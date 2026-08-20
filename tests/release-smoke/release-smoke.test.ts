@@ -141,6 +141,14 @@ async function runInterruptedSmoke(): Promise<{ result: ChildResult; smokeRoot: 
 }
 
 describe('release artifact smoke', () => {
+  it('materializes dependencies with a frozen isolated install instead of copying development node_modules', async () => {
+    const source = await readFile(smokeScript, 'utf8')
+    expect(source).not.toMatch(/cp\(resolve\(repositoryRoot, ['"]node_modules['"]\)/)
+    expect(source).toContain("const dependencyDescriptors = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc']")
+    expect(source).toContain("runCommand('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts']")
+    expect(source).toContain("await rm(join(runtimeRoot, dependencyDescriptor), { force: true })")
+  })
+
   it('runs the exact artifact from an isolated extracted directory', async () => {
     const divergent = createDivergentArtifactFixture()
     try {
