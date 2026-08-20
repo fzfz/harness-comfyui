@@ -1,0 +1,29 @@
+{
+  "paths": {
+    "dataDir": "",
+    "runRepositoryFile": "",
+    "runDirectory": "",
+    "savedMediaDirectory": "",
+    "logDirectory": ""
+  },
+  "comfyui": {
+    "defaultInstanceId": ""
+  },
+  "source": {
+    "catalogCliPath": "",
+    "sourceCliPath": "",
+    "contractId": "harness-comfyui-source",
+    "supportedContractVersions": ["1"]
+  },
+  "jobs": {
+    "pollIntervalMs": 500,
+    "missingObservationMs": 30000
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 4173
+  },
+  "process": {
+    "shutdownTimeoutMs": 10000
+  }
+}

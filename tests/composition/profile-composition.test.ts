@@ -1,0 +1,98 @@
+import { join, resolve } from 'node:path'
+import { readFile } from 'node:fs/promises'
+
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { createProfileFixture } from '../../src/testing/profile-fixture.ts'
+
+const artifactManifestPath = '.release/quality/artifact.json'
+const repositoryRoot = resolve(import.meta.dirname, '../..')
+const fixtures: Array<Awaited<ReturnType<typeof createProfileFixture>>> = []
+
+afterEach(async () => {
+  await Promise.all(fixtures.splice(0).map(fixture => fixture.dispose()))
+})
+
+describe('release artifact composition', () => {
+  it('loads the fixed artifact and exposes the ComfyUI details slot as the active replacement', async () => {
+    const qualityArtifact = JSON.parse(await readFile(resolve(artifactManifestPath), 'utf8')) as {
+      commit: string
+      sha256: string
+    }
+    const fixture = await createProfileFixture({
+      configuration: 'test',
+    })
+    fixtures.push(fixture)
+
+    try {
+      expect(fixture.artifact.commit).toBe(qualityArtifact.commit)
+      expect(fixture.artifact.sha256).toBe(qualityArtifact.sha256)
+      await fixture.materialize()
+      const manifest = JSON.parse(await readFile(fixture.profileManifestPath, 'utf8')) as {
+        dependencies?: Record<string, string>
+        dsh?: { profile?: { bundles?: string[] } }
+      }
+      expect(manifest.dependencies?.['harness-comfyui']).toBe(`file:${fixture.artifact.tarballPath}`)
+      expect(manifest.dsh?.profile?.bundles).toEqual([
+        '@deepseek-ai/dsh-base',
+        '@deepseek-ai/dsh-web-app',
+        'harness-comfyui',
+      ])
+
+      const installed = await fixture.readInstalledProfileEvidence()
+      expect(installed.profileVersions).toEqual({
+        dshBase: undefined,
+        dshWebApp: undefined,
+        harnessComfyui: fixture.artifact.version,
+      })
+      const sourcePackage = JSON.parse(await readFile(join(repositoryRoot, 'package.json'), 'utf8')) as {
+        devDependencies: Record<string, string>
+      }
+      const expectedRuntimeBundleVersions = {
+        cliDsh: sourcePackage.devDependencies['@deepseek-ai/dsh'],
+        dshBase: sourcePackage.devDependencies['@deepseek-ai/dsh-base'],
+        dshWebApp: sourcePackage.devDependencies['@deepseek-ai/dsh-web-app'],
+      }
+      expect(installed.runtimeBundleVersions).toEqual({
+        ...expectedRuntimeBundleVersions,
+      })
+      expect(installed.hostLoaderRow).toEqual({
+        id: 'harness-comfyui',
+        name: 'harness-comfyui',
+        configurationExpression: '!!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE',
+      })
+
+      await fixture.start()
+      expect(JSON.parse(await readFile(join(fixture.runtimeCwd, 'config/base.json'), 'utf8'))).toEqual({
+        pollutedCheckoutConfig: true,
+      })
+      const boot = await fixture.readBootGraph()
+      expect(boot.entries.filter(entry => entry.id === 'harness-comfyui')).toHaveLength(1)
+      expect(boot.entries.filter(entry => entry.id === '@deepseek-ai/dsh-client-ui-conversation')).toHaveLength(1)
+      expect(await fixture.readClientModule('harness-comfyui')).toContain('__ModuleLoader__')
+
+      const composition = await fixture.inspectDetailsComposition({
+        nativeClientId: '@deepseek-ai/dsh-client-ui-conversation',
+      })
+      expect(composition.registrationError).toBeUndefined()
+      expect(composition.priorities).toEqual([-10, 0])
+      expect(composition.activePriority).toBe(-10)
+      expect(composition.entries).toEqual([
+        { owner: 'harness-comfyui', priority: -10, active: true },
+        { owner: '@deepseek-ai/dsh-client-ui-conversation', priority: 0, active: false },
+      ])
+
+      await fixture.unloadClient(composition)
+      expect(composition.remainingPriorities).toEqual([0])
+      expect(composition.remainingEntries).toEqual([
+        { owner: '@deepseek-ai/dsh-client-ui-conversation', priority: 0, active: true },
+      ])
+    } finally {
+      await fixture.stop()
+      await fixture.dispose()
+    }
+    expect(fixture.cleanupEvidence.processExit).toBeDefined()
+    expect(fixture.cleanupEvidence.portReleased).toBe(true)
+    expect(fixture.cleanupEvidence.dshHomeRemoved).toBe(true)
+  }, 90000)
+})

@@ -1,0 +1,16 @@
+{
+  "paths": {
+    "dataDir": "",
+    "runRepositoryFile": "",
+    "runDirectory": "",
+    "savedMediaDirectory": "",
+    "logDirectory": ""
+  },
+  "comfyui": {
+    "defaultInstanceId": "production"
+  },
+  "source": {
+    "catalogCliPath": "",
+    "sourceCliPath": ""
+  }
+}
