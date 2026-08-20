@@ -7,7 +7,10 @@ import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 import { packPackage } from '../../scripts/release/pack.mjs'
-import { validatePackage } from '../../scripts/release/validate-package.mjs'
+import { parseArguments, validatePackage } from '../../scripts/release/validate-package.mjs'
+import { createReleasePreview, formatReleasePreview } from '../../scripts/release/preview.mjs'
+
+const defaultFixtureCommit = '0123456789abcdef0123456789abcdef01234567'
 
 function createFixture() {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-package-'))
@@ -38,9 +41,25 @@ function createFixture() {
   return root
 }
 
+function createGitFixture() {
+  const root = createFixture()
+  for (const args of [
+    ['init', '-q'],
+    ['config', 'user.email', 'fixture@example.invalid'],
+    ['config', 'user.name', 'Release Fixture'],
+    ['add', 'package.json', 'lib', 'config'],
+    ['commit', '-qm', 'fixture'],
+  ]) {
+    const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' })
+    if (result.status !== 0) throw new Error(result.stderr)
+  }
+  const commit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim()
+  return { root, commit }
+}
+
 function createArtifact(
   root: string,
-  options: { extraPackageFiles?: Record<string, string>; omitPackageFiles?: string[] } = {},
+  options: { commit?: string; extraPackageFiles?: Record<string, string>; omitPackageFiles?: string[] } = {},
 ) {
   const packageRoot = join(root, 'package')
   cpSync(join(root, 'lib'), join(packageRoot, 'lib'), { recursive: true })
@@ -63,7 +82,7 @@ function createArtifact(
     tarballPath: resolve(tarball),
     filename: 'harness-comfyui-0.1.0-test.1.tgz',
     version: '0.1.0-test.1',
-    commit: '0123456789abcdef0123456789abcdef01234567',
+    commit: options.commit ?? defaultFixtureCommit,
     byteLength: bytes.byteLength,
     sha256: createHash('sha256').update(bytes).digest('hex'),
   }
@@ -211,5 +230,122 @@ describe('release package scripts', () => {
         },
       }),
     ).toThrow(/pack command failed/i)
+  })
+
+  it('accepts a complete expected identity pair and keeps the default parser mode available', () => {
+    const root = createFixture()
+    const artifact = createArtifact(root)
+    expect(parseArguments([])).toMatchObject({ expectedVersion: undefined, expectedCommit: undefined })
+    expect(parseArguments([
+      '--root',
+      root,
+      '--expected-version',
+      artifact.version,
+      '--expected-commit',
+      artifact.commit,
+    ])).toEqual({ root: resolve(root), expectedVersion: artifact.version, expectedCommit: artifact.commit })
+
+    expect(validatePackage(root, {
+      gitCommit: () => artifact.commit,
+      expectedVersion: artifact.version,
+      expectedCommit: artifact.commit,
+    }).artifact).toEqual(artifact)
+  })
+
+  it.each([
+    [['--expected-version', '0.1.0-test.1'], /must be supplied together/i],
+    [['--expected-commit', '0123456789abcdef0123456789abcdef01234567'], /must be supplied together/i],
+    [['--expected-version', '1.2'], /must be supplied together|strict semver/i],
+    [['--expected-version', '01.2.3', '--expected-commit', '0123456789abcdef0123456789abcdef01234567'], /strict semver/i],
+    [['--expected-version', '1.2.3', '--expected-commit', 'ABCDEF0123456789ABCDEF0123456789ABCDEF01'], /lowercase 40-character hex/i],
+    [['--expected-version', '1.2.3', '--expected-commit', 'not-a-commit-string-000000000000000000000'], /lowercase 40-character hex/i],
+    [['--expected-version', '1.2.3', '--expected-version', '1.2.3', '--expected-commit', '0123456789abcdef0123456789abcdef01234567'], /duplicate argument/i],
+    [['--expected-version', '1.2.3', '--expected-commit', '0123456789abcdef0123456789abcdef01234567', '--unexpected'], /unknown argument/i],
+  ])('rejects malformed expected identity arguments: %s', (args, message) => {
+    expect(() => parseArguments(args)).toThrow(message)
+  })
+
+  it('rejects expected identity values that differ from source, artifact, or HEAD', () => {
+    const root = createFixture()
+    const artifact = createArtifact(root)
+    expect(() => validatePackage(root, {
+      gitCommit: () => artifact.commit,
+      expectedVersion: '0.1.0-test.2',
+      expectedCommit: artifact.commit,
+    })).toThrow(/expected version .*source package\.json/i)
+    expect(() => validatePackage(root, {
+      gitCommit: () => artifact.commit,
+      expectedVersion: artifact.version,
+      expectedCommit: 'fedcba9876543210fedcba9876543210fedcba98',
+    })).toThrow(/expected commit .*artifact\.json/i)
+    expect(() => validatePackage(root, {
+      gitCommit: () => 'fedcba9876543210fedcba9876543210fedcba98',
+      expectedVersion: artifact.version,
+      expectedCommit: artifact.commit,
+    })).toThrow(/expected commit .*current HEAD/i)
+  })
+
+  it('formats and reads a release preview deterministically from the validated artifact', () => {
+    const fixture = createGitFixture()
+    const root = fixture.root
+    const artifact = createArtifact(root, { commit: fixture.commit })
+    const expected = [
+      'Release Preview',
+      `version=${artifact.version}`,
+      `commit=${artifact.commit}`,
+      `filename=${artifact.filename}`,
+      `byteLength=${artifact.byteLength}`,
+      `sha256=${artifact.sha256}`,
+      `tarballPath=${artifact.tarballPath}`,
+      '',
+    ].join('\n')
+    expect(formatReleasePreview(artifact)).toBe(expected)
+    expect(createReleasePreview(root, {
+      expectedVersion: artifact.version,
+      expectedCommit: artifact.commit,
+    })).toBe(expected)
+  })
+
+  it('exposes the preview as a repository CLI entry without invoking build or pack', () => {
+    const fixture = createGitFixture()
+    const root = fixture.root
+    const artifact = createArtifact(root, { commit: fixture.commit })
+    const result = spawnSync(process.execPath, [
+      resolve(process.cwd(), 'scripts/release/preview.mjs'),
+      '--root',
+      root,
+      '--expected-version',
+      artifact.version,
+      '--expected-commit',
+      artifact.commit,
+    ], { encoding: 'utf8' })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe(formatReleasePreview(artifact))
+    expect(result.stdout).not.toMatch(/(?:pnpm run build|pnpm pack|git tag|git push|deploy)/i)
+  })
+
+  it('revalidates tarball identity and package content before formatting a preview', () => {
+    const fixture = createGitFixture()
+    const root = fixture.root
+    const artifact = createArtifact(root, { commit: fixture.commit })
+    writeFileSync(artifact.tarballPath, 'tampered tarball bytes')
+
+    expect(() => createReleasePreview(root, {
+      expectedVersion: artifact.version,
+      expectedCommit: artifact.commit,
+    })).toThrow(/artifact byteLength|artifact sha256/i)
+  })
+
+  it('rejects a preview when the artifact SHA-256 is tampered', () => {
+    const fixture = createGitFixture()
+    const root = fixture.root
+    const artifact = createArtifact(root, { commit: fixture.commit })
+    writeFileSync(join(root, '.release/quality/artifact.json'), `${JSON.stringify({ ...artifact, sha256: '0'.repeat(64) })}\n`)
+
+    expect(() => createReleasePreview(root, {
+      expectedVersion: artifact.version,
+      expectedCommit: artifact.commit,
+    })).toThrow(/artifact sha256/i)
   })
 })

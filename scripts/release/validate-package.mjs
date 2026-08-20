@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const artifactDirectoryName = '.release/quality'
+const strictSemVer = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
+const exactGitCommit = /^[0-9a-f]{40}$/u
 
 function readJson(path) {
   try {
@@ -34,20 +36,61 @@ function currentGitCommit(root) {
   return commit
 }
 
-function parseArguments(argv) {
+export function assertExpectedIdentity(options = {}) {
+  const hasExpectedVersion = options.expectedVersion !== undefined
+  const hasExpectedCommit = options.expectedCommit !== undefined
+  if (hasExpectedVersion !== hasExpectedCommit) {
+    throw new Error('--expected-version and --expected-commit must be supplied together')
+  }
+  if (hasExpectedVersion && (typeof options.expectedVersion !== 'string' || !strictSemVer.test(options.expectedVersion))) {
+    throw new Error(`expected version must be strict SemVer: ${String(options.expectedVersion)}`)
+  }
+  if (hasExpectedCommit && (typeof options.expectedCommit !== 'string' || !exactGitCommit.test(options.expectedCommit))) {
+    throw new Error(`expected commit must be lowercase 40-character hex: ${String(options.expectedCommit)}`)
+  }
+  return {
+    expectedVersion: options.expectedVersion,
+    expectedCommit: options.expectedCommit,
+  }
+}
+
+export function parseArguments(argv) {
   let root = repositoryRoot
   let seenRoot = false
+  let seenExpectedVersion = false
+  let seenExpectedCommit = false
+  let expectedVersion
+  let expectedCommit
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
-    if (argument !== '--root') throw new Error(`unknown argument ${argument}`)
-    if (seenRoot) throw new Error('duplicate argument --root')
-    const value = argv[index + 1]
-    if (!value || value.startsWith('--')) throw new Error('--root requires a non-empty value')
-    root = resolve(value)
-    seenRoot = true
-    index += 1
+    if (argument === '--root') {
+      if (seenRoot) throw new Error('duplicate argument --root')
+      const value = argv[index + 1]
+      if (!value || value.startsWith('--')) throw new Error('--root requires a non-empty value')
+      root = resolve(value)
+      seenRoot = true
+      index += 1
+      continue
+    }
+    if (argument === '--expected-version' || argument === '--expected-commit') {
+      const seen = argument === '--expected-version' ? seenExpectedVersion : seenExpectedCommit
+      if (seen) throw new Error(`duplicate argument ${argument}`)
+      const value = argv[index + 1]
+      if (!value || value.startsWith('--')) throw new Error(`${argument} requires a non-empty value`)
+      if (argument === '--expected-version') {
+        expectedVersion = value
+        seenExpectedVersion = true
+      } else {
+        expectedCommit = value
+        seenExpectedCommit = true
+      }
+      index += 1
+      continue
+    }
+    throw new Error(`unknown argument ${argument}`)
   }
-  return root
+  assertExpectedIdentity({ expectedVersion, expectedCommit })
+  return { root, expectedVersion, expectedCommit }
 }
 
 function runTar(args, root, description) {
@@ -114,7 +157,7 @@ function validateExportTargets(packedManifest, entries) {
   }
 }
 
-function readArtifact(root) {
+export function readArtifact(root) {
   const destination = resolve(root, artifactDirectoryName)
   const artifactPath = join(destination, 'artifact.json')
   const artifact = readJson(artifactPath)
@@ -132,7 +175,7 @@ function readArtifact(root) {
     throw new Error('artifact filename must match the tarball basename')
   }
   if (typeof artifact.version !== 'string' || artifact.version.length === 0) throw new Error('artifact version must be a non-empty string')
-  if (typeof artifact.commit !== 'string' || !/^[0-9a-f]{40}$/u.test(artifact.commit)) throw new Error('artifact commit must be an exact git commit')
+  if (typeof artifact.commit !== 'string' || !exactGitCommit.test(artifact.commit)) throw new Error('artifact commit must be an exact git commit')
   if (!Number.isInteger(artifact.byteLength) || artifact.byteLength < 0) throw new Error('artifact byteLength must be a non-negative integer')
   if (typeof artifact.sha256 !== 'string' || !/^[0-9a-f]{64}$/u.test(artifact.sha256)) throw new Error('artifact sha256 must be a lowercase SHA-256')
   return { artifact, destination }
@@ -181,11 +224,24 @@ function validateTarEntries(entries, expectedEntries) {
 
 export function validatePackage(root = repositoryRoot, options = {}) {
   const resolvedRoot = resolve(root)
+  const expectedIdentity = assertExpectedIdentity(options)
   const { artifact, destination } = readArtifact(resolvedRoot)
   const sourceManifest = readJson(join(resolvedRoot, 'package.json'))
   const expectedEntries = ['package/package.json', ...validatePackageFiles(sourceManifest.files, resolvedRoot)]
-  if (sourceManifest.version !== artifact.version) throw new Error(`artifact version ${artifact.version} differs from package.json ${sourceManifest.version}`)
   const actualCommit = (options.gitCommit ?? currentGitCommit)(resolvedRoot)
+  if (expectedIdentity.expectedVersion !== undefined && sourceManifest.version !== expectedIdentity.expectedVersion) {
+    throw new Error(`expected version ${expectedIdentity.expectedVersion} differs from source package.json ${sourceManifest.version}`)
+  }
+  if (expectedIdentity.expectedVersion !== undefined && artifact.version !== expectedIdentity.expectedVersion) {
+    throw new Error(`expected version ${expectedIdentity.expectedVersion} differs from artifact.json ${artifact.version}`)
+  }
+  if (expectedIdentity.expectedCommit !== undefined && artifact.commit !== expectedIdentity.expectedCommit) {
+    throw new Error(`expected commit ${expectedIdentity.expectedCommit} differs from artifact.json ${artifact.commit}`)
+  }
+  if (expectedIdentity.expectedCommit !== undefined && actualCommit !== expectedIdentity.expectedCommit) {
+    throw new Error(`expected commit ${expectedIdentity.expectedCommit} differs from current HEAD ${actualCommit}`)
+  }
+  if (sourceManifest.version !== artifact.version) throw new Error(`artifact version ${artifact.version} differs from package.json ${sourceManifest.version}`)
   if (actualCommit !== artifact.commit) throw new Error(`artifact commit ${artifact.commit} differs from current git commit ${actualCommit}`)
 
   const tarballPath = artifact.tarballPath
@@ -217,12 +273,26 @@ export function validatePackage(root = repositoryRoot, options = {}) {
   validateExportTargets(packedManifest, entries)
 
   const result = { artifact, entries: [...entries].sort(), packedManifest }
-  process.stdout.write(`package validated: ${artifact.filename} (${artifact.sha256})\n`)
+  if (!options.quiet) process.stdout.write(`package validated: ${artifact.filename} (${artifact.sha256})\n`)
   return result
 }
 
+export function formatReleasePreview(artifact) {
+  return [
+    'Release Preview',
+    `version=${artifact.version}`,
+    `commit=${artifact.commit}`,
+    `filename=${artifact.filename}`,
+    `byteLength=${artifact.byteLength}`,
+    `sha256=${artifact.sha256}`,
+    `tarballPath=${artifact.tarballPath}`,
+    '',
+  ].join('\n')
+}
+
 export function main(argv = process.argv.slice(2)) {
-  validatePackage(parseArguments(argv))
+  const argumentsValue = parseArguments(argv)
+  validatePackage(argumentsValue.root, argumentsValue)
   return 0
 }
 

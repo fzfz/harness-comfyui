@@ -8,6 +8,23 @@ export interface ValidationResult {
 
 export interface ValidateOptions {
   gitCommit?: (root: string) => string
+  expectedVersion?: string
+  expectedCommit?: string
+  quiet?: boolean
 }
 
+export interface ParsedValidateArguments {
+  root: string
+  expectedVersion?: string
+  expectedCommit?: string
+}
+
+export declare function assertExpectedIdentity(options?: ValidateOptions): {
+  expectedVersion?: string
+  expectedCommit?: string
+}
+
+export declare function parseArguments(argv: string[]): ParsedValidateArguments
+export declare function readArtifact(root: string): { artifact: PackageArtifact; destination: string }
+export declare function formatReleasePreview(artifact: PackageArtifact): string
 export declare function validatePackage(root?: string, options?: ValidateOptions): ValidationResult
