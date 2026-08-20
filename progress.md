@@ -13,7 +13,7 @@
   - 计划编写者读取 DeepSeek Harness 根目录、packages 目录和 Web 包的开发约束。
   - 计划编写者列出数据源仓库现有 ComfyUI、会话和 Pi Skill 相关模块。
   - 计划编写者确认 DeepSeek Harness 提供会话节点、附件、Skill、任务、交付物和工作流运行的浏览器扩展包。
-  - 计划编写者确认 DeepSeek Harness 要求业务会话节点使用稳定业务 ID 关联持久事件并支持顺序重放。
+  - 计划编写者确认 DeepSeek Harness 的业务会话节点可以使用稳定业务 ID 关联持久事件并支持顺序重放；后续设计决定不把该能力用于复制 Generation Run 状态。
   - 计划编写者确认 DeepSeek Harness 已实现三列布局、Skill 斜杠触发器和输入引用 chip。
   - 计划编写者识别 `details` 单占用 slot 与现有工具详情面板之间的布局冲突。
   - 计划编写者确认输入引用 chip 能够在发送时通过异步 codec 生成模型文本，并在序列化失败时阻止发送。
@@ -52,7 +52,7 @@
   - 计划编写者定义 ComfyUI transport、状态映射、媒体 descriptor、媒体流读取和 Session 访问控制。
   - 计划编写者定义目录、来源、运行、Workflow 和媒体的跨模块数据结构。
   - 计划编写者把原 CLI 方案校正为现有 OpenAPI 3.1 live discovery，并把每个 operation 注册为资源专用 `query_semantic_*` Harness Tool。
-  - 计划编写者执行生产依赖审计；官方 registry 返回 12 个 high advisory，因此正式 bundle 安装和生产连接保持 NO-GO。
+  - 计划编写者对来源 DeepSeek Harness monorepo 执行生产依赖审计；该历史基线返回 12 个 high advisory，当时正式 bundle 安装和生产连接保持 NO-GO。Phase 8 已经完成当前项目依赖处理，当前项目完整闭包与 production 闭包均为 0 advisory。
   - 独立审核队员第二轮复审发现实例 URL 公开投影矛盾；计划编写者拆分 Host 私有来源快照与模型、Session、浏览器公开投影。
   - 独立审核队员第三轮复审发现本地媒体分页接口缺失；计划编写者增加 `GenerationRuns.listMedia()` 和媒体分页契约。
   - 独立审核队员最终复审未发现剩余 P0、P1 或 P2，并判定 PASS。
@@ -129,12 +129,34 @@
   - `prototype/generation-workbench/tests/prototype-contract.test.mjs`（新建）
   - `prototype/generation-workbench/README.md`（新建）
 
+### Phase 7: 确认正式实现边界
+- **Status:** in_progress
+- Actions taken:
+  - 用户确认一个权威 OpenAPI schema 投影 Catalog discovery/CLI 与 Source discovery/CLI；两个表面复用稳定 ID、revision、共用 schema 和错误结构。
+  - 用户确认本版本不认证调用 Source Operation 的其他本机进程。Harness 只通过注册边界确保 Source Operation 不进入 Agent Tool、Skill Tool 或浏览器 RPC；数据源 operation 保持只读。
+  - 用户确认本版本不处理用户选择模板后到 Generation Tool Call 前发生模板 revision 更新的并发情形。Host 在 Tool 调用中读取当前模板 bundle，并把该次返回结果保存为运行来源快照。
+  - 用户确认生成选项允许显式选择安全 ComfyUI 实例 ID；未选择时 Host 使用配置默认实例，明确选择的实例不可用时不切换。
+  - 用户确认当前 Harness 安装使用一个 SQLite 保存包含 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id` 和 `run_id` 的运行元数据，并按 Workspace 与 Run 分区保存文件。
+  - 用户确认 Catalog discovery 与 Source discovery 返回相同的 `contract_id` 和 `contract_version`；Host adapter 只接受配置声明支持的组合。
+  - 用户确认异步运行状态不复制进 Harness Session 日志。Session 只保存原生 Generation Tool Call 与包含 `run_id` 的 Tool Result；Run Repository 保存权威状态，浏览器使用非持久 Run Change Notification 触发重新读取。
+- Files created/modified:
+  - `CONTEXT.md`（更新）
+  - `docs/adr/0003-message-context-excludes-execution-routing.md`（更新）
+  - `docs/adr/0007-one-source-contract-with-two-read-surfaces.md`（更新）
+  - `docs/adr/0008-one-sqlite-and-workspace-run-directories.md`（新建）
+  - `docs/adr/0009-source-contract-version-gate.md`（新建）
+  - `docs/adr/0010-run-repository-is-the-status-authority.md`（新建）
+  - `prototype-scheme.md`（更新）
+  - `findings.md`（更新）
+  - `task_plan.md`（更新）
+  - `progress.md`（更新）
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | 目标目录检查 | `ls -la` 与 `git status` | 确认目录状态且不修改文件 | 目录为空且不是 Git 仓库 | PASS |
 | 来源仓库工作树检查 | 两个来源仓库的 `git status --short --branch` | 识别用户文件并保持只读 | 两个来源仓库都有用户未提交修改 | PASS |
-| 静态原型结构测试 | `node --test prototype/generation-workbench/tests/*.test.mjs` | 全部分支与结构契约通过 | 26/26 通过 | PASS |
+| 静态原型结构测试 | `node --test prototype/generation-workbench/tests/*.test.mjs` | 全部分支与结构契约通过 | 27/27 通过 | PASS |
 | 现有 ComfyUI Jobs API | 只读请求两个登记实例的 `/system_stats` 与 `/api/jobs` | 取得现有版本和分页 Job 响应 | `mac mini` 0.28.3、`win3080` 0.33.1；两个实例均返回 `jobs + pagination` | PASS |
 | 单 Job 查询与取消路由 | 查询 `win3080` 的已完成 Job，调用单 Job cancel 后回读 | 取消路由存在；终态请求为幂等 no-op | cancel 返回 HTTP 200、`cancelled=false`；回读仍为 `completed` | PASS |
 | 控件与轮次语义 | 页面加载、选择三个静态聊天轮次 | 没有死控件；轮次按钮说明任务、动作和运行数量 | 删除 `+` 与 `…`；显示本轮任务摘要和“查看 N 项 ComfyUI 运行” | PASS |
@@ -156,17 +178,46 @@
 | 多运行定位 | 普通画风参数对比轮次点击失败运行的“定位结果” | 当前聊天轮次的两个运行仍显示 | 成功运行与失败运行同时保留，失败卡片获得定位高亮 | PASS |
 | 连续发送 | 在角色 Session 连续发送两条消息 | 两个聊天轮次分别拥有独立 Agent 输出和 `run_id` | 创建 `turn_portrait_live_1/2` 与 `run_DEMO_PORTRAIT_001/002` | PASS |
 | Session 往返恢复 | 角色 Session 新增两轮后切换视频 Session 再返回 | 新轮次、运行、计数和会话汇总保持 | 角色 Session 保留四个轮次与三个运行 | PASS |
+| 来源 Harness production audit | `pnpm audit --prod --registry=https://registry.npmjs.org --json` | 复现规格中的 high advisory 基线 | 0 critical、12 high、12 moderate、1 low | PASS |
+| 当前项目完整依赖审计 | `pnpm audit --json` | critical/high 至少为 0；记录全部严重级别 | 591 个依赖，critical/high/moderate/low 全部为 0 | PASS |
+| 当前项目 production 依赖审计 | `pnpm audit --prod --json` | critical/high 至少为 0；记录全部严重级别 | 475 个依赖，critical/high/moderate/low 全部为 0 | PASS |
+| Frozen lockfile-only | `pnpm install --lockfile-only --ignore-scripts --frozen-lockfile` | lockfile 与 manifest/override 一致且不创建 `node_modules` | 通过 supply-chain policy；没有 `node_modules` | PASS |
+| Advisory 修复后原型回归 | `node --test prototype/generation-workbench/tests/*.test.mjs` | 原有静态原型测试不受依赖配置影响 | 27/27 通过 | PASS |
+| 工作区差异格式 | `git diff --check` | 没有空白错误 | 无输出 | PASS |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
 |-----------|-------|---------|------------|
 | 2026-08-20 | 当前目标目录不是 Git 仓库 | 1 | 本轮不创建提交或分支；用户确认方案后确定初始化方式。 |
+| 2026-08-20 | 默认 pnpm registry 的 audit endpoint 不存在 | 1 | `registry.npmmirror.com` 返回 `ERR_PNPM_AUDIT_ENDPOINT_NOT_EXISTS`；后续审计命令只对当前调用显式使用 `https://registry.npmjs.org`，不修改全局或仓库配置。 |
+| 2026-08-20 | `pnpm why` 不支持 `--lockfile-only` | 1 | 停止重复调用；使用 `pnpm list <package> --lockfile-only --depth Infinity --parseable` 和 lockfile 查询验证依赖路径。 |
+| 2026-08-20 | `pnpm run` 在缺少 `node_modules` 时触发依赖准备 | 1 | `strict-dep-builds` 在执行任何 build script 前失败；把 464 MB 生成目录移入系统废纸篓，后续 pre-install 门禁直接调用 `pnpm audit`，测试直接调用 `node --test`。 |
+
+### Phase 8: 逐项处理 high dependency advisory
+- **Status:** completed
+- Actions taken:
+  - 读取当前计划、已发布规格和依赖安全门禁；在生成当前项目 lockfile 前没有安装依赖。
+  - 保持原 DeepSeek Harness 仓库只读，并记录其提交、lockfile 摘要和用户未提交文件。
+  - 使用官方 npm registry 对来源 DeepSeek Harness monorepo 重新执行完整与 `--prod` audit；来源完整闭包为 15 high，来源 production 闭包为 12 high。
+  - 把 12 条 production audit 条目归并为 7 个受影响包版本和对应修复版本，并逐条记录当前项目处理结论。
+  - 创建精确直接依赖 manifest、官方 registry 配置、七个受影响版本 override 和 lockfile；lockfile-only 解析没有执行依赖脚本。
+  - 当前项目完整闭包与 production 闭包的 audit 均为 critical/high/moderate/low 全部 0。
+  - `pnpm run` 的意外依赖准备发现五个未审计 build-script 包；所有脚本在 Phase 9 审核完成前保持拒绝状态。
+
+### Phase 9: 审核 dependency build script 并完成正式依赖安装
+- **Status:** completed
+- Actions taken:
+  - 从官方 npm registry 下载五个精确版本 tarball，并在隔离临时目录中验证路径、registry integrity、文件清单、安装命令和本地调用链；下载与检查阶段没有执行 lifecycle script。
+  - 第一版 `allowBuilds` 决定错误地把四个依赖包标记为拒绝；用户指出 build-script 安全审核不得变成安装行为裁剪。
+  - 计划执行者撤销四个拒绝决定，并在 `allowBuilds` 中明确允许五个已经完成安全审计的精确版本。
+  - 计划执行者运行此前未执行的四个 lifecycle script，并再次执行 frozen install，验证五个依赖包保留完整安装行为。
+  - 完整依赖与 production 依赖 audit 均为 0 critical、0 high、0 moderate、0 low；原型测试 27/27 通过。
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 6 已完成：变体 A 静态原型通过结构测试、浏览器验证和独立语义审核。 |
-| Where am I going? | 等待用户检查静态原型并决定修改内容或是否进入正式实现阶段。 |
-| What's the goal? | 产出 DeepSeek Harness 三列式 Agent 生图工作台原型方案。 |
-| What have I learned? | 本次实际 Workflow JSON 是由内部请求数据与模板来源快照转换的完整 UI Workflow；API Workflow JSON 由前者编译并提交远端。页面只下载前者，Host 私有逻辑读取后者。现有两个 ComfyUI 实例已经使用 Jobs API；单 Job cancel 能按 `prompt_id` 取消排队或运行中 Job，并对终态返回幂等 no-op。 |
-| What have I done? | 已实现并验证三列式静态原型、多轮聊天、零个/一个/多个运行关联、上下文选择、流式输出、会话媒体库、跨会话媒体库、全局异步任务列表、单 Job 取消、原文件新窗口打开和本次实际 Workflow JSON 下载；Skill 选择交互保留给 DeepSeek Harness 原生输入区。 |
+| Where am I? | Phase 9 已完成：dependency advisory、build-script 和 frozen install 门禁全部通过。 |
+| Where am I going? | 按 Issue #1 实现正式 Harness bundle、Host plugin、Client plugin、Run Repository 和完整交付流程。 |
+| What's the goal? | 在精确项目依赖闭包和失败关闭的 build-script 策略上实现 DeepSeek Harness ComfyUI 工作台。 |
+| What have I learned? | 来源 monorepo 的 production audit 数量不能代表当前项目 closure；当前项目只实际包含修复后的 `js-yaml`、`nanoid` 和 `postcss`，其他受影响包不在 closure 中。 |
+| What have I done? | 已创建精确 manifest、七个安全 override、五个精确 build-script 允许决定和两份标准化安全报告；完成完整 lifecycle、frozen install、full/prod audit 和 26 项原型回归验证。 |

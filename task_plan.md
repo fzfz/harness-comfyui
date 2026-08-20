@@ -1,13 +1,13 @@
 # Harness ComfyUI 原型方案调研计划
 
 ## Goal
-计划编写者基于 DeepSeek Harness 与 NoobAI-XL-FZ-PROD-ENV 的现有实现，产出一份供用户讨论的三列式 Agent 生图工作台原型方案；本轮不迁移 Skill、不实现底层服务、不连接真实 ComfyUI 实例。
+计划执行者基于已经发布的 DeepSeek Harness ComfyUI 工作台规格，逐项识别并处理计划依赖闭包中的 high advisory；安全门禁通过前不安装正式依赖、不连接生产 ComfyUI 写路径。
 
 ## Next Step
-用户检查 `/prototype/generation-workbench` 的交互和信息层级，并决定静态原型需要修改的内容；正式 DeepSeek Harness 宿主安装、Host 插件、数据 CLI 和 ComfyUI 运行服务仍属于后续实现阶段。
+依赖 advisory 门禁、build-script 门禁与 frozen install 已经通过。下一阶段由计划执行者实现 Issue #1 的正式 Harness bundle、Host plugin、Client plugin、Run Repository 和测试流程。
 
 ## Current Phase
-Phase 6
+Phase 9 completed
 
 ## Phases
 
@@ -56,6 +56,35 @@ Phase 6
 - [x] 独立语义审核队员检查页面文案、具体名词和用户需求覆盖。
 - **Status:** completed
 
+### Phase 7: 确认正式实现边界
+- [x] 用户确认 Workspace 范围、Chat Turn 定义、Generation Run 持久化、Tool 接纳返回、数据源不可用行为和 ComfyUI Job 取消边界。
+- [x] 用户确认当前仓库拥有独立 Harness bundle，项目使用 Harness 原生 Session/数字 turn/callId，并且只有实际 Generation Tool Call 创建 `run_id`。
+- [x] 用户确认单用户安装、Host 前台 worker、Harness 原生 Skill 调用策略和 `submission_unknown` 显式新消息重提边界。
+- [x] 用户确认一个 OpenAPI schema 投影 Agent Catalog CLI 与 Host 专用只读 Source CLI；本版本不认证其他本机进程。
+- [x] 用户确认 Tool 调用时读取当前模板 bundle；本版本不设计选择时 revision 锁定或 revision 冲突。
+- [x] 用户确认 ComfyUI 实例采用显式安全 ID 或 Host 配置默认值，显式实例不可用时不切换。
+- [x] 用户确认当前安装使用一个 SQLite 保存运行元数据，运行文件按 Workspace 与 Run 分区。
+- [x] 用户确认两个 discovery 返回同一契约身份，Host adapter 遇到不兼容版本时阻止对应数据源能力。
+- [x] 用户确认异步运行状态只保存在 Run Repository，并且不把每次状态变化复制为持久 Harness Session 事件。
+- [x] 计划编写者在设计树没有未决叶节点后发布实现规格 Issue #1。
+- **Status:** completed
+
+### Phase 8: 逐项处理 high dependency advisory
+- [x] 计划执行者从只读原 DeepSeek Harness manifest 与 lockfile 取得当前 high advisory 原始报告。
+- [x] 计划执行者把报告映射为 advisory 编号、受影响包、依赖链、计划 production closure、修复版本和来源证据。
+- [x] 计划执行者逐项处理每个唯一 advisory，并记录精确升级或当前项目闭包排除结论。
+- [x] 计划执行者在当前仓库创建精确版本依赖计划、七个受影响版本 override 和 lockfile 审计门禁。
+- [x] 计划执行者重新运行完整闭包与 production 闭包门禁；两个范围的 critical、high、moderate 和 low 都为 0。
+- **Status:** completed
+
+### Phase 9: 审核 dependency build script 并完成正式依赖安装
+- [x] 计划执行者从官方 npm registry 下载五个精确版本 tarball，并在不执行 lifecycle script 的隔离目录中检查文件清单、registry integrity、安装命令及其本地调用链。
+- [x] 计划执行者分别完成五个精确版本的 lifecycle script 安全审计，并在 `allowBuilds` 中明确允许五个精确版本。
+- [x] 计划执行者保留五个依赖包的完整安装行为，不使用 `allowBuilds` 裁剪 package lifecycle script。
+- [x] 计划执行者完成 `pnpm install --frozen-lockfile`，并验证 pnpm 没有自动忽略未分类 build script。
+- [x] 计划执行者重新运行完整依赖 audit、production 依赖 audit、27 项原型测试和工作区差异格式检查。
+- **Status:** completed
+
 ## Key Questions
 1. DeepSeek Harness 当前通过哪个 Web 插件接口向会话页面增加三列式工作台？
 2. DeepSeek Harness 当前如何向浏览器发送用户消息、Agent 增量文本、Tool 调用和 Tool 结果？
@@ -75,9 +104,15 @@ Phase 6
 | 页面只下载本次实际 Workflow JSON | 该文件由内部请求数据和模板来源快照转换并保留 ComfyUI 前端图信息。API Workflow JSON 仍由当前仓库持久化并实际提交 `/prompt`，但不注册浏览器下载。原始请求快照不作为下载产物。 |
 | DeepSeek Harness 决定迁移后 Skill 的文件与工具可见性 | 迁移后的 `SKILL.md` 不沿用原仓库的宿主沙箱假设。 |
 | 完善原数据源 CLI 并由 Harness Tool 提供给 Skill | 用户要求保留原 CLI 的数据提供责任，并通过 DeepSeek Harness 的工具机制调用。 |
-| 原 CLI 继续使用 `schema/api/openapi.yaml` 和 live discovery | 当前 `imagegen-semantic-query` 已经动态读取 OpenAPI operation；方案不创建第二个 manifest。 |
+| 一个权威 `schema/api/openapi.yaml` 投影两个只读 discovery/CLI 表面 | `imagegen-semantic-query` 只发现 Agent 安全 Catalog Operation；Host 私有 CLI 只发现 Source Operation。两个表面复用稳定 ID、revision、共用 schema 和错误结构，不创建第二个 schema manifest。 |
+| Source Operation 本版本不做本机进程认证 | Source Operation 只通过 Host 专用的本机只读表面提供，Harness 不把它注册为 Agent Tool、Skill Tool 或浏览器 RPC；其他本机进程不属于本版本威胁模型。 |
+| Tool 调用时读取当前模板 bundle | 用户选择模板后到 Tool 调用前的 revision 变化不属于本版本并发模型；Host 在 Tool 调用中读取一次当前 bundle，并把该结果保存为运行来源快照。 |
+| ComfyUI 实例采用显式选择或配置默认值 | 用户可以选择安全实例 ID；未选择时 Host 使用配置默认实例。明确选择不可用时失败，不自动切换。 |
+| 一个 SQLite 保存当前安装的运行元数据 | 每条记录包含 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id` 和 `run_id`；文件按 Workspace 和 Run 分区。 |
+| 两个 discovery 返回同一契约身份 | Host adapter 只接受配置中声明支持的 `contract_id` 与 `contract_version`，不猜测或回退。 |
+| Run Repository 是异步运行状态的权威来源 | Harness Session 日志只保留原生 Generation Tool Call 与包含 `run_id` 的 Tool Result；Host 使用非持久 Run Change Notification 提醒浏览器重新读取。 |
 | `submitting` 崩溃恢复为 `submission_unknown` | 当前没有经过验证的远端业务幂等键，恢复流程不能安全自动重提。 |
-| 正式 bundle 与生产连接暂时 NO-GO | 当前 DeepSeek Harness 生产依赖审计存在 12 个 high advisory；静态零依赖原型仍可讨论和实现。 |
+| 依赖 advisory、build-script 与 frozen install 门禁均已通过 | 当前项目完整与 production audit 均为 0；`allowBuilds` 明确允许五个已经完成安全审计的精确版本，不裁剪依赖包的安装行为。 |
 | 原 DeepSeek Harness 目录保持只读 | 用户指定该目录只供调研；正式宿主、Host 插件和 Skill 必须安装到当前仓库。 |
 | Skill 选择交互归 DeepSeek Harness 所有 | 本项目不实现 Skill 选择器、菜单或选择状态，只消费 Harness Session 中已经记录的 Skill 与 Tool 调用事件。 |
 | Tool 调用详情归 DeepSeek Harness 轨迹功能所有 | 本项目右列只显示 ComfyUI 运行与媒体，不复制单一 Tool 的参数或结构化结果面板。 |
@@ -85,7 +120,7 @@ Phase 6
 | 底模是资源查询筛选条件 | 上下文选择器用底模 ID 筛选具有 `base_model_id` 关系的候选项；底模筛选值不写入消息上下文。 |
 | 底模筛选器提供“全部” | 选择“全部”时，上下文目录查询不附加具体底模限制；底模仍不写入消息上下文。 |
 | 全局媒体库使用 Harness 左侧入口和居中弹层 | 当前仓库 Client plugin 注册 `sidebar.footer.action`，并使用 Harness `Modal` 呈现按会话、轮次、类型、时间筛选的跨会话媒体。 |
-| 全局异步任务列表使用 ComfyUI Jobs API | 当前仓库保存 Session、`turn_id`、`run_id`、实例 ID 与 `prompt_id` 关联；服务使用 `GET /api/jobs/{prompt_id}` 观察任务，并使用 `POST /api/jobs/{prompt_id}/cancel` 取消指定的排队或运行中 Job。 |
+| 全局异步任务列表使用 ComfyUI Jobs API | 当前仓库保存 Harness Session ID、数字 `turn`、`run_id`、实例 ID 与 `prompt_id` 关联；服务使用 `GET /api/jobs/{prompt_id}` 观察任务，并使用 `POST /api/jobs/{prompt_id}/cancel` 取消指定的排队或运行中 Job。 |
 | 原型不保留没有已实现行为的可见控件 | 每个可见按钮必须触发原型中能够核对的状态变化、导航、筛选、复制、下载或对话框操作。 |
 
 ## Errors Encountered

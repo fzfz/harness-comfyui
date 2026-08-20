@@ -22,6 +22,7 @@
 - 数据源仓库已经存在 `comfyui-run-runtime.mjs`、`comfyui-runtime-gateway.mjs`、`comfyui-runtime-media.mjs`、模板工作流模块、运行时参数模块、会话模块和 Pi Skill 宿主模块。
 - 数据源仓库 `package.json` 已使用精确依赖版本；本轮不新增或安装依赖。
 - DeepSeek Harness 提供 `ConversationNodeDefinition` 和 keyed renderer；客户端插件能够把一组具有稳定业务 ID 的持久会话事件聚合为单个聊天节点，并按事件序号重放状态。
+- 本项目不使用 `ConversationNodeDefinition` 复制 Generation Run 状态。Harness Session 日志只保存原生 Tool Call/Tool Result 与 `run_id` 关联；Run Repository 保存权威运行状态，Host 只发送非持久 Run Change Notification。
 - DeepSeek Harness 已有浏览器端附件、Skill、任务、交付物、会话、侧栏、布局、工具结果与工作流运行 UI 包；方案应组合这些扩展点，不应另建一套独立聊天协议。
 - DeepSeek Harness 的 Agent 输入通过统一 inbox 接收；`agent.inject()` 添加的上下文会等待下一条能够唤醒 Agent 的消息，适合“选择上下文后随本次用户消息发送”的交互。
 - 数据源仓库当前可见的仓库级 Skill 只有 `anima-prompt-builder` 和 `wai-sdxl-prompt-builder`；管理 Skill 与会话 Skill 的宿主逻辑主要位于 `app/pi` 和 `app/session`，需要继续定位它们的实际运行目录与契约。
@@ -36,7 +37,7 @@
 - 当前运行中的数据源语义发现接口只暴露四个只读操作：`querySemanticWorksForSkill`、`querySemanticCharactersForSkill`、`querySemanticStylesForSkill` 和 `querySemanticPromptTermsForSkill`。
 - 当前 `imagegen-semantic-query` CLI 根据 `/internal/semantic` OpenAPI 3.1 文档动态生成参数和调用方式；它没有底模、模型、LoRA、画师串、ComfyUI 实例、模板或媒体操作。
 - 用户明确要求继续使用并完善数据源仓库的原 CLI。DeepSeek Harness Host 把完善后的 CLI 包装为结构化 Harness Tool，迁移后的 Skill 通过 Harness Tool 查询原仓库数据。
-- `schema/api/openapi.yaml` 是现有 CLI 的 operation、输入 schema、响应 schema 和 `x-noobai-pi-tool-name` 唯一来源；方案不应增加第二个 CLI manifest。
+- `schema/api/openapi.yaml` 是 Catalog Operation 与 Source Operation 的 operation、输入 schema、响应 schema、稳定 ID、revision 和错误结构的唯一来源；数据源服务从该文档投影 Agent 安全 discovery 与 Host 私有 source discovery，方案不增加第二个 schema manifest。
 - 数据源 SQLite 已包含 `generation_base_models`、`generation_models`、`generation_loras`、`artist_prompt_strings`、`comfyui_instances`、`comfyui_templates`、`comfyui_template_revisions`、`comfyui_template_runtime_configs`、`comfyui_runs` 和 `comfyui_run_outputs`。
 - 当前生产版本的 `comfyui_run_outputs.media_type` 只允许 `image/jpeg`、`image/png` 和 `image/webp`。用户要求的视频和音频需要新增结构化媒体种类、MIME 配置、文件校验和页面呈现。
 - 当前 ComfyUI 工作流运行参数契约已经定义 `positive_prompt`、`negative_prompt`、`width`、`height`、`resolution_preset`、`aspect_ratio`、`megapixels`、`seed`、LoRA 参数、参考图片和通用工作流输入等绑定种类。
@@ -51,7 +52,7 @@
 - `win3080` 的 `POST /api/jobs/{prompt_id}/cancel` 实测存在。对查询确认为 `completed` 的 Job 调用后返回 HTTP 200 与 `{ "cancelled": false }`，回读仍为 `completed`，证明终态取消是幂等 no-op。ComfyUI 官方 `server.py` 对 `pending` Job 按 ID 出队，对 `in_progress` Job调用 `PromptQueue.interrupt_if_running(prompt_id)` 原子中断；该实现不会把取消请求落到随后开始运行的其他 Job。
 - `/prompt` 请求结果无法确认且本仓库尚未保存 `prompt_id` 时，本仓库状态为 `submission_unknown`；页面不能查询或取消 Job。已经保存 `prompt_id` 后，Jobs API 首次返回 404 且尚未超过观察期限时，本仓库保持原远端状态；持续 404 超过观察期限后，本仓库状态为 `failed`，错误码为 `COMFYUI_JOB_MISSING`。
 - 当前数据源开发仓库的运行网关只封装 `submit()`、`observe()` 和输出下载，尚未封装 `POST /api/jobs/{prompt_id}/cancel`。本项目正式实现必须在当前仓库的 `ComfyuiTransport` 和 `GenerationRuns.cancel()` 中实现取消；数据源仓库仍不保存本项目的任务状态或取消结果。
-- 当前 DeepSeek Harness 锁文件的官方 npm registry 生产依赖审计结果是 0 critical、12 high、12 moderate、1 low；正式 bundle 安装与生产连接不能获得依赖安全 PASS。
+- 2026-08-20 的来源 DeepSeek Harness monorepo 锁文件基线是 0 critical、12 high、12 moderate、1 low；该历史基线不代表当前项目 lockfile。当前项目完整闭包与 production 闭包均为 0 critical、0 high、0 moderate、0 low，dependency advisory 门禁已经通过。五个 build-script 包也已经完成独立审核，frozen install 已经成功。
 - 用户已经选择 UI 变体 A。静态实现不再创建 B、C 页面，B、C 只作为讨论记录保留。
 - `NoobAI-XL-FZ-PROD-ENV` v0.71.8 的 `docs/adr/0005-deterministic-multi-lora-api-workflow-transform.md` 明确定义“本轮实际 Workflow JSON”与“实际 Workflow API 请求 JSON”；该 checkout 的下载行为目前位于静态 `iterative-image-tasks-prototype.html`，不是正式后端接口。
 - 相邻开发仓库 `NoobAI-XL-FZ` 的已提交 `HEAD` 已经实现这条链路；当前工作树存在用户修改和删除，本轮证据通过 `git show HEAD:<path>` 读取。`prepareIterativeWorkflow()` 深拷贝 UI Workflow 0.4，按 `replace_input` bindings 写入最终提示词和固定参数，处理 LoRA 节点链并在转换前后执行静态校验。
@@ -59,8 +60,8 @@
 - 数据源开发仓库的正式工作台从成功运行投影读取已经保存的 `workflow_json` 与 `api_workflow_json`，使用 `application/json` Blob 下载。下载逻辑不读取当前模板，也不重新运行转换器或 compiler。
 - 用户所说的“请求快照转换为 workflow json”对应本方案的本次实际 Workflow JSON：它由模板来源快照与内部请求数据确定性转换而来，保留 ComfyUI 前端节点、widget、连接和画布信息。原始 `request.json` 只作为本仓库内部幂等与恢复事实，不是页面下载产物。页面只提供“下载本次 Workflow JSON（可导入 ComfyUI）”；API Workflow JSON 只供 Host 私有提交、恢复和诊断逻辑使用。
 - 独立语义复审发现原 `PrivateRunSourceSnapshot` 只保存模板身份，不能离线重建实际 Workflow。方案已改为 `PersistedRunSourceSnapshot`：该类型保存完整 `ComfyuiTemplateBundle`、非敏感实例投影和本次 LoRA 来源投影；`RunRequestSnapshot` 单独保存运行关联、参数、LoRA 权重和上下文。两个快照都只写入当前仓库。
-- 同一 ToolExecution 的传输或恢复重试复用稳定 `request_id` 与原 `run_id`。用户通过新的聊天消息明确要求 Agent 再次生成，且在 `submission_unknown` 情况下确认重复任务风险后，Harness 才创建新的 `tool_call_id`、`request_id` 和 `run_id`；`submission_unknown` 不会自动重提。
-- 一个 DeepSeek Harness Session 包含多个聊天轮次；每个聊天轮次可以包含零个或多个由 DeepSeek Harness 记录的 Skill 调用事件，并且可以关联零个、一个或多个 ComfyUI `run_id`。本项目只消费这些宿主事件，不保存自有 Skill 选择状态。右列“当前轮次结果”必须使用稳定 `turn_id` 投影关联运行，不能显示 Session 最新运行作为替代。
+- 同一 ToolExecution 的传输或恢复重试复用稳定 `request_id` 与原 `run_id`。用户通过新的聊天消息明确要求 Agent 再次生成，且在 `submission_unknown` 情况下确认重复任务风险后，Harness 才创建新的 `call_id`、`request_id` 和 `run_id`；`submission_unknown` 不会自动重提。
+- 一个 DeepSeek Harness Session 包含多个聊天轮次；每个聊天轮次可以包含零个或多个由 DeepSeek Harness 记录的 Skill 调用事件，并且可以关联零个、一个或多个 ComfyUI `run_id`。本项目只消费这些宿主事件，不保存自有 Skill 选择状态。右列“当前轮次结果”必须使用 Harness 原生 Session ID 与数字 `turn` 投影关联运行，不能显示 Session 最新运行作为替代。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -76,18 +77,22 @@
 | 生成结果面板不复制 Tool 详情 | DeepSeek Harness 轨迹功能已经显示多个 Tool 的参数、结果和事件顺序；本项目右列只投影 ComfyUI 运行与媒体。 |
 | 底模只作为上下文资源查询条件 | 用户选择的底模 ID 用于筛选生成模型、LoRA、画师或画风、画师串和 Workflow 模板；底模筛选值不生成消息上下文引用。 |
 | `CatalogKind` 与 `ContextKind` 使用不同边界 | `CatalogKind` 保留 `base-model` 查询能力；`ContextKind`、`ContextRef`、`ContextSnapshot` 和 `ReferenceCodec` 在类型与运行时 schema 中排除 `base-model`。 |
-| 数据源仓库增加一个结构化 CLI 外部接口，当前项目只实现 CLI adapter | 现有 CLI 范围不足；新项目和迁移后的 Skill 不能静态导入数据源仓库内部模块。 |
+| 数据源仓库提供两个只读 CLI 表面，当前项目只实现对应 adapter | 现有语义 CLI 扩展 Agent 安全 Catalog Operation；Host 私有 CLI 从同一个 OpenAPI schema 读取 Source Operation。新项目和迁移后的 Skill 不能静态导入数据源仓库内部模块。 |
 | 数据源仓库只提供实例、模板和目录数据的只读 CLI | 用户明确要求任务运行与媒体保存不能在数据源仓库中持久化。 |
 | 当前仓库拥有 `run_id`、内部来源快照、内部请求快照、本次实际 Workflow JSON、API Workflow JSON 和媒体文件 | 当前仓库必须成为任务运行和结果的唯一持久事实来源。 |
 | 两个 Workflow JSON 在远端提交前同时持久化 | 本次实际 Workflow JSON 是可导入 ComfyUI 前端的完整图；API Workflow JSON 是实际提交 `/prompt` 的执行图。浏览器只下载前者；Host 私有逻辑读取后者。 |
 | Harness `ctx.jobs` 只代理一个持久 `run_id` 的当前观察过程 | 该注册表能够向 Agent 和现有 Web UI 提供实时任务状态，但其进程内记录不能替代当前仓库的运行数据库。 |
 | DeepSeek Harness 决定迁移后 Skill 的执行环境 | 原仓库的 Skill 可见性要求不能替代 DeepSeek Harness 的 Skill provider、profile 和工具注册行为。 |
 | 完善原数据源 CLI 并通过 Harness Tool 提供给 Skill | 用户要求沿用“CLI 提供结构化数据、Harness 负责 Tool 注册和调用”的机制，不创建第二套 Skill 数据服务。 |
-| 保留 OpenAPI discovery 作为原 CLI 的唯一契约来源 | 当前 CLI 已经按 `/internal/semantic` 的 OpenAPI 3.1 动态发现操作和参数。 |
+| 一个权威 OpenAPI schema 投影两个 discovery/CLI 表面 | `/internal/semantic` 只投影 Agent 安全 Catalog Operation；Host 专用的本机只读 discovery 只投影 Source Operation。Harness 不把 Source Operation 注册为 Agent Tool、Skill Tool 或浏览器 RPC；本版本不认证其他本机进程。 |
+| 两个 discovery 使用同一契约身份 | Catalog discovery 与 Source discovery 返回相同的 `contract_id` 和 `contract_version`；Host adapter 只接受配置明确列出的版本，不猜测、不回退。 |
+| ComfyUI 实例属于 Execution Route | 浏览器用户可以明确选择安全实例 ID；未选择时 Host 使用配置的默认实例。明确选择的实例不可用时失败，不静默切换。 |
+| 当前仓库使用一个运行 SQLite | 每条运行记录保存 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id` 和 `run_id`；运行文件按 `workspace_id/run_id` 分区，数据源仓库不保存运行产物。 |
+| Run Repository 是运行状态权威来源 | Harness Session 日志只保存原生 Generation Tool Call 与包含 `run_id` 的 Tool Result；Host 不写入持久 `generation.run.*` 状态事件，浏览器通过非持久通知触发重新读取。 |
 | `submitting` 恢复为 `submission_unknown` 且不自动重提 | 远端可能已经接收，但本仓库未确认并保存 `prompt_id`，因此无法证明再次提交安全。 |
-| 正式 bundle 安装与生产连接暂时 NO-GO | 当前 Harness 生产依赖审计存在 12 个 high advisory；静态零依赖原型不受该门禁影响。 |
+| 依赖 advisory、build-script 与 frozen install 门禁均已通过 | 来源 Harness 的 12 个 high advisory 已逐项处理，当前项目完整与 production audit 均为 0；`allowBuilds` 明确允许五个已经完成安全审计的精确版本。 |
 | 正式 DeepSeek Harness 宿主只安装到当前仓库 | 用户指定原 Harness 目录只供调研；当前项目必须拥有并隔离自己的宿主安装和持久数据。 |
-| “当前轮次结果”按稳定 `turn_id` 投影运行 | 一个 Session 有多个聊天轮次，并且每轮可能关联零个或多个 `run_id`；Session 最新运行不能替代轮次关联。 |
+| “当前轮次结果”按 Session ID 与数字 `turn` 投影运行 | 一个 Session 有多个聊天轮次，并且每轮可能关联零个或多个 `run_id`；Session 最新运行不能替代轮次关联。 |
 
 ## Issues Encountered
 | Issue | Resolution |
@@ -110,9 +115,20 @@
 - 运行卡片、会话媒体卡片和全局媒体卡片都按所属 `run_id` 下载本次实际 Workflow JSON，文件名以 `-workflow.json` 结尾；页面不存在 API Workflow JSON 下载按钮。
 - 左侧“所有媒体”入口打开居中媒体库。全局媒体库按会话、聊天轮次、媒体种类和保存时间筛选；右列会话媒体库固定当前 Session，并按聊天轮次、媒体种类和保存时间筛选。两个媒体库复用固定尺寸卡片与分页行为。
 - 左侧“所有 ComfyUI 异步任务”入口打开居中任务列表。任务列表按会话、聊天轮次和创建时间筛选并独立分页；每行显示本仓库状态、ComfyUI Job 原始状态或尚未取得 Job 的具体原因、`run_id`、可用的 `prompt_id` 和实例名称。排队与运行中任务通过确认弹窗演示单 Job 取消，其他状态显示不能取消的具体原因。
-- 页面删除项目级 Skill 按钮、菜单、选择状态和消息内预选标记后，浏览器仍能发送普通消息并创建独立 `turn_id/run_id`；Skill 交互由正式组合中的 DeepSeek Harness 原生会话输入区负责。
+- 静态原型 fixture 仍使用页面内部字符串键关联演示轮次与 `run_id`；该键不是正式契约。正式组合使用 DeepSeek Harness 原生 Session ID 与数字 `turn`，Skill 交互由 DeepSeek Harness 原生会话输入区负责。
 - 默认角色 Session 的 `turn_portrait_03` 同时显示队列等待、ComfyUI 执行中、保存媒体和提交结果未知四个真实关联运行；普通画风参数对比 Session 同时显示成功和失败运行。用户不需要操作底部原型状态选择器才能看到这些状态。
-- 页面删除没有实现行为的“新建会话”和“会话选项”按钮。聊天轮次按钮改为“第 N 轮 · 本轮任务摘要 / 查看 N 项 ComfyUI 运行”，右列同时显示任务摘要和稳定 `turn_id`，使按钮动作与结果来源可见。
+- 页面删除没有实现行为的“新建会话”和“会话选项”按钮。聊天轮次按钮改为“第 N 轮 · 本轮任务摘要 / 查看 N 项 ComfyUI 运行”，右列同时显示任务摘要和轮次序号，使按钮动作与结果来源可见。
 - 页面为会话搜索、上下文搜索和聊天输入补充明确名称；页面提供“跳到生成工作区”的键盘入口；媒体元素预留固定宽高；上下文对话框限制自身滚动范围。
 - 失败和提交结果未知卡片不提供绕过 Harness 的直接提交按钮；卡片要求用户通过新的聊天消息请求新运行。当前轮次卡片使用没有播放按钮的静态视频封面和音频波形；媒体库卡片打开本地 MP4 或 WAV 原文件。媒体筛选无匹配时显示筛选空态，不声称 Session 没有媒体。
 - 上下文选择器把底模放在独立筛选栏中；底模不出现在资源种类、草稿标签或已发送消息的上下文快照。右列删除 Tool 详情标签；聊天 Tool 调用仍可定位 `run_id`，完整调用详情由 DeepSeek Harness 轨迹功能展示。
+
+## 2026-08-20 Dependency Advisory Audit
+
+- 只读来源仓库 `/Volumes/4Tdisk/work/AI2/deepseek-harness` 当前提交是 `99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`；`pnpm-lock.yaml` SHA-256 是 `f517dc3978d57531cda747df62a2abdde1df5b9f25415fcf1fc5d51f8b7547ea`。来源仓库包含用户未提交文件，本任务不修改该仓库。
+- 对来源 DeepSeek Harness monorepo 执行 `pnpm audit --prod --registry=https://registry.npmjs.org --json` 复现 0 critical、12 high、12 moderate、1 low；来源 monorepo 的完整开发闭包是 0 critical、15 high、20 moderate、3 low。
+- 12 个 production audit 条目不是 12 个独立升级动作：三个 `brace-expansion@5.0.6` high 可由 `5.0.9` 同时处理；两个 `js-yaml@4.2.0` high 可由 `4.3.1` 同时处理；两个 `fast-uri@3.1.3` high 可由 `3.1.5` 同时处理；两个 `nanoid@3.3.12` high 可由 `3.3.18` 同时处理；`undici@7.28.0`、`ip-address@10.2.0`、`postcss@8.5.15` 各需要一个版本处理结论。
+- 原 DeepSeek Harness monorepo 的 production audit 包含 E2B、MCP、subagent 与 test-support workspace 路径。在当前项目建立 `package.json` 和 lockfile 之前，计划编写者没有把来源 monorepo 的 12 条路径声明为当前项目 production closure；随后生成的当前项目 lockfile 已经通过完整闭包与 production 闭包审计。
+- 本机 `ctx7@0.3.5` 低于 registry 当前 `0.5.8`。依赖规则禁止为了文档查询临时安装或运行未审计的新版本，因此本任务不升级 ctx7，公告证据改用官方 pnpm、npm 与 GitHub Advisory 来源。
+- 当前项目 lockfile SHA-256 是 `31575c342f4838904459d5b3daccad309ef3a1f227ef0fb9b0f982168e46e3c3`。完整闭包包含 591 个依赖，production 闭包含 475 个依赖；两个范围的 critical、high、moderate 和 low advisory 均为 0。
+- 当前项目实际包含 `js-yaml@4.3.1`、`nanoid@3.3.18` 和 `postcss@8.5.26`。当前项目不包含 `brace-expansion`、`fast-uri`、`undici` 或 `ip-address`；相应 override 防止后续受影响版本进入 lockfile。
+- `strict-dep-builds` 发现的五个精确版本已经完成安装脚本审计。`allowBuilds` 明确允许 `@deepseek-ai/dsh-subprocess-local@0.1.0-rc.7`、`@google/genai@1.52.0`、`koffi@3.1.5`、`node-pty@1.2.0-beta.15` 和 `protobufjs@7.6.5`，不裁剪五个依赖包的 lifecycle script。
