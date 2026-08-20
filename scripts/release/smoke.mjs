@@ -221,15 +221,16 @@ async function runSmoke(artifact) {
   let portReleased = false
   let result
   try {
-    const developmentDependencySentinel = resolve(repositoryRoot, 'node_modules/@deepseek-ai/schemastery/package.json')
-    await access(developmentDependencySentinel)
     const developmentNodeModules = await realpath(resolve(repositoryRoot, 'node_modules'))
-    await cp(developmentNodeModules, join(runtimeRoot, 'node_modules'), {
-      recursive: true,
-      dereference: false,
-      verbatimSymlinks: true,
+    for (const dependencyDescriptor of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc']) {
+      await cp(resolve(repositoryRoot, dependencyDescriptor), join(runtimeRoot, dependencyDescriptor))
+    }
+    const install = await runCommand('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'], {
+      cwd: runtimeRoot,
+      isolatedRoot: smokeRoot,
+      env: process.env,
     })
-    await access(developmentDependencySentinel)
+    if (install.code !== 0) throw new Error(`isolated frozen dependency install failed: ${install.stderr || install.stdout}`)
     let isolatedNodeModules
     try {
       isolatedNodeModules = await realpath(join(runtimeRoot, 'node_modules'))
@@ -238,6 +239,9 @@ async function runSmoke(artifact) {
     }
     if (isolatedNodeModules === developmentNodeModules || isolatedNodeModules.startsWith(`${developmentNodeModules}/`)) {
       throw new Error(`release runtime resolved node_modules through the development checkout: ${isolatedNodeModules}`)
+    }
+    for (const dependencyDescriptor of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc']) {
+      await rm(join(runtimeRoot, dependencyDescriptor), { force: true })
     }
     await extractArtifact(artifact, runtimeRoot, smokeRoot)
     for (const forbidden of ['src', 'prototype', 'tests']) {
