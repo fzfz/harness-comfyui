@@ -1,0 +1,53 @@
+name: Release Preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer to preview
+        required: true
+        type: string
+      commit:
+        description: Exact commit from main to preview
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact main commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - name: Enable pnpm 11.7.0
+        run: corepack prepare pnpm@11.7.0 --activate
+      - name: Check manifest and lockfile
+        run: pnpm run check:manifest-lock
+      - name: Audit dependency advisories
+        run: pnpm run security:advisories
+      - name: Check dependency build scripts
+        run: pnpm run security:build-scripts
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Quality
+        run: pnpm quality
+      - name: Release Preview
+        run: node scripts/release/preview.mjs --expected-version "${{ inputs.version }}" --expected-commit "${{ inputs.commit }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Release Preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preview
+          path: |
+            .release/quality/artifact.json
+            .release/quality/*.tgz
+          if-no-files-found: error
