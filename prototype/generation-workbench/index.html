@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="DeepSeek Harness 三列式 ComfyUI Agent 工作台静态原型"
+    />
+    <title>生成工作台 · 静态原型</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-workbench">跳到生成工作区</a>
+    <!--
+      已选变体 A：在 DeepSeek Harness 三列框架中验证会话、带上下文的聊天和生成结果。
+      用户已经完成变体选择，因此本静态原型不包含 B、C 页面或变体切换器。
+    -->
+    <div class="prototype-shell">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <svg class="brand-mark" viewBox="0 0 36 36" aria-hidden="true">
+            <path d="M7 10h8v8H7zM21 18h8v8h-8z" />
+            <path d="M15 14h6M18 14v8M18 22h3" />
+          </svg>
+          <div>
+            <p class="eyebrow">DEEPSEEK HARNESS</p>
+            <h1>生成工作台</h1>
+          </div>
+        </div>
+
+        <div class="header-context" aria-label="当前宿主和 Agent">
+          <span class="connection-indicator" aria-hidden="true"></span>
+          <span>静态数据</span>
+          <span class="header-divider" aria-hidden="true"></span>
+          <span class="agent-avatar" aria-hidden="true">DS</span>
+          <span>图像生成 Agent</span>
+        </div>
+
+        <nav class="mobile-nav" aria-label="移动端页面区域">
+          <button type="button" data-mobile-panel="sessions">会话</button>
+          <button type="button" data-mobile-panel="conversation" class="is-active">聊天</button>
+          <button type="button" data-mobile-panel="results">结果</button>
+        </nav>
+      </header>
+
+      <main class="workbench-grid" id="main-workbench" aria-label="三列式 Agent 生成工作台">
+        <aside class="panel session-panel" data-panel="sessions" aria-label="会话列表">
+          <div class="panel-heading session-heading">
+            <div>
+              <p class="section-kicker">SESSION</p>
+              <h2>会话</h2>
+            </div>
+          </div>
+
+          <label class="search-field" for="session-search">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="8.5" cy="8.5" r="4.5" />
+              <path d="m12 12 4 4" />
+            </svg>
+            <input id="session-search" name="session-search" type="search" aria-label="搜索会话" placeholder="搜索会话" autocomplete="off" />
+            <kbd>⌘ K</kbd>
+          </label>
+
+          <button class="sidebar-library-entry" id="open-media-library" type="button">
+            <span class="sidebar-library-entry-icon" aria-hidden="true">▦</span>
+            <span><strong>所有媒体</strong><small>跨会话浏览已保存媒体</small></span>
+            <span id="all-media-entry-count">0</span>
+          </button>
+
+          <button class="sidebar-library-entry" id="open-task-library" type="button">
+            <span class="sidebar-library-entry-icon" aria-hidden="true">⌁</span>
+            <span><strong>所有 ComfyUI 异步任务</strong><small>跨会话查看状态与取消任务</small></span>
+            <span id="all-task-entry-count">0</span>
+          </button>
+
+          <div class="session-list" id="session-list">
+            <p class="list-date">今天</p>
+            <button class="session-row is-current" type="button" data-session-id="portrait">
+              <span class="session-title">角色立绘调整</span>
+              <span class="session-meta">14:32</span>
+              <span class="session-preview">调整角色服装与构图</span>
+              <span class="run-count">5 项运行</span>
+            </button>
+            <button class="session-row" type="button" data-session-id="video">
+              <span class="session-title">测试视频工作流</span>
+              <span class="session-meta">11:08</span>
+              <span class="session-preview">生成 4 秒镜头运动</span>
+              <span class="run-count">1 项运行</span>
+            </button>
+            <p class="list-date">昨天</p>
+            <button class="session-row" type="button" data-session-id="comparison">
+              <span class="session-title">画风参数对比</span>
+              <span class="session-meta">周三</span>
+              <span class="session-preview">普通聊天轮次：一项完成、一项失败</span>
+              <span class="run-count">2 项运行</span>
+            </button>
+          </div>
+
+          <div class="session-footer">
+            <span class="storage-glyph" aria-hidden="true"></span>
+            <span>会话历史由 Harness 保存</span>
+          </div>
+        </aside>
+
+        <section class="panel conversation-panel is-mobile-active" data-panel="conversation" aria-label="当前会话聊天">
+          <header class="conversation-header">
+            <div>
+              <p class="section-kicker">CONVERSATION</p>
+              <h2 id="conversation-title">角色立绘调整</h2>
+            </div>
+            <div class="conversation-actions"><span class="agent-status"><span aria-hidden="true"></span>Agent 就绪</span></div>
+          </header>
+
+          <div class="message-list" id="message-list" aria-live="polite">
+            <article class="message agent-message">
+              <div class="message-avatar">DS</div>
+              <div class="message-body">
+                <div class="message-byline"><strong>图像生成 Agent</strong><time>14:28</time></div>
+                <p>告诉我这次要调整的角色、画风和输出规格。我会先核对附加上下文，再决定是否调用已安装的 Skill。</p>
+              </div>
+            </article>
+
+            <section class="conversation-turn" data-turn-id="turn_portrait_01">
+              <div class="turn-heading"><button type="button" data-select-turn="turn_portrait_01"><span>第 1 轮 · 生成角色半身像</span><strong>查看 1 项 ComfyUI 运行</strong></button></div>
+              <article class="message user-message">
+                <div class="message-body">
+                  <div class="message-byline"><strong>你</strong><time>14:30</time></div>
+                  <p>保留角色的银色短发和蓝灰色眼睛，改成半身构图，背景更安静。</p>
+                  <details class="context-snapshot">
+                    <summary>已记录 3 项上下文</summary>
+                    <ul>
+                      <li><span>Workflow 模板</span>Anima 角色半身像</li>
+                      <li><span>角色</span>银发调查员</li>
+                      <li><span>画师或画风</span>清透赛璐璐</li>
+                    </ul>
+                  </details>
+                </div>
+              </article>
+
+              <article class="message agent-message">
+                <div class="message-avatar">DS</div>
+                <div class="message-body">
+                  <div class="message-byline"><strong>图像生成 Agent</strong><time>14:31</time></div>
+                  <p>我会沿用 Anima 角色半身像模板，把尺寸设为 832 × 1216，并将背景描述收敛为低对比度室内光。</p>
+                  <button class="tool-call" type="button" data-focus-run="run_01J8M7H4Q9">
+                    <span class="tool-call-icon" aria-hidden="true">↳</span>
+                    <span><strong>generate_with_comfyui</strong><small>运行 run_01J8M7H4Q9 已完成</small></span>
+                    <span class="tool-call-action">定位结果</span>
+                  </button>
+                </div>
+              </article>
+            </section>
+
+            <section class="conversation-turn" data-turn-id="turn_portrait_02">
+              <div class="turn-heading"><button type="button" data-select-turn="turn_portrait_02"><span>第 2 轮 · 解释背景变化</span><strong>查看本轮回复 · 无 ComfyUI 运行</strong></button></div>
+              <article class="message user-message">
+                <div class="message-body">
+                  <div class="message-byline"><strong>你</strong><time>14:34</time></div>
+                  <p>先不要继续生成。请说明这一版的背景为什么比上一版安静。</p>
+                </div>
+              </article>
+              <article class="message agent-message">
+                <div class="message-avatar">DS</div>
+                <div class="message-body">
+                  <div class="message-byline"><strong>图像生成 Agent</strong><time>14:34</time></div>
+                  <p>这一版减少了背景物件数量，并把明暗对比集中在角色面部。此轮只解释已有结果，没有调用 Skill，也没有创建 ComfyUI 运行。</p>
+                </div>
+              </article>
+            </section>
+
+            <section class="conversation-turn is-selected" data-turn-id="turn_portrait_03">
+              <div class="turn-heading"><button type="button" data-select-turn="turn_portrait_03"><span>第 3 轮 · 生成四种服装与背景变体</span><strong>查看 4 项 ComfyUI 运行</strong></button></div>
+              <article class="message user-message">
+                <div class="message-body">
+                  <div class="message-byline"><strong>你</strong><time>14:38</time></div>
+                  <p>基于上一版创建四种服装与背景组合，并分别提交为独立运行。</p>
+                  <details class="context-snapshot">
+                    <summary>已记录 3 项上下文</summary>
+                    <ul>
+                      <li><span>Workflow 模板</span>Anima 角色半身像</li>
+                      <li><span>角色</span>银发调查员</li>
+                      <li><span>画师或画风</span>清透赛璐璐</li>
+                    </ul>
+                  </details>
+                </div>
+              </article>
+              <article class="message agent-message">
+                <div class="message-avatar">DS</div>
+                <div class="message-body">
+                  <div class="message-byline"><strong>图像生成 Agent</strong><time>14:39</time></div>
+                  <p>四项独立运行已经创建。它们当前分别处于队列等待、ComfyUI 执行、保存媒体和提交结果未知状态。</p>
+                  <button class="tool-call" type="button" data-focus-run="run_01J8QUEUE42"><span class="tool-call-icon" aria-hidden="true">↳</span><span><strong>generate_with_comfyui</strong><small>运行 run_01J8QUEUE42 正在队列等待</small></span><span class="tool-call-action">定位结果</span></button>
+                  <button class="tool-call" type="button" data-focus-run="run_01J8RUNNING"><span class="tool-call-icon" aria-hidden="true">↳</span><span><strong>generate_with_comfyui</strong><small>运行 run_01J8RUNNING 正在 ComfyUI 执行</small></span><span class="tool-call-action">定位结果</span></button>
+                  <button class="tool-call" type="button" data-focus-run="run_01J8SAVE003"><span class="tool-call-icon" aria-hidden="true">↳</span><span><strong>generate_with_comfyui</strong><small>运行 run_01J8SAVE003 正在保存媒体</small></span><span class="tool-call-action">定位结果</span></button>
+                  <button class="tool-call" type="button" data-focus-run="run_01J8UNKNOWN"><span class="tool-call-icon" aria-hidden="true">↳</span><span><strong>generate_with_comfyui</strong><small>运行 run_01J8UNKNOWN 的提交结果未知</small></span><span class="tool-call-action">定位结果</span></button>
+                </div>
+              </article>
+            </section>
+          </div>
+
+          <footer class="composer-wrap">
+            <div class="draft-state">
+              <div class="draft-state-heading">
+                <span>本次消息上下文</span>
+                <small id="draft-context-count">2 项，将与正文一起写入会话</small>
+              </div>
+              <div class="context-chips" id="context-chips">
+                <span class="context-chip" data-ref-id="template-17">
+                  <span class="chip-kind">模板</span>Anima 角色半身像
+                  <button type="button" aria-label="移除模板 Anima 角色半身像">×</button>
+                </span>
+                <span class="context-chip" data-ref-id="character-39936">
+                  <span class="chip-kind">角色</span>银发调查员
+                  <button type="button" aria-label="移除角色 银发调查员">×</button>
+                </span>
+              </div>
+            </div>
+
+            <div class="composer-actions">
+              <button class="secondary-button" id="open-context" type="button">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+                添加上下文
+              </button>
+            </div>
+
+            <div class="composer-box" id="composer-box">
+              <textarea id="message-input" name="message" rows="3" aria-label="本次发送给图像生成 Agent 的消息" autocomplete="off" placeholder="向图像生成 Agent 描述本次任务……"></textarea>
+              <div class="composer-footer">
+                <p id="composer-status">Enter 发送 · Shift + Enter 换行</p>
+                <button class="send-button" id="send-message" type="button">
+                  <span>发送</span>
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 12-6-4 12-2-5-6-1Z" /></svg>
+                </button>
+              </div>
+            </div>
+          </footer>
+        </section>
+
+        <aside class="panel results-panel" data-panel="results" aria-label="生成结果">
+          <div class="panel-heading results-heading">
+            <div>
+              <p class="section-kicker">OUTPUT</p>
+              <h2>生成结果</h2>
+            </div>
+            <span class="result-total" id="result-total">本会话共 5 项运行</span>
+          </div>
+
+          <div class="details-tabs" role="tablist" aria-label="生成结果区域">
+            <button id="tab-current" type="button" role="tab" aria-selected="true" aria-controls="panel-current" data-result-tab="current">当前轮次结果</button>
+            <button id="tab-session" type="button" role="tab" aria-selected="false" aria-controls="panel-session" data-result-tab="session">本会话结果</button>
+          </div>
+
+          <div class="results-scroll">
+            <section id="panel-current" class="result-tab-panel" role="tabpanel" aria-labelledby="tab-current">
+              <div class="turn-binding"><div><span>当前结果来自</span><strong id="current-turn-label">第 3 轮 · 生成四种服装与背景变体</strong></div><code id="current-turn-id">turn_portrait_03</code></div>
+              <div class="run-list" id="current-run-list"></div>
+            </section>
+
+            <section id="panel-session" class="result-tab-panel" role="tabpanel" aria-labelledby="tab-session" hidden>
+              <div class="result-filter-row">
+                <span id="session-media-count">0 个已保存媒体</span>
+                <div class="session-media-filters">
+                  <label>聊天轮次
+                    <select id="turn-filter" name="turn-filter" aria-label="按聊天轮次筛选本会话媒体"></select>
+                  </label>
+                  <label>媒体种类
+                    <select id="media-filter" name="media-filter" aria-label="按媒体种类筛选本会话媒体">
+                    <option value="all">全部</option>
+                    <option value="image">图片</option>
+                    <option value="video">视频</option>
+                    <option value="audio">音频</option>
+                    </select>
+                  </label>
+                  <label>保存时间
+                    <select id="session-time-filter" name="session-time-filter" aria-label="按保存时间筛选本会话媒体">
+                      <option value="all">全部时间</option>
+                      <option value="today">今天</option>
+                      <option value="yesterday">昨天</option>
+                      <option value="older">更早</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="session-media-grid" id="session-media-grid"></div>
+              <nav class="session-media-pagination" aria-label="本会话媒体分页">
+                <button type="button" id="media-page-previous">上一页</button>
+                <span id="media-page-status">第 1 / 1 页</span>
+                <button type="button" id="media-page-next">下一页</button>
+              </nav>
+            </section>
+
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <dialog class="context-dialog" id="context-dialog" aria-labelledby="context-dialog-title">
+      <form method="dialog" class="dialog-frame">
+        <header class="dialog-header">
+          <div>
+            <p class="section-kicker">MESSAGE CONTEXT</p>
+            <h2 id="context-dialog-title">添加本次消息上下文</h2>
+            <p>选择结果只属于当前草稿。发送时，Harness 会把这些引用解析为不可变上下文，并与正文一起写入会话。</p>
+          </div>
+          <button class="icon-button dialog-close" value="cancel" aria-label="关闭上下文选择器">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg>
+          </button>
+        </header>
+
+        <div class="context-filter-bar">
+          <label for="base-model-filter">
+            <span>底模筛选</span>
+            <select id="base-model-filter" name="base-model-filter" aria-label="用于筛选上下文资源的底模"></select>
+          </label>
+          <p>底模只用于筛选生成模型、LoRA、画师或画风、画师串和 Workflow 模板候选项，不会写入消息上下文。</p>
+        </div>
+
+        <div class="context-workspace">
+          <nav class="resource-kind-list" aria-label="上下文资源种类" id="resource-kind-list"></nav>
+          <section class="candidate-pane" aria-label="资源搜索结果">
+            <div class="candidate-toolbar">
+              <label class="search-field" for="context-search">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="4.5" /><path d="m12 12 4 4" /></svg>
+                <input id="context-search" name="context-search" type="search" aria-label="搜索上下文资源" placeholder="搜索 Workflow 模板" autocomplete="off" />
+              </label>
+              <button class="text-button" id="simulate-query-error" type="button">模拟查询失败</button>
+            </div>
+            <div class="filter-notice" id="filter-notice" hidden></div>
+            <div class="candidate-list" id="candidate-list"></div>
+          </section>
+          <aside class="candidate-detail" id="candidate-detail" aria-label="候选项详情"></aside>
+        </div>
+
+        <footer class="dialog-footer">
+          <p id="dialog-selection-summary">尚未新增上下文</p>
+          <div>
+            <button class="secondary-button" value="cancel">取消</button>
+            <button class="primary-button" id="confirm-context" value="default">添加所选上下文</button>
+          </div>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="media-library-dialog" id="media-library-dialog" aria-labelledby="media-library-title">
+      <form method="dialog" class="media-library-frame">
+        <header class="dialog-header media-library-header">
+          <div>
+            <p class="section-kicker">MEDIA LIBRARY</p>
+            <h2 id="media-library-title">所有媒体</h2>
+            <p>浏览当前仓库已经保存的图片、视频和音频。点击任一媒体卡片会在新窗口打开原文件。</p>
+          </div>
+          <button class="icon-button dialog-close" value="cancel" aria-label="关闭所有媒体">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg>
+          </button>
+        </header>
+
+        <div class="media-library-toolbar">
+          <label>会话
+            <select id="library-session-filter" name="library-session-filter" aria-label="按会话筛选所有媒体"></select>
+          </label>
+          <label>聊天轮次
+            <select id="library-turn-filter" name="library-turn-filter" aria-label="按聊天轮次筛选所有媒体"></select>
+          </label>
+          <label>媒体种类
+            <select id="library-kind-filter" name="library-kind-filter" aria-label="按媒体种类筛选所有媒体">
+              <option value="all">全部</option>
+              <option value="image">图片</option>
+              <option value="video">视频</option>
+              <option value="audio">音频</option>
+            </select>
+          </label>
+          <label>保存时间
+            <select id="library-time-filter" name="library-time-filter" aria-label="按保存时间筛选所有媒体">
+              <option value="all">全部时间</option>
+              <option value="today">今天</option>
+              <option value="yesterday">昨天</option>
+              <option value="older">更早</option>
+            </select>
+          </label>
+          <span id="library-media-count">0 个已保存媒体</span>
+        </div>
+
+        <div class="media-library-content">
+          <div class="session-media-grid global-media-grid" id="library-media-grid"></div>
+        </div>
+        <nav class="session-media-pagination media-library-pagination" aria-label="所有媒体分页">
+          <button type="button" id="library-page-previous">上一页</button>
+          <span id="library-page-status">第 1 / 1 页</span>
+          <button type="button" id="library-page-next">下一页</button>
+        </nav>
+      </form>
+    </dialog>
+
+    <dialog class="media-library-dialog task-library-dialog" id="task-library-dialog" aria-labelledby="task-library-title">
+      <form method="dialog" class="media-library-frame">
+        <header class="dialog-header media-library-header">
+          <div>
+            <p class="section-kicker">COMFYUI JOBS</p>
+            <h2 id="task-library-title">所有 ComfyUI 异步任务</h2>
+            <p>本列表按当前仓库保存的会话与聊天轮次关联任务，并通过任务所属实例的 Jobs API 更新 ComfyUI 状态。</p>
+          </div>
+          <button class="icon-button dialog-close" value="cancel" aria-label="关闭所有 ComfyUI 异步任务">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg>
+          </button>
+        </header>
+
+        <div class="media-library-toolbar task-library-toolbar">
+          <label>会话
+            <select id="task-session-filter" name="task-session-filter" aria-label="按会话筛选所有 ComfyUI 异步任务"></select>
+          </label>
+          <label>聊天轮次
+            <select id="task-turn-filter" name="task-turn-filter" aria-label="按聊天轮次筛选所有 ComfyUI 异步任务"></select>
+          </label>
+          <label>创建时间
+            <select id="task-time-filter" name="task-time-filter" aria-label="按创建时间筛选所有 ComfyUI 异步任务">
+              <option value="all">全部时间</option>
+              <option value="today">今天</option>
+              <option value="yesterday">昨天</option>
+              <option value="older">更早</option>
+            </select>
+          </label>
+          <span id="task-library-count">0 项异步任务</span>
+        </div>
+
+        <div class="media-library-content task-library-content">
+          <div class="task-table" role="table" aria-label="ComfyUI 异步任务列表">
+            <div class="task-table-header" role="row">
+              <span role="columnheader">任务与实例</span>
+              <span role="columnheader">会话与聊天轮次</span>
+              <span role="columnheader">创建时间</span>
+              <span role="columnheader">本仓库状态 / ComfyUI Job 状态</span>
+              <span role="columnheader">操作</span>
+            </div>
+            <div id="task-list" role="rowgroup"></div>
+          </div>
+        </div>
+        <nav class="session-media-pagination media-library-pagination" aria-label="所有 ComfyUI 异步任务分页">
+          <button type="button" id="task-page-previous">上一页</button>
+          <span id="task-page-status">第 1 / 1 页</span>
+          <button type="button" id="task-page-next">下一页</button>
+        </nav>
+      </form>
+    </dialog>
+
+    <dialog class="cancel-task-dialog" id="cancel-task-dialog" aria-labelledby="cancel-task-title">
+      <div class="cancel-task-frame">
+        <header>
+          <p class="section-kicker">CANCEL COMFYUI JOB</p>
+          <h2 id="cancel-task-title">取消 ComfyUI 异步任务？</h2>
+        </header>
+        <p id="cancel-task-description"></p>
+        <div class="cancel-task-target" id="cancel-task-target"></div>
+        <p class="cancel-task-api">当前仓库会向任务所属实例发送 <code>POST /api/jobs/{prompt_id}/cancel</code>。该接口只取消指定的排队任务或运行中任务。</p>
+        <div class="cancel-task-actions">
+          <button class="secondary-button" id="cancel-task-back" type="button">返回任务列表</button>
+          <button class="danger-button" id="confirm-task-cancel" type="button">确认取消任务</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="prototype-state-switcher" aria-label="静态原型状态切换器">
+      <button type="button" id="previous-state" aria-label="上一个原型状态">←</button>
+      <label for="prototype-state">
+        <span>原型状态</span>
+        <select id="prototype-state">
+          <option value="success">当前轮次：混合运行状态</option>
+          <option value="empty">空会话</option>
+          <option value="streaming">Agent 流式输出</option>
+          <option value="context-error">上下文查询错误</option>
+          <option value="queued">运行排队</option>
+          <option value="running">远端运行</option>
+          <option value="downloading">保存媒体</option>
+          <option value="media">图片、视频与音频</option>
+          <option value="failed">运行失败</option>
+          <option value="unknown">提交结果未知</option>
+        </select>
+      </label>
+      <button type="button" id="next-state" aria-label="下一个原型状态">→</button>
+    </div>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

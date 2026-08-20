@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title description">
+  <title id="title">角色镜头运动视频静态封面</title>
+  <desc id="description">工作台静态原型中的视频媒体占位封面。</desc>
+  <rect width="960" height="540" fill="#dce4ec"/>
+  <rect x="42" y="42" width="876" height="456" fill="#17212b"/>
+  <rect x="68" y="68" width="824" height="404" fill="#25394b"/>
+  <path d="M68 394 892 212v260H68z" fill="#40566a"/>
+  <circle cx="688" cy="194" r="104" fill="#687f95"/>
+  <path d="M356 472c9-119 49-191 105-218 62 25 106 101 116 218z" fill="#111922"/>
+  <ellipse cx="464" cy="235" rx="77" ry="101" fill="#efd3c1"/>
+  <path d="M383 215c5-94 62-143 137-119 65 21 77 91 50 166-22-67-60-109-114-126-5 43-29 79-70 105z" fill="#d6dee7"/>
+  <path d="M420 236c15-9 29-9 43 0M493 235c15-9 29-9 43 0" stroke="#607f9b" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="480" cy="270" r="53" fill="#fbfcfe" opacity="0.94"/>
+  <path d="m466 241 42 29-42 29z" fill="#2855d9"/>
+  <path d="M98 102h178M98 126h112M728 427h134" stroke="#93a5b8" stroke-width="4"/>
+  <text x="99" y="451" fill="#dce4ec" font-family="ui-monospace, monospace" font-size="17" letter-spacing="3">OUTPUT 01 · 00:04</text>
+</svg>

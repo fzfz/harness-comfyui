@@ -1,0 +1,51 @@
+# Operating system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Node.js and JavaScript tooling
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnpm-store/
+coverage/
+dist/
+build/
+
+# Python tooling and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.code-workspace
+
+# Local ComfyUI/runtime artifacts
+comfyui-output/
+comfyui-input/
+checkpoints/
+models/
