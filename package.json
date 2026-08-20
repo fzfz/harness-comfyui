@@ -13,7 +13,7 @@
     "security:build-scripts": "node scripts/security/check-build-scripts.mjs",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run tests/unit",
-    "test:contract": "vitest run tests/contract",
+    "test:contract": "vitest run tests/contract tests/deploy/deployment-scripts.test.ts tests/release-package/dry-run.test.ts tests/release-package/package-scripts.test.ts tests/security/audit-lockfile.test.ts tests/security/check-build-scripts.test.ts tests/security/check-manifest-lock.test.ts",
     "test:integration": "vitest run tests/integration",
     "test:composition": "vitest run tests/composition",
     "test:e2e": "vitest run tests/e2e --maxWorkers=1 --no-file-parallelism",
@@ -21,22 +21,21 @@
     "test:build-artifacts": "vitest run tests/build-artifacts.test.ts",
     "test:packed-runtime": "vitest run tests/release-package/runtime-closure.test.ts",
     "test:prototype": "node --test prototype/generation-workbench/tests/*.test.mjs",
-    "build": "tsc -b tsconfig.host.json && tsdown --config tsdown.config.ts && node scripts/build/tsdown-client-bundle.ts",
+    "build": "tsc -b tsconfig.host.json && tsdown --config tsdown.config.ts && node scripts/build/bundle-generated-typert.ts && node scripts/build/tsdown-client-bundle.ts",
     "package:pack": "node scripts/release/pack.mjs",
     "package:validate": "node scripts/release/validate-package.mjs && pnpm run test:build-artifacts && pnpm run test:packed-runtime",
     "quality": "pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke",
     "profile:materialize:development": "node scripts/profile/materialize.mjs --configuration development --dsh-home .local/dsh/development --package-spec .",
     "dev:start": "node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173",
     "release:dry-run": "node scripts/release/dry-run.mjs",
-    "release:smoke": "node scripts/release/smoke.mjs",
+    "release:smoke": "node scripts/release/smoke.mjs && pnpm run test:release-smoke",
     "deploy:preflight": "node scripts/deploy/preflight.mjs",
     "deploy:activate": "node scripts/deploy/activate.mjs",
     "deploy:health": "node scripts/deploy/health.mjs",
     "deploy:rollback": "node scripts/deploy/rollback.mjs"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "3.18.1",
-    "zod": "4.4.3"
+    "@deepseek-ai/schemastery": "3.18.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -65,7 +64,8 @@
     "react-dom": "18.3.1",
     "tsdown": "0.22.2",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.8",
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -137,9 +137,12 @@
     "lib/types/types.d.ts",
     "lib/types.js",
     "lib/typert.host.js",
+    "lib/typert.host.js.map",
     "lib/typert.host.d.ts",
     "lib/typert.remote-client.js",
+    "lib/typert.remote-client.js.map",
     "lib/typert.remote-client.d.ts",
+    "lib/typert.remote-client.d.ts.map",
     "cordis.patch.yml",
     "config/base.json",
     "config/environment-overrides.json",

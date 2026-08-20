@@ -112,7 +112,7 @@ describe('packed runtime dependency closure', () => {
       for (const specifier of externalImports(await readFile(path, 'utf8'))) imports.add(specifier)
     }
 
-    expect([...imports].sort()).toContain('zod')
+    expect([...imports].sort()).not.toContain('zod')
     expect([...imports].filter(specifier => !declared.has(specifier)).sort()).toEqual([])
   }, 70000)
 })

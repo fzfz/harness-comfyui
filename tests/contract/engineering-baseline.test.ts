@@ -32,7 +32,6 @@ describe('Issue #2 public package and composition contracts', () => {
     }
     expect(manifest.dependencies).toEqual({
       '@deepseek-ai/schemastery': '3.18.1',
-      zod: '4.4.3',
     })
     expect(manifest.peerDependencies).toEqual(harnessPeerVersions)
     expect(manifest.devDependencies).toEqual({
@@ -46,6 +45,7 @@ describe('Issue #2 public package and composition contracts', () => {
       tsdown: '0.22.2',
       typescript: '6.0.3',
       vitest: '4.1.8',
+      zod: '4.4.3',
     })
   })
 
@@ -69,9 +69,12 @@ describe('Issue #2 public package and composition contracts', () => {
       'lib/types/types.d.ts',
       'lib/types.js',
       'lib/typert.host.js',
+      'lib/typert.host.js.map',
       'lib/typert.host.d.ts',
       'lib/typert.remote-client.js',
+      'lib/typert.remote-client.js.map',
       'lib/typert.remote-client.d.ts',
+      'lib/typert.remote-client.d.ts.map',
       'cordis.patch.yml',
       'config/base.json',
       'config/environment-overrides.json',
@@ -89,11 +92,20 @@ describe('Issue #2 public package and composition contracts', () => {
 
   it('runs built-artifact and packed-runtime tests only after their artifacts exist', () => {
     const scripts = readJson('package.json').scripts as Record<string, string>
+    expect(scripts['test:contract']).toBe(
+      'vitest run tests/contract tests/deploy/deployment-scripts.test.ts tests/release-package/dry-run.test.ts tests/release-package/package-scripts.test.ts tests/security/audit-lockfile.test.ts tests/security/check-build-scripts.test.ts tests/security/check-manifest-lock.test.ts',
+    )
     expect(scripts['test:e2e']).toBe('vitest run tests/e2e --maxWorkers=1 --no-file-parallelism')
     expect(scripts['test:build-artifacts']).toBe('vitest run tests/build-artifacts.test.ts')
     expect(scripts['test:packed-runtime']).toBe('vitest run tests/release-package/runtime-closure.test.ts')
     expect(scripts['package:validate']).toBe(
       'node scripts/release/validate-package.mjs && pnpm run test:build-artifacts && pnpm run test:packed-runtime',
+    )
+    expect(scripts.build).toBe(
+      'tsc -b tsconfig.host.json && tsdown --config tsdown.config.ts && node scripts/build/bundle-generated-typert.ts && node scripts/build/tsdown-client-bundle.ts',
+    )
+    expect(scripts['release:smoke']).toBe(
+      'node scripts/release/smoke.mjs && pnpm run test:release-smoke',
     )
     expect(scripts.quality).toBe(
       'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',

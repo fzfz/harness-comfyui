@@ -12,6 +12,7 @@ const generatedNames = [
   'typert.host.d.ts',
   'typert.remote-client.js',
   'typert.remote-client.d.ts',
+  'typert.remote-client.d.ts.map',
 ] as const
 
 function writeJson(path: string, value: unknown): void {
@@ -108,7 +109,7 @@ function copyGeneratedArtifacts(): void {
 /**
  * Adapt the locked rc.7 workspace-only generator to this standalone package.
  * The official Typert plugin owns generation; this adapter only stages inputs
- * and copies its four public outputs back into the package build directory.
+ * and copies its public outputs back into the package build directory.
  */
 export function standaloneTypertWorkspacePlugin(): Record<string, unknown> {
   return {
