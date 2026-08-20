@@ -117,13 +117,19 @@
     "lib/index.js",
     "lib/client.js",
     "lib/client.js.map",
-    "lib/types/**/*.d.ts",
+    "lib/types/index.d.ts",
+    "lib/types/client.d.ts",
     "cordis.patch.yml",
-    "config/**/*.json",
-    "config/**/*.ts",
-    "profiles/**/*.json",
-    "profiles/**/*.yml",
-    "profiles/**/*.yaml",
-    "scripts/profile/*.mjs"
+    "config/base.json",
+    "config/environment-overrides.json",
+    "config/profiles/development.json",
+    "config/profiles/production.json",
+    "config/profiles/release-smoke.json",
+    "config/profiles/test.json",
+    "profiles/comfyui-workbench/cordis.patch.yml",
+    "profiles/comfyui-workbench/package.json",
+    "profiles/comfyui-workbench/pnpm-workspace.yaml",
+    "scripts/profile/materialize.mjs",
+    "scripts/profile/start.mjs"
   ]
 }

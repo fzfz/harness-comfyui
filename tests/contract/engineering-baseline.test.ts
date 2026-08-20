@@ -57,7 +57,25 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.scripts['dev:start']).toBe(
       'node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173',
     )
-    expect(manifest.files).toContain('profiles/**/*.yaml')
+    expect(manifest.files).toEqual([
+      'lib/index.js',
+      'lib/client.js',
+      'lib/client.js.map',
+      'lib/types/index.d.ts',
+      'lib/types/client.d.ts',
+      'cordis.patch.yml',
+      'config/base.json',
+      'config/environment-overrides.json',
+      'config/profiles/development.json',
+      'config/profiles/production.json',
+      'config/profiles/release-smoke.json',
+      'config/profiles/test.json',
+      'profiles/comfyui-workbench/cordis.patch.yml',
+      'profiles/comfyui-workbench/package.json',
+      'profiles/comfyui-workbench/pnpm-workspace.yaml',
+      'scripts/profile/materialize.mjs',
+      'scripts/profile/start.mjs',
+    ])
   })
 
   it('exposes only the declared host and client build surfaces', () => {
