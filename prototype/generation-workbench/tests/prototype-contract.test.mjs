@@ -384,3 +384,19 @@ test("a native modal dialog backs the context picker", () => {
   assert.match(javascript, /dialog\.showModal\(\)/);
   assert.doesNotMatch(html + javascript, /risk-dialog/);
 });
+
+test("message-context candidates use fixed three-column cards with covers and pagination", () => {
+  assert.match(html, /id="candidate-list"[^>]+aria-label="上下文资源候选卡片"/);
+  assert.match(html, /id="candidate-page-previous"/);
+  assert.match(html, /id="candidate-page-status"/);
+  assert.match(html, /id="candidate-page-next"/);
+  assert.match(css, /grid-template-columns: repeat\(3, 150px\)/);
+  assert.match(css, /grid-auto-rows: 160px/);
+  assert.match(css, /\.candidate-card[\s\S]*?height: 160px;[\s\S]*?width: 150px;/);
+  assert.match(javascript, /const CONTEXT_CANDIDATE_PAGE_SIZE = 6/);
+  assert.match(javascript, /candidates\.slice\(pageStart, pageStart \+ CONTEXT_CANDIDATE_PAGE_SIZE\)/);
+  assert.match(javascript, /item\.coverUrl[\s\S]*?candidate-cover-image/);
+  assert.match(javascript, /candidate-cover-placeholder[\s\S]*?暂无封面/);
+  assert.match(javascript, /\.\/fixtures\/generated-portrait\.svg/);
+  assert.ok((javascript.match(/id: "template-/g) ?? []).length > 6, "the default Workflow Template kind spans multiple pages");
+});

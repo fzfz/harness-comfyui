@@ -149,6 +149,7 @@ const catalog = {
     {
       id: "template-17",
       baseModelId: "base-anima",
+      coverUrl: "./fixtures/generated-portrait.svg",
       title: "Anima 角色半身像",
       subtitle: "832 × 1216 · 支持宽高、CFG、提示词与 LoRA",
       tag: "rev.17",
@@ -158,11 +159,57 @@ const catalog = {
     {
       id: "template-24",
       baseModelId: "base-anima",
+      coverUrl: "./fixtures/video-poster.svg",
       title: "Anima 角色短视频",
       subtitle: "4 秒 · 支持提示词、分辨率、帧数与 CFG",
       tag: "rev.8",
       description: "用于生成短镜头运动的视频 Workflow 模板。",
       fields: { "稳定 ID": "comfyui_template_24", "模板 revision": "8", "底模": "Anima aesthetic v1.1", "输出": "video/mp4" },
+    },
+    {
+      id: "template-31",
+      baseModelId: "base-anima",
+      title: "Anima LoRA 对比",
+      subtitle: "双方案 · 固定 seed 与构图参数",
+      tag: "rev.4",
+      description: "使用同一组基础参数创建多项独立运行，适合比较 LoRA 组合。",
+      fields: { "稳定 ID": "comfyui_template_31", "模板 revision": "4", "底模": "Anima aesthetic v1.1", "输出": "image/png" },
+    },
+    {
+      id: "template-35",
+      baseModelId: "base-anima",
+      title: "Anima 高分辨率细化",
+      subtitle: "1024 × 1536 · 两阶段采样",
+      tag: "rev.6",
+      description: "在基础角色图之后执行高分辨率细化并保存最终图片。",
+      fields: { "稳定 ID": "comfyui_template_35", "模板 revision": "6", "底模": "Anima aesthetic v1.1", "输出": "image/png" },
+    },
+    {
+      id: "template-38",
+      baseModelId: "base-anima",
+      title: "Anima 铅笔草图",
+      subtitle: "768 × 1152 · 低 CFG 草图",
+      tag: "rev.3",
+      description: "生成适合作为后续细化输入的低对比铅笔草图。",
+      fields: { "稳定 ID": "comfyui_template_38", "模板 revision": "3", "底模": "Anima aesthetic v1.1", "输出": "image/png" },
+    },
+    {
+      id: "template-41",
+      baseModelId: "base-anima",
+      title: "Anima 横幅场景",
+      subtitle: "1536 × 864 · 环境构图",
+      tag: "rev.5",
+      description: "为横向环境叙事保留更宽的构图空间和角色站位。",
+      fields: { "稳定 ID": "comfyui_template_41", "模板 revision": "5", "底模": "Anima aesthetic v1.1", "输出": "image/png" },
+    },
+    {
+      id: "template-44",
+      baseModelId: "base-anima",
+      title: "Anima 声画短片",
+      subtitle: "6 秒 · 视频与环境音输出",
+      tag: "rev.2",
+      description: "一次运行保存视频和环境音两个输出。",
+      fields: { "稳定 ID": "comfyui_template_44", "模板 revision": "2", "底模": "Anima aesthetic v1.1", "输出": "video/mp4, audio/wav" },
     },
   ],
   media: [
@@ -238,10 +285,12 @@ let taskLibraryTimeFilter = "all";
 let taskLibraryReturnFocus = null;
 let cancelTaskReturnFocus = null;
 let pendingCancelRunId = null;
+let contextCandidatePage = 1;
 
 const SESSION_MEDIA_PAGE_SIZE = 4;
 const GLOBAL_MEDIA_PAGE_SIZE = 8;
 const GLOBAL_TASK_PAGE_SIZE = 5;
+const CONTEXT_CANDIDATE_PAGE_SIZE = 6;
 
 const sessionInfo = {
   portrait: { title: "角色立绘调整", state: "success", defaultTurnId: "turn_portrait_03" },
@@ -1127,6 +1176,21 @@ function renderCandidateDetail(item) {
   $("#candidate-detail").innerHTML = `<p class="detail-kind">${escapeHtml(kind?.label ?? "资源")}</p><h3>${escapeHtml(item.title)}</h3><p class="detail-description">${escapeHtml(item.description)}</p><dl class="detail-table">${rows}</dl><p class="detail-hint">${escapeHtml(hint)}</p>`;
 }
 
+function candidateCoverMarkup(item, kind) {
+  if (item.coverUrl) {
+    return `<img class="candidate-cover-image" src="${escapeHtml(item.coverUrl)}" alt="${escapeHtml(item.title)}的资源封面" width="150" height="88" loading="lazy" />`;
+  }
+  return `<span class="candidate-cover-placeholder" role="img" aria-label="${escapeHtml(item.title)}没有封面图"><span>${escapeHtml(kind?.icon ?? "RS")}</span><small>暂无封面</small></span>`;
+}
+
+function renderCandidatePagination(totalCount) {
+  const totalPages = Math.max(1, Math.ceil(totalCount / CONTEXT_CANDIDATE_PAGE_SIZE));
+  contextCandidatePage = Math.min(Math.max(contextCandidatePage, 1), totalPages);
+  $("#candidate-page-status").textContent = `第 ${contextCandidatePage} / ${totalPages} 页 · ${totalCount} 项`;
+  $("#candidate-page-previous").disabled = contextCandidatePage === 1;
+  $("#candidate-page-next").disabled = contextCandidatePage === totalPages;
+}
+
 function renderCandidates() {
   queryErrorActive = false;
   const query = $("#context-search").value.trim().toLocaleLowerCase("zh-CN");
@@ -1155,17 +1219,24 @@ function renderCandidates() {
         ? `底模“${activeBaseModelTitle()}”下没有符合当前搜索词的${activeDefinition?.label ?? "资源"}候选项。请修改底模筛选或搜索词。`
         : "修改搜索词，或者改选其他资源种类。";
     $("#candidate-list").innerHTML = `<div class="query-state"><span class="query-state-icon" style="color:var(--muted);background:var(--soft-canvas)">0</span><strong>${emptyTitle}</strong><p>${emptyCopy}</p></div>`;
+    renderCandidatePagination(0);
     renderCandidateDetail(null);
     return;
   }
 
-  if (!candidates.some((candidate) => candidate.id === activeCandidateId)) activeCandidateId = candidates[0].id;
-  $("#candidate-list").innerHTML = candidates.map((item) => {
+  renderCandidatePagination(candidates.length);
+  const pageStart = (contextCandidatePage - 1) * CONTEXT_CANDIDATE_PAGE_SIZE;
+  const pageItems = candidates.slice(pageStart, pageStart + CONTEXT_CANDIDATE_PAGE_SIZE);
+  if (!pageItems.some((candidate) => candidate.id === activeCandidateId)) activeCandidateId = pageItems[0].id;
+  $("#candidate-list").innerHTML = pageItems.map((item) => {
     const selected = pendingDialogRefs.has(item.id) || draftRefs.has(item.id);
-    return `<button type="button" class="candidate-row ${item.id === activeCandidateId ? "is-active" : ""} ${selected ? "is-selected" : ""}" data-candidate-id="${item.id}">
-      <span class="candidate-check" aria-hidden="true">✓</span>
-      <span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.subtitle)}</small></span>
-      <span class="candidate-tag">${escapeHtml(item.tag)}</span>
+    return `<button type="button" class="candidate-card ${item.id === activeCandidateId ? "is-active" : ""} ${selected ? "is-selected" : ""}" data-candidate-id="${item.id}" aria-pressed="${selected}">
+      <span class="candidate-cover">
+        ${candidateCoverMarkup(item, activeDefinition)}
+        <span class="candidate-check" aria-hidden="true">✓</span>
+        <span class="candidate-tag">${escapeHtml(item.tag)}</span>
+      </span>
+      <span class="candidate-card-copy"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.subtitle)}</small></span>
     </button>`;
   }).join("");
   renderCandidateDetail(candidates.find((candidate) => candidate.id === activeCandidateId));
@@ -1183,6 +1254,7 @@ function openContextDialog() {
   queryErrorActive = false;
   activeKind = "comfyui-template";
   activeCandidateId = catalog[activeKind][0]?.id ?? null;
+  contextCandidatePage = 1;
   $("#context-search").value = "";
   renderBaseModelFilter();
   renderKindList();
@@ -1195,6 +1267,7 @@ function openContextDialog() {
 function renderQueryError() {
   queryErrorActive = true;
   $("#candidate-list").innerHTML = `<div class="query-state"><span class="query-state-icon">!</span><strong>数据源没有返回${escapeHtml(kindDefinitions.find((definition) => definition.id === activeKind)?.label ?? "资源")}结果</strong><p><code>GENERATION_CATALOG_SOURCE_UNAVAILABLE</code><br />Harness Tool 无法完成本次只读查询。页面不会删除已经选择的上下文。</p><button class="secondary-button" type="button" id="retry-context-query">重新查询</button></div>`;
+  renderCandidatePagination(0);
   $("#candidate-detail").innerHTML = `<p class="detail-kind">查询错误</p><h3>当前草稿保持不变</h3><p class="detail-description">关闭选择器后，用户正文和已经选择的上下文仍保留。重新发送前需要完成失败引用的解析。</p>`;
 }
 
@@ -1408,6 +1481,7 @@ $("#resource-kind-list").addEventListener("click", (event) => {
   if (!button) return;
   activeKind = button.dataset.kind;
   activeCandidateId = catalog[activeKind][0]?.id ?? null;
+  contextCandidatePage = 1;
   $("#context-search").value = "";
   renderKindList();
   renderCandidates();
@@ -1435,11 +1509,26 @@ $("#candidate-list").addEventListener("click", (event) => {
 
 $("#context-search").addEventListener("input", () => {
   if (queryErrorActive) queryErrorActive = false;
+  contextCandidatePage = 1;
   renderCandidates();
 });
 
 $("#base-model-filter").addEventListener("change", (event) => {
   activeBaseModelId = event.target.value;
+  activeCandidateId = null;
+  contextCandidatePage = 1;
+  renderCandidates();
+});
+
+$("#candidate-page-previous").addEventListener("click", () => {
+  if (contextCandidatePage === 1) return;
+  contextCandidatePage -= 1;
+  activeCandidateId = null;
+  renderCandidates();
+});
+
+$("#candidate-page-next").addEventListener("click", () => {
+  contextCandidatePage += 1;
   activeCandidateId = null;
   renderCandidates();
 });

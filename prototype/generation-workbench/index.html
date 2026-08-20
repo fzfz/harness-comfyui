@@ -327,7 +327,12 @@
               <button class="text-button" id="simulate-query-error" type="button">模拟查询失败</button>
             </div>
             <div class="filter-notice" id="filter-notice" hidden></div>
-            <div class="candidate-list" id="candidate-list"></div>
+            <div class="candidate-list" id="candidate-list" aria-label="上下文资源候选卡片"></div>
+            <nav class="candidate-pagination" aria-label="上下文资源候选分页">
+              <button type="button" id="candidate-page-previous">上一页</button>
+              <span id="candidate-page-status">第 1 / 1 页 · 0 项</span>
+              <button type="button" id="candidate-page-next">下一页</button>
+            </nav>
           </section>
           <aside class="candidate-detail" id="candidate-detail" aria-label="候选项详情"></aside>
         </div>

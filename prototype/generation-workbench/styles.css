@@ -2089,31 +2089,81 @@ dialog::backdrop {
 }
 
 .candidate-list {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 6px 8px 10px;
-}
-
-.candidate-row {
-  align-items: start;
-  background: transparent;
-  border: 1px solid transparent;
+  align-content: start;
   display: grid;
-  gap: 8px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  padding: 9px 8px;
+  flex: 1;
+  gap: 9px;
+  grid-auto-rows: 160px;
+  grid-template-columns: repeat(3, 150px);
+  justify-content: center;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
+.candidate-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  height: 160px;
+  overflow: hidden;
+  padding: 0;
   text-align: left;
-  width: 100%;
+  width: 150px;
 }
 
-.candidate-row:hover {
+.candidate-card:hover {
+  border-color: color-mix(in srgb, var(--action) 45%, var(--line));
+  transform: translateY(-1px);
+}
+
+.candidate-card.is-active {
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--action) 18%, transparent);
+}
+
+.candidate-cover {
   background: var(--soft-canvas);
+  border-bottom: 1px solid var(--soft-line);
+  display: block;
+  flex: 0 0 88px;
+  height: 88px;
+  overflow: hidden;
+  position: relative;
+  width: 150px;
 }
 
-.candidate-row.is-active {
-  background: var(--action-soft);
-  border-color: color-mix(in srgb, var(--action) 22%, transparent);
+.candidate-cover-image {
+  display: block;
+  height: 88px;
+  object-fit: cover;
+  width: 150px;
+}
+
+.candidate-cover-placeholder {
+  align-items: center;
+  background:
+    linear-gradient(135deg, transparent 49%, color-mix(in srgb, var(--line) 65%, transparent) 50%, transparent 51%),
+    var(--soft-canvas);
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  height: 88px;
+  justify-content: center;
+  width: 150px;
+}
+
+.candidate-cover-placeholder > span {
+  border: 1px solid currentColor;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  padding: 6px;
+}
+
+.candidate-cover-placeholder small {
+  font-size: 8px;
+  margin-top: 7px;
 }
 
 .candidate-check {
@@ -2123,39 +2173,87 @@ dialog::backdrop {
   display: flex;
   height: 17px;
   justify-content: center;
-  margin-top: 1px;
+  left: 7px;
+  position: absolute;
+  top: 7px;
   width: 17px;
 }
 
-.candidate-row.is-selected .candidate-check {
+.candidate-card.is-selected .candidate-check {
   background: var(--action);
   border-color: var(--action);
   color: var(--surface);
 }
 
-.candidate-row strong,
-.candidate-row small {
+.candidate-card-copy {
+  display: block;
+  min-height: 0;
+  padding: 8px 9px 9px;
+}
+
+.candidate-card strong,
+.candidate-card small {
   display: block;
 }
 
-.candidate-row strong {
+.candidate-card strong {
+  display: -webkit-box;
   font-size: 11px;
+  line-height: 1.35;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.candidate-row small {
+.candidate-card small {
   color: var(--muted);
+  display: -webkit-box;
   font-size: 9px;
   line-height: 1.4;
   margin-top: 3px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .candidate-tag {
-  background: var(--soft-canvas);
-  color: var(--muted);
+  background: color-mix(in srgb, var(--ink) 78%, transparent);
+  color: var(--surface);
   font-family: var(--mono-font);
   font-size: 8px;
-  padding: 3px 4px;
+  padding: 3px 5px;
+  position: absolute;
+  right: 7px;
+  top: 7px;
   white-space: nowrap;
+}
+
+.candidate-pagination {
+  align-items: center;
+  border-top: 1px solid var(--soft-line);
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+
+.candidate-pagination button {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 9px;
+  padding: 5px 9px;
+}
+
+.candidate-pagination button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.candidate-pagination span {
+  color: var(--muted);
+  font-family: var(--mono-font);
+  font-size: 9px;
 }
 
 .candidate-detail {
@@ -2228,6 +2326,7 @@ dialog::backdrop {
   align-items: center;
   display: flex;
   flex-direction: column;
+  grid-column: 1 / -1;
   height: 100%;
   justify-content: center;
   padding: 30px;
@@ -2625,6 +2724,10 @@ dialog::backdrop {
 
   .candidate-pane {
     border-right: 0;
+  }
+
+  .candidate-list {
+    justify-content: start;
   }
 
   .text-button {
