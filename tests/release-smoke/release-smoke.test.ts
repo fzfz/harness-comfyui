@@ -112,46 +112,46 @@ describe('release artifact smoke', () => {
   })
 
   it('runs the exact artifact from an isolated extracted directory', async () => {
-      const manifest = JSON.parse(await readFile(artifactManifestPath, 'utf8')) as {
-        commit: string
-        sha256: string
-        version: string
-      }
-      const result = await runSmoke()
-      expect(result.code, result.stderr || result.stdout).toBe(0)
-      const evidence = JSON.parse(result.stdout.trim()) as {
-        artifact: { commit: string; sha256: string; version: string }
-        configuration: string
-        bootEntries: string[]
-        runtimeVersions: { cliDsh: string; dshBase: string; dshWebApp: string; harnessComfyui: string }
-        cleanup: { processExited: boolean; portReleased: boolean; directoryRemoved: boolean }
-      }
-      expect(evidence.artifact).toEqual({
-        commit: manifest.commit,
-        sha256: manifest.sha256,
-        version: manifest.version,
-      })
-      expect(evidence.configuration).toBe('release-smoke')
-      expect(evidence.bootEntries).toContain('@deepseek-ai/dsh-client-ui-layout')
-      expect(evidence.bootEntries).toContain('@deepseek-ai/dsh-client-ui-conversation')
-      expect(evidence.bootEntries).toContain('harness-comfyui')
-      const sourcePackage = JSON.parse(await readFile(resolve(repositoryRoot, 'package.json'), 'utf8')) as {
-        devDependencies: Record<string, string>
-      }
-      const expectedRuntimeBundleVersions = {
-        cliDsh: sourcePackage.devDependencies['@deepseek-ai/dsh'],
-        dshBase: sourcePackage.devDependencies['@deepseek-ai/dsh-base'],
-        dshWebApp: sourcePackage.devDependencies['@deepseek-ai/dsh-web-app'],
-      }
-      expect(evidence.runtimeVersions).toEqual({
-        ...expectedRuntimeBundleVersions,
-        harnessComfyui: manifest.version,
-      })
-      expect(evidence.cleanup).toEqual({
-        processExited: true,
-        portReleased: true,
-        directoryRemoved: true,
-      })
+    const manifest = JSON.parse(await readFile(artifactManifestPath, 'utf8')) as {
+      commit: string
+      sha256: string
+      version: string
+    }
+    const result = await runSmoke()
+    expect(result.code, result.stderr || result.stdout).toBe(0)
+    const evidence = JSON.parse(result.stdout.trim()) as {
+      artifact: { commit: string; sha256: string; version: string }
+      configuration: string
+      bootEntries: string[]
+      runtimeVersions: { cliDsh: string; dshBase: string; dshWebApp: string; harnessComfyui: string }
+      cleanup: { processExited: boolean; portReleased: boolean; directoryRemoved: boolean }
+    }
+    expect(evidence.artifact).toEqual({
+      commit: manifest.commit,
+      sha256: manifest.sha256,
+      version: manifest.version,
+    })
+    expect(evidence.configuration).toBe('release-smoke')
+    expect(evidence.bootEntries).toContain('@deepseek-ai/dsh-client-ui-layout')
+    expect(evidence.bootEntries).toContain('@deepseek-ai/dsh-client-ui-conversation')
+    expect(evidence.bootEntries).toContain('harness-comfyui')
+    const sourcePackage = JSON.parse(await readFile(resolve(repositoryRoot, 'package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>
+    }
+    const expectedRuntimeBundleVersions = {
+      cliDsh: sourcePackage.devDependencies['@deepseek-ai/dsh'],
+      dshBase: sourcePackage.devDependencies['@deepseek-ai/dsh-base'],
+      dshWebApp: sourcePackage.devDependencies['@deepseek-ai/dsh-web-app'],
+    }
+    expect(evidence.runtimeVersions).toEqual({
+      ...expectedRuntimeBundleVersions,
+      harnessComfyui: manifest.version,
+    })
+    expect(evidence.cleanup).toEqual({
+      processExited: true,
+      portReleased: true,
+      directoryRemoved: true,
+    })
   }, 120000)
 
   it('cleans the running smoke process and temporary root when interrupted during isolated setup', async () => {

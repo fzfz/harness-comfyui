@@ -89,6 +89,7 @@ describe('Issue #2 public package and composition contracts', () => {
 
   it('runs built-artifact and packed-runtime tests only after their artifacts exist', () => {
     const scripts = readJson('package.json').scripts as Record<string, string>
+    expect(scripts['test:e2e']).toBe('vitest run tests/e2e --maxWorkers=1 --no-file-parallelism')
     expect(scripts['test:build-artifacts']).toBe('vitest run tests/build-artifacts.test.ts')
     expect(scripts['test:packed-runtime']).toBe('vitest run tests/release-package/runtime-closure.test.ts')
     expect(scripts['package:validate']).toBe(

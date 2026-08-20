@@ -16,7 +16,7 @@
     "test:contract": "vitest run tests/contract",
     "test:integration": "vitest run tests/integration",
     "test:composition": "vitest run tests/composition",
-    "test:e2e": "vitest run tests/e2e",
+    "test:e2e": "vitest run tests/e2e --maxWorkers=1 --no-file-parallelism",
     "test:release-smoke": "vitest run tests/release-smoke",
     "test:build-artifacts": "vitest run tests/build-artifacts.test.ts",
     "test:packed-runtime": "vitest run tests/release-package/runtime-closure.test.ts",
