@@ -37,6 +37,7 @@ describe('workflow orchestration contracts', () => {
     expect(source).toContain('version:');
     expect(source).toContain('commit:');
     expect(source).toMatch(/ref:\s*\$\{\{\s*inputs\.commit\s*\}\}/);
+    expect(source).toContain('git fetch --no-tags origin main:refs/remotes/origin/main');
     expect(source).toContain('pnpm run check:manifest-lock');
     expect(source).toContain('pnpm run security:advisories');
     expect(source).toContain('pnpm run security:build-scripts');

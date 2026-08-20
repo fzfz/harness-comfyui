@@ -42,19 +42,32 @@ function createFixture() {
 }
 
 function createGitFixture() {
+  const fixture = createOriginMainFixture()
+  return { root: fixture.root, commit: fixture.mainCommit }
+}
+
+function runGit(root: string, args: string[]) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(result.stderr)
+  return result.stdout.trim()
+}
+
+function createOriginMainFixture() {
   const root = createFixture()
+  const remote = mkdtempSync(join(tmpdir(), 'harness-comfyui-origin-main-'))
+  const bare = join(remote, 'origin.git')
+  runGit(remote, ['init', '-q', '--bare', bare])
   for (const args of [
-    ['init', '-q'],
+    ['init', '-q', '-b', 'main'],
     ['config', 'user.email', 'fixture@example.invalid'],
     ['config', 'user.name', 'Release Fixture'],
     ['add', 'package.json', 'lib', 'config'],
-    ['commit', '-qm', 'fixture'],
-  ]) {
-    const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' })
-    if (result.status !== 0) throw new Error(result.stderr)
-  }
-  const commit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout.trim()
-  return { root, commit }
+    ['commit', '-qm', 'main fixture'],
+    ['remote', 'add', 'origin', bare],
+    ['push', '-q', 'origin', 'HEAD:refs/heads/main'],
+  ]) runGit(root, args)
+  const mainCommit = runGit(root, ['rev-parse', 'HEAD'])
+  return { root, mainCommit, remote }
 }
 
 function createArtifact(
@@ -347,5 +360,28 @@ describe('release package scripts', () => {
       expectedVersion: artifact.version,
       expectedCommit: artifact.commit,
     })).toThrow(/artifact sha256/i)
+  })
+
+  it('accepts a main commit and rejects a branch-only commit even when artifact, HEAD, and expected identity agree', () => {
+    const fixture = createOriginMainFixture()
+    const mainArtifact = createArtifact(fixture.root, { commit: fixture.mainCommit })
+
+    expect(createReleasePreview(fixture.root, {
+      expectedVersion: mainArtifact.version,
+      expectedCommit: fixture.mainCommit,
+    })).toContain(`commit=${fixture.mainCommit}`)
+
+    rmSync(join(fixture.root, 'package'), { recursive: true, force: true })
+    runGit(fixture.root, ['checkout', '-q', '-b', 'feature-only'])
+    writeFileSync(join(fixture.root, 'lib/index.js'), 'export const fixture = "branch-only"\n')
+    runGit(fixture.root, ['add', 'lib/index.js'])
+    runGit(fixture.root, ['commit', '-qm', 'branch-only fixture'])
+    const branchCommit = runGit(fixture.root, ['rev-parse', 'HEAD'])
+    const branchArtifact = createArtifact(fixture.root, { commit: branchCommit })
+
+    expect(() => createReleasePreview(fixture.root, {
+      expectedVersion: branchArtifact.version,
+      expectedCommit: branchCommit,
+    })).toThrow(/origin\/main|not reachable|not contained/i)
   })
 })

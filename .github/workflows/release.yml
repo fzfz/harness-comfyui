@@ -24,6 +24,8 @@ jobs:
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
+      - name: Fetch origin main for release identity check
+        run: git fetch --no-tags origin main:refs/remotes/origin/main
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
