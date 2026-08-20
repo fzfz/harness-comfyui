@@ -1,0 +1,20 @@
+{
+  "paths": {
+    "dataDir": ".local/development",
+    "runRepositoryFile": ".local/development/runs.sqlite",
+    "runDirectory": ".local/development/runs",
+    "savedMediaDirectory": ".local/development/media",
+    "logDirectory": ".local/development/logs"
+  },
+  "comfyui": {
+    "defaultInstanceId": "development"
+  },
+  "source": {
+    "catalogCliPath": "node",
+    "sourceCliPath": "node"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 4173
+  }
+}

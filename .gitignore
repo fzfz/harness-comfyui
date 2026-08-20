@@ -49,3 +49,6 @@ comfyui-output/
 comfyui-input/
 checkpoints/
 models/
+.local/
+lib/
+.release/
