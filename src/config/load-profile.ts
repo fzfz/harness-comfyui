@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import {
+  ConfigurationProfileSchema,
   configurationProfileNames,
   parseConfigurationProfile,
   type ConfigurationProfile,
@@ -29,15 +31,30 @@ export class ConfigurationProfileError extends TypeError {
   }
 }
 
-const knownObjectKeys: Record<string, Set<string>> = {
-  '<root>': new Set(['paths', 'comfyui', 'source', 'jobs', 'server', 'process']),
-  paths: new Set(['dataDir', 'runRepositoryFile', 'runDirectory', 'savedMediaDirectory', 'logDirectory']),
-  comfyui: new Set(['defaultInstanceId']),
-  source: new Set(['catalogCliPath', 'sourceCliPath', 'contractId', 'supportedContractVersions']),
-  jobs: new Set(['pollIntervalMs', 'missingObservationMs']),
-  server: new Set(['host', 'port']),
-  process: new Set(['shutdownTimeoutMs']),
+interface ObjectSchema {
+  type?: string
+  dict?: Record<string, ObjectSchema>
 }
+
+function locatePackageConfigurationRoot(): string {
+  let directory = dirname(fileURLToPath(import.meta.url))
+  for (let depth = 0; depth < 4; depth += 1) {
+    try {
+      const manifest = JSON.parse(readFileSync(resolve(directory, 'package.json'), 'utf8')) as { name?: string }
+      const configRoot = resolve(directory, 'config')
+      readFileSync(resolve(configRoot, 'base.json'), 'utf8')
+      if (manifest.name === 'harness-comfyui') return configRoot
+    } catch {
+      // Continue to the package parent containing package.json and config/base.json.
+    }
+    const parent = dirname(directory)
+    if (parent === directory) break
+    directory = parent
+  }
+  throw new Error(`cannot locate harness-comfyui package configuration from ${fileURLToPath(import.meta.url)}`)
+}
+
+const packageConfigurationRoot = locatePackageConfigurationRoot()
 
 function readJson(path: string): JsonObject {
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'))
@@ -72,21 +89,16 @@ function assignPath(target: JsonObject, dottedPath: string, value: unknown): voi
   current[segments.at(-1)!] = value
 }
 
-function assertKnownFields(value: unknown, path: string, profileName: string, configPath: string): void {
+function assertSchemaFields(value: unknown, schema: ObjectSchema, path: string, profileName: string, configPath: string): void {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return
-  const keyGroup = path === '' ? '<root>' : path.split('.')[0]!
-  const allowed = knownObjectKeys[keyGroup]
-  if (!allowed) return
+  if (schema.type !== 'object' || schema.dict === undefined) return
   for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) {
+    if (schema.dict[key] === undefined) {
       throw new ConfigurationProfileError(profileName, configPath, path ? `${path}.${key}` : key, 'unknown property')
     }
   }
   for (const [key, child] of Object.entries(value)) {
-    if (keyGroup !== '<root>' && key !== 'paths' && key !== 'comfyui' && key !== 'source' && key !== 'jobs' && key !== 'server' && key !== 'process') continue
-    if (child && typeof child === 'object' && !Array.isArray(child)) {
-      assertKnownFields(child, path ? `${path}.${key}` : key, profileName, configPath)
-    }
+    assertSchemaFields(child, schema.dict[key]!, path ? `${path}.${key}` : key, profileName, configPath)
   }
 }
 
@@ -103,7 +115,7 @@ function isProfileName(value: string): value is ConfigurationProfileName {
 }
 
 export function loadProfile(profileName: string, options: LoadProfileOptions = {}): ConfigurationProfile {
-  const configRoot = resolve(options.configRoot ?? 'config')
+  const configRoot = resolve(options.configRoot ?? packageConfigurationRoot)
   const profilePath = resolve(configRoot, 'profiles', `${profileName}.json`)
   if (!isProfileName(profileName)) {
     throw new ConfigurationProfileError(profileName, profilePath, 'profileName', `unknown profile; expected ${configurationProfileNames.join(', ')}`)
@@ -143,7 +155,7 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
     assignPath(merged, overrideMap[key] as string, parseEnvironmentValue(key, rawValue))
   }
 
-  assertKnownFields(merged, '', profileName, profilePath)
+  assertSchemaFields(merged, ConfigurationProfileSchema, '', profileName, profilePath)
   try {
     return {
       ...parseConfigurationProfile(merged),

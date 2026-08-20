@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { delimiter, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawn } from 'node:child_process'
@@ -88,10 +88,10 @@ function commandEnvironment(binDirectory: string, recordPath: string, mode: stri
   }
 }
 
-function runNodeScript(script: string, args: readonly string[], env: NodeJS.ProcessEnv): Promise<CommandResult> {
+function runNodeScript(script: string, args: readonly string[], env: NodeJS.ProcessEnv, cwd = repositoryRoot): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
     const child = spawn(process.execPath, [script, ...args], {
-      cwd: repositoryRoot,
+      cwd,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -274,6 +274,35 @@ describe('profile CLI seams', () => {
       expect(readRecords(recordPath)[0]).toMatchObject({
         argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311'],
         cwd: repositoryRoot,
+        dshHome: targetHome,
+        configuration: 'test',
+      })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('runs the managed foreground dsh command from the caller cwd', async () => {
+    const root = createTemporaryDirectory('start-caller-cwd')
+    const targetHome = join(root, 'target-home')
+    const runtimeCwd = join(root, 'runtime-cwd')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    mkdirSync(runtimeCwd)
+    try {
+      const result = await runNodeScript(startScript, [
+        '--configuration', 'test',
+        '--dsh-home', targetHome,
+        '--host', '127.0.0.1',
+        '--port', '4311',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'exit'),
+        FAKE_PNPM_EXIT_CODE: '0',
+      }, runtimeCwd)
+      expect(result.code).toBe(0)
+      expect(readRecords(recordPath)[0]).toMatchObject({
+        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311'],
+        cwd: realpathSync(runtimeCwd),
         dshHome: targetHome,
         configuration: 'test',
       })

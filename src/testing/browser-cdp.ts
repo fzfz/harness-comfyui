@@ -1,9 +1,10 @@
-import { spawn, type ChildProcessByStdio } from 'node:child_process'
+import { execFile, spawn, type ChildProcess, type ChildProcessByStdio } from 'node:child_process'
 import { access, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Readable } from 'node:stream'
 import { setTimeout as delay } from 'node:timers/promises'
+import { promisify } from 'node:util'
 
 interface CdpMessage {
   id?: number
@@ -116,11 +117,14 @@ export interface RealBrowserProbe {
   cleanup: {
     browserExited: boolean
     browserProfileRemoved: boolean
+    processGroupId: number | undefined
+    profileDirectory: string
   }
 }
 
 interface BrowserSession {
   process: ChildProcessByStdio<null, Readable, Readable>
+  processGroupId: number | undefined
   profileDirectory: string
   connection: CdpConnection
   targetId: string
@@ -165,7 +169,21 @@ async function waitUntil<T>(probe: () => Promise<T | undefined>, description: st
   throw new Error(`timed out waiting for ${description}`)
 }
 
-type BrowserProcess = ChildProcessByStdio<null, Readable, Readable>
+type BrowserProcess = ChildProcess
+type LaunchedBrowserProcess = ChildProcessByStdio<null, Readable, Readable>
+const execFileAsync = promisify(execFile)
+
+export interface BrowserProcessCleanupOptions {
+  terminateTimeoutMs?: number
+  killTimeoutMs?: number
+  pollIntervalMs?: number
+}
+
+export interface BrowserProfileCleanupOptions {
+  stableWindowMs?: number
+  timeoutMs?: number
+  pollIntervalMs?: number
+}
 
 async function waitForProcess(child: BrowserProcess, timeoutMs: number): Promise<boolean> {
   if (child.exitCode !== null || child.signalCode !== null) return true
@@ -178,7 +196,7 @@ async function waitForProcess(child: BrowserProcess, timeoutMs: number): Promise
   })
 }
 
-async function terminateProcess(child: BrowserProcess): Promise<boolean> {
+async function terminateSingleProcess(child: BrowserProcess): Promise<boolean> {
   if (child.exitCode === null && child.signalCode === null) {
     if (child.pid !== undefined && process.platform !== 'win32') {
       try {
@@ -201,6 +219,78 @@ async function terminateProcess(child: BrowserProcess): Promise<boolean> {
   return waitForProcess(child, 1500)
 }
 
+async function processGroupMembers(processGroupId: number): Promise<number[]> {
+  const { stdout } = await execFileAsync('/bin/ps', ['-axo', 'pid=,pgid='])
+  return stdout.split('\n').flatMap(line => {
+    const [pid, pgid] = line.trim().split(/\s+/).map(Number)
+    return Number.isSafeInteger(pid) && pgid === processGroupId ? [pid!] : []
+  })
+}
+
+async function waitForProcessGroupExit(processGroupId: number, timeoutMs: number, pollIntervalMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if ((await processGroupMembers(processGroupId)).length === 0) return true
+    await delay(pollIntervalMs)
+  }
+  return (await processGroupMembers(processGroupId)).length === 0
+}
+
+function signalProcessGroup(processGroupId: number, signal: NodeJS.Signals): void {
+  try {
+    process.kill(-processGroupId, signal)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+  }
+}
+
+export async function terminateBrowserProcessGroup(
+  child: BrowserProcess,
+  processGroupId: number | undefined,
+  options: BrowserProcessCleanupOptions = {},
+): Promise<boolean> {
+  if (process.platform === 'win32' || processGroupId === undefined) return terminateSingleProcess(child)
+  if (!Number.isSafeInteger(processGroupId) || processGroupId <= 0) throw new TypeError('browser process group ID must be a positive integer')
+  const terminateTimeoutMs = options.terminateTimeoutMs ?? 1500
+  const killTimeoutMs = options.killTimeoutMs ?? 1500
+  const pollIntervalMs = options.pollIntervalMs ?? 25
+
+  if ((await processGroupMembers(processGroupId)).length > 0) signalProcessGroup(processGroupId, 'SIGTERM')
+  let groupExited = await waitForProcessGroupExit(processGroupId, terminateTimeoutMs, pollIntervalMs)
+  if (!groupExited) {
+    signalProcessGroup(processGroupId, 'SIGKILL')
+    groupExited = await waitForProcessGroupExit(processGroupId, killTimeoutMs, pollIntervalMs)
+  }
+  const leaderExited = await waitForProcess(child, killTimeoutMs)
+  return groupExited && leaderExited
+}
+
+export async function removeBrowserProfileWhenStable(
+  profileDirectory: string,
+  options: BrowserProfileCleanupOptions = {},
+): Promise<boolean> {
+  const stableWindowMs = options.stableWindowMs ?? 250
+  const timeoutMs = options.timeoutMs ?? 2000
+  const pollIntervalMs = options.pollIntervalMs ?? 25
+  if (stableWindowMs <= 0 || timeoutMs < stableWindowMs || pollIntervalMs <= 0) {
+    throw new TypeError('browser profile cleanup durations must be positive and timeoutMs must cover stableWindowMs')
+  }
+  await rm(profileDirectory, { recursive: true, force: true })
+  const deadline = Date.now() + timeoutMs
+  const absentSince = Date.now()
+  while (Date.now() < deadline) {
+    try {
+      await access(profileDirectory)
+      throw new Error(`browser profile was rebuilt before it remained continuously absent for ${stableWindowMs}ms: ${profileDirectory}`)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+    if (Date.now() - absentSince >= stableWindowMs) return true
+    await delay(pollIntervalMs)
+  }
+  throw new Error(`browser profile did not remain continuously absent for ${stableWindowMs}ms: ${profileDirectory}`)
+}
+
 async function launchBrowser(): Promise<BrowserSession> {
   const executable = await findBrowserExecutable()
   const profileDirectory = await mkdtemp(join(tmpdir(), 'harness-comfyui-chrome-'))
@@ -220,7 +310,7 @@ async function launchBrowser(): Promise<BrowserSession> {
     'about:blank',
   ]
   if (process.platform === 'linux' && typeof process.getuid === 'function' && process.getuid() === 0) args.push('--no-sandbox')
-  let child: BrowserProcess | undefined
+  let child: LaunchedBrowserProcess | undefined
   let connection: CdpConnection | undefined
   try {
     child = spawn(executable, args, {
@@ -292,11 +382,21 @@ async function launchBrowser(): Promise<BrowserSession> {
       window.__HARNESS_BROWSER_PROBE__ = state;
     })();`,
     }, sessionId)
-    return { process: child, profileDirectory, connection, targetId, sessionId }
+    return {
+      process: child,
+      processGroupId: process.platform === 'win32' ? undefined : child.pid,
+      profileDirectory,
+      connection,
+      targetId,
+      sessionId,
+    }
   } catch (error) {
     connection?.close()
-    if (child !== undefined) await terminateProcess(child)
-    await rm(profileDirectory, { recursive: true, force: true })
+    if (child !== undefined) {
+      const exited = await terminateBrowserProcessGroup(child, process.platform === 'win32' ? undefined : child.pid)
+      if (!exited) throw new AggregateError([error], 'browser launch failed and Chrome process-group cleanup did not complete')
+    }
+    await removeBrowserProfileWhenStable(profileDirectory)
     throw error
   }
 }
@@ -348,9 +448,12 @@ export async function runRealBrowserProbe(
           return rect.width > 0 && rect.height > 0 && getComputedStyle(element).display !== 'none' && getComputedStyle(element).visibility !== 'hidden';
         };
         const visibleButtons = [...document.querySelectorAll('button')].filter(visible);
+        const shellOverlays = document.querySelectorAll('[data-shell-overlay]');
         const probe = window.__HARNESS_BROWSER_PROBE__;
         return {
-          appFrame: visible(document.body) && visibleButtons.length >= 2 && (document.body.textContent ?? '').trim().length > 0,
+          appFrame: visible(document.body) && shellOverlays.length === 1 && visibleButtons.length >= 2 && (document.body.textContent ?? '').trim().length > 0,
+          requiredMarker: '[data-shell-overlay]',
+          shellOverlayCount: shellOverlays.length,
           bodyText: (document.body.textContent ?? '').trim().slice(0, 200),
           bodyRect: { width: document.body.getBoundingClientRect().width, height: document.body.getBoundingClientRect().height },
           visibleButtonCount: visibleButtons.length,
@@ -359,7 +462,7 @@ export async function runRealBrowserProbe(
           fiberIds: Object.keys(probe?.fibers ?? {}),
         };
       })()`)
-      const value = state as { appFrame?: boolean; bodyText?: string; bodyRect?: { width: number; height: number }; visibleButtonCount?: number; loadedModules?: string[]; contextIds?: string[]; fiberIds?: string[] } | undefined
+      const value = state as { appFrame?: boolean; requiredMarker?: string; shellOverlayCount?: number; bodyText?: string; bodyRect?: { width: number; height: number }; visibleButtonCount?: number; loadedModules?: string[]; contextIds?: string[]; fiberIds?: string[] } | undefined
       lastReadiness = value
       if (!value?.appFrame) return undefined
       if (!value.loadedModules?.includes('@deepseek-ai/dsh-client-ui-layout')) return undefined
@@ -450,18 +553,13 @@ export async function runRealBrowserProbe(
     }
     session.connection.close()
     try {
-      browserExited = await terminateProcess(session.process)
+      browserExited = await terminateBrowserProcessGroup(session.process, session.processGroupId)
     } catch (error) {
       cleanupError = error
     }
     try {
-      await rm(session.profileDirectory, { recursive: true, force: true })
-      try {
-        await access(session.profileDirectory)
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') browserProfileRemoved = true
-        else throw error
-      }
+      if (!browserExited) throw new Error('Chrome process group is still running; browser profile removal was not attempted')
+      browserProfileRemoved = await removeBrowserProfileWhenStable(session.profileDirectory)
     } catch (error) {
       cleanupError ??= error
     }
@@ -475,5 +573,13 @@ export async function runRealBrowserProbe(
   }
   if (probeError !== undefined) throw probeError
   if (probe === undefined) throw new Error('real browser probe completed without a result')
-  return { ...probe, cleanup: { browserExited, browserProfileRemoved } }
+  return {
+    ...probe,
+    cleanup: {
+      browserExited,
+      browserProfileRemoved,
+      processGroupId: session.processGroupId,
+      profileDirectory: session.profileDirectory,
+    },
+  }
 }

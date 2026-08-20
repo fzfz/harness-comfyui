@@ -30,7 +30,10 @@ describe('Issue #2 public package and composition contracts', () => {
       react: '18.3.1',
       'react-dom': '18.3.1',
     }
-    expect(manifest.dependencies).toEqual({ '@deepseek-ai/schemastery': '3.18.1' })
+    expect(manifest.dependencies).toEqual({
+      '@deepseek-ai/schemastery': '3.18.1',
+      zod: '4.4.3',
+    })
     expect(manifest.peerDependencies).toEqual(harnessPeerVersions)
     expect(manifest.devDependencies).toEqual({
       ...harnessPeerVersions,
@@ -82,6 +85,18 @@ describe('Issue #2 public package and composition contracts', () => {
       'scripts/profile/materialize.mjs',
       'scripts/profile/start.mjs',
     ])
+  })
+
+  it('runs built-artifact and packed-runtime tests only after their artifacts exist', () => {
+    const scripts = readJson('package.json').scripts as Record<string, string>
+    expect(scripts['test:build-artifacts']).toBe('vitest run tests/build-artifacts.test.ts')
+    expect(scripts['test:packed-runtime']).toBe('vitest run tests/release-package/runtime-closure.test.ts')
+    expect(scripts['package:validate']).toBe(
+      'node scripts/release/validate-package.mjs && pnpm run test:build-artifacts && pnpm run test:packed-runtime',
+    )
+    expect(scripts.quality).toBe(
+      'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',
+    )
   })
 
   it('exposes only the declared host and client build surfaces', () => {

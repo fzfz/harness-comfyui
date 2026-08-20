@@ -1,9 +1,5 @@
-import { createHash } from 'node:crypto'
-import { basename, join, resolve } from 'node:path'
-import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -13,56 +9,24 @@ const artifactManifestPath = '.release/quality/artifact.json'
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const fixtures: Array<Awaited<ReturnType<typeof createProfileFixture>>> = []
 
-function createDivergentArtifactFixture() {
-  const base = JSON.parse(readFileSync(resolve(artifactManifestPath), 'utf8')) as {
-    tarballPath: string
-    filename: string
-    version: string
-    commit: string
-    byteLength: number
-    sha256: string
-  }
-  const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-divergent-artifact-'))
-  const extracted = join(root, 'extracted')
-  mkdirSync(extracted)
-  const unpack = spawnSync('tar', ['-xzf', base.tarballPath, '-C', extracted], { encoding: 'utf8' })
-  if (unpack.status !== 0) throw new Error(unpack.stderr)
-  const packageManifestPath = join(extracted, 'package/package.json')
-  const packageManifest = JSON.parse(readFileSync(packageManifestPath, 'utf8')) as { version: string }
-  const appVersion = `${base.version}-app-fixture`
-  packageManifest.version = appVersion
-  writeFileSync(packageManifestPath, `${JSON.stringify(packageManifest, null, 2)}\n`)
-  const tarballPath = join(root, `harness-comfyui-${appVersion}.tgz`)
-  const pack = spawnSync('tar', ['-czf', tarballPath, '-C', extracted, 'package'], { encoding: 'utf8' })
-  if (pack.status !== 0) throw new Error(pack.stderr)
-  const bytes = readFileSync(tarballPath)
-  const manifest = {
-    ...base,
-    filename: basename(tarballPath),
-    version: appVersion,
-    tarballPath,
-    byteLength: bytes.byteLength,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-  }
-  const manifestPath = join(root, 'artifact.json')
-  writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`)
-  return { manifestPath, manifest, root }
-}
-
 afterEach(async () => {
   await Promise.all(fixtures.splice(0).map(fixture => fixture.dispose()))
 })
 
 describe('release artifact composition', () => {
   it('loads the fixed artifact and exposes the ComfyUI details slot as the active replacement', async () => {
-    const divergent = createDivergentArtifactFixture()
+    const qualityArtifact = JSON.parse(await readFile(resolve(artifactManifestPath), 'utf8')) as {
+      commit: string
+      sha256: string
+    }
     const fixture = await createProfileFixture({
       configuration: 'test',
-      artifactManifestPath: divergent.manifestPath,
     })
     fixtures.push(fixture)
 
     try {
+      expect(fixture.artifact.commit).toBe(qualityArtifact.commit)
+      expect(fixture.artifact.sha256).toBe(qualityArtifact.sha256)
       await fixture.materialize()
       const manifest = JSON.parse(await readFile(fixture.profileManifestPath, 'utf8')) as {
         dependencies?: Record<string, string>
@@ -89,7 +53,6 @@ describe('release artifact composition', () => {
         dshBase: sourcePackage.devDependencies['@deepseek-ai/dsh-base'],
         dshWebApp: sourcePackage.devDependencies['@deepseek-ai/dsh-web-app'],
       }
-      expect(fixture.artifact.version).not.toBe(expectedRuntimeBundleVersions.cliDsh)
       expect(installed.runtimeBundleVersions).toEqual({
         ...expectedRuntimeBundleVersions,
       })
@@ -100,6 +63,9 @@ describe('release artifact composition', () => {
       })
 
       await fixture.start()
+      expect(JSON.parse(await readFile(join(fixture.runtimeCwd, 'config/base.json'), 'utf8'))).toEqual({
+        pollutedCheckoutConfig: true,
+      })
       const boot = await fixture.readBootGraph()
       expect(boot.entries.filter(entry => entry.id === 'harness-comfyui')).toHaveLength(1)
       expect(boot.entries.filter(entry => entry.id === '@deepseek-ai/dsh-client-ui-conversation')).toHaveLength(1)
@@ -124,7 +90,6 @@ describe('release artifact composition', () => {
     } finally {
       await fixture.stop()
       await fixture.dispose()
-      rmSync(divergent.root, { recursive: true, force: true })
     }
     expect(fixture.cleanupEvidence.processExit).toBeDefined()
     expect(fixture.cleanupEvidence.portReleased).toBe(true)

@@ -1,7 +1,10 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
+import Schema from '@deepseek-ai/schemastery'
 import { describe, expect, it } from 'vitest'
 
 import { ConfigurationProfileSchema } from '../../config/schema.ts'
@@ -128,6 +131,58 @@ describe('Configuration Profile loader', () => {
       throw new Error('expected an unknown JSON property to be rejected')
     } finally {
       rmSync(temporaryConfigRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('uses the schema dictionary as the only allowlist when the schema gains a property', () => {
+    const temporaryConfigRoot = mkdtempSync(join(tmpdir(), 'harness-comfyui-config-schema-'))
+    const schemaDict = ConfigurationProfileSchema.dict!
+    try {
+      cpSync(resolve('config'), temporaryConfigRoot, { recursive: true })
+      schemaDict.schemaOwnedFixtureField = Schema.string().required()
+      const profilePath = join(temporaryConfigRoot, 'profiles', 'development.json')
+      const profile = JSON.parse(readFileSync(profilePath, 'utf8')) as Record<string, unknown>
+      profile.schemaOwnedFixtureField = 'accepted-from-schema'
+      writeFileSync(profilePath, JSON.stringify(profile), 'utf8')
+
+      const loaded = loadProfile('development', {
+        configRoot: temporaryConfigRoot,
+        environment: {},
+      }) as unknown as Record<string, unknown>
+      expect(loaded.schemaOwnedFixtureField).toBe('accepted-from-schema')
+    } finally {
+      delete schemaDict.schemaOwnedFixtureField
+      rmSync(temporaryConfigRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('resolves default configuration from the module package instead of the process cwd', () => {
+    const pollutedCwd = mkdtempSync(join(tmpdir(), 'harness-comfyui-polluted-cwd-'))
+    try {
+      mkdirSync(join(pollutedCwd, 'config/profiles'), { recursive: true })
+      cpSync(resolve('config'), join(pollutedCwd, 'config'), { recursive: true })
+      const pollutedPath = join(pollutedCwd, 'config/profiles/development.json')
+      const polluted = JSON.parse(readFileSync(pollutedPath, 'utf8')) as { paths: { dataDir: string } }
+      polluted.paths.dataDir = 'polluted-checkout-config'
+      writeFileSync(pollutedPath, JSON.stringify(polluted), 'utf8')
+      const moduleUrl = pathToFileURL(resolve('src/config/load-profile.ts')).href
+      const result = spawnSync(process.execPath, [
+        '--input-type=module',
+        '--eval',
+        `const { loadProfile } = await import(${JSON.stringify(moduleUrl)}); process.stdout.write(loadProfile('development', { environment: {} }).paths.dataDir)`,
+      ], {
+        cwd: pollutedCwd,
+        encoding: 'utf8',
+        shell: false,
+      })
+
+      expect({ status: result.status, stderr: result.stderr, stdout: result.stdout }).toEqual({
+        status: 0,
+        stderr: '',
+        stdout: '.local/development',
+      })
+    } finally {
+      rmSync(pollutedCwd, { recursive: true, force: true })
     }
   })
 

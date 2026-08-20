@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { spawn, type ChildProcessByStdio } from 'node:child_process'
 import { createReadStream } from 'node:fs'
-import { access, mkdtemp, readFile, rm, stat } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,6 +19,7 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const materializeScript = resolve(repositoryRoot, 'scripts/profile/materialize.mjs')
 const startScript = resolve(repositoryRoot, 'scripts/profile/start.mjs')
+const qualityArtifactManifestPath = resolve(repositoryRoot, '.release/quality/artifact.json')
 const profileName = 'comfyui-workbench'
 const profileBundles = [
   '@deepseek-ai/dsh-base',
@@ -86,13 +87,12 @@ export interface CleanupEvidence {
 
 export interface ProfileFixtureOptions {
   configuration: 'development' | 'test' | 'release-smoke' | 'production'
-  artifactManifestPath: string
-  exactArtifact?: boolean
 }
 
 export interface ProfileFixture {
   readonly artifact: ArtifactManifest
   readonly dshHome: string
+  readonly runtimeCwd: string
   readonly profileManifestPath: string
   readonly cleanupEvidence: CleanupEvidence
   readonly port: number | undefined
@@ -112,6 +112,30 @@ interface RunningProcess {
   child: ChildProcessByStdio<null, Readable, Readable>
   output: string
   errorOutput: string
+}
+
+export interface ProfileVersionReader {
+  profilePackageVersion(packageName: string): Promise<string | undefined>
+  runtimePackageVersion(packageName: string): Promise<string>
+}
+
+export async function readProfileVersionEvidence(reader: ProfileVersionReader): Promise<Pick<InstalledProfileEvidence, 'profileVersions' | 'runtimeBundleVersions'>> {
+  const harnessComfyui = await reader.profilePackageVersion('harness-comfyui')
+  if (harnessComfyui === undefined || harnessComfyui.length === 0) {
+    throw new Error('materialized profile harness-comfyui version must be a non-empty string')
+  }
+  return {
+    profileVersions: {
+      harnessComfyui,
+      dshBase: await reader.profilePackageVersion('@deepseek-ai/dsh-base'),
+      dshWebApp: await reader.profilePackageVersion('@deepseek-ai/dsh-web-app'),
+    },
+    runtimeBundleVersions: {
+      cliDsh: await reader.runtimePackageVersion('@deepseek-ai/dsh'),
+      dshBase: await reader.runtimePackageVersion('@deepseek-ai/dsh-base'),
+      dshWebApp: await reader.runtimePackageVersion('@deepseek-ai/dsh-web-app'),
+    },
+  }
 }
 
 function asString(value: unknown, property: string): string {
@@ -135,9 +159,8 @@ function parseArtifactManifest(value: unknown, manifestPath: string): ArtifactMa
   return parsed
 }
 
-async function readArtifactManifest(manifestPath: string): Promise<ArtifactManifest> {
-  const absolutePath = resolve(repositoryRoot, manifestPath)
-  const manifest = parseArtifactManifest(JSON.parse(await readFile(absolutePath, 'utf8')), absolutePath)
+async function readArtifactManifest(): Promise<ArtifactManifest> {
+  const manifest = parseArtifactManifest(JSON.parse(await readFile(qualityArtifactManifestPath, 'utf8')), qualityArtifactManifestPath)
   const [file, digest] = await Promise.all([
     stat(manifest.tarballPath),
     new Promise<string>((resolveDigest, reject) => {
@@ -242,6 +265,7 @@ function readInstalledPackageVersion(packageName: string): string {
 class ProfileFixtureImpl implements ProfileFixture {
   readonly artifact: ArtifactManifest
   readonly dshHome: string
+  readonly runtimeCwd: string
   readonly profileManifestPath: string
   readonly cleanupEvidence: CleanupEvidence = {
     processExit: undefined,
@@ -257,6 +281,7 @@ class ProfileFixtureImpl implements ProfileFixture {
     this.configuration = options.configuration
     this.artifact = artifact
     this.dshHome = dshHome
+    this.runtimeCwd = join(dshHome, 'artifact-runtime-cwd')
     this.profileManifestPath = join(dshHome, 'profiles', profileName, 'package.json')
   }
 
@@ -276,9 +301,19 @@ class ProfileFixtureImpl implements ProfileFixture {
 
   async start(): Promise<void> {
     if (this.running) throw new Error('profile fixture is already running')
+    await mkdir(join(this.runtimeCwd, 'config/profiles'), { recursive: true })
+    await Promise.all([
+      writeFile(join(this.runtimeCwd, 'config/base.json'), '{"pollutedCheckoutConfig":true}\n'),
+      writeFile(join(this.runtimeCwd, 'config/environment-overrides.json'), '{}\n'),
+      writeFile(join(this.runtimeCwd, `config/profiles/${this.configuration}.json`), '{}\n'),
+      writeFile(join(this.runtimeCwd, 'package.json'), '{"name":"harness-comfyui-artifact-runtime","private":true,"type":"module"}\n'),
+    ])
     const child = spawn(process.execPath, [startScript, '--configuration', this.configuration, '--dsh-home', this.dshHome, '--host', '127.0.0.1', '--port', '0'], {
-      cwd: repositoryRoot,
-      env: environmentFor(this.dshHome),
+      cwd: this.runtimeCwd,
+      env: {
+        ...environmentFor(this.dshHome),
+        HARNESS_COMFYUI_CONFIGURATION_PROFILE: this.configuration,
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     })
@@ -360,17 +395,17 @@ class ProfileFixtureImpl implements ProfileFixture {
         return undefined
       }
     }
+    const versionEvidence = await readProfileVersionEvidence({
+      async profilePackageVersion(packageName) {
+        if (packageName === 'harness-comfyui') return asString(harnessManifest.version, 'harness-comfyui.version')
+        return profilePackageVersion(packageName)
+      },
+      async runtimePackageVersion(packageName) {
+        return readInstalledPackageVersion(packageName)
+      },
+    })
     return {
-      profileVersions: {
-        harnessComfyui: asString(harnessManifest.version, 'harness-comfyui.version'),
-        dshBase: await profilePackageVersion('@deepseek-ai/dsh-base'),
-        dshWebApp: await profilePackageVersion('@deepseek-ai/dsh-web-app'),
-      },
-      runtimeBundleVersions: {
-        cliDsh: readInstalledPackageVersion('@deepseek-ai/dsh'),
-        dshBase: readInstalledPackageVersion('@deepseek-ai/dsh-base'),
-        dshWebApp: readInstalledPackageVersion('@deepseek-ai/dsh-web-app'),
-      },
+      ...versionEvidence,
       hostLoaderRow: {
         id: row[1],
         name: row[2],
@@ -435,13 +470,11 @@ class ProfileFixtureImpl implements ProfileFixture {
 }
 
 export async function createProfileFixture(options: ProfileFixtureOptions): Promise<ProfileFixture> {
-  const artifact = await readArtifactManifest(options.artifactManifestPath)
-  if (options.exactArtifact === true) {
-    const head = await runProcess('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, env: process.env })
-    const commit = head.stdout.trim()
-    if (head.code !== 0 || commit !== artifact.commit) {
-      throw new Error(`artifact commit must equal repository HEAD: artifact=${artifact.commit} HEAD=${commit || '<unavailable>'}`)
-    }
+  const artifact = await readArtifactManifest()
+  const head = await runProcess('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, env: process.env })
+  const commit = head.stdout.trim()
+  if (head.code !== 0 || commit !== artifact.commit) {
+    throw new Error(`artifact commit must equal repository HEAD: artifact=${artifact.commit} HEAD=${commit || '<unavailable>'}`)
   }
   const dshHome = await mkdtemp(join(tmpdir(), 'harness-comfyui-profile-'))
   if (!isAbsolute(dshHome)) throw new Error(`fixture DSH_HOME is not absolute: ${dshHome}`)

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { delimiter, dirname, resolve } from 'node:path'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const profileName = 'comfyui-workbench'
@@ -69,11 +69,12 @@ function runForeground(options) {
     '--port',
     options.port,
   ], {
-    cwd: repositoryRoot,
+    cwd: process.cwd(),
     env: {
       ...process.env,
       DSH_HOME: resolve(repositoryRoot, options.dshHome),
       HARNESS_COMFYUI_CONFIGURATION_PROFILE: options.configuration,
+      PATH: `${resolve(repositoryRoot, 'node_modules/.bin')}${delimiter}${process.env.PATH ?? ''}`,
     },
     stdio: 'inherit',
     detached: process.platform !== 'win32',
