@@ -5,6 +5,12 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { ConfigurationProfileName } from '../../config/schema.ts'
 import type { PluginStatus } from '../contract/plugin-status.ts'
 
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    pluginStatus: PluginStatusService
+  }
+}
+
 export class PluginStatusService extends TypertRemoteService {
   private readonly status: PluginStatus
 

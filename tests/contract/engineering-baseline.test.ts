@@ -63,6 +63,12 @@ describe('Issue #2 public package and composition contracts', () => {
       'lib/client.js.map',
       'lib/types/index.d.ts',
       'lib/types/client.d.ts',
+      'lib/types/types.d.ts',
+      'lib/types.js',
+      'lib/typert.host.js',
+      'lib/typert.host.d.ts',
+      'lib/typert.remote-client.js',
+      'lib/typert.remote-client.d.ts',
       'cordis.patch.yml',
       'config/base.json',
       'config/environment-overrides.json',
@@ -89,6 +95,18 @@ describe('Issue #2 public package and composition contracts', () => {
       './client': {
         types: './lib/types/client.d.ts',
         default: './lib/client.js',
+      },
+      './types': {
+        types: './lib/types/types.d.ts',
+        default: './lib/types.js',
+      },
+      './typert': {
+        types: './lib/typert.host.d.ts',
+        default: './lib/typert.host.js',
+      },
+      './remote': {
+        types: './lib/typert.remote-client.d.ts',
+        default: './lib/typert.remote-client.js',
       },
       './package.json': './package.json',
     })

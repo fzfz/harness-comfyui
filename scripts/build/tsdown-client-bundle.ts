@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { builtinModules } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -59,6 +59,20 @@ interface ClientBundleOptions {
   readonly output: string
 }
 
+async function resolveLockedZodEntry(): Promise<string> {
+  const store = join(root, 'node_modules', '.pnpm')
+  const candidates = (await readdir(store, { withFileTypes: true }))
+    .filter(entry => entry.isDirectory() && /^zod@[^_]+$/u.test(entry.name))
+    .map(entry => join(store, entry.name, 'node_modules', 'zod'))
+  if (candidates.length !== 1) {
+    throw new Error(`Client build requires exactly one locked zod package; found ${candidates.length}`)
+  }
+  const packageRoot = candidates[0]!
+  const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8')) as { name?: string }
+  if (manifest.name !== 'zod') throw new Error(`Client build resolved a non-zod package at ${packageRoot}`)
+  return join(packageRoot, 'index.js')
+}
+
 const cssInjection = (css: string): string => {
   const serializedCss = JSON.stringify(css)
   return [
@@ -75,6 +89,13 @@ const cssInjection = (css: string): string => {
 export async function buildClientBundle(options: ClientBundleOptions): Promise<void> {
   const css = await readFile(options.css, 'utf8')
   const outputDirectory = dirname(options.output)
+  const zodEntry = await resolveLockedZodEntry()
+  const generatedRemoteDependencies = {
+    name: 'harness-comfyui-generated-remote-dependencies',
+    resolveId(specifier: string) {
+      return specifier === 'zod' ? zodEntry : undefined
+    },
+  }
 
   await build({
     config: false,
@@ -91,7 +112,7 @@ export async function buildClientBundle(options: ClientBundleOptions): Promise<v
     clean: false,
     dts: false,
     outExtensions: () => ({ js: '.js', dts: '.d.ts' }),
-    plugins: [clientImportPolicy],
+    plugins: [generatedRemoteDependencies, clientImportPolicy],
     banner: `window.__ModuleLoader__.load({ id: "harness-comfyui", factory: (require) => { const module = { exports: {} }; const exports = module.exports;\n${cssInjection(css)}\n`,
     footer: '\nreturn module.exports; } });',
   })
@@ -100,9 +121,24 @@ export async function buildClientBundle(options: ClientBundleOptions): Promise<v
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  await buildClientBundle({
-    entry: join(root, 'src/client/index.tsx'),
-    css: join(root, 'src/client/styles.css'),
-    output: join(root, 'lib/client.js'),
-  })
+  const generatedEntry = join(root, '.local/build/client-entry.ts')
+  await mkdir(dirname(generatedEntry), { recursive: true })
+  await writeFile(generatedEntry, [
+    "import TYPERT_REMOTE from '../../lib/typert.remote-client.js'",
+    "import { applyWithRemote, inject, name } from '../../src/client/index.tsx'",
+    '',
+    'export { inject, name }',
+    'export const apply = (ctx: Parameters<typeof applyWithRemote>[0]) =>',
+    '  applyWithRemote(ctx, TYPERT_REMOTE)',
+    '',
+  ].join('\n'), 'utf8')
+  try {
+    await buildClientBundle({
+      entry: generatedEntry,
+      css: join(root, 'src/client/styles.css'),
+      output: join(root, 'lib/client.js'),
+    })
+  } finally {
+    await rm(generatedEntry, { force: true })
+  }
 }

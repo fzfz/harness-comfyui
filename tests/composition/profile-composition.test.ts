@@ -105,13 +105,22 @@ describe('release artifact composition', () => {
       expect(boot.entries.filter(entry => entry.id === '@deepseek-ai/dsh-client-ui-conversation')).toHaveLength(1)
       expect(await fixture.readClientModule('harness-comfyui')).toContain('__ModuleLoader__')
 
-      const composition = await fixture.inspectDetailsComposition()
+      const composition = await fixture.inspectDetailsComposition({
+        nativeClientId: '@deepseek-ai/dsh-client-ui-conversation',
+      })
       expect(composition.registrationError).toBeUndefined()
       expect(composition.priorities).toEqual([-10, 0])
       expect(composition.activePriority).toBe(-10)
+      expect(composition.entries).toEqual([
+        { owner: 'harness-comfyui', priority: -10, active: true },
+        { owner: '@deepseek-ai/dsh-client-ui-conversation', priority: 0, active: false },
+      ])
 
       await fixture.unloadClient(composition)
       expect(composition.remainingPriorities).toEqual([0])
+      expect(composition.remainingEntries).toEqual([
+        { owner: '@deepseek-ai/dsh-client-ui-conversation', priority: 0, active: true },
+      ])
     } finally {
       await fixture.stop()
       await fixture.dispose()
@@ -120,5 +129,5 @@ describe('release artifact composition', () => {
     expect(fixture.cleanupEvidence.processExit).toBeDefined()
     expect(fixture.cleanupEvidence.portReleased).toBe(true)
     expect(fixture.cleanupEvidence.dshHomeRemoved).toBe(true)
-  })
+  }, 90000)
 })

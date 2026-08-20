@@ -105,12 +105,13 @@ describe('built Client bundle boundary', () => {
     expect(styleElements).toHaveLength(1)
     expect(styleElements[0]?.dataset.plugin).toBe('harness-comfyui')
     expect(styleElements[0]?.textContent).toBe(await readFile(join(root, 'src/client/styles.css'), 'utf8'))
-    expect(plugin).toMatchObject({ name: 'harness-comfyui', inject: ['slots'] })
+    expect(plugin).toMatchObject({ name: 'harness-comfyui', inject: ['slots', 'remote'] })
     expect(plugin?.apply).toBeTypeOf('function')
 
     const SlotRegistry = runtimeExports.SlotRegistry
     const ctx = new Context()
     await ctx.plugin(SlotRegistry)
+    const remoteDisposer = ctx.provide('remote', {})
     const rootDisposer = ctx.slots.register(
       {
         name: 'root',
@@ -138,6 +139,7 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entriesOfSlot('details')[0]?.options.priority).toBe(0)
     nativeDetailsDisposer()
     rootDisposer()
+    await remoteDisposer()
     await ctx.fiber.dispose()
   })
 })

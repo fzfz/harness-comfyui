@@ -13,6 +13,7 @@ describe('release artifact browser boundary', () => {
     const fixture = await createProfileFixture({
       configuration: 'test',
       artifactManifestPath: '.release/quality/artifact.json',
+      exactArtifact: true,
     })
     fixtures.push(fixture)
 
@@ -20,16 +21,22 @@ describe('release artifact browser boundary', () => {
       await fixture.materialize()
       await fixture.start()
 
-      const browser = await fixture.runBrowserProbe()
+      const browser = await fixture.runRealBrowserProbe()
       expect(browser.appFrame).toBe(true)
       expect(browser.nativeDetailsModuleLoaded).toBe(true)
       expect(browser.hostClientConnected).toBe(true)
       expect(browser.clientModuleLoaded).toBe(true)
+      expect(browser.consoleErrors).toEqual([])
+      expect(browser.runtimeExceptions).toEqual([])
       expect(browser.pluginStatus).toEqual({
         packageName: 'harness-comfyui',
         packageVersion: fixture.artifact.version,
         configurationProfile: 'test',
         hostLoaded: true,
+      })
+      expect(browser.cleanup).toEqual({
+        browserExited: true,
+        browserProfileRemoved: true,
       })
     } finally {
       await fixture.stop()
@@ -38,5 +45,5 @@ describe('release artifact browser boundary', () => {
     expect(fixture.cleanupEvidence.processExit).toBeDefined()
     expect(fixture.cleanupEvidence.portReleased).toBe(true)
     expect(fixture.cleanupEvidence.dshHomeRemoved).toBe(true)
-  })
+  }, 90000)
 })

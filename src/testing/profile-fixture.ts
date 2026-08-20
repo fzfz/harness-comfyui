@@ -8,10 +8,13 @@ import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createConnection } from 'node:net'
 import type { Readable } from 'node:stream'
-import { Context } from '@deepseek-ai/cordis'
-import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import { createRequire } from 'node:module'
-import vm from 'node:vm'
+
+import {
+  runRealBrowserProbe,
+  type BrowserSlotEntry,
+  type RealBrowserProbe,
+} from './browser-cdp.ts'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const materializeScript = resolve(repositoryRoot, 'scripts/profile/materialize.mjs')
@@ -65,24 +68,13 @@ export interface InstalledProfileEvidence {
   }
 }
 
-export interface BrowserProbe {
-  appFrame: boolean
-  hostClientConnected: boolean
-  clientModuleLoaded: boolean
-  nativeDetailsModuleLoaded: boolean
-  pluginStatus: {
-    packageName: string
-    packageVersion: string
-    configurationProfile: string
-    hostLoaded: true
-  }
-}
-
 export interface DetailsComposition {
   registrationError: string | undefined
   priorities: number[]
   activePriority: number | undefined
+  entries: BrowserSlotEntry[]
   remainingPriorities: number[]
+  remainingEntries: BrowserSlotEntry[]
   unload(): Promise<void>
 }
 
@@ -95,6 +87,7 @@ export interface CleanupEvidence {
 export interface ProfileFixtureOptions {
   configuration: 'development' | 'test' | 'release-smoke' | 'production'
   artifactManifestPath: string
+  exactArtifact?: boolean
 }
 
 export interface ProfileFixture {
@@ -110,19 +103,9 @@ export interface ProfileFixture {
   readBootGraph(): Promise<BootGraph>
   readInstalledProfileEvidence(): Promise<InstalledProfileEvidence>
   readClientModule(id: string): Promise<string>
-  runBrowserProbe(): Promise<BrowserProbe>
-  inspectDetailsComposition(): Promise<DetailsComposition>
+  runRealBrowserProbe(): Promise<RealBrowserProbe>
+  inspectDetailsComposition(options: { nativeClientId: string }): Promise<DetailsComposition>
   unloadClient(composition: DetailsComposition): Promise<void>
-}
-
-interface RuntimeClientExports {
-  SlotRegistry: typeof import('@deepseek-ai/dsh-client-runtime/client').SlotRegistry
-}
-
-interface ClientPlugin {
-  name: string
-  inject: string[]
-  apply(ctx: Context): void
 }
 
 interface RunningProcess {
@@ -233,99 +216,6 @@ function parseBootGraph(html: string): BootGraph {
   const graph = JSON.parse(match[1]) as BootGraph
   if (typeof graph.rev !== 'string' || !Array.isArray(graph.entries)) throw new Error('web app boot graph has an invalid shape')
   return graph
-}
-
-async function loadRuntimeExports(): Promise<RuntimeClientExports> {
-  const require = (await import('node:module')).createRequire(import.meta.url)
-  const clientModules = new Map<string, RuntimeClientExports>()
-  const hadWindow = Object.hasOwn(globalThis, 'window')
-  const previousWindow = globalThis.window
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      __ModuleLoader__: {
-        load({ id, factory }: { id: string; factory: (require: (specifier: string) => unknown) => RuntimeClientExports }) {
-          clientModules.set(id, factory(require))
-        },
-      },
-    },
-  })
-  try {
-    await import('@deepseek-ai/dsh-client-runtime/client')
-    const runtimeExports = clientModules.get('@deepseek-ai/dsh-client-runtime')
-    if (!runtimeExports) throw new Error('runtime client did not register with ModuleLoader')
-    return runtimeExports
-  } finally {
-    if (hadWindow) Object.defineProperty(globalThis, 'window', { configurable: true, value: previousWindow })
-    else Reflect.deleteProperty(globalThis, 'window')
-  }
-}
-
-async function detailsCompositionFromModule(moduleCode: string): Promise<DetailsComposition> {
-  const vm = await import('node:vm')
-  const runtimeExports = await loadRuntimeExports()
-  let handoff: { id: string; factory: (require: (specifier: string) => unknown) => ClientPlugin } | undefined
-  const styleElements: Array<{ dataset: Record<string, string>; textContent: string }> = []
-  const document = {
-    head: { appendChild(element: (typeof styleElements)[number]) { styleElements.push(element) } },
-    createElement() { return { dataset: {}, textContent: '' } },
-    querySelector() { return undefined },
-  }
-  const window = {
-    __ModuleLoader__: {
-      load(value: typeof handoff) { handoff = value },
-    },
-  }
-  vm.runInNewContext(moduleCode, { document, window })
-  if (!handoff) throw new Error('Client module did not register with ModuleLoader')
-  const requireExternal = (specifier: string): unknown => {
-    if (specifier === '@deepseek-ai/dsh-client-runtime/client') return runtimeExports
-    throw new Error(`built client module requested unexpected external ${specifier}`)
-  }
-  const plugin = handoff.factory(requireExternal)
-  const ctx = new Context()
-  let rootDisposer: (() => void) | undefined
-  let nativeDetailsDisposer: (() => void) | undefined
-  let clientFiber: Awaited<ReturnType<typeof ctx.plugin>> | undefined
-  let registrationError: string | undefined
-  try {
-    await ctx.plugin(runtimeExports.SlotRegistry)
-    rootDisposer = ctx.slots.register(
-      {
-        name: 'root',
-        children: {
-          sidebar: { kind: 'single', scope: 'root' },
-          conversation: { kind: 'single', scope: 'session-maybe' },
-          details: { kind: 'single', scope: 'session' },
-        },
-      },
-      (_props: PropsRenderSlots<'sidebar' | 'conversation' | 'details'>) => null,
-    )
-    nativeDetailsDisposer = ctx.slots.register({ name: 'details', priority: 0 }, () => null)
-    clientFiber = ctx.plugin(plugin)
-    await clientFiber
-  } catch (error) {
-    registrationError = error instanceof Error ? error.message : String(error)
-  }
-
-  const currentPriorities = (): number[] => ctx.slots.entries('details')
-    .map(entry => entry.options.priority)
-    .filter((priority): priority is number => priority !== undefined)
-  const priorities = currentPriorities()
-  const composition: DetailsComposition = {
-    registrationError,
-    priorities,
-    activePriority: ctx.slots.entriesOfSlot('details')[0]?.options.priority,
-    remainingPriorities: [],
-    async unload() {
-      if (clientFiber) await clientFiber.dispose()
-      composition.remainingPriorities = currentPriorities()
-      nativeDetailsDisposer?.()
-      rootDisposer?.()
-      await ctx.fiber.dispose()
-    },
-  }
-  return composition
 }
 
 function readInstalledPackageVersion(packageName: string): string {
@@ -498,57 +388,30 @@ class ProfileFixtureImpl implements ProfileFixture {
     return response.text()
   }
 
-  async runBrowserProbe(): Promise<BrowserProbe> {
-    const htmlResponse = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}`)
-    if (!htmlResponse.ok) throw new Error(`browser shell returned HTTP ${htmlResponse.status}`)
-    const html = await htmlResponse.text()
-    const graph = parseBootGraph(html)
-    const layoutEntry = graph.entries.find(entry => entry.id === '@deepseek-ai/dsh-client-ui-layout')
-    const conversationEntry = graph.entries.find(entry => entry.id === '@deepseek-ai/dsh-client-ui-conversation')
-    const harnessEntry = graph.entries.find(entry => entry.id === 'harness-comfyui')
-    if (!layoutEntry || !conversationEntry || !harnessEntry) throw new Error('browser boot graph omitted AppFrame, native details, or harness Client entry')
-    const [layoutResponse, conversationResponse, harnessResponse] = await Promise.all([
-      fetchWithTimeout(`http://127.0.0.1:${this.currentPort}${layoutEntry.url}`),
-      fetchWithTimeout(`http://127.0.0.1:${this.currentPort}${conversationEntry.url}`),
-      fetchWithTimeout(`http://127.0.0.1:${this.currentPort}${harnessEntry.url}`),
-    ])
-    const layoutModule = await layoutResponse.text()
-    const conversationModule = await conversationResponse.text()
-    const harnessModule = await harnessResponse.text()
-    const appFrame = layoutResponse.ok && /AppFrame/.test(layoutModule)
-    const nativeDetailsModuleLoaded = conversationResponse.ok && /details/i.test(conversationModule)
-    const clientModuleLoaded = harnessResponse.ok && harnessModule.includes('__ModuleLoader__')
-    const apiResponse = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}/api/pluginStatus/get`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-request',
-        rpcId: `browser-${Date.now().toString(36)}`,
-        method: 'pluginStatus/get',
-        payload: { args: {} },
-      }),
-    })
-    if (!apiResponse.ok) throw new Error(`browser Host-Client bridge returned HTTP ${apiResponse.status}`)
-    const wire = JSON.parse(await apiResponse.text()) as JsonObject
-    const result = wire.result as JsonObject | undefined
-    const value = result?.value as JsonObject | undefined
-    if (wire.type !== 'server-response' || result?.ok !== true || value === undefined) throw new Error('browser Host-Client bridge returned an invalid pluginStatus envelope')
-    return {
-      appFrame,
-      hostClientConnected: true,
-      clientModuleLoaded,
-      nativeDetailsModuleLoaded,
-      pluginStatus: {
-        packageName: asString(value.packageName, 'pluginStatus.packageName'),
-        packageVersion: asString(value.packageVersion, 'pluginStatus.packageVersion'),
-        configurationProfile: asString(value.configurationProfile, 'pluginStatus.configurationProfile'),
-        hostLoaded: value.hostLoaded === true ? true : (() => { throw new Error('pluginStatus.hostLoaded must be true') })(),
-      },
-    }
+  async runRealBrowserProbe(): Promise<RealBrowserProbe> {
+    if (this.currentPort === undefined) throw new Error('profile is not running')
+    return runRealBrowserProbe(`http://127.0.0.1:${this.currentPort}/`)
   }
 
-  async inspectDetailsComposition(): Promise<DetailsComposition> {
-    return detailsCompositionFromModule(await this.readClientModule('harness-comfyui'))
+  async inspectDetailsComposition(options: { nativeClientId: string }): Promise<DetailsComposition> {
+    const browser = await this.runRealBrowserProbe()
+    const registrationErrors = browser.singleSlotDuplicateErrors
+    const expectedNative = browser.detailsEntries.some(entry => entry.owner === options.nativeClientId)
+    if (!expectedNative) {
+      registrationErrors.push(`details snapshot omitted ${options.nativeClientId}: ${JSON.stringify(browser.detailsEntries)}`)
+    }
+    const composition: DetailsComposition = {
+      registrationError: registrationErrors[0],
+      priorities: browser.detailsEntries.map(entry => entry.priority),
+      activePriority: browser.detailsEntries.find(entry => entry.active)?.priority,
+      entries: browser.detailsEntries,
+      remainingPriorities: browser.remainingDetailsEntries.map(entry => entry.priority),
+      remainingEntries: browser.remainingDetailsEntries,
+      async unload() {
+        // The real browser probe already disposed the harness-comfyui Fiber.
+      },
+    }
+    return composition
   }
 
   async unloadClient(composition: DetailsComposition): Promise<void> {
@@ -573,6 +436,13 @@ class ProfileFixtureImpl implements ProfileFixture {
 
 export async function createProfileFixture(options: ProfileFixtureOptions): Promise<ProfileFixture> {
   const artifact = await readArtifactManifest(options.artifactManifestPath)
+  if (options.exactArtifact === true) {
+    const head = await runProcess('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, env: process.env })
+    const commit = head.stdout.trim()
+    if (head.code !== 0 || commit !== artifact.commit) {
+      throw new Error(`artifact commit must equal repository HEAD: artifact=${artifact.commit} HEAD=${commit || '<unavailable>'}`)
+    }
+  }
   const dshHome = await mkdtemp(join(tmpdir(), 'harness-comfyui-profile-'))
   if (!isAbsolute(dshHome)) throw new Error(`fixture DSH_HOME is not absolute: ${dshHome}`)
   return new ProfileFixtureImpl(options, artifact, dshHome)
