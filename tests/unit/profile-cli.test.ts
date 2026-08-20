@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { delimiter, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawn } from 'node:child_process'
@@ -54,11 +54,14 @@ record({
   pid: process.pid,
 })
 
-if (mode === 'materialize') {
+if (mode === 'materialize' || mode === 'pollute-default') {
   const manifestPath = join(process.env.DSH_HOME, 'profiles', 'comfyui-workbench', 'package.json')
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   manifest.dependencies = { ...(manifest.dependencies ?? {}), 'harness-comfyui': 'file:.' }
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\\n')
+  if (mode === 'pollute-default') {
+    writeFileSync(process.env.FAKE_DSH_DEFAULT_MANIFEST, '{"polluted":true}\\n')
+  }
   process.exit(0)
 }
 
@@ -141,7 +144,8 @@ describe('profile CLI seams', () => {
   it('materializes the exact public profile files and calls dsh plugin add in the target DSH_HOME', async () => {
     const root = createTemporaryDirectory('materialize')
     const targetHome = join(root, 'target-home')
-    const defaultHome = join(root, 'default-home')
+    const homeRoot = join(root, 'os-home')
+    const defaultHome = join(homeRoot, '.dsh')
     const recordPath = join(root, 'pnpm-record.jsonl')
     const defaultManifestPath = join(defaultHome, 'profiles', 'comfyui-workbench', 'package.json')
     mkdirSync(join(defaultHome, 'profiles', 'comfyui-workbench'), { recursive: true })
@@ -152,7 +156,11 @@ describe('profile CLI seams', () => {
         '--configuration', 'development',
         '--dsh-home', targetHome,
         '--package-spec', '.',
-      ], commandEnvironment(binDirectory, recordPath, 'materialize'))
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'materialize'),
+        HOME: homeRoot,
+        USERPROFILE: homeRoot,
+      })
       expect(result.code).toBe(0)
 
       const profileDirectory = join(targetHome, 'profiles', 'comfyui-workbench')
@@ -179,6 +187,58 @@ describe('profile CLI seams', () => {
         dshHome: targetHome,
       })
       expect(readFileSync(defaultManifestPath, 'utf8')).toBe('{"sentinel":true}\n')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('fails when plugin installation creates the default DSH home profile', async () => {
+    const root = createTemporaryDirectory('materialize-default-home-pollution')
+    const targetHome = join(root, 'target-home')
+    const homeRoot = join(root, 'os-home')
+    const defaultHome = join(homeRoot, '.dsh')
+    const defaultManifestPath = join(defaultHome, 'profiles', 'comfyui-workbench', 'package.json')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    mkdirSync(join(defaultHome, 'profiles', 'comfyui-workbench'), { recursive: true })
+    writeFileSync(defaultManifestPath, '{"sentinel":true}\n', 'utf8')
+    const binDirectory = writeFakePnpm(root)
+    try {
+      const result = await runNodeScript(materializeScript, [
+        '--configuration', 'development',
+        '--dsh-home', targetHome,
+        '--package-spec', '.',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'pollute-default'),
+        FAKE_DSH_DEFAULT_MANIFEST: defaultManifestPath,
+        HOME: homeRoot,
+        USERPROFILE: homeRoot,
+      })
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('default DSH home profile manifest changed')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects the default DSH home as the materialization target', async () => {
+    const root = createTemporaryDirectory('materialize-default-home-target')
+    const homeRoot = join(root, 'os-home')
+    const defaultHome = join(homeRoot, '.dsh')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    try {
+      const result = await runNodeScript(materializeScript, [
+        '--configuration', 'development',
+        '--dsh-home', defaultHome,
+        '--package-spec', '.',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'materialize'),
+        HOME: homeRoot,
+        USERPROFILE: homeRoot,
+      })
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('default DSH home')
+      expect(existsSync(recordPath)).toBe(false)
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

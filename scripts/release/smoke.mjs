@@ -8,6 +8,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 
+import { isRunning, terminateChild } from './process-lifecycle.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const defaultManifestPath = resolve(repositoryRoot, '.release/quality/artifact.json')
 const profileName = 'comfyui-workbench'
@@ -17,14 +19,48 @@ const profileBundles = [
   '@deepseek-ai/dsh-web-app',
   'harness-comfyui',
 ]
-const trackedChildren = new Set()
+const trackedChildren = new Map()
+const terminationPromises = new Map()
+const cancellation = {
+  requested: false,
+  signal: undefined,
+}
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => {
-    for (const child of trackedChildren) {
-      if (child.exitCode === null && child.signalCode === null) child.kill(signal)
-    }
-  })
+  process.once(signal, () => requestCancellation(signal))
+}
+
+function trackChild(child, { processGroup = false } = {}) {
+  trackedChildren.set(child, { processGroup })
+  child.once('close', () => trackedChildren.delete(child))
+  return child
+}
+
+function stopTrackedChild(child, signal) {
+  const existing = terminationPromises.get(child)
+  if (existing !== undefined) return existing
+  const metadata = trackedChildren.get(child) ?? { processGroup: false }
+  const termination = terminateChild(child, {
+    processGroup: metadata.processGroup,
+    gracefulSignal: signal,
+    gracefulTimeoutMs: 1_000,
+    forceTimeoutMs: 5_000,
+  }).finally(() => terminationPromises.delete(child))
+  terminationPromises.set(child, termination)
+  return termination
+}
+
+function requestCancellation(signal) {
+  if (cancellation.requested) return
+  cancellation.requested = true
+  cancellation.signal = signal
+  for (const child of trackedChildren.keys()) {
+    void stopTrackedChild(child, signal).catch(() => undefined)
+  }
+}
+
+function throwIfCancelled() {
+  if (cancellation.requested) throw new Error(`release-smoke cancelled by ${cancellation.signal}`)
 }
 
 function parseArguments(argv) {
@@ -89,17 +125,15 @@ function runCommand(command, args, options) {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     })
-    trackedChildren.add(child)
+    trackChild(child)
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', chunk => { stdout += String(chunk) })
     child.stderr.on('data', chunk => { stderr += String(chunk) })
     child.once('error', error => {
-      trackedChildren.delete(child)
       reject(error)
     })
     child.once('close', (code, signal) => {
-      trackedChildren.delete(child)
       resolveResult({ code, signal, stdout, stderr })
     })
   })
@@ -131,9 +165,10 @@ function runtimeEnvironment(profileHome) {
   }
 }
 
-async function waitUntil(probe, description, timeoutMs = 30000) {
+async function waitUntil(probe, description, timeoutMs = 30000, { respectCancellation = true } = {}) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
+    if (respectCancellation) throwIfCancelled()
     const result = await probe()
     if (result !== undefined) return result
     await delay(100)
@@ -179,18 +214,6 @@ function parseHostLoaderRow(patch) {
   }
 }
 
-function waitForChild(child, output) {
-  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve({ code: child.exitCode, signal: child.signalCode, output })
-  return new Promise((resolveResult, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`release-smoke start process did not exit: ${output.error}`)), 30000)
-    child.once('error', reject)
-    child.once('close', (code, signal) => {
-      clearTimeout(timeout)
-      resolveResult({ code, signal, output })
-    })
-  })
-}
-
 async function assertPortReleased(port) {
   return waitUntil(async () => await new Promise(result => {
     const socket = createConnection({ host: '127.0.0.1', port })
@@ -207,30 +230,28 @@ async function assertPortReleased(port) {
       clearTimeout(timeout)
       result(true)
     })
-  }), 'release-smoke port release', 5000)
+  }), 'release-smoke port release', 5000, { respectCancellation: false })
 }
 
 async function runSmoke(artifact) {
   const smokeRoot = await mkdtemp(join(tmpdir(), 'harness-comfyui-release-smoke-'))
   const runtimeRoot = join(smokeRoot, 'dependency-install')
   const profileHome = join(smokeRoot, 'dsh-home')
-  await mkdir(runtimeRoot)
   let startChild
   let port
   let processExited = false
   let portReleased = false
   let result
+  let cleanupError
   try {
+    await mkdir(runtimeRoot)
+    throwIfCancelled()
     const developmentNodeModules = await realpath(resolve(repositoryRoot, 'node_modules'))
-    for (const dependencyDescriptor of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc']) {
-      await cp(resolve(repositoryRoot, dependencyDescriptor), join(runtimeRoot, dependencyDescriptor))
-    }
-    const install = await runCommand('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'], {
-      cwd: runtimeRoot,
-      isolatedRoot: smokeRoot,
-      env: process.env,
+    await cp(resolve(repositoryRoot, 'node_modules'), join(runtimeRoot, 'node_modules'), {
+      recursive: true,
+      dereference: false,
+      verbatimSymlinks: true,
     })
-    if (install.code !== 0) throw new Error(`isolated frozen dependency install failed: ${install.stderr || install.stdout}`)
     let isolatedNodeModules
     try {
       isolatedNodeModules = await realpath(join(runtimeRoot, 'node_modules'))
@@ -240,10 +261,8 @@ async function runSmoke(artifact) {
     if (isolatedNodeModules === developmentNodeModules || isolatedNodeModules.startsWith(`${developmentNodeModules}/`)) {
       throw new Error(`release runtime resolved node_modules through the development checkout: ${isolatedNodeModules}`)
     }
-    for (const dependencyDescriptor of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc']) {
-      await rm(join(runtimeRoot, dependencyDescriptor), { force: true })
-    }
     await extractArtifact(artifact, runtimeRoot, smokeRoot)
+    throwIfCancelled()
     for (const forbidden of ['src', 'prototype', 'tests']) {
       try {
         await access(join(runtimeRoot, forbidden))
@@ -259,6 +278,7 @@ async function runSmoke(artifact) {
       env: environment,
     })
     if (materialize.code !== 0) throw new Error(`release artifact materialize failed: ${materialize.stderr || materialize.stdout}`)
+    throwIfCancelled()
     const profileDirectory = join(profileHome, 'profiles', profileName)
     const profileManifest = JSON.parse(await readFile(join(profileDirectory, 'package.json'), 'utf8'))
     if (profileManifest.dependencies?.['harness-comfyui'] !== `file:${artifact.tarballPath}`) throw new Error('release artifact profile dependency changed')
@@ -267,14 +287,13 @@ async function runSmoke(artifact) {
     const harnessVersion = await readRuntimePackageVersion(profileDirectory, 'harness-comfyui', developmentNodeModules)
     const startOutput = { value: '', error: '' }
     assertIsolatedCwd(runtimeRoot, smokeRoot)
-    startChild = spawn(process.execPath, [join(runtimeRoot, 'scripts/profile/start.mjs'), '--configuration', configuration, '--dsh-home', profileHome, '--host', '127.0.0.1', '--port', '0'], {
+    startChild = trackChild(spawn(process.execPath, [join(runtimeRoot, 'scripts/profile/start.mjs'), '--configuration', configuration, '--dsh-home', profileHome, '--host', '127.0.0.1', '--port', '0'], {
       cwd: runtimeRoot,
       env: environment,
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
-    })
-    trackedChildren.add(startChild)
-    startChild.once('close', () => trackedChildren.delete(startChild))
+      detached: process.platform !== 'win32',
+    }), { processGroup: process.platform !== 'win32' })
     startChild.stdout.on('data', chunk => { startOutput.value += String(chunk) })
     startChild.stderr.on('data', chunk => { startOutput.error += String(chunk) })
     port = await waitUntil(async () => {
@@ -313,21 +332,40 @@ async function runSmoke(artifact) {
     }
     result = { artifact: { commit: artifact.commit, sha256: artifact.sha256, version: artifact.version }, configuration, bootEntries, hostLoaderRow, runtimeVersions }
   } finally {
-    if (startChild) {
-      if (startChild.exitCode === null && startChild.signalCode === null) startChild.kill('SIGTERM')
-      await waitForChild(startChild, { value: '', error: '' })
-      processExited = true
-      if (port !== undefined) portReleased = await assertPortReleased(port)
+    const stopSignal = cancellation.signal ?? 'SIGTERM'
+    for (const child of trackedChildren.keys()) {
+      try {
+        await stopTrackedChild(child, stopSignal)
+      } catch (error) {
+        cleanupError ??= error
+      }
     }
-    await rm(smokeRoot, { recursive: true, force: true })
+    if (startChild) {
+      processExited = !isRunning(startChild)
+      if (port !== undefined) {
+        try {
+          portReleased = await assertPortReleased(port)
+        } catch (error) {
+          cleanupError ??= error
+        }
+      }
+    }
+    try {
+      await rm(smokeRoot, { recursive: true, force: true })
+    } catch (error) {
+      cleanupError ??= error
+    }
     let directoryRemoved = false
     try {
       await access(smokeRoot)
-    } catch {
+    } catch (error) {
+      if (error?.code !== 'ENOENT') cleanupError ??= error
       directoryRemoved = true
     }
     result = result === undefined ? undefined : { ...result, cleanup: { processExited, portReleased, directoryRemoved } }
   }
+  if (cleanupError !== undefined) throw cleanupError
+  throwIfCancelled()
   if (result === undefined) throw new Error('release-smoke completed without evidence')
   return result
 }

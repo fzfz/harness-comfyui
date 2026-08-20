@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { homedir } from 'node:os'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const sourceProfileDirectory = resolve(repositoryRoot, 'profiles/comfyui-workbench')
@@ -13,6 +14,8 @@ const profileBundles = [
 ]
 const configurationProfiles = new Set(['development', 'test', 'release-smoke', 'production'])
 const templateFiles = ['package.json', 'cordis.patch.yml', 'pnpm-workspace.yaml']
+const defaultDshHome = resolve(homedir(), '.dsh')
+const defaultProfileManifestPath = resolve(defaultDshHome, 'profiles', profileName, 'package.json')
 
 function parseArguments(argv) {
   const values = new Map()
@@ -78,6 +81,25 @@ function runPluginInstall(dshHome, packageSpec) {
   return result.status ?? 1
 }
 
+function readDefaultProfileManifestState() {
+  try {
+    return { exists: true, content: readFileSync(defaultProfileManifestPath, 'utf8') }
+  } catch (error) {
+    if (error?.code === 'ENOENT') return { exists: false, content: undefined }
+    throw error
+  }
+}
+
+function assertDefaultProfileManifestUnchanged(before) {
+  const after = readDefaultProfileManifestState()
+  if (after.exists !== before.exists) {
+    throw new Error(`default DSH home profile manifest existence changed: ${defaultProfileManifestPath}`)
+  }
+  if (after.exists && after.content !== before.content) {
+    throw new Error(`default DSH home profile manifest changed: ${defaultProfileManifestPath}`)
+  }
+}
+
 function assertMaterializedProfile(profileDirectory) {
   const manifestPath = resolve(profileDirectory, 'package.json')
   let manifest
@@ -97,8 +119,17 @@ function assertMaterializedProfile(profileDirectory) {
 function main(argv) {
   const options = parseArguments(argv)
   const dshHome = resolve(repositoryRoot, options.dshHome)
+  if (dshHome === defaultDshHome) {
+    throw new Error(`--dsh-home must not be the default DSH home: ${defaultDshHome}`)
+  }
+  const defaultProfileManifestBefore = readDefaultProfileManifestState()
   const profileDirectory = materializeProfileFiles(dshHome)
-  const exitCode = runPluginInstall(dshHome, options.packageSpec)
+  let exitCode
+  try {
+    exitCode = runPluginInstall(dshHome, options.packageSpec)
+  } finally {
+    assertDefaultProfileManifestUnchanged(defaultProfileManifestBefore)
+  }
   if (exitCode !== 0) return exitCode
   assertMaterializedProfile(profileDirectory)
   return 0
