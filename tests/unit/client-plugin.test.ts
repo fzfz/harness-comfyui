@@ -1,10 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const { harnessComfyuiRemote } = vi.hoisted(() => ({
+  harnessComfyuiRemote: { package: 'harness-comfyui', descriptors: [] },
+}))
+
 vi.mock('@deepseek-ai/dsh-client-runtime/client', () => ({
   defineStore: (definition: unknown) => definition,
 }))
+vi.mock('harness-comfyui/remote', () => ({
+  default: harnessComfyuiRemote,
+}))
 
-import { applyWithRemote } from '../../src/client/index.tsx'
+import { apply } from '../../src/client/index.tsx'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -31,16 +38,14 @@ function createContext(options: { mountError?: Error } = {}) {
 describe('Client plugin Host projection', () => {
   it('mounts the generated Remote contribution without changing native slots and unmounts once', async () => {
     const fixture = createContext()
-    const contribution = { package: 'harness-comfyui', descriptors: [] }
 
-    const dispose = await applyWithRemote(fixture.context as never, contribution as never)
+    const dispose = await apply(fixture.context as never)
 
     expect(fixture.mount).toHaveBeenCalledOnce()
-    expect(fixture.mount).toHaveBeenCalledWith(contribution)
+    expect(fixture.mount).toHaveBeenCalledWith(harnessComfyuiRemote)
     expect(fixture.inject).not.toHaveBeenCalled()
     expect(fixture.register).not.toHaveBeenCalled()
 
-    await dispose()
     await dispose()
     expect(fixture.unmount).toHaveBeenCalledOnce()
   })
@@ -48,7 +53,7 @@ describe('Client plugin Host projection', () => {
   it('fails startup and does not register a slot when the generated contribution cannot mount', async () => {
     const fixture = createContext({ mountError: new Error('Remote contribution rejected') })
 
-    await expect(applyWithRemote(fixture.context as never, {} as never)).rejects.toThrow(
+    await expect(apply(fixture.context as never)).rejects.toThrow(
       'Remote contribution rejected',
     )
     expect(fixture.inject).not.toHaveBeenCalled()

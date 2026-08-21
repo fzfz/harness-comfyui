@@ -64,11 +64,9 @@ describe('built Client bundle boundary', () => {
     const output = join(directory, 'lib', 'client.js')
     const generatedEntry = join(directory, 'client-entry.ts')
     await writeFile(generatedEntry, [
-      `import TYPERT_REMOTE from ${JSON.stringify(join(root, 'lib/typert.remote-client.js'))}`,
-      `import { applyWithRemote, inject, name } from ${JSON.stringify(join(root, 'src/client/index.tsx'))}`,
+      `import { apply, inject, name } from ${JSON.stringify(join(root, 'src/client/index.tsx'))}`,
       '',
-      'export { inject, name }',
-      'export const apply = (ctx) => applyWithRemote(ctx, TYPERT_REMOTE)',
+      'export { apply, inject, name }',
       '',
     ].join('\n'), 'utf8')
     await buildClientBundle({
