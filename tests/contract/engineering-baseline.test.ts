@@ -61,7 +61,10 @@ describe('Issue #2 public package and composition contracts', () => {
       vitest: '4.1.8',
     })
 
-    expect(manifest.peerDependenciesMeta ?? {}).toEqual({})
+    expect(manifest.peerDependenciesMeta).toEqual(
+      Object.fromEntries(Object.keys(harnessPeerVersions).map((name) => [name, { optional: true }])),
+    )
+    expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())
 
     const importer = readRootImporter()
     for (const packageName of ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-workspace']) {
@@ -91,7 +94,7 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.scripts['deploy:start']).toBe('node scripts/deploy/cli.mjs start')
     expect(manifest.scripts['deploy:stop']).toBe('node scripts/deploy/cli.mjs stop')
     expect(manifest.scripts['deploy:status']).toBe('node scripts/deploy/cli.mjs status')
-    expect(manifest.scripts['test:deploy']).toBe('vitest run tests/deploy')
+    expect(manifest.scripts['test:deploy']).toBe('vitest run tests/deploy --maxWorkers=1 --no-file-parallelism')
     expect(manifest.files).toEqual([
       'lib/index.js',
       'lib/client.js',
@@ -120,15 +123,8 @@ describe('Issue #2 public package and composition contracts', () => {
       'deployment/runtime/package.json',
       'deployment/runtime/pnpm-lock.yaml',
       'deployment/runtime/pnpm-workspace.yaml',
-      'scripts/deploy/cli.mjs',
-      'scripts/deploy/contracts.mjs',
-      'scripts/deploy/install.mjs',
-      'scripts/deploy/lifecycle.mjs',
-      'scripts/deploy/health.mjs',
-      'scripts/deploy/start.mjs',
-      'scripts/deploy/stop.mjs',
-      'scripts/deploy/status.mjs',
-      'scripts/deploy/preflight.mjs',
+      'skills/**',
+      'scripts/deploy/*.mjs',
       'scripts/profile/materialize.mjs',
       'scripts/profile/start.mjs',
     ])
@@ -152,7 +148,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'node scripts/release/smoke.mjs && pnpm run test:release-smoke',
     )
     expect(scripts.quality).toBe(
-      'pnpm run check:harness-boundary && pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',
+      'pnpm run check:harness-boundary && pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:deploy && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',
     )
   })
 

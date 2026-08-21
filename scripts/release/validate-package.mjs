@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { lstatSync, readFileSync } from 'node:fs'
+import { lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { basename, dirname, isAbsolute, join, posix, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +8,13 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const artifactDirectoryName = '.release/quality'
 const strictSemVer = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
 const exactGitCommit = /^[0-9a-f]{40}$/u
+const FIXED_FILE_GLOBS = new Set(['skills/**', 'scripts/deploy/*.mjs'])
+const APPROVED_SKILL_DIRECTORIES = new Set([
+  'comfyui-generate',
+  'anima-prompt-builder',
+  'wai-sdxl-prompt-builder',
+  'lora-adjustment',
+])
 
 function readJson(path) {
   try {
@@ -181,34 +188,153 @@ export function readArtifact(root) {
   return { artifact, destination }
 }
 
+function assertPackageFilePath(file, root) {
+  if (typeof file !== 'string' || file.length === 0) throw new Error('package.json files entries must be non-empty strings')
+  if (file.startsWith('/') || file.startsWith('\\') || /^[A-Za-z]:[\\/]/u.test(file)) {
+    throw new Error(`package.json files entry must be relative: ${file}`)
+  }
+  if (file.includes('\\') || /[*?\[\]{}]/u.test(file)) throw new Error(`package.json files entry must be an exact path or one of the fixed globs: ${file}`)
+  if (file.endsWith('/')) throw new Error(`package.json files entry must name a file: ${file}`)
+  if (file.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')) {
+    throw new Error(`package.json files entry contains an invalid path segment: ${file}`)
+  }
+  if (posix.normalize(file) !== file) throw new Error(`package.json files entry must be normalized: ${file}`)
+  const sourcePath = resolve(root, file)
+  if (relative(root, sourcePath).startsWith('..') || isAbsolute(relative(root, sourcePath))) {
+    throw new Error(`package.json files entry escapes the repository: ${file}`)
+  }
+  try {
+    const sourceStat = lstatSync(sourcePath)
+    if (!sourceStat.isFile() || sourceStat.isSymbolicLink()) throw new Error('not a regular file')
+  } catch (error) {
+    throw new Error(`package.json files entry does not identify a repository file: ${file}`, { cause: error })
+  }
+}
+
+function walkRegularFiles(directory, root, prefix) {
+  const files = []
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    const relativePath = `${prefix}/${entry.name}`
+    const sourcePath = join(directory, entry.name)
+    if (entry.isSymbolicLink()) throw new Error(`package.json files glob contains a symbolic link: ${relativePath}`)
+    if (entry.isDirectory()) {
+      files.push(...walkRegularFiles(sourcePath, root, relativePath))
+      continue
+    }
+    if (!entry.isFile()) throw new Error(`package.json files glob contains a non-regular entry: ${relativePath}`)
+    const normalized = posix.normalize(relative(root, sourcePath).replaceAll('\\', '/'))
+    if (normalized !== relative(root, sourcePath).replaceAll('\\', '/')) {
+      throw new Error(`package.json files glob produced a non-normalized path: ${relativePath}`)
+    }
+    files.push(normalized)
+  }
+  return files
+}
+
+function expandSkillsGlob(root) {
+  const skillsRoot = resolve(root, 'skills')
+  let rootStat
+  try {
+    rootStat = lstatSync(skillsRoot)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return []
+    throw error
+  }
+  if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) throw new Error('skills must be a directory when it exists')
+  const files = []
+  for (const entry of readdirSync(skillsRoot, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    if (!APPROVED_SKILL_DIRECTORIES.has(entry.name)) {
+      throw new Error(`skills contains an unapproved Skill directory: ${entry.name}`)
+    }
+    if (entry.isSymbolicLink() || !entry.isDirectory()) {
+      throw new Error(`skills/${entry.name} must be an approved Skill directory`)
+    }
+    const skillFiles = walkRegularFiles(join(skillsRoot, entry.name), root, `skills/${entry.name}`)
+    if (skillFiles.length === 0) throw new Error(`skills/${entry.name} must contain a Skill file`)
+    files.push(...skillFiles)
+  }
+  return files.sort()
+}
+
+function expandDeployGlob(root) {
+  const deployRoot = resolve(root, 'scripts/deploy')
+  let rootStat
+  try {
+    rootStat = lstatSync(deployRoot)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return []
+    throw error
+  }
+  if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) throw new Error('scripts/deploy must be a directory when it exists')
+  const files = []
+  for (const entry of readdirSync(deployRoot, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    if (!entry.name.endsWith('.mjs')) continue
+    const relativePath = `scripts/deploy/${entry.name}`
+    if (entry.isSymbolicLink() || !entry.isFile()) throw new Error(`scripts/deploy glob contains a non-regular entry: ${relativePath}`)
+    files.push(relativePath)
+  }
+  return files
+}
+
+function expandFixedGlob(file, root) {
+  if (file === 'skills/**') return expandSkillsGlob(root)
+  if (file === 'scripts/deploy/*.mjs') return expandDeployGlob(root)
+  throw new Error(`package.json files entry must be an exact path or one of the fixed globs: ${file}`)
+}
+
 function validatePackageFiles(files, root) {
   if (!Array.isArray(files) || files.length === 0) throw new Error('package.json files must be a non-empty array')
   const seen = new Set()
+  const declared = new Set()
+  const expanded = []
   for (const file of files) {
     if (typeof file !== 'string' || file.length === 0) throw new Error('package.json files entries must be non-empty strings')
     if (file.startsWith('/') || file.startsWith('\\') || /^[A-Za-z]:[\\/]/u.test(file)) {
       throw new Error(`package.json files entry must be relative: ${file}`)
     }
-    if (file.includes('\\') || /[*?\[\]{}]/u.test(file)) throw new Error(`package.json files entry must be an exact path: ${file}`)
-    if (file.endsWith('/')) throw new Error(`package.json files entry must name a file: ${file}`)
-    if (file.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')) {
-      throw new Error(`package.json files entry contains an invalid path segment: ${file}`)
+    if (/[*?\[\]{}]/u.test(file)) {
+      if (!FIXED_FILE_GLOBS.has(file)) {
+        throw new Error(`package.json files entry must be an exact path or one of the fixed globs: ${file}`)
+      }
+      if (declared.has(file)) throw new Error(`package.json files contains a duplicate entry: ${file}`)
+      declared.add(file)
+      for (const expandedFile of expandFixedGlob(file, root)) {
+        if (seen.has(expandedFile)) throw new Error(`package.json files contains a duplicate expanded entry: ${expandedFile}`)
+        seen.add(expandedFile)
+        expanded.push(expandedFile)
+      }
+      continue
     }
-    if (posix.normalize(file) !== file) throw new Error(`package.json files entry must be normalized: ${file}`)
+    assertPackageFilePath(file, root)
+    if (declared.has(file)) throw new Error(`package.json files contains a duplicate entry: ${file}`)
+    declared.add(file)
     if (seen.has(file)) throw new Error(`package.json files contains a duplicate entry: ${file}`)
     seen.add(file)
-    const sourcePath = resolve(root, file)
-    if (relative(root, sourcePath).startsWith('..') || isAbsolute(relative(root, sourcePath))) {
-      throw new Error(`package.json files entry escapes the repository: ${file}`)
-    }
-    try {
-      const sourceStat = lstatSync(sourcePath)
-      if (!sourceStat.isFile() || sourceStat.isSymbolicLink()) throw new Error('not a regular file')
-    } catch (error) {
-      throw new Error(`package.json files entry does not identify a repository file: ${file}`, { cause: error })
+    expanded.push(file)
+  }
+  return expanded.map((file) => `package/${file}`)
+}
+
+function validatePeerDependenciesMeta(manifest, context) {
+  const peers = manifest.peerDependencies
+  const meta = manifest.peerDependenciesMeta
+  if (peers === undefined) {
+    if (meta !== undefined) throw new Error(`${context}.peerDependenciesMeta requires peerDependencies`)
+    return
+  }
+  if (!peers || typeof peers !== 'object' || Array.isArray(peers)) throw new Error(`${context}.peerDependencies must be an object`)
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) throw new Error(`${context}.peerDependenciesMeta must be an object`)
+  const peerKeys = Object.keys(peers).sort()
+  const metaKeys = Object.keys(meta).sort()
+  if (JSON.stringify(peerKeys) !== JSON.stringify(metaKeys)) {
+    throw new Error(`${context}.peerDependenciesMeta keys must exactly match peerDependencies`)
+  }
+  for (const peer of peerKeys) {
+    const value = meta[peer]
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1 || value.optional !== true) {
+      throw new Error(`${context}.peerDependenciesMeta.${peer} must be exactly { optional: true }`)
     }
   }
-  return [...seen].map((file) => `package/${file}`)
 }
 
 function validateTarEntries(entries, expectedEntries) {
@@ -227,6 +353,7 @@ export function validatePackage(root = repositoryRoot, options = {}) {
   const expectedIdentity = assertExpectedIdentity(options)
   const { artifact, destination } = readArtifact(resolvedRoot)
   const sourceManifest = readJson(join(resolvedRoot, 'package.json'))
+  validatePeerDependenciesMeta(sourceManifest, 'source package.json')
   const expectedEntries = ['package/package.json', ...validatePackageFiles(sourceManifest.files, resolvedRoot)]
   const actualCommit = (options.gitCommit ?? currentGitCommit)(resolvedRoot)
   if (expectedIdentity.expectedVersion !== undefined && sourceManifest.version !== expectedIdentity.expectedVersion) {
@@ -269,6 +396,13 @@ export function validatePackage(root = repositoryRoot, options = {}) {
   if (packedManifest.version !== artifact.version) throw new Error(`packed package version ${packedManifest.version} differs from artifact ${artifact.version}`)
   if (JSON.stringify(packedManifest.files) !== JSON.stringify(sourceManifest.files)) {
     throw new Error('packed package.json files differs from the source package.json files')
+  }
+  validatePeerDependenciesMeta(packedManifest, 'packed package.json')
+  if (JSON.stringify(packedManifest.peerDependencies ?? {}) !== JSON.stringify(sourceManifest.peerDependencies ?? {})) {
+    throw new Error('packed package.json peerDependencies differs from the source package.json peerDependencies')
+  }
+  if (JSON.stringify(packedManifest.peerDependenciesMeta ?? {}) !== JSON.stringify(sourceManifest.peerDependenciesMeta ?? {})) {
+    throw new Error('packed package.json peerDependenciesMeta differs from the source package.json peerDependenciesMeta')
   }
   validateExportTargets(packedManifest, entries)
 
