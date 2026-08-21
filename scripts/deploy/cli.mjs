@@ -145,6 +145,10 @@ async function runLifecycleCommand(command, installation, commandOptions = undef
     const module = await import('./logs.mjs')
     return module.runProductLogs(installation, commandOptions)
   }
+  if (command === 'upgrade') {
+    const module = await import('./upgrade.mjs')
+    return module.runProductUpgrade(installation, commandOptions.artifact, operation)
+  }
   const module = await import('./status.mjs')
   return module.runProductStatus(installation)
 }
@@ -157,13 +161,13 @@ export async function main(argv = process.argv.slice(2)) {
 
   const [command, ...commandArguments] = argv
   if (!COMMANDS.includes(command)) throw new Error(`unknown command: ${command}`)
-  if (command !== 'preflight' && command !== 'install') {
+  if (command !== 'preflight' && command !== 'install' && command !== 'upgrade') {
     if (command !== 'start' && command !== 'stop' && command !== 'restart' && command !== 'status' && command !== 'health' && command !== 'logs') {
       throw new Error(`command ${command} is not implemented in this slice`)
     }
   }
 
-  const options = command === 'preflight' || command === 'install'
+  const options = command === 'preflight' || command === 'install' || command === 'upgrade'
     ? parseArtifactArguments(commandArguments, command)
     : command === 'logs'
       ? parseLogsArguments(commandArguments)

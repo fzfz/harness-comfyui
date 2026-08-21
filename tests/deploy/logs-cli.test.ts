@@ -428,7 +428,7 @@ describe('installed logs CLI', () => {
     }
   })
 
-  it('fails on malformed active-release state and records only a failed operation terminal', async () => {
+  it('fails on malformed active-release state before dispatching the installed CLI or Host', async () => {
     const fixture = await createFixture()
     const install = await installFixture(fixture)
     expect(install.status, install.stderr).toBe(0)
@@ -439,22 +439,22 @@ describe('installed logs CLI', () => {
     const activeState = JSON.parse(await readFile(activeStatePath, 'utf8'))
     await writeFile(activeStatePath, `${JSON.stringify({ ...activeState, activeVersion: '' })}\n`, 'utf8')
 
-    const result = await runProcess(stableBin, [
-      'logs', '--installation', fixture.inputPath, '--source', 'operations', '--lines', '5',
+    const status = await runProcess(stableBin, [
+      'status', '--json', '--installation', fixture.inputPath,
+    ], fixture.env)
+    const start = await runProcess(stableBin, [
+      'start', '--installation', fixture.inputPath,
     ], fixture.env)
 
-    expect(result.status).not.toBe(0)
-    expect(result.stderr).toMatch(/active-release|activeVersion/u)
-    const after = (await readFile(operationsPath, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
-    const events = after.slice(before.length)
-    expect(events).toHaveLength(2)
-    expect(events[0]).toMatchObject({ command: 'logs', status: 'started', installationId: 'fixture-logs' })
-    expect(events[1]).toMatchObject({
-      command: 'logs',
-      status: 'failed',
-      installationId: 'fixture-logs',
-      operationId: events[0].operationId,
-    })
-    expect(events.some(event => event.status === 'passed')).toBe(false)
+    expect(status.status).not.toBe(0)
+    expect(status.stderr).toMatch(/active-release|activeVersion/u)
+    expect(start.status).not.toBe(0)
+    expect(start.stderr).toMatch(/active-release|activeVersion/u)
+    await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(lstat(fixture.hostReadyFile)).rejects.toMatchObject({ code: 'ENOENT' })
+
+    const after = (await readFile(operationsPath, 'utf8')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
+    expect(after).toHaveLength(before.length)
+    expect(after).toEqual(before)
   })
 })

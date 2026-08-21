@@ -16,6 +16,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 export const PROCESS_STATE_SCHEMA_VERSION = 1
 export const OPERATION_SCHEMA_VERSION = 1
+export const ACTIVE_RELEASE_STATE_SCHEMA_VERSION = 1
 const HARNESS_ENVIRONMENT_PREFIX = 'HARNESS_COMFYUI_'
 
 function isRecord(value) {
@@ -39,6 +40,14 @@ function requirePositiveInteger(value, name) {
   return value
 }
 
+function requireReleaseVersion(value, name) {
+  const version = requireNonEmptyString(value, name)
+  if (version === '.' || version === '..' || version.includes('/') || version.includes('\\')) {
+    throw new Error(`${name} must be a release directory name`)
+  }
+  return version
+}
+
 async function readJsonFile(path, name) {
   let value
   try {
@@ -53,32 +62,83 @@ function operationsPath(root) {
   return resolve(root, 'state/operations.jsonl')
 }
 
-async function readActiveVersion(root) {
-  const path = resolve(root, 'state/active-release.json')
-  let contents
-  try {
-    contents = await readFile(path, 'utf8')
-  } catch (error) {
-    if (error?.code === 'ENOENT') return undefined
-    throw new Error(`cannot read state/active-release.json: ${error instanceof Error ? error.message : String(error)}`)
+function validateReleaseDescription(value, root, name, { allowNull = false } = {}) {
+  if (allowNull && value === null) return null
+  const description = requireRecord(value, name)
+  const keys = Object.keys(description).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['activeVersion', 'releasePath'])) {
+    throw new Error(`${name} must contain only activeVersion and releasePath`)
   }
-  let state
-  try {
-    state = JSON.parse(contents)
-  } catch (error) {
-    throw new Error(`cannot read state/active-release.json: malformed JSON: ${error instanceof Error ? error.message : String(error)}`)
+  const activeVersion = requireReleaseVersion(description.activeVersion, `${name}.activeVersion`)
+  const releasePath = requireNonEmptyString(description.releasePath, `${name}.releasePath`)
+  if (!isAbsolute(releasePath)) throw new Error(`${name}.releasePath must be absolute`)
+  const expectedReleasePath = resolve(root, 'releases', activeVersion)
+  if (resolve(releasePath) !== expectedReleasePath) {
+    throw new Error(`${name}.releasePath does not match activeVersion`)
   }
-  if (!isRecord(state)) throw new Error('state/active-release.json must be an object')
-  if (state.schemaVersion !== 1) throw new Error('state/active-release.json.schemaVersion must be 1')
-  requireNonEmptyString(state.installationId, 'state/active-release.json.installationId')
-  const activeVersion = requireNonEmptyString(state.activeVersion, 'state/active-release.json.activeVersion')
+  return { activeVersion, releasePath: resolve(releasePath) }
+}
+
+function validateActiveReleaseState(value, root) {
+  const state = requireRecord(value, 'state/active-release.json')
+  const expectedKeys = ['activeVersion', 'installationId', 'previousRelease', 'releasePath', 'schemaVersion']
+  const keys = Object.keys(state).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(expectedKeys)) {
+    throw new Error('state/active-release.json has an invalid schema')
+  }
+  if (state.schemaVersion !== ACTIVE_RELEASE_STATE_SCHEMA_VERSION) {
+    throw new Error(`state/active-release.json.schemaVersion must be ${ACTIVE_RELEASE_STATE_SCHEMA_VERSION}`)
+  }
+  const installationId = requireNonEmptyString(state.installationId, 'state/active-release.json.installationId')
+  const activeVersion = requireReleaseVersion(state.activeVersion, 'state/active-release.json.activeVersion')
   const releasePath = requireNonEmptyString(state.releasePath, 'state/active-release.json.releasePath')
   if (!isAbsolute(releasePath)) throw new Error('state/active-release.json.releasePath must be absolute')
   const expectedReleasePath = resolve(root, 'releases', activeVersion)
   if (resolve(releasePath) !== expectedReleasePath) {
     throw new Error('state/active-release.json.releasePath does not match activeVersion')
   }
-  return activeVersion
+  const previousRelease = validateReleaseDescription(state.previousRelease, root, 'state/active-release.json.previousRelease', { allowNull: true })
+  if (previousRelease !== null && previousRelease.releasePath === resolve(releasePath)) {
+    throw new Error('state/active-release.json.previousRelease must differ from active release')
+  }
+  return {
+    schemaVersion: ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
+    installationId,
+    activeVersion,
+    releasePath: resolve(releasePath),
+    previousRelease,
+  }
+}
+
+export async function readActiveReleaseState(root, expectedInstallationId) {
+  requireNonEmptyString(expectedInstallationId, 'expected installationId')
+  const path = resolve(root, 'state/active-release.json')
+  let value
+  try {
+    value = JSON.parse(await readFile(path, 'utf8'))
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    if (error instanceof SyntaxError) {
+      throw new Error(`cannot read state/active-release.json: malformed JSON: ${error.message}`)
+    }
+    throw new Error(`cannot read state/active-release.json: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  const state = validateActiveReleaseState(value, resolve(root))
+  if (state.installationId !== expectedInstallationId) {
+    throw new Error(`state/active-release.json.installationId does not match expected installation ${expectedInstallationId}`)
+  }
+  return state
+}
+
+export async function writeActiveReleaseState(root, state) {
+  const normalized = validateActiveReleaseState(state, resolve(root))
+  await writeAtomicJson(resolve(root, 'state/active-release.json'), normalized)
+  return normalized
+}
+
+async function readActiveVersion(root, expectedInstallationId) {
+  const state = await readActiveReleaseState(root, expectedInstallationId)
+  return state?.activeVersion
 }
 
 async function appendOperationEvent(event) {
@@ -100,7 +160,7 @@ export async function beginProductOperation(installation, command) {
   }
   let activeVersion
   try {
-    activeVersion = await readActiveVersion(installation.root)
+    activeVersion = await readActiveVersion(installation.root, installation.installationId)
   } catch (error) {
     await appendOperationEvent({ ...baseEvent, status: 'started' })
     await appendOperationEvent({
@@ -117,7 +177,7 @@ export async function beginProductOperation(installation, command) {
 }
 
 export async function finishProductOperation(operation, installation, status) {
-  const activeVersion = await readActiveVersion(installation.root)
+  const activeVersion = await readActiveVersion(installation.root, installation.installationId)
   const event = {
     path: operationsPath(installation.root),
     schemaVersion: OPERATION_SCHEMA_VERSION,
@@ -248,16 +308,10 @@ function processIdentityMismatch(state, identity) {
   return `process identity mismatch for PID ${state.pid}: expected ${JSON.stringify(state.processIdentity)}, got ${JSON.stringify(identity)}`
 }
 
-async function readActiveRelease(root) {
-  const statePath = resolve(root, 'state/active-release.json')
-  const state = await readJsonFile(statePath, 'state/active-release.json')
-  const activeVersion = requireNonEmptyString(state.activeVersion, 'state/active-release.json.activeVersion')
-  const releasePath = requireNonEmptyString(state.releasePath, 'state/active-release.json.releasePath')
-  if (!isAbsolute(releasePath)) throw new Error('state/active-release.json.releasePath must be absolute')
-  const expectedReleasePath = resolve(root, 'releases', activeVersion)
-  if (resolve(releasePath) !== expectedReleasePath) {
-    throw new Error('state/active-release.json.releasePath does not match activeVersion')
-  }
+async function readActiveRelease(root, expectedInstallationId) {
+  const state = await readActiveReleaseState(root, expectedInstallationId)
+  if (state === undefined) throw new Error('state/active-release.json does not exist')
+  const { activeVersion, releasePath } = state
   const packageCliPath = resolve(releasePath, 'package/scripts/deploy/cli.mjs')
   const dshExecutable = resolve(releasePath, 'harness-runtime/node_modules/.bin/dsh')
   const dshHome = resolve(releasePath, 'dsh-home')
@@ -463,6 +517,7 @@ function waitForChildClose(child) {
 }
 
 export {
+  validateActiveReleaseState,
   assertNoRunningHost,
   assertProcessStateOwnership,
   attachHostErrorOutput,

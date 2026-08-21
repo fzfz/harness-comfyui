@@ -314,7 +314,7 @@ export async function runProductHealth(input) {
   let active;
   let packageManifest;
   try {
-    active = await readActiveRelease(installation.root);
+    active = await readActiveRelease(installation.root, installation.installationId);
     packageManifest = await readProductPackageManifest(active);
     if (packageManifest.version !== active.activeVersion) throw new Error('active release version mismatch');
     evidence.activeRelease = { status: 'passed', version: packageManifest.version };

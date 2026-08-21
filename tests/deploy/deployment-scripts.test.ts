@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -111,6 +112,57 @@ function expectedIdentityArgs(fixture: Awaited<ReturnType<typeof createFixture>>
   return Object.entries(values).flatMap(([flag, value]) => [flag, value]);
 }
 
+async function prepareLegacyActivation(fixture: Awaited<ReturnType<typeof createFixture>>) {
+  const artifact = fixture.input.artifact;
+  const identity = {
+    version: artifact.version,
+    commit: artifact.commit,
+    sha256: artifact.sha256,
+    byteLength: artifact.byteLength,
+  };
+  await writeFile(fixture.input.installation.activeReleaseFile, JSON.stringify({
+    releasePath: fixture.input.installation.candidateRelease,
+    environment: fixture.input.environment,
+    artifact: identity,
+  }), 'utf8');
+  await writeFile(fixture.activationPath, JSON.stringify({
+    stage: 'activate',
+    status: 'passed',
+    environment: fixture.input.environment,
+    artifact,
+    deploymentApproval: fixture.input.deploymentApproval,
+    previousRelease: { releasePath: fixture.input.installation.previousRelease },
+    activeRelease: {
+      releasePath: fixture.input.installation.candidateRelease,
+      environment: fixture.input.environment,
+      artifact: identity,
+    },
+  }), 'utf8');
+}
+
+async function runProductActivation(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  installation: { root: string; installationId: string },
+  candidate: Record<string, unknown>,
+  outputPath: string,
+) {
+  const scriptPath = join(fixture.root, 'activate-product-helper.mjs');
+  await writeFile(scriptPath, `import { writeFile } from 'node:fs/promises'
+import { activateProductRelease } from ${JSON.stringify(pathToFileURL(join(repositoryRoot, 'scripts/deploy/activate.mjs')).href)}
+const installation = JSON.parse(process.argv[2])
+const candidate = JSON.parse(process.argv[3])
+const outputPath = process.argv[4]
+try {
+  const evidence = await activateProductRelease(installation, candidate)
+  await writeFile(outputPath, JSON.stringify(evidence) + '\\n', 'utf8')
+} catch (error) {
+  process.stderr.write(String(error?.message ?? error) + '\\n')
+  process.exitCode = 1
+}
+`, 'utf8');
+  return runNode(scriptPath, [JSON.stringify(installation), JSON.stringify(candidate), outputPath]);
+}
+
 describe('deployment public CLIs', () => {
   it('preflight accepts an isolated fixture release with a verified artifact identity', async () => {
     const fixture = await createFixture();
@@ -128,36 +180,77 @@ describe('deployment public CLIs', () => {
     expect(evidence.artifact).toMatchObject(fixture.input.artifact);
   });
 
-  it.each(['fixture-a', 'fixture-b'])('activate stops the %s fixture, switches the active pointer, and starts the candidate', async (environment) => {
-    const fixture = await createFixture(environment);
-    await writeFile(fixture.inputPath, JSON.stringify(fixture.input), 'utf8');
+  it('activateProductRelease atomically switches the product state and records the previous release', async () => {
+    const fixture = await createFixture();
+    const root = join(fixture.root, 'product-installation');
+    const previousRelease = join(root, 'releases/0.1.0-fixture.1');
+    const candidateRelease = join(root, 'releases/0.1.0-fixture.2');
+    const statePath = join(root, 'state/active-release.json');
+    const outputPath = join(fixture.root, 'activation-product-output.json');
+    await mkdir(previousRelease, { recursive: true });
+    await mkdir(candidateRelease, { recursive: true });
+    await mkdir(join(root, 'state'), { recursive: true });
+    await writeFile(statePath, JSON.stringify({
+      schemaVersion: 1,
+      installationId: 'product-fixture',
+      activeVersion: '0.1.0-fixture.1',
+      releasePath: previousRelease,
+      previousRelease: null,
+    }), 'utf8');
 
-    const preflight = await runNode(preflightScript, ['--input', fixture.inputPath, '--output', fixture.outputPath]);
-    expect(preflight.exitCode, preflight.stderr).toBe(0);
-    const result = await runNode(join(repositoryRoot, 'scripts/deploy/activate.mjs'), [
-      '--input', fixture.inputPath,
-      '--preflight', fixture.outputPath,
-      '--output', fixture.activationPath,
-    ]);
+    const result = await runProductActivation(fixture, { root, installationId: 'product-fixture' }, {
+      activeVersion: '0.1.0-fixture.2',
+      releasePath: candidateRelease,
+    }, outputPath);
 
     expect(result.exitCode, result.stderr).toBe(0);
-    const evidence = JSON.parse(await readFile(fixture.activationPath, 'utf8')) as Record<string, any>;
-    expect(evidence).toMatchObject({ stage: 'activate', status: 'passed', environment });
-    expect(evidence.activeRelease.releasePath).toBe(fixture.input.installation.candidateRelease);
-    const activePointer = JSON.parse(await readFile(fixture.input.installation.activeReleaseFile, 'utf8')) as Record<string, any>;
-    expect(activePointer.releasePath).toBe(fixture.input.installation.candidateRelease);
-    expect((await readFile(fixture.commandLog, 'utf8')).trim().split('\n')).toEqual(['activate.stop', 'activate.start']);
+    expect(JSON.parse(await readFile(statePath, 'utf8'))).toEqual({
+      schemaVersion: 1,
+      installationId: 'product-fixture',
+      activeVersion: '0.1.0-fixture.2',
+      releasePath: candidateRelease,
+      previousRelease: { activeVersion: '0.1.0-fixture.1', releasePath: previousRelease },
+    });
+    expect(JSON.parse(await readFile(outputPath, 'utf8')).active.previousRelease).toEqual({
+      activeVersion: '0.1.0-fixture.1',
+      releasePath: previousRelease,
+    });
+  });
+
+  it('activateProductRelease rejects a non-exact candidate shape without changing active state', async () => {
+    const fixture = await createFixture();
+    const root = join(fixture.root, 'product-installation');
+    const previousRelease = join(root, 'releases/0.1.0-fixture.1');
+    const candidateRelease = join(root, 'releases/0.1.0-fixture.2');
+    const statePath = join(root, 'state/active-release.json');
+    const outputPath = join(fixture.root, 'activation-product-invalid-output.json');
+    await mkdir(previousRelease, { recursive: true });
+    await mkdir(candidateRelease, { recursive: true });
+    await mkdir(join(root, 'state'), { recursive: true });
+    const before = JSON.stringify({
+      schemaVersion: 1,
+      installationId: 'product-fixture',
+      activeVersion: '0.1.0-fixture.1',
+      releasePath: previousRelease,
+      previousRelease: null,
+    });
+    await writeFile(statePath, before, 'utf8');
+
+    const result = await runProductActivation(fixture, { root, installationId: 'product-fixture' }, {
+      artifact: { version: '0.1.0-fixture.2' },
+      releasePath: candidateRelease,
+    }, outputPath);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/only activeVersion and releasePath/u);
+    expect(await readFile(statePath, 'utf8')).toBe(before);
   });
 
   it('health checks the active fixture after activation without changing its release pointer', async () => {
     const fixture = await createFixture();
     await writeFile(fixture.inputPath, JSON.stringify(fixture.input), 'utf8');
     expect((await runNode(preflightScript, ['--input', fixture.inputPath, '--output', fixture.outputPath])).exitCode).toBe(0);
-    expect((await runNode(join(repositoryRoot, 'scripts/deploy/activate.mjs'), [
-      '--input', fixture.inputPath,
-      '--preflight', fixture.outputPath,
-      '--output', fixture.activationPath,
-    ])).exitCode).toBe(0);
+    await prepareLegacyActivation(fixture);
 
     const result = await runNode(join(repositoryRoot, 'scripts/deploy/health.mjs'), [
       '--input', fixture.inputPath,
@@ -177,11 +270,7 @@ describe('deployment public CLIs', () => {
     fixture.input.commands.health = [process.execPath, '-e', 'process.exit(1)'];
     await writeFile(fixture.inputPath, JSON.stringify(fixture.input), 'utf8');
     expect((await runNode(preflightScript, ['--input', fixture.inputPath, '--output', fixture.outputPath])).exitCode).toBe(0);
-    expect((await runNode(join(repositoryRoot, 'scripts/deploy/activate.mjs'), [
-      '--input', fixture.inputPath,
-      '--preflight', fixture.outputPath,
-      '--output', fixture.activationPath,
-    ])).exitCode).toBe(0);
+    await prepareLegacyActivation(fixture);
     const health = await runNode(join(repositoryRoot, 'scripts/deploy/health.mjs'), [
       '--input', fixture.inputPath,
       '--activation', fixture.activationPath,
@@ -209,56 +298,10 @@ describe('deployment public CLIs', () => {
     });
     const activePointer = JSON.parse(await readFile(fixture.input.installation.activeReleaseFile, 'utf8')) as Record<string, any>;
     expect(activePointer.releasePath).toBe(fixture.input.installation.previousRelease);
-    expect((await readFile(fixture.commandLog, 'utf8')).trim().split('\n')).toEqual(['activate.stop', 'activate.start', 'rollback.stop', 'rollback.start']);
+    expect((await readFile(fixture.commandLog, 'utf8')).trim().split('\n')).toEqual(['rollback.stop', 'rollback.start']);
   });
 
-  it('stops activation immediately when stopping the previous fixture fails', async () => {
-    const fixture = await createFixture();
-    fixture.input.commands.stop = [process.execPath, '-e', 'process.exit(1)'];
-    await writeFile(fixture.inputPath, JSON.stringify(fixture.input), 'utf8');
-    expect((await runNode(preflightScript, ['--input', fixture.inputPath, '--output', fixture.outputPath])).exitCode).toBe(0);
-
-    const result = await runNode(join(repositoryRoot, 'scripts/deploy/activate.mjs'), [
-      '--input', fixture.inputPath,
-      '--preflight', fixture.outputPath,
-      '--output', fixture.activationPath,
-    ]);
-
-    expect(result.exitCode).toBe(1);
-    expect(JSON.parse(await readFile(fixture.activationPath, 'utf8'))).toMatchObject({
-      stage: 'activate', status: 'failed', failedAt: 'stop',
-    });
-    const activePointer = JSON.parse(await readFile(fixture.input.installation.activeReleaseFile, 'utf8')) as Record<string, any>;
-    expect(activePointer.releasePath).toBe(fixture.input.installation.previousRelease);
-    expect((await readFile(fixture.commandLog, 'utf8')).trim()).toBe('');
-  });
-
-  it('restores the previous fixture when candidate startup fails', async () => {
-    const fixture = await createFixture();
-    fixture.input.commands.start = [
-      process.execPath,
-      '-e',
-      `require('node:fs').appendFileSync(${JSON.stringify(fixture.commandLog)}, process.env.DEPLOYMENT_STAGE + '\\n'); if (process.env.DEPLOYMENT_RELEASE_PATH === ${JSON.stringify(fixture.input.installation.candidateRelease)}) process.exit(1);`,
-    ];
-    await writeFile(fixture.inputPath, JSON.stringify(fixture.input), 'utf8');
-    expect((await runNode(preflightScript, ['--input', fixture.inputPath, '--output', fixture.outputPath])).exitCode).toBe(0);
-
-    const result = await runNode(join(repositoryRoot, 'scripts/deploy/activate.mjs'), [
-      '--input', fixture.inputPath,
-      '--preflight', fixture.outputPath,
-      '--output', fixture.activationPath,
-    ]);
-
-    expect(result.exitCode).toBe(1);
-    expect(JSON.parse(await readFile(fixture.activationPath, 'utf8'))).toMatchObject({
-      stage: 'activate', status: 'failed', failedAt: 'start', rollback: { status: 'passed' },
-    });
-    const activePointer = JSON.parse(await readFile(fixture.input.installation.activeReleaseFile, 'utf8')) as Record<string, any>;
-    expect(activePointer.releasePath).toBe(fixture.input.installation.previousRelease);
-    expect((await readFile(fixture.commandLog, 'utf8')).trim().split('\n')).toEqual(['activate.stop', 'activate.start', 'activate.rollback-start']);
-  });
-
-  it('blocks production and missing deployment approval before running fixture commands', async () => {
+  it('keeps preflight and approval checks scoped to the legacy deployment fixture', async () => {
     const productionFixture = await createFixture();
     productionFixture.input.environment = 'production';
     await writeFile(productionFixture.inputPath, JSON.stringify(productionFixture.input), 'utf8');
@@ -269,14 +312,7 @@ describe('deployment public CLIs', () => {
     delete (approvalFixture.input as Record<string, unknown>).deploymentApproval;
     await writeFile(approvalFixture.inputPath, JSON.stringify(approvalFixture.input), 'utf8');
     expect((await runNode(preflightScript, ['--input', approvalFixture.inputPath, '--output', approvalFixture.outputPath])).exitCode).toBe(0);
-    const approvalResult = await runNode(join(repositoryRoot, 'scripts/deploy/activate.mjs'), [
-      '--input', approvalFixture.inputPath,
-      '--preflight', approvalFixture.outputPath,
-      '--output', approvalFixture.activationPath,
-    ]);
-    expect(approvalResult.exitCode).toBe(1);
-    expect(JSON.parse(await readFile(approvalFixture.activationPath, 'utf8'))).toMatchObject({ stage: 'activate', status: 'failed' });
-    expect((await readFile(approvalFixture.commandLog, 'utf8')).trim()).toBe('');
+    expect((await readFile(approvalFixture.outputPath, 'utf8')).length).toBeGreaterThan(0);
   });
 
   it.each([

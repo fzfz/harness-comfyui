@@ -536,7 +536,7 @@ export function validateDiscovery(value, name, installation) {
   };
 }
 
-export async function runProductPreflight(input, artifactPath) {
+export async function runProductPreflight(input, artifactPath, options = {}) {
   const installation = validateInstallation(input);
   const artifact = await readArtifactPackageJson(artifactPath);
   const pnpmVersion = await readPnpmVersion();
@@ -550,7 +550,7 @@ export async function runProductPreflight(input, artifactPath) {
     await probePersistentDirectory(path, name);
   }
   await probeRunRepositoryLocation(installation.paths.runRepositoryFile);
-  await probePort(installation.host, installation.port);
+  if (options.allowKnownPortUse !== true) await probePort(installation.host, installation.port);
 
   const catalogDiscovery = validateDiscovery(
     await readDiscovery(installation.source.catalogCliPath, 'catalog'),

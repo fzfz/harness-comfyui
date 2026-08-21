@@ -38,14 +38,33 @@ async function createFakePnpm(root: string): Promise<{ binDirectory: string; hom
   await mkdir(binDirectory, { recursive: true })
   await mkdir(home, { recursive: true })
   await writeFile(dshSource, `#!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 if (process.argv.slice(2, 5).join(' ') !== 'plugin --profile comfyui-workbench') process.exit(2)
 const manifestPath = join(process.env.DSH_HOME, 'profiles', 'comfyui-workbench', 'package.json')
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-manifest.dependencies = { ...(manifest.dependencies ?? {}), 'harness-comfyui': 'file:' + process.argv.at(-1) }
+const packageSpec = process.argv.at(-1)
+if (packageSpec === undefined) process.exit(3)
+manifest.dependencies = { ...(manifest.dependencies ?? {}), 'harness-comfyui': 'file:' + packageSpec }
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\\n')
+const profileDirectory = join(process.env.DSH_HOME, 'profiles', 'comfyui-workbench')
+const installedPackage = join(profileDirectory, 'node_modules', 'harness-comfyui')
+const unpackRoot = mkdtempSync(join(tmpdir(), 'harness-profile-package-'))
+try {
+  execFileSync('tar', ['-xzf', packageSpec, '-C', unpackRoot], { stdio: 'ignore' })
+  cpSync(join(unpackRoot, 'package'), installedPackage, { recursive: true })
+} finally {
+  rmSync(unpackRoot, { recursive: true, force: true })
+}
+const ordinaryDependency = join(installedPackage, 'node_modules', '@deepseek-ai', 'schemastery')
+mkdirSync(ordinaryDependency, { recursive: true })
+writeFileSync(join(ordinaryDependency, 'package.json'), JSON.stringify({ name: '@deepseek-ai/schemastery', version: '3.18.1', type: 'module' }) + '\\n')
+writeFileSync(join(ordinaryDependency, 'index.js'), 'export const resolvedFrom = "profile-node-modules"\\n')
+mkdirSync(join(installedPackage, 'lib'), { recursive: true })
+writeFileSync(join(installedPackage, 'lib/index.js'), 'import { resolvedFrom } from "@deepseek-ai/schemastery"\\nif (resolvedFrom !== "profile-node-modules") process.exit(4)\\n')
 `, 'utf8')
   await chmod(dshSource, 0o755)
   await writeFile(join(binDirectory, 'pnpm'), `#!/usr/bin/env node
@@ -113,6 +132,7 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     version: '0.1.0-test.1',
     engines: { node: '^22.19.0 || >=24.0.0' },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
+    dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.7',
       '@deepseek-ai/dsh-base': '0.1.0-rc.7',
@@ -329,8 +349,15 @@ describe('harness-comfyui install CLI', () => {
       previousRelease: null,
     })
     expect(state.releasePath).toBe(releaseRoot)
-    expect(JSON.parse(await readFile(join(releaseRoot, 'dsh-home/profiles/comfyui-workbench/package.json'), 'utf8')).dependencies['harness-comfyui'])
-      .toBe(`file:${join(releaseRoot, 'package')}`)
+    const profileDependency = JSON.parse(await readFile(join(releaseRoot, 'dsh-home/profiles/comfyui-workbench/package.json'), 'utf8')).dependencies['harness-comfyui']
+    expect(profileDependency).toBe(`file:${fixture.tarballPath}`)
+    expect(profileDependency).not.toBe(`file:${releaseRoot}/package`)
+    const installedPackageRoot = join(releaseRoot, 'dsh-home/profiles/comfyui-workbench/node_modules/harness-comfyui')
+    const installedPackageStats = await lstat(installedPackageRoot)
+    expect(installedPackageStats.isDirectory()).toBe(true)
+    expect(installedPackageStats.isSymbolicLink()).toBe(false)
+    const releaseLocalHost = await runProcess(process.execPath, [join(installedPackageRoot, 'lib/index.js')], fixture.env)
+    expect(releaseLocalHost.status, releaseLocalHost.stderr).toBe(0)
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
     const stableHelp = await runProcess(stableBin, ['--help'], fixture.env)
     expect(stableHelp.status, stableHelp.stderr).toBe(0)

@@ -1,162 +1,54 @@
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
 import {
-  artifactIdentity,
-  assertReleasePath,
-  readActivePointer,
-  readJson,
-  runCommand,
-  sameArtifact,
-  validateDeploymentApproval,
-  validateDeploymentInput,
-  writeActivePointer,
-  writeJson,
-} from './preflight.mjs';
+  ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
+  readActiveReleaseState,
+  validateActiveReleaseState,
+  writeActiveReleaseState,
+} from './lifecycle.mjs'
 
-function parseActivateArgs(argv) {
-  const options = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index];
-    if (argument !== '--input' && argument !== '--preflight' && argument !== '--output') {
-      throw new Error(`unknown option: ${argument}`);
-    }
-    const value = argv[index + 1];
-    if (!value || value.startsWith('--')) {
-      throw new Error(`${argument} requires a path`);
-    }
-    options[argument.slice(2)] = resolve(value);
-    index += 1;
+function requireCandidateShape(candidate) {
+  if (candidate === null || typeof candidate !== 'object' || Array.isArray(candidate)) {
+    throw new Error('candidate release must be an object')
   }
-  if (!options.input || !options.preflight || !options.output) {
-    throw new Error('usage: activate.mjs --input <json> --preflight <json> --output <json>');
+  const keys = Object.keys(candidate).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['activeVersion', 'releasePath'])) {
+    throw new Error('candidate release must contain only activeVersion and releasePath')
   }
-  return options;
+  return candidate
 }
 
-function failedEvidence(error, extra = {}) {
-  return {
-    stage: 'activate',
-    status: 'failed',
-    error: error instanceof Error ? error.message : String(error),
-    ...extra,
-  };
+function normalizeCandidate(installation, candidate) {
+  const value = requireCandidateShape(candidate)
+  return validateActiveReleaseState({
+    schemaVersion: ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
+    installationId: installation.installationId,
+    activeVersion: value.activeVersion,
+    releasePath: value.releasePath,
+    previousRelease: null,
+  }, installation.root)
 }
 
-async function loadActivationContext(inputPath, preflightPath) {
-  const input = await readJson(inputPath);
-  const preflight = await readJson(preflightPath);
-  if (preflight.stage !== 'preflight' || preflight.status !== 'passed') {
-    throw new Error('preflight evidence must have stage=preflight and status=passed');
+export async function activateProductRelease(installation, candidate) {
+  const previous = await readActiveReleaseState(installation.root, installation.installationId)
+  if (previous === undefined) throw new Error('cannot upgrade without an active release')
+  const normalizedCandidate = normalizeCandidate(installation, candidate)
+  if (normalizedCandidate.activeVersion === previous.activeVersion) {
+    throw new Error(`release ${normalizedCandidate.activeVersion} is already active`)
   }
-  const normalized = await validateDeploymentInput(input);
-  if (preflight.environment !== normalized.environment || !sameArtifact(preflight.artifact, normalized.artifact)) {
-    throw new Error('preflight evidence does not match deployment input');
+  const next = {
+    ...normalizedCandidate,
+    previousRelease: {
+      activeVersion: previous.activeVersion,
+      releasePath: previous.releasePath,
+    },
   }
-  if (preflight.installation.candidateRelease !== normalized.installation.candidateRelease
-    || preflight.installation.previousRelease !== normalized.installation.previousRelease
-    || preflight.installation.activeReleaseFile !== normalized.installation.activeReleaseFile) {
-    throw new Error('preflight installation paths do not match deployment input');
-  }
-  const deploymentApproval = validateDeploymentApproval(input.deploymentApproval, normalized.environment, normalized.artifact);
-  return { normalized, preflight, deploymentApproval };
+  await writeActiveReleaseState(installation.root, next)
+  return { previous, active: next }
 }
 
-export async function runActivate(inputPath, preflightPath) {
-  const { normalized, preflight, deploymentApproval } = await loadActivationContext(inputPath, preflightPath);
-  const { installation, commands, artifact, environment } = normalized;
-  const previousPointer = await readActivePointer(installation.activeReleaseFile);
-  assertReleasePath(previousPointer, installation.previousRelease);
-
-  const stopped = await runCommand(commands.stop, {
-    cwd: installation.previousRelease,
-    environment,
-    releasePath: installation.previousRelease,
-    stage: 'activate.stop',
-  });
-  if (stopped.code !== 0) {
-    return failedEvidence(new Error(`stop command exited with ${stopped.code}`), {
-      failedAt: 'stop',
-      activeRelease: previousPointer,
-      command: { code: stopped.code, signal: stopped.signal },
-    });
+export async function restoreProductRelease(installation, state) {
+  if (state === undefined) throw new Error('cannot restore an absent active release')
+  if (state.installationId !== installation.installationId) {
+    throw new Error('restored release installationId does not match installation')
   }
-
-  const candidatePointer = {
-    releasePath: installation.candidateRelease,
-    environment,
-    artifact: artifactIdentity(artifact),
-  };
-  try {
-    await writeActivePointer(installation.activeReleaseFile, candidatePointer);
-  } catch (error) {
-    return failedEvidence(error, { failedAt: 'switch', activeRelease: previousPointer });
-  }
-
-  const started = await runCommand(commands.start, {
-    cwd: installation.candidateRelease,
-    environment,
-    releasePath: installation.candidateRelease,
-    stage: 'activate.start',
-  });
-  if (started.code !== 0) {
-    let rollbackError = null;
-    let previousStart = null;
-    try {
-      await writeActivePointer(installation.activeReleaseFile, previousPointer);
-      previousStart = await runCommand(commands.start, {
-        cwd: installation.previousRelease,
-        environment,
-        releasePath: installation.previousRelease,
-        stage: 'activate.rollback-start',
-      });
-      if (previousStart.code !== 0) {
-        rollbackError = `previous release start command exited with ${previousStart.code}`;
-      }
-    } catch (error) {
-      rollbackError = error.message;
-    }
-    return failedEvidence(new Error(`start command exited with ${started.code}`), {
-      failedAt: 'start',
-      activeRelease: await readActivePointer(installation.activeReleaseFile),
-      command: { code: started.code, signal: started.signal },
-      rollback: {
-        status: rollbackError ? 'failed' : 'passed',
-        error: rollbackError,
-        previousStart: previousStart ? { code: previousStart.code, signal: previousStart.signal } : null,
-      },
-    });
-  }
-
-  return {
-    stage: 'activate',
-    status: 'passed',
-    environment,
-    artifact: artifact,
-    deploymentApproval,
-    previousRelease: previousPointer,
-    activeRelease: candidatePointer,
-    preflightArtifact: preflight.artifact,
-  };
-}
-
-async function main() {
-  const options = parseActivateArgs(process.argv.slice(2));
-  let evidence;
-  try {
-    evidence = await runActivate(options.input, options.preflight);
-  } catch (error) {
-    evidence = failedEvidence(error);
-  }
-  await writeJson(options.output, evidence);
-  process.stdout.write(`${JSON.stringify(evidence)}\n`);
-  if (evidence.status !== 'passed') {
-    process.exitCode = 1;
-  }
-}
-
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    process.stderr.write(`deployment activate failed: ${error.message}\n`);
-    process.exitCode = 1;
-  });
+  return writeActiveReleaseState(installation.root, state)
 }

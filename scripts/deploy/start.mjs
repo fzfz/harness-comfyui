@@ -22,7 +22,7 @@ import {
 
 export async function runProductStart(input, operation = {}) {
   const installation = validateInstallation(input)
-  const active = await readActiveRelease(installation.root)
+  const active = await readActiveRelease(installation.root, installation.installationId)
   const statePath = processStatePath(installation.root)
   await assertNoRunningHost(statePath, installation, active.activeVersion)
   if (await probePort(installation.host, installation.port)) {

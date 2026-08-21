@@ -13,9 +13,22 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
-import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { delimiter, isAbsolute, join, resolve } from 'node:path'
 
+import { validateInstallation } from './contracts.mjs'
 import { runProductPreflight } from './preflight.mjs'
+import {
+  ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
+  assertProcessStateOwnership,
+  processIdentityMismatch,
+  processStatePath,
+  readActiveReleaseState,
+  readProcessIdentity,
+  readProcessState,
+  sameProcessIdentity,
+  writeActiveReleaseState,
+} from './lifecycle.mjs'
 
 const PRODUCT_RUNTIME_DEPENDENCIES = Object.freeze([
   '@deepseek-ai/dsh',
@@ -196,7 +209,7 @@ async function assertDshExecutable(path) {
   }
 }
 
-async function materializeProfile(releaseRoot, installation, pnpmExecutable) {
+async function materializeProfile(releaseRoot, installation, pnpmExecutable, packageSpec) {
   const packageRoot = join(releaseRoot, 'package')
   const dshHome = join(releaseRoot, 'dsh-home')
   const dshExecutable = join(releaseRoot, 'harness-runtime/node_modules/.bin/dsh')
@@ -206,25 +219,13 @@ async function materializeProfile(releaseRoot, installation, pnpmExecutable) {
     materializeScript,
     '--configuration', installation.configurationProfile,
     '--dsh-home', dshHome,
-    '--package-spec', packageRoot,
+    '--package-spec', packageSpec,
     '--dsh-executable', dshExecutable,
     '--pnpm-executable', pnpmExecutable,
   ], { cwd: packageRoot, env: { ...process.env, DSH_HOME: dshHome } })
   if (result.code !== 0) {
     const detail = result.stderr.trim() || result.stdout.trim()
     throw new Error(`profile materialize failed${detail ? `: ${detail}` : ` with exit code ${result.code}`}`)
-  }
-}
-
-async function writeAtomicJson(path, value) {
-  await mkdir(dirname(path), { recursive: true })
-  const temporaryPath = `${path}.${randomUUID()}.next`
-  try {
-    await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
-    await rename(temporaryPath, path)
-  } catch (error) {
-    await rm(temporaryPath, { force: true })
-    throw error
   }
 }
 
@@ -238,43 +239,106 @@ async function assertNoActiveRelease(statePath) {
   throw new Error('installation already has an active release; use upgrade (an active release already exists)')
 }
 
-async function writeStableBin(root) {
+async function stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable) {
+  const { installation, artifact } = preflight
+  const root = installation.root
+  const releaseRoot = resolve(root, 'releases', artifact.version)
+  await validateTarball(artifactPath)
+  await ensureAbsent(releaseRoot, `release ${artifact.version}`)
+  const releasesRoot = resolve(root, 'releases')
+  await mkdir(releasesRoot, { recursive: true })
+  const stagingRoot = await mkdtemp(join(releasesRoot, `.${artifact.version}.incoming-`))
+  try {
+    const extractedPackageRoot = join(stagingRoot, 'package')
+    const extraction = await runExternal('tar', ['-xzf', artifactPath, '-C', stagingRoot])
+    if (extraction.code !== 0) {
+      throw new Error(`tarball extraction failed: ${extraction.stderr.trim() || `exit code ${extraction.code}`}`)
+    }
+    const packedManifest = await readPackageManifest(extractedPackageRoot)
+    if (packedManifest.version !== artifact.version) throw new Error('artifact package version changed during install')
+    await validateRuntimeManifest(extractedPackageRoot, packedManifest)
+    const runtimeRoot = join(stagingRoot, 'harness-runtime')
+    await copyRuntimeFiles(extractedPackageRoot, runtimeRoot)
+    await runPnpmInstall(runtimeRoot, pnpmExecutable)
+    await rename(stagingRoot, releaseRoot)
+    await materializeProfile(releaseRoot, installation, pnpmExecutable, resolve(artifactPath))
+    return { releaseRoot, artifact, installation }
+  } catch (error) {
+    await rm(stagingRoot, { recursive: true, force: true })
+    await rm(releaseRoot, { recursive: true, force: true })
+    throw error
+  }
+}
+
+async function hasVerifiedRunningHost(installation) {
+  const active = await readActiveReleaseState(installation.root, installation.installationId)
+  if (active === undefined) return false
+  const state = await readProcessState(processStatePath(installation.root))
+  if (state === null) return false
+  assertProcessStateOwnership(state, installation, active.activeVersion)
+  const identity = await readProcessIdentity(state.pid)
+  if (identity === null) return false
+  if (!sameProcessIdentity(state.processIdentity, identity)) {
+    throw new Error(processIdentityMismatch(state, identity))
+  }
+  return true
+}
+
+export async function stageProductRelease(input, artifactPath) {
+  const installation = validateInstallation(input)
+  const allowKnownPortUse = await hasVerifiedRunningHost(installation)
+  const preflight = await runProductPreflight(installation, artifactPath, { allowKnownPortUse })
+  const pnpmExecutable = await resolveExecutable(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
+  const staged = await stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable)
+  return { ...staged, preflight }
+}
+
+async function writeStableBin(root, parserReleaseRoot, installationId) {
   const binDirectory = join(root, 'bin')
   const stablePath = join(binDirectory, 'harness-comfyui')
   await mkdir(binDirectory, { recursive: true })
   const source = `#!/usr/bin/env node
-import { readFileSync } from 'node:fs'
 import { spawn } from 'node:child_process'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)))
-const state = JSON.parse(readFileSync(join(root, 'state/active-release.json'), 'utf8'))
-if (typeof state.releasePath !== 'string' || state.releasePath.length === 0) throw new Error('active release state has no releasePath')
-const child = spawn(process.execPath, [join(state.releasePath, 'package/scripts/deploy/cli.mjs'), ...process.argv.slice(2)], { stdio: 'inherit', shell: false })
-const signalExitCodes = { SIGINT: 130, SIGTERM: 143 }
-let spawnFailed = false
-const forwardSignal = signal => {
-  if (child.exitCode !== null || child.signalCode !== null) return
-  try {
-    child.kill(signal)
-  } catch (error) {
+const root = ${JSON.stringify(root)}
+let releaseCliPath
+try {
+  const lifecycle = await import(${JSON.stringify(pathToFileURL(join(parserReleaseRoot, 'package/scripts/deploy/lifecycle.mjs')).href)})
+  const state = await lifecycle.readActiveReleaseState(root, ${JSON.stringify(installationId)})
+  if (state === undefined) throw new Error('active release state does not exist')
+  releaseCliPath = join(state.releasePath, 'package/scripts/deploy/cli.mjs')
+} catch (error) {
+  process.stderr.write('harness-comfyui: active release dispatch failed: ' + error.message + '\\n')
+}
+if (releaseCliPath === undefined) {
+  process.exitCode = 1
+} else {
+  const child = spawn(process.execPath, [releaseCliPath, ...process.argv.slice(2)], { stdio: 'inherit', shell: false })
+  const signalExitCodes = { SIGINT: 130, SIGTERM: 143 }
+  let spawnFailed = false
+  const forwardSignal = signal => {
+    if (child.exitCode !== null || child.signalCode !== null) return
+    try {
+      child.kill(signal)
+    } catch (error) {
+      process.stderr.write('harness-comfyui: ' + error.message + '\\n')
+      process.exitCode = 1
+    }
+  }
+  process.on('SIGINT', () => forwardSignal('SIGINT'))
+  process.on('SIGTERM', () => forwardSignal('SIGTERM'))
+  child.once('error', error => {
+    spawnFailed = true
     process.stderr.write('harness-comfyui: ' + error.message + '\\n')
     process.exitCode = 1
-  }
+  })
+  child.once('close', (code, signal) => {
+    process.removeAllListeners('SIGINT')
+    process.removeAllListeners('SIGTERM')
+    process.exitCode = spawnFailed ? 1 : (code ?? (signal ? signalExitCodes[signal] ?? 1 : 0))
+  })
 }
-process.on('SIGINT', () => forwardSignal('SIGINT'))
-process.on('SIGTERM', () => forwardSignal('SIGTERM'))
-child.once('error', error => {
-  spawnFailed = true
-  process.stderr.write('harness-comfyui: ' + error.message + '\\n')
-  process.exitCode = 1
-})
-child.once('close', (code, signal) => {
-  process.removeAllListeners('SIGINT')
-  process.removeAllListeners('SIGTERM')
-  process.exitCode = spawnFailed ? 1 : (code ?? (signal ? signalExitCodes[signal] ?? 1 : 0))
-})
 `
   const temporaryPath = `${stablePath}.${randomUUID()}.next`
   try {
@@ -297,38 +361,21 @@ export async function runProductInstall(input, artifactPath) {
   const pnpmExecutable = await resolveExecutable(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
 
   await assertNoActiveRelease(statePath)
-  await validateTarball(artifactPath)
-  await ensureAbsent(releaseRoot, `release ${artifact.version}`)
-  const releasesRoot = resolve(root, 'releases')
-  await mkdir(releasesRoot, { recursive: true })
-  const stagingRoot = await mkdtemp(join(releasesRoot, `.${artifact.version}.incoming-`))
+  await stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable)
   let releaseCreated = false
   let stateCommitted = false
   let stableBinPath
   try {
-    const extractedPackageRoot = join(stagingRoot, 'package')
-    const extraction = await runExternal('tar', ['-xzf', artifactPath, '-C', stagingRoot])
-    if (extraction.code !== 0) {
-      throw new Error(`tarball extraction failed: ${extraction.stderr.trim() || `exit code ${extraction.code}`}`)
-    }
-    const packedManifest = await readPackageManifest(extractedPackageRoot)
-    if (packedManifest.version !== artifact.version) throw new Error('artifact package version changed during install')
-    await validateRuntimeManifest(extractedPackageRoot, packedManifest)
-    const runtimeRoot = join(stagingRoot, 'harness-runtime')
-    await copyRuntimeFiles(extractedPackageRoot, runtimeRoot)
-    await runPnpmInstall(runtimeRoot, pnpmExecutable)
-    await rename(stagingRoot, releaseRoot)
     releaseCreated = true
-    await materializeProfile(releaseRoot, installation, pnpmExecutable)
     const state = {
-      schemaVersion: 1,
+      schemaVersion: ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
       installationId: installation.installationId,
       activeVersion: artifact.version,
       previousRelease: null,
       releasePath: releaseRoot,
     }
-    stableBinPath = await writeStableBin(root)
-    await writeAtomicJson(statePath, state)
+    stableBinPath = await writeStableBin(root, releaseRoot, installation.installationId)
+    await writeActiveReleaseState(root, state)
     stateCommitted = true
     return {
       stage: 'install',
@@ -344,8 +391,6 @@ export async function runProductInstall(input, artifactPath) {
     }
     if (releaseCreated && !stateCommitted) {
       await rm(releaseRoot, { recursive: true, force: true })
-    } else if (!releaseCreated) {
-      await rm(stagingRoot, { recursive: true, force: true })
     }
     throw error
   }
