@@ -27,5 +27,11 @@ jobs:
         run: pnpm run security:build-scripts
       - name: Frozen install
         run: pnpm install --frozen-lockfile
-      - name: Deploy lifecycle tests
+      - name: Build product
+        run: pnpm run build
+      - name: Pack shared .release/quality/artifact.json
+        run: pnpm run package:pack
+      - name: Validate shared .release/quality/artifact.json
+        run: pnpm run package:validate
+      - name: Deploy lifecycle tests using .release/quality/artifact.json
         run: pnpm test:deploy
