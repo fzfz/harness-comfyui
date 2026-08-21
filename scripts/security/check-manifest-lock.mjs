@@ -310,14 +310,10 @@ export function validateDependencyClosure(root = repositoryRoot) {
   const rootPolicy = readWorkspacePolicy(resolvedRoot)
   const runtimePolicy = readWorkspacePolicy(resolvedRoot, resolve(resolvedRoot, runtimeDirectory))
   try {
-    if (rootPolicy.strictDepBuilds !== true || runtimePolicy.strictDepBuilds !== true) {
-      throw new Error('strictDepBuilds must be true')
-    }
-    deepStrictEqual(runtimePolicy.strictDepBuilds, rootPolicy.strictDepBuilds)
-    deepStrictEqual(runtimePolicy.allowBuilds, rootPolicy.allowBuilds)
-    deepStrictEqual(runtimePolicy.overrides, rootPolicy.overrides)
+    deepStrictEqual(rootPolicy, RUNTIME_DEPENDENCY_POLICY.workspace)
+    deepStrictEqual(runtimePolicy, RUNTIME_DEPENDENCY_POLICY.workspace)
   } catch {
-    throw new Error('root and runtime workspace strictDepBuilds/allowBuilds/overrides must be identical and strictDepBuilds must be true')
+    throw new Error('root and runtime workspace strictDepBuilds/allowBuilds/overrides must match the runtime contract exactly')
   }
   readStrictDependencyBuilds(resolvedRoot, resolvedRoot)
   readStrictDependencyBuilds(resolvedRoot, resolve(resolvedRoot, runtimeDirectory))

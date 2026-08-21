@@ -3,11 +3,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { deepStrictEqual } from 'node:assert/strict'
 
 import {
   RUNTIME_DEPENDENCY_POLICY,
   readPnpmPackageManagerVersion,
 } from '../deploy/runtime-contract.mjs'
+import { readWorkspacePolicy } from '../security/check-manifest-lock.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -36,6 +38,13 @@ async function buildRuntimeFiles(root) {
   const rootManifest = await readJson(resolve(resolvedRoot, 'package.json'), 'package.json')
   const packageManagerVersion = readPnpmPackageManagerVersion(rootManifest, 'package.json')
   const dependencies = readRuntimeDependencies(rootManifest)
+  let rootPolicy
+  try {
+    rootPolicy = readWorkspacePolicy(resolvedRoot)
+    deepStrictEqual(rootPolicy, RUNTIME_DEPENDENCY_POLICY.workspace)
+  } catch (error) {
+    throw new Error(`pnpm-workspace.yaml policy differs from the runtime contract: ${error instanceof Error ? error.message : String(error)}`)
+  }
   let workspace
   try {
     workspace = await readFile(resolve(resolvedRoot, 'pnpm-workspace.yaml'), 'utf8')

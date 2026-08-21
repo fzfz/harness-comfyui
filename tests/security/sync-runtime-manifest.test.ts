@@ -82,4 +82,17 @@ describe('release:sync-runtime-manifest', () => {
     await expect(syncRuntimeManifest(fixture)).rejects.toThrow(/packageManager.*exact/i)
     await expect(readFile(join(fixture, 'deployment/runtime/package.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
+
+  it('rejects a root workspace policy drift before copying it into the runtime workspace', async () => {
+    const fixture = await createFixture()
+    const workspacePath = join(fixture, 'pnpm-workspace.yaml')
+    const workspace = await readFile(workspacePath, 'utf8')
+    await writeFile(workspacePath, workspace.replace(
+      "  'koffi@3.1.5': true\n",
+      "  'koffi@3.1.4': true\n",
+    ))
+
+    await expect(syncRuntimeManifest(fixture)).rejects.toThrow(/runtime contract|allowBuilds|policy/i)
+    await expect(readFile(join(fixture, 'deployment/runtime/package.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
 })

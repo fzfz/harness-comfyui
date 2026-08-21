@@ -1,8 +1,4 @@
-type RuntimeManifestDependencies = {
-  '@deepseek-ai/dsh': string
-  '@deepseek-ai/dsh-base': string
-  '@deepseek-ai/dsh-web-app': string
-}
+type RuntimeManifestDependencies = Readonly<Record<string, string>>
 
 export type RuntimeManifestResult = {
   directory: string

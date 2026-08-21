@@ -51,6 +51,13 @@ async function createFixture(): Promise<string> {
   return fixture
 }
 
+async function rewriteBothWorkspaces(fixture: string, edit: (workspace: string) => string): Promise<void> {
+  for (const relativePath of ['pnpm-workspace.yaml', 'deployment/runtime/pnpm-workspace.yaml']) {
+    const workspacePath = join(fixture, relativePath)
+    await writeFile(workspacePath, edit(await readFile(workspacePath, 'utf8')))
+  }
+}
+
 describe('check:manifest-lock', () => {
   it('passes the current manifest and lockfile without changing either file', async () => {
     const fixture = await createFixture()
@@ -166,5 +173,32 @@ describe('check:manifest-lock', () => {
 
     expect(result.code).not.toBe(0)
     expect(`${result.stdout}\n${result.stderr}`).toMatch(/strictDepBuilds|workspace|runtime/i)
+  })
+
+  it.each([
+    ['both workspaces add an allowBuilds decision', (workspace: string) => workspace.replace(
+      'allowBuilds:\n',
+      "allowBuilds:\n  'unreviewed-package@1.0.0': true\n",
+    ), 'allowBuilds'],
+    ['both workspaces add an override', (workspace: string) => workspace.replace(
+      'overrides:\n',
+      "overrides:\n  'unreviewed-package@1.0.0': '1.0.0'\n",
+    ), 'overrides'],
+    ['both workspaces replace an override value', (workspace: string) => workspace.replace(
+      "  'nanoid@>=3.0.0 <3.3.18': '3.3.18'\n",
+      "  'nanoid@>=3.0.0 <3.3.18': '3.3.17'\n",
+    ), 'overrides'],
+    ['both workspaces delete an override', (workspace: string) => workspace.replace(
+      "  'nanoid@>=3.0.0 <3.3.18': '3.3.18'\n",
+      '',
+    ), 'overrides'],
+  ])('fails when %s despite root/runtime equality', async (_label, edit, field) => {
+    const fixture = await createFixture()
+    await rewriteBothWorkspaces(fixture, edit)
+
+    const result = await runScript(['--root', fixture])
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(new RegExp(`runtime contract.*${field}|${field}.*runtime contract`, 'i'))
   })
 })
