@@ -65,7 +65,32 @@ async function createFixture() {
     name: 'harness-comfyui',
     version: '0.1.0-test.1',
     engines: { node: '^22.19.0 || >=24.0.0' },
+    devDependencies: {
+      '@deepseek-ai/dsh': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+    },
   })}\n`, 'utf8')
+  await mkdir(join(packageRoot, 'deployment/runtime'), { recursive: true })
+  await writeFile(join(packageRoot, 'deployment/runtime/package.json'), `${JSON.stringify({
+    name: 'harness-comfyui-runtime',
+    private: true,
+    dependencies: {
+      '@deepseek-ai/dsh': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+    },
+  }, null, 2)}\n`, 'utf8')
+  await writeFile(join(packageRoot, 'deployment/runtime/pnpm-lock.yaml'), await readFile(join(repositoryRoot, 'deployment/runtime/pnpm-lock.yaml'), 'utf8'), 'utf8')
+  await writeFile(join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml'), await readFile(join(repositoryRoot, 'deployment/runtime/pnpm-workspace.yaml'), 'utf8'), 'utf8')
+  await mkdir(join(packageRoot, 'config/profiles'), { recursive: true })
+  for (const relativePath of [
+    'config/base.json',
+    'config/environment-overrides.json',
+    'config/profiles/production.json',
+  ]) {
+    await writeFile(join(packageRoot, relativePath), await readFile(join(repositoryRoot, relativePath), 'utf8'), 'utf8')
+  }
   const tar = await runProcess('tar', ['-czf', tarballPath, '-C', root, 'package'])
   if (tar.status !== 0) throw new Error(`fixture tarball failed: ${tar.stderr}`)
 
@@ -106,7 +131,16 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
   }
   await writeFile(inputPath, `${JSON.stringify(installation, null, 2)}\n`, 'utf8')
 
-  return { root, installation, inputPath, tarballPath, discoveryLog, catalogCliPath, sourceCliPath }
+  return { root, packageRoot, installation, inputPath, tarballPath, discoveryLog, catalogCliPath, sourceCliPath }
+}
+
+async function repackFixture(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  edit: (packageRoot: string) => Promise<void>,
+) {
+  await edit(fixture.packageRoot)
+  const tar = await runProcess('tar', ['-czf', fixture.tarballPath, '-C', fixture.root, 'package'])
+  if (tar.status !== 0) throw new Error(`fixture tarball failed: ${tar.stderr}`)
 }
 
 async function rewriteInstallation(
@@ -118,13 +152,16 @@ async function rewriteInstallation(
   await writeFile(fixture.inputPath, `${JSON.stringify(installation, null, 2)}\n`, 'utf8')
 }
 
-async function runPreflight(fixture: Awaited<ReturnType<typeof createFixture>>) {
+async function runPreflight(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  options: Parameters<typeof runProcess>[2] = {},
+) {
   return runProcess(process.execPath, [
     cliScript,
     'preflight',
     '--installation', fixture.inputPath,
     '--artifact', fixture.tarballPath,
-  ])
+  ], options)
 }
 
 afterEach(async () => {
@@ -154,6 +191,96 @@ describe('harness-comfyui preflight CLI', () => {
       },
     })
     expect((await readFile(fixture.discoveryLog, 'utf8')).trim().split('\n')).toEqual(['catalog', 'source'])
+  })
+
+  it('rejects a runtime dependency version drift before probing the installation', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      const manifestPath = join(packageRoot, 'deployment/runtime/package.json')
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as { dependencies: Record<string, string> }
+      manifest.dependencies['@deepseek-ai/dsh'] = '0.1.0-rc.6'
+      await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('runtime dependency @deepseek-ai/dsh')
+    expect(result.stderr).toContain('0.1.0-rc.7')
+    expect(result.stderr).not.toContain('discovery CLI')
+  })
+
+  it('rejects a tarball that omits a frozen runtime entry', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      await rm(join(packageRoot, 'deployment/runtime/pnpm-lock.yaml'))
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('deployment/runtime/pnpm-lock.yaml')
+  })
+
+  it('rejects a tarball that omits the selected Configuration Profile', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      await rm(join(packageRoot, 'config/profiles/production.json'))
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('production')
+    expect(result.stderr).toContain('config/profiles/production.json')
+  })
+
+  it('ignores ambient HARNESS_COMFYUI_* values and derives overrides only from installation.json', async () => {
+    const fixture = await createFixture()
+
+    const result = await runPreflight(fixture, {
+      env: {
+        ...process.env,
+        HARNESS_COMFYUI_SERVER_PORT: 'not-a-port',
+        HARNESS_COMFYUI_UNLISTED: 'must-be-ignored',
+      },
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+  })
+
+  it.each([
+    ['a malformed selected profile', async (packageRoot: string) => {
+      await writeFile(join(packageRoot, 'config/profiles/production.json'), '[not-an-object]\n', 'utf8')
+    }, 'production'],
+    ['an unknown selected profile property', async (packageRoot: string) => {
+      const profilePath = join(packageRoot, 'config/profiles/production.json')
+      const profile = JSON.parse(await readFile(profilePath, 'utf8')) as Record<string, unknown>
+      profile.unknownProfileField = true
+      await writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8')
+    }, 'unknown property'],
+    ['an invalid merged profile value', async (packageRoot: string) => {
+      const profilePath = join(packageRoot, 'config/profiles/production.json')
+      const profile = JSON.parse(await readFile(profilePath, 'utf8')) as { source: Record<string, unknown> }
+      profile.source.contractId = 'wrong-contract'
+      await writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8')
+    }, 'contractId'],
+    ['a malformed environment override map', async (packageRoot: string) => {
+      const overridePath = join(packageRoot, 'config/environment-overrides.json')
+      const overrides = JSON.parse(await readFile(overridePath, 'utf8')) as Record<string, unknown>
+      overrides.HARNESS_COMFYUI_SERVER_PORT = 4173
+      await writeFile(overridePath, `${JSON.stringify(overrides, null, 2)}\n`, 'utf8')
+    }, 'environment-overrides.json'],
+  ])('rejects %s with profile or tarball entry evidence', async (_label, edit, expectedMessage) => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, edit)
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(expectedMessage)
+    expect(result.stderr).toContain('production')
   })
 
   it('exposes exactly ten commands and rejects unknown and unimplemented commands', async () => {

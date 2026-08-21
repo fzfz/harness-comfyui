@@ -1,4 +1,5 @@
 export { apply, Config, inject, name } from './host/plugin.ts'
+export { loadProfile } from './config/load-profile.ts'
 export { PluginStatusService } from './service/plugin-status.ts'
 export type { Config as HostPluginConfig } from './host/plugin.ts'
 export type { PluginStatus } from './contract/plugin-status.ts'
