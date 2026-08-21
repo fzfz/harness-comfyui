@@ -228,18 +228,14 @@ async function writeAtomicJson(path, value) {
   }
 }
 
-async function readPreviousRelease(statePath) {
+async function assertNoActiveRelease(statePath) {
   try {
     await lstat(statePath)
   } catch (error) {
-    if (error?.code === 'ENOENT') return null
+    if (error?.code === 'ENOENT') return
     throw error
   }
-  const state = JSON.parse(await readFile(statePath, 'utf8'))
-  if (state?.releasePath !== undefined && typeof state.releasePath !== 'string') {
-    throw new Error('state/active-release.json.releasePath must be a string')
-  }
-  return state?.releasePath ?? null
+  throw new Error('installation already has an active release; use upgrade (an active release already exists)')
 }
 
 async function writeStableBin(root) {
@@ -260,9 +256,15 @@ child.once('error', error => { process.stderr.write('harness-comfyui: ' + error.
 child.once('close', (code, signal) => { process.exitCode = code ?? (signal ? 1 : 0) })
 `
   const temporaryPath = `${stablePath}.${randomUUID()}.next`
-  await writeFile(temporaryPath, source, { encoding: 'utf8', mode: 0o755, flag: 'wx' })
-  await chmod(temporaryPath, 0o755)
-  await rename(temporaryPath, stablePath)
+  try {
+    await writeFile(temporaryPath, source, { encoding: 'utf8', mode: 0o755, flag: 'wx' })
+    await chmod(temporaryPath, 0o755)
+    await rename(temporaryPath, stablePath)
+  } catch (error) {
+    await rm(temporaryPath, { force: true })
+    throw error
+  }
+  return stablePath
 }
 
 export async function runProductInstall(input, artifactPath) {
@@ -273,14 +275,15 @@ export async function runProductInstall(input, artifactPath) {
   const statePath = resolve(root, 'state/active-release.json')
   const pnpmExecutable = await resolveExecutable(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
 
+  await assertNoActiveRelease(statePath)
   await validateTarball(artifactPath)
   await ensureAbsent(releaseRoot, `release ${artifact.version}`)
-  const previousRelease = await readPreviousRelease(statePath)
   const releasesRoot = resolve(root, 'releases')
   await mkdir(releasesRoot, { recursive: true })
   const stagingRoot = await mkdtemp(join(releasesRoot, `.${artifact.version}.incoming-`))
   let releaseCreated = false
   let stateCommitted = false
+  let stableBinPath
   try {
     const extractedPackageRoot = join(stagingRoot, 'package')
     const extraction = await runExternal('tar', ['-xzf', artifactPath, '-C', stagingRoot])
@@ -300,10 +303,10 @@ export async function runProductInstall(input, artifactPath) {
       schemaVersion: 1,
       installationId: installation.installationId,
       activeVersion: artifact.version,
-      previousRelease,
+      previousRelease: null,
       releasePath: releaseRoot,
     }
-    await writeStableBin(root)
+    stableBinPath = await writeStableBin(root)
     await writeAtomicJson(statePath, state)
     stateCommitted = true
     return {
@@ -312,9 +315,12 @@ export async function runProductInstall(input, artifactPath) {
       installation,
       artifact,
       runtime: { node: process.versions.node, pnpm: PRODUCT_PNPM_VERSION },
-      release: { version: artifact.version, path: releaseRoot, previousRelease },
+      release: { version: artifact.version, path: releaseRoot, previousRelease: null },
     }
   } catch (error) {
+    if (stableBinPath !== undefined && !stateCommitted) {
+      await rm(stableBinPath, { force: true })
+    }
     if (releaseCreated && !stateCommitted) {
       await rm(releaseRoot, { recursive: true, force: true })
     } else if (!releaseCreated) {

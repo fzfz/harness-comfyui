@@ -291,6 +291,30 @@ describe('harness-comfyui install CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'releases/0.1.0-test.1'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
+  it('rejects install when an active release already exists and preserves it', async () => {
+    const fixture = await createFixture()
+    expect((await runInstall(fixture)).status).toBe(0)
+    const statePath = join(fixture.installation.root, 'state/active-release.json')
+    const stablePath = join(fixture.installation.root, 'bin/harness-comfyui')
+    const beforeState = await readFile(statePath, 'utf8')
+    const beforeStable = await readFile(stablePath, 'utf8')
+    const packageManifestPath = join(fixture.root, 'package/package.json')
+    const packageManifest = JSON.parse(await readFile(packageManifestPath, 'utf8'))
+    packageManifest.version = '0.1.0-test.2'
+    await writeFile(packageManifestPath, `${JSON.stringify(packageManifest, null, 2)}\n`, 'utf8')
+    const secondArtifact = join(fixture.root, 'harness-comfyui-0.1.0-test.2.tgz')
+    const tar = await runProcess('tar', ['-czf', secondArtifact, '-C', fixture.root, 'package'], process.env)
+    expect(tar.status).toBe(0)
+
+    const result = await runInstall(fixture, secondArtifact)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/upgrade/i)
+    expect(await readFile(statePath, 'utf8')).toBe(beforeState)
+    expect(await readFile(stablePath, 'utf8')).toBe(beforeStable)
+    await expect(lstat(join(fixture.installation.root, 'releases/0.1.0-test.2'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it.skipIf(process.env.HARNESS_REAL_ARTIFACT === undefined)('installs the current packed artifact with its frozen runtime', async () => {
     const fixture = await createFixture()
     const artifactPath = process.env.HARNESS_REAL_ARTIFACT
