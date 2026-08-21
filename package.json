@@ -8,6 +8,7 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "check:harness-boundary": "node scripts/security/check-harness-boundary.mjs",
     "check:manifest-lock": "node scripts/security/check-manifest-lock.mjs",
     "security:advisories": "node scripts/security/audit-lockfile.mjs",
     "security:build-scripts": "node scripts/security/check-build-scripts.mjs",
@@ -24,7 +25,7 @@
     "build": "tsc -b tsconfig.host.json && tsdown --config tsdown.config.ts && node scripts/build/bundle-generated-typert.ts && node scripts/build/tsdown-client-bundle.ts",
     "package:pack": "node scripts/release/pack.mjs",
     "package:validate": "node scripts/release/validate-package.mjs && pnpm run test:build-artifacts && pnpm run test:packed-runtime",
-    "quality": "pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke",
+    "quality": "pnpm run check:harness-boundary && pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke",
     "profile:materialize:development": "node scripts/profile/materialize.mjs --configuration development --dsh-home .local/dsh/development --package-spec .",
     "dev:start": "node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173",
     "release:dry-run": "node scripts/release/dry-run.mjs",
