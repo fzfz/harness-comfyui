@@ -54,14 +54,31 @@ function operationsPath(root) {
 }
 
 async function readActiveVersion(root) {
+  const path = resolve(root, 'state/active-release.json')
+  let contents
   try {
-    const state = JSON.parse(await readFile(resolve(root, 'state/active-release.json'), 'utf8'))
-    if (!isRecord(state) || typeof state.activeVersion !== 'string' || state.activeVersion.length === 0) return undefined
-    return state.activeVersion
+    contents = await readFile(path, 'utf8')
   } catch (error) {
     if (error?.code === 'ENOENT') return undefined
-    return undefined
+    throw new Error(`cannot read state/active-release.json: ${error instanceof Error ? error.message : String(error)}`)
   }
+  let state
+  try {
+    state = JSON.parse(contents)
+  } catch (error) {
+    throw new Error(`cannot read state/active-release.json: malformed JSON: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (!isRecord(state)) throw new Error('state/active-release.json must be an object')
+  if (state.schemaVersion !== 1) throw new Error('state/active-release.json.schemaVersion must be 1')
+  requireNonEmptyString(state.installationId, 'state/active-release.json.installationId')
+  const activeVersion = requireNonEmptyString(state.activeVersion, 'state/active-release.json.activeVersion')
+  const releasePath = requireNonEmptyString(state.releasePath, 'state/active-release.json.releasePath')
+  if (!isAbsolute(releasePath)) throw new Error('state/active-release.json.releasePath must be absolute')
+  const expectedReleasePath = resolve(root, 'releases', activeVersion)
+  if (resolve(releasePath) !== expectedReleasePath) {
+    throw new Error('state/active-release.json.releasePath does not match activeVersion')
+  }
+  return activeVersion
 }
 
 async function appendOperationEvent(event) {
@@ -73,16 +90,27 @@ async function appendOperationEvent(event) {
 export async function beginProductOperation(installation, command) {
   const operationId = randomUUID()
   const startedAt = new Date().toISOString()
-  const activeVersion = await readActiveVersion(installation.root)
-  const event = {
+  const baseEvent = {
     path: operationsPath(installation.root),
     schemaVersion: OPERATION_SCHEMA_VERSION,
     operationId,
     command,
-    status: 'started',
     startedAt,
     installationId: installation.installationId,
   }
+  let activeVersion
+  try {
+    activeVersion = await readActiveVersion(installation.root)
+  } catch (error) {
+    await appendOperationEvent({ ...baseEvent, status: 'started' })
+    await appendOperationEvent({
+      ...baseEvent,
+      status: 'failed',
+      finishedAt: new Date().toISOString(),
+    })
+    throw error
+  }
+  const event = { ...baseEvent, status: 'started' }
   if (activeVersion !== undefined) event.activeVersion = activeVersion
   await appendOperationEvent(event)
   return { operationId, command, startedAt, installationId: installation.installationId }

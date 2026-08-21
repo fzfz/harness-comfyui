@@ -427,4 +427,34 @@ describe('installed logs CLI', () => {
       expect(result.status).not.toBe(0)
     }
   })
+
+  it('fails on malformed active-release state and records only a failed operation terminal', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const operationsPath = join(fixture.installation.root, 'state/operations.jsonl')
+    const before = (await readFile(operationsPath, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
+    const activeStatePath = join(fixture.installation.root, 'state/active-release.json')
+    const activeState = JSON.parse(await readFile(activeStatePath, 'utf8'))
+    await writeFile(activeStatePath, `${JSON.stringify({ ...activeState, activeVersion: '' })}\n`, 'utf8')
+
+    const result = await runProcess(stableBin, [
+      'logs', '--installation', fixture.inputPath, '--source', 'operations', '--lines', '5',
+    ], fixture.env)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/active-release|activeVersion/u)
+    const after = (await readFile(operationsPath, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
+    const events = after.slice(before.length)
+    expect(events).toHaveLength(2)
+    expect(events[0]).toMatchObject({ command: 'logs', status: 'started', installationId: 'fixture-logs' })
+    expect(events[1]).toMatchObject({
+      command: 'logs',
+      status: 'failed',
+      installationId: 'fixture-logs',
+      operationId: events[0].operationId,
+    })
+    expect(events.some(event => event.status === 'passed')).toBe(false)
+  })
 })
