@@ -79,10 +79,8 @@ describe('workflow orchestration contracts', () => {
     expect(source).not.toMatch(/artifactPath|artifactSha256|artifactVersion|artifactCommit|targetEnvironment|releaseSmokePassed/u);
     expect(source).not.toMatch(/deploy:(?:activate|preflight|health|rollback)|production-binding|production-write|external target|ssh|curl|https?:\/\//iu);
     expectPreinstallGates(source);
-    expect(commandIndex(source, 'pnpm quality')).toBeGreaterThan(commandIndex(source, 'pnpm install --frozen-lockfile'));
-    expect(commandIndex(source, 'pnpm test:deploy')).toBeGreaterThan(commandIndex(source, 'pnpm quality'));
-    expect(count(source, 'pnpm quality')).toBe(1);
+    expect(commandIndex(source, 'pnpm test:deploy')).toBeGreaterThan(commandIndex(source, 'pnpm install --frozen-lockfile'));
     expect(count(source, 'pnpm test:deploy')).toBe(1);
-    expect(source).not.toMatch(/pnpm\s+(?:run\s+)?(?:build|package:pack)/u);
+    expect(source).not.toMatch(/pnpm\s+(?:run\s+)?(?:quality|build|package:pack|package:validate|test:(?:unit|contract|integration|prototype|composition|e2e)|release:smoke)\b/u);
   });
 });
