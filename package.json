@@ -19,6 +19,7 @@
     "test:unit": "vitest run tests/unit",
     "test:contract": "vitest run tests/contract tests/deploy/deployment-scripts.test.ts tests/release-package/dry-run.test.ts tests/release-package/package-scripts.test.ts tests/security/audit-lockfile.test.ts tests/security/check-build-scripts.test.ts tests/security/check-manifest-lock.test.ts",
     "test:integration": "vitest run tests/integration",
+    "test:deploy": "vitest run tests/deploy",
     "test:composition": "vitest run tests/composition",
     "test:e2e": "vitest run tests/e2e --maxWorkers=1 --no-file-parallelism",
     "test:release-smoke": "vitest run tests/release-smoke",
@@ -36,9 +37,14 @@
     "release:smoke": "node scripts/release/smoke.mjs && pnpm run test:release-smoke",
     "deploy:preflight": "node scripts/deploy/cli.mjs preflight",
     "deploy:install": "node scripts/deploy/cli.mjs install",
-    "deploy:activate": "node scripts/deploy/activate.mjs",
-    "deploy:health": "node scripts/deploy/health.mjs",
-    "deploy:rollback": "node scripts/deploy/rollback.mjs"
+    "deploy:start": "node scripts/deploy/cli.mjs start",
+    "deploy:stop": "node scripts/deploy/cli.mjs stop",
+    "deploy:status": "node scripts/deploy/cli.mjs status",
+    "deploy:restart": "node scripts/deploy/cli.mjs restart",
+    "deploy:health": "node scripts/deploy/cli.mjs health",
+    "deploy:logs": "node scripts/deploy/cli.mjs logs",
+    "deploy:upgrade": "node scripts/deploy/cli.mjs upgrade",
+    "deploy:rollback": "node scripts/deploy/cli.mjs rollback"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "3.18.1"
@@ -165,6 +171,7 @@
     "scripts/deploy/cli.mjs",
     "scripts/deploy/contracts.mjs",
     "scripts/deploy/install.mjs",
+    "scripts/deploy/lifecycle.mjs",
     "scripts/deploy/preflight.mjs",
     "scripts/profile/materialize.mjs",
     "scripts/profile/start.mjs"

@@ -95,11 +95,13 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
+    'scripts/deploy/lifecycle.mjs',
     'scripts/deploy/preflight.mjs',
     'deployment/runtime/package.json',
     'deployment/runtime/pnpm-lock.yaml',
     'deployment/runtime/pnpm-workspace.yaml',
     'scripts/profile/materialize.mjs',
+    'scripts/profile/start.mjs',
     'profiles/comfyui-workbench/package.json',
     'profiles/comfyui-workbench/cordis.patch.yml',
     'profiles/comfyui-workbench/pnpm-workspace.yaml',
@@ -239,7 +241,7 @@ describe('harness-comfyui install CLI', () => {
       .toBe(`file:${join(releaseRoot, 'package')}`)
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
     const stableHelp = await runProcess(stableBin, ['--help'], fixture.env)
-    expect(stableHelp.status).toBe(0)
+    expect(stableHelp.status, stableHelp.stderr).toBe(0)
     expect(stableHelp.stdout).toContain('Commands:')
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })

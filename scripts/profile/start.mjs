@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { delimiter, dirname, resolve } from 'node:path'
+import { delimiter, dirname, isAbsolute, resolve } from 'node:path'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const profileName = 'comfyui-workbench'
@@ -12,7 +13,7 @@ function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index]
     if (!flag.startsWith('--')) throw new Error(`unknown argument ${flag}`)
-    if (!['--configuration', '--dsh-home', '--host', '--port'].includes(flag)) {
+    if (!['--configuration', '--dsh-home', '--dsh-executable', '--host', '--port'].includes(flag)) {
       throw new Error(`unknown argument ${flag}`)
     }
     if (values.has(flag)) throw new Error(`duplicate argument ${flag}`)
@@ -32,9 +33,14 @@ function parseArguments(argv) {
   if (!/^\d+$/.test(port) || Number(port) > 65535) throw new Error(`invalid --port ${JSON.stringify(port)}`)
   const host = values.get('--host')
   if (host.length === 0) throw new Error('--host requires a non-empty value')
+  const dshExecutable = values.get('--dsh-executable')
+  if (dshExecutable !== undefined && !isAbsolute(dshExecutable)) {
+    throw new Error('--dsh-executable must be an absolute path')
+  }
   return {
     configuration,
     dshHome: values.get('--dsh-home'),
+    dshExecutable,
     host,
     port,
   }
@@ -42,14 +48,6 @@ function parseArguments(argv) {
 
 function sendSignal(child, signal) {
   if (child.pid === undefined) return
-  if (process.platform !== 'win32') {
-    try {
-      process.kill(-child.pid, signal)
-      return
-    } catch {
-      // The child may have exited between the close check and this signal.
-    }
-  }
   try {
     child.kill(signal)
   } catch {
@@ -57,29 +55,28 @@ function sendSignal(child, signal) {
   }
 }
 
-function runForeground(options) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const child = spawn(command, [
-    'exec',
-    'dsh',
-    '--profile',
-    profileName,
-    '--host',
-    options.host,
-    '--port',
-    options.port,
-  ], {
-    cwd: process.cwd(),
+export function spawnForeground(options) {
+  const command = options.dshExecutable ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
+  const args = options.dshExecutable === undefined
+    ? ['exec', 'dsh', '--profile', profileName, '--host', options.host, '--port', options.port]
+    : ['--profile', profileName, '--host', options.host, '--port', options.port]
+  const environment = options.environment ?? process.env
+  return spawn(command, args, {
+    cwd: options.cwd ?? process.cwd(),
     env: {
-      ...process.env,
+      ...environment,
       DSH_HOME: resolve(repositoryRoot, options.dshHome),
       HARNESS_COMFYUI_CONFIGURATION_PROFILE: options.configuration,
-      PATH: `${resolve(repositoryRoot, 'node_modules/.bin')}${delimiter}${process.env.PATH ?? ''}`,
+      PATH: `${resolve(repositoryRoot, 'node_modules/.bin')}${delimiter}${environment.PATH ?? ''}`,
     },
-    stdio: 'inherit',
-    detached: process.platform !== 'win32',
+    stdio: options.stdio ?? 'inherit',
+    detached: false,
     shell: false,
   })
+}
+
+export function runForeground(options) {
+  const child = spawnForeground(options)
 
   let forwardedSignal
   const forward = signal => {
@@ -114,9 +111,20 @@ async function main(argv) {
   return runForeground(options)
 }
 
-main(process.argv.slice(2))
-  .then(exitCode => { process.exitCode = exitCode })
-  .catch(error => {
-    process.stderr.write(`profile start: ${error instanceof Error ? error.message : String(error)}\n`)
-    process.exitCode = 2
-  })
+function isMainModule() {
+  if (process.argv[1] === undefined) return false
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return false
+  }
+}
+
+if (isMainModule()) {
+  main(process.argv.slice(2))
+    .then(exitCode => { process.exitCode = exitCode })
+    .catch(error => {
+      process.stderr.write(`profile start: ${error instanceof Error ? error.message : String(error)}\n`)
+      process.exitCode = 2
+    })
+}

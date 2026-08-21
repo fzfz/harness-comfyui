@@ -63,6 +63,10 @@ describe('Issue #2 public package and composition contracts', () => {
     )
     expect(manifest.scripts['deploy:preflight']).toBe('node scripts/deploy/cli.mjs preflight')
     expect(manifest.scripts['deploy:install']).toBe('node scripts/deploy/cli.mjs install')
+    expect(manifest.scripts['deploy:start']).toBe('node scripts/deploy/cli.mjs start')
+    expect(manifest.scripts['deploy:stop']).toBe('node scripts/deploy/cli.mjs stop')
+    expect(manifest.scripts['deploy:status']).toBe('node scripts/deploy/cli.mjs status')
+    expect(manifest.scripts['test:deploy']).toBe('vitest run tests/deploy')
     expect(manifest.files).toEqual([
       'lib/index.js',
       'lib/client.js',
@@ -94,6 +98,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'scripts/deploy/cli.mjs',
       'scripts/deploy/contracts.mjs',
       'scripts/deploy/install.mjs',
+      'scripts/deploy/lifecycle.mjs',
       'scripts/deploy/preflight.mjs',
       'scripts/profile/materialize.mjs',
       'scripts/profile/start.mjs',

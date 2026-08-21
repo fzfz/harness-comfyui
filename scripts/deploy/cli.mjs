@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import { runProductInstall } from './install.mjs'
 import { readJson, runProductPreflight } from './preflight.mjs'
+import { runProductStart, runProductStatus, runProductStop } from './lifecycle.mjs'
 
 export const COMMANDS = Object.freeze([
   'install', 'preflight', 'start', 'stop', 'restart',
@@ -64,6 +65,26 @@ export function parseInstallArguments(argv) {
   return parseArtifactArguments(argv, 'install')
 }
 
+export function parseLifecycleArguments(argv, command) {
+  const options = { json: false }
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index]
+    if (argument === '--json') {
+      if (options.json) throw new Error('duplicate option: --json')
+      options.json = true
+      continue
+    }
+    if (argument !== '--installation') throw new Error(`unknown option: ${argument}`)
+    if (options.installation) throw new Error('duplicate option: --installation')
+    options.installation = requireAbsoluteArgument(argv[index + 1], argument)
+    index += 1
+  }
+  if (!options.installation) {
+    throw new Error(`usage: harness-comfyui ${command}${command === 'status' ? ' --json' : ''} --installation <absolute-json>`)
+  }
+  return options
+}
+
 export async function main(argv = process.argv.slice(2)) {
   if (argv.length === 0 || (argv.length === 1 && argv[0] === '--help')) {
     process.stdout.write(helpText())
@@ -73,14 +94,21 @@ export async function main(argv = process.argv.slice(2)) {
   const [command, ...commandArguments] = argv
   if (!COMMANDS.includes(command)) throw new Error(`unknown command: ${command}`)
   if (command !== 'preflight' && command !== 'install') {
-    throw new Error(`command ${command} is not implemented in this slice`)
+    if (command !== 'start' && command !== 'stop' && command !== 'status') {
+      throw new Error(`command ${command} is not implemented in this slice`)
+    }
   }
 
-  const options = parseArtifactArguments(commandArguments, command)
+  const options = command === 'preflight' || command === 'install'
+    ? parseArtifactArguments(commandArguments, command)
+    : parseLifecycleArguments(commandArguments, command)
   const installation = await readJson(options.installation)
-  const evidence = command === 'preflight'
-    ? await runProductPreflight(installation, options.artifact)
-    : await runProductInstall(installation, options.artifact)
+  let evidence
+  if (command === 'preflight') evidence = await runProductPreflight(installation, options.artifact)
+  else if (command === 'install') evidence = await runProductInstall(installation, options.artifact)
+  else if (command === 'start') evidence = await runProductStart(installation)
+  else if (command === 'stop') evidence = await runProductStop(installation)
+  else evidence = await runProductStatus(installation)
   process.stdout.write(`${JSON.stringify(evidence)}\n`)
   return 0
 }
