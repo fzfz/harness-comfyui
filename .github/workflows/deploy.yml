@@ -1,45 +1,13 @@
-name: Deployment Fixture Orchestration
+name: Deploy Lifecycle Validation
 
 on:
   workflow_dispatch:
-    inputs:
-      artifactPath:
-        description: Path to the structured deployment input JSON containing the smoke-passed artifact identity
-        required: true
-        type: string
-      artifactSha256:
-        description: Expected SHA-256 of the release artifact
-        required: true
-        type: string
-      artifactVersion:
-        description: Expected release SemVer
-        required: true
-        type: string
-      artifactCommit:
-        description: Expected exact release commit
-        required: true
-        type: string
-      targetEnvironment:
-        description: Fixture target environment accepted by deployment scripts
-        required: true
-        type: string
-      releaseSmokePassed:
-        description: Release-smoke approval for the artifact identity
-        required: true
-        type: boolean
 
 permissions:
   contents: read
 
 jobs:
-  deployment-approval:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deployment approval boundary
-        run: echo "deployment approval is consumed by the repository deployment scripts"
-
-  deployment:
-    needs: deployment-approval
+  lifecycle-validation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -51,29 +19,15 @@ jobs:
           cache: pnpm
       - name: Enable pnpm 11.7.0
         run: corepack prepare pnpm@11.7.0 --activate
-      - name: Preflight
-        run: pnpm deploy:preflight -- --input "${{ inputs.artifactPath }}" --output "$RUNNER_TEMP/preflight.json" --environment "${{ inputs.targetEnvironment }}" --artifact-sha256 "${{ inputs.artifactSha256 }}" --artifact-version "${{ inputs.artifactVersion }}" --artifact-commit "${{ inputs.artifactCommit }}" --smoke-passed "${{ inputs.releaseSmokePassed }}"
-      - name: Activate
-        run: pnpm deploy:activate -- --input "${{ inputs.artifactPath }}" --preflight "$RUNNER_TEMP/preflight.json" --output "$RUNNER_TEMP/activation.json"
-      - name: Health
-        id: health
-        run: pnpm deploy:health -- --input "${{ inputs.artifactPath }}" --activation "$RUNNER_TEMP/activation.json" --output "$RUNNER_TEMP/health.json"
-      - name: Explicit rollback after health failure
-        if: ${{ failure() && steps.health.outcome == 'failure' }}
-        run: pnpm deploy:rollback -- --input "${{ inputs.artifactPath }}" --activation "$RUNNER_TEMP/activation.json" --health "$RUNNER_TEMP/health.json" --output "$RUNNER_TEMP/rollback.json"
-
-  production-binding:
-    needs: deployment
-    if: ${{ false }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ticket 14 production binding boundary
-        run: exit 0
-
-  production-write-approval:
-    needs: production-binding
-    if: ${{ false }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ticket 14 production write approval boundary
-        run: exit 0
+      - name: Check manifest and lockfile
+        run: pnpm run check:manifest-lock
+      - name: Audit dependency advisories
+        run: pnpm run security:advisories
+      - name: Check dependency build scripts
+        run: pnpm run security:build-scripts
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Quality
+        run: pnpm quality
+      - name: Deploy lifecycle tests
+        run: pnpm test:deploy
