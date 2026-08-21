@@ -133,6 +133,10 @@ async function runLifecycleCommand(command, installation, commandOptions = undef
     const module = await import('./stop.mjs')
     return module.runProductStop(installation)
   }
+  if (command === 'restart') {
+    const module = await import('./restart.mjs')
+    return module.runProductRestart(installation, operation)
+  }
   if (command === 'health') {
     const module = await import('./health.mjs')
     return module.runProductHealth(installation)
@@ -153,8 +157,11 @@ export async function main(argv = process.argv.slice(2)) {
 
   const [command, ...commandArguments] = argv
   if (!COMMANDS.includes(command)) throw new Error(`unknown command: ${command}`)
+  if (command === 'restart' && commandArguments.length === 0) {
+    throw new Error('command restart is not implemented in this slice')
+  }
   if (command !== 'preflight' && command !== 'install') {
-    if (command !== 'start' && command !== 'stop' && command !== 'status' && command !== 'health' && command !== 'logs') {
+    if (command !== 'start' && command !== 'stop' && command !== 'restart' && command !== 'status' && command !== 'health' && command !== 'logs') {
       throw new Error(`command ${command} is not implemented in this slice`)
     }
   }
