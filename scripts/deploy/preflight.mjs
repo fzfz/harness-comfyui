@@ -495,7 +495,7 @@ async function probePort(host, port) {
   }
 }
 
-async function readDiscovery(path, name) {
+export async function readDiscovery(path, name) {
   let result;
   try {
     result = await runExternal(path, ['--discovery-json']);
@@ -514,7 +514,7 @@ async function readDiscovery(path, name) {
   }
 }
 
-function validateDiscovery(value, name, installation) {
+export function validateDiscovery(value, name, installation) {
   const discovery = requireRecord(value, `${name} discovery`);
   const expectedVersion = installation.source.supportedContractVersions[0];
   if (discovery.contract_id !== SOURCE_CONTRACT_ID) {

@@ -78,8 +78,8 @@ export function parseLifecycleArguments(argv, command) {
     options.installation = requireAbsoluteArgument(argv[index + 1], argument)
     index += 1
   }
-  if (!options.installation) {
-    throw new Error(`usage: harness-comfyui ${command}${command === 'status' ? ' --json' : ''} --installation <absolute-json>`)
+  if (!options.installation || (command === 'health' && !options.json)) {
+    throw new Error(`usage: harness-comfyui ${command}${command === 'status' || command === 'health' ? ' --json' : ''} --installation <absolute-json>`)
   }
   return options
 }
@@ -92,6 +92,10 @@ async function runLifecycleCommand(command, installation) {
   if (command === 'stop') {
     const module = await import('./stop.mjs')
     return module.runProductStop(installation)
+  }
+  if (command === 'health') {
+    const module = await import('./health.mjs')
+    return module.runProductHealth(installation)
   }
   const module = await import('./status.mjs')
   return module.runProductStatus(installation)
@@ -106,7 +110,7 @@ export async function main(argv = process.argv.slice(2)) {
   const [command, ...commandArguments] = argv
   if (!COMMANDS.includes(command)) throw new Error(`unknown command: ${command}`)
   if (command !== 'preflight' && command !== 'install') {
-    if (command !== 'start' && command !== 'stop' && command !== 'status') {
+    if (command !== 'start' && command !== 'stop' && command !== 'status' && command !== 'health') {
       throw new Error(`command ${command} is not implemented in this slice`)
     }
   }
@@ -120,7 +124,7 @@ export async function main(argv = process.argv.slice(2)) {
   else if (command === 'install') evidence = await runProductInstall(installation, options.artifact)
   else evidence = await runLifecycleCommand(command, installation)
   process.stdout.write(`${JSON.stringify(evidence)}\n`)
-  return 0
+  return command === 'health' && evidence.status !== 'passed' ? 1 : 0
 }
 
 function isMainModule() {
