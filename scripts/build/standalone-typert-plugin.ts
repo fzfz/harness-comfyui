@@ -35,6 +35,16 @@ function prepareWorkspace(): void {
   writeFileSync(join(protocolPackageRoot, 'src', 'index.ts'), [
     "import { Service, type Context } from '@deepseek-ai/cordis'",
     '',
+    'declare const LOOKUP_HOST: unique symbol',
+    'declare const LOOKUP_WIRE: unique symbol',
+    '',
+    'export interface TypertLookup<Host, Wire> {',
+    '  readonly [LOOKUP_HOST]: Host',
+    '  readonly [LOOKUP_WIRE]: Wire',
+    '}',
+    '',
+    'export interface TypertLookupMap {}',
+    '',
     'export interface TypertGatewayBinding<ServiceType extends object = object> {',
     '  readonly service: ServiceType',
     '  readonly serviceKey: string',
@@ -90,6 +100,12 @@ function prepareWorkspace(): void {
   mkdirSync(packageScope, { recursive: true })
   symlinkSync(protocolPackageRoot, join(packageScope, 'dsh-typert-protocol'), 'dir')
   writeJson(join(workspaceRoot, 'tsconfig.host.json'), {
+    compilerOptions: {
+      baseUrl: '.',
+      paths: {
+        '@deepseek-ai/dsh-typert-protocol': ['packages/dsh-typert-protocol/src/index.ts'],
+      },
+    },
     files: [],
     references: [
       { path: './packages/dsh-typert-protocol/tsconfig.json' },
