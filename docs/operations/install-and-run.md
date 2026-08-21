@@ -6,7 +6,9 @@
 
 ## 输入边界
 
-每个 lifecycle 子命令的唯一配置输入是用户指定的 `installation.json`。`preflight`、`install` 和 `upgrade` 还需要用户显式指定 Release Artifact tarball；`start`、`stop`、`restart`、`status`、`health`、`logs` 和 `rollback` 只读取 installation JSON 与 installation 目录中的状态。
+每个 lifecycle 子命令的唯一配置输入是用户指定的 `installation.json`。`preflight`、`install` 和 `upgrade` 还需要用户显式指定 Release Artifact tarball；其余 lifecycle 子命令不接受第二个配置文件。
+
+生命周期状态不是配置输入，而是 lifecycle 命令产生或更新的状态：`stop` 删除受管 Host 的 `state/process.json`，`restart` 先删除旧进程状态再写入新进程状态，`rollback` 更新 `state/active-release.json` 并写入恢复版本的进程状态，`health` 写入 `state/last-health.json`，`status` 在发现 PID 已退出时可以清理过期的 `state/process.json`。
 
 产品 CLI 是 `installation.json` 到 Harness Host 环境的唯一转换器。产品 CLI 会从已经通过 schema 校验的 installation JSON 生成 Host 环境值，并忽略进程外已有的 `HARNESS_COMFYUI_*` 环境变量。用户不需要、也不能通过第二个配置文件覆盖 installation JSON 的运行字段。
 
@@ -60,7 +62,7 @@
 
 `root` 是 installation 根目录。`paths.dataDir`、`paths.runDirectory`、`paths.savedMediaDirectory` 和 `paths.logDirectory` 必须分别指向 `root/shared/data`、`root/shared/runs`、`root/shared/saved-media` 和 `root/shared/logs`。`paths.runRepositoryFile` 必须位于 `root/shared/data` 内。
 
-`source.catalogCliPath` 和 `source.sourceCliPath` 必须分别指向能够接受 `--discovery-json` 的绝对可执行文件。两个 Source CLI 必须返回相同的 `imagegen-source-contract` 与版本 `1`。`comfyui.defaultInstanceId`、`client.runRefreshIntervalMs` 和 `process.shutdownTimeoutMs` 是 installation 的非敏感运行参数。
+`source.catalogCliPath` 和 `source.sourceCliPath` 必须分别指向能够接受 `--discovery-json` 的绝对可执行文件。两个 Source CLI 必须返回相同的 `imagegen-source-contract` 与版本 `1`。`Source Operation` 是 Host 专用的本机只读数据源操作；该操作通过 `source.sourceCliPath` 对应的 Source CLI 查询 ComfyUI 实例与模板来源数据，并把 ComfyUI Instance Authorization 返回给 Host 进程内调用方。`Source Operation` 不属于 Harness Tool、Skill Tool 或浏览器 RPC。`comfyui.defaultInstanceId`、`client.runRefreshIntervalMs` 和 `process.shutdownTimeoutMs` 是 installation 的非敏感运行参数。
 
 本版本的必需 Host Runtime Credential 集合为空。当前 schema、Configuration Profile、`environment-overrides.json`、Release Artifact 和生命周期 workflow 不创建 Host Runtime Credential 字段、secret 名称或 credential 环境变量。ComfyUI Instance Authorization 只由 Source Operation 在 Host 进程内使用，不属于 installation JSON 的字段。
 
@@ -80,7 +82,7 @@ npm exec --yes --package=<absolute-tarball> -- harness-comfyui install --install
 <root>/bin/harness-comfyui
 ```
 
-首次安装完成后，`start`、`stop`、`restart`、`status`、`health`、`logs`、`upgrade` 和 `rollback` 都必须通过 `<root>/bin/harness-comfyui` 运行。stable bin 只读取 `<root>/state/active-release.json`，再把同一 CLI 请求转交给 active release。后续生命周期命令不读取源码 worktree、全局安装的 `dsh` 或 npm cache。
+首次安装完成后，`start`、`stop`、`restart`、`status`、`health`、`logs`、`upgrade` 和 `rollback` 都必须通过 `<root>/bin/harness-comfyui` 运行。stable bin 只读取 `<root>/state/active-release.json`，再把同一 CLI 请求转交给 active release。首次安装完成后的 `start`、`status`、`health`、`logs` 和 `stop` 不读取源码 worktree、全局安装的 `dsh` 或 npm cache。`upgrade` 会为候选版本安装新的 installation-local Harness runtime；该候选版本使用自己的绝对 `node_modules/.bin/dsh`。
 
 ## 十个 lifecycle 子命令
 
@@ -94,7 +96,7 @@ npm exec --yes --package=<absolute-tarball> -- harness-comfyui install --install
 
 | 子命令 | 精确命令 | 命令行为 |
 | --- | --- | --- |
-| `preflight` | `harness-comfyui preflight --installation <absolute-installation-json> --artifact <absolute-tarball>` | 校验 installation JSON、Release Artifact、Node/pnpm/Harness 版本、持久目录读写能力、Run Repository 路径、监听地址和两个 Source contract discovery identity。`preflight` 不停止当前 Host。 |
+| `preflight` | `harness-comfyui preflight --installation <absolute-installation-json> --artifact <absolute-tarball>` | 校验 installation JSON、`production` Configuration Profile、Release Artifact、Node/pnpm/Harness 版本、持久目录读写能力、Run Repository 路径、监听地址和两个 Source contract discovery identity。`preflight` 不停止当前 Host。 |
 | `install` | `harness-comfyui install --installation <absolute-installation-json> --artifact <absolute-tarball>` | 创建不可变 release、安装 installation-local Harness runtime、物化 profile、写入 active release state 和 stable bin。`install` 不启动 Host。首次安装使用上一节的 `npm exec` 命令。 |
 | `start` | `<root>/bin/harness-comfyui start --installation <absolute-installation-json>` | 启动 active release 的真实 Harness Host，转发终端 stdout/stderr，并把脱敏后的输出写入产品日志。命令保持前台运行，直到另一个终端运行 `stop`。 |
 | `stop` | `<root>/bin/harness-comfyui stop --installation <absolute-installation-json>` | 读取 installation state 标识的 PID 与 process identity，只向相同进程发送 `SIGTERM`，等待进程退出，确认监听端口释放，并删除拥有者仍然匹配的 `state/process.json`。 |
@@ -150,16 +152,96 @@ Host stdout 写入 `<root>/shared/logs/host.stdout.log`，Host stderr 写入 `<r
 
 `stop` 只会向 installation state 与 process identity 同时匹配的 Host PID 发送 `SIGTERM`。Host 退出并且端口释放后，CLI 删除 `state/process.json`；成功 stop 后，installation 不再保存已退出 Host 的 PID state，监听端口也不再被该 installation 占用。
 
-## 生产验收路径
+## 快速产品 smoke
 
-生产验收必须让 package validation、deploy lifecycle、composition、browser E2E 和 release smoke 使用 `.release/quality/artifact.json` 指向的同一 artifact identity。生产验收使用该 artifact 与 `runtime/production/installation.json`，不从源码 worktree 或 prototype 启动 Host。
+快速产品 smoke 是唯一需要用户手工操作 `runtime/production/` installation 的生产路径。快速产品 smoke 只覆盖 install、start、status、health、logs、浏览器原生 `AppFrame` 和 stop；快速产品 smoke 不手工调用 restart、upgrade 或 rollback。
 
-验收者按以下顺序操作：
+快速产品 smoke 必须使用 `.release/quality/artifact.json` 指向的同一个 Release Artifact tarball。验收者先把 `ARTIFACT` 设置为该 manifest 中记录的绝对 tarball 路径，把 `INSTALLATION` 设置为 `runtime/production/installation.json` 的绝对路径，把 `ROOT` 设置为 installation JSON 中 `root` 的绝对路径：
 
-1. 验收者准备使用 `configurationProfile: "production"` 的 `runtime/production/installation.json`，并确认 JSON 中所有路径满足本文件的 root/shared 归属规则。
-2. 验收者使用同一绝对 tarball 两次的首次安装命令创建 `<root>/bin/harness-comfyui`，然后使用 stable bin 启动 active release。
-3. 验收者在另一个终端使用 stable bin 运行 `status --json`、`health --json` 和 `logs`，确认 process、active release、Harness Web、Client bundle、`pluginStatus`、两个 Source contract、Run Repository 和 Saved Media 均通过健康检查。
-4. 验收者打开 installation JSON 中 `host` 与 `port` 对应的浏览器地址，确认真实 Harness Web 渲染原生 `AppFrame`，并确认当前项目 Host plugin、Client plugin 和 `pluginStatus` Remote 已加载。
-5. 验收者在另一个终端使用 stable bin 运行 `stop`，确认前台 start 命令退出、`state/process.json` 被清理且监听端口释放。
+```sh
+ARTIFACT=/absolute/path/to/.release/quality/harness-comfyui-release.tgz
+INSTALLATION=/absolute/path/to/worktree/runtime/production/installation.json
+ROOT=/absolute/path/to/worktree/runtime/production
+```
 
-该验收路径只证明 Release Artifact 能够安装、启动、检查、记录日志和停止真实 Harness 基线。该验收路径不声明 Issue #3 及后续 Issue 的产品 UI 或 prototype 页面已经实现。
+首次安装是一个命令。该命令把同一个 `$ARTIFACT` 路径同时传给 `npm exec --package` 和 `--artifact`，并把 `$INSTALLATION` 传给 `--installation`：
+
+```sh
+npm exec --yes --package="$ARTIFACT" -- harness-comfyui install --installation "$INSTALLATION" --artifact "$ARTIFACT"
+```
+
+安装命令成功后，验收者在终端 A 运行前台 `start`：
+
+```sh
+"$ROOT/bin/harness-comfyui" start --installation "$INSTALLATION"
+```
+
+验收者在终端 B 运行以下三个只读命令：
+
+```sh
+"$ROOT/bin/harness-comfyui" status --json --installation "$INSTALLATION"
+"$ROOT/bin/harness-comfyui" health --json --installation "$INSTALLATION"
+"$ROOT/bin/harness-comfyui" logs --installation "$INSTALLATION" --source all --lines 50
+```
+
+`health --json` 必须报告 process、active release、Harness Web、Client bundle、`pluginStatus`、两个 Source contract、Run Repository 和 Saved Media 均通过。验收者打开 installation JSON 中 `host` 与 `port` 对应的浏览器地址，确认真实 Harness Web 渲染原生 `AppFrame`，并确认 `harness-comfyui` Host plugin、Client plugin 和 `pluginStatus` Remote 已加载。
+
+验收者在终端 B 运行最终 stop：
+
+```sh
+"$ROOT/bin/harness-comfyui" stop --installation "$INSTALLATION"
+```
+
+最终 stop 必须让终端 A 的前台 `start` 命令退出，并且必须清理 `state/process.json`、释放监听端口。快速产品 smoke 不声明 Issue #3 及后续 Issue 的产品 UI 或 prototype 页面已经实现。
+
+## 完整 Issue #2 lifecycle 验收
+
+完整 Issue #2 lifecycle 验收由 `test:deploy` 在受控临时 installation 中完成。该测试必须读取 `.release/quality/artifact.json`，使用同一个 artifact identity 的产品 CLI，不得从源码 worktree、prototype 或测试 fixture 直接导入 lifecycle helper。完整验收不是对 `runtime/production/` 用户 installation 的手工维护步骤。
+
+验收者运行以下固定测试命令：
+
+```sh
+pnpm test:deploy
+```
+
+`test:deploy` 必须在测试拥有的 installation 中调用下列精确产品命令，并保存每个命令的退出状态、active release state、process state、健康证据、日志和端口证据：
+
+1. 测试使用以下精确 restart 命令，并确认同一 installation 的 stop/start 顺序、唯一前台 Host、端口释放和 `state/process.json` 更新：
+
+   ```sh
+   <root>/bin/harness-comfyui restart --installation <absolute-installation-json>
+   ```
+
+   另一个受控终端使用以下精确 stop 命令后，restart 前台命令必须退出：
+
+   ```sh
+   <root>/bin/harness-comfyui stop --installation <absolute-installation-json>
+   ```
+
+2. 测试使用以下精确 upgrade 命令安装候选 artifact，并确认旧 Host 停止、active release 切换、候选 Host 启动、health 通过、`previousRelease` 指向旧版本、shared 目录内容保持不变且始终只有一个 Host：
+
+   ```sh
+   <root>/bin/harness-comfyui upgrade --installation <absolute-installation-json> --artifact <absolute-candidate-tarball>
+   ```
+
+   候选启动失败和候选 health 失败两个场景都必须保存失败证据。每个失败场景都必须确认 CLI 恢复并启动上一 release、上一 release 的 health 通过、active release 回到上一版本、没有第二个 Host、候选目录没有成为 active release。测试必须在另一个受控终端运行以下 stop 命令，使恢复后的前台命令退出并完成 state/port 清理：
+
+   ```sh
+   <root>/bin/harness-comfyui stop --installation <absolute-installation-json>
+   ```
+
+3. 测试使用以下精确 rollback 命令，并确认当前 release 停止、`state/active-release.json` 把 previous release 与当前 release 交换、恢复版本启动、health 通过、shared 目录内容保持不变且始终只有一个 Host：
+
+   ```sh
+   <root>/bin/harness-comfyui rollback --installation <absolute-installation-json>
+   ```
+
+   测试必须保存 rollback 前后的 active version、previous release、health 结果、process identity 和端口证据。测试随后使用以下精确 stop 命令完成最终清理：
+
+   ```sh
+   <root>/bin/harness-comfyui stop --installation <absolute-installation-json>
+   ```
+
+   最终 stop 后，测试必须确认前台 rollback 命令退出、`state/process.json` 不存在、监听端口已经释放、Harness Host 子进程已经退出；测试不得删除 shared 数据作为 stop 的替代结果。
+
+完整 Issue #2 lifecycle 验收只证明同一 Release Artifact 的产品 lifecycle CLI 能够重启、升级、在候选失败时恢复、回滚 previous release 并清理运行状态。完整验收不声明 Issue #3 及后续 Issue 的产品 UI 或 prototype 页面已经实现。
