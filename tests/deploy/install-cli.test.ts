@@ -277,13 +277,27 @@ describe('harness-comfyui install CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
+  it('does not commit a release when stable bin creation fails', async () => {
+    const fixture = await createFixture()
+    const binPath = join(fixture.installation.root, 'bin')
+    await mkdir(fixture.installation.root, { recursive: true })
+    await writeFile(binPath, 'bin path is occupied\n', 'utf8')
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('EEXIST')
+    await expect(lstat(join(fixture.installation.root, 'state/active-release.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(lstat(join(fixture.installation.root, 'releases/0.1.0-test.1'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it.skipIf(process.env.HARNESS_REAL_ARTIFACT === undefined)('installs the current packed artifact with its frozen runtime', async () => {
     const fixture = await createFixture()
     const artifactPath = process.env.HARNESS_REAL_ARTIFACT
     if (artifactPath === undefined) return
     const result = await runInstall(fixture, artifactPath, {
       ...fixture.env,
-      PATH: process.env.PATH,
+      PATH: process.env.PATH ?? '',
     })
 
     expect(result.status).toBe(0)

@@ -303,9 +303,9 @@ export async function runProductInstall(input, artifactPath) {
       previousRelease,
       releasePath: releaseRoot,
     }
+    await writeStableBin(root)
     await writeAtomicJson(statePath, state)
     stateCommitted = true
-    await writeStableBin(root)
     return {
       stage: 'install',
       status: 'passed',
