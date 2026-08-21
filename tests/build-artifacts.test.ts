@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { access, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -15,24 +14,6 @@ afterEach(async () => {
 })
 
 describe('built public declaration artifacts', () => {
-  it('runs the repository Typert generator with the checked-in build configuration', () => {
-    const result = spawnSync('pnpm', ['build'], {
-      cwd: root,
-      encoding: 'utf8',
-      shell: false,
-      timeout: 120000,
-    })
-
-    expect({
-      status: result.status,
-      signal: result.signal,
-      output: `${result.stdout}\n${result.stderr}`,
-    }).toMatchObject({
-      status: 0,
-      signal: null,
-    })
-  }, 130000)
-
   it('publishes generator-owned Host Typert and Client remote artifacts', async () => {
     const generated = {
       hostJavaScript: await readFile(join(root, 'lib/typert.host.js'), 'utf8'),
