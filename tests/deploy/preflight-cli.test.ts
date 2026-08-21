@@ -331,7 +331,7 @@ describe('harness-comfyui preflight CLI', () => {
       const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
       const workspace = await readFile(workspacePath, 'utf8')
       await writeFile(workspacePath, workspace.replace("  'koffi@3.1.5': true", "  'koffi@3.1.4': true"), 'utf8')
-    }, 'allowBuilds koffi@3.1.5'],
+    }, 'frozen workspace policy'],
     ['a workspace overrides policy drift', async (packageRoot: string) => {
       const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
       const workspace = await readFile(workspacePath, 'utf8')
@@ -345,6 +345,46 @@ describe('harness-comfyui preflight CLI', () => {
 
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain(expectedMessage)
+  })
+
+  it.each([
+    ['an additional allowBuilds entry', (workspace: string) => workspace.replace(
+      'allowBuilds:\n',
+      "allowBuilds:\n  'unreviewed-package@1.0.0': true\n",
+    ), 'allowBuilds'],
+    ['a missing allowBuilds entry', (workspace: string) => workspace.replace(
+      "  'koffi@3.1.5': true\n",
+      '',
+    ), 'allowBuilds'],
+    ['a replaced allowBuilds decision', (workspace: string) => workspace.replace(
+      "  'koffi@3.1.5': true\n",
+      "  'koffi@3.1.5': false\n",
+    ), 'allowBuilds'],
+    ['an additional override entry', (workspace: string) => workspace.replace(
+      'overrides:\n',
+      "overrides:\n  'unreviewed-package@1.0.0': '1.0.0'\n",
+    ), 'overrides'],
+    ['a missing override entry', (workspace: string) => workspace.replace(
+      "  'nanoid@>=3.0.0 <3.3.18': '3.3.18'\n",
+      '',
+    ), 'overrides'],
+    ['a replaced override value', (workspace: string) => workspace.replace(
+      "  'nanoid@>=3.0.0 <3.3.18': '3.3.18'\n",
+      "  'nanoid@>=3.0.0 <3.3.18': '3.3.17'\n",
+    ), 'overrides'],
+  ])('rejects %s by comparing the complete frozen workspace policy', async (_label, edit, expectedMessage) => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
+      const workspace = await readFile(workspacePath, 'utf8')
+      await writeFile(workspacePath, edit(workspace), 'utf8')
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(expectedMessage)
+    expect(result.stderr).toMatch(/frozen|policy|differs|exact/i)
   })
 
   it('rejects a tarball that omits the selected Configuration Profile', async () => {

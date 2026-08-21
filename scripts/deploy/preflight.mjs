@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { deepStrictEqual } from 'node:assert/strict';
 import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -319,28 +320,59 @@ function assertRuntimeWorkspace(workspaceText) {
   if (!/^strictDepBuilds:\s*true\s*$/mu.test(workspaceText)) {
     throw new Error('artifact deployment/runtime/pnpm-workspace.yaml must set strictDepBuilds: true');
   }
-  for (const packageName of [
-    '@deepseek-ai/dsh-subprocess-local@0.1.0-rc.7',
-    '@google/genai@1.52.0',
-    'koffi@3.1.5',
-    'node-pty@1.2.0-beta.15',
-    'protobufjs@7.6.5',
-  ]) {
-    const [name, version] = packageName.split('@').filter(Boolean).length > 1
-      ? [packageName.slice(0, packageName.lastIndexOf('@')), packageName.slice(packageName.lastIndexOf('@') + 1)]
-      : [packageName, undefined];
-    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-    const escapedVersion = version?.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-    const pattern = escapedVersion === undefined
-      ? new RegExp(`^  ['"]?${escapedName}['"]?:\\s*true\\s*$`, 'mu')
-      : new RegExp(`^  ['"]?${escapedName}['"]?@${escapedVersion}['"]?:\\s*true\\s*$`, 'mu');
-    if (!pattern.test(workspaceText)) {
-      throw new Error(`artifact deployment/runtime/pnpm-workspace.yaml must retain allowBuilds ${packageName}`);
+  const readMap = (sectionName) => {
+    const values = {};
+    let active = false;
+    let found = false;
+    for (const [lineNumber, sourceLine] of lines.entries()) {
+      const line = sourceLine.trimEnd();
+      if (line.trim().length === 0 || line.trimStart().startsWith('#')) continue;
+      const topLevel = line.match(/^([A-Za-z][A-Za-z0-9_-]*):\s*$/u);
+      if (topLevel !== null) {
+        active = topLevel[1] === sectionName;
+        found ||= active;
+        continue;
+      }
+      if (!active) continue;
+      if (!line.startsWith('  ') || line.startsWith('    ')) {
+        throw new Error(`artifact deployment/runtime/pnpm-workspace.yaml ${sectionName} has malformed entry on line ${lineNumber + 1}`);
+      }
+      const entry = line.match(/^ {2}([^:]+):\s*(.+)$/u);
+      if (entry === null) {
+        throw new Error(`artifact deployment/runtime/pnpm-workspace.yaml ${sectionName} has malformed entry on line ${lineNumber + 1}`);
+      }
+      const key = entry[1].trim().replace(/^'(.*)'$/u, '$1').replace(/^"(.*)"$/u, '$1');
+      const scalar = entry[2].trim();
+      const value = scalar === 'true'
+        ? true
+        : scalar === 'false'
+          ? false
+          : scalar.replace(/^'(.*)'$/u, '$1').replace(/^"(.*)"$/u, '$1');
+      if (Object.hasOwn(values, key)) {
+        throw new Error(`artifact deployment/runtime/pnpm-workspace.yaml ${sectionName} contains duplicate key ${key}`);
+      }
+      values[key] = value;
+    }
+    if (!found || Object.keys(values).length === 0) {
+      throw new Error(`artifact deployment/runtime/pnpm-workspace.yaml must retain the frozen ${sectionName} policy`);
+    }
+    return Object.fromEntries(Object.entries(values).sort(([left], [right]) => left.localeCompare(right)));
+  };
+  const actualPolicy = {
+    strictDepBuilds: true,
+    allowBuilds: readMap('allowBuilds'),
+    overrides: readMap('overrides'),
+  };
+  const differences = [];
+  for (const field of ['strictDepBuilds', 'allowBuilds', 'overrides']) {
+    try {
+      deepStrictEqual(actualPolicy[field], RUNTIME_DEPENDENCY_POLICY.workspace[field]);
+    } catch {
+      differences.push(field);
     }
   }
-  const overridesIndex = lines.findIndex(line => /^overrides:\s*$/u.test(line));
-  if (overridesIndex < 0 || !lines.slice(overridesIndex + 1).some(line => /^ {2}\S[^:]*:\s*\S+/u.test(line))) {
-    throw new Error('artifact deployment/runtime/pnpm-workspace.yaml must retain the frozen overrides policy');
+  if (differences.length > 0) {
+    throw new Error(`artifact deployment/runtime/pnpm-workspace.yaml frozen workspace policy ${differences.join(', ')} differs from the runtime contract`);
   }
 }
 

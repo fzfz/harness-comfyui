@@ -1,12 +1,13 @@
 export type RuntimeDependencyPolicy = {
-  readonly packages: readonly [
-    '@deepseek-ai/dsh',
-    '@deepseek-ai/dsh-base',
-    '@deepseek-ai/dsh-web-app',
-  ]
+  readonly packages: readonly string[]
   readonly install: {
     readonly strictDepBuilds: true
     readonly strictPeerDependencies: true
+  }
+  readonly workspace: {
+    readonly strictDepBuilds: true
+    readonly allowBuilds: Readonly<Record<string, true>>
+    readonly overrides: Readonly<Record<string, string>>
   }
 }
 
