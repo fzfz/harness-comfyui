@@ -173,6 +173,7 @@
     "scripts/deploy/install.mjs",
     "scripts/deploy/lifecycle.mjs",
     "scripts/deploy/health.mjs",
+    "scripts/deploy/logs.mjs",
     "scripts/deploy/start.mjs",
     "scripts/deploy/stop.mjs",
     "scripts/deploy/status.mjs",

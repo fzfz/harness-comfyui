@@ -20,7 +20,7 @@ import {
   writeAtomicJson,
 } from './lifecycle.mjs'
 
-export async function runProductStart(input) {
+export async function runProductStart(input, operation = {}) {
   const installation = validateInstallation(input)
   const active = await readActiveRelease(installation.root)
   const statePath = processStatePath(installation.root)
@@ -71,7 +71,7 @@ export async function runProductStart(input) {
     installationId: installation.installationId,
     activeVersion: active.activeVersion,
     pid: child.pid,
-    operationId: randomUUID(),
+    operationId: operation.operationId ?? randomUUID(),
     startedAt: new Date().toISOString(),
     host: installation.host,
     port: installation.port,
@@ -80,6 +80,9 @@ export async function runProductStart(input) {
   let stateWritten = false
   const stdoutLog = attachHostOutput(join(installation.paths.logDirectory, 'host.stdout.log'), child.stdout)
   const stderrLog = attachHostErrorOutput(child, join(installation.paths.logDirectory, 'host.stderr.log'))
+  const closeLogs = async () => {
+    await Promise.all([stdoutLog.close(), stderrLog.close()])
+  }
   try {
     await writeAtomicJson(statePath, state)
     stateWritten = true
@@ -89,8 +92,7 @@ export async function runProductStart(input) {
         child.once('close', (code, signal) => resolveResult({ code: code ?? 1, signal }))
         child.once('error', error => resolveResult({ code: 1, signal: null, error }))
       })
-    stdoutLog.end()
-    stderrLog.end()
+    await closeLogs()
     if (exit.error !== undefined) throw exit.error
     if (exit.code !== 0) {
       throw new Error(`Host exited with code ${exit.code}${exit.signal ? ` (${exit.signal})` : ''}`)
@@ -113,6 +115,7 @@ export async function runProductStart(input) {
       forwardSignal(child, 'SIGTERM')
       await waitForChildClose(child)
     }
+    await closeLogs()
     if (stateWritten) await removeOwnedProcessState(statePath, state)
     throw error
   } finally {

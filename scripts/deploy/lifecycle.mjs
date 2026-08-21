@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createWriteStream, constants as fsConstants } from 'node:fs'
 import {
   access,
+  appendFile,
   lstat,
   mkdir,
   readFile,
@@ -14,6 +15,7 @@ import { createConnection } from 'node:net'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 export const PROCESS_STATE_SCHEMA_VERSION = 1
+export const OPERATION_SCHEMA_VERSION = 1
 const HARNESS_ENVIRONMENT_PREFIX = 'HARNESS_COMFYUI_'
 
 function isRecord(value) {
@@ -45,6 +47,61 @@ async function readJsonFile(path, name) {
     throw new Error(`cannot read ${name}: ${error instanceof Error ? error.message : String(error)}`)
   }
   return requireRecord(value, name)
+}
+
+function operationsPath(root) {
+  return resolve(root, 'state/operations.jsonl')
+}
+
+async function readActiveVersion(root) {
+  try {
+    const state = JSON.parse(await readFile(resolve(root, 'state/active-release.json'), 'utf8'))
+    if (!isRecord(state) || typeof state.activeVersion !== 'string' || state.activeVersion.length === 0) return undefined
+    return state.activeVersion
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    return undefined
+  }
+}
+
+async function appendOperationEvent(event) {
+  await mkdir(dirname(event.path), { recursive: true })
+  const { path, ...record } = event
+  await appendFile(path, `${JSON.stringify(record)}\n`, { encoding: 'utf8', mode: 0o600 })
+}
+
+export async function beginProductOperation(installation, command) {
+  const operationId = randomUUID()
+  const startedAt = new Date().toISOString()
+  const activeVersion = await readActiveVersion(installation.root)
+  const event = {
+    path: operationsPath(installation.root),
+    schemaVersion: OPERATION_SCHEMA_VERSION,
+    operationId,
+    command,
+    status: 'started',
+    startedAt,
+    installationId: installation.installationId,
+  }
+  if (activeVersion !== undefined) event.activeVersion = activeVersion
+  await appendOperationEvent(event)
+  return { operationId, command, startedAt, installationId: installation.installationId }
+}
+
+export async function finishProductOperation(operation, installation, status) {
+  const activeVersion = await readActiveVersion(installation.root)
+  const event = {
+    path: operationsPath(installation.root),
+    schemaVersion: OPERATION_SCHEMA_VERSION,
+    operationId: operation.operationId,
+    command: operation.command,
+    status,
+    startedAt: operation.startedAt,
+    finishedAt: new Date().toISOString(),
+    installationId: operation.installationId,
+  }
+  if (activeVersion !== undefined) event.activeVersion = activeVersion
+  await appendOperationEvent(event)
 }
 
 async function writeAtomicJson(path, value) {
@@ -241,7 +298,8 @@ async function waitForProcessExit(state, timeoutMs) {
   while (Date.now() < deadline) {
     const identity = await readProcessIdentity(state.pid)
     if (identity === null) return
-    if (identity.command.includes('<defunct>') && identity.startTime === state.processIdentity.startTime) return
+    const exitedProcess = identity.command.includes('<defunct>') || /^\([^)]*\)$/u.test(identity.command)
+    if (exitedProcess && identity.startTime === state.processIdentity.startTime) return
     if (!sameProcessIdentity(state.processIdentity, identity)) {
       throw new Error(processIdentityMismatch(state, identity))
     }
@@ -303,22 +361,63 @@ function statusView(installation, activeVersion, state, status) {
   }
 }
 
-function attachHostOutput(logPath, output) {
+export function redactSensitiveLine(line) {
+  let redacted = line
+  redacted = redacted.replace(
+    /(authorization\s*(?::|=)\s*(?:(?:bearer|basic|token)\s+)?)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
+    '$1[REDACTED]',
+  )
+  redacted = redacted.replace(
+    /((?:credential|secret|token|password)\s*(?:=|:)\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
+    '$1[REDACTED]',
+  )
+  redacted = redacted.replace(
+    /(HARNESS_COMFYUI_[A-Z0-9_]*\s*=\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/gu,
+    '$1[REDACTED]',
+  )
+  return redacted
+}
+
+function attachRedactedOutput(logPath, output, destination) {
   const log = createWriteStream(logPath, { flags: 'a' })
-  output?.on('data', chunk => {
-    log.write(chunk)
-    process.stdout.write(chunk)
-  })
-  return log
+  let pending = ''
+  let closed = false
+
+  const emit = line => {
+    const redacted = redactSensitiveLine(line)
+    log.write(redacted)
+    destination.write(redacted)
+  }
+  const append = chunk => {
+    if (closed) return
+    pending += String(chunk)
+    const lines = pending.split('\n')
+    pending = lines.pop() ?? ''
+    for (const line of lines) emit(`${line}\n`)
+  }
+  const flush = () => {
+    if (pending.length > 0) {
+      emit(pending)
+      pending = ''
+    }
+  }
+  output?.on('data', append)
+  return {
+    close: () => {
+      if (closed) return Promise.resolve()
+      closed = true
+      flush()
+      return new Promise(resolveResult => log.end(resolveResult))
+    },
+  }
+}
+
+function attachHostOutput(logPath, output) {
+  return attachRedactedOutput(logPath, output, process.stdout)
 }
 
 function attachHostErrorOutput(child, logPath) {
-  const log = createWriteStream(logPath, { flags: 'a' })
-  child.stderr?.on('data', chunk => {
-    log.write(chunk)
-    process.stderr.write(chunk)
-  })
-  return log
+  return attachRedactedOutput(logPath, child.stderr, process.stderr)
 }
 
 function forwardSignal(child, signal) {
@@ -346,6 +445,7 @@ export {
   processStatePath,
   processIdentityMismatch,
   probePort,
+  operationsPath,
   readActiveRelease,
   readProcessState,
   removeOwnedProcessState,
