@@ -121,10 +121,12 @@ server.listen(Number(process.env.HARNESS_COMFYUI_SERVER_PORT), process.env.HARNE
   process.stdout.write('token=stdout-token-secret\\n')
   process.stdout.write('password: stdout-password-secret\\n')
   process.stdout.write('HARNESS_COMFYUI_SERVER_PORT=stdout-env-secret\\n')
+  process.stdout.write('{"Authorization":"Bearer json-secret","credential":"json-credential","secret":"json-secret","token":"json-token","password":"json-password","message":"keep json text"}\\n')
   process.stderr.write('ordinary stderr line\\n')
   process.stderr.write('authorization: Basic stderr-secret\\n')
   process.stderr.write('credential = stderr-credential-secret\\n')
   process.stderr.write('HARNESS_COMFYUI_DATA_DIR=stderr-env-secret\\n')
+  process.stderr.write('{"Authorization":"Bearer stderr-json-secret","credential":"stderr-json-credential","secret":"stderr-json-secret","token":"stderr-json-token","password":"stderr-json-password","message":"keep stderr json text"}\\n')
   writeFileSync(process.env.LOGS_HOST_READY_FILE, String(process.pid))
 })
 let closing = false
@@ -283,6 +285,24 @@ afterEach(async () => {
 })
 
 describe('installed logs CLI', () => {
+  it('redacts quoted JSON keys and values while preserving ordinary text', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const line = '{"Authorization":"Bearer json-secret","credential":"json-credential","secret":"json-secret","token":"json-token","password":"json-password","message":"keep this"}\n' + 'token: "quoted-token"\n'
+    await appendFile(join(fixture.installation.root, 'shared/logs/host.stdout.log'), line, 'utf8')
+
+    const logs = await runProcess(stableBin, [
+      'logs', '--installation', fixture.inputPath, '--source', 'stdout', '--lines', '2',
+    ], fixture.env)
+    expect(logs.status, logs.stderr).toBe(0)
+    expect(logs.stdout).toContain('{"Authorization":"[REDACTED]","credential":"[REDACTED]","secret":"[REDACTED]","token":"[REDACTED]","password":"[REDACTED]","message":"keep this"}')
+    expect(logs.stdout).toContain('token: "[REDACTED]"')
+    expect(logs.stdout).not.toMatch(/json-secret|json-credential|json-token|json-password/u)
+  })
+
   it('reads a redacted stdout tail through the installed stable CLI', async () => {
     const fixture = await createFixture()
     const install = await installFixture(fixture)
@@ -305,8 +325,8 @@ describe('installed logs CLI', () => {
     await stopFixture(fixture)
     const startResult = await start.output
     expect(startResult.status).toBe(0)
-    expect(startResult.stdout).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret/u)
-    expect(startResult.stderr).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret/u)
+    expect(startResult.stdout).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret|json-secret|json-credential|json-token|json-password/u)
+    expect(startResult.stderr).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret|stderr-json-secret|stderr-json-credential|stderr-json-token|stderr-json-password/u)
   }, 30_000)
 
   it('distinguishes stdout, stderr, and operations, correlates start state, and redacts persisted secrets', async () => {
@@ -342,23 +362,23 @@ describe('installed logs CLI', () => {
     expect(all.stdout).toMatch(/\[stderr\]/u)
     expect(all.stdout).toMatch(/\[operations\]/u)
     for (const output of [stdout.stdout, stderr.stdout, all.stdout]) {
-      expect(output).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret/u)
-      expect(output).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret/u)
+      expect(output).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret|json-secret|json-credential|json-token|json-password/u)
+      expect(output).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret|stderr-json-secret|stderr-json-credential|stderr-json-token|stderr-json-password/u)
     }
 
     await stopFixture(fixture)
     const startResult = await start.output
     expect(startResult.status).toBe(0)
-    expect(startResult.stdout).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret/u)
-    expect(startResult.stderr).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret/u)
+    expect(startResult.stdout).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret|json-secret|json-credential|json-token|json-password/u)
+    expect(startResult.stderr).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret|stderr-json-secret|stderr-json-credential|stderr-json-token|stderr-json-password/u)
 
     const persistedLogs = await Promise.all([
       readFile(join(fixture.installation.root, 'shared/logs/host.stdout.log'), 'utf8'),
       readFile(join(fixture.installation.root, 'shared/logs/host.stderr.log'), 'utf8'),
     ])
     for (const log of persistedLogs) {
-      expect(log).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret/u)
-      expect(log).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret/u)
+      expect(log).not.toMatch(/stdout-secret|stdout-token-secret|stdout-password-secret|stdout-env-secret|json-secret|json-credential|json-token|json-password/u)
+      expect(log).not.toMatch(/stderr-secret|stderr-credential-secret|stderr-env-secret|stderr-json-secret|stderr-json-credential|stderr-json-token|stderr-json-password/u)
     }
 
     const operations = (await readFile(operationsPath, 'utf8')).trim().split('\n').map(line => JSON.parse(line))

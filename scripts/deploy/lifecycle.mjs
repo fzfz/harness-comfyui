@@ -445,17 +445,25 @@ function statusView(installation, activeVersion, state, status) {
 
 export function redactSensitiveLine(line) {
   let redacted = line
+  const replaceSensitiveValue = (_match, prefix, _keyQuote, sensitiveValue) => {
+    const quote = sensitiveValue[0] === sensitiveValue.at(-1) && (sensitiveValue[0] === '"' || sensitiveValue[0] === "'") ? sensitiveValue[0] : ''
+    return `${prefix}${quote}[REDACTED]${quote}`
+  }
+  const replaceEnvironmentValue = (_match, prefix, sensitiveValue) => {
+    const quote = sensitiveValue[0] === sensitiveValue.at(-1) && (sensitiveValue[0] === '"' || sensitiveValue[0] === "'") ? sensitiveValue[0] : ''
+    return `${prefix}${quote}[REDACTED]${quote}`
+  }
   redacted = redacted.replace(
-    /(authorization\s*(?::|=)\s*(?:(?:bearer|basic|token)\s+)?)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
-    '$1[REDACTED]',
+    /((['"]?)authorization\2\s*(?::|=)\s*(?:(?:bearer|basic|token)\s+)?)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;}\]]+)/giu,
+    replaceSensitiveValue,
   )
   redacted = redacted.replace(
-    /((?:credential|secret|token|password)\s*(?:=|:)\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
-    '$1[REDACTED]',
+    /((['"]?)(?:credential|secret|token|password)\2\s*(?:=|:)\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;}\]]+)/giu,
+    replaceSensitiveValue,
   )
   redacted = redacted.replace(
-    /(HARNESS_COMFYUI_[A-Z0-9_]*\s*=\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/gu,
-    '$1[REDACTED]',
+    /(HARNESS_COMFYUI_[A-Z0-9_]*\s*=\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;}\]]+)/gu,
+    replaceEnvironmentValue,
   )
   return redacted
 }
