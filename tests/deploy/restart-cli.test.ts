@@ -8,7 +8,6 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
-const cliScript = join(repositoryRoot, 'scripts/deploy/cli.mjs')
 const temporaryRoots: string[] = []
 const runningChildren: ChildProcess[] = []
 
@@ -18,10 +17,10 @@ type ProcessResult = {
   stderr: string
 }
 
-function runProcess(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<ProcessResult> {
+function runProcess(command: string, args: string[], env: NodeJS.ProcessEnv, cwd = repositoryRoot): Promise<ProcessResult> {
   return new Promise((resolveResult) => {
     const child = spawn(command, args, {
-      cwd: repositoryRoot,
+      cwd,
       env,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -245,6 +244,7 @@ async function createFixture() {
     const target = join(packageRoot, relativePath)
     await mkdir(resolve(target, '..'), { recursive: true })
     await copyFile(join(repositoryRoot, relativePath), target)
+    if (relativePath === 'scripts/deploy/cli.mjs') await chmod(target, 0o755)
   }
   const runtimeDirectory = join(packageRoot, 'deployment/runtime')
   await writeFile(join(runtimeDirectory, 'package.json'), `${JSON.stringify({
@@ -298,6 +298,8 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     ...process.env,
     HOME: fake.home,
     USERPROFILE: fake.home,
+    npm_config_cache: join(root, 'npm-cache'),
+    NPM_CONFIG_CACHE: join(root, 'npm-cache'),
     PATH: `${fake.binDirectory}${delimiter}${process.env.PATH ?? ''}`,
     FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
     HOST_READY_FILE: hostReadyFile,
@@ -307,12 +309,16 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
-  return runProcess(process.execPath, [
-    cliScript,
+  return runProcess('npm', [
+    'exec',
+    '--yes',
+    `--package=${fixture.tarballPath}`,
+    '--',
+    'harness-comfyui',
     'install',
     '--installation', fixture.inputPath,
     '--artifact', fixture.tarballPath,
-  ], fixture.env)
+  ], fixture.env, fixture.root)
 }
 
 afterEach(async () => {
@@ -333,6 +339,7 @@ describe('installed restart CLI', () => {
     const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     const readyLines = await waitForLines(fixture.hostReadyFile, 1)
     const oldState = await waitForState(processPath)
+    expect(Number(readyLines[0])).toBe(oldState.pid)
 
     const restart = spawnProcess(stableBin, ['restart', '--installation', fixture.inputPath], fixture.env)
     const restartedLines = await waitForLines(fixture.hostReadyFile, 2)
@@ -364,6 +371,11 @@ describe('installed restart CLI', () => {
 
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
     const processPath = join(fixture.installation.root, 'state/process.json')
+    const missingInstallation = await runProcess(stableBin, ['restart'], fixture.env)
+    expect(missingInstallation.status).not.toBe(0)
+    expect(missingInstallation.stderr).toContain('usage: harness-comfyui restart --installation <absolute-json>')
+    expect(missingInstallation.stderr).not.toContain('not implemented in this slice')
+
     const restart = spawnProcess(stableBin, ['restart', '--installation', fixture.inputPath], fixture.env)
     const ready = await waitForLines(fixture.hostReadyFile, 1)
     const state = await waitForState(processPath)
