@@ -252,8 +252,29 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const state = JSON.parse(readFileSync(join(root, 'state/active-release.json'), 'utf8'))
 if (typeof state.releasePath !== 'string' || state.releasePath.length === 0) throw new Error('active release state has no releasePath')
 const child = spawn(process.execPath, [join(state.releasePath, 'package/scripts/deploy/cli.mjs'), ...process.argv.slice(2)], { stdio: 'inherit', shell: false })
-child.once('error', error => { process.stderr.write('harness-comfyui: ' + error.message + '\\n'); process.exitCode = 1 })
-child.once('close', (code, signal) => { process.exitCode = code ?? (signal ? 1 : 0) })
+const signalExitCodes = { SIGINT: 130, SIGTERM: 143 }
+let spawnFailed = false
+const forwardSignal = signal => {
+  if (child.exitCode !== null || child.signalCode !== null) return
+  try {
+    child.kill(signal)
+  } catch (error) {
+    process.stderr.write('harness-comfyui: ' + error.message + '\\n')
+    process.exitCode = 1
+  }
+}
+process.on('SIGINT', () => forwardSignal('SIGINT'))
+process.on('SIGTERM', () => forwardSignal('SIGTERM'))
+child.once('error', error => {
+  spawnFailed = true
+  process.stderr.write('harness-comfyui: ' + error.message + '\\n')
+  process.exitCode = 1
+})
+child.once('close', (code, signal) => {
+  process.removeAllListeners('SIGINT')
+  process.removeAllListeners('SIGTERM')
+  process.exitCode = spawnFailed ? 1 : (code ?? (signal ? signalExitCodes[signal] ?? 1 : 0))
+})
 `
   const temporaryPath = `${stablePath}.${randomUUID()}.next`
   try {

@@ -1,4 +1,4 @@
-import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { access, chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer, type AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
@@ -202,6 +202,98 @@ async function runInstall(
   ], env)
 }
 
+async function waitForFile(path: string): Promise<void> {
+  const deadline = Date.now() + 5000
+  while (Date.now() < deadline) {
+    try {
+      await access(path)
+      return
+    } catch {
+      await new Promise(resolveDelay => setTimeout(resolveDelay, 25))
+    }
+  }
+  throw new Error(`timed out waiting for ${path}`)
+}
+
+async function waitForProcessGone(pid: number): Promise<void> {
+  const deadline = Date.now() + 5000
+  while (Date.now() < deadline) {
+    try {
+      process.kill(pid, 0)
+    } catch {
+      return
+    }
+    await new Promise(resolveDelay => setTimeout(resolveDelay, 25))
+  }
+  throw new Error(`process ${pid} is still running`)
+}
+
+async function runStableSignalCase(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  signal: NodeJS.Signals,
+): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
+  const state = JSON.parse(await readFile(join(fixture.installation.root, 'state/active-release.json'), 'utf8')) as { releasePath: string }
+  const releaseCli = join(state.releasePath, 'package/scripts/deploy/cli.mjs')
+  const readyPath = join(fixture.root, `${signal}.ready`)
+  const pidPath = join(fixture.root, `${signal}.pid`)
+  const markerPath = join(fixture.root, `${signal}.received`)
+  await writeFile(releaseCli, `import { appendFileSync, writeFileSync } from 'node:fs'
+
+writeFileSync(${JSON.stringify(readyPath)}, 'ready\\n')
+writeFileSync(${JSON.stringify(pidPath)}, String(process.pid))
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    appendFileSync(${JSON.stringify(markerPath)}, signal + '\\n')
+    process.exit(signal === 'SIGINT' ? 130 : 143)
+  })
+}
+setInterval(() => {}, 1000)
+`, 'utf8')
+
+  const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+  const child = spawn(stableBin, ['signal-test'], {
+    cwd: repositoryRoot,
+    env: {
+      ...fixture.env,
+      SIGNAL_UNRELATED_ENV: 'must-not-be-read-by-wrapper',
+    },
+    shell: false,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  let childPid: number | undefined
+  const resultPromise = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolveResult, rejectResult) => {
+    const timeout = setTimeout(() => rejectResult(new Error(`timed out waiting for stable bin ${signal} exit`)), 1500)
+    child.once('error', error => {
+      clearTimeout(timeout)
+      rejectResult(error)
+    })
+    child.once('close', (code, exitSignal) => {
+      clearTimeout(timeout)
+      resolveResult({ code, signal: exitSignal })
+    })
+  })
+
+  try {
+    await waitForFile(readyPath)
+    childPid = Number((await readFile(pidPath, 'utf8')).trim())
+    if (!Number.isInteger(childPid)) throw new Error(`invalid child pid: ${childPid}`)
+    expect(child.kill(signal)).toBe(true)
+    const result = await resultPromise
+    expect((await readFile(markerPath, 'utf8')).trim()).toBe(signal)
+    await waitForProcessGone(childPid)
+    return result
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+    if (childPid !== undefined) {
+      try {
+        process.kill(childPid, 'SIGKILL')
+      } catch {
+        // The child already exited.
+      }
+    }
+  }
+}
+
 afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
@@ -333,4 +425,29 @@ describe('harness-comfyui install CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'bin/harness-comfyui'))).resolves.toBeDefined()
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   }, 120_000)
+
+  it.skipIf(process.platform === 'win32')('forwards SIGINT and SIGTERM from the generated stable bin to its foreground child', async () => {
+    const expected = { SIGINT: 130, SIGTERM: 143 } as const
+
+    for (const signal of Object.keys(expected) as Array<keyof typeof expected>) {
+      const fixture = await createFixture()
+      expect((await runInstall(fixture)).status).toBe(0)
+
+      const result = await runStableSignalCase(fixture, signal)
+
+      expect(result.signal).toBeNull()
+      expect(result.code).toBe(expected[signal])
+    }
+  }, 30_000)
+
+  it('preserves the foreground child exit code in the generated stable bin', async () => {
+    const fixture = await createFixture()
+    expect((await runInstall(fixture)).status).toBe(0)
+    const state = JSON.parse(await readFile(join(fixture.installation.root, 'state/active-release.json'), 'utf8')) as { releasePath: string }
+    await writeFile(join(state.releasePath, 'package/scripts/deploy/cli.mjs'), 'process.exit(23)\n', 'utf8')
+
+    const result = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), ['normal-exit'], fixture.env)
+
+    expect(result.status).toBe(23)
+  })
 })
