@@ -222,6 +222,7 @@ async function createFixture() {
     'scripts/deploy/stop.mjs',
     'scripts/deploy/status.mjs',
     'scripts/deploy/preflight.mjs',
+    'scripts/deploy/runtime-contract.mjs',
     'scripts/profile/materialize.mjs',
     'scripts/profile/start.mjs',
     'profiles/comfyui-workbench/package.json',
@@ -235,6 +236,7 @@ async function createFixture() {
   await writeFile(join(packageRoot, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
     version: '0.1.0-test.1',
+    packageManager: 'pnpm@11.7.0',
     engines: { node: '^22.19.0 || >=24.0.0' },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {

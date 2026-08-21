@@ -10,6 +10,10 @@ import {
   SOURCE_CONTRACT_ID,
   validateInstallation,
 } from './contracts.mjs';
+import {
+  RUNTIME_DEPENDENCY_POLICY,
+  readPnpmPackageManagerVersion,
+} from './runtime-contract.mjs';
 
 export async function readJson(path) {
   let contents;
@@ -65,13 +69,7 @@ async function requireFile(path, name) {
 }
 
 const PRODUCT_PACKAGE_NAME = 'harness-comfyui';
-const PRODUCT_PNPM_VERSION = '11.7.0';
 const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u;
-const FROZEN_RUNTIME_PACKAGES = Object.freeze([
-  '@deepseek-ai/dsh',
-  '@deepseek-ai/dsh-base',
-  '@deepseek-ai/dsh-web-app',
-]);
 const RUNTIME_ENTRIES = Object.freeze([
   'deployment/runtime/package.json',
   'deployment/runtime/pnpm-lock.yaml',
@@ -205,11 +203,12 @@ async function readArtifactPackageJson(artifactPath) {
   if (manifest.name !== PRODUCT_PACKAGE_NAME) {
     throw new Error(`artifact package.json.name must be ${PRODUCT_PACKAGE_NAME}`);
   }
+  const packageManagerVersion = readPnpmPackageManagerVersion(manifest, 'artifact package.json');
   const version = requireString(manifest.version, 'artifact package.json.version');
   parseSemver(version, 'artifact package.json.version');
   const devDependencies = requireRecord(manifest.devDependencies, 'artifact package.json.devDependencies');
   const runtimeVersions = {};
-  for (const packageName of FROZEN_RUNTIME_PACKAGES) {
+  for (const packageName of RUNTIME_DEPENDENCY_POLICY.packages) {
     const packageVersion = devDependencies[packageName];
     if (typeof packageVersion !== 'string' || !SEMVER_PATTERN.test(packageVersion)) {
       throw new Error(`artifact package.json.devDependencies.${packageName} must be a non-empty exact version`);
@@ -221,7 +220,7 @@ async function readArtifactPackageJson(artifactPath) {
   if (!satisfiesNodeEngine(nodeEngine, process.versions.node)) {
     throw new Error(`current Node ${process.versions.node} does not satisfy artifact package.json.engines.node ${nodeEngine}`);
   }
-  return { name: PRODUCT_PACKAGE_NAME, version, nodeEngine, runtimeVersions };
+  return { name: PRODUCT_PACKAGE_NAME, version, nodeEngine, packageManagerVersion, runtimeVersions };
 }
 
 async function readArtifactEntry(artifactPath, entry, description = entry) {
@@ -279,7 +278,7 @@ function assertRuntimeLock(lockText, runtimeVersions) {
     if (line.trim().length > 0 && !line.startsWith(' ')) break;
     importerLines.push(line);
   }
-  for (const packageName of FROZEN_RUNTIME_PACKAGES) {
+  for (const packageName of RUNTIME_DEPENDENCY_POLICY.packages) {
     const dependencyIndex = importerLines.findIndex(line => line.trim() === "'" + packageName + "':");
     const specifier = dependencyIndex < 0
       ? undefined
@@ -370,11 +369,11 @@ async function validateArtifactRuntime(artifactPath, rootManifest) {
   requireRecord(runtimeManifest, 'artifact deployment/runtime/package.json');
   const dependencies = requireRecord(runtimeManifest.dependencies, 'artifact deployment/runtime/package.json.dependencies');
   const dependencyNames = Object.keys(dependencies).sort();
-  const expectedNames = [...FROZEN_RUNTIME_PACKAGES].sort();
+  const expectedNames = [...RUNTIME_DEPENDENCY_POLICY.packages].sort();
   if (JSON.stringify(dependencyNames) !== JSON.stringify(expectedNames)) {
     throw new Error('artifact deployment/runtime/package.json dependencies must contain exactly the frozen runtime packages');
   }
-  for (const packageName of FROZEN_RUNTIME_PACKAGES) {
+  for (const packageName of RUNTIME_DEPENDENCY_POLICY.packages) {
     if (dependencies[packageName] !== rootManifest.runtimeVersions[packageName]) {
       throw new Error(`runtime dependency ${packageName} must equal exact root package.json.devDependencies.${packageName} ${rootManifest.runtimeVersions[packageName]}`);
     }
@@ -453,7 +452,7 @@ async function validateArtifactConfiguration(artifactPath, installation) {
   }
 }
 
-async function readPnpmVersion() {
+async function readPnpmVersion(expectedVersion) {
   const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
   let result;
   try {
@@ -466,8 +465,8 @@ async function readPnpmVersion() {
     throw new Error(`pnpm --version failed${detail ? `: ${detail}` : ''}`);
   }
   const version = result.stdout.trim();
-  if (version !== PRODUCT_PNPM_VERSION) {
-    throw new Error(`pnpm version must be ${PRODUCT_PNPM_VERSION}, got ${version || '(empty)'}`);
+  if (version !== expectedVersion) {
+    throw new Error(`pnpm version must be ${expectedVersion}, got ${version || '(empty)'}`);
   }
   return version;
 }
@@ -566,7 +565,7 @@ export async function runProductPreflight(input, artifactPath, options = {}) {
   const artifact = await readArtifactPackageJson(artifactPath);
   const runtimeClosure = await validateArtifactRuntime(artifactPath, artifact);
   const configuration = await validateArtifactConfiguration(artifactPath, installation);
-  const pnpmVersion = await readPnpmVersion();
+  const pnpmVersion = await readPnpmVersion(artifact.packageManagerVersion);
 
   for (const [name, path] of [
     ['installation.paths.dataDir', installation.paths.dataDir],

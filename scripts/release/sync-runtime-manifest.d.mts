@@ -7,6 +7,7 @@ type RuntimeManifestDependencies = {
 export type RuntimeManifestResult = {
   directory: string
   dependencies: RuntimeManifestDependencies
+  packageManagerVersion: string
 }
 
 export type RuntimeManifestCheckResult = RuntimeManifestResult & {

@@ -186,6 +186,7 @@ const packageFiles = [
   'lib/config-profile-validator.js',
   'scripts/deploy/cli.mjs', 'scripts/deploy/contracts.mjs', 'scripts/deploy/install.mjs',
   'scripts/deploy/lifecycle.mjs', 'scripts/deploy/preflight.mjs', 'scripts/deploy/activate.mjs',
+  'scripts/deploy/runtime-contract.mjs',
   'scripts/deploy/upgrade.mjs', 'scripts/deploy/start.mjs', 'scripts/deploy/stop.mjs',
   'scripts/deploy/status.mjs', 'scripts/deploy/health.mjs', 'scripts/deploy/logs.mjs',
   'scripts/profile/materialize.mjs', 'scripts/profile/start.mjs',
@@ -198,7 +199,7 @@ async function createArtifact(root: string, version: string): Promise<string> {
   const packageRoot = join(root, `package-${version}`)
   await mkdir(packageRoot, { recursive: true })
   const manifest = {
-    name: 'harness-comfyui', version, engines: { node: '^22.19.0 || >=24.0.0' },
+    name: 'harness-comfyui', version, packageManager: 'pnpm@11.7.0', engines: { node: '^22.19.0 || >=24.0.0' },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.7', '@deepseek-ai/dsh-base': '0.1.0-rc.7', '@deepseek-ai/dsh-web-app': '0.1.0-rc.7' },
     files: packageFiles,

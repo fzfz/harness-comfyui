@@ -19,6 +19,12 @@ import { delimiter, isAbsolute, join, resolve } from 'node:path'
 import { validateInstallation } from './contracts.mjs'
 import { PROFILE_VALIDATOR_ENTRY, runProductPreflight } from './preflight.mjs'
 import {
+  RUNTIME_DEPENDENCY_POLICY,
+  readPnpmPackageManagerVersion,
+  runtimeInstallEnvironment,
+  runtimeInstallNpmrc,
+} from './runtime-contract.mjs'
+import {
   ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
   assertProcessStateOwnership,
   processIdentityMismatch,
@@ -30,12 +36,6 @@ import {
   writeActiveReleaseState,
 } from './lifecycle.mjs'
 
-const PRODUCT_RUNTIME_DEPENDENCIES = Object.freeze([
-  '@deepseek-ai/dsh',
-  '@deepseek-ai/dsh-base',
-  '@deepseek-ai/dsh-web-app',
-])
-const PRODUCT_PNPM_VERSION = '11.7.0'
 const RUNTIME_FILES = Object.freeze([
   'deployment/runtime/package.json',
   'deployment/runtime/pnpm-lock.yaml',
@@ -52,6 +52,7 @@ const DEPLOYMENT_FILES = Object.freeze([
   'scripts/deploy/contracts.mjs',
   'scripts/deploy/install.mjs',
   'scripts/deploy/preflight.mjs',
+  'scripts/deploy/runtime-contract.mjs',
   'scripts/profile/materialize.mjs',
 ])
 
@@ -159,6 +160,7 @@ async function readPackageManifest(packageRoot) {
   }
   if (manifest?.name !== 'harness-comfyui') throw new Error('release package.json.name must be harness-comfyui')
   if (typeof manifest.version !== 'string' || manifest.version.length === 0) throw new Error('release package.json.version must be a non-empty string')
+  readPnpmPackageManagerVersion(manifest, 'release package.json')
   return manifest
 }
 
@@ -170,11 +172,11 @@ async function validateRuntimeManifest(packageRoot, rootManifest) {
     throw new Error(`runtime package.json is malformed: ${error instanceof Error ? error.message : String(error)}`)
   }
   const actualNames = Object.keys(runtimeManifest?.dependencies ?? {}).sort()
-  const expectedNames = [...PRODUCT_RUNTIME_DEPENDENCIES].sort()
+  const expectedNames = [...RUNTIME_DEPENDENCY_POLICY.packages].sort()
   if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
     throw new Error('runtime package.json must contain exactly the three product runtime dependencies')
   }
-  for (const name of PRODUCT_RUNTIME_DEPENDENCIES) {
+  for (const name of RUNTIME_DEPENDENCY_POLICY.packages) {
     if (runtimeManifest.dependencies[name] !== rootManifest.devDependencies?.[name]) {
       throw new Error(`runtime dependency ${name} does not match the packed root manifest`)
     }
@@ -186,13 +188,13 @@ async function copyRuntimeFiles(packageRoot, runtimeRoot) {
   for (const relativePath of RUNTIME_FILES) {
     await copyFile(join(packageRoot, relativePath), join(runtimeRoot, relativePath.slice('deployment/runtime/'.length)))
   }
-  await writeFile(join(runtimeRoot, '.npmrc'), 'strict-dep-builds=true\nstrict-peer-dependencies=false\n', 'utf8')
+  await writeFile(join(runtimeRoot, '.npmrc'), runtimeInstallNpmrc(), 'utf8')
 }
 
 async function runPnpmInstall(runtimeRoot, pnpmExecutable) {
   const result = await runExternal(pnpmExecutable, ['install', '--frozen-lockfile', '--prod'], {
     cwd: runtimeRoot,
-    env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' },
+    env: runtimeInstallEnvironment({ ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' }),
   })
   if (result.code !== 0) {
     const detail = result.stderr.trim() || result.stdout.trim()
@@ -383,7 +385,7 @@ export async function runProductInstall(input, artifactPath) {
       status: 'passed',
       installation,
       artifact,
-      runtime: { node: process.versions.node, pnpm: PRODUCT_PNPM_VERSION },
+      runtime: { node: process.versions.node, pnpm: preflight.runtime.pnpm },
       release: { version: artifact.version, path: releaseRoot, previousRelease: null },
     }
   } catch (error) {

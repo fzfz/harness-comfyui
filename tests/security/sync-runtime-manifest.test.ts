@@ -71,4 +71,15 @@ describe('release:sync-runtime-manifest', () => {
     expect(result.code).not.toBe(0)
     expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime manifest|dsh|stale/i)
   })
+
+  it('fails closed when the root packageManager is not an exact pnpm declaration', async () => {
+    const fixture = await createFixture()
+    const manifestPath = join(fixture, 'package.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+    manifest.packageManager = 'pnpm@latest'
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+
+    await expect(syncRuntimeManifest(fixture)).rejects.toThrow(/packageManager.*exact/i)
+    await expect(readFile(join(fixture, 'deployment/runtime/package.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
 })

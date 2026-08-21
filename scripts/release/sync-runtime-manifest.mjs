@@ -4,12 +4,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  RUNTIME_DEPENDENCY_POLICY,
+  readPnpmPackageManagerVersion,
+} from '../deploy/runtime-contract.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const runtimeDependencies = Object.freeze([
-  '@deepseek-ai/dsh',
-  '@deepseek-ai/dsh-base',
-  '@deepseek-ai/dsh-web-app',
-])
 
 async function readJson(path, label) {
   try {
@@ -21,7 +21,7 @@ async function readJson(path, label) {
 
 function readRuntimeDependencies(rootManifest) {
   const dependencies = {}
-  for (const name of runtimeDependencies) {
+  for (const name of RUNTIME_DEPENDENCY_POLICY.packages) {
     const version = rootManifest.devDependencies?.[name]
     if (typeof version !== 'string' || version.length === 0) {
       throw new Error(`package.json.devDependencies.${name} must be a non-empty version`)
@@ -34,6 +34,7 @@ function readRuntimeDependencies(rootManifest) {
 async function buildRuntimeFiles(root) {
   const resolvedRoot = resolve(root)
   const rootManifest = await readJson(resolve(resolvedRoot, 'package.json'), 'package.json')
+  const packageManagerVersion = readPnpmPackageManagerVersion(rootManifest, 'package.json')
   const dependencies = readRuntimeDependencies(rootManifest)
   let workspace
   try {
@@ -51,6 +52,7 @@ async function buildRuntimeFiles(root) {
     packageText,
     workspaceText: workspace,
     dependencies,
+    packageManagerVersion,
   }
 }
 
@@ -59,7 +61,11 @@ export async function syncRuntimeManifest(root = repositoryRoot) {
   await mkdir(files.directory, { recursive: true })
   await writeFile(resolve(files.directory, 'package.json'), files.packageText, 'utf8')
   await writeFile(resolve(files.directory, 'pnpm-workspace.yaml'), files.workspaceText, 'utf8')
-  return { directory: files.directory, dependencies: files.dependencies }
+  return {
+    directory: files.directory,
+    dependencies: files.dependencies,
+    packageManagerVersion: files.packageManagerVersion,
+  }
 }
 
 export async function checkRuntimeManifest(root = repositoryRoot) {
@@ -78,7 +84,12 @@ export async function checkRuntimeManifest(root = repositoryRoot) {
   if (packageText !== files.packageText) staleFiles.push('deployment/runtime/package.json')
   if (workspaceText !== files.workspaceText) staleFiles.push('deployment/runtime/pnpm-workspace.yaml')
   if (staleFiles.length > 0) throw new Error(`runtime manifest is stale: ${staleFiles.join(', ')}`)
-  return { current: true, directory: files.directory, dependencies: files.dependencies }
+  return {
+    current: true,
+    directory: files.directory,
+    dependencies: files.dependencies,
+    packageManagerVersion: files.packageManagerVersion,
+  }
 }
 
 function parseArguments(argv) {

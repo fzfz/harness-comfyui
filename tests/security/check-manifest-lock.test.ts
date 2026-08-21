@@ -65,6 +65,19 @@ describe('check:manifest-lock', () => {
     await expect(readFile(join(fixture, 'pnpm-lock.yaml'))).resolves.toEqual(lockfileBefore)
   })
 
+  it('fails closed when the root packageManager is not an exact pnpm declaration', async () => {
+    const fixture = await createFixture()
+    const manifestPath = join(fixture, 'package.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+    manifest.packageManager = 'npm@11.7.0'
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+
+    const result = await runScript(['--root', fixture])
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/packageManager.*pnpm/i)
+  })
+
   it('fails when a locked dependency specifier drifts in package.json', async () => {
     const fixture = await createFixture()
     const manifestPath = join(fixture, 'package.json')

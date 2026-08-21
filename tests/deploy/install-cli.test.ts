@@ -120,6 +120,7 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     'scripts/deploy/install.mjs',
     'scripts/deploy/lifecycle.mjs',
     'scripts/deploy/preflight.mjs',
+    'scripts/deploy/runtime-contract.mjs',
     'deployment/runtime/package.json',
     'deployment/runtime/pnpm-lock.yaml',
     'deployment/runtime/pnpm-workspace.yaml',
@@ -134,6 +135,7 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
   await writeFile(join(packageRoot, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
     version: '0.1.0-test.1',
+    packageManager: 'pnpm@11.7.0',
     engines: { node: '^22.19.0 || >=24.0.0' },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {
@@ -324,6 +326,7 @@ describe('harness-comfyui install CLI', () => {
       'harness-runtime/package.json',
       'harness-runtime/pnpm-lock.yaml',
       'harness-runtime/pnpm-workspace.yaml',
+      'harness-runtime/.npmrc',
       'harness-runtime/node_modules/.bin/dsh',
       'dsh-home/profiles/comfyui-workbench/package.json',
       'dsh-home/profiles/comfyui-workbench/cordis.patch.yml',
@@ -331,6 +334,8 @@ describe('harness-comfyui install CLI', () => {
     ]) {
       await expect(lstat(join(releaseRoot, relativePath))).resolves.toBeDefined()
     }
+    await expect(readFile(join(releaseRoot, 'harness-runtime/.npmrc'), 'utf8'))
+      .resolves.toBe('strict-dep-builds=true\nstrict-peer-dependencies=true\n')
     for (const relativePath of ['shared/data', 'shared/runs', 'shared/saved-media', 'shared/logs', 'state']) {
       await expect(lstat(join(fixture.installation.root, relativePath))).resolves.toBeDefined()
     }

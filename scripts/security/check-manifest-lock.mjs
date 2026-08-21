@@ -5,13 +5,14 @@ import { createHash } from 'node:crypto'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  RUNTIME_DEPENDENCY_POLICY,
+  readPnpmPackageManagerVersion,
+} from '../deploy/runtime-contract.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 export const runtimeDirectory = 'deployment/runtime'
-export const frozenRuntimeDependencies = Object.freeze([
-  '@deepseek-ai/dsh',
-  '@deepseek-ai/dsh-base',
-  '@deepseek-ai/dsh-web-app',
-])
+export const frozenRuntimeDependencies = RUNTIME_DEPENDENCY_POLICY.packages
 
 function parseArguments(argv) {
   const values = new Map()
@@ -220,7 +221,7 @@ export function assertLockfileResolves(lockPath, expectedVersions) {
 
 function readRootVersions(rootManifest, label) {
   const versions = {}
-  for (const packageName of frozenRuntimeDependencies) {
+  for (const packageName of RUNTIME_DEPENDENCY_POLICY.packages) {
     const version = rootManifest.devDependencies?.[packageName]
     if (typeof version !== 'string' || version.length === 0 || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(version)) {
       throw new Error(`${label}.devDependencies.${packageName} must be an exact version`)
@@ -242,11 +243,11 @@ function assertRuntimeManifest(runtimeManifest, rootVersions) {
     throw new Error('deployment/runtime/package.json.dependencies must be an object')
   }
   const actualNames = Object.keys(dependencies).sort()
-  const expectedNames = [...frozenRuntimeDependencies].sort()
+  const expectedNames = [...RUNTIME_DEPENDENCY_POLICY.packages].sort()
   if (actualNames.length !== expectedNames.length || actualNames.some((name, index) => name !== expectedNames[index])) {
     throw new Error('deployment/runtime/package.json dependencies must contain exactly the frozen runtime packages')
   }
-  for (const packageName of frozenRuntimeDependencies) {
+  for (const packageName of RUNTIME_DEPENDENCY_POLICY.packages) {
     if (dependencies[packageName] !== rootVersions[packageName]) {
       throw new Error(`deployment/runtime/package.json.dependencies.${packageName} must match root package.json.devDependencies`)
     }
@@ -301,6 +302,7 @@ export function validateDependencyClosure(root = repositoryRoot) {
   const rootManifestPath = resolve(resolvedRoot, 'package.json')
   const runtimeManifestPath = resolve(resolvedRoot, runtimeDirectory, 'package.json')
   const rootManifest = readJson(rootManifestPath, 'package.json')
+  const packageManagerVersion = readPnpmPackageManagerVersion(rootManifest, 'package.json')
   const rootVersions = readRootVersions(rootManifest, 'package.json')
   const runtimeManifest = readJson(runtimeManifestPath, 'deployment/runtime/package.json')
   assertRuntimeManifest(runtimeManifest, rootVersions)
@@ -328,7 +330,7 @@ export function validateDependencyClosure(root = repositoryRoot) {
   } catch {
     throw new Error('root and runtime lockfile overrides must match the workspace override policy')
   }
-  return { rootVersions, rootPolicy, runtimePolicy, rootLock, runtimeLock }
+  return { packageManagerVersion, rootVersions, rootPolicy, runtimePolicy, rootLock, runtimeLock }
 }
 
 export function checkManifestLock(root = repositoryRoot) {

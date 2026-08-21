@@ -64,6 +64,7 @@ async function createFixture() {
   await writeFile(join(packageRoot, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
     version: '0.1.0-test.1',
+    packageManager: 'pnpm@11.7.0',
     type: 'module',
     engines: { node: '^22.19.0 || >=24.0.0' },
     devDependencies: {
@@ -196,12 +197,44 @@ describe('harness-comfyui preflight CLI', () => {
     expect((await readFile(fixture.discoveryLog, 'utf8')).trim().split('\n')).toEqual(['catalog', 'source'])
   })
 
+  it('uses the packed packageManager version as the pnpm compatibility contract', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      const manifestPath = join(packageRoot, 'package.json')
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+      manifest.packageManager = 'pnpm@11.8.0'
+      await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('pnpm version must be 11.8.0')
+    expect(result.stderr).not.toContain('discovery CLI')
+  })
+
+  it('rejects a packed artifact without packageManager evidence', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      const manifestPath = join(packageRoot, 'package.json')
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+      delete manifest.packageManager
+      await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('packageManager')
+    expect(result.stderr).not.toContain('discovery CLI')
+  })
+
   it('validates a production profile from an extracted package without node_modules', async () => {
     const fixture = await createFixture()
     await mkdir(join(fixture.packageRoot, 'lib'), { recursive: true })
     await mkdir(join(fixture.packageRoot, 'scripts/deploy'), { recursive: true })
     await copyFile(join(repositoryRoot, 'lib/config-profile-validator.js'), join(fixture.packageRoot, 'lib/config-profile-validator.js'))
-    for (const filename of ['activate.mjs', 'cli.mjs', 'contracts.mjs', 'install.mjs', 'lifecycle.mjs', 'preflight.mjs']) {
+    for (const filename of ['activate.mjs', 'cli.mjs', 'contracts.mjs', 'install.mjs', 'lifecycle.mjs', 'preflight.mjs', 'runtime-contract.mjs']) {
       await copyFile(join(repositoryRoot, 'scripts/deploy', filename), join(fixture.packageRoot, 'scripts/deploy', filename))
     }
     const tar = await runProcess('tar', ['-czf', fixture.tarballPath, '-C', fixture.root, 'package'])
