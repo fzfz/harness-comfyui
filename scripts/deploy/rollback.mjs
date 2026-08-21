@@ -1,148 +1,170 @@
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import { access } from 'node:fs/promises'
+import { constants as fsConstants } from 'node:fs'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+import { validateInstallation } from './contracts.mjs'
 import {
-  assertReleasePath,
-  readActivePointer,
-  readJson,
-  runCommand,
-  sameArtifact,
-  validateDeploymentApproval,
-  validateDeploymentInput,
-  writeActivePointer,
-  writeJson,
-} from './preflight.mjs';
+  processStatePath,
+  probePort,
+  readActiveRelease,
+  readActiveReleaseState,
+  readProcessState,
+  writeActiveReleaseState,
+} from './lifecycle.mjs'
 
-function parseRollbackArgs(argv) {
-  const options = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index];
-    if (argument !== '--input' && argument !== '--activation' && argument !== '--health' && argument !== '--output') {
-      throw new Error(`unknown option: ${argument}`);
-    }
-    const value = argv[index + 1];
-    if (!value || value.startsWith('--')) {
-      throw new Error(`${argument} requires a path`);
-    }
-    options[argument.slice(2)] = resolve(value);
-    index += 1;
-  }
-  if (!options.input || !options.activation || !options.health || !options.output) {
-    throw new Error('usage: rollback.mjs --input <json> --activation <json> --health <json> --output <json>');
-  }
-  return options;
+function waitForDelay(milliseconds) {
+  return new Promise(resolveResult => setTimeout(resolveResult, milliseconds))
 }
 
-function failedEvidence(error, extra = {}) {
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+async function loadReleaseLifecycle(release) {
+  const packageRoot = join(release.releasePath, 'package', 'scripts', 'deploy')
+  const modulePaths = {
+    start: join(packageRoot, 'start.mjs'),
+    health: join(packageRoot, 'health.mjs'),
+    stop: join(packageRoot, 'stop.mjs'),
+  }
+  for (const [name, path] of Object.entries(modulePaths)) {
+    try {
+      await access(path, fsConstants.R_OK)
+    } catch (error) {
+      throw new Error(`release ${release.activeVersion} has no product ${name} module: ${errorMessage(error)}`)
+    }
+  }
+  const [start, health, stop] = await Promise.all(
+    Object.values(modulePaths).map(path => import(pathToFileURL(path).href)),
+  )
+  const helpers = {
+    start: start.runProductStart,
+    health: health.runProductHealth,
+    stop: stop.runProductStop,
+  }
+  for (const [name, helper] of Object.entries(helpers)) {
+    if (typeof helper !== 'function') {
+      throw new Error(`release ${release.activeVersion} has no product ${name} helper`)
+    }
+  }
+  return {
+    ...release,
+    runProductStart: helpers.start,
+    runProductHealth: helpers.health,
+    runProductStop: helpers.stop,
+  }
+}
+
+async function waitForHostReady(startPromise, installation, expectedVersion) {
+  const observedStart = startPromise.then(
+    value => ({ status: 'stopped', value }),
+    error => ({ status: 'failed', error }),
+  )
+  const deadline = Date.now() + installation.process.shutdownTimeoutMs
+  const statePath = processStatePath(installation.root)
+  while (Date.now() < deadline) {
+    const outcome = await Promise.race([
+      observedStart,
+      waitForDelay(25).then(() => null),
+    ])
+    if (outcome !== null) {
+      if (outcome.status === 'failed') throw outcome.error
+      throw new Error(`Host ${expectedVersion} exited before readiness`)
+    }
+    const state = await readProcessState(statePath)
+    if (state?.activeVersion === expectedVersion
+      && state.host === installation.host
+      && state.port === installation.port
+      && await probePort(installation.host, installation.port)) {
+      return
+    }
+  }
+  throw new Error(`Host ${expectedVersion} did not become ready before shutdown timeout`)
+}
+
+async function stopRestoredHost(installation, lifecycle, expectedVersion) {
+  try {
+    const active = await readActiveReleaseState(installation.root, installation.installationId)
+    if (active?.activeVersion !== expectedVersion) return
+    await lifecycle.runProductStop(installation)
+  } catch (error) {
+    throw new Error(`rollback cleanup could not stop Host ${expectedVersion}: ${errorMessage(error)}`)
+  }
+}
+
+async function startAndHealth(installation, operation, lifecycle, expectedVersion) {
+  let startPromise
+  try {
+    startPromise = lifecycle.runProductStart(installation, operation)
+    await waitForHostReady(startPromise, installation, expectedVersion)
+    const health = await lifecycle.runProductHealth(installation)
+    if (health.status !== 'passed') {
+      const error = new Error(`rollback health check failed for ${expectedVersion}`)
+      error.health = health
+      throw error
+    }
+    return { startPromise, health }
+  } catch (error) {
+    let cleanupError
+    try {
+      await stopRestoredHost(installation, lifecycle, expectedVersion)
+    } catch (candidateError) {
+      cleanupError = candidateError
+    }
+    if (startPromise !== undefined) await startPromise.catch(() => undefined)
+    if (cleanupError !== undefined) {
+      throw new Error(`${errorMessage(error)}; ${errorMessage(cleanupError)}`)
+    }
+    throw error
+  }
+}
+
+function swappedState(state) {
+  return {
+    schemaVersion: state.schemaVersion,
+    installationId: state.installationId,
+    activeVersion: state.previousRelease.activeVersion,
+    releasePath: state.previousRelease.releasePath,
+    previousRelease: {
+      activeVersion: state.activeVersion,
+      releasePath: state.releasePath,
+    },
+  }
+}
+
+export async function runProductRollback(input, operation = {}) {
+  const installation = validateInstallation(input)
+  const state = await readActiveReleaseState(installation.root, installation.installationId)
+  if (state === undefined) throw new Error('cannot rollback without an active release')
+  if (state.previousRelease === null) throw new Error('cannot rollback without a previous release')
+
+  // Resolve every module before stopping the current Host. A malformed or
+  // incomplete target therefore leaves the current release running.
+  const current = await readActiveRelease(installation.root, installation.installationId)
+  const currentLifecycle = await loadReleaseLifecycle({
+    activeVersion: current.activeVersion,
+    releasePath: current.releasePath,
+  })
+  const previousLifecycle = await loadReleaseLifecycle(state.previousRelease)
+
+  await currentLifecycle.runProductStop(installation)
+  const nextState = swappedState(state)
+  await writeActiveReleaseState(installation.root, nextState)
+
+  const restored = await startAndHealth(
+    installation,
+    operation,
+    previousLifecycle,
+    nextState.activeVersion,
+  )
+  await restored.startPromise
   return {
     stage: 'rollback',
-    status: 'failed',
-    error: error instanceof Error ? error.message : String(error),
-    ...extra,
-  };
-}
-
-async function loadRollbackContext(inputPath, activationPath, healthPath) {
-  const input = await readJson(inputPath);
-  const activation = await readJson(activationPath);
-  const health = await readJson(healthPath);
-  if (activation.stage !== 'activate' || activation.status !== 'passed') {
-    throw new Error('activation evidence must have stage=activate and status=passed');
+    status: 'stopped',
+    installationId: installation.installationId,
+    activeVersion: nextState.activeVersion,
+    previousRelease: nextState.previousRelease,
+    health: restored.health,
   }
-  if (health.stage !== 'health' || health.status !== 'failed' || health.rollbackRequired !== true) {
-    throw new Error('rollback requires failed health evidence with rollbackRequired=true');
-  }
-  const normalized = await validateDeploymentInput(input);
-  if (activation.environment !== normalized.environment || !sameArtifact(activation.artifact, normalized.artifact)) {
-    throw new Error('activation evidence does not match deployment input');
-  }
-  if (health.environment !== normalized.environment || !sameArtifact(health.artifact, normalized.artifact)) {
-    throw new Error('health evidence does not match deployment input');
-  }
-  if (activation.activeRelease?.releasePath !== normalized.installation.candidateRelease) {
-    throw new Error('activation evidence does not point to the candidate release');
-  }
-  const deploymentApproval = validateDeploymentApproval(input.deploymentApproval, normalized.environment, normalized.artifact);
-  const previousRelease = activation.previousRelease;
-  assertReleasePath(previousRelease, normalized.installation.previousRelease, 'activation previous release');
-  return { normalized, activation, health, deploymentApproval, previousRelease };
-}
-
-export async function runRollback(inputPath, activationPath, healthPath) {
-  const { normalized, activation, health, deploymentApproval, previousRelease } = await loadRollbackContext(inputPath, activationPath, healthPath);
-  const { installation, commands, artifact, environment } = normalized;
-  const activePointer = await readActivePointer(installation.activeReleaseFile);
-  assertReleasePath(activePointer, installation.candidateRelease);
-
-  const stopped = await runCommand(commands.stop, {
-    cwd: installation.candidateRelease,
-    environment,
-    releasePath: installation.candidateRelease,
-    stage: 'rollback.stop',
-  });
-  if (stopped.code !== 0) {
-    return failedEvidence(new Error(`rollback stop command exited with ${stopped.code}`), {
-      failedAt: 'stop',
-      activeRelease: activePointer,
-      command: { code: stopped.code, signal: stopped.signal },
-    });
-  }
-
-  try {
-    await writeActivePointer(installation.activeReleaseFile, previousRelease);
-  } catch (error) {
-    return failedEvidence(error, { failedAt: 'switch', activeRelease: activePointer });
-  }
-
-  const started = await runCommand(commands.start, {
-    cwd: installation.previousRelease,
-    environment,
-    releasePath: installation.previousRelease,
-    stage: 'rollback.start',
-  });
-  if (started.code !== 0) {
-    return failedEvidence(new Error(`rollback start command exited with ${started.code}`), {
-      failedAt: 'start',
-      activeRelease: await readActivePointer(installation.activeReleaseFile),
-      command: { code: started.code, signal: started.signal },
-    });
-  }
-
-  return {
-    stage: 'rollback',
-    status: 'passed',
-    environment,
-    artifact,
-    deploymentApproval,
-    restoredRelease: previousRelease,
-    healthFailure: healthSummary(activation, health),
-  };
-}
-
-function healthSummary(activation, health) {
-  return {
-    activationArtifact: activation.artifact,
-    failedAt: health.stage,
-  };
-}
-
-async function main() {
-  const options = parseRollbackArgs(process.argv.slice(2));
-  let evidence;
-  try {
-    evidence = await runRollback(options.input, options.activation, options.health);
-  } catch (error) {
-    evidence = failedEvidence(error);
-  }
-  await writeJson(options.output, evidence);
-  process.stdout.write(`${JSON.stringify(evidence)}\n`);
-  if (evidence.status !== 'passed') {
-    process.exitCode = 1;
-  }
-}
-
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    process.stderr.write(`deployment rollback failed: ${error.message}\n`);
-    process.exitCode = 1;
-  });
 }

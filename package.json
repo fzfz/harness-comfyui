@@ -181,6 +181,7 @@
     "scripts/deploy/preflight.mjs",
     "scripts/deploy/activate.mjs",
     "scripts/deploy/upgrade.mjs",
+    "scripts/deploy/rollback.mjs",
     "scripts/profile/materialize.mjs",
     "scripts/profile/start.mjs"
   ]

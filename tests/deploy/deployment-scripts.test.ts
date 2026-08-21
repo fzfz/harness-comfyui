@@ -45,7 +45,6 @@ async function createFixture(environment = 'fixture-a') {
     outputPath: join(root, 'preflight-output.json'),
     activationPath: join(root, 'activation-output.json'),
     healthPath: join(root, 'health-output.json'),
-    rollbackPath: join(root, 'rollback-output.json'),
     commandLog,
     input: {
       environment,
@@ -263,42 +262,6 @@ describe('deployment public CLIs', () => {
     expect(evidence).toMatchObject({ stage: 'health', status: 'passed', environment: 'fixture-a', rollbackRequired: false });
     const activePointer = JSON.parse(await readFile(fixture.input.installation.activeReleaseFile, 'utf8')) as Record<string, any>;
     expect(activePointer.releasePath).toBe(fixture.input.installation.candidateRelease);
-  });
-
-  it('health failure produces rollback evidence and rollback restores the previous fixture explicitly', async () => {
-    const fixture = await createFixture();
-    fixture.input.commands.health = [process.execPath, '-e', 'process.exit(1)'];
-    await writeFile(fixture.inputPath, JSON.stringify(fixture.input), 'utf8');
-    expect((await runNode(preflightScript, ['--input', fixture.inputPath, '--output', fixture.outputPath])).exitCode).toBe(0);
-    await prepareLegacyActivation(fixture);
-    const health = await runNode(join(repositoryRoot, 'scripts/deploy/health.mjs'), [
-      '--input', fixture.inputPath,
-      '--activation', fixture.activationPath,
-      '--output', fixture.healthPath,
-    ]);
-    expect(health.exitCode).toBe(1);
-    expect(JSON.parse(await readFile(fixture.healthPath, 'utf8'))).toMatchObject({
-      stage: 'health',
-      status: 'failed',
-      rollbackRequired: true,
-    });
-
-    const result = await runNode(join(repositoryRoot, 'scripts/deploy/rollback.mjs'), [
-      '--input', fixture.inputPath,
-      '--activation', fixture.activationPath,
-      '--health', fixture.healthPath,
-      '--output', fixture.rollbackPath,
-    ]);
-
-    expect(result.exitCode, result.stderr).toBe(0);
-    expect(JSON.parse(await readFile(fixture.rollbackPath, 'utf8'))).toMatchObject({
-      stage: 'rollback',
-      status: 'passed',
-      restoredRelease: { releasePath: fixture.input.installation.previousRelease },
-    });
-    const activePointer = JSON.parse(await readFile(fixture.input.installation.activeReleaseFile, 'utf8')) as Record<string, any>;
-    expect(activePointer.releasePath).toBe(fixture.input.installation.previousRelease);
-    expect((await readFile(fixture.commandLog, 'utf8')).trim().split('\n')).toEqual(['rollback.stop', 'rollback.start']);
   });
 
   it('keeps preflight and approval checks scoped to the legacy deployment fixture', async () => {

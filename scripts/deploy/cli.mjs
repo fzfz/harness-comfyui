@@ -80,6 +80,9 @@ export function parseLifecycleArguments(argv, command) {
     options.installation = requireAbsoluteArgument(argv[index + 1], argument)
     index += 1
   }
+  if (options.json && command !== 'status' && command !== 'health') {
+    throw new Error(`--json is not supported for ${command}`)
+  }
   if (!options.installation || (command === 'health' && !options.json)) {
     throw new Error(`usage: harness-comfyui ${command}${command === 'status' || command === 'health' ? ' --json' : ''} --installation <absolute-json>`)
   }
@@ -149,6 +152,10 @@ async function runLifecycleCommand(command, installation, commandOptions = undef
     const module = await import('./upgrade.mjs')
     return module.runProductUpgrade(installation, commandOptions.artifact, operation)
   }
+  if (command === 'rollback') {
+    const module = await import('./rollback.mjs')
+    return module.runProductRollback(installation, operation)
+  }
   const module = await import('./status.mjs')
   return module.runProductStatus(installation)
 }
@@ -162,7 +169,7 @@ export async function main(argv = process.argv.slice(2)) {
   const [command, ...commandArguments] = argv
   if (!COMMANDS.includes(command)) throw new Error(`unknown command: ${command}`)
   if (command !== 'preflight' && command !== 'install' && command !== 'upgrade') {
-    if (command !== 'start' && command !== 'stop' && command !== 'restart' && command !== 'status' && command !== 'health' && command !== 'logs') {
+    if (command !== 'start' && command !== 'stop' && command !== 'restart' && command !== 'status' && command !== 'health' && command !== 'logs' && command !== 'rollback') {
       throw new Error(`command ${command} is not implemented in this slice`)
     }
   }
