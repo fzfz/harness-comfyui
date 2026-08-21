@@ -178,11 +178,15 @@ export async function main(argv = process.argv.slice(2)) {
     }
   }
 
-  const options = command === 'preflight' || command === 'install' || command === 'upgrade'
-    ? parseArtifactArguments(commandArguments, command)
-    : command === 'logs'
-      ? parseLogsArguments(commandArguments)
-      : parseLifecycleArguments(commandArguments, command)
+  const options = command === 'preflight'
+    ? parsePreflightArguments(commandArguments)
+    : command === 'install'
+      ? parseInstallArguments(commandArguments)
+      : command === 'upgrade'
+        ? parseUpgradeArguments(commandArguments)
+        : command === 'logs'
+          ? parseLogsArguments(commandArguments)
+          : parseLifecycleArguments(commandArguments, command)
   const installation = await readJson(options.installation)
   const validatedInstallation = validateInstallation(installation)
   const operation = await beginProductOperation(validatedInstallation, command)
