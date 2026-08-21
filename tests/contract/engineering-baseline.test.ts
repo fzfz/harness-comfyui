@@ -53,6 +53,7 @@ describe('Issue #2 public package and composition contracts', () => {
     const manifest = readJson('package.json')
     expect(manifest.packageManager).toBe('pnpm@11.7.0')
     expect(manifest.engines).toEqual({ node: '^22.19.0 || >=24.0.0' })
+    expect(manifest.bin).toEqual({ 'harness-comfyui': 'scripts/deploy/cli.mjs' })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
     expect(manifest.scripts['profile:materialize:development']).toBe(
       'node scripts/profile/materialize.mjs --configuration development --dsh-home .local/dsh/development --package-spec .',
@@ -60,6 +61,7 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.scripts['dev:start']).toBe(
       'node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173',
     )
+    expect(manifest.scripts['deploy:preflight']).toBe('node scripts/deploy/cli.mjs preflight')
     expect(manifest.files).toEqual([
       'lib/index.js',
       'lib/client.js',
@@ -85,6 +87,9 @@ describe('Issue #2 public package and composition contracts', () => {
       'profiles/comfyui-workbench/cordis.patch.yml',
       'profiles/comfyui-workbench/package.json',
       'profiles/comfyui-workbench/pnpm-workspace.yaml',
+      'scripts/deploy/cli.mjs',
+      'scripts/deploy/contracts.mjs',
+      'scripts/deploy/preflight.mjs',
       'scripts/profile/materialize.mjs',
       'scripts/profile/start.mjs',
     ])
@@ -108,7 +113,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'node scripts/release/smoke.mjs && pnpm run test:release-smoke',
     )
     expect(scripts.quality).toBe(
-      'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',
+      'pnpm run check:harness-boundary && pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',
     )
   })
 

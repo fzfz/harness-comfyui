@@ -12,5 +12,8 @@
   "source": {
     "catalogCliPath": "",
     "sourceCliPath": ""
+  },
+  "client": {
+    "runRefreshIntervalMs": 1000
   }
 }

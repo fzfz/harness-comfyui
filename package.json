@@ -7,6 +7,9 @@
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
   },
+  "bin": {
+    "harness-comfyui": "scripts/deploy/cli.mjs"
+  },
   "scripts": {
     "check:harness-boundary": "node scripts/security/check-harness-boundary.mjs",
     "check:manifest-lock": "node scripts/security/check-manifest-lock.mjs",
@@ -30,7 +33,7 @@
     "dev:start": "node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173",
     "release:dry-run": "node scripts/release/dry-run.mjs",
     "release:smoke": "node scripts/release/smoke.mjs && pnpm run test:release-smoke",
-    "deploy:preflight": "node scripts/deploy/preflight.mjs",
+    "deploy:preflight": "node scripts/deploy/cli.mjs preflight",
     "deploy:activate": "node scripts/deploy/activate.mjs",
     "deploy:health": "node scripts/deploy/health.mjs",
     "deploy:rollback": "node scripts/deploy/rollback.mjs"
@@ -154,6 +157,9 @@
     "profiles/comfyui-workbench/cordis.patch.yml",
     "profiles/comfyui-workbench/package.json",
     "profiles/comfyui-workbench/pnpm-workspace.yaml",
+    "scripts/deploy/cli.mjs",
+    "scripts/deploy/contracts.mjs",
+    "scripts/deploy/preflight.mjs",
     "scripts/profile/materialize.mjs",
     "scripts/profile/start.mjs"
   ]

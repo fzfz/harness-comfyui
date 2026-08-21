@@ -7,6 +7,7 @@
   "HARNESS_COMFYUI_DEFAULT_INSTANCE_ID": "comfyui.defaultInstanceId",
   "HARNESS_COMFYUI_CATALOG_CLI_PATH": "source.catalogCliPath",
   "HARNESS_COMFYUI_SOURCE_CLI_PATH": "source.sourceCliPath",
+  "HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS": "client.runRefreshIntervalMs",
   "HARNESS_COMFYUI_SERVER_HOST": "server.host",
   "HARNESS_COMFYUI_SERVER_PORT": "server.port"
 }
