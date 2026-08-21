@@ -78,6 +78,7 @@ const RUNTIME_ENTRIES = Object.freeze([
   'deployment/runtime/pnpm-workspace.yaml',
 ]);
 const CONFIG_ENTRY_PREFIX = 'config/';
+export const PROFILE_VALIDATOR_ENTRY = 'lib/config-profile-validator.js';
 
 async function runExternal(command, args, { timeoutMs = 10000 } = {}) {
   return new Promise((resolveResult, reject) => {
@@ -306,8 +307,11 @@ function assertRuntimeWorkspace(workspaceText) {
   for (let index = packagesIndex + 1; index < lines.length; index += 1) {
     const line = lines[index];
     if (line.trim().length === 0) continue;
+    if (!line.startsWith(' ')) break;
     const entry = line.match(/^ {2}-\s+(.+)\s*$/u);
-    if (entry === null) break;
+    if (entry === null) {
+      throw new Error('artifact deployment/runtime/pnpm-workspace.yaml must declare only package .');
+    }
     packageEntries.push(entry[1]);
   }
   if (packageEntries.length !== 1 || packageEntries[0] !== '.') {
@@ -343,6 +347,9 @@ function assertRuntimeWorkspace(workspaceText) {
 
 async function validateArtifactRuntime(artifactPath, rootManifest) {
   const entries = await listArtifactEntries(artifactPath);
+  if (!entries.has(`package/${PROFILE_VALIDATOR_ENTRY}`)) {
+    throw new Error(`artifact must contain package/${PROFILE_VALIDATOR_ENTRY}`);
+  }
   for (const required of RUNTIME_ENTRIES) {
     if (!entries.has(`package/${required}`)) {
       throw new Error(`artifact must contain package/${required}`);
@@ -403,7 +410,7 @@ function profileEnvironment(installation) {
 }
 
 async function loadSharedProfileLoader() {
-  const bundlePath = fileURLToPath(new URL('../../lib/index.js', import.meta.url));
+  const bundlePath = fileURLToPath(new URL('../../lib/config-profile-validator.js', import.meta.url));
   let bundle;
   try {
     bundle = await import(`${pathToFileURL(bundlePath).href}?configuration-profile-preflight=${randomUUID()}`);

@@ -1,5 +1,5 @@
 import { createServer, type AddressInfo } from 'node:net'
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
@@ -64,6 +64,7 @@ async function createFixture() {
   await writeFile(join(packageRoot, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
     version: '0.1.0-test.1',
+    type: 'module',
     engines: { node: '^22.19.0 || >=24.0.0' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.7',
@@ -83,6 +84,8 @@ async function createFixture() {
   }, null, 2)}\n`, 'utf8')
   await writeFile(join(packageRoot, 'deployment/runtime/pnpm-lock.yaml'), await readFile(join(repositoryRoot, 'deployment/runtime/pnpm-lock.yaml'), 'utf8'), 'utf8')
   await writeFile(join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml'), await readFile(join(repositoryRoot, 'deployment/runtime/pnpm-workspace.yaml'), 'utf8'), 'utf8')
+  await mkdir(join(packageRoot, 'lib'), { recursive: true })
+  await copyFile(join(repositoryRoot, 'lib/config-profile-validator.js'), join(packageRoot, 'lib/config-profile-validator.js'))
   await mkdir(join(packageRoot, 'config/profiles'), { recursive: true })
   for (const relativePath of [
     'config/base.json',
@@ -193,6 +196,45 @@ describe('harness-comfyui preflight CLI', () => {
     expect((await readFile(fixture.discoveryLog, 'utf8')).trim().split('\n')).toEqual(['catalog', 'source'])
   })
 
+  it('validates a production profile from an extracted package without node_modules', async () => {
+    const fixture = await createFixture()
+    await mkdir(join(fixture.packageRoot, 'lib'), { recursive: true })
+    await mkdir(join(fixture.packageRoot, 'scripts/deploy'), { recursive: true })
+    await copyFile(join(repositoryRoot, 'lib/config-profile-validator.js'), join(fixture.packageRoot, 'lib/config-profile-validator.js'))
+    for (const filename of ['activate.mjs', 'cli.mjs', 'contracts.mjs', 'install.mjs', 'lifecycle.mjs', 'preflight.mjs']) {
+      await copyFile(join(repositoryRoot, 'scripts/deploy', filename), join(fixture.packageRoot, 'scripts/deploy', filename))
+    }
+    const tar = await runProcess('tar', ['-czf', fixture.tarballPath, '-C', fixture.root, 'package'])
+    if (tar.status !== 0) throw new Error(`fixture tarball failed: ${tar.stderr}`)
+    const extractedRoot = await mkdtemp(join(tmpdir(), 'harness-preflight-packed-'))
+    temporaryRoots.push(extractedRoot)
+    const extract = await runProcess('tar', ['-xzf', fixture.tarballPath, '-C', extractedRoot])
+    if (extract.status !== 0) throw new Error(`fixture extraction failed: ${extract.stderr}`)
+
+    const packageRoot = join(extractedRoot, 'package')
+    const bundle = await readFile(join(packageRoot, 'lib/config-profile-validator.js'), 'utf8')
+    const externalImports = [...bundle.matchAll(/(?:from|import\(|require\()\s*["']([^"']+)["']/gu)]
+      .map(match => match[1])
+      .filter(specifier => !specifier.startsWith('node:'))
+    expect(externalImports).toEqual([])
+    await expect(lstat(join(packageRoot, 'node_modules'))).rejects.toMatchObject({ code: 'ENOENT' })
+
+    const env = { ...process.env }
+    delete env.NODE_PATH
+    const result = await runProcess(process.execPath, [
+      join(packageRoot, 'scripts/deploy/cli.mjs'),
+      'preflight',
+      '--installation', fixture.inputPath,
+      '--artifact', fixture.tarballPath,
+    ], { cwd: extractedRoot, env })
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: '' })
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      stage: 'preflight',
+      status: 'passed',
+      configuration: { profile: 'production' },
+    })
+  })
+
   it('rejects a runtime dependency version drift before probing the installation', async () => {
     const fixture = await createFixture()
     await repackFixture(fixture, async packageRoot => {
@@ -220,6 +262,56 @@ describe('harness-comfyui preflight CLI', () => {
 
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('deployment/runtime/pnpm-lock.yaml')
+  })
+
+  it('rejects a runtime workspace that declares any package besides .', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
+      const workspace = await readFile(workspacePath, 'utf8')
+      await writeFile(workspacePath, workspace.replace('  - .\n', '  - .\n  - extra\n'), 'utf8')
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('must declare only package .')
+  })
+
+  it.each([
+    ['a lock importer specifier drift', async (packageRoot: string) => {
+      const lockPath = join(packageRoot, 'deployment/runtime/pnpm-lock.yaml')
+      const lock = await readFile(lockPath, 'utf8')
+      await writeFile(lockPath, lock.replace("specifier: 0.1.0-rc.7", "specifier: 0.1.0-rc.6"), 'utf8')
+    }, 'importer . must resolve'],
+    ['a lock package resolution drift', async (packageRoot: string) => {
+      const lockPath = join(packageRoot, 'deployment/runtime/pnpm-lock.yaml')
+      const lock = await readFile(lockPath, 'utf8')
+      await writeFile(lockPath, lock.replace(/^  '@deepseek-ai\/dsh@0\.1\.0-rc\.7.*':$/gmu, "  '@deepseek-ai/dsh@0.1.0-rc.6':"), 'utf8')
+    }, 'missing package resolution'],
+    ['a workspace strict dependency policy drift', async (packageRoot: string) => {
+      const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
+      const workspace = await readFile(workspacePath, 'utf8')
+      await writeFile(workspacePath, workspace.replace('strictDepBuilds: true', 'strictDepBuilds: false'), 'utf8')
+    }, 'strictDepBuilds: true'],
+    ['a workspace build allowlist drift', async (packageRoot: string) => {
+      const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
+      const workspace = await readFile(workspacePath, 'utf8')
+      await writeFile(workspacePath, workspace.replace("  'koffi@3.1.5': true", "  'koffi@3.1.4': true"), 'utf8')
+    }, 'allowBuilds koffi@3.1.5'],
+    ['a workspace overrides policy drift', async (packageRoot: string) => {
+      const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
+      const workspace = await readFile(workspacePath, 'utf8')
+      await writeFile(workspacePath, workspace.replace(/overrides:\n(?:  [^\n]+\n)*/u, 'overrides:\n'), 'utf8')
+    }, 'frozen overrides policy'],
+  ])('rejects %s with frozen runtime evidence', async (_label, edit, expectedMessage) => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, edit)
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(expectedMessage)
   })
 
   it('rejects a tarball that omits the selected Configuration Profile', async () => {

@@ -163,6 +163,7 @@
   },
   "files": [
     "lib/index.js",
+    "lib/config-profile-validator.js",
     "lib/client.js",
     "lib/client.js.map",
     "lib/types/index.d.ts",

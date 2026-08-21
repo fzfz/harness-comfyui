@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { delimiter, isAbsolute, join, resolve } from 'node:path'
 
 import { validateInstallation } from './contracts.mjs'
-import { runProductPreflight } from './preflight.mjs'
+import { PROFILE_VALIDATOR_ENTRY, runProductPreflight } from './preflight.mjs'
 import {
   ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
   assertProcessStateOwnership,
@@ -45,6 +45,7 @@ const PROFILE_FILES = Object.freeze([
   'profiles/comfyui-workbench/package.json',
   'profiles/comfyui-workbench/cordis.patch.yml',
   'profiles/comfyui-workbench/pnpm-workspace.yaml',
+  PROFILE_VALIDATOR_ENTRY,
 ])
 const DEPLOYMENT_FILES = Object.freeze([
   'scripts/deploy/cli.mjs',

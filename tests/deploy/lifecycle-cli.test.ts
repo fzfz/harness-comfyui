@@ -7,6 +7,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { writeFrozenRuntimeAndConfiguration } from './frozen-artifact-fixture.ts'
+
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const cliScript = join(repositoryRoot, 'scripts/deploy/cli.mjs')
 const temporaryRoots: string[] = []
@@ -205,6 +207,8 @@ async function createFixture() {
     openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
   }
   const packageFiles = [
+    'lib/index.js',
+    'lib/config-profile-validator.js',
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
@@ -241,19 +245,7 @@ async function createFixture() {
     await mkdir(resolve(target, '..'), { recursive: true })
     await copyFile(join(repositoryRoot, relativePath), target)
   }
-  const runtimeDirectory = join(packageRoot, 'deployment/runtime')
-  await writeFile(join(runtimeDirectory, 'package.json'), `${JSON.stringify({
-    name: 'harness-comfyui-runtime',
-    private: true,
-    dependencies: {
-      '@deepseek-ai/dsh': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
-    },
-  }, null, 2)}
-`, 'utf8')
-  await writeFile(join(runtimeDirectory, 'pnpm-lock.yaml'), 'lockfileVersion: \'9.0\'\n\nimporters: {}\n', 'utf8')
-  await writeFile(join(runtimeDirectory, 'pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n', 'utf8')
+  await writeFrozenRuntimeAndConfiguration(packageRoot)
   for (const path of [catalogCliPath, sourceCliPath]) {
     await writeFile(path, `#!/usr/bin/env node
 if (process.argv[2] !== '--discovery-json') process.exit(2)

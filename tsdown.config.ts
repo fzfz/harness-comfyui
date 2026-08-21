@@ -8,6 +8,19 @@ import {
 
 export default defineConfig([
   {
+    entry: { 'config-profile-validator': 'src/config/profile-validator.ts' },
+    outDir: 'lib',
+    format: 'esm',
+    platform: 'node',
+    target: 'node22.19.0',
+    fixedExtension: false,
+    dts: false,
+    clean: false,
+    deps: {
+      alwaysBundle: ['@deepseek-ai/schemastery'],
+    },
+  },
+  {
     entry: {
       index: 'lib/types/src/index.js',
       types: 'lib/types/src/types.js',

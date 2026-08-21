@@ -6,6 +6,8 @@ import { spawn } from 'node:child_process'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { writeFrozenRuntimeAndConfiguration } from './frozen-artifact-fixture.ts'
+
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const cliScript = join(repositoryRoot, 'scripts/deploy/cli.mjs')
 const temporaryRoots: string[] = []
@@ -111,6 +113,8 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
   }
   const packageFiles = [
+    'lib/index.js',
+    'lib/config-profile-validator.js',
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
@@ -132,7 +136,6 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     version: '0.1.0-test.1',
     engines: { node: '^22.19.0 || >=24.0.0' },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
-    dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.7',
       '@deepseek-ai/dsh-base': '0.1.0-rc.7',
@@ -145,18 +148,7 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     await mkdir(resolve(target, '..'), { recursive: true })
     await copyFile(join(repositoryRoot, relativePath), target)
   }
-  await mkdir(join(packageRoot, 'deployment/runtime'), { recursive: true })
-  await writeFile(join(packageRoot, 'deployment/runtime/package.json'), `${JSON.stringify({
-    name: 'harness-comfyui-runtime',
-    private: true,
-    dependencies: {
-      '@deepseek-ai/dsh': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
-    },
-  }, null, 2)}\n`, 'utf8')
-  await writeFile(join(packageRoot, 'deployment/runtime/pnpm-lock.yaml'), 'lockfileVersion: \'9.0\'\n\nimporters: {}\n', 'utf8')
-  await writeFile(join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n', 'utf8')
+  await writeFrozenRuntimeAndConfiguration(packageRoot)
   if (symlinkEntry) await symlink('/tmp/harness-install-outside', join(packageRoot, 'unsafe-link'))
   if (outsideEntry) await writeFile(join(root, 'outside-entry.txt'), 'outside\n', 'utf8')
 

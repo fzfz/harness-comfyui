@@ -97,6 +97,7 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.scripts['test:deploy']).toBe('vitest run tests/deploy --maxWorkers=1 --no-file-parallelism')
     expect(manifest.files).toEqual([
       'lib/index.js',
+      'lib/config-profile-validator.js',
       'lib/client.js',
       'lib/client.js.map',
       'lib/types/index.d.ts',

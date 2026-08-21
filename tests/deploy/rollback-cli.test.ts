@@ -7,6 +7,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { writeFrozenRuntimeAndConfiguration } from './frozen-artifact-fixture.ts'
+
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const temporaryRoots: string[] = []
 const runningChildren: ChildProcess[] = []
@@ -182,6 +184,7 @@ const discovery = {
 }
 
 const packageFiles = [
+  'lib/config-profile-validator.js',
   'scripts/deploy/cli.mjs', 'scripts/deploy/contracts.mjs', 'scripts/deploy/install.mjs',
   'scripts/deploy/lifecycle.mjs', 'scripts/deploy/preflight.mjs', 'scripts/deploy/activate.mjs',
   'scripts/deploy/upgrade.mjs', 'scripts/deploy/rollback.mjs', 'scripts/deploy/start.mjs',
@@ -208,12 +211,7 @@ async function createArtifact(root: string, version: string): Promise<string> {
     await mkdir(resolve(target, '..'), { recursive: true })
     await copyFile(join(repositoryRoot, relativePath), target)
   }
-  const runtimeRoot = join(packageRoot, 'deployment/runtime')
-  await writeFile(join(runtimeRoot, 'package.json'), JSON.stringify({ name: 'harness-comfyui-runtime', private: true, dependencies: {
-    '@deepseek-ai/dsh': '0.1.0-rc.7', '@deepseek-ai/dsh-base': '0.1.0-rc.7', '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
-  } }, null, 2) + '\n', 'utf8')
-  await writeFile(join(runtimeRoot, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n\nimporters: {}\n", 'utf8')
-  await writeFile(join(runtimeRoot, 'pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n', 'utf8')
+  await writeFrozenRuntimeAndConfiguration(packageRoot)
   const artifactPath = join(root, `harness-comfyui-${version}.tgz`)
   const tar = await runProcess('tar', ['-czf', artifactPath, '-C', root, `package-${version}`], process.env)
   if (tar.status !== 0) throw new Error(`fixture tarball failed: ${tar.stderr}`)
