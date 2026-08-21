@@ -11,7 +11,6 @@ import type { Readable } from 'node:stream'
 
 import {
   runRealBrowserProbe,
-  type BrowserSlotEntry,
   type RealBrowserProbe,
 } from './browser-cdp.ts'
 
@@ -98,16 +97,6 @@ export interface ClientPackageEvidence {
   moduleSource: string
 }
 
-export interface DetailsComposition {
-  registrationError: string | undefined
-  priorities: number[]
-  activePriority: number | undefined
-  entries: BrowserSlotEntry[]
-  remainingPriorities: number[]
-  remainingEntries: BrowserSlotEntry[]
-  unload(): Promise<void>
-}
-
 export interface CleanupEvidence {
   processExit: { code: number | null; signal: NodeJS.Signals | null } | undefined
   processStateRemoved: boolean
@@ -132,7 +121,6 @@ export interface ProfileFixture {
   readonly cleanupEvidence: CleanupEvidence
   readonly port: number
   install(): Promise<void>
-  materialize(): Promise<void>
   start(): Promise<void>
   status(): Promise<JsonObject>
   health(): Promise<JsonObject>
@@ -144,8 +132,6 @@ export interface ProfileFixture {
   readClientPackageEvidence(): Promise<ClientPackageEvidence>
   readClientModule(id: string): Promise<string>
   runRealBrowserProbe(): Promise<RealBrowserProbe>
-  inspectDetailsComposition(options: { nativeClientId: string }): Promise<DetailsComposition>
-  unloadClient(composition: DetailsComposition): Promise<void>
 }
 
 export interface ProfileVersionReader {
@@ -436,10 +422,7 @@ class ProfileFixtureImpl implements ProfileFixture {
       '--artifact', this.artifact.tarballPath,
     ], {
       cwd: this.runtimeCwd,
-      env: {
-        ...this.environment,
-        npm_config_legacy_peer_deps: 'true',
-      },
+      env: this.environment,
       onChild: child => this.trackChild(child),
     })
     if (result.code !== 0) throw new Error(`product CLI install failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
@@ -447,10 +430,6 @@ class ProfileFixtureImpl implements ProfileFixture {
     await access(this.profileManifestPath)
     this.installed = true
     this.stopped = false
-  }
-
-  async materialize(): Promise<void> {
-    await this.install()
   }
 
   async start(): Promise<void> {
@@ -613,28 +592,6 @@ class ProfileFixtureImpl implements ProfileFixture {
 
   async runRealBrowserProbe(): Promise<RealBrowserProbe> {
     return runRealBrowserProbe(`http://127.0.0.1:${this.currentPort}/`)
-  }
-
-  async inspectDetailsComposition(options: { nativeClientId: string }): Promise<DetailsComposition> {
-    const browser = await this.runRealBrowserProbe()
-    const registrationErrors = [...browser.singleSlotDuplicateErrors]
-    const expectedNative = browser.detailsEntries.some(entry => entry.owner === options.nativeClientId)
-    if (!expectedNative) registrationErrors.push(`details snapshot omitted ${options.nativeClientId}: ${JSON.stringify(browser.detailsEntries)}`)
-    const projectEntries = browser.detailsEntries.filter(entry => entry.owner === 'harness-comfyui')
-    if (projectEntries.length > 0) registrationErrors.push(`harness-comfyui registered a details occupant: ${JSON.stringify(projectEntries)}`)
-    return {
-      registrationError: registrationErrors[0],
-      priorities: browser.detailsEntries.map(entry => entry.priority),
-      activePriority: browser.detailsEntries.find(entry => entry.active)?.priority,
-      entries: browser.detailsEntries,
-      remainingPriorities: browser.remainingDetailsEntries.map(entry => entry.priority),
-      remainingEntries: browser.remainingDetailsEntries,
-      async unload() {},
-    }
-  }
-
-  async unloadClient(composition: DetailsComposition): Promise<void> {
-    await composition.unload()
   }
 
   async dispose(): Promise<void> {

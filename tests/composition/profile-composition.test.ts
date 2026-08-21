@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { createProfileFixture } from '../../src/testing/profile-fixture.ts'
@@ -17,6 +19,11 @@ describe('release artifact composition', () => {
 
     try {
       await fixture.install()
+
+      const profileManifest = JSON.parse(await readFile(fixture.profileManifestPath, 'utf8')) as {
+        dependencies?: Record<string, string>
+      }
+      expect(profileManifest.dependencies?.['harness-comfyui']).toBe(`file:${fixture.artifact.tarballPath}`)
 
       const installed = await fixture.readInstalledProfileEvidence()
       expect(installed.profileBundles).toEqual([
