@@ -102,6 +102,20 @@ async function waitForPortClosed(host: string, port: number, timeoutMs = 10_000)
   throw new Error(`timed out waiting for ${host}:${port} to close`)
 }
 
+async function readProcessState(path: string): Promise<Record<string, any>> {
+  return JSON.parse(await readFile(path, 'utf8')) as Record<string, any>
+}
+
+async function processStateExists(path: string): Promise<boolean> {
+  try {
+    await lstat(path)
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    return false
+  }
+}
+
 async function createFakePnpm(root: string): Promise<{ binDirectory: string; home: string }> {
   const binDirectory = join(root, 'fake-bin')
   const home = join(root, 'home')
@@ -195,6 +209,9 @@ async function createFixture() {
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
     'scripts/deploy/lifecycle.mjs',
+    'scripts/deploy/start.mjs',
+    'scripts/deploy/stop.mjs',
+    'scripts/deploy/status.mjs',
     'scripts/deploy/preflight.mjs',
     'scripts/profile/materialize.mjs',
     'scripts/profile/start.mjs',
@@ -463,6 +480,139 @@ describe('installed lifecycle CLI', () => {
     expect(() => process.kill(replacement.pid!, 0)).not.toThrow()
     replacement.kill('SIGTERM')
     await new Promise(resolveClose => replacement.once('close', resolveClose))
+  })
+
+  it.each([
+    { field: 'installationId', value: 'another-installation' },
+    { field: 'activeVersion', value: '0.1.0-test.other' },
+    { field: 'host', value: '127.0.0.2' },
+    { field: 'port', value: 1 },
+  ])('refuses %s ownership mismatches before status or stop acts', async ({ field, value }) => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+    const originalState = await readProcessState(statePath)
+    const mismatchedState = { ...originalState, [field]: value }
+
+    let statusResult: ProcessResult | undefined
+    let stateAfterStatus = false
+    let statusReportedRunning = false
+    let stopResult: ProcessResult | undefined
+    let stateAfterStop = false
+    let startAliveAfterStop = false
+    try {
+      await writeFile(statePath, `${JSON.stringify(mismatchedState, null, 2)}\n`, 'utf8')
+      statusResult = await runProcess(stableBin, ['status', '--json', '--installation', fixture.inputPath], fixture.env)
+      stateAfterStatus = await processStateExists(statePath)
+      if (statusResult.status === 0) statusReportedRunning = JSON.parse(statusResult.stdout).status === 'running'
+
+      await writeFile(statePath, `${JSON.stringify(mismatchedState, null, 2)}\n`, 'utf8')
+      stopResult = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+      stateAfterStop = await processStateExists(statePath)
+      startAliveAfterStop = start.exitCode === null
+    } finally {
+      await writeFile(statePath, `${JSON.stringify(originalState, null, 2)}\n`, 'utf8')
+      if (start.exitCode === null) {
+        const cleanup = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+        expect(cleanup.status, cleanup.stderr).toBe(0)
+      }
+      await start.output
+    }
+
+    expect(statusResult?.status).not.toBe(0)
+    expect(statusResult?.stderr).toMatch(/does not match current installation/i)
+    expect(statusReportedRunning).toBe(false)
+    expect(stateAfterStatus).toBe(true)
+    expect(stopResult?.status).not.toBe(0)
+    expect(stopResult?.stderr).toMatch(/does not match current installation/i)
+    expect(stateAfterStop).toBe(true)
+    expect(startAliveAfterStop).toBe(true)
+  }, 30_000)
+
+  it('refuses a process identity with matching start time but a different command', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+    const originalState = await readProcessState(statePath)
+    const mismatchedState = {
+      ...originalState,
+      processIdentity: {
+        ...originalState.processIdentity,
+        command: `${originalState.processIdentity.command} --different-command`,
+      },
+    }
+
+    let statusResult: ProcessResult | undefined
+    let stopResult: ProcessResult | undefined
+    let startAliveAfterStop = false
+    try {
+      await writeFile(statePath, `${JSON.stringify(mismatchedState, null, 2)}\n`, 'utf8')
+      statusResult = await runProcess(stableBin, ['status', '--json', '--installation', fixture.inputPath], fixture.env)
+
+      await writeFile(statePath, `${JSON.stringify(mismatchedState, null, 2)}\n`, 'utf8')
+      stopResult = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+      startAliveAfterStop = start.exitCode === null
+    } finally {
+      await writeFile(statePath, `${JSON.stringify(originalState, null, 2)}\n`, 'utf8')
+      if (start.exitCode === null) {
+        const cleanup = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+        expect(cleanup.status, cleanup.stderr).toBe(0)
+      }
+      await start.output
+    }
+
+    expect(statusResult?.status).not.toBe(0)
+    expect(statusResult?.stderr).toMatch(/identity mismatch/i)
+    expect(stopResult?.status).not.toBe(0)
+    expect(stopResult?.stderr).toMatch(/identity mismatch/i)
+    expect(startAliveAfterStop).toBe(true)
+  }, 30_000)
+
+  it('preserves a stale process state owned by another installation', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    const foreignState = {
+      schemaVersion: 1,
+      installationId: 'another-installation',
+      activeVersion: '0.1.0-test.1',
+      pid: 99_999_999,
+      operationId: 'foreign-stale-operation',
+      startedAt: '2026-08-22T00:00:00.000Z',
+      host: fixture.installation.host,
+      port: fixture.installation.port,
+      processIdentity: { startTime: 'stale', command: '/stale/dsh' },
+    }
+    await writeFile(statePath, `${JSON.stringify(foreignState, null, 2)}\n`, 'utf8')
+
+    const status = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'status', '--json', '--installation', fixture.inputPath,
+    ], fixture.env)
+    const stateAfterStatus = await processStateExists(statePath)
+    await writeFile(statePath, `${JSON.stringify(foreignState, null, 2)}\n`, 'utf8')
+    const stop = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'stop', '--installation', fixture.inputPath,
+    ], fixture.env)
+    const stateAfterStop = await processStateExists(statePath)
+
+    expect(status.status).not.toBe(0)
+    expect(status.stderr).toMatch(/does not match current installation/i)
+    expect(stateAfterStatus).toBe(true)
+    expect(stop.status).not.toBe(0)
+    expect(stop.stderr).toMatch(/does not match current installation/i)
+    expect(stateAfterStop).toBe(true)
   })
 
 })

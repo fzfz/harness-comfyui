@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url'
 
 import { runProductInstall } from './install.mjs'
 import { readJson, runProductPreflight } from './preflight.mjs'
-import { runProductStart, runProductStatus, runProductStop } from './lifecycle.mjs'
 
 export const COMMANDS = Object.freeze([
   'install', 'preflight', 'start', 'stop', 'restart',
@@ -85,6 +84,19 @@ export function parseLifecycleArguments(argv, command) {
   return options
 }
 
+async function runLifecycleCommand(command, installation) {
+  if (command === 'start') {
+    const module = await import('./start.mjs')
+    return module.runProductStart(installation)
+  }
+  if (command === 'stop') {
+    const module = await import('./stop.mjs')
+    return module.runProductStop(installation)
+  }
+  const module = await import('./status.mjs')
+  return module.runProductStatus(installation)
+}
+
 export async function main(argv = process.argv.slice(2)) {
   if (argv.length === 0 || (argv.length === 1 && argv[0] === '--help')) {
     process.stdout.write(helpText())
@@ -106,9 +118,7 @@ export async function main(argv = process.argv.slice(2)) {
   let evidence
   if (command === 'preflight') evidence = await runProductPreflight(installation, options.artifact)
   else if (command === 'install') evidence = await runProductInstall(installation, options.artifact)
-  else if (command === 'start') evidence = await runProductStart(installation)
-  else if (command === 'stop') evidence = await runProductStop(installation)
-  else evidence = await runProductStatus(installation)
+  else evidence = await runLifecycleCommand(command, installation)
   process.stdout.write(`${JSON.stringify(evidence)}\n`)
   return 0
 }

@@ -13,10 +13,7 @@ import { spawn } from 'node:child_process'
 import { createConnection } from 'node:net'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
-import { spawnForeground } from '../profile/start.mjs'
-import { validateInstallation } from './contracts.mjs'
-
-const PROCESS_STATE_SCHEMA_VERSION = 1
+export const PROCESS_STATE_SCHEMA_VERSION = 1
 const HARNESS_ENVIRONMENT_PREFIX = 'HARNESS_COMFYUI_'
 
 function isRecord(value) {
@@ -159,7 +156,11 @@ async function waitForStableProcessIdentity(pid) {
 }
 
 function sameProcessIdentity(left, right) {
-  return left.startTime === right.startTime
+  return left.startTime === right.startTime && left.command === right.command
+}
+
+function processIdentityMismatch(state, identity) {
+  return `process identity mismatch for PID ${state.pid}: expected ${JSON.stringify(state.processIdentity)}, got ${JSON.stringify(identity)}`
 }
 
 async function readActiveRelease(root) {
@@ -185,7 +186,7 @@ async function readActiveRelease(root) {
   return { activeVersion, releasePath, packageCliPath, dshExecutable, dshHome }
 }
 
-export function buildHostEnvironment(installation, dshHome) {
+function buildHostEnvironment(installation, dshHome) {
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
   )
@@ -242,7 +243,7 @@ async function waitForProcessExit(state, timeoutMs) {
     if (identity === null) return
     if (identity.command.includes('<defunct>') && identity.startTime === state.processIdentity.startTime) return
     if (!sameProcessIdentity(state.processIdentity, identity)) {
-      throw new Error(`process identity mismatch for PID ${state.pid}`)
+      throw new Error(processIdentityMismatch(state, identity))
     }
     await new Promise(resolveResult => setTimeout(resolveResult, 25))
   }
@@ -256,6 +257,20 @@ async function removeOwnedProcessState(path, state) {
   await rm(path, { force: true })
 }
 
+function assertProcessStateOwnership(state, installation, activeVersion) {
+  const expected = {
+    installationId: installation.installationId,
+    activeVersion,
+    host: installation.host,
+    port: installation.port,
+  }
+  for (const [field, value] of Object.entries(expected)) {
+    if (state[field] !== value) {
+      throw new Error(`state/process.json.${field} does not match current installation`)
+    }
+  }
+}
+
 async function clearStaleProcessState(path, state) {
   const identity = await readProcessIdentity(state.pid)
   if (identity === null) {
@@ -263,14 +278,15 @@ async function clearStaleProcessState(path, state) {
     return null
   }
   if (!sameProcessIdentity(state.processIdentity, identity)) {
-    throw new Error(`process identity mismatch for PID ${state.pid}`)
+    throw new Error(processIdentityMismatch(state, identity))
   }
   return identity
 }
 
-async function assertNoRunningHost(path) {
+async function assertNoRunningHost(path, installation, activeVersion) {
   const state = await readProcessState(path)
   if (state === null) return
+  assertProcessStateOwnership(state, installation, activeVersion)
   const identity = await clearStaleProcessState(path, state)
   if (identity !== null) throw new Error(`Host is already running with PID ${state.pid}`)
 }
@@ -319,151 +335,25 @@ function waitForChildClose(child) {
   return new Promise(resolveResult => child.once('close', resolveResult))
 }
 
-export async function runProductStart(input) {
-  const installation = validateInstallation(input)
-  const active = await readActiveRelease(installation.root)
-  const statePath = processStatePath(installation.root)
-  await assertNoRunningHost(statePath)
-  if (await probePort(installation.host, installation.port)) {
-    throw new Error(`Host is already running on ${installation.host}:${installation.port}`)
-  }
-  await mkdir(installation.paths.logDirectory, { recursive: true })
-
-  const environment = buildHostEnvironment(installation, active.dshHome)
-  const child = spawnForeground({
-    dshExecutable: active.dshExecutable,
-    dshHome: active.dshHome,
-    configuration: installation.configurationProfile,
-    host: installation.host,
-    port: String(installation.port),
-    cwd: resolve(active.releasePath, 'package'),
-    environment,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  if (child.pid === undefined) throw new Error('Host process did not provide a PID')
-  let forwardedSignal
-  const onSigInt = () => {
-    if (forwardedSignal === undefined) forwardedSignal = 'SIGINT'
-    forwardSignal(child, 'SIGINT')
-  }
-  const onSigTerm = () => {
-    if (forwardedSignal === undefined) forwardedSignal = 'SIGTERM'
-    forwardSignal(child, 'SIGTERM')
-  }
-  process.once('SIGINT', onSigInt)
-  process.once('SIGTERM', onSigTerm)
-  let processIdentity
-  try {
-    processIdentity = await waitForStableProcessIdentity(child.pid)
-    if (processIdentity === null) throw new Error(`cannot determine process identity for Host PID ${child.pid}`)
-  } catch (error) {
-    process.removeListener('SIGINT', onSigInt)
-    process.removeListener('SIGTERM', onSigTerm)
-    if (child.exitCode === null) {
-      forwardSignal(child, 'SIGTERM')
-      await waitForChildClose(child)
-    }
-    throw error
-  }
-  const state = {
-    schemaVersion: PROCESS_STATE_SCHEMA_VERSION,
-    installationId: installation.installationId,
-    activeVersion: active.activeVersion,
-    pid: child.pid,
-    operationId: randomUUID(),
-    startedAt: new Date().toISOString(),
-    host: installation.host,
-    port: installation.port,
-    processIdentity,
-  }
-  let stateWritten = false
-  const stdoutLog = attachHostOutput(join(installation.paths.logDirectory, 'host.stdout.log'), child.stdout)
-  const stderrLog = attachHostErrorOutput(child, join(installation.paths.logDirectory, 'host.stderr.log'))
-  try {
-    await writeAtomicJson(statePath, state)
-    stateWritten = true
-    const exit = child.exitCode !== null
-      ? { code: child.exitCode, signal: child.signalCode }
-      : await new Promise(resolveResult => {
-        child.once('close', (code, signal) => resolveResult({ code: code ?? 1, signal }))
-        child.once('error', error => resolveResult({ code: 1, signal: null, error }))
-      })
-    stdoutLog.end()
-    stderrLog.end()
-    if (exit.error !== undefined) throw exit.error
-    if (exit.code !== 0) {
-      throw new Error(`Host exited with code ${exit.code}${exit.signal ? ` (${exit.signal})` : ''}`)
-    }
-    await removeOwnedProcessState(statePath, state)
-    return {
-      stage: 'start',
-      status: 'stopped',
-      installationId: installation.installationId,
-      activeVersion: active.activeVersion,
-      pid: state.pid,
-      startedAt: state.startedAt,
-      host: installation.host,
-      port: installation.port,
-      operationId: state.operationId,
-      signal: forwardedSignal,
-    }
-  } catch (error) {
-    if (child.exitCode === null) {
-      forwardSignal(child, 'SIGTERM')
-      await waitForChildClose(child)
-    }
-    if (stateWritten) await removeOwnedProcessState(statePath, state)
-    throw error
-  } finally {
-    process.removeListener('SIGINT', onSigInt)
-    process.removeListener('SIGTERM', onSigTerm)
-  }
+export {
+  assertNoRunningHost,
+  assertProcessStateOwnership,
+  attachHostErrorOutput,
+  attachHostOutput,
+  buildHostEnvironment,
+  clearStaleProcessState,
+  forwardSignal,
+  processStatePath,
+  processIdentityMismatch,
+  probePort,
+  readActiveRelease,
+  readProcessState,
+  removeOwnedProcessState,
+  sameProcessIdentity,
+  statusView,
+  waitForChildClose,
+  waitForPortClosed,
+  waitForProcessExit,
+  waitForStableProcessIdentity,
+  writeAtomicJson,
 }
-
-export async function runProductStop(input) {
-  const installation = validateInstallation(input)
-  const active = await readActiveRelease(installation.root)
-  const statePath = processStatePath(installation.root)
-  const state = await readProcessState(statePath)
-  if (state === null) {
-    return { stage: 'stop', ...statusView(installation, active.activeVersion, null, 'stopped') }
-  }
-  const identity = await readProcessIdentity(state.pid)
-  if (identity === null) {
-    await rm(statePath, { force: true })
-    await waitForPortClosed(installation.host, installation.port, installation.process.shutdownTimeoutMs)
-    return { stage: 'stop', ...statusView(installation, active.activeVersion, null, 'stopped') }
-  }
-  if (!sameProcessIdentity(state.processIdentity, identity)) {
-    throw new Error(`process identity mismatch for PID ${state.pid}`)
-  }
-  try {
-    process.kill(state.pid, 'SIGTERM')
-  } catch (error) {
-    if (error?.code !== 'ESRCH') throw error
-  }
-  await waitForProcessExit(state, installation.process.shutdownTimeoutMs)
-  await waitForPortClosed(installation.host, installation.port, installation.process.shutdownTimeoutMs)
-  await removeOwnedProcessState(statePath, state)
-  return { stage: 'stop', ...statusView(installation, active.activeVersion, null, 'stopped') }
-}
-
-export async function runProductStatus(input) {
-  const installation = validateInstallation(input)
-  const active = await readActiveRelease(installation.root)
-  const statePath = processStatePath(installation.root)
-  const state = await readProcessState(statePath)
-  if (state === null) {
-    const portOccupied = await probePort(installation.host, installation.port)
-    return statusView(installation, active.activeVersion, null, portOccupied ? 'unhealthy' : 'stopped')
-  }
-  const identity = await clearStaleProcessState(statePath, state)
-  if (identity === null) {
-    const portOccupied = await probePort(installation.host, installation.port)
-    return statusView(installation, active.activeVersion, null, portOccupied ? 'unhealthy' : 'stopped')
-  }
-  const portReady = await probePort(installation.host, installation.port)
-  return statusView(installation, active.activeVersion, state, portReady ? 'running' : 'starting')
-}
-
-export { processStatePath, readActiveRelease, readProcessState, writeAtomicJson }
