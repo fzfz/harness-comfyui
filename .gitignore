@@ -50,5 +50,6 @@ comfyui-input/
 checkpoints/
 models/
 .local/
+runtime/
 lib/
 .release/
