@@ -145,7 +145,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'tsc -b tsconfig.host.json && tsdown --config tsdown.config.ts && node scripts/build/bundle-generated-typert.ts && node scripts/build/tsdown-client-bundle.ts',
     )
     expect(scripts['release:smoke']).toBe(
-      'node scripts/release/smoke.mjs && pnpm run test:release-smoke',
+      'node scripts/release/smoke.mjs',
     )
     expect(scripts.quality).toBe(
       'pnpm run check:harness-boundary && pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:deploy && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',

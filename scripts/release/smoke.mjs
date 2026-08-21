@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process'
 import { resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { terminateChild } from './process-lifecycle.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const defaultManifestPath = resolve(repositoryRoot, '.release/quality/artifact.json')
 const smokeTestPath = resolve(repositoryRoot, 'tests/release-smoke')
@@ -33,16 +35,24 @@ export function smokeTestCommand() {
   ]
 }
 
-export function runReleaseSmoke({ artifactManifestPath = defaultManifestPath } = {}) {
-  const executable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const child = spawn(executable, smokeTestCommand(), {
-    cwd: repositoryRoot,
+export function runReleaseSmoke({
+  artifactManifestPath = defaultManifestPath,
+  executable: configuredExecutable,
+  command = smokeTestCommand(),
+  cwd = repositoryRoot,
+  environment = process.env,
+} = {}) {
+  const executable = configuredExecutable ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
+  const processGroup = process.platform !== 'win32'
+  const child = spawn(executable, command, {
+    cwd,
     env: {
-      ...process.env,
+      ...environment,
       [manifestEnvironmentKey]: resolve(artifactManifestPath),
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
+    detached: processGroup,
   })
 
   let stdout = ''
@@ -51,8 +61,13 @@ export function runReleaseSmoke({ artifactManifestPath = defaultManifestPath } =
   child.stderr.on('data', chunk => { stderr += String(chunk) })
 
   return new Promise((resolveResult, reject) => {
+    let termination
     const forwardSignal = signal => {
-      if (child.exitCode === null && child.signalCode === null) child.kill(signal)
+      if (termination !== undefined || child.exitCode !== null || child.signalCode !== null) return
+      termination = terminateChild(child, {
+        processGroup,
+        gracefulSignal: signal,
+      })
     }
     const cleanupSignals = () => {
       process.off('SIGINT', onInterrupt)
@@ -66,9 +81,14 @@ export function runReleaseSmoke({ artifactManifestPath = defaultManifestPath } =
       cleanupSignals()
       reject(error)
     })
-    child.once('close', (code, signal) => {
+    child.once('close', async (code, signal) => {
       cleanupSignals()
-      resolveResult({ code, signal, stdout, stderr })
+      try {
+        await termination
+        resolveResult({ code, signal, stdout, stderr })
+      } catch (error) {
+        reject(error)
+      }
     })
   })
 }
