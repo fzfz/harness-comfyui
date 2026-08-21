@@ -170,9 +170,10 @@ describe('harness-comfyui preflight CLI', () => {
     expect(unknown.status).not.toBe(0)
     expect(unknown.stderr).toContain('unknown command: unknown-command')
 
-    const unimplemented = await runProcess(process.execPath, [cliScript, 'restart'])
-    expect(unimplemented.status).not.toBe(0)
-    expect(unimplemented.stderr).toContain('command restart is not implemented in this slice')
+    const missingInstallation = await runProcess(process.execPath, [cliScript, 'restart'])
+    expect(missingInstallation.status).not.toBe(0)
+    expect(missingInstallation.stderr).toContain('usage: harness-comfyui restart --installation <absolute-json>')
+    expect(missingInstallation.stderr).not.toContain('not implemented in this slice')
   })
 
   it.each([
