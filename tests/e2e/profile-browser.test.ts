@@ -30,7 +30,7 @@ describe('release artifact browser boundary', () => {
     fixtures.push(fixture)
 
     try {
-      await fixture.materialize()
+      await fixture.install()
       await fixture.start()
 
       const browser = await fixture.runRealBrowserProbe()
@@ -38,6 +38,20 @@ describe('release artifact browser boundary', () => {
       expect(browser.nativeDetailsModuleLoaded).toBe(true)
       expect(browser.hostClientConnected).toBe(true)
       expect(browser.clientModuleLoaded).toBe(true)
+      expect(browser.loadedModules).toContain('@deepseek-ai/dsh-client-ui-layout')
+      expect(browser.loadedModules).toContain('@deepseek-ai/dsh-client-ui-conversation')
+      expect(browser.detailsEntries).toContainEqual({
+        owner: '@deepseek-ai/dsh-client-ui-conversation',
+        priority: 0,
+        active: true,
+      })
+      expect(browser.detailsEntries.every(entry => entry.owner !== 'harness-comfyui')).toBe(true)
+      expect(browser.remainingDetailsEntries).toContainEqual({
+        owner: '@deepseek-ai/dsh-client-ui-conversation',
+        priority: 0,
+        active: true,
+      })
+      expect(browser.remainingDetailsEntries.every(entry => entry.owner !== 'harness-comfyui')).toBe(true)
       expect(browser.consoleErrors).toEqual([])
       expect(browser.runtimeExceptions).toEqual([])
       expect(browser.pluginStatus).toEqual({
@@ -61,7 +75,10 @@ describe('release artifact browser boundary', () => {
       await fixture.dispose()
     }
     expect(fixture.cleanupEvidence.processExit).toBeDefined()
+    expect(fixture.cleanupEvidence.processStateRemoved).toBe(true)
     expect(fixture.cleanupEvidence.portReleased).toBe(true)
+    expect(fixture.cleanupEvidence.installationRemoved).toBe(true)
+    expect(fixture.cleanupEvidence.noChildProcesses).toBe(true)
     expect(fixture.cleanupEvidence.dshHomeRemoved).toBe(true)
   }, 90000)
 })
