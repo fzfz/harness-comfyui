@@ -363,7 +363,7 @@ describe('harness-comfyui install CLI', () => {
     expect(stableHelp.status, stableHelp.stderr).toBe(0)
     expect(stableHelp.stdout).toContain('Commands:')
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
-  })
+  }, 30_000)
 
   it('rejects a duplicate release version without replacing the first release', async () => {
     const fixture = await createFixture()

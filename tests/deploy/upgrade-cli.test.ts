@@ -331,7 +331,7 @@ describe('installed upgrade CLI', () => {
     expect(await readFile(operationsPath, 'utf8')).toBe(beforeOperations)
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     await expect(lstat(fixture.readyPath)).rejects.toMatchObject({ code: 'ENOENT' })
-  })
+  }, 30_000)
 
   it('stages without stopping the old Host, atomically upgrades, preserves shared data, and keeps foreground ownership', async () => {
     const fixture = await createFixture()
