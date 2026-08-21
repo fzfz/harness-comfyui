@@ -10,12 +10,12 @@ afterEach(() => vi.restoreAllMocks())
 
 function createContext(options: { mountError?: Error } = {}) {
   const unmount = vi.fn(async () => undefined)
-  const mount = vi.fn(async () => {
+  const mount = vi.fn(async (_contribution: unknown) => {
     if (options.mountError !== undefined) throw options.mountError
     return unmount
   })
   const register = vi.fn(() => () => undefined)
-  const inject = vi.fn((_name: string, callback: () => unknown) => callback())
+  const inject = vi.fn()
   return {
     context: {
       remote: { $mount: mount },
@@ -29,15 +29,18 @@ function createContext(options: { mountError?: Error } = {}) {
 }
 
 describe('Client plugin Host projection', () => {
-  it('mounts the generated Remote contribution before registering details and unmounts it', async () => {
+  it('mounts the generated Remote contribution without changing native slots and unmounts once', async () => {
     const fixture = createContext()
+    const contribution = { package: 'harness-comfyui', descriptors: [] }
 
-    const dispose = await applyWithRemote(fixture.context as never, {} as never)
+    const dispose = await applyWithRemote(fixture.context as never, contribution as never)
 
     expect(fixture.mount).toHaveBeenCalledOnce()
-    expect(fixture.inject).toHaveBeenCalledAfter(fixture.mount)
-    expect(fixture.register).toHaveBeenCalledOnce()
+    expect(fixture.mount).toHaveBeenCalledWith(contribution)
+    expect(fixture.inject).not.toHaveBeenCalled()
+    expect(fixture.register).not.toHaveBeenCalled()
 
+    await dispose()
     await dispose()
     expect(fixture.unmount).toHaveBeenCalledOnce()
   })
