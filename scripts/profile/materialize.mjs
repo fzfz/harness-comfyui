@@ -22,7 +22,7 @@ function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index]
     if (!flag.startsWith('--')) throw new Error(`unknown argument ${flag}`)
-    if (!['--configuration', '--dsh-home', '--package-spec'].includes(flag)) {
+    if (!['--configuration', '--dsh-home', '--package-spec', '--dsh-executable', '--pnpm-executable'].includes(flag)) {
       throw new Error(`unknown argument ${flag}`)
     }
     if (values.has(flag)) throw new Error(`duplicate argument ${flag}`)
@@ -42,6 +42,8 @@ function parseArguments(argv) {
     configuration,
     dshHome: values.get('--dsh-home'),
     packageSpec: values.get('--package-spec'),
+    dshExecutable: values.get('--dsh-executable'),
+    pnpmExecutable: values.get('--pnpm-executable'),
   }
 }
 
@@ -58,7 +60,34 @@ function materializeProfileFiles(dshHome) {
   return profileDirectory
 }
 
-function runPluginInstall(dshHome, packageSpec) {
+function runPluginInstall(dshHome, packageSpec, { dshExecutable, pnpmExecutable }) {
+  if ((dshExecutable === undefined) !== (pnpmExecutable === undefined)) {
+    throw new Error('--dsh-executable and --pnpm-executable must be provided together')
+  }
+  if (dshExecutable !== undefined) {
+    const pnpmDirectory = dirname(resolve(pnpmExecutable))
+    const result = spawnSync(resolve(dshExecutable), [
+      'plugin',
+      '--profile',
+      profileName,
+      'add',
+      packageSpec,
+    ], {
+      cwd: repositoryRoot,
+      env: {
+        ...process.env,
+        DSH_HOME: dshHome,
+        PATH: `${pnpmDirectory}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH ?? ''}`,
+      },
+      stdio: 'inherit',
+      shell: false,
+    })
+    if (result.error !== undefined) {
+      process.stderr.write(`profile materialize: failed to execute dsh: ${String(result.error)}\n`)
+      return 127
+    }
+    return result.status ?? 1
+  }
   const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
   const result = spawnSync(command, [
     'exec',
@@ -126,7 +155,7 @@ function main(argv) {
   const profileDirectory = materializeProfileFiles(dshHome)
   let exitCode
   try {
-    exitCode = runPluginInstall(dshHome, options.packageSpec)
+    exitCode = runPluginInstall(dshHome, options.packageSpec, options)
   } finally {
     assertDefaultProfileManifestUnchanged(defaultProfileManifestBefore)
   }

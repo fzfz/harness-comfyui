@@ -1,0 +1,296 @@
+import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { createServer, type AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { delimiter, join, resolve } from 'node:path'
+import { spawn } from 'node:child_process'
+
+import { afterEach, describe, expect, it } from 'vitest'
+
+const repositoryRoot = resolve(import.meta.dirname, '../..')
+const cliScript = join(repositoryRoot, 'scripts/deploy/cli.mjs')
+const temporaryRoots: string[] = []
+
+type ProcessResult = {
+  status: number
+  stdout: string
+  stderr: string
+}
+
+async function runProcess(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<ProcessResult> {
+  const child = spawn(command, args, {
+    cwd: repositoryRoot,
+    env,
+    shell: false,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  let stdout = ''
+  let stderr = ''
+  child.stdout?.on('data', chunk => { stdout += String(chunk) })
+  child.stderr?.on('data', chunk => { stderr += String(chunk) })
+  const status = await new Promise<number>(resolveExit => child.on('close', code => resolveExit(code ?? 1)))
+  return { status, stdout, stderr }
+}
+
+async function createFakePnpm(root: string): Promise<{ binDirectory: string; home: string }> {
+  const binDirectory = join(root, 'fake-bin')
+  const home = join(root, 'home')
+  const dshSource = join(root, 'fake-dsh.mjs')
+  await mkdir(binDirectory, { recursive: true })
+  await mkdir(home, { recursive: true })
+  await writeFile(dshSource, `#!/usr/bin/env node
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+if (process.argv.slice(2, 5).join(' ') !== 'plugin --profile comfyui-workbench') process.exit(2)
+const manifestPath = join(process.env.DSH_HOME, 'profiles', 'comfyui-workbench', 'package.json')
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+manifest.dependencies = { ...(manifest.dependencies ?? {}), 'harness-comfyui': 'file:' + process.argv.at(-1) }
+writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\\n')
+`, 'utf8')
+  await chmod(dshSource, 0o755)
+  await writeFile(join(binDirectory, 'pnpm'), `#!/usr/bin/env node
+const fs = require('node:fs')
+const path = require('node:path')
+const args = process.argv.slice(2)
+if (args.length === 1 && args[0] === '--version') {
+  process.stdout.write('11.7.0\\n')
+  process.exit(0)
+}
+if (args[0] !== 'install') process.exit(2)
+const target = path.join(process.cwd(), 'node_modules', '.bin')
+fs.mkdirSync(target, { recursive: true })
+fs.copyFileSync(process.env.FAKE_DSH_SOURCE, path.join(target, 'dsh'))
+fs.chmodSync(path.join(target, 'dsh'), 0o755)
+`, 'utf8')
+  await chmod(join(binDirectory, 'pnpm'), 0o755)
+  return { binDirectory, home }
+}
+
+async function findFreePort(): Promise<number> {
+  const server = createServer()
+  await new Promise<void>((resolveListen, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => resolveListen())
+  })
+  const port = (server.address() as AddressInfo).port
+  await new Promise<void>((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
+  return port
+}
+
+async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}) {
+  const root = await mkdtemp(join(tmpdir(), 'harness-install-cli-'))
+  temporaryRoots.push(root)
+  const installationRoot = join(root, 'installation')
+  const packageRoot = join(root, 'package')
+  const tarballPath = join(root, 'harness-comfyui-0.1.0-test.1.tgz')
+  const inputPath = join(root, 'installation.json')
+  const catalogCliPath = join(root, 'catalog-discovery.mjs')
+  const sourceCliPath = join(root, 'source-discovery.mjs')
+  const discovery = {
+    contract_id: 'imagegen-source-contract',
+    contract_version: 1,
+    openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
+  }
+  const packageFiles = [
+    'scripts/deploy/cli.mjs',
+    'scripts/deploy/contracts.mjs',
+    'scripts/deploy/install.mjs',
+    'scripts/deploy/preflight.mjs',
+    'deployment/runtime/package.json',
+    'deployment/runtime/pnpm-lock.yaml',
+    'deployment/runtime/pnpm-workspace.yaml',
+    'scripts/profile/materialize.mjs',
+    'profiles/comfyui-workbench/package.json',
+    'profiles/comfyui-workbench/cordis.patch.yml',
+    'profiles/comfyui-workbench/pnpm-workspace.yaml',
+  ]
+
+  await mkdir(packageRoot, { recursive: true })
+  await writeFile(join(packageRoot, 'package.json'), `${JSON.stringify({
+    name: 'harness-comfyui',
+    version: '0.1.0-test.1',
+    engines: { node: '^22.19.0 || >=24.0.0' },
+    bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
+    devDependencies: {
+      '@deepseek-ai/dsh': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+    },
+    files: packageFiles,
+  }, null, 2)}\n`, 'utf8')
+  for (const relativePath of packageFiles) {
+    const target = join(packageRoot, relativePath)
+    await mkdir(resolve(target, '..'), { recursive: true })
+    await copyFile(join(repositoryRoot, relativePath), target)
+  }
+  await mkdir(join(packageRoot, 'deployment/runtime'), { recursive: true })
+  await writeFile(join(packageRoot, 'deployment/runtime/package.json'), `${JSON.stringify({
+    name: 'harness-comfyui-runtime',
+    private: true,
+    dependencies: {
+      '@deepseek-ai/dsh': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+    },
+  }, null, 2)}\n`, 'utf8')
+  await writeFile(join(packageRoot, 'deployment/runtime/pnpm-lock.yaml'), 'lockfileVersion: \'9.0\'\n\nimporters: {}\n', 'utf8')
+  await writeFile(join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml'), 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n', 'utf8')
+  if (symlinkEntry) await symlink('/tmp/harness-install-outside', join(packageRoot, 'unsafe-link'))
+  if (outsideEntry) await writeFile(join(root, 'outside-entry.txt'), 'outside\n', 'utf8')
+
+  await writeFile(catalogCliPath, `#!/usr/bin/env node
+process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+`, 'utf8')
+  await writeFile(sourceCliPath, `#!/usr/bin/env node
+process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+`, 'utf8')
+  await chmod(catalogCliPath, 0o755)
+  await chmod(sourceCliPath, 0o755)
+
+  const tarEntries = outsideEntry ? ['package', 'outside-entry.txt'] : ['package']
+  const tar = await runProcess('tar', ['-czf', tarballPath, '-C', root, ...tarEntries], process.env)
+  if (tar.status !== 0) throw new Error(`fixture tarball failed: ${tar.stderr}`)
+  const fake = await createFakePnpm(root)
+  const port = await findFreePort()
+  const installation = {
+    schemaVersion: 1,
+    installationId: 'fixture-install',
+    root: installationRoot,
+    configurationProfile: 'production',
+    host: '127.0.0.1',
+    port,
+    paths: {
+      dataDir: join(installationRoot, 'shared/data'),
+      runRepositoryFile: join(installationRoot, 'shared/data/runs.sqlite'),
+      runDirectory: join(installationRoot, 'shared/runs'),
+      savedMediaDirectory: join(installationRoot, 'shared/saved-media'),
+      logDirectory: join(installationRoot, 'shared/logs'),
+    },
+    comfyui: { defaultInstanceId: 'fixture-instance' },
+    source: {
+      catalogCliPath,
+      sourceCliPath,
+      contractId: 'imagegen-source-contract',
+      supportedContractVersions: [1],
+    },
+    client: { runRefreshIntervalMs: 1000 },
+    process: { shutdownTimeoutMs: 10000 },
+  }
+  await writeFile(inputPath, `${JSON.stringify(installation, null, 2)}\n`, 'utf8')
+  const env = {
+    ...process.env,
+    HOME: fake.home,
+    USERPROFILE: fake.home,
+    PATH: `${fake.binDirectory}${delimiter}${process.env.PATH ?? ''}`,
+    FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
+  }
+  return { root, installation, inputPath, tarballPath, env }
+}
+
+async function runInstall(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  artifactPath = fixture.tarballPath,
+  env = fixture.env,
+) {
+  return runProcess(process.execPath, [
+    cliScript,
+    'install',
+    '--installation', fixture.inputPath,
+    '--artifact', artifactPath,
+  ], env)
+}
+
+afterEach(async () => {
+  await Promise.all(temporaryRoots.splice(0).map(root => rm(root, { recursive: true, force: true })))
+})
+
+describe('harness-comfyui install CLI', () => {
+  it('creates a release package, runtime, dsh-home, active state, and stable help entry without process state', async () => {
+    const fixture = await createFixture()
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).toBe(0)
+    expect(JSON.parse(result.stdout)).toMatchObject({ stage: 'install', status: 'passed' })
+    const releaseRoot = join(fixture.installation.root, 'releases/0.1.0-test.1')
+    for (const relativePath of [
+      'package/package.json',
+      'harness-runtime/package.json',
+      'harness-runtime/pnpm-lock.yaml',
+      'harness-runtime/pnpm-workspace.yaml',
+      'harness-runtime/node_modules/.bin/dsh',
+      'dsh-home/profiles/comfyui-workbench/package.json',
+      'dsh-home/profiles/comfyui-workbench/cordis.patch.yml',
+      'dsh-home/profiles/comfyui-workbench/pnpm-workspace.yaml',
+    ]) {
+      await expect(lstat(join(releaseRoot, relativePath))).resolves.toBeDefined()
+    }
+    for (const relativePath of ['shared/data', 'shared/runs', 'shared/saved-media', 'shared/logs', 'state']) {
+      await expect(lstat(join(fixture.installation.root, relativePath))).resolves.toBeDefined()
+    }
+    const state = JSON.parse(await readFile(join(fixture.installation.root, 'state/active-release.json'), 'utf8'))
+    expect(state).toMatchObject({
+      installationId: 'fixture-install',
+      activeVersion: '0.1.0-test.1',
+      previousRelease: null,
+    })
+    expect(state.releasePath).toBe(releaseRoot)
+    expect(JSON.parse(await readFile(join(releaseRoot, 'dsh-home/profiles/comfyui-workbench/package.json'), 'utf8')).dependencies['harness-comfyui'])
+      .toBe(`file:${join(releaseRoot, 'package')}`)
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const stableHelp = await runProcess(stableBin, ['--help'], fixture.env)
+    expect(stableHelp.status).toBe(0)
+    expect(stableHelp.stdout).toContain('Commands:')
+    await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects a duplicate release version without replacing the first release', async () => {
+    const fixture = await createFixture()
+    expect((await runInstall(fixture)).status).toBe(0)
+    const statePath = join(fixture.installation.root, 'state/active-release.json')
+    const before = await readFile(statePath, 'utf8')
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('already exists')
+    expect(await readFile(statePath, 'utf8')).toBe(before)
+  })
+
+  it('rejects a tarball containing a symlink before creating a release', async () => {
+    const fixture = await createFixture({ symlinkEntry: true })
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/symlink|unsafe tar/i)
+    await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects a tarball entry outside package/ before creating a release', async () => {
+    const fixture = await createFixture({ outsideEntry: true })
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/outside package|unsafe tar/i)
+    await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it.skipIf(process.env.HARNESS_REAL_ARTIFACT === undefined)('installs the current packed artifact with its frozen runtime', async () => {
+    const fixture = await createFixture()
+    const artifactPath = process.env.HARNESS_REAL_ARTIFACT
+    if (artifactPath === undefined) return
+    const result = await runInstall(fixture, artifactPath, {
+      ...fixture.env,
+      PATH: process.env.PATH,
+    })
+
+    expect(result.status).toBe(0)
+    const evidence = JSON.parse(result.stdout)
+    const releaseRoot = join(fixture.installation.root, 'releases', evidence.artifact.version)
+    await expect(lstat(join(releaseRoot, 'harness-runtime/node_modules/.bin/dsh'))).resolves.toBeDefined()
+    await expect(lstat(join(fixture.installation.root, 'bin/harness-comfyui'))).resolves.toBeDefined()
+    await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }, 120_000)
+})

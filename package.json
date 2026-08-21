@@ -32,8 +32,10 @@
     "profile:materialize:development": "node scripts/profile/materialize.mjs --configuration development --dsh-home .local/dsh/development --package-spec .",
     "dev:start": "node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173",
     "release:dry-run": "node scripts/release/dry-run.mjs",
+    "release:sync-runtime-manifest": "node scripts/release/sync-runtime-manifest.mjs",
     "release:smoke": "node scripts/release/smoke.mjs && pnpm run test:release-smoke",
     "deploy:preflight": "node scripts/deploy/cli.mjs preflight",
+    "deploy:install": "node scripts/deploy/cli.mjs install",
     "deploy:activate": "node scripts/deploy/activate.mjs",
     "deploy:health": "node scripts/deploy/health.mjs",
     "deploy:rollback": "node scripts/deploy/rollback.mjs"
@@ -157,8 +159,12 @@
     "profiles/comfyui-workbench/cordis.patch.yml",
     "profiles/comfyui-workbench/package.json",
     "profiles/comfyui-workbench/pnpm-workspace.yaml",
+    "deployment/runtime/package.json",
+    "deployment/runtime/pnpm-lock.yaml",
+    "deployment/runtime/pnpm-workspace.yaml",
     "scripts/deploy/cli.mjs",
     "scripts/deploy/contracts.mjs",
+    "scripts/deploy/install.mjs",
     "scripts/deploy/preflight.mjs",
     "scripts/profile/materialize.mjs",
     "scripts/profile/start.mjs"

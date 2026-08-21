@@ -62,6 +62,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173',
     )
     expect(manifest.scripts['deploy:preflight']).toBe('node scripts/deploy/cli.mjs preflight')
+    expect(manifest.scripts['deploy:install']).toBe('node scripts/deploy/cli.mjs install')
     expect(manifest.files).toEqual([
       'lib/index.js',
       'lib/client.js',
@@ -87,8 +88,12 @@ describe('Issue #2 public package and composition contracts', () => {
       'profiles/comfyui-workbench/cordis.patch.yml',
       'profiles/comfyui-workbench/package.json',
       'profiles/comfyui-workbench/pnpm-workspace.yaml',
+      'deployment/runtime/package.json',
+      'deployment/runtime/pnpm-lock.yaml',
+      'deployment/runtime/pnpm-workspace.yaml',
       'scripts/deploy/cli.mjs',
       'scripts/deploy/contracts.mjs',
+      'scripts/deploy/install.mjs',
       'scripts/deploy/preflight.mjs',
       'scripts/profile/materialize.mjs',
       'scripts/profile/start.mjs',
