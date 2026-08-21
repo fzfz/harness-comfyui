@@ -66,6 +66,10 @@ export function parseInstallArguments(argv) {
   return parseArtifactArguments(argv, 'install')
 }
 
+export function parseUpgradeArguments(argv) {
+  return parseArtifactArguments(argv, 'upgrade')
+}
+
 export function parseLifecycleArguments(argv, command) {
   const options = { json: false }
   for (let index = 0; index < argv.length; index += 1) {
@@ -83,7 +87,7 @@ export function parseLifecycleArguments(argv, command) {
   if (options.json && command !== 'status' && command !== 'health') {
     throw new Error(`--json is not supported for ${command}`)
   }
-  if (!options.installation || (command === 'health' && !options.json)) {
+  if (!options.installation || ((command === 'status' || command === 'health') && !options.json)) {
     throw new Error(`usage: harness-comfyui ${command}${command === 'status' || command === 'health' ? ' --json' : ''} --installation <absolute-json>`)
   }
   return options
