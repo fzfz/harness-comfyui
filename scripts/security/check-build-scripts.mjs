@@ -4,6 +4,13 @@ import { deepStrictEqual } from 'node:assert/strict'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  readStrictDependencyBuilds,
+  readWorkspacePolicy,
+  runtimeDirectory,
+  validateDependencyClosure,
+} from './check-manifest-lock.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const policyFile = 'config/dependency-security-policy.json'
 const expectedDecisionCount = 5
@@ -62,30 +69,6 @@ function readSecurityPolicy(root) {
     }
   }
   return policy.allowBuilds
-}
-
-function readStrictDependencyBuilds(root) {
-  const path = resolve(root, '.npmrc')
-  let content
-  try {
-    content = readFileSync(path, 'utf8')
-  } catch (error) {
-    throw new Error(`could not read .npmrc: ${error instanceof Error ? error.message : String(error)}`)
-  }
-  const values = new Map()
-  for (const [lineNumber, sourceLine] of content.split(/\r?\n/u).entries()) {
-    const line = sourceLine.trim()
-    if (line.length === 0 || line.startsWith('#') || line.startsWith(';')) continue
-    const separator = line.indexOf('=')
-    if (separator <= 0) throw new Error(`malformed .npmrc line ${lineNumber + 1}`)
-    const key = line.slice(0, separator).trim()
-    const value = line.slice(separator + 1).trim()
-    if (values.has(key)) throw new Error(`duplicate .npmrc setting ${key}`)
-    values.set(key, value)
-  }
-  if (values.get('strict-dep-builds') !== 'true') {
-    throw new Error('.npmrc must set strict-dep-builds=true')
-  }
 }
 
 function readAllowBuildsFromPnpm(root) {
@@ -150,11 +133,29 @@ function rejectManifestBuildDecisions(root) {
 }
 
 export function checkBuildScripts(root = repositoryRoot) {
-  readStrictDependencyBuilds(root)
+  const resolvedRoot = resolve(root)
+  const runtimeRoot = resolve(resolvedRoot, runtimeDirectory)
+  readStrictDependencyBuilds(resolvedRoot, resolvedRoot)
+  readStrictDependencyBuilds(resolvedRoot, runtimeRoot)
   rejectManifestBuildDecisions(root)
+  rejectManifestBuildDecisions(runtimeRoot)
   const expected = readSecurityPolicy(root)
+  const closure = validateDependencyClosure(resolvedRoot)
+  const rootWorkspace = readWorkspacePolicy(resolvedRoot)
+  const runtimeWorkspace = readWorkspacePolicy(resolvedRoot, runtimeRoot)
+  try {
+    if (rootWorkspace.strictDepBuilds !== true || runtimeWorkspace.strictDepBuilds !== true) {
+      throw new Error('strictDepBuilds must be true')
+    }
+    deepStrictEqual(runtimeWorkspace.strictDepBuilds, rootWorkspace.strictDepBuilds)
+    deepStrictEqual(rootWorkspace.allowBuilds, expected)
+    deepStrictEqual(runtimeWorkspace.allowBuilds, expected)
+    deepStrictEqual(runtimeWorkspace.overrides, rootWorkspace.overrides)
+  } catch {
+    throw new Error('root and runtime workspace strictDepBuilds/allowBuilds/overrides must match the reviewed policy and strictDepBuilds must be true')
+  }
   const allowBuilds = validateAllowBuilds(readAllowBuildsFromPnpm(root), expected)
-  return { allowBuilds }
+  return { allowBuilds, closure, rootWorkspace, runtimeWorkspace }
 }
 
 export function main(argv = process.argv.slice(2)) {

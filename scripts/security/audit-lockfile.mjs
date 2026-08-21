@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { runtimeDirectory } from './check-manifest-lock.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const registry = 'https://registry.npmjs.org'
 const severities = ['critical', 'high', 'moderate', 'low']
@@ -22,23 +24,23 @@ function parseArguments(argv) {
   return resolve(values.get('--root') ?? repositoryRoot)
 }
 
-function runPnpmAudit(root, production) {
+function runPnpmAudit(workspaceRoot, workspaceName, production) {
   const command = process.env.PNPM_BIN ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   const args = ['audit']
   if (production) args.push('--prod')
   args.push('--json', `--registry=${registry}`)
   const result = spawnSync(command, args, {
-    cwd: root,
+    cwd: workspaceRoot,
     env: { ...process.env },
     encoding: 'utf8',
     shell: false,
   })
   if (result.error !== undefined) {
-    throw new Error(`${production ? 'production' : 'full'} audit could not execute pnpm: ${String(result.error)}`)
+    throw new Error(`${workspaceName} ${production ? 'production' : 'full'} audit could not execute pnpm: ${String(result.error)}`)
   }
   const output = String(result.stdout ?? '')
   if (result.status !== 0) {
-    throw new Error(`${production ? 'production' : 'full'} audit exited with code ${String(result.status)}\n${output}${String(result.stderr ?? '')}`)
+    throw new Error(`${workspaceName} ${production ? 'production' : 'full'} audit exited with code ${String(result.status)}\n${output}${String(result.stderr ?? '')}`)
   }
   return output
 }
@@ -70,9 +72,21 @@ export function parseAuditJson(output, scope) {
 }
 
 export function auditLockfile(root = repositoryRoot) {
-  const full = parseAuditJson(runPnpmAudit(root, false), 'full')
-  const production = parseAuditJson(runPnpmAudit(root, true), 'production')
-  return { full, production }
+  const workspaces = [
+    { name: 'root', path: resolve(root) },
+    { name: 'runtime', path: resolve(root, runtimeDirectory) },
+  ]
+  const summaries = {}
+  for (const workspace of workspaces) {
+    const full = parseAuditJson(runPnpmAudit(workspace.path, workspace.name, false), `${workspace.name} full`)
+    const production = parseAuditJson(runPnpmAudit(workspace.path, workspace.name, true), `${workspace.name} production`)
+    summaries[workspace.name] = { full, production }
+  }
+  return {
+    ...summaries,
+    full: summaries.root.full,
+    production: summaries.root.production,
+  }
 }
 
 function formatCounts(counts) {
@@ -82,8 +96,10 @@ function formatCounts(counts) {
 export function main(argv = process.argv.slice(2)) {
   const root = parseArguments(argv)
   const summaries = auditLockfile(root)
-  process.stdout.write(`full: ${formatCounts(summaries.full)}\n`)
-  process.stdout.write(`production: ${formatCounts(summaries.production)}\n`)
+  process.stdout.write(`full: ${formatCounts(summaries.root.full)} (root)\n`)
+  process.stdout.write(`production: ${formatCounts(summaries.root.production)} (root)\n`)
+  process.stdout.write(`runtime full: ${formatCounts(summaries.runtime.full)}\n`)
+  process.stdout.write(`runtime production: ${formatCounts(summaries.runtime.production)}\n`)
   return 0
 }
 

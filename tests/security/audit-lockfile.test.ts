@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
@@ -34,12 +34,15 @@ const prod = process.argv.includes('--prod')
 if (record) appendFileSync(record, JSON.stringify({ argv: process.argv.slice(2), prod }) + '\\n')
 
 const clean = { advisories: {}, metadata: { vulnerabilities: { critical: 0, high: 0, moderate: 0, low: 0 } } }
+const runtime = process.cwd().endsWith('/deployment/runtime')
 const payload = mode === 'malformed'
   ? '{not-json'
   : mode === 'missing-metadata'
     ? JSON.stringify({ advisories: {} })
     : mode === 'severity'
       ? JSON.stringify({ ...clean, metadata: { vulnerabilities: { critical: 0, high: 0, moderate: 1, low: 0 } } })
+      : mode === 'runtime-severity' && runtime
+        ? JSON.stringify({ ...clean, metadata: { vulnerabilities: { critical: 0, high: 0, moderate: 1, low: 0 } } })
       : mode === 'advisory-nonzero'
         ? JSON.stringify({ ...clean, advisories: { GHSA_fixture: { severity: 'high' } } })
         : JSON.stringify(clean)
@@ -50,9 +53,21 @@ process.exit(mode === 'nonzero' || mode === 'advisory-nonzero' ? 1 : 0)
   return { bin, record }
 }
 
-function runScript(environment: NodeJS.ProcessEnv): Promise<CommandResult> {
+async function createAuditRoot(): Promise<string> {
+  const fixture = await mkdtemp(join(tmpdir(), 'harness-comfyui-audit-root-'))
+  temporaryDirectories.push(fixture)
+  await mkdir(join(fixture, 'deployment', 'runtime'), { recursive: true })
+  await Promise.all([
+    writeFile(join(fixture, 'deployment/runtime/package.json'), await readFile(resolve(root, 'deployment/runtime/package.json'))),
+    writeFile(join(fixture, 'deployment/runtime/pnpm-lock.yaml'), await readFile(resolve(root, 'deployment/runtime/pnpm-lock.yaml'))),
+    writeFile(join(fixture, 'deployment/runtime/pnpm-workspace.yaml'), await readFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'))),
+  ])
+  return fixture
+}
+
+function runScript(environment: NodeJS.ProcessEnv, args: readonly string[] = []): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
-    const child = spawn(process.execPath, [script], {
+    const child = spawn(process.execPath, [script, ...args], {
       cwd: root,
       env: { ...process.env, NO_COLOR: '1', ...environment },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -69,17 +84,26 @@ function runScript(environment: NodeJS.ProcessEnv): Promise<CommandResult> {
 describe('security:advisories', () => {
   it('runs full and production audits against the official registry and reports zero severities', async () => {
     const fake = await createFakePnpm('clean')
+    const fixture = await createAuditRoot()
     const result = await runScript({
       PNPM_BIN: fake.bin,
       FAKE_PNPM_MODE: 'clean',
       FAKE_PNPM_RECORD: fake.record,
-    })
+    }, ['--root', fixture])
 
     expect(result.code).toBe(0)
     expect(result.stdout).toContain('full: critical=0 high=0 moderate=0 low=0')
     expect(result.stdout).toContain('production: critical=0 high=0 moderate=0 low=0')
     const invocations = (await readFile(fake.record, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
     expect(invocations).toEqual([
+      {
+        argv: ['audit', '--json', '--registry=https://registry.npmjs.org'],
+        prod: false,
+      },
+      {
+        argv: ['audit', '--prod', '--json', '--registry=https://registry.npmjs.org'],
+        prod: true,
+      },
       {
         argv: ['audit', '--json', '--registry=https://registry.npmjs.org'],
         prod: false,
@@ -116,5 +140,18 @@ describe('security:advisories', () => {
 
     expect(result.code).not.toBe(0)
     expect(`${result.stdout}\n${result.stderr}`).toMatch(/execute pnpm|ENOENT|spawn/i)
+  })
+
+  it('fails when only the runtime closure reports a vulnerability', async () => {
+    const fake = await createFakePnpm('runtime-severity')
+    const fixture = await createAuditRoot()
+    const result = await runScript({
+      PNPM_BIN: fake.bin,
+      FAKE_PNPM_MODE: 'runtime-severity',
+      FAKE_PNPM_RECORD: fake.record,
+    }, ['--root', fixture])
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime|moderate=1|vulnerabilit/i)
   })
 })

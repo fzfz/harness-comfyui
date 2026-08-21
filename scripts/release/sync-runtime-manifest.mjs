@@ -5,14 +5,18 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const runtimeDependencies = [
+const runtimeDependencies = Object.freeze([
   '@deepseek-ai/dsh',
   '@deepseek-ai/dsh-base',
   '@deepseek-ai/dsh-web-app',
-]
+])
 
-async function readJson(path) {
-  return JSON.parse(await readFile(path, 'utf8'))
+async function readJson(path, label) {
+  try {
+    return JSON.parse(await readFile(path, 'utf8'))
+  } catch (error) {
+    throw new Error(`could not read ${label}: ${error instanceof Error ? error.message : String(error)}`)
+  }
 }
 
 function readRuntimeDependencies(rootManifest) {
@@ -27,25 +31,96 @@ function readRuntimeDependencies(rootManifest) {
   return dependencies
 }
 
-export async function syncRuntimeManifest(root = repositoryRoot) {
+async function buildRuntimeFiles(root) {
   const resolvedRoot = resolve(root)
-  const rootManifest = await readJson(resolve(resolvedRoot, 'package.json'))
+  const rootManifest = await readJson(resolve(resolvedRoot, 'package.json'), 'package.json')
   const dependencies = readRuntimeDependencies(rootManifest)
-  const rootWorkspace = await readFile(resolve(resolvedRoot, 'pnpm-workspace.yaml'), 'utf8')
-  const outputDirectory = resolve(resolvedRoot, 'deployment/runtime')
-  await mkdir(outputDirectory, { recursive: true })
-  await writeFile(resolve(outputDirectory, 'package.json'), `${JSON.stringify({
+  let workspace
+  try {
+    workspace = await readFile(resolve(resolvedRoot, 'pnpm-workspace.yaml'), 'utf8')
+  } catch (error) {
+    throw new Error(`could not read pnpm-workspace.yaml: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  const packageText = `${JSON.stringify({
     name: 'harness-comfyui-runtime',
     private: true,
     dependencies,
-  }, null, 2)}\n`, 'utf8')
-  await writeFile(resolve(outputDirectory, 'pnpm-workspace.yaml'), rootWorkspace, 'utf8')
-  return { directory: outputDirectory, dependencies }
+  }, null, 2)}\n`
+  return {
+    directory: resolve(resolvedRoot, 'deployment/runtime'),
+    packageText,
+    workspaceText: workspace,
+    dependencies,
+  }
+}
+
+export async function syncRuntimeManifest(root = repositoryRoot) {
+  const files = await buildRuntimeFiles(root)
+  await mkdir(files.directory, { recursive: true })
+  await writeFile(resolve(files.directory, 'package.json'), files.packageText, 'utf8')
+  await writeFile(resolve(files.directory, 'pnpm-workspace.yaml'), files.workspaceText, 'utf8')
+  return { directory: files.directory, dependencies: files.dependencies }
+}
+
+export async function checkRuntimeManifest(root = repositoryRoot) {
+  const files = await buildRuntimeFiles(root)
+  const packagePath = resolve(files.directory, 'package.json')
+  const workspacePath = resolve(files.directory, 'pnpm-workspace.yaml')
+  let packageText
+  let workspaceText
+  try {
+    packageText = await readFile(packagePath, 'utf8')
+    workspaceText = await readFile(workspacePath, 'utf8')
+  } catch (error) {
+    throw new Error(`runtime manifest is stale: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  const staleFiles = []
+  if (packageText !== files.packageText) staleFiles.push('deployment/runtime/package.json')
+  if (workspaceText !== files.workspaceText) staleFiles.push('deployment/runtime/pnpm-workspace.yaml')
+  if (staleFiles.length > 0) throw new Error(`runtime manifest is stale: ${staleFiles.join(', ')}`)
+  return { current: true, directory: files.directory, dependencies: files.dependencies }
+}
+
+function parseArguments(argv) {
+  let root = repositoryRoot
+  let rootProvided = false
+  let check = false
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index]
+    if (argument === '--check') {
+      if (check) throw new Error('duplicate option: --check')
+      check = true
+      continue
+    }
+    if (argument === '--root') {
+      if (rootProvided) throw new Error('duplicate option: --root')
+      const value = argv[index + 1]
+      if (value === undefined || value.startsWith('--') || value.length === 0) throw new Error('--root requires a non-empty value')
+      root = resolve(value)
+      rootProvided = true
+      index += 1
+      continue
+    }
+    throw new Error(`unknown option: ${argument}`)
+  }
+  return { root, check }
+}
+
+async function main(argv = process.argv.slice(2)) {
+  const options = parseArguments(argv)
+  if (options.check) {
+    await checkRuntimeManifest(options.root)
+    process.stdout.write(`runtime manifest is current: ${resolve(options.root, 'deployment/runtime')}\n`)
+    return 0
+  }
+  const result = await syncRuntimeManifest(options.root)
+  process.stdout.write(`runtime manifest synchronized: ${result.directory}\n`)
+  return 0
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  syncRuntimeManifest().then(
-    result => process.stdout.write(`runtime manifest synchronized: ${result.directory}\n`),
+  main().then(
+    status => { process.exitCode = status },
     error => {
       process.stderr.write(`runtime manifest synchronization failed: ${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1
