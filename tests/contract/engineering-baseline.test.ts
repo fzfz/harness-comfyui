@@ -6,6 +6,19 @@ import { describe, expect, it } from 'vitest'
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const readJson = (path: string): Record<string, any> => JSON.parse(readFileSync(resolve(root, path), 'utf8')) as Record<string, any>
+const readRootImporter = (): string => {
+  const lockfile = readFileSync(resolve(root, 'pnpm-lock.yaml'), 'utf8')
+  const match = lockfile.match(/^importers:\n\n  \.:\n([\s\S]*?)\n\npackages:\n/mu)
+  if (match === null) throw new Error('pnpm-lock.yaml is missing the root importer')
+  return match[1]
+}
+
+const readImporterEntry = (importer: string, packageName: string): { specifier: string; version: string } | null => {
+  const yamlKey = packageName.startsWith('@') ? `'${packageName}'` : packageName
+  const escapedKey = yamlKey.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+  const match = importer.match(new RegExp(`^      ${escapedKey}:\\n        specifier: ([^\\n]+)\\n        version: ([^\\n]+)$`, 'mu'))
+  return match === null ? null : { specifier: match[1], version: match[2] }
+}
 
 describe('Issue #2 public package and composition contracts', () => {
   it('keeps package dependencies in the locked classifications and versions', () => {
@@ -14,19 +27,20 @@ describe('Issue #2 public package and composition contracts', () => {
       '@deepseek-ai/cordis': '4.0.1',
       '@deepseek-ai/dsh-agent': '0.1.0-rc.7',
       '@deepseek-ai/dsh-api-remotes': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-client-connection': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-locale': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-ui-conversation': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-ui-input-trigger': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-ui-layout': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-ui-primitives': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-ui-sidebar': '0.1.0-rc.7',
       '@deepseek-ai/dsh-client-ui-slots': '0.1.0-rc.7',
       '@deepseek-ai/dsh-invariants': '0.1.0-rc.7',
       '@deepseek-ai/dsh-jobs': '0.1.0-rc.7',
       '@deepseek-ai/dsh-session': '0.1.0-rc.7',
       '@deepseek-ai/dsh-tools': '0.1.0-rc.7',
       '@deepseek-ai/dsh-typert-protocol': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-workspace': '0.1.0-rc.7',
       react: '18.3.1',
       'react-dom': '18.3.1',
     }
@@ -45,8 +59,19 @@ describe('Issue #2 public package and composition contracts', () => {
       tsdown: '0.22.2',
       typescript: '6.0.3',
       vitest: '4.1.8',
-      zod: '4.4.3',
     })
+
+    expect(manifest.peerDependenciesMeta ?? {}).toEqual({})
+
+    const importer = readRootImporter()
+    for (const packageName of ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-workspace']) {
+      expect(readImporterEntry(importer, packageName)).toEqual({
+        specifier: '0.1.0-rc.7',
+        version: expect.stringMatching(/^0\.1\.0-rc\.7(?:\(|$)/u),
+      })
+    }
+    expect(readImporterEntry(importer, '@deepseek-ai/dsh-client-ui-sidebar')).toBeNull()
+    expect(readImporterEntry(importer, 'zod')).toBeNull()
   })
 
   it('pins the runtime and public command aliases', () => {
@@ -99,6 +124,10 @@ describe('Issue #2 public package and composition contracts', () => {
       'scripts/deploy/contracts.mjs',
       'scripts/deploy/install.mjs',
       'scripts/deploy/lifecycle.mjs',
+      'scripts/deploy/health.mjs',
+      'scripts/deploy/start.mjs',
+      'scripts/deploy/stop.mjs',
+      'scripts/deploy/status.mjs',
       'scripts/deploy/preflight.mjs',
       'scripts/profile/materialize.mjs',
       'scripts/profile/start.mjs',
@@ -158,14 +187,13 @@ describe('Issue #2 public package and composition contracts', () => {
       client: {
         platform: 'web',
         inject: [
-          '@deepseek-ai/dsh-client-runtime',
+          '@deepseek-ai/dsh-client-connection',
           '@deepseek-ai/dsh-api-remotes',
           '@deepseek-ai/dsh-client-locale',
+          '@deepseek-ai/dsh-client-runtime',
           '@deepseek-ai/dsh-client-ui-conversation',
           '@deepseek-ai/dsh-client-ui-input-trigger',
           '@deepseek-ai/dsh-client-ui-layout',
-          '@deepseek-ai/dsh-client-ui-primitives',
-          '@deepseek-ai/dsh-client-ui-sidebar',
         ],
       },
     })
