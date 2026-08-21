@@ -17,7 +17,8 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const qualityArtifactManifestPath = resolve(repositoryRoot, '.release/quality/artifact.json')
 const profileName = 'comfyui-workbench'
-const fixedConfiguration = 'test' as const
+const fixtureConfigurations = ['test', 'release-smoke'] as const
+type FixtureConfiguration = (typeof fixtureConfigurations)[number]
 const profileBundles = [
   '@deepseek-ai/dsh-base',
   '@deepseek-ai/dsh-web-app',
@@ -107,11 +108,13 @@ export interface CleanupEvidence {
 }
 
 export interface ProfileFixtureOptions {
-  configuration: typeof fixedConfiguration
+  configuration: FixtureConfiguration
+  artifactManifestPath?: string
 }
 
 export interface ProfileFixture {
   readonly artifact: ArtifactManifest
+  readonly configuration: FixtureConfiguration
   readonly dshHome: string
   readonly runtimeCwd: string
   readonly installationRoot: string
@@ -202,8 +205,9 @@ async function sha256File(path: string): Promise<string> {
   })
 }
 
-async function readArtifactManifest(): Promise<ArtifactManifest> {
-  const manifest = parseArtifactManifest(JSON.parse(await readFile(qualityArtifactManifestPath, 'utf8')))
+async function readArtifactManifest(manifestPath = qualityArtifactManifestPath): Promise<ArtifactManifest> {
+  const resolvedManifestPath = resolve(manifestPath)
+  const manifest = parseArtifactManifest(JSON.parse(await readFile(resolvedManifestPath, 'utf8')))
   const [file, digest] = await Promise.all([
     stat(manifest.tarballPath),
     sha256File(manifest.tarballPath),
@@ -337,6 +341,7 @@ function parseHostLoaderRow(patch: string): InstalledProfileEvidence['hostLoader
 
 class ProfileFixtureImpl implements ProfileFixture {
   readonly artifact: ArtifactManifest
+  readonly configuration: FixtureConfiguration
   readonly dshHome: string
   readonly runtimeCwd: string
   readonly installationRoot: string
@@ -361,8 +366,9 @@ class ProfileFixtureImpl implements ProfileFixture {
   private startChild: FixtureChild | undefined
   private startResultPromise: Promise<CommandResult> | undefined
 
-  constructor(artifact: ArtifactManifest, testRoot: string, port: number) {
+  constructor(artifact: ArtifactManifest, configuration: FixtureConfiguration, testRoot: string, port: number) {
     this.artifact = artifact
+    this.configuration = configuration
     this.testRoot = testRoot
     this.runtimeCwd = join(testRoot, 'command-cwd')
     this.installationRoot = join(testRoot, 'installation')
@@ -617,9 +623,14 @@ class ProfileFixtureImpl implements ProfileFixture {
 }
 
 export async function createProfileFixture(options: ProfileFixtureOptions): Promise<ProfileFixture> {
-  if (options.configuration !== fixedConfiguration) throw new Error(`composition fixture configuration must be ${fixedConfiguration}`)
-  const artifact = await readArtifactManifest()
-  const testRoot = await mkdtemp(join(tmpdir(), 'harness-comfyui-composition-'))
+  if (!fixtureConfigurations.includes(options.configuration)) {
+    throw new Error(`profile fixture configuration must be one of ${fixtureConfigurations.join(', ')}`)
+  }
+  const artifact = await readArtifactManifest(options.artifactManifestPath)
+  const prefix = options.configuration === 'release-smoke'
+    ? 'harness-comfyui-release-smoke-'
+    : 'harness-comfyui-composition-'
+  const testRoot = await mkdtemp(join(tmpdir(), prefix))
   try {
     const port = await findFreePort()
     const catalogCliPath = join(testRoot, 'catalog-discovery.mjs')
@@ -634,9 +645,9 @@ export async function createProfileFixture(options: ProfileFixtureOptions): Prom
     await chmod(sourceCliPath, 0o755)
     await writeFile(installationPath, `${JSON.stringify({
       schemaVersion: 1,
-      installationId: `composition-${process.pid}-${basename(testRoot)}`,
+      installationId: `${options.configuration}-${process.pid}-${basename(testRoot)}`,
       root: installationRoot,
-      configurationProfile: fixedConfiguration,
+      configurationProfile: options.configuration,
       host: '127.0.0.1',
       port,
       paths: {
@@ -646,7 +657,7 @@ export async function createProfileFixture(options: ProfileFixtureOptions): Prom
         savedMediaDirectory: join(installationRoot, 'shared/saved-media'),
         logDirectory: join(installationRoot, 'shared/logs'),
       },
-      comfyui: { defaultInstanceId: 'composition-test-instance' },
+      comfyui: { defaultInstanceId: `${options.configuration}-instance` },
       source: {
         catalogCliPath,
         sourceCliPath,
@@ -656,7 +667,7 @@ export async function createProfileFixture(options: ProfileFixtureOptions): Prom
       client: { runRefreshIntervalMs: 1000 },
       process: { shutdownTimeoutMs: 15000 },
     }, null, 2)}\n`, 'utf8')
-    return new ProfileFixtureImpl(artifact, testRoot, port)
+    return new ProfileFixtureImpl(artifact, options.configuration, testRoot, port)
   } catch (error) {
     await rm(testRoot, { recursive: true, force: true })
     throw error
