@@ -8,8 +8,8 @@ import vm from 'node:vm'
 import { Context } from '@deepseek-ai/cordis'
 import { typertPlugin } from '@deepseek-ai/dsh-typert-generator/tsdown'
 import { build } from 'tsdown'
-import { afterEach, describe, expect, it } from 'vitest'
-import { createElement, type ReactNode } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createElement, type ReactElement, type ReactNode } from 'react'
 import type { ILayout } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {
   AssistantChatData,
@@ -583,7 +583,7 @@ describe('built Client bundle boundary', () => {
       sessionId: SessionSummary['id']
       variant: 'composer'
       useInput: <S>(selector: (snapshot: InputState | undefined) => S) => S
-      inputActions: { setDraft: (draft: string) => void }
+      inputActions: { setDraft: (draft: string) => void; submit: () => void }
       overlay: ReactNode
     }) => ReactNode) | undefined
     expect(composerComponent).toBeTypeOf('function')
@@ -596,11 +596,12 @@ describe('built Client bundle boundary', () => {
       occurrences: [],
       queue: [],
     } as InputState
+    const submit = vi.fn()
     const composerMarkup = () => renderToStaticMarkup(createElement(composerComponent, {
       sessionId: 'portrait' as SessionSummary['id'],
       variant: 'composer',
       useInput: <S,>(selector: (snapshot: InputState | undefined) => S) => selector(inputState),
-      inputActions: { setDraft: () => undefined },
+      inputActions: { setDraft: () => undefined, submit },
       overlay: createElement('div', { 'data-native-menu-view': true }, 'native slash menu'),
     }))
     const firstComposerMarkup = composerMarkup()
@@ -615,6 +616,31 @@ describe('built Client bundle boundary', () => {
     const secondComposerMarkup = composerMarkup()
     expect(secondComposerMarkup).toContain('video draft</textarea>')
     expect(secondComposerMarkup).not.toContain('portrait draft')
+
+    const composerElement = composerComponent({
+      sessionId: 'portrait' as SessionSummary['id'],
+      variant: 'composer',
+      useInput: <S,>(selector: (snapshot: InputState | undefined) => S) => selector(inputState),
+      inputActions: { setDraft: () => undefined, submit },
+      overlay: createElement('div', { 'data-native-menu-view': true }, 'native slash menu'),
+    }) as ReactElement
+    const composerBox = composerElement.props.children as ReactElement
+    const composerChildren = (Array.isArray(composerBox.props.children)
+      ? composerBox.props.children
+      : [composerBox.props.children]) as ReactNode[]
+    const composerFooter = composerChildren.find((child: ReactNode): child is ReactElement => (
+      child !== null && typeof child === 'object' && 'type' in child && child.type === 'div'
+      && child.props.className === 'composer-footer'
+    ))
+    const composerFooterChildren = (Array.isArray(composerFooter?.props.children)
+      ? composerFooter.props.children
+      : [composerFooter?.props.children]) as ReactNode[]
+    const composerButton = composerFooterChildren.find((child: ReactNode): child is ReactElement => (
+      child !== null && typeof child === 'object' && 'type' in child && child.type === 'button'
+    ))
+    expect(composerButton).toBeDefined()
+    composerButton?.props.onClick()
+    expect(submit).toHaveBeenCalledOnce()
 
     layout.toggleSidebar()
     const collapsedMarkup = renderRoot()

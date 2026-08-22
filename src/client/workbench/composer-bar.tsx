@@ -1,4 +1,8 @@
-import type { ISessions, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type {
+  ConversationSnapshot,
+  ISessions,
+  SessionId,
+} from '@deepseek-ai/dsh-client-runtime/client'
 import type {
   InputTriggerServiceContract,
   TriggerGuard,
@@ -13,7 +17,10 @@ type PublicInputSnapshot = {
 
 type PublicInputActions = {
   readonly setDraft: (text: string) => void
+  readonly submit: () => void
 }
+
+type PublicSessionSnapshot = Pick<ConversationSnapshot, 'promptError'>
 
 export type ComposerBarProps = {
   readonly sessionId: SessionId | undefined
@@ -23,6 +30,7 @@ export type ComposerBarProps = {
   readonly overlay?: ReactNode
   readonly useInput: <S>(selector: (snapshot: PublicInputSnapshot) => S) => S | undefined
   readonly inputActions: PublicInputActions | undefined
+  readonly useSession?: <S>(selector: (snapshot: PublicSessionSnapshot) => S) => S | undefined
 }
 
 function triggerGuard(input: PublicInputSnapshot | undefined): TriggerGuard {
@@ -56,6 +64,20 @@ export function createComposerBar(ctx: {
     const disabled = props.disabled === true
       || props.sessionId === undefined
       || props.inputActions === undefined
+    const promptError = props.useSession?.(snapshot => snapshot.promptError) ?? null
+    const sendError = promptError?.op === 'send'
+      ? `发送失败：${promptError.error.message}（${promptError.error.code}）`
+      : undefined
+    const machineBusy = input?.phase === 'adjudicating' || input?.phase === 'submitting'
+    const canSubmit = !disabled
+      && input !== undefined
+      && input.draft.trim() !== ''
+      && !machineBusy
+
+    const submit = () => {
+      if (!canSubmit) return
+      props.inputActions?.submit()
+    }
 
     const onChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
       if (disabled || props.inputActions === undefined) return
@@ -96,14 +118,15 @@ export function createComposerBar(ctx: {
       }
 
       if (event.key === 'Enter') {
-        triggerController?.arbitrate('enter', composing)
         event.preventDefault()
+        if (triggerController?.arbitrate('enter', composing) !== 'pass' || event.repeat) return
+        submit()
       }
     }
 
     return (
       <footer className="composer-wrap">
-        <div className="composer-box" id="composer-box">
+        <div className={sendError === undefined ? 'composer-box' : 'composer-box is-error'} id="composer-box">
           {props.overlay === undefined ? null : (
             <div className="composer-overlay">{props.overlay}</div>
           )}
@@ -120,8 +143,16 @@ export function createComposerBar(ctx: {
             onKeyDown={onKeyDown}
           />
           <div className="composer-footer">
-            <p id="composer-status">Enter 发送 · Shift + Enter 换行</p>
-            <button className="send-button" id="send-message" type="button" disabled={disabled}>
+            <p id="composer-status" role={sendError === undefined ? undefined : 'alert'}>
+              {sendError ?? 'Enter 发送 · Shift + Enter 换行'}
+            </p>
+            <button
+              className="send-button"
+              id="send-message"
+              type="button"
+              disabled={!canSubmit}
+              onClick={submit}
+            >
               <span>发送</span>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="m4 10 12-6-4 12-2-5-6-1Z" />

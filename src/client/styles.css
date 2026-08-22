@@ -502,6 +502,11 @@
   border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, var(--dsw-alias-border-l1));
 }
 
+.composer-box.is-error {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, var(--dsw-alias-bg-layer-1));
+  border-color: var(--dsw-alias-state-error-primary);
+}
+
 .composer-overlay {
   height: 0;
   position: absolute;
@@ -531,6 +536,11 @@
   color: var(--dsw-alias-label-secondary);
   font-size: 9px;
   margin: 0 0 0 3px;
+}
+
+.composer-box.is-error .composer-footer p {
+  color: var(--dsw-alias-state-error-primary);
+  font-weight: 700;
 }
 
 .send-button {
