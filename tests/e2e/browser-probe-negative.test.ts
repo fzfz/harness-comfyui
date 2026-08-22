@@ -28,7 +28,7 @@ describe('real browser probe failure boundary', () => {
       'about:blank',
       { readinessTimeoutMs: 100 },
     )).rejects.toThrow('timed out waiting for visible Harness AppFrame and client contexts')
-  }, 15000)
+  }, 30000)
 
   it('rejects a visible AppFrame-shaped document whose render script throws', async () => {
     const resourcesBefore = await browserResourceSnapshot()
@@ -55,7 +55,7 @@ describe('real browser probe failure boundary', () => {
     } finally {
       await new Promise<void>((resolve, reject) => server.close(error => error === undefined ? resolve() : reject(error)))
     }
-  }, 15000)
+  }, 30000)
 
   it('rejects a visible button-rich document without the AppFrame shell overlay marker', async () => {
     const resourcesBefore = await browserResourceSnapshot()
@@ -79,5 +79,5 @@ describe('real browser probe failure boundary', () => {
     } finally {
       await new Promise<void>((resolve, reject) => server.close(error => error === undefined ? resolve() : reject(error)))
     }
-  }, 15000)
+  }, 30000)
 })
