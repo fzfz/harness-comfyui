@@ -129,8 +129,27 @@ export async function deriveCandidateArtifact(
     const packageRoot = join(extractionRoot, 'package')
     const manifestPath = join(packageRoot, 'package.json')
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+    const originalVersion = manifest.version
+    if (typeof originalVersion !== 'string' || originalVersion.length === 0) {
+      throw new Error('candidate artifact source package version must be a non-empty string')
+    }
+    if (originalVersion !== artifact.version) {
+      throw new Error(`candidate artifact source package version does not match verified artifact: ${originalVersion}`)
+    }
     manifest.version = version
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    const packageIndexPath = join(packageRoot, 'lib/index.js')
+    const packageIndex = await readFile(packageIndexPath, 'utf8')
+    const originalVersionMarker = `var version = ${JSON.stringify(originalVersion)};`
+    const markerCount = packageIndex.split(originalVersionMarker).length - 1
+    if (markerCount !== 1) {
+      throw new Error(`candidate artifact package version marker must occur exactly once; found ${markerCount}`)
+    }
+    await writeFile(
+      packageIndexPath,
+      packageIndex.replace(originalVersionMarker, `var version = ${JSON.stringify(version)};`),
+      'utf8',
+    )
     await patchCandidatePackage(packageRoot, options.mode)
     const packed = await runTar(['-czf', tarballPath, '-C', extractionRoot, 'package'])
     if (packed.code !== 0) throw new Error(`candidate artifact packing failed: ${packed.stderr || String(packed.code ?? packed.signal)}`)
