@@ -12,6 +12,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import type { ILayout } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {
+  AssistantChatData,
+  ChatNode,
+} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {
+  ConversationSnapshot,
   SessionListState,
   SessionSummary,
   SlotRegistry as SlotRegistryType,
@@ -34,6 +39,95 @@ type ClientPlugin = {
   name: string
   inject: string[]
   apply(ctx: Context): void
+}
+
+type IntegrationChatNode = ChatNode<'user' | 'assistant-step'>
+
+function chatLocation(turn: number, step?: number): IntegrationChatNode['location'] {
+  const turnLocation = {
+    turn,
+    start: undefined,
+    end: undefined,
+    status: step === undefined ? 'closed' : 'open',
+    steps: [],
+    data: { get: () => undefined },
+  }
+  if (step === undefined) return { kind: 'turn', turn: turnLocation } as IntegrationChatNode['location']
+  return {
+    kind: 'step',
+    turn: turnLocation,
+    step: {
+      turn,
+      step,
+      start: undefined,
+      end: undefined,
+      status: 'open',
+      data: { get: () => undefined },
+    },
+  } as IntegrationChatNode['location']
+}
+
+function conversationSnapshot(
+  sessionId: SessionSummary['id'],
+  agentText: string,
+  status: AssistantChatData['status'] = 'settled',
+): ConversationSnapshot {
+  const userText = sessionId === 'video' ? '视频 Session 请求' : '角色 Session 请求'
+  const chatNodes: IntegrationChatNode[] = [
+    {
+      key: 'user-1',
+      kind: 'user',
+      id: 'user-1',
+      target: 'chat',
+      anchorSeq: 1,
+      location: chatLocation(1),
+      visibility: 'visible',
+      data: {
+        kind: 'user',
+        seq: 1,
+        time: 1_723_300_320_000,
+        content: [{ type: 'text', text: userText }],
+        source: 'integration-test',
+      },
+    },
+    {
+      key: 'assistant-1',
+      kind: 'assistant-step',
+      id: 'assistant-1',
+      target: 'chat',
+      anchorSeq: 2,
+      location: chatLocation(1, 1),
+      visibility: 'visible',
+      data: {
+        status,
+        turn: 1,
+        step: 1,
+        blocks: [{ kind: 'text', text: agentText }],
+        time: 1_723_300_321_000,
+      },
+    },
+  ]
+  const byKey = new Map(chatNodes.map(node => [node.key, node]))
+  return {
+    sessionId,
+    chat: {
+      order: chatNodes.map(node => node.key),
+      nodes: {
+        get: (key: string) => byKey.get(key),
+        values: () => [...byKey.values()],
+      },
+      locations: {
+        getTurn: () => [],
+        getStep: () => [],
+      },
+      timeline: {} as ConversationSnapshot['chat']['timeline'],
+      legacy: {} as ConversationSnapshot['chat']['legacy'],
+    },
+    nodes: [],
+    partial: null,
+    openState: 'open',
+    lastAgentError: null,
+  } as unknown as ConversationSnapshot
 }
 
 async function generateIsolatedTypertWorkspace(directory: string): Promise<string> {
@@ -282,6 +376,19 @@ describe('built Client bundle boundary', () => {
       } as never,
       (() => createElement('div', { 'data-upstream-session-header': true })) as never,
     )
+    const upstreamSessionDisposer = ctx.slots.register(
+      {
+        name: 'conversation.session',
+        children: {
+          'conversation.view': { kind: 'list', scope: 'session' },
+        },
+      } as never,
+      (() => createElement('div', { 'data-upstream-conversation-session': true })) as never,
+    )
+    const upstreamViewDisposer = ctx.slots.register(
+      { name: 'conversation.view', id: 'chat', order: 0 } as never,
+      (() => createElement('div', { 'data-upstream-conversation-view': true })) as never,
+    )
 
     expect(mountedContributions).toHaveLength(1)
     expect(mountedContributions[0]).toMatchObject({ package: 'harness-comfyui' })
@@ -293,6 +400,11 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entries('conversation')).toHaveLength(1)
     expect(ctx.slots.entries('conversation.session.header' as never)).toHaveLength(2)
     expect(ctx.slots.entriesOfSlot('conversation.session.header' as never)[0]?.options.priority).toBe(-10)
+    expect(ctx.slots.entries('conversation.view' as never)).toHaveLength(2)
+    expect(ctx.slots.entriesOfSlot('conversation.view' as never)[0]?.options).toMatchObject({
+      id: 'chat',
+      priority: -10,
+    })
     expect(ctx.slots.entries('details')).toHaveLength(0)
     expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
 
@@ -379,6 +491,55 @@ describe('built Client bundle boundary', () => {
     expect(secondHeaderMarkup).toContain('Agent 就绪')
     expect(secondHeaderMarkup).not.toContain('Agent 运行中')
 
+    const viewEntry = ctx.slots.entriesOfSlot('conversation.view' as never)[0]
+    const viewComponent = viewEntry?.component as ((props: {
+      sessionId: SessionSummary['id']
+      useSession: <S>(selector: (snapshot: ConversationSnapshot) => S) => S
+    }) => ReactNode) | undefined
+    expect(viewComponent).toBeTypeOf('function')
+    if (!viewComponent) throw new Error('project ConversationSnapshot view was not elected')
+    let activeConversation = conversationSnapshot(
+      sessionsState.current as SessionSummary['id'],
+      '初始 Session 回复',
+    )
+    const renderConversation = () => renderToStaticMarkup(createElement(viewComponent, {
+      sessionId: activeConversation.sessionId,
+      useSession: <S,>(selector: (snapshot: ConversationSnapshot) => S) => selector(activeConversation),
+    }))
+    const firstConversationMarkup = renderConversation()
+    expect(firstConversationMarkup).toContain('初始 Session 回复')
+    expect(firstConversationMarkup).toContain('查看本轮回复 · 无 ComfyUI 运行')
+
+    activeConversation = conversationSnapshot(
+      sessionsState.current as SessionSummary['id'],
+      '第一段增量',
+      'running',
+    )
+    const firstDeltaMarkup = renderConversation()
+    expect(firstDeltaMarkup).toContain('第一段增量')
+    expect(firstDeltaMarkup).toContain('正在输出')
+    expect(firstDeltaMarkup).toContain('stream-caret')
+
+    activeConversation = conversationSnapshot(
+      sessionsState.current as SessionSummary['id'],
+      '完成 Session 回复',
+      'settled',
+    )
+    const settledConversationMarkup = renderConversation()
+    expect(settledConversationMarkup).toContain('完成 Session 回复')
+    expect(settledConversationMarkup).not.toContain('正在输出')
+    expect(settledConversationMarkup).not.toContain('第一段增量')
+
+    activeConversation = conversationSnapshot(
+      'video' as SessionSummary['id'],
+      '替换 Session 回复',
+      'settled',
+    )
+    const replacementConversationMarkup = renderConversation()
+    expect(replacementConversationMarkup).toContain('替换 Session 回复')
+    expect(replacementConversationMarkup).not.toContain('完成 Session 回复')
+    expect(replacementConversationMarkup).not.toContain('角色 Session 请求')
+
     layout.toggleSidebar()
     const collapsedMarkup = renderRoot()
     expect(collapsedMarkup).toContain('56px minmax(0, 1fr) 432px')
@@ -395,6 +556,7 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entries('root')).toHaveLength(0)
     expect(ctx.slots.entries('sidebar')).toHaveLength(0)
     expect(ctx.slots.entries('conversation.session.header' as never)).toHaveLength(0)
+    expect(ctx.slots.entries('conversation.view' as never)).toHaveLength(0)
     expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
     expect(ctx.reflect.get('layout')).toBeUndefined()
     expect(document.documentElement.style.getPropertyValue('color-scheme')).toBe('')
@@ -405,6 +567,8 @@ describe('built Client bundle boundary', () => {
     sessionsDisposer()
     await remoteDisposer()
     upstreamHeaderDisposer()
+    upstreamViewDisposer()
+    upstreamSessionDisposer()
     upstreamConversationDisposer()
     await ctx.fiber.dispose()
   })

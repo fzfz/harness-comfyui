@@ -167,11 +167,13 @@ describe('Client plugin Host projection', () => {
       'sidebar:register',
       'conversation.session.header:inject',
       'conversation.session.header:register',
+      'conversation.view:inject',
+      'conversation.view:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
     ])
-    expect(fixture.register).toHaveBeenCalledTimes(3)
+    expect(fixture.register).toHaveBeenCalledTimes(4)
     expect(fixture.register).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'root',
@@ -190,6 +192,11 @@ describe('Client plugin Host projection', () => {
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
+      4,
+      { name: 'conversation.view', id: 'chat', order: 0, priority: -10 },
+      expect.any(Function),
+    )
+    expect(fixture.register).toHaveBeenNthCalledWith(
       2,
       { name: 'sidebar', priority: -10 },
       expect.any(Function),
@@ -204,11 +211,14 @@ describe('Client plugin Host projection', () => {
       'sidebar:register',
       'conversation.session.header:inject',
       'conversation.session.header:register',
+      'conversation.view:inject',
+      'conversation.view:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
       'theme:unsubscribe',
       'layout:dispose',
+      'conversation.view:dispose',
       'conversation.session.header:dispose',
       'sidebar:dispose',
       'root:dispose',
