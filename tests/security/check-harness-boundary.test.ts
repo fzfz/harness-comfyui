@@ -87,13 +87,15 @@ const loaderPatch = `- insert:
 
 function createFixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-boundary-'))
+  mkdirSync(join(root, 'src/agent'), { recursive: true })
   mkdirSync(join(root, 'src/host/tools'), { recursive: true })
   mkdirSync(join(root, 'deployment/runtime'), { recursive: true })
   mkdirSync(join(root, 'profiles/comfyui-workbench'), { recursive: true })
   writeFileSync(join(root, 'src.ts'), '// outside src directory\n', 'utf8')
   writeFileSync(join(root, 'README.md'), 'ctx.tools.register("markdown-only")\n', 'utf8')
   writeFileSync(join(root, 'src/host/tools/register-project-tools.ts'), 'ctx.tools.register(definition)\n', 'utf8')
-  writeFileSync(join(root, 'src/host/plugin.ts'), 'registerProjectTools(ctx, definitions)\n', 'utf8')
+  writeFileSync(join(root, 'src/agent/plugin.ts'), 'registerProjectTools(ctx, definitions)\n', 'utf8')
+  writeFileSync(join(root, 'src/host/plugin.ts'), 'ctx.effect(() => undefined)\n', 'utf8')
   writeFileSync(join(root, 'package.json'), `${JSON.stringify(rootPackage, null, 2)}\n`, 'utf8')
   writeFileSync(join(root, 'deployment/runtime/package.json'), `${JSON.stringify(runtimePackage, null, 2)}\n`, 'utf8')
   writeFileSync(join(root, 'pnpm-workspace.yaml'), workspaceText, 'utf8')
@@ -133,7 +135,7 @@ function appendText(root: string, relativePath: string, suffix: string): void {
 }
 
 describe('check:harness-boundary', () => {
-  it('accepts the one registry call and one Host lifecycle call without reading Markdown', () => {
+  it('accepts the one Agent registry call and one Host lifecycle call without reading Markdown', () => {
     const root = createFixture()
     try {
       const result = run(root)
@@ -154,13 +156,25 @@ describe('check:harness-boundary', () => {
     }
   })
 
-  it('rejects a second Host registry call', () => {
+  it('rejects a Host registry call after the Agent migration', () => {
     const root = createFixture('')
     try {
       writeFileSync(join(root, 'src/host/plugin.ts'), 'registerProjectTools(ctx, first)\nregisterProjectTools(ctx, second)\n', 'utf8')
       const result = run(root)
       expect(result.status).not.toBe(0)
       expect(`${result.stdout}\n${result.stderr}`).toContain('src/host/plugin.ts')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a second Agent registry call', () => {
+    const root = createFixture('')
+    try {
+      writeFileSync(join(root, 'src/agent/plugin.ts'), 'registerProjectTools(ctx, first)\nregisterProjectTools(ctx, second)\n', 'utf8')
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain('src/agent/plugin.ts')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

@@ -1,0 +1,8 @@
+{
+  "agentPresetId": "harness-comfyui",
+  "agentPresetArtifactRelativeRoot": "agent-presets",
+  "agentPresetInstallRelativeRoot": "dsh-home/.agent-presets",
+  "skillRelativeRoot": "skills",
+  "agentPluginExport": "./agent",
+  "sessionListConvergenceTimeoutMs": 10000
+}

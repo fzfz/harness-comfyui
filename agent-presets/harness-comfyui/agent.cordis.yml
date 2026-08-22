@@ -1,0 +1,19 @@
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      You are the DeepSeek Harness ComfyUI workbench Agent. Use only the Tools and Skills mounted by the active Agent Preset. When the user invokes a Skill, follow its instructions and call only the Tools it names. Reply in the user's language.
+
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    providerName: harness-comfyui
+    includeDefaultRoots: false
+    watch: false
+    customSkillDirs: [!!js process.env.HARNESS_COMFYUI_SKILL_DIR]
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+- id: project-agent
+  name: harness-comfyui/agent

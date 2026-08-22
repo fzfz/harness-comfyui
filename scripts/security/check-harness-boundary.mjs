@@ -5,7 +5,7 @@ import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const registryPath = 'src/host/tools/register-project-tools.ts'
-const pluginPath = 'src/host/plugin.ts'
+const pluginPath = 'src/agent/plugin.ts'
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
   ['@deepseek-ai/dsh-client-runtime/client', 'value-or-type'],

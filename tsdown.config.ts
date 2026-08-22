@@ -8,6 +8,16 @@ import {
 
 export default defineConfig([
   {
+    entry: { agent: 'src/agent/plugin.ts' },
+    outDir: 'lib',
+    format: 'esm',
+    platform: 'node',
+    target: 'node22.19.0',
+    fixedExtension: false,
+    dts: false,
+    clean: false,
+  },
+  {
     entry: { 'config-profile-validator': 'src/config/profile-validator.ts' },
     outDir: 'lib',
     format: 'esm',
