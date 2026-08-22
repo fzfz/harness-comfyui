@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { writeFrozenRuntimeAndConfiguration } from './frozen-artifact-fixture.ts'
+import { isExitedProcessIdentity } from '../../scripts/deploy/lifecycle.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const cliScript = join(repositoryRoot, 'scripts/deploy/cli.mjs')
@@ -313,6 +314,22 @@ afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
+describe('process identity exit classification', () => {
+  const startTime = 'Sat Aug 22 09:44:18 2026'
+  const expected = { startTime, command: '/installation/releases/0.1.0-test.1/harness-runtime/node_modules/.bin/dsh --no-open' }
+
+  it.each([
+    { name: 'same start time and Z state', observed: { startTime, command: '[node]', processState: 'Z+' }, result: true },
+    { name: 'same start time and defunct command', observed: { startTime, command: '<defunct>' }, result: true },
+    { name: 'same start time and parenthesized command', observed: { startTime, command: '(node)' }, result: true },
+    { name: 'different start time and Z state', observed: { startTime: 'Sat Aug 22 09:44:19 2026', command: '[node]', processState: 'Z' }, result: false },
+    { name: 'different start time and defunct command', observed: { startTime: 'Sat Aug 22 09:44:19 2026', command: '<defunct>' }, result: false },
+    { name: 'active [node] command', observed: { startTime, command: '[node]', processState: 'R' }, result: false },
+  ])('$name', ({ observed, result }) => {
+    expect(isExitedProcessIdentity(expected, observed)).toBe(result)
+  })
+})
+
 describe('installed lifecycle CLI', () => {
   it('starts the installed stable CLI in the foreground, reports status, and stops it', async () => {
     const fixture = await createFixture()
@@ -338,6 +355,11 @@ describe('installed lifecycle CLI', () => {
       },
     })
     expect(processState.processIdentity.command).toContain('harness-runtime/node_modules/.bin/dsh')
+    expect(processState.processIdentity).toEqual({
+      startTime: expect.any(String),
+      command: expect.any(String),
+    })
+    expect(processState.processIdentity).not.toHaveProperty('processState')
 
     const status = await runProcess(stableBin, ['status', '--json', '--installation', fixture.inputPath], fixture.env)
     expect(status.status, status.stderr).toBe(0)
