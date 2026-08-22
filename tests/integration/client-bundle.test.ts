@@ -161,7 +161,10 @@ describe('built Client bundle boundary', () => {
     expect(styleElements).toHaveLength(1)
     expect(styleElements[0]?.dataset.plugin).toBe('harness-comfyui')
     expect(styleElements[0]?.textContent).toBe(await readFile(join(packageRoot, 'src/client/styles.css'), 'utf8'))
-    expect(plugin).toMatchObject({ name: 'harness-comfyui', inject: ['remote'] })
+    expect(plugin).toMatchObject({
+      name: 'harness-comfyui',
+      inject: ['slots', 'sessions', 'remote', 'theme', 'inputTriggers'],
+    })
     expect(plugin?.apply).toBeTypeOf('function')
 
     const SlotRegistry = runtimeExports.SlotRegistry
@@ -177,6 +180,9 @@ describe('built Client bundle boundary', () => {
         }
       },
     })
+    const sessionsDisposer = ctx.provide('sessions', {})
+    const themeDisposer = ctx.provide('theme', {})
+    const inputTriggersDisposer = ctx.provide('inputTriggers', {})
     const rootDisposer = ctx.slots.register(
       {
         name: 'root',
@@ -209,6 +215,9 @@ describe('built Client bundle boundary', () => {
     expect(remoteUnmountCount).toBe(1)
     nativeDetailsDisposer()
     rootDisposer()
+    inputTriggersDisposer()
+    themeDisposer()
+    sessionsDisposer()
     await remoteDisposer()
     await ctx.fiber.dispose()
   })

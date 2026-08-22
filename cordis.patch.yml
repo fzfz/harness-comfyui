@@ -3,3 +3,6 @@
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+
+- id: ui-layout
+  disabled: true

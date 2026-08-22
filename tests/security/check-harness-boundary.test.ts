@@ -15,6 +15,7 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
+  '@deepseek-ai/dsh-client-ui-theme',
 ]
 
 const workspaceText = `packages:
@@ -83,6 +84,9 @@ const loaderPatch = `- insert:
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+
+- id: ui-layout
+  disabled: true
 `
 
 function createFixture(otherSource = ''): string {

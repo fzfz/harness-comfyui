@@ -23,6 +23,7 @@ const frozenClientInject = Object.freeze([
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
+  '@deepseek-ai/dsh-client-ui-theme',
 ])
 const forbiddenSourceProtocols = /^(?:patch|file|link|workspace|npm|git|github|gitlab|bitbucket):/iu
 const forbiddenSourceBinding = /(?:^|[\s{])(?:patch|file|link|workspace|npm):(?:[./*@]|https?:)/iu
@@ -38,6 +39,9 @@ const expectedLoaderPatch = `- insert:
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+
+- id: ui-layout
+  disabled: true
 `
 
 function parseArguments(argv) {
