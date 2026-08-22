@@ -5,7 +5,9 @@
 | 对象 | 执行主体和对象定义 |
 | --- | --- |
 | Fast Quality Gate | `.github/workflows/ci.yml` 的 `quality` job 执行 `quality:preinstall`、frozen install 和 `quality:fast`，为 Pull Request 与 `main` push 提供快速门禁。 |
-| Release Artifact | `.github/workflows/deploy.yml` 的 `candidate` job 针对一个精确 commit 生成的 `.tgz` 文件及 `.release/quality/artifact.json` manifest。manifest 记录 version、commit、filename、byteLength、SHA-256 和当前 runner 上的 tarballPath。 |
+| Release Artifact | `.github/workflows/deploy.yml` 的 `candidate` job 针对一个精确 commit 生成的 `.tgz` 文件及 `.release/quality/artifact.json` manifest。manifest 记录 version、commit、filename、byteLength、SHA-256 和 tarballPath；tarballPath 是生成该 manifest 的 runner 上的 runner-local 路径。 |
+| `quality-candidate` | `.github/workflows/deploy.yml` 的 `candidate` job 上传的 candidate artifact 名称。该 artifact 精确包含 `.release/quality/artifact.json`、一个 `.release/quality/*.tgz` 和 `lib/**`，四个 consumer job 从该 artifact 下载 tarball。 |
+| `quality-qualified` | `.github/workflows/deploy.yml` 的 `qualification` job 在四个 consumer job 通过并验证 Qualification Record 后上传的 qualified artifact 名称。该 artifact 精确包含 `.release/quality/artifact.json`、同一个 `.release/quality/*.tgz`、`.release/quality/qualification.json` 和 `lib/**`。 |
 | Artifact Qualification | `.github/workflows/deploy.yml` 针对一个 Release Artifact 运行四个独立慢门禁，并在四个门禁全部通过后生成 qualified artifact。 |
 | Qualification Record | `qualification` job 写入的 `.release/quality/qualification.json`。该 JSON 把 workflow run ID、commit、Release Artifact 身份和四个门禁的通过状态绑定在一起。 |
 | Release Preview | `.github/workflows/release.yml` 的 `workflow_dispatch` job。该 job 下载指定 qualification run 产生的 qualified artifact，验证其身份后调用 preview，不重新构建或重新运行 Artifact Qualification。 |
@@ -47,12 +49,15 @@ classifier 只有在每一个 changed path 都属于下面三个 fast-only 类�
 - 以 `docs/` 开头的路径；
 - 以 `prototype/` 或 `.planning/` 开头的路径。
 
+`classify-changes.mjs` 使用 `git diff --name-only --no-renames`，所以 Git rename 会拆成旧路径的 deleted entry 和新路径的 added entry。classifier 会分别检查两个路径：产品文件 rename 只要包含一个非 fast-only 路径就返回 `qualify=true`；纯 `docs/` 内 rename 会产生两个 `docs/` 路径，且在没有其他 changed path 时可以返回 `qualify=false`。该例外只适用于纯 fast-only 的 `docs/` rename，其他 rename 不适用。
+
 所有其他分类结果都返回 `qualify=true`。classifier 对以下情况 fail closed，并要求 Artifact Qualification：
 
 - changed paths 为空；
 - `before` 或 `after` 缺失、格式无效、为全零 commit，或 Git diff 失败；
 - changed path 不属于 fast-only 类别的未知路径；
 - 已删除的产品文件路径，因为该路径不属于 fast-only 类别；
+- 产品文件 rename，因为 `--no-renames` 会把它拆成 deleted path 与 added path，只要其中一个路径不是 fast-only path 就必须 `qualify=true`；
 - `workflow_dispatch`，因为该事件没有上游 `quality` job。
 
 当 classifier 返回 `qualify=true` 时，`ci.yml` 以当前 `github.sha` 调用 `.github/workflows/deploy.yml` 的 reusable workflow。当 classifier 返回 `qualify=false` 时，`ci.yml` 跳过 Artifact Qualification。
@@ -78,17 +83,22 @@ classifier 只有在每一个 changed path 都属于下面三个 fast-only 类�
 | `browser-e2e` | `pnpm test:e2e` | Browser E2E |
 | `release-smoke` | `pnpm run release:smoke` | Release smoke |
 
-每个慢门禁 job 都下载 `quality-candidate`，然后执行 `node scripts/ci/artifact-qualification.mjs relocate --root "$PWD"`。该脚本读取 tarball bytes，计算 tarball 的 byteLength 和 SHA-256，并把计算值与 `artifact.json` 的 byteLength、sha256 和 filename 比较；比较通过后，脚本把 manifest 的 tarballPath relocation 到当前 runner 的 `.release/quality/<filename>`，再验证 relocation 后的 manifest 与 tarball。每个慢门禁 job 随后只执行自己的门禁命令。
+每个慢门禁 job 都下载 `quality-candidate`，然后执行 `node scripts/ci/artifact-qualification.mjs relocate --root "$PWD"`。该脚本先要求当前 runner 的 `.release/quality` 是真实目录、目录内恰好有一个 `.tgz`，并且该 `.tgz` 的 filename 等于 `artifact.json` 的 manifest filename。结构检查通过后，该脚本分别读取 tarball bytes 并将文件 byteLength 与 manifest byteLength 比较，再计算 SHA-256 并将结果与 manifest sha256 比较。两项比较都通过后，该脚本只通过原子写入把 `artifact.json.tarballPath` 更新为当前 runner 上 `.release/quality/<filename>` 的 normalized absolute path；该脚本不修改 tarball bytes、manifest filename、byteLength 或 sha256，并在 relocation 后再次验证这些值。每个慢门禁 job 随后只执行自己的门禁命令。
 
 ### Qualification Record 和 qualified artifact
 
 `qualification` job 只在 `deploy-lifecycle`、`composition`、`browser-e2e` 和 `release-smoke` 四个 job 全部通过后运行。该 job 下载并 relocation 同一个 `quality-candidate`，然后使用 `scripts/ci/artifact-qualification.mjs write` 写入 `qualification.json`。
 
+`qualification.json` 的 top-level keys exactly 是 `schemaVersion`、`workflowName`、`runId`、`commit`、`artifact` 和 `gates`；`artifact` object 的 keys exactly 是 `manifestFilename`、`filename`、`version`、`commit`、`byteLength` 和 `sha256`；每个 gate object 的 keys exactly 是 `id` 和 `status`。
+
 该 record 绑定以下对象：
 
+- `schemaVersion` 是 quality policy 的 schema version；
+- `workflowName` 是 quality policy 的 workflow name；
 - `runId` 是当前 Artifact Qualification workflow 的 `github.run_id`；
 - `commit` 是 workflow 输入的精确 commit；
-- `artifact.version`、`artifact.filename`、`artifact.byteLength` 和 `artifact.sha256` 来自 `artifact.json`；
+- `artifact.manifestFilename` 是 `artifact.json`；
+- `artifact.version`、`artifact.filename`、`artifact.commit`、`artifact.byteLength` 和 `artifact.sha256` 来自 `artifact.json`；
 - `gates` 包含 `test:deploy`、`test:composition`、`test:e2e` 和 `release:smoke`，并且每个 gate 的 `status` 都是 `passed`。
 
 `qualification` job 随后使用同一组 version、commit、run ID 和 SHA-256 验证 record 与 tarball，再上传名为 `quality-qualified` 的 qualified artifact。该 qualified artifact 包含 `artifact.json`、同一个 `.tgz`、`qualification.json` 和 `lib/**`。
@@ -109,15 +119,15 @@ Release Preview 下载后执行 relocation，并使用 `scripts/ci/artifact-qual
 
 | 触发场景 | 执行门禁 | 产物 | 是否运行慢测试 |
 | --- | --- | --- | --- |
-| Pull Request | `quality:preinstall`、frozen install、`quality:fast` | Fast Quality Gate 结果；不生成 qualification artifact | 否 |
-| `main` push，所有 changed paths 都是 fast-only | `quality:preinstall`、frozen install、`quality:fast`，随后 classifier 返回 `qualify=false` | Fast Quality Gate 结果；不生成 candidate 或 qualified artifact | 否 |
-| `main` push，classifier 出现空 changed paths、无效 commit 输入、未知 path、已删除产品文件路径或其他非 fast-only path | Fast Quality Gate 通过后执行 Artifact Qualification | `quality-candidate`、`quality-qualified`、`artifact.json`、`qualification.json` | 是；每个 qualified artifact 一次 |
-| Artifact Qualification `workflow_dispatch` | candidate 先执行 `quality:preinstall`、frozen install 和 `quality:fast`，再执行打包、验证和四个慢门禁 | `quality-candidate`、`quality-qualified`、`qualification.json` | 是；每个 qualified artifact 一次 |
-| Release Preview `workflow_dispatch` | 下载、relocation、record/tarball identity validation、preview | `release-preview` | 否 |
+| Pull Request | `quality:preinstall`、frozen install、`quality:fast` | Fast Quality Gate 结果；不生成 qualification artifact | 否；不执行 consumer job |
+| `main` push，所有 changed paths 都是 fast-only | `quality:preinstall`、frozen install、`quality:fast`，随后 classifier 返回 `qualify=false` | Fast Quality Gate 结果；不生成 candidate 或 qualified artifact | 否；不执行 consumer job |
+| `main` push，classifier 出现空 changed paths、无效 commit 输入、未知 path、已删除产品文件路径、产品文件 rename 或其他非 fast-only path | Fast Quality Gate 通过后执行 Artifact Qualification | `quality-candidate`、`quality-qualified`、`artifact.json`、`qualification.json` | 是；该 run attempt 执行四个 consumer job |
+| Artifact Qualification `workflow_dispatch` | candidate 先执行 `quality:preinstall`、frozen install 和 `quality:fast`，再执行打包、验证和四个慢门禁 | `quality-candidate`、`quality-qualified`、`qualification.json` | 是；该 run attempt 执行四个 consumer job |
+| Release Preview `workflow_dispatch` | 下载、relocation、record/tarball identity validation、preview | `release-preview` | 否；不执行 consumer job |
 
 ## 门禁运行原则
 
-每个 qualifying artifact 只运行一次四个慢门禁；四个消费者 job 并行使用同一个 candidate tarball。Pull Request 只运行 Fast Quality Gate，Release Preview 只下载并验证已经 qualified 的 artifact，因此 Pull Request 与 Release Preview 都不会重复运行慢测试。`.github/workflows/ci.yml` 使用 `ci-${{ github.workflow }}-${{ github.ref }}` concurrency group 和 `cancel-in-progress: true`，所以新的 `main` push 会取消同一 ref 上仍在运行的旧 CI。
+每个 Artifact Qualification workflow run attempt 都声明一个 `candidate` job 和四个 consumer job；`candidate` job 执行一次 `pnpm run package:pack`，四个 consumer job 并行使用同一个 candidate tarball。Pull Request 与 Release Preview 都不调用四个慢门禁：Pull Request 只运行 Fast Quality Gate，Release Preview 只下载并验证已经 qualified 的 artifact。该架构不对 manual rerun 或 GitHub Actions rerun 作去重保证。`.github/workflows/ci.yml` 使用 `ci-${{ github.workflow }}-${{ github.ref }}` concurrency group 和 `cancel-in-progress: true`，所以新的 `main` push 会取消同一 ref 上仍在运行的旧 CI。
 
 开发者可以显式运行 `pnpm run quality:artifact` 作为本地完整命令。该命令依次组合 `quality`、`package:pack`、`package:validate`、`test:deploy`、`test:composition`、`test:e2e` 和 `release:smoke`。常规 CI workflow 不调用 `quality:artifact`；CI 使用 candidate job 和四个并行 Artifact Qualification job 实现同一门禁边界。
 
