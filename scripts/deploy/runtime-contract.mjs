@@ -3,7 +3,7 @@ const EXACT_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9
 const RUNTIME_WORKSPACE_POLICY = Object.freeze({
   strictDepBuilds: true,
   allowBuilds: Object.freeze({
-    '@deepseek-ai/dsh-subprocess-local@0.1.0-rc.7': true,
+    '@deepseek-ai/dsh-subprocess-local@0.1.0-rc.8': true,
     '@google/genai@1.52.0': true,
     'koffi@3.1.5': true,
     'node-pty@1.2.0-beta.15': true,

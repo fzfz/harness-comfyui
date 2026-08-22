@@ -186,7 +186,7 @@ describe('security:build-scripts', () => {
     const fixture = await createFixture('clean')
     const runtimeLockPath = join(fixture.root, 'deployment/runtime/pnpm-lock.yaml')
     const runtimeLock = await readFile(runtimeLockPath, 'utf8')
-    await writeFile(runtimeLockPath, runtimeLock.replace(/'@deepseek-ai\/dsh@0\.1\.0-rc\.7'/u, "'@deepseek-ai/dsh@0.1.0-rc.6'"))
+    await writeFile(runtimeLockPath, runtimeLock.replace(/'@deepseek-ai\/dsh@0\.1\.0-rc\.8'/u, "'@deepseek-ai/dsh@0.1.0-rc.6'"))
     const result = await runScript({
       PNPM_BIN: fixture.pnpm,
       FAKE_PNPM_MODE: 'clean',

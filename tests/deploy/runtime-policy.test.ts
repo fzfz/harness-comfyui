@@ -22,7 +22,7 @@ describe('runtime dependency policy contract', () => {
       workspace: {
         strictDepBuilds: true,
         allowBuilds: {
-          '@deepseek-ai/dsh-subprocess-local@0.1.0-rc.7': true,
+          '@deepseek-ai/dsh-subprocess-local@0.1.0-rc.8': true,
           '@google/genai@1.52.0': true,
           'koffi@3.1.5': true,
           'node-pty@1.2.0-beta.15': true,

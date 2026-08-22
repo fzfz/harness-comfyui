@@ -139,9 +139,9 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     engines: { node: '^22.19.0 || >=24.0.0' },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {
-      '@deepseek-ai/dsh': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+      '@deepseek-ai/dsh': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.8',
     },
     files: packageFiles,
   }, null, 2)}\n`, 'utf8')

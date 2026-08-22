@@ -33,13 +33,13 @@ describe('release artifact composition', () => {
       ])
       expect(installed.profileVersions).toEqual({
         harnessComfyui: fixture.artifact.version,
-        dshBase: '0.1.0-rc.7',
-        dshWebApp: '0.1.0-rc.7',
+        dshBase: '0.1.0-rc.8',
+        dshWebApp: '0.1.0-rc.8',
       })
       expect(installed.runtimeBundleVersions).toEqual({
-        cliDsh: '0.1.0-rc.7',
-        dshBase: '0.1.0-rc.7',
-        dshWebApp: '0.1.0-rc.7',
+        cliDsh: '0.1.0-rc.8',
+        dshBase: '0.1.0-rc.8',
+        dshWebApp: '0.1.0-rc.8',
       })
       expect(installed.hostLoaderRow).toEqual({
         id: 'harness-comfyui',

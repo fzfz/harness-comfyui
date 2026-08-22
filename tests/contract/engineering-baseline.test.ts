@@ -25,22 +25,22 @@ describe('Issue #2 public package and composition contracts', () => {
     const manifest = readJson('package.json')
     const harnessPeerVersions = {
       '@deepseek-ai/cordis': '4.0.1',
-      '@deepseek-ai/dsh-agent': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-api-remotes': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-connection': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-locale': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-ui-conversation': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-ui-input-trigger': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-ui-layout': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-ui-primitives': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-client-ui-slots': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-invariants': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-jobs': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-session': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-tools': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-typert-protocol': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-workspace': '0.1.0-rc.7',
+      '@deepseek-ai/dsh-agent': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-api-remotes': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-connection': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-locale': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-ui-conversation': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-ui-input-trigger': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-ui-layout': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-ui-primitives': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-ui-slots': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-invariants': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-jobs': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-session': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-tools': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-typert-protocol': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-workspace': '0.1.0-rc.8',
       react: '18.3.1',
       'react-dom': '18.3.1',
     }
@@ -50,10 +50,10 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.peerDependencies).toEqual(harnessPeerVersions)
     expect(manifest.devDependencies).toEqual({
       ...harnessPeerVersions,
-      '@deepseek-ai/dsh': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-typert-generator': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+      '@deepseek-ai/dsh': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-typert-generator': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.8',
       '@types/node': '22.20.0',
       '@types/react': '18.3.31',
       tsdown: '0.22.2',
@@ -69,8 +69,8 @@ describe('Issue #2 public package and composition contracts', () => {
     const importer = readRootImporter()
     for (const packageName of ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-workspace']) {
       expect(readImporterEntry(importer, packageName)).toEqual({
-        specifier: '0.1.0-rc.7',
-        version: expect.stringMatching(/^0\.1\.0-rc\.7(?:\(|$)/u),
+        specifier: '0.1.0-rc.8',
+        version: expect.stringMatching(/^0\.1\.0-rc\.8(?:\(|$)/u),
       })
     }
     expect(readImporterEntry(importer, '@deepseek-ai/dsh-client-ui-sidebar')).toBeNull()

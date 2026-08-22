@@ -119,7 +119,7 @@ describe('check:manifest-lock', () => {
     const fixture = await createFixture()
     const lockfilePath = join(fixture, 'deployment/runtime/pnpm-lock.yaml')
     const lockfile = await readFile(lockfilePath, 'utf8')
-    await writeFile(lockfilePath, lockfile.replace(/'@deepseek-ai\/dsh@0\.1\.0-rc\.7'/u, "'@deepseek-ai/dsh@0.1.0-rc.6'"))
+    await writeFile(lockfilePath, lockfile.replace(/'@deepseek-ai\/dsh@0\.1\.0-rc\.8'/u, "'@deepseek-ai/dsh@0.1.0-rc.6'"))
 
     const result = await runScript(['--root', fixture])
 

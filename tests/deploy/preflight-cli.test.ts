@@ -68,9 +68,9 @@ async function createFixture() {
     type: 'module',
     engines: { node: '^22.19.0 || >=24.0.0' },
     devDependencies: {
-      '@deepseek-ai/dsh': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+      '@deepseek-ai/dsh': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.8',
     },
   })}\n`, 'utf8')
   await mkdir(join(packageRoot, 'deployment/runtime'), { recursive: true })
@@ -78,9 +78,9 @@ async function createFixture() {
     name: 'harness-comfyui-runtime',
     private: true,
     dependencies: {
-      '@deepseek-ai/dsh': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-base': '0.1.0-rc.7',
-      '@deepseek-ai/dsh-web-app': '0.1.0-rc.7',
+      '@deepseek-ai/dsh': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-base': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-web-app': '0.1.0-rc.8',
     },
   }, null, 2)}\n`, 'utf8')
   await writeFile(join(packageRoot, 'deployment/runtime/pnpm-lock.yaml'), await readFile(join(repositoryRoot, 'deployment/runtime/pnpm-lock.yaml'), 'utf8'), 'utf8')
@@ -281,7 +281,7 @@ describe('harness-comfyui preflight CLI', () => {
 
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('runtime dependency @deepseek-ai/dsh')
-    expect(result.stderr).toContain('0.1.0-rc.7')
+    expect(result.stderr).toContain('0.1.0-rc.8')
     expect(result.stderr).not.toContain('discovery CLI')
   })
 
@@ -315,12 +315,12 @@ describe('harness-comfyui preflight CLI', () => {
     ['a lock importer specifier drift', async (packageRoot: string) => {
       const lockPath = join(packageRoot, 'deployment/runtime/pnpm-lock.yaml')
       const lock = await readFile(lockPath, 'utf8')
-      await writeFile(lockPath, lock.replace("specifier: 0.1.0-rc.7", "specifier: 0.1.0-rc.6"), 'utf8')
+      await writeFile(lockPath, lock.replace("specifier: 0.1.0-rc.8", "specifier: 0.1.0-rc.6"), 'utf8')
     }, 'importer . must resolve'],
     ['a lock package resolution drift', async (packageRoot: string) => {
       const lockPath = join(packageRoot, 'deployment/runtime/pnpm-lock.yaml')
       const lock = await readFile(lockPath, 'utf8')
-      await writeFile(lockPath, lock.replace(/^  '@deepseek-ai\/dsh@0\.1\.0-rc\.7.*':$/gmu, "  '@deepseek-ai/dsh@0.1.0-rc.6':"), 'utf8')
+      await writeFile(lockPath, lock.replace(/^  '@deepseek-ai\/dsh@0\.1\.0-rc\.8.*':$/gmu, "  '@deepseek-ai/dsh@0.1.0-rc.6':"), 'utf8')
     }, 'missing package resolution'],
     ['a workspace strict dependency policy drift', async (packageRoot: string) => {
       const workspacePath = join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml')
