@@ -16,7 +16,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      - name: Enable pnpm 11.7.0
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Activate pnpm 11.7.0
         run: corepack prepare pnpm@11.7.0 --activate
       - name: Check manifest and lockfile
         run: pnpm run check:manifest-lock
