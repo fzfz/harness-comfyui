@@ -39,11 +39,6 @@ const expectedLoaderPatch = `- insert:
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
 `
-const expectedAgentPresetPatch = `- id: agent-presets
-  config:
-    default: harness-comfyui
-    includeUserRoot: true
-`
 
 function parseArguments(argv) {
   const values = new Map()
@@ -237,6 +232,39 @@ function assertPublicPackageMetadata(manifest, manifestPath) {
   }
 }
 
+function readProductAgentBoundary(path) {
+  const config = readJson(path, path)
+  if (!isPlainObject(config)) throw new Error(`${path} must be an object`)
+  const agentPresetId = config.agentPresetId
+  if (typeof agentPresetId !== 'string' || agentPresetId.length === 0 || agentPresetId.includes('/') || agentPresetId.includes('\\')) {
+    throw new Error(`${path}.agentPresetId must be a non-empty single path segment`)
+  }
+  const agentPluginExport = config.agentPluginExport
+  if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
+    throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
+  }
+  return { agentPresetId, agentPluginExport }
+}
+
+function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
+  const exportTarget = `./lib/${productAgent.agentPluginExport.slice(2)}.js`
+  const exports = manifest.exports
+  if (!isPlainObject(exports) || !isPlainObject(exports[productAgent.agentPluginExport]) || exports[productAgent.agentPluginExport].default !== exportTarget) {
+    throw new Error(`${manifestPath}.exports[${productAgent.agentPluginExport}] must default to ${exportTarget}`)
+  }
+  if (!Array.isArray(manifest.files)) throw new Error(`${manifestPath}.files must be an array`)
+  const requiredFiles = [
+    exportTarget.slice(2),
+    `agent-presets/${productAgent.agentPresetId}/preset.yml`,
+    `agent-presets/${productAgent.agentPresetId}/agent.cordis.yml`,
+    'config/product-agent.json',
+    'profiles/comfyui-workbench/cordis.patch.yml',
+  ]
+  for (const entry of requiredFiles) {
+    if (!manifest.files.includes(entry)) throw new Error(`${manifestPath}.files must contain ${entry}`)
+  }
+}
+
 function readLines(path) {
   try {
     return readFileSync(path, 'utf8').split(/\r?\n/u)
@@ -312,9 +340,11 @@ function assertPatchFile(path, expected) {
 
 function validateStructuredHarnessBoundary(root) {
   const rootManifestPath = resolve(root, 'package.json')
+  const productAgentPath = resolve(root, 'config/product-agent.json')
   const runtimeManifestPath = resolve(root, 'deployment/runtime/package.json')
   const profileManifestPath = resolve(root, 'profiles/comfyui-workbench/package.json')
   const rootManifest = readJson(rootManifestPath, rootManifestPath)
+  const productAgent = readProductAgentBoundary(productAgentPath)
   const runtimeManifest = readJson(runtimeManifestPath, runtimeManifestPath)
   assertManifestDependencyFields(rootManifest, 'package.json')
   assertManifestDependencyFields(runtimeManifest, 'deployment/runtime/package.json')
@@ -322,8 +352,9 @@ function validateStructuredHarnessBoundary(root) {
     assertManifestDependencyFields(readJson(profileManifestPath, profileManifestPath), 'profiles/comfyui-workbench/package.json')
   }
   assertPublicPackageMetadata(rootManifest, 'package.json')
+  assertAgentPackageMetadata(rootManifest, 'package.json', productAgent)
   assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
-  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), expectedAgentPresetPatch)
+  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets\n  config:\n    default: ${productAgent.agentPresetId}\n    includeUserRoot: true\n`)
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
   assertWorkspaceFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))

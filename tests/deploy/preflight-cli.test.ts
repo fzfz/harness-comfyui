@@ -272,6 +272,33 @@ describe('harness-comfyui preflight CLI', () => {
     expect(result.stderr).not.toContain('discovery CLI')
   })
 
+  it.each([
+    ['profile patch prefix', async (packageRoot: string) => {
+      const patchPath = join(packageRoot, 'profiles/comfyui-workbench/cordis.patch.yml')
+      await writeFile(patchPath, `- id: unexpected-prefix\n${await readFile(patchPath, 'utf8')}`, 'utf8')
+    }],
+    ['profile patch suffix', async (packageRoot: string) => {
+      await writeFile(join(packageRoot, 'profiles/comfyui-workbench/cordis.patch.yml'), `${await readFile(join(packageRoot, 'profiles/comfyui-workbench/cordis.patch.yml'), 'utf8')}# unexpected-suffix\n`, 'utf8')
+    }],
+    ['profile patch extra row', async (packageRoot: string) => {
+      const patchPath = join(packageRoot, 'profiles/comfyui-workbench/cordis.patch.yml')
+      await writeFile(patchPath, `${await readFile(patchPath, 'utf8')}- id: unexpected-row\n`, 'utf8')
+    }],
+    ['profile patch extra roots key', async (packageRoot: string) => {
+      const patchPath = join(packageRoot, 'profiles/comfyui-workbench/cordis.patch.yml')
+      await writeFile(patchPath, `${await readFile(patchPath, 'utf8')}  roots: []\n`, 'utf8')
+    }],
+  ])('rejects %s content before probing either discovery CLI', async (_name, edit) => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, edit)
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/agent-presets|cordis.patch.yml/u)
+    expect(result.stderr).not.toContain('discovery CLI')
+  })
+
   it('uses the packed runtime packageManager version as the pnpm compatibility contract', async () => {
     const fixture = await createFixture()
     await repackFixture(fixture, async packageRoot => {

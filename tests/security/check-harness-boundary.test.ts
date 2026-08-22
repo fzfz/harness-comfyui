@@ -17,6 +17,15 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-layout',
 ]
 
+const productAgentConfig = {
+  agentPresetId: 'harness-comfyui',
+  agentPresetArtifactRelativeRoot: 'agent-presets',
+  agentPresetInstallRelativeRoot: 'dsh-home/.agent-presets',
+  skillRelativeRoot: 'skills',
+  agentPluginExport: './agent',
+  sessionListConvergenceTimeoutMs: 10000,
+}
+
 const workspaceText = `packages:
   - .
 
@@ -36,6 +45,14 @@ const rootPackage = {
   dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
   devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.7' },
   peerDependencies: { '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.7' },
+  exports: { './agent': { default: './lib/agent.js' } },
+  files: [
+    'lib/agent.js',
+    'agent-presets/harness-comfyui/preset.yml',
+    'agent-presets/harness-comfyui/agent.cordis.yml',
+    'config/product-agent.json',
+    'profiles/comfyui-workbench/cordis.patch.yml',
+  ],
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
     client: { platform: 'web', inject: clientInject },
@@ -90,6 +107,7 @@ function createFixture(otherSource = ''): string {
   mkdirSync(join(root, 'src/agent'), { recursive: true })
   mkdirSync(join(root, 'src/host/tools'), { recursive: true })
   mkdirSync(join(root, 'deployment/runtime'), { recursive: true })
+  mkdirSync(join(root, 'config'), { recursive: true })
   mkdirSync(join(root, 'profiles/comfyui-workbench'), { recursive: true })
   writeFileSync(join(root, 'src.ts'), '// outside src directory\n', 'utf8')
   writeFileSync(join(root, 'README.md'), 'ctx.tools.register("markdown-only")\n', 'utf8')
@@ -97,6 +115,7 @@ function createFixture(otherSource = ''): string {
   writeFileSync(join(root, 'src/agent/plugin.ts'), 'registerProjectTools(ctx, definitions)\n', 'utf8')
   writeFileSync(join(root, 'src/host/plugin.ts'), 'ctx.effect(() => undefined)\n', 'utf8')
   writeFileSync(join(root, 'package.json'), `${JSON.stringify(rootPackage, null, 2)}\n`, 'utf8')
+  writeFileSync(join(root, 'config/product-agent.json'), `${JSON.stringify(productAgentConfig, null, 2)}\n`, 'utf8')
   writeFileSync(join(root, 'deployment/runtime/package.json'), `${JSON.stringify(runtimePackage, null, 2)}\n`, 'utf8')
   writeFileSync(join(root, 'pnpm-workspace.yaml'), workspaceText, 'utf8')
   writeFileSync(join(root, 'deployment/runtime/pnpm-workspace.yaml'), workspaceText, 'utf8')
@@ -378,6 +397,36 @@ describe('check:harness-boundary', () => {
       const result = run(root)
       expect(result.status).not.toBe(0)
       expect(`${result.stdout}\n${result.stderr}`).toContain('package.json.dsh')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['agent preset ID', (config: Record<string, any>) => { config.agentPresetId = 'other-agent' }, 'agent-presets/other-agent/preset.yml'],
+    ['Agent plugin export', (config: Record<string, any>) => { config.agentPluginExport = './other-agent' }, 'package.json.exports[./other-agent]'],
+  ])('rejects %s drift from config/product-agent.json', (_label, update, evidence) => {
+    const root = createFixture()
+    try {
+      updateJson(root, 'config/product-agent.json', update)
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain(evidence)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['Agent export', (manifest: Record<string, any>) => { manifest.exports['./agent'].default = './lib/other-agent.js' }, 'package.json.exports'],
+    ['Agent bundle file', (manifest: Record<string, any>) => { manifest.files = manifest.files.filter((entry: string) => entry !== 'lib/agent.js') }, 'package.json.files'],
+  ])('rejects root package %s drift from config/product-agent.json', (_label, update, field) => {
+    const root = createFixture()
+    try {
+      updateJson(root, 'package.json', update)
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain(field)
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

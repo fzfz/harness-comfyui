@@ -168,19 +168,15 @@ export function validateProductAgentManifest(manifest, productAgent, source = 'p
 }
 
 function validateAgentPresetProfilePatch(text, productAgent, source) {
-  const lines = text.replace(/\r\n/gu, '\n').trim().split('\n');
-  const rowIndexes = lines.flatMap((line, index) => line.trim() === '- id: agent-presets' ? [index] : []);
-  if (rowIndexes.length !== 1) {
-    throw new Error(`${source} must contain exactly one agent-presets patch row`);
-  }
   const expected = [
     '- id: agent-presets',
     '  config:',
     `    default: ${productAgent.agentPresetId}`,
     '    includeUserRoot: true',
+    '',
   ].join('\n');
-  if (lines.slice(rowIndexes[0], rowIndexes[0] + 4).join('\n') !== expected) {
-    throw new Error(`${source} agent-presets patch row must set default: ${productAgent.agentPresetId} and includeUserRoot: true`);
+  if (text.replace(/\r\n/gu, '\n') !== expected) {
+    throw new Error(`${source} must equal exactly the four-line agent-presets patch with default: ${productAgent.agentPresetId} and includeUserRoot: true`);
   }
 }
 
