@@ -272,11 +272,42 @@ describe('profile CLI seams', () => {
       })
       expect(result.code).toBe(37)
       expect(readRecords(recordPath)[0]).toMatchObject({
-        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311'],
+        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311', '--no-open'],
         cwd: repositoryRoot,
         dshHome: targetHome,
         configuration: 'test',
       })
+      expect(readRecords(recordPath)[0].argv?.filter(argument => argument === '--no-open')).toHaveLength(1)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('passes --no-open exactly once to an explicit dsh executable', async () => {
+    const root = createTemporaryDirectory('start-explicit-executable')
+    const targetHome = join(root, 'target-home')
+    const recordPath = join(root, 'dsh-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    const dshExecutable = join(binDirectory, 'pnpm')
+    try {
+      const result = await runNodeScript(startScript, [
+        '--configuration', 'test',
+        '--dsh-home', targetHome,
+        '--dsh-executable', dshExecutable,
+        '--host', '127.0.0.1',
+        '--port', '4311',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'exit'),
+        FAKE_PNPM_EXIT_CODE: '0',
+      })
+      expect(result.code).toBe(0)
+      const [launch] = readRecords(recordPath)
+      expect(launch.argv).toEqual([
+        '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311', '--no-open',
+      ])
+      expect(launch.argv?.filter(argument => argument === '--no-open')).toHaveLength(1)
+      expect(launch.dshHome).toBe(targetHome)
+      expect(launch.configuration).toBe('test')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -301,7 +332,7 @@ describe('profile CLI seams', () => {
       }, runtimeCwd)
       expect(result.code).toBe(0)
       expect(readRecords(recordPath)[0]).toMatchObject({
-        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311'],
+        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311', '--no-open'],
         cwd: realpathSync(runtimeCwd),
         dshHome: targetHome,
         configuration: 'test',

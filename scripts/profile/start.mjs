@@ -57,9 +57,10 @@ function sendSignal(child, signal) {
 
 export function spawnForeground(options) {
   const command = options.dshExecutable ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
+  const dshArguments = ['--profile', profileName, '--host', options.host, '--port', options.port, '--no-open']
   const args = options.dshExecutable === undefined
-    ? ['exec', 'dsh', '--profile', profileName, '--host', options.host, '--port', options.port]
-    : ['--profile', profileName, '--host', options.host, '--port', options.port]
+    ? ['exec', 'dsh', ...dshArguments]
+    : dshArguments
   const environment = options.environment ?? process.env
   return spawn(command, args, {
     cwd: options.cwd ?? process.cwd(),
