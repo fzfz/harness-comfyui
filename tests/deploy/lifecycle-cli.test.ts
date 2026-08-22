@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { writeFrozenRuntimeAndConfiguration } from './frozen-artifact-fixture.ts'
+// @ts-expect-error The process identity seam is a checked-in JavaScript lifecycle module.
 import { isExitedProcessIdentity } from '../../scripts/deploy/lifecycle.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
