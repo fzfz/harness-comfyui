@@ -373,6 +373,13 @@ describe('installed upgrade CLI', () => {
     const install = await installFixture(fixture)
     expect(install.status, install.stderr || install.stdout).toBe(0)
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const oldReleaseRoot = join(fixture.installation.root, 'releases/0.1.0-test.1')
+    const oldPresetContents = await Promise.all([
+      'preset.yml',
+      'agent.cordis.yml',
+    ].map(relativePath => readFile(join(oldReleaseRoot, 'dsh-home/.agent-presets/harness-comfyui', relativePath), 'utf8')))
+    const oldSkillStats = await lstat(join(oldReleaseRoot, 'package/skills'))
+    expect(oldSkillStats.isDirectory()).toBe(true)
     const stableBinBeforeUpgrade = await readFile(stableBin, 'utf8')
     const initialStageLines = (await readFile(fixture.stageReadyFile, 'utf8')).trim().split('\n').filter(Boolean).length
     const processPath = join(fixture.installation.root, 'state/process.json')
@@ -393,6 +400,24 @@ describe('installed upgrade CLI', () => {
     const candidateState = await waitForState(join(fixture.installation.root, 'state/active-release.json'), '0.1.0-test.2')
     expect(candidateState.previousRelease).toEqual({ activeVersion: '0.1.0-test.1', releasePath: join(fixture.installation.root, 'releases/0.1.0-test.1') })
     expect(candidateState.releasePath).toBe(join(fixture.installation.root, 'releases/0.1.0-test.2'))
+    for (const relativePath of [
+      'dsh-home/.agent-presets/harness-comfyui/preset.yml',
+      'dsh-home/.agent-presets/harness-comfyui/agent.cordis.yml',
+    ]) {
+      await expect(lstat(join(candidateState.releasePath, relativePath))).resolves.toBeDefined()
+    }
+    const candidateSkillStats = await lstat(join(candidateState.releasePath, 'package/skills'))
+    expect(candidateSkillStats.isDirectory()).toBe(true)
+    for (const relativePath of ['dsh-home/skills', '.dsh/skills', '.agents/skills']) {
+      await expect(lstat(join(candidateState.releasePath, relativePath))).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    await expect(lstat(oldReleaseRoot)).resolves.toBeDefined()
+    await expect(readFile(join(oldReleaseRoot, 'dsh-home/.agent-presets/harness-comfyui/preset.yml'), 'utf8'))
+      .resolves.toBe(oldPresetContents[0])
+    await expect(readFile(join(oldReleaseRoot, 'dsh-home/.agent-presets/harness-comfyui/agent.cordis.yml'), 'utf8'))
+      .resolves.toBe(oldPresetContents[1])
+    const oldSkillStatsAfter = await lstat(join(oldReleaseRoot, 'package/skills'))
+    expect(oldSkillStatsAfter.isDirectory()).toBe(true)
     const candidateProfile = JSON.parse(await readFile(join(candidateState.releasePath, 'dsh-home/profiles/comfyui-workbench/package.json'), 'utf8'))
     expect(candidateProfile.dependencies['harness-comfyui']).toBe(`file:${fixture.candidateArtifact}`)
     expect(candidateProfile.dependencies['harness-comfyui']).not.toBe(`file:${candidateState.releasePath}/package`)
