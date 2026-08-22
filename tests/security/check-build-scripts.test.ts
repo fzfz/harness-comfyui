@@ -21,9 +21,18 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
 })
 
+interface DependencySecurityPolicy {
+  readonly strictDepBuilds: true
+  readonly allowBuilds: Record<string, unknown>
+  readonly overrides: Record<string, string>
+}
+
+async function readPolicy(): Promise<DependencySecurityPolicy> {
+  return JSON.parse(await readFile(policyPath, 'utf8')) as DependencySecurityPolicy
+}
+
 async function readPolicyAllowBuilds(): Promise<Record<string, unknown>> {
-  const policy = JSON.parse(await readFile(policyPath, 'utf8')) as { allowBuilds: Record<string, unknown> }
-  return policy.allowBuilds
+  return (await readPolicy()).allowBuilds
 }
 
 interface FixtureOptions {
@@ -39,8 +48,12 @@ async function createFixture(mode: string, options: FixtureOptions = {}): Promis
   temporaryDirectories.push(fixtureRoot)
   await mkdir(join(fixtureRoot, 'config'), { recursive: true })
   await mkdir(join(fixtureRoot, 'deployment', 'runtime'), { recursive: true })
-  const sourceAllowBuilds = await readPolicyAllowBuilds()
-  const policyText = options.policyText ?? JSON.stringify({ allowBuilds: options.policyAllowBuilds ?? sourceAllowBuilds })
+  const sourcePolicy = await readPolicy()
+  const sourceAllowBuilds = sourcePolicy.allowBuilds
+  const policyText = options.policyText ?? JSON.stringify({
+    ...sourcePolicy,
+    allowBuilds: options.policyAllowBuilds ?? sourceAllowBuilds,
+  })
   await writeFile(join(fixtureRoot, 'config', 'dependency-security-policy.json'), policyText, 'utf8')
   const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8')) as Record<string, unknown>
   if (Object.hasOwn(options, 'manifestPnpm')) manifest.pnpm = options.manifestPnpm
@@ -295,7 +308,10 @@ describe('security:build-scripts', () => {
 
   it('rejects an extra policy decision', async () => {
     const sourceAllowBuilds = await readPolicyAllowBuilds()
-    const policyText = JSON.stringify({ allowBuilds: { ...sourceAllowBuilds, 'extra@1.0.0': true } })
+    const policyText = JSON.stringify({
+      ...await readPolicy(),
+      allowBuilds: { ...sourceAllowBuilds, 'extra@1.0.0': true },
+    })
     const fixture = await createFixture('clean', { policyText })
     const result = await runScript({
       PNPM_BIN: fixture.pnpm,

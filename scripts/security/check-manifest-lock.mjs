@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  parseRuntimeWorkspacePolicy,
   RUNTIME_DEPENDENCY_POLICY,
   readPnpmPackageManagerVersion,
 } from '../deploy/runtime-contract.mjs'
@@ -13,6 +14,8 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 export const runtimeDirectory = 'deployment/runtime'
 export const frozenRuntimeDependencies = RUNTIME_DEPENDENCY_POLICY.packages
+export const dependencySecurityPolicyFile = 'config/dependency-security-policy.json'
+const expectedAllowBuildDecisionCount = 5
 
 function parseArguments(argv) {
   const values = new Map()
@@ -36,6 +39,77 @@ function readJson(path, label) {
   } catch (error) {
     throw new Error(`could not read ${label}: ${error instanceof Error ? error.message : String(error)}`)
   }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function sortedFrozenRecord(record) {
+  return Object.freeze(Object.fromEntries(Object.entries(record).sort(([left], [right]) => left.localeCompare(right))))
+}
+
+export function readDependencySecurityPolicy(root = repositoryRoot) {
+  const policy = readJson(resolve(root, dependencySecurityPolicyFile), dependencySecurityPolicyFile)
+  if (!isPlainObject(policy)) throw new Error(`${dependencySecurityPolicyFile} must contain an object`)
+  const actualFields = Object.keys(policy).sort()
+  const expectedFields = ['allowBuilds', 'overrides', 'strictDepBuilds']
+  if (actualFields.length !== expectedFields.length || actualFields.some((field, index) => field !== expectedFields[index])) {
+    throw new Error(`${dependencySecurityPolicyFile} must contain exactly strictDepBuilds, allowBuilds, and overrides`)
+  }
+  if (policy.strictDepBuilds !== true) throw new Error(`${dependencySecurityPolicyFile}.strictDepBuilds must be true`)
+  if (!isPlainObject(policy.allowBuilds)) throw new Error(`${dependencySecurityPolicyFile} is missing object allowBuilds`)
+  if (Object.keys(policy.allowBuilds).length !== expectedAllowBuildDecisionCount) {
+    throw new Error(`${dependencySecurityPolicyFile} must contain exactly ${expectedAllowBuildDecisionCount} allowBuilds decisions`)
+  }
+  for (const [packageIdentity, decision] of Object.entries(policy.allowBuilds)) {
+    const versionSeparator = packageIdentity.lastIndexOf('@')
+    const packageVersion = versionSeparator > 0 ? packageIdentity.slice(versionSeparator + 1) : ''
+    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(packageVersion)) {
+      throw new Error(`${dependencySecurityPolicyFile} contains an unclassified or non-exact package identity: ${packageIdentity}`)
+    }
+    if (decision !== true || typeof decision !== 'boolean') {
+      throw new Error(`${dependencySecurityPolicyFile} allowBuilds decision for ${packageIdentity} must be boolean true`)
+    }
+  }
+  if (!isPlainObject(policy.overrides) || Object.keys(policy.overrides).length === 0) {
+    throw new Error(`${dependencySecurityPolicyFile} is missing non-empty object overrides`)
+  }
+  for (const [selector, version] of Object.entries(policy.overrides)) {
+    if (selector.length === 0 || typeof version !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(version)) {
+      throw new Error(`${dependencySecurityPolicyFile} override ${selector || '<empty>'} must resolve to an exact version`)
+    }
+  }
+  return Object.freeze({
+    strictDepBuilds: true,
+    allowBuilds: sortedFrozenRecord(policy.allowBuilds),
+    overrides: sortedFrozenRecord(policy.overrides),
+  })
+}
+
+function encodeYamlScalar(value) {
+  if (typeof value === 'boolean') return String(value)
+  return `'${value.replaceAll("'", "''")}'`
+}
+
+export function renderWorkspacePolicy(policy) {
+  const mapSection = (name, values) => [
+    `${name}:`,
+    ...Object.entries(values)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `  ${encodeYamlScalar(key)}: ${encodeYamlScalar(value)}`),
+  ].join('\n')
+  return [
+    'packages:',
+    '  - .',
+    '',
+    `strictDepBuilds: ${String(policy.strictDepBuilds)}`,
+    '',
+    mapSection('allowBuilds', policy.allowBuilds),
+    '',
+    mapSection('overrides', policy.overrides),
+    '',
+  ].join('\n')
 }
 
 function digest(path) {
@@ -95,20 +169,6 @@ function readMapSection(text, sectionName, label) {
   return Object.fromEntries(Object.entries(values).sort(([left], [right]) => left.localeCompare(right)))
 }
 
-function readTopLevelBoolean(text, fieldName, label) {
-  const pattern = new RegExp(`^${fieldName}:\\s*(\\S+)\\s*$`, 'u')
-  let value
-  for (const [lineNumber, sourceLine] of text.split(/\r?\n/u).entries()) {
-    const match = sourceLine.trimEnd().match(pattern)
-    if (match === null) continue
-    if (value !== undefined) throw new Error(`${label} contains duplicate ${fieldName} on line ${lineNumber + 1}`)
-    value = decodeYamlScalar(match[1], `${label}.${fieldName}`)
-  }
-  if (value === undefined) throw new Error(`${label} is missing ${fieldName}`)
-  if (value !== true) throw new Error(`${label}.${fieldName} must be true`)
-  return true
-}
-
 function readWorkspaceText(workspaceRoot) {
   const path = resolve(workspaceRoot, 'pnpm-workspace.yaml')
   try {
@@ -120,11 +180,7 @@ function readWorkspaceText(workspaceRoot) {
 
 export function readWorkspacePolicy(_root, workspaceRoot = _root) {
   const { path, text } = readWorkspaceText(workspaceRoot)
-  return {
-    strictDepBuilds: readTopLevelBoolean(text, 'strictDepBuilds', path),
-    allowBuilds: readMapSection(text, 'allowBuilds', path),
-    overrides: readMapSection(text, 'overrides', path),
-  }
+  return parseRuntimeWorkspacePolicy(text, path)
 }
 
 export function readStrictDependencyBuilds(root, workspaceRoot = root) {
@@ -311,13 +367,20 @@ export function validateDependencyClosure(root = repositoryRoot) {
   const runtimeManifest = readJson(runtimeManifestPath, 'deployment/runtime/package.json')
   assertRuntimeManifest(runtimeManifest, rootVersions, packageManagerVersion)
 
-  const rootPolicy = readWorkspacePolicy(resolvedRoot)
-  const runtimePolicy = readWorkspacePolicy(resolvedRoot, resolve(resolvedRoot, runtimeDirectory))
+  const dependencySecurityPolicy = readDependencySecurityPolicy(resolvedRoot)
+  const expectedWorkspaceText = renderWorkspacePolicy(dependencySecurityPolicy)
+  const rootWorkspace = readWorkspaceText(resolvedRoot)
+  const runtimeWorkspace = readWorkspaceText(resolve(resolvedRoot, runtimeDirectory))
+  const rootPolicy = parseRuntimeWorkspacePolicy(rootWorkspace.text, rootWorkspace.path)
+  const runtimePolicy = parseRuntimeWorkspacePolicy(runtimeWorkspace.text, runtimeWorkspace.path)
   try {
-    deepStrictEqual(rootPolicy, RUNTIME_DEPENDENCY_POLICY.workspace)
-    deepStrictEqual(runtimePolicy, RUNTIME_DEPENDENCY_POLICY.workspace)
+    deepStrictEqual(rootPolicy, dependencySecurityPolicy)
+    deepStrictEqual(runtimePolicy, dependencySecurityPolicy)
   } catch {
-    throw new Error('root and runtime workspace strictDepBuilds/allowBuilds/overrides must match the runtime contract exactly')
+    throw new Error(`root and runtime workspace strictDepBuilds/allowBuilds/overrides must match ${dependencySecurityPolicyFile} exactly`)
+  }
+  if (rootWorkspace.text !== expectedWorkspaceText || runtimeWorkspace.text !== expectedWorkspaceText) {
+    throw new Error(`root and runtime pnpm-workspace.yaml must be deterministic projections of ${dependencySecurityPolicyFile}`)
   }
   readStrictDependencyBuilds(resolvedRoot, resolvedRoot)
   readStrictDependencyBuilds(resolvedRoot, resolve(resolvedRoot, runtimeDirectory))
@@ -330,7 +393,7 @@ export function validateDependencyClosure(root = repositoryRoot) {
   } catch {
     throw new Error('root and runtime lockfile overrides must match the workspace override policy')
   }
-  return { packageManagerVersion, rootVersions, rootPolicy, runtimePolicy, rootLock, runtimeLock }
+  return { packageManagerVersion, rootVersions, dependencySecurityPolicy, rootPolicy, runtimePolicy, rootLock, runtimeLock }
 }
 
 export function checkManifestLock(root = repositoryRoot) {

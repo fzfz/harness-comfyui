@@ -19,8 +19,10 @@ afterEach(async () => {
 async function createFixture(): Promise<string> {
   const fixture = await mkdtemp(join(tmpdir(), 'harness-comfyui-runtime-manifest-'))
   temporaryDirectories.push(fixture)
+  await mkdir(join(fixture, 'config'), { recursive: true })
   await mkdir(join(fixture, 'deployment', 'runtime'), { recursive: true })
   await copyFile(resolve(root, 'package.json'), join(fixture, 'package.json'))
+  await copyFile(resolve(root, 'config/dependency-security-policy.json'), join(fixture, 'config/dependency-security-policy.json'))
   await copyFile(resolve(root, 'pnpm-workspace.yaml'), join(fixture, 'pnpm-workspace.yaml'))
   return fixture
 }
@@ -96,7 +98,21 @@ describe('release:sync-runtime-manifest', () => {
       "  'koffi@3.1.4': true\n",
     ))
 
-    await expect(syncRuntimeManifest(fixture)).rejects.toThrow(/runtime contract|allowBuilds|policy/i)
+    await expect(syncRuntimeManifest(fixture)).rejects.toThrow(/dependency-security-policy|allowBuilds|policy/i)
+    await expect(readFile(join(fixture, 'deployment/runtime/package.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects root and runtime projections that drift from the structured dependency policy source', async () => {
+    const fixture = await createFixture()
+    const policyPath = join(fixture, 'config/dependency-security-policy.json')
+    const policy = JSON.parse(await readFile(policyPath, 'utf8')) as {
+      allowBuilds: Record<string, true>
+    }
+    delete policy.allowBuilds['koffi@3.1.5']
+    policy.allowBuilds['koffi@3.1.4'] = true
+    await writeFile(policyPath, `${JSON.stringify(policy, null, 2)}\n`)
+
+    await expect(syncRuntimeManifest(fixture)).rejects.toThrow(/dependency-security-policy|allowBuilds|policy/i)
     await expect(readFile(join(fixture, 'deployment/runtime/package.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 })

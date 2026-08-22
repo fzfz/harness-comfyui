@@ -9,7 +9,12 @@ import {
   RUNTIME_DEPENDENCY_POLICY,
   readPnpmPackageManagerVersion,
 } from '../deploy/runtime-contract.mjs'
-import { readWorkspacePolicy } from '../security/check-manifest-lock.mjs'
+import {
+  dependencySecurityPolicyFile,
+  readDependencySecurityPolicy,
+  readWorkspacePolicy,
+  renderWorkspacePolicy,
+} from '../security/check-manifest-lock.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -38,18 +43,23 @@ async function buildRuntimeFiles(root) {
   const rootManifest = await readJson(resolve(resolvedRoot, 'package.json'), 'package.json')
   const packageManagerVersion = readPnpmPackageManagerVersion(rootManifest, 'package.json')
   const dependencies = readRuntimeDependencies(rootManifest)
+  const dependencySecurityPolicy = readDependencySecurityPolicy(resolvedRoot)
+  const expectedWorkspace = renderWorkspacePolicy(dependencySecurityPolicy)
   let rootPolicy
   try {
     rootPolicy = readWorkspacePolicy(resolvedRoot)
-    deepStrictEqual(rootPolicy, RUNTIME_DEPENDENCY_POLICY.workspace)
+    deepStrictEqual(rootPolicy, dependencySecurityPolicy)
   } catch (error) {
-    throw new Error(`pnpm-workspace.yaml policy differs from the runtime contract: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`pnpm-workspace.yaml policy differs from ${dependencySecurityPolicyFile}: ${error instanceof Error ? error.message : String(error)}`)
   }
   let workspace
   try {
     workspace = await readFile(resolve(resolvedRoot, 'pnpm-workspace.yaml'), 'utf8')
   } catch (error) {
     throw new Error(`could not read pnpm-workspace.yaml: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (workspace !== expectedWorkspace) {
+    throw new Error(`pnpm-workspace.yaml is not the deterministic projection of ${dependencySecurityPolicyFile}`)
   }
   const packageText = `${JSON.stringify({
     name: 'harness-comfyui-runtime',
@@ -60,7 +70,7 @@ async function buildRuntimeFiles(root) {
   return {
     directory: resolve(resolvedRoot, 'deployment/runtime'),
     packageText,
-    workspaceText: workspace,
+    workspaceText: expectedWorkspace,
     dependencies,
     packageManagerVersion,
   }

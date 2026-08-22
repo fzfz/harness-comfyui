@@ -39,9 +39,11 @@ function runScript(args: readonly string[]): Promise<CommandResult> {
 async function createFixture(): Promise<string> {
   const fixture = await mkdtemp(join(tmpdir(), 'harness-comfyui-manifest-lock-'))
   temporaryDirectories.push(fixture)
+  await mkdir(join(fixture, 'config'), { recursive: true })
   await mkdir(join(fixture, 'scripts', 'security'), { recursive: true })
   await mkdir(join(fixture, 'deployment', 'runtime'), { recursive: true })
   await copyFile(resolve(root, 'package.json'), join(fixture, 'package.json'))
+  await copyFile(resolve(root, 'config/dependency-security-policy.json'), join(fixture, 'config/dependency-security-policy.json'))
   await copyFile(resolve(root, 'pnpm-lock.yaml'), join(fixture, 'pnpm-lock.yaml'))
   await copyFile(resolve(root, '.npmrc'), join(fixture, '.npmrc'))
   await copyFile(resolve(root, 'pnpm-workspace.yaml'), join(fixture, 'pnpm-workspace.yaml'))
@@ -217,6 +219,6 @@ describe('check:manifest-lock', () => {
     const result = await runScript(['--root', fixture])
 
     expect(result.code).not.toBe(0)
-    expect(`${result.stdout}\n${result.stderr}`).toMatch(new RegExp(`runtime contract.*${field}|${field}.*runtime contract`, 'i'))
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(new RegExp(`dependency-security-policy.*${field}|${field}.*dependency-security-policy|deterministic projection`, 'i'))
   })
 })

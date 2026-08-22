@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   RUNTIME_DEPENDENCY_POLICY,
@@ -6,6 +11,13 @@ import {
   runtimeInstallEnvironment,
   runtimeInstallNpmrc,
 } from '../../scripts/deploy/runtime-contract.mjs'
+
+const root = resolve(import.meta.dirname, '../..')
+const temporaryDirectories: string[] = []
+
+afterEach(async () => {
+  await Promise.all(temporaryDirectories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
+})
 
 describe('runtime dependency policy contract', () => {
   it('defines the exact frozen runtime package set and fail-closed install policy', () => {
@@ -73,5 +85,26 @@ describe('runtime dependency policy contract', () => {
       })
     expect(runtimeInstallEnvironment({ npm_config_strict_peer_dependencies: 'false' }))
       .not.toHaveProperty('npm_config_strict_peer_dependencies')
+  })
+
+  it('loads the frozen workspace policy from the packaged runtime workspace projection', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'harness-comfyui-runtime-policy-'))
+    temporaryDirectories.push(fixture)
+    await mkdir(join(fixture, 'scripts', 'deploy'), { recursive: true })
+    await mkdir(join(fixture, 'deployment', 'runtime'), { recursive: true })
+    await copyFile(
+      join(root, 'scripts/deploy/runtime-contract.mjs'),
+      join(fixture, 'scripts/deploy/runtime-contract.mjs'),
+    )
+    const workspace = await readFile(join(root, 'deployment/runtime/pnpm-workspace.yaml'), 'utf8')
+    await writeFile(
+      join(fixture, 'deployment/runtime/pnpm-workspace.yaml'),
+      workspace.replace("  'nanoid@>=3.0.0 <3.3.18': '3.3.18'", "  'nanoid@>=3.0.0 <3.3.18': '3.3.17'"),
+    )
+
+    const fixtureContract = await import(`${pathToFileURL(join(fixture, 'scripts/deploy/runtime-contract.mjs')).href}?fixture=${Date.now()}`)
+
+    expect(fixtureContract.RUNTIME_DEPENDENCY_POLICY.workspace.overrides['nanoid@>=3.0.0 <3.3.18'])
+      .toBe('3.3.17')
   })
 })

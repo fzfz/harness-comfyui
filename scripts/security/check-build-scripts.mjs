@@ -5,15 +5,13 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  dependencySecurityPolicyFile,
   readStrictDependencyBuilds,
-  readWorkspacePolicy,
   runtimeDirectory,
   validateDependencyClosure,
 } from './check-manifest-lock.mjs'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const policyFile = 'config/dependency-security-policy.json'
-const expectedDecisionCount = 5
 
 const buildDecisionFields = [
   'onlyBuiltDependencies',
@@ -50,27 +48,6 @@ function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function readSecurityPolicy(root) {
-  const policy = readJson(resolve(root, policyFile), policyFile)
-  if (!isPlainObject(policy)) throw new Error(`${policyFile} must contain an object`)
-  if (!isPlainObject(policy.allowBuilds)) throw new Error(`${policyFile} is missing object allowBuilds`)
-  const entries = Object.entries(policy.allowBuilds)
-  if (entries.length !== expectedDecisionCount) {
-    throw new Error(`${policyFile} must contain exactly ${expectedDecisionCount} allowBuilds decisions`)
-  }
-  for (const [packageIdentity, decision] of entries) {
-    const versionSeparator = packageIdentity.lastIndexOf('@')
-    const packageVersion = versionSeparator > 0 ? packageIdentity.slice(versionSeparator + 1) : ''
-    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(packageVersion)) {
-      throw new Error(`${policyFile} contains an unclassified or non-exact package identity: ${packageIdentity}`)
-    }
-    if (decision !== true || typeof decision !== 'boolean') {
-      throw new Error(`${policyFile} allowBuilds decision for ${packageIdentity} must be boolean true`)
-    }
-  }
-  return policy.allowBuilds
-}
-
 function readAllowBuildsFromPnpm(root) {
   const command = process.env.PNPM_BIN ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   const result = spawnSync(command, ['config', 'get', 'allowBuilds', '--json'], {
@@ -101,7 +78,7 @@ function validateAllowBuilds(actual, expected) {
   const actualKeys = Object.keys(actual).sort()
   const expectedKeys = Object.keys(expected).sort()
   if (actualKeys.length !== expectedKeys.length || actualKeys.some((key, index) => key !== expectedKeys[index])) {
-    throw new Error(`pnpm allowBuilds projection differs from ${policyFile}; received ${actualKeys.join(', ')}`)
+    throw new Error(`pnpm allowBuilds projection differs from ${dependencySecurityPolicyFile}; received ${actualKeys.join(', ')}`)
   }
   for (const [packageIdentity, decision] of Object.entries(actual)) {
     if (typeof decision !== 'boolean') {
@@ -139,23 +116,10 @@ export function checkBuildScripts(root = repositoryRoot) {
   readStrictDependencyBuilds(resolvedRoot, runtimeRoot)
   rejectManifestBuildDecisions(root)
   rejectManifestBuildDecisions(runtimeRoot)
-  const expected = readSecurityPolicy(root)
   const closure = validateDependencyClosure(resolvedRoot)
-  const rootWorkspace = readWorkspacePolicy(resolvedRoot)
-  const runtimeWorkspace = readWorkspacePolicy(resolvedRoot, runtimeRoot)
-  try {
-    if (rootWorkspace.strictDepBuilds !== true || runtimeWorkspace.strictDepBuilds !== true) {
-      throw new Error('strictDepBuilds must be true')
-    }
-    deepStrictEqual(runtimeWorkspace.strictDepBuilds, rootWorkspace.strictDepBuilds)
-    deepStrictEqual(rootWorkspace.allowBuilds, expected)
-    deepStrictEqual(runtimeWorkspace.allowBuilds, expected)
-    deepStrictEqual(runtimeWorkspace.overrides, rootWorkspace.overrides)
-  } catch {
-    throw new Error('root and runtime workspace strictDepBuilds/allowBuilds/overrides must match the reviewed policy and strictDepBuilds must be true')
-  }
+  const expected = closure.dependencySecurityPolicy.allowBuilds
   const allowBuilds = validateAllowBuilds(readAllowBuildsFromPnpm(root), expected)
-  return { allowBuilds, closure, rootWorkspace, runtimeWorkspace }
+  return { allowBuilds, closure, rootWorkspace: closure.rootPolicy, runtimeWorkspace: closure.runtimePolicy }
 }
 
 export function main(argv = process.argv.slice(2)) {
