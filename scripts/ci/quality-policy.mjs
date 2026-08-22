@@ -10,6 +10,15 @@ function fail(message) {
   throw new Error(`quality gate policy: ${message}`)
 }
 
+function assertExactKeys(value, expectedKeys, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`${label} must be an object`)
+  const actualKeys = Object.keys(value).sort()
+  const sortedExpected = [...expectedKeys].sort()
+  if (JSON.stringify(actualKeys) !== JSON.stringify(sortedExpected)) {
+    fail(`${label} must contain exactly ${expectedKeys.join(', ')}`)
+  }
+}
+
 function readJson(path) {
   try {
     return JSON.parse(readFileSync(path, 'utf8'))
@@ -58,6 +67,7 @@ function assertThresholds(value) {
 
 function assertQualification(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('qualification must be an object')
+  assertExactKeys(value, ['artifactNames', 'gates', 'requiredGateIds', 'schemaVersion', 'workflowName'], 'qualification')
   if (!Number.isInteger(value.schemaVersion) || value.schemaVersion < 1) fail('qualification.schemaVersion must be a positive integer')
   if (typeof value.workflowName !== 'string' || value.workflowName.length === 0) fail('qualification.workflowName must be a non-empty string')
   const configuredIds = assertStringArray(value.requiredGateIds, 'qualification.requiredGateIds', { unique: true })
@@ -73,21 +83,30 @@ function assertQualification(value) {
       fail(`qualification.artifactNames.${key} must be a non-empty string`)
     }
   }
+  if (new Set(artifactNameKeys.map(key => value.artifactNames[key])).size !== artifactNameKeys.length) {
+    fail('qualification.artifactNames values must be unique')
+  }
   if (!Array.isArray(value.gates) || value.gates.length !== configuredIds.length) fail('qualification.gates must define every required gate exactly once')
   const gateIds = value.gates.map((gate) => {
     if (!gate || typeof gate !== 'object' || Array.isArray(gate)) fail('qualification.gates entries must be objects')
-    if (typeof gate.id !== 'string' || typeof gate.job !== 'string' || typeof gate.command !== 'string') {
-      fail('qualification.gates entries require id, job, and command strings')
+    assertExactKeys(gate, ['command', 'id', 'job'], 'qualification.gates entry')
+    if (typeof gate.id !== 'string' || gate.id.length === 0 || typeof gate.job !== 'string' || gate.job.length === 0 || typeof gate.command !== 'string' || gate.command.length === 0) {
+      fail('qualification.gates entries require non-empty id, job, and command strings')
     }
     return gate.id
   })
+  if (new Set(gateIds).size !== gateIds.length) fail('qualification.gates ids must be unique')
   if (JSON.stringify(gateIds) !== JSON.stringify(configuredIds)) fail('qualification.gates must use requiredGateIds in order')
+  const gateJobs = value.gates.map(gate => gate.job)
+  if (new Set(gateJobs).size !== gateJobs.length) fail('qualification.gates jobs must be unique')
   return value
 }
 
 export function validateQualityPolicy(policy) {
   if (!policy || typeof policy !== 'object' || Array.isArray(policy)) fail('root must be an object')
+  assertExactKeys(policy, ['coverage', 'fastOnlyFiles', 'fastOnlyPrefixes', 'qualification'], 'policy')
   if (!policy.coverage || typeof policy.coverage !== 'object' || Array.isArray(policy.coverage)) fail('coverage must be an object')
+  assertExactKeys(policy.coverage, ['exclude', 'include', 'provider', 'thresholds'], 'coverage')
   if (policy.coverage.provider !== 'v8') fail('coverage.provider must be v8')
   assertStringArray(policy.coverage.include, 'coverage.include')
   assertStringArray(policy.coverage.exclude, 'coverage.exclude')

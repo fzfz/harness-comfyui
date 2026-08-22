@@ -11,8 +11,17 @@ on:
         description: Exact commit from main to preview
         required: true
         type: string
+      qualification_run_id:
+        description: Workflow run ID that produced the qualified artifact
+        required: true
+        type: string
+      artifact_sha256:
+        description: SHA-256 identity of the qualified tarball
+        required: true
+        type: string
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -38,28 +47,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      - name: Disable Corepack pnpm shim
-        run: corepack disable pnpm
-      - name: Install pnpm 11.7.0
-        run: npm install --global pnpm@11.7.0
-      - name: Verify pnpm 11.7.0 outside the repository
-        run: |
-          verification_root="$(mktemp -d)"
-          trap 'rm -rf "$verification_root"' EXIT
-          mkdir -p "$verification_root/home" "$verification_root/cwd"
-          test "$(cd "$verification_root/cwd" && HOME="$verification_root/home" USERPROFILE="$verification_root/home" pnpm --version)" = "11.7.0"
-      - name: Check manifest and lockfile
-        run: pnpm run check:manifest-lock
-      - name: Audit dependency advisories
-        run: pnpm run security:advisories
-      - name: Check dependency build scripts
-        run: pnpm run security:build-scripts
-      - name: Frozen install
-        run: pnpm install --frozen-lockfile
-      - name: Quality
-        run: pnpm quality
+      - name: Download qualified artifact from the qualification run
+        uses: actions/download-artifact@v4
+        with:
+          name: quality-qualified
+          run-id: ${{ inputs.qualification_run_id }}
+          github-token: ${{ github.token }}
+          path: .
+      - name: Relocate qualified manifest
+        run: node scripts/ci/artifact-qualification.mjs relocate --root "$PWD"
+      - name: Validate qualified artifact identity
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+          EXPECTED_COMMIT: ${{ inputs.commit }}
+          EXPECTED_RUN_ID: ${{ inputs.qualification_run_id }}
+          EXPECTED_SHA256: ${{ inputs.artifact_sha256 }}
+        run: node scripts/ci/artifact-qualification.mjs validate --root "$PWD" --expected-version "$EXPECTED_VERSION" --expected-commit "$EXPECTED_COMMIT" --expected-run-id "$EXPECTED_RUN_ID" --expected-sha256 "$EXPECTED_SHA256"
       - name: Release Preview
-        run: node scripts/release/preview.mjs --expected-version "${{ inputs.version }}" --expected-commit "${{ inputs.commit }}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        run: |
+          set -o pipefail
+          node scripts/release/preview.mjs --expected-version "$RELEASE_VERSION" --expected-commit "$RELEASE_COMMIT" | tee .release/quality/release-preview.txt | tee "$GITHUB_STEP_SUMMARY"
       - name: Upload Release Preview artifact
         uses: actions/upload-artifact@v4
         with:
@@ -67,4 +77,7 @@ jobs:
           path: |
             .release/quality/artifact.json
             .release/quality/*.tgz
+            .release/quality/qualification.json
+            .release/quality/release-preview.txt
+          include-hidden-files: true
           if-no-files-found: error

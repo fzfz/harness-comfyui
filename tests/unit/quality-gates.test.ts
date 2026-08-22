@@ -85,6 +85,47 @@ describe('quality gate policy', () => {
     })
   })
 
+  it('rejects unknown policy keys and malformed qualification gate or artifact-name records', () => {
+    const policy = loadQualityPolicy(repositoryRoot)
+    expect(() => validateQualityPolicy({ ...policy, unexpected: true })).toThrow(/policy.*exactly/u)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      coverage: { ...policy.coverage, unexpected: true },
+    })).toThrow(/coverage.*exactly/u)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      qualification: { ...policy.qualification, unexpected: true },
+    })).toThrow(/qualification.*exactly/u)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      qualification: {
+        ...policy.qualification,
+        artifactNames: { ...policy.qualification.artifactNames, unexpected: 'extra' },
+      },
+    })).toThrow(/artifactNames.*exactly/u)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      qualification: {
+        ...policy.qualification,
+        artifactNames: { ...policy.qualification.artifactNames, qualified: policy.qualification.artifactNames.candidate },
+      },
+    })).toThrow(/artifactNames.*unique/u)
+
+    const withGates = (mutate: (gates: Array<Record<string, unknown>>) => void) => {
+      const gates = policy.qualification.gates.map((gate: Record<string, unknown>) => ({ ...gate }))
+      mutate(gates)
+      return validateQualityPolicy({
+        ...policy,
+        qualification: { ...policy.qualification, gates },
+      })
+    }
+    expect(() => withGates(gates => { gates[0].unexpected = true })).toThrow(/gates entry.*exactly/u)
+    expect(() => withGates(gates => { gates[0].id = '' })).toThrow(/non-empty/u)
+    expect(() => withGates(gates => { gates[1].id = gates[0].id })).toThrow(/ids.*unique/u)
+    expect(() => withGates(gates => { gates[1].job = gates[0].job })).toThrow(/jobs.*unique/u)
+    expect(() => withGates(gates => { gates[0].command = '' })).toThrow(/non-empty/u)
+  })
+
   it('returns false only when every path is explicitly fast-only', () => {
     expect(classifyChangedPaths(['docs/operations/test-gates.md'], repositoryRoot).qualify).toBe(false)
     expect(classifyChangedPaths(['prototype/generation-workbench/app.js'], repositoryRoot).qualify).toBe(false)
