@@ -57,7 +57,7 @@ function changedPathsFromGit(root, before, after) {
   if (!exactCommit.test(before) || !exactCommit.test(after) || zeroCommit.test(before) || zeroCommit.test(after)) {
     throw new Error('before and after must be non-zero lowercase 40-character commits')
   }
-  const result = spawnSync('git', ['diff', '--name-only', before, after], {
+  const result = spawnSync('git', ['diff', '--name-only', '--no-renames', before, after], {
     cwd: root,
     encoding: 'utf8',
     shell: false,

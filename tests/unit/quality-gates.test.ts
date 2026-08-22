@@ -153,6 +153,19 @@ describe('quality gate policy', () => {
     expect(classifyGitDiff(docsFixture.root, docsFixture.before)).toBe('false')
   })
 
+  it('qualifies a product-to-docs rename while skipping a docs-to-docs rename', () => {
+    const productToDocs = createGitFixture('src/renamed-product.ts')
+    mkdirSync(join(productToDocs.root, 'docs'), { recursive: true })
+    git(productToDocs.root, 'mv', 'src/renamed-product.ts', 'docs/renamed-product.md')
+    git(productToDocs.root, 'commit', '--quiet', '-m', 'rename product to docs')
+    expect(classifyGitDiff(productToDocs.root, productToDocs.before)).toBe('true')
+
+    const docsToDocs = createGitFixture('docs/renamed-guide.md')
+    git(docsToDocs.root, 'mv', 'docs/renamed-guide.md', 'docs/renamed-guide-updated.md')
+    git(docsToDocs.root, 'commit', '--quiet', '-m', 'rename docs')
+    expect(classifyGitDiff(docsToDocs.root, docsToDocs.before)).toBe('false')
+  })
+
   it('validates fast-only paths as relative slash-separated paths without rejecting legitimate dot names', () => {
     const policy = loadQualityPolicy(repositoryRoot)
     expect(validateQualityPolicy({
