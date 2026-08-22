@@ -11,7 +11,11 @@ import { build } from 'tsdown'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import type { ILayout } from '@deepseek-ai/dsh-client-ui-layout/client'
-import type { SlotRegistry as SlotRegistryType } from '@deepseek-ai/dsh-client-runtime/client'
+import type {
+  SessionListState,
+  SessionSummary,
+  SlotRegistry as SlotRegistryType,
+} from '@deepseek-ai/dsh-client-runtime/client'
 
 import { buildClientBundle } from '../../scripts/build/tsdown-client-bundle.ts'
 import { bundleGeneratedTypert } from '../../scripts/build/bundle-generated-typert.ts'
@@ -209,7 +213,48 @@ describe('built Client bundle boundary', () => {
         }
       },
     })
-    const sessionsDisposer = ctx.provide('sessions', {})
+    const sessionsState: SessionListState = {
+      ids: ['portrait', 'video', 'comparison'] as SessionListState['ids'],
+      byId: {
+        portrait: {
+          id: 'portrait' as SessionSummary['id'],
+          displayTitle: '角色立绘调整',
+          title: '角色立绘调整',
+          updatedAt: 1_723_300_320_000,
+          running: false,
+          blank: false,
+        },
+        video: {
+          id: 'video' as SessionSummary['id'],
+          displayTitle: '测试视频工作流',
+          title: '测试视频工作流',
+          updatedAt: 1_723_296_480_000,
+          running: false,
+          blank: false,
+        },
+        comparison: {
+          id: 'comparison' as SessionSummary['id'],
+          displayTitle: '画风参数对比',
+          title: '画风参数对比',
+          updatedAt: 1_721_088_000_000,
+          running: false,
+          blank: false,
+        },
+      } as SessionListState['byId'],
+      current: 'portrait' as SessionListState['current'],
+      phase: 'ready',
+      subagentsByParent: {},
+      jobsBySession: {},
+      currentAddress: undefined,
+    }
+    const sessions = {
+      list: {
+        getSnapshot: () => sessionsState,
+        subscribe: () => () => undefined,
+      },
+      open: () => undefined,
+    }
+    const sessionsDisposer = ctx.provide('sessions', sessions)
     const themeDisposer = ctx.provide('theme', {
       getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }),
     })
@@ -222,7 +267,8 @@ describe('built Client bundle boundary', () => {
     expect((mountedContributions[0] as { descriptors: Array<{ service: string; method: string }> }).descriptors)
       .toContainEqual(expect.objectContaining({ service: 'pluginStatus', method: 'get' }))
     expect(ctx.slots.entries('root')).toHaveLength(1)
-    expect(ctx.slots.entries('sidebar')).toHaveLength(0)
+    expect(ctx.slots.entries('sidebar')).toHaveLength(1)
+    expect(ctx.slots.entries('sidebar')[0]?.options.priority).toBe(-10)
     expect(ctx.slots.entries('conversation')).toHaveLength(0)
     expect(ctx.slots.entries('details')).toHaveLength(0)
     expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
@@ -235,6 +281,23 @@ describe('built Client bundle boundary', () => {
       'details',
       'shell.overlay',
     ])
+
+    const sidebarComponent = ctx.slots.entries('sidebar')[0]?.component as ((props: {
+      collapsed: boolean
+      width: number
+      useSessions: <S>(selector: (snapshot: SessionListState) => S) => S
+    }) => ReactNode) | undefined
+    expect(sidebarComponent).toBeTypeOf('function')
+    if (!sidebarComponent) throw new Error('project Session sidebar was not registered')
+    const sidebarMarkup = renderToStaticMarkup(createElement(sidebarComponent, {
+      collapsed: false,
+      width: 294,
+      useSessions: <S,>(selector: (snapshot: SessionListState) => S) => selector(sessionsState),
+    }))
+    expect(sidebarMarkup).toContain('data-session-id="portrait"')
+    expect(sidebarMarkup).toContain('data-session-id="video"')
+    expect(sidebarMarkup).toContain('data-session-id="comparison"')
+    expect(sidebarMarkup).toContain('placeholder="搜索会话"')
 
     const layout = ctx.reflect.get('layout') as ILayout | undefined
     expect(layout).toBeDefined()
@@ -284,6 +347,7 @@ describe('built Client bundle boundary', () => {
 
     await clientFiber.dispose()
     expect(ctx.slots.entries('root')).toHaveLength(0)
+    expect(ctx.slots.entries('sidebar')).toHaveLength(0)
     expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
     expect(ctx.reflect.get('layout')).toBeUndefined()
     expect(document.documentElement.style.getPropertyValue('color-scheme')).toBe('')

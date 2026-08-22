@@ -65,10 +65,10 @@ function createContext(options: { mountError?: Error } = {}) {
       await unmount()
     }
   })
-  const register = vi.fn(() => {
-    events.push('root:register')
+  const register = vi.fn((options: { name?: string }) => {
+    events.push(`${options.name ?? 'unknown'}:register`)
     return () => {
-      events.push('root:dispose')
+      events.push(`${options.name ?? 'unknown'}:dispose`)
     }
   })
   const provide = vi.fn(() => {
@@ -158,11 +158,12 @@ describe('Client plugin Host projection', () => {
     expect(fixture.events).toEqual([
       'remote:mount',
       'root:register',
+      'sidebar:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
     ])
-    expect(fixture.register).toHaveBeenCalledOnce()
+    expect(fixture.register).toHaveBeenCalledTimes(2)
     expect(fixture.register).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'root',
@@ -175,6 +176,11 @@ describe('Client plugin Host projection', () => {
       }),
       expect.any(Function),
     )
+    expect(fixture.register).toHaveBeenNthCalledWith(
+      2,
+      { name: 'sidebar', priority: -10 },
+      expect.any(Function),
+    )
 
     await dispose()
     expect(fixture.unmount).toHaveBeenCalledOnce()
@@ -182,11 +188,13 @@ describe('Client plugin Host projection', () => {
     expect(fixture.events).toEqual([
       'remote:mount',
       'root:register',
+      'sidebar:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
       'theme:unsubscribe',
       'layout:dispose',
+      'sidebar:dispose',
       'root:dispose',
       'remote:unmount',
     ])

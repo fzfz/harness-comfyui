@@ -36,3 +36,195 @@
 .harness-comfyui-shell-overlay > * {
   pointer-events: auto;
 }
+
+.session-panel {
+  background: var(--dsw-alias-bg-layer-1);
+  border-right: 1px solid var(--dsw-alias-border-l1);
+  color: var(--dsw-alias-label-primary);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.session-panel .panel-heading {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  min-height: 66px;
+  padding: 13px 16px 12px;
+}
+
+.session-panel .panel-heading h2 {
+  font-family: var(--dsw-font-family);
+  font-size: 17px;
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.session-panel .section-kicker,
+.session-panel .list-date {
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--dsw-font-markdown-code-font-family);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.session-panel .search-field {
+  align-items: center;
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid transparent;
+  display: flex;
+  gap: 8px;
+  margin: 0 12px 10px;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+.session-panel .search-field:focus-within {
+  background: var(--dsw-alias-bg-layer-1);
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-border-l1));
+}
+
+.session-panel .search-field svg {
+  color: var(--dsw-alias-label-secondary);
+  fill: none;
+  flex: 0 0 auto;
+  height: 16px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+  width: 16px;
+}
+
+.session-panel .search-field input {
+  background: transparent;
+  border: 0;
+  min-width: 0;
+  outline: 0;
+  width: 100%;
+}
+
+.session-panel .search-field input::placeholder {
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 76%, transparent);
+}
+
+.session-panel .search-field kbd {
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l1);
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--dsw-font-markdown-code-font-family);
+  font-size: 9px;
+  padding: 2px 4px;
+}
+
+.session-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px;
+}
+
+.list-date {
+  padding: 13px 8px 6px;
+}
+
+.session-row {
+  background: transparent;
+  border: 1px solid transparent;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 3px;
+  padding: 10px 10px 9px;
+  position: relative;
+  text-align: left;
+  width: 100%;
+}
+
+.session-row:hover {
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.session-row.is-current {
+  background: var(--dsw-alias-interactive-bg-active);
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 22%, transparent);
+}
+
+.session-row.is-current::before {
+  background: var(--dsw-alias-brand-primary);
+  content: "";
+  height: calc(100% - 14px);
+  left: -1px;
+  position: absolute;
+  top: 7px;
+  width: 3px;
+}
+
+.session-title {
+  font-family: var(--dsw-font-family);
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-meta {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+}
+
+.run-count {
+  align-self: end;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
+  border-radius: 999px;
+  color: var(--dsw-alias-brand-primary);
+  font-family: var(--dsw-font-markdown-code-font-family);
+  font-size: 9px;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  margin-top: 4px;
+  min-width: 54px;
+  padding: 2px 5px;
+  text-align: center;
+}
+
+.session-empty {
+  color: var(--dsw-alias-label-secondary);
+  margin: 0;
+  padding: 13px 8px 6px;
+}
+
+.session-footer {
+  align-items: center;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-secondary);
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  padding: 11px 16px;
+}
+
+.storage-glyph {
+  border: 1px solid var(--dsw-alias-label-secondary);
+  border-radius: 50%;
+  height: 8px;
+  position: relative;
+  width: 8px;
+}
+
+.storage-glyph::after {
+  background: var(--dsw-alias-label-secondary);
+  content: "";
+  height: 1px;
+  left: 8px;
+  position: absolute;
+  top: 3px;
+  width: 8px;
+}
