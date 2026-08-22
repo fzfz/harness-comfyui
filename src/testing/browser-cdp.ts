@@ -185,6 +185,35 @@ export interface BrowserProfileCleanupOptions {
   pollIntervalMs?: number
 }
 
+export interface BrowserViewport {
+  width: number
+  height: number
+}
+
+export interface RealBrowserProbeOptions {
+  readinessTimeoutMs?: number
+  viewport?: BrowserViewport
+}
+
+const defaultBrowserViewport: BrowserViewport = { width: 1280, height: 900 }
+
+export function browserWindowSizeArgument(viewport: BrowserViewport = defaultBrowserViewport): string {
+  if (viewport === null || typeof viewport !== 'object' || Array.isArray(viewport)) {
+    throw new TypeError('browser viewport must be an object containing exactly width and height')
+  }
+  const keys = Object.keys(viewport).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['height', 'width'])) {
+    throw new TypeError('browser viewport must contain exactly width and height')
+  }
+  if (!Number.isSafeInteger(viewport.width) || viewport.width <= 0) {
+    throw new TypeError('browser viewport width must be a positive integer')
+  }
+  if (!Number.isSafeInteger(viewport.height) || viewport.height <= 0) {
+    throw new TypeError('browser viewport height must be a positive integer')
+  }
+  return `--window-size=${viewport.width},${viewport.height}`
+}
+
 async function waitForProcess(child: BrowserProcess, timeoutMs: number): Promise<boolean> {
   if (child.exitCode !== null || child.signalCode !== null) return true
   return await new Promise(resolve => {
@@ -350,7 +379,8 @@ export async function removeBrowserProfileWhenStable(
   throw new Error(`browser profile did not remain continuously absent for ${stableWindowMs}ms: ${profileDirectory}`)
 }
 
-async function launchBrowser(): Promise<BrowserSession> {
+async function launchBrowser(viewport?: BrowserViewport): Promise<BrowserSession> {
+  const windowSizeArgument = browserWindowSizeArgument(viewport)
   const executable = await findBrowserExecutable()
   const profileDirectory = await mkdtemp(join(tmpdir(), 'harness-comfyui-chrome-'))
   const args = [
@@ -365,7 +395,7 @@ async function launchBrowser(): Promise<BrowserSession> {
     '--remote-debugging-port=0',
     '--remote-allow-origins=*',
     `--user-data-dir=${profileDirectory}`,
-    '--window-size=1280,900',
+    windowSizeArgument,
     'about:blank',
   ]
   if (process.platform === 'linux' && typeof process.getuid === 'function' && process.getuid() === 0) args.push('--no-sandbox')
@@ -439,9 +469,9 @@ async function evaluate(session: BrowserSession, expression: string): Promise<un
 
 export async function runRealBrowserProbe(
   url: string,
-  options: { readinessTimeoutMs?: number } = {},
+  options: RealBrowserProbeOptions = {},
 ): Promise<RealBrowserProbe> {
-  const session = await launchBrowser()
+  const session = await launchBrowser(options.viewport)
   const consoleErrors: string[] = []
   const runtimeExceptions: string[] = []
   const removeConsoleListener = session.connection.on('Runtime.consoleAPICalled', message => {

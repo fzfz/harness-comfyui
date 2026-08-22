@@ -1,6 +1,30 @@
 import { describe, expect, it } from 'vitest'
 
-import { installModuleLoaderCapture } from '../../src/testing/browser-cdp.ts'
+import {
+  browserWindowSizeArgument,
+  installModuleLoaderCapture,
+} from '../../src/testing/browser-cdp.ts'
+
+describe('browser viewport input', () => {
+  it('formats a validated custom viewport for the Chrome window-size argument', () => {
+    expect(browserWindowSizeArgument({ width: 1440, height: 960 })).toBe('--window-size=1440,960')
+  })
+
+  it('keeps the default Chrome viewport at 1280 by 900', () => {
+    expect(browserWindowSizeArgument()).toBe('--window-size=1280,900')
+  })
+
+  it.each([
+    [null, 'must be an object containing exactly width and height'],
+    [{ width: 1440 }, 'must contain exactly width and height'],
+    [{ width: 1440, height: 960, scale: 2 }, 'must contain exactly width and height'],
+    [{ width: 0, height: 960 }, 'width must be a positive integer'],
+    [{ width: 1440.5, height: 960 }, 'width must be a positive integer'],
+    [{ width: 1440, height: -1 }, 'height must be a positive integer'],
+  ])('rejects invalid structured viewport input %#', (viewport, message) => {
+    expect(() => browserWindowSizeArgument(viewport as never)).toThrow(message)
+  })
+})
 
 describe('browser ModuleLoader capture', () => {
   it('keeps capturing registrations after the loader replaces load and wraps each handoff once', () => {

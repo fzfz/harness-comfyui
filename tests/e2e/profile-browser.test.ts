@@ -33,7 +33,9 @@ describe('release artifact browser boundary', () => {
       await fixture.install()
       await fixture.start()
 
-      const browser = await fixture.runRealBrowserProbe()
+      const browser = await fixture.runRealBrowserProbe({
+        viewport: { width: 1440, height: 960 },
+      })
       expect(browser.appFrame).toBe(true)
       expect(browser.nativeDetailsModuleLoaded).toBe(true)
       expect(browser.hostClientConnected).toBe(true)

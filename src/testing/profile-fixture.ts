@@ -12,6 +12,7 @@ import type { Readable } from 'node:stream'
 import {
   runRealBrowserProbe,
   type RealBrowserProbe,
+  type RealBrowserProbeOptions,
 } from './browser-cdp.ts'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -137,7 +138,7 @@ export interface ProfileFixture {
   readInstalledProfileEvidence(): Promise<InstalledProfileEvidence>
   readClientPackageEvidence(): Promise<ClientPackageEvidence>
   readClientModule(id: string): Promise<string>
-  runRealBrowserProbe(): Promise<RealBrowserProbe>
+  runRealBrowserProbe(options?: RealBrowserProbeOptions): Promise<RealBrowserProbe>
 }
 
 export interface ProfileVersionReader {
@@ -686,8 +687,8 @@ class ProfileFixtureImpl implements ProfileFixture {
     return response.text()
   }
 
-  async runRealBrowserProbe(): Promise<RealBrowserProbe> {
-    return runRealBrowserProbe(`http://127.0.0.1:${this.currentPort}/`)
+  async runRealBrowserProbe(options?: RealBrowserProbeOptions): Promise<RealBrowserProbe> {
+    return runRealBrowserProbe(`http://127.0.0.1:${this.currentPort}/`, options)
   }
 
   async dispose(): Promise<void> {
