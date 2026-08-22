@@ -110,6 +110,39 @@ describe('quality gate policy', () => {
     })).toThrow(/files.*unique/u)
   })
 
+  it.each([
+    ['schemaVersion zero', (qualification: Record<string, unknown>) => ({ ...qualification, schemaVersion: 0 }), /schemaVersion.*positive integer/u],
+    ['schemaVersion non-integer', (qualification: Record<string, unknown>) => ({ ...qualification, schemaVersion: 1.5 }), /schemaVersion.*positive integer/u],
+    ['empty workflowName', (qualification: Record<string, unknown>) => ({ ...qualification, workflowName: '' }), /workflowName.*non-empty/u],
+    ['duplicate requiredGateIds', (qualification: Record<string, unknown>) => ({
+      ...qualification,
+      requiredGateIds: ['test:deploy', 'test:deploy'],
+    }), /requiredGateIds.*duplicates/u],
+    ['empty requiredGateIds', (qualification: Record<string, unknown>) => ({ ...qualification, requiredGateIds: [] }), /requiredGateIds.*non-empty/u],
+    ['empty requiredGateId', (qualification: Record<string, unknown>) => ({ ...qualification, requiredGateIds: [''] }), /requiredGateIds.*non-empty/u],
+    ['non-string requiredGateId', (qualification: Record<string, unknown>) => ({ ...qualification, requiredGateIds: [42] }), /requiredGateIds.*non-empty/u],
+    ['missing qualification.files', (qualification: Record<string, unknown>) => {
+      const { files: _files, ...withoutFiles } = qualification
+      return withoutFiles
+    }, /qualification.*exactly/u],
+    ['empty qualification.files', (qualification: Record<string, unknown>) => ({ ...qualification, files: {} }), /files.*exactly/u],
+    ['array qualification.files', (qualification: Record<string, unknown>) => ({ ...qualification, files: [] }), /files must be an object/u],
+    ['empty manifest filename', (qualification: Record<string, unknown>) => ({
+      ...qualification,
+      files: { ...(qualification.files as Record<string, unknown>), manifest: '' },
+    }), /files\.manifest.*non-empty/u],
+    ['non-string record filename', (qualification: Record<string, unknown>) => ({
+      ...qualification,
+      files: { ...(qualification.files as Record<string, unknown>), record: null },
+    }), /files\.record.*non-empty/u],
+  ])('rejects malformed qualification policy: %s', (_name, mutate, expected) => {
+    const policy = loadQualityPolicy(repositoryRoot)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      qualification: mutate(policy.qualification),
+    })).toThrow(expected)
+  })
+
   it('rejects unsupported coverage providers, incomplete thresholds, non-integers, and out-of-range thresholds', () => {
     const policy = loadQualityPolicy(repositoryRoot)
     expect(() => validateQualityPolicy({

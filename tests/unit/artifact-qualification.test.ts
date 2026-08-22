@@ -104,13 +104,21 @@ describe('artifact qualification relocation', () => {
     expect(() => relocateArtifact(fixture.root)).toThrow(expected)
   })
 
-  it('rejects a tarball symlink instead of hashing a linked file', () => {
+  it.each([
+    ['tarball symlink', (fixture: ReturnType<typeof artifactFixture>) => {
+      rmSync(fixture.currentTarballPath)
+      const target = join(fixture.root, 'outside.tgz')
+      writeFileSync(target, fixture.bytes)
+      symlinkSync(target, fixture.currentTarballPath)
+    }, /symlink/u],
+    ['tarball directory', (fixture: ReturnType<typeof artifactFixture>) => {
+      rmSync(fixture.currentTarballPath)
+      mkdirSync(fixture.currentTarballPath)
+    }, /regular file/u],
+  ])('rejects a non-regular %s instead of hashing it', (_name, mutate, expected) => {
     const fixture = artifactFixture()
-    rmSync(fixture.currentTarballPath)
-    const target = join(fixture.root, 'outside.tgz')
-    writeFileSync(target, fixture.bytes)
-    symlinkSync(target, fixture.currentTarballPath)
-    expect(() => relocateArtifact(fixture.root)).toThrow(/symlink/u)
+    mutate(fixture)
+    expect(() => relocateArtifact(fixture.root)).toThrow(expected)
   })
 
   it.each([
@@ -121,6 +129,8 @@ describe('artifact qualification relocation', () => {
     ['tarball basename mismatch', (artifact: Record<string, unknown>) => { artifact.tarballPath = resolve(String(artifact.tarballPath), '..', 'other.tgz') }, /basename/u],
     ['invalid SemVer', (artifact: Record<string, unknown>) => { artifact.version = '01.2.3' }, /SemVer/u],
     ['invalid commit', (artifact: Record<string, unknown>) => { artifact.commit = 'A'.repeat(40) }, /commit/u],
+    ['negative byteLength', (artifact: Record<string, unknown>) => { artifact.byteLength = -1 }, /byteLength.*non-negative/u],
+    ['non-integer byteLength', (artifact: Record<string, unknown>) => { artifact.byteLength = 1.5 }, /byteLength.*non-negative/u],
     ['invalid SHA-256', (artifact: Record<string, unknown>) => { artifact.sha256 = 'F'.repeat(64) }, /SHA-256/u],
   ])('rejects %s in artifact manifest', (_name, mutate, expected) => {
     const fixture = artifactFixture()
