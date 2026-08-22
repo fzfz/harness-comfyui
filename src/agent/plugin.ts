@@ -6,7 +6,7 @@ import { registerProjectTools } from '../host/tools/register-project-tools.ts'
 const definitions: readonly ToolDefinition[] = []
 
 export const name = 'harness-comfyui/agent'
-export const inject: [] = []
+export const inject = ['tools'] as const
 
 /** Restrict inherited Tools before registering this Agent Preset's project Tools. */
 export function apply(ctx: Context): void {

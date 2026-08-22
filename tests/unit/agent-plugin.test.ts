@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { apply } from '../../src/agent/plugin.ts'
+import { apply, inject } from '../../src/agent/plugin.ts'
 
 type AgentContextFixture = {
   effect(execute: () => () => void, label?: string): unknown
@@ -11,6 +11,10 @@ type AgentContextFixture = {
 }
 
 describe('harness-comfyui Agent plugin', () => {
+  it('declares the public Cordis Tools service required by the Agent plugin', () => {
+    expect(inject).toEqual(['tools'])
+  })
+
   it('restricts inherited tools before applying the empty project Tool set', () => {
     const calls: string[] = []
     let disposeEffect: (() => void) | undefined
