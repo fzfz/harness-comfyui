@@ -339,6 +339,81 @@ async function readActiveRelease(root, expectedInstallationId) {
   return { activeVersion, releasePath, packageCliPath, dshExecutable, dshHome }
 }
 
+function agentPresetApiUrl(installation) {
+  const host = installation.host.includes(':') ? `[${installation.host}]` : installation.host
+  return `http://${host}:${installation.port}/api/agentPreset.list`
+}
+
+async function readAgentPresetRoster(installation) {
+  const rpcId = randomUUID()
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 2_000)
+  let response
+  try {
+    response = await fetch(agentPresetApiUrl(installation), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        type: 'client-request',
+        rpcId,
+        method: 'agentPreset.list',
+        payload: {},
+      }),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    throw new Error(`agentPreset.list request failed: ${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    clearTimeout(timeout)
+  }
+  if (!response.ok) throw new Error(`agentPreset.list HTTP request returned status ${response.status}`)
+  let wire
+  try {
+    wire = await response.json()
+  } catch {
+    throw new Error('agentPreset.list response is malformed JSON')
+  }
+  if (!isRecord(wire) || wire.type !== 'server-response' || wire.rpcId !== rpcId) {
+    throw new Error('agentPreset.list response envelope is invalid')
+  }
+  if (!isRecord(wire.result) || wire.result.ok !== true || !isRecord(wire.result.value)) {
+    throw new Error('agentPreset.list response result is invalid')
+  }
+  const value = wire.result.value
+  if (!Array.isArray(value.presets)) throw new Error('agentPreset.list response presets are invalid')
+  return value
+}
+
+function validateAgentPresetRoster(roster, productAgent) {
+  if (!isRecord(roster) || !Array.isArray(roster.presets)) {
+    throw new Error('agentPreset.list response presets are invalid')
+  }
+  const productRows = roster.presets.filter(row => isRecord(row) && row.id === productAgent.agentPresetId)
+  if (productRows.length !== 1) {
+    throw new Error(`agentPreset.list must return exactly one preset with id "${productAgent.agentPresetId}"; found ${productRows.length}`)
+  }
+  const productRow = productRows[0]
+  if (productRow.trust !== 'user') {
+    throw new Error(`agent preset "${productAgent.agentPresetId}" must have trust "user"`)
+  }
+  if (productRow.isDefault !== true) {
+    throw new Error(`agent preset "${productAgent.agentPresetId}" must be the default preset`)
+  }
+  if (productRow.broken !== undefined) {
+    throw new Error(`agent preset "${productAgent.agentPresetId}" is broken: ${String(productRow.broken)}`)
+  }
+  return {
+    id: productRow.id,
+    trust: productRow.trust,
+    isDefault: productRow.isDefault,
+    releaseRelativeRoot: `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`,
+  }
+}
+
+async function validateRunningAgentPresetRoster(installation, productAgent) {
+  return validateAgentPresetRoster(await readAgentPresetRoster(installation), productAgent)
+}
+
 async function buildHostEnvironment(installation, active, productAgent = undefined) {
   const resolvedProductAgent = productAgent ?? await readProductAgentConfig(resolve(active.releasePath, 'package'))
   const environment = Object.fromEntries(
@@ -685,6 +760,9 @@ export {
   probePort,
   operationsPath,
   readActiveRelease,
+  readAgentPresetRoster,
+  validateAgentPresetRoster,
+  validateRunningAgentPresetRoster,
   readProcessState,
   removeOwnedProcessState,
   sameProcessIdentity,

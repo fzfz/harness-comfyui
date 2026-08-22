@@ -147,6 +147,21 @@ const server = createServer((request, response) => {
     return
   }
   if (request.method === 'GET' && request.url === '/client.js') { response.end('client bundle'); return }
+  if (request.method === 'POST' && request.url === '/api/agentPreset.list') {
+    let body = ''
+    request.on('data', chunk => { body += String(chunk) })
+    request.on('end', () => {
+      let rpcId = 'unknown'
+      try { rpcId = JSON.parse(body).rpcId } catch {}
+      response.setHeader('content-type', 'application/json')
+      response.end(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {
+        presets: [{ id: 'harness-comfyui', trust: 'user', isDefault: true }],
+        authorable: true,
+        hasDocument: true,
+      } } }))
+    })
+    return
+  }
   if (request.method === 'POST' && request.url === '/api/pluginStatus/get') {
     response.setHeader('content-type', 'application/json')
     response.end(JSON.stringify({ type: 'server-response', result: { ok: true, value: {

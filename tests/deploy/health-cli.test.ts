@@ -114,6 +114,7 @@ const pluginStatus = {
   configurationProfile: 'production',
   hostLoaded: process.env.HEALTH_PLUGIN_STATUS_LOADED === 'true',
 }
+const rosterMode = process.env.HEALTH_AGENT_PRESET_MODE ?? 'valid'
 const server = createServer((request, response) => {
   let body = ''
   request.on('data', chunk => { body += String(chunk) })
@@ -140,6 +141,42 @@ const server = createServer((request, response) => {
         type: 'server-response',
         rpcId: 'health',
         result: { ok: true, value: pluginStatus },
+      }))
+      return
+    }
+    if (request.method === 'POST' && request.url === '/api/agentPreset.list') {
+      if (rosterMode === 'wire-failure') {
+        response.writeHead(503)
+        response.end('agent preset service unavailable')
+        return
+      }
+      if (rosterMode === 'malformed') {
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end('{')
+        return
+      }
+      const presets = rosterMode === 'missing'
+        ? []
+        : rosterMode === 'duplicate'
+          ? [
+              { id: 'harness-comfyui', trust: 'user', isDefault: true },
+              { id: 'harness-comfyui', trust: 'user', isDefault: true },
+            ]
+          : [
+              {
+                id: 'harness-comfyui',
+                trust: rosterMode === 'wrong-trust' ? 'system' : 'user',
+                isDefault: rosterMode !== 'non-default',
+                ...(rosterMode === 'broken' ? { broken: 'preset document unavailable' } : {}),
+              },
+            ]
+      let rpcId = 'unknown'
+      try { rpcId = JSON.parse(body).rpcId } catch {}
+      response.writeHead(200, { 'content-type': 'application/json' })
+      response.end(JSON.stringify({
+        type: 'server-response',
+        rpcId,
+        result: { ok: true, value: { presets, authorable: true, hasDocument: true } },
       }))
       return
     }
@@ -180,7 +217,7 @@ fs.chmodSync(path.join(target, 'dsh'), 0o755)
   return { binDirectory, home }
 }
 
-async function createFixture({ pluginStatusLoaded = true } = {}) {
+async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid' } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'harness-health-cli-'))
   temporaryRoots.push(root)
   const installationRoot = join(root, 'installation')
@@ -288,6 +325,7 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     HEALTH_HOST_READY_FILE: hostReadyFile,
     HEALTH_REQUEST_LOG: requestLog,
     HEALTH_PLUGIN_STATUS_LOADED: String(pluginStatusLoaded),
+    HEALTH_AGENT_PRESET_MODE: rosterMode,
   }
   return { root, installation, inputPath, tarballPath, hostReadyFile, requestLog, env }
 }
@@ -333,6 +371,13 @@ describe('installed health CLI', () => {
       status: 'passed',
       process: { status: 'passed' },
       activeRelease: { status: 'passed' },
+      agentPresetRoster: {
+        status: 'passed',
+        id: 'harness-comfyui',
+        trust: 'user',
+        isDefault: true,
+        releaseRelativeRoot: 'dsh-home/.agent-presets/harness-comfyui',
+      },
       harnessWeb: { status: 'passed' },
       clientBundle: { status: 'passed' },
       pluginStatus: {
@@ -352,15 +397,24 @@ describe('installed health CLI', () => {
 
     const requests = (await readFile(fixture.requestLog, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
     expect(requests.map(request => ({ method: request.method, url: request.url }))).toEqual([
+      { method: 'POST', url: '/api/agentPreset.list' },
       { method: 'GET', url: '/' },
       { method: 'GET', url: '/assets/harness-comfyui.js' },
       { method: 'POST', url: '/api/pluginStatus/get' },
     ])
-    expect(JSON.parse(requests[2].body)).toMatchObject({
+    expect(JSON.parse(requests[0].body)).toMatchObject({
+      type: 'client-request',
+      method: 'agentPreset.list',
+      payload: {},
+    })
+    expect(JSON.parse(requests[3].body)).toMatchObject({
       type: 'client-request',
       method: 'pluginStatus/get',
       payload: { args: {} },
     })
+    expect(requests.filter(request => request.url === '/api/agentPreset.list')).toHaveLength(1)
+    expect(requests.every(request => !String(request.url).toLowerCase().includes('session'))).toBe(true)
+    expect(requests.every(request => !String(request.body).toLowerCase().includes('session'))).toBe(true)
     expect(requests.some(request => String(request.url).includes('/prompt'))).toBe(false)
     expect(requests.some(request => String(request.url).includes('conversation'))).toBe(false)
 
@@ -387,6 +441,41 @@ describe('installed health CLI', () => {
     })
     expect(evidence.process.status).toBe('passed')
     expect(JSON.parse(await readFile(join(fixture.installation.root, 'state/last-health.json'), 'utf8'))).toEqual(evidence)
+
+    await stopFixture(fixture)
+    expect((await start.output).status).toBe(0)
+  }, 30_000)
+
+  it.each([
+    { mode: 'missing', message: /exactly one preset/u },
+    { mode: 'duplicate', message: /exactly one preset/u },
+    { mode: 'wrong-trust', message: /trust "user"/u },
+    { mode: 'non-default', message: /default preset/u },
+    { mode: 'broken', message: /is broken/u },
+    { mode: 'malformed', message: /malformed JSON/u },
+    { mode: 'wire-failure', message: /HTTP request returned status 503/u },
+  ])('returns a concrete Agent Preset roster failure for $mode without Session requests', async ({ mode, message }) => {
+    const fixture = await createFixture({ rosterMode: mode })
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+
+    const health = await runProcess(stableBin, ['health', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(health.status).not.toBe(0)
+    const evidence = JSON.parse(health.stdout)
+    expect(evidence).toMatchObject({
+      stage: 'health',
+      status: 'failed',
+      process: { status: 'passed' },
+      agentPresetRoster: { status: 'failed', error: message },
+    })
+    const requests = (await readFile(fixture.requestLog, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
+    expect(requests.filter(request => request.url === '/api/agentPreset.list')).toHaveLength(1)
+    expect(requests.every(request => !String(request.url).toLowerCase().includes('session'))).toBe(true)
+    expect(requests.every(request => !String(request.body).toLowerCase().includes('session'))).toBe(true)
 
     await stopFixture(fixture)
     expect((await start.output).status).toBe(0)

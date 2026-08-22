@@ -1,4 +1,5 @@
 import { validateInstallation } from './contracts.mjs'
+import { validateProductAgentRelease } from './preflight.mjs'
 import {
   assertProcessStateOwnership,
   clearStaleProcessState,
@@ -7,11 +8,13 @@ import {
   readActiveRelease,
   readProcessState,
   statusView,
+  validateRunningAgentPresetRoster,
 } from './lifecycle.mjs'
 
 export async function runProductStatus(input) {
   const installation = validateInstallation(input)
   const active = await readActiveRelease(installation.root, installation.installationId)
+  const agentReadiness = await validateProductAgentRelease(active.releasePath)
   const statePath = processStatePath(installation.root)
   const state = await readProcessState(statePath)
   if (state === null) {
@@ -25,5 +28,6 @@ export async function runProductStatus(input) {
     return statusView(installation, active.activeVersion, null, portOccupied ? 'unhealthy' : 'stopped')
   }
   const portReady = await probePort(installation.host, installation.port)
+  if (portReady) await validateRunningAgentPresetRoster(installation, agentReadiness.productAgent)
   return statusView(installation, active.activeVersion, state, portReady ? 'running' : 'starting')
 }

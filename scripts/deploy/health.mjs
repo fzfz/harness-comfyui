@@ -4,6 +4,7 @@ import { access, lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path';
 import {
   readDiscovery,
+  validateProductAgentRelease,
   validateDiscovery,
 } from './preflight.mjs';
 import { validateInstallation } from './contracts.mjs';
@@ -14,12 +15,14 @@ import {
   readProcessIdentity,
   readProcessState,
   sameProcessIdentity,
+  validateRunningAgentPresetRoster,
   writeAtomicJson,
 } from './lifecycle.mjs';
 
 const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'process',
   'activeRelease',
+  'agentPresetRoster',
   'harnessWeb',
   'clientBundle',
   'pluginStatus',
@@ -218,10 +221,12 @@ export async function runProductHealth(input) {
 
   let active;
   let packageManifest;
+  let productAgent;
   try {
     active = await readActiveRelease(installation.root, installation.installationId);
     packageManifest = await readProductPackageManifest(active);
     if (packageManifest.version !== active.activeVersion) throw new Error('active release version mismatch');
+    ({ productAgent } = await validateProductAgentRelease(active.releasePath));
     evidence.activeRelease = { status: 'passed', version: packageManifest.version };
   } catch {
     evidence.activeRelease = failedCheck('active-release-invalid');
@@ -241,6 +246,17 @@ export async function runProductHealth(input) {
     }
   } else {
     evidence.process = failedCheck('active-release-required');
+  }
+
+  if (active !== undefined && productAgent !== undefined) {
+    try {
+      const roster = await validateRunningAgentPresetRoster(installation, productAgent);
+      evidence.agentPresetRoster = { status: 'passed', ...roster };
+    } catch (error) {
+      evidence.agentPresetRoster = failedCheck(error instanceof Error ? error.message : String(error));
+    }
+  } else {
+    evidence.agentPresetRoster = failedCheck('active-release-required');
   }
 
   let web;

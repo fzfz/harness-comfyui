@@ -160,7 +160,51 @@ appendFileSync(process.env.HOST_ENV_LOG, JSON.stringify({
   serverPort: process.env.HARNESS_COMFYUI_SERVER_PORT,
   ambientRemoved: process.env.HARNESS_COMFYUI_AMBIENT,
 }) + '\\n', 'utf8')
-const server = createServer((_request, response) => response.end('fixture host'))
+const server = createServer((request, response) => {
+  let body = ''
+  request.on('data', chunk => { body += String(chunk) })
+  request.on('end', () => {
+    appendFileSync(process.env.HOST_REQUEST_LOG, JSON.stringify({ method: request.method, url: request.url, body }) + '\\n')
+    if (request.method === 'POST' && request.url === '/api/agentPreset.list') {
+      const rosterMode = process.env.LIFECYCLE_AGENT_PRESET_MODE ?? 'valid'
+      if (rosterMode === 'wire-failure') {
+        response.writeHead(503)
+        response.end('agent preset service unavailable')
+        return
+      }
+      if (rosterMode === 'malformed') {
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end('{')
+        return
+      }
+      const presets = rosterMode === 'missing'
+        ? []
+        : rosterMode === 'duplicate'
+          ? [
+              { id: 'harness-comfyui', trust: 'user', isDefault: true },
+              { id: 'harness-comfyui', trust: 'user', isDefault: true },
+            ]
+          : [
+              {
+                id: 'harness-comfyui',
+                trust: rosterMode === 'wrong-trust' ? 'system' : 'user',
+                isDefault: rosterMode !== 'non-default',
+                ...(rosterMode === 'broken' ? { broken: 'preset document unavailable' } : {}),
+              },
+            ]
+      let rpcId = 'unknown'
+      try { rpcId = JSON.parse(body).rpcId } catch {}
+      response.writeHead(200, { 'content-type': 'application/json' })
+      response.end(JSON.stringify({
+        type: 'server-response',
+        rpcId,
+        result: { ok: true, value: { presets, authorable: true, hasDocument: true } },
+      }))
+      return
+    }
+    response.end('fixture host')
+  })
+})
 server.listen(Number(process.env.HARNESS_COMFYUI_SERVER_PORT), process.env.HARNESS_COMFYUI_SERVER_HOST, () => {
   writeFileSync(process.env.HOST_READY_FILE, String(process.pid))
   process.stdout.write('fixture-host-ready\\n')
@@ -194,7 +238,7 @@ fs.chmodSync(path.join(target, 'dsh'), 0o755)
   return { binDirectory, home }
 }
 
-async function createFixture() {
+async function createFixture({ rosterMode = 'valid' } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'harness-lifecycle-cli-'))
   temporaryRoots.push(root)
   const installationRoot = join(root, 'installation')
@@ -203,6 +247,7 @@ async function createFixture() {
   const inputPath = join(root, 'installation.json')
   const hostReadyFile = join(root, 'host-ready')
   const hostEnvLog = join(root, 'host-env.jsonl')
+  const hostRequestLog = join(root, 'host-requests.jsonl')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
   const discovery = {
@@ -301,12 +346,14 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
     HOST_READY_FILE: hostReadyFile,
     HOST_ENV_LOG: hostEnvLog,
+    HOST_REQUEST_LOG: hostRequestLog,
+    LIFECYCLE_AGENT_PRESET_MODE: rosterMode,
     HARNESS_COMFYUI_AMBIENT: 'must-be-removed',
     HARNESS_COMFYUI_SKILL_DIR: '/ambient/skills',
     DSH_HOME: '/ambient/dsh-home',
     DSH_TOOLS_MODE: 'ambient',
   }
-  return { root, installation, inputPath, tarballPath, hostReadyFile, hostEnvLog, env }
+  return { root, installation, inputPath, tarballPath, hostReadyFile, hostEnvLog, hostRequestLog, env }
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
@@ -385,6 +432,17 @@ describe('installed lifecycle CLI', () => {
       port: fixture.installation.port,
       status: 'running',
     })
+    const requests = (await readFile(fixture.hostRequestLog, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
+    expect(requests.map(request => ({ method: request.method, url: request.url }))).toEqual([
+      { method: 'POST', url: '/api/agentPreset.list' },
+    ])
+    expect(JSON.parse(requests[0].body)).toMatchObject({
+      type: 'client-request',
+      method: 'agentPreset.list',
+      payload: {},
+    })
+    expect(requests.some(request => String(request.url).toLowerCase().includes('session'))).toBe(false)
+    expect(requests.some(request => String(request.body).toLowerCase().includes('session'))).toBe(false)
 
     const environment = JSON.parse((await readFile(fixture.hostEnvLog, 'utf8')).trim())
     expect(environment).toMatchObject({
@@ -416,6 +474,39 @@ describe('installed lifecycle CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'shared/logs/host.stderr.log'))).resolves.toBeDefined()
     await waitForPortClosed(fixture.installation.host, fixture.installation.port)
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }, 30_000)
+
+  it.each([
+    { mode: 'missing', message: /exactly one preset/u },
+    { mode: 'duplicate', message: /exactly one preset/u },
+    { mode: 'wrong-trust', message: /trust "user"/u },
+    { mode: 'non-default', message: /default preset/u },
+    { mode: 'broken', message: /is broken/u },
+    { mode: 'malformed', message: /malformed JSON/u },
+    { mode: 'wire-failure', message: /HTTP request returned status 503/u },
+  ])('rejects running status when Agent Preset roster is $mode', async ({ mode, message }) => {
+    const fixture = await createFixture({ rosterMode: mode })
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+    await waitForFile(join(fixture.installation.root, 'state/process.json'))
+
+    const status = await runProcess(stableBin, ['status', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(status.status).not.toBe(0)
+    expect(status.stderr).toMatch(message)
+    const requests = (await readFile(fixture.hostRequestLog, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
+    expect(requests.map(request => ({ method: request.method, url: request.url }))).toEqual([
+      { method: 'POST', url: '/api/agentPreset.list' },
+    ])
+    expect(requests.some(request => String(request.url).toLowerCase().includes('session'))).toBe(false)
+    expect(requests.some(request => String(request.body).toLowerCase().includes('session'))).toBe(false)
+
+    const stop = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+    expect(stop.status, stop.stderr).toBe(0)
+    expect((await start.output).status).toBe(0)
   }, 30_000)
 
   it('rejects an incomplete release before the start seam can spawn a Host', async () => {
@@ -506,6 +597,7 @@ describe('installed lifecycle CLI', () => {
       pid: null,
       startedAt: null,
     })
+    await expect(lstat(fixture.hostRequestLog)).rejects.toMatchObject({ code: 'ENOENT' })
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
 
     const start = spawnProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
