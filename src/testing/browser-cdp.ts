@@ -450,12 +450,15 @@ export async function runRealBrowserProbe(
         const visibleButtons = [...document.querySelectorAll('button')].filter(visible);
         const shellOverlays = document.querySelectorAll('[data-shell-overlay]');
         const probe = window.__HARNESS_BROWSER_PROBE__;
+        const body = document.body;
+        const bodyText = body?.textContent?.trim() ?? '';
+        const bodyRect = body?.getBoundingClientRect();
         return {
-          appFrame: visible(document.body) && shellOverlays.length === 1 && visibleButtons.length >= 2 && (document.body.textContent ?? '').trim().length > 0,
+          appFrame: body !== null && visible(body) && shellOverlays.length === 1 && visibleButtons.length >= 2 && bodyText.length > 0,
           requiredMarker: '[data-shell-overlay]',
           shellOverlayCount: shellOverlays.length,
-          bodyText: (document.body.textContent ?? '').trim().slice(0, 200),
-          bodyRect: { width: document.body.getBoundingClientRect().width, height: document.body.getBoundingClientRect().height },
+          bodyText: bodyText.slice(0, 200),
+          bodyRect: bodyRect === undefined ? undefined : { width: bodyRect.width, height: bodyRect.height },
           visibleButtonCount: visibleButtons.length,
           loadedModules: probe?.loadedModules ?? [],
           contextIds: Object.keys(probe?.contexts ?? {}),

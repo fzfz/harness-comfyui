@@ -23,6 +23,13 @@ async function browserResourceSnapshot(): Promise<{ processLines: string[]; prof
 }
 
 describe('real browser probe failure boundary', () => {
+  it('waits for a document body instead of reading textContent from a null body', async () => {
+    await expect(runRealBrowserProbe(
+      'about:blank',
+      { readinessTimeoutMs: 100 },
+    )).rejects.toThrow('timed out waiting for visible Harness AppFrame and client contexts')
+  }, 15000)
+
   it('rejects a visible AppFrame-shaped document whose render script throws', async () => {
     const resourcesBefore = await browserResourceSnapshot()
     const server = createServer((_request, response) => {
