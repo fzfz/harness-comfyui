@@ -89,8 +89,8 @@ function safePolicyFilename(filename, label) {
 
 function readQualificationPolicy(root) {
   const policy = loadQualityPolicy(root)
-  const manifestFilename = safePolicyFilename(policy.qualification.artifactNames.manifest, 'manifest')
-  const recordFilename = safePolicyFilename(policy.qualification.artifactNames.record, 'record')
+  const manifestFilename = safePolicyFilename(policy.qualification.files.manifest, 'manifest')
+  const recordFilename = safePolicyFilename(policy.qualification.files.record, 'record')
   return { policy, manifestFilename, recordFilename }
 }
 

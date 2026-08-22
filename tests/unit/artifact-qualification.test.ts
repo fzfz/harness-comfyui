@@ -87,6 +87,23 @@ describe('artifact qualification relocation', () => {
     expect(() => relocateArtifact(fixture.root)).toThrow(expected)
   })
 
+  it.each([
+    ['missing manifest', (manifestPath: string) => rmSync(manifestPath), /does not exist/u],
+    ['invalid manifest JSON', (manifestPath: string) => writeFileSync(manifestPath, '{invalid json\n'), /not valid JSON/u],
+    ['manifest directory', (manifestPath: string) => { rmSync(manifestPath); mkdirSync(manifestPath) }, /regular file/u],
+    ['manifest symlink', (manifestPath: string, fixture: ReturnType<typeof artifactFixture>) => {
+      const target = join(fixture.root, 'outside-artifact.json')
+      copyFileSync(manifestPath, target)
+      rmSync(manifestPath)
+      symlinkSync(target, manifestPath)
+    }, /symlink/u],
+  ])('rejects %s', (_name, mutate, expected) => {
+    const fixture = artifactFixture()
+    const manifestPath = join(fixture.qualityDirectory, 'artifact.json')
+    mutate(manifestPath, fixture)
+    expect(() => relocateArtifact(fixture.root)).toThrow(expected)
+  })
+
   it('rejects a tarball symlink instead of hashing a linked file', () => {
     const fixture = artifactFixture()
     rmSync(fixture.currentTarballPath)
@@ -128,7 +145,7 @@ describe('qualification record write and validation', () => {
       runId: '123456789',
       commit,
       artifact: {
-        manifestFilename: policy.qualification.artifactNames.manifest,
+        manifestFilename: policy.qualification.files.manifest,
         filename: fixture.filename,
         version: fixture.artifact.version,
         commit,
@@ -263,6 +280,30 @@ describe('qualification record write and validation', () => {
     const record = JSON.parse(readFileSync(recordPath, 'utf8')) as Record<string, unknown>
     mutate(record)
     writeFileSync(recordPath, `${JSON.stringify(record)}\n`)
+    expect(() => validateQualification(fixture.root, {
+      expectedVersion: fixture.artifact.version,
+      expectedCommit: commit,
+      expectedRunId: '123456789',
+      expectedSha256: fixture.artifact.sha256,
+    })).toThrow(expected)
+  })
+
+  it.each([
+    ['missing record', (recordPath: string) => rmSync(recordPath), /does not exist/u],
+    ['invalid record JSON', (recordPath: string) => writeFileSync(recordPath, '{invalid json\n'), /not valid JSON/u],
+    ['record directory', (recordPath: string) => { rmSync(recordPath); mkdirSync(recordPath) }, /regular file/u],
+    ['record symlink', (recordPath: string, fixture: ReturnType<typeof artifactFixture>) => {
+      const target = join(fixture.root, 'outside-qualification.json')
+      writeFileSync(target, '{}\n')
+      rmSync(recordPath)
+      symlinkSync(target, recordPath)
+    }, /symlink/u],
+  ])('rejects %s', (_name, mutate, expected) => {
+    const fixture = artifactFixture()
+    relocateArtifact(fixture.root)
+    writeQualification(fixture.root, { runId: '123456789', commit })
+    const recordPath = join(fixture.qualityDirectory, 'qualification.json')
+    mutate(recordPath, fixture)
     expect(() => validateQualification(fixture.root, {
       expectedVersion: fixture.artifact.version,
       expectedCommit: commit,

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const policyFilename = 'config/quality-gates.json'
-const artifactNameKeys = ['candidate', 'qualified', 'manifest', 'record']
+const qualificationFileKeys = ['manifest', 'record']
 
 function fail(message) {
   throw new Error(`quality gate policy: ${message}`)
@@ -67,38 +67,25 @@ function assertThresholds(value) {
 
 function assertQualification(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('qualification must be an object')
-  assertExactKeys(value, ['artifactNames', 'gates', 'requiredGateIds', 'schemaVersion', 'workflowName'], 'qualification')
+  assertExactKeys(value, ['files', 'requiredGateIds', 'schemaVersion', 'workflowName'], 'qualification')
   if (!Number.isInteger(value.schemaVersion) || value.schemaVersion < 1) fail('qualification.schemaVersion must be a positive integer')
   if (typeof value.workflowName !== 'string' || value.workflowName.length === 0) fail('qualification.workflowName must be a non-empty string')
-  const configuredIds = assertStringArray(value.requiredGateIds, 'qualification.requiredGateIds', { unique: true })
-  if (!value.artifactNames || typeof value.artifactNames !== 'object' || Array.isArray(value.artifactNames)) {
-    fail('qualification.artifactNames must be an object')
+  assertStringArray(value.requiredGateIds, 'qualification.requiredGateIds', { unique: true })
+  if (!value.files || typeof value.files !== 'object' || Array.isArray(value.files)) {
+    fail('qualification.files must be an object')
   }
-  const artifactKeys = Object.keys(value.artifactNames).sort()
-  if (JSON.stringify(artifactKeys) !== JSON.stringify([...artifactNameKeys].sort())) {
-    fail(`qualification.artifactNames must contain exactly ${artifactNameKeys.join(', ')}`)
+  const fileKeys = Object.keys(value.files).sort()
+  if (JSON.stringify(fileKeys) !== JSON.stringify([...qualificationFileKeys].sort())) {
+    fail(`qualification.files must contain exactly ${qualificationFileKeys.join(', ')}`)
   }
-  for (const key of artifactNameKeys) {
-    if (typeof value.artifactNames[key] !== 'string' || value.artifactNames[key].length === 0) {
-      fail(`qualification.artifactNames.${key} must be a non-empty string`)
+  for (const key of qualificationFileKeys) {
+    if (typeof value.files[key] !== 'string' || value.files[key].length === 0) {
+      fail(`qualification.files.${key} must be a non-empty string`)
     }
   }
-  if (new Set(artifactNameKeys.map(key => value.artifactNames[key])).size !== artifactNameKeys.length) {
-    fail('qualification.artifactNames values must be unique')
+  if (new Set(qualificationFileKeys.map(key => value.files[key])).size !== qualificationFileKeys.length) {
+    fail('qualification.files values must be unique')
   }
-  if (!Array.isArray(value.gates) || value.gates.length !== configuredIds.length) fail('qualification.gates must define every required gate exactly once')
-  const gateIds = value.gates.map((gate) => {
-    if (!gate || typeof gate !== 'object' || Array.isArray(gate)) fail('qualification.gates entries must be objects')
-    assertExactKeys(gate, ['command', 'id', 'job'], 'qualification.gates entry')
-    if (typeof gate.id !== 'string' || gate.id.length === 0 || typeof gate.job !== 'string' || gate.job.length === 0 || typeof gate.command !== 'string' || gate.command.length === 0) {
-      fail('qualification.gates entries require non-empty id, job, and command strings')
-    }
-    return gate.id
-  })
-  if (new Set(gateIds).size !== gateIds.length) fail('qualification.gates ids must be unique')
-  if (JSON.stringify(gateIds) !== JSON.stringify(configuredIds)) fail('qualification.gates must use requiredGateIds in order')
-  const gateJobs = value.gates.map(gate => gate.job)
-  if (new Set(gateJobs).size !== gateJobs.length) fail('qualification.gates jobs must be unique')
   return value
 }
 

@@ -77,15 +77,13 @@ describe('quality gate policy', () => {
       'test:e2e',
       'release:smoke',
     ])
-    expect(policy.qualification.artifactNames).toEqual({
-      candidate: 'quality-candidate',
-      qualified: 'quality-qualified',
+    expect(policy.qualification.files).toEqual({
       manifest: 'artifact.json',
       record: 'qualification.json',
     })
   })
 
-  it('rejects unknown policy keys and malformed qualification gate or artifact-name records', () => {
+  it('rejects unknown policy keys and malformed qualification file records', () => {
     const policy = loadQualityPolicy(repositoryRoot)
     expect(() => validateQualityPolicy({ ...policy, unexpected: true })).toThrow(/policy.*exactly/u)
     expect(() => validateQualityPolicy({
@@ -100,30 +98,63 @@ describe('quality gate policy', () => {
       ...policy,
       qualification: {
         ...policy.qualification,
-        artifactNames: { ...policy.qualification.artifactNames, unexpected: 'extra' },
+        files: { ...policy.qualification.files, unexpected: 'extra' },
       },
-    })).toThrow(/artifactNames.*exactly/u)
+    })).toThrow(/files.*exactly/u)
     expect(() => validateQualityPolicy({
       ...policy,
       qualification: {
         ...policy.qualification,
-        artifactNames: { ...policy.qualification.artifactNames, qualified: policy.qualification.artifactNames.candidate },
+        files: { ...policy.qualification.files, record: policy.qualification.files.manifest },
       },
-    })).toThrow(/artifactNames.*unique/u)
+    })).toThrow(/files.*unique/u)
+  })
 
-    const withGates = (mutate: (gates: Array<Record<string, unknown>>) => void) => {
-      const gates = policy.qualification.gates.map((gate: Record<string, unknown>) => ({ ...gate }))
-      mutate(gates)
-      return validateQualityPolicy({
+  it('rejects unsupported coverage providers, incomplete thresholds, non-integers, and out-of-range thresholds', () => {
+    const policy = loadQualityPolicy(repositoryRoot)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      coverage: { ...policy.coverage, provider: 'istanbul' },
+    })).toThrow(/provider must be v8/u)
+
+    const missingThreshold = { ...policy.coverage.thresholds }
+    delete missingThreshold.branches
+    expect(() => validateQualityPolicy({
+      ...policy,
+      coverage: { ...policy.coverage, thresholds: missingThreshold },
+    })).toThrow(/thresholds.*exactly/u)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      coverage: {
+        ...policy.coverage,
+        thresholds: { ...policy.coverage.thresholds, mutations: 1 },
+      },
+    })).toThrow(/thresholds.*exactly/u)
+    expect(() => validateQualityPolicy({
+      ...policy,
+      coverage: {
+        ...policy.coverage,
+        thresholds: { ...policy.coverage.thresholds, lines: 91.5 },
+      },
+    })).toThrow(/thresholds\.lines.*integer/u)
+    for (const value of [-1, 101]) {
+      expect(() => validateQualityPolicy({
         ...policy,
-        qualification: { ...policy.qualification, gates },
-      })
+        coverage: {
+          ...policy.coverage,
+          thresholds: { ...policy.coverage.thresholds, lines: value },
+        },
+      })).toThrow(/thresholds\.lines.*integer/u)
     }
-    expect(() => withGates(gates => { gates[0].unexpected = true })).toThrow(/gates entry.*exactly/u)
-    expect(() => withGates(gates => { gates[0].id = '' })).toThrow(/non-empty/u)
-    expect(() => withGates(gates => { gates[1].id = gates[0].id })).toThrow(/ids.*unique/u)
-    expect(() => withGates(gates => { gates[1].job = gates[0].job })).toThrow(/jobs.*unique/u)
-    expect(() => withGates(gates => { gates[0].command = '' })).toThrow(/non-empty/u)
+  })
+
+  it('fails closed when the policy file is missing or invalid JSON', () => {
+    const root = temporaryRoot()
+    const policyPath = join(root, 'config/quality-gates.json')
+    expect(() => loadQualityPolicy(root)).toThrow(/cannot read/u)
+    mkdirSync(join(root, 'config'), { recursive: true })
+    writeFileSync(policyPath, '{invalid json\n')
+    expect(() => loadQualityPolicy(root)).toThrow(/cannot read.*JSON/u)
   })
 
   it('returns false only when every path is explicitly fast-only', () => {
