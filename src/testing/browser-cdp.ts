@@ -244,6 +244,65 @@ function signalProcessGroup(processGroupId: number, signal: NodeJS.Signals): voi
   }
 }
 
+export function installModuleLoaderCapture(target: any, state: any): void {
+  const previousDescriptor = Object.getOwnPropertyDescriptor(target, '__ModuleLoader__')
+  let loader: any
+  const seenHandoffs = new WeakSet<object>()
+  const captureHandoff = (handoff: any): void => {
+    if (handoff === null || (typeof handoff !== 'object' && typeof handoff !== 'function')) return
+    if (seenHandoffs.has(handoff)) return
+    seenHandoffs.add(handoff)
+    state.loadedModules.push(handoff.id)
+    if (handoff.id !== 'harness-comfyui' && handoff.id !== '@deepseek-ai/dsh-client-ui-conversation' && handoff.id !== '@deepseek-ai/dsh-client-ui-layout') return
+    const factory = handoff.factory
+    if (typeof factory !== 'function') throw new TypeError(`browser probe module ${String(handoff.id)} factory must be a function`)
+    handoff.factory = (require: any) => {
+      const module = factory(require)
+      if (typeof module?.apply !== 'function') return module
+      const apply = module.apply
+      module.apply = async (context: any) => {
+        state.contexts[handoff.id] = context
+        const captureFiber = () => {
+          for (const runtime of context.registry.values()) {
+            for (const fiber of runtime.fibers) {
+              if (fiber.ctx === context) state.fibers[handoff.id] = fiber
+            }
+          }
+        }
+        captureFiber()
+        const result = await apply(context)
+        captureFiber()
+        return result
+      }
+      return module
+    }
+  }
+  const installLoader = (value: any): void => {
+    loader = value
+    const descriptor = Object.getOwnPropertyDescriptor(value, 'load')
+    let delegate = value.load
+    const wrapper = function (handoff: any): any {
+      captureHandoff(handoff)
+      if (typeof delegate !== 'function') throw new TypeError('browser probe ModuleLoader.load delegate must be a function')
+      return Reflect.apply(delegate, loader, [handoff])
+    }
+    Object.defineProperty(value, 'load', {
+      configurable: true,
+      enumerable: descriptor?.enumerable ?? true,
+      get: () => wrapper,
+      set: (next: any) => { delegate = next },
+    })
+  }
+  Object.defineProperty(target, '__ModuleLoader__', {
+    configurable: true,
+    get: () => loader,
+    set: (value: any) => {
+      installLoader(value)
+      if (previousDescriptor?.set) previousDescriptor.set.call(target, value)
+    },
+  })
+}
+
 export async function terminateBrowserProcessGroup(
   child: BrowserProcess,
   processGroupId: number | undefined,
@@ -340,45 +399,7 @@ async function launchBrowser(): Promise<BrowserSession> {
     await connection.send('Page.addScriptToEvaluateOnNewDocument', {
       source: `(() => {
       const state = { contexts: Object.create(null), fibers: Object.create(null), loadedModules: [] };
-      const previousDescriptor = Object.getOwnPropertyDescriptor(window, '__ModuleLoader__');
-      let loader;
-      Object.defineProperty(window, '__ModuleLoader__', {
-        configurable: true,
-        get() { return loader; },
-        set(value) {
-          loader = value;
-          const load = value.load;
-          value.load = handoff => {
-            state.loadedModules.push(handoff.id);
-            if (handoff.id === 'harness-comfyui' || handoff.id === '@deepseek-ai/dsh-client-ui-conversation' || handoff.id === '@deepseek-ai/dsh-client-ui-layout') {
-              const factory = handoff.factory;
-              handoff.factory = require => {
-                const module = factory(require);
-                if (typeof module?.apply === 'function') {
-                  const apply = module.apply;
-                  module.apply = async context => {
-                    state.contexts[handoff.id] = context;
-                    const captureFiber = () => {
-                      for (const runtime of context.registry.values()) {
-                        for (const fiber of runtime.fibers) {
-                          if (fiber.ctx === context) state.fibers[handoff.id] = fiber;
-                        }
-                      }
-                    };
-                    captureFiber();
-                    const result = await apply(context);
-                    captureFiber();
-                    return result;
-                  };
-                }
-                return module;
-              };
-            }
-            return load(handoff);
-          };
-          if (previousDescriptor?.set) previousDescriptor.set(value);
-        },
-      });
+      (${installModuleLoaderCapture.toString()})(window, state);
       window.__HARNESS_BROWSER_PROBE__ = state;
     })();`,
     }, sessionId)
