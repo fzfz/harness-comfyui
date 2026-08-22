@@ -168,7 +168,7 @@ const shutdown = () => {
   server.close(() => process.exit(0))
 }
 process.once('SIGINT', shutdown)
-process.once('SIGTERM', shutdown)
+if (process.env.FAKE_DSH_DEFAULT_SIGTERM !== '1') process.once('SIGTERM', shutdown)
 setInterval(() => {}, 1000)
 `, 'utf8')
   await chmod(dshSource, 0o755)
@@ -379,6 +379,27 @@ describe('installed lifecycle CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'shared/logs/host.stderr.log'))).resolves.toBeDefined()
     await waitForPortClosed(fixture.installation.host, fixture.installation.port)
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }, 30_000)
+
+  it('reports a foreground start as stopped when product stop terminates the running Host with SIGTERM', async () => {
+    const fixture = await createFixture()
+    Object.assign(fixture.env, { FAKE_DSH_DEFAULT_SIGTERM: '1' })
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+
+    const stop = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+    expect(stop.status, stop.stderr).toBe(0)
+    const startResult = await start.output
+    expect(startResult.status, startResult.stderr).toBe(0)
+    const terminalLine = startResult.stdout.trim().split('\n').at(-1)
+    expect(JSON.parse(terminalLine!)).toMatchObject({ stage: 'start', status: 'stopped' })
+    await expect(lstat(statePath)).rejects.toMatchObject({ code: 'ENOENT' })
+    await waitForPortClosed(fixture.installation.host, fixture.installation.port)
   }, 30_000)
 
   it('rejects a duplicate start while the installed Host is running', async () => {
