@@ -534,19 +534,32 @@ process.stdout.write(values[field] ?? '')
     expect(install.status, install.stderr).toBe(0)
 
     const fixedStartTime = 'Sat Aug 22 09:44:18 2026'
-    const transitionAt = Date.now() + 3_000
     const transientPs = join(fixture.root, 'fake-bin/ps')
+    const psCallPrefix = join(fixture.root, 'fake-ps-call')
+    const psTracePath = join(fixture.root, 'fake-ps-trace.log')
     await writeFile(transientPs, `#!/usr/bin/env node
+const { appendFileSync, writeFileSync } = require('node:fs')
 const field = process.argv.at(-1)?.replace(/=$/u, '')
+let index = 0
+while (true) {
+  try {
+    writeFileSync(process.env.FAKE_PS_CALL_PREFIX + '-' + index, '', { flag: 'wx' })
+    break
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error
+    index += 1
+  }
+}
 const values = {
   lstart: ${JSON.stringify(fixedStartTime)},
   command: '[node]',
-  stat: Date.now() < Number(process.env.FAKE_PS_TRANSITION_AT) ? 'R' : 'Z',
+  stat: Math.floor(index / 3) === 0 ? 'R' : 'Z',
 }
-    process.stdout.write(values[field] ?? '')
+appendFileSync(process.env.FAKE_PS_TRACE_FILE, index + ':' + field + ':' + (values[field] ?? '') + '\\n')
+process.stdout.write(values[field] ?? '')
 `, 'utf8')
     await chmod(transientPs, 0o755)
-    Object.assign(fixture.env, { FAKE_PS_TRANSITION_AT: String(transitionAt) })
+    Object.assign(fixture.env, { FAKE_PS_CALL_PREFIX: psCallPrefix, FAKE_PS_TRACE_FILE: psTracePath })
 
     const statePath = join(fixture.installation.root, 'state/process.json')
     await writeFile(statePath, `${JSON.stringify({
@@ -569,7 +582,86 @@ const values = {
     ], fixture.env)
 
     expect(stop.status, stop.stderr).toBe(0)
+    const psTrace = await readFile(psTracePath, 'utf8')
+    expect(psTrace).toMatch(/:stat:R\n/u)
+    expect(psTrace).toMatch(/:stat:Z\n/u)
     await expect(lstat(statePath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects a same-start-time non-node bracketed command without signaling or clearing state', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const replacement = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+      cwd: repositoryRoot,
+      env: fixture.env,
+      stdio: 'ignore',
+    })
+    runningChildren.push(replacement)
+    if (replacement.pid === undefined) throw new Error('replacement process did not provide a PID')
+    await new Promise<void>((resolveSpawn, rejectSpawn) => {
+      replacement.once('spawn', resolveSpawn)
+      replacement.once('error', rejectSpawn)
+    })
+
+    const fixedStartTime = 'Sat Aug 22 09:44:18 2026'
+    const transientPs = join(fixture.root, 'fake-bin/ps')
+    const psCallPrefix = join(fixture.root, 'fake-ps-call')
+    const psTracePath = join(fixture.root, 'fake-ps-trace.log')
+    await writeFile(transientPs, `#!/usr/bin/env node
+const { appendFileSync, writeFileSync } = require('node:fs')
+const field = process.argv.at(-1)?.replace(/=$/u, '')
+let index = 0
+while (true) {
+  try {
+    writeFileSync(process.env.FAKE_PS_CALL_PREFIX + '-' + index, '', { flag: 'wx' })
+    break
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error
+    index += 1
+  }
+}
+const values = {
+  lstart: ${JSON.stringify(fixedStartTime)},
+  command: '[python]',
+  stat: Math.floor(index / 3) === 0 ? 'R' : 'Z',
+}
+appendFileSync(process.env.FAKE_PS_TRACE_FILE, index + ':' + field + ':' + (values[field] ?? '') + '\\n')
+process.stdout.write(values[field] ?? '')
+`, 'utf8')
+    await chmod(transientPs, 0o755)
+    Object.assign(fixture.env, { FAKE_PS_CALL_PREFIX: psCallPrefix, FAKE_PS_TRACE_FILE: psTracePath })
+
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    await writeFile(statePath, `${JSON.stringify({
+      schemaVersion: 1,
+      installationId: fixture.installation.installationId,
+      activeVersion: '0.1.0-test.1',
+      pid: replacement.pid,
+      operationId: 'transient-non-node-operation',
+      startedAt: '2026-08-22T00:00:00.000Z',
+      host: fixture.installation.host,
+      port: fixture.installation.port,
+      processIdentity: {
+        startTime: fixedStartTime,
+        command: '/installation/releases/0.1.0-test.1/harness-runtime/node_modules/.bin/dsh --profile comfyui-workbench --no-open',
+      },
+    }, null, 2)}\n`, 'utf8')
+
+    const stop = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'stop', '--installation', fixture.inputPath,
+    ], fixture.env)
+
+    expect(stop.status).not.toBe(0)
+    expect(stop.stderr).toMatch(/process identity mismatch/u)
+    const psTrace = await readFile(psTracePath, 'utf8')
+    expect(psTrace).toMatch(/:stat:R\n/u)
+    expect(psTrace).not.toMatch(/:stat:Z\n/u)
+    await expect(lstat(statePath)).resolves.toBeDefined()
+    expect(() => process.kill(replacement.pid!, 0)).not.toThrow()
+    replacement.kill('SIGTERM')
+    await new Promise(resolveClose => replacement.once('close', resolveClose))
   })
 
   it('rejects an active [node] process with a matching start time', async () => {

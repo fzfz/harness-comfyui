@@ -312,8 +312,8 @@ function isExitedProcessIdentity(expected, observed) {
   return zombieState || zombieCommand
 }
 
-function isBracketedProcessCommand(command) {
-  return /^\[[^\]]+\]$/u.test(command)
+function isTransientNodeProcessCommand(command) {
+  return command === '[node]'
 }
 
 function processIdentityMismatch(state, identity) {
@@ -499,7 +499,7 @@ async function waitForStopIdentityResolution(state, initialIdentity, deadline) {
     if (sameProcessIdentity(state.processIdentity, identity)) return identity
     if (
       identity.startTime !== state.processIdentity.startTime
-      || !isBracketedProcessCommand(identity.command)
+      || !isTransientNodeProcessCommand(identity.command)
     ) {
       throw new Error(processIdentityMismatch(state, identity))
     }
