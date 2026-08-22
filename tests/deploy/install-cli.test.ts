@@ -120,6 +120,10 @@ async function createFixture({
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
+    'lib/agent.js',
+    'agent-presets/harness-comfyui/preset.yml',
+    'agent-presets/harness-comfyui/agent.cordis.yml',
+    'config/product-agent.json',
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
@@ -142,6 +146,7 @@ async function createFixture({
     version: '0.1.0-test.1',
     packageManager: 'pnpm@11.7.0',
     engines: { node: '^22.19.0 || >=24.0.0' },
+    exports: { './agent': { default: './lib/agent.js' } },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.8',
@@ -401,7 +406,7 @@ describe('harness-comfyui install CLI', () => {
 
   it.each([
     ['Skill', { skillRoot: 'file' as const }, /Skill target must be a directory/u],
-    ['Preset', { presetRoot: 'file' as const }, /Preset artifact source must be a directory/u],
+    ['Preset', { presetRoot: 'file' as const }, /Agent artifact.*preset\.yml/u],
   ])('rejects a non-directory %s target before committing a release', async (_name, options, message) => {
     const fixture = await createFixture(options)
     const releasesRoot = join(fixture.installation.root, 'releases')
@@ -424,7 +429,7 @@ describe('harness-comfyui install CLI', () => {
     const result = await runInstall(fixture)
 
     expect(result.status).not.toBe(0)
-    expect(result.stderr).toMatch(/symlink|unsafe tar/u)
+    expect(result.stderr).toMatch(/symlink|unsafe tar|Agent artifact.*preset\.yml/u)
     await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
   }, 30_000)
 

@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 
 const frozenEntries = [
+  'lib/agent.js',
   'deployment/runtime/package.json',
   'deployment/runtime/pnpm-lock.yaml',
   'deployment/runtime/pnpm-workspace.yaml',

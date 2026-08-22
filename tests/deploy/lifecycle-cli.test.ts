@@ -213,6 +213,10 @@ async function createFixture() {
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
+    'lib/agent.js',
+    'agent-presets/harness-comfyui/preset.yml',
+    'agent-presets/harness-comfyui/agent.cordis.yml',
+    'config/product-agent.json',
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
@@ -237,6 +241,7 @@ async function createFixture() {
     version: '0.1.0-test.1',
     packageManager: 'pnpm@11.7.0',
     engines: { node: '^22.19.0 || >=24.0.0' },
+    exports: { './agent': { default: './lib/agent.js' } },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.8',
@@ -412,6 +417,24 @@ describe('installed lifecycle CLI', () => {
     await waitForPortClosed(fixture.installation.host, fixture.installation.port)
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   }, 30_000)
+
+  it('rejects an incomplete release before the start seam can spawn a Host', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const skillRoot = join(fixture.installation.root, 'releases/0.1.0-test.1/package/skills')
+    await rm(skillRoot, { recursive: true, force: true })
+    const start = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'start', '--installation', fixture.inputPath,
+    ], fixture.env)
+
+    expect(start.status).not.toBe(0)
+    expect(start.stderr).toMatch(/Skill root.*does not exist/u)
+    await expect(lstat(fixture.hostReadyFile)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(lstat(fixture.hostEnvLog)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
 
   it('reports a foreground start as stopped when product stop terminates the running Host with SIGTERM', async () => {
     const fixture = await createFixture()

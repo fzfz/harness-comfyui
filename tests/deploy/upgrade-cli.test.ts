@@ -196,6 +196,10 @@ const discovery = {
 }
 const packageFiles = [
   'lib/config-profile-validator.js',
+  'lib/agent.js',
+  'agent-presets/harness-comfyui/preset.yml',
+  'agent-presets/harness-comfyui/agent.cordis.yml',
+  'config/product-agent.json',
   'scripts/deploy/cli.mjs', 'scripts/deploy/contracts.mjs', 'scripts/deploy/install.mjs',
   'scripts/deploy/lifecycle.mjs', 'scripts/deploy/preflight.mjs', 'scripts/deploy/activate.mjs',
   'scripts/deploy/runtime-contract.mjs',
@@ -212,6 +216,7 @@ async function createArtifact(root: string, version: string): Promise<string> {
   await mkdir(packageRoot, { recursive: true })
   const manifest = {
     name: 'harness-comfyui', version, packageManager: 'pnpm@11.7.0', engines: { node: '^22.19.0 || >=24.0.0' },
+    exports: { './agent': { default: './lib/agent.js' } },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.8', '@deepseek-ai/dsh-base': '0.1.0-rc.8', '@deepseek-ai/dsh-web-app': '0.1.0-rc.8' },
     files: packageFiles,

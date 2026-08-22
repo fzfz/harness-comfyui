@@ -199,6 +199,10 @@ async function createFixture({ pluginStatusLoaded = true } = {}) {
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
+    'lib/agent.js',
+    'agent-presets/harness-comfyui/preset.yml',
+    'agent-presets/harness-comfyui/agent.cordis.yml',
+    'config/product-agent.json',
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/health.mjs',
@@ -224,6 +228,7 @@ async function createFixture({ pluginStatusLoaded = true } = {}) {
     version: '0.1.0-test.1',
     packageManager: 'pnpm@11.7.0',
     engines: { node: '^22.19.0 || >=24.0.0' },
+    exports: { './agent': { default: './lib/agent.js' } },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.8',
