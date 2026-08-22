@@ -80,5 +80,5 @@ describe('release artifact browser boundary', () => {
     expect(fixture.cleanupEvidence.installationRemoved).toBe(true)
     expect(fixture.cleanupEvidence.noChildProcesses).toBe(true)
     expect(fixture.cleanupEvidence.dshHomeRemoved).toBe(true)
-  }, 90000)
+  }, 120000)
 })

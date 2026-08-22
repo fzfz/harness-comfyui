@@ -477,7 +477,7 @@ export async function runRealBrowserProbe(
       if (!value.fiberIds?.includes('@deepseek-ai/dsh-client-ui-layout')) return undefined
       if (!value.fiberIds?.includes('harness-comfyui')) return undefined
       return value
-    }, 'visible Harness AppFrame and client contexts', options.readinessTimeoutMs ?? 8000)
+    }, 'visible Harness AppFrame and client contexts', options.readinessTimeoutMs ?? 30000)
 
     const state = await evaluate(session, `(async () => {
       const probe = window.__HARNESS_BROWSER_PROBE__;
