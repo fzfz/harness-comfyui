@@ -37,6 +37,47 @@
   pointer-events: auto;
 }
 
+.conversation-header {
+  align-items: center;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  min-height: 66px;
+  padding: 13px 20px 12px;
+}
+
+.conversation-header h2 {
+  font-family: var(--dsw-font-family);
+  font-size: 17px;
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.conversation-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.agent-status {
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 7px;
+}
+
+.agent-status > span {
+  background: var(--dsw-alias-state-success-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-success-primary) 18%, transparent);
+  display: inline-block;
+  height: 7px;
+  width: 7px;
+}
+
 .session-panel {
   background: var(--dsw-alias-bg-layer-1);
   border-right: 1px solid var(--dsw-alias-border-l1);

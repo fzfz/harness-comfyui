@@ -71,6 +71,10 @@ function createContext(options: { mountError?: Error } = {}) {
       events.push(`${options.name ?? 'unknown'}:dispose`)
     }
   })
+  const inject = vi.fn((name: string, callback: () => () => void) => {
+    events.push(`${name}:inject`)
+    return callback()
+  })
   const provide = vi.fn(() => {
     events.push('layout:provide')
     return async () => {
@@ -90,7 +94,7 @@ function createContext(options: { mountError?: Error } = {}) {
   return {
     context: {
       remote: { $mount: mount },
-      slots: { register },
+      slots: { register, inject },
       reflect: { provide },
       theme: { getTheme },
       on,
@@ -98,6 +102,7 @@ function createContext(options: { mountError?: Error } = {}) {
     mount,
     unmount,
     register,
+    inject,
     provide,
     getTheme,
     on,
@@ -115,6 +120,7 @@ describe('Client plugin Host projection', () => {
     const unmount = vi.fn(async () => undefined)
     const mount = vi.fn(async () => unmount)
     const register = vi.fn(() => () => undefined)
+    const injectSlot = vi.fn((_name: string, callback: () => () => void) => callback())
     const disposers: Array<() => unknown> = []
 
     for (const service of inject) {
@@ -122,7 +128,7 @@ describe('Client plugin Host projection', () => {
       const value = service === 'remote'
         ? { $mount: mount }
         : service === 'slots'
-          ? { register }
+          ? { register, inject: injectSlot }
           : service === 'theme'
             ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
           : {}
@@ -135,7 +141,7 @@ describe('Client plugin Host projection', () => {
     const value = missingService === 'remote'
       ? { $mount: mount }
       : missingService === 'slots'
-        ? { register }
+        ? { register, inject: injectSlot }
         : missingService === 'theme'
           ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
         : {}
@@ -159,11 +165,13 @@ describe('Client plugin Host projection', () => {
       'remote:mount',
       'root:register',
       'sidebar:register',
+      'conversation.session.header:inject',
+      'conversation.session.header:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
     ])
-    expect(fixture.register).toHaveBeenCalledTimes(2)
+    expect(fixture.register).toHaveBeenCalledTimes(3)
     expect(fixture.register).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'root',
@@ -174,6 +182,11 @@ describe('Client plugin Host projection', () => {
           'shell.overlay': { kind: 'list', scope: 'root' },
         },
       }),
+      expect.any(Function),
+    )
+    expect(fixture.register).toHaveBeenNthCalledWith(
+      3,
+      { name: 'conversation.session.header', priority: -10 },
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
@@ -189,11 +202,14 @@ describe('Client plugin Host projection', () => {
       'remote:mount',
       'root:register',
       'sidebar:register',
+      'conversation.session.header:inject',
+      'conversation.session.header:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
       'theme:unsubscribe',
       'layout:dispose',
+      'conversation.session.header:dispose',
       'sidebar:dispose',
       'root:dispose',
       'remote:unmount',

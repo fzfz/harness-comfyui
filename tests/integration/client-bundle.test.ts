@@ -262,6 +262,27 @@ describe('built Client bundle boundary', () => {
     const clientFiber = ctx.plugin(plugin)
     await clientFiber
 
+    const upstreamConversationDisposer = ctx.slots.register(
+      {
+        name: 'conversation',
+        children: {
+          'conversation.session': { kind: 'single', scope: 'session' },
+          'conversation.session.header': { kind: 'single', scope: 'session' },
+        },
+      } as never,
+      (() => createElement('div', { 'data-upstream-conversation': true })) as never,
+    )
+    const upstreamHeaderDisposer = ctx.slots.register(
+      {
+        name: 'conversation.session.header',
+        children: {
+          'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+          'conversation.session.header.utilities': { kind: 'list', scope: 'session' },
+        },
+      } as never,
+      (() => createElement('div', { 'data-upstream-session-header': true })) as never,
+    )
+
     expect(mountedContributions).toHaveLength(1)
     expect(mountedContributions[0]).toMatchObject({ package: 'harness-comfyui' })
     expect((mountedContributions[0] as { descriptors: Array<{ service: string; method: string }> }).descriptors)
@@ -269,7 +290,9 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entries('root')).toHaveLength(1)
     expect(ctx.slots.entries('sidebar')).toHaveLength(1)
     expect(ctx.slots.entries('sidebar')[0]?.options.priority).toBe(-10)
-    expect(ctx.slots.entries('conversation')).toHaveLength(0)
+    expect(ctx.slots.entries('conversation')).toHaveLength(1)
+    expect(ctx.slots.entries('conversation.session.header' as never)).toHaveLength(2)
+    expect(ctx.slots.entriesOfSlot('conversation.session.header' as never)[0]?.options.priority).toBe(-10)
     expect(ctx.slots.entries('details')).toHaveLength(0)
     expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
 
@@ -333,6 +356,29 @@ describe('built Client bundle boundary', () => {
       initialMarkup.indexOf('data-shell-overlay'),
     )
 
+    const headerEntry = ctx.slots.entriesOfSlot('conversation.session.header' as never)[0]
+    const headerComponent = headerEntry?.component as ((props: {
+      sessionId: SessionSummary['id']
+      useSessions: <S>(selector: (snapshot: SessionListState) => S) => S
+    }) => ReactNode) | undefined
+    expect(headerComponent).toBeTypeOf('function')
+    if (!headerComponent) throw new Error('project Session header was not elected')
+    let activeState = sessionsState
+    const renderHeader = () => renderToStaticMarkup(createElement(headerComponent, {
+      sessionId: activeState.current as SessionSummary['id'],
+      useSessions: <S,>(selector: (snapshot: SessionListState) => S) => selector(activeState),
+    }))
+    const firstHeaderMarkup = renderHeader()
+    expect(firstHeaderMarkup).toContain('<p class="section-kicker">CONVERSATION</p>')
+    expect(firstHeaderMarkup).toContain('<h2 id="conversation-title">角色立绘调整</h2>')
+    expect(firstHeaderMarkup).toContain('Agent 就绪')
+    activeState = { ...sessionsState, current: 'video' as SessionListState['current'] }
+    const secondHeaderMarkup = renderHeader()
+    expect(secondHeaderMarkup).toContain('<h2 id="conversation-title">测试视频工作流</h2>')
+    expect(secondHeaderMarkup).not.toContain('角色立绘调整')
+    expect(secondHeaderMarkup).toContain('Agent 就绪')
+    expect(secondHeaderMarkup).not.toContain('Agent 运行中')
+
     layout.toggleSidebar()
     const collapsedMarkup = renderRoot()
     expect(collapsedMarkup).toContain('56px minmax(0, 1fr) 432px')
@@ -348,6 +394,7 @@ describe('built Client bundle boundary', () => {
     await clientFiber.dispose()
     expect(ctx.slots.entries('root')).toHaveLength(0)
     expect(ctx.slots.entries('sidebar')).toHaveLength(0)
+    expect(ctx.slots.entries('conversation.session.header' as never)).toHaveLength(0)
     expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
     expect(ctx.reflect.get('layout')).toBeUndefined()
     expect(document.documentElement.style.getPropertyValue('color-scheme')).toBe('')
@@ -357,6 +404,8 @@ describe('built Client bundle boundary', () => {
     themeDisposer()
     sessionsDisposer()
     await remoteDisposer()
+    upstreamHeaderDisposer()
+    upstreamConversationDisposer()
     await ctx.fiber.dispose()
   })
 })

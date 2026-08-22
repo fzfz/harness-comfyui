@@ -8,6 +8,7 @@ import harnessComfyuiRemote from 'harness-comfyui/remote'
 import { LayoutController } from './workbench/layout-contract.ts'
 import { createWorkbenchRoot } from './workbench/root.tsx'
 import { createSessionSidebar } from './workbench/session-sidebar.tsx'
+import { createSessionHeader } from './workbench/session-header.tsx'
 import { installThemeProjection } from './workbench/theme-projection.ts'
 
 export const name = 'harness-comfyui'
@@ -49,10 +50,27 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     throw error
   }
 
+  let disposeSessionHeader: () => void
+  try {
+    disposeSessionHeader = ctx.slots.inject(
+      'conversation.session.header' as never,
+      () => ctx.slots.register(
+        { name: 'conversation.session.header', priority: -10 } as never,
+        createSessionHeader() as never,
+      ),
+    )
+  } catch (error) {
+    disposeSidebar()
+    disposeRoot()
+    await remoteUnmount()
+    throw error
+  }
+
   let disposeService: () => Promise<void>
   try {
     disposeService = ctx.reflect.provide('layout', layoutService)
   } catch (error) {
+    disposeSessionHeader()
     disposeSidebar()
     disposeRoot()
     await remoteUnmount()
@@ -64,6 +82,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     disposeTheme = installThemeProjection(ctx)
   } catch (error) {
     await disposeService()
+    disposeSessionHeader()
     disposeSidebar()
     disposeRoot()
     await remoteUnmount()
@@ -73,6 +92,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   return async () => {
     disposeTheme()
     await disposeService()
+    disposeSessionHeader()
     disposeSidebar()
     disposeRoot()
     await remoteUnmount()
