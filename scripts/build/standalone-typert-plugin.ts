@@ -4,9 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const workspaceRoot = join(repositoryRoot, '.local', 'typert-workspace')
-const packageRoot = join(workspaceRoot, 'packages', 'harness-comfyui')
-const protocolPackageRoot = join(workspaceRoot, 'packages', 'dsh-typert-protocol')
+const defaultWorkspaceRoot = join(repositoryRoot, '.local', 'typert-workspace')
 const generatedNames = [
   'typert.host.js',
   'typert.host.d.ts',
@@ -15,11 +13,29 @@ const generatedNames = [
   'typert.remote-client.d.ts.map',
 ] as const
 
+interface StandaloneTypertWorkspaceOptions {
+  readonly workspaceRoot?: string
+  readonly outputDirectory?: string
+  readonly cleanupWorkspace?: boolean
+}
+
+function resolveWorkspace(options: StandaloneTypertWorkspaceOptions) {
+  const workspaceRoot = options.workspaceRoot ?? defaultWorkspaceRoot
+  return {
+    workspaceRoot,
+    packageRoot: join(workspaceRoot, 'packages', 'harness-comfyui'),
+    protocolPackageRoot: join(workspaceRoot, 'packages', 'dsh-typert-protocol'),
+    outputDirectory: options.outputDirectory ?? join(repositoryRoot, 'lib'),
+    cleanupWorkspace: options.cleanupWorkspace ?? true,
+  }
+}
+
 function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
-function prepareWorkspace(): void {
+function prepareWorkspace(workspace: ReturnType<typeof resolveWorkspace>): void {
+  const { workspaceRoot, packageRoot, protocolPackageRoot } = workspace
   rmSync(workspaceRoot, { recursive: true, force: true })
   mkdirSync(packageRoot, { recursive: true })
   cpSync(join(repositoryRoot, 'src'), join(packageRoot, 'src'), { recursive: true })
@@ -114,11 +130,13 @@ function prepareWorkspace(): void {
   })
 }
 
-function copyGeneratedArtifacts(): void {
+function copyGeneratedArtifacts(workspace: ReturnType<typeof resolveWorkspace>): void {
+  const { packageRoot, outputDirectory } = workspace
+  mkdirSync(outputDirectory, { recursive: true })
   for (const name of generatedNames) {
     const source = join(packageRoot, 'lib', name)
     const contents = readFileSync(source)
-    writeFileSync(join(repositoryRoot, 'lib', name), contents)
+    writeFileSync(join(outputDirectory, name), contents)
   }
 }
 
@@ -127,19 +145,25 @@ function copyGeneratedArtifacts(): void {
  * The official Typert plugin owns generation; this adapter only stages inputs
  * and copies its public outputs back into the package build directory.
  */
-export function standaloneTypertWorkspacePlugin(): Record<string, unknown> {
+export function standaloneTypertWorkspacePlugin(
+  options: StandaloneTypertWorkspaceOptions = {},
+): Record<string, unknown> {
+  const workspace = resolveWorkspace(options)
   return {
     name: 'harness-comfyui-standalone-typert-workspace',
     options() {
-      prepareWorkspace()
+      prepareWorkspace(workspace)
     },
     writeBundle() {
-      copyGeneratedArtifacts()
+      copyGeneratedArtifacts(workspace)
     },
     closeBundle() {
-      rmSync(workspaceRoot, { recursive: true, force: true })
+      if (workspace.cleanupWorkspace) rmSync(workspace.workspaceRoot, { recursive: true, force: true })
     },
   }
 }
 
-export const standaloneTypertOutputDirectory = join(packageRoot, 'lib')
+export const standaloneTypertOutputDirectory = join(
+  resolveWorkspace({}).packageRoot,
+  'lib',
+)

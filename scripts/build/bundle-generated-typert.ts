@@ -132,16 +132,23 @@ const generatedBundles = [
   },
 ] as const
 
-export async function bundleGeneratedTypert(): Promise<void> {
+interface BundleGeneratedTypertOptions {
+  readonly directory?: string
+}
+
+export async function bundleGeneratedTypert(
+  options: BundleGeneratedTypertOptions = {},
+): Promise<void> {
   const zodPath = resolveApprovedZod()
+  const directory = options.directory ?? join(repositoryRoot, 'lib')
   const generated = await Promise.all(generatedBundles.map(async definition => {
-    const entry = join(repositoryRoot, 'lib', definition.expectation.fileName)
+    const entry = join(directory, definition.expectation.fileName)
     const rawSource = await readFile(entry, 'utf8')
     const marker = firstLine(rawSource)
     const bundles = await build({
       config: false,
       entry: [entry],
-      outDir: join(repositoryRoot, 'lib'),
+      outDir: directory,
       format: 'esm',
       platform: definition.platform,
       target: definition.target,
@@ -169,8 +176,8 @@ export async function bundleGeneratedTypert(): Promise<void> {
   }))
 
   await Promise.all(generated.flatMap(output => [
-    writeFile(join(repositoryRoot, 'lib', output.fileName), output.code, 'utf8'),
-    writeFile(join(repositoryRoot, 'lib', `${output.fileName}.map`), output.map, 'utf8'),
+    writeFile(join(directory, output.fileName), output.code, 'utf8'),
+    writeFile(join(directory, `${output.fileName}.map`), output.map, 'utf8'),
   ]))
 }
 
