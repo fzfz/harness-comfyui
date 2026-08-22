@@ -43,6 +43,15 @@ type ClientPlugin = {
 
 type IntegrationChatNode = ChatNode<'user' | 'assistant-step'>
 
+type InputState = {
+  draft: string
+  draftRev: number
+  imageIds: readonly never[]
+  phase: 'plain' | 'adjudicating' | 'claimed' | 'submitting'
+  occurrences: readonly never[]
+  queue: readonly never[]
+}
+
 function chatLocation(turn: number, step?: number): IntegrationChatNode['location'] {
   const turnLocation = {
     turn,
@@ -347,12 +356,23 @@ describe('built Client bundle boundary', () => {
         subscribe: () => () => undefined,
       },
       open: () => undefined,
+      scope: (id: SessionSummary['id']) => ({ sessionId: id }),
     }
     const sessionsDisposer = ctx.provide('sessions', sessions)
     const themeDisposer = ctx.provide('theme', {
       getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }),
     })
-    const inputTriggersDisposer = ctx.provide('inputTriggers', {})
+    const triggerScopes: unknown[] = []
+    const inputTriggersDisposer = ctx.provide('inputTriggers', {
+      sessionOf: (scope: unknown) => {
+        triggerScopes.push(scope)
+        return {
+          track: () => undefined,
+          arbitrate: () => 'pass',
+          onSpace: () => false,
+        }
+      },
+    })
     const clientFiber = ctx.plugin(plugin)
     await clientFiber
 
@@ -362,6 +382,8 @@ describe('built Client bundle boundary', () => {
         children: {
           'conversation.session': { kind: 'single', scope: 'session' },
           'conversation.session.header': { kind: 'single', scope: 'session' },
+          'conversation.composer.bar': { kind: 'single', scope: 'session-maybe' },
+          'conversation.input.overlay': { kind: 'list', scope: 'session' },
         },
       } as never,
       (() => createElement('div', { 'data-upstream-conversation': true })) as never,
@@ -389,6 +411,14 @@ describe('built Client bundle boundary', () => {
       { name: 'conversation.view', id: 'chat', order: 0 } as never,
       (() => createElement('div', { 'data-upstream-conversation-view': true })) as never,
     )
+    const upstreamComposerDisposer = ctx.slots.register(
+      { name: 'conversation.composer.bar', id: 'native-input-bar', order: 0 } as never,
+      (() => createElement('div', { 'data-upstream-composer-bar': true })) as never,
+    )
+    const upstreamOverlayDisposer = ctx.slots.register(
+      { name: 'conversation.input.overlay', id: 'native-slash-menu', order: 0 } as never,
+      (() => createElement('div', { 'data-native-menu-view': true })) as never,
+    )
 
     expect(mountedContributions).toHaveLength(1)
     expect(mountedContributions[0]).toMatchObject({ package: 'harness-comfyui' })
@@ -404,6 +434,14 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entriesOfSlot('conversation.view' as never)[0]?.options).toMatchObject({
       id: 'chat',
       priority: -10,
+    })
+    expect(ctx.slots.entries('conversation.composer.bar' as never)).toHaveLength(2)
+    expect(ctx.slots.entriesOfSlot('conversation.composer.bar' as never)[0]?.options).toMatchObject({
+      priority: -10,
+    })
+    expect(ctx.slots.entries('conversation.input.overlay' as never)).toHaveLength(1)
+    expect(ctx.slots.entriesOfSlot('conversation.input.overlay' as never)[0]?.options).toMatchObject({
+      id: 'native-slash-menu',
     })
     expect(ctx.slots.entries('details')).toHaveLength(0)
     expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
@@ -540,6 +578,44 @@ describe('built Client bundle boundary', () => {
     expect(replacementConversationMarkup).not.toContain('完成 Session 回复')
     expect(replacementConversationMarkup).not.toContain('角色 Session 请求')
 
+    const composerEntry = ctx.slots.entriesOfSlot('conversation.composer.bar' as never)[0]
+    const composerComponent = composerEntry?.component as ((props: {
+      sessionId: SessionSummary['id']
+      variant: 'composer'
+      useInput: <S>(selector: (snapshot: InputState | undefined) => S) => S
+      inputActions: { setDraft: (draft: string) => void }
+      overlay: ReactNode
+    }) => ReactNode) | undefined
+    expect(composerComponent).toBeTypeOf('function')
+    if (!composerComponent) throw new Error('project composer bar was not elected')
+    let inputState: InputState = {
+      draft: 'portrait draft',
+      draftRev: 3,
+      imageIds: [],
+      phase: 'plain',
+      occurrences: [],
+      queue: [],
+    } as InputState
+    const composerMarkup = () => renderToStaticMarkup(createElement(composerComponent, {
+      sessionId: 'portrait' as SessionSummary['id'],
+      variant: 'composer',
+      useInput: <S,>(selector: (snapshot: InputState | undefined) => S) => selector(inputState),
+      inputActions: { setDraft: () => undefined },
+      overlay: createElement('div', { 'data-native-menu-view': true }, 'native slash menu'),
+    }))
+    const firstComposerMarkup = composerMarkup()
+    expect(firstComposerMarkup).toContain('class="composer-wrap"')
+    expect(firstComposerMarkup).toContain('class="composer-box"')
+    expect(firstComposerMarkup).toContain('id="message-input"')
+    expect(firstComposerMarkup).toContain('Enter 发送 · Shift + Enter 换行')
+    expect(firstComposerMarkup).toContain('portrait draft</textarea>')
+    expect(firstComposerMarkup).toContain('data-native-menu-view="true"')
+    expect(triggerScopes).toContainEqual({ sessionId: 'portrait' })
+    inputState = { ...inputState, draft: 'video draft', draftRev: 4 }
+    const secondComposerMarkup = composerMarkup()
+    expect(secondComposerMarkup).toContain('video draft</textarea>')
+    expect(secondComposerMarkup).not.toContain('portrait draft')
+
     layout.toggleSidebar()
     const collapsedMarkup = renderRoot()
     expect(collapsedMarkup).toContain('56px minmax(0, 1fr) 432px')
@@ -557,6 +633,7 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entries('sidebar')).toHaveLength(0)
     expect(ctx.slots.entries('conversation.session.header' as never)).toHaveLength(0)
     expect(ctx.slots.entries('conversation.view' as never)).toHaveLength(0)
+    expect(ctx.slots.entries('conversation.composer.bar' as never)).toHaveLength(0)
     expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
     expect(ctx.reflect.get('layout')).toBeUndefined()
     expect(document.documentElement.style.getPropertyValue('color-scheme')).toBe('')
@@ -568,6 +645,8 @@ describe('built Client bundle boundary', () => {
     await remoteDisposer()
     upstreamHeaderDisposer()
     upstreamViewDisposer()
+    upstreamComposerDisposer()
+    upstreamOverlayDisposer()
     upstreamSessionDisposer()
     upstreamConversationDisposer()
     await ctx.fiber.dispose()

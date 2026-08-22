@@ -97,6 +97,7 @@ function createContext(options: { mountError?: Error } = {}) {
       slots: { register, inject },
       reflect: { provide },
       theme: { getTheme },
+      inputTriggers: { sessionOf: vi.fn() },
       on,
     },
     mount,
@@ -169,11 +170,13 @@ describe('Client plugin Host projection', () => {
       'conversation.session.header:register',
       'conversation.view:inject',
       'conversation.view:register',
+      'conversation.composer.bar:inject',
+      'conversation.composer.bar:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
     ])
-    expect(fixture.register).toHaveBeenCalledTimes(4)
+    expect(fixture.register).toHaveBeenCalledTimes(5)
     expect(fixture.register).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'root',
@@ -197,6 +200,11 @@ describe('Client plugin Host projection', () => {
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
+      5,
+      { name: 'conversation.composer.bar', priority: -10 },
+      expect.any(Function),
+    )
+    expect(fixture.register).toHaveBeenNthCalledWith(
       2,
       { name: 'sidebar', priority: -10 },
       expect.any(Function),
@@ -213,11 +221,14 @@ describe('Client plugin Host projection', () => {
       'conversation.session.header:register',
       'conversation.view:inject',
       'conversation.view:register',
+      'conversation.composer.bar:inject',
+      'conversation.composer.bar:register',
       'layout:provide',
       'theme:get',
       'theme:subscribe',
       'theme:unsubscribe',
       'layout:dispose',
+      'conversation.composer.bar:dispose',
       'conversation.view:dispose',
       'conversation.session.header:dispose',
       'sidebar:dispose',

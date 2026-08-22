@@ -1,6 +1,7 @@
 /// <reference path="./remote.d.ts" />
 
 import type { ClientContext, ISessions } from '@deepseek-ai/dsh-client-runtime/client'
+import type { InputTriggerServiceContract } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 
 import harnessComfyuiRemote from 'harness-comfyui/remote'
@@ -10,6 +11,7 @@ import { createWorkbenchRoot } from './workbench/root.tsx'
 import { createSessionSidebar } from './workbench/session-sidebar.tsx'
 import { createSessionHeader } from './workbench/session-header.tsx'
 import { createConversationView } from './workbench/conversation-view.tsx'
+import { createComposerBar } from './workbench/composer-bar.tsx'
 import { installThemeProjection } from './workbench/theme-projection.ts'
 
 export const name = 'harness-comfyui'
@@ -85,9 +87,31 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     throw error
   }
 
+  let disposeComposerBar: () => void
+  try {
+    disposeComposerBar = ctx.slots.inject(
+      'conversation.composer.bar' as never,
+      () => ctx.slots.register(
+        { name: 'conversation.composer.bar', priority: -10 } as never,
+        createComposerBar({
+          sessions: ctx.sessions as unknown as Pick<ISessions, 'scope'>,
+          inputTriggers: ctx.inputTriggers as InputTriggerServiceContract,
+        }) as never,
+      ),
+    )
+  } catch (error) {
+    disposeConversationView()
+    disposeSessionHeader()
+    disposeSidebar()
+    disposeRoot()
+    await remoteUnmount()
+    throw error
+  }
+
   try {
     disposeService = ctx.reflect.provide('layout', layoutService)
   } catch (error) {
+    disposeComposerBar()
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
@@ -101,6 +125,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     disposeTheme = installThemeProjection(ctx)
   } catch (error) {
     await disposeService()
+    disposeComposerBar()
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
@@ -112,6 +137,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   return async () => {
     disposeTheme()
     await disposeService()
+    disposeComposerBar()
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
