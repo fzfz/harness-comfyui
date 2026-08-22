@@ -33,6 +33,10 @@ function expectCommonRuntimeSetup(source: string) {
   expect(source).toContain('node-version-file: .node-version');
   expect(source).not.toMatch(/node-version:\s*['"]?\d/u);
   expect(source).toContain('corepack prepare pnpm@11.7.0 --activate');
+  expect(commandIndex(source, 'corepack prepare pnpm@11.7.0 --activate')).toBeGreaterThan(
+    source.indexOf('uses: actions/setup-node@v4'),
+  );
+  expect(source).not.toContain('cache: pnpm');
   expect(source).not.toMatch(/secrets\./i);
 }
 
