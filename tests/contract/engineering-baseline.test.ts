@@ -58,6 +58,7 @@ describe('Issue #2 public package and composition contracts', () => {
       '@types/react': '18.3.31',
       tsdown: '0.22.2',
       typescript: '6.0.3',
+      '@vitest/coverage-v8': '4.1.8',
       vitest: '4.1.8',
     })
 
@@ -148,8 +149,20 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(scripts['release:smoke']).toBe(
       'node scripts/release/smoke.mjs',
     )
+    expect(scripts['quality:preinstall']).toBe(
+      'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
+    )
+    expect(scripts['test:coverage']).toBe(
+      'vitest run tests/unit tests/integration --coverage',
+    )
+    expect(scripts['quality:fast']).toBe(
+      'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:prototype && pnpm run build',
+    )
     expect(scripts.quality).toBe(
-      'pnpm run check:harness-boundary && pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts && pnpm run typecheck && pnpm run test:unit && pnpm run test:contract && pnpm run test:integration && pnpm run test:prototype && pnpm run build && pnpm run package:pack && pnpm run package:validate && pnpm run test:deploy && pnpm run test:composition && pnpm run test:e2e && pnpm run release:smoke',
+      'pnpm run quality:preinstall && pnpm run quality:fast',
+    )
+    expect(scripts['quality:artifact']).toBe(
+      'pnpm run quality && pnpm run package:pack && pnpm run package:validate && pnpm test:deploy && pnpm test:composition && pnpm test:e2e && pnpm run release:smoke',
     )
   })
 

@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs'
+
 import ts from 'typescript'
 import { defineConfig } from 'vitest/config'
+
+const qualityPolicy = JSON.parse(readFileSync(new URL('./config/quality-gates.json', import.meta.url), 'utf8'))
 
 const decoratorSyntax = /^\s*@[A-Za-z_$][\w$]*/m
 
@@ -29,4 +33,14 @@ const standardDecoratorPlugin = {
 
 export default defineConfig({
   plugins: [standardDecoratorPlugin],
+  test: {
+    testTimeout: 30_000,
+    coverage: {
+      provider: qualityPolicy.coverage.provider,
+      include: qualityPolicy.coverage.include,
+      exclude: qualityPolicy.coverage.exclude,
+      reporter: ['text', 'json-summary'],
+      thresholds: qualityPolicy.coverage.thresholds,
+    },
+  },
 })

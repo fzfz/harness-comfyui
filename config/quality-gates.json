@@ -1,0 +1,53 @@
+{
+  "coverage": {
+    "provider": "v8",
+    "include": ["src/**/*.{ts,tsx}"],
+    "exclude": ["src/**/*.d.ts", "src/testing/**"],
+    "thresholds": {
+      "lines": 91,
+      "functions": 100,
+      "statements": 88,
+      "branches": 79
+    }
+  },
+  "fastOnlyFiles": ["README.md"],
+  "fastOnlyPrefixes": ["docs/"],
+  "qualification": {
+    "schemaVersion": 1,
+    "workflowName": "Artifact Qualification",
+    "requiredGateIds": [
+      "test:deploy",
+      "test:composition",
+      "test:e2e",
+      "release:smoke"
+    ],
+    "gates": [
+      {
+        "id": "test:deploy",
+        "job": "deploy-lifecycle",
+        "command": "pnpm test:deploy"
+      },
+      {
+        "id": "test:composition",
+        "job": "composition",
+        "command": "pnpm test:composition"
+      },
+      {
+        "id": "test:e2e",
+        "job": "browser-e2e",
+        "command": "pnpm test:e2e"
+      },
+      {
+        "id": "release:smoke",
+        "job": "release-smoke",
+        "command": "pnpm run release:smoke"
+      }
+    ],
+    "artifactNames": {
+      "candidate": "quality-candidate",
+      "qualified": "quality-qualified",
+      "manifest": "artifact.json",
+      "record": "qualification.json"
+    }
+  }
+}
