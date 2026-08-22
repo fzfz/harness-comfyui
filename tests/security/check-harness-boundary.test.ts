@@ -17,14 +17,13 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-layout',
 ]
 
-const productAgentConfig = {
-  agentPresetId: 'harness-comfyui',
-  agentPresetArtifactRelativeRoot: 'agent-presets',
-  agentPresetInstallRelativeRoot: 'dsh-home/.agent-presets',
-  skillRelativeRoot: 'skills',
-  agentPluginExport: './agent',
-  sessionListConvergenceTimeoutMs: 10000,
-}
+const productAgentConfig = JSON.parse(readFileSync(join(process.cwd(), 'config/product-agent.json'), 'utf8')) as Record<string, any>
+const agentPresetId = productAgentConfig.agentPresetId as string
+const agentPresetArtifactRelativeRoot = productAgentConfig.agentPresetArtifactRelativeRoot as string
+const skillRelativeRoot = productAgentConfig.skillRelativeRoot as string
+const agentPluginExport = productAgentConfig.agentPluginExport as string
+const agentPluginExportTarget = `lib/${agentPluginExport.slice(2)}.js`
+const agentPresetArtifactRoot = `${agentPresetArtifactRelativeRoot}/${agentPresetId}`
 
 const workspaceText = `packages:
   - .
@@ -45,13 +44,14 @@ const rootPackage = {
   dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
   devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.7' },
   peerDependencies: { '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.7' },
-  exports: { './agent': { default: './lib/agent.js' } },
+  exports: { [agentPluginExport]: { default: `./${agentPluginExportTarget}` } },
   files: [
-    'lib/agent.js',
-    'agent-presets/harness-comfyui/preset.yml',
-    'agent-presets/harness-comfyui/agent.cordis.yml',
+    agentPluginExportTarget,
+    `${agentPresetArtifactRoot}/preset.yml`,
+    `${agentPresetArtifactRoot}/agent.cordis.yml`,
     'config/product-agent.json',
     'profiles/comfyui-workbench/cordis.patch.yml',
+    `${skillRelativeRoot}/**`,
   ],
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
@@ -128,7 +128,7 @@ function createFixture(otherSource = ''): string {
   writeFileSync(join(root, 'cordis.patch.yml'), loaderPatch, 'utf8')
   writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets
   config:
-    default: harness-comfyui
+    default: ${agentPresetId}
     includeUserRoot: true
 `, 'utf8')
   if (otherSource) {
@@ -403,7 +403,10 @@ describe('check:harness-boundary', () => {
   })
 
   it.each([
-    ['agent preset ID', (config: Record<string, any>) => { config.agentPresetId = 'other-agent' }, 'agent-presets/other-agent/preset.yml'],
+    ['agent preset ID', (config: Record<string, any>) => { config.agentPresetId = 'other-agent' }, `package.json.files must contain ${agentPresetArtifactRelativeRoot}/other-agent/preset.yml`],
+    ['Agent preset artifact root', (config: Record<string, any>) => { config.agentPresetArtifactRelativeRoot = 'other-agent-presets' }, `package.json.files must contain other-agent-presets/${agentPresetId}/preset.yml`],
+    ['Agent preset install root', (config: Record<string, any>) => { config.agentPresetInstallRelativeRoot = '../outside' }, 'agentPresetInstallRelativeRoot must be a normalized package-relative path'],
+    ['Skill root', (config: Record<string, any>) => { config.skillRelativeRoot = 'skill-bundle' }, 'package.json.files must contain skill-bundle/**'],
     ['Agent plugin export', (config: Record<string, any>) => { config.agentPluginExport = './other-agent' }, 'package.json.exports[./other-agent]'],
   ])('rejects %s drift from config/product-agent.json', (_label, update, evidence) => {
     const root = createFixture()
@@ -418,8 +421,8 @@ describe('check:harness-boundary', () => {
   })
 
   it.each([
-    ['Agent export', (manifest: Record<string, any>) => { manifest.exports['./agent'].default = './lib/other-agent.js' }, 'package.json.exports'],
-    ['Agent bundle file', (manifest: Record<string, any>) => { manifest.files = manifest.files.filter((entry: string) => entry !== 'lib/agent.js') }, 'package.json.files'],
+    ['Agent export', (manifest: Record<string, any>) => { manifest.exports[agentPluginExport].default = './lib/other-agent.js' }, 'package.json.exports'],
+    ['Agent bundle file', (manifest: Record<string, any>) => { manifest.files = manifest.files.filter((entry: string) => entry !== agentPluginExportTarget) }, 'package.json.files'],
   ])('rejects root package %s drift from config/product-agent.json', (_label, update, field) => {
     const root = createFixture()
     try {

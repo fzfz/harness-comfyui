@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { dirname, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
@@ -176,6 +176,14 @@ function containsHarnessIdentity(value) {
   return typeof value === 'string' && (value.includes('@deepseek-ai/') || value.includes('harness-comfyui'))
 }
 
+function requireNormalizedRelativePath(config, field, path) {
+  const value = config[field]
+  if (typeof value !== 'string' || value.length === 0 || value.includes('\0') || isAbsolute(value) || value.includes('\\') || value.startsWith('./') || value.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) {
+    throw new Error(`${path}.${field} must be a normalized package-relative path`)
+  }
+  return value
+}
+
 function assertManifestDependencyFields(manifest, manifestPath) {
   for (const field of directDependencyFields) {
     const dependencies = manifest[field]
@@ -239,11 +247,20 @@ function readProductAgentBoundary(path) {
   if (typeof agentPresetId !== 'string' || agentPresetId.length === 0 || agentPresetId.includes('/') || agentPresetId.includes('\\')) {
     throw new Error(`${path}.agentPresetId must be a non-empty single path segment`)
   }
+  const agentPresetArtifactRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetArtifactRelativeRoot', path)
+  const agentPresetInstallRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetInstallRelativeRoot', path)
+  const skillRelativeRoot = requireNormalizedRelativePath(config, 'skillRelativeRoot', path)
   const agentPluginExport = config.agentPluginExport
   if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
     throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
   }
-  return { agentPresetId, agentPluginExport }
+  return {
+    agentPresetId,
+    agentPresetArtifactRelativeRoot,
+    agentPresetInstallRelativeRoot,
+    skillRelativeRoot,
+    agentPluginExport,
+  }
 }
 
 function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
@@ -255,10 +272,11 @@ function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
   if (!Array.isArray(manifest.files)) throw new Error(`${manifestPath}.files must be an array`)
   const requiredFiles = [
     exportTarget.slice(2),
-    `agent-presets/${productAgent.agentPresetId}/preset.yml`,
-    `agent-presets/${productAgent.agentPresetId}/agent.cordis.yml`,
+    `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}/preset.yml`,
+    `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}/agent.cordis.yml`,
     'config/product-agent.json',
     'profiles/comfyui-workbench/cordis.patch.yml',
+    `${productAgent.skillRelativeRoot}/**`,
   ]
   for (const entry of requiredFiles) {
     if (!manifest.files.includes(entry)) throw new Error(`${manifestPath}.files must contain ${entry}`)
