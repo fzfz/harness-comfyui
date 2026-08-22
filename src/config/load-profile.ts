@@ -36,6 +36,10 @@ interface ObjectSchema {
   dict?: Record<string, ObjectSchema>
 }
 
+interface EnvironmentPassThrough {
+  readonly passThrough: true
+}
+
 function locatePackageConfigurationRoot(): string {
   let directory = dirname(fileURLToPath(import.meta.url))
   for (let depth = 0; depth < 4; depth += 1) {
@@ -110,6 +114,14 @@ function parseEnvironmentValue(key: string, value: string): unknown {
   return value
 }
 
+function isEnvironmentPassThrough(value: unknown): value is EnvironmentPassThrough {
+  return value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && Object.keys(value).length === 1
+    && (value as Record<string, unknown>).passThrough === true
+}
+
 function isProfileName(value: string): value is ConfigurationProfileName {
   return (configurationProfileNames as readonly string[]).includes(value)
 }
@@ -140,6 +152,7 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
   }
   const allowedEnvironmentKeys = new Set(Object.keys(overrideMap))
   for (const key of allowedEnvironmentKeys) {
+    if (isEnvironmentPassThrough(overrideMap[key])) continue
     if (typeof overrideMap[key] !== 'string' || !overrideMap[key]) {
       throw new ConfigurationProfileError(profileName, overridesPath, key, 'environment override is not allowed')
     }
@@ -152,6 +165,7 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
       }
       continue
     }
+    if (isEnvironmentPassThrough(overrideMap[key])) continue
     assignPath(merged, overrideMap[key] as string, parseEnvironmentValue(key, rawValue))
   }
 
