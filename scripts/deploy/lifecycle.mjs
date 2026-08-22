@@ -280,12 +280,13 @@ async function readPsField(pid, field) {
 }
 
 export async function readProcessIdentity(pid) {
-  const [startTime, command] = await Promise.all([
+  const [startTime, command, processState] = await Promise.all([
     readPsField(pid, 'lstart'),
     readPsField(pid, 'command'),
+    readPsField(pid, 'stat'),
   ])
   if (startTime === null || command === null) return null
-  return { startTime, command }
+  return { startTime, command, processState }
 }
 
 async function waitForStableProcessIdentity(pid) {
@@ -302,6 +303,13 @@ async function waitForStableProcessIdentity(pid) {
 
 function sameProcessIdentity(left, right) {
   return left.startTime === right.startTime && left.command === right.command
+}
+
+function isExitedProcessIdentity(expected, observed) {
+  if (observed?.startTime !== expected.startTime) return false
+  const zombieState = observed.processState?.startsWith('Z') === true
+  const zombieCommand = observed.command.includes('<defunct>') || /^\([^)]*\)$/u.test(observed.command)
+  return zombieState || zombieCommand
 }
 
 function processIdentityMismatch(state, identity) {
@@ -485,8 +493,7 @@ async function waitForProcessExit(state, timeoutMs) {
   while (Date.now() < deadline) {
     const identity = await readProcessIdentity(state.pid)
     if (identity === null) return
-    const exitedProcess = identity.command.includes('<defunct>') || /^\([^)]*\)$/u.test(identity.command)
-    if (exitedProcess && identity.startTime === state.processIdentity.startTime) return
+    if (isExitedProcessIdentity(state.processIdentity, identity)) return
     if (!sameProcessIdentity(state.processIdentity, identity)) {
       throw new Error(processIdentityMismatch(state, identity))
     }
@@ -519,6 +526,10 @@ function assertProcessStateOwnership(state, installation, activeVersion) {
 async function clearStaleProcessState(path, state) {
   const identity = await readProcessIdentity(state.pid)
   if (identity === null) {
+    await rm(path, { force: true })
+    return null
+  }
+  if (isExitedProcessIdentity(state.processIdentity, identity)) {
     await rm(path, { force: true })
     return null
   }
@@ -638,6 +649,7 @@ export {
   buildHostEnvironment,
   clearStaleProcessState,
   forwardSignal,
+  isExitedProcessIdentity,
   processStatePath,
   processIdentityMismatch,
   probePort,

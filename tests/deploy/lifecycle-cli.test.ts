@@ -461,6 +461,83 @@ describe('installed lifecycle CLI', () => {
     expect((await start.output).status).toBe(0)
   })
 
+  it('clears a zombie process whose Linux command has collapsed to [node]', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const fixedStartTime = 'Sat Aug 22 09:44:18 2026'
+    const zombiePs = join(fixture.root, 'fake-bin/ps')
+    await writeFile(zombiePs, `#!/usr/bin/env node
+const field = process.argv.at(-1)?.replace(/=$/u, '')
+const values = { lstart: ${JSON.stringify(fixedStartTime)}, command: '[node]', stat: 'Z' }
+process.stdout.write(values[field] ?? '')
+`, 'utf8')
+    await chmod(zombiePs, 0o755)
+
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    await writeFile(statePath, `${JSON.stringify({
+      schemaVersion: 1,
+      installationId: fixture.installation.installationId,
+      activeVersion: '0.1.0-test.1',
+      pid: 99_999_999,
+      operationId: 'zombie-operation',
+      startedAt: '2026-08-22T00:00:00.000Z',
+      host: fixture.installation.host,
+      port: fixture.installation.port,
+      processIdentity: {
+        startTime: fixedStartTime,
+        command: '/installation/releases/0.1.0-test.1/harness-runtime/node_modules/.bin/dsh --profile comfyui-workbench --no-open',
+      },
+    }, null, 2)}\n`, 'utf8')
+
+    const stop = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'stop', '--installation', fixture.inputPath,
+    ], fixture.env)
+
+    expect(stop.status, stop.stderr).toBe(0)
+    await expect(lstat(statePath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects an active [node] process with a matching start time', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const fixedStartTime = 'Sat Aug 22 09:44:18 2026'
+    const activePs = join(fixture.root, 'fake-bin/ps')
+    await writeFile(activePs, `#!/usr/bin/env node
+const field = process.argv.at(-1)?.replace(/=$/u, '')
+const values = { lstart: ${JSON.stringify(fixedStartTime)}, command: '[node]', stat: 'R' }
+process.stdout.write(values[field] ?? '')
+`, 'utf8')
+    await chmod(activePs, 0o755)
+
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    await writeFile(statePath, `${JSON.stringify({
+      schemaVersion: 1,
+      installationId: fixture.installation.installationId,
+      activeVersion: '0.1.0-test.1',
+      pid: 99_999_998,
+      operationId: 'active-node-operation',
+      startedAt: '2026-08-22T00:00:00.000Z',
+      host: fixture.installation.host,
+      port: fixture.installation.port,
+      processIdentity: {
+        startTime: fixedStartTime,
+        command: '/installation/releases/0.1.0-test.1/harness-runtime/node_modules/.bin/dsh --profile comfyui-workbench --no-open',
+      },
+    }, null, 2)}\n`, 'utf8')
+
+    const stop = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'stop', '--installation', fixture.inputPath,
+    ], fixture.env)
+
+    expect(stop.status).not.toBe(0)
+    expect(stop.stderr).toMatch(/process identity mismatch/u)
+    await expect(lstat(statePath)).resolves.toBeDefined()
+  })
+
   it('rejects PID reuse without sending a signal to the replacement process', async () => {
     const fixture = await createFixture()
     const install = await installFixture(fixture)

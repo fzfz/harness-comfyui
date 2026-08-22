@@ -5,6 +5,7 @@ import {
   assertProcessStateOwnership,
   processStatePath,
   processIdentityMismatch,
+  isExitedProcessIdentity,
   readActiveRelease,
   readProcessIdentity,
   readProcessState,
@@ -25,7 +26,7 @@ export async function runProductStop(input) {
   }
   assertProcessStateOwnership(state, installation, active.activeVersion)
   const identity = await readProcessIdentity(state.pid)
-  if (identity === null) {
+  if (identity === null || isExitedProcessIdentity(state.processIdentity, identity)) {
     await rm(statePath, { force: true })
     await waitForPortClosed(installation.host, installation.port, installation.process.shutdownTimeoutMs)
     return { stage: 'stop', ...statusView(installation, active.activeVersion, null, 'stopped') }

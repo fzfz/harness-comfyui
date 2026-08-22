@@ -27,6 +27,7 @@ import {
 import {
   ACTIVE_RELEASE_STATE_SCHEMA_VERSION,
   assertProcessStateOwnership,
+  isExitedProcessIdentity,
   processIdentityMismatch,
   processStatePath,
   readActiveReleaseState,
@@ -284,6 +285,7 @@ async function hasVerifiedRunningHost(installation) {
   assertProcessStateOwnership(state, installation, active.activeVersion)
   const identity = await readProcessIdentity(state.pid)
   if (identity === null) return false
+  if (isExitedProcessIdentity(state.processIdentity, identity)) return false
   if (!sameProcessIdentity(state.processIdentity, identity)) {
     throw new Error(processIdentityMismatch(state, identity))
   }

@@ -86,7 +86,10 @@ export async function runProductStart(input, operation = {}) {
     startedAt: new Date().toISOString(),
     host: installation.host,
     port: installation.port,
-    processIdentity,
+    processIdentity: {
+      startTime: processIdentity.startTime,
+      command: processIdentity.command,
+    },
   }
   let stateWritten = false
   const stdoutLog = attachHostOutput(join(installation.paths.logDirectory, 'host.stdout.log'), child.stdout)
