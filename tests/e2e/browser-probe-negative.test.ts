@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { runRealBrowserProbe } from '../../src/testing/browser-cdp.ts'
 
 const execFileAsync = promisify(execFile)
+const realBrowserNegativeTestTotalTimeoutMs = 30_000
 
 async function browserResourceSnapshot(): Promise<{ processLines: string[]; profileDirectories: string[] }> {
   const [{ stdout }, entries] = await Promise.all([
@@ -28,7 +29,7 @@ describe('real browser probe failure boundary', () => {
       'about:blank',
       { readinessTimeoutMs: 100 },
     )).rejects.toThrow('timed out waiting for visible Harness AppFrame and client contexts')
-  }, 30000)
+  }, realBrowserNegativeTestTotalTimeoutMs)
 
   it('rejects a visible AppFrame-shaped document whose render script throws', async () => {
     const resourcesBefore = await browserResourceSnapshot()
@@ -55,7 +56,7 @@ describe('real browser probe failure boundary', () => {
     } finally {
       await new Promise<void>((resolve, reject) => server.close(error => error === undefined ? resolve() : reject(error)))
     }
-  }, 30000)
+  }, realBrowserNegativeTestTotalTimeoutMs)
 
   it('rejects a visible button-rich document without the AppFrame shell overlay marker', async () => {
     const resourcesBefore = await browserResourceSnapshot()
@@ -79,5 +80,5 @@ describe('real browser probe failure boundary', () => {
     } finally {
       await new Promise<void>((resolve, reject) => server.close(error => error === undefined ? resolve() : reject(error)))
     }
-  }, 30000)
+  }, realBrowserNegativeTestTotalTimeoutMs)
 })
