@@ -115,6 +115,24 @@ describe('check:manifest-lock', () => {
     expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime|dsh|version|manifest/i)
   })
 
+  it.each([
+    ['is missing', undefined],
+    ['has a different exact version', 'pnpm@11.8.0'],
+    ['has a non-exact version', 'pnpm@latest'],
+  ])('fails when the runtime packageManager %s', async (_label, packageManager) => {
+    const fixture = await createFixture()
+    const manifestPath = join(fixture, 'deployment/runtime/package.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, unknown>
+    if (packageManager === undefined) delete manifest.packageManager
+    else manifest.packageManager = packageManager
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+
+    const result = await runScript(['--root', fixture])
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime.*packageManager|packageManager.*pnpm/i)
+  })
+
   it('fails when a runtime lock resolution drifts while both manifests remain unchanged', async () => {
     const fixture = await createFixture()
     const lockfilePath = join(fixture, 'deployment/runtime/pnpm-lock.yaml')

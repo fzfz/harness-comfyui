@@ -54,6 +54,7 @@ async function buildRuntimeFiles(root) {
   const packageText = `${JSON.stringify({
     name: 'harness-comfyui-runtime',
     private: true,
+    packageManager: `pnpm@${packageManagerVersion}`,
     dependencies,
   }, null, 2)}\n`
   return {

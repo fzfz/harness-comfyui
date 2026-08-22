@@ -160,16 +160,19 @@ async function readPackageManifest(packageRoot) {
   }
   if (manifest?.name !== 'harness-comfyui') throw new Error('release package.json.name must be harness-comfyui')
   if (typeof manifest.version !== 'string' || manifest.version.length === 0) throw new Error('release package.json.version must be a non-empty string')
-  readPnpmPackageManagerVersion(manifest, 'release package.json')
   return manifest
 }
 
-async function validateRuntimeManifest(packageRoot, rootManifest) {
+async function validateRuntimeManifest(packageRoot, rootManifest, expectedPackageManagerVersion) {
   let runtimeManifest
   try {
     runtimeManifest = JSON.parse(await readFile(join(packageRoot, 'deployment/runtime/package.json'), 'utf8'))
   } catch (error) {
     throw new Error(`runtime package.json is malformed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  const actualPackageManagerVersion = readPnpmPackageManagerVersion(runtimeManifest, 'runtime package.json')
+  if (actualPackageManagerVersion !== expectedPackageManagerVersion) {
+    throw new Error(`runtime package.json.packageManager must match preflight pnpm@${expectedPackageManagerVersion}`)
   }
   const actualNames = Object.keys(runtimeManifest?.dependencies ?? {}).sort()
   const expectedNames = [...RUNTIME_DEPENDENCY_POLICY.packages].sort()
@@ -259,7 +262,7 @@ async function stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable
     }
     const packedManifest = await readPackageManifest(extractedPackageRoot)
     if (packedManifest.version !== artifact.version) throw new Error('artifact package version changed during install')
-    await validateRuntimeManifest(extractedPackageRoot, packedManifest)
+    await validateRuntimeManifest(extractedPackageRoot, packedManifest, preflight.runtime.pnpm)
     const runtimeRoot = join(stagingRoot, 'harness-runtime')
     await copyRuntimeFiles(extractedPackageRoot, runtimeRoot)
     await runPnpmInstall(runtimeRoot, pnpmExecutable)

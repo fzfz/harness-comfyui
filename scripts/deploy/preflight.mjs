@@ -204,7 +204,6 @@ async function readArtifactPackageJson(artifactPath) {
   if (manifest.name !== PRODUCT_PACKAGE_NAME) {
     throw new Error(`artifact package.json.name must be ${PRODUCT_PACKAGE_NAME}`);
   }
-  const packageManagerVersion = readPnpmPackageManagerVersion(manifest, 'artifact package.json');
   const version = requireString(manifest.version, 'artifact package.json.version');
   parseSemver(version, 'artifact package.json.version');
   const devDependencies = requireRecord(manifest.devDependencies, 'artifact package.json.devDependencies');
@@ -221,7 +220,7 @@ async function readArtifactPackageJson(artifactPath) {
   if (!satisfiesNodeEngine(nodeEngine, process.versions.node)) {
     throw new Error(`current Node ${process.versions.node} does not satisfy artifact package.json.engines.node ${nodeEngine}`);
   }
-  return { name: PRODUCT_PACKAGE_NAME, version, nodeEngine, packageManagerVersion, runtimeVersions };
+  return { name: PRODUCT_PACKAGE_NAME, version, nodeEngine, runtimeVersions };
 }
 
 async function readArtifactEntry(artifactPath, entry, description = entry) {
@@ -399,6 +398,7 @@ async function validateArtifactRuntime(artifactPath, rootManifest) {
     throw new Error(`artifact deployment/runtime/package.json is malformed JSON: ${error.message}`);
   }
   requireRecord(runtimeManifest, 'artifact deployment/runtime/package.json');
+  const packageManagerVersion = readPnpmPackageManagerVersion(runtimeManifest, 'artifact deployment/runtime/package.json');
   const dependencies = requireRecord(runtimeManifest.dependencies, 'artifact deployment/runtime/package.json.dependencies');
   const dependencyNames = Object.keys(dependencies).sort();
   const expectedNames = [...RUNTIME_DEPENDENCY_POLICY.packages].sort();
@@ -418,6 +418,7 @@ async function validateArtifactRuntime(artifactPath, rootManifest) {
   assertRuntimeLock(lockText, rootManifest.runtimeVersions);
   assertRuntimeWorkspace(workspaceText);
   return {
+    packageManagerVersion,
     dependencies,
     lockfileVersion: '9.0',
     strictDepBuilds: true,
@@ -597,7 +598,7 @@ export async function runProductPreflight(input, artifactPath, options = {}) {
   const artifact = await readArtifactPackageJson(artifactPath);
   const runtimeClosure = await validateArtifactRuntime(artifactPath, artifact);
   const configuration = await validateArtifactConfiguration(artifactPath, installation);
-  const pnpmVersion = await readPnpmVersion(artifact.packageManagerVersion);
+  const pnpmVersion = await readPnpmVersion(runtimeClosure.packageManagerVersion);
 
   for (const [name, path] of [
     ['installation.paths.dataDir', installation.paths.dataDir],

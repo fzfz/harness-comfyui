@@ -46,6 +46,10 @@ describe('release:sync-runtime-manifest', () => {
     const fixture = await createFixture()
 
     await syncRuntimeManifest(fixture)
+    const runtimeManifest = JSON.parse(await readFile(join(fixture, 'deployment/runtime/package.json'), 'utf8')) as {
+      packageManager: string
+    }
+    expect(runtimeManifest.packageManager).toBe('pnpm@11.7.0')
     await expect(readFile(join(fixture, 'deployment/runtime/pnpm-workspace.yaml'), 'utf8'))
       .resolves.toContain('strictDepBuilds: true')
     await expect(checkRuntimeManifest(fixture)).resolves.toMatchObject({ current: true })

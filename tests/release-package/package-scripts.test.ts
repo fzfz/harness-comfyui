@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -107,6 +107,50 @@ function createArtifact(
 }
 
 describe('release package scripts', () => {
+  it('packs pnpm compatibility evidence in the runtime manifest when package packing omits root packageManager metadata', () => {
+    const destination = mkdtempSync(join(tmpdir(), 'harness-comfyui-packed-runtime-'))
+    try {
+      const result = spawnSync('pnpm', ['pack', '--pack-destination', destination], {
+        cwd: resolve(process.cwd()),
+        encoding: 'utf8',
+      })
+      expect(result.status).toBe(0)
+      const filename = readdirSync(destination).find(entry => entry.endsWith('.tgz'))
+      expect(filename).toBeDefined()
+      const tarball = join(destination, filename as string)
+      const readManifest = (entry: string) => {
+        const extracted = spawnSync('tar', ['-xOzf', tarball, entry], { encoding: 'utf8' })
+        expect(extracted.status).toBe(0)
+        return JSON.parse(extracted.stdout) as Record<string, unknown>
+      }
+      expect(readManifest('package/package.json').packageManager).toBeUndefined()
+      expect(readManifest('package/deployment/runtime/package.json').packageManager).toBe('pnpm@11.7.0')
+    } finally {
+      rmSync(destination, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['is missing', undefined],
+    ['has a different exact version', 'pnpm@11.8.0'],
+    ['has a non-exact version', 'pnpm@latest'],
+  ])('rejects a packed runtime packageManager that %s', (_label, packageManager) => {
+    const root = createFixture()
+    const manifestPath = join(root, 'package.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown> & { files: string[] }
+    manifest.packageManager = 'pnpm@11.7.0'
+    manifest.files = [...manifest.files, 'deployment/runtime/package.json']
+    writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`)
+    mkdirSync(join(root, 'deployment/runtime'), { recursive: true })
+    writeFileSync(join(root, 'deployment/runtime/package.json'), '{}\n')
+    const runtimeManifest = packageManager === undefined ? {} : { packageManager }
+    const artifact = createArtifact(root, {
+      extraPackageFiles: { 'deployment/runtime/package.json': `${JSON.stringify(runtimeManifest)}\n` },
+    })
+
+    expect(() => validatePackage(root, { gitCommit: () => artifact.commit })).toThrow(/packageManager.*pnpm/i)
+  })
+
   it('declares the fixed release globs, complete optional peer metadata, and deterministic deploy test order', () => {
     const manifest = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {
       files: string[]

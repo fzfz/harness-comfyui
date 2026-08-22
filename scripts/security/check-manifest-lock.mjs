@@ -237,7 +237,11 @@ function readRootVersions(rootManifest, label) {
   return versions
 }
 
-function assertRuntimeManifest(runtimeManifest, rootVersions) {
+function assertRuntimeManifest(runtimeManifest, rootVersions, packageManagerVersion) {
+  const runtimePackageManagerVersion = readPnpmPackageManagerVersion(runtimeManifest, 'deployment/runtime/package.json')
+  if (runtimePackageManagerVersion !== packageManagerVersion) {
+    throw new Error(`deployment/runtime/package.json.packageManager must match package.json.packageManager pnpm@${packageManagerVersion}`)
+  }
   const dependencies = runtimeManifest.dependencies
   if (dependencies === null || typeof dependencies !== 'object' || Array.isArray(dependencies)) {
     throw new Error('deployment/runtime/package.json.dependencies must be an object')
@@ -305,7 +309,7 @@ export function validateDependencyClosure(root = repositoryRoot) {
   const packageManagerVersion = readPnpmPackageManagerVersion(rootManifest, 'package.json')
   const rootVersions = readRootVersions(rootManifest, 'package.json')
   const runtimeManifest = readJson(runtimeManifestPath, 'deployment/runtime/package.json')
-  assertRuntimeManifest(runtimeManifest, rootVersions)
+  assertRuntimeManifest(runtimeManifest, rootVersions, packageManagerVersion)
 
   const rootPolicy = readWorkspacePolicy(resolvedRoot)
   const runtimePolicy = readWorkspacePolicy(resolvedRoot, resolve(resolvedRoot, runtimeDirectory))

@@ -4,6 +4,8 @@ import { spawnSync } from 'node:child_process'
 import { basename, dirname, isAbsolute, join, posix, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { readPnpmPackageManagerVersion } from '../deploy/runtime-contract.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const artifactDirectoryName = '.release/quality'
 const strictSemVer = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
@@ -403,6 +405,20 @@ export function validatePackage(root = repositoryRoot, options = {}) {
   }
   if (JSON.stringify(packedManifest.peerDependenciesMeta ?? {}) !== JSON.stringify(sourceManifest.peerDependenciesMeta ?? {})) {
     throw new Error('packed package.json peerDependenciesMeta differs from the source package.json peerDependenciesMeta')
+  }
+  const runtimeManifestEntry = 'package/deployment/runtime/package.json'
+  if (expectedEntries.includes(runtimeManifestEntry)) {
+    const packageManagerVersion = readPnpmPackageManagerVersion(sourceManifest, 'package.json')
+    let runtimeManifest
+    try {
+      runtimeManifest = JSON.parse(readTarEntry(tarballPath, runtimeManifestEntry, resolvedRoot))
+    } catch (error) {
+      throw new Error(`packed deployment/runtime/package.json is invalid: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
+    }
+    const runtimePackageManagerVersion = readPnpmPackageManagerVersion(runtimeManifest, 'packed deployment/runtime/package.json')
+    if (runtimePackageManagerVersion !== packageManagerVersion) {
+      throw new Error(`packed deployment/runtime/package.json.packageManager must match package.json.packageManager pnpm@${packageManagerVersion}`)
+    }
   }
   validateExportTargets(packedManifest, entries)
 
