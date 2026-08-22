@@ -117,6 +117,11 @@ const badHealth = version !== '0.1.0-test.1' && process.env.FAIL_CANDIDATE_HEALT
 const readyPath = process.env.UPGRADE_HOST_READY_FILE
 const metricsPath = process.env.UPGRADE_HOST_METRICS_FILE
 const metrics = () => JSON.parse(readFileSync(metricsPath, 'utf8'))
+const recordHealthProbe = () => {
+  const value = metrics()
+  value.healthProbes = (value.healthProbes ?? 0) + 1
+  writeFileSync(metricsPath, JSON.stringify(value) + '\\n')
+}
 const updateMetrics = (delta, event) => {
   const value = metrics()
   value.active += delta
@@ -126,6 +131,7 @@ const updateMetrics = (delta, event) => {
 }
 const server = createServer((request, response) => {
   if (request.method === 'GET' && request.url === '/') {
+    recordHealthProbe()
     const entries = badHealth ? [] : [
       { id: '@deepseek-ai/dsh-client-ui-layout', url: '/layout.js' },
       { id: '@deepseek-ai/dsh-client-ui-conversation', url: '/conversation.js' },
@@ -235,7 +241,7 @@ async function createFixture(options: { failCandidateStart?: boolean; failCandid
   const stageReadyFile = join(root, 'stage-ready')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  await writeFile(metricsPath, JSON.stringify({ active: 0, maxActive: 0, events: [] }) + '\n', 'utf8')
+  await writeFile(metricsPath, JSON.stringify({ active: 0, maxActive: 0, healthProbes: 0, events: [] }) + '\n', 'utf8')
   for (const path of [catalogCliPath, sourceCliPath]) {
     await writeFile(path, `#!/usr/bin/env node\nif (process.argv[2] !== '--discovery-json') process.exit(2)\nprocess.stdout.write(${JSON.stringify(JSON.stringify(discovery))})\n`, 'utf8')
     await chmod(path, 0o755)
@@ -273,6 +279,35 @@ async function createFixture(options: { failCandidateStart?: boolean; failCandid
   const firstArtifact = await createArtifact(root, '0.1.0-test.1')
   const candidateArtifact = await createArtifact(root, '0.1.0-test.2')
   return { root, installation, inputPath, firstArtifact, candidateArtifact, readyPath, metricsPath, stageReadyFile, env }
+}
+
+async function waitForPassedHealth(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  version: string,
+  timeoutMs = 30_000,
+): Promise<Record<string, any>> {
+  const statePath = join(fixture.installation.root, 'state/active-release.json')
+  const healthPath = join(fixture.installation.root, 'state/last-health.json')
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      const state = JSON.parse(await readFile(statePath, 'utf8')) as Record<string, any>
+      const health = JSON.parse(await readFile(healthPath, 'utf8')) as Record<string, any>
+      if (state.activeVersion === version
+        && state.installationId === fixture.installation.installationId
+        && health.stage === 'health'
+        && health.status === 'passed'
+        && health.activeRelease?.status === 'passed'
+        && health.activeRelease.version === version
+        && health.process?.status === 'passed') {
+        return health
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+    await delay(20)
+  }
+  throw new Error(`timed out waiting for passed health evidence for ${version}`)
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
@@ -364,6 +399,9 @@ describe('installed upgrade CLI', () => {
     expect(JSON.parse(await readFile(processPath, 'utf8')).pid).not.toBe(oldState.pid)
     await assertSharedContent(fixture)
 
+    const candidateHealth = await runProcess(stableBin, ['health', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(candidateHealth.status, candidateHealth.stderr).toBe(0)
+    expect(JSON.parse(candidateHealth.stdout)).toMatchObject({ stage: 'health', status: 'passed' })
     expect((await stopFixture(fixture)).status).toBe(0)
     expect((await upgrade.output).status).toBe(0)
     expect((await oldHost.output).status).toBe(0)
@@ -476,11 +514,20 @@ describe('installed upgrade CLI', () => {
     const upgrade = spawnProcess(stableBin, [
       'upgrade', '--installation', fixture.inputPath, '--artifact', fixture.candidateArtifact,
     ], fixture.env)
-    const readyLines = await waitForLines(fixture.readyPath, 'failCandidateStart' in options && options.failCandidateStart ? 2 : 3)
+    const readyLines = await waitForLines(
+      fixture.readyPath,
+      'failCandidateStart' in options && options.failCandidateStart ? 2 : 3,
+      30_000,
+    )
     expect(readyLines.at(-1)).toMatch(/^0\.1\.0-test\.1:/u)
     const recoveredState = await waitForState(join(fixture.installation.root, 'state/active-release.json'), '0.1.0-test.1')
     expect(recoveredState.previousRelease).toBeNull()
     expect(JSON.parse(await readFile(processPath, 'utf8')).activeVersion).toBe('0.1.0-test.1')
+    await waitForPassedHealth(fixture, '0.1.0-test.1')
+    if ('failCandidateHealth' in options && options.failCandidateHealth) {
+      const healthMetrics = JSON.parse(await readFile(fixture.metricsPath, 'utf8')) as { healthProbes: number }
+      expect(healthMetrics.healthProbes).toBeGreaterThan(1)
+    }
     await assertSharedContent(fixture)
     const candidateRoot = join(fixture.installation.root, 'releases/0.1.0-test.2')
     await expect(lstat(candidateRoot)).resolves.toBeDefined()

@@ -11,7 +11,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
-import { createConnection } from 'node:net'
+import { createConnection, createServer } from 'node:net'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 export const PROCESS_STATE_SCHEMA_VERSION = 1
@@ -366,13 +366,118 @@ function probePort(host, port) {
   })
 }
 
+function waitForDelay(milliseconds) {
+  return new Promise(resolveResult => setTimeout(resolveResult, milliseconds))
+}
+
+/**
+ * Wait for a foreground Host to become fully product-ready.
+ *
+ * A listening port only proves that the Host process has bound its socket. The
+ * product health contract also covers the Web boot graph, bundles, plugin
+ * projection, discovery contracts, and shared directories. Upgrade and
+ * rollback must use the same readiness gate so a transient Web bootstrap
+ * cannot trigger recovery before the existing shutdown timeout expires.
+ */
+export async function waitForProductHealth(
+  startPromise,
+  installation,
+  expectedVersion,
+  runProductHealth,
+  failureMessage,
+) {
+  if (typeof runProductHealth !== 'function') throw new TypeError('runProductHealth must be a function')
+  const observedStart = startPromise.then(
+    value => ({ status: 'stopped', value }),
+    error => ({ status: 'failed', error }),
+  )
+  const deadline = Date.now() + installation.process.shutdownTimeoutMs
+  const statePath = processStatePath(installation.root)
+  let lastHealth
+  let lastHealthError
+
+  const failIfHostExited = async outcome => {
+    if (outcome.status === 'failed') throw outcome.error
+    throw new Error(`Host ${expectedVersion} exited before readiness`)
+  }
+
+  while (Date.now() < deadline) {
+    const outcome = await Promise.race([
+      observedStart,
+      waitForDelay(Math.min(25, Math.max(1, deadline - Date.now()))).then(() => null),
+    ])
+    if (outcome !== null) await failIfHostExited(outcome)
+
+    const state = await readProcessState(statePath)
+    if (state?.activeVersion !== expectedVersion
+      || state.host !== installation.host
+      || state.port !== installation.port
+      || !(await probePort(installation.host, installation.port))) {
+      continue
+    }
+
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) break
+    const healthPromise = Promise.resolve().then(() => runProductHealth(installation))
+    const healthOutcome = await Promise.race([
+      observedStart,
+      healthPromise.then(
+        health => ({ status: 'health', health }),
+        error => ({ status: 'health-failed', error }),
+      ),
+      waitForDelay(remaining).then(() => ({ status: 'timeout' })),
+    ])
+    if (healthOutcome.status === 'stopped' || healthOutcome.status === 'failed') {
+      await failIfHostExited(healthOutcome)
+    }
+    if (healthOutcome.status === 'timeout') {
+      // The health helper owns its own bounded probes. Attach a rejection
+      // handler to the in-flight call before leaving the deadline gate.
+      healthPromise.catch(() => undefined)
+      break
+    }
+    if (healthOutcome.status === 'health-failed') {
+      lastHealthError = healthOutcome.error
+      continue
+    }
+    lastHealth = healthOutcome.health
+    if (lastHealth?.status === 'passed') return lastHealth
+  }
+
+  const error = new Error(failureMessage)
+  if (lastHealth !== undefined) error.health = lastHealth
+  if (lastHealthError !== undefined) error.cause = lastHealthError
+  throw error
+}
+
 async function waitForPortClosed(host, port, timeoutMs) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (!(await probePort(host, port))) return
+    if (!(await probePort(host, port)) && await probePortAvailable(host, port)) {
+      // Keep the port-release check stable across the close callback and the
+      // next event-loop turn before a foreground Host attempts to bind it.
+      await waitForDelay(Math.min(25, Math.max(1, deadline - Date.now())))
+      if (!(await probePort(host, port)) && await probePortAvailable(host, port)) return
+    }
     await new Promise(resolveResult => setTimeout(resolveResult, 25))
   }
   throw new Error(`port ${host}:${port} did not become available before shutdown timeout`)
+}
+
+function probePortAvailable(host, port) {
+  return new Promise(resolveResult => {
+    const server = createServer()
+    let settled = false
+    const finish = value => {
+      if (settled) return
+      settled = true
+      resolveResult(value)
+    }
+    server.once('error', () => finish(false))
+    server.listen({ host, port }, () => {
+      server.close(() => finish(true))
+    })
+  })
 }
 
 async function waitForProcessExit(state, timeoutMs) {

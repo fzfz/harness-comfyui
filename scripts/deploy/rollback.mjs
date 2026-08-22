@@ -5,17 +5,11 @@ import { pathToFileURL } from 'node:url'
 
 import { validateInstallation } from './contracts.mjs'
 import {
-  processStatePath,
-  probePort,
   readActiveRelease,
   readActiveReleaseState,
-  readProcessState,
+  waitForProductHealth,
   writeActiveReleaseState,
 } from './lifecycle.mjs'
-
-function waitForDelay(milliseconds) {
-  return new Promise(resolveResult => setTimeout(resolveResult, milliseconds))
-}
 
 function errorMessage(error) {
   return error instanceof Error ? error.message : String(error)
@@ -56,33 +50,6 @@ async function loadReleaseLifecycle(release) {
   }
 }
 
-async function waitForHostReady(startPromise, installation, expectedVersion) {
-  const observedStart = startPromise.then(
-    value => ({ status: 'stopped', value }),
-    error => ({ status: 'failed', error }),
-  )
-  const deadline = Date.now() + installation.process.shutdownTimeoutMs
-  const statePath = processStatePath(installation.root)
-  while (Date.now() < deadline) {
-    const outcome = await Promise.race([
-      observedStart,
-      waitForDelay(25).then(() => null),
-    ])
-    if (outcome !== null) {
-      if (outcome.status === 'failed') throw outcome.error
-      throw new Error(`Host ${expectedVersion} exited before readiness`)
-    }
-    const state = await readProcessState(statePath)
-    if (state?.activeVersion === expectedVersion
-      && state.host === installation.host
-      && state.port === installation.port
-      && await probePort(installation.host, installation.port)) {
-      return
-    }
-  }
-  throw new Error(`Host ${expectedVersion} did not become ready before shutdown timeout`)
-}
-
 async function stopRestoredHost(installation, lifecycle, expectedVersion) {
   try {
     const active = await readActiveReleaseState(installation.root, installation.installationId)
@@ -97,13 +64,13 @@ async function startAndHealth(installation, operation, lifecycle, expectedVersio
   let startPromise
   try {
     startPromise = lifecycle.runProductStart(installation, operation)
-    await waitForHostReady(startPromise, installation, expectedVersion)
-    const health = await lifecycle.runProductHealth(installation)
-    if (health.status !== 'passed') {
-      const error = new Error(`rollback health check failed for ${expectedVersion}`)
-      error.health = health
-      throw error
-    }
+    const health = await waitForProductHealth(
+      startPromise,
+      installation,
+      expectedVersion,
+      lifecycle.runProductHealth,
+      `rollback health check failed for ${expectedVersion}`,
+    )
     return { startPromise, health }
   } catch (error) {
     let cleanupError

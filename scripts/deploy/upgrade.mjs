@@ -5,41 +5,10 @@ import { validateInstallation } from './contracts.mjs'
 import { activateProductRelease, restoreProductRelease } from './activate.mjs'
 import { stageProductRelease } from './install.mjs'
 import {
-  probePort,
-  processStatePath,
   readActiveRelease,
   readActiveReleaseState,
-  readProcessState,
+  waitForProductHealth,
 } from './lifecycle.mjs'
-
-function waitForDelay(milliseconds) {
-  return new Promise(resolveResult => setTimeout(resolveResult, milliseconds))
-}
-
-async function waitForHostReady(startPromise, installation, expectedVersion) {
-  const observedStart = startPromise.then(
-    value => ({ status: 'stopped', value }),
-    error => ({ status: 'failed', error }),
-  )
-  const deadline = Date.now() + installation.process.shutdownTimeoutMs
-  const statePath = processStatePath(installation.root)
-  while (Date.now() < deadline) {
-    const outcome = await Promise.race([
-      observedStart,
-      waitForDelay(25).then(() => null),
-    ])
-    if (outcome !== null) {
-      if (outcome.status === 'failed') throw outcome.error
-      throw new Error(`Host ${expectedVersion} exited before readiness`)
-    }
-    const state = await readProcessState(statePath)
-    if (state?.activeVersion === expectedVersion && state.host === installation.host && state.port === installation.port
-      && await probePort(installation.host, installation.port)) {
-      return
-    }
-  }
-  throw new Error(`Host ${expectedVersion} did not become ready before shutdown timeout`)
-}
 
 async function loadActiveLifecycle(installation, expectedVersion) {
   const active = await readActiveRelease(installation.root, installation.installationId)
@@ -71,13 +40,13 @@ async function startAndHealth(installation, operation, version) {
   try {
     lifecycle = await loadActiveLifecycle(installation, version)
     startPromise = lifecycle.runProductStart(installation, operation)
-    await waitForHostReady(startPromise, installation, version)
-    const health = await lifecycle.runProductHealth(installation)
-    if (health.status !== 'passed') {
-      const error = new Error(`candidate health check failed for ${version}`)
-      error.health = health
-      throw error
-    }
+    const health = await waitForProductHealth(
+      startPromise,
+      installation,
+      version,
+      lifecycle.runProductHealth,
+      `candidate health check failed for ${version}`,
+    )
     return { startPromise, health }
   } catch (error) {
     if (startPromise !== undefined) {

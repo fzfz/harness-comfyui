@@ -117,6 +117,11 @@ const badHealth = version === '0.1.0-test.1' && process.env.FAIL_ROLLBACK_HEALTH
 const readyPath = process.env.ROLLBACK_HOST_READY_FILE
 const metricsPath = process.env.ROLLBACK_HOST_METRICS_FILE
 const metrics = () => JSON.parse(readFileSync(metricsPath, 'utf8'))
+const recordHealthProbe = () => {
+  const value = metrics()
+  value.healthProbes = (value.healthProbes ?? 0) + 1
+  writeFileSync(metricsPath, JSON.stringify(value) + '\\n')
+}
 const updateMetrics = (delta, event) => {
   const value = metrics()
   value.active += delta
@@ -126,6 +131,7 @@ const updateMetrics = (delta, event) => {
 }
 const server = createServer((request, response) => {
   if (request.method === 'GET' && request.url === '/') {
+    recordHealthProbe()
     const entries = badHealth ? [] : [
       { id: '@deepseek-ai/dsh-client-ui-layout', url: '/layout.js' },
       { id: '@deepseek-ai/dsh-client-ui-conversation', url: '/conversation.js' },
@@ -236,7 +242,7 @@ async function createFixture() {
   const stageReadyFile = join(root, 'stage-ready')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  await writeFile(metricsPath, JSON.stringify({ active: 0, maxActive: 0, events: [] }) + '\n', 'utf8')
+  await writeFile(metricsPath, JSON.stringify({ active: 0, maxActive: 0, healthProbes: 0, events: [] }) + '\n', 'utf8')
   for (const path of [catalogCliPath, sourceCliPath]) {
     await writeFile(path, `#!/usr/bin/env node\nif (process.argv[2] !== '--discovery-json') process.exit(2)\nprocess.stdout.write(${JSON.stringify(JSON.stringify(discovery))})\n`, 'utf8')
     await chmod(path, 0o755)
@@ -281,6 +287,31 @@ async function createFixture() {
 
 type Fixture = Awaited<ReturnType<typeof createFixture>>
 
+async function waitForPassedHealth(fixture: Fixture, version: string, timeoutMs = 30_000): Promise<Record<string, any>> {
+  const statePath = join(fixture.installation.root, 'state/active-release.json')
+  const healthPath = join(fixture.installation.root, 'state/last-health.json')
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      const state = JSON.parse(await readFile(statePath, 'utf8')) as Record<string, any>
+      const health = JSON.parse(await readFile(healthPath, 'utf8')) as Record<string, any>
+      if (state.activeVersion === version
+        && state.installationId === fixture.installation.installationId
+        && health.stage === 'health'
+        && health.status === 'passed'
+        && health.activeRelease?.status === 'passed'
+        && health.activeRelease.version === version
+        && health.process?.status === 'passed') {
+        return health
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+    await delay(20)
+  }
+  throw new Error(`timed out waiting for passed health evidence for ${version}`)
+}
+
 async function installFixture(fixture: Fixture): Promise<ProcessResult> {
   return runProcess('npm', [
     'exec', '--yes', `--package=${fixture.firstArtifact}`, '--', 'harness-comfyui', 'install',
@@ -302,6 +333,7 @@ async function upgradeFixture(fixture: Fixture) {
   ], fixture.env)
   await waitForLines(fixture.readyPath, 2)
   await waitForState(join(fixture.installation.root, 'state/active-release.json'), '0.1.0-test.2')
+  await waitForPassedHealth(fixture, '0.1.0-test.2')
   return upgrade
 }
 
@@ -343,6 +375,7 @@ describe('installed rollback CLI', () => {
     expect(secondPid).not.toBe(initialPid)
     expect(JSON.parse(await readFile(fixture.metricsPath, 'utf8'))).toMatchObject({ active: 1, maxActive: 1 })
 
+    await waitForPassedHealth(fixture, '0.1.0-test.2')
     const rollback = spawnProcess(stableBin(fixture), ['rollback', '--installation', fixture.inputPath], fixture.env)
     const thirdReady = await waitForLines(fixture.readyPath, 3)
     const thirdPid = Number(thirdReady[2].split(':')[1])
@@ -372,6 +405,9 @@ describe('installed rollback CLI', () => {
       activeVersion: '0.1.0-test.1',
       releasePath: join(fixture.installation.root, 'releases/0.1.0-test.1'),
     })
+    const switchedHealth = await runProcess(stableBin(fixture), ['health', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(switchedHealth.status, switchedHealth.stderr).toBe(0)
+    expect(JSON.parse(switchedHealth.stdout)).toMatchObject({ stage: 'health', status: 'passed' })
     const stopped = await stopFixture(fixture)
     expect(stopped.status, `${stopped.stdout}\n${stopped.stderr}`).toBe(0)
     const secondRollbackResult = await secondRollback.output
@@ -459,6 +495,7 @@ describe('installed rollback CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
     if (healthFailure) {
       expect(JSON.parse(await readFile(join(fixture.installation.root, 'state/last-health.json'), 'utf8'))).toMatchObject({ status: 'failed' })
+      expect(JSON.parse(await readFile(fixture.metricsPath, 'utf8')).healthProbes).toBeGreaterThan(1)
     }
     await assertSharedContent(fixture)
     expect((await upgrade.output).status).toBe(0)
