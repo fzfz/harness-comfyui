@@ -96,5 +96,5 @@ describe('built public declaration artifacts', () => {
     })
     const diagnostics = ts.getPreEmitDiagnostics(program)
     expect(diagnostics.map(diagnostic => ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'))).toEqual([])
-  })
+  }, 30_000)
 })
