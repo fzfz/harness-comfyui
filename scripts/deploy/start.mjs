@@ -55,7 +55,18 @@ export async function runProductStart(input, operation = {}) {
   process.once('SIGTERM', onSigTerm)
   let processIdentity
   try {
-    processIdentity = await waitForStableProcessIdentity(child.pid)
+    const startup = await Promise.race([
+      waitForStableProcessIdentity(child.pid).then(identity => ({ status: 'identity', identity })),
+      new Promise(resolveResult => {
+        child.once('close', (code, signal) => resolveResult({ status: 'exited', code: code ?? 1, signal }))
+        child.once('error', error => resolveResult({ status: 'error', error }))
+      }),
+    ])
+    if (startup.status === 'error') throw startup.error
+    if (startup.status === 'exited') {
+      throw new Error(`Host exited with code ${startup.code}${startup.signal ? ` (${startup.signal})` : ''}`)
+    }
+    processIdentity = startup.identity
     if (processIdentity === null) throw new Error(`cannot determine process identity for Host PID ${child.pid}`)
   } catch (error) {
     process.removeListener('SIGINT', onSigInt)

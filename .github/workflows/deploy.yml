@@ -16,12 +16,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Disable Corepack pnpm shim
+        run: corepack disable pnpm
       - name: Install pnpm 11.7.0
-        run: corepack install --global pnpm@11.7.0
-      - name: Verify pnpm 11.7.0
-        run: test "$(pnpm --version)" = "11.7.0"
+        run: npm install --global pnpm@11.7.0
+      - name: Verify pnpm 11.7.0 outside the repository
+        run: |
+          verification_root="$(mktemp -d)"
+          trap 'rm -rf "$verification_root"' EXIT
+          mkdir -p "$verification_root/home" "$verification_root/cwd"
+          test "$(cd "$verification_root/cwd" && HOME="$verification_root/home" USERPROFILE="$verification_root/home" pnpm --version)" = "11.7.0"
       - name: Check manifest and lockfile
         run: pnpm run check:manifest-lock
       - name: Audit dependency advisories
