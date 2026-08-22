@@ -123,8 +123,10 @@ export interface ProfileFixture {
   readonly profileManifestPath: string
   readonly cleanupEvidence: CleanupEvidence
   readonly port: number
+  preflight(): Promise<JsonObject>
   install(): Promise<void>
   start(): Promise<void>
+  restart(): Promise<void>
   status(): Promise<JsonObject>
   health(): Promise<JsonObject>
   logs(options?: { source?: 'stdout' | 'stderr' | 'operations' | 'all'; lines?: number }): Promise<string>
@@ -365,6 +367,8 @@ class ProfileFixtureImpl implements ProfileFixture {
   private disposed = false
   private startChild: FixtureChild | undefined
   private startResultPromise: Promise<CommandResult> | undefined
+  private restartChild: FixtureChild | undefined
+  private restartResultPromise: Promise<CommandResult> | undefined
 
   constructor(artifact: ArtifactManifest, configuration: FixtureConfiguration, testRoot: string, port: number) {
     this.artifact = artifact
@@ -411,6 +415,25 @@ class ProfileFixtureImpl implements ProfileFixture {
       child.once('error', reject)
       child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
     })
+  }
+
+  async preflight(): Promise<JsonObject> {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    const result = await runCommand('npm', [
+      'exec',
+      '--yes',
+      `--package=${this.artifact.tarballPath}`,
+      '--',
+      'harness-comfyui',
+      'preflight',
+      '--installation', this.installationPath,
+      '--artifact', this.artifact.tarballPath,
+    ], {
+      cwd: this.runtimeCwd,
+      env: this.environment,
+      onChild: child => this.trackChild(child),
+    })
+    return parseJsonResult(result, 'product CLI preflight')
   }
 
   async install(): Promise<void> {
@@ -466,6 +489,35 @@ class ProfileFixtureImpl implements ProfileFixture {
     }, 'product CLI boot readiness', 60000, () => child.exitCode !== null || child.signalCode !== null)
   }
 
+  async restart(): Promise<void> {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    if (!this.installed) throw new Error('product CLI install has not completed')
+    if (this.stopped) throw new Error('profile fixture has already been stopped')
+    if (this.restartChild !== undefined) throw new Error('profile fixture restart is already running')
+    const child = this.spawnStable(['restart', '--installation', this.installationPath])
+    this.restartChild = child
+    let stdout = ''
+    let stderr = ''
+    this.restartResultPromise = new Promise<CommandResult>((resolveResult, reject) => {
+      child.stdout.on('data', chunk => { stdout += String(chunk) })
+      child.stderr.on('data', chunk => { stderr += String(chunk) })
+      child.once('error', reject)
+      child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
+    })
+
+    await waitUntil(async () => {
+      const result = await this.status().catch(() => undefined)
+      if (child.exitCode !== null || child.signalCode !== null) {
+        throw new Error(`product CLI restart exited before readiness: ${stderr || stdout}`)
+      }
+      if (result?.status !== 'running') return undefined
+      const response = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}/`)
+      if (!response.ok) return undefined
+      parseBootGraph(await response.text())
+      return true
+    }, 'product CLI restart readiness', 60000, () => child.exitCode !== null || child.signalCode !== null)
+  }
+
   async status(): Promise<JsonObject> {
     return parseJsonResult(await this.runStable(['status', '--json', '--installation', this.installationPath]), 'status')
   }
@@ -490,11 +542,17 @@ class ProfileFixtureImpl implements ProfileFixture {
     if (!this.installed || this.stopped) return
     const result = await this.runStable(['stop', '--installation', this.installationPath])
     if (result.code !== 0) throw new Error(`product CLI stop failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
-    if (this.startResultPromise !== undefined) {
-      const startResult = await this.startResultPromise
-      this.cleanupEvidence.processExit = { code: startResult.code, signal: startResult.signal }
+    const lifecycleResults = [this.startResultPromise, this.restartResultPromise].filter(
+      (promise): promise is Promise<CommandResult> => promise !== undefined,
+    )
+    if (lifecycleResults.length > 0) {
+      const results = await Promise.all(lifecycleResults)
+      const firstResult = results[0]
+      this.cleanupEvidence.processExit = { code: firstResult.code, signal: firstResult.signal }
       this.startChild = undefined
       this.startResultPromise = undefined
+      this.restartChild = undefined
+      this.restartResultPromise = undefined
     }
     await waitUntil(async () => {
       try {
