@@ -116,6 +116,8 @@ async function assertFinalCleanup(fixture: ProfileFixture): Promise<void> {
   expect(fixture.cleanupEvidence.processStateRemoved).toBe(true)
   expect(fixture.cleanupEvidence.portReleased).toBe(true)
   expect(fixture.cleanupEvidence.noChildProcesses).toBe(true)
+  expect(fixture.cleanupEvidence.installationRemoved).toBe(true)
+  expect(fixture.cleanupEvidence.dshHomeRemoved).toBe(true)
   await expect(lstat(join(fixture.installationRoot, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
 }
 
@@ -160,6 +162,7 @@ async function runCandidateFailureCase(mode: Exclude<CandidateFailureMode, 'none
   const result = await upgrade.result
   expect(result.code).toBe(1)
   expect(result.signal).toBeNull()
+  await fixture.dispose()
   await assertFinalCleanup(fixture)
 }
 
@@ -209,6 +212,7 @@ describe('verified release artifact upgrade and rollback lifecycle', () => {
     const result = await upgrade.result
     expect(result.code).toBe(0)
     expect(result.signal).toBeNull()
+    await fixture.dispose()
     await assertFinalCleanup(fixture)
   }, 300000)
 
@@ -272,6 +276,7 @@ describe('verified release artifact upgrade and rollback lifecycle', () => {
     expect(rollbackResult.code).toBe(0)
     expect(upgradeResult.signal).toBeNull()
     expect(rollbackResult.signal).toBeNull()
+    await fixture.dispose()
     await assertFinalCleanup(fixture)
   }, 300000)
 })
