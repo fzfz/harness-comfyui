@@ -26,6 +26,23 @@ function assertStringArray(value, field, options = {}) {
   return value
 }
 
+export function normalizeRelativePath(value) {
+  if (typeof value !== 'string' || value.length === 0 || value.includes('\0') || value.includes('\\')) return null
+  if (value.startsWith('/') || /^[A-Za-z]:[\\/]/u.test(value)) return null
+  const segments = value.split('/')
+  if (segments.some(segment => segment.length === 0 || segment === '.' || segment === '..')) return null
+  return value
+}
+
+function assertFastOnlyFile(value) {
+  if (normalizeRelativePath(value) === null) fail(`fastOnlyFiles contains an invalid relative path ${String(value)}`)
+}
+
+function assertFastOnlyPrefix(value) {
+  if (typeof value !== 'string' || !value.endsWith('/')) fail(`fastOnlyPrefixes must end with /: ${String(value)}`)
+  if (normalizeRelativePath(value.slice(0, -1)) === null) fail(`fastOnlyPrefixes contains an invalid relative prefix ${String(value)}`)
+}
+
 function assertThresholds(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('coverage.thresholds must be an object')
   const keys = ['branches', 'functions', 'lines', 'statements']
@@ -77,12 +94,8 @@ export function validateQualityPolicy(policy) {
   assertThresholds(policy.coverage.thresholds)
   assertStringArray(policy.fastOnlyFiles, 'fastOnlyFiles', { unique: true })
   assertStringArray(policy.fastOnlyPrefixes, 'fastOnlyPrefixes', { unique: true })
-  for (const file of policy.fastOnlyFiles) {
-    if (file.startsWith('/') || file.includes('..')) fail(`fastOnlyFiles contains an unsafe path ${file}`)
-  }
-  for (const prefix of policy.fastOnlyPrefixes) {
-    if (prefix.startsWith('/') || prefix.includes('..') || !prefix.endsWith('/')) fail(`fastOnlyPrefixes contains an unsafe prefix ${prefix}`)
-  }
+  for (const file of policy.fastOnlyFiles) assertFastOnlyFile(file)
+  for (const prefix of policy.fastOnlyPrefixes) assertFastOnlyPrefix(prefix)
   assertQualification(policy.qualification)
   return policy
 }

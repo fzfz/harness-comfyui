@@ -1,15 +1,59 @@
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 // @ts-expect-error The policy seam is a checked-in JavaScript CLI module.
 import { classifyChangedPaths } from '../../scripts/ci/classify-changes.mjs'
 // @ts-expect-error The policy seam is a checked-in JavaScript policy module.
-import { loadQualityPolicy } from '../../scripts/ci/quality-policy.mjs'
+import { loadQualityPolicy, validateQualityPolicy } from '../../scripts/ci/quality-policy.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const classifierScript = resolve(repositoryRoot, 'scripts/ci/classify-changes.mjs')
+const temporaryRoots: string[] = []
+
+function temporaryRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-quality-git-'))
+  temporaryRoots.push(root)
+  return root
+}
+
+function git(root: string, ...args: string[]): string {
+  return execFileSync('git', [
+    '-c', 'user.name=quality-gate-test',
+    '-c', 'user.email=quality-gate-test@example.invalid',
+    ...args,
+  ], { cwd: root, encoding: 'utf8' }).trim()
+}
+
+function createGitFixture(path: string): { root: string; trackedPath: string; before: string } {
+  const root = temporaryRoot()
+  mkdirSync(join(root, 'config'), { recursive: true })
+  copyFileSync(join(repositoryRoot, 'config/quality-gates.json'), join(root, 'config/quality-gates.json'))
+  git(root, 'init', '--quiet')
+  const trackedPath = join(root, path)
+  mkdirSync(resolve(trackedPath, '..'), { recursive: true })
+  writeFileSync(trackedPath, 'fixture\n')
+  git(root, 'add', '--all')
+  git(root, 'commit', '--quiet', '-m', 'fixture')
+  return { root, trackedPath, before: git(root, 'rev-parse', 'HEAD') }
+}
+
+function classifyGitDiff(root: string, before: string): string {
+  const after = git(root, 'rev-parse', 'HEAD')
+  return execFileSync(process.execPath, [
+    classifierScript,
+    '--root', root,
+    '--before', before,
+    '--after', after,
+  ], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+}
+
+afterEach(() => {
+  for (const root of temporaryRoots.splice(0)) rmSync(root, { recursive: true, force: true })
+})
 
 describe('quality gate policy', () => {
   it('loads one structured source for numerical coverage, fail-closed classes, and qualification identity', () => {
@@ -24,7 +68,7 @@ describe('quality gate policy', () => {
       branches: expect.any(Number),
     })
     expect(policy.fastOnlyFiles).toEqual(['README.md'])
-    expect(policy.fastOnlyPrefixes).toEqual(['docs/'])
+    expect(policy.fastOnlyPrefixes).toEqual(['docs/', 'prototype/', '.planning/'])
     expect(policy.qualification.schemaVersion).toBe(1)
     expect(policy.qualification.workflowName).toBe('Artifact Qualification')
     expect(policy.qualification.requiredGateIds).toEqual([
@@ -43,6 +87,8 @@ describe('quality gate policy', () => {
 
   it('returns false only when every path is explicitly fast-only', () => {
     expect(classifyChangedPaths(['docs/operations/test-gates.md'], repositoryRoot).qualify).toBe(false)
+    expect(classifyChangedPaths(['prototype/generation-workbench/app.js'], repositoryRoot).qualify).toBe(false)
+    expect(classifyChangedPaths(['.planning/quality-gate-architecture/task_plan.md'], repositoryRoot).qualify).toBe(false)
     expect(classifyChangedPaths(['README.md'], repositoryRoot).qualify).toBe(false)
     expect(classifyChangedPaths(['docs/operations/test-gates.md', 'README.md'], repositoryRoot).qualify).toBe(false)
     expect(classifyChangedPaths(['docs/operations/test-gates.md', 'src/host/plugin.ts'], repositoryRoot).qualify).toBe(true)
@@ -50,6 +96,35 @@ describe('quality gate policy', () => {
     expect(classifyChangedPaths([], repositoryRoot).qualify).toBe(true)
     expect(classifyChangedPaths(['../outside.txt'], repositoryRoot).qualify).toBe(true)
     expect(classifyChangedPaths(['src/host/plugin.ts'], repositoryRoot, { workflowDispatch: true }).qualify).toBe(true)
+  })
+
+  it('qualifies deleted product paths while skipping deleted fast-only paths', () => {
+    const productFixture = createGitFixture('src/removed-product.ts')
+    unlinkSync(productFixture.trackedPath)
+    git(productFixture.root, 'add', '--all')
+    git(productFixture.root, 'commit', '--quiet', '-m', 'delete product')
+    expect(classifyGitDiff(productFixture.root, productFixture.before)).toBe('true')
+
+    const docsFixture = createGitFixture('docs/removed-guide.md')
+    unlinkSync(docsFixture.trackedPath)
+    git(docsFixture.root, 'add', '--all')
+    git(docsFixture.root, 'commit', '--quiet', '-m', 'delete docs')
+    expect(classifyGitDiff(docsFixture.root, docsFixture.before)).toBe('false')
+  })
+
+  it('validates fast-only paths as relative slash-separated paths without rejecting legitimate dot names', () => {
+    const policy = loadQualityPolicy(repositoryRoot)
+    expect(validateQualityPolicy({
+      ...policy,
+      fastOnlyFiles: ['release..notes.md'],
+    }).fastOnlyFiles).toEqual(['release..notes.md'])
+
+    for (const file of ['../README.md', 'docs\\guide.md', 'docs/\0guide.md', 'docs/./guide.md', 'docs//guide.md', '']) {
+      expect(() => validateQualityPolicy({ ...policy, fastOnlyFiles: [file] })).toThrow(/fastOnlyFiles/u)
+    }
+    for (const prefix of ['docs', 'docs\\', 'docs/\0', 'docs/./', 'docs//', '', '/docs/']) {
+      expect(() => validateQualityPolicy({ ...policy, fastOnlyPrefixes: [prefix] })).toThrow(/fastOnlyPrefixes/u)
+    }
   })
 
   it('CLI fails closed for missing, invalid, zero, and git-diff failures', () => {

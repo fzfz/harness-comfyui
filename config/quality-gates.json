@@ -11,7 +11,7 @@
     }
   },
   "fastOnlyFiles": ["README.md"],
-  "fastOnlyPrefixes": ["docs/"],
+  "fastOnlyPrefixes": ["docs/", "prototype/", ".planning/"],
   "qualification": {
     "schemaVersion": 1,
     "workflowName": "Artifact Qualification",

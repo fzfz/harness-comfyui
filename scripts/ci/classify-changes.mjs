@@ -2,21 +2,13 @@ import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { loadQualityPolicy, repositoryRoot } from './quality-policy.mjs'
+import { loadQualityPolicy, normalizeRelativePath, repositoryRoot } from './quality-policy.mjs'
 
 const exactCommit = /^[0-9a-f]{40}$/u
 const zeroCommit = /^0{40}$/u
 
-function normalizeChangedPath(value) {
-  if (typeof value !== 'string' || value.length === 0 || value.includes('\0')) return null
-  if (value.startsWith('/') || value.startsWith('\\') || /^[A-Za-z]:[\\/]/u.test(value)) return null
-  const normalized = value.replaceAll('\\', '/')
-  if (normalized !== value || normalized.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) return null
-  return normalized
-}
-
 function isFastOnlyPath(path, policy) {
-  const normalized = normalizeChangedPath(path)
+  const normalized = normalizeRelativePath(path)
   if (normalized === null) return false
   return policy.fastOnlyFiles.includes(normalized) || policy.fastOnlyPrefixes.some(prefix => normalized.startsWith(prefix))
 }
@@ -65,7 +57,7 @@ function changedPathsFromGit(root, before, after) {
   if (!exactCommit.test(before) || !exactCommit.test(after) || zeroCommit.test(before) || zeroCommit.test(after)) {
     throw new Error('before and after must be non-zero lowercase 40-character commits')
   }
-  const result = spawnSync('git', ['diff', '--name-only', '--diff-filter=ACMR', before, after], {
+  const result = spawnSync('git', ['diff', '--name-only', before, after], {
     cwd: root,
     encoding: 'utf8',
     shell: false,

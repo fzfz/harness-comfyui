@@ -34,7 +34,6 @@ const standardDecoratorPlugin = {
 export default defineConfig({
   plugins: [standardDecoratorPlugin],
   test: {
-    testTimeout: 30_000,
     coverage: {
       provider: qualityPolicy.coverage.provider,
       include: qualityPolicy.coverage.include,
