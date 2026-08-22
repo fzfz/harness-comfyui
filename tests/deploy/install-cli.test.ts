@@ -1,4 +1,4 @@
-import { access, chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { access, chmod, copyFile, lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer, type AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
@@ -404,12 +404,15 @@ describe('harness-comfyui install CLI', () => {
     ['Preset', { presetRoot: 'file' as const }, /Preset artifact source must be a directory/u],
   ])('rejects a non-directory %s target before committing a release', async (_name, options, message) => {
     const fixture = await createFixture(options)
+    const releasesRoot = join(fixture.installation.root, 'releases')
+    await mkdir(releasesRoot, { recursive: true })
 
     const result = await runInstall(fixture)
 
     expect(result.status).not.toBe(0)
     expect(result.stderr).toMatch(message)
-    await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(lstat(join(releasesRoot, '0.1.0-test.1'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readdir(releasesRoot)).resolves.toEqual([])
   }, 30_000)
 
   it.each([

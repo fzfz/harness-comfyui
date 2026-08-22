@@ -10,7 +10,6 @@ import {
   readdir,
   readFile,
   rename,
-  rmdir,
   rm,
   writeFile,
 } from 'node:fs/promises'
@@ -354,11 +353,6 @@ async function stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable
   } catch (error) {
     await rm(stagingRoot, { recursive: true, force: true })
     await rm(releaseRoot, { recursive: true, force: true })
-    try {
-      await rmdir(releasesRoot)
-    } catch (cleanupError) {
-      if (cleanupError?.code !== 'ENOENT' && cleanupError?.code !== 'ENOTEMPTY') throw cleanupError
-    }
     throw error
   }
 }
