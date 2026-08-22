@@ -164,7 +164,28 @@ describe('release package scripts', () => {
       Object.fromEntries(Object.keys(manifest.peerDependencies).map((name) => [name, { optional: true }])),
     )
     expect(manifest.scripts['test:deploy']).toBe('vitest run tests/deploy --maxWorkers=1 --no-file-parallelism')
-    expect(manifest.scripts.quality.split(' && ')).toContain('pnpm run test:deploy')
+    expect(manifest.scripts.quality.split(' && ')).toEqual([
+      'pnpm run quality:preinstall',
+      'pnpm run quality:fast',
+    ])
+    const fastCommands = manifest.scripts['quality:fast'].split(' && ')
+    for (const forbiddenCommand of [
+      'pnpm run package:pack',
+      'pnpm run package:validate',
+      'pnpm test:deploy',
+      'pnpm test:composition',
+      'pnpm test:e2e',
+      'pnpm run release:smoke',
+    ]) expect(fastCommands).not.toContain(forbiddenCommand)
+    expect(manifest.scripts['quality:artifact'].split(' && ')).toEqual([
+      'pnpm run quality',
+      'pnpm run package:pack',
+      'pnpm run package:validate',
+      'pnpm test:deploy',
+      'pnpm test:composition',
+      'pnpm test:e2e',
+      'pnpm run release:smoke',
+    ])
   })
 
   it('cleans the quality directory, runs pack exactly once, and records artifact identity', () => {
