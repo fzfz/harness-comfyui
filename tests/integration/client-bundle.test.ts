@@ -9,7 +9,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { typertPlugin } from '@deepseek-ai/dsh-typert-generator/tsdown'
 import { build } from 'tsdown'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import { createElement, type ReactNode } from 'react'
+import type { ILayout } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { SlotRegistry as SlotRegistryType } from '@deepseek-ai/dsh-client-runtime/client'
 
 import { buildClientBundle } from '../../scripts/build/tsdown-client-bundle.ts'
@@ -18,6 +19,9 @@ import { standaloneTypertWorkspacePlugin } from '../../scripts/build/standalone-
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const temporaryDirectories: string[] = []
+const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
+  renderToStaticMarkup(node: ReactNode): string
+}
 type RuntimeClientExports = {
   SlotRegistry: typeof SlotRegistryType
   defineStore: typeof import('@deepseek-ai/dsh-client-runtime/client').defineStore
@@ -92,7 +96,7 @@ describe('built Client bundle boundary', () => {
     await Promise.all(temporaryDirectories.splice(0).map(path => rm(path, { recursive: true, force: true })))
   })
 
-  it('loads through ModuleLoader, mounts the generated Remote, and leaves native slots unchanged', async () => {
+  it('loads through ModuleLoader, mounts the generated Remote, and composes the project root', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'harness-comfyui-built-client-'))
     temporaryDirectories.push(directory)
     const packageRoot = await generateIsolatedTypertWorkspace(directory)
@@ -153,6 +157,9 @@ describe('built Client bundle boundary', () => {
     const runtimeExports = await loadSlotRegistry()
     const requireExternal = (specifier: string): unknown => {
       if (specifier === '@deepseek-ai/dsh-client-runtime/client') return runtimeExports
+      if (specifier === 'react' || specifier === 'react/jsx-runtime') {
+        return createRequire(import.meta.url)(specifier)
+      }
       throw new Error(`built bundle unexpectedly required ${specifier}`)
     }
     if (!handoff) throw new Error('Client bundle did not register with ModuleLoader')
@@ -183,19 +190,6 @@ describe('built Client bundle boundary', () => {
     const sessionsDisposer = ctx.provide('sessions', {})
     const themeDisposer = ctx.provide('theme', {})
     const inputTriggersDisposer = ctx.provide('inputTriggers', {})
-    const rootDisposer = ctx.slots.register(
-      {
-        name: 'root',
-        children: {
-          sidebar: { kind: 'single', scope: 'root' },
-          conversation: { kind: 'single', scope: 'session-maybe' },
-          details: { kind: 'single', scope: 'session' },
-        },
-        inject: () => ({}),
-      },
-      (_props: PropsRenderSlots<'sidebar' | 'conversation' | 'details'>) => null,
-    )
-    const nativeDetailsDisposer = ctx.slots.register({ name: 'details', priority: 0 }, () => null)
     const clientFiber = ctx.plugin(plugin)
     await clientFiber
 
@@ -203,18 +197,72 @@ describe('built Client bundle boundary', () => {
     expect(mountedContributions[0]).toMatchObject({ package: 'harness-comfyui' })
     expect((mountedContributions[0] as { descriptors: Array<{ service: string; method: string }> }).descriptors)
       .toContainEqual(expect.objectContaining({ service: 'pluginStatus', method: 'get' }))
-    expect(ctx.slots.entries('details')).toHaveLength(1)
-    expect(ctx.slots.entriesOfSlot('details')[0]?.options.priority).toBe(0)
     expect(ctx.slots.entries('root')).toHaveLength(1)
     expect(ctx.slots.entries('sidebar')).toHaveLength(0)
     expect(ctx.slots.entries('conversation')).toHaveLength(0)
+    expect(ctx.slots.entries('details')).toHaveLength(0)
+    expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
+
+    const rootSnapshot = ctx.slots.snapshot('root')
+    expect(rootSnapshot).toHaveLength(1)
+    expect(rootSnapshot[0]?.children.map(child => child.name)).toEqual([
+      'sidebar',
+      'conversation',
+      'details',
+      'shell.overlay',
+    ])
+
+    const layout = ctx.reflect.get('layout') as ILayout | undefined
+    expect(layout).toBeDefined()
+    if (!layout) throw new Error('project layout service was not provided')
+
+    const rootEntry = ctx.slots.entriesOfSlot('root')[0]
+    const rootComponent = rootEntry?.component as ((props: {
+      renderSlot: (key: string, owner: object) => ReactNode
+    }) => ReactNode) | undefined
+    expect(rootComponent).toBeTypeOf('function')
+    if (!rootComponent) throw new Error('project root component was not registered')
+
+    const renderCalls: Array<{ key: string; owner: object }> = []
+    const renderRoot = () => {
+      renderCalls.length = 0
+      return renderToStaticMarkup(createElement(rootComponent, {
+        renderSlot(key, owner) {
+          renderCalls.push({ key, owner })
+          return createElement('span', { 'data-rendered-slot': key })
+        },
+      }))
+    }
+
+    const initialMarkup = renderRoot()
+    expect(initialMarkup).toContain('294px minmax(0, 1fr) 432px')
+    expect(renderCalls).toEqual([
+      { key: 'sidebar', owner: { collapsed: false, width: 294 } },
+      { key: 'conversation', owner: {} },
+      { key: 'details', owner: {} },
+      { key: 'shell.overlay', owner: {} },
+    ])
+    expect(initialMarkup.indexOf('data-layout-column="details"')).toBeLessThan(
+      initialMarkup.indexOf('data-shell-overlay'),
+    )
+
+    layout.toggleSidebar()
+    const collapsedMarkup = renderRoot()
+    expect(collapsedMarkup).toContain('56px minmax(0, 1fr) 432px')
+    expect(renderCalls[0]).toEqual({ key: 'sidebar', owner: { collapsed: true, width: 56 } })
+
+    layout.toggleSidebar()
+    expect(renderRoot()).toContain('294px minmax(0, 1fr) 432px')
+    layout.closeDetails()
+    expect(renderRoot()).toContain('294px minmax(0, 1fr) 0px')
+    layout.openDetails()
+    expect(renderRoot()).toContain('294px minmax(0, 1fr) 432px')
 
     await clientFiber.dispose()
-    expect(ctx.slots.entries('details')).toHaveLength(1)
-    expect(ctx.slots.entriesOfSlot('details')[0]?.options.priority).toBe(0)
+    expect(ctx.slots.entries('root')).toHaveLength(0)
+    expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
+    expect(ctx.reflect.get('layout')).toBeUndefined()
     expect(remoteUnmountCount).toBe(1)
-    nativeDetailsDisposer()
-    rootDisposer()
     inputTriggersDisposer()
     themeDisposer()
     sessionsDisposer()

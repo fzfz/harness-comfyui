@@ -1,3 +1,38 @@
 [data-plugin="harness-comfyui-details"] {
   min-width: 0;
 }
+
+.harness-comfyui-shell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.harness-comfyui-columns {
+  display: grid;
+  grid-template-rows: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.harness-comfyui-column {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.harness-comfyui-shell-overlay {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+}
+
+.harness-comfyui-shell-overlay > * {
+  pointer-events: auto;
+}
