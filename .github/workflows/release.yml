@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact main commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
@@ -44,11 +44,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
           git merge-base --is-ancestor "$RELEASE_COMMIT" refs/remotes/origin/main
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Download qualified artifact from the qualification run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: quality-qualified
           run-id: ${{ inputs.qualification_run_id }}
@@ -71,7 +71,7 @@ jobs:
           set -o pipefail
           node scripts/release/preview.mjs --expected-version "$RELEASE_VERSION" --expected-commit "$RELEASE_COMMIT" | tee .release/quality/release-preview.txt | tee "$GITHUB_STEP_SUMMARY"
       - name: Upload Release Preview artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-preview
           path: |

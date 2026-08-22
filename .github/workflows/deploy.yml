@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
@@ -34,7 +34,7 @@ jobs:
           node --input-type=module -e 'const commit = process.env.QUALIFICATION_COMMIT; if (!/^[0-9a-f]{40}$/u.test(commit ?? "")) throw new Error("qualification commit must be lowercase 40-character hex")'
           test "$(git rev-parse HEAD)" = "$QUALIFICATION_COMMIT"
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Disable Corepack pnpm shim
@@ -62,7 +62,7 @@ jobs:
       - name: Validate candidate artifact
         run: pnpm run package:validate
       - name: Upload quality candidate
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: quality-candidate
           path: |
@@ -78,12 +78,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Disable Corepack pnpm shim
@@ -101,7 +101,7 @@ jobs:
       - name: Frozen install
         run: pnpm install --frozen-lockfile
       - name: Download quality candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: quality-candidate
           path: .
@@ -116,12 +116,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Disable Corepack pnpm shim
@@ -139,7 +139,7 @@ jobs:
       - name: Frozen install
         run: pnpm install --frozen-lockfile
       - name: Download quality candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: quality-candidate
           path: .
@@ -154,12 +154,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Disable Corepack pnpm shim
@@ -177,7 +177,7 @@ jobs:
       - name: Frozen install
         run: pnpm install --frozen-lockfile
       - name: Download quality candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: quality-candidate
           path: .
@@ -192,12 +192,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Disable Corepack pnpm shim
@@ -215,7 +215,7 @@ jobs:
       - name: Frozen install
         run: pnpm install --frozen-lockfile
       - name: Download quality candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: quality-candidate
           path: .
@@ -230,16 +230,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.commit }}
           fetch-depth: 0
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
       - name: Download quality candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: quality-candidate
           path: .
@@ -265,7 +265,7 @@ jobs:
           EXPECTED_SHA256: ${{ steps.artifact.outputs.sha256 }}
         run: node scripts/ci/artifact-qualification.mjs validate --root "$PWD" --expected-version "$EXPECTED_VERSION" --expected-commit "$EXPECTED_COMMIT" --expected-run-id "$EXPECTED_RUN_ID" --expected-sha256 "$EXPECTED_SHA256"
       - name: Upload qualified artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: quality-qualified
           path: |

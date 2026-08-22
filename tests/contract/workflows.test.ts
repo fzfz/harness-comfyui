@@ -7,10 +7,7 @@ type QualityPolicy = {
   qualification: {
     workflowName: string
     requiredGateIds: string[]
-    gates: Array<{ id: string; job: string; command: string }>
-    artifactNames: {
-      candidate: string
-      qualified: string
+    files: {
       manifest: string
       record: string
     }
@@ -18,6 +15,31 @@ type QualityPolicy = {
 }
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
+
+const actionPins = {
+  checkout: '11d5960a326750d5838078e36cf38b85af677262',
+  'setup-node': '49933ea5288caeca8642d1e84afbd3f7d6820020',
+  'upload-artifact': 'ea165f8d65b6e75b540449e92b4886f43607fa02',
+  'download-artifact': 'd3f86a106a0bac45b974a628896c90dbdf5c8093'
+} as const
+
+type ActionName = keyof typeof actionPins
+
+const candidateArtifactName = 'quality-candidate'
+const qualifiedArtifactName = 'quality-qualified'
+const qualificationConsumers = [
+  {id: 'test:deploy', job: 'deploy-lifecycle', command: 'pnpm test:deploy'},
+  {id: 'test:composition', job: 'composition', command: 'pnpm test:composition'},
+  {id: 'test:e2e', job: 'browser-e2e', command: 'pnpm test:e2e'},
+  {id: 'release:smoke', job: 'release-smoke', command: 'pnpm run release:smoke'}
+] as const
+
+function expectPinnedActions(source: string, actions: readonly ActionName[]) {
+  for (const action of actions) {
+    expect(source).toContain(`actions/${action}@${actionPins[action]}`)
+  }
+  expect(source).not.toMatch(/actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@v4(?:\b|$)/u)
+}
 
 async function workflow(name: string) {
   return readFile(join(repositoryRoot, '.github/workflows', name), 'utf8')
@@ -77,8 +99,7 @@ function jobBlock(source: string, job: string) {
 }
 
 function expectExactRuntimeSetup(source: string) {
-  expect(source).toContain('actions/checkout@v4')
-  expect(source).toContain('actions/setup-node@v4')
+  expectPinnedActions(source, ['checkout', 'setup-node'])
   expect(source).toContain('node-version-file: .node-version')
   expect(source).not.toMatch(/node-version:\s*['"]?\d/u)
   expect(source).toContain('corepack disable pnpm')
@@ -135,6 +156,7 @@ describe('workflow orchestration contracts', () => {
     expect(source).toMatch(/workflow_dispatch:[\s\S]*?commit:[\s\S]*?required: true[\s\S]*?type: string/u)
     expect(source).toMatch(/permissions:\n\s+contents: read/u)
     expectExactRuntimeSetup(source)
+    expectPinnedActions(source, ['upload-artifact', 'download-artifact'])
     expectPreinstallOrder(source)
     expect(source).toContain('if: github.event_name == \'workflow_dispatch\'')
     expect(source).toContain('pnpm run quality:fast')
@@ -157,25 +179,25 @@ describe('workflow orchestration contracts', () => {
     expect(count(source, 'pnpm run build')).toBe(1)
     expect(count(source, 'pnpm run package:pack')).toBe(1)
     expect(count(source, 'pnpm run package:validate')).toBe(1)
-    expect(source).toContain(`name: ${qualification.artifactNames.candidate}`)
-    expect(source).toContain(`.release/quality/${qualification.artifactNames.manifest}`)
+    expect(source).toContain(`name: ${candidateArtifactName}`)
+    expect(source).toContain(`.release/quality/${qualification.files.manifest}`)
     expect(source).toContain('.release/quality/*.tgz')
     expect(source).toContain('lib/**')
     expect(source).toContain('include-hidden-files: true')
     expect(source).toContain('if-no-files-found: error')
 
-    expect(qualification.requiredGateIds).toHaveLength(4)
-    for (const gate of qualification.gates) {
+    expect(qualification.requiredGateIds).toEqual(qualificationConsumers.map(({id}) => id))
+    for (const gate of qualificationConsumers) {
       const consumer = jobBlock(source, gate.job)
       expect(consumer).toContain('needs: candidate')
-      expect(consumer).toContain('actions/download-artifact@v4')
-      expect(consumer).toContain(`name: ${qualification.artifactNames.candidate}`)
+      expect(consumer).toContain(`actions/download-artifact@${actionPins['download-artifact']}`)
+      expect(consumer).toContain(`name: ${candidateArtifactName}`)
       expect(consumer).toContain('path: .')
       expect(consumer).toContain('artifact-qualification.mjs relocate --root "$PWD"')
       expect(consumer).toContain(gate.command)
       expect(consumer).not.toMatch(/pnpm run (?:build|package:pack|package:validate)\b/u)
     }
-    expect(source).toContain('actions/download-artifact@v4')
+    expect(source).toContain(`actions/download-artifact@${actionPins['download-artifact']}`)
     expect(source).toContain('path: .')
     expect(count(source, 'artifact-qualification.mjs relocate --root "$PWD"')).toBe(5)
     expect(count(source, 'pnpm test:deploy')).toBe(1)
@@ -185,7 +207,7 @@ describe('workflow orchestration contracts', () => {
     expect(source).toContain('needs: [deploy-lifecycle, composition, browser-e2e, release-smoke]')
     expect(source).toContain('artifact-qualification.mjs write')
     expect(source).toContain('artifact-qualification.mjs validate')
-    expect(source).toContain(`name: ${qualification.artifactNames.qualified}`)
+    expect(source).toContain(`name: ${qualifiedArtifactName}`)
     const final = jobBlock(source, 'qualification')
     expect(final).toContain('needs: [deploy-lifecycle, composition, browser-e2e, release-smoke]')
     expect(final).toContain('QUALIFICATION_RUN_ID: ${{ github.run_id }}')
@@ -194,7 +216,7 @@ describe('workflow orchestration contracts', () => {
     expect(final).toContain('--commit "$QUALIFICATION_COMMIT"')
     expect(final).toContain('--expected-version "$EXPECTED_VERSION"')
     expect(final).toContain('--expected-sha256 "$EXPECTED_SHA256"')
-    expect(final).toContain(`name: ${qualification.artifactNames.qualified}`)
+    expect(final).toContain(`name: ${qualifiedArtifactName}`)
     expectNoInputExpressionsInRun(source)
     expect(source).not.toMatch(/deploy:(?:install|start|stop|upgrade|rollback)|ssh|curl\s+https?:/iu)
   })
@@ -212,14 +234,15 @@ describe('workflow orchestration contracts', () => {
     expect(source).toContain('fetch-depth: 0')
     expect(source).toContain('git fetch --no-tags origin main:refs/remotes/origin/main')
     expect(source).toContain('git merge-base --is-ancestor')
-    expect(source).toContain('actions/setup-node@v4')
+    expectPinnedActions(source, ['checkout', 'setup-node'])
+    expectPinnedActions(source, ['upload-artifact', 'download-artifact'])
     expect(source).not.toContain('npm install --global')
     expect(source).not.toContain('corepack disable')
     expect(source).not.toMatch(/pnpm\s+(?:install|run\s+(?:quality|build|package:|test:)|test:)/u)
     expect(source).not.toMatch(/git\s+(?:tag|push)\b|gh\s+release|softprops\/action-gh-release/iu)
     expectNoInputExpressionsInRun(source)
-    expect(source).toContain('actions/download-artifact@v4')
-    expect(source).toContain(`name: ${qualification.artifactNames.qualified}`)
+    expect(source).toContain(`actions/download-artifact@${actionPins['download-artifact']}`)
+    expect(source).toContain(`name: ${qualifiedArtifactName}`)
     expect(source).toContain('run-id: ${{ inputs.qualification_run_id }}')
     expect(source).toContain('github-token: ${{ github.token }}')
     expect(source).toContain('path: .')
@@ -236,8 +259,8 @@ describe('workflow orchestration contracts', () => {
     expect(source).toContain('set -o pipefail')
     expect(source).toContain('--expected-version "$RELEASE_VERSION"')
     expect(source).toContain('--expected-commit "$RELEASE_COMMIT"')
-    expect(source).toContain(`.release/quality/${qualification.artifactNames.manifest}`)
-    expect(source).toContain(`.release/quality/${qualification.artifactNames.record}`)
+    expect(source).toContain(`.release/quality/${qualification.files.manifest}`)
+    expect(source).toContain(`.release/quality/${qualification.files.record}`)
     expect(source).toContain('.release/quality/release-preview.txt')
     expect(source).toContain('include-hidden-files: true')
     expect(source).toContain('if-no-files-found: error')
