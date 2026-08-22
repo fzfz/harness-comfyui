@@ -130,6 +130,7 @@ export interface ProfileFixture {
   status(): Promise<JsonObject>
   health(): Promise<JsonObject>
   logs(options?: { source?: 'stdout' | 'stderr' | 'operations' | 'all'; lines?: number }): Promise<string>
+  spawnCli(args: string[], environmentOverrides?: Record<string, string>): ProductCliProcess
   stop(): Promise<void>
   dispose(): Promise<void>
   readBootGraph(): Promise<BootGraph>
@@ -163,12 +164,19 @@ export async function readProfileVersionEvidence(reader: ProfileVersionReader): 
   }
 }
 
-interface CommandResult {
+export interface ProductCliResult {
   code: number | null
   signal: NodeJS.Signals | null
   stdout: string
   stderr: string
 }
+
+export interface ProductCliProcess {
+  readonly pid: number
+  readonly result: Promise<ProductCliResult>
+}
+
+type CommandResult = ProductCliResult
 
 function asString(value: unknown, property: string): string {
   if (typeof value !== 'string' || value.length === 0) throw new TypeError(`artifact manifest ${property} must be a non-empty string`)
@@ -362,6 +370,7 @@ class ProfileFixtureImpl implements ProfileFixture {
   private readonly environment: NodeJS.ProcessEnv
   private readonly currentPort: number
   private readonly children = new Set<FixtureChild>()
+  private readonly foregroundResults: Promise<CommandResult>[] = []
   private installed = false
   private stopped = false
   private disposed = false
@@ -394,11 +403,11 @@ class ProfileFixtureImpl implements ProfileFixture {
     return child
   }
 
-  private spawnStable(args: string[]): FixtureChild {
+  private spawnStable(args: string[], environmentOverrides: Record<string, string> = {}): FixtureChild {
     if (!this.installed) throw new Error('product CLI install has not completed')
     const child = spawn(this.stableCliPath, args, {
       cwd: this.runtimeCwd,
-      env: this.environment,
+      env: { ...this.environment, ...environmentOverrides },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     })
@@ -407,6 +416,10 @@ class ProfileFixtureImpl implements ProfileFixture {
 
   private async runStable(args: string[]): Promise<CommandResult> {
     const child = this.spawnStable(args)
+    return this.readChildResult(child)
+  }
+
+  private readChildResult(child: FixtureChild): Promise<CommandResult> {
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', chunk => { stdout += String(chunk) })
@@ -415,6 +428,15 @@ class ProfileFixtureImpl implements ProfileFixture {
       child.once('error', reject)
       child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
     })
+  }
+
+  spawnCli(args: string[], environmentOverrides: Record<string, string> = {}): ProductCliProcess {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    const child = this.spawnStable(args, environmentOverrides)
+    if (child.pid === undefined) throw new Error('product CLI process did not provide a PID')
+    const result = this.readChildResult(child)
+    this.foregroundResults.push(result)
+    return { pid: child.pid, result }
   }
 
   async preflight(): Promise<JsonObject> {
@@ -475,6 +497,7 @@ class ProfileFixtureImpl implements ProfileFixture {
       child.once('error', reject)
       child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
     })
+    this.foregroundResults.push(this.startResultPromise)
 
     await waitUntil(async () => {
       const result = await this.status().catch(() => undefined)
@@ -504,6 +527,7 @@ class ProfileFixtureImpl implements ProfileFixture {
       child.once('error', reject)
       child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
     })
+    this.foregroundResults.push(this.restartResultPromise)
 
     await waitUntil(async () => {
       const result = await this.status().catch(() => undefined)
@@ -542,12 +566,14 @@ class ProfileFixtureImpl implements ProfileFixture {
     if (!this.installed || this.stopped) return
     const result = await this.runStable(['stop', '--installation', this.installationPath])
     if (result.code !== 0) throw new Error(`product CLI stop failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
-    const lifecycleResults = [this.startResultPromise, this.restartResultPromise].filter(
+    const lifecycleResults = [...this.foregroundResults]
+    const requiredSuccessfulResults = [this.startResultPromise, this.restartResultPromise].filter(
       (promise): promise is Promise<CommandResult> => promise !== undefined,
     )
     if (lifecycleResults.length > 0) {
       const results = await Promise.all(lifecycleResults)
       for (const [index, lifecycleResult] of results.entries()) {
+        if (!requiredSuccessfulResults.includes(lifecycleResults[index]!)) continue
         if (lifecycleResult.code !== 0 || lifecycleResult.signal !== null) {
           throw new Error(`product CLI lifecycle command ${index + 1} exited with ${lifecycleResult.code ?? lifecycleResult.signal}`)
         }
@@ -558,6 +584,7 @@ class ProfileFixtureImpl implements ProfileFixture {
       this.startResultPromise = undefined
       this.restartChild = undefined
       this.restartResultPromise = undefined
+      this.foregroundResults.length = 0
     }
     await waitUntil(async () => {
       try {
