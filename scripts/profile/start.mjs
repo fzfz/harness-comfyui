@@ -22,7 +22,7 @@ function parseArguments(argv) {
     values.set(flag, value)
     index += 1
   }
-  for (const flag of ['--configuration', '--dsh-home', '--host', '--port']) {
+  for (const flag of ['--configuration', '--dsh-home', '--dsh-executable', '--host', '--port']) {
     if (!values.has(flag)) throw new Error(`missing required argument ${flag}`)
   }
   const configuration = values.get('--configuration')
@@ -56,13 +56,10 @@ function sendSignal(child, signal) {
 }
 
 export function spawnForeground(options) {
-  const command = options.dshExecutable ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
+  const command = options.dshExecutable
   const dshArguments = ['--profile', profileName, '--host', options.host, '--port', options.port, '--no-open']
-  const args = options.dshExecutable === undefined
-    ? ['exec', 'dsh', ...dshArguments]
-    : dshArguments
   const environment = options.environment ?? process.env
-  return spawn(command, args, {
+  return spawn(command, dshArguments, {
     cwd: options.cwd ?? process.cwd(),
     env: {
       ...environment,
@@ -90,7 +87,7 @@ export function runForeground(options) {
 
   return new Promise(resolveResult => {
     child.once('error', error => {
-      process.stderr.write(`profile start: failed to execute pnpm: ${String(error)}\n`)
+      process.stderr.write(`profile start: failed to execute dsh: ${String(error)}\n`)
       resolveResult(127)
     })
     child.once('close', (code, signal) => {

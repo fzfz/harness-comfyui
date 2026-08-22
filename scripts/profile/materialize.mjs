@@ -1,7 +1,7 @@
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -31,12 +31,15 @@ function parseArguments(argv) {
     values.set(flag, value)
     index += 1
   }
-  for (const flag of ['--configuration', '--dsh-home', '--package-spec']) {
+  for (const flag of ['--configuration', '--dsh-home', '--package-spec', '--dsh-executable', '--pnpm-executable']) {
     if (!values.has(flag)) throw new Error(`missing required argument ${flag}`)
   }
   const configuration = values.get('--configuration')
   if (!configurationProfiles.has(configuration)) {
     throw new Error(`invalid --configuration ${JSON.stringify(configuration)}; expected development, test, release-smoke, or production`)
+  }
+  for (const flag of ['--dsh-executable', '--pnpm-executable']) {
+    if (!isAbsolute(values.get(flag))) throw new Error(`${flag} must be an absolute path`)
   }
   return {
     configuration,
@@ -61,37 +64,8 @@ function materializeProfileFiles(dshHome) {
 }
 
 function runPluginInstall(dshHome, packageSpec, { dshExecutable, pnpmExecutable }) {
-  if ((dshExecutable === undefined) !== (pnpmExecutable === undefined)) {
-    throw new Error('--dsh-executable and --pnpm-executable must be provided together')
-  }
-  if (dshExecutable !== undefined) {
-    const pnpmDirectory = dirname(resolve(pnpmExecutable))
-    const result = spawnSync(resolve(dshExecutable), [
-      'plugin',
-      '--profile',
-      profileName,
-      'add',
-      packageSpec,
-    ], {
-      cwd: repositoryRoot,
-      env: {
-        ...process.env,
-        DSH_HOME: dshHome,
-        PATH: `${pnpmDirectory}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH ?? ''}`,
-      },
-      stdio: 'inherit',
-      shell: false,
-    })
-    if (result.error !== undefined) {
-      process.stderr.write(`profile materialize: failed to execute dsh: ${String(result.error)}\n`)
-      return 127
-    }
-    return result.status ?? 1
-  }
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const result = spawnSync(command, [
-    'exec',
-    'dsh',
+  const pnpmDirectory = dirname(pnpmExecutable)
+  const result = spawnSync(dshExecutable, [
     'plugin',
     '--profile',
     profileName,
@@ -99,12 +73,16 @@ function runPluginInstall(dshHome, packageSpec, { dshExecutable, pnpmExecutable 
     packageSpec,
   ], {
     cwd: repositoryRoot,
-    env: { ...process.env, DSH_HOME: dshHome },
+    env: {
+      ...process.env,
+      DSH_HOME: dshHome,
+      PATH: `${pnpmDirectory}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH ?? ''}`,
+    },
     stdio: 'inherit',
     shell: false,
   })
   if (result.error !== undefined) {
-    process.stderr.write(`profile materialize: failed to execute pnpm: ${String(result.error)}\n`)
+    process.stderr.write(`profile materialize: failed to execute dsh: ${String(result.error)}\n`)
     return 127
   }
   return result.status ?? 1

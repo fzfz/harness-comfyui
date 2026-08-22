@@ -84,10 +84,10 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.bin).toEqual({ 'harness-comfyui': 'scripts/deploy/cli.mjs' })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
     expect(manifest.scripts['profile:materialize:development']).toBe(
-      'node scripts/profile/materialize.mjs --configuration development --dsh-home .local/dsh/development --package-spec .',
+      'node scripts/profile/materialize.mjs --configuration development --dsh-home .local/dsh/development --package-spec . --dsh-executable "$PWD/node_modules/.bin/dsh" --pnpm-executable "$(command -v pnpm)"',
     )
     expect(manifest.scripts['dev:start']).toBe(
-      'node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --host 127.0.0.1 --port 4173',
+      'node scripts/profile/start.mjs --configuration development --dsh-home .local/dsh/development --dsh-executable "$PWD/node_modules/.bin/dsh" --host 127.0.0.1 --port 4173',
     )
     expect(manifest.scripts['deploy:preflight']).toBe('node scripts/deploy/cli.mjs preflight')
     expect(manifest.scripts['deploy:install']).toBe('node scripts/deploy/cli.mjs install')
