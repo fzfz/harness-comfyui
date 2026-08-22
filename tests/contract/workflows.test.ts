@@ -32,10 +32,14 @@ function expectCommonRuntimeSetup(source: string) {
   expect(source).toContain('actions/setup-node@v4');
   expect(source).toContain('node-version-file: .node-version');
   expect(source).not.toMatch(/node-version:\s*['"]?\d/u);
+  expect(source).toContain('corepack enable');
   expect(source).toContain('corepack prepare pnpm@11.7.0 --activate');
-  expect(commandIndex(source, 'corepack prepare pnpm@11.7.0 --activate')).toBeGreaterThan(
-    source.indexOf('uses: actions/setup-node@v4'),
-  );
+  const setupNode = source.indexOf('uses: actions/setup-node@v4');
+  const enableCorepack = commandIndex(source, 'corepack enable');
+  const preparePnpm = commandIndex(source, 'corepack prepare pnpm@11.7.0 --activate');
+  expect(enableCorepack).toBeGreaterThan(setupNode);
+  expect(preparePnpm).toBeGreaterThan(enableCorepack);
+  expect(commandIndex(source, 'pnpm run check:manifest-lock')).toBeGreaterThan(preparePnpm);
   expect(source).not.toContain('cache: pnpm');
   expect(source).not.toMatch(/secrets\./i);
 }
