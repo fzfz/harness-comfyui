@@ -522,7 +522,8 @@ describe('installed upgrade CLI', () => {
     expect(readyLines.at(-1)).toMatch(/^0\.1\.0-test\.1:/u)
     const recoveredState = await waitForState(join(fixture.installation.root, 'state/active-release.json'), '0.1.0-test.1')
     expect(recoveredState.previousRelease).toBeNull()
-    expect(JSON.parse(await readFile(processPath, 'utf8')).activeVersion).toBe('0.1.0-test.1')
+    const recoveredProcessState = await waitForState(processPath, '0.1.0-test.1')
+    expect(recoveredProcessState.activeVersion).toBe('0.1.0-test.1')
     await waitForPassedHealth(fixture, '0.1.0-test.1')
     if ('failCandidateHealth' in options && options.failCandidateHealth) {
       const healthMetrics = JSON.parse(await readFile(fixture.metricsPath, 'utf8')) as { healthProbes: number }
