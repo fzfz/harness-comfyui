@@ -65,11 +65,17 @@ function recordCandidateEvidence(event) {
 async function patchStartModule(packageRoot: string, prelude: string, replacement: string): Promise<void> {
   const startPath = join(packageRoot, 'scripts/profile/start.mjs')
   let startSource = await readFile(startPath, 'utf8')
-  const spawnAnchor = '  return spawn(command, args, {'
-  if (!startSource.includes(spawnAnchor)) throw new Error('candidate fixture could not locate profile start spawn anchor')
+  const spawnAnchor = '  return spawn(command, dshArguments, {'
+  const spawnAnchorCount = startSource.split(spawnAnchor).length - 1
+  if (spawnAnchorCount !== 1) {
+    throw new Error(`candidate fixture profile start spawn anchor must occur exactly once; found ${spawnAnchorCount}`)
+  }
   const returnAnchor = '  })\n}\n\nexport function runForeground'
-  if (!startSource.includes(returnAnchor)) throw new Error('candidate fixture could not locate profile start return anchor')
-  startSource = `${prelude}${startSource.replace(spawnAnchor, '  const child = spawn(command, args, {').replace(
+  const returnAnchorCount = startSource.split(returnAnchor).length - 1
+  if (returnAnchorCount !== 1) {
+    throw new Error(`candidate fixture profile start return anchor must occur exactly once; found ${returnAnchorCount}`)
+  }
+  startSource = `${prelude}${startSource.replace(spawnAnchor, '  const child = spawn(command, dshArguments, {').replace(
     returnAnchor,
     replacement,
   )}`
