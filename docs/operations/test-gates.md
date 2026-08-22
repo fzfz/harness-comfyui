@@ -49,15 +49,15 @@ classifier 只有在每一个 changed path 都属于下面三个 fast-only 类�
 - 以 `docs/` 开头的路径；
 - 以 `prototype/` 或 `.planning/` 开头的路径。
 
-`classify-changes.mjs` 使用 `git diff --name-only --no-renames`，所以 Git rename 会拆成旧路径的 deleted entry 和新路径的 added entry。classifier 会分别检查两个路径：产品文件 rename 只要包含一个非 fast-only 路径就返回 `qualify=true`；纯 `docs/` 内 rename 会产生两个 `docs/` 路径，且在没有其他 changed path 时可以返回 `qualify=false`。该例外只适用于纯 fast-only 的 `docs/` rename，其他 rename 不适用。
+`classify-changes.mjs` 使用 `git diff --name-only --no-renames`，所以 Git rename 会拆成旧路径的 deleted entry 和新路径的 added entry，classifier 会分别检查两个路径。只要 changed paths 没有其他路径，并且每个路径都是精确的 `README.md` 或以 `docs/`、`prototype/`、`.planning/` 开头，classifier 就返回 `qualify=false`；该结论包括这三个目录内部的新增、修改、删除和 rename。目录内部 rename 产生的 deleted path 与 added path 仍然分别属于同一个 fast-only 目录。任一 rename 或 delete 涉及这三个目录和 `README.md` 之外的产品路径时，classifier 都返回 `qualify=true` 并要求 Artifact Qualification。
 
 所有其他分类结果都返回 `qualify=true`。classifier 对以下情况 fail closed，并要求 Artifact Qualification：
 
 - changed paths 为空；
 - `before` 或 `after` 缺失、格式无效、为全零 commit，或 Git diff 失败；
 - changed path 不属于 fast-only 类别的未知路径；
-- 已删除的产品文件路径，因为该路径不属于 fast-only 类别；
-- 产品文件 rename，因为 `--no-renames` 会把它拆成 deleted path 与 added path，只要其中一个路径不是 fast-only path 就必须 `qualify=true`；
+- 涉及 fast-only 类别之外产品路径的 delete；
+- 涉及 fast-only 类别之外产品路径的 rename，因为 `--no-renames` 会把它拆成 deleted path 与 added path，只要其中一个路径不是 fast-only path 就必须 `qualify=true`；
 - `workflow_dispatch`，因为该事件没有上游 `quality` job。
 
 当 classifier 返回 `qualify=true` 时，`ci.yml` 以当前 `github.sha` 调用 `.github/workflows/deploy.yml` 的 reusable workflow。当 classifier 返回 `qualify=false` 时，`ci.yml` 跳过 Artifact Qualification。
