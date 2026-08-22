@@ -36,10 +36,6 @@ function recordCandidateEvidence(event) {
   if (candidateEvidencePath === undefined) return
   appendFileSync(candidateEvidencePath, JSON.stringify({ event, pid: process.pid }) + '\\n', 'utf8')
 }
-if (process.env.HARNESS_TEST_CANDIDATE_MODE === 'start') {
-  recordCandidateEvidence('candidate-start-failure')
-  throw new Error('candidate-only start failure')
-}
 `
 }
 
@@ -80,6 +76,26 @@ async function patchStartModule(packageRoot: string, prelude: string, replacemen
   await writeFile(startPath, startSource, 'utf8')
 }
 
+async function patchStartFailureModule(packageRoot: string): Promise<void> {
+  const startPath = join(packageRoot, 'scripts/profile/start.mjs')
+  const startSource = await readFile(startPath, 'utf8')
+  const spawnForegroundAnchor = 'export function spawnForeground(options) {\n'
+  const anchorCount = startSource.split(spawnForegroundAnchor).length - 1
+  if (anchorCount !== 1) {
+    throw new Error(`candidate fixture profile start function anchor must occur exactly once; found ${anchorCount}`)
+  }
+  const injectedFunction = `${spawnForegroundAnchor}  if (process.env.HARNESS_TEST_CANDIDATE_MODE === 'start') {
+    recordCandidateEvidence('candidate-start-failure')
+    throw new Error('candidate-only start failure')
+  }
+`
+  await writeFile(
+    startPath,
+    `${candidateStartFailurePrelude()}${startSource.replace(spawnForegroundAnchor, injectedFunction)}`,
+    'utf8',
+  )
+}
+
 async function patchHealthModule(packageRoot: string): Promise<void> {
   const healthPath = join(packageRoot, 'scripts/deploy/health.mjs')
   let healthSource = await readFile(healthPath, 'utf8')
@@ -95,11 +111,7 @@ async function patchHealthModule(packageRoot: string): Promise<void> {
 async function patchCandidatePackage(packageRoot: string, mode: CandidateFailureMode): Promise<void> {
   if (mode === 'none') return
   if (mode === 'start') {
-    await patchStartModule(
-      packageRoot,
-      candidateStartFailurePrelude(),
-      "  })\n  return child\n}\n\nexport function runForeground",
-    )
+    await patchStartFailureModule(packageRoot)
     return
   }
   await patchStartModule(
