@@ -1,7 +1,7 @@
 import { createServer, type AddressInfo } from 'node:net'
 import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -87,12 +87,15 @@ async function createFixture() {
   await writeFile(join(packageRoot, 'deployment/runtime/pnpm-workspace.yaml'), await readFile(join(repositoryRoot, 'deployment/runtime/pnpm-workspace.yaml'), 'utf8'), 'utf8')
   await mkdir(join(packageRoot, 'lib'), { recursive: true })
   await copyFile(join(repositoryRoot, 'lib/config-profile-validator.js'), join(packageRoot, 'lib/config-profile-validator.js'))
-  await mkdir(join(packageRoot, 'config/profiles'), { recursive: true })
   for (const relativePath of [
     'config/base.json',
     'config/environment-overrides.json',
     'config/profiles/production.json',
+    'config/product-agent.json',
+    'agent-presets/harness-comfyui/preset.yml',
+    'agent-presets/harness-comfyui/agent.cordis.yml',
   ]) {
+    await mkdir(join(packageRoot, dirname(relativePath)), { recursive: true })
     await writeFile(join(packageRoot, relativePath), await readFile(join(repositoryRoot, relativePath), 'utf8'), 'utf8')
   }
   const tar = await runProcess('tar', ['-czf', tarballPath, '-C', root, 'package'])
@@ -189,12 +192,31 @@ describe('harness-comfyui preflight CLI', () => {
         port: fixture.installation.port,
       },
       artifact: { name: 'harness-comfyui', version: '0.1.0-test.1' },
+      productAgent: {
+        agentPresetId: 'harness-comfyui',
+        agentPresetArtifactRelativeRoot: 'agent-presets',
+        agentPresetInstallRelativeRoot: 'dsh-home/.agent-presets',
+        skillRelativeRoot: 'skills',
+      },
       source: {
         catalog: { contract_id: 'imagegen-source-contract', contract_version: 1 },
         source: { contract_id: 'imagegen-source-contract', contract_version: 1 },
       },
     })
     expect((await readFile(fixture.discoveryLog, 'utf8')).trim().split('\n')).toEqual(['catalog', 'source'])
+  })
+
+  it('requires the structured product Agent configuration before probing the installation', async () => {
+    const fixture = await createFixture()
+    await repackFixture(fixture, async packageRoot => {
+      await rm(join(packageRoot, 'config/product-agent.json'))
+    })
+
+    const result = await runPreflight(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/product-agent|config\/product-agent\.json/u)
+    expect(result.stderr).not.toContain('discovery CLI')
   })
 
   it('uses the packed runtime packageManager version as the pnpm compatibility contract', async () => {

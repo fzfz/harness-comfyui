@@ -7,8 +7,10 @@ import {
   lstat,
   mkdir,
   mkdtemp,
+  readdir,
   readFile,
   rename,
+  rmdir,
   rm,
   writeFile,
 } from 'node:fs/promises'
@@ -17,7 +19,7 @@ import { pathToFileURL } from 'node:url'
 import { delimiter, isAbsolute, join, resolve } from 'node:path'
 
 import { validateInstallation } from './contracts.mjs'
-import { PROFILE_VALIDATOR_ENTRY, runProductPreflight } from './preflight.mjs'
+import { PROFILE_VALIDATOR_ENTRY, readProductAgentConfig, runProductPreflight } from './preflight.mjs'
 import {
   RUNTIME_DEPENDENCY_POLICY,
   readPnpmPackageManagerVersion,
@@ -195,6 +197,80 @@ async function copyRuntimeFiles(packageRoot, runtimeRoot) {
   await writeFile(join(runtimeRoot, '.npmrc'), runtimeInstallNpmrc(), 'utf8')
 }
 
+async function assertExistingDirectory(path, description) {
+  let stats
+  try {
+    stats = await lstat(path)
+  } catch (error) {
+    if (error?.code === 'ENOENT') throw new Error(`${description} does not exist: ${path}`)
+    throw error
+  }
+  if (stats.isSymbolicLink()) throw new Error(`${description} must not be a symlink: ${path}`)
+  if (!stats.isDirectory()) throw new Error(`${description} must be a directory: ${path}`)
+  return stats
+}
+
+async function ensureDirectoryPath(root, relativePath, description) {
+  await assertExistingDirectory(root, `${description} root`)
+  let current = root
+  for (const segment of relativePath.split('/')) {
+    current = join(current, segment)
+    let stats
+    try {
+      stats = await lstat(current)
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+      await mkdir(current)
+      stats = await lstat(current)
+    }
+    if (stats.isSymbolicLink()) throw new Error(`${description} must not be a symlink: ${current}`)
+    if (!stats.isDirectory()) throw new Error(`${description} must be a directory: ${current}`)
+  }
+  return current
+}
+
+async function copyDirectoryContents(source, target, description) {
+  for (const entry of await readdir(source, { withFileTypes: true })) {
+    const sourcePath = join(source, entry.name)
+    const targetPath = join(target, entry.name)
+    const sourceStats = await lstat(sourcePath)
+    if (sourceStats.isSymbolicLink()) throw new Error(`${description} contains a symlink: ${sourcePath}`)
+    if (sourceStats.isDirectory()) {
+      await ensureDirectoryPath(target, entry.name, `${description} target`)
+      await copyDirectoryContents(sourcePath, targetPath, description)
+      continue
+    }
+    if (!sourceStats.isFile()) throw new Error(`${description} contains a non-regular entry: ${sourcePath}`)
+    try {
+      const targetStats = await lstat(targetPath)
+      if (targetStats.isSymbolicLink()) throw new Error(`${description} target must not be a symlink: ${targetPath}`)
+      if (!targetStats.isFile()) throw new Error(`${description} target must be a regular file: ${targetPath}`)
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+    }
+    await copyFile(sourcePath, targetPath)
+  }
+}
+
+export async function materializeProductAgentFiles(packageRoot, releaseRoot, productAgent) {
+  const skillTarget = await ensureDirectoryPath(packageRoot, productAgent.skillRelativeRoot, 'Skill target')
+  await assertExistingDirectory(
+    join(packageRoot, productAgent.agentPresetArtifactRelativeRoot, productAgent.agentPresetId),
+    'Preset artifact source',
+  )
+  const presetTarget = await ensureDirectoryPath(
+    releaseRoot,
+    `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`,
+    'Preset target',
+  )
+  await copyDirectoryContents(
+    join(packageRoot, productAgent.agentPresetArtifactRelativeRoot, productAgent.agentPresetId),
+    presetTarget,
+    'Preset artifact',
+  )
+  return { presetTarget, skillTarget }
+}
+
 async function runPnpmInstall(runtimeRoot, pnpmExecutable) {
   const result = await runExternal(pnpmExecutable, ['install', '--frozen-lockfile', '--prod'], {
     cwd: runtimeRoot,
@@ -263,7 +339,12 @@ async function stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable
     }
     const packedManifest = await readPackageManifest(extractedPackageRoot)
     if (packedManifest.version !== artifact.version) throw new Error('artifact package version changed during install')
+    const packedProductAgent = await readProductAgentConfig(extractedPackageRoot)
+    if (JSON.stringify(packedProductAgent) !== JSON.stringify(preflight.productAgent)) {
+      throw new Error('artifact config/product-agent.json changed during install')
+    }
     await validateRuntimeManifest(extractedPackageRoot, packedManifest, preflight.runtime.pnpm)
+    await materializeProductAgentFiles(extractedPackageRoot, stagingRoot, packedProductAgent)
     const runtimeRoot = join(stagingRoot, 'harness-runtime')
     await copyRuntimeFiles(extractedPackageRoot, runtimeRoot)
     await runPnpmInstall(runtimeRoot, pnpmExecutable)
@@ -273,6 +354,11 @@ async function stageReleaseFromPreflight(preflight, artifactPath, pnpmExecutable
   } catch (error) {
     await rm(stagingRoot, { recursive: true, force: true })
     await rm(releaseRoot, { recursive: true, force: true })
+    try {
+      await rmdir(releasesRoot)
+    } catch (cleanupError) {
+      if (cleanupError?.code !== 'ENOENT' && cleanupError?.code !== 'ENOTEMPTY') throw cleanupError
+    }
     throw error
   }
 }

@@ -56,6 +56,54 @@ function requireAbsolutePath(value, name) {
   return resolve(path);
 }
 
+function requireRelativePath(value, name) {
+  const path = requireString(value, name);
+  if (isAbsolute(path) || path.includes('\\') || path.startsWith('./') || path.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) {
+    throw new Error(`${name} must be a normalized package-relative path`);
+  }
+  return path;
+}
+
+export function parseProductAgentConfig(value, source = 'config/product-agent.json') {
+  const config = requireRecord(value, source);
+  const agentPresetId = requireString(config.agentPresetId, `${source}.agentPresetId`);
+  if (agentPresetId.includes('/') || agentPresetId.includes('\\')) {
+    throw new Error(`${source}.agentPresetId must be a single path segment`);
+  }
+  const parsed = {
+    agentPresetId,
+    agentPresetArtifactRelativeRoot: requireRelativePath(
+      config.agentPresetArtifactRelativeRoot,
+      `${source}.agentPresetArtifactRelativeRoot`,
+    ),
+    agentPresetInstallRelativeRoot: requireRelativePath(
+      config.agentPresetInstallRelativeRoot,
+      `${source}.agentPresetInstallRelativeRoot`,
+    ),
+    skillRelativeRoot: requireRelativePath(config.skillRelativeRoot, `${source}.skillRelativeRoot`),
+    agentPluginExport: requireString(config.agentPluginExport, `${source}.agentPluginExport`),
+    sessionListConvergenceTimeoutMs: config.sessionListConvergenceTimeoutMs,
+  };
+  if (!parsed.agentPluginExport.startsWith('./') || parsed.agentPluginExport.includes('\\')) {
+    throw new Error(`${source}.agentPluginExport must be a package-relative export`);
+  }
+  if (!Number.isInteger(parsed.sessionListConvergenceTimeoutMs) || parsed.sessionListConvergenceTimeoutMs <= 0) {
+    throw new Error(`${source}.sessionListConvergenceTimeoutMs must be a positive integer`);
+  }
+  return parsed;
+}
+
+export async function readProductAgentConfig(packageRoot) {
+  const path = join(packageRoot, 'config/product-agent.json');
+  let value;
+  try {
+    value = JSON.parse(await readFile(path, 'utf8'));
+  } catch (error) {
+    throw new Error(`cannot read ${path}: ${error.message}`);
+  }
+  return parseProductAgentConfig(value, path);
+}
+
 async function requireFile(path, name) {
   let stats;
   try {
@@ -596,6 +644,10 @@ export function validateDiscovery(value, name, installation) {
 export async function runProductPreflight(input, artifactPath, options = {}) {
   const installation = validateInstallation(input);
   const artifact = await readArtifactPackageJson(artifactPath);
+  const productAgent = parseProductAgentConfig(
+    await readArtifactJsonEntry(artifactPath, 'config/product-agent.json', 'product-agent configuration'),
+    'artifact package/config/product-agent.json',
+  );
   const runtimeClosure = await validateArtifactRuntime(artifactPath, artifact);
   const configuration = await validateArtifactConfiguration(artifactPath, installation);
   const pnpmVersion = await readPnpmVersion(runtimeClosure.packageManagerVersion);
@@ -631,6 +683,7 @@ export async function runProductPreflight(input, artifactPath, options = {}) {
     status: 'passed',
     installation,
     artifact,
+    productAgent,
     configuration: {
       profile: configuration.configurationProfile,
       server: configuration.server,

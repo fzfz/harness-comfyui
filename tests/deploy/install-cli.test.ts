@@ -98,7 +98,12 @@ async function findFreePort(): Promise<number> {
   return port
 }
 
-async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}) {
+async function createFixture({
+  symlinkEntry = false,
+  outsideEntry = false,
+  skillRoot = 'absent' as 'absent' | 'directory' | 'file' | 'symlink',
+  presetRoot = 'directory' as 'directory' | 'file' | 'symlink',
+} = {}) {
   const root = await mkdtemp(join(tmpdir(), 'harness-install-cli-'))
   temporaryRoots.push(root)
   const installationRoot = join(root, 'installation')
@@ -151,6 +156,22 @@ async function createFixture({ symlinkEntry = false, outsideEntry = false } = {}
     await copyFile(join(repositoryRoot, relativePath), target)
   }
   await writeFrozenRuntimeAndConfiguration(packageRoot)
+  if (skillRoot === 'directory') {
+    await mkdir(join(packageRoot, 'skills/comfyui-generate'), { recursive: true })
+    await writeFile(join(packageRoot, 'skills/comfyui-generate/SKILL.md'), '# fixture skill\n', 'utf8')
+  } else if (skillRoot === 'file') {
+    await writeFile(join(packageRoot, 'skills'), 'skill root must be a directory\n', 'utf8')
+  } else if (skillRoot === 'symlink') {
+    await symlink('/tmp/harness-install-skill-target', join(packageRoot, 'skills'))
+  }
+  if (presetRoot !== 'directory') {
+    await rm(join(packageRoot, 'agent-presets/harness-comfyui'), { recursive: true, force: true })
+    if (presetRoot === 'file') {
+      await writeFile(join(packageRoot, 'agent-presets/harness-comfyui'), 'preset root must be a directory\n', 'utf8')
+    } else {
+      await symlink('/tmp/harness-install-preset-target', join(packageRoot, 'agent-presets/harness-comfyui'))
+    }
+  }
   if (symlinkEntry) await symlink('/tmp/harness-install-outside', join(packageRoot, 'unsafe-link'))
   if (outsideEntry) await writeFile(join(root, 'outside-entry.txt'), 'outside\n', 'utf8')
 
@@ -328,11 +349,17 @@ describe('harness-comfyui install CLI', () => {
       'harness-runtime/pnpm-workspace.yaml',
       'harness-runtime/.npmrc',
       'harness-runtime/node_modules/.bin/dsh',
+      'dsh-home/.agent-presets/harness-comfyui/preset.yml',
+      'dsh-home/.agent-presets/harness-comfyui/agent.cordis.yml',
+      'package/skills',
       'dsh-home/profiles/comfyui-workbench/package.json',
       'dsh-home/profiles/comfyui-workbench/cordis.patch.yml',
       'dsh-home/profiles/comfyui-workbench/pnpm-workspace.yaml',
     ]) {
       await expect(lstat(join(releaseRoot, relativePath))).resolves.toBeDefined()
+    }
+    for (const relativePath of ['dsh-home/skills', '.dsh/skills', '.agents/skills']) {
+      await expect(lstat(join(releaseRoot, relativePath))).rejects.toMatchObject({ code: 'ENOENT' })
     }
     await expect(readFile(join(releaseRoot, 'harness-runtime/.npmrc'), 'utf8'))
       .resolves.toBe('strict-dep-builds=true\nstrict-peer-dependencies=true\n')
@@ -360,6 +387,42 @@ describe('harness-comfyui install CLI', () => {
     expect(stableHelp.status, stableHelp.stderr).toBe(0)
     expect(stableHelp.stdout).toContain('Commands:')
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }, 30_000)
+
+  it('preserves a real artifact Skill directory while materializing the missing Skill root', async () => {
+    const fixture = await createFixture({ skillRoot: 'directory' })
+
+    const result = await runInstall(fixture)
+
+    expect(result.status, result.stderr || result.stdout).toBe(0)
+    const releaseRoot = join(fixture.installation.root, 'releases/0.1.0-test.1')
+    expect(await readFile(join(releaseRoot, 'package/skills/comfyui-generate/SKILL.md'), 'utf8')).toBe('# fixture skill\n')
+  }, 30_000)
+
+  it.each([
+    ['Skill', { skillRoot: 'file' as const }, /Skill target must be a directory/u],
+    ['Preset', { presetRoot: 'file' as const }, /Preset artifact source must be a directory/u],
+  ])('rejects a non-directory %s target before committing a release', async (_name, options, message) => {
+    const fixture = await createFixture(options)
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(message)
+    await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }, 30_000)
+
+  it.each([
+    ['Skill', { skillRoot: 'symlink' as const }],
+    ['Preset', { presetRoot: 'symlink' as const }],
+  ])('rejects a symlink %s source before committing a release', async (_name, options) => {
+    const fixture = await createFixture(options)
+
+    const result = await runInstall(fixture)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toMatch(/symlink|unsafe tar/u)
+    await expect(lstat(join(fixture.installation.root, 'releases'))).rejects.toMatchObject({ code: 'ENOENT' })
   }, 30_000)
 
   it('rejects a duplicate release version without replacing the first release', async () => {

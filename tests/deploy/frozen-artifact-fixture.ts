@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 
@@ -10,13 +10,15 @@ const frozenEntries = [
   'config/base.json',
   'config/environment-overrides.json',
   'config/profiles/production.json',
+  'config/product-agent.json',
+  'agent-presets/harness-comfyui/preset.yml',
+  'agent-presets/harness-comfyui/agent.cordis.yml',
 ] as const
 
 /** Populate a synthetic package with the same runtime/config evidence preflight requires. */
 export async function writeFrozenRuntimeAndConfiguration(packageRoot: string): Promise<void> {
-  await mkdir(join(packageRoot, 'deployment/runtime'), { recursive: true })
-  await mkdir(join(packageRoot, 'config/profiles'), { recursive: true })
   await Promise.all(frozenEntries.map(async relativePath => {
+    await mkdir(join(packageRoot, dirname(relativePath)), { recursive: true })
     await writeFile(
       join(packageRoot, relativePath),
       await readFile(join(repositoryRoot, relativePath), 'utf8'),
