@@ -128,8 +128,30 @@ describe('built Client bundle boundary', () => {
     )
     expect(resolvedSources).not.toContain(join(root, 'lib', 'typert.remote-client.js'))
 
+    const createDomElement = () => {
+      const values = new Map<string, string>()
+      const attributes = new Map<string, string>()
+      return {
+        style: {
+          getPropertyPriority: () => '',
+          getPropertyValue: (name: string) => values.get(name) ?? '',
+          removeProperty: (name: string) => values.delete(name),
+          setProperty: (name: string, value: string) => {
+            values.set(name, value)
+          },
+        },
+        getAttribute: (name: string) => attributes.get(name) ?? null,
+        hasAttribute: (name: string) => attributes.has(name),
+        removeAttribute: (name: string) => attributes.delete(name),
+        setAttribute: (name: string, value: string) => {
+          attributes.set(name, value)
+        },
+      }
+    }
     const styleElements: Array<{ dataset: Record<string, string>; textContent: string }> = []
     const document = {
+      documentElement: createDomElement(),
+      body: createDomElement(),
       head: {
         appendChild(element: (typeof styleElements)[number]) {
           styleElements.push(element)
@@ -188,7 +210,9 @@ describe('built Client bundle boundary', () => {
       },
     })
     const sessionsDisposer = ctx.provide('sessions', {})
-    const themeDisposer = ctx.provide('theme', {})
+    const themeDisposer = ctx.provide('theme', {
+      getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }),
+    })
     const inputTriggersDisposer = ctx.provide('inputTriggers', {})
     const clientFiber = ctx.plugin(plugin)
     await clientFiber
@@ -262,6 +286,8 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entries('root')).toHaveLength(0)
     expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
     expect(ctx.reflect.get('layout')).toBeUndefined()
+    expect(document.documentElement.style.getPropertyValue('color-scheme')).toBe('')
+    expect(document.body.hasAttribute('data-ds-dark-theme')).toBe(false)
     expect(remoteUnmountCount).toBe(1)
     inputTriggersDisposer()
     themeDisposer()

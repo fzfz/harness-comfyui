@@ -7,6 +7,7 @@ import harnessComfyuiRemote from 'harness-comfyui/remote'
 
 import { LayoutController } from './workbench/layout-contract.ts'
 import { createWorkbenchRoot } from './workbench/root.tsx'
+import { installThemeProjection } from './workbench/theme-projection.ts'
 
 export const name = 'harness-comfyui'
 export const inject = ['slots', 'sessions', 'remote', 'theme', 'inputTriggers'] as const
@@ -35,16 +36,29 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     throw error
   }
 
+  let disposeService: () => Promise<void>
   try {
-    const disposeService = ctx.reflect.provide('layout', layoutService)
-    return async () => {
-      await disposeService()
-      disposeRoot()
-      await remoteUnmount()
-    }
+    disposeService = ctx.reflect.provide('layout', layoutService)
   } catch (error) {
     disposeRoot()
     await remoteUnmount()
     throw error
+  }
+
+  let disposeTheme: () => void
+  try {
+    disposeTheme = installThemeProjection(ctx)
+  } catch (error) {
+    await disposeService()
+    disposeRoot()
+    await remoteUnmount()
+    throw error
+  }
+
+  return async () => {
+    disposeTheme()
+    await disposeService()
+    disposeRoot()
+    await remoteUnmount()
   }
 }

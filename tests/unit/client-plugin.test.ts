@@ -1,5 +1,5 @@
 import { Context } from '@deepseek-ai/cordis'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { harnessComfyuiRemote } = vi.hoisted(() => ({
   harnessComfyuiRemote: { package: 'harness-comfyui', descriptors: [] },
@@ -14,10 +14,48 @@ vi.mock('harness-comfyui/remote', () => ({
 
 import { apply, inject } from '../../src/client/index.tsx'
 
-afterEach(() => vi.restoreAllMocks())
+function createTestDocument() {
+  const createStyle = () => {
+    const values = new Map<string, string>()
+    return {
+      getPropertyPriority: () => '',
+      getPropertyValue: (name: string) => values.get(name) ?? '',
+      removeProperty: (name: string) => values.delete(name),
+      setProperty: (name: string, value: string) => {
+        values.set(name, value)
+      },
+    }
+  }
+  const createElement = () => {
+    const attributes = new Map<string, string>()
+    return {
+      style: createStyle(),
+      getAttribute: (name: string) => attributes.get(name) ?? null,
+      hasAttribute: (name: string) => attributes.has(name),
+      removeAttribute: (name: string) => attributes.delete(name),
+      setAttribute: (name: string, value: string) => {
+        attributes.set(name, value)
+      },
+    }
+  }
+  return { documentElement: createElement(), body: createElement() }
+}
+
+beforeEach(() => {
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: createTestDocument(),
+  })
+})
+
+afterEach(() => {
+  Reflect.deleteProperty(globalThis, 'document')
+  vi.restoreAllMocks()
+})
 
 function createContext(options: { mountError?: Error } = {}) {
   const events: string[] = []
+  const themeSnapshot = { active: { colorScheme: 'light' as const, tokens: {} } }
   const unmount = vi.fn(async () => undefined)
   const mount = vi.fn(async (_contribution: unknown) => {
     events.push('remote:mount')
@@ -39,16 +77,30 @@ function createContext(options: { mountError?: Error } = {}) {
       events.push('layout:dispose')
     }
   })
+  const getTheme = vi.fn(() => {
+    events.push('theme:get')
+    return themeSnapshot
+  })
+  const on = vi.fn((_event: string, _listener: (snapshot: typeof themeSnapshot) => void) => {
+    events.push('theme:subscribe')
+    return () => {
+      events.push('theme:unsubscribe')
+    }
+  })
   return {
     context: {
       remote: { $mount: mount },
       slots: { register },
       reflect: { provide },
+      theme: { getTheme },
+      on,
     },
     mount,
     unmount,
     register,
     provide,
+    getTheme,
+    on,
     events,
   }
 }
@@ -71,6 +123,8 @@ describe('Client plugin Host projection', () => {
         ? { $mount: mount }
         : service === 'slots'
           ? { register }
+          : service === 'theme'
+            ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
           : {}
       disposers.push(ctx.provide(service, value))
     }
@@ -82,6 +136,8 @@ describe('Client plugin Host projection', () => {
       ? { $mount: mount }
       : missingService === 'slots'
         ? { register }
+        : missingService === 'theme'
+          ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
         : {}
     disposers.push(ctx.provide(missingService, value))
     await fiber
@@ -103,6 +159,8 @@ describe('Client plugin Host projection', () => {
       'remote:mount',
       'root:register',
       'layout:provide',
+      'theme:get',
+      'theme:subscribe',
     ])
     expect(fixture.register).toHaveBeenCalledOnce()
     expect(fixture.register).toHaveBeenCalledWith(
@@ -125,6 +183,9 @@ describe('Client plugin Host projection', () => {
       'remote:mount',
       'root:register',
       'layout:provide',
+      'theme:get',
+      'theme:subscribe',
+      'theme:unsubscribe',
       'layout:dispose',
       'root:dispose',
       'remote:unmount',
