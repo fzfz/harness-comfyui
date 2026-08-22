@@ -307,6 +307,29 @@ describe('profile CLI seams', () => {
     }
   })
 
+  it('rejects a relative dsh executable before PATH resolution', async () => {
+    const root = createTemporaryDirectory('start-absolute-executable-required')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    try {
+      const result = await runNodeScript(startScript, [
+        '--configuration', 'test',
+        '--dsh-home', join(root, 'target-home'),
+        '--dsh-executable', 'pnpm',
+        '--host', '127.0.0.1',
+        '--port', '4311',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'exit'),
+        FAKE_PNPM_EXIT_CODE: '0',
+      })
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('--dsh-executable must be an absolute path')
+      expect(existsSync(recordPath)).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('starts the foreground dsh process with explicit configuration and forwards its exit code', async () => {
     const root = createTemporaryDirectory('start-exit')
     const targetHome = join(root, 'target-home')
