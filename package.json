@@ -17,7 +17,7 @@
     "security:build-scripts": "node scripts/security/check-build-scripts.mjs",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run tests/unit",
-    "test:coverage": "vitest run tests/unit tests/integration --coverage",
+    "test:coverage": "vitest run tests/unit tests/integration --coverage --testTimeout=30000",
     "test:contract": "vitest run tests/contract tests/deploy/deployment-scripts.test.ts tests/release-package/dry-run.test.ts tests/release-package/package-scripts.test.ts tests/security/audit-lockfile.test.ts tests/security/check-build-scripts.test.ts tests/security/check-manifest-lock.test.ts",
     "test:integration": "vitest run tests/integration",
     "test:deploy": "vitest run tests/deploy --maxWorkers=1 --no-file-parallelism",

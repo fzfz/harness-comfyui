@@ -153,7 +153,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
     )
     expect(scripts['test:coverage']).toBe(
-      'vitest run tests/unit tests/integration --coverage',
+      'vitest run tests/unit tests/integration --coverage --testTimeout=30000',
     )
     expect(scripts['quality:fast']).toBe(
       'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:prototype && pnpm run build',
