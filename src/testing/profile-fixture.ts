@@ -571,12 +571,20 @@ class ProfileFixtureImpl implements ProfileFixture {
     const requiredSuccessfulResults = [this.startResultPromise, this.restartResultPromise].filter(
       (promise): promise is Promise<CommandResult> => promise !== undefined,
     )
+    let lifecycleFailure: Error | undefined
     if (lifecycleResults.length > 0) {
       const results = await Promise.all(lifecycleResults)
       for (const [index, lifecycleResult] of results.entries()) {
         if (!requiredSuccessfulResults.includes(lifecycleResults[index]!)) continue
         if (lifecycleResult.code !== 0 || lifecycleResult.signal !== null) {
-          throw new Error(`product CLI lifecycle command ${index + 1} exited with ${lifecycleResult.code ?? lifecycleResult.signal}`)
+          const output = [
+            lifecycleResult.stderr.trim() ? `stderr: ${lifecycleResult.stderr.trim()}` : '',
+            lifecycleResult.stdout.trim() ? `stdout: ${lifecycleResult.stdout.trim()}` : '',
+          ].filter(Boolean).join('\n')
+          lifecycleFailure = new Error(
+            `product CLI lifecycle command ${index + 1} exited with ${lifecycleResult.code ?? lifecycleResult.signal}${output ? `\n${output}` : ''}`,
+          )
+          break
         }
       }
       const firstResult = results[0]
@@ -599,6 +607,7 @@ class ProfileFixtureImpl implements ProfileFixture {
     this.cleanupEvidence.processStateRemoved = true
     this.cleanupEvidence.portReleased = await this.waitForPortReleased()
     this.stopped = true
+    if (lifecycleFailure !== undefined) throw lifecycleFailure
   }
 
   private async waitForPortReleased(): Promise<boolean> {

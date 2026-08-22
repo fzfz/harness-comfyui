@@ -71,7 +71,7 @@ export async function runProductStart(input, operation = {}) {
   } catch (error) {
     process.removeListener('SIGINT', onSigInt)
     process.removeListener('SIGTERM', onSigTerm)
-    if (child.exitCode === null) {
+    if (child.exitCode === null && child.signalCode === null) {
       forwardSignal(child, 'SIGTERM')
       await waitForChildClose(child)
     }
@@ -97,15 +97,16 @@ export async function runProductStart(input, operation = {}) {
   try {
     await writeAtomicJson(statePath, state)
     stateWritten = true
-    const exit = child.exitCode !== null
+    const exit = child.exitCode !== null || child.signalCode !== null
       ? { code: child.exitCode, signal: child.signalCode }
       : await new Promise(resolveResult => {
-        child.once('close', (code, signal) => resolveResult({ code: code ?? 1, signal }))
+        child.once('close', (code, signal) => resolveResult({ code, signal }))
         child.once('error', error => resolveResult({ code: 1, signal: null, error }))
       })
     await closeLogs()
     if (exit.error !== undefined) throw exit.error
-    if (exit.code !== 0) {
+    const stoppedBySigTerm = exit.code === null && exit.signal === 'SIGTERM'
+    if (!stoppedBySigTerm && (exit.code !== 0 || exit.signal !== null)) {
       throw new Error(`Host exited with code ${exit.code}${exit.signal ? ` (${exit.signal})` : ''}`)
     }
     await removeOwnedProcessState(statePath, state)
@@ -122,7 +123,7 @@ export async function runProductStart(input, operation = {}) {
       signal: forwardedSignal,
     }
   } catch (error) {
-    if (child.exitCode === null) {
+    if (child.exitCode === null && child.signalCode === null) {
       forwardSignal(child, 'SIGTERM')
       await waitForChildClose(child)
     }
