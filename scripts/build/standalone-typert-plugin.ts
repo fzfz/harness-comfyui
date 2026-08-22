@@ -2,6 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } f
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { TsdownPlugin } from 'tsdown'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const defaultWorkspaceRoot = join(repositoryRoot, '.local', 'typert-workspace')
@@ -147,7 +148,7 @@ function copyGeneratedArtifacts(workspace: ReturnType<typeof resolveWorkspace>):
  */
 export function standaloneTypertWorkspacePlugin(
   options: StandaloneTypertWorkspaceOptions = {},
-): Record<string, unknown> {
+): TsdownPlugin {
   const workspace = resolveWorkspace(options)
   return {
     name: 'harness-comfyui-standalone-typert-workspace',
