@@ -33,13 +33,17 @@ function expectCommonRuntimeSetup(source: string) {
   expect(source).toContain('node-version-file: .node-version');
   expect(source).not.toMatch(/node-version:\s*['"]?\d/u);
   expect(source).toContain('corepack enable');
-  expect(source).toContain('corepack prepare pnpm@11.7.0 --activate');
+  expect(source).toContain('corepack install --global pnpm@11.7.0');
+  expect(source).toContain('test "$(pnpm --version)" = "11.7.0"');
   const setupNode = source.indexOf('uses: actions/setup-node@v4');
   const enableCorepack = commandIndex(source, 'corepack enable');
-  const preparePnpm = commandIndex(source, 'corepack prepare pnpm@11.7.0 --activate');
+  const installPnpm = commandIndex(source, 'corepack install --global pnpm@11.7.0');
+  const verifyPnpm = commandIndex(source, 'test "$(pnpm --version)" = "11.7.0"');
   expect(enableCorepack).toBeGreaterThan(setupNode);
-  expect(preparePnpm).toBeGreaterThan(enableCorepack);
-  expect(commandIndex(source, 'pnpm run check:manifest-lock')).toBeGreaterThan(preparePnpm);
+  expect(installPnpm).toBeGreaterThan(enableCorepack);
+  expect(verifyPnpm).toBeGreaterThan(installPnpm);
+  expect(commandIndex(source, 'pnpm run check:manifest-lock')).toBeGreaterThan(verifyPnpm);
+  expect(source).not.toContain('corepack prepare');
   expect(source).not.toContain('cache: pnpm');
   expect(source).not.toMatch(/secrets\./i);
 }
