@@ -127,15 +127,35 @@ async function waitForRecord(recordPath: string): Promise<void> {
 
 describe('profile CLI seams', () => {
   it.each([
-    ['--configuration', ['--dsh-home', '/tmp/dsh', '--package-spec', '.']],
-    ['--dsh-home', ['--configuration', 'development', '--package-spec', '.']],
-    ['--package-spec', ['--configuration', 'development', '--dsh-home', '/tmp/dsh']],
+    ['--configuration', ['--dsh-home', '/tmp/dsh', '--package-spec', '.', '--dsh-executable', '/tmp/dsh-bin', '--pnpm-executable', '/tmp/pnpm-bin']],
+    ['--dsh-home', ['--configuration', 'development', '--package-spec', '.', '--dsh-executable', '/tmp/dsh-bin', '--pnpm-executable', '/tmp/pnpm-bin']],
+    ['--package-spec', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--dsh-executable', '/tmp/dsh-bin', '--pnpm-executable', '/tmp/pnpm-bin']],
+    ['--dsh-executable', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--package-spec', '.', '--pnpm-executable', '/tmp/pnpm-bin']],
+    ['--pnpm-executable', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--package-spec', '.', '--dsh-executable', '/tmp/dsh-bin']],
   ] as const)('materialize requires %s', async (missingFlag, args) => {
     const root = createTemporaryDirectory('required-materialize')
     try {
       const result = await runNodeScript(materializeScript, args, process.env)
       expect(result.code).not.toBe(0)
       expect(result.stderr).toContain(missingFlag)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an implicit pnpm exec dsh materialization command', async () => {
+    const root = createTemporaryDirectory('materialize-explicit-executables')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    try {
+      const result = await runNodeScript(materializeScript, [
+        '--configuration', 'development',
+        '--dsh-home', join(root, 'target-home'),
+        '--package-spec', '.',
+      ], commandEnvironment(binDirectory, recordPath, 'materialize'))
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('missing required argument --dsh-executable')
+      expect(existsSync(recordPath)).toBe(false)
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -151,11 +171,14 @@ describe('profile CLI seams', () => {
     mkdirSync(join(defaultHome, 'profiles', 'comfyui-workbench'), { recursive: true })
     writeFileSync(defaultManifestPath, '{"sentinel":true}\n', 'utf8')
     const binDirectory = writeFakePnpm(root)
+    const explicitExecutable = join(binDirectory, 'pnpm')
     try {
       const result = await runNodeScript(materializeScript, [
         '--configuration', 'development',
         '--dsh-home', targetHome,
         '--package-spec', '.',
+        '--dsh-executable', explicitExecutable,
+        '--pnpm-executable', explicitExecutable,
       ], {
         ...commandEnvironment(binDirectory, recordPath, 'materialize'),
         HOME: homeRoot,
@@ -182,7 +205,7 @@ describe('profile CLI seams', () => {
       const [launch] = readRecords(recordPath)
       expect(launch).toMatchObject({
         event: 'spawn',
-        argv: ['exec', 'dsh', 'plugin', '--profile', 'comfyui-workbench', 'add', '.'],
+        argv: ['plugin', '--profile', 'comfyui-workbench', 'add', '.'],
         cwd: repositoryRoot,
         dshHome: targetHome,
       })
@@ -202,11 +225,14 @@ describe('profile CLI seams', () => {
     mkdirSync(join(defaultHome, 'profiles', 'comfyui-workbench'), { recursive: true })
     writeFileSync(defaultManifestPath, '{"sentinel":true}\n', 'utf8')
     const binDirectory = writeFakePnpm(root)
+    const explicitExecutable = join(binDirectory, 'pnpm')
     try {
       const result = await runNodeScript(materializeScript, [
         '--configuration', 'development',
         '--dsh-home', targetHome,
         '--package-spec', '.',
+        '--dsh-executable', explicitExecutable,
+        '--pnpm-executable', explicitExecutable,
       ], {
         ...commandEnvironment(binDirectory, recordPath, 'pollute-default'),
         FAKE_DSH_DEFAULT_MANIFEST: defaultManifestPath,
@@ -226,11 +252,14 @@ describe('profile CLI seams', () => {
     const defaultHome = join(homeRoot, '.dsh')
     const recordPath = join(root, 'pnpm-record.jsonl')
     const binDirectory = writeFakePnpm(root)
+    const explicitExecutable = join(binDirectory, 'pnpm')
     try {
       const result = await runNodeScript(materializeScript, [
         '--configuration', 'development',
         '--dsh-home', defaultHome,
         '--package-spec', '.',
+        '--dsh-executable', explicitExecutable,
+        '--pnpm-executable', explicitExecutable,
       ], {
         ...commandEnvironment(binDirectory, recordPath, 'materialize'),
         HOME: homeRoot,
@@ -245,14 +274,60 @@ describe('profile CLI seams', () => {
   })
 
   it.each([
-    ['--configuration', ['--dsh-home', '/tmp/dsh', '--host', '127.0.0.1', '--port', '4173']],
-    ['--dsh-home', ['--configuration', 'development', '--host', '127.0.0.1', '--port', '4173']],
-    ['--host', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--port', '4173']],
-    ['--port', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--host', '127.0.0.1']],
+    ['--configuration', ['--dsh-home', '/tmp/dsh', '--dsh-executable', '/tmp/dsh-bin', '--host', '127.0.0.1', '--port', '4173']],
+    ['--dsh-home', ['--configuration', 'development', '--dsh-executable', '/tmp/dsh-bin', '--host', '127.0.0.1', '--port', '4173']],
+    ['--dsh-executable', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--host', '127.0.0.1', '--port', '4173']],
+    ['--host', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--dsh-executable', '/tmp/dsh-bin', '--port', '4173']],
+    ['--port', ['--configuration', 'development', '--dsh-home', '/tmp/dsh', '--dsh-executable', '/tmp/dsh-bin', '--host', '127.0.0.1']],
   ] as const)('start requires %s', async (missingFlag, args) => {
     const result = await runNodeScript(startScript, args, process.env)
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain(missingFlag)
+  })
+
+  it('rejects an implicit pnpm exec dsh start command', async () => {
+    const root = createTemporaryDirectory('start-explicit-executable-required')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    try {
+      const result = await runNodeScript(startScript, [
+        '--configuration', 'test',
+        '--dsh-home', join(root, 'target-home'),
+        '--host', '127.0.0.1',
+        '--port', '4311',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'exit'),
+        FAKE_PNPM_EXIT_CODE: '0',
+      })
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('missing required argument --dsh-executable')
+      expect(existsSync(recordPath)).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a relative dsh executable before PATH resolution', async () => {
+    const root = createTemporaryDirectory('start-absolute-executable-required')
+    const recordPath = join(root, 'pnpm-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    try {
+      const result = await runNodeScript(startScript, [
+        '--configuration', 'test',
+        '--dsh-home', join(root, 'target-home'),
+        '--dsh-executable', 'pnpm',
+        '--host', '127.0.0.1',
+        '--port', '4311',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'exit'),
+        FAKE_PNPM_EXIT_CODE: '0',
+      })
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('--dsh-executable must be an absolute path')
+      expect(existsSync(recordPath)).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('starts the foreground dsh process with explicit configuration and forwards its exit code', async () => {
@@ -260,10 +335,12 @@ describe('profile CLI seams', () => {
     const targetHome = join(root, 'target-home')
     const recordPath = join(root, 'pnpm-record.jsonl')
     const binDirectory = writeFakePnpm(root)
+    const dshExecutable = join(binDirectory, 'pnpm')
     try {
       const result = await runNodeScript(startScript, [
         '--configuration', 'test',
         '--dsh-home', targetHome,
+        '--dsh-executable', dshExecutable,
         '--host', '127.0.0.1',
         '--port', '4311',
       ], {
@@ -272,11 +349,42 @@ describe('profile CLI seams', () => {
       })
       expect(result.code).toBe(37)
       expect(readRecords(recordPath)[0]).toMatchObject({
-        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311'],
+        argv: ['--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311', '--no-open'],
         cwd: repositoryRoot,
         dshHome: targetHome,
         configuration: 'test',
       })
+      expect(readRecords(recordPath)[0].argv?.filter(argument => argument === '--no-open')).toHaveLength(1)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('passes --no-open exactly once to an explicit dsh executable', async () => {
+    const root = createTemporaryDirectory('start-explicit-executable')
+    const targetHome = join(root, 'target-home')
+    const recordPath = join(root, 'dsh-record.jsonl')
+    const binDirectory = writeFakePnpm(root)
+    const dshExecutable = join(binDirectory, 'pnpm')
+    try {
+      const result = await runNodeScript(startScript, [
+        '--configuration', 'test',
+        '--dsh-home', targetHome,
+        '--dsh-executable', dshExecutable,
+        '--host', '127.0.0.1',
+        '--port', '4311',
+      ], {
+        ...commandEnvironment(binDirectory, recordPath, 'exit'),
+        FAKE_PNPM_EXIT_CODE: '0',
+      })
+      expect(result.code).toBe(0)
+      const [launch] = readRecords(recordPath)
+      expect(launch.argv).toEqual([
+        '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311', '--no-open',
+      ])
+      expect(launch.argv?.filter(argument => argument === '--no-open')).toHaveLength(1)
+      expect(launch.dshHome).toBe(targetHome)
+      expect(launch.configuration).toBe('test')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -288,11 +396,13 @@ describe('profile CLI seams', () => {
     const runtimeCwd = join(root, 'runtime-cwd')
     const recordPath = join(root, 'pnpm-record.jsonl')
     const binDirectory = writeFakePnpm(root)
+    const dshExecutable = join(binDirectory, 'pnpm')
     mkdirSync(runtimeCwd)
     try {
       const result = await runNodeScript(startScript, [
         '--configuration', 'test',
         '--dsh-home', targetHome,
+        '--dsh-executable', dshExecutable,
         '--host', '127.0.0.1',
         '--port', '4311',
       ], {
@@ -301,7 +411,7 @@ describe('profile CLI seams', () => {
       }, runtimeCwd)
       expect(result.code).toBe(0)
       expect(readRecords(recordPath)[0]).toMatchObject({
-        argv: ['exec', 'dsh', '--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311'],
+        argv: ['--profile', 'comfyui-workbench', '--host', '127.0.0.1', '--port', '4311', '--no-open'],
         cwd: realpathSync(runtimeCwd),
         dshHome: targetHome,
         configuration: 'test',
@@ -316,9 +426,11 @@ describe('profile CLI seams', () => {
     const targetHome = join(root, 'target-home')
     const recordPath = join(root, 'pnpm-record.jsonl')
     const binDirectory = writeFakePnpm(root)
+    const dshExecutable = join(binDirectory, 'pnpm')
     const child = spawn(process.execPath, [startScript,
       '--configuration', 'release-smoke',
       '--dsh-home', targetHome,
+      '--dsh-executable', dshExecutable,
       '--host', '127.0.0.1',
       '--port', '0',
     ], {

@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -58,12 +58,19 @@ describe('built Client bundle boundary', () => {
     await Promise.all(temporaryDirectories.splice(0).map(path => rm(path, { recursive: true, force: true })))
   })
 
-  it('loads through ModuleLoader and keeps the details replacement unloadable', async () => {
+  it('loads through ModuleLoader, mounts the generated Remote, and leaves native slots unchanged', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'harness-comfyui-built-client-'))
     temporaryDirectories.push(directory)
     const output = join(directory, 'lib', 'client.js')
+    const generatedEntry = join(directory, 'client-entry.ts')
+    await writeFile(generatedEntry, [
+      `import { apply, inject, name } from ${JSON.stringify(join(root, 'src/client/index.tsx'))}`,
+      '',
+      'export { apply, inject, name }',
+      '',
+    ].join('\n'), 'utf8')
     await buildClientBundle({
-      entry: join(root, 'src/client/index.tsx'),
+      entry: generatedEntry,
       css: join(root, 'src/client/styles.css'),
       output,
     })
@@ -105,13 +112,22 @@ describe('built Client bundle boundary', () => {
     expect(styleElements).toHaveLength(1)
     expect(styleElements[0]?.dataset.plugin).toBe('harness-comfyui')
     expect(styleElements[0]?.textContent).toBe(await readFile(join(root, 'src/client/styles.css'), 'utf8'))
-    expect(plugin).toMatchObject({ name: 'harness-comfyui', inject: ['slots', 'remote'] })
+    expect(plugin).toMatchObject({ name: 'harness-comfyui', inject: ['remote'] })
     expect(plugin?.apply).toBeTypeOf('function')
 
     const SlotRegistry = runtimeExports.SlotRegistry
     const ctx = new Context()
     await ctx.plugin(SlotRegistry)
-    const remoteDisposer = ctx.provide('remote', {})
+    const mountedContributions: unknown[] = []
+    let remoteUnmountCount = 0
+    const remoteDisposer = ctx.provide('remote', {
+      $mount: async (contribution: unknown) => {
+        mountedContributions.push(contribution)
+        return async () => {
+          remoteUnmountCount += 1
+        }
+      },
+    })
     const rootDisposer = ctx.slots.register(
       {
         name: 'root',
@@ -128,8 +144,12 @@ describe('built Client bundle boundary', () => {
     const clientFiber = ctx.plugin(plugin)
     await clientFiber
 
-    expect(ctx.slots.entries('details').map(entry => entry.options.priority)).toEqual([-10, 0])
-    expect(ctx.slots.entriesOfSlot('details')[0]?.options.priority).toBe(-10)
+    expect(mountedContributions).toHaveLength(1)
+    expect(mountedContributions[0]).toMatchObject({ package: 'harness-comfyui' })
+    expect((mountedContributions[0] as { descriptors: Array<{ service: string; method: string }> }).descriptors)
+      .toContainEqual(expect.objectContaining({ service: 'pluginStatus', method: 'get' }))
+    expect(ctx.slots.entries('details')).toHaveLength(1)
+    expect(ctx.slots.entriesOfSlot('details')[0]?.options.priority).toBe(0)
     expect(ctx.slots.entries('root')).toHaveLength(1)
     expect(ctx.slots.entries('sidebar')).toHaveLength(0)
     expect(ctx.slots.entries('conversation')).toHaveLength(0)
@@ -137,6 +157,7 @@ describe('built Client bundle boundary', () => {
     await clientFiber.dispose()
     expect(ctx.slots.entries('details')).toHaveLength(1)
     expect(ctx.slots.entriesOfSlot('details')[0]?.options.priority).toBe(0)
+    expect(remoteUnmountCount).toBe(1)
     nativeDetailsDisposer()
     rootDisposer()
     await remoteDisposer()

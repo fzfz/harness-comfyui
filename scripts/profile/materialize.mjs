@@ -1,7 +1,7 @@
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -22,7 +22,7 @@ function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index]
     if (!flag.startsWith('--')) throw new Error(`unknown argument ${flag}`)
-    if (!['--configuration', '--dsh-home', '--package-spec'].includes(flag)) {
+    if (!['--configuration', '--dsh-home', '--package-spec', '--dsh-executable', '--pnpm-executable'].includes(flag)) {
       throw new Error(`unknown argument ${flag}`)
     }
     if (values.has(flag)) throw new Error(`duplicate argument ${flag}`)
@@ -31,17 +31,22 @@ function parseArguments(argv) {
     values.set(flag, value)
     index += 1
   }
-  for (const flag of ['--configuration', '--dsh-home', '--package-spec']) {
+  for (const flag of ['--configuration', '--dsh-home', '--package-spec', '--dsh-executable', '--pnpm-executable']) {
     if (!values.has(flag)) throw new Error(`missing required argument ${flag}`)
   }
   const configuration = values.get('--configuration')
   if (!configurationProfiles.has(configuration)) {
     throw new Error(`invalid --configuration ${JSON.stringify(configuration)}; expected development, test, release-smoke, or production`)
   }
+  for (const flag of ['--dsh-executable', '--pnpm-executable']) {
+    if (!isAbsolute(values.get(flag))) throw new Error(`${flag} must be an absolute path`)
+  }
   return {
     configuration,
     dshHome: values.get('--dsh-home'),
     packageSpec: values.get('--package-spec'),
+    dshExecutable: values.get('--dsh-executable'),
+    pnpmExecutable: values.get('--pnpm-executable'),
   }
 }
 
@@ -58,11 +63,9 @@ function materializeProfileFiles(dshHome) {
   return profileDirectory
 }
 
-function runPluginInstall(dshHome, packageSpec) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const result = spawnSync(command, [
-    'exec',
-    'dsh',
+function runPluginInstall(dshHome, packageSpec, { dshExecutable, pnpmExecutable }) {
+  const pnpmDirectory = dirname(pnpmExecutable)
+  const result = spawnSync(dshExecutable, [
     'plugin',
     '--profile',
     profileName,
@@ -70,12 +73,16 @@ function runPluginInstall(dshHome, packageSpec) {
     packageSpec,
   ], {
     cwd: repositoryRoot,
-    env: { ...process.env, DSH_HOME: dshHome },
+    env: {
+      ...process.env,
+      DSH_HOME: dshHome,
+      PATH: `${pnpmDirectory}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH ?? ''}`,
+    },
     stdio: 'inherit',
     shell: false,
   })
   if (result.error !== undefined) {
-    process.stderr.write(`profile materialize: failed to execute pnpm: ${String(result.error)}\n`)
+    process.stderr.write(`profile materialize: failed to execute dsh: ${String(result.error)}\n`)
     return 127
   }
   return result.status ?? 1
@@ -126,7 +133,7 @@ function main(argv) {
   const profileDirectory = materializeProfileFiles(dshHome)
   let exitCode
   try {
-    exitCode = runPluginInstall(dshHome, options.packageSpec)
+    exitCode = runPluginInstall(dshHome, options.packageSpec, options)
   } finally {
     assertDefaultProfileManifestUnchanged(defaultProfileManifestBefore)
   }

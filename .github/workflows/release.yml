@@ -26,6 +26,14 @@ jobs:
           fetch-depth: 0
       - name: Fetch origin main for release identity check
         run: git fetch --no-tags origin main:refs/remotes/origin/main
+      - name: Verify release identity
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        run: |
+          node --input-type=module -e 'import { assertExpectedIdentity } from "./scripts/release/validate-package.mjs"; assertExpectedIdentity({ expectedVersion: process.env.RELEASE_VERSION, expectedCommit: process.env.RELEASE_COMMIT })'
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          git merge-base --is-ancestor "$RELEASE_COMMIT" refs/remotes/origin/main
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:

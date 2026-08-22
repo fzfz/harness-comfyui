@@ -4,9 +4,14 @@ import { deepStrictEqual } from 'node:assert/strict'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  dependencySecurityPolicyFile,
+  readStrictDependencyBuilds,
+  runtimeDirectory,
+  validateDependencyClosure,
+} from './check-manifest-lock.mjs'
+
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const policyFile = 'config/dependency-security-policy.json'
-const expectedDecisionCount = 5
 
 const buildDecisionFields = [
   'onlyBuiltDependencies',
@@ -43,51 +48,6 @@ function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function readSecurityPolicy(root) {
-  const policy = readJson(resolve(root, policyFile), policyFile)
-  if (!isPlainObject(policy)) throw new Error(`${policyFile} must contain an object`)
-  if (!isPlainObject(policy.allowBuilds)) throw new Error(`${policyFile} is missing object allowBuilds`)
-  const entries = Object.entries(policy.allowBuilds)
-  if (entries.length !== expectedDecisionCount) {
-    throw new Error(`${policyFile} must contain exactly ${expectedDecisionCount} allowBuilds decisions`)
-  }
-  for (const [packageIdentity, decision] of entries) {
-    const versionSeparator = packageIdentity.lastIndexOf('@')
-    const packageVersion = versionSeparator > 0 ? packageIdentity.slice(versionSeparator + 1) : ''
-    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(packageVersion)) {
-      throw new Error(`${policyFile} contains an unclassified or non-exact package identity: ${packageIdentity}`)
-    }
-    if (decision !== true || typeof decision !== 'boolean') {
-      throw new Error(`${policyFile} allowBuilds decision for ${packageIdentity} must be boolean true`)
-    }
-  }
-  return policy.allowBuilds
-}
-
-function readStrictDependencyBuilds(root) {
-  const path = resolve(root, '.npmrc')
-  let content
-  try {
-    content = readFileSync(path, 'utf8')
-  } catch (error) {
-    throw new Error(`could not read .npmrc: ${error instanceof Error ? error.message : String(error)}`)
-  }
-  const values = new Map()
-  for (const [lineNumber, sourceLine] of content.split(/\r?\n/u).entries()) {
-    const line = sourceLine.trim()
-    if (line.length === 0 || line.startsWith('#') || line.startsWith(';')) continue
-    const separator = line.indexOf('=')
-    if (separator <= 0) throw new Error(`malformed .npmrc line ${lineNumber + 1}`)
-    const key = line.slice(0, separator).trim()
-    const value = line.slice(separator + 1).trim()
-    if (values.has(key)) throw new Error(`duplicate .npmrc setting ${key}`)
-    values.set(key, value)
-  }
-  if (values.get('strict-dep-builds') !== 'true') {
-    throw new Error('.npmrc must set strict-dep-builds=true')
-  }
-}
-
 function readAllowBuildsFromPnpm(root) {
   const command = process.env.PNPM_BIN ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
   const result = spawnSync(command, ['config', 'get', 'allowBuilds', '--json'], {
@@ -118,7 +78,7 @@ function validateAllowBuilds(actual, expected) {
   const actualKeys = Object.keys(actual).sort()
   const expectedKeys = Object.keys(expected).sort()
   if (actualKeys.length !== expectedKeys.length || actualKeys.some((key, index) => key !== expectedKeys[index])) {
-    throw new Error(`pnpm allowBuilds projection differs from ${policyFile}; received ${actualKeys.join(', ')}`)
+    throw new Error(`pnpm allowBuilds projection differs from ${dependencySecurityPolicyFile}; received ${actualKeys.join(', ')}`)
   }
   for (const [packageIdentity, decision] of Object.entries(actual)) {
     if (typeof decision !== 'boolean') {
@@ -150,11 +110,16 @@ function rejectManifestBuildDecisions(root) {
 }
 
 export function checkBuildScripts(root = repositoryRoot) {
-  readStrictDependencyBuilds(root)
+  const resolvedRoot = resolve(root)
+  const runtimeRoot = resolve(resolvedRoot, runtimeDirectory)
+  readStrictDependencyBuilds(resolvedRoot, resolvedRoot)
+  readStrictDependencyBuilds(resolvedRoot, runtimeRoot)
   rejectManifestBuildDecisions(root)
-  const expected = readSecurityPolicy(root)
+  rejectManifestBuildDecisions(runtimeRoot)
+  const closure = validateDependencyClosure(resolvedRoot)
+  const expected = closure.dependencySecurityPolicy.allowBuilds
   const allowBuilds = validateAllowBuilds(readAllowBuildsFromPnpm(root), expected)
-  return { allowBuilds }
+  return { allowBuilds, closure, rootWorkspace: closure.rootPolicy, runtimeWorkspace: closure.runtimePolicy }
 }
 
 export function main(argv = process.argv.slice(2)) {

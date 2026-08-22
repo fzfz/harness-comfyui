@@ -102,12 +102,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const generatedEntry = join(root, '.local/build/client-entry.ts')
   await mkdir(dirname(generatedEntry), { recursive: true })
   await writeFile(generatedEntry, [
-    "import TYPERT_REMOTE from '../../lib/typert.remote-client.js'",
-    "import { applyWithRemote, inject, name } from '../../src/client/index.tsx'",
+    "import { apply, inject, name } from '../../src/client/index.tsx'",
     '',
-    'export { inject, name }',
-    'export const apply = (ctx: Parameters<typeof applyWithRemote>[0]) =>',
-    '  applyWithRemote(ctx, TYPERT_REMOTE)',
+    'export { apply, inject, name }',
     '',
   ].join('\n'), 'utf8')
   try {

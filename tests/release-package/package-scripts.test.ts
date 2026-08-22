@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -77,6 +77,9 @@ function createArtifact(
   const packageRoot = join(root, 'package')
   cpSync(join(root, 'lib'), join(packageRoot, 'lib'), { recursive: true })
   cpSync(join(root, 'config'), join(packageRoot, 'config'), { recursive: true })
+  for (const directory of ['scripts', 'skills']) {
+    if (existsSync(join(root, directory))) cpSync(join(root, directory), join(packageRoot, directory), { recursive: true })
+  }
   cpSync(join(root, 'package.json'), join(packageRoot, 'package.json'))
   for (const [relativePath, content] of Object.entries(options.extraPackageFiles ?? {})) {
     const path = join(packageRoot, relativePath)
@@ -104,6 +107,66 @@ function createArtifact(
 }
 
 describe('release package scripts', () => {
+  it('packs pnpm compatibility evidence in the runtime manifest when package packing omits root packageManager metadata', () => {
+    const destination = mkdtempSync(join(tmpdir(), 'harness-comfyui-packed-runtime-'))
+    try {
+      const result = spawnSync('pnpm', ['pack', '--pack-destination', destination], {
+        cwd: resolve(process.cwd()),
+        encoding: 'utf8',
+      })
+      expect(result.status).toBe(0)
+      const filename = readdirSync(destination).find(entry => entry.endsWith('.tgz'))
+      expect(filename).toBeDefined()
+      const tarball = join(destination, filename as string)
+      const readManifest = (entry: string) => {
+        const extracted = spawnSync('tar', ['-xOzf', tarball, entry], { encoding: 'utf8' })
+        expect(extracted.status).toBe(0)
+        return JSON.parse(extracted.stdout) as Record<string, unknown>
+      }
+      expect(readManifest('package/package.json').packageManager).toBeUndefined()
+      expect(readManifest('package/deployment/runtime/package.json').packageManager).toBe('pnpm@11.7.0')
+    } finally {
+      rmSync(destination, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['is missing', undefined],
+    ['has a different exact version', 'pnpm@11.8.0'],
+    ['has a non-exact version', 'pnpm@latest'],
+  ])('rejects a packed runtime packageManager that %s', (_label, packageManager) => {
+    const root = createFixture()
+    const manifestPath = join(root, 'package.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown> & { files: string[] }
+    manifest.packageManager = 'pnpm@11.7.0'
+    manifest.files = [...manifest.files, 'deployment/runtime/package.json']
+    writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`)
+    mkdirSync(join(root, 'deployment/runtime'), { recursive: true })
+    writeFileSync(join(root, 'deployment/runtime/package.json'), '{}\n')
+    const runtimeManifest = packageManager === undefined ? {} : { packageManager }
+    const artifact = createArtifact(root, {
+      extraPackageFiles: { 'deployment/runtime/package.json': `${JSON.stringify(runtimeManifest)}\n` },
+    })
+
+    expect(() => validatePackage(root, { gitCommit: () => artifact.commit })).toThrow(/packageManager.*pnpm/i)
+  })
+
+  it('declares the fixed release globs, complete optional peer metadata, and deterministic deploy test order', () => {
+    const manifest = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {
+      files: string[]
+      peerDependencies: Record<string, string>
+      peerDependenciesMeta: Record<string, { optional: boolean }>
+      scripts: Record<string, string>
+    }
+    expect(manifest.files).toContain('skills/**')
+    expect(manifest.files).toContain('scripts/deploy/*.mjs')
+    expect(manifest.peerDependenciesMeta).toEqual(
+      Object.fromEntries(Object.keys(manifest.peerDependencies).map((name) => [name, { optional: true }])),
+    )
+    expect(manifest.scripts['test:deploy']).toBe('vitest run tests/deploy --maxWorkers=1 --no-file-parallelism')
+    expect(manifest.scripts.quality.split(' && ')).toContain('pnpm run test:deploy')
+  })
+
   it('cleans the quality directory, runs pack exactly once, and records artifact identity', () => {
     const root = createFixture()
     const destination = join(root, '.release/quality')
@@ -141,6 +204,66 @@ describe('release package scripts', () => {
     const result = validatePackage(root, { gitCommit: () => artifact.commit })
     expect(result.entries).toEqual(['package/config/base.json', 'package/lib/index.js', 'package/lib/types/index.d.ts', 'package/package.json'])
     expect(result.packedManifest.version).toBe(artifact.version)
+  })
+
+  it('expands only the fixed deploy and approved Skill globs deterministically', () => {
+    const root = createFixture()
+    mkdirSync(join(root, 'scripts/deploy'), { recursive: true })
+    writeFileSync(join(root, 'scripts/deploy/z-last.mjs'), 'export const last = true\n')
+    writeFileSync(join(root, 'scripts/deploy/a-first.mjs'), 'export const first = true\n')
+    mkdirSync(join(root, 'skills/comfyui-generate'), { recursive: true })
+    writeFileSync(join(root, 'skills/comfyui-generate/SKILL.md'), '# fixture\n')
+    const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    manifest.files = [...manifest.files, 'skills/**', 'scripts/deploy/*.mjs']
+    writeFileSync(join(root, 'package.json'), `${JSON.stringify(manifest)}\n`)
+    const artifact = createArtifact(root)
+
+    const result = validatePackage(root, { gitCommit: () => artifact.commit })
+    expect(result.entries).toEqual([
+      'package/config/base.json',
+      'package/lib/index.js',
+      'package/lib/types/index.d.ts',
+      'package/package.json',
+      'package/scripts/deploy/a-first.mjs',
+      'package/scripts/deploy/z-last.mjs',
+      'package/skills/comfyui-generate/SKILL.md',
+    ])
+  })
+
+  it('rejects unapproved Skill directories and non-fixed globs', () => {
+    const root = createFixture()
+    mkdirSync(join(root, 'skills/not-approved'), { recursive: true })
+    writeFileSync(join(root, 'skills/not-approved/SKILL.md'), '# forbidden\n')
+    const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    manifest.files = [...manifest.files, 'skills/**']
+    writeFileSync(join(root, 'package.json'), `${JSON.stringify(manifest)}\n`)
+    const artifact = createArtifact(root)
+    expect(() => validatePackage(root, { gitCommit: () => artifact.commit })).toThrow(/unapproved Skill directory/i)
+
+    const invalidGlobRoot = createFixture()
+    const invalidManifest = JSON.parse(readFileSync(join(invalidGlobRoot, 'package.json'), 'utf8'))
+    invalidManifest.files = [...invalidManifest.files, 'skills/*']
+    writeFileSync(join(invalidGlobRoot, 'package.json'), `${JSON.stringify(invalidManifest)}\n`)
+    const invalidArtifact = createArtifact(invalidGlobRoot)
+    expect(() => validatePackage(invalidGlobRoot, { gitCommit: () => invalidArtifact.commit })).toThrow(/fixed globs/i)
+  })
+
+  it('requires packed peer metadata for every declared host-provided peer', () => {
+    const root = createFixture()
+    const peers = {
+      '@deepseek-ai/cordis': '4.0.1',
+      react: '18.3.1',
+    }
+    const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    manifest.peerDependencies = peers
+    manifest.peerDependenciesMeta = Object.fromEntries(Object.keys(peers).map((name) => [name, { optional: true }]))
+    writeFileSync(join(root, 'package.json'), `${JSON.stringify(manifest)}\n`)
+    const artifact = createArtifact(root)
+
+    const result = validatePackage(root, { gitCommit: () => artifact.commit })
+    const packedPeerMeta = result.packedManifest.peerDependenciesMeta as Record<string, unknown>
+    expect(Object.keys(packedPeerMeta).sort()).toEqual(Object.keys(peers).sort())
+    expect(packedPeerMeta).toEqual(manifest.peerDependenciesMeta)
   })
 
   it('rejects a tarball with source content outside the structured allowlist', () => {

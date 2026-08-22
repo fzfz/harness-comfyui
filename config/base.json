@@ -12,8 +12,8 @@
   "source": {
     "catalogCliPath": "",
     "sourceCliPath": "",
-    "contractId": "harness-comfyui-source",
-    "supportedContractVersions": ["1"]
+    "contractId": "imagegen-source-contract",
+    "supportedContractVersions": [1]
   },
   "jobs": {
     "pollIntervalMs": 500,
@@ -22,6 +22,9 @@
   "server": {
     "host": "127.0.0.1",
     "port": 4173
+  },
+  "client": {
+    "runRefreshIntervalMs": 1000
   },
   "process": {
     "shutdownTimeoutMs": 10000

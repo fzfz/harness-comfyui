@@ -2,6 +2,7 @@ import Schema from '@deepseek-ai/schemastery'
 
 const nonEmptyString = Schema.string().pattern(/\S+/).required()
 const nonNegativeInteger = Schema.natural().required()
+const positiveInteger = Schema.natural().min(1).required()
 
 export const configurationProfileNames = [
   'development',
@@ -27,11 +28,14 @@ export interface ConfigurationProfileValues {
     catalogCliPath: string
     sourceCliPath: string
     contractId: string
-    supportedContractVersions: string[]
+    supportedContractVersions: number[]
   }
   jobs: {
     pollIntervalMs: number
     missingObservationMs: number
+  }
+  client: {
+    runRefreshIntervalMs: number
   }
   server: {
     host: string
@@ -60,12 +64,15 @@ const ConfigurationProfileSchema = Schema.object({
   source: Schema.object({
     catalogCliPath: nonEmptyString,
     sourceCliPath: nonEmptyString,
-    contractId: nonEmptyString,
-    supportedContractVersions: Schema.array(nonEmptyString).min(1).required(),
+    contractId: Schema.const('imagegen-source-contract').required(),
+    supportedContractVersions: Schema.array(Schema.const(1).required()).min(1).max(1).required(),
   }).required(),
   jobs: Schema.object({
     pollIntervalMs: nonNegativeInteger,
     missingObservationMs: nonNegativeInteger,
+  }).required(),
+  client: Schema.object({
+    runRefreshIntervalMs: positiveInteger,
   }).required(),
   server: Schema.object({
     host: nonEmptyString,

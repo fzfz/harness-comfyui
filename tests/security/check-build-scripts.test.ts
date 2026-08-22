@@ -21,9 +21,18 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
 })
 
+interface DependencySecurityPolicy {
+  readonly strictDepBuilds: true
+  readonly allowBuilds: Record<string, unknown>
+  readonly overrides: Record<string, string>
+}
+
+async function readPolicy(): Promise<DependencySecurityPolicy> {
+  return JSON.parse(await readFile(policyPath, 'utf8')) as DependencySecurityPolicy
+}
+
 async function readPolicyAllowBuilds(): Promise<Record<string, unknown>> {
-  const policy = JSON.parse(await readFile(policyPath, 'utf8')) as { allowBuilds: Record<string, unknown> }
-  return policy.allowBuilds
+  return (await readPolicy()).allowBuilds
 }
 
 interface FixtureOptions {
@@ -38,8 +47,13 @@ async function createFixture(mode: string, options: FixtureOptions = {}): Promis
   const fixtureRoot = await mkdtemp(join(tmpdir(), 'harness-comfyui-build-scripts-'))
   temporaryDirectories.push(fixtureRoot)
   await mkdir(join(fixtureRoot, 'config'), { recursive: true })
-  const sourceAllowBuilds = await readPolicyAllowBuilds()
-  const policyText = options.policyText ?? JSON.stringify({ allowBuilds: options.policyAllowBuilds ?? sourceAllowBuilds })
+  await mkdir(join(fixtureRoot, 'deployment', 'runtime'), { recursive: true })
+  const sourcePolicy = await readPolicy()
+  const sourceAllowBuilds = sourcePolicy.allowBuilds
+  const policyText = options.policyText ?? JSON.stringify({
+    ...sourcePolicy,
+    allowBuilds: options.policyAllowBuilds ?? sourceAllowBuilds,
+  })
   await writeFile(join(fixtureRoot, 'config', 'dependency-security-policy.json'), policyText, 'utf8')
   const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8')) as Record<string, unknown>
   if (Object.hasOwn(options, 'manifestPnpm')) manifest.pnpm = options.manifestPnpm
@@ -47,6 +61,10 @@ async function createFixture(mode: string, options: FixtureOptions = {}): Promis
   const sourceNpmrc = await readFile(resolve(root, '.npmrc'), 'utf8')
   await writeFile(join(fixtureRoot, '.npmrc'), options.npmrc ?? sourceNpmrc, 'utf8')
   await copyFile(resolve(root, 'pnpm-workspace.yaml'), join(fixtureRoot, 'pnpm-workspace.yaml'))
+  await copyFile(resolve(root, 'pnpm-lock.yaml'), join(fixtureRoot, 'pnpm-lock.yaml'))
+  await copyFile(resolve(root, 'deployment/runtime/package.json'), join(fixtureRoot, 'deployment/runtime/package.json'))
+  await copyFile(resolve(root, 'deployment/runtime/pnpm-lock.yaml'), join(fixtureRoot, 'deployment/runtime/pnpm-lock.yaml'))
+  await copyFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'), join(fixtureRoot, 'deployment/runtime/pnpm-workspace.yaml'))
 
   const record = join(fixtureRoot, 'pnpm-record.jsonl')
   const pnpm = join(fixtureRoot, 'pnpm')
@@ -115,6 +133,81 @@ describe('security:build-scripts', () => {
 
     expect(result.code).not.toBe(0)
     expect(`${result.stdout}\n${result.stderr}`).toMatch(/projection|allowBuilds|unknown/i)
+  })
+
+  it('rejects runtime-only workspace policy drift', async () => {
+    const fixture = await createFixture('clean')
+    const runtimeWorkspacePath = join(fixture.root, 'deployment/runtime/pnpm-workspace.yaml')
+    const runtimeWorkspace = await readFile(runtimeWorkspacePath, 'utf8')
+    await writeFile(runtimeWorkspacePath, runtimeWorkspace.replace(/'koffi@3\.1\.5': true/u, "'koffi@3.1.4': true"))
+    const result = await runScript({
+      PNPM_BIN: fixture.pnpm,
+      FAKE_PNPM_MODE: 'clean',
+      FAKE_PNPM_RECORD: fixture.record,
+    }, fixture.root)
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime|workspace|allowBuilds|policy/i)
+  })
+
+  it('rejects a missing root workspace strictDepBuilds setting', async () => {
+    const fixture = await createFixture('clean')
+    const workspacePath = join(fixture.root, 'pnpm-workspace.yaml')
+    const workspace = await readFile(workspacePath, 'utf8')
+    await writeFile(workspacePath, workspace.replace('strictDepBuilds: true\n\n', ''))
+    const result = await runScript({
+      PNPM_BIN: fixture.pnpm,
+      FAKE_PNPM_MODE: 'clean',
+      FAKE_PNPM_RECORD: fixture.record,
+    }, fixture.root)
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/strictDepBuilds|workspace|missing/i)
+  })
+
+  it('rejects a false root workspace strictDepBuilds setting', async () => {
+    const fixture = await createFixture('clean')
+    const workspacePath = join(fixture.root, 'pnpm-workspace.yaml')
+    const workspace = await readFile(workspacePath, 'utf8')
+    await writeFile(workspacePath, workspace.replace('strictDepBuilds: true', 'strictDepBuilds: false'))
+    const result = await runScript({
+      PNPM_BIN: fixture.pnpm,
+      FAKE_PNPM_MODE: 'clean',
+      FAKE_PNPM_RECORD: fixture.record,
+    }, fixture.root)
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/strictDepBuilds|workspace|true/i)
+  })
+
+  it('rejects runtime-only workspace strictDepBuilds drift', async () => {
+    const fixture = await createFixture('clean')
+    const workspacePath = join(fixture.root, 'deployment/runtime/pnpm-workspace.yaml')
+    const workspace = await readFile(workspacePath, 'utf8')
+    await writeFile(workspacePath, workspace.replace('strictDepBuilds: true', 'strictDepBuilds: false'))
+    const result = await runScript({
+      PNPM_BIN: fixture.pnpm,
+      FAKE_PNPM_MODE: 'clean',
+      FAKE_PNPM_RECORD: fixture.record,
+    }, fixture.root)
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/strictDepBuilds|workspace|runtime/i)
+  })
+
+  it('rejects runtime-only lockfile drift', async () => {
+    const fixture = await createFixture('clean')
+    const runtimeLockPath = join(fixture.root, 'deployment/runtime/pnpm-lock.yaml')
+    const runtimeLock = await readFile(runtimeLockPath, 'utf8')
+    await writeFile(runtimeLockPath, runtimeLock.replace(/'@deepseek-ai\/dsh@0\.1\.0-rc\.8'/u, "'@deepseek-ai/dsh@0.1.0-rc.6'"))
+    const result = await runScript({
+      PNPM_BIN: fixture.pnpm,
+      FAKE_PNPM_MODE: 'clean',
+      FAKE_PNPM_RECORD: fixture.record,
+    }, fixture.root)
+
+    expect(result.code).not.toBe(0)
+    expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime|lock|dsh|version/i)
   })
 
   it.each([
@@ -215,7 +308,10 @@ describe('security:build-scripts', () => {
 
   it('rejects an extra policy decision', async () => {
     const sourceAllowBuilds = await readPolicyAllowBuilds()
-    const policyText = JSON.stringify({ allowBuilds: { ...sourceAllowBuilds, 'extra@1.0.0': true } })
+    const policyText = JSON.stringify({
+      ...await readPolicy(),
+      allowBuilds: { ...sourceAllowBuilds, 'extra@1.0.0': true },
+    })
     const fixture = await createFixture('clean', { policyText })
     const result = await runScript({
       PNPM_BIN: fixture.pnpm,

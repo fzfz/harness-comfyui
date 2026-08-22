@@ -185,6 +185,35 @@ export interface BrowserProfileCleanupOptions {
   pollIntervalMs?: number
 }
 
+export interface BrowserViewport {
+  width: number
+  height: number
+}
+
+export interface RealBrowserProbeOptions {
+  readinessTimeoutMs?: number
+  viewport?: BrowserViewport
+}
+
+const defaultBrowserViewport: BrowserViewport = { width: 1280, height: 900 }
+
+export function browserWindowSizeArgument(viewport: BrowserViewport = defaultBrowserViewport): string {
+  if (viewport === null || typeof viewport !== 'object' || Array.isArray(viewport)) {
+    throw new TypeError('browser viewport must be an object containing exactly width and height')
+  }
+  const keys = Object.keys(viewport).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['height', 'width'])) {
+    throw new TypeError('browser viewport must contain exactly width and height')
+  }
+  if (!Number.isSafeInteger(viewport.width) || viewport.width <= 0) {
+    throw new TypeError('browser viewport width must be a positive integer')
+  }
+  if (!Number.isSafeInteger(viewport.height) || viewport.height <= 0) {
+    throw new TypeError('browser viewport height must be a positive integer')
+  }
+  return `--window-size=${viewport.width},${viewport.height}`
+}
+
 async function waitForProcess(child: BrowserProcess, timeoutMs: number): Promise<boolean> {
   if (child.exitCode !== null || child.signalCode !== null) return true
   return await new Promise(resolve => {
@@ -244,6 +273,65 @@ function signalProcessGroup(processGroupId: number, signal: NodeJS.Signals): voi
   }
 }
 
+export function installModuleLoaderCapture(target: any, state: any): void {
+  const previousDescriptor = Object.getOwnPropertyDescriptor(target, '__ModuleLoader__')
+  let loader: any
+  const seenHandoffs = new WeakSet<object>()
+  const captureHandoff = (handoff: any): void => {
+    if (handoff === null || (typeof handoff !== 'object' && typeof handoff !== 'function')) return
+    if (seenHandoffs.has(handoff)) return
+    seenHandoffs.add(handoff)
+    state.loadedModules.push(handoff.id)
+    if (handoff.id !== 'harness-comfyui' && handoff.id !== '@deepseek-ai/dsh-client-ui-conversation' && handoff.id !== '@deepseek-ai/dsh-client-ui-layout') return
+    const factory = handoff.factory
+    if (typeof factory !== 'function') throw new TypeError(`browser probe module ${String(handoff.id)} factory must be a function`)
+    handoff.factory = (require: any) => {
+      const module = factory(require)
+      if (typeof module?.apply !== 'function') return module
+      const apply = module.apply
+      module.apply = async (context: any) => {
+        state.contexts[handoff.id] = context
+        const captureFiber = () => {
+          for (const runtime of context.registry.values()) {
+            for (const fiber of runtime.fibers) {
+              if (fiber.ctx === context) state.fibers[handoff.id] = fiber
+            }
+          }
+        }
+        captureFiber()
+        const result = await apply(context)
+        captureFiber()
+        return result
+      }
+      return module
+    }
+  }
+  const installLoader = (value: any): void => {
+    loader = value
+    const descriptor = Object.getOwnPropertyDescriptor(value, 'load')
+    let delegate = value.load
+    const wrapper = function (handoff: any): any {
+      captureHandoff(handoff)
+      if (typeof delegate !== 'function') throw new TypeError('browser probe ModuleLoader.load delegate must be a function')
+      return Reflect.apply(delegate, loader, [handoff])
+    }
+    Object.defineProperty(value, 'load', {
+      configurable: true,
+      enumerable: descriptor?.enumerable ?? true,
+      get: () => wrapper,
+      set: (next: any) => { delegate = next },
+    })
+  }
+  Object.defineProperty(target, '__ModuleLoader__', {
+    configurable: true,
+    get: () => loader,
+    set: (value: any) => {
+      installLoader(value)
+      if (previousDescriptor?.set) previousDescriptor.set.call(target, value)
+    },
+  })
+}
+
 export async function terminateBrowserProcessGroup(
   child: BrowserProcess,
   processGroupId: number | undefined,
@@ -291,7 +379,8 @@ export async function removeBrowserProfileWhenStable(
   throw new Error(`browser profile did not remain continuously absent for ${stableWindowMs}ms: ${profileDirectory}`)
 }
 
-async function launchBrowser(): Promise<BrowserSession> {
+async function launchBrowser(viewport?: BrowserViewport): Promise<BrowserSession> {
+  const windowSizeArgument = browserWindowSizeArgument(viewport)
   const executable = await findBrowserExecutable()
   const profileDirectory = await mkdtemp(join(tmpdir(), 'harness-comfyui-chrome-'))
   const args = [
@@ -306,7 +395,7 @@ async function launchBrowser(): Promise<BrowserSession> {
     '--remote-debugging-port=0',
     '--remote-allow-origins=*',
     `--user-data-dir=${profileDirectory}`,
-    '--window-size=1280,900',
+    windowSizeArgument,
     'about:blank',
   ]
   if (process.platform === 'linux' && typeof process.getuid === 'function' && process.getuid() === 0) args.push('--no-sandbox')
@@ -340,45 +429,7 @@ async function launchBrowser(): Promise<BrowserSession> {
     await connection.send('Page.addScriptToEvaluateOnNewDocument', {
       source: `(() => {
       const state = { contexts: Object.create(null), fibers: Object.create(null), loadedModules: [] };
-      const previousDescriptor = Object.getOwnPropertyDescriptor(window, '__ModuleLoader__');
-      let loader;
-      Object.defineProperty(window, '__ModuleLoader__', {
-        configurable: true,
-        get() { return loader; },
-        set(value) {
-          loader = value;
-          const load = value.load;
-          value.load = handoff => {
-            state.loadedModules.push(handoff.id);
-            if (handoff.id === 'harness-comfyui' || handoff.id === '@deepseek-ai/dsh-client-ui-conversation' || handoff.id === '@deepseek-ai/dsh-client-ui-layout') {
-              const factory = handoff.factory;
-              handoff.factory = require => {
-                const module = factory(require);
-                if (typeof module?.apply === 'function') {
-                  const apply = module.apply;
-                  module.apply = async context => {
-                    state.contexts[handoff.id] = context;
-                    const captureFiber = () => {
-                      for (const runtime of context.registry.values()) {
-                        for (const fiber of runtime.fibers) {
-                          if (fiber.ctx === context) state.fibers[handoff.id] = fiber;
-                        }
-                      }
-                    };
-                    captureFiber();
-                    const result = await apply(context);
-                    captureFiber();
-                    return result;
-                  };
-                }
-                return module;
-              };
-            }
-            return load(handoff);
-          };
-          if (previousDescriptor?.set) previousDescriptor.set(value);
-        },
-      });
+      (${installModuleLoaderCapture.toString()})(window, state);
       window.__HARNESS_BROWSER_PROBE__ = state;
     })();`,
     }, sessionId)
@@ -418,9 +469,9 @@ async function evaluate(session: BrowserSession, expression: string): Promise<un
 
 export async function runRealBrowserProbe(
   url: string,
-  options: { readinessTimeoutMs?: number } = {},
+  options: RealBrowserProbeOptions = {},
 ): Promise<RealBrowserProbe> {
-  const session = await launchBrowser()
+  const session = await launchBrowser(options.viewport)
   const consoleErrors: string[] = []
   const runtimeExceptions: string[] = []
   const removeConsoleListener = session.connection.on('Runtime.consoleAPICalled', message => {
@@ -450,12 +501,15 @@ export async function runRealBrowserProbe(
         const visibleButtons = [...document.querySelectorAll('button')].filter(visible);
         const shellOverlays = document.querySelectorAll('[data-shell-overlay]');
         const probe = window.__HARNESS_BROWSER_PROBE__;
+        const body = document.body;
+        const bodyText = body?.textContent?.trim() ?? '';
+        const bodyRect = body?.getBoundingClientRect();
         return {
-          appFrame: visible(document.body) && shellOverlays.length === 1 && visibleButtons.length >= 2 && (document.body.textContent ?? '').trim().length > 0,
+          appFrame: body !== null && visible(body) && shellOverlays.length === 1 && visibleButtons.length >= 2 && bodyText.length > 0,
           requiredMarker: '[data-shell-overlay]',
           shellOverlayCount: shellOverlays.length,
-          bodyText: (document.body.textContent ?? '').trim().slice(0, 200),
-          bodyRect: { width: document.body.getBoundingClientRect().width, height: document.body.getBoundingClientRect().height },
+          bodyText: bodyText.slice(0, 200),
+          bodyRect: bodyRect === undefined ? undefined : { width: bodyRect.width, height: bodyRect.height },
           visibleButtonCount: visibleButtons.length,
           loadedModules: probe?.loadedModules ?? [],
           contextIds: Object.keys(probe?.contexts ?? {}),
@@ -474,7 +528,7 @@ export async function runRealBrowserProbe(
       if (!value.fiberIds?.includes('@deepseek-ai/dsh-client-ui-layout')) return undefined
       if (!value.fiberIds?.includes('harness-comfyui')) return undefined
       return value
-    }, 'visible Harness AppFrame and client contexts', options.readinessTimeoutMs ?? 8000)
+    }, 'visible Harness AppFrame and client contexts', options.readinessTimeoutMs ?? 30000)
 
     const state = await evaluate(session, `(async () => {
       const probe = window.__HARNESS_BROWSER_PROBE__;

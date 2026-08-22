@@ -1,33 +1,56 @@
 import { createHash } from 'node:crypto'
 import { spawn, type ChildProcessByStdio } from 'node:child_process'
 import { createReadStream } from 'node:fs'
-import { access, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { access, chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { createConnection, createServer, type AddressInfo } from 'node:net'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
-import { createConnection } from 'node:net'
 import type { Readable } from 'node:stream'
-import { createRequire } from 'node:module'
 
 import {
   runRealBrowserProbe,
-  type BrowserSlotEntry,
   type RealBrowserProbe,
+  type RealBrowserProbeOptions,
 } from './browser-cdp.ts'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const materializeScript = resolve(repositoryRoot, 'scripts/profile/materialize.mjs')
-const startScript = resolve(repositoryRoot, 'scripts/profile/start.mjs')
 const qualityArtifactManifestPath = resolve(repositoryRoot, '.release/quality/artifact.json')
 const profileName = 'comfyui-workbench'
+const fixtureConfigurations = ['test', 'release-smoke'] as const
+type FixtureConfiguration = (typeof fixtureConfigurations)[number]
 const profileBundles = [
   '@deepseek-ai/dsh-base',
   '@deepseek-ai/dsh-web-app',
   'harness-comfyui',
 ] as const
+const discovery = {
+  contract_id: 'imagegen-source-contract',
+  contract_version: 1,
+  openapi: {
+    openapi: '3.1.0',
+    info: { title: 'harness-comfyui composition test discovery', version: '1' },
+    paths: {},
+  },
+}
+const harnessEnvironmentKeys = [
+  'HARNESS_COMFYUI_CONFIGURATION_PROFILE',
+  'HARNESS_COMFYUI_DATA_DIR',
+  'HARNESS_COMFYUI_RUN_REPOSITORY_FILE',
+  'HARNESS_COMFYUI_RUN_DIRECTORY',
+  'HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY',
+  'HARNESS_COMFYUI_LOG_DIRECTORY',
+  'HARNESS_COMFYUI_DEFAULT_INSTANCE_ID',
+  'HARNESS_COMFYUI_CATALOG_CLI_PATH',
+  'HARNESS_COMFYUI_SOURCE_CLI_PATH',
+  'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS',
+  'HARNESS_COMFYUI_SERVER_HOST',
+  'HARNESS_COMFYUI_SERVER_PORT',
+]
 
 type JsonObject = Record<string, unknown>
+type FixtureChild = ChildProcessByStdio<null, Readable, Readable>
 
 export interface ArtifactManifest {
   tarballPath: string
@@ -52,6 +75,7 @@ export interface BootGraph {
 }
 
 export interface InstalledProfileEvidence {
+  profileBundles: string[]
   profileVersions: {
     harnessComfyui: string
     dshBase: string | undefined
@@ -69,49 +93,52 @@ export interface InstalledProfileEvidence {
   }
 }
 
-export interface DetailsComposition {
-  registrationError: string | undefined
-  priorities: number[]
-  activePriority: number | undefined
-  entries: BrowserSlotEntry[]
-  remainingPriorities: number[]
-  remainingEntries: BrowserSlotEntry[]
-  unload(): Promise<void>
+export interface ClientPackageEvidence {
+  exportTarget: string
+  modulePath: string
+  moduleSource: string
 }
 
 export interface CleanupEvidence {
   processExit: { code: number | null; signal: NodeJS.Signals | null } | undefined
+  processStateRemoved: boolean
   portReleased: boolean
+  installationRemoved: boolean
+  noChildProcesses: boolean
   dshHomeRemoved: boolean
 }
 
 export interface ProfileFixtureOptions {
-  configuration: 'development' | 'test' | 'release-smoke' | 'production'
+  configuration: FixtureConfiguration
+  artifactManifestPath?: string
 }
 
 export interface ProfileFixture {
   readonly artifact: ArtifactManifest
+  readonly configuration: FixtureConfiguration
   readonly dshHome: string
   readonly runtimeCwd: string
+  readonly installationRoot: string
+  readonly installationPath: string
+  readonly stableCliPath: string
   readonly profileManifestPath: string
   readonly cleanupEvidence: CleanupEvidence
-  readonly port: number | undefined
-  materialize(): Promise<void>
+  readonly port: number
+  preflight(): Promise<JsonObject>
+  install(): Promise<void>
   start(): Promise<void>
+  restart(): Promise<void>
+  status(): Promise<JsonObject>
+  health(): Promise<JsonObject>
+  logs(options?: { source?: 'stdout' | 'stderr' | 'operations' | 'all'; lines?: number }): Promise<string>
+  spawnCli(args: string[], environmentOverrides?: Record<string, string>): ProductCliProcess
   stop(): Promise<void>
   dispose(): Promise<void>
   readBootGraph(): Promise<BootGraph>
   readInstalledProfileEvidence(): Promise<InstalledProfileEvidence>
+  readClientPackageEvidence(): Promise<ClientPackageEvidence>
   readClientModule(id: string): Promise<string>
-  runRealBrowserProbe(): Promise<RealBrowserProbe>
-  inspectDetailsComposition(options: { nativeClientId: string }): Promise<DetailsComposition>
-  unloadClient(composition: DetailsComposition): Promise<void>
-}
-
-interface RunningProcess {
-  child: ChildProcessByStdio<null, Readable, Readable>
-  output: string
-  errorOutput: string
+  runRealBrowserProbe(options?: RealBrowserProbeOptions): Promise<RealBrowserProbe>
 }
 
 export interface ProfileVersionReader {
@@ -138,38 +165,63 @@ export async function readProfileVersionEvidence(reader: ProfileVersionReader): 
   }
 }
 
+export interface ProductCliResult {
+  code: number | null
+  signal: NodeJS.Signals | null
+  stdout: string
+  stderr: string
+}
+
+export interface ProductCliProcess {
+  readonly pid: number
+  readonly result: Promise<ProductCliResult>
+}
+
+type CommandResult = ProductCliResult
+
 function asString(value: unknown, property: string): string {
   if (typeof value !== 'string' || value.length === 0) throw new TypeError(`artifact manifest ${property} must be a non-empty string`)
   return value
 }
 
-function parseArtifactManifest(value: unknown, manifestPath: string): ArtifactManifest {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(`artifact manifest ${manifestPath} must be an object`)
+function parseArtifactManifest(value: unknown): ArtifactManifest {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(`artifact manifest ${qualityArtifactManifestPath} must be an object`)
   const manifest = value as JsonObject
+  const expectedKeys = ['tarballPath', 'filename', 'version', 'commit', 'byteLength', 'sha256']
+  if (JSON.stringify(Object.keys(manifest).sort()) !== JSON.stringify(expectedKeys.sort())) {
+    throw new TypeError('artifact manifest must contain exactly tarballPath, filename, version, commit, byteLength, and sha256')
+  }
   const parsed: ArtifactManifest = {
-    tarballPath: asString(manifest.tarballPath, 'tarballPath'),
+    tarballPath: resolve(asString(manifest.tarballPath, 'tarballPath')),
     filename: asString(manifest.filename, 'filename'),
     version: asString(manifest.version, 'version'),
     commit: asString(manifest.commit, 'commit'),
     byteLength: manifest.byteLength as number,
     sha256: asString(manifest.sha256, 'sha256'),
   }
-  if (!Number.isSafeInteger(parsed.byteLength) || parsed.byteLength <= 0) throw new TypeError(`artifact manifest byteLength must be a positive integer`)
-  parsed.tarballPath = resolve(parsed.tarballPath)
+  if (basename(parsed.tarballPath) !== parsed.filename) throw new TypeError('artifact manifest filename does not match tarballPath')
+  if (!Number.isSafeInteger(parsed.byteLength) || parsed.byteLength <= 0) throw new TypeError('artifact manifest byteLength must be a positive integer')
+  if (!/^[a-f0-9]{64}$/u.test(parsed.sha256)) throw new TypeError('artifact manifest sha256 must be a lowercase SHA-256')
+  if (!/^[a-f0-9]{40}$/u.test(parsed.commit)) throw new TypeError('artifact manifest commit must be a lowercase git commit')
   return parsed
 }
 
-async function readArtifactManifest(): Promise<ArtifactManifest> {
-  const manifest = parseArtifactManifest(JSON.parse(await readFile(qualityArtifactManifestPath, 'utf8')), qualityArtifactManifestPath)
+async function sha256File(path: string): Promise<string> {
+  return new Promise((resolveHash, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(path)
+    stream.on('data', chunk => hash.update(chunk))
+    stream.once('error', reject)
+    stream.once('end', () => resolveHash(hash.digest('hex')))
+  })
+}
+
+async function readArtifactManifest(manifestPath = qualityArtifactManifestPath): Promise<ArtifactManifest> {
+  const resolvedManifestPath = resolve(manifestPath)
+  const manifest = parseArtifactManifest(JSON.parse(await readFile(resolvedManifestPath, 'utf8')))
   const [file, digest] = await Promise.all([
     stat(manifest.tarballPath),
-    new Promise<string>((resolveDigest, reject) => {
-      const hash = createHash('sha256')
-      const stream = createReadStream(manifest.tarballPath)
-      stream.on('data', chunk => hash.update(chunk))
-      stream.once('error', reject)
-      stream.once('end', () => resolveDigest(hash.digest('hex')))
-    }),
+    sha256File(manifest.tarballPath),
   ])
   if (!file.isFile()) throw new Error(`artifact tarball is not a file: ${manifest.tarballPath}`)
   if (manifest.byteLength !== file.size) throw new Error(`artifact byteLength changed: manifest=${manifest.byteLength} actual=${file.size}`)
@@ -177,21 +229,46 @@ async function readArtifactManifest(): Promise<ArtifactManifest> {
   return manifest
 }
 
-function environmentFor(home: string): NodeJS.ProcessEnv {
+async function findFreePort(): Promise<number> {
+  const server = createServer()
+  await new Promise<void>((resolveListen, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolveListen)
+  })
+  const address = server.address()
+  if (address === null || typeof address === 'string') throw new Error('fixture port server did not expose an address')
+  const port = (address as AddressInfo).port
+  await new Promise<void>((resolveClose, reject) => server.close(error => error === undefined ? resolveClose() : reject(error)))
+  return port
+}
+
+function fixtureEnvironment(root: string): NodeJS.ProcessEnv {
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !harnessEnvironmentKeys.includes(key)),
+  )
+  const home = join(root, 'home')
+  const npmCache = join(root, 'npm-cache')
   return {
-    ...process.env,
-    DSH_HOME: home,
-    HARNESS_COMFYUI_DATA_DIR: join(home, 'data'),
-    HARNESS_COMFYUI_RUN_REPOSITORY_FILE: join(home, 'runs.sqlite'),
-    HARNESS_COMFYUI_RUN_DIRECTORY: join(home, 'runs'),
-    HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: join(home, 'media'),
-    HARNESS_COMFYUI_LOG_DIRECTORY: join(home, 'logs'),
-    HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
-    HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
+    ...environment,
+    HOME: home,
+    USERPROFILE: home,
+    NPM_CONFIG_CACHE: npmCache,
+    npm_config_cache: npmCache,
   }
 }
 
-function runProcess(command: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv }): Promise<{ code: number | null; signal: NodeJS.Signals | null; stdout: string; stderr: string }> {
+function discoveryScriptSource(): string {
+  return `#!/usr/bin/env node
+if (process.argv.length !== 3 || process.argv[2] !== '--discovery-json') process.exit(2)
+process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+`
+}
+
+async function runCommand(
+  command: string,
+  args: string[],
+  options: { cwd: string; env: NodeJS.ProcessEnv; onChild?: (child: FixtureChild) => void },
+): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
     const child = spawn(command, args, {
       cwd: options.cwd,
@@ -199,6 +276,7 @@ function runProcess(command: string, args: string[], options: { cwd: string; env
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     })
+    options.onChild?.(child)
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', chunk => { stdout += String(chunk) })
@@ -208,7 +286,12 @@ function runProcess(command: string, args: string[], options: { cwd: string; env
   })
 }
 
-async function waitUntil<T>(probe: () => Promise<T | undefined>, description: string, timeoutMs = 30000): Promise<T> {
+async function waitUntil<T>(
+  probe: () => Promise<T | undefined>,
+  description: string,
+  timeoutMs = 30000,
+  shouldAbortOnError: () => boolean = () => false,
+): Promise<T> {
   const deadline = Date.now() + timeoutMs
   let lastError: unknown
   while (Date.now() < deadline) {
@@ -216,6 +299,7 @@ async function waitUntil<T>(probe: () => Promise<T | undefined>, description: st
       const result = await probe()
       if (result !== undefined) return result
     } catch (error) {
+      if (shouldAbortOnError()) throw error
       lastError = error
     }
     await delay(100)
@@ -223,262 +307,462 @@ async function waitUntil<T>(probe: () => Promise<T | undefined>, description: st
   throw new Error(`timed out waiting for ${description}${lastError === undefined ? '' : `: ${String(lastError)}`}`)
 }
 
-async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+async function fetchWithTimeout(url: string): Promise<Response> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 2000)
   try {
-    return await fetch(url, { ...init, signal: controller.signal })
+    return await fetch(url, { signal: controller.signal })
   } finally {
     clearTimeout(timeout)
   }
 }
 
 function parseBootGraph(html: string): BootGraph {
-  const match = html.match(/window\.__DSH_BOOT__\s*=\s*(\{[\s\S]*?\})\s*<\/script>/)
+  const match = html.match(/window\.__DSH_BOOT__\s*=\s*(\{[\s\S]*?\})\s*<\/script>/u)
   if (!match?.[1]) throw new Error('web app HTML did not contain window.__DSH_BOOT__')
   const graph = JSON.parse(match[1]) as BootGraph
   if (typeof graph.rev !== 'string' || !Array.isArray(graph.entries)) throw new Error('web app boot graph has an invalid shape')
   return graph
 }
 
-function readInstalledPackageVersion(packageName: string): string {
-  const require = createRequire(import.meta.url)
-  let directory: string
-  try {
-    directory = dirname(require.resolve(packageName))
-  } catch {
-    const packageManifest = resolve(repositoryRoot, 'node_modules', packageName, 'package.json')
-    const manifest = JSON.parse(require('node:fs').readFileSync(packageManifest, 'utf8')) as JsonObject
-    return asString(manifest.version, `${packageName}.version`)
+function parseJsonResult(result: CommandResult, command: string): JsonObject {
+  if (result.code !== 0) throw new Error(`${command} failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
+  const lines = result.stdout.trim().split(/\r?\n/u).filter(Boolean)
+  const line = lines.at(-1)
+  if (line === undefined) throw new Error(`${command} returned no JSON evidence`)
+  const value = JSON.parse(line) as unknown
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${command} returned a non-object JSON evidence`)
+  return value as JsonObject
+}
+
+async function readPackageVersion(path: string, property: string): Promise<string> {
+  const manifest = JSON.parse(await readFile(path, 'utf8')) as JsonObject
+  return asString(manifest.version, property)
+}
+
+function parseHostLoaderRow(patch: string): InstalledProfileEvidence['hostLoaderRow'] {
+  const row = patch.match(/- id:\s*(harness-comfyui)\s+name:\s*(harness-comfyui)\s+config:\s+configurationProfile:\s*([^\n]+)/u)
+  if (!row?.[1] || !row[2] || !row[3]) throw new Error('materialized profile omitted the harness Host Loader row')
+  return {
+    id: row[1],
+    name: row[2],
+    configurationExpression: row[3],
   }
-  for (let depth = 0; depth < 8; depth += 1) {
-    try {
-      const manifest = JSON.parse(require('node:fs').readFileSync(join(directory, 'package.json'), 'utf8')) as JsonObject
-      return asString(manifest.version, `${packageName}.version`)
-    } catch {
-      directory = dirname(directory)
-    }
-  }
-  throw new Error(`could not locate installed package manifest for ${packageName}`)
 }
 
 class ProfileFixtureImpl implements ProfileFixture {
   readonly artifact: ArtifactManifest
+  readonly configuration: FixtureConfiguration
   readonly dshHome: string
   readonly runtimeCwd: string
+  readonly installationRoot: string
+  readonly installationPath: string
+  readonly stableCliPath: string
   readonly profileManifestPath: string
   readonly cleanupEvidence: CleanupEvidence = {
     processExit: undefined,
+    processStateRemoved: false,
     portReleased: false,
+    installationRemoved: false,
+    noChildProcesses: false,
     dshHomeRemoved: false,
   }
-  private readonly configuration: ProfileFixtureOptions['configuration']
-  private running: RunningProcess | undefined
-  private currentPort: number | undefined
+  private readonly testRoot: string
+  private readonly environment: NodeJS.ProcessEnv
+  private readonly currentPort: number
+  private readonly children = new Set<FixtureChild>()
+  private readonly foregroundResults: Promise<CommandResult>[] = []
+  private installed = false
+  private stopped = false
   private disposed = false
+  private startChild: FixtureChild | undefined
+  private startResultPromise: Promise<CommandResult> | undefined
+  private restartChild: FixtureChild | undefined
+  private restartResultPromise: Promise<CommandResult> | undefined
 
-  constructor(options: ProfileFixtureOptions, artifact: ArtifactManifest, dshHome: string) {
-    this.configuration = options.configuration
+  constructor(artifact: ArtifactManifest, configuration: FixtureConfiguration, testRoot: string, port: number) {
     this.artifact = artifact
-    this.dshHome = dshHome
-    this.runtimeCwd = join(dshHome, 'artifact-runtime-cwd')
-    this.profileManifestPath = join(dshHome, 'profiles', profileName, 'package.json')
+    this.configuration = configuration
+    this.testRoot = testRoot
+    this.runtimeCwd = join(testRoot, 'command-cwd')
+    this.installationRoot = join(testRoot, 'installation')
+    this.dshHome = join(this.installationRoot, 'releases', artifact.version, 'dsh-home')
+    this.installationPath = join(testRoot, 'installation.json')
+    this.stableCliPath = join(this.installationRoot, 'bin/harness-comfyui')
+    this.profileManifestPath = join(this.installationRoot, 'releases', artifact.version, 'dsh-home/profiles', profileName, 'package.json')
+    this.environment = fixtureEnvironment(testRoot)
+    this.currentPort = port
   }
 
-  get port(): number | undefined {
+  get port(): number {
     return this.currentPort
   }
 
-  async materialize(): Promise<void> {
-    if (this.disposed) throw new Error('profile fixture is already disposed')
-    const command = process.execPath
-    const result = await runProcess(command, [materializeScript, '--configuration', this.configuration, '--dsh-home', this.dshHome, '--package-spec', this.artifact.tarballPath], {
-      cwd: repositoryRoot,
-      env: environmentFor(this.dshHome),
-    })
-    if (result.code !== 0) throw new Error(`profile materialize failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
+  private trackChild(child: FixtureChild): FixtureChild {
+    this.children.add(child)
+    child.once('close', () => this.children.delete(child))
+    return child
   }
 
-  async start(): Promise<void> {
-    if (this.running) throw new Error('profile fixture is already running')
-    await mkdir(join(this.runtimeCwd, 'config/profiles'), { recursive: true })
-    await Promise.all([
-      writeFile(join(this.runtimeCwd, 'config/base.json'), '{"pollutedCheckoutConfig":true}\n'),
-      writeFile(join(this.runtimeCwd, 'config/environment-overrides.json'), '{}\n'),
-      writeFile(join(this.runtimeCwd, `config/profiles/${this.configuration}.json`), '{}\n'),
-      writeFile(join(this.runtimeCwd, 'package.json'), '{"name":"harness-comfyui-artifact-runtime","private":true,"type":"module"}\n'),
-    ])
-    const child = spawn(process.execPath, [startScript, '--configuration', this.configuration, '--dsh-home', this.dshHome, '--host', '127.0.0.1', '--port', '0'], {
+  private spawnStable(args: string[], environmentOverrides: Record<string, string> = {}): FixtureChild {
+    if (!this.installed) throw new Error('product CLI install has not completed')
+    const child = spawn(this.stableCliPath, args, {
       cwd: this.runtimeCwd,
-      env: {
-        ...environmentFor(this.dshHome),
-        HARNESS_COMFYUI_CONFIGURATION_PROFILE: this.configuration,
-      },
+      env: { ...this.environment, ...environmentOverrides },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
     })
-    const running: RunningProcess = { child, output: '', errorOutput: '' }
-    this.running = running
-    child.stdout.on('data', chunk => { running.output += String(chunk) })
-    child.stderr.on('data', chunk => { running.errorOutput += String(chunk) })
-    child.once('error', error => { running.errorOutput += String(error) })
+    return this.trackChild(child)
+  }
 
-    this.currentPort = await waitUntil(async () => {
-      const match = running.output.match(/dsh web: http:\/\/127\.0\.0\.1:(\d+)/)
-      if (!match?.[1]) {
-        if (child.exitCode !== null) throw new Error(`profile start exited before readiness: ${running.errorOutput}`)
-        return undefined
+  private async runStable(args: string[]): Promise<CommandResult> {
+    const child = this.spawnStable(args)
+    return this.readChildResult(child)
+  }
+
+  private readChildResult(child: FixtureChild): Promise<CommandResult> {
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', chunk => { stdout += String(chunk) })
+    child.stderr.on('data', chunk => { stderr += String(chunk) })
+    return new Promise((resolveResult, reject) => {
+      child.once('error', reject)
+      child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
+    })
+  }
+
+  spawnCli(args: string[], environmentOverrides: Record<string, string> = {}): ProductCliProcess {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    const child = this.spawnStable(args, environmentOverrides)
+    if (child.pid === undefined) throw new Error('product CLI process did not provide a PID')
+    const result = this.readChildResult(child)
+    this.foregroundResults.push(result)
+    return { pid: child.pid, result }
+  }
+
+  async preflight(): Promise<JsonObject> {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    const result = await runCommand('npm', [
+      'exec',
+      '--yes',
+      `--package=${this.artifact.tarballPath}`,
+      '--',
+      'harness-comfyui',
+      'preflight',
+      '--installation', this.installationPath,
+      '--artifact', this.artifact.tarballPath,
+    ], {
+      cwd: this.runtimeCwd,
+      env: this.environment,
+      onChild: child => this.trackChild(child),
+    })
+    return parseJsonResult(result, 'product CLI preflight')
+  }
+
+  async install(): Promise<void> {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    if (this.installed) return
+    await mkdir(this.runtimeCwd, { recursive: true })
+    const result = await runCommand('npm', [
+      'exec',
+      '--yes',
+      `--package=${this.artifact.tarballPath}`,
+      '--',
+      'harness-comfyui',
+      'install',
+      '--installation', this.installationPath,
+      '--artifact', this.artifact.tarballPath,
+    ], {
+      cwd: this.runtimeCwd,
+      env: this.environment,
+      onChild: child => this.trackChild(child),
+    })
+    if (result.code !== 0) throw new Error(`product CLI install failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
+    await access(this.stableCliPath)
+    await access(this.profileManifestPath)
+    this.installed = true
+    this.stopped = false
+  }
+
+  async start(): Promise<void> {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    if (this.stopped) throw new Error('profile fixture has already been stopped')
+    if (this.startChild !== undefined) throw new Error('profile fixture is already running')
+    const child = this.spawnStable(['start', '--installation', this.installationPath])
+    this.startChild = child
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', chunk => { stdout += String(chunk) })
+    child.stderr.on('data', chunk => { stderr += String(chunk) })
+    this.startResultPromise = new Promise<CommandResult>((resolveResult, reject) => {
+      child.once('error', reject)
+      child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
+    })
+    this.foregroundResults.push(this.startResultPromise)
+
+    await waitUntil(async () => {
+      const result = await this.status().catch(() => undefined)
+      if (child.exitCode !== null || child.signalCode !== null) {
+        throw new Error(`product CLI start exited before readiness: ${stderr || stdout}`)
       }
-      const port = Number(match[1])
-      const response = await fetchWithTimeout(`http://127.0.0.1:${port}/`)
-      if (response.status !== 200) return undefined
-      const html = await response.text()
-      parseBootGraph(html)
-      return port
-    }, 'foreground profile readiness')
+      if (result?.status !== 'running') return undefined
+      const response = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}/`)
+      if (!response.ok) return undefined
+      parseBootGraph(await response.text())
+      return true
+    }, 'product CLI boot readiness', 60000, () => child.exitCode !== null || child.signalCode !== null)
+  }
+
+  async restart(): Promise<void> {
+    if (this.disposed) throw new Error('profile fixture is already disposed')
+    if (!this.installed) throw new Error('product CLI install has not completed')
+    if (this.stopped) throw new Error('profile fixture has already been stopped')
+    if (this.restartChild !== undefined) throw new Error('profile fixture restart is already running')
+    const child = this.spawnStable(['restart', '--installation', this.installationPath])
+    this.restartChild = child
+    let stdout = ''
+    let stderr = ''
+    this.restartResultPromise = new Promise<CommandResult>((resolveResult, reject) => {
+      child.stdout.on('data', chunk => { stdout += String(chunk) })
+      child.stderr.on('data', chunk => { stderr += String(chunk) })
+      child.once('error', reject)
+      child.once('close', (code, signal) => resolveResult({ code, signal, stdout, stderr }))
+    })
+    this.foregroundResults.push(this.restartResultPromise)
+
+    await waitUntil(async () => {
+      const result = await this.status().catch(() => undefined)
+      if (child.exitCode !== null || child.signalCode !== null) {
+        throw new Error(`product CLI restart exited before readiness: ${stderr || stdout}`)
+      }
+      if (result?.status !== 'running') return undefined
+      const response = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}/`)
+      if (!response.ok) return undefined
+      parseBootGraph(await response.text())
+      return true
+    }, 'product CLI restart readiness', 60000, () => child.exitCode !== null || child.signalCode !== null)
+  }
+
+  async status(): Promise<JsonObject> {
+    return parseJsonResult(await this.runStable(['status', '--json', '--installation', this.installationPath]), 'status')
+  }
+
+  async health(): Promise<JsonObject> {
+    return parseJsonResult(await this.runStable(['health', '--json', '--installation', this.installationPath]), 'health')
+  }
+
+  async logs(options: { source?: 'stdout' | 'stderr' | 'operations' | 'all'; lines?: number } = {}): Promise<string> {
+    const source = options.source ?? 'all'
+    const lines = String(options.lines ?? 50)
+    const result = await this.runStable([
+      'logs', '--installation', this.installationPath,
+      '--source', source,
+      '--lines', lines,
+    ])
+    if (result.code !== 0) throw new Error(`logs failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
+    return result.stdout
   }
 
   async stop(): Promise<void> {
-    const running = this.running
-    if (!running) return
-    const { child } = running
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM')
-    const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolveResult, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`profile start did not exit: ${running.errorOutput}`)), 30000)
-      child.once('close', (code, signal) => {
-        clearTimeout(timeout)
-        resolveResult({ code, signal })
+    if (!this.installed || this.stopped) return
+    const result = await this.runStable(['stop', '--installation', this.installationPath])
+    if (result.code !== 0) throw new Error(`product CLI stop failed with ${result.code ?? result.signal}: ${result.stderr || result.stdout}`)
+    const lifecycleResults = [...this.foregroundResults]
+    const requiredSuccessfulResults = [this.startResultPromise, this.restartResultPromise].filter(
+      (promise): promise is Promise<CommandResult> => promise !== undefined,
+    )
+    if (lifecycleResults.length > 0) {
+      const results = await Promise.all(lifecycleResults)
+      for (const [index, lifecycleResult] of results.entries()) {
+        if (!requiredSuccessfulResults.includes(lifecycleResults[index]!)) continue
+        if (lifecycleResult.code !== 0 || lifecycleResult.signal !== null) {
+          throw new Error(`product CLI lifecycle command ${index + 1} exited with ${lifecycleResult.code ?? lifecycleResult.signal}`)
+        }
+      }
+      const firstResult = results[0]
+      this.cleanupEvidence.processExit = { code: firstResult.code, signal: firstResult.signal }
+      this.startChild = undefined
+      this.startResultPromise = undefined
+      this.restartChild = undefined
+      this.restartResultPromise = undefined
+      this.foregroundResults.length = 0
+    }
+    await waitUntil(async () => {
+      try {
+        await access(join(this.installationRoot, 'state/process.json'))
+        return undefined
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true
+        throw error
+      }
+    }, 'product CLI process state cleanup', 10000)
+    this.cleanupEvidence.processStateRemoved = true
+    this.cleanupEvidence.portReleased = await this.waitForPortReleased()
+    this.stopped = true
+  }
+
+  private async waitForPortReleased(): Promise<boolean> {
+    return waitUntil(async () => await new Promise<boolean | undefined>(resolveResult => {
+      const socket = createConnection({ host: '127.0.0.1', port: this.currentPort })
+      const timer = setTimeout(() => {
+        socket.destroy()
+        resolveResult(undefined)
+      }, 250)
+      socket.once('connect', () => {
+        clearTimeout(timer)
+        socket.destroy()
+        resolveResult(false)
       })
-    })
-    this.cleanupEvidence.processExit = result
-    if (this.currentPort === undefined) throw new Error('profile did not expose a port before shutdown')
-    this.cleanupEvidence.portReleased = await waitUntil(async () => {
-      const port = this.currentPort!
-      return await new Promise<boolean | undefined>(resolveResult => {
-        const socket = createConnection({ host: '127.0.0.1', port })
-        const timer = setTimeout(() => {
-          socket.destroy()
-          resolveResult(undefined)
-        }, 250)
-        socket.once('connect', () => {
-          clearTimeout(timer)
-          socket.destroy()
-          resolveResult(false)
-        })
-        socket.once('error', () => {
-          clearTimeout(timer)
-          resolveResult(true)
-        })
+      socket.once('error', () => {
+        clearTimeout(timer)
+        socket.destroy()
+        resolveResult(true)
       })
-    }, 'profile port release', 5000)
-    this.running = undefined
+    }), 'product CLI port release', 10000)
   }
 
   async readBootGraph(): Promise<BootGraph> {
-    if (this.currentPort === undefined) throw new Error('profile is not running')
     const response = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}/`)
     if (!response.ok) throw new Error(`web app returned HTTP ${response.status}`)
     return parseBootGraph(await response.text())
   }
 
+  private async activeReleaseRoot(): Promise<string> {
+    const state = JSON.parse(await readFile(join(this.installationRoot, 'state/active-release.json'), 'utf8')) as JsonObject
+    if (typeof state.releasePath !== 'string' || !isAbsolute(state.releasePath)) throw new Error('active release state has no absolute releasePath')
+    return state.releasePath
+  }
+
   async readInstalledProfileEvidence(): Promise<InstalledProfileEvidence> {
-    const profileDirectory = join(this.dshHome, 'profiles', profileName)
-    const patch = await readFile(join(profileDirectory, 'node_modules/harness-comfyui/cordis.patch.yml'), 'utf8')
-    const row = patch.match(/- id:\s*(harness-comfyui)\s+name:\s*(harness-comfyui)\s+config:\s+configurationProfile:\s*([^\n]+)/)
-    if (!row?.[1] || !row[2] || !row[3]) throw new Error('materialized profile omitted the harness Host Loader row')
-    const harnessManifest = JSON.parse(await readFile(join(profileDirectory, 'node_modules/harness-comfyui/package.json'), 'utf8')) as JsonObject
-    const profilePackageVersion = async (packageName: string): Promise<string | undefined> => {
-      try {
-        const manifest = JSON.parse(await readFile(join(profileDirectory, 'node_modules', packageName, 'package.json'), 'utf8')) as JsonObject
-        return asString(manifest.version, `${packageName}.version`)
-      } catch {
-        return undefined
-      }
+    const releaseRoot = await this.activeReleaseRoot()
+    const profileDirectory = join(releaseRoot, 'dsh-home/profiles', profileName)
+    const profileManifest = JSON.parse(await readFile(join(profileDirectory, 'package.json'), 'utf8')) as JsonObject
+    const dsh = profileManifest.dsh
+    const profile = dsh && typeof dsh === 'object' && !Array.isArray(dsh) ? (dsh as JsonObject).profile : undefined
+    const bundleList = profile && typeof profile === 'object' && !Array.isArray(profile) ? (profile as JsonObject).bundles : undefined
+    if (!Array.isArray(bundleList) || bundleList.some(value => typeof value !== 'string')) throw new Error('materialized profile bundle list is invalid')
+
+    const runtimeNodeModules = join(releaseRoot, 'harness-runtime/node_modules')
+    const profileNodeModules = join(profileDirectory, 'node_modules')
+    const runtimeVersions = {
+      cliDsh: await readPackageVersion(join(runtimeNodeModules, '@deepseek-ai/dsh/package.json'), '@deepseek-ai/dsh.version'),
+      dshBase: await readPackageVersion(join(runtimeNodeModules, '@deepseek-ai/dsh-base/package.json'), '@deepseek-ai/dsh-base.version'),
+      dshWebApp: await readPackageVersion(join(runtimeNodeModules, '@deepseek-ai/dsh-web-app/package.json'), '@deepseek-ai/dsh-web-app.version'),
     }
-    const versionEvidence = await readProfileVersionEvidence({
-      async profilePackageVersion(packageName) {
-        if (packageName === 'harness-comfyui') return asString(harnessManifest.version, 'harness-comfyui.version')
-        return profilePackageVersion(packageName)
-      },
-      async runtimePackageVersion(packageName) {
-        return readInstalledPackageVersion(packageName)
-      },
-    })
+    const profileVersions = {
+      harnessComfyui: await readPackageVersion(join(profileNodeModules, 'harness-comfyui/package.json'), 'harness-comfyui.version'),
+      dshBase: runtimeVersions.dshBase,
+      dshWebApp: runtimeVersions.dshWebApp,
+    }
+    const patch = await readFile(join(profileNodeModules, 'harness-comfyui/cordis.patch.yml'), 'utf8')
     return {
-      ...versionEvidence,
-      hostLoaderRow: {
-        id: row[1],
-        name: row[2],
-        configurationExpression: row[3],
-      },
+      profileBundles: [...bundleList],
+      profileVersions,
+      runtimeBundleVersions: runtimeVersions,
+      hostLoaderRow: parseHostLoaderRow(patch),
     }
+  }
+
+  async readClientPackageEvidence(): Promise<ClientPackageEvidence> {
+    const releaseRoot = await this.activeReleaseRoot()
+    const packageRoot = join(releaseRoot, 'package')
+    const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8')) as JsonObject
+    const exports = manifest.exports
+    if (!exports || typeof exports !== 'object' || Array.isArray(exports)) throw new Error('release package exports are missing')
+    const client = (exports as JsonObject)['./client']
+    if (!client || typeof client !== 'object' || Array.isArray(client)) throw new Error('release package ./client export is missing')
+    const exportTarget = (client as JsonObject).default
+    if (typeof exportTarget !== 'string' || exportTarget.length === 0) throw new Error('release package ./client default export is missing')
+    const modulePath = join(packageRoot, exportTarget)
+    const moduleSource = await readFile(modulePath, 'utf8')
+    return { exportTarget, modulePath, moduleSource }
   }
 
   async readClientModule(id: string): Promise<string> {
     const graph = await this.readBootGraph()
     const entry = graph.entries.find(candidate => candidate.id === id)
     if (!entry) throw new Error(`client manifest has no entry ${id}`)
-    const response = await fetchWithTimeout(`http://127.0.0.1:${this.currentPort}${entry.url}`)
+    const response = await fetchWithTimeout(new URL(entry.url, `http://127.0.0.1:${this.currentPort}`).toString())
     if (!response.ok) throw new Error(`client module ${id} returned HTTP ${response.status}`)
     return response.text()
   }
 
-  async runRealBrowserProbe(): Promise<RealBrowserProbe> {
-    if (this.currentPort === undefined) throw new Error('profile is not running')
-    return runRealBrowserProbe(`http://127.0.0.1:${this.currentPort}/`)
-  }
-
-  async inspectDetailsComposition(options: { nativeClientId: string }): Promise<DetailsComposition> {
-    const browser = await this.runRealBrowserProbe()
-    const registrationErrors = browser.singleSlotDuplicateErrors
-    const expectedNative = browser.detailsEntries.some(entry => entry.owner === options.nativeClientId)
-    if (!expectedNative) {
-      registrationErrors.push(`details snapshot omitted ${options.nativeClientId}: ${JSON.stringify(browser.detailsEntries)}`)
-    }
-    const composition: DetailsComposition = {
-      registrationError: registrationErrors[0],
-      priorities: browser.detailsEntries.map(entry => entry.priority),
-      activePriority: browser.detailsEntries.find(entry => entry.active)?.priority,
-      entries: browser.detailsEntries,
-      remainingPriorities: browser.remainingDetailsEntries.map(entry => entry.priority),
-      remainingEntries: browser.remainingDetailsEntries,
-      async unload() {
-        // The real browser probe already disposed the harness-comfyui Fiber.
-      },
-    }
-    return composition
-  }
-
-  async unloadClient(composition: DetailsComposition): Promise<void> {
-    await composition.unload()
+  async runRealBrowserProbe(options?: RealBrowserProbeOptions): Promise<RealBrowserProbe> {
+    return runRealBrowserProbe(`http://127.0.0.1:${this.currentPort}/`, options)
   }
 
   async dispose(): Promise<void> {
     if (this.disposed) return
-    this.disposed = true
     try {
-      await this.stop()
+      if (this.installed) await this.stop()
     } finally {
-      await rm(this.dshHome, { recursive: true, force: true })
+      await rm(this.testRoot, { recursive: true, force: true })
+      try {
+        await access(this.installationRoot)
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') this.cleanupEvidence.installationRemoved = true
+      }
       try {
         await access(this.dshHome)
-      } catch {
-        this.cleanupEvidence.dshHomeRemoved = true
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') this.cleanupEvidence.dshHomeRemoved = true
       }
+      this.cleanupEvidence.noChildProcesses = this.children.size === 0
+      this.disposed = true
     }
   }
 }
 
 export async function createProfileFixture(options: ProfileFixtureOptions): Promise<ProfileFixture> {
-  const artifact = await readArtifactManifest()
-  const head = await runProcess('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, env: process.env })
-  const commit = head.stdout.trim()
-  if (head.code !== 0 || commit !== artifact.commit) {
-    throw new Error(`artifact commit must equal repository HEAD: artifact=${artifact.commit} HEAD=${commit || '<unavailable>'}`)
+  if (!fixtureConfigurations.includes(options.configuration)) {
+    throw new Error(`profile fixture configuration must be one of ${fixtureConfigurations.join(', ')}`)
   }
-  const dshHome = await mkdtemp(join(tmpdir(), 'harness-comfyui-profile-'))
-  if (!isAbsolute(dshHome)) throw new Error(`fixture DSH_HOME is not absolute: ${dshHome}`)
-  return new ProfileFixtureImpl(options, artifact, dshHome)
+  const artifact = await readArtifactManifest(options.artifactManifestPath)
+  const prefix = options.configuration === 'release-smoke'
+    ? 'harness-comfyui-release-smoke-'
+    : 'harness-comfyui-composition-'
+  const testRoot = await mkdtemp(join(tmpdir(), prefix))
+  try {
+    const port = await findFreePort()
+    const catalogCliPath = join(testRoot, 'catalog-discovery.mjs')
+    const sourceCliPath = join(testRoot, 'source-discovery.mjs')
+    const installationRoot = join(testRoot, 'installation')
+    const installationPath = join(testRoot, 'installation.json')
+    const runtimeCwd = join(testRoot, 'command-cwd')
+    await mkdir(runtimeCwd, { recursive: true })
+    await writeFile(catalogCliPath, discoveryScriptSource(), { encoding: 'utf8', mode: 0o755 })
+    await writeFile(sourceCliPath, discoveryScriptSource(), { encoding: 'utf8', mode: 0o755 })
+    await chmod(catalogCliPath, 0o755)
+    await chmod(sourceCliPath, 0o755)
+    await writeFile(installationPath, `${JSON.stringify({
+      schemaVersion: 1,
+      installationId: `${options.configuration}-${process.pid}-${basename(testRoot)}`,
+      root: installationRoot,
+      configurationProfile: options.configuration,
+      host: '127.0.0.1',
+      port,
+      paths: {
+        dataDir: join(installationRoot, 'shared/data'),
+        runRepositoryFile: join(installationRoot, 'shared/data/runs.sqlite'),
+        runDirectory: join(installationRoot, 'shared/runs'),
+        savedMediaDirectory: join(installationRoot, 'shared/saved-media'),
+        logDirectory: join(installationRoot, 'shared/logs'),
+      },
+      comfyui: { defaultInstanceId: `${options.configuration}-instance` },
+      source: {
+        catalogCliPath,
+        sourceCliPath,
+        contractId: discovery.contract_id,
+        supportedContractVersions: [discovery.contract_version],
+      },
+      client: { runRefreshIntervalMs: 1000 },
+      process: { shutdownTimeoutMs: 15000 },
+    }, null, 2)}\n`, 'utf8')
+    return new ProfileFixtureImpl(artifact, options.configuration, testRoot, port)
+  } catch (error) {
+    await rm(testRoot, { recursive: true, force: true })
+    throw error
+  }
 }
 
 export { profileBundles }

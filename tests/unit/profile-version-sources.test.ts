@@ -10,9 +10,9 @@ describe('profile version evidence sources', () => {
       ['@deepseek-ai/dsh-web-app', undefined],
     ])
     const runtimeVersions = new Map([
-      ['@deepseek-ai/dsh', '0.1.0-rc.7'],
-      ['@deepseek-ai/dsh-base', '0.1.0-rc.7'],
-      ['@deepseek-ai/dsh-web-app', '0.1.0-rc.7'],
+      ['@deepseek-ai/dsh', '0.1.0-rc.8'],
+      ['@deepseek-ai/dsh-base', '0.1.0-rc.8'],
+      ['@deepseek-ai/dsh-web-app', '0.1.0-rc.8'],
     ])
 
     await expect(readProfileVersionEvidence({
@@ -31,9 +31,9 @@ describe('profile version evidence sources', () => {
         dshWebApp: undefined,
       },
       runtimeBundleVersions: {
-        cliDsh: '0.1.0-rc.7',
-        dshBase: '0.1.0-rc.7',
-        dshWebApp: '0.1.0-rc.7',
+        cliDsh: '0.1.0-rc.8',
+        dshBase: '0.1.0-rc.8',
+        dshWebApp: '0.1.0-rc.8',
       },
     })
   })
@@ -44,7 +44,7 @@ describe('profile version evidence sources', () => {
         return packageName === 'harness-comfyui' ? '' : undefined
       },
       async runtimePackageVersion() {
-        return '0.1.0-rc.7'
+        return '0.1.0-rc.8'
       },
     })).rejects.toThrow('harness-comfyui version')
   })

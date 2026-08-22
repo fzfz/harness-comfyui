@@ -20,6 +20,7 @@ describe('Configuration Profile loader', () => {
     HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: 'isolated-instance',
     HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
     HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
+    HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '1100',
     HARNESS_COMFYUI_SERVER_HOST: '127.0.0.1',
     HARNESS_COMFYUI_SERVER_PORT: '4199',
   }
@@ -29,11 +30,13 @@ describe('Configuration Profile loader', () => {
       configRoot: 'config',
       environment: {
         HARNESS_COMFYUI_SERVER_PORT: '4199',
+        HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '1200',
       },
     })
 
     expect(profile.configurationProfile).toBe('development')
     expect(profile.server.port).toBe(4199)
+    expect(profile.client.runRefreshIntervalMs).toBe(1200)
     expect(profile.paths.dataDir).toBe('.local/development')
   })
 
@@ -69,6 +72,7 @@ describe('Configuration Profile loader', () => {
       expect(profile.paths.dataDir).toBe('.local/isolated/data')
       expect(profile.paths.dataDir).not.toBe('.local/development')
       expect(profile.server.port).toBe(4199)
+      expect(profile.client.runRefreshIntervalMs).toBe(1100)
     },
   )
 
@@ -233,6 +237,7 @@ describe('Configuration Profile loader', () => {
       'comfyui',
       'source',
       'jobs',
+      'client',
       'server',
       'process',
     ])
@@ -255,6 +260,7 @@ describe('Configuration Profile loader', () => {
       'missingObservationMs',
     ])
     expect(Object.keys(schemaDict.server.dict!)).toEqual(['host', 'port'])
+    expect(Object.keys(schemaDict.client.dict!)).toEqual(['runRefreshIntervalMs'])
     expect(Object.keys(schemaDict.process.dict!)).toEqual(['shutdownTimeoutMs'])
   })
 })

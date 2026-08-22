@@ -16,5 +16,8 @@
   "server": {
     "host": "127.0.0.1",
     "port": 4173
+  },
+  "client": {
+    "runRefreshIntervalMs": 1000
   }
 }

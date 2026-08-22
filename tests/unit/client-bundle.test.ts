@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import vm from 'node:vm'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -29,6 +30,8 @@ const expectedInlineRules = [
   /^@deepseek-ai\/(cosmokit|schemastery)(\/|$)/,
   /^@deepseek-ai\/dsh-[a-z0-9]+(-[a-z0-9]+)*\/remote$/,
 ]
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const temporaryDirectories: string[] = []
 
@@ -67,6 +70,17 @@ afterEach(async () => {
 })
 
 describe('Client bundle build seam', () => {
+  it('uses the public self-package Remote seam in source and build entry', async () => {
+    const source = await readFile(join(repositoryRoot, 'src/client/index.tsx'), 'utf8')
+    const buildScript = await readFile(join(repositoryRoot, 'scripts/build/tsdown-client-bundle.ts'), 'utf8')
+
+    expect(source).toMatch(/from ['"]harness-comfyui\/remote['"]/u)
+    expect(source).toContain('ctx.remote.$mount(harnessComfyuiRemote)')
+    expect(source).not.toContain('applyWithRemote')
+    expect(buildScript).not.toContain('lib/typert.remote-client.js')
+    expect(buildScript).not.toContain('applyWithRemote')
+  })
+
   it('exports the exact external and inline policy as one structured constant', () => {
     expect(CLIENT_BUNDLE_POLICY).toEqual({
       externals: expectedExternals,
