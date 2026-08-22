@@ -107,7 +107,11 @@ function createFixture(otherSource = ''): string {
     '@deepseek-ai/dsh-web-app',
   ]), 'utf8')
   writeFileSync(join(root, 'cordis.patch.yml'), loaderPatch, 'utf8')
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n', 'utf8')
+  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets
+  config:
+    default: harness-comfyui
+    includeUserRoot: true
+`, 'utf8')
   if (otherSource) {
     writeFileSync(join(root, 'src/other.ts'), otherSource, 'utf8')
   }

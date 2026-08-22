@@ -30,7 +30,7 @@ export async function runProductStart(input, operation = {}) {
   }
   await mkdir(installation.paths.logDirectory, { recursive: true })
 
-  const environment = buildHostEnvironment(installation, active.dshHome)
+  const environment = await buildHostEnvironment(installation, active)
   const child = spawnForeground({
     dshExecutable: active.dshExecutable,
     dshHome: active.dshHome,

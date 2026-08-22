@@ -113,6 +113,12 @@ if (args[0] !== '--profile' || args[1] !== 'comfyui-workbench') process.exit(2)
 
 const version = process.env.DSH_HOME.split('/').at(-2)
 if (version === '0.1.0-test.1' && process.env.FAIL_ROLLBACK_START === '1') process.exit(23)
+appendFileSync(process.env.ROLLBACK_HOST_ENV_LOG, JSON.stringify({
+  version,
+  dshHome: process.env.DSH_HOME,
+  skillDirectory: process.env.HARNESS_COMFYUI_SKILL_DIR,
+  toolsMode: process.env.DSH_TOOLS_MODE,
+}) + '\\n')
 const badHealth = version === '0.1.0-test.1' && process.env.FAIL_ROLLBACK_HEALTH === '1'
 const readyPath = process.env.ROLLBACK_HOST_READY_FILE
 const metricsPath = process.env.ROLLBACK_HOST_METRICS_FILE
@@ -239,6 +245,7 @@ async function createFixture() {
   const inputPath = join(root, 'installation.json')
   const readyPath = join(root, 'host-ready')
   const metricsPath = join(root, 'host-metrics.json')
+  const envLogPath = join(root, 'host-env.jsonl')
   const stageReadyFile = join(root, 'stage-ready')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
@@ -276,13 +283,17 @@ async function createFixture() {
     PATH: `${fake.binDirectory}${delimiter}${process.env.PATH ?? ''}`,
     FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
     ROLLBACK_HOST_READY_FILE: readyPath,
+    ROLLBACK_HOST_ENV_LOG: envLogPath,
     ROLLBACK_HOST_METRICS_FILE: metricsPath,
     FAIL_ROLLBACK_START: '0',
     FAIL_ROLLBACK_HEALTH: '0',
+    DSH_HOME: '/ambient/dsh-home',
+    HARNESS_COMFYUI_SKILL_DIR: '/ambient/skills',
+    DSH_TOOLS_MODE: 'ambient',
   }
   const firstArtifact = await createArtifact(root, '0.1.0-test.1')
   const candidateArtifact = await createArtifact(root, '0.1.0-test.2')
-  return { root, installation, inputPath, firstArtifact, candidateArtifact, readyPath, metricsPath, stageReadyFile, env }
+  return { root, installation, inputPath, firstArtifact, candidateArtifact, readyPath, envLogPath, metricsPath, stageReadyFile, env }
 }
 
 type Fixture = Awaited<ReturnType<typeof createFixture>>
@@ -398,7 +409,34 @@ describe('installed rollback CLI', () => {
 
     const secondRollback = spawnProcess(stableBin(fixture), ['rollback', '--installation', fixture.inputPath], fixture.env)
     const fourthReady = await waitForLines(fixture.readyPath, 4)
+    const environmentLines = await waitForLines(fixture.envLogPath, 4)
     const fourthPid = Number(fourthReady[3].split(':')[1])
+    expect(environmentLines.map(line => JSON.parse(line))).toEqual([
+      {
+        version: '0.1.0-test.1',
+        dshHome: join(fixture.installation.root, 'releases/0.1.0-test.1/dsh-home'),
+        skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.1/package/skills'),
+        toolsMode: 'native',
+      },
+      {
+        version: '0.1.0-test.2',
+        dshHome: join(fixture.installation.root, 'releases/0.1.0-test.2/dsh-home'),
+        skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.2/package/skills'),
+        toolsMode: 'native',
+      },
+      {
+        version: '0.1.0-test.1',
+        dshHome: join(fixture.installation.root, 'releases/0.1.0-test.1/dsh-home'),
+        skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.1/package/skills'),
+        toolsMode: 'native',
+      },
+      {
+        version: '0.1.0-test.2',
+        dshHome: join(fixture.installation.root, 'releases/0.1.0-test.2/dsh-home'),
+        skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.2/package/skills'),
+        toolsMode: 'native',
+      },
+    ])
     const switchedAgain = await waitForState(statePath, '0.1.0-test.2')
     expect(fourthPid).not.toBe(thirdPid)
     expect(switchedAgain.previousRelease).toEqual({

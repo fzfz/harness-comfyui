@@ -142,6 +142,8 @@ if (args.slice(0, 3).join(' ') === 'plugin --profile comfyui-workbench') {
 if (args[0] !== '--profile' || args[1] !== 'comfyui-workbench') process.exit(2)
 appendFileSync(process.env.HOST_ENV_LOG, JSON.stringify({
   dshHome: process.env.DSH_HOME,
+  skillDirectory: process.env.HARNESS_COMFYUI_SKILL_DIR,
+  toolsMode: process.env.DSH_TOOLS_MODE,
   configurationProfile: process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE,
   dataDir: process.env.HARNESS_COMFYUI_DATA_DIR,
   runRepositoryFile: process.env.HARNESS_COMFYUI_RUN_REPOSITORY_FILE,
@@ -295,6 +297,9 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     HOST_READY_FILE: hostReadyFile,
     HOST_ENV_LOG: hostEnvLog,
     HARNESS_COMFYUI_AMBIENT: 'must-be-removed',
+    HARNESS_COMFYUI_SKILL_DIR: '/ambient/skills',
+    DSH_HOME: '/ambient/dsh-home',
+    DSH_TOOLS_MODE: 'ambient',
   }
   return { root, installation, inputPath, tarballPath, hostReadyFile, hostEnvLog, env }
 }
@@ -379,6 +384,8 @@ describe('installed lifecycle CLI', () => {
     const environment = JSON.parse((await readFile(fixture.hostEnvLog, 'utf8')).trim())
     expect(environment).toMatchObject({
       dshHome: join(fixture.installation.root, 'releases/0.1.0-test.1/dsh-home'),
+      skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.1/package/skills'),
+      toolsMode: 'native',
       configurationProfile: 'production',
       dataDir: fixture.installation.paths.dataDir,
       runRepositoryFile: fixture.installation.paths.runRepositoryFile,

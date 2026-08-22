@@ -1,1 +1,4 @@
-[]
+- id: agent-presets
+  config:
+    default: harness-comfyui
+    includeUserRoot: true

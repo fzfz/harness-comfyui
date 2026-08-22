@@ -14,6 +14,8 @@ import { spawn } from 'node:child_process'
 import { createConnection, createServer } from 'node:net'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
+import { readProductAgentConfig } from './preflight.mjs'
+
 export const PROCESS_STATE_SCHEMA_VERSION = 1
 export const OPERATION_SCHEMA_VERSION = 1
 export const ACTIVE_RELEASE_STATE_SCHEMA_VERSION = 1
@@ -337,13 +339,16 @@ async function readActiveRelease(root, expectedInstallationId) {
   return { activeVersion, releasePath, packageCliPath, dshExecutable, dshHome }
 }
 
-function buildHostEnvironment(installation, dshHome) {
+async function buildHostEnvironment(installation, active) {
+  const productAgent = await readProductAgentConfig(resolve(active.releasePath, 'package'))
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
   )
   return {
     ...environment,
-    DSH_HOME: dshHome,
+    DSH_HOME: active.dshHome,
+    DSH_TOOLS_MODE: 'native',
+    HARNESS_COMFYUI_SKILL_DIR: resolve(active.releasePath, 'package', productAgent.skillRelativeRoot),
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: installation.configurationProfile,
     HARNESS_COMFYUI_DATA_DIR: installation.paths.dataDir,
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: installation.paths.runRepositoryFile,

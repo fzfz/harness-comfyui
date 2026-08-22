@@ -39,6 +39,11 @@ const expectedLoaderPatch = `- insert:
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
 `
+const expectedAgentPresetPatch = `- id: agent-presets
+  config:
+    default: harness-comfyui
+    includeUserRoot: true
+`
 
 function parseArguments(argv) {
   const values = new Map()
@@ -318,7 +323,7 @@ function validateStructuredHarnessBoundary(root) {
   }
   assertPublicPackageMetadata(rootManifest, 'package.json')
   assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
-  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
+  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), expectedAgentPresetPatch)
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
   assertWorkspaceFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))
