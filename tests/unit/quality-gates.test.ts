@@ -48,6 +48,7 @@ function classifyGitDiff(root: string, before: string): string {
     '--root', root,
     '--before', before,
     '--after', after,
+    '--event-name', 'push',
   ], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 }
 
