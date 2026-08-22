@@ -338,9 +338,11 @@ describe('installed lifecycle CLI', () => {
     expect(install.status, install.stderr).toBe(0)
 
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const statePath = join(fixture.installation.root, 'state/process.json')
     const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     await waitForFile(fixture.hostReadyFile)
-    const processState = JSON.parse(await readFile(join(fixture.installation.root, 'state/process.json'), 'utf8'))
+    await waitForFile(statePath)
+    const processState = JSON.parse(await readFile(statePath, 'utf8'))
     expect(processState).toMatchObject({
       schemaVersion: 1,
       installationId: 'fixture-lifecycle',
@@ -414,6 +416,7 @@ describe('installed lifecycle CLI', () => {
     const statePath = join(fixture.installation.root, 'state/process.json')
     const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     await waitForFile(fixture.hostReadyFile)
+    await waitForFile(statePath)
 
     const stop = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
     expect(stop.status, stop.stderr).toBe(0)
@@ -431,8 +434,10 @@ describe('installed lifecycle CLI', () => {
     expect(install.status, install.stderr).toBe(0)
 
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const statePath = join(fixture.installation.root, 'state/process.json')
     const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     await waitForFile(fixture.hostReadyFile)
+    await waitForFile(statePath)
 
     const duplicate = await runProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     expect(duplicate.status).not.toBe(0)
@@ -477,6 +482,7 @@ describe('installed lifecycle CLI', () => {
       'start', '--installation', fixture.inputPath,
     ], fixture.env)
     await waitForFile(fixture.hostReadyFile)
+    await waitForFile(join(fixture.installation.root, 'state/process.json'))
     const stop = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
       'stop', '--installation', fixture.inputPath,
     ], fixture.env)
@@ -522,8 +528,54 @@ process.stdout.write(values[field] ?? '')
     await expect(lstat(statePath)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
+  it('waits for a same-start-time bracketed command to become a zombie before clearing state', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const fixedStartTime = 'Sat Aug 22 09:44:18 2026'
+    const transitionAt = Date.now() + 3_000
+    const transientPs = join(fixture.root, 'fake-bin/ps')
+    await writeFile(transientPs, `#!/usr/bin/env node
+const field = process.argv.at(-1)?.replace(/=$/u, '')
+const values = {
+  lstart: ${JSON.stringify(fixedStartTime)},
+  command: '[node]',
+  stat: Date.now() < Number(process.env.FAKE_PS_TRANSITION_AT) ? 'R' : 'Z',
+}
+    process.stdout.write(values[field] ?? '')
+`, 'utf8')
+    await chmod(transientPs, 0o755)
+    Object.assign(fixture.env, { FAKE_PS_TRANSITION_AT: String(transitionAt) })
+
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    await writeFile(statePath, `${JSON.stringify({
+      schemaVersion: 1,
+      installationId: fixture.installation.installationId,
+      activeVersion: '0.1.0-test.1',
+      pid: 99_999_997,
+      operationId: 'transient-zombie-operation',
+      startedAt: '2026-08-22T00:00:00.000Z',
+      host: fixture.installation.host,
+      port: fixture.installation.port,
+      processIdentity: {
+        startTime: fixedStartTime,
+        command: '/installation/releases/0.1.0-test.1/harness-runtime/node_modules/.bin/dsh --profile comfyui-workbench --no-open',
+      },
+    }, null, 2)}\n`, 'utf8')
+
+    const stop = await runProcess(join(fixture.installation.root, 'bin/harness-comfyui'), [
+      'stop', '--installation', fixture.inputPath,
+    ], fixture.env)
+
+    expect(stop.status, stop.stderr).toBe(0)
+    await expect(lstat(statePath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it('rejects an active [node] process with a matching start time', async () => {
     const fixture = await createFixture()
+    fixture.installation.process.shutdownTimeoutMs = 100
+    await writeFile(fixture.inputPath, `${JSON.stringify(fixture.installation, null, 2)}\n`, 'utf8')
     const install = await installFixture(fixture)
     expect(install.status, install.stderr).toBe(0)
 
@@ -611,6 +663,7 @@ process.stdout.write(values[field] ?? '')
     const statePath = join(fixture.installation.root, 'state/process.json')
     const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     await waitForFile(fixture.hostReadyFile)
+    await waitForFile(statePath)
     const originalState = await readProcessState(statePath)
     const mismatchedState = { ...originalState, [field]: value }
 
@@ -658,6 +711,7 @@ process.stdout.write(values[field] ?? '')
     const statePath = join(fixture.installation.root, 'state/process.json')
     const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
     await waitForFile(fixture.hostReadyFile)
+    await waitForFile(statePath)
     const originalState = await readProcessState(statePath)
     const mismatchedState = {
       ...originalState,

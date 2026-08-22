@@ -312,6 +312,10 @@ function isExitedProcessIdentity(expected, observed) {
   return zombieState || zombieCommand
 }
 
+function isBracketedProcessCommand(command) {
+  return /^\[[^\]]+\]$/u.test(command)
+}
+
 function processIdentityMismatch(state, identity) {
   return `process identity mismatch for PID ${state.pid}: expected ${JSON.stringify(state.processIdentity)}, got ${JSON.stringify(identity)}`
 }
@@ -488,14 +492,35 @@ function probePortAvailable(host, port) {
   })
 }
 
+async function waitForStopIdentityResolution(state, initialIdentity, deadline) {
+  let identity = initialIdentity
+  while (true) {
+    if (identity === null || isExitedProcessIdentity(state.processIdentity, identity)) return null
+    if (sameProcessIdentity(state.processIdentity, identity)) return identity
+    if (
+      identity.startTime !== state.processIdentity.startTime
+      || !isBracketedProcessCommand(identity.command)
+    ) {
+      throw new Error(processIdentityMismatch(state, identity))
+    }
+    if (Date.now() >= deadline) throw new Error(processIdentityMismatch(state, identity))
+    await new Promise(resolveResult => setTimeout(resolveResult, 25))
+    identity = await readProcessIdentity(state.pid)
+  }
+}
+
 async function waitForProcessExit(state, timeoutMs) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    const identity = await readProcessIdentity(state.pid)
+    let identity = await readProcessIdentity(state.pid)
     if (identity === null) return
     if (isExitedProcessIdentity(state.processIdentity, identity)) return
     if (!sameProcessIdentity(state.processIdentity, identity)) {
-      throw new Error(processIdentityMismatch(state, identity))
+      identity = await waitForStopIdentityResolution(state, identity, deadline)
+      if (identity === null || isExitedProcessIdentity(state.processIdentity, identity)) return
+      if (!sameProcessIdentity(state.processIdentity, identity)) {
+        throw new Error(processIdentityMismatch(state, identity))
+      }
     }
     await new Promise(resolveResult => setTimeout(resolveResult, 25))
   }
@@ -662,6 +687,7 @@ export {
   waitForChildClose,
   waitForPortClosed,
   waitForProcessExit,
+  waitForStopIdentityResolution,
   waitForStableProcessIdentity,
   writeAtomicJson,
 }

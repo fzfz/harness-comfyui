@@ -14,6 +14,7 @@ import {
   statusView,
   waitForPortClosed,
   waitForProcessExit,
+  waitForStopIdentityResolution,
 } from './lifecycle.mjs'
 
 export async function runProductStop(input) {
@@ -25,7 +26,11 @@ export async function runProductStop(input) {
     return { stage: 'stop', ...statusView(installation, active.activeVersion, null, 'stopped') }
   }
   assertProcessStateOwnership(state, installation, active.activeVersion)
-  const identity = await readProcessIdentity(state.pid)
+  const deadline = Date.now() + installation.process.shutdownTimeoutMs
+  let identity = await readProcessIdentity(state.pid)
+  if (identity !== null && !isExitedProcessIdentity(state.processIdentity, identity) && !sameProcessIdentity(state.processIdentity, identity)) {
+    identity = await waitForStopIdentityResolution(state, identity, deadline)
+  }
   if (identity === null || isExitedProcessIdentity(state.processIdentity, identity)) {
     await rm(statePath, { force: true })
     await waitForPortClosed(installation.host, installation.port, installation.process.shutdownTimeoutMs)
