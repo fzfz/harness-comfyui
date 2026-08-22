@@ -7,6 +7,18 @@ import { createProfileFixture } from '../../src/testing/profile-fixture.ts'
 
 const fixtures: Array<Awaited<ReturnType<typeof createProfileFixture>>> = []
 
+function processIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code === 'ESRCH') return false
+    if (code === 'EPERM') return true
+    throw error
+  }
+}
+
 afterEach(async () => {
   await Promise.all(fixtures.splice(0).map(fixture => fixture.dispose()))
 })
@@ -45,6 +57,8 @@ describe('release artifact deployment lifecycle', () => {
       expect(Number.isSafeInteger(newState.pid)).toBe(true)
       expect(newState.pid).toBeGreaterThan(0)
       expect(newState.pid).not.toBe(oldState.pid)
+      expect(processIsAlive(oldState.pid)).toBe(false)
+      expect(processIsAlive(newState.pid)).toBe(true)
       await expect(fixture.status()).resolves.toMatchObject({
         status: 'running',
         activeVersion: fixture.artifact.version,

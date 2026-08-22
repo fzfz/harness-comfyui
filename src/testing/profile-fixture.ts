@@ -547,6 +547,11 @@ class ProfileFixtureImpl implements ProfileFixture {
     )
     if (lifecycleResults.length > 0) {
       const results = await Promise.all(lifecycleResults)
+      for (const [index, lifecycleResult] of results.entries()) {
+        if (lifecycleResult.code !== 0 || lifecycleResult.signal !== null) {
+          throw new Error(`product CLI lifecycle command ${index + 1} exited with ${lifecycleResult.code ?? lifecycleResult.signal}`)
+        }
+      }
       const firstResult = results[0]
       this.cleanupEvidence.processExit = { code: firstResult.code, signal: firstResult.signal }
       this.startChild = undefined
