@@ -31,8 +31,8 @@
 | 6. 主线程 diff 审查与返修 | complete | 主线程逐 hunk 核对范围、接口和验收；执行队员只修复明确 finding |
 | 7. 两轴代码审查 | complete | 独立 Standards Reviewer 与 Spec Reviewer 返回可用结论；已接受 finding 完成返修 |
 | 8. 最终验收 | complete | 定向回归、一次完整测试、高耗时真实 lifecycle、真实浏览器功能与独立视觉验收全部 PASS；Host 已 stop |
-| 9. 集成本地 main | pending | worktree 分支已提交；本地 main 合入；worktree 已删除；分支清理边界已记录 |
-| 10. 关闭与发布 | pending | Issue #17 已关闭；版本提交为 `0.1.17`；tag/Release `v0.1.17` 与发布 artifact 身份验证通过 |
+| 9. 集成本地 main | complete | worktree 分支与最终 boundary repair 分支均已提交并合入本地 main；两个 worktree 与分支均已删除 |
+| 10. 关闭与发布 | in_progress | Issue #17 已关闭；版本提交为 `0.1.17`；tag/Release `v0.1.17` 与发布 artifact 身份验证通过 |
 
 ## Test evidence ledger
 
@@ -51,6 +51,8 @@
 | `b48bc5b` | `node_modules/.bin/tsc --noEmit` and diff checks | PASS | TypeScript/diff changes |
 | `4ab14e7` | Issue #17 real browser Session create/reconnect E2E | 1/1 PASS | E2E test or product Session behavior changes |
 | `4ab14e7` | `git diff --check` and cached diff check | PASS | diff changes |
+| `1a24166` | Harness boundary focused security tests | 41/41 PASS | boundary allowlist or security test changes |
+| `1a24166` | direct `check-harness-boundary.mjs` and `git diff --check` | PASS | boundary source or diff changes |
 
 ## Two-axis review status
 
@@ -77,3 +79,4 @@
 | Deploy preflight resolved ambient pnpm 10.32.1 instead of required 11.7.0 | final acceptance | selected an existing local pnpm 11.7.0 package through a temporary wrapper-first PATH; no download, install, or global configuration change |
 | cold Composition profile run exceeded its 90 second test timeout | final acceptance | let the focused scenario exit naturally; it passed in 83.226 seconds, then ran only the two remaining composition files |
 | Issue #3 E2E expected an empty Session list | final acceptance | Issue #17 now creates exactly one project Session; executor updated only that E2E to assert create-once and a stable second browser connection |
+| main CI `32664651582` rejected the new public connection type import | release qualification | reopened #17; a repair worktree added only the rc.8 public type-only specifier and positive/negative security tests; focused 41/41 and direct boundary check PASS |

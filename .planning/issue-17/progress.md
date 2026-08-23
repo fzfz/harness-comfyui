@@ -43,3 +43,8 @@
 - 故障恢复后出现的 `session-5aca...` 被 Workspace registry 记账；它来自隔离验收清空客户端持久选择后的 rc.8 `WorkspaceRuntime.connectWorkspace`，不是只传 `{cwd, agentPreset}` 的 Issue #17 binding create。正常 refresh/reconnect/restart 证据在隔离场景前已经 PASS，未据此扩展 Issue #17 源码。
 - 第一名视觉 Reviewer 把已关闭 Issue #3 的既有原型差异误归为 Issue #17 回退。第二名独立 Reviewer 同时比较静态原型、Issue #3 已验收产品基线与 Issue #17 截图，裁决左列、标题、普通消息、流式状态、输入区、右列、三列尺寸和可见控件全部 no-regression PASS。
 - 最终 Host 已通过稳定 CLI stop；PID 与 4173 listener 均消失。worktree 临时凭据副本与 `node_modules` symlink 已删除，Issue 分支 Git 状态干净。Phase 8 完成。
+- 主线程关闭 #17、将六个实现提交以 merge commit `47b08b3` 合入本地 main，并删除约 377 MiB 的独立 worktree、Issue 分支和生成型 runtime；规划与浏览器证据随后提交为 `980a7fa`。
+- Release executor 提交 `f2edfa9`：产品版本改为 `0.1.17`，plugin-status 测试从 package.json 读取版本，release-smoke 改为要求 conversation/harness-comfyui 且明确排除 PRD 02 禁用的 ui-layout。受影响 plugin-status 4/4 PASS；旧 artifact 无法完成版本变更后的 release-smoke，留给最终 qualification 生成一次新 artifact。
+- 首次 main CI `32664651582` 的 preinstall gates PASS，但 `quality:fast` 在 `check:harness-boundary` 拒绝 Issue #17 要求的公开 `@deepseek-ai/dsh-client-connection/client` type import 后停止，未进入 artifact qualification。
+- 主线程重新打开 #17 并建立 `/Volumes/4Tdisk/work/AI2/harness-comfyui-issue-17-repair`。执行队员提交 `1a24166`，只把公开 connection client specifier登记为 type-only，并新增接受 type import/拒绝 value import 两个测试；focused security `41/41`、直接 boundary script 与 diff check PASS。
+- 主线程逐行审查 boundary repair，以 merge commit `fa593c9` 合入 main，删除 repair worktree、symlink 和分支。Phase 9 完成；下一步关闭 #17 并重新推送唯一最终 CI candidate。

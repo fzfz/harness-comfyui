@@ -163,3 +163,9 @@
 - Removing the release-local user Preset through public `agentPreset.remove` while the Host held an empty isolated Session state produced the exact create-failed Workbench message and no composer, Session row or fallback Preset. Every moved runtime state was restored from an exact backup before final stop.
 - An independent no-regression Reviewer compared the static prototype, the accepted Issue #3 product baseline and the Issue #17 browser screenshots. All PRD 16 visual items passed; the first reviewer's reported controls and copy differences were already present in the closed parent Issue baseline or came from real Session data.
 - The acceptance Host is stopped, port 4173 is free, the release-local credential copy is deleted, and the Issue worktree has no tracked or untracked Git changes.
+
+## Final security-boundary repair
+
+- Main CI run `32664651582` passed every preinstall gate and then stopped before qualification because `scripts/security/check-harness-boundary.mjs` did not yet list the public rc.8 `@deepseek-ai/dsh-client-connection/client` type surface required by Issue #17.
+- Repair commit `1a24166b8bdfeff296f1821aee3296b6a51c1ab5` adds only that specifier as `type-only`. A positive fixture accepts `ConnectionHandle` through `import type`; a negative fixture proves a value import remains rejected.
+- Focused boundary tests passed `41/41`; the direct boundary command and diff check passed. The repair does not change product runtime behavior, dependencies, copy, layout, Session logic or release version.
