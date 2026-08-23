@@ -22,6 +22,7 @@ import {
 const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'process',
   'activeRelease',
+  'agentPresetInstallation',
   'agentPresetRoster',
   'harnessWeb',
   'clientBundle',
@@ -34,6 +35,19 @@ const PRODUCT_HEALTH_CHECKS = Object.freeze([
 
 function failedCheck(error) {
   return { status: 'failed', error };
+}
+
+function agentPresetInstallationEvidence(productAgent, requiredEntries) {
+  const artifactRoot = `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}`;
+  const artifactPrefix = `${artifactRoot}/`;
+  return {
+    status: 'passed',
+    releaseRelativeRoot: `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`,
+    requiredFiles: requiredEntries
+      .filter(entry => entry.startsWith(artifactPrefix))
+      .map(entry => entry.slice(artifactPrefix.length)),
+    skillRelativeRoot: `package/${productAgent.skillRelativeRoot}`,
+  };
 }
 
 function initialProductHealthEvidence() {
@@ -222,14 +236,17 @@ export async function runProductHealth(input) {
   let active;
   let packageManifest;
   let productAgent;
+  let agentPresetRequiredEntries;
   try {
     active = await readActiveRelease(installation.root, installation.installationId);
     packageManifest = await readProductPackageManifest(active);
     if (packageManifest.version !== active.activeVersion) throw new Error('active release version mismatch');
-    ({ productAgent } = await validateProductAgentRelease(active.releasePath));
+    ({ productAgent, requiredEntries: agentPresetRequiredEntries } = await validateProductAgentRelease(active.releasePath));
     evidence.activeRelease = { status: 'passed', version: packageManifest.version };
-  } catch {
+    evidence.agentPresetInstallation = agentPresetInstallationEvidence(productAgent, agentPresetRequiredEntries);
+  } catch (error) {
     evidence.activeRelease = failedCheck('active-release-invalid');
+    evidence.agentPresetInstallation = failedCheck(error instanceof Error ? error.message : String(error));
   }
 
   if (active !== undefined) {
@@ -241,14 +258,16 @@ export async function runProductHealth(input) {
       if (identity === null || !sameProcessIdentity(state.processIdentity, identity)) throw new Error('process identity mismatch');
       if (!(await probePort(installation.host, installation.port))) throw new Error('Host port is not running');
       evidence.process = { status: 'passed' };
-    } catch {
-      evidence.process = failedCheck('process-invalid');
+    } catch (error) {
+      evidence.process = failedCheck(error instanceof Error ? error.message : String(error));
     }
   } else {
     evidence.process = failedCheck('active-release-required');
   }
 
-  if (active !== undefined && productAgent !== undefined) {
+  if (evidence.process.status !== 'passed') {
+    evidence.agentPresetRoster = failedCheck('process readiness required');
+  } else if (active !== undefined && productAgent !== undefined) {
     try {
       const roster = await validateRunningAgentPresetRoster(installation, productAgent);
       evidence.agentPresetRoster = { status: 'passed', ...roster };

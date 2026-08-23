@@ -406,7 +406,6 @@ function validateAgentPresetRoster(roster, productAgent) {
     id: productRow.id,
     trust: productRow.trust,
     isDefault: productRow.isDefault,
-    releaseRelativeRoot: `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`,
   }
 }
 
