@@ -22,6 +22,7 @@ import type {
   SlotRegistry as SlotRegistryType,
 } from '@deepseek-ai/dsh-client-runtime/client'
 
+import productAgentConfig from '../../config/product-agent.json' with { type: 'json' }
 import { buildClientBundle } from '../../scripts/build/tsdown-client-bundle.ts'
 import { bundleGeneratedTypert } from '../../scripts/build/bundle-generated-typert.ts'
 import { standaloneTypertWorkspacePlugin } from '../../scripts/build/standalone-typert-plugin.ts'
@@ -279,7 +280,7 @@ describe('built Client bundle boundary', () => {
         },
       },
     }
-    vm.runInNewContext(await readFile(output, 'utf8'), { document, window })
+    vm.runInNewContext(await readFile(output, 'utf8'), { AbortController, document, window })
 
     expect(handoff?.id).toBe('harness-comfyui')
     expect(handoff?.factory).toBeTypeOf('function')
@@ -323,6 +324,7 @@ describe('built Client bundle boundary', () => {
           id: 'portrait' as SessionSummary['id'],
           displayTitle: '角色立绘调整',
           title: '角色立绘调整',
+          agentPreset: productAgentConfig.agentPresetId,
           updatedAt: 1_723_300_320_000,
           running: false,
           blank: false,
@@ -331,6 +333,7 @@ describe('built Client bundle boundary', () => {
           id: 'video' as SessionSummary['id'],
           displayTitle: '测试视频工作流',
           title: '测试视频工作流',
+          agentPreset: productAgentConfig.agentPresetId,
           updatedAt: 1_723_296_480_000,
           running: false,
           blank: false,
@@ -339,6 +342,7 @@ describe('built Client bundle boundary', () => {
           id: 'comparison' as SessionSummary['id'],
           displayTitle: '画风参数对比',
           title: '画风参数对比',
+          agentPreset: productAgentConfig.agentPresetId,
           updatedAt: 1_721_088_000_000,
           running: false,
           blank: false,
@@ -509,8 +513,8 @@ describe('built Client bundle boundary', () => {
     const initialMarkup = renderRoot()
     expect(initialMarkup).toContain('294px minmax(0, 1fr) 432px')
     expect(renderCalls).toEqual([
-      { key: 'sidebar', owner: { collapsed: false, width: 294 } },
       { key: 'conversation', owner: {} },
+      { key: 'sidebar', owner: { collapsed: false, width: 294 } },
       { key: 'details', owner: {} },
       { key: 'shell.overlay', owner: {} },
     ])
@@ -674,7 +678,7 @@ describe('built Client bundle boundary', () => {
     layout.toggleSidebar()
     const collapsedMarkup = renderRoot()
     expect(collapsedMarkup).toContain('56px minmax(0, 1fr) 432px')
-    expect(renderCalls[0]).toEqual({ key: 'sidebar', owner: { collapsed: true, width: 56 } })
+    expect(renderCalls[1]).toEqual({ key: 'sidebar', owner: { collapsed: true, width: 56 } })
 
     layout.toggleSidebar()
     expect(renderRoot()).toContain('294px minmax(0, 1fr) 432px')
