@@ -211,7 +211,7 @@ v0.71.8 的普通模板运行服务确实会在内存中把当前模板 Workflow
 1. 数据源 CLI 的只读操作应返回一次运行所需的结构化目录投影：实例身份与 Host 私有连接描述、模板修订中的 UI Workflow JSON、模板运行参数配置、参数绑定、预期输出节点 ID、模型和 LoRA 元数据。Skill 只通过 DeepSeek Harness Tool 获取该结构化结果；Skill 不直接读取数据源仓库文件或数据库。
 2. harness-comfyui 的 Host 应在本地分别创建不可变来源快照和不可变运行请求快照。来源快照保存数据源 CLI 返回的完整模板修订、运行配置、bindings 和本次 LoRA 文件投影；运行请求快照保存本次最终提示词、固定参数、LoRA 顺序、权重和运行关联字段。数据源仓库不保存这两个快照。
 3. harness-comfyui 的确定性服务应从本地来源快照与运行请求快照生成可导入 ComfyUI 的 `workflow_json`，再从该 `workflow_json` 编译 `api_workflow_json`。同一次运行不能分别从两个不同输入生成两个图。
-4. harness-comfyui 应在远端 `/prompt` 调用前，把 `workflow_json` 与 `api_workflow_json` 保存到本地运行记录。同一 DeepSeek Harness ToolExecution 的传输重试或进程恢复必须复用稳定 `request_id` 和原 `run_id`，不能创建第二个远端任务；用户显式发起新重试时使用新的 `tool_call_id`、`request_id` 和 `run_id`，并保存该新运行自己的两个 JSON。
+4. harness-comfyui 应在远端 `/prompt` 调用前，把 `workflow_json` 与 `api_workflow_json` 保存到本地运行记录。同一 DeepSeek Harness ToolExecution 的传输重试或进程恢复必须复用原生 `call_id` 和原 `run_id`，不能创建第二个远端任务；用户显式发起新重试时使用新的 `call_id` 和 `run_id`，并保存该新运行自己的两个 JSON。
 5. “下载 Workflow JSON”操作应读取成功运行记录中已经保存的 `workflow_json`。下载操作不应重新查询数据源 CLI、不应重新应用参数、不应重新编译，也不应返回原始运行请求快照。
 6. 变体 A 的成功结果卡应同时使用两个不混淆的名称：`下载本次 Workflow JSON（可导入 ComfyUI）` 和 `下载本次 API Workflow JSON（提交文件）`。
 7. 当前系统使用任务 ID 和轮次号命名文件。聊天宿主中一次会话轮次可能产生多个 ComfyUI 运行，因此 harness-comfyui 应使用本地运行身份命名：实际 Workflow 文件使用 `comfyui-run-<run_id>-workflow.json`，API Workflow 文件使用 `comfyui-run-<run_id>-api-workflow.json`。

@@ -4,6 +4,12 @@
 
 Ticket 10 — 在当前 Session 与整个 Workspace 找回历史媒体。
 
+## Harness 核心零改动与公共接口
+
+本Ticket在Ticket 02注册到公开`details`的项目occupant中实现Session媒体库，并在Ticket 02注册到公开`sidebar`的项目occupant中直接渲染“所有媒体”入口。该入口使用Harness `Modal`实现Workspace媒体库；页面通过项目Typert Remote分页查询媒体，并通过`@deepseek-ai/dsh-host-webserver`的prefix route读取媒体和Actual Workflow。本Ticket不得注册第二个root、重复声明Ticket 02项目root拥有的child slot，也不得替换Harness Session、Tool execution或route dispatcher。
+
+Host route只接受 `media_id` 或 `run_id`，在 Host 内解析 Workspace授权与文件路径。浏览器响应不得包含本地路径、ComfyUI URL、Authorization 或 API Workflow JSON。
+
 ## 用户任务
 
 浏览器用户在右列按 Chat Turn、媒体种类和保存时间查找当前 Session 的 Saved Media，也可以从左列打开“所有媒体”，增加 Session 筛选后查找当前 Workspace 内其他 Session 的媒体、打开原文件并下载所属运行的 Actual Workflow。

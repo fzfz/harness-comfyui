@@ -1,13 +1,13 @@
 # Harness ComfyUI 原型方案调研计划
 
 ## Goal
-计划执行者基于已经发布的 DeepSeek Harness ComfyUI 工作台规格，逐项识别并处理计划依赖闭包中的 high advisory；安全门禁通过前不安装正式依赖、不连接生产 ComfyUI 写路径。
+计划编写者在Issues #2–#15开始实现前，把每张Issue使用的DeepSeek Harness `0.1.0-rc.7` public plugin seam和来源功能迁移方案写成计划执行者能够直接落地的确定规范；计划必须区分Harness核心运行权威、上游随附UI插件与项目UI插件，并分别为两个Prompt Skill、来源系统的`lora-adjustment` Skill和独立`comfyui-generate`生成Skill写明逐文件改动、输入合同、Tool调用链和黑盒验收。
 
 ## Next Step
-依赖 advisory 门禁、build-script 门禁与 frozen install 已经通过。下一阶段由计划执行者实现 Issue #1 的正式 Harness bundle、Host plugin、Client plugin、Run Repository 和测试流程。
+计划编写者把已经冻结的Skill Invocation→Generation Tool Call/Result→`ToolResultNode.meta.run_id`→唯一`GenerationRunProjectionStore`链路同步到父Issue和GitHub Issues #2、#5、#7、#8、#13、#14。同步后，独立语义审核者必须确认中列异步摘要与右列详细卡片读取同一Run快照、两处不重复轮询、缺少同轮`comfyui-generate` Skill Invocation时Host拒绝创建Run，并确认Issue执行者不承担接口调研或设计决定。
 
 ## Current Phase
-Phase 9 completed
+Phase 14 in progress
 
 ## Phases
 
@@ -48,7 +48,7 @@ Phase 9 completed
 - [x] 计划执行者实现同一 Session 的多聊天轮次选择，并分别演示零个、一个和多个 `run_id` 的轮次关联。
 - [x] 计划执行者实现本次实际 Workflow JSON 的浏览器 Blob 下载入口，并保持 API Workflow JSON 只供 Host 私有提交、恢复和诊断逻辑使用。
 - [x] 计划执行者把“本会话结果”实现为按聊天轮次、媒体种类和保存时间筛选的固定尺寸媒体网格，并增加独立分页。
-- [x] 计划执行者根据 DeepSeek Harness 的 `sidebar.footer.action` 与 `Modal` 能力实现左侧“所有媒体”入口和居中跨会话媒体库。
+- [x] 计划执行者在静态原型中实现左侧“所有媒体”入口和居中跨会话媒体库；正式 Harness 实现接口由 Phase 10 单独审计。
 - [x] 计划执行者为会话媒体库和全局媒体库的共用媒体卡片实现原文件新窗口打开和所属运行 Workflow JSON 下载。
 - [x] 计划执行者只读探测数据源登记的两个 ComfyUI 实例，确认当前实例通过 Jobs API 列出、查询和取消单个 Job。
 - [x] 计划执行者实现左侧“所有 ComfyUI 异步任务”入口、按会话/聊天轮次/创建时间筛选、独立分页和排队/运行中 Job 取消交互。
@@ -85,6 +85,47 @@ Phase 9 completed
 - [x] 计划执行者重新运行完整依赖 audit、production 依赖 audit、27 项原型测试和工作区差异格式检查。
 - **Status:** completed
 
+### Phase 10: 审核 Harness 核心零改动与公共插件接口闭包
+- [x] 计划编写者从指定 Harness commit 的已提交源码和 package exports 核对 Host plugin、Client plugin、AppFrame slots、Modal、输入引用、Typert RPC、Tool、Jobs、Skill 与媒体访问接口。
+- [x] 计划编写者为 Issues #2–#15 逐票列出允许使用的已导出接口，并对没有对应 public plugin seam 的产品功能和原型 UI 在规划阶段直接写入阻塞结论。
+- [x] 计划编写者把禁止修改 Harness 仓库、修改 `node_modules/@deepseek-ai/*`、deep import、vendor、`patch-package`、DOM 劫持和重建 Harness 核心交互的硬门禁写入父 Issue、各子 Issue 与对应 PRD。
+- [x] 计划编写者为当前仓库增加能够证明 tarball-only composition 不依赖 Harness 源码目录或核心补丁的验收要求。
+- [x] 独立语义审核队员检查本地规格和 GitHub Issues #1–#15；审核队员确认每张票的接口、实现主体、验收对象和阻塞行为明确。
+- **Status:** completed
+
+### Phase 11: 纠正默认UI限制被误判为插件阻塞
+- [x] 计划编写者把Harness核心、上游随附UI插件与项目UI插件的责任直接写入ADR、父Issue、PRD和Tickets。
+- [x] 计划编写者把项目UI固定为保留AppFrame root与ConversationRoot，并通过`priority: -10`替换公开`sidebar`、`details`、`conversation.session.header`、`conversation.view`的`chat` occupant和`conversation.composer.bar`。
+- [x] 计划编写者确认ConversationRoot继续渲染`conversation.input.overlay`；项目composer原样渲染该overlay，并通过公开InputTriggerController连接Harness原生`/` Skill菜单。
+- [x] 计划编写者保留原型规定的composer可见界面与产品行为：当前Session草稿、Message Context、一次发送、失败保留、成功清理和附件生命周期。
+- [x] 计划编写者把Issues #3、#4和#6恢复为已验证public plugin机制可实现，并同步GitHub正文、标签和native依赖图。
+- [x] 独立审核队员确认本地与远端不再包含错误阻塞，且每张票仍满足核心零改动、原型1:1与产品验收要求。
+- **Status:** completed
+
+### Phase 12: 补全Prompt、LoRA调整与ComfyUI生成Skills的可执行迁移方案
+- [x] 计划编写者逐文件核对固定revision中的Anima Prompt Skill与WAI Prompt Skill，列出保留、改写和删除责任。
+- [x] 计划编写者逐文件核对来源系统`management-skills/lora-adjustment/`，冻结`lora-adjustment`在Harness中的安装目录、输入、输出、Catalog依赖、连续调整语义和黑盒验收。
+- [x] 计划编写者核对Harness rc.7 Skill正文加载、reference读取、脚本执行与Tool调用能力，禁止假设来源宿主专用工具仍然存在。
+- [x] 计划编写者冻结迁移后Prompt Skill读取普通用户正文与`generation-context.v1`快照的输入合同、Prompt输出格式、失败行为和逐文件迁移清单；两个Prompt Skill不创建Generation Run。
+- [x] 计划编写者冻结独立`comfyui-generate`Skill读取模板、Execution Route和显式运行参数的合同，以及它调用Generation Tool的唯一顺序。
+- [x] 计划编写者同步PRD 04、PRD 05、PRD 12、原型方案、受影响Ticket草稿与GitHub Issues，并保证执行者不承担研究或设计决定。
+- [ ] 独立语义审核队员确认计划执行者不需要重新调研、解释旧宿主合同或设计迁移方案。
+- **Status:** in_progress
+
+### Phase 13: 删除移动端范围并核对桌面列宽
+- [x] 计划编写者把父Issue、Tickets 02–14与对应PRD的移动端、窄屏single-panel和九viewport要求删除，验收尺寸只保留`1440×1000`。
+- [x] 计划编写者把本地父Issue与Tickets 01–14完整同步到GitHub Issues #1–#15，并逐票验证远端正文与本地来源一致。
+- [x] 计划编写者核对rc.7 AppFrame默认列宽、公开`ILayout`方法与slot declaration/render ownership。
+- [ ] 用户决定是否接受AppFrame默认桌面列宽作为原型可见例外；如果不接受，当前rc.7公共插件机制与“不得实现第二套Skill菜单”约束共同构成Ticket 02阻塞。
+- **Status:** in_progress
+
+### Phase 14: 正式采用源数据仓库 v0.82.2 envelope
+- [x] 在唯一结构化合同文件中冻结 v0.82.2 Catalog/Source discovery、成功响应、错误响应、CLI 退出码和字段映射。
+- [x] 同步 CONTEXT、ADR、Configuration Profile、PRD 01/03/04/05、父 Issue 和 Tickets 03/04/05/12/13 的旧 wrapper、旧 Schema 校验和旧模板字段。
+- [x] 将 `expected_output_node_ids_json: null` 定义为模板生成入口的 fail-closed 条件，不让 Issue 执行者自行猜测或补值。
+- [x] 回读并核对 GitHub Issues #1–#14 的可执行正文；只发布 v0.82.2 envelope 的消费规范，不修改源数据仓库。
+- **Status:** completed
+
 ## Key Questions
 1. DeepSeek Harness 当前通过哪个 Web 插件接口向会话页面增加三列式工作台？
 2. DeepSeek Harness 当前如何向浏览器发送用户消息、Agent 增量文本、Tool 调用和 Tool 结果？
@@ -110,18 +151,21 @@ Phase 9 completed
 | ComfyUI 实例采用显式选择或配置默认值 | 用户可以选择安全实例 ID；未选择时 Host 使用配置默认实例。明确选择不可用时失败，不自动切换。 |
 | 一个 SQLite 保存当前安装的运行元数据 | 每条记录包含 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id` 和 `run_id`；文件按 Workspace 和 Run 分区。 |
 | 两个 discovery 返回同一契约身份 | Host adapter 只接受配置中声明支持的 `contract_id` 与 `contract_version`，不猜测或回退。 |
-| Run Repository 是异步运行状态的权威来源 | Harness Session 日志只保留原生 Generation Tool Call 与包含 `run_id` 的 Tool Result；Host 使用非持久 Run Change Notification 提醒浏览器重新读取。 |
+| Run Repository 是异步运行状态的权威来源 | Harness Session日志保存同一数字`turn`中的`comfyui-generate` Skill Invocation、原生Generation Tool Call与含结构化`run_id` meta的Tool Result；Client只通过项目unary Typert Remote读取。页面可见且中列Tool行或右列卡片观察非终态Run时，唯一`GenerationRunProjectionStore`继续轮询；两处同时可见时每周期只查询一次。 |
 | `submitting` 崩溃恢复为 `submission_unknown` | 当前没有经过验证的远端业务幂等键，恢复流程不能安全自动重提。 |
 | 依赖 advisory、build-script 与 frozen install 门禁均已通过 | 当前项目完整与 production audit 均为 0；`allowBuilds` 明确允许五个已经完成安全审计的精确版本，不裁剪依赖包的安装行为。 |
 | 原 DeepSeek Harness 目录保持只读 | 用户指定该目录只供调研；正式宿主、Host 插件和 Skill 必须安装到当前仓库。 |
-| Skill 选择交互归 DeepSeek Harness 所有 | 本项目不实现 Skill 选择器、菜单或选择状态，只消费 Harness Session 中已经记录的 Skill 与 Tool 调用事件。 |
+| Skill选择、发现与调用校验使用DeepSeek Harness现有交互 | 项目中列保留Harness原生composer、`ui-input-trigger`与`ui-skill`：用户输入`/`后由Harness显示Skill，选择后由Harness插入`/skill-name `。项目不调用SkillsApi重做菜单、不保存Skill选择状态，也不注册第二个Skill provider或invocation policy。 |
 | Tool 调用详情归 DeepSeek Harness 轨迹功能所有 | 本项目右列只显示 ComfyUI 运行与媒体，不复制单一 Tool 的参数或结构化结果面板。 |
-| 当前系统没有专用 LoRA Session | LoRA 是可选运行参数；任何获得 `generate_with_comfyui` Tool 权限的普通 Skill 都可以在普通 Session 中创建 ComfyUI 运行。 |
+| 当前系统不迁移旧专用 LoRA Session，但必须迁移 `lora-adjustment` Skill | 用户在普通Harness Session中显式调用`lora-adjustment`取得Prompt、LoRA权重和触发词；该Skill不创建Run。用户随后显式调用`comfyui-generate`才创建ComfyUI运行。 |
 | 底模是资源查询筛选条件 | 上下文选择器用底模 ID 筛选具有 `base_model_id` 关系的候选项；底模筛选值不写入消息上下文。 |
 | 底模筛选器提供“全部” | 选择“全部”时，上下文目录查询不附加具体底模限制；底模仍不写入消息上下文。 |
-| 全局媒体库使用 Harness 左侧入口和居中弹层 | 当前仓库 Client plugin 注册 `sidebar.footer.action`，并使用 Harness `Modal` 呈现按会话、轮次、类型、时间筛选的跨会话媒体。 |
+| 全局媒体库使用项目Workbench左侧入口和居中弹层 | Issue #3注册到公开`sidebar`的项目occupant在搜索框之后、Session列表之前直接渲染“所有媒体”入口；媒体票使用Harness `Modal`呈现跨会话媒体库。 |
 | 全局异步任务列表使用 ComfyUI Jobs API | 当前仓库保存 Harness Session ID、数字 `turn`、`run_id`、实例 ID 与 `prompt_id` 关联；服务使用 `GET /api/jobs/{prompt_id}` 观察任务，并使用 `POST /api/jobs/{prompt_id}/cancel` 取消指定的排队或运行中 Job。 |
 | 原型不保留没有已实现行为的可见控件 | 每个可见按钮必须触发原型中能够核对的状态变化、导航、筛选、复制、下载或对话框操作。 |
+| 项目Workbench保留AppFrame与ConversationRoot | 项目通过公开`sidebar`、`details`和conversation slots替换可见产品区域，保留ConversationRoot声明的`conversation.input.overlay`，因此不需要第二个root或第二套Skill菜单。 |
+| 本版本只交付桌面布局 | 产品验收固定为`1440×1000`桌面三列及原型列宽关系；移动端布局、移动端导航、窄屏单panel和原型CSS断点不属于本版本。 |
+| Composer状态所有权不是产品需求 | 原型只规定composer的可见结构、Message Context、发送与失败/成功行为；计划不得要求用户选择状态由项目store或Harness InputHub持有，也不得把默认InputBar路径写成唯一产品验收路径。 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

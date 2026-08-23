@@ -4,6 +4,10 @@
 
 Ticket 11 — 一次运行交付多个图片、视频和音频结果。
 
+## Harness 核心零改动与公共接口
+
+本Ticket复用Ticket 02注册到公开`details`的项目occupant、项目Typert Remote与`@deepseek-ai/dsh-host-webserver` prefix route。Harness只提供插件承载面；项目Run Repository拥有多输出状态、媒体描述和文件。项目不得修改Harness资源服务器来增加媒体种类，也不得让URL扩展名替代最终Content-Type与文件签名。
+
 ## 用户任务
 
 浏览器用户发送一个短片生成请求，一项 Generation Run 按 `output_index` 保存多张图片、一项视频和一项音频；当前轮次结果、Session 媒体库和 Workspace 媒体库都能识别、筛选和打开这些输出。

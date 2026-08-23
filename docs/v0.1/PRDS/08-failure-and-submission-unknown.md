@@ -4,6 +4,10 @@
 
 Ticket 08 — 在运行失败或提交结果未知时获得安全的下一步。
 
+## Harness 核心零改动与公共接口
+
+本Ticket只通过项目Typert Remote读取Run Repository的失败与`submission_unknown`投影，并在Ticket 02注册到公开`details`的项目occupant中呈现。用户要求再次执行时必须使用项目Workbench输入区通过一次原生`SessionFace.prompt(parts, 'queue')`发送新消息，由Harness AgentLoop触发新的Tool Call；结果卡不得直接调用AgentLoop、Tool registry或ComfyUI`/prompt`，也不得复用旧`callId`产生第二次远端提交。
+
 ## 用户任务
 
 浏览器用户在画风对比 Chat Turn 中区分一项成功和一项失败；远端执行失败时看到失败节点与下一步，提交结果无法确认时看到重复执行风险，并且页面不会提供绕过 Harness 消息与 Tool Call 的直接重试按钮。

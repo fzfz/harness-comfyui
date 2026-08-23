@@ -566,7 +566,7 @@ function noRunForTurnMarkup(turnId) {
   return `<div class="empty-results">
     <svg viewBox="0 0 90 62" aria-hidden="true"><rect x="3" y="17" width="22" height="18"/><rect x="64" y="28" width="22" height="18"/><path d="M25 26h18v11h21M43 26v-14h21"/></svg>
     <h3>此轮对话没有创建 ComfyUI 运行</h3>
-    <p>在聊天轮次 <code>${escapeHtml(turnId)}</code> 中，获得 <code>generate_with_comfyui</code> Tool 权限的普通 Skill 未调用该 Tool，因此该轮次没有关联 <code>run_id</code>。本会话其他轮次的结果仍保留在“本会话结果”。</p>
+    <p>聊天轮次 <code>${escapeHtml(turnId)}</code> 没有调用 <code>generate_with_comfyui</code>，因此该轮次没有关联 <code>run_id</code>。Prompt Skill 与 LoRA 调整 Skill 的结果保留在中列；只有独立 ComfyUI 生成 Skill 的 Tool Call才会在右列产生运行结果。本会话其他轮次的结果仍保留在“本会话结果”。</p>
   </div>`;
 }
 
@@ -589,7 +589,7 @@ function mediaGalleryEmptyMarkup({ libraryScope, totalCount, sessionFilter, kind
       : libraryScope === "session" ? "当前会话还没有已保存媒体" : "当前 Workspace 还没有已保存媒体"}</h3>
     <p>${hasSavedMedia
       ? `当前生效条件：会话 = “${escapeHtml(sessionLabel)}”、聊天轮次 = “${escapeHtml(turnLabel)}”、媒体种类 = “${escapeHtml(mediaLabel)}”、保存时间 = “${escapeHtml(timeLabel)}”。请选择其他筛选条件。`
-      : "获得 generate_with_comfyui Tool 权限的普通 Skill 调用该 Tool，且当前仓库完成媒体保存后，图片、视频和音频会显示在这里。"}</p>
+      : "用户显式调用独立 ComfyUI 生成 Skill，Agent调用 generate_with_comfyui，且当前仓库完成媒体保存后，图片、视频和音频会显示在这里。"}</p>
   </div>`;
 }
 
@@ -950,7 +950,7 @@ function taskLibraryEmptyMarkup(totalCount) {
     <h3>${totalCount > 0 ? "当前筛选没有匹配的异步任务" : "当前 Workspace 还没有 ComfyUI 异步任务"}</h3>
     <p>${totalCount > 0
       ? `当前生效条件：会话 = “${escapeHtml(sessionLabel)}”、聊天轮次 = “${escapeHtml(turnLabel)}”、创建时间 = “${escapeHtml(timeLabel)}”。请选择其他筛选条件。`
-      : "普通 Skill 通过 Harness Tool 创建 ComfyUI 任务后，当前仓库会保存任务与会话、聊天轮次的关联；收到 /prompt 成功响应后，当前仓库再保存 prompt_id。"}</p>
+      : "独立 ComfyUI 生成 Skill 通过 Harness Tool 创建任务后，当前仓库会保存任务与会话、聊天轮次的关联；收到 /prompt 成功响应后，当前仓库再保存 prompt_id。"}</p>
   </div>`;
 }
 

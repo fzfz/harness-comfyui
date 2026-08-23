@@ -119,6 +119,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'cordis.patch.yml',
       'README.md',
       'config/base.json',
+      'config/source-contract-v0.82.2.json',
       'config/environment-overrides.json',
       'config/product-agent.json',
       'config/profiles/development.json',

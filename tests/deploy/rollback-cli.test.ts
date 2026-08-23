@@ -203,10 +203,14 @@ fs.appendFileSync(${JSON.stringify(stageReadyFile)}, process.cwd() + '\\n')
   return { binDirectory, home }
 }
 
-const discovery = {
-  contract_id: 'imagegen-source-contract',
-  contract_version: 1,
-  openapi: { openapi: '3.1.0', info: { title: 'rollback fixture', version: '1' }, paths: {} },
+const catalogDiscovery = {
+  openapi: '3.1.0', info: { title: 'rollback catalog fixture', version: '0.82.2' },
+  'x-imagegen-media-origin': {}, paths: {}, components: {},
+}
+const sourceDiscovery = {
+  status: 'ok', message: null,
+  results: [{ openapi: '3.1.0', info: { title: 'rollback source fixture', version: '0.82.2' }, paths: {}, components: {} }],
+  page: 1, page_size: 1, total_count: 1,
 }
 
 const packageFiles = [
@@ -269,7 +273,7 @@ async function createFixture() {
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
   await writeFile(metricsPath, JSON.stringify({ active: 0, maxActive: 0, healthProbes: 0, events: [] }) + '\n', 'utf8')
-  for (const path of [catalogCliPath, sourceCliPath]) {
+  for (const [path, discovery] of [[catalogCliPath, catalogDiscovery], [sourceCliPath, sourceDiscovery]] as const) {
     await writeFile(path, `#!/usr/bin/env node\nif (process.argv[2] !== '--discovery-json') process.exit(2)\nprocess.stdout.write(${JSON.stringify(JSON.stringify(discovery))})\n`, 'utf8')
     await chmod(path, 0o755)
   }
@@ -283,7 +287,7 @@ async function createFixture() {
       logDirectory: join(installationRoot, 'shared/logs'),
     },
     comfyui: { defaultInstanceId: 'rollback-instance' },
-    source: { catalogCliPath, sourceCliPath, contractId: 'imagegen-source-contract', supportedContractVersions: [1] },
+    source: { catalogCliPath, sourceCliPath, contractId: 'imagegen-source-contract', sourceReleaseVersion: '0.82.2' },
     client: { runRefreshIntervalMs: 1000 }, process: { shutdownTimeoutMs: 10_000 },
   }
   await writeFile(inputPath, JSON.stringify(installation, null, 2) + '\n', 'utf8')

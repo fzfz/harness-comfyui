@@ -283,7 +283,7 @@ process.exit(91)
       logDirectory: join(installationRoot, 'shared/logs'),
     },
     comfyui: { defaultInstanceId: 'upgrade-instance' },
-    source: { catalogCliPath, sourceCliPath, contractId: 'imagegen-source-contract', supportedContractVersions: [1] },
+    source: { catalogCliPath, sourceCliPath, contractId: 'imagegen-source-contract', sourceReleaseVersion: '0.82.2' },
     client: { runRefreshIntervalMs: 1000 }, process: { shutdownTimeoutMs: 10_000 },
   }
   await writeFile(inputPath, JSON.stringify(installation, null, 2) + '\n', 'utf8')
@@ -484,6 +484,7 @@ describe('installed upgrade CLI', () => {
     const candidateHealth = await runProcess(stableBin, ['health', '--json', '--installation', fixture.inputPath], fixture.env)
     expect(candidateHealth.status, candidateHealth.stderr).toBe(0)
     expect(JSON.parse(candidateHealth.stdout)).toMatchObject({ stage: 'health', status: 'passed' })
+    await expect(readFile(fixture.sourceCallLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect((await stopFixture(fixture)).status).toBe(0)
     expect((await upgrade.output).status).toBe(0)
     expect((await oldHost.output).status).toBe(0)

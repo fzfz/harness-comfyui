@@ -4,6 +4,12 @@
 
 Ticket 07 — 离开页面后继续观察排队、远端执行与保存媒体。
 
+## Harness 核心零改动与公共接口
+
+本 Ticket 只使用 `@deepseek-ai/dsh-jobs` 的 `ctx.jobs` 代理当前 Agent 的进程内等待，并通过项目 `harness-comfyui/remote` 暴露 Run Repository 的 unary `get/list`。持久 worker、ComfyUI transport 和 Run Repository 都属于项目 Host plugin；`ctx.jobs` 不能成为持久状态来源，也不能代替 ComfyUI单 Job cancel。
+
+DeepSeek Harness rc.8 的 public forwarded-event allowlist 不包含项目 Run 事件。本 Ticket 不发送 `generation.run.changed`，不修改 `@deepseek-ai/dsh-api-remotes`，并按 PRD 06 的 `refreshAfterMs` 条件轮询规则刷新唯一`GenerationRunProjectionStore`。中列Generation Tool行和右列运行卡都从该Store读取，不分别维护状态或轮询计时器。
+
 ## 用户任务
 
 浏览器用户创建 Generation Run 后可以切换 Session、关闭页面或重启 Harness；重新打开原 Session 时继续看到真实的队列等待、远端运行、保存媒体和成功状态，并且原运行不会创建第二个 ComfyUI Job。
@@ -33,11 +39,12 @@ Run Repository 必须原子保存状态、状态时间、`prompt_id`、安全实
 3. 已保存 `prompt_id` 的运行只使用 `GET /api/jobs/{prompt_id}` 观察原 Job。远端 `pending` 映射 `remote_pending`，`in_progress` 映射 `remote_running`，`completed` 映射 `downloading`。
 4. 第一次 404 或网络中断在 `jobs.missingObservationMs` 内保留此前远端状态和 `prompt_id`。超过期限的连续 404 进入 `failed` 与 `COMFYUI_JOB_MISSING`。
 5. `completed` 后按输出描述逐项下载、验证和原子保存。进度记录当前输出序号、总数和已完成字节或确定的阶段百分比。
-6. 每次持久状态改变后发送只含 `run_id` 的非持久通知。Client 收到通知后回读 Run Repository。
+6. 每次持久状态改变只更新 Run Repository。Client 按 PRD 06 的立即查询与条件轮询规则回读 Run Repository；只要页面可见且中列Generation Tool行或右列卡片仍观察一项非终态运行，轮询就必须继续。Host 不发送项目自定义 forwarded event。
 7. Host 关闭时停止新的轮询，等待当前原子写入在 `process.shutdownTimeoutMs` 内完成，然后退出；不得创建后台 daemon 或遗留进程。
 
 ## 浏览器投影
 
+- 中列`generate_with_comfyui` Tool行显示`run_id`和状态摘要：`created`、`prepared`与`submitting`显示“正在准备 ComfyUI 运行”；`remote_pending`显示“队列等待”；`remote_running`显示“正在 ComfyUI 执行”；`downloading`显示“正在保存媒体”；终态显示对应结果。该文案必须与原型Tool行一致。
 - `remote_pending` 显示“队列等待”、可用的队列前方数量和“等待 ComfyUI 调度”。
 - `remote_running` 显示“远端运行”、当前节点安全名称、步数和百分比；缺少进度时显示“ComfyUI 正在运行，尚未返回步骤进度”。
 - `downloading` 显示“保存媒体”、当前 `output_index`、输出总数和百分比。
@@ -57,7 +64,8 @@ Run Repository 必须原子保存状态、状态时间、`prompt_id`、安全实
 4. 首次 404 保持原状态；超过观察期限的连续 404 进入 `failed`。
 5. 停止数据源后仍能打开已保存成功运行与媒体；新的来源查询明确失败。
 6. 质量命令结束后没有 worker、Harness 子进程或监听端口残留。
+7. 中列Tool行与右列卡片同时显示时，每个`refreshAfterMs`周期对同一查询键只调用一次Remote；关闭右列但保持中列Tool行可见时，队列等待、远程运行、保存媒体和终态仍按Run Repository真实更新。
 
 ## 不属于本 Ticket
 
-本 Ticket 不实现用户取消按钮、失败对比页面的全部文案或生产 ComfyUI 写验证。
+本 Ticket 不实现用户取消按钮、失败对比页面的全部文案或版本发布后的用户环境操作。

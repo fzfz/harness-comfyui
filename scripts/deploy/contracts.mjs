@@ -2,7 +2,7 @@ import { isIP } from 'node:net'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 
 export const SOURCE_CONTRACT_ID = 'imagegen-source-contract'
-export const SOURCE_CONTRACT_VERSION = 1
+export const SOURCE_RELEASE_VERSION = '0.82.2'
 export const CONFIGURATION_PROFILES = Object.freeze(['development', 'test', 'release-smoke', 'production'])
 
 const INSTALLATION_KEYS = [
@@ -11,7 +11,7 @@ const INSTALLATION_KEYS = [
 ]
 const PATH_KEYS = ['dataDir', 'runRepositoryFile', 'runDirectory', 'savedMediaDirectory', 'logDirectory']
 const COMFYUI_KEYS = ['defaultInstanceId']
-const SOURCE_KEYS = ['catalogCliPath', 'sourceCliPath', 'contractId', 'supportedContractVersions']
+const SOURCE_KEYS = ['catalogCliPath', 'sourceCliPath', 'contractId', 'sourceReleaseVersion']
 const CLIENT_KEYS = ['runRefreshIntervalMs']
 const PROCESS_KEYS = ['shutdownTimeoutMs']
 
@@ -114,10 +114,8 @@ export function validateInstallation(input) {
   if (source.contractId !== SOURCE_CONTRACT_ID) {
     throw new TypeError(`installation.source.contractId must be ${SOURCE_CONTRACT_ID}`)
   }
-  if (!Array.isArray(source.supportedContractVersions)
-    || source.supportedContractVersions.length !== 1
-    || source.supportedContractVersions[0] !== SOURCE_CONTRACT_VERSION) {
-    throw new TypeError('installation.source.supportedContractVersions must contain only 1')
+  if (source.sourceReleaseVersion !== SOURCE_RELEASE_VERSION) {
+    throw new TypeError(`installation.source.sourceReleaseVersion must be ${SOURCE_RELEASE_VERSION}`)
   }
 
   const client = requireRecord(installation.client, 'installation.client')
@@ -141,7 +139,7 @@ export function validateInstallation(input) {
       catalogCliPath,
       sourceCliPath,
       contractId: SOURCE_CONTRACT_ID,
-      supportedContractVersions: [SOURCE_CONTRACT_VERSION],
+      sourceReleaseVersion: SOURCE_RELEASE_VERSION,
     },
     client: { runRefreshIntervalMs },
     process: { shutdownTimeoutMs },

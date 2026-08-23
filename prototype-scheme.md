@@ -2,7 +2,7 @@
 
 ## 1. 方案目标
 
-本方案定义一个运行在 DeepSeek Harness Web 客户端中的三列式 ComfyUI 工作台。用户在中列与一个 DeepSeek Harness Agent 进行流式聊天，并在发送每条消息前选择数据源仓库中的结构化上下文；Skill 的发现、选择和调用交互继续由 DeepSeek Harness 原生会话输入能力负责；Agent 可以调用 ComfyUI 生成工具；右列按持久 `run_id` 展示生成状态、图片、视频、音频和可导入 ComfyUI 前端的本次实际 Workflow JSON。API Workflow JSON 由当前仓库保存并提交给 ComfyUI，不作为浏览器下载项。
+本方案定义一个运行在 DeepSeek Harness Web客户端中的三列式ComfyUI工作台。用户在中列与一个DeepSeek Harness Agent进行流式聊天，并在发送每条消息前选择数据源仓库中的结构化上下文；中列项目composer渲染Harness原生input overlay，用户输入`/`后由`ui-input-trigger`与`ui-skill`显示当前Session可调用Skill并完成文本插入，当前项目不实现第二套Skill菜单。Generation Tool持久接纳`run_id`后，中列Tool行持续显示该运行的异步状态摘要，右列按同一`run_id`展示详细生成状态、图片、视频、音频和可导入ComfyUI前端的本次实际Workflow JSON。两处从唯一Client Run投影Store读取同一Run Repository快照。API Workflow JSON由当前仓库保存并提交给ComfyUI，不作为浏览器下载项。
 
 当前阶段交付方案和零依赖静态原型。当前阶段不复制 Skill、不修改两个来源仓库、不提交真实 ComfyUI 任务、不安装依赖。
 
@@ -12,10 +12,10 @@
 
 | 名称 | 定义 | 负责的动作 |
 |---|---|---|
-| 浏览器用户 | 使用 DeepSeek Harness Web 客户端的人 | 选择会话、选择上下文、通过 DeepSeek Harness 原生交互选择或调用 Skill、发送消息、查看生成结果、下载 JSON |
+| 浏览器用户 | 使用 DeepSeek Harness Web客户端的人 | 在项目Workbench选择会话、选择上下文、选择或输入Host公开的Skill、发送消息、查看生成结果、下载JSON |
 | DeepSeek Harness Agent | DeepSeek Harness 当前会话中的单个 Agent | 读取当前用户消息及其上下文快照、选择是否调用模型工具、向用户输出流式文本 |
-| Harness ComfyUI Host 插件 | 安装到当前仓库所拥有的 DeepSeek Harness 宿主中的项目插件 | 把数据源只读 CLI 注册为结构化 Harness Tool 与浏览器 RPC，并注册输入引用 codec、ComfyUI 模型工具、非持久 Run Change Notification 和右列结果面板 |
-| 数据源只读 CLI | 由 `NoobAI-XL-FZ-PROD-ENV` 提供的版本化结构化命令行接口 | 查询目录数据、ComfyUI 实例连接数据、Workflow 模板、模板 revision 和运行时配置；不创建运行，不保存媒体，不更新数据源数据库 |
+| Harness ComfyUI插件 | 安装到当前仓库所拥有的DeepSeek Harness宿主中的项目Host/Client插件 | Client通过公开bundle row覆盖停用上游`ui-layout`，向内建`root`注册唯一桌面Shell并声明标准列slot；Client继续运行ConversationRoot与Harness原生`/` Skill菜单；Host注册数据源只读CLITool、项目Typert Remote、ComfyUI模型Tool和同源媒体路由；不修改Harness Core |
+| 数据源只读 CLI | 由 Installation 配置指向的 `NoobAI-XL-FZ` 已发布版本提供的结构化命令行接口 | 查询目录数据、ComfyUI 实例连接数据、Workflow 模板、模板 revision 和运行时配置；不创建运行，不保存媒体，不更新数据源数据库 |
 | 本仓库 ComfyUI 运行服务 | 在 `harness-comfyui` 中实现并由 Harness Host 插件调用的底层服务 | 复制本次运行需要的只读来源快照、编译 API workflow、提交 ComfyUI、观察队列、下载并保存媒体、保存运行快照 |
 | ComfyUI 实例 | 数据源仓库已经登记的远端或本地 ComfyUI 服务 | 执行 API workflow 并产生图片、视频或音频输出 |
 | Skill 执行者 | DeepSeek Harness 加载 Skill 后执行 `SKILL.md` 的 Agent | 按 Skill 说明收集用户意图并调用当前 Harness profile 向该 Agent 提供的模型工具 |
@@ -24,12 +24,13 @@
 
 ### 3.1 可以直接复用的 DeepSeek Harness 能力
 
-- `AppFrame` 已提供 `sidebar`、`conversation`、`details` 三列布局。
-- `sidebar.footer.action` slot 允许当前仓库的 Client plugin 在 DeepSeek Harness 左侧栏注册“所有媒体”入口。
+- 项目bundle通过rc.8公开composition按row id停用上游随附`ui-layout`。项目Client plugin向内建`root`注册唯一root occupant，声明并渲染标准`sidebar`、`conversation`、`details`与`shell.overlay`，在`1440×1000`固定使用`294px minmax(0, 1fr) 432px`。
+- 项目root先声明四个child slot，再提供公开`ILayout` service。`ui-conversation`的ConversationRoot注册到项目声明的`conversation` slot并继续声明、渲染`conversation.input.overlay`；项目不得运行第二个root或通过DOM/CSS选择器移动Harness节点。
+- 项目`sidebar` occupant使用公开`useSessions/useWorkspaces`、`ctx.sessions.search()`与`ctx.sessions.open()`渲染原型左列，并在搜索框之后、Session列表之前直接渲染“所有 ComfyUI 异步任务”和“所有媒体”两个入口。
 - `@deepseek-ai/dsh-client-ui-primitives` 提供全视口遮罩上的居中 `Modal`；全局媒体库使用该容器，不创建独立页面。
-- 会话列表和流式聊天已经属于 DeepSeek Harness 客户端，不需要创建第二套会话协议。
-- 输入框已经支持 `/skill-name` 选择和具有 `source`、`ref`、`label` 的引用 chip。
-- `ReferenceCodec.serialize()` 可以在一次用户消息提交中把引用解析为模型可见文本；任一引用解析失败会阻止发送并保留草稿。
+- Session、Agent stream、Tool call/result和持久消息属于DeepSeek Harness核心权威；项目只通过公开`ctx.sessions`、`SessionFace`与`ConversationSnapshot`读取或调用，不创建第二套会话协议。
+- 项目`conversation.composer.bar` occupant渲染原型输入区和ConversationRoot传入的原生`conversation.input.overlay`。项目textarea使用公开`useInput`、`inputActions`与`ctx.inputTriggers.sessionOf(sessionScope)`连接Harness InputTriggerController；用户输入`/`后由Harness显示按当前Session过滤的Skill并插入普通`/skill-name `文本，Host在Agent执行前重新验证。项目不调用SkillsApi实现第二套菜单。
+- 项目发送协调器按chip顺序resolve稳定ContextRef并生成`generation-context.v1`文本；任一引用解析或附件编码失败都会阻止一次`SessionFace.prompt()`并保留当前草稿。
 - `ConversationNodeDefinition` 可以把带稳定业务 ID 的持久 Session 事件重放为聊天节点；本项目不使用该能力复制 Generation Run 状态。
 - `ctx.jobs` 可以为 Agent 提供当前进程中的等待、状态通知和“停止等待”入口；该入口不取消远端 ComfyUI prompt。
 
@@ -39,23 +40,23 @@
 - `comfyui-run-runtime.mjs` 和 `comfyui-runtime-gateway.mjs` 可以作为协议调研依据，但本方案不调用它们保存运行或媒体。
 - 运行时绑定已经支持正向提示词、负向提示词、宽度、高度、分辨率预设、宽高比、像素总量、seed、LoRA、参考图片和显式工作流输入。
 - 当前数据源数据库中的 35 个 Workflow 模板全部声明 `version: 0.4`；本方案的第一版 compiler 只接受该实际版本。
-- 指定的 `NoobAI-XL-FZ-PROD-ENV` v0.71.8 checkout 保存了两个 Workflow JSON 的 ADR 定义和静态下载原型。相邻开发仓库 `NoobAI-XL-FZ` 的已提交 `HEAD` 包含 `prepareIterativeWorkflow()`、运行前双 JSON 持久化、运行详情投影和浏览器 Blob 下载；该开发仓库当前工作树存在用户修改，因此本轮只把 `HEAD` 内容作为实现证据。当前项目只迁移该确定性行为和测试语义，不静态导入开发仓库模块，也不把该开发仓库作为运行依赖。
+- 源数据代码实施基线是`NoobAI-XL-FZ`已提交并发布为`v0.81.0`的`main` revision `2a8e0dbc6b21bf28550f29dbfc68f2692fcabd2a`；该revision包含`prepareIterativeWorkflow()`、运行前双JSON持久化、运行详情投影、浏览器Blob下载、六类向量对象和两个旧`/internal/semantic/*` CLI-only查询。`NoobAI-XL-FZ-PROD-ENV`停在已发布`v0.80.0`，只作为用户安装目录和三个迁移Skill的已发布来源，不是源数据代码修改目标。当前项目只消费源数据仓库按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`后续发布的CLI与合同，不静态导入源数据模块，也不修改用户安装目录。
 - 2026-08-20 对数据源数据库登记的两个实例执行了只读接口探测：`mac mini` 运行 ComfyUI `0.28.3`，`win3080` 运行 ComfyUI `0.33.1`；两个实例的 `GET /api/jobs` 都返回 `jobs` 与 `pagination`。`win3080` 的 `GET /api/jobs/{prompt_id}` 返回单 Job 详情；对一个已完成 Job 调用 `POST /api/jobs/{prompt_id}/cancel` 返回 HTTP 200 与 `{ "cancelled": false }`，回读状态仍为 `completed`。该结果与 [ComfyUI 官方 OpenAPI](https://github.com/Comfy-Org/ComfyUI/blob/master/openapi.yaml) 和 [官方 server.py 实现](https://github.com/Comfy-Org/ComfyUI/blob/master/server.py) 一致：排队 Job 按 ID 出队，运行中 Job 通过 `interrupt_if_running(prompt_id)` 原子中断，终态或未知 Job 返回幂等 no-op。
 
 ### 3.3 必须实现的缺口
 
-- 当前语义 CLI 只查询作品、角色、画师或画风、提示词条目；它不能查询底模、生成模型、LoRA、画师串、ComfyUI 实例和模板。
+- 当前语义 CLI 通过旧 `/internal/semantic` discovery 查询作品、角色、画师或画风、提示词条目、LoRA 和画师串；它不能查询底模、生成模型、ComfyUI 实例和模板，也不支持新的 Catalog `search`/`resolve` 结构化协议。
 - 当前 ComfyUI 输出只接受 JPEG、PNG 和 WebP；视频与音频需要新的媒体种类、MIME 配置、文件签名校验、保存逻辑和浏览器 renderer。
 - 当前仓库尚未实现自己的运行数据库、运行 worker、媒体目录、本次实际 Workflow JSON、API Workflow JSON 和重启恢复。
 - DeepSeek Harness 已经通过轨迹功能展示多个 Tool 的调用详情；本项目生成结果面板不得重复实现 Tool 详情或占用 Harness 的轨迹职责。
-- 用户指定的生产 checkout 不包含后续主仓库中的管理 Skill 文件；当前方案不能声称这些文件已经可以迁移。
+- 用户指定的生产checkout当前固定在`799b7759029d70076791321e2b02bf53c651c98f`，并包含`management-skills/lora-adjustment/`；本方案把该Skill与两个Prompt Skill一起迁移到release-local Harness Skill目录。
 - 数据源只读 CLI 尚未提供 Host 私有的 ComfyUI 实例连接投影、模板 revision workflow 和运行时配置查询。
 
 ## 4. 选定的产品结构
 
 ### 4.1 已选方案 A：稳定工作台
 
-用户已经选定原型变体 A。页面复用 DeepSeek Harness 的现有三列框架；右列只承载 ComfyUI 运行和媒体结果，Tool 调用详情继续由 DeepSeek Harness 轨迹功能展示。
+用户已经选定原型变体A。项目bundle通过rc.8公开bundle row覆盖停用上游随附`ui-layout`插件；项目Client plugin向内建`root`注册唯一root occupant，声明并渲染标准`sidebar`、`conversation`、`details`与`shell.overlay`，在`1440×1000`使用`294px minmax(0, 1fr) 432px`。项目继续运行ConversationRoot、`ui-input-trigger`与`ui-skill`，所以标准conversation projection和Harness原生`/` Skill菜单继续工作；Harness核心继续拥有Session、Agent、Skill验证、Tool execution与持久日志。当前rc.8规划审计没有等待用户决定的public plugin seam阻塞。
 
 ```text
 ┌──────────────────────┬────────────────────────────────────────────┬──────────────────────────────────┐
@@ -70,7 +71,7 @@
 │ 昨天                 │ └─────────────────────────────────────┘ │                                  │
 │ · 画风参数对比       │                                            │ 已完成卡片                      │
 │                      │ [＋添加上下文]                             │ 图片、视频或音频                │
-│                      │ [DeepSeek Harness 原生消息输入与 Skill 触发区]│ [下载本次 Workflow JSON]     │
+│                      │ [项目 Workbench 消息输入与 Skill 候选区]    │ [下载本次 Workflow JSON]     │
 └──────────────────────┴────────────────────────────────────────────┴──────────────────────────────────┘
 ```
 
@@ -79,9 +80,9 @@
 - 左列继续使用 DeepSeek Harness 的 Session 数据和当前会话选择行为。
 - 每个会话行只显示会话标题、最后更新时间和当前运行数量。
 - 点击会话行必须同时切换中列消息和右列的“本会话结果”。
-- 左列“所有媒体”入口由当前仓库的 Client plugin 注册到 `sidebar.footer.action`，并打开居中的全局媒体库。全局媒体库按会话、聊天轮次、媒体种类和保存时间筛选媒体，并使用独立分页状态。
-- 左列“所有 ComfyUI 异步任务”入口由同一个 Client plugin 注册到 `sidebar.footer.action`，并打开居中的全局任务列表。列表按会话、聊天轮次和创建时间筛选当前 Workspace 的任务并使用独立分页状态；每行显示本仓库状态、ComfyUI Job 原始状态或未取得 Job 的具体原因、实例名称、`run_id` 和可用的 `prompt_id`。`remote_pending` 与 `remote_running` 行显示取消按钮，其他状态显示不能取消的具体原因。
-- 收窄窗口时，页面遵守现有 `AppFrame` 的列收缩规则，不创建新的断点逻辑。
+- 项目`sidebar` occupant在搜索框之后、Session列表之前直接渲染“所有 ComfyUI 异步任务”和“所有媒体”。“所有媒体”打开居中的全局媒体库；全局媒体库按会话、聊天轮次、媒体种类和保存时间筛选媒体，并使用独立分页状态。
+- “所有 ComfyUI 异步任务”打开居中的全局任务列表。列表按会话、聊天轮次和创建时间筛选当前 Workspace 的任务并使用独立分页状态；每行显示本仓库状态、ComfyUI Job 原始状态或未取得 Job 的具体原因、实例名称、`run_id` 和可用的`prompt_id`。`remote_pending`与`remote_running`行显示取消按钮，其他状态显示不能取消的具体原因。
+- 本版本只实现和验收`1440×1000`桌面三列布局与原型列宽关系，不实现移动端布局、移动端导航、窄屏单panel或原型CSS断点。
 
 #### 中列：流式聊天与本次消息上下文
 
@@ -91,7 +92,7 @@
 - 输入框上方显示“本次消息上下文条”。每个上下文 chip 显示资源种类、名称和删除按钮。
 - “添加上下文”打开分层选择器。选择器顶部的底模筛选器包含“全部”和具体底模；它为具有 `base_model_id` 关系的资源查询提供条件，选择“全部”时不传入具体底模限制。底模筛选值不生成消息上下文引用。第一层选择可插入的资源种类，第二层执行搜索，第三层显示候选项详情。ComfyUI 实例不出现在可插入上下文种类中。
 - 生成选项允许浏览器用户选择一个只包含实例 ID、安全名称和可用状态的 ComfyUI 实例。用户不选择实例时，Host 使用 `config/runtime.json` 中的默认实例 ID；用户明确选择的实例不可用时，本次运行失败，Host 不切换到其他实例。
-- DeepSeek Harness 原生会话输入区负责显示 Skill 候选、接收用户的 Skill 选择并把 Skill 调用写入 Session。本项目不注册第二个 Skill 按钮、Skill 菜单或 Skill 选择状态。
+- 项目保留ConversationRoot并在项目`conversation.composer.bar` occupant中渲染原生`conversation.input.overlay`。用户输入`/`后，`ui-input-trigger`与`ui-skill`在该overlay显示Skill并把选择结果插入普通`/<skill-name> `文本。Host在执行前按当前Session的cwd与preset scope重新发现并校验Skill；本项目不实现第二套Skill菜单、选择状态、provider或invocation policy。
 - 本项目只消费 DeepSeek Harness Session 中已经存在的 Skill 与 Tool 调用事件，并使用 Tool 调用事件返回的 `run_id` 投影右列结果。
 - 用户发送消息后，本次上下文 chip 清空；已经发送的用户消息以折叠块显示不可变上下文快照。
 - 引用解析失败时，发送操作保持失败状态并显示具体错误；页面保留用户正文和全部 chip。
@@ -148,30 +149,34 @@
 
 上下文选择器从 `generation_base_models` 读取底模筛选选项。用户选择的底模只作为支持 `base_model_id` 查询条件的 operation 参数；Harness 不为底模筛选值创建消息上下文引用或不可变上下文快照项。
 
-| UI 名称 | `kind` | 来源对象 | 支持的主要筛选 |
-|---|---|---|---|
-| 生成模型 | `model` | `generation_models` | `base_model_id`、文件名、作者 |
-| LoRA | `lora` | `generation_loras` | `base_model_id`、名称、触发词 |
-| 作品 | `work` | `works` | 名称、别名 |
-| 角色 | `character` | `characters` | `work_id`、名称、别名 |
-| 画师或画风 | `style` | `styles` | `base_model_id`、名称、别名 |
-| 画师串 | `artist-string` | `artist_prompt_strings` | `base_model_id`、标题、关联 style |
-| ComfyUI 实例 | `comfyui-instance` | `comfyui_instances` 的安全投影 | 生成选项的 Execution Route；不进入 Message Context；不返回 URL 或凭据字段 |
-| Workflow 模板 | `comfyui-template` | 模板、模板 revision 和运行时配置的安全投影 | `base_model_id`、`model_id`、`lora_id`、模板类型 |
-| 已保存媒体 | `media` | 当前仓库的持久运行输出 | `run_id`、媒体种类、创建时间 |
+Modal左侧固定显示以下九行，顺序、来源与首次负责Ticket不能由实现者调整：
+
+| 顺序 | UI名称 | `kind` | 真实来源 | 首次负责Ticket |
+|---|---|---|---|---|
+| 1 | 生成模型 | `model` | 数据源Catalog `query_semantic_generation_models` | Ticket 05 |
+| 2 | LoRA | `lora` | 数据源Catalog `query_semantic_loras` | Ticket 05 |
+| 3 | 作品 | `work` | 数据源Catalog `query_semantic_works` | Ticket 05 |
+| 4 | 角色 | `character` | 数据源Catalog `query_semantic_characters` | Ticket 03 |
+| 5 | 画师或画风 | `style` | 数据源Catalog `query_semantic_styles` | Ticket 05 |
+| 6 | 提示词条目 | `prompt-term` | 数据源Catalog `query_semantic_prompt_terms` | Ticket 05 |
+| 7 | 画师串 | `artist-string` | 数据源Catalog `query_semantic_artist_prompt_strings` | Ticket 05 |
+| 8 | Workflow模板 | `comfyui-template` | 数据源Catalog `query_semantic_comfyui_templates` | Ticket 03 |
+| 9 | 已保存媒体 | `media` | 当前仓库`GenerationRuns.listMedia()`与`getMediaDescriptor()` | Ticket 05 |
+
+底模不属于左侧资源行。Modal顶部底模筛选器读取`query_semantic_base_models`；具体`base_model_id`只附加到生成模型、LoRA、画师或画风、画师串与Workflow模板的search请求。ComfyUI实例不属于Modal；输入区Execution Route控件读取`query_semantic_comfyui_instances`并只保存安全`instance_id`。
 
 “底模 → 模板”和“底模 → LoRA”不是独立数据表。上下文选择器把选中的底模 ID 作为查询条件，分别以 `base_model_id` 查询 `comfyui-template` 和 `lora`；只有用户从查询结果中选择的模板或 LoRA 才会写入消息上下文。
 
 ### 5.2 可扩展资源定义
 
-计划执行者扩展数据源仓库现有的 `schema/api/openapi.yaml`。该 OpenAPI 3.1 文档是 Catalog Operation 与 Source Operation 的可调用路径、输入 schema、返回 schema、operationId、audience 和错误结构的唯一契约来源。数据源服务从该文档投影 `GET /internal/semantic` 的 Agent 安全 discovery 与 Host 专用的本机只读 source discovery；两个 CLI 分别读取对应 discovery，本方案不增加第二个 schema manifest。两个 discovery 都返回同一 `contract_id` 与 `contract_version`。React 组件不硬编码数据表字段。
+数据源仓库按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`扩展现有`schema/api/openapi.yaml`。该OpenAPI 3.1文档是Catalog Operation与Source Operation的可调用路径、输入schema、返回schema、operationId、audience和错误结构的唯一契约来源。数据源服务用新Catalog合同直接替换`GET /internal/semantic` discovery及其旧operation，并从同一文档投影Host专用的本机只读source discovery；本方案不增加第二个schema manifest。两个discovery都返回`contract_id: "imagegen-source-contract"`与`contract_version: 1`。React组件不硬编码数据表字段。
 
-新增资源种类时，计划执行者必须完成以下变更：
+两仓变更必须由两个执行主体分别完成：
 
-1. 在 `schema/api/openapi.yaml` 增加 operation、请求 schema、成功结果 schema、错误响应和唯一 operation audience；只有 Catalog Operation 声明模型 Tool 名称。
-2. 在 `app/http/semantic-handler-routes.mjs` 和 catalog service 中增加实际只读 handler。
-3. 在 Harness 的上下文 renderer registry 中增加候选项和 chip 的显示配置。
-4. 为真实内部 HTTP operation、动态 CLI 调用、Harness Tool provider、浏览器 RPC 和引用序列化增加测试。
+1. 源数据仓库执行者必须先按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`，在源数据仓库自己的Issue、分支、测试和发布流程中修改`schema/api/openapi.yaml`、handler manifest、只读catalog service、两个CLI和源仓库测试，并发布明确commit/tag与`imagegen-source-contract`版本。
+2. 源数据版本发布前，当前仓库Ticket保持`needs-info`阻塞；当前仓库执行者不得进入源数据checkout，也不得复制或猜测源数据Schema。
+3. 源数据版本发布后，当前仓库执行者只在`harness-comfyui`实现Catalog adapter、唯一Harness Tool registry、remote RPC、上下文renderer registry、chip、Context resolver和消费端测试。
+4. 以后新增资源种类时仍重复上述两阶段责任链；不能让一个当前仓库Issue跨仓库修改并发布两套代码。
 
 ### 5.3 原子发送
 
@@ -185,22 +190,23 @@
 }
 ```
 
-用户点击发送后，Harness 插件把 `ContextRef[]` 传给 `ReferenceCodec.serialize()`，查询数据源 CLI，并把每个可插入的轻量引用解析为带 `contract_id` 的不可变上下文快照。`CatalogRef<'base-model'>` 只能作为查询筛选来源，不能传给 `ReferenceCodec.serialize()`。DeepSeek Harness 在同一次普通用户消息提交中记录用户正文和全部上下文快照。浏览器不得先发送独立 `agent.inject()` 请求再发送用户正文。
+用户点击发送后，项目Context resolver按chip顺序查询数据源CLI，并把每个可插入的轻量引用解析为带`contract_id`的不可变上下文快照。`CatalogRef<'base-model'>`只能作为查询筛选来源，不能传给Context resolver。项目把正文与全部快照放入一个text `PromptContentPart`，把浏览器图片编码为image `PromptContentPart`，然后只调用一次当前Session的`SessionFace.prompt()`；Harness把已发送内容写入同一条`user/message`。临时ContextRef列表不会作为独立metadata持久化；浏览器不得先发送独立`agent.inject()`请求再发送用户正文。
 
-序列化后的模型文本使用一个版本化、可折叠的结构：
+每个 occurrence序列化为Ticket 03产品代码中唯一`generation-context.v1`运行时schema定义的版本化block。正文位于全部block之前；多个block按occurrence顺序排列：
 
 ```text
-<generation_context protocol="generation-context.v1">
-{"items":[{"kind":"character","id":"39936","contract_id":"character-context.v1","title":"角色名称","data":{...}}]}
-</generation_context>
 用户输入的正文
+
+<generation-context.v1>
+{"contract_id":"generation-context","contract_version":1,"kind":"character","id":"39936","label":"角色名称","source_release_version":"...","snapshot":{...}}
+</generation-context.v1>
 ```
 
-这项转换只执行字段校验、排序和 JSON 序列化，不执行语义推断。聊天 renderer 根据同一结构把上下文显示为折叠块；模型可见内容仍能从 Session log 完整重建。
+JSON字段顺序固定为`contract_id`、`contract_version`、`kind`、`id`、`label`、`source_release_version`、`snapshot`。这项转换只执行字段校验、固定字段排序和JSON序列化，不执行语义推断。项目Workbench user-message renderer只解析正文末尾标签完整且通过同一schema的block，并把正文与上下文显示为原型折叠块；不完整标签、未知版本或schema不匹配的文本按普通用户正文显示。模型可见内容仍能从Session log完整重建。
 
 ### 5.4 跨模块领域数据结构
 
-本仓库在 `src/contract/` 中为 CLI adapter、Host 工具、运行服务、非持久 Run Change Notification 和前端 fixture 提供一份结构化 TypeScript contract。以下类型是方案中的字段定义；实现阶段不得在各模块复制另一套字段名称。
+本仓库在 `src/contract/` 中为 CLI adapter、Host 工具、运行服务、Run projection Remote 和前端 fixture 提供一份结构化 TypeScript contract。以下类型是方案中的字段定义；实现阶段不得在各模块复制另一套字段名称。
 
 ```ts
 type JsonValue =
@@ -249,28 +255,32 @@ interface CatalogSearchInput {
 interface CatalogItem {
   ref: CatalogRef
   title: string
-  subtitle?: string
-  cover_media_path?: string
+  subtitle: string | null
+  cover_url: string | null
+  source_release_version: string
+  result_contract_id: string
   data: JsonDocument
 }
 
 interface CatalogPage {
+  contract_id: 'imagegen-source-contract'
+  contract_version: 1
   kind: CatalogKind
   items: CatalogItem[]
   page: number
   page_size: number
   total_count: number
-  result_contract_id: string
 }
 
 interface ContextSnapshot {
   ref: ContextRef
   contract_id: string
+  source_release_version: string
   title: string
   data: JsonDocument
 }
 
-interface ReferenceCodec {
+interface ContextResolver {
   serialize(refs: ContextRef[]): Promise<{
     snapshots: ContextSnapshot[]
     model_text: string
@@ -278,7 +288,7 @@ interface ReferenceCodec {
 }
 ```
 
-`CatalogKind` 是可查询种类，因此包含 `base-model` 和 `comfyui-instance`。`ContextKind` 是可插入消息上下文的种类，因此在类型层排除 `base-model` 和 `comfyui-instance`。运行时 schema 对 `GenerationCatalog.resolve()`、`ReferenceCodec.serialize()`、`CreateGenerationRun.context_snapshots` 和 `RunRequestSnapshot.context_snapshots` 执行同一约束；输入包含这两个种类时返回 `CONTEXT_KIND_NOT_INSERTABLE`，并且不得写入 Session log 或运行请求快照。生成选项把安全实例 ID 作为 Execution Route 交给 Host，不通过 `ReferenceCodec`。
+`CatalogKind`是可查询种类，因此包含`base-model`和`comfyui-instance`。`ContextKind`是可插入消息上下文的种类，因此在类型层排除`base-model`和`comfyui-instance`。运行时schema对`GenerationCatalog.resolve()`、`ContextResolver.serialize()`、`CreateGenerationRun.context_snapshots`和`RunRequestSnapshot.context_snapshots`执行同一约束；输入包含这两个种类时返回`CONTEXT_KIND_NOT_INSERTABLE`，并且不得写入Session log或运行请求快照。生成选项把安全实例ID作为Execution Route交给Host，不通过Context resolver。
 
 Host 私有来源类型：
 
@@ -298,12 +308,13 @@ interface RuntimeParameterDefinition {
   parameter_id: string
   kind:
     | 'positive_prompt' | 'negative_prompt' | 'width' | 'height'
-    | 'resolution_preset' | 'aspect_ratio' | 'megapixels' | 'seed'
+    | 'resolution_preset' | 'aspect_ratio' | 'megapixels' | 'cfg' | 'seed'
     | 'lora_model' | 'lora_model_weight' | 'lora_clip_weight'
     | 'lora_trigger_word' | 'reference_image' | 'workflow_input'
+  label: string
   value_type: 'integer' | 'number' | 'boolean' | 'string'
     | 'enum' | 'asset_reference' | 'image_reference'
-  default_value: JsonValue
+  default_value: string | number | boolean | null
   required: boolean
   visible: boolean
 }
@@ -331,6 +342,9 @@ interface ComfyuiUiWorkflowV04 extends JsonDocument {
 }
 
 interface ComfyuiTemplateBundle {
+  contract_id: 'imagegen-source-contract'
+  contract_version: 1
+  source_release_version: string
   template_id: string
   title: string
   workflow_revision: number
@@ -359,7 +373,6 @@ type RunStatus =
   | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'
 
 interface CreateGenerationRun {
-  request_id: string
   title: string
   workspace_id: string
   session_id: string
@@ -380,7 +393,6 @@ interface RequestedLoraApplication {
 }
 
 interface RunRequestSnapshot {
-  request_id: string
   title: string
   workspace_id: string
   session_id: string
@@ -426,7 +438,6 @@ interface PersistedRunSourceSnapshot {
 
 interface GenerationRunSnapshot {
   run_id: string
-  request_id: string
   title: string
   workspace_id: string
   session_id: string
@@ -525,7 +536,7 @@ interface GenerationCatalog {
 
 ```text
 迁移后的 Skill
-  → DeepSeek Harness 动态注册的 query_semantic_* Tool
+  → 当前项目Host plugin通过统一registerProjectTools()注册的query_semantic_* Tool
   → StructuredCliGenerationCatalog
   → 数据源仓库中完善后的只读 CLI
   → 数据源仓库数据库
@@ -533,20 +544,27 @@ interface GenerationCatalog {
 
 `provider: 'local-generation-runs'` 的 `media` 资源种类不调用数据源 CLI。浏览器和被目标 profile 授权的 Harness Tool 通过 Host 当前入口派生的 `ArtifactAccessScope` 调用 `GenerationRuns.listMedia(input, access_scope)` 查询分页媒体，并通过相同范围调用 `GenerationRuns.getMediaDescriptor(media_id, access_scope)` 精确读取一个 `media_id`。
 
-DeepSeek Harness Host 插件只读取 Agent 安全 discovery，并按每个 Catalog Operation 的模型 Tool 名称注册工具。现有工具名保持 `query_semantic_works`、`query_semantic_characters`、`query_semantic_styles` 和 `query_semantic_prompt_terms`。新增资源使用同一命名规则，例如 `query_semantic_base_models`、`query_semantic_generation_models`、`query_semantic_loras`、`query_semantic_artist_prompt_strings`、`query_semantic_comfyui_instances` 和 `query_semantic_comfyui_templates`。Host 插件不得把 Source Operation 注册为模型 Tool。
+Ticket 01创建`src/host/tools/register-project-tools.ts`，该模块是当前项目唯一直接调用Harness公开`ctx.tools.register()`的位置。Host plugin只读取Agent安全discovery，使用`defineTool()`构造完整定义，再通过该统一registry注册PRD 05固定的十个Catalog Tool。registry按稳定顺序注册、失败时反向注销本次Tool、Host plugin卸载时反向注销全部项目Tool。Host plugin不得把Source Operation、项目Remote、产品管理CLI或GenerationRuns方法注册为模型Tool。
 
-每个工具直接使用对应 OpenAPI operation 的闭合输入对象和成功结果，不使用通用的 `invoke(operation, any)`：
+每个工具直接使用对应OpenAPI operation的闭合`search`或`resolve`输入对象和成功结果，不使用通用的`invoke(operation, any)`：
 
 ```ts
-query_semantic_loras({
-  base_model_id?: number,
-  query?: string,
-  page?: number,
-  page_size?: number
-}): Promise<CatalogPage>
+query_semantic_loras(
+  | {
+      mode: 'search'
+      query?: string
+      page?: number
+      page_size?: number
+      base_model_id?: string
+    }
+  | {
+      mode: 'resolve'
+      id: string
+    }
+): Promise<CatalogPage>
 ```
 
-本次开发需要在原数据源 OpenAPI、handler、catalog service 和 CLI 契约测试中补齐 `base-model`、`model`、`lora`、`artist-string`、`comfyui-instance` 和 `comfyui-template`，并保留已经存在的 `work`、`character`、`style` 和 `prompt-term` 查询语义。
+原数据源OpenAPI、handler、catalog service、两个只读CLI和源仓库契约测试的修改必须按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`在数据源仓库自己的Issue、分支、测试和版本发布流程中完成。当前仓库Issues只消费已发布CLI并实现Harness plugin adapter；所需数据源版本尚未发布时保持阻塞，不得跨仓库直接修改或复制数据源实现。
 
 每个可插入上下文的查询 operation 必须支持按稳定 ID 精确查询。`GenerationCatalog.resolve(ref)` 使用对应 operation 的稳定 ID 条件并要求结果恰好一条；它不通过名称再次搜索选中项。
 
@@ -566,13 +584,13 @@ interface ComfyuiSourceCatalog {
 }
 ```
 
-`PrivateComfyuiInstanceSnapshot` 包含连接 ComfyUI 所需的 URL 和认证信息。该对象只存在于本仓库 Host 进程内存中；运行数据库、日志、模型工具结果、Run Change Notification 和浏览器响应只保存实例 ID 与安全名称，不保存认证信息。
+`PrivateComfyuiInstanceSnapshot` 包含连接 ComfyUI 所需的 URL 和认证信息。该对象只存在于本仓库 Host 进程内存中；运行数据库、日志、模型工具结果、Run projection Remote 和浏览器响应只保存实例 ID 与安全名称，不保存认证信息。
 
 `ComfyuiTemplateBundle` 包含 Tool 调用执行时数据源返回的当前模板 ID、模板 revision、原始 workflow JSON、`workflow_sha256`、运行时配置 revision、参数定义和绑定定义。本版本不锁定用户选择模板时的 revision，也不处理用户选择后、Tool 调用前模板发生更新的并发情形。Host 在 Tool 调用中读取一次当前 bundle，并把这次返回的完整 bundle 复制为该 Generation Run 的不可变来源快照；运行创建后的数据源变化不得改变该运行。
 
 本方案不把实例认证信息加入 `/internal/semantic` discovery，因为该 discovery 只包含 Catalog Operation。数据源仓库从同一个 `schema/api/openapi.yaml` 投影 Host 专用的本机只读 source discovery，并新增读取该 discovery 的只读命令 `imagegen-comfyui-source-read`；该表面只提供实例连接和当前完整模板 bundle 的 Source Operation。DeepSeek Harness profile 不注册 Source Operation 为 Agent Tool、Skill Tool 或浏览器 RPC；`ComfyuiSourceCatalog` adapter 负责从 Host 进程启动命令并读取 stdout。命令不记录完整响应，也不执行数据源写操作。operation audience 只负责 discovery 投影和 Harness Tool 注册分类。本版本不认证调用 Source Operation 的其他本机进程。
 
-`ComfyuiSourceCatalog` 返回 `SOURCE_INSTANCE_NOT_FOUND`、`SOURCE_INSTANCE_DISABLED`、`SOURCE_INSTANCE_INVALID`、`SOURCE_CREDENTIAL_UNAVAILABLE`、`SOURCE_TEMPLATE_NOT_FOUND`、`SOURCE_CONTRACT_UNSUPPORTED` 或 `SOURCE_PROTOCOL_ERROR`。任一错误都会在本仓库运行进入远端提交前终止该运行。
+`ComfyuiSourceCatalog` 返回 `SOURCE_INSTANCE_NOT_FOUND`、`SOURCE_CREDENTIAL_UNAVAILABLE`、`SOURCE_TEMPLATE_NOT_FOUND`、`SOURCE_TEMPLATE_UNAVAILABLE`、`SOURCE_CONTRACT_UNSUPPORTED` 或 `SOURCE_PROTOCOL_ERROR`。两个实例读取错误和两个模板读取错误与Source CLI错误同名；discovery identity或版本不匹配映射为`SOURCE_CONTRACT_UNSUPPORTED`；`SOURCE_REQUEST_INVALID`、`SOURCE_DATABASE_BUSY`和`SOURCE_INTERNAL_ERROR`逐项映射为`SOURCE_PROTOCOL_ERROR`；CLI连接、超时、未声明服务错误、非JSON、空stdout、多JSON或响应Schema错误也映射为`SOURCE_PROTOCOL_ERROR`。任一错误都会在本仓库运行进入远端提交前终止该运行。
 
 ### 6.3 `GenerationRuns`
 
@@ -604,17 +622,17 @@ interface GenerationRuns {
 
 `create()` 和异步 worker 必须按以下顺序运行：
 
-1. Host 使用稳定字符串 `comfyui:<session_id>:<call_id>` 作为 `request_id`。同一个 ToolExecution 重试时必须复用该值。
-2. `RunRepository` 先在一个事务中为唯一 `request_id` 创建 `run_id` 和 `created` 记录。相同 `request_id` 与相同请求返回原运行；相同 `request_id` 与不同请求返回 `RUN_REQUEST_CONFLICT`。
+1. Host 直接使用 Harness 提供的 `(workspace_id, session_id, call_id)` 作为唯一 Tool Call identity。同一个 ToolExecution 重试时必须复用该 identity。
+2. `RunRepository` 先在一个事务中为唯一 `(workspace_id, session_id, call_id)` 创建 `run_id` 和 `created` 记录。相同 identity与相同请求返回原运行；相同 identity与不同请求返回 `RUN_REQUEST_CONFLICT`。
 3. worker 通过数据源只读 Source Operation 读取已解析实例连接和当前完整模板 bundle，并把这次返回的模板 revision、`workflow_sha256` 和运行时配置 revision 写入本次运行的来源快照。
 4. worker 校验运行参数，通过 runtime bindings 把不可变请求数据应用到模板 UI Workflow 的深拷贝，生成本次实际 Workflow JSON；worker 随后读取 ComfyUI `/object_info`，并从本次实际 Workflow JSON 编译 API Workflow JSON。
 5. worker 先把来源快照、内部请求快照、本次实际 Workflow JSON 和 API Workflow JSON 原子写入 `<run_id>` 目录，再把数据库状态更新为 `prepared`。
 6. worker 把数据库状态更新为 `submitting` 后调用 ComfyUI `/prompt`。收到成功响应后，worker 在一个事务中保存 `prompt_id` 并把状态更新为 `remote_pending`。
 7. worker 通过 `GET /api/jobs/{prompt_id}` 观察 Job。远端状态为 `completed` 时，worker 从 Job 的 `outputs` 读取模板声明的输出描述，下载并验证全部输出，在每个媒体文件安全落盘后把状态更新为 `succeeded`。
 
-同一 ToolExecution 的网络传输重试、Harness 恢复和 worker 恢复都复用原 `request_id` 与原 `run_id`。只有用户在新的聊天消息中明确要求 Agent 再次生成，并在 `submission_unknown` 情况下确认可能产生重复远端任务后，Harness 才创建新的 ToolExecution；新的 `call_id` 产生新的 `request_id` 与 `run_id`。运行卡片只说明风险和下一步，不提供绕过 Harness 会话与 Tool 调用机制的直接提交按钮。
+同一 ToolExecution 的网络传输重试、Harness 恢复和 worker 恢复都复用原 `(workspace_id, session_id, call_id)` 与原 `run_id`。只有用户在新的聊天消息中明确要求 Agent 再次生成，并在 `submission_unknown` 情况下确认可能产生重复远端任务后，Harness 才创建新的 ToolExecution；新的 `call_id` 产生新的 `run_id`。运行卡片只说明风险和下一步，不提供绕过 Harness 会话与 Tool 调用机制的直接提交按钮。
 
-ComfyUI `/prompt` 没有经本轮验证的业务幂等键。worker 在 `submitting` 时崩溃，或者请求超时且无法确定远端是否接收任务时，恢复流程必须把运行更新为终态 `submission_unknown`，并返回 `COMFYUI_SUBMISSION_RESULT_UNKNOWN`。恢复流程不得自动再次提交该运行。该规则优先保证不会为同一个 `request_id` 创建第二个远端任务。
+ComfyUI `/prompt` 没有经本轮验证的业务幂等键。worker 在 `submitting` 时崩溃，或者请求超时且无法确定远端是否接收任务时，恢复流程必须把运行更新为终态 `submission_unknown`，并返回 `COMFYUI_SUBMISSION_RESULT_UNKNOWN`。恢复流程不得自动再次提交该运行。该规则优先保证不会为同一个 Harness Tool Call identity创建第二个远端任务。
 
 `get()` 必须从当前仓库的运行数据库返回以下状态之一：
 
@@ -754,7 +772,7 @@ configured-data-directory/
                     └── ...
 ```
 
-`runs.sqlite` 是当前 Harness 安装唯一的运行元数据数据库。每条运行记录保存 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id`、`run_id`、唯一 `request_id`、来源 ID、非敏感实例 URL 快照、状态、ComfyUI `prompt_id`、四个运行 JSON 文件的相对路径、媒体文件相对路径、错误结构和时间戳。JSON 文件保存不可变事实。数据库不得重复保存一份可独立修改的完整 workflow JSON。服务用同一运行目录内的临时文件完成写入和同步后再执行原子 rename；数据库只在目标文件完成后保存其相对路径。
+`runs.sqlite` 是当前 Harness 安装唯一的运行元数据数据库。每条运行记录保存 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id`、`run_id`、来源 ID、非敏感实例 URL 快照、状态、ComfyUI `prompt_id`、四个运行 JSON 文件的相对路径、媒体文件相对路径、错误结构和时间戳；数据库对 `(workspace_id, session_id, call_id)` 建立唯一约束。JSON 文件保存不可变事实。数据库不得重复保存一份可独立修改的完整 workflow JSON。服务用同一运行目录内的临时文件完成写入和同步后再执行原子 rename；数据库只在目标文件完成后保存其相对路径。
 
 运行服务通过显式项目命令或 DeepSeek Harness 插件生命周期以前台方式启动；本方案不创建隐藏 daemon、系统登录项或定时任务。服务启动后扫描本仓库数据库中的非终态运行，并通过已保存的 `prompt_id` 向原 ComfyUI 实例恢复观察。
 
@@ -769,30 +787,50 @@ generate_with_comfyui({
   title: string,
   instance_id?: string,
   template_id: string,
-  parameters: Record<string, string | number | boolean>
+  parameters: Record<string, string | number | boolean>,
+  lora_applications: Array<{
+    source_lora_id: string,
+    strength_model: number,
+    strength_clip?: number,
+    applied_trigger_words: string[]
+  }>
 }): Promise<{ run_id: string }>
 ```
 
-Harness Host 插件从当前 ToolExecution 绑定 `workspace_id`、`session_id`、数字 `turn` 和 `call_id`，并读取该用户消息已经记录的不可变 `ContextSnapshot[]`。模型不提供这四类关联数据。`instance_id` 只允许使用实例 Catalog Operation 返回的安全 ID；省略时，Host 读取 `config/runtime.json` 的默认实例 ID。明确选择的实例不可用时，Host 返回具体 Source 错误，不切换实例。Host 以 `comfyui:<session_id>:<call_id>` 建立稳定 `request_id`，调用本仓库 `GenerationRuns.create()` 并注册一个 `ctx.jobs` 观察任务。工具不得根据轻量 `ContextRef` 再次查询当前数据源，否则数据源变化会使任务上下文与用户消息上下文不一致。
+`generate_with_comfyui`的`defineTool()`输出必须同时定义以下确定投影：
 
-工具不得接受任意 API workflow、任意 ComfyUI 节点 ID 或数据库文件路径。只有模板运行时配置声明为 `workflow_input` 的参数才能修改对应节点输入。
+```ts
+type GenerationToolValue = { run_id: string }
+
+type GenerationToolPresentationMeta = {
+  contract_id: 'harness-comfyui-generation-run'
+  contract_version: 1
+  run_id: string
+}
+```
+
+`output.schema`只接受必填`run_id`的封闭对象，`output.render()`向Harness Tool Result写入同一JSON对象，`output.presentationMeta()`返回`GenerationToolPresentationMeta`。Harness原生`tool/result`持久该meta，Client公开`ToolResultNode.meta`在实时投影和Session重放中都返回它。公开`ToolResultNode.call`可在配对call尚未进入当前history window时为`null`：`call !== null`时Client校验`call.name === "generate_with_comfyui"`、settled success与meta；`call === null`时Client使用公开`callId`、当前Session和meta `run_id`调用项目`GenerationRuns.resolveToolResultLink()`，由Host核对持久`(workspace_id, session_id, call_id) -> run_id`映射。映射校验成功才建立Run链接；Client不从Agent文本、Tool标题或Tool Result文字解析该链接。
+
+Harness Host 插件从当前 ToolExecution 绑定 `workspace_id`、`session_id`、数字 `turn` 和 `call_id`，并读取该用户消息已经记录的不可变 `ContextSnapshot[]`。模型不提供这四类关联数据。`instance_id` 只允许使用实例 Catalog Operation 返回的安全 ID；省略时，Host 读取 `config/runtime.json` 的默认实例 ID。明确选择的实例不可用时，Host 返回具体 Source 错误，不切换实例。Host 直接使用 `(workspace_id, session_id, call_id)` 调用本仓库 `GenerationRuns.create()` 并注册一个 `ctx.jobs` 观察任务。工具不得根据轻量 `ContextRef` 再次查询当前数据源，否则数据源变化会使任务上下文与用户消息上下文不一致。
+
+每个`lora_applications`成员必须与当前用户消息的一项LoRA`ContextSnapshot`按稳定ID和顺序一一匹配；Host只从该不可变快照读取文件名和允许触发词。权重必须位于模板声明范围内，实际触发词必须来自该成员的允许集合并已经包含在正向Prompt中。工具不得接受任意 API workflow、任意 ComfyUI 节点 ID 或数据库文件路径。只有模板运行时配置声明为 `workflow_input` 的参数才能修改对应节点输入。
 
 ## 7. 数据源只读 CLI 协议
 
 ### 7.1 传输格式
 
-数据源继续使用现有 `imagegen-semantic-query` CLI 处理 Catalog Operation。CLI 先请求 `GET /internal/semantic`，读取由 `schema/api/openapi.yaml` 派生且只包含 Agent 安全 operation 的 OpenAPI 3.1 discovery，再根据 `--path` 和 OpenAPI 参数定义请求一个目录查询 operation。CLI 把服务成功或失败的 JSON 原样压缩为一行 stdout；CLI 自身错误使用既有结构化错误和退出码。计划执行者不得把该 CLI 改写为另一种 stdin envelope。
+数据源用结构化Catalog模式替换现有`imagegen-semantic-query` CLI的旧semantic协议。CLI请求`GET /internal/semantic`的新OpenAPI 3.1 discovery，再根据`--path`、`--mode`和OpenAPI参数定义请求一个目录operation；旧批量调用形状不再保留。成功时CLI向stdout写一个Catalog JSON值和末尾换行并保持stderr为空；服务错误、协议错误或取消时stdout为空，CLI按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`固定的退出码向stderr写一个闭合错误对象。当前仓库执行者不得修改该CLI；CLI变更只由源数据仓库执行者在源仓库自己的发布流程中完成。
 
 两个 discovery 必须返回同一契约身份：
 
 ```ts
 interface SourceContractIdentity {
-  contract_id: string
-  contract_version: string
+  contract_id: 'imagegen-source-contract'
+  contract_version: 1
 }
 ```
 
-`config/runtime.json` 使用 `supported_source_contracts` 保存 Host 明确支持的 `contract_id` 与 `contract_version` 组合。`StructuredCliGenerationCatalog` 和 `ComfyuiSourceCatalog` 启动时分别读取对应 discovery 并执行精确匹配；未知契约或不受支持版本返回 `SOURCE_CONTRACT_UNSUPPORTED`。adapter 不猜测字段含义、不回退到旧路径，也不忽略版本差异。
+`config/runtime.json`使用`supported_source_contracts`保存Host明确支持的组合，本版本只包含`{"contract_id":"imagegen-source-contract","contract_version":1}`。`StructuredCliGenerationCatalog`启动时执行`imagegen-semantic-query --port <source-service-port> --discovery-json`，`ComfyuiSourceCatalog`启动时执行`imagegen-comfyui-source-read --port <source-service-port> --discovery-json`；两者都要求唯一stdout JSON包含`contract_id`、`contract_version`、`source_release_version`和对应OpenAPI 3.1对象，并执行精确identity匹配。`source_release_version`由数据源服务从其`package.json.version`产生，Harness不向CLI传入该值。未知契约或不受支持版本返回`SOURCE_CONTRACT_UNSUPPORTED`。adapter不猜测字段含义、不回退到旧路径，也不忽略版本差异。`<source-service-port>`表示调用方提供给CLI的本机源服务端口；本源数据实施文档不定义目标仓库保存该值的配置字段。
 
 示例调用形状：
 
@@ -800,6 +838,7 @@ interface SourceContractIdentity {
 imagegen-semantic-query \
   --port 18093 \
   --path /internal/semantic/loras \
+  --mode search \
   --base_model_id 3 \
   --query portrait \
   --page 1 \
@@ -808,15 +847,19 @@ imagegen-semantic-query \
 
 CLI 的参数名称、必填性、类型、范围、示例和响应 schema 全部来自 live discovery。所有新增语义 operation 都是只读查询；handler 不得插入或更新 `comfyui_runs`、`comfyui_run_outputs` 或其他数据源表，也不得把媒体写入数据源目录。
 
-### 7.2 新增内部语义 operation
+### 7.2 十个 Catalog operation
 
 | path | operationId | Harness Tool | 返回内容 |
 |---|---|---|---|
+| `/internal/semantic/works` | `querySemanticWorksForSkill` | `query_semantic_works` | 作品安全投影分页 |
+| `/internal/semantic/characters` | `querySemanticCharactersForSkill` | `query_semantic_characters` | 角色安全投影分页，可按作品ID筛选 |
+| `/internal/semantic/styles` | `querySemanticStylesForSkill` | `query_semantic_styles` | 画师或画风安全投影分页，可按底模ID筛选 |
+| `/internal/semantic/prompt-terms` | `querySemanticPromptTermsForSkill` | `query_semantic_prompt_terms` | Prompt术语安全投影分页 |
 | `/internal/semantic/base-models` | `querySemanticBaseModelsForSkill` | `query_semantic_base_models` | 底模安全投影分页 |
 | `/internal/semantic/generation-models` | `querySemanticGenerationModelsForSkill` | `query_semantic_generation_models` | 生成模型安全投影分页 |
 | `/internal/semantic/loras` | `querySemanticLorasForSkill` | `query_semantic_loras` | LoRA 安全投影分页 |
 | `/internal/semantic/artist-prompt-strings` | `querySemanticArtistPromptStringsForSkill` | `query_semantic_artist_prompt_strings` | 画师串安全投影分页 |
-| `/internal/semantic/comfyui-instances` | `querySemanticComfyuiInstancesForSkill` | `query_semantic_comfyui_instances` | 实例 ID、安全名称、能力、启用与验证状态；不返回 URL 或凭据 |
+| `/internal/semantic/comfyui-instances` | `querySemanticComfyuiInstancesForSkill` | `query_semantic_comfyui_instances` | 实例ID、安全名称、enabled和validated；不返回URL或凭据 |
 | `/internal/semantic/comfyui-templates` | `querySemanticComfyuiTemplatesForSkill` | `query_semantic_comfyui_templates` | 模板、当前 revision 与运行时参数摘要；不返回完整 workflow |
 
 DeepSeek Harness Host 插件根据 discovery 注册上表的模型工具；目标 Harness profile 决定哪些工具对一个 Agent 可见。浏览器上下文选择器通过 Harness 类型化 remote RPC 使用同一个 `StructuredCliGenerationCatalog` adapter。目标 profile 不向 Skill 暴露启动 CLI 进程的 Host 能力；只有 Host adapter 启动 CLI。
@@ -834,6 +877,7 @@ Host 调用媒体与 Workflow 读取方法时必须提供第 6.3 节定义的 `A
 | `GenerationRuns.create` | 创建本仓库持久运行并异步提交 ComfyUI |
 | `GenerationRuns.get` | 读取本仓库中的一个运行及其输出描述 |
 | `GenerationRuns.list` | 按 Host 授权的 Harness Workspace、Session、数字 `turn`、状态和创建时间分页查询本仓库运行 |
+| `GenerationRuns.resolveToolResultLink` | 当公开`ToolResultNode.call === null`时，按Host派生Workspace、当前Session、公开`callId`与meta `run_id`核对持久Tool→Run映射，并返回固定Generation Tool link合同 |
 | `GenerationRuns.cancel(run_id, access_scope)` | 在 Host 派生的 Workspace 授权范围内取消指定的 `remote_pending` 或 `remote_running` Job，并通过 Jobs API 回读最终状态 |
 | `GenerationRuns.listMedia(input, access_scope)` | 按 Host 授权的 Harness Workspace 或单个 Session、数字 `turn`、`run_id`、媒体种类和创建时间范围分页查询本仓库媒体 |
 | `GenerationRuns.getActualWorkflowJson(run_id, access_scope)` | 在 `ArtifactAccessScope` 授权范围内读取本仓库保存的本次实际 Workflow JSON |
@@ -841,22 +885,15 @@ Host 调用媒体与 Workflow 读取方法时必须提供第 6.3 节定义的 `A
 | `GenerationRuns.getMediaDescriptor(media_id, access_scope)` | 在 `ArtifactAccessScope` 授权范围内读取本仓库保存的媒体公开描述 |
 | `GenerationRuns.openMedia(media_id, access_scope)` | 在 Host 派生的 `ArtifactAccessScope` 范围内读取本仓库保存的媒体二进制流 |
 
-## 8. 运行通知与结果卡片
+## 8. 运行刷新与结果卡片
 
-### 8.1 Session 关联与 Run Change Notification
+### 8.1 Session 关联与 Run Refresh Polling
 
-Harness Session 日志只保存原生 Generation Tool Call 和包含 `run_id` 的 Generation Tool Result。Harness ComfyUI Host 插件不得写入 `generation.run.created`、`generation.run.updated`、`generation.run.completed`、`generation.run.failed` 或 `generation.run.cancelled` 持久事件。
+Harness Session日志在用户显式选择`comfyui-generate`时保存`source.kind: "skill-invocation"`与`source.name: "comfyui-generate"`的原生Context消息，并保存原生Generation Tool Call和包含`run_id`与meta合同的Generation Tool Result。Generation Tool Host adapter先按`exec.callId`唯一找到`tool/call`及其数字turn与`seq`，再找到同一turn且位于Tool Call之前的最近唯一`turn/start`，并且只扫描`turn/start.seq < event.seq < tool/call.seq`内的`user/message.source`。边界缺失、歧义、目标Context缺失或只在上一turn存在时返回`GENERATION_SKILL_INVOCATION_REQUIRED`，不得创建Run、持久映射或调用`/prompt`。Harness ComfyUI Host插件不得写入`generation.run.created`、`generation.run.updated`、`generation.run.completed`、`generation.run.failed`或`generation.run.cancelled`持久事件。
 
-Generation Run 状态改变后，Host 通过类型化 remote channel 发送以下非持久通知：
+DeepSeek Harness `0.1.0-rc.8` 的 public forwarded-event allowlist 不包含项目 Run 事件。当前项目不修改该 allowlist，也不发送自定义 Host→Client 事件。项目 Typert Remote 的 Run projection response 包含当前 Workspace、Session、数字 `turn` 的运行列表、`hasNonterminalRuns` 和 `refreshAfterMs`；response 不包含凭据、文件路径或 ComfyUI URL。
 
-```ts
-interface RunChangeNotification {
-  type: 'generation.run.changed'
-  run_id: string
-}
-```
-
-通知不包含状态快照、错误、Workflow、媒体描述或凭据。浏览器收到通知后，在 Host 派生的访问范围内调用 `GenerationRuns.get()` 或 `GenerationRuns.list()` 读取 Run Repository。浏览器重新打开 Session 时，不依赖通知历史；右列直接按当前 Workspace、Session 和数字 `turn` 查询运行。
+Client必须实现唯一`GenerationRunProjectionStore`和唯一轮询协调器。中列Generation Tool行用`run_id`订阅单项投影，右列用当前Session和数字`turn`订阅分页投影；Remote返回项全部按`run_id`归并到同一Store，两处不保存独立的Run副本。Client遇到通过call+meta校验或`resolveToolResultLink()`映射校验的Tool Result、打开results panel、切换Session、切换数字`turn`或完成取消请求后立即调用Run projection Remote。页面可见，且中列可见Tool行或右列可见卡片订阅了非终态Run时，Client按`refreshAfterMs`继续查询；两处同时可见时合并为一个计时器和一次查询。页面隐藏、两处都没有可见消费者或全部已观察运行终态时停止。浏览器重新打开Session时，项目Store直接按当前Workspace、Session和数字`turn`查询运行，不依赖项目事件历史。
 
 ### 8.2 媒体描述
 
@@ -864,7 +901,7 @@ interface RunChangeNotification {
 
 右列 Workflow JSON 下载处理器使用 Host 当前 Session 派生的 Session `ArtifactAccessScope`；全局媒体库 Workflow JSON 下载处理器使用 Host 当前 Workspace 派生的 Workspace `ArtifactAccessScope`。两个处理器都调用 `GenerationRuns.getActualWorkflowJson(run_id, access_scope)`，且只读取所属运行已经保存的 `actual-workflow.json`。因此浏览器用户停留在 Session A 时，可以从全局媒体库下载同一 Workspace 内 Session B 的媒体所属 Workflow；右列下载不能读取 Session B 的运行；两个入口都不能读取其他 Workspace 的运行。媒体或运行不存在时返回 `MEDIA_NOT_FOUND` 或 `RUN_NOT_FOUND`；Workflow JSON 尚未保存时返回 `GENERATION_ARTIFACT_NOT_READY`；授权范围不包含所属运行时返回 `GENERATION_ARTIFACT_ACCESS_DENIED`。`GenerationRuns.getApiWorkflowJson(run_id)` 只供 Host 私有提交、恢复和诊断逻辑使用，不注册为浏览器下载 RPC。
 
-本仓库运行服务在保存媒体前必须依据配置的 MIME allowlist 和文件签名验证实际内容。URL 扩展名不能决定媒体种类。媒体凭据和 ComfyUI 实例凭据不得出现在 `StoredMediaDescriptor`、Run Change Notification 或浏览器响应中。
+本仓库运行服务在保存媒体前必须依据配置的 MIME allowlist 和文件签名验证实际内容。URL 扩展名不能决定媒体种类。媒体凭据和 ComfyUI 实例凭据不得出现在 `StoredMediaDescriptor`、Run projection Remote 或浏览器响应中。
 
 ### 8.3 可下载 JSON 的定义
 
@@ -882,33 +919,41 @@ interface RunChangeNotification {
 
 ### 9.1 目标目录
 
-用户确认正式实现后，计划执行者先在当前仓库安装 DeepSeek Harness 宿主，再把项目级 Skill 放入该宿主当前版本支持的项目 Skill 目录；当前检查结果对应 `.dsh/skills/<skill-name>/`。DeepSeek Harness 的 Skill provider、当前 profile、工具注册和宿主文件可见性决定 Skill 的实际执行环境。迁移后的 `SKILL.md` 不声明自己的沙箱范围，也不沿用原仓库对 Skill 可见文件的宿主假设。
+Release Artifact固定包含`skills/comfyui-generate/`、`skills/anima-prompt-builder/`、`skills/wai-sdxl-prompt-builder/`和`skills/lora-adjustment/`。产品安装程序把四个目录复制到每个release自己的`<release>/dsh-home/skills/`；rc.8既有`@deepseek-ai/dsh-skill-filesystem` provider从当前`DSH_HOME/skills`发现它们。Harness原生`/` Skill菜单显示当前Session可调用Skill并插入普通`/<skill-name> `文本，Host在执行前重新发现并校验。当前项目不实现第二套Skill菜单、选择状态、provider或invocation policy。
 
-本项目在 DeepSeek Harness Host 中根据数据源 OpenAPI 动态注册 `query_semantic_*` 工具，并静态注册 `generate_with_comfyui`。迁移后的 Skill 使用所需的资源专用查询工具和生成工具完成本需求。这是 Host 插件提供的工具接口，不是 Skill 对宿主可见性的决定。
+四个Skill都是同一Harness Skill层中的普通可调用Skill。Prompt Skill与LoRA调整Skill在中列返回内容，不调用Generation Tool；`comfyui-generate`才根据用户显式请求调用`generate_with_comfyui`。Skill之间不存在上下级关系，任何Skill调用本身都不创建专用Session。
 
-### 9.2 可以从当前生产 checkout 检查并迁移的 Skill
+### 9.2 来源系统的三个迁移 Skill
 
-- `anima-prompt-builder`
-- `wai-sdxl-prompt-builder`
+唯一来源是`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV`的committed tree`799b7759029d70076791321e2b02bf53c651c98f`（tag`v0.80.0`）：
 
-计划执行者迁移这两个 Skill 时，把本需求的数据查询入口改为 Harness 动态注册的 `query_semantic_*` 资源专用工具，把生成入口改为 `generate_with_comfyui`。迁移后的 `SKILL.md` 不写入数据源仓库绝对路径；数据源目录由 Host 插件配置。
+- `skills/anima-prompt-builder/`
+- `skills/wai-sdxl-prompt-builder/`
+- `management-skills/lora-adjustment/`
 
-### 9.3 当前不能执行的迁移
+计划执行者把第三个目录迁入当前仓库的`skills/lora-adjustment/`。三个迁移Skill保留各自领域知识和需要的references，但重写为Harness普通Skill的输入、Tool和直接assistant输出协议；不迁移来源Pi、专用管理Skill会话、`agents/openai.yaml`、validation/report脚本、旧调用标识字段、来源输入包装对象、旧Skill脚本执行器或任何finalizer协议。Anima必须新建`references/catalog-tools.md`与`references/output-format.md`并移除旧语义接口和输出协议文件；WAI必须新建`references/catalog-tools.md`、`references/message-input.md`与`references/prompt-output-format.md`并改写全部旧语义Tool链接；LoRA只保留并修订`references/weight-guidance.md`，不迁移`config/`或`scripts/`。
 
-用户指定的 `/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV` checkout 当前没有管理 Skill 和管理会话 Skill 的目录。正式迁移前，用户需要指定包含这些 Skill 的仓库目录与 revision，或者允许计划执行者把生产 checkout 更新到包含这些文件的 revision。
+### 9.3 Prompt Skills
 
-旧 Pi 会话持久化、三轮限制和旧 Pi prompt 组装逻辑不迁入 DeepSeek Harness。DeepSeek Harness Session 是唯一会话事实来源；只迁移已定义的领域查询、上下文快照和 Skill 结果契约。
+`anima-prompt-builder`与`wai-sdxl-prompt-builder`读取当前普通用户消息、同一消息的不可变`generation-context.v1`快照和相关Harness Session历史。两个Skill只能使用`query_semantic_works`、`query_semantic_characters`、`query_semantic_styles`和`query_semantic_prompt_terms`取得真实语义记录。一个查询目标固定产生一次`{mode:'search',query,page:1,page_size:10}`Tool Call；多个目标分别调用，不发送批量查询数组。成功时它们在中列直接返回完整单行Prompt；失败时返回缺少的具体信息和下一步。两个Skill都不调用`generate_with_comfyui`，因此其当前聊天轮次没有`run_id`，右列显示本轮无ComfyUI运行。
 
-### 9.4 新增 Skill：`comfyui-generate`
+### 9.4 LoRA 调整 Skill
 
-`comfyui-generate` 是 DeepSeek Harness 中的普通可选 Skill。它不创建专用 Session 类型，也不是 ComfyUI 任务提交的唯一入口或必经流程。任何由目标 Harness profile 授予 `generate_with_comfyui` Tool 权限的普通 Skill，都可以在任意普通 Session 的聊天轮次中创建零个或多个 ComfyUI 运行。LoRA 只是 `generate_with_comfyui` 请求中的可选运行参数之一。
+`lora-adjustment`读取当前用户调整要求、当前消息中的一个Workflow模板快照、一个或多个有序LoRA快照和当前完整Prompt。它按快照顺序为每个字符串`source_lora_id`调用一次`query_semantic_loras({mode:'resolve',id:source_lora_id})`，保持消息快照的成员、顺序、文件名和允许触发词不变，不调用来源旧LoRA查询Tool，也不接受Host隐式注入底模或LoRA集合。成功时它在中列直接返回`{prompt_text, loras}`；每个LoRA结果包含原`source_lora_id`、MODEL权重、适用时的CLIP权重和实际采用触发词。停用成员使用零权重和空触发词；`LoraLoaderModelOnly`不返回CLIP权重。连续调整使用同一Harness Session中最近一次成功结果作为当前基线。
+
+`lora-adjustment`不创建或拥有专用LoRA Session，不调用`generate_with_comfyui`，不创建、编号或推进Generation Run。其当前聊天轮次的右列显示本轮无ComfyUI运行。
+
+### 9.5 新增 Skill：`comfyui-generate`
+
+`comfyui-generate`是与前三个Skill并列的普通可选Skill。用户必须在一条新消息中显式选择它，并附加当前生成所需的Workflow模板、LoRA和其他上下文；用户可以明确引用同一Session内最近的Prompt Skill输出或LoRA调整结果。Skill不得自动调用另一个Skill，也不得把前三个Skill成功解释为自动生成授权。
 
 `comfyui-generate` 的 `SKILL.md` 负责以下动作：
 
-1. 从用户消息和已附上下文确认生成意图。
-2. 在缺少模板或实例时调用 `query_semantic_comfyui_templates` 或 `query_semantic_comfyui_instances` 请求候选；其他缺失资源使用对应的 `query_semantic_*` 工具。
-3. 把用户明确提供的提示词、宽度、高度、像素总量、CFG、seed、LoRA 和模板声明的其他运行参数传给 `generate_with_comfyui`。
-4. `generate_with_comfyui` 的 Generation Tool Result 只包含已经持久接纳的 `{ run_id }`。Skill 的 Agent 回复只报告该 `run_id`，不复制 Run Repository 的状态或输出摘要；浏览器或 Host 按该 `run_id` 读取当前状态和输出。
+1. 从当前用户消息、`generation-context.v1`快照、可选`generation-route.v1`和用户明确引用的先前Skill结果确认生成意图、唯一模板、Prompt和可选LoRA调整结果。
+2. 只按模板安全摘要中声明的`parameter_id`与`kind`映射Prompt、宽度、高度、像素总量、CFG、seed和其他显式运行值；不得猜测节点ID、input name、widget index或未声明参数。
+3. 当前消息包含LoRA快照时，把被引用LoRA调整结果逐项转换为`generate_with_comfyui.lora_applications[]`；成员、顺序、稳定ID、权重和触发词必须与当前消息快照一致。
+4. 对每个用户明确要求的运行调用一次`generate_with_comfyui`。Generation Tool Result只包含已经持久接纳的`{run_id}`。
+5. 中列保留Agent文本、Tool Call/Result与“定位结果”，并从唯一Client Run投影Store持续显示该`run_id`的异步状态摘要；右侧第三列从同一Store快照显示详细状态、媒体和Actual Workflow下载。
 
 确定性的模板字段绑定、节点写入、参数类型校验、状态轮询和媒体保存属于 `GenerationRuns`，不写入 Skill 脚本。
 
@@ -981,7 +1026,7 @@ NoobAI-XL-FZ-PROD-ENV/
 | 依赖 | 计划版本 | 用途 |
 |---|---:|---|
 | `@deepseek-ai/cordis` | `4.0.1` | Host 与 Client 插件组合 |
-| 所需 `@deepseek-ai/dsh-*` peer package | `0.1.0-rc.7` | Session、Tool、Remote、Client runtime 和 UI slot |
+| 所需 `@deepseek-ai/dsh-*` peer package | `0.1.0-rc.8` | Session、Tool、Remote、Client runtime 和 UI slot |
 | `react` / `react-dom` | `18.3.1` | Client renderer |
 | `typescript` | `6.0.3` | 类型检查与构建 |
 | `tsdown` | `0.22.2` | 与当前 Harness 一致的 bundle 构建 |
@@ -1020,13 +1065,15 @@ high/critical advisory 门禁与 build-script 门禁都已经通过。`pnpm-work
 
 ### 阶段 2：结构化查询 CLI
 
-计划执行者先在数据源仓库的唯一 OpenAPI schema 中定义 Catalog Operation 与 Source Operation，并分别实现 Agent 安全 discovery、Host 专用的本机只读 source discovery、只读 handler 和 catalog service。测试必须验证 `imagegen-semantic-query` 只能发现 Catalog Operation，`imagegen-comfyui-source-read` 只能发现 Source Operation，两个 discovery 返回相同的 `contract_id` 与 `contract_version`，并且全部 Source Operation 都不修改数据源。Harness Agent Tool 列表、Skill Tool 列表和浏览器 RPC 不得包含 Source Operation。本版本不增加调用进程身份认证测试。随后计划执行者在 Harness 插件中实现动态 Tool provider、adapter、remote RPC、上下文选择器和 `ReferenceCodec`。该阶段不得在数据源仓库创建运行记录或媒体文件。
+源数据仓库执行者必须先按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`在源数据仓库自己的Issue、分支、测试和版本发布流程中实现并发布10个Catalog Operation、2个Source Operation、两个discovery、只读handler、catalog service和两个CLI。源数据测试必须证明`imagegen-semantic-query`只能发现Catalog Operation，`imagegen-comfyui-source-read`只能发现Source Operation，两个discovery返回相同的`contract_id`与`contract_version`，并且全部Source Operation都不修改数据源。源数据仓库完成发布后，用户把发布commit/tag、CLI版本、合同版本和release acceptance提供给本仓库。
+
+当前仓库Ticket在上述源数据发布前保持阻塞。解除阻塞后，当前仓库执行者只能在自己的worktree中实现Harness Tool provider、唯一registry、adapter、remote RPC、上下文选择器和Context resolver；Harness Agent Tool列表、Skill Tool列表和浏览器RPC不得包含Source Operation。本仓库Issue不得修改、提交或发布源数据仓库文件。
 
 验收内容：
 
 - 每个资源种类都具有成功、空集合、非法筛选、资源不存在和数据源不可用测试。
 - `base-model` 查询测试必须返回底模筛选选项；类型测试必须阻止 `CatalogRef<'base-model'>` 与 `CatalogRef<'comfyui-instance'>` 赋值给 `ContextRef`。
-- 运行时契约测试必须确认 `GenerationCatalog.resolve()`、`ReferenceCodec.serialize()` 和消息提交接口收到 `kind: 'base-model'` 或 `kind: 'comfyui-instance'` 时返回 `CONTEXT_KIND_NOT_INSERTABLE`，并且 Session log 与 `RunRequestSnapshot.context_snapshots` 均不新增对应项。
+- 运行时契约测试必须确认`GenerationCatalog.resolve()`、`ContextResolver.serialize()`和消息提交接口收到`kind: 'base-model'`或`kind: 'comfyui-instance'`时返回`CONTEXT_KIND_NOT_INSERTABLE`，并且Session log与`RunRequestSnapshot.context_snapshots`均不新增对应项。
 - adapter 契约测试必须覆盖支持的 `contract_id`/`contract_version`、未知契约和不受支持版本；不兼容契约必须阻止对应数据源能力并返回 `SOURCE_CONTRACT_UNSUPPORTED`。
 - 浏览器无法获得 ComfyUI 凭据字段或数据库内部字段。
 - ComfyUI 实例模型 Tool 结果和生成浏览器 RPC 的契约测试断言不存在 `instance_url`、实例 `url`、`authorization` 和凭据字段；Host source adapter 仍能取得 URL 与认证信息。
@@ -1034,19 +1081,19 @@ high/critical advisory 门禁与 build-script 门禁都已经通过。`pnpm-work
 
 ### 阶段 3：持久 ComfyUI 运行
 
-计划执行者在当前仓库实现 `LocalGenerationRuns`、运行数据库、`ActualWorkflowBuilder`、Workflow compiler、ComfyUI transport、媒体目录和恢复 worker，使当前仓库同时保存本次实际 Workflow JSON 与 API Workflow JSON，支持幂等创建、重启恢复以及图片、视频、音频输出。随后计划执行者实现 Harness 工具、`ctx.jobs` 代理和非持久 Run Change Notification。
+计划执行者在当前仓库实现 `LocalGenerationRuns`、运行数据库、`ActualWorkflowBuilder`、Workflow compiler、ComfyUI transport、媒体目录和恢复 worker，使当前仓库同时保存本次实际 Workflow JSON 与 API Workflow JSON，支持幂等创建、重启恢复以及图片、视频、音频输出。随后计划执行者实现 Harness Tool、`ctx.jobs` 代理、项目 Run projection Typert Remote 和条件轮询 Client。
 
 验收内容：
 
 - 数据源只读 CLI 返回的模板 revision、workflow hash 或运行时配置 revision 不完整时，本仓库运行服务拒绝提交并返回明确错误。
-- 重复 `request_id` 不会创建第二个远端 ComfyUI 任务。
-- 测试分别在远端提交前、`submitting` 状态、远端返回 `prompt_id` 后和 `prompt_id` 落库后注入进程崩溃；同一个 `request_id` 的恢复流程不产生第二个远端任务。
+- 重复 `(workspace_id, session_id, call_id)` 不会创建第二个远端 ComfyUI 任务。
+- 测试分别在远端提交前、`submitting` 状态、远端返回 `prompt_id` 后和 `prompt_id` 落库后注入进程崩溃；同一个 Harness Tool Call identity的恢复流程不产生第二个远端任务。
 - `/prompt` 请求超时且本仓库没有保存 `prompt_id` 时，运行进入 `submission_unknown`，错误码为 `COMFYUI_SUBMISSION_RESULT_UNKNOWN`，取消能力为 false，worker 不自动重提。
 - 已保存 `prompt_id` 后首次收到 Jobs API 404 且尚未超过观察期限时，运行保持进入本次查询前的远端状态，不生成错误码，取消能力按 `remote_pending` 或 `remote_running` 状态计算，worker 不自动重提。
 - 已保存 `prompt_id` 后持续收到 Jobs API 404 并超过观察期限时，运行进入 `failed`，错误码为 `COMFYUI_JOB_MISSING`，取消能力为 false，worker 不自动重提。
 - DeepSeek Harness 进程重启后，右列能够根据持久 `run_id` 恢复状态。
-- Harness Session 日志契约测试必须确认 Generation Tool Result 保存 `run_id`，并且日志中不存在 `generation.run.created`、`generation.run.updated`、`generation.run.completed`、`generation.run.failed` 和 `generation.run.cancelled`。
-- 浏览器通知测试必须确认 `generation.run.changed` 只携带 `run_id`；浏览器收到通知后重新读取 Run Repository，重新打开 Session 时不依赖通知历史。
+- Harness Session日志契约测试必须确认`comfyui-generate`的`skill-invocation`Context位于目标`turn/start`与`generate_with_comfyui` Tool Call之间，Tool Call与Tool Result使用同一`callId`；Tool Result的canonical output保存`run_id`，`ToolResultNode.meta`保存`harness-comfyui-generation-run` v1合同。上一turn有Invocation但当前turn缺失时必须返回`GENERATION_SKILL_INVOCATION_REQUIRED`且不创建Run。history window只有Tool Result且`ToolResultNode.call === null`时，`resolveToolResultLink()`必须恢复合法映射并拒绝篡改的Session、`call_id`或`run_id`。日志中不存在`generation.run.created`、`generation.run.updated`、`generation.run.completed`、`generation.run.failed`和`generation.run.cancelled`。
+- 浏览器刷新测试必须确认Tool Result meta合同被验证，且打开右列、切换Session、切换数字`turn`和取消后立即读取Run Repository；页面可见、中列或右列存在可见的非终态运行时按`refreshAfterMs`继续查询，两处同时可见时不重复轮询，页面隐藏、两处都没有可见消费者或全部终态时停止。每次Store revision中，中列Tool行与右列卡片必须显示同一状态。实现与产物中不得出现`generation.run.changed`或其他项目forwarded event。
 - 媒体类型由响应 Content-Type 与文件签名共同确认。
 - 多运行、多输出 fixture 验证 `listMedia()` 的 Session 与 Workspace 授权隔离、数字 `turn`、`run_id`、媒体种类、创建时间范围、分页和 `total_count`。
 - fake transport 覆盖 `GET /api/jobs/{prompt_id}` 的排队、运行、完成、Job 失败、Job 取消、任务消失、网络中断、多输出、非法 MIME、签名不匹配、图片、视频和音频分支，并覆盖 `POST /api/jobs/{prompt_id}/cancel` 的成功、幂等 no-op 和完成竞态。
@@ -1061,18 +1108,20 @@ high/critical advisory 门禁与 build-script 门禁都已经通过。`pnpm-work
 
 ### 阶段 4：Skill 适配
 
-计划执行者迁移当前 checkout 中确实存在的 prompt Skill，并新增普通可选 Skill `comfyui-generate`。计划执行者不得创建专用“LoRA 会话”类型，也不得要求其他 Skill 先进入 `comfyui-generate` 才能调用 `generate_with_comfyui`。管理 Skill 迁移必须等待正确来源 revision。
+计划执行者从固定来源revision迁移`anima-prompt-builder`、`wai-sdxl-prompt-builder`和`lora-adjustment`，并新增普通可选Skill`comfyui-generate`。四个Skill都通过同一Harness Skill provider发现。计划执行者不得创建专用Prompt或LoRA Session，也不得让Prompt或LoRA调整Skill调用`generate_with_comfyui`。
 
 验收内容：
 
 - 计划执行者使用 DeepSeek Harness 当前版本的原生 Skill provider、目标 profile 和已注册工具完成组合测试，不模拟原仓库的 Skill 可见性规则。
-- 迁移后的 Skill 通过 Host 注册的 `query_semantic_*` 和 `generate_with_comfyui` 完成本需求，不在 `SKILL.md` 中保存数据源仓库绝对路径、SQLite 路径或 ComfyUI URL。
-- Skill 缺少模板、实例或必填运行参数时返回具体缺失项。
-- Skill 调用成功后，右列按工具返回的 `run_id` 显示同一运行。
+- 两个Prompt Skill只调用四个Prompt语义Catalog Tool并在中列返回单行Prompt；`lora-adjustment`调用`query_semantic_loras`并在中列返回`{prompt_text,loras}`；三者都不创建Run。
+- `comfyui-generate`只在用户显式选择后，把当前消息与用户明确引用的先前Skill结果转换为一次Generation Tool调用。
+- 四个Skill不在`SKILL.md`中保存数据源仓库绝对路径、SQLite路径或ComfyUI URL，也不包含来源系统的旧调用标识字段、`run_skill_script`或finalizer协议。
+- Skill缺少模板、Prompt、LoRA快照、实例或必填运行参数时返回具体缺失项。
+- 只有`comfyui-generate`调用成功后，右侧第三列才按工具返回的`run_id`显示同一运行。
 
 ### 阶段 5：真实组合测试
 
-计划执行者使用 DeepSeek Harness 的真实插件组合测试覆盖用户消息、流式 Agent 输出、Tool Call/Tool Result、非持久 Run Change Notification、右列结果和 Session 重新打开。ComfyUI transport 使用受控测试实例或 fake transport；生产实例写操作必须经过单独确认。
+计划执行者使用 DeepSeek Harness 的真实插件组合测试覆盖用户消息、流式 Agent 输出、Tool Call/Tool Result、Run projection Remote 条件轮询、右列结果和 Session 重新打开。ComfyUI transport 使用受控测试实例或 fake transport。
 
 ## 12. 需求映射
 
@@ -1085,8 +1134,8 @@ high/critical advisory 门禁与 build-script 门禁都已经通过。`pnpm-work
 | 生成结果卡片 | 第 4.1 节右列与第 8 节 |
 | 每条消息插入结构化上下文 | 第 5 节 |
 | 上下文种类可持续扩展 | 第 5.2 节与第 7 节 |
-| 聊天中选择不同 Skill | DeepSeek Harness 原生会话输入能力；第 3.1、4.1 与第 9 节明确本项目不实现第二套 Skill 交互 |
-| 迁移会话 Skill、管理 Skill 和后续 Skill | 第 9 节；当前来源缺口已明确标记 |
+| 聊天中选择不同Skill | 用户在项目输入框输入`/`并使用Harness原生Skill菜单；Host继续负责Skill发现、文本插入与调用校验 |
+| 迁移会话 Skill、管理 Skill 和后续 Skill | 第9.2至9.4节迁移两个Prompt Skill与`lora-adjustment`；第9.5节新增`comfyui-generate` |
 | 异步 ComfyUI 底层服务 | 第 6.3、6.4、7.3、8、11 节 |
 | Skill 修改模板参数并提交任务 | 第 6.5、9.4 节 |
 | 结果块显示 Skill 运行结果 | 第 8 节 |
@@ -1097,14 +1146,12 @@ high/critical advisory 门禁与 build-script 门禁都已经通过。`pnpm-work
 
 1. 右列采用变体 A，并只保留“当前轮次结果 / 本会话结果”两个标签；多个 Tool 的调用详情由 DeepSeek Harness 轨迹功能展示。
 2. 成功运行卡片和媒体卡片提供本次实际 Workflow JSON 下载。该文件由内部请求数据与模板来源快照转换得到，不是原始请求快照；API Workflow JSON 只供 Host 私有提交、恢复和诊断逻辑使用，页面不提供请求快照或 API Workflow JSON 下载。
-3. 左侧栏通过 `sidebar.footer.action` 提供“所有媒体”入口；入口使用 DeepSeek Harness 的居中 `Modal` 显示跨会话媒体库。右列“本会话结果”和全局媒体库复用固定尺寸媒体卡片、轮次/类型/时间筛选及分页行为；全局媒体库额外提供会话筛选。
-4. 左侧栏通过同一个 `sidebar.footer.action` 注册位置提供“所有 ComfyUI 异步任务”入口；入口使用居中 `Modal` 显示按会话、聊天轮次和创建时间筛选的 Workspace 任务列表。排队与运行中 Job 通过当前实例已经验证的 `POST /api/jobs/{prompt_id}/cancel` 取消。
-5. Skill 发现、选择和调用交互由 DeepSeek Harness 原生会话输入能力负责；本项目只提供结构化上下文扩展、ComfyUI Tool、运行状态和结果面板。
+3. 项目`sidebar` occupant在原型规定位置直接渲染“所有媒体”入口，并使用DeepSeek Harness的居中`Modal`显示跨会话媒体库。右列“本会话结果”和全局媒体库复用固定尺寸媒体卡片、轮次/类型/时间筛选及分页行为；全局媒体库额外提供会话筛选。
+4. 项目`sidebar` occupant在原型规定位置直接渲染“所有 ComfyUI 异步任务”入口；入口使用居中`Modal`显示按会话、聊天轮次和创建时间筛选的Workspace任务列表。排队与运行中Job通过当前实例已经验证的`POST /api/jobs/{prompt_id}/cancel`取消。
+5. Skill候选、`/`菜单、文本插入、发现与调用校验使用DeepSeek Harness现有交互；项目`conversation.composer.bar` occupant渲染ConversationRoot传入的原生`conversation.input.overlay`，同时提供结构化上下文和项目消息发送控件。
 
-仍需确认：
-
-1. 用户希望从哪个仓库目录和 revision 迁移管理 Skill？当前指定的生产 checkout 没有这些 Skill 文件。
+Skill迁移来源与职责已经确认：两个Prompt Skill和`lora-adjustment`来自`NoobAI-XL-FZ-PROD-ENV@799b7759029d70076791321e2b02bf53c651c98f`；`comfyui-generate`由当前项目新增。Prompt与LoRA结果位于中列，生成结果位于右侧第三列。
 
 ## 14. 推荐结论
 
-变体 A 已经选定。该变体直接复用 DeepSeek Harness 已有的会话列表、流式 conversation 和三列布局；右列只显示当前轮次与本会话的 ComfyUI 结果，多个 Tool 的详情由 DeepSeek Harness 轨迹功能展示；底模只作为目录查询筛选条件，`ContextRef` 在类型与运行时 schema 中排除 `base-model`；消息上下文通过 `ReferenceCodec` 与用户正文原子写入 Session log；`GenerationCatalog` 隔离目录查询，`ComfyuiSourceCatalog` 隔离实例与模板只读查询，`GenerationRuns` 隔离当前仓库中的持久 ComfyUI 生命周期；`generate_with_comfyui` 向目标 Harness profile 授权的普通 Skill 提供统一 Tool 接口，不要求专用 Session 或前置 Skill。数据源仓库只提供来源数据，当前仓库是 `run_id`、状态、媒体文件、内部来源快照、内部请求快照、本次实际 Workflow JSON 和 API Workflow JSON 的唯一持久事实来源。
+变体A已经选定。该变体通过rc.8公开bundle row覆盖、内建root slot、标准child slot与公开`ILayout` service渲染项目Workbench，并继续运行ConversationRoot、真实Session、标准conversation projection、Skill校验和Tool执行；右列只显示当前轮次与本会话的ComfyUI结果，多个Tool的参数、结果与顺序来自Harness公开projection；底模只作为目录查询筛选条件，`ContextRef`在类型与运行时schema中排除`base-model`；消息上下文由Context resolver与正文通过一次`SessionFace.prompt()`原子写入Session log；`GenerationCatalog`隔离目录查询，`ComfyuiSourceCatalog`隔离实例与模板只读查询，`GenerationRuns`隔离当前仓库中的持久ComfyUI生命周期；`generate_with_comfyui`向目标Harness profile授权的普通Skill提供统一Tool接口，不要求专用Session或前置Skill。数据源仓库只提供来源数据，当前仓库是`run_id`、状态、媒体文件、内部来源快照、内部请求快照、本次实际Workflow JSON和API Workflow JSON的唯一持久事实来源。

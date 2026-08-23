@@ -217,7 +217,8 @@ test("Session results use fixed media cards with turn filters and independent pa
   assert.match(javascript, />下载本次 Workflow JSON（可导入 ComfyUI）<\/span>/);
   assert.match(javascript, /sessionMediaCardMarkup\(item, "session"\)/);
   assert.match(javascript, /当前生效条件：会话 =/);
-  assert.match(javascript, /获得 generate_with_comfyui Tool 权限的普通 Skill/);
+  assert.match(javascript, /Prompt Skill 与 LoRA 调整 Skill 的结果保留在中列/);
+  assert.match(javascript, /只有独立 ComfyUI 生成 Skill 的 Tool Call才会在右列产生运行结果/);
   assert.doesNotMatch(javascript, /媒体生成 Skill/);
   assert.doesNotMatch(javascript, /function renderSessionRuns/);
   assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
@@ -368,7 +369,7 @@ test("run cards describe Jobs API observations instead of legacy history polling
   assert.doesNotMatch(html + javascript, /查询远端历史状态|ComfyUI 历史记录显示|ComfyUI history/);
 });
 
-test("the project layer does not implement the DeepSeek Harness native Skill chooser", () => {
+test("the static prototype does not duplicate the live Harness slash Skill chooser", () => {
   assert.doesNotMatch(html, /skill-trigger|skill-menu|data-skill|选择 Skill|预选 Skill/);
   assert.doesNotMatch(javascript, /selectedSkill|skill-trigger|skill-menu|data-skill/);
 });

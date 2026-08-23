@@ -267,7 +267,7 @@ describe('Configuration Profile loader', () => {
       'catalogCliPath',
       'sourceCliPath',
       'contractId',
-      'supportedContractVersions',
+      'sourceReleaseVersion',
     ])
     expect(Object.keys(schemaDict.jobs.dict!)).toEqual([
       'pollIntervalMs',

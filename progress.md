@@ -48,7 +48,7 @@
 - **Status:** completed
 - Actions taken:
   - 独立审核队员第一次审核判定 FAIL，并报告远端提交崩溃窗口、transport 契约缺失、跨模块类型缺失、Skill 工具与权限表述冲突以及依赖计划缺失。
-  - 计划编写者定义稳定 `request_id`、提交状态、`submission_unknown` 终态和四个崩溃注入测试位置。
+  - 计划编写者定义 Harness `(workspace_id, session_id, call_id)` 唯一身份、提交状态、`submission_unknown` 终态和四个崩溃注入测试位置。
   - 计划编写者定义 ComfyUI transport、状态映射、媒体 descriptor、媒体流读取和 Session 访问控制。
   - 计划编写者定义目录、来源、运行、Workflow 和媒体的跨模块数据结构。
   - 计划编写者把原 CLI 方案校正为现有 OpenAPI 3.1 live discovery，并把每个 operation 注册为资源专用 `query_semantic_*` Harness Tool。
@@ -108,11 +108,11 @@
   - 用户明确底模只作为筛选条件；计划执行者把底模移出上下文资源、草稿标签和历史快照，并在上下文选择器顶部增加独立筛选器。
   - 用户明确 Tool 调用详情由 DeepSeek Harness 轨迹功能负责；计划执行者删除右列 Tool 详情标签、固定 Tool 名称和结构化结果复制交互。
   - 用户要求媒体结果改为会话级媒体库；计划执行者把“本会话结果”改为固定尺寸媒体网格，并增加聊天轮次、媒体种类、保存时间筛选和独立分页。
-  - 用户要求跨会话浏览媒体；计划执行者只读确认 DeepSeek Harness 提供 `sidebar.footer.action` slot 与居中 `Modal`，并在原型左侧增加“所有媒体”入口及按会话、轮次、类型、时间筛选的全局媒体库。
+  - 用户要求跨会话浏览媒体；计划执行者在静态原型左侧增加“所有媒体”入口及按会话、轮次、类型、时间筛选的全局媒体库；当前正式接口固定为项目`sidebar` occupant直接渲染入口并使用Harness `Modal`。
   - 用户要求每个媒体能够打开原文件并下载所属 Workflow；计划执行者为共用媒体卡片增加原文件新窗口链接和“下载本次 Workflow JSON（可导入 ComfyUI）”按钮，同时保持 API Workflow JSON 不在页面下载。
   - 用户要求左侧新增所有 ComfyUI 异步任务入口；计划执行者只读取得数据源登记实例并实际确认两个实例均支持 `GET /api/jobs`，`win3080` 支持单 Job 查询和幂等 `POST /api/jobs/{prompt_id}/cancel`。
   - 计划执行者把原型任务观察契约从旧 `/queue` 与 `/history` 组合修正为 `GET /api/jobs/{prompt_id}`，并实现按会话、聊天轮次、创建时间筛选、每页五项、排队与运行中任务取消、取消确认、“正在取消”与“已取消”状态同步。
-  - 独立语义审核队员发现方案的 `CatalogRef` 仍允许底模进入 `ContextSnapshot`；计划执行者增加排除 `base-model` 的 `ContextKind` 与 `ContextRef`，并把 `GenerationCatalog.resolve()` 和 `ReferenceCodec.serialize()` 收窄到该类型。
+  - 独立语义审核队员发现方案的`CatalogRef`仍允许底模进入`ContextSnapshot`；计划执行者增加排除`base-model`的`ContextKind`与`ContextRef`，并把`GenerationCatalog.resolve()`和项目Context resolver收窄到该类型。
   - 独立语义审核队员发现 `submission_unknown` fixture、Jobs API 404 状态映射和方案状态机不一致；计划执行者把 `/prompt` 未确认、首次 Job 404 和持续 Job 404 分别收敛为 `submission_unknown`、保持远端状态和 `failed / COMFYUI_JOB_MISSING`，并把 `ComfyuiTransport` 接口统一为 `getJob()` 与 `cancelJob()`。
   - 独立语义审核队员完成页面文案、领域主体和多轮运行关系验收；审核发现的问题已经全部修改。
 - Files created/modified:
@@ -138,7 +138,7 @@
   - 用户确认生成选项允许显式选择安全 ComfyUI 实例 ID；未选择时 Host 使用配置默认实例，明确选择的实例不可用时不切换。
   - 用户确认当前 Harness 安装使用一个 SQLite 保存包含 `workspace_id`、`session_id`、Harness 数字 `turn`、Harness `call_id` 和 `run_id` 的运行元数据，并按 Workspace 与 Run 分区保存文件。
   - 用户确认 Catalog discovery 与 Source discovery 返回相同的 `contract_id` 和 `contract_version`；Host adapter 只接受配置声明支持的组合。
-  - 用户确认异步运行状态不复制进 Harness Session 日志。Session 只保存原生 Generation Tool Call 与包含 `run_id` 的 Tool Result；Run Repository 保存权威状态，浏览器使用非持久 Run Change Notification 触发重新读取。
+  - 用户确认异步运行状态不复制进 Harness Session 日志。Session 只保存原生 Generation Tool Call 与包含 `run_id` 的 Tool Result；Run Repository 保存权威状态。后续 rc.7 公共接口审核确认自定义 forwarded event 不可用，因此浏览器改用项目 unary Typert Remote条件轮询。
 - Files created/modified:
   - `CONTEXT.md`（更新）
   - `docs/adr/0003-message-context-excludes-execution-routing.md`（更新）
@@ -168,7 +168,7 @@
 | 全局异步任务列表 | 点击左侧“所有 ComfyUI 异步任务”并选择视频 Session | 居中弹层按会话联动聊天轮次并筛选任务 | 全部会话显示 8 项和 2 页；视频 Session 收敛为 1 个聊天轮次和 1 项任务 | PASS |
 | 动态聊天任务投影 | 发送一条新消息并在 Agent 静态流式输出完成后打开全局任务列表 | 新聊天轮次创建的任务进入全局列表；列表计数增加；任务按真实时间戳倒序显示 | 任务数量由 8 增至 9；新任务显示在第一页首行；本仓库状态和 ComfyUI Job 原始状态均为已完成 | PASS |
 | 提交超时与 Job 缺失边界 | 检查 `/prompt` 未确认、首次 Job 404、持续 Job 404 三个结构化 fixture | 三条路径分别具有唯一的本仓库状态、错误码、取消能力和自动重提规则 | 分别映射为 `submission_unknown`、保持远端状态、`failed / COMFYUI_JOB_MISSING`；三条路径都不自动重提 | PASS |
-| 异步任务分页与窄窗口 | 在 635px 宽窗口查看第一页并切换下一页 | 弹层不横向撑出视口；第一页 5 项、第二页 3 项 | 任务表在窄窗口转换为卡片；分页数量为 5 / 3 | PASS |
+| 静态原型窄窗口演示（不进入产品范围） | 在 635px 宽窗口查看第一页并切换下一页 | 仅记录原型已有演示；产品Issues不实现或验收该布局 | 该原型行为不构成产品验收要求 | EXCLUDED |
 | 运行中任务取消 | 点击“取消运行中任务”并确认 | 显示目标 `run_id`、`prompt_id`、实例和 Jobs API；状态从正在取消收敛为已取消 | 700ms 静态状态转换完成，Job 状态为 `cancelled`，取消按钮消失，右列同一运行同步更新 | PASS |
 | 任务弹层模态行为 | 打开任务列表并按 Esc | 使用顶层模态并在关闭后把焦点返回入口 | `#task-library-dialog:modal` 数量为 1；Esc 后入口恢复 active | PASS |
 | 媒体原文件与 Workflow | 点击视频媒体主体并检查媒体卡片按钮 | 原文件在新窗口打开；按钮下载所属运行的本次实际 Workflow JSON | 新标签页打开 `demo-video.mp4`；每张媒体卡片显示“下载本次 Workflow JSON（可导入 ComfyUI）” | PASS |
@@ -192,6 +192,7 @@
 | 2026-08-20 | 默认 pnpm registry 的 audit endpoint 不存在 | 1 | `registry.npmmirror.com` 返回 `ERR_PNPM_AUDIT_ENDPOINT_NOT_EXISTS`；后续审计命令只对当前调用显式使用 `https://registry.npmjs.org`，不修改全局或仓库配置。 |
 | 2026-08-20 | `pnpm why` 不支持 `--lockfile-only` | 1 | 停止重复调用；使用 `pnpm list <package> --lockfile-only --depth Infinity --parseable` 和 lockfile 查询验证依赖路径。 |
 | 2026-08-20 | `pnpm run` 在缺少 `node_modules` 时触发依赖准备 | 1 | `strict-dep-builds` 在执行任何 build script 前失败；把 464 MB 生成目录移入系统废纸篓，后续 pre-install 门禁直接调用 `pnpm audit`，测试直接调用 `node --test`。 |
+| 2026-08-21 | zsh 把 `packages/*/*/src/index.ts` 当作当前仓库 glob 并在 `git grep` 前报错 | 1 | 后续只向 `git grep` 传递明确目录或引用后的 pathspec；本次第二个只读查询仍正常返回 Tool presentation 证据。 |
 
 ### Phase 8: 逐项处理 high dependency advisory
 - **Status:** completed
@@ -221,3 +222,114 @@
 | What's the goal? | 在精确项目依赖闭包和失败关闭的 build-script 策略上实现 DeepSeek Harness ComfyUI 工作台。 |
 | What have I learned? | 来源 monorepo 的 production audit 数量不能代表当前项目 closure；当前项目只实际包含修复后的 `js-yaml`、`nanoid` 和 `postcss`，其他受影响包不在 closure 中。 |
 | What have I done? | 已创建精确 manifest、七个安全 override、五个精确 build-script 允许决定和两份标准化安全报告；完成完整 lifecycle、frozen install、full/prod audit 和 26 项原型回归验证。 |
+
+### Phase 10: 审核 Harness 核心零改动与公共插件接口闭包
+- **Status:** completed
+- Actions taken:
+  - 用户要求在执行 Issues 前确认全部 UI 与功能只能通过 DeepSeek Harness 公共插件机制实现。
+  - 计划编写者确认现有父 Issue、Ticket 01 调研表和 PRD 02 只有部分边界，尚未把核心零改动和逐票公开接口写入每张 GitHub Issue。
+  - 计划编写者开始从指定 Harness commit 的已提交文件核对全部公开插件接口；本轮不读取来源仓库未提交修改作为证据。
+  - 重新审计后，Message Context chip由项目Workbench的临时`ContextRef[]`呈现；用户确认Modal后一次性加入所选引用，发送时由项目Context resolver解析，并通过一次公开`SessionFace.prompt()`提交。
+  - 计划编写者读取 GitHub Issues #1–#15 的当前清单和本地父 Issue；现有正文尚未把每张产品 Issue 的精确 Harness public seam 与 seam 缺失时的停止条件写成硬门禁。
+  - 计划编写者确认项目生成的 Typert Remote 必须由项目 Client plugin 调用公开 `ctx.remote.$mount()`；rc.7 的固定 `dsh-api-remotes` Client assembly 不会自动加入项目 namespace，也不需要修改。
+  - 计划编写者确认 `dsh-client-modules`、Tools、Jobs、Skill、Host web route、Workspace registry 和 Typert loader 均有可用的 rc.7 package public export，并把每张票使用的接口直接写入ADR、PRD、父Issue与子Issue。
+  - 计划编写者确认Prompt Skills可由产品安装程序复制到release-local`DSH_HOME/skills`，由rc.7现有filesystem provider发现；项目Workbench通过公开SkillsApi显示候选，Host继续负责调用校验。
+  - 计划编写者新增ADR 0012，并在Issues #2–#15正文中分别写明所属产品功能允许使用的public interface。
+  - 计划编写者更新领域词汇、ADR 0010、原型方案和计划记录，把不可实现的自定义 Run 事件统一替换为项目 Typert Remote条件轮询。
+  - 计划编写者为 PRD 01–14 逐份增加所属 Ticket 的精确 Harness public interfaces、实现主体、核心零改动约束和验收对象；PRD 03 明确多 chip的逐 render public CAS，PRD 12 明确 release-local `DSH_HOME/skills`，PRD 13 明确 artifact NO-GO 门禁。
+  - 计划编写者在 Ticket draft 中增加全局核心零改动门禁、Ticket 01 完整 public seam调研表和 Tickets 01–14 各自的接口段落；旧 Run Change Notification 实现跨度已替换为项目 Remote条件轮询。
+  - 后续复审推翻了项目root方案：`ui-input-trigger`的原生MenuView只注册到ConversationRoot声明的`conversation.input.overlay`，项目必须保留AppFrame root与ConversationRoot，并替换公开列occupant和conversation occupant。
+  - 计划编写者把`skills/comfyui-generate/`的artifact、release-local`DSH_HOME/skills`安装、filesystem provider发现、SkillsApi候选与Host校验责任写入Ticket 04、PRD 04、Ticket 01 package allowlist和Release Artifact验收。
+  - 最终composition保留AppFrame与ConversationRoot；项目通过公开`sidebar`、`details`、`conversation.session.header`、`conversation.view`的`chat` occupant和`conversation.composer.bar`呈现桌面产品内容，并从公开ConversationSnapshot读取Session消息、Agent partial与Tool projection。
+  - 计划编写者确认临时ContextRef列表不会单独持久化，并把持久化格式冻结为同一条Harness`user/message` text content末尾的`generation-context.v1` blocks。
+  - 独立审核队员最初只证明默认InputBar的私有附件ID不能由priority-shadow composer复用；重新审计确认项目Workbench可以把浏览器File直接编码为公开image`PromptContentPart`，再通过一次`SessionFace.prompt()`交给Host attachment store。
+  - 计划编写者撤销Issues #3、#4和#6的错误阻塞结论；三个Issue正文均明确现有public plugin mechanisms可以实现对应产品功能。
+  - 计划编写者同步远端 Issues #1–#15；逐票文本比较确认远端正文与本地冻结稿完全一致，父子关系和 `blocked by` 集合未变。
+  - 27项原型合同测试和`git diff --check`通过；指定Harness checkout仍在commit`99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`，本轮没有写入该checkout。
+  - Phase 10独立复核只验证了默认InputBar附件对象生命周期，仍错误接受了Issues #3、#4和#6的阻塞结论；Phase 11以公开root与`SessionFace.prompt()`完整插件组合证据取代该结论。
+
+### Phase 11: 纠正默认UI限制被误判为插件阻塞
+- **Status:** in_progress
+- Actions taken:
+  - 用户明确Harness源码必须持续与上游同步且不得分叉；项目可以使用上游公开插件机制替换上游随附UI插件。
+  - 重新审计确认此前只检查了默认AppFrame和默认ConversationController附件registry，错误地把默认UI实现不能扩展或复用写成公共插件机制不能实现。
+  - 用户确认项目UI可以通过公开核心契约读取Session、Agent、Skill和Tool权威数据并渲染自己的1:1界面。
+  - 用户确认项目采用公开`root` single slot的优先级occupant；默认AppFrame保留为非winner和自动fallback，不使用全屏overlay或Harness DOM改写。
+  - 原型与产品需求只规定composer可见结构和发送行为，没有规定项目必须拥有或修改Harness composer状态；计划编写者开始删除自行增加的状态所有权与默认InputBar唯一路径约束。
+  - 计划编写者已经修正PRD 02、PRD 03、PRD 05和PRD 13：项目通过公开`root` single slot渲染Workbench，保留`ui-conversation`的标准projection，临时正文、ContextRef和浏览器File通过一次原生`SessionFace.prompt()`提交；Issues #3、#4和#6不再存在已确认public seam阻塞。
+  - 计划编写者已经同步修正父Issue、本地Tickets 01–13及PRD 04、06、09、10、12：所有后续UI区域改为项目Workbench子slot，Tool行读取公开ConversationSnapshot，Skill候选读取公开SkillsApi，Ticket 13在任一产品Issue仍有未解决public plugin seam阻塞时判定NO-GO。
+  - 计划编写者删除draft总则与过程记录中残留的Issues #3/#4/#6阻塞结论和`details` priority-shadow方案；项目只使用公开root Workbench及其五个项目child slots。
+  - 计划编写者把Issue #9的抽象“原生消息输入”接口收窄为公开`SessionFace.prompt(parts, 'queue')`与Harness AgentLoop产生的新Tool Call，并同步远端父Issue #1。
+  - 远端Issues #1–#15均无默认InputBar、composer-state、DraftAttachmentId或私有attachment facade要求；#3/#4/#6均为`ready-for-agent`，native parent/blockedBy图保持不变。
+  - 用户明确移动端不属于产品需求；桌面验收只使用`1440×1000`并核对原型三列顺序与列宽关系，不再要求九个viewport、移动端导航、窄屏single-panel或原型CSS断点。
+  - Harness接口责任保留在各Issue正文与对应PRD；`check:harness-boundary`直接检查manifest、lockfile、Cordis YAML和源码import。
+
+### Phase 12: 补全Prompt、LoRA调整与ComfyUI生成Skills的可执行迁移方案
+- **Status:** in_progress
+- Actions taken:
+  - 用户指出Ticket 12只有迁移目标、打包位置和最终验收，没有计划执行者能够直接落地的Skill内部改动。
+  - 计划编写者只读核对固定revision中的两个Skill目录，确认Anima依赖来源Prompt包装对象，WAI输入合同包含旧调用标识字段，两个Skill依赖`run_skill_script`与`finalize_skill_error`且都没有调用`generate_with_comfyui`。
+  - 用户指出父Issue遗漏来源系统`management-skills/lora-adjustment/`迁移。计划编写者已确认该Skill负责根据原始生图需求、当前提示词、有序LoRA快照、权重范围和LoRA节点类型返回调整后的提示词、MODEL/CLIP权重与实际触发词；迁移必须保留该产品能力，但不迁入旧`run_skill_script`错误/校验流程。
+  - 计划编写者在当前浏览器重新打开静态原型并确认三列事实：左列是Session，中列显示Agent消息与`generate_with_comfyui` Tool Call，右侧第三列显示该Tool Result的`run_id`运行卡片；Prompt与LoRA调整结果属于中列，只有独立`comfyui-generate`调用Generation Tool后右列才新增结果。
+  - 计划编写者把PRD 12改为三个真实迁移Skill：`anima-prompt-builder`、`wai-sdxl-prompt-builder`、`lora-adjustment`；固定来源为`NoobAI-XL-FZ-PROD-ENV@799b7759029d70076791321e2b02bf53c651c98f`，并明确移除旧Pi、旧调用标识字段、`run_skill_script`和finalizer协议。
+  - 计划编写者补全PRD 04中的独立`comfyui-generate`合同：它只在用户显式选择后把当前消息、模板参数定义、可选LoRA调整结果和Execution Route转换为一次`generate_with_comfyui`调用；Prompt与LoRA调整Skill不再调用Generation Tool。Tool输入增加与当前消息LoRA快照逐项匹配的`lora_applications[]`。
+  - 计划编写者只读复核固定来源Skill、本地PRD/Ticket草稿和GitHub Issues #1、#2、#4、#5、#6、#13。当前文档已确定CLI位于Harness Tool之后，但Catalog Tool的统一注册合同仍缺少逐Tool schema、description、CLI映射、错误映射、生命周期和授权验收；本轮没有修改PRD或GitHub Issue。
+  - 计划编写者确认Message Context正式包含九类可插入资源；Ticket 03负责Workflow模板与角色，Ticket 05负责生成模型、LoRA、作品、画师或画风、提示词条目、画师串和Saved Media。底模只用于筛选，ComfyUI实例只用于Execution Route。
+
+### Phase 13: 删除移动端范围并核对桌面列宽
+- **Status:** in_progress
+- Actions taken:
+  - 用户明确本版本没有移动端布局需求。计划编写者把本地父Issue、Tickets 02–14与对应PRD统一为单一`1440×1000`桌面验收，并同步GitHub Issues #1–#15。
+  - 远端Issues #1–#15正文与本地父Issue/Ticket来源逐项相等；原型合同测试27项通过，`git diff --check`通过。
+  - 进一步核对确认原型在`1440px`下的三列约为`294 / 714 / 432`，而rc.7 AppFrame默认是`280 / 800 / 360`；公开`ctx.layout`没有设置像素宽度的方法。
+  - 替换AppFrame root会失去ConversationRoot对`conversation.input.overlay`的render授权，因而无法呈现现有`ui-input-trigger` MenuView。桌面精确初始列宽与“不实现第二套Skill菜单”当前不能同时满足，等待用户决定是否接受AppFrame默认宽度这一可见例外。
+  - 计划编写者补全`generation-route.v1`消息控制block以及LoRA/Workflow模板安全快照字段；显式实例与Message Context通过同一次`SessionFace.prompt(parts,'queue')`写入原生用户消息，但实例不计入Context/chip。
+  - 计划编写者重写方案第9节：四个Skill处于同一Harness Skill层；两个Prompt Skill和`lora-adjustment`的结果只显示在中列，`comfyui-generate`的Tool Call显示在中列，其`run_id`运行卡片只显示在右侧第三列。
+  - 计划编写者同步PRD 01、PRD 13、PRD索引、CONTEXT、父Issue草稿和Ticket 04/05/12/13草稿；Release Artifact的Skill allowlist现在固定为四个目录，原型空态文案也明确Prompt/LoRA结果在中列、生成结果在右列。
+- 计划编写者将Ticket 12视为当前不可直接执行，开始核对Harness rc.7实际Skill加载与Tool能力；本阶段不新增规划文件。
+
+### Phase 14: 正式采用源数据仓库 v0.82.2 envelope
+- **Status:** completed
+- Actions taken:
+  - 用户选择正式采用源数据仓库 v0.82.2 的 raw-passthrough envelope，不再要求源 CLI 输出旧的顶层 `contract_id`、`contract_version`、`source_release_version` wrapper。
+  - 已冻结实施边界：Harness Installation 通过 `source.sourceReleaseVersion: "0.82.2"` 固定版本，live discovery/响应字段由 Harness-owned 结构化合同和 adapter 校验；`expected_output_node_ids_json: null` 继续失败关闭。
+  - 已开始同步 CONTEXT、ADR、配置、PRD、父 Issue、Tickets 和 GitHub 正文；源数据仓库保持只读。
+  - 已将 `scripts/deploy/preflight.mjs` 与 `scripts/deploy/health.mjs` 的 discovery gate 改为 v0.82.2 Catalog 裸 OpenAPI / Source 成功 envelope，并将 Installation pin 改为 `sourceReleaseVersion: "0.82.2"`。
+  - 已更新部署与 composition 测试夹具为两种真实 discovery shape；配置、工程基线和 frozen artifact allowlist 已包含 `config/source-contract-v0.82.2.json`。
+  - 验证通过：`CI=1 pnpm exec vitest run tests/unit/config-loader.test.ts tests/contract/engineering-baseline.test.ts tests/deploy/preflight-cli.test.ts tests/deploy/health-cli.test.ts --maxWorkers=1 --no-file-parallelism`（4 files / 77 tests）。完整 `tests/deploy` 另有 5 个既有 artifact 生命周期测试因 rc.7/rc.8 fixture peer 依赖冲突失败，未归因于 v0.82.2 gate。
+  - 追加验证通过：`CI=1 pnpm run test:contract`（9 files / 103 tests）。
+# 2026-08-21 Skill 调用到三列异步状态链路
+
+- 已确认 Harness 用户显式 Skill 调用会持久写入 `source.kind: "skill-invocation"` 与 Skill 名称；AgentLoop 产生的 `tool/call` 和 `tool/result` 使用同一 `callId`。
+- 已确认 `defineTool().output.presentationMeta()` 可把结构化 `run_id` 链接持久到公开 `ToolResultNode.meta`，项目无需解析 Agent 文案。
+- 原型中列已显示队列等待、远程运行、保存媒体、提交结果未知和终态；规划将补全一个项目 Client Run 投影 Store，让中列 Tool 行和右列运行卡读取同一 `GenerationRunSnapshot`。
+## 2026-08-21 Skill→Tool→中列/右列异步投影合同补全
+
+- `generate_with_comfyui` Host adapter现在被规格要求在创建Run前核对同一数字`turn`中的`comfyui-generate`原生Skill Invocation；缺失时返回`GENERATION_SKILL_INVOCATION_REQUIRED`，不创建Run、不持久映射、不调用`/prompt`。
+- Tool Result通过`defineTool().output.presentationMeta()`持久`harness-comfyui-generation-run` v1与`run_id`；右列只从公开`ToolResultNode.meta`建立Run链接，不解析Skill文本、Agent文本、Tool标题或Tool Result文字。
+- 中列Generation Tool行与右列运行卡统一读取`GenerationRunProjectionStore`的同一快照；页面可见且任一处观察非终态Run时继续刷新，两处同时可见时共享一个计时器和每周期一次Remote查询。
+- 已同步本地PRD 04、PRD 12、PRD 13、原型方案、父Issue草稿与Tickets 04、06、07、12、13草稿；下一步同步已创建的GitHub Issues并完成独立语义复审。
+
+## 2026-08-21 Catalog Tool与迁移Skill合同补全
+
+- 一次试图同时修改五份PRD的大补丁因`01-engineering-baseline.md`上下文不匹配而整体未应用；后续改为逐文件小补丁，避免误判部分内容已经写入。
+- 计划编写者创建`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`，把10个Catalog operation、2个Host-only Source operation、两个CLI、源仓库测试和版本发布交给数据源仓库自己的Issue实施；当前仓库没有修改或运行数据源仓库。
+- 计划编写者在PRD 01/03/04/05/12、PRD索引、CONTEXT、原型方案、父Issue和Tickets 01/03/04/05/12中补全唯一Tool registry、逐Tool合同、CLI映射、Skill逐文件迁移、真实Tool黑盒测试和上下文左侧九行责任。
+- 计划编写者同步GitHub Issues #1、#2、#4、#5、#6和#13；#4移除`ready-for-agent`并增加`needs-info`，等待数据源仓库发布commit/tag、contract version、两个CLI与release acceptance。
+
+## 2026-08-22 Source Data Catalog设计访谈
+
+- 用户确认Q1、Q2、Q3和Q7采用建议：计划状态保持`design-review`；实施基线固定为已提交revision `c7c92fc677bf45a16c2bbee518935ba19bb6166f`；新Catalog使用`GET /internal/catalog`和十个`/internal/catalog/*` operation并保留旧semantic协议；发布版本字段命名为`source_release_version`。
+- 用户确认源仓库只负责OpenAPI、handler和CLI合同；目标Harness如何注册Tool、授权Skill和选择Execution Route不属于源仓库实施计划。
+- 用户确认不增加Catalog数据库谱系ID，也不固定上游ComfyUI commit。计划继续使用数据库正整数主键的十进制字符串作为Catalog ID，并继续支持`SaveAudioAdvanced`。
+- 实施文档已经从Harness仓库移动到`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`；Harness仓库中的依赖文档引用该新位置。
+- 独立语义复审确认Q1、Q2、Q3和Q7的核心决定已写入。复审指出的五处投影遗漏已经修正：十个Catalog operation表、`ComfyuiTemplateBundle`契约身份、Catalog item发布版本、`ContextSnapshot`发布版本和旧六operation实施事实。
+- 源仓库和Harness仓库本轮允许文件的`git diff --check`均通过。
+- 用户把实施基线更新为`2a8e0db`并说明`v0.81.0`已经push和发布。只读核对确认`main`与`origin/main`均位于完整revision `2a8e0dbc6b21bf28550f29dbfc68f2692fcabd2a`，远端带注释标签`v0.81.0`解引用到同一commit，`package.json`版本为`0.81.0`。
+- `v0.81.0`正式范围是六类向量对象、迁移036、管理增量向量维护和两个旧`/internal/semantic/*` CLI-only查询；该版本没有实现本计划的新`/internal/catalog`、Host-only Source discovery或`imagegen-comfyui-source-read`。
+- 计划和Harness依赖文档已经把源代码实施基线改为`2a8e0dbc6b21bf28550f29dbfc68f2692fcabd2a`，并把两个CLI-only operation名称修正为`querySemanticGenerationLorasForCli`与`querySemanticArtistPromptStringsForCli`。
+- 用户确认Q9至Q11采用建议：本计划发布版本固定为`v0.82.0`；格式合法但不存在的`base_model_id`或`work_id`返回`422 CATALOG_REQUEST_INVALID`；search的`total_count`按查询和筛选后、分页前的完整记录数计算，超出末页时返回空`items`和不变的真实总数。
+- 用户纠正Q12至Q14越过CLI交付范围。计划编写者撤销三个问题及其建议：源仓库不修改runtime input candidate、runtime config保存流程或数据库迁移；不因旧参数缺少额外约束而要求管理员重新保存模板；Catalog与Source CLI只投影实例的`enabled`和`validated`，不替目标仓库筛选实例或决定Execution Route。
+- 范围复查继续删除源实施文档中的目标仓库消费步骤、模板binding执行语义和`template-run-admission.mjs`修改要求。Source CLI只从当前Workflow revision与runtime config逐字段构造并验证`TemplateBundle`；缺少必要当前记录时只返回CLI合同中的`SOURCE_TEMPLATE_UNAVAILABLE`。
+- 用户推翻此前Q3的独立Catalog namespace决定。`v0.82.0`直接用十个新Catalog operation替换`GET /internal/semantic`及六个旧operation；计划不创建`/internal/catalog`，也不保留旧semantic request、response或Pi Tool扩展。源计划、ADR、Harness原型和PRD路径已经同步为`/internal/semantic/*`。
+- 用户确认原方案要求的两个CLI继续保留：`imagegen-semantic-query`只提供十类安全Catalog投影，`imagegen-comfyui-source-read`只提供Host-only实例源数据和完整模板bundle；不合并为一个命令。

@@ -49,7 +49,7 @@
     "catalogCliPath": "/absolute/path/to/catalog-discovery-cli",
     "sourceCliPath": "/absolute/path/to/source-discovery-cli",
     "contractId": "imagegen-source-contract",
-    "supportedContractVersions": [1]
+    "sourceReleaseVersion": "0.82.2"
   },
   "client": {
     "runRefreshIntervalMs": 1000

@@ -261,10 +261,14 @@ async function createFixture({ rosterMode = 'valid' } = {}) {
   const hostRequestLog = join(root, 'host-requests.jsonl')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  const discovery = {
-    contract_id: 'imagegen-source-contract',
-    contract_version: 1,
-    openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
+  const catalogDiscovery = {
+    openapi: '3.1.0', info: { title: 'fixture catalog', version: '0.82.2' },
+    'x-imagegen-media-origin': {}, paths: {}, components: {},
+  }
+  const sourceDiscovery = {
+    status: 'ok', message: null,
+    results: [{ openapi: '3.1.0', info: { title: 'fixture source', version: '0.82.2' }, paths: {}, components: {} }],
+    page: 1, page_size: 1, total_count: 1,
   }
   const packageFiles = [
     'lib/index.js',
@@ -313,7 +317,7 @@ async function createFixture({ rosterMode = 'valid' } = {}) {
     await copyFile(join(repositoryRoot, relativePath), target)
   }
   await writeFrozenRuntimeAndConfiguration(packageRoot)
-  for (const path of [catalogCliPath, sourceCliPath]) {
+  for (const [path, discovery] of [[catalogCliPath, catalogDiscovery], [sourceCliPath, sourceDiscovery]] as const) {
     await writeFile(path, `#!/usr/bin/env node
 if (process.argv[2] !== '--discovery-json') process.exit(2)
 process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
@@ -343,7 +347,7 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
       catalogCliPath,
       sourceCliPath,
       contractId: 'imagegen-source-contract',
-      supportedContractVersions: [1],
+      sourceReleaseVersion: '0.82.2',
     },
     client: { runRefreshIntervalMs: 1000 },
     process: { shutdownTimeoutMs: 10000 },

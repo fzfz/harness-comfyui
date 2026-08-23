@@ -358,7 +358,7 @@ process.exit(91)
       catalogCliPath,
       sourceCliPath,
       contractId: 'imagegen-source-contract',
-      supportedContractVersions: [1],
+      sourceReleaseVersion: '0.82.2',
     },
     client: { runRefreshIntervalMs: 1000 },
     process: { shutdownTimeoutMs: 10000 },

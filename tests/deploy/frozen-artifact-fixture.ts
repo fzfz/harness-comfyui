@@ -9,6 +9,7 @@ const frozenEntries = [
   'deployment/runtime/pnpm-lock.yaml',
   'deployment/runtime/pnpm-workspace.yaml',
   'config/base.json',
+  'config/source-contract-v0.82.2.json',
   'config/environment-overrides.json',
   'config/profiles/production.json',
   'config/product-agent.json',

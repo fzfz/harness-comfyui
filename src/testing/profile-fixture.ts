@@ -25,14 +25,25 @@ const profileBundles = [
   '@deepseek-ai/dsh-web-app',
   'harness-comfyui',
 ] as const
-const discovery = {
-  contract_id: 'imagegen-source-contract',
-  contract_version: 1,
-  openapi: {
+const catalogDiscovery = {
+  openapi: '3.1.0',
+  info: { title: 'harness-comfyui composition test discovery', version: '0.82.2' },
+  'x-imagegen-media-origin': {},
+  paths: {},
+  components: {},
+}
+const sourceDiscovery = {
+  status: 'ok',
+  message: null,
+  results: [{
     openapi: '3.1.0',
-    info: { title: 'harness-comfyui composition test discovery', version: '1' },
+    info: { title: 'harness-comfyui source discovery', version: '0.82.2' },
     paths: {},
-  },
+    components: {},
+  }],
+  page: 1,
+  page_size: 1,
+  total_count: 1,
 }
 const harnessEnvironmentKeys = [
   'HARNESS_COMFYUI_CONFIGURATION_PROFILE',
@@ -257,7 +268,7 @@ function fixtureEnvironment(root: string): NodeJS.ProcessEnv {
   }
 }
 
-function discoveryScriptSource(): string {
+function discoveryScriptSource(discovery: JsonObject): string {
   return `#!/usr/bin/env node
 if (process.argv.length !== 3 || process.argv[2] !== '--discovery-json') process.exit(2)
 process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
@@ -739,8 +750,8 @@ export async function createProfileFixture(options: ProfileFixtureOptions): Prom
     const installationPath = join(testRoot, 'installation.json')
     const runtimeCwd = join(testRoot, 'command-cwd')
     await mkdir(runtimeCwd, { recursive: true })
-    await writeFile(catalogCliPath, discoveryScriptSource(), { encoding: 'utf8', mode: 0o755 })
-    await writeFile(sourceCliPath, discoveryScriptSource(), { encoding: 'utf8', mode: 0o755 })
+    await writeFile(catalogCliPath, discoveryScriptSource(catalogDiscovery), { encoding: 'utf8', mode: 0o755 })
+    await writeFile(sourceCliPath, discoveryScriptSource(sourceDiscovery), { encoding: 'utf8', mode: 0o755 })
     await chmod(catalogCliPath, 0o755)
     await chmod(sourceCliPath, 0o755)
     await writeFile(installationPath, `${JSON.stringify({
@@ -761,8 +772,8 @@ export async function createProfileFixture(options: ProfileFixtureOptions): Prom
       source: {
         catalogCliPath,
         sourceCliPath,
-        contractId: discovery.contract_id,
-        supportedContractVersions: [discovery.contract_version],
+        contractId: 'imagegen-source-contract',
+        sourceReleaseVersion: '0.82.2',
       },
       client: { runRefreshIntervalMs: 1000 },
       process: { shutdownTimeoutMs: 15000 },

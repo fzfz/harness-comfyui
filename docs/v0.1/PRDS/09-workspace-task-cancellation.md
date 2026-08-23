@@ -4,6 +4,12 @@
 
 Ticket 09 — 在 Workspace 任务中心筛选并取消一项运行。
 
+## Harness 核心零改动与公共接口
+
+Ticket 02注册到公开`sidebar`的项目occupant已经在左列搜索框之后、Session列表之前预留项目入口区域。本Ticket在该项目组件中直接渲染“所有 ComfyUI 异步任务”入口，使用`@deepseek-ai/dsh-client-ui-primitives`的`Modal`，并调用项目Typert Remote的task list/cancel。项目取消服务调用ComfyUI `POST /api/jobs/{prompt_id}/cancel`并更新Run Repository；`ctx.jobs.kill`只会停止进程内等待，不能代替远端Job取消。
+
+本Ticket不得注册第二个root、重复声明Ticket 02项目root拥有的child slot或通过DOM修改项目桌面Shell。真实composition必须证明Ticket 02的项目`sidebar` occupant通过公开`ctx.sessions`显示真实Session列表，并在原型规定位置显示项目任务入口。
+
 ## 用户任务
 
 浏览器用户从左列打开“所有 ComfyUI 异步任务”，按 Session、Chat Turn 和创建时间筛选当前 Workspace 的任务，定位一个排队或运行中的 ComfyUI Job，确认准确目标并取消该 Job。

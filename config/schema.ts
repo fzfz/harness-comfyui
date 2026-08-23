@@ -28,7 +28,7 @@ export interface ConfigurationProfileValues {
     catalogCliPath: string
     sourceCliPath: string
     contractId: string
-    supportedContractVersions: number[]
+    sourceReleaseVersion: string
   }
   jobs: {
     pollIntervalMs: number
@@ -65,7 +65,7 @@ const ConfigurationProfileSchema = Schema.object({
     catalogCliPath: nonEmptyString,
     sourceCliPath: nonEmptyString,
     contractId: Schema.const('imagegen-source-contract').required(),
-    supportedContractVersions: Schema.array(Schema.const(1).required()).min(1).max(1).required(),
+    sourceReleaseVersion: Schema.const('0.82.2').required(),
   }).required(),
   jobs: Schema.object({
     pollIntervalMs: nonNegativeInteger,
