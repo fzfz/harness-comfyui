@@ -3,6 +3,46 @@
 }
 
 .harness-comfyui-shell {
+  --canvas: #e8edf3;
+  --surface: #fbfcfe;
+  --ink: #17212b;
+  --muted: #687584;
+  --action: #2855d9;
+  --run: #d78923;
+  --danger: #b33a46;
+  --success: #187c68;
+  --line: color-mix(in srgb, var(--muted) 30%, transparent);
+  --soft-line: color-mix(in srgb, var(--muted) 16%, transparent);
+  --soft-canvas: color-mix(in srgb, var(--canvas) 55%, var(--surface));
+  --action-soft: color-mix(in srgb, var(--action) 9%, var(--surface));
+  --run-soft: color-mix(in srgb, var(--run) 12%, var(--surface));
+  --danger-soft: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  --success-soft: color-mix(in srgb, var(--success) 9%, var(--surface));
+  --body-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  --display-font: ui-rounded, "SF Pro Rounded", "PingFang SC", var(--body-font);
+  --mono-font: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --header-height: 58px;
+
+  --dsw-alias-bg-base: var(--canvas);
+  --dsw-alias-bg-layer-1: var(--surface);
+  --dsw-alias-bg-layer-2: var(--soft-canvas);
+  --dsw-alias-border-l1: var(--line);
+  --dsw-alias-border-l2: var(--soft-line);
+  --dsw-alias-brand-primary: var(--action);
+  --dsw-alias-interactive-bg-active: var(--action-soft);
+  --dsw-alias-label-primary: var(--ink);
+  --dsw-alias-label-secondary: var(--muted);
+  --dsw-alias-state-error-primary: var(--danger);
+  --dsw-alias-state-success-primary: var(--success);
+  --dsw-alias-state-warn-primary: var(--run);
+  --dsw-font-family: var(--display-font);
+  --dsw-font-markdown-code-font-family: var(--mono-font);
+
+  background: var(--canvas);
+  box-sizing: border-box;
+  color: var(--ink);
+  font-family: var(--body-font);
+  font-size: 14px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -12,13 +52,47 @@
   overflow: hidden;
 }
 
+.harness-comfyui-shell,
+.harness-comfyui-shell *,
+.harness-comfyui-shell *::before,
+.harness-comfyui-shell *::after {
+  box-sizing: border-box;
+}
+
+.harness-comfyui-shell button,
+.harness-comfyui-shell input,
+.harness-comfyui-shell textarea,
+.harness-comfyui-shell select {
+  color: inherit;
+  font: inherit;
+}
+
+.harness-comfyui-shell button,
+.harness-comfyui-shell select {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.harness-comfyui-shell button:focus-visible,
+.harness-comfyui-shell input:focus-visible,
+.harness-comfyui-shell textarea:focus-visible,
+.harness-comfyui-shell select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--action) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.harness-comfyui-shell button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .app-header {
   align-items: center;
   background: var(--dsw-alias-bg-layer-1);
   border-bottom: 1px solid var(--dsw-alias-border-l1);
   display: flex;
-  flex: 0 0 58px;
-  height: 58px;
+  flex: 0 0 var(--header-height);
+  height: var(--header-height);
   justify-content: space-between;
   padding: 0 18px;
 }
@@ -89,7 +163,7 @@
 .agent-status > span {
   background: var(--dsw-alias-state-success-primary);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-success-primary) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--success-soft);
   display: inline-block;
   height: 7px;
   width: 7px;
@@ -135,7 +209,7 @@
 }
 
 .harness-comfyui-conversation {
-  background: var(--dsw-alias-bg-base);
+  background: var(--surface);
   border-right: 1px solid var(--dsw-alias-border-l1);
   display: flex;
   flex-direction: column;
@@ -158,6 +232,7 @@
   color: var(--dsw-alias-label-primary);
   display: flex;
   flex: 0 0 auto;
+  height: 66px;
   justify-content: space-between;
   min-height: 66px;
   padding: 13px 20px 12px;
@@ -187,7 +262,7 @@
 .agent-status > span {
   background: var(--dsw-alias-state-success-primary);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-success-primary) 18%, transparent);
+  box-shadow: 0 0 0 3px var(--success-soft);
   display: inline-block;
   height: 7px;
   width: 7px;
@@ -207,6 +282,7 @@
   align-items: center;
   display: flex;
   flex: 0 0 auto;
+  height: 66px;
   justify-content: space-between;
   min-height: 66px;
   padding: 13px 16px 12px;
@@ -404,6 +480,7 @@
   border-bottom: 1px solid var(--dsw-alias-border-l2);
   display: flex;
   flex: 0 0 auto;
+  height: 66px;
   justify-content: space-between;
   min-height: 66px;
   padding: 13px 16px 12px;
@@ -427,7 +504,7 @@
 }
 
 .result-total {
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
+  background: var(--soft-canvas);
   color: var(--dsw-alias-label-secondary);
   font-family: var(--dsw-font-markdown-code-font-family);
   font-size: 9px;
@@ -438,7 +515,7 @@
   border-bottom: 1px solid var(--dsw-alias-border-l1);
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding: 0 10px;
 }
 

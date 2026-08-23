@@ -117,7 +117,7 @@ describe('Issue 3 empty results panel', () => {
 
     expect(stylesheet).toContain('.results-panel {')
     expect(stylesheet).toContain('min-height: 66px;')
-    expect(stylesheet).toContain('grid-template-columns: repeat(2, 1fr);')
+    expect(stylesheet).toContain('grid-template-columns: repeat(3, 1fr);')
     expect(stylesheet).toContain('padding: 10px 3px 9px;')
     expect(stylesheet).toContain('min-height: 320px;')
     expect(stylesheet).toContain('height: 62px;')

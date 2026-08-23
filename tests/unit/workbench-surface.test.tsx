@@ -76,6 +76,30 @@ describe('Issue 3 desktop workbench surface contract', () => {
     )
   })
 
+  it('scopes prototype visual tokens, box sizing, fixed heading heights, and three-column tabs to the shell', () => {
+    expect(css).toContain('--canvas: #e8edf3;')
+    expect(css).toContain('--surface: #fbfcfe;')
+    expect(css).toContain('--ink: #17212b;')
+    expect(css).toContain('--muted: #687584;')
+    expect(css).toContain('--action: #2855d9;')
+    expect(css).toContain('--run: #d78923;')
+    expect(css).toContain('--success: #187c68;')
+    expect(css).toContain('--line: color-mix(in srgb, var(--muted) 30%, transparent);')
+    expect(css).toContain('--soft-canvas: color-mix(in srgb, var(--canvas) 55%, var(--surface));')
+    expect(css).toContain('--action-soft: color-mix(in srgb, var(--action) 9%, var(--surface));')
+    expect(css).toContain('--body-font:')
+    expect(css).toContain('--display-font:')
+    expect(css).toContain('--mono-font:')
+    expect(css).toContain('font-family: var(--body-font);\n  font-size: 14px;')
+    expect(css).toContain('box-shadow: 0 0 0 3px var(--success-soft);')
+    expect(css).toContain('.result-total {\n  background: var(--soft-canvas);')
+    expect(css).toContain('.harness-comfyui-conversation {\n  background: var(--surface);')
+    expect(css).toContain('.harness-comfyui-shell,\n.harness-comfyui-shell *,\n.harness-comfyui-shell *::before,\n.harness-comfyui-shell *::after {')
+    expect(css).toContain('height: 66px;')
+    expect(css).toContain('grid-template-columns: repeat(3, 1fr);')
+    expect(css).toContain('.harness-comfyui-shell button:focus-visible,')
+  })
+
   it('keeps the current desktop surface selectors and excludes later-scope UI', () => {
     const requiredSelectors = [
       '.app-header',
