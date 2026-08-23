@@ -12,6 +12,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-layout/client', 'value-or-type'],
   ['@deepseek-ai/dsh-client-ui-theme/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-connection/client', 'type-only'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
   ['@deepseek-ai/schemastery', 'value-or-type'],
