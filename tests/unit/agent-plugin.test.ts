@@ -3,28 +3,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apply, inject } from '../../src/agent/plugin.ts'
 import { registerProjectTools } from '../../src/host/tools/register-project-tools.ts'
 
-var actualRegisterProjectTools: typeof registerProjectTools
-
 vi.mock('../../src/host/tools/register-project-tools.ts', async () => {
   const actual = await vi.importActual<typeof import('../../src/host/tools/register-project-tools.ts')>('../../src/host/tools/register-project-tools.ts')
-  actualRegisterProjectTools = actual.registerProjectTools
   return {
     ...actual,
-    registerProjectTools: vi.fn(actual.registerProjectTools),
+    registerProjectTools: vi.fn(),
   }
 })
 
 type AgentContextFixture = {
   effect(execute: () => () => void, label?: string): unknown
   tools: {
-    restrict(filter: unknown): () => void
     register(definition: unknown): () => void
   }
 }
 
 describe('harness-comfyui Agent plugin', () => {
   beforeEach(() => {
-    vi.mocked(registerProjectTools).mockImplementation((...args) => actualRegisterProjectTools(...args))
+    vi.mocked(registerProjectTools).mockReturnValue(() => undefined)
   })
 
   afterEach(() => {
@@ -35,7 +31,7 @@ describe('harness-comfyui Agent plugin', () => {
     expect(inject).toEqual(['tools'])
   })
 
-  it('restricts inherited tools before applying the empty project Tool set', () => {
+  it('registers the empty project Tool set directly in the Agent scope', () => {
     const calls: string[] = []
     let disposeEffect: (() => void) | undefined
     const context: AgentContextFixture = {
@@ -45,10 +41,6 @@ describe('harness-comfyui Agent plugin', () => {
         return disposeEffect
       },
       tools: {
-        restrict(filter) {
-          calls.push(`restrict:${JSON.stringify(filter)}`)
-          return () => calls.push('dispose:restriction')
-        },
         register() {
           calls.push('register:project-tool')
           return () => calls.push('dispose:project-tool')
@@ -58,48 +50,55 @@ describe('harness-comfyui Agent plugin', () => {
 
     apply(context as never)
 
-    expect(calls).toEqual([
-      'effect:project Agent Tool registry',
-      'restrict:{"allow":[]}',
-    ])
+    expect(calls).toEqual(['effect:project Agent Tool registry'])
+    expect(registerProjectTools).toHaveBeenCalledWith(context, [])
 
     disposeEffect?.()
 
-    expect(calls).toEqual([
-      'effect:project Agent Tool registry',
-      'restrict:{"allow":[]}',
-      'dispose:restriction',
-    ])
+    expect(calls).toEqual(['effect:project Agent Tool registry'])
   })
 
-  it('releases the restriction exactly once and preserves a registration failure', () => {
+  it('disposes the project registration and preserves a registration failure', () => {
+    const disposeProjectTools = vi.fn()
+    vi.mocked(registerProjectTools).mockReturnValue(disposeProjectTools)
+
+    let disposeEffect: (() => void) | undefined
+    const context: AgentContextFixture = {
+      effect(execute) {
+        disposeEffect = execute()
+        return disposeEffect
+      },
+      tools: {
+        register() {
+          throw new Error('the plugin must use registerProjectTools')
+        },
+      },
+    }
+
+    apply(context as never)
+    disposeEffect?.()
+
+    expect(disposeProjectTools).toHaveBeenCalledTimes(1)
+  })
+
+  it('propagates a project registration failure without touching unrelated Tool filters', () => {
     const registrationError = new Error('project Tool registration failed')
     vi.mocked(registerProjectTools).mockImplementation(() => {
       throw registrationError
     })
 
-    let restrictionDisposeCount = 0
-    let projectDisposerCount = 0
     const context: AgentContextFixture = {
       effect(execute) {
         return execute()
       },
       tools: {
-        restrict() {
-          return () => {
-            restrictionDisposeCount += 1
-          }
-        },
         register() {
-          projectDisposerCount += 1
           return () => undefined
         },
       },
     }
 
     expect(() => apply(context as never)).toThrow(registrationError)
-    expect(restrictionDisposeCount).toBe(1)
-    expect(projectDisposerCount).toBe(0)
     expect(registerProjectTools).toHaveBeenCalledTimes(1)
   })
 })
