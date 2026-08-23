@@ -65,6 +65,31 @@ function collectSourceFiles(directory, result = []) {
   return result
 }
 
+function collectGeneratedAgentFiles(directory, result = []) {
+  if (!statSync(directory, { throwIfNoEntry: false })?.isDirectory()) return result
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    const path = resolve(directory, entry.name)
+    if (entry.isDirectory()) collectGeneratedAgentFiles(path, result)
+    else if (entry.isFile() && /\.(?:d\.ts|js|map)$/u.test(entry.name)) result.push(path)
+  }
+  return result
+}
+
+function assertGeneratedAgentArtifacts(root) {
+  const files = []
+  const bundledAgentPath = resolve(root, 'lib/agent.js')
+  if (statSync(bundledAgentPath, { throwIfNoEntry: false })?.isFile()) files.push(bundledAgentPath)
+  files.push(...collectGeneratedAgentFiles(resolve(root, 'lib/types/src/agent')))
+
+  for (const filePath of files) {
+    const source = readFileSync(filePath, 'utf8')
+    if (/ctx\.tools\.restrict\s*\(\s*\{\s*allow\s*:\s*\[\s*\]\s*\}\s*\)/u.test(source)
+      || source.includes('Restrict inherited Tools')) {
+      throw new Error(`${relative(root, filePath).replaceAll('\\', '/')} contains the removed Agent Tool restriction`)
+    }
+  }
+}
+
 function isDirectRegisterCall(node) {
   if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) return false
   const register = node.expression
@@ -417,6 +442,7 @@ function scan(root) {
     throw new Error(`expected exactly one registerProjectTools() call in ${pluginPath}; found ${registryCalls.length}`)
   }
   validateStructuredHarnessBoundary(root)
+  assertGeneratedAgentArtifacts(root)
 }
 
 export function main(argv = process.argv.slice(2)) {

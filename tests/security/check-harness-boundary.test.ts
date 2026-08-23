@@ -168,6 +168,24 @@ describe('check:harness-boundary', () => {
     }
   })
 
+  it('rejects a stale generated Agent artifact that still restricts the project scope', () => {
+    const root = createFixture()
+    try {
+      mkdirSync(join(root, 'lib/types/src/agent'), { recursive: true })
+      writeFileSync(
+        join(root, 'lib/types/src/agent/plugin.js'),
+        'ctx.tools.restrict({ allow: [] })\n',
+        'utf8',
+      )
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain('lib/types/src/agent/plugin.js')
+      expect(`${result.stdout}\n${result.stderr}`).toContain('removed Agent Tool restriction')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('rejects a direct Harness registration from any other src file', () => {
     const root = createFixture('ctx.tools.register(otherDefinition)\n')
     try {
