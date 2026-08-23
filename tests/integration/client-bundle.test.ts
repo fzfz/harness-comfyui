@@ -299,7 +299,7 @@ describe('built Client bundle boundary', () => {
     expect(styleElements[0]?.textContent).toBe(await readFile(join(packageRoot, 'src/client/styles.css'), 'utf8'))
     expect(plugin).toMatchObject({
       name: 'harness-comfyui',
-      inject: ['slots', 'sessions', 'remote', 'theme', 'inputTriggers'],
+      inject: ['slots', 'sessions', 'remote', 'theme', 'inputTriggers', 'connection'],
     })
     expect(plugin?.apply).toBeTypeOf('function')
 
