@@ -48,3 +48,6 @@
 - 首次 main CI `32664651582` 的 preinstall gates PASS，但 `quality:fast` 在 `check:harness-boundary` 拒绝 Issue #17 要求的公开 `@deepseek-ai/dsh-client-connection/client` type import 后停止，未进入 artifact qualification。
 - 主线程重新打开 #17 并建立 `/Volumes/4Tdisk/work/AI2/harness-comfyui-issue-17-repair`。执行队员提交 `1a24166`，只把公开 connection client specifier登记为 type-only，并新增接受 type import/拒绝 value import 两个测试；focused security `41/41`、直接 boundary script 与 diff check PASS。
 - 主线程逐行审查 boundary repair，以 merge commit `fa593c9` 合入 main，删除 repair worktree、symlink 和分支。Phase 9 完成；下一步关闭 #17 并重新推送唯一最终 CI candidate。
+- 第二次 main CI `32664906733` 通过 boundary、安全、frozen install，随后在覆盖率集成测试发现 `tests/integration/client-bundle.test.ts` 仍固定五项 Client service inject；实际与 Issue #17 规格均要求第六项 `connection`。
+- 主线程再次建立隔离 repair worktree。执行队员提交 `933f4f4`，只更新该一行断言；diff check PASS。本地共享依赖树在更早的旧 fixture `conversation` slot 声明处失败，未到本次断言，因此不重复扩大本地测试，交由 clean-build CI验证。
+- 主线程审查 1-line diff，以 merge commit `bbc5dc4` 合入 main，并再次删除 repair worktree、symlink 与分支。

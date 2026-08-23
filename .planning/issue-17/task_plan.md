@@ -53,6 +53,7 @@
 | `4ab14e7` | `git diff --check` and cached diff check | PASS | diff changes |
 | `1a24166` | Harness boundary focused security tests | 41/41 PASS | boundary allowlist or security test changes |
 | `1a24166` | direct `check-harness-boundary.mjs` and `git diff --check` | PASS | boundary source or diff changes |
+| `933f4f4` | exact Client bundle inject expectation and `git diff --check` | PASS at diff boundary; local test blocked before assertion by stale built fixture | Client plugin inject expectation changes |
 
 ## Two-axis review status
 
@@ -80,3 +81,4 @@
 | cold Composition profile run exceeded its 90 second test timeout | final acceptance | let the focused scenario exit naturally; it passed in 83.226 seconds, then ran only the two remaining composition files |
 | Issue #3 E2E expected an empty Session list | final acceptance | Issue #17 now creates exactly one project Session; executor updated only that E2E to assert create-once and a stable second browser connection |
 | main CI `32664651582` rejected the new public connection type import | release qualification | reopened #17; a repair worktree added only the rc.8 public type-only specifier and positive/negative security tests; focused 41/41 and direct boundary check PASS |
+| main CI `32664906733` rejected the old five-service Client bundle expectation | release qualification | reopened #17; a repair worktree updated only the one integration assertion to include `connection`; CI is the authoritative clean-build verification because the local shared tree failed earlier on a stale built fixture |

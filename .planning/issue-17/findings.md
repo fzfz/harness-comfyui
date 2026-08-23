@@ -169,3 +169,9 @@
 - Main CI run `32664651582` passed every preinstall gate and then stopped before qualification because `scripts/security/check-harness-boundary.mjs` did not yet list the public rc.8 `@deepseek-ai/dsh-client-connection/client` type surface required by Issue #17.
 - Repair commit `1a24166b8bdfeff296f1821aee3296b6a51c1ab5` adds only that specifier as `type-only`. A positive fixture accepts `ConnectionHandle` through `import type`; a negative fixture proves a value import remains rejected.
 - Focused boundary tests passed `41/41`; the direct boundary command and diff check passed. The repair does not change product runtime behavior, dependencies, copy, layout, Session logic or release version.
+
+## Final Client bundle expectation repair
+
+- Main CI run `32664906733` passed the repaired boundary and reached coverage integration tests. It stopped at `tests/integration/client-bundle.test.ts` because the bundled plugin expectation still listed the Issue #3 five-service inject array.
+- Repair commit `933f4f4eeb193046ce46ebe979793a319336bdb0` changes only that assertion to include the Issue #17 `connection` service after `inputTriggers`, matching the production export and the already accepted unit assertion.
+- The local shared dependency/build tree stopped earlier at a stale `conversation` slot fixture and did not reach the changed line. The clean CI build remains the verification layer for this assertion; no unrelated local test or source change was added.
