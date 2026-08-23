@@ -5,6 +5,16 @@ import { describe, expect, it } from 'vitest'
 
 import { LayoutController } from '../../src/client/workbench/layout-contract.ts'
 import { createWorkbenchRoot } from '../../src/client/workbench/root.tsx'
+import {
+  createWorkbenchSessionError,
+  WORKBENCH_SESSION_ERROR_MESSAGES,
+  type WorkbenchSessionErrorCode,
+} from '../../src/client/workbench/session-binding-errors.ts'
+import type {
+  WorkbenchSessionBinding,
+  WorkbenchSessionBindingPhase,
+  WorkbenchSessionBindingState,
+} from '../../src/client/workbench/workbench-session-binding.ts'
 
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
   renderToStaticMarkup(node: ReactNode): string
@@ -12,14 +22,90 @@ const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/serve
 
 const css = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
 
-function renderRoot(): string {
-  const Root = createWorkbenchRoot(new LayoutController())
+function bindingFor(
+  phase: WorkbenchSessionBindingPhase,
+  error?: WorkbenchSessionBindingState['error'],
+): WorkbenchSessionBinding {
+  const snapshot: WorkbenchSessionBindingState = {
+    phase,
+    pendingSessionId: phase === 'awaiting-list'
+      ? 'created-session' as WorkbenchSessionBindingState['pendingSessionId']
+      : undefined,
+    error,
+  }
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: () => () => undefined,
+    dispose: () => undefined,
+  }
+}
+
+function renderRoot(
+  binding = bindingFor('ready'),
+  onConversationSlot: () => void = () => undefined,
+): string {
+  const Root = createWorkbenchRoot(new LayoutController(), binding)
   return renderToStaticMarkup(createElement(Root, {
-    renderSlot: key => createElement('span', { 'data-rendered-slot': key }),
+    renderSlot: key => {
+      if (key === 'conversation') {
+        onConversationSlot()
+        return createElement(
+          'div',
+          { 'data-conversation-slot': 'mounted' },
+          createElement('button', { 'data-submit-entry': 'mounted' }, '提交入口'),
+        )
+      }
+      return createElement('span', { 'data-rendered-slot': key })
+    },
   }))
 }
 
 describe('Issue 3 desktop workbench surface contract', () => {
+  it('mounts the existing conversation slot unchanged when the binding is ready', () => {
+    let conversationCalls = 0
+    const markup = renderRoot(bindingFor('ready'), () => {
+      conversationCalls += 1
+    })
+
+    expect(conversationCalls).toBe(1)
+    expect(markup).toContain('data-conversation-slot="mounted"')
+    expect(markup).toContain('data-submit-entry="mounted"')
+  })
+
+  it.each(['idle', 'creating', 'awaiting-list'] as const)(
+    'does not mount the conversation slot while the binding is %s',
+    phase => {
+      let conversationCalls = 0
+      const markup = renderRoot(bindingFor(phase), () => {
+        conversationCalls += 1
+      })
+
+      expect(conversationCalls).toBe(0)
+      expect(markup).toContain('data-rendered-slot="sidebar"')
+      expect(markup).toContain('data-rendered-slot="details"')
+      expect(markup).not.toContain('data-conversation-slot="mounted"')
+      expect(markup).not.toContain('data-submit-entry="mounted"')
+    },
+  )
+
+  it.each(Object.keys(WORKBENCH_SESSION_ERROR_MESSAGES) as WorkbenchSessionErrorCode[])(
+    'keeps the outer columns and renders the exact %s binding error without the conversation slot',
+    code => {
+      let conversationCalls = 0
+      const markup = renderRoot(bindingFor('error', createWorkbenchSessionError(code)), () => {
+        conversationCalls += 1
+      })
+
+      expect(conversationCalls).toBe(0)
+      expect(markup).toContain('data-rendered-slot="sidebar"')
+      expect(markup).toContain('data-rendered-slot="details"')
+      expect(markup).toContain('class="conversation-state conversation-error"')
+      expect(markup).toContain(WORKBENCH_SESSION_ERROR_MESSAGES[code])
+      expect(markup).not.toContain('data-conversation-slot="mounted"')
+      expect(markup).not.toContain('data-submit-entry="mounted"')
+    },
+  )
+
   it('renders the complete prototype desktop Header before the fixed columns', () => {
     const markup = renderRoot()
     const headerStart = markup.indexOf('<header class="app-header">')

@@ -1,6 +1,7 @@
 import { useSyncExternalStore, type ReactNode } from 'react'
 
 import { layoutContract, type LayoutController } from './layout-contract.ts'
+import type { WorkbenchSessionBinding } from './workbench-session-binding.ts'
 
 type EmptyOwnerProps = Record<never, never>
 
@@ -14,13 +15,30 @@ export type WorkbenchRootProps = {
 }
 
 /** Project root composition for the fixed desktop shell. */
-export function createWorkbenchRoot(layout: LayoutController) {
+export function createWorkbenchRoot(
+  layout: LayoutController,
+  sessionBinding: Pick<WorkbenchSessionBinding, 'getSnapshot' | 'subscribe'>,
+) {
   return function WorkbenchRoot(props: WorkbenchRootProps): ReactNode {
     const snapshot = useSyncExternalStore(
       layout.subscribe,
       layout.getSnapshot,
       layout.getSnapshot,
     )
+    const sessionBindingSnapshot = useSyncExternalStore(
+      sessionBinding.subscribe,
+      sessionBinding.getSnapshot,
+      sessionBinding.getSnapshot,
+    )
+    const conversation = sessionBindingSnapshot.phase === 'ready'
+      ? props.renderSlot('conversation', {})
+      : sessionBindingSnapshot.phase === 'error' && sessionBindingSnapshot.error !== undefined
+        ? (
+          <div className="conversation-state conversation-error" role="alert">
+            {sessionBindingSnapshot.error.message}
+          </div>
+        )
+        : null
 
     return (
       <div className="harness-comfyui-shell" data-plugin="harness-comfyui">
@@ -57,7 +75,7 @@ export function createWorkbenchRoot(layout: LayoutController) {
             })}
           </div>
           <div className="harness-comfyui-column harness-comfyui-conversation" data-layout-column="conversation">
-            {props.renderSlot('conversation', {})}
+            {conversation}
           </div>
           <div className="harness-comfyui-column harness-comfyui-details" data-layout-column="details">
             {props.renderSlot('details', {})}
