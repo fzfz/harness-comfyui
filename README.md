@@ -6,12 +6,12 @@ Harness-ComfyUI 是运行在 DeepSeek Harness Host/Client 中的 ComfyUI 工作�
 
 | 记录对象 | 当前值 |
 | --- | --- |
-| Harness-ComfyUI 产品版本 | `0.1.0-rc.7` |
+| Harness-ComfyUI 产品版本 | `0.1.3` |
 | DeepSeek Harness 直接依赖版本 | `0.1.0-rc.8` |
-| GitHub Release tag | [`v0.1.0-rc.7`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.0-rc.7) |
-| GitHub Release 状态 | Prerelease |
-| GitHub Release commit | `10c2c1f2eef9c0bfb9497a7b1e7d366627582b44` |
-| GitHub Release 发布日期 | `2026-08-22` |
+| GitHub Release tag | [`v0.1.3`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.3) |
+| GitHub Release 状态 | Latest release |
+| GitHub Release commit | `b292e1cd69be766204037ea9f781766ef7714015` |
+| GitHub Release 发布日期 | `2026-08-24` |
 
 `package.json` 的 `version` 是 Harness-ComfyUI 产品版本的唯一结构化来源。`package.json` 中精确锁定的 `@deepseek-ai/dsh-*` 版本是 DeepSeek Harness 直接依赖版本的唯一结构化来源。产品版本与 Harness 依赖版本表示两个不同对象；维护者不得根据 Harness 依赖版本推断产品版本。
 
@@ -29,6 +29,7 @@ Harness-ComfyUI 是运行在 DeepSeek Harness Host/Client 中的 ComfyUI 工作�
 
 | 产品版本 | GitHub Release tag | 精确 commit | 发布日期 | 状态 | 交付范围 |
 | --- | --- | --- | --- | --- | --- |
+| `0.1.3` | [`v0.1.3`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.3) | `b292e1cd69be766204037ea9f781766ef7714015` | `2026-08-24` | Latest release | 当前工作区全部变更、Harness v0.82.2 source contract 与 Issue #3 工作台更新 |
 | `0.1.0-rc.7` | [`v0.1.0-rc.7`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.0-rc.7) | `10c2c1f2eef9c0bfb9497a7b1e7d366627582b44` | `2026-08-22` | Prerelease | Issue #2 产品安装与完整生命周期基线 |
 
 ## 产品管理命令
