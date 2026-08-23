@@ -116,6 +116,7 @@ describe('Issue #2 public package and composition contracts', () => {
       'agent-presets/harness-comfyui/preset.yml',
       'agent-presets/harness-comfyui/agent.cordis.yml',
       'cordis.patch.yml',
+      'README.md',
       'config/base.json',
       'config/environment-overrides.json',
       'config/product-agent.json',
