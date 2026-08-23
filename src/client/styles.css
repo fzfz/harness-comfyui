@@ -108,6 +108,24 @@
   gap: 10px;
 }
 
+.brand-copy {
+  align-items: flex-start;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+.brand-copy .eyebrow,
+.brand-copy h1 {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
 .brand-mark {
   background: var(--dsw-alias-label-primary);
   color: var(--dsw-alias-bg-layer-1);
@@ -157,6 +175,12 @@
   color: var(--dsw-alias-label-secondary);
   font-size: 12px;
   gap: 8px;
+}
+
+.header-context-label {
+  display: inline-flex;
+  opacity: 1;
+  visibility: visible;
 }
 
 .connection-indicator,
@@ -295,6 +319,23 @@
   margin: 2px 0 0;
 }
 
+.session-heading-copy {
+  align-items: flex-start;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+.session-heading-copy .section-kicker,
+.session-heading-copy h2 {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
 .session-panel .section-kicker,
 .session-panel .list-date {
   color: var(--dsw-alias-label-secondary);
@@ -310,11 +351,16 @@
   align-items: center;
   background: var(--dsw-alias-bg-layer-2);
   border: 1px solid transparent;
+  color: var(--ink);
   display: flex;
   gap: 8px;
   margin: 0 12px 10px;
   min-height: 36px;
+  opacity: 1;
   padding: 0 10px;
+  position: relative;
+  visibility: visible;
+  z-index: 0;
 }
 
 .session-panel .search-field:focus-within {
@@ -337,8 +383,12 @@
 .session-panel .search-field input {
   background: transparent;
   border: 0;
+  color: var(--ink);
+  display: block;
   min-width: 0;
   outline: 0;
+  opacity: 1;
+  visibility: visible;
   width: 100%;
 }
 
@@ -356,10 +406,13 @@
 }
 
 .session-list {
+  display: block;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  opacity: 1;
   padding: 0 8px;
+  visibility: visible;
 }
 
 .list-date {
@@ -398,17 +451,23 @@
 }
 
 .session-title {
+  display: block;
   font-family: var(--dsw-font-family);
   font-size: 13px;
   font-weight: 700;
+  opacity: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  visibility: visible;
   white-space: nowrap;
 }
 
 .session-meta {
   color: var(--dsw-alias-label-secondary);
+  display: block;
   font-size: 11px;
+  opacity: 1;
+  visibility: visible;
 }
 
 .run-count {
@@ -416,6 +475,7 @@
   background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
   border-radius: 999px;
   color: var(--dsw-alias-brand-primary);
+  display: block;
   font-family: var(--dsw-font-markdown-code-font-family);
   font-size: 9px;
   grid-column: 2;
@@ -425,6 +485,7 @@
   min-width: 54px;
   padding: 2px 5px;
   text-align: center;
+  visibility: visible;
 }
 
 .session-empty {

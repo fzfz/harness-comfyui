@@ -32,11 +32,12 @@ describe('Issue 3 desktop workbench surface contract', () => {
     expect(markup).toContain('<path d="M15 14h6M18 14v8M18 22h3"></path>')
     expect(markup).toContain('<p class="eyebrow">DEEPSEEK HARNESS</p>')
     expect(markup).toContain('<h1>生成工作台</h1>')
+    expect(markup).toContain('<div class="brand-copy">')
     expect(markup).toContain('<span class="connection-indicator" aria-hidden="true"></span>')
-    expect(markup).toContain('<span>静态数据</span>')
+    expect(markup).toContain('<span class="header-context-label">静态数据</span>')
     expect(markup).toContain('<span class="header-divider" aria-hidden="true"></span>')
     expect(markup).toContain('<span class="agent-avatar" aria-hidden="true">DS</span>')
-    expect(markup).toContain('<span>图像生成 Agent</span>')
+    expect(markup).toContain('<span class="header-context-label">图像生成 Agent</span>')
     let previous = headerStart
     for (const token of [
       'DEEPSEEK HARNESS',
@@ -51,6 +52,16 @@ describe('Issue 3 desktop workbench surface contract', () => {
     }
     expect(markup).not.toContain('mobile-nav')
     expect(markup).not.toContain('data-mobile-panel')
+  })
+
+  it('keeps owned Header copy visible above upstream global styles', () => {
+    expect(css).toContain('.brand-copy {')
+    expect(css).toContain('display: flex;')
+    expect(css).toContain('color: var(--ink);')
+    expect(css).toContain('opacity: 1;')
+    expect(css).toContain('visibility: visible;')
+    expect(css).toContain('.header-context-label {')
+    expect(css).toContain('display: inline-flex;')
   })
 
   it('keeps the Header and desktop three-column geometry deterministic', () => {

@@ -79,6 +79,7 @@ describe('real Harness Session sidebar', () => {
     expect(initial).toContain('data-session-id="video"')
     expect(initial).toContain('data-session-id="comparison"')
     expect(initial).toContain('class="session-row is-current"')
+    expect(initial).toContain('<div class="session-heading-copy">')
     expect(initial).toContain('<p class="section-kicker">SESSION</p>')
     expect(initial).toContain('<svg viewBox="0 0 20 20" aria-hidden="true">')
     expect(initial).toContain('<kbd>⌘ K</kbd>')
@@ -156,6 +157,11 @@ describe('real Harness Session sidebar', () => {
 
   it('keeps the owned sidebar CSS at prototype desktop values', () => {
     const stylesheet = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
+    expect(stylesheet).toContain('.session-heading-copy {')
+    expect(stylesheet).toContain('display: flex;')
+    expect(stylesheet).toContain('color: var(--ink);')
+    expect(stylesheet).toContain('opacity: 1;')
+    expect(stylesheet).toContain('visibility: visible;')
     expect(stylesheet).toContain('min-height: 66px;')
     expect(stylesheet).toContain('padding: 13px 16px 12px;')
     expect(stylesheet).toContain('gap: 8px;')

@@ -87,7 +87,7 @@ export function renderSessionSidebar(props: SessionSidebarViewProps): ReactNode 
       aria-label="会话列表"
     >
       <div className="panel-heading session-heading">
-        <div>
+        <div className="session-heading-copy">
           <p className="section-kicker">SESSION</p>
           <h2>会话</h2>
         </div>
