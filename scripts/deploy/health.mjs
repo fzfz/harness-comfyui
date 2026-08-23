@@ -2,11 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access, lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import {
-  readDiscovery,
-  validateProductAgentRelease,
-  validateDiscovery,
-} from './preflight.mjs';
+import { validateProductAgentRelease } from './preflight.mjs';
 import { validateInstallation } from './contracts.mjs';
 import {
   assertProcessStateOwnership,
@@ -28,8 +24,6 @@ const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'harnessWeb',
   'clientBundle',
   'pluginStatus',
-  'catalogContract',
-  'sourceContract',
   'runRepository',
   'savedMedia',
 ]);
@@ -152,12 +146,17 @@ async function inspectHarnessWeb(installation) {
   if (!response.ok) throw new Error('Harness Web root unavailable');
   const graph = parseHealthBootGraph(await response.text());
   const requiredIds = [
-    '@deepseek-ai/dsh-client-ui-layout',
     '@deepseek-ai/dsh-client-ui-conversation',
     'harness-comfyui',
   ];
-  if (requiredIds.some(id => !graph.entries.some(entry => entry.id === id))) {
-    throw new Error('Harness Web boot graph missing required bundle');
+  for (const id of requiredIds) {
+    if (!graph.entries.some(entry => entry.id === id)) {
+      throw new Error(`Harness Web boot graph missing required bundle "${id}"`);
+    }
+  }
+  const disabledId = '@deepseek-ai/dsh-client-ui-layout';
+  if (graph.entries.some(entry => entry.id === disabledId)) {
+    throw new Error(`Harness Web boot graph contains disabled bundle "${disabledId}"`);
   }
   return { baseUrl, graph };
 }
@@ -213,15 +212,6 @@ async function inspectPluginStatus(installation, packageManifest, web) {
     throw new Error('pluginStatus projection mismatch');
   }
   return expected;
-}
-
-async function inspectDiscovery(installation, path, name) {
-  const discovery = validateDiscovery(await readDiscovery(path, name), name, installation);
-  return {
-    status: 'passed',
-    contractId: discovery.contract_id,
-    contractVersion: discovery.contract_version,
-  };
 }
 
 export async function runProductHealth(input) {
@@ -310,23 +300,6 @@ export async function runProductHealth(input) {
   } else {
     evidence.clientBundle = failedCheck('harness-web-required');
     evidence.pluginStatus = failedCheck('harness-web-required');
-  }
-
-  try {
-    evidence.catalogContract = await inspectDiscovery(installation, installation.source.catalogCliPath, 'catalog');
-  } catch {
-    evidence.catalogContract = failedCheck('catalog-contract-invalid');
-  }
-  try {
-    evidence.sourceContract = await inspectDiscovery(installation, installation.source.sourceCliPath, 'source');
-  } catch {
-    evidence.sourceContract = failedCheck('source-contract-invalid');
-  }
-  if (evidence.catalogContract.status === 'passed' && evidence.sourceContract.status === 'passed'
-    && (evidence.catalogContract.contractId !== evidence.sourceContract.contractId
-      || evidence.catalogContract.contractVersion !== evidence.sourceContract.contractVersion)) {
-    evidence.catalogContract = failedCheck('discovery-identity-mismatch');
-    evidence.sourceContract = failedCheck('discovery-identity-mismatch');
   }
 
   try {

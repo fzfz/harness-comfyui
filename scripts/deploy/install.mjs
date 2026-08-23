@@ -18,7 +18,7 @@ import { pathToFileURL } from 'node:url'
 import { delimiter, isAbsolute, join, resolve } from 'node:path'
 
 import { validateInstallation } from './contracts.mjs'
-import { PROFILE_VALIDATOR_ENTRY, readProductAgentConfig, runProductPreflight } from './preflight.mjs'
+import { PROFILE_VALIDATOR_ENTRY, readProductAgentConfig, renderAgentSettings, runProductPreflight } from './preflight.mjs'
 import {
   RUNTIME_DEPENDENCY_POLICY,
   readPnpmPackageManagerVersion,
@@ -266,6 +266,11 @@ export async function materializeProductAgentFiles(packageRoot, releaseRoot, pro
     join(packageRoot, productAgent.agentPresetArtifactRelativeRoot, productAgent.agentPresetId),
     presetTarget,
     'Preset artifact',
+  )
+  await writeFile(
+    join(releaseRoot, 'dsh-home/settings.yaml'),
+    renderAgentSettings(productAgent),
+    'utf8',
   )
   return { presetTarget, skillTarget }
 }

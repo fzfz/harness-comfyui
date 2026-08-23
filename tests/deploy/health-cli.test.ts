@@ -127,14 +127,27 @@ if (args.slice(0, 3).join(' ') === 'plugin --profile comfyui-workbench') {
 }
 if (args[0] !== '--profile' || args[1] !== 'comfyui-workbench') process.exit(2)
 
-const graph = {
-  rev: 'fixture-revision',
-  entries: [
+const bootGraphMode = process.env.HEALTH_BOOT_GRAPH_MODE ?? 'issue3'
+const graphEntriesByMode = {
+  'issue3': [
+    { id: '@deepseek-ai/dsh-client-ui-conversation', url: '/assets/conversation.js', rev: 'conversation-revision' },
+    { id: 'harness-comfyui', url: '/assets/harness-comfyui.js', rev: 'harness-revision' },
+  ],
+  'layout-present': [
     { id: '@deepseek-ai/dsh-client-ui-layout', url: '/assets/layout.js', rev: 'layout-revision' },
     { id: '@deepseek-ai/dsh-client-ui-conversation', url: '/assets/conversation.js', rev: 'conversation-revision' },
     { id: 'harness-comfyui', url: '/assets/harness-comfyui.js', rev: 'harness-revision' },
   ],
+  'missing-conversation': [
+    { id: 'harness-comfyui', url: '/assets/harness-comfyui.js', rev: 'harness-revision' },
+  ],
+  'missing-harness': [
+    { id: '@deepseek-ai/dsh-client-ui-conversation', url: '/assets/conversation.js', rev: 'conversation-revision' },
+  ],
 }
+const graphEntries = graphEntriesByMode[bootGraphMode]
+if (graphEntries === undefined) throw new Error('unknown HEALTH_BOOT_GRAPH_MODE')
+const graph = { rev: 'fixture-revision', entries: graphEntries }
 const pluginStatus = {
   packageName: 'harness-comfyui',
   packageVersion: '0.1.0-test.1',
@@ -253,7 +266,7 @@ fs.chmodSync(path.join(target, 'dsh'), 0o755)
   return { binDirectory, home }
 }
 
-async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid' } = {}) {
+async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid', bootGraphMode = 'issue3' } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'harness-health-cli-'))
   temporaryRoots.push(root)
   const installationRoot = join(root, 'installation')
@@ -263,13 +276,9 @@ async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid' }
   const hostReadyFile = join(root, 'host-ready')
   const hostCloseFile = join(root, 'host-close')
   const requestLog = join(root, 'health-requests.jsonl')
+  const sourceCallLog = join(root, 'source-cli-calls.log')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  const discovery = {
-    contract_id: 'imagegen-source-contract',
-    contract_version: 1,
-    openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
-  }
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
@@ -317,10 +326,12 @@ async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid' }
     await copyFile(join(repositoryRoot, relativePath), target)
   }
   await writeFrozenRuntimeAndConfiguration(packageRoot)
-  for (const path of [catalogCliPath, sourceCliPath]) {
+  for (const [path, label] of [[catalogCliPath, 'catalog'], [sourceCliPath, 'source']] as const) {
     await writeFile(path, `#!/usr/bin/env node
-if (process.argv[2] !== '--discovery-json') process.exit(2)
-process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+import { appendFileSync } from 'node:fs'
+appendFileSync(${JSON.stringify(sourceCallLog)}, ${JSON.stringify(`${label}\n`)})
+process.stderr.write(${JSON.stringify(`${label} discovery CLI must not be invoked\n`)})
+process.exit(91)
     `, 'utf8')
     await chmod(path, 0o755)
   }
@@ -364,8 +375,9 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     HEALTH_REQUEST_LOG: requestLog,
     HEALTH_PLUGIN_STATUS_LOADED: String(pluginStatusLoaded),
     HEALTH_AGENT_PRESET_MODE: rosterMode,
+    HEALTH_BOOT_GRAPH_MODE: bootGraphMode,
   }
-  return { root, installation, inputPath, tarballPath, hostReadyFile, hostCloseFile, requestLog, env }
+  return { root, installation, inputPath, tarballPath, hostReadyFile, hostCloseFile, requestLog, sourceCallLog, env }
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
@@ -402,7 +414,7 @@ afterEach(async () => {
 
 describe('installed health CLI', () => {
   it('checks the running installation without conversation or ComfyUI requests', async () => {
-    const fixture = await createFixture()
+    const fixture = await createFixture({ bootGraphMode: 'issue3' })
     const install = await installFixture(fixture)
     expect(install.status, install.stderr).toBe(0)
 
@@ -439,11 +451,12 @@ describe('installed health CLI', () => {
         configurationProfile: 'production',
         hostLoaded: true,
       },
-      catalogContract: { status: 'passed', contractId: 'imagegen-source-contract', contractVersion: 1 },
-      sourceContract: { status: 'passed', contractId: 'imagegen-source-contract', contractVersion: 1 },
       runRepository: { status: 'passed' },
       savedMedia: { status: 'passed' },
     })
+    expect(evidence).not.toHaveProperty('catalogContract')
+    expect(evidence).not.toHaveProperty('sourceContract')
+    await expect(readFile(fixture.sourceCallLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect(Object.keys(evidence.agentPresetInstallation).sort()).toEqual([
       'releaseRelativeRoot', 'requiredFiles', 'skillRelativeRoot', 'status',
     ])
@@ -475,6 +488,33 @@ describe('installed health CLI', () => {
     expect(requests.every(request => !String(request.body).toLowerCase().includes('session'))).toBe(true)
     expect(requests.some(request => String(request.url).includes('/prompt'))).toBe(false)
     expect(requests.some(request => String(request.url).includes('conversation'))).toBe(false)
+
+    await stopFixture(fixture)
+    expect((await start.output).status).toBe(0)
+  }, 30_000)
+
+  it.each([
+    { mode: 'layout-present', expectedError: 'harness-web-invalid' },
+    { mode: 'missing-conversation', expectedError: 'harness-web-invalid' },
+    { mode: 'missing-harness', expectedError: 'harness-web-invalid' },
+  ])('rejects Issue #3 boot graph mode $mode', async ({ mode, expectedError }) => {
+    const fixture = await createFixture({ bootGraphMode: mode })
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+
+    const health = await runProcess(stableBin, ['health', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(health.status).not.toBe(0)
+    const evidence = JSON.parse(health.stdout)
+    expect(evidence).toMatchObject({
+      stage: 'health',
+      status: 'failed',
+      process: { status: 'passed' },
+      harnessWeb: { status: 'failed', error: expectedError },
+    })
 
     await stopFixture(fixture)
     expect((await start.output).status).toBe(0)

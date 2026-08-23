@@ -1,13 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  browserScreenshotPath,
   browserWindowSizeArgument,
   installModuleLoaderCapture,
+  runRealBrowserProbe,
 } from '../../src/testing/browser-cdp.ts'
 
 describe('browser viewport input', () => {
+  it('accepts only an absolute PNG screenshot destination for the fixed desktop viewport', () => {
+    expect(browserScreenshotPath('/tmp/workbench.png')).toBe('/tmp/workbench.png')
+    expect(() => browserScreenshotPath('workbench.png')).toThrow('absolute')
+    expect(() => browserScreenshotPath('/tmp/workbench.jpg')).toThrow('PNG')
+  })
+
+  it('rejects screenshot capture requests outside the single approved viewport before launching Chrome', async () => {
+    await expect(runRealBrowserProbe(
+      'about:blank',
+      { viewport: { width: 1440, height: 960 }, screenshotPath: '/tmp/workbench.png' },
+    )).rejects.toThrow('exact 1440x1000')
+  })
+
   it('formats a validated custom viewport for the Chrome window-size argument', () => {
-    expect(browserWindowSizeArgument({ width: 1440, height: 960 })).toBe('--window-size=1440,960')
+    expect(browserWindowSizeArgument({ width: 1440, height: 1000 })).toBe('--window-size=1440,1000')
   })
 
   it('keeps the default Chrome viewport at 1280 by 900', () => {

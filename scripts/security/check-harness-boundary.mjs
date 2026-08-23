@@ -10,6 +10,8 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
   ['@deepseek-ai/dsh-client-runtime/client', 'value-or-type'],
   ['@deepseek-ai/dsh-client-ui-layout/client', 'value-or-type'],
+  ['@deepseek-ai/dsh-client-ui-theme/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
   ['@deepseek-ai/schemastery', 'value-or-type'],
@@ -23,6 +25,7 @@ const frozenClientInject = Object.freeze([
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
+  '@deepseek-ai/dsh-client-ui-theme',
 ])
 const forbiddenSourceProtocols = /^(?:patch|file|link|workspace|npm|git|github|gitlab|bitbucket):/iu
 const forbiddenSourceBinding = /(?:^|[\s{])(?:patch|file|link|workspace|npm):(?:[./*@]|https?:)/iu
@@ -38,6 +41,9 @@ const expectedLoaderPatch = `- insert:
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+
+- id: ui-layout
+  disabled: true
 `
 
 function parseArguments(argv) {
@@ -279,12 +285,22 @@ function readProductAgentBoundary(path) {
   if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
     throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
   }
+  const expectedAgentModel = {
+    provider: 'opencode-go',
+    model: 'deepseek-v4-flash',
+    reasoningEffort: 'max',
+    apiKeyEnv: 'OPENCODE_GO_API_KEY',
+  }
+  if (!sameStructuredValue(config.agentModel, expectedAgentModel)) {
+    throw new Error(`${path}.agentModel must select exactly opencode-go/deepseek-v4-flash with reasoningEffort max and apiKeyEnv OPENCODE_GO_API_KEY`)
+  }
   return {
     agentPresetId,
     agentPresetArtifactRelativeRoot,
     agentPresetInstallRelativeRoot,
     skillRelativeRoot,
     agentPluginExport,
+    agentModel: expectedAgentModel,
   }
 }
 

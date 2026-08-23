@@ -4,5 +4,11 @@
   "agentPresetInstallRelativeRoot": "dsh-home/.agent-presets",
   "skillRelativeRoot": "skills",
   "agentPluginExport": "./agent",
-  "sessionListConvergenceTimeoutMs": 10000
+  "sessionListConvergenceTimeoutMs": 10000,
+  "agentModel": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4-flash",
+    "reasoningEffort": "max",
+    "apiKeyEnv": "OPENCODE_GO_API_KEY"
+  }
 }

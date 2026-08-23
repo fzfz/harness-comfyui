@@ -33,6 +33,7 @@ describe('Issue #2 public package and composition contracts', () => {
       '@deepseek-ai/dsh-client-ui-conversation': '0.1.0-rc.8',
       '@deepseek-ai/dsh-client-ui-input-trigger': '0.1.0-rc.8',
       '@deepseek-ai/dsh-client-ui-layout': '0.1.0-rc.8',
+      '@deepseek-ai/dsh-client-ui-theme': '0.1.0-rc.8',
       '@deepseek-ai/dsh-client-ui-primitives': '0.1.0-rc.8',
       '@deepseek-ai/dsh-client-ui-slots': '0.1.0-rc.8',
       '@deepseek-ai/dsh-invariants': '0.1.0-rc.8',
@@ -212,6 +213,7 @@ describe('Issue #2 public package and composition contracts', () => {
           '@deepseek-ai/dsh-client-ui-conversation',
           '@deepseek-ai/dsh-client-ui-input-trigger',
           '@deepseek-ai/dsh-client-ui-layout',
+          '@deepseek-ai/dsh-client-ui-theme',
         ],
       },
     })
