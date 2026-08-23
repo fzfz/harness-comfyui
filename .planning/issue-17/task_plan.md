@@ -32,7 +32,7 @@
 | 7. 两轴代码审查 | complete | 独立 Standards Reviewer 与 Spec Reviewer 返回可用结论；已接受 finding 完成返修 |
 | 8. 最终验收 | complete | 定向回归、一次完整测试、高耗时真实 lifecycle、真实浏览器功能与独立视觉验收全部 PASS；Host 已 stop |
 | 9. 集成本地 main | complete | worktree 分支与最终 boundary repair 分支均已提交并合入本地 main；两个 worktree 与分支均已删除 |
-| 10. 关闭与发布 | in_progress | Issue #17 已关闭；版本提交为 `0.1.17`；tag/Release `v0.1.17` 与发布 artifact 身份验证通过 |
+| 10. 关闭与发布 | blocked | Issue #17 已关闭且版本提交为 `0.1.17`；PRD 13 因继承的全局 coverage threshold failure 阻止 tag/Release，修复该基线需要用户另行授权扩大范围 |
 
 ## Test evidence ledger
 
@@ -55,6 +55,8 @@
 | `1a24166` | direct `check-harness-boundary.mjs` and `git diff --check` | PASS | boundary source or diff changes |
 | `933f4f4` | exact Client bundle inject expectation and `git diff --check` | PASS at diff boundary; local test blocked before assertion by stale built fixture | Client plugin inject expectation changes |
 | `27a2aba` + `ef1f693` | `tests/integration/client-bundle.test.ts` built Client fixture | 1/1 PASS in 1.82s; cumulative diff check PASS | Client bundle fixture, Session metadata or gated render-order changes |
+| `529b789` / CI `32665629884` | boundary + typecheck + unit/integration | boundary/typecheck PASS; 23 files and 240/240 tests PASS | current main code or tests change |
+| `529b789` / CI `32665629884` | global coverage | branches 82.09% PASS; lines 85.73%, functions 91.91%, statements 82.86% FAIL inherited thresholds | coverage remediation or quality policy changes |
 
 ## Two-axis review status
 
@@ -84,3 +86,4 @@
 | main CI `32664651582` rejected the new public connection type import | release qualification | reopened #17; a repair worktree added only the rc.8 public type-only specifier and positive/negative security tests; focused 41/41 and direct boundary check PASS |
 | main CI `32664906733` rejected the old five-service Client bundle expectation | release qualification | reopened #17; a repair worktree updated only the one integration assertion to include `connection`; CI is the authoritative clean-build verification because the local shared tree failed earlier on a stale built fixture |
 | main CI `32665072523` reached the stale built Client fixture and failed before plugin-owned root registration | release qualification | reopened #17; an isolated repair worktree supplied the public connection/VM/Session metadata fixture and aligned two exact render-call order assertions; focused built Client integration passed 1/1 |
+| main CI `32665629884` passed all 240 tests but failed inherited global coverage thresholds | release qualification | two isolated test-only attribution probes proved the built VM execution was not the cause and were fully reverted; PRD 13 requires NO-GO, while repairing other closed-Issue coverage gaps is outside #17 |

@@ -182,3 +182,10 @@
 - Commit `27a2aba932cee1118925cbca918d238213733530` provides the public connection fixture and releases it during teardown.
 - Commit `ef1f693d24d59a1e7c1a81208214c69e58b47f30` exposes the standard `AbortController` global to the built-bundle VM, sources all three fixture Session Preset IDs from `config/product-agent.json`, and updates two exact `renderCalls` assertions for the gated conversation's earlier evaluation. DOM column order, layout widths, slot keys and owner objects remain fully asserted.
 - The focused built Client integration passed `1/1` in `1.82s`. Main-thread cumulative diff review found no product source, dependency, copy, style, release identity or unrelated test change.
+
+## Release qualification blocker
+
+- Main CI run `32665629884` passed the Harness boundary, TypeScript check and all `240/240` unit/integration tests. The run failed only the global coverage thresholds: lines `85.73% / 91%`, functions `91.91% / 100%`, statements `82.86% / 88%`; branches passed at `82.09% / 79%`.
+- Two test-only probes in an isolated worktree showed that removing the built bundle sourcemap directive or wrapping only the VM-executed bundle in V8 ignore markers did not change the structured coverage totals. Both experiments were reverted without a commit, and their worktree was deleted.
+- The v0.1.3 planning record already reports the same baseline failure after `208/208` tests passed: lines `83.55%`, functions `91.89%`, statements `81.69%`. Issue #17 raises current coverage but does not resolve the inherited repository-wide deficit.
+- PRD 13 requires NO-GO when any test gate fails. Adding tests for unrelated Issue #3/#16 source or changing global thresholds would expand Issue #17, so no `v0.1.17` tag or GitHub Release may be created without a separate user authorization for repository-wide coverage remediation.

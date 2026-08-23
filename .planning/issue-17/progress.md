@@ -54,3 +54,7 @@
 - 第三次 main CI `32665072523` 通过 preinstall 后在同一 built Client integration 场景暴露完整的 Issue #3 旧夹具：测试没有提供新增 `connection` 服务，因此插件未 apply，后续 `conversation` 注册失败。
 - 主线程重新打开 #17 并建立 `/Volumes/4Tdisk/work/AI2/harness-comfyui-issue-17-ci-fixture-2`。执行队员以两个提交 `27a2aba`、`ef1f693` 只修 `tests/integration/client-bundle.test.ts`：提供并释放公开 connection fixture、向 VM 暴露 `AbortController`、从 `config/product-agent.json` 为三条项目 Session 补齐 Preset 元数据，并把两个 `renderCalls` 断言对齐 gated conversation 的实际求值顺序。
 - 聚焦 `client-bundle.test.ts` 通过 `1/1`，总 duration `1.82s`；主线程检查累计 `19 insertions / 3 deletions`、`git diff --check` 与提交边界后 fast-forward 合入 main。修复 worktree、未跟踪 `node_modules` symlink 与分支均已删除。
+- 第四次 main CI `32665629884` 的 boundary、typecheck 与全部 `23 files / 240 tests` PASS；唯一失败是仓库全局 coverage：lines `85.73% / 91%`、functions `91.91% / 100%`、statements `82.86% / 88%`，branches `82.09% / 79%` PASS。
+- 独立 coverage diagnosis worktree 先验证移除 built bundle sourcemap，再验证仅忽略 VM 中执行的 bundle coverage；两种 probe 都没有改变结构化 coverage totals，因此所有实验修改均撤销且没有提交。该 worktree、未跟踪 symlink 与分支均已删除。
+- `.planning/release-v0.1.3/` 已记录上一版本在 `208/208` 测试 PASS 后仍有同一全局基线失败：lines `83.55%`、functions `91.89%`、statements `81.69%`。当前 #17 候选覆盖率较上一版提高，但仍未达到仓库阈值。
+- #17 的功能、生命周期、浏览器和独立视觉验收保持 PASS；修复其他已关闭 Issue 的覆盖缺口会扩大 #17 边界。依据 PRD 13 的任一测试门禁失败 NO-GO 规则，`v0.1.17` tag 与 GitHub Release 暂停，等待用户明确授权独立的全局 coverage remediation 范围。
