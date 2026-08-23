@@ -117,6 +117,76 @@ describe('project root boot order', () => {
     expect(browser.runtimeExceptions).toEqual([])
   }, 240000)
 
+  it('diagnoses the public chat view seam for a real blank Session', async () => {
+    const fixture = await createProfileFixture({ configuration: 'test' })
+    fixtures.push(fixture)
+
+    await fixture.install()
+    await fixture.start()
+
+    const workspaceResult = await rpc(fixture.port, 'workspace.create', { path: fixture.runtimeCwd }) as {
+      workspace?: { workspaceId?: string }
+    }
+    const workspaceId = workspaceResult.workspace?.workspaceId
+    if (typeof workspaceId !== 'string') throw new Error('diagnostic workspace.create did not return a workspaceId')
+    const sessionResult = await rpc(fixture.port, 'session.create', {
+      workspaceId,
+      agentPreset: 'harness-comfyui',
+    }) as { sessionId?: string }
+    const sessionId = sessionResult.sessionId
+    if (typeof sessionId !== 'string') throw new Error('diagnostic session.create did not return a sessionId')
+
+    const browser = await fixture.runRealBrowserProbe({
+      viewport: { width: 1440, height: 1000 },
+      scenarioScript: `(async () => {
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const until = async (probe, label, timeout = 20000) => {
+          const deadline = Date.now() + timeout;
+          while (Date.now() < deadline) {
+            const value = await probe();
+            if (value) return value;
+            await wait(100);
+          }
+          throw new Error('timed out waiting for ' + label);
+        };
+        const row = await until(() => document.querySelector('[data-session-id="${sessionId}"]'), 'blank Session row');
+        row.click();
+        await until(() => document.querySelector('[data-layout-column="conversation"]'), 'conversation column');
+        await wait(500);
+        const context = window.__HARNESS_BROWSER_PROBE__?.contexts?.['harness-comfyui'];
+        const viewEntries = context?.slots.snapshot('conversation.view')[0]?.occupants.map(entry => ({
+          id: entry.id,
+          priority: entry.priority,
+          active: entry.active,
+        })) ?? [];
+        return {
+          sessionId: '${sessionId}',
+          projectViewRegistered: viewEntries.some(entry => entry.id === 'chat' && entry.priority === -10 && entry.active),
+          projectEmptyView: document.querySelector('.message-list .empty-conversation') !== null,
+          projectMessageList: document.querySelector('.message-list') !== null,
+          harnessBlankHero: document.body.innerText.includes('探索未至之境'),
+          viewEntries,
+        };
+      })()`,
+    })
+
+    const result = browser.scenarioResult as {
+      sessionId: string
+      projectViewRegistered: boolean
+      projectEmptyView: boolean
+      projectMessageList: boolean
+      harnessBlankHero: boolean
+      viewEntries: Array<{ id?: string; priority?: number; active?: boolean }>
+    }
+    expect(result.sessionId).toBe(sessionId)
+    expect(result.projectViewRegistered).toBe(true)
+    expect(result.projectEmptyView).toBe(false)
+    expect(result.projectMessageList).toBe(false)
+    expect(result.harnessBlankHero).toBe(true)
+    expect(browser.consoleErrors).toEqual([])
+    expect(browser.runtimeExceptions).toEqual([])
+  }, 240000)
+
   it('selects a real workspace Skill through the native MenuView overlay', async () => {
     const fixture = await createProfileFixture({ configuration: 'test' })
     fixtures.push(fixture)
