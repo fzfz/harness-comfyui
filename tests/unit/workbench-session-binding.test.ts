@@ -368,6 +368,29 @@ describe('Workbench Session binding', () => {
     expect(harness.create).toHaveBeenCalledOnce()
   })
 
+  it('re-reads the project Session list for a new Host generation without creating again', () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+    const firstCreateSignal = harness.pendingCreate()?.signal
+
+    harness.setHost(undefined)
+    expect(firstCreateSignal?.aborted).toBe(true)
+
+    harness.setState(state(undefined, [
+      summary('restored-session', 100, { agentPreset: 'harness-comfyui' }),
+    ]))
+    harness.setHost({ cwd: '/workspace-new-generation' })
+
+    expect(harness.create).toHaveBeenCalledOnce()
+    expect(harness.open).toHaveBeenCalledOnce()
+    expect(harness.open).toHaveBeenCalledWith('restored-session')
+    expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
+    binding.dispose()
+  })
+
   it('shows only non-subagent harness-comfyui Sessions in the project sidebar', () => {
     const markup = renderToStaticMarkup(renderSessionSidebar({
       collapsed: false,

@@ -44,7 +44,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
           'shell.overlay': { kind: 'list', scope: 'root' },
         },
       },
-      createWorkbenchRoot(layoutService),
+      createWorkbenchRoot(layoutService, sessionBinding),
     )
   } catch (error) {
     sessionBinding.dispose()
