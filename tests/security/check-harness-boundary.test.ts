@@ -256,6 +256,26 @@ describe('check:harness-boundary', () => {
     }
   })
 
+  it('accepts the public Session connection type import', () => {
+    const root = createFixture("import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'\n")
+    try {
+      expect(run(root).status).toBe(0)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a value Session connection import', () => {
+    const root = createFixture("import { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'\n")
+    try {
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain('must import')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it.each([
     ['a dynamic import', "void import('@deepseek-ai/dsh-client-runtime/internal')"],
     ['an export import', "export { hidden } from '@deepseek-ai/dsh-client-runtime/internal'"],
