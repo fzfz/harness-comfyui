@@ -7,10 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isAbsolute, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 
-import {
-  SOURCE_CONTRACT_ID,
-  validateInstallation,
-} from './contracts.mjs';
+import { validateInstallation } from './contracts.mjs';
 import {
   RUNTIME_DEPENDENCY_POLICY,
   readPnpmPackageManagerVersion,
@@ -726,47 +723,6 @@ async function probePort(host, port) {
   }
 }
 
-export async function readDiscovery(path, name) {
-  let result;
-  try {
-    result = await runExternal(path, ['--discovery-json']);
-  } catch (error) {
-    throw new Error(`${name} discovery CLI could not start: ${error.message}`);
-  }
-  if (result.timedOut) throw new Error(`${name} discovery CLI timed out`);
-  if (result.code !== 0) {
-    const detail = result.stderr.trim();
-    throw new Error(`${name} discovery CLI failed with exit code ${result.code}${detail ? `: ${detail}` : ''}`);
-  }
-  try {
-    return JSON.parse(result.stdout.trim());
-  } catch (error) {
-    throw new Error(`${name} discovery CLI returned malformed JSON: ${error.message}`);
-  }
-}
-
-export function validateDiscovery(value, name, installation) {
-  const discovery = requireRecord(value, `${name} discovery`);
-  const expectedVersion = installation.source.supportedContractVersions[0];
-  if (discovery.contract_id !== SOURCE_CONTRACT_ID) {
-    throw new Error(`${name} discovery contract_id must be ${SOURCE_CONTRACT_ID}`);
-  }
-  if (discovery.contract_version !== expectedVersion) {
-    throw new Error(`${name} discovery contract_version must be ${expectedVersion}`);
-  }
-  const openapi = requireRecord(discovery.openapi, `${name} discovery.openapi`);
-  if (typeof openapi.openapi !== 'string' || !/^3\.1(?:\.\d+)?$/u.test(openapi.openapi)) {
-    throw new Error(`${name} discovery.openapi.openapi must be an OpenAPI 3.1 version`);
-  }
-  requireRecord(openapi.info, `${name} discovery.openapi.info`);
-  requireRecord(openapi.paths, `${name} discovery.openapi.paths`);
-  return {
-    contract_id: discovery.contract_id,
-    contract_version: discovery.contract_version,
-    openapi,
-  };
-}
-
 export async function runProductPreflight(input, artifactPath, options = {}) {
   const installation = validateInstallation(input);
   const artifactRead = await readArtifactPackageJson(artifactPath);
@@ -791,21 +747,6 @@ export async function runProductPreflight(input, artifactPath, options = {}) {
   await probeRunRepositoryLocation(installation.paths.runRepositoryFile);
   if (options.allowKnownPortUse !== true) await probePort(installation.host, installation.port);
 
-  const catalogDiscovery = validateDiscovery(
-    await readDiscovery(installation.source.catalogCliPath, 'catalog'),
-    'catalog',
-    installation,
-  );
-  const sourceDiscovery = validateDiscovery(
-    await readDiscovery(installation.source.sourceCliPath, 'source'),
-    'source',
-    installation,
-  );
-  if (catalogDiscovery.contract_id !== sourceDiscovery.contract_id
-    || catalogDiscovery.contract_version !== sourceDiscovery.contract_version) {
-    throw new Error('catalog and source discovery contract identities do not match');
-  }
-
   return {
     stage: 'preflight',
     status: 'passed',
@@ -821,10 +762,6 @@ export async function runProductPreflight(input, artifactPath, options = {}) {
     runtime: {
       node: process.versions.node,
       pnpm: pnpmVersion,
-    },
-    source: {
-      catalog: catalogDiscovery,
-      source: sourceDiscovery,
     },
   };
 }

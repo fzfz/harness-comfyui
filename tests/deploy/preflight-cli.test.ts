@@ -54,12 +54,6 @@ async function createFixture() {
   const discoveryLog = join(root, 'discovery.log')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  const discovery = {
-    contract_id: 'imagegen-source-contract',
-    contract_version: 1,
-    openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
-  }
-
   await mkdir(packageRoot, { recursive: true })
   await writeFile(join(packageRoot, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
@@ -114,9 +108,9 @@ async function createFixture() {
   for (const [path, label] of [[catalogCliPath, 'catalog'], [sourceCliPath, 'source']] as const) {
     await writeFile(path, `#!/usr/bin/env node
 import { appendFileSync } from 'node:fs'
-if (process.argv[2] !== '--discovery-json') process.exit(2)
 appendFileSync(${JSON.stringify(discoveryLog)}, ${JSON.stringify(`${label}\n`)})
-process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+process.stderr.write(${JSON.stringify(`${label} discovery CLI must not be invoked\n`)})
+process.exit(91)
 `, 'utf8')
     await chmod(path, 0o755)
   }
@@ -186,7 +180,7 @@ afterEach(async () => {
 })
 
 describe('harness-comfyui preflight CLI', () => {
-  it('validates a tarball, installation paths, free port, and both source discovery CLIs', async () => {
+  it('validates a tarball and installation paths without invoking either source discovery CLI', async () => {
     const fixture = await createFixture()
 
     const result = await runPreflight(fixture)
@@ -208,12 +202,9 @@ describe('harness-comfyui preflight CLI', () => {
         agentPresetInstallRelativeRoot: 'dsh-home/.agent-presets',
         skillRelativeRoot: 'skills',
       },
-      source: {
-        catalog: { contract_id: 'imagegen-source-contract', contract_version: 1 },
-        source: { contract_id: 'imagegen-source-contract', contract_version: 1 },
-      },
     })
-    expect((await readFile(fixture.discoveryLog, 'utf8')).trim().split('\n')).toEqual(['catalog', 'source'])
+    expect(JSON.parse(result.stdout)).not.toHaveProperty('source')
+    await expect(readFile(fixture.discoveryLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('requires the structured product Agent configuration before probing the installation', async () => {
@@ -616,22 +607,13 @@ describe('harness-comfyui preflight CLI', () => {
     expect(result.stderr).toContain(message)
   })
 
-  it('rejects a source discovery identity that does not match the installation contract', async () => {
+  it('does not invoke a source CLI that would fail if called', async () => {
     const fixture = await createFixture()
-    const discovery = {
-      contract_id: 'wrong-contract',
-      contract_version: 1,
-      openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
-    }
-    await writeFile(fixture.sourceCliPath, `#!/usr/bin/env node
-process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
-`, 'utf8')
-    await chmod(fixture.sourceCliPath, 0o755)
 
     const result = await runPreflight(fixture)
 
-    expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('source discovery contract_id must be imagegen-source-contract')
+    expect(result.status).toBe(0)
+    await expect(readFile(fixture.discoveryLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('rejects an occupied installation port without starting a product process', async () => {

@@ -66,8 +66,10 @@ describe('release artifact composition', () => {
       expect(health).toMatchObject({ stage: 'health', status: 'passed' })
       expect(Object.keys(health)).toEqual(expect.arrayContaining([
         'process', 'activeRelease', 'harnessWeb', 'clientBundle', 'pluginStatus',
-        'catalogContract', 'sourceContract', 'runRepository', 'savedMedia',
+        'runRepository', 'savedMedia',
       ]))
+      expect(health).not.toHaveProperty('catalogContract')
+      expect(health).not.toHaveProperty('sourceContract')
       const logs = await fixture.logs()
       expect(logs).toContain('[operations]')
       expect(logs).toContain('[stdout]')

@@ -276,13 +276,9 @@ async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid', 
   const hostReadyFile = join(root, 'host-ready')
   const hostCloseFile = join(root, 'host-close')
   const requestLog = join(root, 'health-requests.jsonl')
+  const sourceCallLog = join(root, 'source-cli-calls.log')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  const discovery = {
-    contract_id: 'imagegen-source-contract',
-    contract_version: 1,
-    openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
-  }
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
@@ -330,10 +326,12 @@ async function createFixture({ pluginStatusLoaded = true, rosterMode = 'valid', 
     await copyFile(join(repositoryRoot, relativePath), target)
   }
   await writeFrozenRuntimeAndConfiguration(packageRoot)
-  for (const path of [catalogCliPath, sourceCliPath]) {
+  for (const [path, label] of [[catalogCliPath, 'catalog'], [sourceCliPath, 'source']] as const) {
     await writeFile(path, `#!/usr/bin/env node
-if (process.argv[2] !== '--discovery-json') process.exit(2)
-process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+import { appendFileSync } from 'node:fs'
+appendFileSync(${JSON.stringify(sourceCallLog)}, ${JSON.stringify(`${label}\n`)})
+process.stderr.write(${JSON.stringify(`${label} discovery CLI must not be invoked\n`)})
+process.exit(91)
     `, 'utf8')
     await chmod(path, 0o755)
   }
@@ -379,7 +377,7 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     HEALTH_AGENT_PRESET_MODE: rosterMode,
     HEALTH_BOOT_GRAPH_MODE: bootGraphMode,
   }
-  return { root, installation, inputPath, tarballPath, hostReadyFile, hostCloseFile, requestLog, env }
+  return { root, installation, inputPath, tarballPath, hostReadyFile, hostCloseFile, requestLog, sourceCallLog, env }
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
@@ -453,11 +451,12 @@ describe('installed health CLI', () => {
         configurationProfile: 'production',
         hostLoaded: true,
       },
-      catalogContract: { status: 'passed', contractId: 'imagegen-source-contract', contractVersion: 1 },
-      sourceContract: { status: 'passed', contractId: 'imagegen-source-contract', contractVersion: 1 },
       runRepository: { status: 'passed' },
       savedMedia: { status: 'passed' },
     })
+    expect(evidence).not.toHaveProperty('catalogContract')
+    expect(evidence).not.toHaveProperty('sourceContract')
+    await expect(readFile(fixture.sourceCallLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect(Object.keys(evidence.agentPresetInstallation).sort()).toEqual([
       'releaseRelativeRoot', 'requiredFiles', 'skillRelativeRoot', 'status',
     ])

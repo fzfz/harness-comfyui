@@ -110,13 +110,9 @@ async function createFixture({
   const packageRoot = join(root, 'package')
   const tarballPath = join(root, 'harness-comfyui-0.1.0-test.1.tgz')
   const inputPath = join(root, 'installation.json')
+  const sourceCallLog = join(root, 'source-cli-calls.log')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
-  const discovery = {
-    contract_id: 'imagegen-source-contract',
-    contract_version: 1,
-    openapi: { openapi: '3.1.0', info: { title: 'fixture', version: '1' }, paths: {} },
-  }
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
@@ -180,12 +176,14 @@ async function createFixture({
   if (symlinkEntry) await symlink('/tmp/harness-install-outside', join(packageRoot, 'unsafe-link'))
   if (outsideEntry) await writeFile(join(root, 'outside-entry.txt'), 'outside\n', 'utf8')
 
-  await writeFile(catalogCliPath, `#!/usr/bin/env node
-process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
+  for (const [path, label] of [[catalogCliPath, 'catalog'], [sourceCliPath, 'source']] as const) {
+    await writeFile(path, `#!/usr/bin/env node
+import { appendFileSync } from 'node:fs'
+appendFileSync(${JSON.stringify(sourceCallLog)}, ${JSON.stringify(`${label}\n`)})
+process.stderr.write(${JSON.stringify(`${label} discovery CLI must not be invoked\n`)})
+process.exit(91)
 `, 'utf8')
-  await writeFile(sourceCliPath, `#!/usr/bin/env node
-process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
-`, 'utf8')
+  }
   await chmod(catalogCliPath, 0o755)
   await chmod(sourceCliPath, 0o755)
 
@@ -226,7 +224,7 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     PATH: `${fake.binDirectory}${delimiter}${process.env.PATH ?? ''}`,
     FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
   }
-  return { root, installation, inputPath, tarballPath, env }
+  return { root, installation, inputPath, tarballPath, sourceCallLog, env }
 }
 
 async function runInstall(
@@ -346,6 +344,7 @@ describe('harness-comfyui install CLI', () => {
 
     expect(result.status).toBe(0)
     expect(JSON.parse(result.stdout)).toMatchObject({ stage: 'install', status: 'passed' })
+    await expect(readFile(fixture.sourceCallLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     const releaseRoot = join(fixture.installation.root, 'releases/0.1.0-test.1')
     for (const relativePath of [
       'package/package.json',

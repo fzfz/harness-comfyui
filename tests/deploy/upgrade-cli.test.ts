@@ -203,11 +203,6 @@ fs.appendFileSync(${JSON.stringify(stageReadyFile)}, process.cwd() + '\\n')
   return { binDirectory, home }
 }
 
-const discovery = {
-  contract_id: 'imagegen-source-contract',
-  contract_version: 1,
-  openapi: { openapi: '3.1.0', info: { title: 'upgrade fixture', version: '1' }, paths: {} },
-}
 const packageFiles = [
   'lib/config-profile-validator.js',
   'lib/agent.js',
@@ -265,11 +260,17 @@ async function createFixture(options: { failCandidateStart?: boolean; failCandid
   const metricsPath = join(root, 'host-metrics.json')
   const envLogPath = join(root, 'host-env.jsonl')
   const stageReadyFile = join(root, 'stage-ready')
+  const sourceCallLog = join(root, 'source-cli-calls.log')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
   await writeFile(metricsPath, JSON.stringify({ active: 0, maxActive: 0, healthProbes: 0, events: [] }) + '\n', 'utf8')
-  for (const path of [catalogCliPath, sourceCliPath]) {
-    await writeFile(path, `#!/usr/bin/env node\nif (process.argv[2] !== '--discovery-json') process.exit(2)\nprocess.stdout.write(${JSON.stringify(JSON.stringify(discovery))})\n`, 'utf8')
+  for (const [path, label] of [[catalogCliPath, 'catalog'], [sourceCliPath, 'source']] as const) {
+    await writeFile(path, `#!/usr/bin/env node
+import { appendFileSync } from 'node:fs'
+appendFileSync(${JSON.stringify(sourceCallLog)}, ${JSON.stringify(`${label}\n`)})
+process.stderr.write(${JSON.stringify(`${label} discovery CLI must not be invoked\n`)})
+process.exit(91)
+`, 'utf8')
     await chmod(path, 0o755)
   }
   const port = await findFreePort()
@@ -308,7 +309,7 @@ async function createFixture(options: { failCandidateStart?: boolean; failCandid
   }
   const firstArtifact = await createArtifact(root, '0.1.0-test.1')
   const candidateArtifact = await createArtifact(root, '0.1.0-test.2')
-  return { root, installation, inputPath, firstArtifact, candidateArtifact, readyPath, envLogPath, metricsPath, stageReadyFile, env }
+  return { root, installation, inputPath, firstArtifact, candidateArtifact, readyPath, envLogPath, metricsPath, stageReadyFile, sourceCallLog, env }
 }
 
 async function waitForPassedHealth(
@@ -402,6 +403,7 @@ describe('installed upgrade CLI', () => {
     const fixture = await createFixture()
     const install = await installFixture(fixture)
     expect(install.status, install.stderr || install.stdout).toBe(0)
+    await expect(readFile(fixture.sourceCallLog, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
     const oldReleaseRoot = join(fixture.installation.root, 'releases/0.1.0-test.1')
     const oldPresetContents = await Promise.all([
