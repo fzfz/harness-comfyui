@@ -5,6 +5,7 @@ import {
   clearStaleProcessState,
   processStatePath,
   probePort,
+  probePortOwnedByProcess,
   readActiveRelease,
   readProcessState,
   statusView,
@@ -28,6 +29,10 @@ export async function runProductStatus(input) {
     return statusView(installation, active.activeVersion, null, portOccupied ? 'unhealthy' : 'stopped')
   }
   const portReady = await probePort(installation.host, installation.port)
-  if (portReady) await validateRunningAgentPresetRoster(installation, agentReadiness.productAgent)
-  return statusView(installation, active.activeVersion, state, portReady ? 'running' : 'starting')
+  if (!portReady) return statusView(installation, active.activeVersion, state, 'starting')
+  if (!(await probePortOwnedByProcess(installation.host, installation.port, state.pid))) {
+    return statusView(installation, active.activeVersion, state, 'unhealthy')
+  }
+  await validateRunningAgentPresetRoster(installation, agentReadiness.productAgent)
+  return statusView(installation, active.activeVersion, state, 'running')
 }

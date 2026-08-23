@@ -1,4 +1,5 @@
 import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createServer as createHttpServer } from 'node:http'
 import { createConnection, createServer, type AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
@@ -127,7 +128,7 @@ async function createFakePnpm(root: string): Promise<{ binDirectory: string; hom
   await mkdir(binDirectory, { recursive: true })
   await mkdir(home, { recursive: true })
   await writeFile(dshSource, `#!/usr/bin/env node
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 
@@ -210,6 +211,15 @@ server.listen(Number(process.env.HARNESS_COMFYUI_SERVER_PORT), process.env.HARNE
   process.stdout.write('fixture-host-ready\\n')
 })
 let closing = false
+let closedByFixture = false
+const closeFile = process.env.HOST_CLOSE_FILE
+if (closeFile) {
+  setInterval(() => {
+    if (closedByFixture || !existsSync(closeFile)) return
+    closedByFixture = true
+    server.close()
+  }, 20)
+}
 const shutdown = () => {
   if (closing) return
   closing = true
@@ -246,6 +256,7 @@ async function createFixture({ rosterMode = 'valid' } = {}) {
   const tarballPath = join(root, 'harness-comfyui-0.1.0-test.1.tgz')
   const inputPath = join(root, 'installation.json')
   const hostReadyFile = join(root, 'host-ready')
+  const hostCloseFile = join(root, 'host-close')
   const hostEnvLog = join(root, 'host-env.jsonl')
   const hostRequestLog = join(root, 'host-requests.jsonl')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
@@ -345,6 +356,7 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     PATH: `${fake.binDirectory}${delimiter}${process.env.PATH ?? ''}`,
     FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
     HOST_READY_FILE: hostReadyFile,
+    HOST_CLOSE_FILE: hostCloseFile,
     HOST_ENV_LOG: hostEnvLog,
     HOST_REQUEST_LOG: hostRequestLog,
     LIFECYCLE_AGENT_PRESET_MODE: rosterMode,
@@ -353,7 +365,7 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     DSH_HOME: '/ambient/dsh-home',
     DSH_TOOLS_MODE: 'ambient',
   }
-  return { root, installation, inputPath, tarballPath, hostReadyFile, hostEnvLog, hostRequestLog, env }
+  return { root, installation, inputPath, tarballPath, hostReadyFile, hostCloseFile, hostEnvLog, hostRequestLog, env }
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
@@ -474,6 +486,54 @@ describe('installed lifecycle CLI', () => {
     await expect(lstat(join(fixture.installation.root, 'shared/logs/host.stderr.log'))).resolves.toBeDefined()
     await waitForPortClosed(fixture.installation.host, fixture.installation.port)
     await expect(lstat(join(fixture.installation.root, 'state/process.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+  }, 30_000)
+
+  it('does not report running or call agentPreset.list when a foreign listener occupies the configured port', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const statePath = join(fixture.installation.root, 'state/process.json')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+    await waitForFile(statePath)
+    await writeFile(fixture.hostCloseFile, 'close\n', 'utf8')
+    await waitForPortClosed(fixture.installation.host, fixture.installation.port)
+
+    let agentPresetRequests = 0
+    const foreign = createHttpServer((request, response) => {
+      if (request.method === 'POST' && request.url === '/api/agentPreset.list') agentPresetRequests += 1
+      let body = ''
+      request.on('data', chunk => { body += String(chunk) })
+      request.on('end', () => {
+        let rpcId = 'foreign-listener'
+        try { rpcId = JSON.parse(body).rpcId } catch {}
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({
+          type: 'server-response',
+          rpcId,
+          result: { ok: true, value: {
+            presets: [{ id: 'harness-comfyui', trust: 'user', isDefault: true }],
+          } },
+        }))
+      })
+    })
+    await new Promise<void>((resolveListen, reject) => {
+      foreign.once('error', reject)
+      foreign.listen(fixture.installation.port, fixture.installation.host, () => resolveListen())
+    })
+
+    const status = await runProcess(stableBin, ['status', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(status.status, status.stderr).toBe(0)
+    expect(JSON.parse(status.stdout)).toMatchObject({ status: 'unhealthy' })
+    expect(JSON.parse(status.stdout).status).not.toBe('running')
+    expect(agentPresetRequests).toBe(0)
+
+    await new Promise<void>((resolveClose, reject) => foreign.close(error => error ? reject(error) : resolveClose()))
+    const stop = await runProcess(stableBin, ['stop', '--installation', fixture.inputPath], fixture.env)
+    expect(stop.status, stop.stderr).toBe(0)
+    expect((await start.output).status).toBe(0)
   }, 30_000)
 
   it.each([

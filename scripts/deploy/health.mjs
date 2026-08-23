@@ -11,6 +11,7 @@ import { validateInstallation } from './contracts.mjs';
 import {
   assertProcessStateOwnership,
   probePort,
+  probePortOwnedByProcess,
   readActiveRelease,
   readProcessIdentity,
   readProcessState,
@@ -257,6 +258,9 @@ export async function runProductHealth(input) {
       const identity = await readProcessIdentity(state.pid);
       if (identity === null || !sameProcessIdentity(state.processIdentity, identity)) throw new Error('process identity mismatch');
       if (!(await probePort(installation.host, installation.port))) throw new Error('Host port is not running');
+      if (!(await probePortOwnedByProcess(installation.host, installation.port, state.pid))) {
+        throw new Error(`Host port is not owned by managed Host PID ${state.pid}`);
+      }
       evidence.process = { status: 'passed' };
     } catch (error) {
       evidence.process = failedCheck(error instanceof Error ? error.message : String(error));

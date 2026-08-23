@@ -457,6 +457,38 @@ function probePort(host, port) {
   })
 }
 
+async function readListeningPortProcessIds(host, port) {
+  if (process.platform === 'win32') {
+    throw new Error('port ownership is unsupported on Windows')
+  }
+  const address = host.includes(':') ? `[${host}]` : host
+  let result
+  try {
+    result = await runExternal('lsof', [
+      '-nP',
+      '-a',
+      `-iTCP@${address}:${port}`,
+      '-sTCP:LISTEN',
+      '-Fp',
+    ])
+  } catch (error) {
+    throw new Error(`cannot inspect port ownership: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (result.code !== 0 && !(result.code === 1 && result.stderr.trim().length === 0)) {
+    throw new Error(`cannot inspect port ownership: lsof exited with code ${result.code}`)
+  }
+  return result.stdout
+    .split('\n')
+    .filter(line => line.startsWith('p'))
+    .map(line => Number(line.slice(1)))
+    .filter(pid => Number.isSafeInteger(pid) && pid > 0)
+}
+
+async function probePortOwnedByProcess(host, port, pid) {
+  const processIds = await readListeningPortProcessIds(host, port)
+  return processIds.includes(pid)
+}
+
 function waitForDelay(milliseconds) {
   return new Promise(resolveResult => setTimeout(resolveResult, milliseconds))
 }
@@ -464,11 +496,12 @@ function waitForDelay(milliseconds) {
 /**
  * Wait for a foreground Host to become fully product-ready.
  *
- * A listening port only proves that the Host process has bound its socket. The
- * product health contract also covers the Web boot graph, bundles, plugin
- * projection, discovery contracts, and shared directories. Upgrade and
- * rollback must use the same readiness gate so a transient Web bootstrap
- * cannot trigger recovery before the existing shutdown timeout expires.
+ * A listening port only proves that a process has bound the socket. The
+ * product health contract also covers listener ownership, the Web boot graph,
+ * bundles, plugin projection, discovery contracts, and shared directories.
+ * Upgrade and rollback must use the same readiness gate so a transient Web
+ * bootstrap cannot trigger recovery before the existing shutdown timeout
+ * expires.
  */
 export async function waitForProductHealth(
   startPromise,
@@ -503,7 +536,8 @@ export async function waitForProductHealth(
     if (state?.activeVersion !== expectedVersion
       || state.host !== installation.host
       || state.port !== installation.port
-      || !(await probePort(installation.host, installation.port))) {
+      || !(await probePort(installation.host, installation.port))
+      || !(await probePortOwnedByProcess(installation.host, installation.port, state.pid))) {
       continue
     }
 
@@ -757,6 +791,7 @@ export {
   processStatePath,
   processIdentityMismatch,
   probePort,
+  probePortOwnedByProcess,
   operationsPath,
   readActiveRelease,
   readAgentPresetRoster,

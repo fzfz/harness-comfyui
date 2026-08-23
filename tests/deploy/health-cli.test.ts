@@ -1,4 +1,5 @@
 import { chmod, copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createServer as createHttpServer } from 'node:http'
 import { createServer, type AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
@@ -541,6 +542,51 @@ describe('installed health CLI', () => {
     expect(requests.filter(request => request.url === '/api/agentPreset.list')).toHaveLength(0)
 
     await new Promise<void>((resolveClose, reject) => unrelated.close(error => error ? reject(error) : resolveClose()))
+    await terminateFixtureHost(fixture, start)
+  }, 30_000)
+
+  it('fails the process check and does not call agentPreset.list when a foreign listener replaces the managed Host', async () => {
+    const fixture = await createFixture()
+    const install = await installFixture(fixture)
+    expect(install.status, install.stderr).toBe(0)
+
+    const stableBin = join(fixture.installation.root, 'bin/harness-comfyui')
+    const start = spawnProcess(stableBin, ['start', '--installation', fixture.inputPath], fixture.env)
+    await waitForFile(fixture.hostReadyFile)
+    await writeFile(fixture.hostCloseFile, 'close\n', 'utf8')
+    await waitForPortClosed(fixture.installation.host, fixture.installation.port)
+
+    let agentPresetRequests = 0
+    const foreign = createHttpServer((request, response) => {
+      if (request.method === 'POST' && request.url === '/api/agentPreset.list') agentPresetRequests += 1
+      let body = ''
+      request.on('data', chunk => { body += String(chunk) })
+      request.on('end', () => {
+        let rpcId = 'foreign-listener'
+        try { rpcId = JSON.parse(body).rpcId } catch {}
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({
+          type: 'server-response',
+          rpcId,
+          result: { ok: true, value: {
+            presets: [{ id: 'harness-comfyui', trust: 'user', isDefault: true }],
+          } },
+        }))
+      })
+    })
+    await new Promise<void>((resolveListen, reject) => {
+      foreign.once('error', reject)
+      foreign.listen(fixture.installation.port, fixture.installation.host, () => resolveListen())
+    })
+
+    const health = await runProcess(stableBin, ['health', '--json', '--installation', fixture.inputPath], fixture.env)
+    expect(health.status).not.toBe(0)
+    const evidence = JSON.parse(health.stdout)
+    expect(evidence.process.status).toBe('failed')
+    expect(evidence.agentPresetRoster).toEqual({ status: 'failed', error: 'process readiness required' })
+    expect(agentPresetRequests).toBe(0)
+
+    await new Promise<void>((resolveClose, reject) => foreign.close(error => error ? reject(error) : resolveClose()))
     await terminateFixtureHost(fixture, start)
   }, 30_000)
 
