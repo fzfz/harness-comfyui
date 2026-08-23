@@ -53,7 +53,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function createContext(options: { mountError?: Error } = {}) {
+function createContext(options: { mountError?: Error; registerErrorName?: string } = {}) {
   const events: string[] = []
   const themeSnapshot = { active: { colorScheme: 'light' as const, tokens: {} } }
   const unmount = vi.fn(async () => undefined)
@@ -65,10 +65,13 @@ function createContext(options: { mountError?: Error } = {}) {
       await unmount()
     }
   })
-  const register = vi.fn((options: { name?: string }) => {
-    events.push(`${options.name ?? 'unknown'}:register`)
+  const register = vi.fn((registration: { name?: string }) => {
+    events.push(`${registration.name ?? 'unknown'}:register`)
+    if (registration.name === options.registerErrorName) {
+      throw new Error(`${registration.name} registration rejected`)
+    }
     return () => {
-      events.push(`${options.name ?? 'unknown'}:dispose`)
+      events.push(`${registration.name ?? 'unknown'}:dispose`)
     }
   })
   const inject = vi.fn((name: string, callback: () => () => void) => {
@@ -165,6 +168,7 @@ describe('Client plugin Host projection', () => {
     expect(fixture.events).toEqual([
       'remote:mount',
       'root:register',
+      'details:register',
       'sidebar:register',
       'conversation.session.header:inject',
       'conversation.session.header:register',
@@ -176,7 +180,7 @@ describe('Client plugin Host projection', () => {
       'theme:get',
       'theme:subscribe',
     ])
-    expect(fixture.register).toHaveBeenCalledTimes(5)
+    expect(fixture.register).toHaveBeenCalledTimes(6)
     expect(fixture.register).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'root',
@@ -190,23 +194,28 @@ describe('Client plugin Host projection', () => {
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
-      3,
+      4,
       { name: 'conversation.session.header', priority: -10 },
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
-      4,
+      5,
       { name: 'conversation.view', id: 'chat', order: 0, priority: -10 },
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
-      5,
+      6,
       { name: 'conversation.composer.bar', priority: -10 },
       expect.any(Function),
     )
     expect(fixture.register).toHaveBeenNthCalledWith(
-      2,
+      3,
       { name: 'sidebar', priority: -10 },
+      expect.any(Function),
+    )
+    expect(fixture.register).toHaveBeenNthCalledWith(
+      2,
+      { name: 'details', priority: -10 },
       expect.any(Function),
     )
 
@@ -216,6 +225,7 @@ describe('Client plugin Host projection', () => {
     expect(fixture.events).toEqual([
       'remote:mount',
       'root:register',
+      'details:register',
       'sidebar:register',
       'conversation.session.header:inject',
       'conversation.session.header:register',
@@ -232,6 +242,7 @@ describe('Client plugin Host projection', () => {
       'conversation.view:dispose',
       'conversation.session.header:dispose',
       'sidebar:dispose',
+      'details:dispose',
       'root:dispose',
       'remote:unmount',
     ])
@@ -245,5 +256,22 @@ describe('Client plugin Host projection', () => {
     )
     expect(fixture.register).not.toHaveBeenCalled()
     expect(fixture.unmount).not.toHaveBeenCalled()
+  })
+
+  it('reverses root and Remote cleanup when the project details occupant cannot register', async () => {
+    const fixture = createContext({ registerErrorName: 'details' })
+
+    await expect(apply(fixture.context as never)).rejects.toThrow(
+      'details registration rejected',
+    )
+    expect(fixture.events).toEqual([
+      'remote:mount',
+      'root:register',
+      'details:register',
+      'root:dispose',
+      'remote:unmount',
+    ])
+    expect(fixture.mount).toHaveBeenCalledOnce()
+    expect(fixture.unmount).toHaveBeenCalledOnce()
   })
 })

@@ -443,7 +443,8 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entriesOfSlot('conversation.input.overlay' as never)[0]?.options).toMatchObject({
       id: 'native-slash-menu',
     })
-    expect(ctx.slots.entries('details')).toHaveLength(0)
+    expect(ctx.slots.entries('details')).toHaveLength(1)
+    expect(ctx.slots.entries('details')[0]?.options.priority).toBe(-10)
     expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
 
     const rootSnapshot = ctx.slots.snapshot('root')
@@ -505,6 +506,23 @@ describe('built Client bundle boundary', () => {
     expect(initialMarkup.indexOf('data-layout-column="details"')).toBeLessThan(
       initialMarkup.indexOf('data-shell-overlay'),
     )
+
+    const detailsEntry = ctx.slots.entries('details')[0]
+    const detailsComponent = detailsEntry?.component as ((props: {
+      sessionId: SessionSummary['id']
+    }) => ReactNode) | undefined
+    expect(detailsComponent).toBeTypeOf('function')
+    if (!detailsComponent) throw new Error('project results panel was not registered')
+    const detailsMarkup = renderToStaticMarkup(createElement(detailsComponent, {
+      sessionId: 'portrait' as SessionSummary['id'],
+    }))
+    expect(detailsMarkup).toContain('OUTPUT')
+    expect(detailsMarkup).toContain('生成结果')
+    expect(detailsMarkup).toContain('当前轮次结果')
+    expect(detailsMarkup).toContain('本会话结果')
+    expect(detailsMarkup).toContain('此轮对话没有创建 ComfyUI 运行')
+    expect(detailsMarkup).toContain('当前会话还没有生成运行')
+    expect(detailsMarkup).toContain('id="panel-session" class="result-tab-panel" role="tabpanel" aria-labelledby="tab-session" hidden')
 
     const headerEntry = ctx.slots.entriesOfSlot('conversation.session.header' as never)[0]
     const headerComponent = headerEntry?.component as ((props: {
@@ -660,6 +678,7 @@ describe('built Client bundle boundary', () => {
     expect(ctx.slots.entries('conversation.session.header' as never)).toHaveLength(0)
     expect(ctx.slots.entries('conversation.view' as never)).toHaveLength(0)
     expect(ctx.slots.entries('conversation.composer.bar' as never)).toHaveLength(0)
+    expect(ctx.slots.entries('details')).toHaveLength(0)
     expect(ctx.slots.snapshot('root')[0]?.children).toEqual([])
     expect(ctx.reflect.get('layout')).toBeUndefined()
     expect(document.documentElement.style.getPropertyValue('color-scheme')).toBe('')

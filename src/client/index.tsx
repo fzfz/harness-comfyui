@@ -12,6 +12,7 @@ import { createSessionSidebar } from './workbench/session-sidebar.tsx'
 import { createSessionHeader } from './workbench/session-header.tsx'
 import { createConversationView } from './workbench/conversation-view.tsx'
 import { createComposerBar } from './workbench/composer-bar.tsx'
+import { createResultsPanel } from './workbench/results-panel.tsx'
 import { installThemeProjection } from './workbench/theme-projection.ts'
 
 export const name = 'harness-comfyui'
@@ -41,6 +42,18 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     throw error
   }
 
+  let disposeDetails: () => void
+  try {
+    disposeDetails = ctx.slots.register(
+      { name: 'details', priority: -10 },
+      createResultsPanel() as never,
+    )
+  } catch (error) {
+    disposeRoot()
+    await remoteUnmount()
+    throw error
+  }
+
   let disposeSidebar: () => void
   try {
     disposeSidebar = ctx.slots.register(
@@ -48,6 +61,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       createSessionSidebar(ctx.sessions as unknown as Pick<ISessions, 'open'>),
     )
   } catch (error) {
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -64,6 +78,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     )
   } catch (error) {
     disposeSidebar()
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -82,6 +97,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   } catch (error) {
     disposeSessionHeader()
     disposeSidebar()
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -103,6 +119,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -115,6 +132,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -129,6 +147,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -141,6 +160,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
+    disposeDetails()
     disposeRoot()
     await remoteUnmount()
   }
