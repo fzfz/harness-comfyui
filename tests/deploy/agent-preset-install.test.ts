@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 // @ts-expect-error The product installer exposes this checked-in deployment seam.
 import { materializeProductAgentFiles } from '../../scripts/deploy/install.mjs'
 // @ts-expect-error The lifecycle starts through this checked-in public readiness seam.
-import { validateProductAgentRelease } from '../../scripts/deploy/preflight.mjs'
+import { parseProductAgentConfig, validateProductAgentRelease } from '../../scripts/deploy/preflight.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const temporaryRoots: string[] = []
@@ -96,6 +96,45 @@ describe('release-local Agent artifact materialization seam', () => {
     for (const relativePath of ['dsh-home/skills', '.dsh/skills', '.agents/skills']) {
       await expect(lstat(join(fixture.releaseRoot, relativePath))).rejects.toMatchObject({ code: 'ENOENT' })
     }
+  })
+
+  it('materializes the fixed opencode-go Agent model overlay into the release DSH home', async () => {
+    const fixture = await createFixture()
+    expect(fixture.productAgent.agentModel).toEqual({
+      provider: 'opencode-go',
+      model: 'deepseek-v4-flash',
+      reasoningEffort: 'max',
+      apiKeyEnv: 'OPENCODE_GO_API_KEY',
+    })
+
+    await materializeProductAgentFiles(fixture.packageRoot, fixture.releaseRoot, fixture.productAgent)
+
+    await expect(readFile(join(fixture.releaseRoot, 'dsh-home/settings.yaml'), 'utf8')).resolves.toBe(
+      'agent-default-model:\n'
+      + '  provider: opencode-go\n'
+      + '  model: deepseek-v4-flash\n'
+      + '  reasoningEffort: max\n'
+      + 'llm-pi-ai:\n'
+      + '  providers:\n'
+      + '    opencode-go:\n'
+      + '      apiKeyEnv: OPENCODE_GO_API_KEY\n',
+    )
+  })
+
+  it.each([
+    ['provider', { provider: 'deepseek-official', model: 'deepseek-v4-flash', reasoningEffort: 'max', apiKeyEnv: 'DEEPSEEK_API_KEY' }],
+    ['credential', { provider: 'opencode-go', model: 'deepseek-v4-flash', reasoningEffort: 'max', apiKeyEnv: 'DEEPSEEK_API_KEY' }],
+  ])('rejects a non-opencode-go Agent model %s', (_label, agentModel) => {
+    const value = JSON.parse(JSON.stringify({
+      agentPresetId: 'harness-comfyui',
+      agentPresetArtifactRelativeRoot: 'agent-presets',
+      agentPresetInstallRelativeRoot: 'dsh-home/.agent-presets',
+      skillRelativeRoot: 'skills',
+      agentPluginExport: './agent',
+      sessionListConvergenceTimeoutMs: 10000,
+      agentModel,
+    }))
+    expect(() => parseProductAgentConfig(value)).toThrow(/must select exactly opencode-go/u)
   })
 
   it.each([

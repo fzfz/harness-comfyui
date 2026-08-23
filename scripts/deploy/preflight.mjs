@@ -61,6 +61,39 @@ function requireRelativePath(value, name) {
   return path;
 }
 
+const FIXED_AGENT_MODEL = Object.freeze({
+  provider: 'opencode-go',
+  model: 'deepseek-v4-flash',
+  reasoningEffort: 'max',
+  apiKeyEnv: 'OPENCODE_GO_API_KEY',
+});
+
+export function parseAgentModelConfig(value, source = 'config/product-agent.json.agentModel') {
+  const config = requireRecord(value, source);
+  const parsed = {
+    provider: requireString(config.provider, `${source}.provider`),
+    model: requireString(config.model, `${source}.model`),
+    reasoningEffort: requireString(config.reasoningEffort, `${source}.reasoningEffort`),
+    apiKeyEnv: requireString(config.apiKeyEnv, `${source}.apiKeyEnv`),
+  };
+  if (JSON.stringify(parsed) !== JSON.stringify(FIXED_AGENT_MODEL)) {
+    throw new Error(`${source} must select exactly opencode-go/deepseek-v4-flash with reasoningEffort max and apiKeyEnv OPENCODE_GO_API_KEY`);
+  }
+  return parsed;
+}
+
+export function renderAgentSettings(productAgent) {
+  const agentModel = parseAgentModelConfig(productAgent.agentModel);
+  return `agent-default-model:\n`
+    + `  provider: ${agentModel.provider}\n`
+    + `  model: ${agentModel.model}\n`
+    + `  reasoningEffort: ${agentModel.reasoningEffort}\n`
+    + `llm-pi-ai:\n`
+    + `  providers:\n`
+    + `    ${agentModel.provider}:\n`
+    + `      apiKeyEnv: ${agentModel.apiKeyEnv}\n`;
+}
+
 export function parseProductAgentConfig(value, source = 'config/product-agent.json') {
   const config = requireRecord(value, source);
   const agentPresetId = requireString(config.agentPresetId, `${source}.agentPresetId`);
@@ -80,6 +113,7 @@ export function parseProductAgentConfig(value, source = 'config/product-agent.js
     skillRelativeRoot: requireRelativePath(config.skillRelativeRoot, `${source}.skillRelativeRoot`),
     agentPluginExport: requireString(config.agentPluginExport, `${source}.agentPluginExport`),
     sessionListConvergenceTimeoutMs: config.sessionListConvergenceTimeoutMs,
+    agentModel: parseAgentModelConfig(config.agentModel, `${source}.agentModel`),
   };
   if (!parsed.agentPluginExport.startsWith('./') || parsed.agentPluginExport.includes('\\')) {
     throw new Error(`${source}.agentPluginExport must be a package-relative export`);
@@ -427,6 +461,11 @@ export async function validateProductAgentRelease(releaseRoot) {
     await assertRegularFilePath(normalizedReleaseRoot, `${presetInstallRoot}/${file}`, `Preset release ${file}`);
   }
   await assertRegularDirectoryPath(packageRoot, productAgent.skillRelativeRoot, 'Skill root');
+  const settingsPath = await assertRegularFilePath(normalizedReleaseRoot, 'dsh-home/settings.yaml', 'Agent settings')
+  const settingsText = await readFile(settingsPath, 'utf8')
+  if (settingsText !== renderAgentSettings(productAgent)) {
+    throw new Error('Agent settings must equal the fixed opencode-go model overlay')
+  }
   return { productAgent, requiredEntries };
 }
 

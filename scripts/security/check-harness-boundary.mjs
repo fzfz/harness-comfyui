@@ -285,12 +285,22 @@ function readProductAgentBoundary(path) {
   if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
     throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
   }
+  const expectedAgentModel = {
+    provider: 'opencode-go',
+    model: 'deepseek-v4-flash',
+    reasoningEffort: 'max',
+    apiKeyEnv: 'OPENCODE_GO_API_KEY',
+  }
+  if (!sameStructuredValue(config.agentModel, expectedAgentModel)) {
+    throw new Error(`${path}.agentModel must select exactly opencode-go/deepseek-v4-flash with reasoningEffort max and apiKeyEnv OPENCODE_GO_API_KEY`)
+  }
   return {
     agentPresetId,
     agentPresetArtifactRelativeRoot,
     agentPresetInstallRelativeRoot,
     skillRelativeRoot,
     agentPluginExport,
+    agentModel: expectedAgentModel,
   }
 }
 

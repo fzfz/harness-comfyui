@@ -430,6 +430,8 @@ describe('check:harness-boundary', () => {
     ['Agent preset install root', (config: Record<string, any>) => { config.agentPresetInstallRelativeRoot = '../outside' }, 'agentPresetInstallRelativeRoot must be a normalized package-relative path'],
     ['Skill root', (config: Record<string, any>) => { config.skillRelativeRoot = 'skill-bundle' }, 'package.json.files must contain skill-bundle/**'],
     ['Agent plugin export', (config: Record<string, any>) => { config.agentPluginExport = './other-agent' }, 'package.json.exports[./other-agent]'],
+    ['Agent model provider', (config: Record<string, any>) => { config.agentModel.provider = 'deepseek-official' }, 'agentModel must select exactly opencode-go'],
+    ['Agent model credential', (config: Record<string, any>) => { config.agentModel.apiKeyEnv = 'DEEPSEEK_API_KEY' }, 'agentModel must select exactly opencode-go'],
   ])('rejects %s drift from config/product-agent.json', (_label, update, evidence) => {
     const root = createFixture()
     try {

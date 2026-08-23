@@ -355,6 +355,7 @@ describe('harness-comfyui install CLI', () => {
       'harness-runtime/node_modules/.bin/dsh',
       'dsh-home/.agent-presets/harness-comfyui/preset.yml',
       'dsh-home/.agent-presets/harness-comfyui/agent.cordis.yml',
+      'dsh-home/settings.yaml',
       'package/skills',
       'dsh-home/profiles/comfyui-workbench/package.json',
       'dsh-home/profiles/comfyui-workbench/cordis.patch.yml',
@@ -362,6 +363,16 @@ describe('harness-comfyui install CLI', () => {
     ]) {
       await expect(lstat(join(releaseRoot, relativePath))).resolves.toBeDefined()
     }
+    await expect(readFile(join(releaseRoot, 'dsh-home/settings.yaml'), 'utf8')).resolves.toBe(
+      'agent-default-model:\n'
+      + '  provider: opencode-go\n'
+      + '  model: deepseek-v4-flash\n'
+      + '  reasoningEffort: max\n'
+      + 'llm-pi-ai:\n'
+      + '  providers:\n'
+      + '    opencode-go:\n'
+      + '      apiKeyEnv: OPENCODE_GO_API_KEY\n',
+    )
     for (const relativePath of ['dsh-home/skills', '.dsh/skills', '.agents/skills']) {
       await expect(lstat(join(releaseRoot, relativePath))).rejects.toMatchObject({ code: 'ENOENT' })
     }

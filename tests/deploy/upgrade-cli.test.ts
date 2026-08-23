@@ -447,6 +447,16 @@ describe('installed upgrade CLI', () => {
     const candidateState = await waitForState(join(fixture.installation.root, 'state/active-release.json'), '0.1.0-test.2')
     expect(candidateState.previousRelease).toEqual({ activeVersion: '0.1.0-test.1', releasePath: join(fixture.installation.root, 'releases/0.1.0-test.1') })
     expect(candidateState.releasePath).toBe(join(fixture.installation.root, 'releases/0.1.0-test.2'))
+    await expect(readFile(join(candidateState.releasePath, 'dsh-home/settings.yaml'), 'utf8')).resolves.toBe(
+      'agent-default-model:\n'
+      + '  provider: opencode-go\n'
+      + '  model: deepseek-v4-flash\n'
+      + '  reasoningEffort: max\n'
+      + 'llm-pi-ai:\n'
+      + '  providers:\n'
+      + '    opencode-go:\n'
+      + '      apiKeyEnv: OPENCODE_GO_API_KEY\n',
+    )
     for (const relativePath of [
       'dsh-home/.agent-presets/harness-comfyui/preset.yml',
       'dsh-home/.agent-presets/harness-comfyui/agent.cordis.yml',
