@@ -73,7 +73,7 @@ export function startWorkbenchSessionBinding(dependencies: {
   let generation = 0
   let activeHost: HostDescription | undefined
   let hasConnected = false
-  let openIssued = false
+  let pendingOpenSessionId: SessionSummary['id'] | undefined
   let createdSessionId: SessionSummary['id'] | undefined
   let createPromise: Promise<void> | undefined
   let createController: AbortController | undefined
@@ -123,7 +123,7 @@ export function startWorkbenchSessionBinding(dependencies: {
     createPromise = undefined
     clearConvergenceTimer()
     cancelSessionsSubscription()
-    openIssued = false
+    pendingOpenSessionId = undefined
     createdSessionId = undefined
   }
 
@@ -134,28 +134,14 @@ export function startWorkbenchSessionBinding(dependencies: {
   }
 
   const openSession = (sessionId: SessionSummary['id']) => {
-    if (disposed || openIssued) return
-    openIssued = true
+    if (disposed || pendingOpenSessionId !== undefined) return
+    pendingOpenSessionId = sessionId
     try {
       dependencies.sessions.open(sessionId)
-      createdSessionId = undefined
-      clearConvergenceTimer()
-      publish('ready', undefined, undefined)
     } catch {
+      pendingOpenSessionId = undefined
       fail('WORKBENCH_SESSION_OPEN_FAILED', sessionId)
     }
-  }
-
-  const convergeCreatedSession = (list: SessionListState) => {
-    if (createdSessionId === undefined) return false
-    const created = list.byId[createdSessionId]
-    if (created === undefined) return true
-    if (created.agentPreset !== WORKBENCH_AGENT_PRESET) {
-      fail('WORKBENCH_SESSION_LIST_MISMATCH', createdSessionId)
-      return true
-    }
-    openSession(createdSessionId)
-    return true
   }
 
   const isActiveCreate = (expectedGeneration: number, controller: AbortController) => (
@@ -254,15 +240,39 @@ export function startWorkbenchSessionBinding(dependencies: {
 
     const list = dependencies.sessions.list.getSnapshot()
     if (list.phase !== 'ready') return
-    if (convergeCreatedSession(list)) return
 
     const current = list.current === undefined ? undefined : list.byId[list.current]
+
+    if (createdSessionId !== undefined) {
+      const created = list.byId[createdSessionId]
+      if (created === undefined) return
+      if (created.agentPreset !== WORKBENCH_AGENT_PRESET) {
+        fail('WORKBENCH_SESSION_LIST_MISMATCH', createdSessionId)
+        return
+      }
+    }
+
     if (current !== undefined && isWorkbenchSession(current)) {
+      pendingOpenSessionId = undefined
+      createdSessionId = undefined
+      clearConvergenceTimer()
       publish('ready', undefined, undefined)
       return
     }
 
-    if (openIssued) return
+    if (snapshot.phase === 'ready') publish('idle', undefined, undefined)
+
+    if (pendingOpenSessionId !== undefined) {
+      const pending = list.byId[pendingOpenSessionId]
+      if (pending !== undefined && isWorkbenchSession(pending)) return
+      pendingOpenSessionId = undefined
+    }
+
+    if (createdSessionId !== undefined) {
+      openSession(createdSessionId)
+      return
+    }
+
     const target = workbenchSessions(list).sort(compareByRecency)[0]
     if (target !== undefined) {
       openSession(target.id)

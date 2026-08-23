@@ -72,11 +72,17 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
     },
     open: vi.fn(),
   }
+  const createSignals: AbortSignal[] = []
+  const create = vi.fn((_payload: unknown, signal?: AbortSignal) => {
+    if (signal !== undefined) createSignals.push(signal)
+    return new Promise<unknown>(() => undefined)
+  })
   const connection = {
     hostDescription: {
       getSnapshot: () => ({ cwd: '/workspace' }),
       subscribe: () => () => undefined,
     },
+    api: { sessions: { create } },
   }
   const unmount = vi.fn(async () => undefined)
   const mount = vi.fn(async (_contribution: unknown) => {
@@ -136,6 +142,8 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
     on,
     events,
     connection,
+    create,
+    createSignals,
     sessions,
   }
 }
@@ -335,5 +343,16 @@ describe('Client plugin Host projection', () => {
     ])
     expect(fixture.mount).toHaveBeenCalledOnce()
     expect(fixture.unmount).toHaveBeenCalledOnce()
+  })
+
+  it('disposes the Session binding and aborts create when details registration fails', async () => {
+    const fixture = createContext({ registerErrorName: 'details' })
+
+    await expect(apply(fixture.context as never)).rejects.toThrow(
+      'details registration rejected',
+    )
+    expect(fixture.create).toHaveBeenCalledOnce()
+    expect(fixture.createSignals).toHaveLength(1)
+    expect(fixture.createSignals[0]?.aborted).toBe(true)
   })
 })

@@ -3,14 +3,19 @@ import { createElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  SessionFace,
   SessionListState,
   SessionSummary,
 } from '@deepseek-ai/dsh-client-runtime/client'
 
+import { LayoutController } from '../../src/client/workbench/layout-contract.ts'
 import { renderSessionSidebar } from '../../src/client/workbench/session-sidebar.tsx'
+import { WORKBENCH_SESSION_ERROR_MESSAGES } from '../../src/client/workbench/session-binding-errors.ts'
 import {
   startWorkbenchSessionBinding,
+  type WorkbenchSessionBinding,
 } from '../../src/client/workbench/workbench-session-binding.ts'
+import { createWorkbenchRoot } from '../../src/client/workbench/root.tsx'
 
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
   renderToStaticMarkup(node: ReactNode): string
@@ -55,16 +60,19 @@ type PendingCreate = {
   reject: (reason: unknown) => void
 }
 
-function sessionListHarness(initialState: SessionListState) {
+function sessionListHarness(initialState: SessionListState, options: { createThrows?: boolean } = {}) {
   let snapshot = initialState
   let hostSnapshot: { cwd: string } | undefined = { cwd: '/workspace' }
   const hostListeners = new Set<() => void>()
   const listListeners = new Set<() => void>()
   const open = vi.fn()
   let pendingCreate: PendingCreate | undefined
-  const create = vi.fn((payload: unknown, signal?: AbortSignal) => new Promise<unknown>((resolve, reject) => {
-    pendingCreate = { payload, signal, resolve, reject }
-  }))
+  const create = vi.fn((payload: unknown, signal?: AbortSignal) => {
+    if (options.createThrows === true) throw new Error('create rejected synchronously')
+    return new Promise<unknown>((resolve, reject) => {
+      pendingCreate = { payload, signal, resolve, reject }
+    })
+  })
   const connection = {
     hostDescription: {
       getSnapshot: () => hostSnapshot,
@@ -142,7 +150,85 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+function renderBindingRoot(binding: WorkbenchSessionBinding, session: SessionFace): string {
+  const Root = createWorkbenchRoot(new LayoutController(), binding)
+  return renderToStaticMarkup(createElement(Root, {
+    renderSlot: key => {
+      if (key === 'conversation') {
+        void session.prompt([], 'queue')
+        return createElement(
+          'div',
+          { 'data-conversation-occupant': 'mounted' },
+          createElement('button', { 'data-submit-entry': 'mounted' }, '提交入口'),
+        )
+      }
+      return createElement('span', { 'data-slot': key })
+    },
+  }))
+}
+
+async function assertCreateFailureBlocksConversation(
+  settle: (harness: ReturnType<typeof sessionListHarness>) => void,
+) {
+  const harness = sessionListHarness(state(undefined, []))
+  const binding = startWorkbenchSessionBinding({
+    connection: harness.connection as never,
+    sessions: harness.sessions as never,
+  })
+  settle(harness)
+  await flushMicrotasks()
+
+  const prompt = vi.fn(async (..._args: unknown[]) => undefined)
+  const session = { prompt } as unknown as SessionFace
+  const markup = renderBindingRoot(binding, session)
+
+  expect(binding.getSnapshot()).toMatchObject({
+    phase: 'error',
+    error: { code: 'WORKBENCH_SESSION_CREATE_FAILED' },
+  })
+  expect(markup).toContain('data-slot="sidebar"')
+  expect(markup).toContain('data-slot="details"')
+  expect(markup).toContain('class="conversation-state conversation-error"')
+  expect(markup).toContain(WORKBENCH_SESSION_ERROR_MESSAGES.WORKBENCH_SESSION_CREATE_FAILED)
+  expect(markup).not.toContain('data-conversation-occupant="mounted"')
+  expect(markup).not.toContain('data-submit-entry="mounted"')
+  expect(prompt).not.toHaveBeenCalled()
+  binding.dispose()
+}
+
 describe('Workbench Session binding', () => {
+  it('leaves ready only for a confirmed project current and corrects one invalid current once', () => {
+    const entries = [
+      summary('standard', 500, { agentPreset: 'standard' }),
+      summary('project-a', 300, { agentPreset: 'harness-comfyui' }),
+      summary('project-b', 100, { agentPreset: 'harness-comfyui' }),
+    ]
+    const harness = sessionListHarness(state('standard', entries))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    expect(harness.open).toHaveBeenCalledOnce()
+    expect(harness.open).toHaveBeenCalledWith('project-a')
+    expect(binding.getSnapshot().phase).not.toBe('ready')
+
+    harness.setState(state('project-a', entries))
+    expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
+
+    harness.setState(state('standard', entries))
+    expect(binding.getSnapshot().phase).not.toBe('ready')
+    expect(harness.open).toHaveBeenCalledTimes(2)
+    expect(harness.open).toHaveBeenLastCalledWith('project-a')
+
+    harness.notify()
+    expect(harness.open).toHaveBeenCalledTimes(2)
+
+    harness.setState(state('project-a', entries))
+    expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
+    binding.dispose()
+  })
+
   it('waits for a connected Host and ready list, then opens the deterministic project Session once', () => {
     const harness = sessionListHarness(state('standard', [
       summary('standard', 500, { agentPreset: 'standard' }),
@@ -228,8 +314,76 @@ describe('Workbench Session binding', () => {
     harness.setState(state(undefined, [summary('created-session', 100, { agentPreset: 'harness-comfyui' })]))
     expect(harness.open).toHaveBeenCalledOnce()
     expect(harness.open).toHaveBeenCalledWith('created-session')
+    expect(binding.getSnapshot().phase).not.toBe('ready')
+    harness.setState(state('created-session', [summary('created-session', 100, { agentPreset: 'harness-comfyui' })]))
     expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
     binding.dispose()
+  })
+
+  it('maps a synchronous Session create throw to CREATE_FAILED', () => {
+    const harness = sessionListHarness(state(undefined, []), { createThrows: true })
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_CREATE_FAILED' },
+    })
+    binding.dispose()
+  })
+
+  it('maps a rejected Session create Promise to CREATE_FAILED', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.rejectCreate(new Error('create rejected'))
+    await flushMicrotasks()
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_CREATE_FAILED' },
+    })
+    binding.dispose()
+  })
+
+  it('maps a result.ok=false Session create envelope to CREATE_FAILED', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.resolveCreate({
+      rpcId: 'rpc-1',
+      result: { ok: false, error: { code: 'CREATE_REJECTED', message: 'rejected' } },
+    })
+    await flushMicrotasks()
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_CREATE_FAILED' },
+    })
+    binding.dispose()
+  })
+
+  it('blocks the public SessionFace prompt after a rejected create Promise', async () => {
+    await assertCreateFailureBlocksConversation(harness => {
+      harness.rejectCreate(new Error('create rejected'))
+    })
+  })
+
+  it('blocks the public SessionFace prompt after a result.ok=false create envelope', async () => {
+    await assertCreateFailureBlocksConversation(harness => {
+      harness.resolveCreate({
+        rpcId: 'rpc-1',
+        result: { ok: false, error: { code: 'CREATE_REJECTED', message: 'rejected' } },
+      })
+    })
   })
 
   it('publishes PRESET_MISMATCH when create resolves a different Agent Preset', async () => {
@@ -387,6 +541,9 @@ describe('Workbench Session binding', () => {
     expect(harness.create).toHaveBeenCalledOnce()
     expect(harness.open).toHaveBeenCalledOnce()
     expect(harness.open).toHaveBeenCalledWith('restored-session')
+    harness.setState(state('restored-session', [
+      summary('restored-session', 100, { agentPreset: 'harness-comfyui' }),
+    ]))
     expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
     binding.dispose()
   })
