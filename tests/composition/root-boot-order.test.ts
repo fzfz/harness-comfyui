@@ -1,8 +1,38 @@
+import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { createProfileFixture } from '../../src/testing/profile-fixture.ts'
 
 const fixtures: Array<Awaited<ReturnType<typeof createProfileFixture>>> = []
+
+type RpcEnvelope = {
+  result?: {
+    ok?: boolean
+    value?: unknown
+    error?: { code?: string; message?: string }
+  }
+}
+
+async function rpc(port: number, method: string, payload: Record<string, unknown>): Promise<any> {
+  const response = await fetch(`http://127.0.0.1:${port}/api/${method}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'client-request',
+      rpcId: `issue3-root-${method}-${Date.now()}-${Math.random()}`,
+      method,
+      payload,
+    }),
+  })
+  const envelope = await response.json() as RpcEnvelope
+  if (!response.ok || envelope.result?.ok !== true) {
+    const error = envelope.result?.error
+    throw new Error(`${method} failed: ${error?.code ?? response.status} ${error?.message ?? ''}`.trim())
+  }
+  return envelope.result.value
+}
 
 afterEach(async () => {
   await Promise.all(fixtures.splice(0).map(fixture => fixture.dispose()))
@@ -83,6 +113,106 @@ describe('project root boot order', () => {
       '@deepseek-ai/dsh-client-ui-skill',
     ]))
     expect(result.overlayOutsideColumns).toBe(true)
+    expect(browser.consoleErrors).toEqual([])
+    expect(browser.runtimeExceptions).toEqual([])
+  }, 240000)
+
+  it('selects a real workspace Skill through the native MenuView overlay', async () => {
+    const fixture = await createProfileFixture({ configuration: 'test' })
+    fixtures.push(fixture)
+
+    await fixture.install()
+    const skillRoot = join(fixture.installationRoot, 'releases', fixture.artifact.version, 'package', 'skills')
+    const skillDirectory = join(skillRoot, 'issue3-native-menu')
+    await mkdir(skillDirectory, { recursive: true })
+    await writeFile(join(skillDirectory, 'SKILL.md'), `---
+name: issue3-native-menu
+description: Proves the native Skill menu in an isolated composition.
+---
+Use this fixture only to verify the public native input menu.
+`, 'utf8')
+
+    await fixture.start()
+    const workspaceResult = await rpc(fixture.port, 'workspace.create', { path: fixture.runtimeCwd }) as {
+      workspace?: { workspaceId?: string; path?: string }
+      created?: boolean
+    }
+    const workspaceId = workspaceResult.workspace?.workspaceId
+    if (typeof workspaceId !== 'string') throw new Error('composition workspace.create did not return a workspaceId')
+    const sessionResult = await rpc(fixture.port, 'session.create', {
+      workspaceId,
+      agentPreset: 'harness-comfyui',
+    }) as { sessionId?: string; agentPreset?: string }
+    if (typeof sessionResult.sessionId !== 'string') throw new Error('composition session.create did not return a sessionId')
+    expect(sessionResult.agentPreset).toBe('harness-comfyui')
+    const skillResult = await rpc(fixture.port, 'skill.list', { sessionId: sessionResult.sessionId }) as {
+      skills?: Array<{ name?: string }>
+    }
+    expect(skillResult.skills?.map(skill => skill.name)).toContain('issue3-native-menu')
+
+    const browser = await fixture.runRealBrowserProbe({
+      viewport: { width: 1440, height: 1000 },
+      scenarioScript: `(async () => {
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const until = async (probe, label, timeout = 20000) => {
+          const deadline = Date.now() + timeout;
+          while (Date.now() < deadline) {
+            const value = await probe();
+            if (value) return value;
+            await wait(100);
+          }
+          throw new Error('timed out waiting for ' + label);
+        };
+        const sessionRow = await until(() => document.querySelector('[data-session-id="${sessionResult.sessionId}"]'), 'created Session row');
+        sessionRow.click();
+        const input = await until(() => {
+          const element = document.querySelector('#message-input');
+          return element instanceof HTMLTextAreaElement && !element.disabled ? element : undefined;
+        }, 'enabled project textarea');
+        const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')?.set;
+        if (typeof setter !== 'function') throw new Error('textarea value setter unavailable');
+        input.focus();
+        setter.call(input, '/');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        const menu = await until(() => {
+          const element = document.querySelector('[role="listbox"]');
+          const option = [...document.querySelectorAll('[role="option"]')].find(item => item.textContent?.includes('issue3-native-menu'));
+          if (!element || !option) return undefined;
+          const rect = element.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 ? { element, option } : undefined;
+        }, 'visible native Skill MenuView with issue3-native-menu option');
+        const listboxVisible = true;
+        const { element: listbox, option } = menu;
+        const context = window.__HARNESS_BROWSER_PROBE__?.contexts?.['harness-comfyui'];
+        const overlayEntries = context?.slots.snapshot('conversation.input.overlay')[0]?.occupants.map(entry => ({
+          id: entry.id,
+          active: entry.active,
+        })) ?? [];
+        option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+        await until(() => input.value === '/issue3-native-menu ' && document.querySelector('[role="listbox"]') === null, 'native Skill selection');
+        return {
+          listboxVisible,
+          overlayEntries,
+          optionText: option.textContent?.trim() ?? '',
+          inputValue: input.value,
+          menuClosed: document.querySelector('[role="listbox"]') === null,
+        };
+      })()`,
+    })
+
+    const result = browser.scenarioResult as {
+      listboxVisible: boolean
+      overlayEntries: Array<{ id?: string; active?: boolean }>
+      optionText: string
+      inputValue: string
+      menuClosed: boolean
+    }
+    expect(result.listboxVisible).toBe(true)
+    expect(result.overlayEntries).toContainEqual({ id: 'slash-menu', active: true })
+    expect(result.optionText).toContain('issue3-native-menu')
+    expect(result.inputValue).toBe('/issue3-native-menu ')
+    expect(result.menuClosed).toBe(true)
     expect(browser.consoleErrors).toEqual([])
     expect(browser.runtimeExceptions).toEqual([])
   }, 240000)
