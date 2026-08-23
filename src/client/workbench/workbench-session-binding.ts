@@ -12,7 +12,7 @@ import {
   type WorkbenchSessionErrorCode,
 } from './session-binding-errors.ts'
 
-export const WORKBENCH_AGENT_PRESET = 'harness-comfyui' as const
+export const WORKBENCH_AGENT_PRESET = productAgentConfig.agentPresetId
 
 const SESSION_LIST_CONVERGENCE_TIMEOUT_MS = productAgentConfig.sessionListConvergenceTimeoutMs
 
