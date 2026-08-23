@@ -1,0 +1,45 @@
+# Issue #17 progress
+
+## 2026-08-24
+
+- 读取 `implement`、`team-mode`、`planning-with-files`、`tdd` 和 `code-review` Skill。
+- 运行 session catch-up；没有发现需要恢复的未同步上下文。
+- 读取 GitHub Issue #1、#3、#16、#17 当前状态；确认 #17 的两个依赖都已关闭。
+- 读取 PRD 16、Issue tracker/triage/domain 文档、当前源代码定位信息、Git worktree/tag 概览、Release workflow 和 `v0.1.3` Release。
+- 根部 `task_plan.md`、`findings.md`、`progress.md` 属于仓库既有记录，已经恢复到本次任务开始时的 `HEAD` 内容；本任务只维护 `.planning/issue-17/`。
+- Phase 1 进行中：仍需固定精确 worktree 状态、完整发布步骤和实施切片文件所有权。
+- 完整读取 PRD 16；把公开接口、六项精确中文文案、选择顺序、create-once 和正式 runtime 禁止 fixture 的要求写入 findings。
+- 读取 `.planning/release-v0.1.3/` 与 `b292e1c`/`b451b19` diff；固定“版本 commit -> qualification/preview -> annotated tag/GitHub Release -> README release record”边界。
+- 检查 Issue #3 的 Workbench Client composition、Session sidebar/header、composer、unit/composition/e2e 测试结构。
+- Phase 1 完成。固定三个顺序纵向切片；每个切片由一个执行队员在同一 worktree 中写入并提交，主线程根据 diff 验收。
+- Fetch 验证 `main == origin/main == b451b19`；建立 `/Volumes/4Tdisk/work/AI2/harness-comfyui-issue-17` 和 `codex/issue-17-session-binding`。
+- 复用主工作树已有 `node_modules` 创建未跟踪 symlink；没有安装或升级依赖。Phase 2 完成，Phase 3 开始。
+- 查询当前 main 的 GitHub CI。记录基线失败：`tests/integration/plugin-status.test.ts` 仍硬编码 `0.1.0-rc.7`；本 Issue worktree不修复，留给用户已授权的 `v0.1.17` release identity 变更。
+- 执行队员提交 Slice A `e61fcf4`。复用其 15/15 focused unit、直接 tsc 与 diff-check PASS 证据，没有重复运行。
+- 主线程审阅 `b451b19...e61fcf4` 的全部 6 文件 diff；确认只实现已有项目 Session 过滤、保持和稳定打开路径。Phase 3 完成，Phase 4 开始。
+- 执行队员提交 Slice B `829113c`，受影响 focused tests 13/13、直接 tsc 与 diff checks PASS；未重复 Slice A 无关测试。
+- 主线程审阅 `e61fcf4...829113c` 全部增量并核对本地 rc.8 public declarations；发现 `agentPresetId` 第二来源，已准备单点返修。
+- 执行队员提交单点返修 `7622495`；binding 11/11、直接 tsc 和 diff checks PASS。主线程检查 1-line diff 后接受 Slice B。
+- Phase 4 完成，Phase 5 开始：把 binding state 接入既有中列错误区域并阻断错误 Session 的 conversation/composer。
+- 执行队员提交 Slice C `6c86e41`；受影响 focused tests 39/39、直接 tsc 与 diff checks PASS。
+- 主线程审阅 `7622495...6c86e41` 全部增量，接受中列门禁、精确错误、outer columns 保留和 reconnect 恢复；Phase 5/6 完成。
+- 固定 code-review 比较点 `b451b19`、4 个提交与 10 个变更文件；发现 ADR 0012 与当前 Issue #1/#17 的 connection 要求存在文档冲突。Phase 7 开始。
+- 两名独立 Reviewer 分别完成 Standards 与 Spec 审查。主线程保留两轴结论并逐项裁决，没有把文档冲突或通用 rollback 重构扩展进 Issue #17。
+- Spec Reviewer 发现 `openIssued` 跨成功 open 持久化，导致当前 Session 后续变为非项目 Session 时 binding 仍可能保持 `ready`。该行为缺陷及 create 失败到中列/消息阻断的测试缺口已接受返修。
+- Standards Reviewer 的 create 失败分支、binding startup rollback 分支测试与 sidebar 单一过滤来源 finding 已接受；精确 `10 秒` 文案与结构化毫秒配置属于不同来源，ADR 0012 更新和通用 rollback 重构不进入本 Issue。
+- 执行队员提交返修 `b48bc5b`：新增测试先证明 open 后错误发布 ready 的 RED，再完成 pending open target 修复；受影响的 binding/client/sidebar 测试 31/31 PASS，直接 tsc 与 diff checks PASS。
+- 主线程逐 hunk 审查 `6c86e41...b48bc5b`，确认 ready 只由 Harness 列表中的合格 current Session 建立，create 失败会阻断 conversation/composer/prompt，startup rollback 会 abort pending create，且变更未扩大 UI、依赖、文档或发布范围。Phase 7 完成，Phase 8 开始。
+- 最终高成本门禁先暴露本机 ambient pnpm 实际为 10.32.1；只读诊断证明 fixture 尚未进入产品 lifecycle。验收队员通过 planning-owned wrapper 复用本机已有 pnpm 11.7.0，未安装或改变全局配置。
+- Deploy 的四个 upgrade/rollback 场景全部 PASS；其余 Deploy `160 passed / 1 skipped`。Contract `103/103`、build、pack、package validation 与 runtime closure 均 PASS。
+- Composition profile 冷运行超过 90 秒；聚焦自然退出为 83.226 秒 PASS，剩余两文件 3/3 PASS。没有重复已通过的 profile 场景。
+- E2E 的旧 Issue #3 空 Session 断言捕获到 Issue #17 正确创建的一个项目 Session。执行队员只修改 `tests/e2e/workbench-browser.test.ts` 并提交 `4ab14e7`；聚焦真实浏览器创建/二次连接 E2E 1/1 PASS。
+- 主线程审查 `b48bc5b...4ab14e7`，接受唯一项目 Session、current Preset/origin 与第二次浏览器连接不新增 Session 的断言。由于提交只改变不入包的测试文件，下一步先重建 artifact manifest 并比较 tarball SHA，再决定哪些证据失效。
+- 当前 HEAD `4ab14e7` 重建 artifact 后固定 `802504` bytes 与 SHA-256 `af31167277582a0c789c7cef2263aab69b9ee9f6a2f65479b6abe610d495d0da`。Contract `103/103`、build、package validation、runtime closure、Deploy `164 passed / 1 skipped`、Composition `4/4`、E2E `5/5` 全部 PASS。
+- Release smoke 的唯一失败来自基线测试仍要求 PRD 02 明确禁用的 `@deepseek-ai/dsh-client-ui-layout`；Issue worktree未修改该发布测试，留给已授权的 `v0.1.17` main release commit。
+- 产品 CLI 在独立 worktree 安装并启动当前 artifact；status、health、logs、Preset roster、boot graph 与 Source CLI 只读边界全部 PASS。
+- 真实浏览器在 `1440×1000` 创建并保持唯一项目 Session。用户消息进入真实 Session；首次因 release-local 凭据缺失显示可见错误且没有 ComfyUI 运行。验收队员只复制本机可信 Harness credential store 到 release-local runtime，重启后采集到 12 个递增流式文本状态、最终 Agent 回复和右列 `0 项运行`；临时凭据副本在清场时删除。
+- 浏览器 refresh、既有连接的 Host reconnect 和产品 restart 均恢复原项目 Session，未额外创建 Session。正式 runtime 的混合列表包含两个 `harness-comfyui`、一个 `standard` 与一个 `minimal` Session；Workbench DOM 只显示两个项目 Session。rc.8 没有公开 API 可直接构造 `origin=subagent` Session，正式 runtime未注入 fixture；既有 focused test覆盖该过滤分支。
+- 通过 rc.8 公开 `agentPreset.remove` 在隔离空 Session 状态中删除 user Preset；真实 Workbench 显示精确 `WORKBENCH_SESSION_CREATE_FAILED` 中文文案，Session 行和 textarea 都为空，不回退 `standard`/`minimal`。原 Preset、Session、Workspace 与 projection 状态随后逐项恢复。
+- 故障恢复后出现的 `session-5aca...` 被 Workspace registry 记账；它来自隔离验收清空客户端持久选择后的 rc.8 `WorkspaceRuntime.connectWorkspace`，不是只传 `{cwd, agentPreset}` 的 Issue #17 binding create。正常 refresh/reconnect/restart 证据在隔离场景前已经 PASS，未据此扩展 Issue #17 源码。
+- 第一名视觉 Reviewer 把已关闭 Issue #3 的既有原型差异误归为 Issue #17 回退。第二名独立 Reviewer 同时比较静态原型、Issue #3 已验收产品基线与 Issue #17 截图，裁决左列、标题、普通消息、流式状态、输入区、右列、三列尺寸和可见控件全部 no-regression PASS。
+- 最终 Host 已通过稳定 CLI stop；PID 与 4173 listener 均消失。worktree 临时凭据副本与 `node_modules` symlink 已删除，Issue 分支 Git 状态干净。Phase 8 完成。
