@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   SessionListState,
@@ -48,18 +48,29 @@ function state(
   }
 }
 
+type PendingCreate = {
+  payload: unknown
+  signal: AbortSignal | undefined
+  resolve: (value: unknown) => void
+  reject: (reason: unknown) => void
+}
+
 function sessionListHarness(initialState: SessionListState) {
   let snapshot = initialState
   let hostSnapshot: { cwd: string } | undefined = { cwd: '/workspace' }
-  const listeners = new Set<() => void>()
+  const hostListeners = new Set<() => void>()
+  const listListeners = new Set<() => void>()
   const open = vi.fn()
-  const create = vi.fn()
+  let pendingCreate: PendingCreate | undefined
+  const create = vi.fn((payload: unknown, signal?: AbortSignal) => new Promise<unknown>((resolve, reject) => {
+    pendingCreate = { payload, signal, resolve, reject }
+  }))
   const connection = {
     hostDescription: {
       getSnapshot: () => hostSnapshot,
       subscribe: (listener: () => void) => {
-        listeners.add(listener)
-        return () => listeners.delete(listener)
+        hostListeners.add(listener)
+        return () => hostListeners.delete(listener)
       },
     },
     api: { sessions: { create } },
@@ -68,8 +79,8 @@ function sessionListHarness(initialState: SessionListState) {
     list: {
       getSnapshot: () => snapshot,
       subscribe: (listener: () => void) => {
-        listeners.add(listener)
-        return () => listeners.delete(listener)
+        listListeners.add(listener)
+        return () => listListeners.delete(listener)
       },
     },
     open,
@@ -82,17 +93,54 @@ function sessionListHarness(initialState: SessionListState) {
     create,
     setState(next: SessionListState) {
       snapshot = next
-      for (const listener of listeners) listener()
+      for (const listener of listListeners) listener()
     },
     setHost(next: { cwd: string } | undefined) {
       hostSnapshot = next
-      for (const listener of listeners) listener()
+      for (const listener of hostListeners) listener()
+    },
+    notifyHost() {
+      for (const listener of hostListeners) listener()
     },
     notify() {
-      for (const listener of listeners) listener()
+      for (const listener of listListeners) listener()
+    },
+    resolveCreate(value: unknown) {
+      if (pendingCreate === undefined) throw new Error('create was not called')
+      pendingCreate.resolve(value)
+    },
+    rejectCreate(reason: unknown) {
+      if (pendingCreate === undefined) throw new Error('create was not called')
+      pendingCreate.reject(reason)
+    },
+    pendingCreate() {
+      return pendingCreate
     },
   }
 }
+
+function successfulCreate(sessionId: string, agentPreset = 'harness-comfyui') {
+  return {
+    rpcId: 'rpc-1',
+    result: {
+      ok: true,
+      value: { sessionId, agentPreset },
+    },
+  }
+}
+
+async function flushMicrotasks() {
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('Workbench Session binding', () => {
   it('waits for a connected Host and ready list, then opens the deterministic project Session once', () => {
@@ -104,7 +152,7 @@ describe('Workbench Session binding', () => {
     ], 'pending'))
     harness.setHost(undefined)
 
-    const dispose = startWorkbenchSessionBinding({
+    const binding = startWorkbenchSessionBinding({
       connection: harness.connection as never,
       sessions: harness.sessions as never,
     })
@@ -132,7 +180,7 @@ describe('Workbench Session binding', () => {
     ]))
     expect(harness.open).toHaveBeenCalledOnce()
 
-    dispose()
+    binding.dispose()
   })
 
   it('keeps the current project Session and does not create a Session', () => {
@@ -141,14 +189,183 @@ describe('Workbench Session binding', () => {
       summary('project-newer', 900, { agentPreset: 'harness-comfyui' }),
     ]))
 
-    const dispose = startWorkbenchSessionBinding({
+    const binding = startWorkbenchSessionBinding({
       connection: harness.connection as never,
       sessions: harness.sessions as never,
     })
 
     expect(harness.open).not.toHaveBeenCalled()
     expect(harness.create).not.toHaveBeenCalled()
-    dispose()
+    binding.dispose()
+  })
+
+  it('creates exactly once with the current Host cwd and opens only after matching list convergence', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    expect(harness.create).toHaveBeenCalledOnce()
+    expect(harness.pendingCreate()?.payload).toEqual({
+      cwd: '/workspace',
+      agentPreset: 'harness-comfyui',
+    })
+    expect(harness.pendingCreate()?.signal).toBeInstanceOf(AbortSignal)
+
+    harness.notify()
+    harness.notifyHost()
+    expect(harness.create).toHaveBeenCalledOnce()
+
+    harness.resolveCreate(successfulCreate('created-session'))
+    await flushMicrotasks()
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'awaiting-list',
+      pendingSessionId: 'created-session',
+    })
+    expect(harness.open).not.toHaveBeenCalled()
+
+    harness.setState(state(undefined, [summary('created-session', 100, { agentPreset: 'harness-comfyui' })]))
+    expect(harness.open).toHaveBeenCalledOnce()
+    expect(harness.open).toHaveBeenCalledWith('created-session')
+    expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
+    binding.dispose()
+  })
+
+  it('publishes PRESET_MISMATCH when create resolves a different Agent Preset', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.resolveCreate(successfulCreate('created-session', 'standard'))
+    await flushMicrotasks()
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_PRESET_MISMATCH' },
+    })
+    expect(harness.open).not.toHaveBeenCalled()
+    binding.dispose()
+  })
+
+  it('publishes CREATE_FAILED when the successful envelope has no session ID', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.resolveCreate({
+      rpcId: 'rpc-1',
+      result: { ok: true, value: { agentPreset: 'harness-comfyui' } },
+    })
+    await flushMicrotasks()
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_CREATE_FAILED' },
+    })
+    binding.dispose()
+  })
+
+  it('publishes LIST_TIMEOUT at the configured 10 second convergence deadline', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.resolveCreate(successfulCreate('created-session'))
+    await flushMicrotasks()
+    vi.advanceTimersByTime(9_999)
+    expect(binding.getSnapshot().error).toBeUndefined()
+    vi.advanceTimersByTime(1)
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_LIST_TIMEOUT' },
+    })
+    expect(harness.open).not.toHaveBeenCalled()
+    binding.dispose()
+  })
+
+  it('publishes LIST_MISMATCH when the created list row reports another Agent Preset', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.resolveCreate(successfulCreate('created-session'))
+    await flushMicrotasks()
+    harness.setState(state(undefined, [summary('created-session', 100, { agentPreset: 'standard' })]))
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_LIST_MISMATCH' },
+    })
+    expect(harness.open).not.toHaveBeenCalled()
+    binding.dispose()
+  })
+
+  it('publishes OPEN_FAILED when the confirmed created Session cannot open', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    harness.open.mockImplementationOnce(() => {
+      throw new Error('open rejected')
+    })
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    harness.resolveCreate(successfulCreate('created-session'))
+    await flushMicrotasks()
+    harness.setState(state(undefined, [summary('created-session', 100, { agentPreset: 'harness-comfyui' })]))
+
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_SESSION_OPEN_FAILED' },
+    })
+    expect(harness.open).toHaveBeenCalledOnce()
+    binding.dispose()
+  })
+
+  it('aborts create and publishes HOST_DISCONNECTED when the Host generation disconnects', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+    const signal = harness.pendingCreate()?.signal
+
+    harness.setHost(undefined)
+
+    expect(signal?.aborted).toBe(true)
+    expect(binding.getSnapshot()).toMatchObject({
+      phase: 'error',
+      error: { code: 'WORKBENCH_HOST_DISCONNECTED' },
+    })
+    binding.dispose()
+  })
+
+  it('aborts create, cancels convergence, and unsubscribes when disposed', async () => {
+    const harness = sessionListHarness(state(undefined, []))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+    const signal = harness.pendingCreate()?.signal
+
+    binding.dispose()
+
+    expect(signal?.aborted).toBe(true)
+    vi.advanceTimersByTime(10_000)
+    harness.setState(state(undefined, [summary('late-session', 100, { agentPreset: 'harness-comfyui' })]))
+    harness.notify()
+    expect(harness.open).not.toHaveBeenCalled()
+    expect(harness.create).toHaveBeenCalledOnce()
   })
 
   it('shows only non-subagent harness-comfyui Sessions in the project sidebar', () => {

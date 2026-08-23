@@ -26,7 +26,7 @@ export const inject = ['slots', 'sessions', 'remote', 'theme', 'inputTriggers', 
 /** Mount the generated Remote contribution and compose the project-owned root shell. */
 export async function apply(ctx: ClientContext & { connection: ConnectionHandle }): Promise<() => Promise<void>> {
   const remoteUnmount = await ctx.remote.$mount(harnessComfyuiRemote)
-  const disposeSessionBinding = startWorkbenchSessionBinding({
+  const sessionBinding = startWorkbenchSessionBinding({
     connection: ctx.connection,
     sessions: ctx.sessions as unknown as WorkbenchSessionService,
   })
@@ -47,7 +47,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
       createWorkbenchRoot(layoutService),
     )
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     await remoteUnmount()
     throw error
   }
@@ -59,7 +59,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
       createResultsPanel() as never,
     )
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -72,7 +72,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
       createSessionSidebar(ctx.sessions as unknown as Pick<ISessions, 'open'>),
     )
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeDetails()
     disposeRoot()
     await remoteUnmount()
@@ -89,7 +89,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
       ),
     )
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeSidebar()
     disposeDetails()
     disposeRoot()
@@ -108,7 +108,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
       ),
     )
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeSessionHeader()
     disposeSidebar()
     disposeDetails()
@@ -130,7 +130,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
       ),
     )
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
@@ -143,7 +143,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
   try {
     disposeService = ctx.reflect.provide('layout', layoutService)
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeComposerBar()
     disposeConversationView()
     disposeSessionHeader()
@@ -158,7 +158,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
   try {
     disposeTheme = installThemeProjection(ctx)
   } catch (error) {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     await disposeService()
     disposeComposerBar()
     disposeConversationView()
@@ -171,7 +171,7 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
   }
 
   return async () => {
-    disposeSessionBinding()
+    sessionBinding.dispose()
     disposeTheme()
     await disposeService()
     disposeComposerBar()
