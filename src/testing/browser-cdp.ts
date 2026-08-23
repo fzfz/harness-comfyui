@@ -1,7 +1,7 @@
 import { execFile, spawn, type ChildProcess, type ChildProcessByStdio } from 'node:child_process'
-import { access, mkdtemp, rm } from 'node:fs/promises'
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { extname, isAbsolute, join } from 'node:path'
 import type { Readable } from 'node:stream'
 import { setTimeout as delay } from 'node:timers/promises'
 import { promisify } from 'node:util'
@@ -113,7 +113,9 @@ export interface RealBrowserProbe {
     hostLoaded: true
   }
   detailsEntries: BrowserSlotEntry[]
-  remainingDetailsEntries: BrowserSlotEntry[]
+  projectFiberActive: boolean
+  scenarioResult?: unknown
+  screenshot?: BrowserScreenshotEvidence
   cleanup: {
     browserExited: boolean
     browserProfileRemoved: boolean
@@ -190,12 +192,30 @@ export interface BrowserViewport {
   height: number
 }
 
+export interface BrowserScreenshotEvidence {
+  path: string
+  viewport: BrowserViewport
+  byteLength: number
+}
+
 export interface RealBrowserProbeOptions {
   readinessTimeoutMs?: number
   viewport?: BrowserViewport
+  scenarioScript?: string
+  screenshotPath?: string
 }
 
 const defaultBrowserViewport: BrowserViewport = { width: 1280, height: 900 }
+
+export function browserScreenshotPath(path: string): string {
+  if (typeof path !== 'string' || !isAbsolute(path)) {
+    throw new TypeError('browser screenshot path must be absolute')
+  }
+  if (extname(path).toLowerCase() !== '.png') {
+    throw new TypeError('browser screenshot path must name a PNG file')
+  }
+  return path
+}
 
 export function browserWindowSizeArgument(viewport: BrowserViewport = defaultBrowserViewport): string {
   if (viewport === null || typeof viewport !== 'object' || Array.isArray(viewport)) {
@@ -426,6 +446,14 @@ async function launchBrowser(viewport?: BrowserViewport): Promise<BrowserSession
     await connection.send('Runtime.enable', {}, sessionId)
     await connection.send('Log.enable', {}, sessionId)
     await connection.send('Page.enable', {}, sessionId)
+    if (viewport !== undefined) {
+      await connection.send('Emulation.setDeviceMetricsOverride', {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 1,
+        mobile: false,
+      }, sessionId)
+    }
     await connection.send('Page.addScriptToEvaluateOnNewDocument', {
       source: `(() => {
       const state = { contexts: Object.create(null), fibers: Object.create(null), loadedModules: [] };
@@ -467,10 +495,36 @@ async function evaluate(session: BrowserSession, expression: string): Promise<un
   return result?.value
 }
 
+async function captureScreenshot(session: BrowserSession, path: string): Promise<BrowserScreenshotEvidence> {
+  const value = await evaluate(session, '({ width: window.innerWidth, height: window.innerHeight })') as BrowserViewport | undefined
+  if (value?.width !== 1440 || value.height !== 1000) {
+    throw new Error(`browser screenshot viewport was ${value?.width ?? 'unknown'}x${value?.height ?? 'unknown'}, expected 1440x1000`)
+  }
+  const response = await session.connection.send('Page.captureScreenshot', { format: 'png' }, session.sessionId)
+  const data = response.result?.data
+  if (typeof data !== 'string' || data.length === 0) throw new Error('Chrome did not return PNG screenshot data')
+  const bytes = Buffer.from(data, 'base64')
+  await writeFile(path, bytes)
+  return {
+    path,
+    viewport: value,
+    byteLength: bytes.byteLength,
+  }
+}
+
 export async function runRealBrowserProbe(
   url: string,
   options: RealBrowserProbeOptions = {},
 ): Promise<RealBrowserProbe> {
+  const screenshotPath = options.screenshotPath === undefined
+    ? undefined
+    : browserScreenshotPath(options.screenshotPath)
+  if (screenshotPath !== undefined && (options.viewport?.width !== 1440 || options.viewport?.height !== 1000)) {
+    throw new RangeError('browser screenshots require the exact 1440x1000 viewport')
+  }
+  if (options.scenarioScript !== undefined && options.scenarioScript.trim().length === 0) {
+    throw new TypeError('browser scenario script must be non-empty')
+  }
   const session = await launchBrowser(options.viewport)
   const consoleErrors: string[] = []
   const runtimeExceptions: string[] = []
@@ -519,17 +573,20 @@ export async function runRealBrowserProbe(
       const value = state as { appFrame?: boolean; requiredMarker?: string; shellOverlayCount?: number; bodyText?: string; bodyRect?: { width: number; height: number }; visibleButtonCount?: number; loadedModules?: string[]; contextIds?: string[]; fiberIds?: string[] } | undefined
       lastReadiness = value
       if (!value?.appFrame) return undefined
-      if (!value.loadedModules?.includes('@deepseek-ai/dsh-client-ui-layout')) return undefined
-      if (!value.loadedModules.includes('@deepseek-ai/dsh-client-ui-conversation')) return undefined
-      if (!value.loadedModules.includes('harness-comfyui')) return undefined
+      if (!value.loadedModules?.includes('@deepseek-ai/dsh-client-ui-conversation')) return undefined
+      if (!value.loadedModules?.includes('harness-comfyui')) return undefined
       if (!value.contextIds?.includes('@deepseek-ai/dsh-client-ui-conversation')) return undefined
-      if (!value.contextIds.includes('@deepseek-ai/dsh-client-ui-layout')) return undefined
       if (!value.contextIds.includes('harness-comfyui')) return undefined
-      if (!value.fiberIds?.includes('@deepseek-ai/dsh-client-ui-layout')) return undefined
       if (!value.fiberIds?.includes('harness-comfyui')) return undefined
       return value
     }, 'visible Harness AppFrame and client contexts', options.readinessTimeoutMs ?? 30000)
 
+    const scenarioResult = options.scenarioScript === undefined
+      ? undefined
+      : await evaluate(session, options.scenarioScript)
+    const screenshot = screenshotPath === undefined
+      ? undefined
+      : await captureScreenshot(session, screenshotPath)
     const state = await evaluate(session, `(async () => {
       const probe = window.__HARNESS_BROWSER_PROBE__;
       const context = probe?.contexts?.['harness-comfyui'];
@@ -538,6 +595,7 @@ export async function runRealBrowserProbe(
       if (!slotContext) throw new Error('test Client probe did not capture the native conversation Context');
       const fiber = probe?.fibers?.['harness-comfyui'];
       if (!fiber) throw new Error('test Client probe did not capture the harness-comfyui Fiber');
+      if (fiber.state !== 2) throw new Error('harness-comfyui Fiber is not active: ' + String(fiber.state));
       let carried;
       const remoteFiber = context.inject(['remote.pluginStatus'], async remoteContext => {
         carried = await remoteContext.remote.pluginStatus.get();
@@ -560,19 +618,17 @@ export async function runRealBrowserProbe(
         }));
       };
       const detailsEntries = snapshot();
-      await fiber.dispose();
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       return {
         pluginStatus: carried.value,
         detailsEntries,
-        remainingDetailsEntries: snapshot(),
+        projectFiberActive: fiber.state === 2,
         loadedModules: probe.loadedModules,
       };
     })()`)
     const value = state as {
       pluginStatus?: RealBrowserProbe['pluginStatus']
       detailsEntries?: BrowserSlotEntry[]
-      remainingDetailsEntries?: BrowserSlotEntry[]
+      projectFiberActive?: boolean
       loadedModules?: string[]
     }
     await delay(100)
@@ -591,7 +647,9 @@ export async function runRealBrowserProbe(
       singleSlotDuplicateErrors: [...consoleErrors, ...runtimeExceptions].filter(message => /single|duplicate|details|slot/i.test(message)),
       pluginStatus: value.pluginStatus,
       detailsEntries: value.detailsEntries ?? [],
-      remainingDetailsEntries: value.remainingDetailsEntries ?? [],
+      projectFiberActive: value.projectFiberActive ?? false,
+      ...(scenarioResult === undefined ? {} : { scenarioResult }),
+      ...(screenshot === undefined ? {} : { screenshot }),
     }
   } catch (error) {
     probeError = runtimeExceptions.length === 0
