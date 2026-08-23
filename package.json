@@ -183,6 +183,7 @@
     "lib/typert.remote-client.d.ts",
     "lib/typert.remote-client.d.ts.map",
     "cordis.patch.yml",
+    "README.md",
     "config/base.json",
     "config/environment-overrides.json",
     "config/profiles/development.json",
