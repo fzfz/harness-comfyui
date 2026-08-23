@@ -9,7 +9,7 @@ export type ResultsPanelViewProps = {
   readonly onTabChange: (tab: ResultsTab) => void
 }
 
-function emptyResults(title: string): ReactNode {
+function emptyResults(title: string, description: string): ReactNode {
   return (
     <div className="empty-results">
       <svg viewBox="0 0 90 62" aria-hidden="true">
@@ -18,6 +18,7 @@ function emptyResults(title: string): ReactNode {
         <path d="M25 26h18v11h21M43 26v-14h21" />
       </svg>
       <h3>{title}</h3>
+      <p className="empty-results-description">{description}</p>
     </div>
   )
 }
@@ -32,6 +33,7 @@ export function renderResultsPanel(props: ResultsPanelViewProps): ReactNode {
           <p className="section-kicker">OUTPUT</p>
           <h2>生成结果</h2>
         </div>
+        <span className="result-total">本会话共 0 项运行</span>
       </div>
 
       <div className="details-tabs" role="tablist" aria-label="生成结果区域">
@@ -69,7 +71,7 @@ export function renderResultsPanel(props: ResultsPanelViewProps): ReactNode {
           aria-labelledby="tab-current"
           hidden={!currentSelected}
         >
-          {emptyResults('此轮对话没有创建 ComfyUI 运行')}
+          {emptyResults('此轮对话没有创建 ComfyUI 运行', '当前聊天轮次没有关联的生成运行。')}
         </section>
         <section
           id="panel-session"
@@ -78,7 +80,7 @@ export function renderResultsPanel(props: ResultsPanelViewProps): ReactNode {
           aria-labelledby="tab-session"
           hidden={currentSelected}
         >
-          {emptyResults('当前会话还没有生成运行')}
+          {emptyResults('当前会话还没有生成运行', '当前会话中没有可显示的生成运行。')}
         </section>
       </div>
     </aside>

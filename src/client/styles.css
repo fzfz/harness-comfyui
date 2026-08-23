@@ -426,6 +426,14 @@
   text-transform: uppercase;
 }
 
+.result-total {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--dsw-font-markdown-code-font-family);
+  font-size: 9px;
+  padding: 4px 6px;
+}
+
 .details-tabs {
   border-bottom: 1px solid var(--dsw-alias-border-l1);
   display: grid;
@@ -483,6 +491,13 @@
   font-family: var(--dsw-font-family);
   font-size: 14px;
   margin: 14px 0 0;
+}
+
+.empty-results-description {
+  color: var(--dsw-alias-label-secondary);
+  line-height: 1.6;
+  margin: 8px 0 0;
+  max-width: 260px;
 }
 
 .message-list {
