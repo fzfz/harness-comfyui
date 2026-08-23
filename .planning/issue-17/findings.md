@@ -175,3 +175,10 @@
 - Main CI run `32664906733` passed the repaired boundary and reached coverage integration tests. It stopped at `tests/integration/client-bundle.test.ts` because the bundled plugin expectation still listed the Issue #3 five-service inject array.
 - Repair commit `933f4f4eeb193046ce46ebe979793a319336bdb0` changes only that assertion to include the Issue #17 `connection` service after `inputTriggers`, matching the production export and the already accepted unit assertion.
 - The local shared dependency/build tree stopped earlier at a stale `conversation` slot fixture and did not reach the changed line. The clean CI build remains the verification layer for this assertion; no unrelated local test or source change was added.
+
+## Final built Client fixture repair
+
+- Main CI run `32665072523` reached the built Client integration test after the six-service expectation repair. The pre-#17 fixture did not provide the new `connection` service, so the plugin did not apply and its project-owned root declaration was absent when the test registered `conversation`.
+- Commit `27a2aba932cee1118925cbca918d238213733530` provides the public connection fixture and releases it during teardown.
+- Commit `ef1f693d24d59a1e7c1a81208214c69e58b47f30` exposes the standard `AbortController` global to the built-bundle VM, sources all three fixture Session Preset IDs from `config/product-agent.json`, and updates two exact `renderCalls` assertions for the gated conversation's earlier evaluation. DOM column order, layout widths, slot keys and owner objects remain fully asserted.
+- The focused built Client integration passed `1/1` in `1.82s`. Main-thread cumulative diff review found no product source, dependency, copy, style, release identity or unrelated test change.

@@ -54,6 +54,7 @@
 | `1a24166` | Harness boundary focused security tests | 41/41 PASS | boundary allowlist or security test changes |
 | `1a24166` | direct `check-harness-boundary.mjs` and `git diff --check` | PASS | boundary source or diff changes |
 | `933f4f4` | exact Client bundle inject expectation and `git diff --check` | PASS at diff boundary; local test blocked before assertion by stale built fixture | Client plugin inject expectation changes |
+| `27a2aba` + `ef1f693` | `tests/integration/client-bundle.test.ts` built Client fixture | 1/1 PASS in 1.82s; cumulative diff check PASS | Client bundle fixture, Session metadata or gated render-order changes |
 
 ## Two-axis review status
 
@@ -82,3 +83,4 @@
 | Issue #3 E2E expected an empty Session list | final acceptance | Issue #17 now creates exactly one project Session; executor updated only that E2E to assert create-once and a stable second browser connection |
 | main CI `32664651582` rejected the new public connection type import | release qualification | reopened #17; a repair worktree added only the rc.8 public type-only specifier and positive/negative security tests; focused 41/41 and direct boundary check PASS |
 | main CI `32664906733` rejected the old five-service Client bundle expectation | release qualification | reopened #17; a repair worktree updated only the one integration assertion to include `connection`; CI is the authoritative clean-build verification because the local shared tree failed earlier on a stale built fixture |
+| main CI `32665072523` reached the stale built Client fixture and failed before plugin-owned root registration | release qualification | reopened #17; an isolated repair worktree supplied the public connection/VM/Session metadata fixture and aligned two exact render-call order assertions; focused built Client integration passed 1/1 |

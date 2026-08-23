@@ -51,3 +51,6 @@
 - 第二次 main CI `32664906733` 通过 boundary、安全、frozen install，随后在覆盖率集成测试发现 `tests/integration/client-bundle.test.ts` 仍固定五项 Client service inject；实际与 Issue #17 规格均要求第六项 `connection`。
 - 主线程再次建立隔离 repair worktree。执行队员提交 `933f4f4`，只更新该一行断言；diff check PASS。本地共享依赖树在更早的旧 fixture `conversation` slot 声明处失败，未到本次断言，因此不重复扩大本地测试，交由 clean-build CI验证。
 - 主线程审查 1-line diff，以 merge commit `bbc5dc4` 合入 main，并再次删除 repair worktree、symlink 与分支。
+- 第三次 main CI `32665072523` 通过 preinstall 后在同一 built Client integration 场景暴露完整的 Issue #3 旧夹具：测试没有提供新增 `connection` 服务，因此插件未 apply，后续 `conversation` 注册失败。
+- 主线程重新打开 #17 并建立 `/Volumes/4Tdisk/work/AI2/harness-comfyui-issue-17-ci-fixture-2`。执行队员以两个提交 `27a2aba`、`ef1f693` 只修 `tests/integration/client-bundle.test.ts`：提供并释放公开 connection fixture、向 VM 暴露 `AbortController`、从 `config/product-agent.json` 为三条项目 Session 补齐 Preset 元数据，并把两个 `renderCalls` 断言对齐 gated conversation 的实际求值顺序。
+- 聚焦 `client-bundle.test.ts` 通过 `1/1`，总 duration `1.82s`；主线程检查累计 `19 insertions / 3 deletions`、`git diff --check` 与提交边界后 fast-forward 合入 main。修复 worktree、未跟踪 `node_modules` symlink 与分支均已删除。
