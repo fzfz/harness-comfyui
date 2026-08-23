@@ -1,6 +1,7 @@
 /// <reference path="./remote.d.ts" />
 
 import type { ClientContext, ISessions } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { InputTriggerServiceContract } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 
@@ -14,13 +15,21 @@ import { createConversationView } from './workbench/conversation-view.tsx'
 import { createComposerBar } from './workbench/composer-bar.tsx'
 import { createResultsPanel } from './workbench/results-panel.tsx'
 import { installThemeProjection } from './workbench/theme-projection.ts'
+import {
+  startWorkbenchSessionBinding,
+  type WorkbenchSessionService,
+} from './workbench/workbench-session-binding.ts'
 
 export const name = 'harness-comfyui'
-export const inject = ['slots', 'sessions', 'remote', 'theme', 'inputTriggers'] as const
+export const inject = ['slots', 'sessions', 'remote', 'theme', 'inputTriggers', 'connection'] as const
 
 /** Mount the generated Remote contribution and compose the project-owned root shell. */
-export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
+export async function apply(ctx: ClientContext & { connection: ConnectionHandle }): Promise<() => Promise<void>> {
   const remoteUnmount = await ctx.remote.$mount(harnessComfyuiRemote)
+  const disposeSessionBinding = startWorkbenchSessionBinding({
+    connection: ctx.connection,
+    sessions: ctx.sessions as unknown as WorkbenchSessionService,
+  })
   const layoutService = new LayoutController()
   let disposeRoot: (() => void)
 
@@ -38,6 +47,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       createWorkbenchRoot(layoutService),
     )
   } catch (error) {
+    disposeSessionBinding()
     await remoteUnmount()
     throw error
   }
@@ -49,6 +59,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       createResultsPanel() as never,
     )
   } catch (error) {
+    disposeSessionBinding()
     disposeRoot()
     await remoteUnmount()
     throw error
@@ -61,6 +72,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       createSessionSidebar(ctx.sessions as unknown as Pick<ISessions, 'open'>),
     )
   } catch (error) {
+    disposeSessionBinding()
     disposeDetails()
     disposeRoot()
     await remoteUnmount()
@@ -77,6 +89,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       ),
     )
   } catch (error) {
+    disposeSessionBinding()
     disposeSidebar()
     disposeDetails()
     disposeRoot()
@@ -95,6 +108,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       ),
     )
   } catch (error) {
+    disposeSessionBinding()
     disposeSessionHeader()
     disposeSidebar()
     disposeDetails()
@@ -116,6 +130,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       ),
     )
   } catch (error) {
+    disposeSessionBinding()
     disposeConversationView()
     disposeSessionHeader()
     disposeSidebar()
@@ -128,6 +143,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   try {
     disposeService = ctx.reflect.provide('layout', layoutService)
   } catch (error) {
+    disposeSessionBinding()
     disposeComposerBar()
     disposeConversationView()
     disposeSessionHeader()
@@ -142,6 +158,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   try {
     disposeTheme = installThemeProjection(ctx)
   } catch (error) {
+    disposeSessionBinding()
     await disposeService()
     disposeComposerBar()
     disposeConversationView()
@@ -154,6 +171,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   }
 
   return async () => {
+    disposeSessionBinding()
     disposeTheme()
     await disposeService()
     disposeComposerBar()

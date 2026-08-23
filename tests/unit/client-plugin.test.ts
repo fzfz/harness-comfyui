@@ -56,6 +56,28 @@ afterEach(() => {
 function createContext(options: { mountError?: Error; registerErrorName?: string } = {}) {
   const events: string[] = []
   const themeSnapshot = { active: { colorScheme: 'light' as const, tokens: {} } }
+  const sessionState = {
+    ids: [],
+    byId: {},
+    current: undefined,
+    phase: 'ready' as const,
+    subagentsByParent: {},
+    jobsBySession: {},
+    currentAddress: undefined,
+  }
+  const sessions = {
+    list: {
+      getSnapshot: () => sessionState,
+      subscribe: () => () => undefined,
+    },
+    open: vi.fn(),
+  }
+  const connection = {
+    hostDescription: {
+      getSnapshot: () => ({ cwd: '/workspace' }),
+      subscribe: () => () => undefined,
+    },
+  }
   const unmount = vi.fn(async () => undefined)
   const mount = vi.fn(async (_contribution: unknown) => {
     events.push('remote:mount')
@@ -97,6 +119,8 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
   return {
     context: {
       remote: { $mount: mount },
+      connection,
+      sessions,
       slots: { register, inject },
       reflect: { provide },
       theme: { getTheme },
@@ -111,12 +135,14 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
     getTheme,
     on,
     events,
+    connection,
+    sessions,
   }
 }
 
 describe('Client plugin Host projection', () => {
   it('exports the exact Issue #3 Client service inject contract', () => {
-    expect(inject).toEqual(['slots', 'sessions', 'remote', 'theme', 'inputTriggers'])
+    expect(inject).toEqual(['slots', 'sessions', 'remote', 'theme', 'inputTriggers', 'connection'])
   })
 
   it.each(inject)('waits for the public %s service before activating', async (missingService) => {
@@ -135,6 +161,24 @@ describe('Client plugin Host projection', () => {
           ? { register, inject: injectSlot }
           : service === 'theme'
             ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
+          : service === 'sessions'
+            ? {
+              list: {
+                getSnapshot: () => ({
+                  ids: [], byId: {}, current: undefined, phase: 'ready' as const,
+                  subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+                }),
+                subscribe: () => () => undefined,
+              },
+              open: vi.fn(),
+            }
+          : service === 'connection'
+            ? {
+              hostDescription: {
+                getSnapshot: () => ({ cwd: '/workspace' }),
+                subscribe: () => () => undefined,
+              },
+            }
           : {}
       disposers.push(ctx.provide(service, value))
     }
@@ -148,6 +192,24 @@ describe('Client plugin Host projection', () => {
         ? { register, inject: injectSlot }
         : missingService === 'theme'
           ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
+        : missingService === 'sessions'
+          ? {
+            list: {
+              getSnapshot: () => ({
+                ids: [], byId: {}, current: undefined, phase: 'ready' as const,
+                subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+              }),
+              subscribe: () => () => undefined,
+            },
+            open: vi.fn(),
+          }
+        : missingService === 'connection'
+          ? {
+            hostDescription: {
+              getSnapshot: () => ({ cwd: '/workspace' }),
+              subscribe: () => () => undefined,
+            },
+          }
         : {}
     disposers.push(ctx.provide(missingService, value))
     await fiber

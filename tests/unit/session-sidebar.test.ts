@@ -24,6 +24,7 @@ function summary(id: string, title: string, updatedAt: number): SessionSummary {
     displayTitle: title,
     title,
     updatedAt,
+    agentPreset: 'harness-comfyui',
     running: false,
     blank: false,
   }

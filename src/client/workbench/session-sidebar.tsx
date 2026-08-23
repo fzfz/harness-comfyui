@@ -5,6 +5,8 @@ import type {
   SessionSummary,
 } from '@deepseek-ai/dsh-client-runtime/client'
 
+import { isWorkbenchSession } from './workbench-session-binding.ts'
+
 export type SessionSidebarProps = {
   collapsed: boolean
   width: number
@@ -31,6 +33,7 @@ function visibleSessions(state: SessionListState, query: string): SessionSummary
   const normalizedQuery = query.trim().toLocaleLowerCase('zh-CN')
   return state.ids
     .map(id => state.byId[id])
+    .filter(isWorkbenchSession)
     .filter(session => normalizedQuery.length === 0
       || session.displayTitle.toLocaleLowerCase('zh-CN').includes(normalizedQuery))
 }
