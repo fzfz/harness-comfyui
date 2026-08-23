@@ -152,12 +152,17 @@ async function inspectHarnessWeb(installation) {
   if (!response.ok) throw new Error('Harness Web root unavailable');
   const graph = parseHealthBootGraph(await response.text());
   const requiredIds = [
-    '@deepseek-ai/dsh-client-ui-layout',
     '@deepseek-ai/dsh-client-ui-conversation',
     'harness-comfyui',
   ];
-  if (requiredIds.some(id => !graph.entries.some(entry => entry.id === id))) {
-    throw new Error('Harness Web boot graph missing required bundle');
+  for (const id of requiredIds) {
+    if (!graph.entries.some(entry => entry.id === id)) {
+      throw new Error(`Harness Web boot graph missing required bundle "${id}"`);
+    }
+  }
+  const disabledId = '@deepseek-ai/dsh-client-ui-layout';
+  if (graph.entries.some(entry => entry.id === disabledId)) {
+    throw new Error(`Harness Web boot graph contains disabled bundle "${disabledId}"`);
   }
   return { baseUrl, graph };
 }

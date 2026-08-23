@@ -139,7 +139,6 @@ const server = createServer((request, response) => {
   if (request.method === 'GET' && request.url === '/') {
     recordHealthProbe()
     const entries = badHealth ? [] : [
-      { id: '@deepseek-ai/dsh-client-ui-layout', url: '/layout.js' },
       { id: '@deepseek-ai/dsh-client-ui-conversation', url: '/conversation.js' },
       { id: 'harness-comfyui', url: '/client.js' },
     ]
