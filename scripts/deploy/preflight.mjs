@@ -56,6 +56,54 @@ function requireAbsolutePath(value, name) {
   return resolve(path);
 }
 
+function requireRelativePath(value, name) {
+  const path = requireString(value, name);
+  if (isAbsolute(path) || path.includes('\\') || path.startsWith('./') || path.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) {
+    throw new Error(`${name} must be a normalized package-relative path`);
+  }
+  return path;
+}
+
+export function parseProductAgentConfig(value, source = 'config/product-agent.json') {
+  const config = requireRecord(value, source);
+  const agentPresetId = requireString(config.agentPresetId, `${source}.agentPresetId`);
+  if (agentPresetId.includes('/') || agentPresetId.includes('\\')) {
+    throw new Error(`${source}.agentPresetId must be a single path segment`);
+  }
+  const parsed = {
+    agentPresetId,
+    agentPresetArtifactRelativeRoot: requireRelativePath(
+      config.agentPresetArtifactRelativeRoot,
+      `${source}.agentPresetArtifactRelativeRoot`,
+    ),
+    agentPresetInstallRelativeRoot: requireRelativePath(
+      config.agentPresetInstallRelativeRoot,
+      `${source}.agentPresetInstallRelativeRoot`,
+    ),
+    skillRelativeRoot: requireRelativePath(config.skillRelativeRoot, `${source}.skillRelativeRoot`),
+    agentPluginExport: requireString(config.agentPluginExport, `${source}.agentPluginExport`),
+    sessionListConvergenceTimeoutMs: config.sessionListConvergenceTimeoutMs,
+  };
+  if (!parsed.agentPluginExport.startsWith('./') || parsed.agentPluginExport.includes('\\')) {
+    throw new Error(`${source}.agentPluginExport must be a package-relative export`);
+  }
+  if (!Number.isInteger(parsed.sessionListConvergenceTimeoutMs) || parsed.sessionListConvergenceTimeoutMs <= 0) {
+    throw new Error(`${source}.sessionListConvergenceTimeoutMs must be a positive integer`);
+  }
+  return parsed;
+}
+
+export async function readProductAgentConfig(packageRoot) {
+  const path = join(packageRoot, 'config/product-agent.json');
+  let value;
+  try {
+    value = JSON.parse(await readFile(path, 'utf8'));
+  } catch (error) {
+    throw new Error(`cannot read ${path}: ${error.message}`);
+  }
+  return parseProductAgentConfig(value, path);
+}
+
 async function requireFile(path, name) {
   let stats;
   try {
@@ -78,6 +126,90 @@ const RUNTIME_ENTRIES = Object.freeze([
 ]);
 const CONFIG_ENTRY_PREFIX = 'config/';
 export const PROFILE_VALIDATOR_ENTRY = 'lib/config-profile-validator.js';
+const AGENT_PRESET_FILES = Object.freeze(['preset.yml', 'agent.cordis.yml']);
+const AGENT_PROFILE_PATCH_ENTRY = 'profiles/comfyui-workbench/cordis.patch.yml';
+
+function agentPluginExportTarget(productAgent) {
+  const exportSuffix = productAgent.agentPluginExport.slice(2);
+  if (exportSuffix.length === 0 || exportSuffix.endsWith('/') || exportSuffix.includes('..')) {
+    throw new Error('product Agent plugin export must identify a package entrypoint');
+  }
+  return `./lib/${exportSuffix}.js`;
+}
+
+function agentPresetRelativeRoot(productAgent) {
+  return `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}`;
+}
+
+function agentPresetRequiredEntries(productAgent) {
+  const presetRoot = agentPresetRelativeRoot(productAgent);
+  return [
+    ...AGENT_PRESET_FILES.map(file => `${presetRoot}/${file}`),
+    agentPluginExportTarget(productAgent).slice(2),
+    'config/product-agent.json',
+    AGENT_PROFILE_PATCH_ENTRY,
+  ];
+}
+
+export function validateProductAgentManifest(manifest, productAgent, source = 'package/package.json') {
+  requireRecord(manifest, source);
+  const exportTarget = agentPluginExportTarget(productAgent);
+  const exports = requireRecord(manifest.exports, `${source}.exports`);
+  const exportValue = exports[productAgent.agentPluginExport];
+  if (!isRecord(exportValue) || exportValue.default !== exportTarget) {
+    throw new Error(`${source}.exports[${productAgent.agentPluginExport}] must default to ${exportTarget}`);
+  }
+  if (!Array.isArray(manifest.files)) throw new Error(`${source}.files must be an array`);
+  const declared = new Set(manifest.files);
+  for (const entry of agentPresetRequiredEntries(productAgent)) {
+    if (!declared.has(entry)) throw new Error(`${source}.files must contain ${entry}`);
+  }
+  return { exportTarget, requiredEntries: agentPresetRequiredEntries(productAgent) };
+}
+
+function validateAgentPresetProfilePatch(text, productAgent, source) {
+  const expected = [
+    '- id: agent-presets',
+    '  config:',
+    `    default: ${productAgent.agentPresetId}`,
+    '    includeUserRoot: true',
+    '',
+  ].join('\n');
+  if (text.replace(/\r\n/gu, '\n') !== expected) {
+    throw new Error(`${source} must equal exactly the four-line agent-presets patch with default: ${productAgent.agentPresetId} and includeUserRoot: true`);
+  }
+}
+
+async function assertRegularDirectoryPath(root, relativePath, name) {
+  let current = root;
+  for (const segment of relativePath.split('/')) {
+    current = join(current, segment);
+    let stats;
+    try {
+      stats = await lstat(current);
+    } catch (error) {
+      throw new Error(`${name} does not exist: ${current}: ${error.message}`);
+    }
+    if (stats.isSymbolicLink()) throw new Error(`${name} must not be a symlink: ${current}`);
+    if (!stats.isDirectory()) throw new Error(`${name} must be a directory: ${current}`);
+  }
+}
+
+async function assertRegularFilePath(root, relativePath, name) {
+  const segments = relativePath.split('/');
+  segments.pop();
+  if (segments.length > 0) await assertRegularDirectoryPath(root, segments.join('/'), `${name} parent`);
+  const path = join(root, relativePath);
+  let stats;
+  try {
+    stats = await lstat(path);
+  } catch (error) {
+    throw new Error(`${name} does not exist: ${path}: ${error.message}`);
+  }
+  if (stats.isSymbolicLink()) throw new Error(`${name} must not be a symlink: ${path}`);
+  if (!stats.isFile()) throw new Error(`${name} must be a regular file: ${path}`);
+  return path;
+}
 
 async function runExternal(command, args, { timeoutMs = 10000 } = {}) {
   return new Promise((resolveResult, reject) => {
@@ -220,7 +352,7 @@ async function readArtifactPackageJson(artifactPath) {
   if (!satisfiesNodeEngine(nodeEngine, process.versions.node)) {
     throw new Error(`current Node ${process.versions.node} does not satisfy artifact package.json.engines.node ${nodeEngine}`);
   }
-  return { name: PRODUCT_PACKAGE_NAME, version, nodeEngine, runtimeVersions };
+  return { name: PRODUCT_PACKAGE_NAME, version, nodeEngine, runtimeVersions, manifest };
 }
 
 async function readArtifactEntry(artifactPath, entry, description = entry) {
@@ -257,6 +389,48 @@ async function readArtifactJsonEntry(artifactPath, entry, profileName) {
   } catch (error) {
     throw new Error(`Configuration Profile "${profileName}" has malformed artifact entry package/${entry}: ${error.message}`);
   }
+}
+
+export async function validateProductAgentArtifact(artifactPath, manifest, productAgent) {
+  const { requiredEntries } = validateProductAgentManifest(manifest, productAgent, 'artifact package.json');
+  const entries = await listArtifactEntries(artifactPath);
+  for (const entry of requiredEntries) {
+    if (!entries.has(`package/${entry}`)) {
+      const description = entry === agentPluginExportTarget(productAgent).slice(2) ? 'Agent bundle' : 'Agent artifact';
+      throw new Error(`artifact ${description} is missing package/${entry}`);
+    }
+  }
+  const profilePatch = await readArtifactEntry(artifactPath, AGENT_PROFILE_PATCH_ENTRY, 'Agent Preset profile patch');
+  validateAgentPresetProfilePatch(profilePatch, productAgent, `artifact package/${AGENT_PROFILE_PATCH_ENTRY}`);
+  return { requiredEntries };
+}
+
+export async function validateProductAgentRelease(releaseRoot) {
+  const normalizedReleaseRoot = resolve(releaseRoot);
+  await assertRegularDirectoryPath(normalizedReleaseRoot, 'package', 'release package root');
+  const packageRoot = join(normalizedReleaseRoot, 'package');
+  const productAgent = await readProductAgentConfig(packageRoot);
+  const manifest = await readJson(join(packageRoot, 'package.json'));
+  const { requiredEntries } = validateProductAgentManifest(manifest, productAgent, 'release package.json');
+  const presetArtifactRoot = agentPresetRelativeRoot(productAgent);
+  await assertRegularDirectoryPath(packageRoot, presetArtifactRoot, 'Preset artifact root');
+  for (const file of AGENT_PRESET_FILES) {
+    await assertRegularFilePath(packageRoot, `${presetArtifactRoot}/${file}`, `Preset artifact ${file}`);
+  }
+  await assertRegularFilePath(packageRoot, agentPluginExportTarget(productAgent).slice(2), 'Agent bundle');
+  await assertRegularFilePath(packageRoot, AGENT_PROFILE_PATCH_ENTRY, 'Agent Preset profile patch');
+  validateAgentPresetProfilePatch(
+    await readFile(join(packageRoot, AGENT_PROFILE_PATCH_ENTRY), 'utf8'),
+    productAgent,
+    `release package/${AGENT_PROFILE_PATCH_ENTRY}`,
+  );
+  const presetInstallRoot = `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`;
+  await assertRegularDirectoryPath(normalizedReleaseRoot, presetInstallRoot, 'Preset release root');
+  for (const file of AGENT_PRESET_FILES) {
+    await assertRegularFilePath(normalizedReleaseRoot, `${presetInstallRoot}/${file}`, `Preset release ${file}`);
+  }
+  await assertRegularDirectoryPath(packageRoot, productAgent.skillRelativeRoot, 'Skill root');
+  return { productAgent, requiredEntries };
 }
 
 function assertRuntimeLock(lockText, runtimeVersions) {
@@ -595,7 +769,13 @@ export function validateDiscovery(value, name, installation) {
 
 export async function runProductPreflight(input, artifactPath, options = {}) {
   const installation = validateInstallation(input);
-  const artifact = await readArtifactPackageJson(artifactPath);
+  const artifactRead = await readArtifactPackageJson(artifactPath);
+  const { manifest: artifactManifest, ...artifact } = artifactRead;
+  const productAgent = parseProductAgentConfig(
+    await readArtifactJsonEntry(artifactPath, 'config/product-agent.json', 'product-agent configuration'),
+    'artifact package/config/product-agent.json',
+  );
+  const agentArtifact = await validateProductAgentArtifact(artifactPath, artifactManifest, productAgent);
   const runtimeClosure = await validateArtifactRuntime(artifactPath, artifact);
   const configuration = await validateArtifactConfiguration(artifactPath, installation);
   const pnpmVersion = await readPnpmVersion(runtimeClosure.packageManagerVersion);
@@ -631,6 +811,8 @@ export async function runProductPreflight(input, artifactPath, options = {}) {
     status: 'passed',
     installation,
     artifact,
+    productAgent,
+    agentArtifact,
     configuration: {
       profile: configuration.configurationProfile,
       server: configuration.server,

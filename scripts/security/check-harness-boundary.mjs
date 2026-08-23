@@ -1,11 +1,11 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { dirname, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const registryPath = 'src/host/tools/register-project-tools.ts'
-const pluginPath = 'src/host/plugin.ts'
+const pluginPath = 'src/agent/plugin.ts'
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
   ['@deepseek-ai/dsh-client-runtime/client', 'value-or-type'],
@@ -69,6 +69,31 @@ function collectSourceFiles(directory, result = []) {
     else if (entry.isFile() && /\.[cm]?tsx?$/u.test(entry.name)) result.push(path)
   }
   return result
+}
+
+function collectGeneratedAgentFiles(directory, result = []) {
+  if (!statSync(directory, { throwIfNoEntry: false })?.isDirectory()) return result
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    const path = resolve(directory, entry.name)
+    if (entry.isDirectory()) collectGeneratedAgentFiles(path, result)
+    else if (entry.isFile() && /\.(?:d\.ts|js|map)$/u.test(entry.name)) result.push(path)
+  }
+  return result
+}
+
+function assertGeneratedAgentArtifacts(root) {
+  const files = []
+  const bundledAgentPath = resolve(root, 'lib/agent.js')
+  if (statSync(bundledAgentPath, { throwIfNoEntry: false })?.isFile()) files.push(bundledAgentPath)
+  files.push(...collectGeneratedAgentFiles(resolve(root, 'lib/types/src/agent')))
+
+  for (const filePath of files) {
+    const source = readFileSync(filePath, 'utf8')
+    if (/ctx\.tools\.restrict\s*\(\s*\{\s*allow\s*:\s*\[\s*\]\s*\}\s*\)/u.test(source)
+      || source.includes('Restrict inherited Tools')) {
+      throw new Error(`${relative(root, filePath).replaceAll('\\', '/')} contains the removed Agent Tool restriction`)
+    }
+  }
 }
 
 function isDirectRegisterCall(node) {
@@ -182,6 +207,14 @@ function containsHarnessIdentity(value) {
   return typeof value === 'string' && (value.includes('@deepseek-ai/') || value.includes('harness-comfyui'))
 }
 
+function requireNormalizedRelativePath(config, field, path) {
+  const value = config[field]
+  if (typeof value !== 'string' || value.length === 0 || value.includes('\0') || isAbsolute(value) || value.includes('\\') || value.startsWith('./') || value.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) {
+    throw new Error(`${path}.${field} must be a normalized package-relative path`)
+  }
+  return value
+}
+
 function assertManifestDependencyFields(manifest, manifestPath) {
   for (const field of directDependencyFields) {
     const dependencies = manifest[field]
@@ -235,6 +268,49 @@ function assertPublicPackageMetadata(manifest, manifestPath) {
   }
   if (!sameStructuredValue(manifest.dsh, { bundle: expectedBundle, client: expectedClient })) {
     throw new Error(`${manifestPath}.dsh contains an unsupported public configuration field`)
+  }
+}
+
+function readProductAgentBoundary(path) {
+  const config = readJson(path, path)
+  if (!isPlainObject(config)) throw new Error(`${path} must be an object`)
+  const agentPresetId = config.agentPresetId
+  if (typeof agentPresetId !== 'string' || agentPresetId.length === 0 || agentPresetId.includes('/') || agentPresetId.includes('\\')) {
+    throw new Error(`${path}.agentPresetId must be a non-empty single path segment`)
+  }
+  const agentPresetArtifactRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetArtifactRelativeRoot', path)
+  const agentPresetInstallRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetInstallRelativeRoot', path)
+  const skillRelativeRoot = requireNormalizedRelativePath(config, 'skillRelativeRoot', path)
+  const agentPluginExport = config.agentPluginExport
+  if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
+    throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
+  }
+  return {
+    agentPresetId,
+    agentPresetArtifactRelativeRoot,
+    agentPresetInstallRelativeRoot,
+    skillRelativeRoot,
+    agentPluginExport,
+  }
+}
+
+function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
+  const exportTarget = `./lib/${productAgent.agentPluginExport.slice(2)}.js`
+  const exports = manifest.exports
+  if (!isPlainObject(exports) || !isPlainObject(exports[productAgent.agentPluginExport]) || exports[productAgent.agentPluginExport].default !== exportTarget) {
+    throw new Error(`${manifestPath}.exports[${productAgent.agentPluginExport}] must default to ${exportTarget}`)
+  }
+  if (!Array.isArray(manifest.files)) throw new Error(`${manifestPath}.files must be an array`)
+  const requiredFiles = [
+    exportTarget.slice(2),
+    `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}/preset.yml`,
+    `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}/agent.cordis.yml`,
+    'config/product-agent.json',
+    'profiles/comfyui-workbench/cordis.patch.yml',
+    `${productAgent.skillRelativeRoot}/**`,
+  ]
+  for (const entry of requiredFiles) {
+    if (!manifest.files.includes(entry)) throw new Error(`${manifestPath}.files must contain ${entry}`)
   }
 }
 
@@ -313,9 +389,11 @@ function assertPatchFile(path, expected) {
 
 function validateStructuredHarnessBoundary(root) {
   const rootManifestPath = resolve(root, 'package.json')
+  const productAgentPath = resolve(root, 'config/product-agent.json')
   const runtimeManifestPath = resolve(root, 'deployment/runtime/package.json')
   const profileManifestPath = resolve(root, 'profiles/comfyui-workbench/package.json')
   const rootManifest = readJson(rootManifestPath, rootManifestPath)
+  const productAgent = readProductAgentBoundary(productAgentPath)
   const runtimeManifest = readJson(runtimeManifestPath, runtimeManifestPath)
   assertManifestDependencyFields(rootManifest, 'package.json')
   assertManifestDependencyFields(runtimeManifest, 'deployment/runtime/package.json')
@@ -323,8 +401,9 @@ function validateStructuredHarnessBoundary(root) {
     assertManifestDependencyFields(readJson(profileManifestPath, profileManifestPath), 'profiles/comfyui-workbench/package.json')
   }
   assertPublicPackageMetadata(rootManifest, 'package.json')
+  assertAgentPackageMetadata(rootManifest, 'package.json', productAgent)
   assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
-  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
+  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets\n  config:\n    default: ${productAgent.agentPresetId}\n    includeUserRoot: true\n`)
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
   assertWorkspaceFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))
@@ -369,6 +448,7 @@ function scan(root) {
     throw new Error(`expected exactly one registerProjectTools() call in ${pluginPath}; found ${registryCalls.length}`)
   }
   validateStructuredHarnessBoundary(root)
+  assertGeneratedAgentArtifacts(root)
 }
 
 export function main(argv = process.argv.slice(2)) {

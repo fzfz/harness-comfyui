@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path'
 
 import { spawnForeground } from '../profile/start.mjs'
 import { validateInstallation } from './contracts.mjs'
+import { validateProductAgentRelease } from './preflight.mjs'
 import {
   PROCESS_STATE_SCHEMA_VERSION,
   assertNoRunningHost,
@@ -23,6 +24,7 @@ import {
 export async function runProductStart(input, operation = {}) {
   const installation = validateInstallation(input)
   const active = await readActiveRelease(installation.root, installation.installationId)
+  const agentReadiness = await validateProductAgentRelease(active.releasePath)
   const statePath = processStatePath(installation.root)
   await assertNoRunningHost(statePath, installation, active.activeVersion)
   if (await probePort(installation.host, installation.port)) {
@@ -30,7 +32,7 @@ export async function runProductStart(input, operation = {}) {
   }
   await mkdir(installation.paths.logDirectory, { recursive: true })
 
-  const environment = buildHostEnvironment(installation, active.dshHome)
+  const environment = await buildHostEnvironment(installation, active, agentReadiness.productAgent)
   const child = spawnForeground({
     dshExecutable: active.dshExecutable,
     dshHome: active.dshHome,

@@ -100,6 +100,7 @@ describe('Issue #2 public package and composition contracts', () => {
     expect(manifest.files).toEqual([
       'lib/index.js',
       'lib/config-profile-validator.js',
+      'lib/agent.js',
       'lib/client.js',
       'lib/client.js.map',
       'lib/types/index.d.ts',
@@ -113,9 +114,13 @@ describe('Issue #2 public package and composition contracts', () => {
       'lib/typert.remote-client.js.map',
       'lib/typert.remote-client.d.ts',
       'lib/typert.remote-client.d.ts.map',
+      'agent-presets/harness-comfyui/preset.yml',
+      'agent-presets/harness-comfyui/agent.cordis.yml',
       'cordis.patch.yml',
+      'README.md',
       'config/base.json',
       'config/environment-overrides.json',
+      'config/product-agent.json',
       'config/profiles/development.json',
       'config/profiles/production.json',
       'config/profiles/release-smoke.json',
@@ -190,6 +195,9 @@ describe('Issue #2 public package and composition contracts', () => {
       './remote': {
         types: './lib/typert.remote-client.d.ts',
         default: './lib/typert.remote-client.js',
+      },
+      './agent': {
+        default: './lib/agent.js',
       },
       './package.json': './package.json',
     })

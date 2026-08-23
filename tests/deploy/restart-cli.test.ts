@@ -148,6 +148,11 @@ if (args.slice(0, 3).join(' ') === 'plugin --profile comfyui-workbench') {
   process.exit(0)
 }
 if (args[0] !== '--profile' || args[1] !== 'comfyui-workbench') process.exit(2)
+appendFileSync(process.env.HOST_ENV_LOG, JSON.stringify({
+  dshHome: process.env.DSH_HOME,
+  skillDirectory: process.env.HARNESS_COMFYUI_SKILL_DIR,
+  toolsMode: process.env.DSH_TOOLS_MODE,
+}) + '\\n')
 const metricsPath = process.env.HOST_METRICS_FILE
 const updateMetrics = (delta, event) => {
   const metrics = JSON.parse(readFileSync(metricsPath, 'utf8'))
@@ -202,6 +207,7 @@ async function createFixture() {
   const tarballPath = join(root, 'harness-comfyui-0.1.0-test.1.tgz')
   const inputPath = join(root, 'installation.json')
   const hostReadyFile = join(root, 'host-ready')
+  const hostEnvLog = join(root, 'host-env.jsonl')
   const metricsPath = join(root, 'host-metrics.json')
   const catalogCliPath = join(root, 'catalog-discovery.mjs')
   const sourceCliPath = join(root, 'source-discovery.mjs')
@@ -213,6 +219,10 @@ async function createFixture() {
   const packageFiles = [
     'lib/index.js',
     'lib/config-profile-validator.js',
+    'lib/agent.js',
+    'agent-presets/harness-comfyui/preset.yml',
+    'agent-presets/harness-comfyui/agent.cordis.yml',
+    'config/product-agent.json',
     'scripts/deploy/cli.mjs',
     'scripts/deploy/contracts.mjs',
     'scripts/deploy/install.mjs',
@@ -238,6 +248,7 @@ async function createFixture() {
     version: '0.1.0-test.1',
     packageManager: 'pnpm@11.7.0',
     engines: { node: '^22.19.0 || >=24.0.0' },
+    exports: { './agent': { default: './lib/agent.js' } },
     bin: { 'harness-comfyui': 'scripts/deploy/cli.mjs' },
     devDependencies: {
       '@deepseek-ai/dsh': '0.1.0-rc.8',
@@ -298,9 +309,13 @@ process.stdout.write(${JSON.stringify(JSON.stringify(discovery))})
     PATH: `${fake.binDirectory}${delimiter}${process.env.PATH ?? ''}`,
     FAKE_DSH_SOURCE: join(root, 'fake-dsh.mjs'),
     HOST_READY_FILE: hostReadyFile,
+    HOST_ENV_LOG: hostEnvLog,
     HOST_METRICS_FILE: metricsPath,
+    DSH_HOME: '/ambient/dsh-home',
+    HARNESS_COMFYUI_SKILL_DIR: '/ambient/skills',
+    DSH_TOOLS_MODE: 'ambient',
   }
-  return { root, installation, inputPath, tarballPath, hostReadyFile, metricsPath, env }
+  return { root, installation, inputPath, tarballPath, hostReadyFile, hostEnvLog, metricsPath, env }
 }
 
 async function installFixture(fixture: Awaited<ReturnType<typeof createFixture>>): Promise<ProcessResult> {
@@ -339,11 +354,24 @@ describe('installed restart CLI', () => {
     const restart = spawnProcess(stableBin, ['restart', '--installation', fixture.inputPath], fixture.env)
     const restartedLines = await waitForLines(fixture.hostReadyFile, 2)
     const newState = await waitForState(processPath)
+    const environmentLines = await waitForLines(fixture.hostEnvLog, 2)
 
     expect(Number(restartedLines[0])).toBe(oldState.pid)
     expect(Number(restartedLines[1])).toBe(newState.pid)
     expect(newState.pid).not.toBe(oldState.pid)
     expect(newState.operationId).toEqual(expect.any(String))
+    expect(environmentLines.map(line => JSON.parse(line))).toEqual([
+      {
+        dshHome: join(fixture.installation.root, 'releases/0.1.0-test.1/dsh-home'),
+        skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.1/package/skills'),
+        toolsMode: 'native',
+      },
+      {
+        dshHome: join(fixture.installation.root, 'releases/0.1.0-test.1/dsh-home'),
+        skillDirectory: join(fixture.installation.root, 'releases/0.1.0-test.1/package/skills'),
+        toolsMode: 'native',
+      },
+    ])
     expect(await start.output).toMatchObject({ status: 0 })
     expect(await stateExists(processPath)).toBe(true)
 

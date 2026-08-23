@@ -9,5 +9,8 @@
   "HARNESS_COMFYUI_SOURCE_CLI_PATH": "source.sourceCliPath",
   "HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS": "client.runRefreshIntervalMs",
   "HARNESS_COMFYUI_SERVER_HOST": "server.host",
-  "HARNESS_COMFYUI_SERVER_PORT": "server.port"
+  "HARNESS_COMFYUI_SERVER_PORT": "server.port",
+  "HARNESS_COMFYUI_SKILL_DIR": {
+    "passThrough": true
+  }
 }

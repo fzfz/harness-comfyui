@@ -4,22 +4,27 @@ import { access, lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path';
 import {
   readDiscovery,
+  validateProductAgentRelease,
   validateDiscovery,
 } from './preflight.mjs';
 import { validateInstallation } from './contracts.mjs';
 import {
   assertProcessStateOwnership,
   probePort,
+  probePortOwnedByProcess,
   readActiveRelease,
   readProcessIdentity,
   readProcessState,
   sameProcessIdentity,
+  validateRunningAgentPresetRoster,
   writeAtomicJson,
 } from './lifecycle.mjs';
 
 const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'process',
   'activeRelease',
+  'agentPresetInstallation',
+  'agentPresetRoster',
   'harnessWeb',
   'clientBundle',
   'pluginStatus',
@@ -31,6 +36,19 @@ const PRODUCT_HEALTH_CHECKS = Object.freeze([
 
 function failedCheck(error) {
   return { status: 'failed', error };
+}
+
+function agentPresetInstallationEvidence(productAgent, requiredEntries) {
+  const artifactRoot = `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}`;
+  const artifactPrefix = `${artifactRoot}/`;
+  return {
+    status: 'passed',
+    releaseRelativeRoot: `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`,
+    requiredFiles: requiredEntries
+      .filter(entry => entry.startsWith(artifactPrefix))
+      .map(entry => entry.slice(artifactPrefix.length)),
+    skillRelativeRoot: `package/${productAgent.skillRelativeRoot}`,
+  };
 }
 
 function initialProductHealthEvidence() {
@@ -218,13 +236,18 @@ export async function runProductHealth(input) {
 
   let active;
   let packageManifest;
+  let productAgent;
+  let agentPresetRequiredEntries;
   try {
     active = await readActiveRelease(installation.root, installation.installationId);
     packageManifest = await readProductPackageManifest(active);
     if (packageManifest.version !== active.activeVersion) throw new Error('active release version mismatch');
+    ({ productAgent, requiredEntries: agentPresetRequiredEntries } = await validateProductAgentRelease(active.releasePath));
     evidence.activeRelease = { status: 'passed', version: packageManifest.version };
-  } catch {
+    evidence.agentPresetInstallation = agentPresetInstallationEvidence(productAgent, agentPresetRequiredEntries);
+  } catch (error) {
     evidence.activeRelease = failedCheck('active-release-invalid');
+    evidence.agentPresetInstallation = failedCheck(error instanceof Error ? error.message : String(error));
   }
 
   if (active !== undefined) {
@@ -235,12 +258,28 @@ export async function runProductHealth(input) {
       const identity = await readProcessIdentity(state.pid);
       if (identity === null || !sameProcessIdentity(state.processIdentity, identity)) throw new Error('process identity mismatch');
       if (!(await probePort(installation.host, installation.port))) throw new Error('Host port is not running');
+      if (!(await probePortOwnedByProcess(installation.host, installation.port, state.pid))) {
+        throw new Error(`Host port is not owned by managed Host PID ${state.pid}`);
+      }
       evidence.process = { status: 'passed' };
-    } catch {
-      evidence.process = failedCheck('process-invalid');
+    } catch (error) {
+      evidence.process = failedCheck(error instanceof Error ? error.message : String(error));
     }
   } else {
     evidence.process = failedCheck('active-release-required');
+  }
+
+  if (evidence.process.status !== 'passed') {
+    evidence.agentPresetRoster = failedCheck('process readiness required');
+  } else if (active !== undefined && productAgent !== undefined) {
+    try {
+      const roster = await validateRunningAgentPresetRoster(installation, productAgent);
+      evidence.agentPresetRoster = { status: 'passed', ...roster };
+    } catch (error) {
+      evidence.agentPresetRoster = failedCheck(error instanceof Error ? error.message : String(error));
+    }
+  } else {
+    evidence.agentPresetRoster = failedCheck('active-release-required');
   }
 
   let web;

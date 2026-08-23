@@ -18,6 +18,14 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-theme',
 ]
 
+const productAgentConfig = JSON.parse(readFileSync(join(process.cwd(), 'config/product-agent.json'), 'utf8')) as Record<string, any>
+const agentPresetId = productAgentConfig.agentPresetId as string
+const agentPresetArtifactRelativeRoot = productAgentConfig.agentPresetArtifactRelativeRoot as string
+const skillRelativeRoot = productAgentConfig.skillRelativeRoot as string
+const agentPluginExport = productAgentConfig.agentPluginExport as string
+const agentPluginExportTarget = `lib/${agentPluginExport.slice(2)}.js`
+const agentPresetArtifactRoot = `${agentPresetArtifactRelativeRoot}/${agentPresetId}`
+
 const workspaceText = `packages:
   - .
 
@@ -37,6 +45,15 @@ const rootPackage = {
   dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
   devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.7' },
   peerDependencies: { '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.7' },
+  exports: { [agentPluginExport]: { default: `./${agentPluginExportTarget}` } },
+  files: [
+    agentPluginExportTarget,
+    `${agentPresetArtifactRoot}/preset.yml`,
+    `${agentPresetArtifactRoot}/agent.cordis.yml`,
+    'config/product-agent.json',
+    'profiles/comfyui-workbench/cordis.patch.yml',
+    `${skillRelativeRoot}/**`,
+  ],
   dsh: {
     bundle: { patch: './cordis.patch.yml' },
     client: { platform: 'web', inject: clientInject },
@@ -91,14 +108,18 @@ const loaderPatch = `- insert:
 
 function createFixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-boundary-'))
+  mkdirSync(join(root, 'src/agent'), { recursive: true })
   mkdirSync(join(root, 'src/host/tools'), { recursive: true })
   mkdirSync(join(root, 'deployment/runtime'), { recursive: true })
+  mkdirSync(join(root, 'config'), { recursive: true })
   mkdirSync(join(root, 'profiles/comfyui-workbench'), { recursive: true })
   writeFileSync(join(root, 'src.ts'), '// outside src directory\n', 'utf8')
   writeFileSync(join(root, 'README.md'), 'ctx.tools.register("markdown-only")\n', 'utf8')
   writeFileSync(join(root, 'src/host/tools/register-project-tools.ts'), 'ctx.tools.register(definition)\n', 'utf8')
-  writeFileSync(join(root, 'src/host/plugin.ts'), 'registerProjectTools(ctx, definitions)\n', 'utf8')
+  writeFileSync(join(root, 'src/agent/plugin.ts'), 'registerProjectTools(ctx, definitions)\n', 'utf8')
+  writeFileSync(join(root, 'src/host/plugin.ts'), 'ctx.effect(() => undefined)\n', 'utf8')
   writeFileSync(join(root, 'package.json'), `${JSON.stringify(rootPackage, null, 2)}\n`, 'utf8')
+  writeFileSync(join(root, 'config/product-agent.json'), `${JSON.stringify(productAgentConfig, null, 2)}\n`, 'utf8')
   writeFileSync(join(root, 'deployment/runtime/package.json'), `${JSON.stringify(runtimePackage, null, 2)}\n`, 'utf8')
   writeFileSync(join(root, 'pnpm-workspace.yaml'), workspaceText, 'utf8')
   writeFileSync(join(root, 'deployment/runtime/pnpm-workspace.yaml'), workspaceText, 'utf8')
@@ -109,7 +130,11 @@ function createFixture(otherSource = ''): string {
     '@deepseek-ai/dsh-web-app',
   ]), 'utf8')
   writeFileSync(join(root, 'cordis.patch.yml'), loaderPatch, 'utf8')
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n', 'utf8')
+  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets
+  config:
+    default: ${agentPresetId}
+    includeUserRoot: true
+`, 'utf8')
   if (otherSource) {
     writeFileSync(join(root, 'src/other.ts'), otherSource, 'utf8')
   }
@@ -137,11 +162,29 @@ function appendText(root: string, relativePath: string, suffix: string): void {
 }
 
 describe('check:harness-boundary', () => {
-  it('accepts the one registry call and one Host lifecycle call without reading Markdown', () => {
+  it('accepts the one Agent registry call and one Host lifecycle call without reading Markdown', () => {
     const root = createFixture()
     try {
       const result = run(root)
       expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a stale generated Agent artifact that still restricts the project scope', () => {
+    const root = createFixture()
+    try {
+      mkdirSync(join(root, 'lib/types/src/agent'), { recursive: true })
+      writeFileSync(
+        join(root, 'lib/types/src/agent/plugin.js'),
+        'ctx.tools.restrict({ allow: [] })\n',
+        'utf8',
+      )
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain('lib/types/src/agent/plugin.js')
+      expect(`${result.stdout}\n${result.stderr}`).toContain('removed Agent Tool restriction')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -158,13 +201,25 @@ describe('check:harness-boundary', () => {
     }
   })
 
-  it('rejects a second Host registry call', () => {
+  it('rejects a Host registry call after the Agent migration', () => {
     const root = createFixture('')
     try {
       writeFileSync(join(root, 'src/host/plugin.ts'), 'registerProjectTools(ctx, first)\nregisterProjectTools(ctx, second)\n', 'utf8')
       const result = run(root)
       expect(result.status).not.toBe(0)
       expect(`${result.stdout}\n${result.stderr}`).toContain('src/host/plugin.ts')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a second Agent registry call', () => {
+    const root = createFixture('')
+    try {
+      writeFileSync(join(root, 'src/agent/plugin.ts'), 'registerProjectTools(ctx, first)\nregisterProjectTools(ctx, second)\n', 'utf8')
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain('src/agent/plugin.ts')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -364,6 +419,39 @@ describe('check:harness-boundary', () => {
       const result = run(root)
       expect(result.status).not.toBe(0)
       expect(`${result.stdout}\n${result.stderr}`).toContain('package.json.dsh')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['agent preset ID', (config: Record<string, any>) => { config.agentPresetId = 'other-agent' }, `package.json.files must contain ${agentPresetArtifactRelativeRoot}/other-agent/preset.yml`],
+    ['Agent preset artifact root', (config: Record<string, any>) => { config.agentPresetArtifactRelativeRoot = 'other-agent-presets' }, `package.json.files must contain other-agent-presets/${agentPresetId}/preset.yml`],
+    ['Agent preset install root', (config: Record<string, any>) => { config.agentPresetInstallRelativeRoot = '../outside' }, 'agentPresetInstallRelativeRoot must be a normalized package-relative path'],
+    ['Skill root', (config: Record<string, any>) => { config.skillRelativeRoot = 'skill-bundle' }, 'package.json.files must contain skill-bundle/**'],
+    ['Agent plugin export', (config: Record<string, any>) => { config.agentPluginExport = './other-agent' }, 'package.json.exports[./other-agent]'],
+  ])('rejects %s drift from config/product-agent.json', (_label, update, evidence) => {
+    const root = createFixture()
+    try {
+      updateJson(root, 'config/product-agent.json', update)
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain(evidence)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ['Agent export', (manifest: Record<string, any>) => { manifest.exports[agentPluginExport].default = './lib/other-agent.js' }, 'package.json.exports'],
+    ['Agent bundle file', (manifest: Record<string, any>) => { manifest.files = manifest.files.filter((entry: string) => entry !== agentPluginExportTarget) }, 'package.json.files'],
+  ])('rejects root package %s drift from config/product-agent.json', (_label, update, field) => {
+    const root = createFixture()
+    try {
+      updateJson(root, 'package.json', update)
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(`${result.stdout}\n${result.stderr}`).toContain(field)
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

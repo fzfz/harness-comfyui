@@ -14,6 +14,8 @@ import { spawn } from 'node:child_process'
 import { createConnection, createServer } from 'node:net'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 
+import { readProductAgentConfig, validateProductAgentRelease } from './preflight.mjs'
+
 export const PROCESS_STATE_SCHEMA_VERSION = 1
 export const OPERATION_SCHEMA_VERSION = 1
 export const ACTIVE_RELEASE_STATE_SCHEMA_VERSION = 1
@@ -337,13 +339,90 @@ async function readActiveRelease(root, expectedInstallationId) {
   return { activeVersion, releasePath, packageCliPath, dshExecutable, dshHome }
 }
 
-function buildHostEnvironment(installation, dshHome) {
+function agentPresetApiUrl(installation) {
+  const host = installation.host.includes(':') ? `[${installation.host}]` : installation.host
+  return `http://${host}:${installation.port}/api/agentPreset.list`
+}
+
+async function readAgentPresetRoster(installation) {
+  const rpcId = randomUUID()
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 2_000)
+  let response
+  try {
+    response = await fetch(agentPresetApiUrl(installation), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        type: 'client-request',
+        rpcId,
+        method: 'agentPreset.list',
+        payload: {},
+      }),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    throw new Error(`agentPreset.list request failed: ${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    clearTimeout(timeout)
+  }
+  if (!response.ok) throw new Error(`agentPreset.list HTTP request returned status ${response.status}`)
+  let wire
+  try {
+    wire = await response.json()
+  } catch {
+    throw new Error('agentPreset.list response is malformed JSON')
+  }
+  if (!isRecord(wire) || wire.type !== 'server-response' || wire.rpcId !== rpcId) {
+    throw new Error('agentPreset.list response envelope is invalid')
+  }
+  if (!isRecord(wire.result) || wire.result.ok !== true || !isRecord(wire.result.value)) {
+    throw new Error('agentPreset.list response result is invalid')
+  }
+  const value = wire.result.value
+  if (!Array.isArray(value.presets)) throw new Error('agentPreset.list response presets are invalid')
+  return value
+}
+
+function validateAgentPresetRoster(roster, productAgent) {
+  if (!isRecord(roster) || !Array.isArray(roster.presets)) {
+    throw new Error('agentPreset.list response presets are invalid')
+  }
+  const productRows = roster.presets.filter(row => isRecord(row) && row.id === productAgent.agentPresetId)
+  if (productRows.length !== 1) {
+    throw new Error(`agentPreset.list must return exactly one preset with id "${productAgent.agentPresetId}"; found ${productRows.length}`)
+  }
+  const productRow = productRows[0]
+  if (productRow.trust !== 'user') {
+    throw new Error(`agent preset "${productAgent.agentPresetId}" must have trust "user"`)
+  }
+  if (productRow.isDefault !== true) {
+    throw new Error(`agent preset "${productAgent.agentPresetId}" must be the default preset`)
+  }
+  if (productRow.broken !== undefined) {
+    throw new Error(`agent preset "${productAgent.agentPresetId}" is broken: ${String(productRow.broken)}`)
+  }
+  return {
+    id: productRow.id,
+    trust: productRow.trust,
+    isDefault: productRow.isDefault,
+  }
+}
+
+async function validateRunningAgentPresetRoster(installation, productAgent) {
+  return validateAgentPresetRoster(await readAgentPresetRoster(installation), productAgent)
+}
+
+async function buildHostEnvironment(installation, active, productAgent = undefined) {
+  const resolvedProductAgent = productAgent ?? await readProductAgentConfig(resolve(active.releasePath, 'package'))
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
   )
   return {
     ...environment,
-    DSH_HOME: dshHome,
+    DSH_HOME: active.dshHome,
+    DSH_TOOLS_MODE: 'native',
+    HARNESS_COMFYUI_SKILL_DIR: resolve(active.releasePath, 'package', resolvedProductAgent.skillRelativeRoot),
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: installation.configurationProfile,
     HARNESS_COMFYUI_DATA_DIR: installation.paths.dataDir,
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: installation.paths.runRepositoryFile,
@@ -378,6 +457,38 @@ function probePort(host, port) {
   })
 }
 
+async function readListeningPortProcessIds(host, port) {
+  if (process.platform === 'win32') {
+    throw new Error('port ownership is unsupported on Windows')
+  }
+  const address = host.includes(':') ? `[${host}]` : host
+  let result
+  try {
+    result = await runExternal('lsof', [
+      '-nP',
+      '-a',
+      `-iTCP@${address}:${port}`,
+      '-sTCP:LISTEN',
+      '-Fp',
+    ])
+  } catch (error) {
+    throw new Error(`cannot inspect port ownership: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (result.code !== 0 && !(result.code === 1 && result.stderr.trim().length === 0)) {
+    throw new Error(`cannot inspect port ownership: lsof exited with code ${result.code}`)
+  }
+  return result.stdout
+    .split('\n')
+    .filter(line => line.startsWith('p'))
+    .map(line => Number(line.slice(1)))
+    .filter(pid => Number.isSafeInteger(pid) && pid > 0)
+}
+
+async function probePortOwnedByProcess(host, port, pid) {
+  const processIds = await readListeningPortProcessIds(host, port)
+  return processIds.includes(pid)
+}
+
 function waitForDelay(milliseconds) {
   return new Promise(resolveResult => setTimeout(resolveResult, milliseconds))
 }
@@ -385,11 +496,12 @@ function waitForDelay(milliseconds) {
 /**
  * Wait for a foreground Host to become fully product-ready.
  *
- * A listening port only proves that the Host process has bound its socket. The
- * product health contract also covers the Web boot graph, bundles, plugin
- * projection, discovery contracts, and shared directories. Upgrade and
- * rollback must use the same readiness gate so a transient Web bootstrap
- * cannot trigger recovery before the existing shutdown timeout expires.
+ * A listening port only proves that a process has bound the socket. The
+ * product health contract also covers listener ownership, the Web boot graph,
+ * bundles, plugin projection, discovery contracts, and shared directories.
+ * Upgrade and rollback must use the same readiness gate so a transient Web
+ * bootstrap cannot trigger recovery before the existing shutdown timeout
+ * expires.
  */
 export async function waitForProductHealth(
   startPromise,
@@ -424,7 +536,8 @@ export async function waitForProductHealth(
     if (state?.activeVersion !== expectedVersion
       || state.host !== installation.host
       || state.port !== installation.port
-      || !(await probePort(installation.host, installation.port))) {
+      || !(await probePort(installation.host, installation.port))
+      || !(await probePortOwnedByProcess(installation.host, installation.port, state.pid))) {
       continue
     }
 
@@ -678,8 +791,12 @@ export {
   processStatePath,
   processIdentityMismatch,
   probePort,
+  probePortOwnedByProcess,
   operationsPath,
   readActiveRelease,
+  readAgentPresetRoster,
+  validateAgentPresetRoster,
+  validateRunningAgentPresetRoster,
   readProcessState,
   removeOwnedProcessState,
   sameProcessIdentity,

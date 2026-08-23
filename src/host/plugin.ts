@@ -6,7 +6,6 @@ import {
   type ConfigurationProfileName,
 } from '../../config/schema.ts'
 import { loadProfile } from '../config/load-profile.ts'
-import { registerProjectTools } from './tools/register-project-tools.ts'
 import { PluginStatusService } from '../service/plugin-status.ts'
 
 export interface Config {
@@ -29,6 +28,5 @@ export const inject: [] = []
 export function apply(ctx: Context, config: Config): void {
   const { HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector, ...environment } = process.env
   loadProfile(config.configurationProfile, { environment })
-  ctx.effect(() => registerProjectTools(ctx, []), 'project Tool registry')
   new PluginStatusService(ctx, config.configurationProfile)
 }
