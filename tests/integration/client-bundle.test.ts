@@ -359,6 +359,17 @@ describe('built Client bundle boundary', () => {
       scope: (id: SessionSummary['id']) => ({ sessionId: id }),
     }
     const sessionsDisposer = ctx.provide('sessions', sessions)
+    const connectionDisposer = ctx.provide('connection', {
+      hostDescription: {
+        getSnapshot: () => ({ cwd: '/workspace' }),
+        subscribe: () => () => undefined,
+      },
+      api: {
+        sessions: {
+          create: vi.fn((_payload: unknown, _signal?: AbortSignal) => new Promise<unknown>(() => undefined)),
+        },
+      },
+    })
     const themeDisposer = ctx.provide('theme', {
       getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }),
     })
@@ -686,6 +697,7 @@ describe('built Client bundle boundary', () => {
     expect(remoteUnmountCount).toBe(1)
     inputTriggersDisposer()
     themeDisposer()
+    connectionDisposer()
     sessionsDisposer()
     await remoteDisposer()
     upstreamHeaderDisposer()
