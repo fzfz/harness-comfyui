@@ -136,10 +136,10 @@ describe('release artifact smoke', () => {
 
       const boot = await fixture.readBootGraph()
       expect(boot.entries.map(entry => entry.id)).toEqual(expect.arrayContaining([
-        '@deepseek-ai/dsh-client-ui-layout',
         '@deepseek-ai/dsh-client-ui-conversation',
         'harness-comfyui',
       ]))
+      expect(boot.entries.map(entry => entry.id)).not.toContain('@deepseek-ai/dsh-client-ui-layout')
       expect(await fixture.readClientModule('harness-comfyui')).toContain('__ModuleLoader__')
 
       await expect(fixture.health()).resolves.toMatchObject({

@@ -6,6 +6,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import packageManifest from '../../package.json' with { type: 'json' }
 import type { PluginStatus } from '../../src/contract/plugin-status.ts'
 import * as harnessComfyui from '../../src/index.ts'
 
@@ -57,7 +58,7 @@ describe('Harness ComfyUI Host plugin status', () => {
       ])
       expect(status.get()).toEqual({
         packageName: 'harness-comfyui',
-        packageVersion: '0.1.0-rc.7',
+        packageVersion: packageManifest.version,
         configurationProfile: 'test',
         hostLoaded: true,
       })
