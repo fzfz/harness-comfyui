@@ -229,6 +229,29 @@ describe('Workbench Session binding', () => {
     binding.dispose()
   })
 
+  it('notifies a subscribed listener for a state change and stops after unsubscribe', () => {
+    const entries = [
+      summary('standard', 500, { agentPreset: 'standard' }),
+      summary('project-a', 300, { agentPreset: 'harness-comfyui' }),
+    ]
+    const harness = sessionListHarness(state('standard', entries))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+    const listener = vi.fn()
+    const unsubscribe = binding.subscribe(listener)
+
+    harness.setState(state('project-a', entries))
+    expect(listener).toHaveBeenCalledOnce()
+    expect(binding.getSnapshot()).toMatchObject({ phase: 'ready', error: undefined })
+
+    unsubscribe()
+    harness.setState(state('standard', entries))
+    expect(listener).toHaveBeenCalledOnce()
+    binding.dispose()
+  })
+
   it('waits for a connected Host and ready list, then opens the deterministic project Session once', () => {
     const harness = sessionListHarness(state('standard', [
       summary('standard', 500, { agentPreset: 'standard' }),
@@ -266,6 +289,30 @@ describe('Workbench Session binding', () => {
     ]))
     expect(harness.open).toHaveBeenCalledOnce()
 
+    binding.dispose()
+  })
+
+  it('drops a pending target that no longer qualifies and opens the next project Session', () => {
+    const harness = sessionListHarness(state('standard', [
+      summary('standard', 500, { agentPreset: 'standard' }),
+      summary('project-a', 300, { agentPreset: 'harness-comfyui' }),
+      summary('project-b', 200, { agentPreset: 'harness-comfyui' }),
+    ]))
+    const binding = startWorkbenchSessionBinding({
+      connection: harness.connection as never,
+      sessions: harness.sessions as never,
+    })
+
+    expect(harness.open).toHaveBeenCalledWith('project-a')
+    harness.setState(state('standard', [
+      summary('standard', 500, { agentPreset: 'standard' }),
+      summary('project-a', 300, { agentPreset: 'standard' }),
+      summary('project-b', 200, { agentPreset: 'harness-comfyui' }),
+    ]))
+
+    expect(harness.open).toHaveBeenCalledTimes(2)
+    expect(harness.open).toHaveBeenLastCalledWith('project-b')
+    expect(harness.create).not.toHaveBeenCalled()
     binding.dispose()
   })
 

@@ -138,6 +138,74 @@ describe('Configuration Profile loader', () => {
     }
   })
 
+  it('reports a corrupt environment override file with the override path', () => {
+    const temporaryConfigRoot = mkdtempSync(join(tmpdir(), 'harness-comfyui-config-overrides-corrupt-'))
+    try {
+      cpSync(resolve('config'), temporaryConfigRoot, { recursive: true })
+      const overridesPath = join(temporaryConfigRoot, 'environment-overrides.json')
+      writeFileSync(overridesPath, '{"HARNESS_COMFYUI_SERVER_PORT":', 'utf8')
+
+      expect(() => loadProfile('development', {
+        configRoot: temporaryConfigRoot,
+        environment: {},
+      })).toThrowError(ConfigurationProfileError)
+
+      try {
+        loadProfile('development', {
+          configRoot: temporaryConfigRoot,
+          environment: {},
+        })
+      } catch (error) {
+        expect(error).toMatchObject({
+          profileName: 'development',
+          configPath: overridesPath,
+          property: '<file>',
+        })
+        expect((error as Error).message).toContain('environment-overrides.json')
+        return
+      }
+
+      throw new Error('expected a corrupt environment override file to be rejected')
+    } finally {
+      rmSync(temporaryConfigRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an invalid environment override map value with key evidence', () => {
+    const temporaryConfigRoot = mkdtempSync(join(tmpdir(), 'harness-comfyui-config-overrides-invalid-'))
+    try {
+      cpSync(resolve('config'), temporaryConfigRoot, { recursive: true })
+      const overridesPath = join(temporaryConfigRoot, 'environment-overrides.json')
+      const overrides = JSON.parse(readFileSync(overridesPath, 'utf8')) as Record<string, unknown>
+      overrides.HARNESS_COMFYUI_SERVER_PORT = 4199
+      writeFileSync(overridesPath, JSON.stringify(overrides), 'utf8')
+
+      expect(() => loadProfile('development', {
+        configRoot: temporaryConfigRoot,
+        environment: {},
+      })).toThrowError(ConfigurationProfileError)
+
+      try {
+        loadProfile('development', {
+          configRoot: temporaryConfigRoot,
+          environment: {},
+        })
+      } catch (error) {
+        expect(error).toMatchObject({
+          profileName: 'development',
+          configPath: overridesPath,
+          property: 'HARNESS_COMFYUI_SERVER_PORT',
+        })
+        expect((error as Error).message).toContain('environment override is not allowed')
+        return
+      }
+
+      throw new Error('expected an invalid environment override map value to be rejected')
+    } finally {
+      rmSync(temporaryConfigRoot, { recursive: true, force: true })
+    }
+  })
+
   it('uses the schema dictionary as the only allowlist when the schema gains a property', () => {
     const temporaryConfigRoot = mkdtempSync(join(tmpdir(), 'harness-comfyui-config-schema-'))
     const schemaDict = ConfigurationProfileSchema.dict!
