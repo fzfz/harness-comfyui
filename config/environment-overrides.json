@@ -8,7 +8,8 @@
   "HARNESS_COMFYUI_CATALOG_CLI_PATH": "source.catalogCliPath",
   "HARNESS_COMFYUI_CATALOG_PORT": "source.catalogPort",
   "HARNESS_COMFYUI_SOURCE_CLI_PATH": "source.sourceCliPath",
+  "HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES": "media.maxFileBytes",
   "HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS": "client.runRefreshIntervalMs",
-  "HARNESS_COMFYUI_SERVER_HOST": "server.host",
+  "HARNESS_COMFYUI_SERVER_HOST": { "passThrough": true },
   "HARNESS_COMFYUI_SERVER_PORT": "server.port"
 }

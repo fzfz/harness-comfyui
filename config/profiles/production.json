@@ -7,7 +7,7 @@
     "logDirectory": ""
   },
   "comfyui": {
-    "defaultInstanceId": "production"
+    "defaultInstanceId": "1"
   },
   "source": {
     "catalogPort": 0,

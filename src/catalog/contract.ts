@@ -85,6 +85,13 @@ interface CatalogContextIdentity {
   readonly id: string
 }
 
+export interface CatalogTemplateParameter {
+  readonly parameter_id: string
+  readonly kind: string
+  readonly value_type: 'string' | 'integer' | 'number' | 'boolean' | 'asset_reference'
+  readonly required: boolean
+}
+
 export type CatalogContext =
   | (CatalogContextIdentity & { readonly kind: 'model'; readonly file_name: string })
   | (CatalogContextIdentity & { readonly kind: 'lora'; readonly file_name: string })
@@ -98,7 +105,11 @@ export type CatalogContext =
   | (CatalogContextIdentity & { readonly kind: 'style'; readonly name: string; readonly prompt_text: string })
   | (CatalogContextIdentity & { readonly kind: 'prompt-term'; readonly tag: string })
   | (CatalogContextIdentity & { readonly kind: 'artist-string'; readonly title: string; readonly prompt_text: string })
-  | (CatalogContextIdentity & { readonly kind: 'comfyui-template'; readonly title: string })
+  | (CatalogContextIdentity & {
+    readonly kind: 'comfyui-template'
+    readonly title: string
+    readonly parameters: readonly CatalogTemplateParameter[]
+  })
 
 export interface CatalogItem {
   readonly context: CatalogContext
@@ -254,8 +265,32 @@ export function parseCatalogContext(value: unknown): CatalogContext {
         prompt_text: itemText(input.prompt_text, 'catalog context prompt text', 100_000),
       })
     case 'comfyui-template':
-      exactKeys(input, ['kind', 'id', 'title'], 'catalog context')
-      return Object.freeze({ kind, id, title: itemText(input.title, 'catalog context title', 500) })
+      exactKeys(input, ['kind', 'id', 'title', 'parameters'], 'catalog context')
+      if (!Array.isArray(input.parameters) || input.parameters.length > 100) {
+        throw new TypeError('catalog context template parameters are invalid')
+      }
+      return Object.freeze({
+        kind,
+        id,
+        title: itemText(input.title, 'catalog context title', 500),
+        parameters: Object.freeze(input.parameters.map((value, index) => {
+          const parameter = record(value, `catalog context template parameter ${index}`)
+          exactKeys(parameter, ['parameter_id', 'kind', 'value_type', 'required'], `catalog context template parameter ${index}`)
+          const valueType = parameter.value_type
+          if (!['string', 'integer', 'number', 'boolean', 'asset_reference'].includes(String(valueType))) {
+            throw new TypeError(`catalog context template parameter ${index} value type is invalid`)
+          }
+          if (typeof parameter.required !== 'boolean') {
+            throw new TypeError(`catalog context template parameter ${index} required flag is invalid`)
+          }
+          return Object.freeze({
+            parameter_id: itemText(parameter.parameter_id, `catalog context template parameter ${index} id`, 500),
+            kind: itemText(parameter.kind, `catalog context template parameter ${index} kind`, 500),
+            value_type: valueType as CatalogTemplateParameter['value_type'],
+            required: parameter.required,
+          })
+        })),
+      })
   }
 }
 

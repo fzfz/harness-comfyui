@@ -26,10 +26,12 @@ Ticket 06 — 在多个聊天轮次之间准确查看零个、一个或多个运
 
 ## Host/Client 契约
 
-1. `GenerationRuns.list()` 必须接受 Host 派生的当前 Workspace 与可选 Session、数字 `turn`、状态、排序和分页条件。浏览器不能提交 Workspace ID。
+Harness `0.1.1-rc.2` 的公开 Typert unary Remote 与 WebServer route handler 不提供浏览器调用者身份或当前 Workspace 授权主体。当前插件只运行在绑定 `127.0.0.1` 的单用户 Harness 进程中；同一浏览器用户可以访问 Harness 已列出的全部 Workspace。`workspaceIdForSession()`只验证 Session 与 Workspace 的唯一归属，不能作为多用户授权。需要调用者级 Workspace 隔离时，必须先由 Harness 公共接口提供经过认证的请求主体；项目插件不得伪造该身份。
+
+1. `GenerationRuns.list()`接受浏览器当前页面的 Session ID与可选数字`turn`。Host通过Workspace Registry解析该Session的唯一Workspace；浏览器不能提交Workspace ID。
 2. 当前轮次查询固定使用当前 Workspace、当前 Session 和选中数字 `turn`；本会话运行计数固定使用当前 Workspace 与当前 Session。
 3. 返回页至少包含 `items`、`page`、`page_size` 和 `total_count`。每项包含运行卡片需要的安全字段，不包含来源快照、内部请求、API Workflow、路径或凭据。
-4. `GenerationRuns.resolveToolResultLink({ session_id, call_id, run_id })`必须从当前连接派生Workspace授权，并要求Run Repository中的`(workspace_id, session_id, call_id) -> run_id`映射完全一致；成功响应固定包含`contract_id: "harness-comfyui-generation-tool-link"`、`contract_version: 1`、`tool_name: "generate_with_comfyui"`、`session_id`、数字`turn`、`call_id`与`run_id`。该Remote不得接受Workspace ID，也不得返回路径、凭据或内部请求。
+4. `GenerationRuns.resolveToolResultLink({ session_id, call_id, run_id })`必须通过Workspace Registry解析请求中Session ID的唯一Workspace归属，并要求Run Repository中的`(workspace_id, session_id, call_id) -> run_id`映射完全一致；成功响应固定包含`contract_id: "harness-comfyui-generation-tool-link"`、`contract_version: 1`、`tool_name: "generate_with_comfyui"`、`session_id`、数字`turn`、`call_id`与`run_id`。该归属校验不构成多用户调用者授权。该Remote不得接受Workspace ID，也不得返回路径、凭据或内部请求。
 5. Client遇到通过call+meta校验或持久映射校验的Generation Tool Result、打开右列、切换Session、切换数字`turn`或完成取消请求后，必须立即调用`GenerationRuns.get()`或`list()`；项目Remote response返回`hasNonterminalRuns`与`refreshAfterMs`，Store按`run_id`归并返回项。
 6. 页面可见，且中列至少一个可见Generation Tool行引用非终态Run，或右列results panel可见且引用非终态Run时，唯一Run投影协调器按`refreshAfterMs`继续查询。中列和右列同时可见时共享订阅并且每个周期只调用一次Remote；页面隐藏、两处都没有可见消费者或全部已观察运行终态时停止。Session重新打开时，Client直接按Session与数字`turn`查询Run Repository，不依赖页面内存或项目事件历史。
 
@@ -47,18 +49,18 @@ Ticket 06 — 在多个聊天轮次之间准确查看零个、一个或多个运
 - 零运行是成功查询后的产品空态，不是加载错误。
 - Run Repository 查询失败时，右列保留当前来源标题并显示可重试错误；不得保留上一轮次的卡片。
 - Tool Result缺少`run_id`、`call !== null`但Tool名不匹配、`call === null`且持久映射不存在，或运行与Tool Call的Session/turn不一致时返回`GENERATION_RUN_LINK_INVALID`，并停止定位。
-- 伪造或其他 Workspace 的 `run_id` 返回访问拒绝或不存在；错误文案不得暴露目标是否属于另一个 Workspace。
+- Session ID 与 Run 或 Media 的持久归属不一致时返回不存在；错误文案不得暴露目标属于哪个 Workspace。
 
 ## 产品验收
 
 1. 一个 Session 依次创建零运行、单运行和四运行 Chat Turn；三个轮次按钮和右列数量逐项正确。
 2. 每个 Tool Call 的“定位结果”聚焦其自身 `run_id`，多个 Tool Call 不互相覆盖。
 3. 切换到其他 Session 再返回，轮次选择、卡片集合和 Session 运行总数保持正确。
-4. 修改或伪造浏览器请求中的 Session/run 标识不能读取其他 Workspace 数据。
+4. 修改浏览器请求中的 Session ID 后，原 Session 的 Run 或 Media 标识不能通过归属校验。调用者级跨 Workspace 隔离不属于当前 rc.2 本机单用户插件接口的能力。
 5. 视觉审核者检查轮次标题、数量文案、选中态、右列来源、空态、卡片顺序、滚动与聚焦样式。
 6. 同一`run_id`从队列等待进入远程运行、保存媒体和成功时，中列Tool行和右列卡片在每次Store更新后显示同一状态；中列单独可见时仍能刷新。
 7. 初始history window只包含Tool Result、配对Tool Call在更早分页且`ToolResultNode.call === null`时，Client通过`resolveToolResultLink()`恢复中列Tool行与右列卡片；篡改`call_id`、Session或meta `run_id`后不建立链接。
 
 ## 不属于本 Ticket
 
-本 Ticket 不推进远端 Job 状态，不实现取消、媒体库或多媒体下载。
+本 Ticket 不推进远端 Job 状态，不实现取消、媒体库、多媒体下载或 Harness 尚未公开请求主体接口的多用户 Workspace 授权。

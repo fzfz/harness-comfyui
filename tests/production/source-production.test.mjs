@@ -204,7 +204,7 @@ describe('source production commands', () => {
     expect(fixture.context.profile).toMatchObject({
       configurationProfile: 'production',
       server: { host: '127.0.0.1', port: fixture.context.runtime.port },
-      comfyui: { defaultInstanceId: 'production' },
+      comfyui: { defaultInstanceId: '1' },
       source: {
         contractId: 'imagegen-source-contract',
         sourceReleaseVersion: '0.82.2',
@@ -227,7 +227,7 @@ describe('source production commands', () => {
         HARNESS_COMFYUI_SOURCE_CLI_PATH: '/ignored/source.mjs',
         HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: 'environment-instance',
         HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '2345',
-        HARNESS_COMFYUI_SERVER_HOST: '127.0.0.2',
+        HARNESS_COMFYUI_SERVER_HOST: '0.0.0.0',
         HARNESS_COMFYUI_SERVER_PORT: String(await findFreePort()),
       },
     })
@@ -246,7 +246,7 @@ describe('source production commands', () => {
         sourceCliPath: resolve(fixture.runtimeRoot, 'source.mjs'),
       },
       client: { runRefreshIntervalMs: 2345 },
-      server: { host: '127.0.0.2' },
+      server: { host: '127.0.0.1' },
     })
     await expect(loadSourceProductionContext({
       repositoryRoot,
@@ -347,16 +347,6 @@ describe('source production commands', () => {
           runtimeRelativeRoot: `.local/changed-source-production-${randomUUID()}`,
         },
         environment: { HARNESS_COMFYUI_SERVER_PORT: String(fixture.context.runtime.port) },
-      }),
-    },
-    {
-      name: 'HARNESS_COMFYUI_SERVER_HOST',
-      change: async fixture => ({
-        definition: fixture.definition,
-        environment: {
-          HARNESS_COMFYUI_SERVER_HOST: '127.0.0.2',
-          HARNESS_COMFYUI_SERVER_PORT: String(fixture.context.runtime.port),
-        },
       }),
     },
     {

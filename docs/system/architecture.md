@@ -24,8 +24,12 @@ pnpm prod:start|restart
 | --- | --- |
 | `scripts/production/` | Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
-| `src/host/` | Host 插件与项目 Tool 唯一注册入口 |
-| `src/client/` | 使用 `sidebar.footer.action` 与 `conversation.input.dock` 原生扩展位的浏览器 Client 模块 |
+| `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，并向 Client 提供 Catalog Typert Remote |
+| `src/host/generation/` | Run Repository、Source adapter、Workflow compiler、Comfy transport、coordinator、Generation Tool、Generation Remote 和媒体路由 |
+| `src/host/tools/` | 项目 Tool 唯一注册入口 |
+| `src/generation/` | Host 与 Client 共用的 Generation Remote 和媒体 URL 合同 |
+| `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器与 Generation Run/Media 投影 |
+| `.agents/skills/comfyui-generate/` | 从当前消息的模板与画面上下文调用异步 Generation Tool 的项目 Skill |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
@@ -36,3 +40,9 @@ pnpm prod:start|restart
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 
 运行状态默认写入 `.local/production/`，源码仍保留在仓库根目录。配置变更在下一次 `prod:start` 或 `prod:restart` 时生效。
+
+## Generation 生命周期
+
+`generate_with_comfyui` 在 Run Repository 持久接纳当前 Tool `callId` 后立即返回 `run_id`。Host 内的 Generation Coordinator 继续执行准备、提交、观察和媒体保存。Host 停止时 coordinator 中止本地观察但不取消远端 ComfyUI 任务；Host 重启后从非终态 Run 继续观察。
+
+Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体内容与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|workflow` 提供。

@@ -75,7 +75,7 @@ CLI非零退出、空stdout、stdout含多个JSON值、响应schema不匹配或o
 
 Catalog 与 Source 目标成功响应都必须先通过 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope 校验。Catalog adapter 将 `results` 映射为内部 `items`，从 `production` Configuration Profile 写入内部 `source_release_version`，从 operation manifest 写入内部 `kind` 与 `result_contract_id`；Source adapter 以 `results` 单项记录为输入。CLI 只做非空、严格 UTF-8、单个 JSON 值检查，Harness adapter 负责业务 Schema 校验。
 
-Source TemplateBundle 的 `expected_output_node_ids_json` 必须是非空数组；`null`、空数组、缺失或非法值统一返回 `SOURCE_TEMPLATE_UNAVAILABLE`，不得从 `workflow_json` 推导或补默认值。
+Source TemplateBundle 的 `expected_output_node_ids_json` 可以是非空数组或 `null`；`null` 表示生成阶段使用目标 ComfyUI 实例 `/object_info` 中 `output_node: true` 的活动节点。空数组、缺失或非法值返回 `SOURCE_PROTOCOL_ERROR`。
 
 ## 前端交互
 

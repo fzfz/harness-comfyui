@@ -19,7 +19,6 @@ import { apply, inject, name } from '../../src/client/index.tsx'
 import {
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
-  WORKBENCH_RESULTS_OVERLAY_ID,
 } from '../../src/client/workbench/contract.ts'
 
 type Registration = {
@@ -32,6 +31,7 @@ type Registration = {
 function installImmediateInject(context: Record<string, any>): void {
   context.get = vi.fn((service: string) => {
     if (service === 'remote.harnessComfyuiCatalog') return context.remote.harnessComfyuiCatalog
+    if (service === 'remote.harnessComfyuiGeneration') return context.remote.harnessComfyuiGeneration
     return undefined
   })
   context.inject = vi.fn((_services: readonly string[], callback: (scope: unknown) => unknown) => {
@@ -83,6 +83,10 @@ describe('Harness Client plugin registration', () => {
       value: { kind: 'model', query: '', page: 1, items: [], totalCount: 0 },
     }))
     const remoteBaseModels = vi.fn(async () => ({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } }))
+    const remoteGenerationList = vi.fn(async () => ({
+      ok: true,
+      value: { sessionId: 'session-1', runs: [], media: [], hasActiveRuns: false, refreshAfterMs: 1000 },
+    }))
 
     const context = {
       slots: { inject: slotInject, register },
@@ -91,6 +95,7 @@ describe('Harness Client plugin registration', () => {
       remote: {
         $mount: vi.fn(async () => remoteDispose),
         harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels },
+        harnessComfyuiGeneration: { list: remoteGenerationList },
       },
       layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
     }
@@ -103,7 +108,6 @@ describe('Harness Client plugin registration', () => {
       'sidebar.footer.action',
       'conversation.input.dock',
       'details',
-      'shell.overlay',
     ])
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
@@ -114,23 +118,17 @@ describe('Harness Client plugin registration', () => {
       order: 20,
     })
     expect(registrations.get('details')).toMatchObject({ priority: -10 })
-    expect(registrations.get('shell.overlay')).toMatchObject({
-      id: WORKBENCH_RESULTS_OVERLAY_ID,
-      order: 20,
-    })
 
     const entryFace = registrations.get('sidebar.footer.action')!.inject()
     const dockFace = registrations.get('conversation.input.dock')!.inject('session-1' as never)
     const detailsFace = registrations.get('details')!.inject('session-1' as never)
-    const overlayFace = registrations.get('shell.overlay')!.inject()
     expect(entryFace).toMatchObject({ workbench: expect.any(Object) })
     expect(dockFace).toMatchObject({
       catalog: expect.objectContaining({ search: expect.any(Function), baseModels: expect.any(Function) }),
       workbench: expect.any(Object),
       sessionInput,
     })
-    expect(detailsFace).toMatchObject({ workbench: expect.any(Object) })
-    expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
+    expect(detailsFace).toMatchObject({ workbench: expect.any(Object), generationStore: expect.any(Object) })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)
     const catalog = (dockFace as { catalog: { search: Function; baseModels: Function } }).catalog
@@ -140,17 +138,20 @@ describe('Harness Client plugin registration', () => {
     )).resolves.toEqual({ kind: 'model', query: '', page: 1, items: [], totalCount: 0 })
     await expect(catalog.baseModels(new AbortController().signal))
       .resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
+    const generationStore = (detailsFace as { generationStore: { subscribe: Function; getSnapshot: Function } }).generationStore
+    const stopGeneration = generationStore.subscribe('session-1', vi.fn())
+    await vi.waitFor(() => expect(remoteGenerationList).toHaveBeenCalledOnce())
+    expect(generationStore.getSnapshot('session-1').projection.sessionId).toBe('session-1')
+    stopGeneration()
 
     await dispose()
 
     expect(injectionDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('details')).toHaveBeenCalledOnce()
-    expect(injectionDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('details')).toHaveBeenCalledOnce()
-    expect(registrationDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
     expect(remoteDispose).toHaveBeenCalledOnce()
   })
 

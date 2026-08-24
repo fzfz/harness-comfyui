@@ -1,15 +1,73 @@
 # Harness ComfyUI 原型方案调研计划
 
 ## Goal
-计划编写者在Issues #2–#15开始实现前，把每张Issue使用的DeepSeek Harness `0.1.0-rc.7` public plugin seam和来源功能迁移方案写成计划执行者能够直接落地的确定规范；计划必须区分Harness核心运行权威、上游随附UI插件与项目UI插件，并分别为两个Prompt Skill、来源系统的`lora-adjustment` Skill和独立`comfyui-generate`生成Skill写明逐文件改动、输入合同、Tool调用链和黑盒验收。
+计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-计划编写者把已经冻结的Skill Invocation→Generation Tool Call/Result→`ToolResultNode.meta.run_id`→唯一`GenerationRunProjectionStore`链路同步到父Issue和GitHub Issues #2、#5、#7、#8、#13、#14。同步后，独立语义审核者必须确认中列异步摘要与右列详细卡片读取同一Run快照、两处不重复轮询、缺少同轮`comfyui-generate` Skill Invocation时Host拒绝创建Run，并确认Issue执行者不承担接口调研或设计决定。
+Phase 22 没有待执行工作；Harness 生产实例保持运行，等待用户验收真实运行与媒体结果。
 
 ## Current Phase
-Phase 21 completed
+Phase 22 completed
 
 ## Phases
+
+## Phase 22：实现真实 Generation Run、媒体存储与右列异步投影
+
+### 必须要实现的目标
+
+- 计划执行者必须先以提交 `e9f78b3` 保存当前 Harness ComfyUI 原型，后续实现提交必须能够与该基线比较和回滚。
+- 计划执行者必须实现 `Session 1 → N Run`、`Run 1 → N Media`、`Run 1 → 1 Actual Workflow + 1 API Workflow` 的 SQLite 与文件系统持久化。
+- 计划执行者必须为每个不同 Harness Tool `callId` 接纳一个独立 Run，并让相同 `callId` 的重复执行返回原 `run_id`。
+- 计划执行者必须实现 Host 生命周期内的异步 coordinator、Source CLI TemplateBundle 读取、ComfyUI 提交/观察/输出下载 adapter 和非终态 Run 重启恢复。
+- 计划执行者必须实现 Generation Run Typert Remote、按 `media_id` 返回媒体和所属 Actual Workflow 的同源 HTTP 路由。
+- 计划执行者必须把右列静态任务和媒体替换为真实投影，并把 Workflow 下载图标从 Session 级 header 移到每张媒体卡片。
+- 计划执行者必须使用 Harness `0.1.1-rc.2` 公开插件、Tool、Remote、WebServer 和原生 Client UI 接口；计划执行者不得修改 Harness 核心或数据源仓库。
+
+### 已确认的 TDD Seam
+
+- `GenerationRuntime.acceptGeneration(identity, request)` 是 Tool 接纳与幂等行为的公开 seam。
+- `GenerationRuntime.advance()` 是持久 Run 状态推进与恢复行为的公开 seam。
+- `GenerationRuns` 项目 Remote 是 Client 结构化查询的公开 seam。
+- `/api/harness-comfyui/media/<media_id>/content` 与 `/api/harness-comfyui/media/<media_id>/workflow` 是浏览器文件响应的公开 seam。
+- 右列 Harness Client slot 是任务卡、媒体卡和逐媒体 Workflow 下载交互的公开 seam。
+
+### 验收清单
+
+- 一个 Session 的同一数字 turn 内两个不同 `callId` 产生两个不同 Run 和两份不同 Actual Workflow。
+- 一个 Run 的多个媒体都解析到该 Run 的 Actual Workflow；另一个 Run 的媒体不能下载前一 Run 的 Workflow。
+- Tool 在 SQLite 持久接纳 `created` Run 后立即返回 `run_id`；Host coordinator 随后异步准备来源快照和两份 Workflow，ComfyUI 执行不阻塞 Tool Result。
+- Host 重启后，已有 `prompt_id` 的非终态 Run 继续观察原 Job，`downloading` Run 继续保存未完成输出，`submitting` 且没有可靠 `prompt_id` 的 Run 进入 `submission_unknown`。
+- 媒体原文件按随机 `media_id` 两级分片保存；SQLite 不保存媒体二进制；浏览器只能访问 SQLite 记录的相对路径。
+- 右列任务按 Run 展示真实状态；右列媒体按 Media 展示真实文件；每张媒体卡片包含自己的 Workflow 下载图标；右列 header 不包含 Workflow 下载按钮。
+- 目标单测、集成测试、类型检查、完整 `pnpm quality`、生产重启、生产健康检查和浏览器验收全部通过。
+- `code-review` 的 Standards 与 Spec 两个独立审核结果没有未解决的阻断问题。
+- 计划执行者提交最终实现到当前分支。
+
+### 非本次目标
+
+- 本阶段不实现跨进程分布式 worker、独立 HTTP 服务、对象存储、云端数据库或媒体 CDN。
+- 本阶段不修改 ComfyUI、Harness 核心、`node_modules/@deepseek-ai/*` 或数据源仓库。
+- 本阶段不新增未经安全审计和版本锁定的第三方依赖。
+- 本阶段不把 Harness Jobs registry 作为 Generation Run 持久状态来源。
+
+### 已获得的授权
+
+- 用户已明确要求执行 Phase 21 已确认的完整方案。
+- 用户已明确要求实现前提交当前工作树，提交 `e9f78b3` 已完成该回滚基线。
+- 用户已指定 Harness `0.1.1-rc.2` 为实现权威，并授权修改、测试、提交和启动当前 Harness 插件。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 针对安装包的类型搜索只使用 `*.d.ts` 与 `*.ts`，没有命中 rc.2 发布包的实际构建扩展名 | 1 | 计划执行者改为先列出安装包真实文件，再按实际扩展名读取公开声明。 |
+| 初次记录 Tool 身份时误把 Code Mode 外层 `rootCallId` 选为 Run 身份 | 1 | 用户不变量要求每次 Generation Tool 调用创建 Run；计划执行者立即改为使用当前 Tool `callId`。 |
+| 第一条 GenerationRuntime green 测试通过后，TypeScript 没有从 `Array.isArray()` 正确缩窄只读 JSON 数组联合 | 1 | 计划执行者在对象分支显式收窄为只读 JSON record，不改变运行行为。 |
+| SourceGenerationPreparer 首次 green 检查的 fixture 只提供一个 widget 值，但测试 binding 指向索引 1 | 1 | 计划执行者把 fixture 修正为与两个声明 binding 一致的两个 widget 值，并把 Workflow 类型收窄为必填 `widgets_values`。 |
+| 生产源码加载首次失败于 Node strip-only 不支持 TypeScript constructor parameter property | 1 | 计划执行者把 Generation Host 类改为显式字段声明，并用 `prod:test` 锁定源码直接加载。 |
+| 浏览器首次加载新增 Generation Remote 时，Typert 拒绝第二次注册同名 `harness-comfyui` package | 1 | 计划执行者新增单次 `$mount()` 回归测试，并把 Catalog 与 Generation descriptors 合并为一份 Remote contribution。 |
+
+- **Status:** completed
 
 ### Phase 1: 检查两个仓库的现有接口
 - [x] 计划编写者检查 DeepSeek Harness 的 Web 页面、插件、会话事件与 Skill 目录。
@@ -222,7 +280,7 @@ Phase 21 completed
 ### Phase 14: 正式采用源数据仓库 v0.82.2 envelope
 - [x] 在唯一结构化合同文件中冻结 v0.82.2 Catalog/Source discovery、成功响应、错误响应、CLI 退出码和字段映射。
 - [x] 同步 CONTEXT、ADR、Configuration Profile、PRD 01/03/04/05、父 Issue 和 Tickets 03/04/05/12/13 的旧 wrapper、旧 Schema 校验和旧模板字段。
-- [x] 将 `expected_output_node_ids_json: null` 定义为模板生成入口的 fail-closed 条件，不让 Issue 执行者自行猜测或补值。
+- [x] 将 `expected_output_node_ids_json: null` 定义为不限制输出节点；Workflow compiler 使用目标 ComfyUI 实例 `/object_info` 中 `output_node: true` 的活动节点，不按节点名称猜测。
 - [x] 回读并核对 GitHub Issues #1–#14 的可执行正文；只发布 v0.82.2 envelope 的消费规范，不修改源数据仓库。
 - **Status:** completed
 

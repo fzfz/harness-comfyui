@@ -75,8 +75,9 @@ describe('Client module materialization seam', () => {
     const moduleMaterializer = await readFile(join(repositoryRoot, 'scripts/production/client-module.mjs'), 'utf8')
 
     expect(source).not.toContain('harness-comfyui/remote')
-    expect(source).toContain("import CATALOG_REMOTE from '../remote.ts'")
-    expect(source).toContain('ctx.remote.$mount(CATALOG_REMOTE)')
+    expect(source).toContain("import HARNESS_COMFYUI_REMOTE from '../remote.ts'")
+    expect(source).toContain('ctx.remote.$mount(HARNESS_COMFYUI_REMOTE)')
+    expect(source.match(/ctx\.remote\.\$mount\(/g)).toHaveLength(1)
     expect(source).not.toContain('applyWithRemote')
     expect(moduleMaterializer).not.toContain('lib/typert.remote-client.js')
     expect(moduleMaterializer).not.toContain('applyWithRemote')

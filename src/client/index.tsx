@@ -4,18 +4,19 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
-import CATALOG_REMOTE from '../remote.ts'
+import HARNESS_COMFYUI_REMOTE from '../remote.ts'
 import { CATALOG_REMOTE_SERVICE } from '../catalog/contract.ts'
+import { GENERATION_REMOTE_SERVICE } from '../generation/contract.ts'
 
 import {
   WORKBENCH_DETAILS_PRIORITY,
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
-  WORKBENCH_RESULTS_OVERLAY_ID,
 } from './workbench/contract.ts'
 import { WorkbenchController } from './workbench/controller.ts'
+import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
-import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-drawer.tsx'
+import { WorkbenchDetails } from './workbench/results-drawer.tsx'
 
 export const name = 'harness-comfyui'
 export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout'] as const
@@ -25,9 +26,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const clientSessions = ctx.sessions as unknown as ISessions
   const disposers: Array<() => void | Promise<void>> = []
   try {
-    disposers.push(await ctx.remote.$mount(CATALOG_REMOTE))
-    const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE], (remoteContext) => {
+    disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
+    const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE, GENERATION_REMOTE_SERVICE], (remoteContext) => {
       const remoteCatalog = remoteContext.get(CATALOG_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiCatalog
+      const remoteGeneration = remoteContext.get(GENERATION_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiGeneration
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
       }
@@ -47,7 +49,17 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           return result.value
         },
       }
+      const generationStore = new GenerationProjectionStore({
+        list: async (sessionId, signal) => {
+          ensureActive(signal)
+          const result = await remoteGeneration.list({ sessionId, turn: null })
+          ensureActive(signal)
+          if (!result.ok) throw new Error(result.error.code)
+          return result.value
+        },
+      }, 1000)
       return [
+        () => generationStore.dispose(),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
           name: 'sidebar.footer.action',
           id: WORKBENCH_ENTRY_ID,
@@ -73,14 +85,8 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         ctx.slots.inject('details', () => ctx.slots.register({
           name: 'details',
           priority: WORKBENCH_DETAILS_PRIORITY,
-          inject: () => ({ workbench }),
+          inject: () => ({ workbench, generationStore }),
         }, WorkbenchDetails)),
-        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-          name: 'shell.overlay',
-          id: WORKBENCH_RESULTS_OVERLAY_ID,
-          order: 20,
-          inject: () => ({ workbench }),
-        }, WorkbenchResultsOverlay)),
       ]
     })
     await remoteFiber

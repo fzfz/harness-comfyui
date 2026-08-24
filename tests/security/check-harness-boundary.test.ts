@@ -30,7 +30,7 @@ function fixture(otherSource = ''): string {
     name: 'harness-comfyui',
     private: true,
     dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
-    devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.8' },
+    devDependencies: { '@deepseek-ai/dsh': '0.1.1-rc.2' },
     peerDependencies: {},
     exports: {},
     dsh: { bundle: { patch: './cordis.patch.yml' }, client: { platform: 'web', inject: clientInject } },
@@ -66,6 +66,15 @@ function updateJson(root: string, path: string, update: (value: Record<string, a
 describe('Harness source boundary', () => {
   it('accepts one project Tool registry in the Host plugin', () => {
     const root = fixture()
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts the public WorkspaceRegistry type export', () => {
+    const root = fixture("import type { WorkspaceRegistry } from '@deepseek-ai/dsh-workspace'\n")
     try {
       expect(run(root)).toMatchObject({ status: 0, stderr: '' })
     } finally {

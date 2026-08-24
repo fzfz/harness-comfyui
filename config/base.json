@@ -20,6 +20,9 @@
     "pollIntervalMs": 500,
     "missingObservationMs": 30000
   },
+  "media": {
+    "maxFileBytes": 536870912
+  },
   "server": {
     "host": "127.0.0.1",
     "port": 4173

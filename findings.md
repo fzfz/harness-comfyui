@@ -229,7 +229,7 @@
 - v0.82.2 的 Catalog discovery 是裸 OpenAPI 3.1 对象；Source discovery 是 `status/message/results/page/page_size/total_count` envelope，OpenAPI 位于 `results[0]`；两者都没有顶层 `contract_id`、`contract_version` 或 `source_release_version`。
 - v0.82.2 CLI 只验证非空、严格 UTF-8、单个 JSON 值并原始透传；业务响应 Schema 由 Harness adapter 验证。Catalog 与 Source 成功响应统一采用 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count`。
 - 已选择正式采用 v0.82.2 envelope：Harness Installation 固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`，这两个字段是 Harness-owned pin，不是从 live body 读取；adapter 依据唯一结构化合同文件校验 discovery、分页 envelope、operation metadata 和业务字段。
-- Source TemplateBundle 的 `expected_output_node_ids_json: null` 不得由 Harness 推导或补默认值；模板生成入口必须失败关闭并返回 `SOURCE_TEMPLATE_UNAVAILABLE`，直到真实 Source 响应提供非空、通过 schema 的输出节点数组。
+- Source TemplateBundle 的 `expected_output_node_ids_json: null` 表示不提供输出节点过滤器；Workflow compiler 使用目标 ComfyUI 实例 `/object_info` 中 `output_node: true` 的活动节点，不按 Workflow 节点名称猜测。
 - 已将 v0.82.2 合同同步到实际部署 gate：`config/base.json`、`config/schema.ts`、`scripts/deploy/contracts.mjs`、`scripts/deploy/preflight.mjs`、`scripts/deploy/health.mjs` 和所有部署测试夹具均使用 `sourceReleaseVersion: "0.82.2"`；Catalog discovery 与 Source discovery 分别按两种 live shape 校验。
 - 已将 `config/source-contract-v0.82.2.json` 纳入 Release Artifact 文件清单，并把同一消费合同同步到 GitHub Issues #1–#15；源数据仓库未被修改。
 
@@ -555,6 +555,28 @@
 - 最终生产状态为 `running`，PID `77911`，`http://127.0.0.1:4173/`；process、source runtime、Harness Web、Client bundle、Run Repository 和 Saved Media 健康检查全部通过。
 - `git diff --check` 无输出并通过。
 
+## 2026-08-25 Phase 22 — 最终边界结论
+
+- Harness rc.2 的空白 Session 同样能够渲染公开 `details` slot。同时注册 `details` 和 `shell.overlay` 会生成两个结果抽屉；插件只注册 `details` 后，空白 Session 与已有 Session 都使用同一原生右列。
+- ComfyUI 提交的不确定边界位于 `/prompt` 请求开始之后。API Workflow 缺失或损坏、Source 读取失败和实例 origin 变化均确定没有发送请求，必须保留具体失败码；连接中断或请求超时才进入 `submission_unknown`。
+- Client Remote 没有公开调用者身份或 Workspace 授权主体；当前 Harness 是绑定 `127.0.0.1` 的单用户本机应用。Session→Workspace 解析用于数据归属校验，不能声称它提供多租户调用者授权。
+
+## 2026-08-25 Phase 22 — 生产界面验收
+
+- Typert `RemoteStore` 以 `contribution.package` 为唯一所有者键，同一个 Client plugin 不能把 Catalog 与 Generation 两份 descriptor contribution 分别以 `package: "harness-comfyui"` 挂载。当前 Client 把三条 descriptor 合并为一份 contribution，并且只调用一次 `ctx.remote.$mount()`。
+- Harness rc.2 的 `details` 列在页面刷新后按原生瞬态布局规则恢复为 0px；左侧“ComfyUI 工作台”入口调用公开 `layout.openDetails()` 后，1280px 验收视口中的右列宽度为 359px。
+- `.agents/skills` 候选属于 Session Agent scope。新增技能目录后，新会话的原生 `/` 列表包含 `comfyui-generate`；技能目录生效前创建的既有 Agent 不会热换已加入的 scope。
+- Generation Runtime 已用内置 `node:sqlite` 持久保存 Run、远端输出和 Media 索引；Node 24.14.0 运行测试时会输出该内置模块的 ExperimentalWarning，但当前实现没有新增第三方依赖。
+- Comfy HTTP transport 使用 stable `prompt_id` 提交 `/prompt`，通过 `/api/jobs/<prompt_id>` 观察状态，并从 `/view` 下载已验证的输出描述符；InstanceSource 的 URL 与 Authorization 只存在于单次 Host 内存调用。
+- `expected_output_node_ids_json: null` 的最终实现语义已经统一到 Source parser、preparer、compiler、PRD 与 ADR：它不限制输出节点，不触发 `SOURCE_TEMPLATE_UNAVAILABLE`；只有缺失、非法 JSON、空数组或显式数组引用非活动输出节点才失败。
+- rc.2 `dsh-skill-filesystem` 默认 `includeDefaultRoots: true`，并按 rank 200 扫描当前 Session `cwd` 所属 Git 项目的 `.agents/skills`；当前 profile 已启用 `skill-filesystem` 与 `tool-skill`，新增 Skill 不需要项目自建列表 RPC 或第二套 `/` 菜单。
+- rc.2 Skill frontmatter 省略 `disable-model-invocation` 与 `user-invocable` 时同时允许模型目录和原生用户 `/` 菜单；`comfyui-generate` 使用合法 kebab-case 名称与单层 `<name>/SKILL.md` 结构。
+- 生产 Source CLI `imagegen-comfyui-source-read.mjs` 当前权限为 `0600` 风格的非可执行脚本；Source adapter 必须用 `process.execPath` 执行 `.mjs`，不能要求或修改外部数据源文件的可执行位。
+- 真实模板 34 需要 `XB_UNetNameBroadcaster`、`ClownsharKSampler_Beta` 与 `FluxResolutionNode`。实例 2 缺少至少第一个节点，实例 1 的 `/object_info` 包含全部三个节点；实例 1 可以把模板 34 编译为 API Workflow。
+- 模板 34 的 `expected_output_node_ids_json` 为 `null` 时，真实编译能够从实例 1 `/object_info` 发现非空活动输出节点集合。这项验证证明 `null` 语义可执行，不需要 Source 记录补写输出 ID。
+- `@deepseek-ai/dsh-workspace@0.1.1-rc.2` 根package export公开`WorkspaceRegistry`与`resolveByPath()`类型；项目安全边界允许该specifier的type-only导入，不允许运行时导入或内部subpath。
+- 静态结果模块仍保存旧Session级Run/Media/Workflow fixture会与真实`media_id → run_id → actual-workflow.json`语义冲突；真实投影上线后应删除这些运行时代码，而不是为它们补覆盖率。
+
 ## 2026-08-25 Phase 21 — 真实媒体、异步运行与 Host 架构
 
 - 用户确认持久化关联不变量为 `Session 1 → N Run`、`Run 1 → N Media`。同一 Session 中的多次 Skill/Tool 调用会创建不同 `run_id`；每次调用可以改变模板参数，因此每个 Run 必须保存自己的 Actual Workflow。
@@ -583,6 +605,41 @@
 - 异步 coordinator 随 Harness Host plugin 启停。Tool 在 SQLite 持久接纳 Run 后返回 `run_id`；coordinator 处理准备、提交、观察、下载和终态转换；Host 退出只停止本地观察，不取消远端 ComfyUI Job；重启扫描非终态 Run。
 - 本机支持的 Node 运行时已经暴露 `node:sqlite`，但当前 Node 24.14.0 仍输出 ExperimentalWarning。实现阶段必须先决定是否接受该运行时状态；本阶段不新增 SQLite 依赖。
 - 推荐实现顺序是：先修正每张媒体绑定独立 Run/Workflow 的静态语义；再实现 Run Repository、ArtifactStore 与 MediaStore；然后用 fake Comfy transport 打通一条 Tool→worker→media→右列纵向切片；最后接入真实 Source CLI 与 ComfyUI HTTP adapter，并补齐多次 Tool 调用、重启、失败和多输出分支。
+
+## 2026-08-25 Phase 22 — 实现真实 Run 与媒体投影
+
+- 用户调用 `implement` Skill 并授权实施完整方案；`implement` 要求使用 TDD、完成后执行两轴 code review，并提交当前分支。
+- 当前修改在实施前已经整体提交为 `e9f78b3`，该提交是本阶段 code review 和回滚的固定点。
+- 已确认的公开测试 seam 是 `GenerationRuntime.acceptGeneration()`、`GenerationRuntime.advance()`、Generation Runs Typert Remote、逐媒体同源 HTTP 路由和右列 Client slot。
+- Context7 高信誉官方资料再次确认 Harness Tool registration、`ctx.effect()` 生命周期和 `ctx.webServer.register()` exact/prefix disposer；本阶段不需要第二个 HTTP 进程。
+- `CONTEXT.md` 与 `docs/system/technology-stack.md` 仍把 Harness 权威版本写为 `0.1.0-rc.8`，与当前精确依赖 `0.1.1-rc.2` 不一致；本阶段必须同步这两处系统文档。
+- 当前 Host plugin 只加载 Configuration Profile、创建 Catalog Remote，并以空数组注册项目 Tool；真实运行模块可以在该入口一次性拥有 Tool、Run Remote、同源路由和 coordinator 生命周期。
+- 当前 Client 已把 Catalog Remote mount 与 `sidebar.footer.action`、`conversation.input.dock`、`details`、`shell.overlay` 注册集中在一个 `apply()` 中；Generation Runs Remote 应与 Catalog Remote 一起 mount，并由右列使用单一外部 store 消费。
+- 当前右列已经移除 header Workflow 下载按钮，每张静态媒体卡片已经有独立图标；本阶段只需要把静态 `runId` 和 Blob fixture 下载替换为 Remote Media 投影与逐媒体 HTTP URL。
+- 当前配置已包含 `runRepositoryFile`、`runDirectory`、`savedMediaDirectory`、`jobs.pollIntervalMs`、`jobs.missingObservationMs` 和 `client.runRefreshIntervalMs`，不需要为第一条纵向切片增加新的运行参数。
+- `package.json` 没有 SQLite 第三方依赖。当前 Node target 和 `@types/node` 已包含 `node:sqlite`，实现阶段先通过 TypeScript 与运行测试验证内置模块，避免未经计划安装依赖。
+- rc.2 Tools README 明确 Tool output `presentationMeta(args, value)` 只为顶层直接调用持久化 JSON meta；Generation Tool 可以把 `run_id` 写入原生 Tool Result meta，Client 不需要解析文本。
+- rc.2 Tool execution 只直接给出 `callId` 与可选 `agent`；`workspace_id`、`session_id` 和数字 turn 必须从 Harness Agent/Session 的公开身份接口解析，不能让模型作为 Tool 参数提供。
+- rc.2 发布包的类型声明位于被根仓库 ignore 规则遮蔽的 `lib/types/`；后续安装包核对必须使用 `rg --no-ignore`，不能误判声明缺失。
+- rc.2 `ToolRunContext` 继承完整 `ToolExecution`，包含 `callId`、`rootCallId`、`arguments`、可选 `agent` 和 `signal`。Generation Run 必须使用当前 Generation Tool 的 `callId`，不能使用外层 `rootCallId`；同一个 `run_code` 中两次 Generation Tool 子调用必须创建两个 Run。
+- rc.2 Workspace 的公开实体包含稳定 `WorkspaceId`、规范路径和 `sessionIds`；Tool 可用 Agent Session 的 `cwd` 经 `workspaceRegistry.resolveByPath()` 获得 `workspace_id`，无需接受模型传入身份。
+- rc.2 Typert Remote Service 是公开 Cordis Service，Catalog 的现有实现模式可以原样用于 Generation Runs 查询，不需要新增 RPC 框架。
+- Agent 的公开身份为 `agent.id === agent.session.id`；Session header 提供创建 `cwd`，Session events 是数字 turn 与原生 `tool/call`、`skill-invocation` 的权威来源。
+- PRD 04 要求 Tool 在创建 Run 前唯一定位当前 `tool/call`，并验证同一 turn 的 `turn/start` 与 Tool Call 之间存在 `comfyui-generate` Skill Invocation；模型参数不得携带 Workspace、Session、turn 或 callId。
+- PRD 04 已冻结 Generation Tool 的名称、描述、参数域、`{run_id}` 输出和 presentation meta 合同；本阶段必须沿用该结构，不重新设计 Tool 文案或输出。
+- v0.82.2 TemplateBundle 的结构化字段包含 `workflow_json`、`parameters_json`、`bindings_json` 与 `expected_output_node_ids_json`；Actual Workflow 必须只按声明 binding 修改，不能猜节点或 widget。
+- Source CLI 只做 Host-only source read；真实 Comfy transport 必须从 InstanceSource 内存连接直接提交、观察和下载，Authorization 不能进入 SQLite、日志、Remote 或快照。
+- 本机 Source discovery 实际公开 `getComfyuiInstanceSourceForHost` 与 `getComfyuiTemplateBundleForHost`，符合 v0.82.2 PRD；Source CLI 与 Catalog CLI 均可连接 `127.0.0.1:18093`。
+- Catalog 当前有 35 个 ComfyUI 模板，它们的 `expected_output_node_ids_json` 为 `null`；这些记录可以进入 Generation Tool，Workflow compiler 使用 live `/object_info` 的 `output_node` 标志识别活动输出节点。
+- 数据源仓库已有 `runtime-compiler.mjs` 证明 UI Workflow→API Workflow 需要 ComfyUI node definitions；当前仓库不能静态导入数据源模块，因此真实 transport 必须从目标实例读取 `/object_info` 并在项目内实现合同等价的编译 adapter。
+- 对当前 35 个模板的只读汇总确认所有 `expected_output_node_ids_json` 都为 `null`。Source CLI 返回成功 envelope；Harness Source adapter 保留 `null`，Workflow compiler 从目标实例节点定义取得活动输出节点。
+- 模板 34 的真实 bundle 已确认包含完整 UI Workflow、parameters 与 bindings，可以进入 Actual Workflow Builder 和 live Workflow compiler。
+- SourceGenerationPreparer 已固定敏感数据边界：`ComfyConnection.url/authorization` 只存在于 Host 内存对象；`source-snapshot.json` 只保存实例 `id/title` 与模板身份、修订、哈希、尺寸策略和输出节点 ID。
+- TemplateBundle 的 `replace_input` 绑定以 `node_id + widget_index` 修改本轮 UI Workflow 副本；请求中没有声明的 parameter 直接返回 `GENERATION_PARAMETER_INVALID`，不得搜索或猜测 Workflow widget。
+- 模板 parameter 的 `default_value` 是 Source 明确声明的值，不是 Host 猜测；请求缺少非必填 parameter 时可以使用该声明默认值。请求缺少必填且无默认值的 parameter 必须失败。
+- 当前迭代链路对非空 `lora_applications` 先返回 `GENERATION_LORA_APPLICATION_INVALID`，直到多 LoRA 确定性转换及分支测试完成；系统不会忽略 LoRA 请求或假装成功。
+- Configuration Profile把`server.host`固定为`127.0.0.1`；`HARNESS_COMFYUI_SERVER_HOST`只把该验证值透传给Harness子进程，调用者不能把当前插件绑定到非回环地址。
+- Saved Media记录存在但媒体文件缺失时，媒体路由返回404和`GENERATION_MEDIA_NOT_FOUND`；Actual Workflow尚未准备时返回409和`GENERATION_ARTIFACT_NOT_READY`；文件缺失时返回404和`GENERATION_ARTIFACT_NOT_FOUND`。右列从同一错误目录读取产品文案。
 ## 2026-08-24 Phase 20 — Workflow 下载图标按钮
 
 - 原原型在运行卡片和 Session 媒体卡片中使用 `data-download-workflow` 提供“下载本次 Workflow JSON（可导入 ComfyUI）”。原型合同明确只下载 Actual Workflow，不提供 API Workflow。

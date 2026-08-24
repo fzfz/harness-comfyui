@@ -121,14 +121,14 @@ Catalog adapter 必须：
 | `bindings_json` | `bindings` |
 | `expected_output_node_ids_json` | `expected_output_node_ids` |
 
-`expected_output_node_ids_json` 必须是非空数组。值为 `null`、空数组、非法 JSON 或缺失时，adapter 返回 `SOURCE_TEMPLATE_UNAVAILABLE`；Harness 不从 `workflow_json` 推导节点、不补默认节点、不读取源数据库内部表，也不调用 ComfyUI。
+`expected_output_node_ids_json` 可以是非空数组或 `null`。非空数组限制本次观察的输出节点；`null` 表示不提供输出节点过滤器，Harness 编译 Actual Workflow 时依据目标 ComfyUI 实例 `/object_info` 中 `output_node: true` 的活动节点生成输出节点集合。空数组、非法 JSON 或字段缺失时，adapter 返回 `SOURCE_PROTOCOL_ERROR`。Harness 不按节点名称猜测输出节点，也不补默认节点。
 
 当前模板结果没有独立 `source_revision` 字段。Harness 快照使用 Configuration Profile pin `source_release_version: "0.82.2"` 作为来源发布标识，不把它伪装成 Workflow revision 或 runtime config revision。
 
 # Ticket 状态门禁
 
 - Ticket 03、05、12 可以使用 v0.82.2 Catalog data；它们必须先通过统一 discovery、envelope 和 adapter schema gate。
-- Ticket 04 可以读取 InstanceSource 和 TemplateBundle envelope；只要真实模板的 `expected_output_node_ids_json` 仍为 `null`，模板生成入口保持阻塞，InstanceSource 子范围不代表单图生成闭环完成。
+- Ticket 04 可以读取 InstanceSource 和 TemplateBundle envelope；`expected_output_node_ids_json` 为 `null` 时使用目标 ComfyUI 实例节点定义识别活动输出节点。
 - Ticket 06–12 只能消费 Ticket 03–05 已规范化的 Harness adapter 结果，不得直接运行 CLI 或读取 Source envelope。
 - Ticket 13 必须在当前开发测试环境中记录同一 v0.82.2 pin、discovery shape、十个 Catalog operation、两个 Source operation、envelope 校验和模板输出节点校验；CLI 退出码 `0` 单独不能作为业务 Schema PASS。
 

@@ -32,7 +32,7 @@ describe('Catalog CLI adapter', () => {
         template_type: 'text_to_image',
         cover_url: 'http://127.0.0.1:18092/media/images/template.webp',
         workflow_json: { secretHostOnlyGraph: true },
-        parameters_json: [{ label: 'seed' }],
+        parameters_json: [{ parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true, visible: true }],
       }], 35, 2),
       stderr: '',
     }))
@@ -46,7 +46,10 @@ describe('Catalog CLI adapter', () => {
         query: 'wai',
         page: 2,
         items: [{
-          context: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
+          context: {
+            kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
+            parameters: [{ parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true }],
+          },
           label: 'wai_txt2img_lora',
           subtitle: 'text_to_image',
           coverUrl: 'http://127.0.0.1:18092/media/images/template.webp',
@@ -85,8 +88,8 @@ describe('Catalog CLI adapter', () => {
     ['artist-string', { id: 7, title: 'watercolor', description: 'watercolor artists', artist_string: '@artist_a, @artist_b', cover_url: null }, {
       kind: 'artist-string', id: '7', title: 'watercolor', prompt_text: '@artist_a, @artist_b',
     }],
-    ['comfyui-template', { id: 37, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null }, {
-      kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
+    ['comfyui-template', { id: 37, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, parameters_json: [] }, {
+      kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [],
     }],
   ] as const)('projects the %s CLI record into exact Agent context data', async (kind, source, context) => {
     const execute: CatalogCliProcess = async () => ({ exitCode: 0, stdout: response([source]), stderr: '' })

@@ -15,6 +15,7 @@ import {
   type CatalogContext,
   type CatalogPage,
   type CatalogQueryRequest,
+  type CatalogTemplateParameter,
 } from '../../catalog/contract.ts'
 
 const MAX_CLI_OUTPUT_BYTES = 32 * 1024 * 1024
@@ -147,6 +148,27 @@ function sourcePromptText(value: unknown): string {
   return value
 }
 
+function sourceTemplateParameters(value: unknown): readonly CatalogTemplateParameter[] {
+  if (!Array.isArray(value) || value.length > 100) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameters are invalid.')
+  }
+  return Object.freeze(value.flatMap((entry) => {
+    const parameter = sourceRecord(entry)
+    if (parameter.visible !== true) return []
+    const valueType = parameter.value_type
+    if (!['string', 'integer', 'number', 'boolean', 'asset_reference'].includes(String(valueType))
+      || typeof parameter.required !== 'boolean') {
+      throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
+    }
+    return [Object.freeze({
+      parameter_id: sourceLabel(parameter.parameter_id),
+      kind: sourceLabel(parameter.kind),
+      value_type: valueType as CatalogTemplateParameter['value_type'],
+      required: parameter.required,
+    })]
+  }))
+}
+
 function sourceContext(kind: CatalogQueryRequest['kind'], id: string, result: Record<string, unknown>): CatalogContext {
   switch (kind) {
     case 'model':
@@ -179,7 +201,12 @@ function sourceContext(kind: CatalogQueryRequest['kind'], id: string, result: Re
         prompt_text: sourcePromptText(result.artist_string),
       })
     case 'comfyui-template':
-      return Object.freeze({ kind, id, title: sourceLabel(result.title) })
+      return Object.freeze({
+        kind,
+        id,
+        title: sourceLabel(result.title),
+        parameters: sourceTemplateParameters(result.parameters_json),
+      })
   }
 }
 

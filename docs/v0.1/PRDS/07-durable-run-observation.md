@@ -8,7 +8,7 @@ Ticket 07 — 离开页面后继续观察排队、远端执行与保存媒体。
 
 本 Ticket 只使用 `@deepseek-ai/dsh-jobs` 的 `ctx.jobs` 代理当前 Agent 的进程内等待，并通过项目 `harness-comfyui/remote` 暴露 Run Repository 的 unary `get/list`。持久 worker、ComfyUI transport 和 Run Repository 都属于项目 Host plugin；`ctx.jobs` 不能成为持久状态来源，也不能代替 ComfyUI单 Job cancel。
 
-DeepSeek Harness rc.8 的 public forwarded-event allowlist 不包含项目 Run 事件。本 Ticket 不发送 `generation.run.changed`，不修改 `@deepseek-ai/dsh-api-remotes`，并按 PRD 06 的 `refreshAfterMs` 条件轮询规则刷新唯一`GenerationRunProjectionStore`。中列Generation Tool行和右列运行卡都从该Store读取，不分别维护状态或轮询计时器。
+DeepSeek Harness `0.1.1-rc.2` 的 public forwarded-event allowlist 不包含项目 Run 事件。本 Ticket 不发送 `generation.run.changed`，不修改 `@deepseek-ai/dsh-api-remotes`，并按 PRD 06 的 `refreshAfterMs` 条件轮询规则刷新唯一`GenerationRunProjectionStore`。中列Generation Tool行和右列运行卡都从该Store读取，不分别维护状态或轮询计时器。
 
 ## 用户任务
 

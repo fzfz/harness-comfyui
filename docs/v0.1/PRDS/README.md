@@ -17,6 +17,6 @@ Ticket 02 与 Ticket 16 的需求文档及实现已经删除。下表中的 Tick
 | 07 | [持久异步运行观察](07-durable-run-observation.md) |
 | 08 | [失败与提交结果未知](08-failure-and-submission-unknown.md) |
 | 09 | [Workspace 任务取消](09-workspace-task-cancellation.md) |
-| 10 | [Session 与 Workspace 媒体](10-session-workspace-media.md) |
+| 10 | [Session 媒体](10-session-workspace-media.md) |
 | 11 | [多输出媒体](11-multi-output-media.md) |
 | 12 | [Prompt 与 LoRA 调整 Skills](12-prompt-skills.md) |

@@ -30,10 +30,21 @@ function stubTestProfileEnvironment(): void {
   for (const [key, value] of Object.entries(values)) vi.stubEnv(key, value)
 }
 
+function provideHostServices(ctx: Context) {
+  const registerTool = vi.fn(() => vi.fn())
+  const registerRoute = vi.fn(() => vi.fn())
+  ctx.provide('tools', { register: registerTool })
+  ctx.provide('webServer', { register: registerRoute })
+  ctx.provide('workspaceRegistry', {
+    resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+  })
+  return { registerRoute, registerTool }
+}
+
 describe('Harness ComfyUI Host plugin', () => {
   it('exports the Loader plugin shape and Standard Schema configuration', () => {
     expect(harnessComfyui.name).toBe('harness-comfyui')
-    expect(harnessComfyui.inject).toEqual([])
+    expect(harnessComfyui.inject).toEqual(['tools', 'webServer', 'workspaceRegistry'])
     expect(typeof harnessComfyui.apply).toBe('function')
     expect(typeof harnessComfyui.Config?.['~standard'].validate).toBe('function')
   })
@@ -41,9 +52,14 @@ describe('Harness ComfyUI Host plugin', () => {
   it('loads a valid Configuration Profile from source', async () => {
     stubTestProfileEnvironment()
     const ctx = new Context()
+    const { registerRoute, registerTool } = provideHostServices(ctx)
     const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'production' })
 
-    expect((ctx as unknown as { pluginStatus?: unknown }).pluginStatus).toBeUndefined()
+    expect(registerTool).toHaveBeenCalledWith(expect.objectContaining({ name: 'generate_with_comfyui' }))
+    expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'prefix',
+      path: '/api/harness-comfyui/media',
+    }))
     await fiber.dispose()
     await ctx.fiber.dispose()
   })
@@ -52,10 +68,7 @@ describe('Harness ComfyUI Host plugin', () => {
     [undefined, 'missing profile'],
     ['invalid', 'unknown profile'],
   ])('rejects %s before Host startup completes', async (configurationProfile, _caseName) => {
-    stubTestProfileEnvironment()
-    const ctx = new Context()
-
-    await expect(ctx.plugin(harnessComfyui, { configurationProfile } as never)).rejects.toThrow()
-    await ctx.fiber.dispose()
+    const result = await harnessComfyui.Config['~standard'].validate({ configurationProfile })
+    expect(result).toHaveProperty('issues')
   })
 })

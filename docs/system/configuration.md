@@ -48,7 +48,8 @@
 | `source.sourceReleaseVersion` | 固定为 `0.82.2` |
 | `jobs.pollIntervalMs` | ComfyUI Job 轮询间隔，毫秒 |
 | `jobs.missingObservationMs` | 缺失 Job observation 判定时间，毫秒 |
-| `server.host` | Harness Web 监听地址；当前为 `127.0.0.1` |
+| `media.maxFileBytes` | 单个 ComfyUI 输出媒体允许保存的最大字节数 |
+| `server.host` | Harness Web 监听地址；固定为 `127.0.0.1`，配置文件不能改为其他地址 |
 | `server.port` | Harness Web 端口；当前为 `4173` |
 | `client.runRefreshIntervalMs` | Client 查询刷新间隔，毫秒 |
 | `process.shutdownTimeoutMs` | 停止进程与释放端口的超时，毫秒 |
@@ -57,10 +58,10 @@
 
 - `HARNESS_COMFYUI_DEFAULT_INSTANCE_ID`
 - `HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS`
-- `HARNESS_COMFYUI_SERVER_HOST`
+- `HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES`
 - `HARNESS_COMFYUI_SERVER_PORT`
 
-`config/environment-overrides.json` 是环境变量名称及其目标字段的唯一结构化来源。加载当前配置时，任何未在该文件中声明的 `HARNESS_COMFYUI_*` 环境变量都会中止配置加载。
+`HARNESS_COMFYUI_SERVER_HOST` 只把已经验证的 `127.0.0.1` 传给 Harness 子进程，不能覆盖 `server.host`。`config/environment-overrides.json` 是环境变量名称、目标字段和子进程透传声明的唯一结构化来源。加载当前配置时，任何未在该文件中声明的 `HARNESS_COMFYUI_*` 环境变量都会中止配置加载。
 
 ## 配置变更
 

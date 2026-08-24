@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
   const React = await import('react')
@@ -29,16 +29,9 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 })
 
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
-import {
-  WorkbenchDetails,
-  WorkbenchResultsOverlay,
-} from '../../src/client/workbench/results-drawer.tsx'
-import {
-  filterStaticMedia,
-  getMediaWorkflowDownloadLabel,
-  STATIC_MEDIA,
-  STATIC_RESULTS_COPY,
-} from '../../src/client/workbench/static-results.ts'
+import { WorkbenchDetails } from '../../src/client/workbench/results-drawer.tsx'
+import { RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
+import type { GenerationProjection } from '../../src/generation/contract.ts'
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
@@ -53,189 +46,173 @@ const { act, create } = createRequire(import.meta.url)('react-test-renderer') as
   }
 }
 
+const projection: GenerationProjection = {
+  sessionId: 'session-1',
+  runs: [
+    { runId: 'run_1', turn: 4, title: '运行一', instanceTitle: 'ComfyUI', templateTitle: 'Anima', status: 'remote_running', errorCode: null, createdAt: 1, updatedAt: 2 },
+    { runId: 'run_2', turn: 3, title: '运行二', instanceTitle: 'ComfyUI', templateTitle: 'Anima', status: 'failed', errorCode: 'COMFYUI_REMOTE_ERROR', createdAt: 1, updatedAt: 2 },
+  ],
+  media: Array.from({ length: 6 }, (_, index) => ({
+    mediaId: `media_${index + 1}`,
+    runId: index < 3 ? 'run_1' : 'run_2',
+    turn: index < 3 ? 4 : 3,
+    outputIndex: index,
+    mediaKind: index === 5 ? 'video' as const : 'image' as const,
+    filename: index === 5 ? 'result.mp4' : `result-${index + 1}.webp`,
+    mediaType: index === 5 ? 'video/mp4' : 'image/webp',
+    byteSize: 100,
+    createdAt: 1_700_000_000_000 + index,
+  })),
+  hasActiveRuns: true,
+  refreshAfterMs: 1000,
+}
+
+const connectedSnapshot = Object.freeze({ projection, errorCode: null })
+
+const generationStore = {
+  subscribe: (_sessionId: string, _listener: () => void) => () => undefined,
+  getSnapshot: (_sessionId: string) => connectedSnapshot,
+  refreshSession: vi.fn(),
+}
+
+afterEach(() => vi.unstubAllGlobals())
+
 function buttonByText(renderer: ReturnType<typeof create>, text: ReactNode) {
   return renderer.root.findAllByType('button').find(button => button.props.children === text)!
 }
 
-describe('static native result drawer', () => {
-  it('provides one native Workflow download icon for every visible media card', () => {
+function renderDetails(workbench: WorkbenchController) {
+  return create(createElement(WorkbenchDetails, {
+    sessionId: 'session-1',
+    useSession: ((selector: (snapshot: unknown) => unknown) => selector({
+      running: false, runningCalls: [], turnEnds: new Map(),
+    })) as never,
+    workbench,
+    generationStore: generationStore as never,
+  }))
+}
+
+describe('native Generation result drawer', () => {
+  it('shows real Run projections and one Workflow download icon on every visible media card', () => {
     const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
-    workbench.openResults()
-    let detailsRenderer: ReturnType<typeof create>
-    let overlayRenderer: ReturnType<typeof create>
-    act(() => {
-      detailsRenderer = create(createElement(WorkbenchDetails, { sessionId: 'session-1', workbench }))
-      overlayRenderer = create(createElement(WorkbenchResultsOverlay, {
-        workbench,
-        useSessions: (selector: (state: unknown) => unknown) => selector({
-          current: 'session-blank',
-          byId: { 'session-blank': { blank: true } },
-        }),
-        useWorkspaces: vi.fn(),
-      } as never))
-    })
-
-    for (const renderer of [detailsRenderer!, overlayRenderer!]) {
-      expect(renderer.root.findAllByProps({ 'aria-label': STATIC_RESULTS_COPY.downloadWorkflow })).toHaveLength(0)
-      act(() => { (buttonByText(renderer, STATIC_RESULTS_COPY.sessionTab).props.onClick as () => void)() })
-      const visibleItems = STATIC_MEDIA.slice(0, 4)
-      expect(renderer.root.findAllByProps({ 'data-icon': 'download' })).toHaveLength(visibleItems.length)
-      for (const item of visibleItems) {
-        const button = renderer.root.findByProps({ 'aria-label': getMediaWorkflowDownloadLabel(item) })
-        expect(button.props.children).toBeUndefined()
-        expect(button.props.title).toBe(STATIC_RESULTS_COPY.downloadWorkflow)
-      }
-    }
-
-    act(() => {
-      detailsRenderer!.unmount()
-      overlayRenderer!.unmount()
-    })
-  })
-
-  it('renders the root overlay drawer only for a blank current Session while results are open', () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
-    workbench.openResults()
-    const useSessions = (selector: (state: unknown) => unknown) => selector({
-      current: 'session-blank',
-      byId: { 'session-blank': { blank: true } },
-    })
     let renderer: ReturnType<typeof create>
-    act(() => {
-      renderer = create(createElement(WorkbenchResultsOverlay, {
-        workbench,
-        useSessions,
-        useWorkspaces: vi.fn(),
-      } as never))
+    act(() => { renderer = renderDetails(workbench) })
+    expect(renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')).toHaveLength(2)
+    expect(JSON.stringify(renderer!.toJSON())).toContain('COMFYUI_REMOTE_ERROR')
+    expect(JSON.stringify(renderer!.toJSON())).toContain('ComfyUI 执行 Workflow 时失败。检查 ComfyUI 任务日志和 Workflow。')
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
+    expect(renderer!.root.findAllByProps({ 'data-icon': 'download' })).toHaveLength(4)
+    expect(renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.title)
+      .toBe(RESULTS_COPY.downloadWorkflow)
+    const anchor = { href: '', download: 'unset', click: vi.fn(), remove: vi.fn() }
+    const append = vi.fn()
+    vi.stubGlobal('document', { createElement: vi.fn(() => anchor), body: { append } })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"workflow":true}', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })))
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:workflow'), revokeObjectURL: vi.fn() })
+    return act(async () => {
+      await (renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.onClick as () => Promise<void>)()
+      expect(anchor.href).toBe('blob:workflow')
+      expect(anchor.download).toBe('comfyui-run-run_1-workflow.json')
+      expect(append).toHaveBeenCalledWith(anchor)
+      expect(anchor.click).toHaveBeenCalledOnce()
+      expect(anchor.remove).toHaveBeenCalledOnce()
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:workflow')
+      renderer!.unmount()
     })
-
-    expect(renderer!.root.findAllByProps({
-      className: 'harness-comfyui-results-drawer harness-comfyui-results-overlay',
-    })).toHaveLength(1)
-    expect(JSON.stringify(renderer!.toJSON())).toContain(STATIC_RESULTS_COPY.title)
-
-    act(() => {
-      ;(renderer!.root.findByProps({ 'aria-label': STATIC_RESULTS_COPY.close }).props.onClick as () => void)()
-    })
-    expect(renderer!.toJSON()).toBeNull()
-    act(() => renderer!.unmount())
   })
 
-  it('does not duplicate the overlay drawer for a connected non-blank Session', () => {
+  it('keeps a media card visible and shows catalog copy when its preview or Workflow is missing', async () => {
     const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
-    workbench.openResults()
     let renderer: ReturnType<typeof create>
-    act(() => {
-      renderer = create(createElement(WorkbenchResultsOverlay, {
-        workbench,
-        useSessions: (selector: (state: unknown) => unknown) => selector({
-          current: 'session-connected',
-          byId: { 'session-connected': { blank: false } },
-        }),
-        useWorkspaces: vi.fn(),
-      } as never))
+    await act(async () => { renderer = renderDetails(workbench) })
+    await act(async () => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_MEDIA_NOT_FOUND"}', {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
+    })))
+    await act(async () => {
+      (renderer!.root.findAllByType('img')[0]!.props.onError as () => void)()
     })
+    expect(JSON.stringify(renderer!.toJSON())).toContain('GENERATION_MEDIA_NOT_FOUND')
+    expect(JSON.stringify(renderer!.toJSON())).toContain('请求的媒体记录不存在。刷新会话媒体列表。')
 
-    expect(renderer!.toJSON()).toBeNull()
-    act(() => renderer!.unmount())
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_ARTIFACT_NOT_READY"}', {
+      status: 409,
+      headers: { 'content-type': 'application/json' },
+    })))
+    await act(async () => {
+      await (renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.onClick as () => Promise<void>)()
+    })
+    expect(JSON.stringify(renderer!.toJSON())).toContain('GENERATION_ARTIFACT_NOT_READY')
+    expect(JSON.stringify(renderer!.toJSON())).toContain('该运行尚未生成所需文件。等待运行准备完成。')
+
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_ARTIFACT_NOT_FOUND"}', {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
+    })))
+    await act(async () => {
+      await (renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.onClick as () => Promise<void>)()
+    })
+    expect(JSON.stringify(renderer!.toJSON())).toContain('GENERATION_ARTIFACT_NOT_FOUND')
+    expect(JSON.stringify(renderer!.toJSON())).toContain('请求的运行文件不存在。刷新会话媒体列表。')
+    expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
+    await act(async () => renderer!.unmount())
   })
 
-  it('filters the structured media fixture by every supported dimension', () => {
-    expect(filterStaticMedia(STATIC_MEDIA, { turn: 'all', kind: 'all', time: 'all' })).toHaveLength(6)
-    expect(filterStaticMedia(STATIC_MEDIA, { turn: 'turn_portrait_03', kind: 'all', time: 'all' })).toHaveLength(3)
-    expect(filterStaticMedia(STATIC_MEDIA, { turn: 'all', kind: 'audio', time: 'all' })).toHaveLength(1)
-    expect(filterStaticMedia(STATIC_MEDIA, { turn: 'all', kind: 'all', time: 'older' })).toHaveLength(2)
-    expect(filterStaticMedia(STATIC_MEDIA, {
-      turn: 'turn_portrait_03', kind: 'audio', time: 'older',
-    })).toHaveLength(0)
-  })
-
-  it('renders run cards, changes focused run, switches tabs, and closes through the layout service', () => {
+  it('changes the selected Run and closes through the Harness layout service', () => {
     const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
     const workbench = new WorkbenchController(layout)
     let renderer: ReturnType<typeof create>
-    act(() => {
-      renderer = create(createElement(WorkbenchDetails, { sessionId: 'session-1', workbench }))
-    })
-
-    expect(renderer!.root.findByProps({ 'data-session-id': 'session-1' })).toBeDefined()
-    expect(JSON.stringify(renderer!.toJSON())).toContain(STATIC_RESULTS_COPY.currentTurn)
-    const runCards = renderer!.root.findAllByType('button')
-      .filter(button => button.props.className === 'harness-comfyui-run-card')
-    expect(runCards).toHaveLength(4)
-    expect(runCards[0]!.props['aria-pressed']).toBe(true)
+    act(() => { renderer = renderDetails(workbench) })
+    const runCards = renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')
+    expect(runCards[0]!.props['aria-pressed']).toBe(false)
     act(() => { (runCards[1]!.props.onClick as () => void)() })
-    expect(renderer!.root.findAllByType('button')
-      .filter(button => button.props.className === 'harness-comfyui-run-card')[1]!.props['aria-pressed']).toBe(true)
-
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.sessionTab).props.onClick as () => void)() })
-    expect(buttonByText(renderer!, STATIC_RESULTS_COPY.sessionTab).props['aria-selected']).toBe(true)
-    expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
-
-    act(() => {
-      ;(renderer!.root.findByProps({ 'aria-label': STATIC_RESULTS_COPY.close }).props.onClick as () => void)()
-    })
+    expect(renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')[1]!.props['aria-pressed']).toBe(true)
+    act(() => { (renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.close }).props.onClick as () => void)() })
     expect(layout.closeDetails).toHaveBeenCalledOnce()
     act(() => renderer!.unmount())
   })
 
-  it('uses native menus for media filters, resets pagination, and renders the empty result', () => {
+  it('filters real media by turn and kind and keeps independent pagination', async () => {
     const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
     let renderer: ReturnType<typeof create>
-    act(() => {
-      renderer = create(createElement(WorkbenchDetails, { sessionId: 'session-1', workbench }))
-    })
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.sessionTab).props.onClick as () => void)() })
-
-    for (let index = 0; index < 3; index += 1) {
-      const anchor = renderer!.root.findAllByType('button')
-        .filter(button => button.props['aria-haspopup'] === 'menu')[index]!
-      act(() => { (anchor.props.onClick as () => void)() })
-      const openMenu = renderer!.root.findAllByProps({ 'data-menu-open': true })[0]!
-      act(() => { (openMenu.props.onBlur as () => void)() })
-    }
-
-    let filterAnchors = renderer!.root.findAllByType('button')
-      .filter(button => button.props['aria-haspopup'] === 'menu')
-    act(() => { (filterAnchors[1]!.props.onClick as () => void)() })
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.audio).props.onClick as () => void)() })
-    expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-audio-preview' })).toHaveLength(1)
-
-    filterAnchors = renderer!.root.findAllByType('button')
-      .filter(button => button.props['aria-haspopup'] === 'menu')
-    act(() => { (filterAnchors[1]!.props.onClick as () => void)() })
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.allKinds).props.onClick as () => void)() })
-
-    const next = renderer!.root.findByProps({ 'aria-label': STATIC_RESULTS_COPY.nextPage })
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const next = renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.nextPage })
     act(() => { (next.props.onClick as () => void)() })
     expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(2)
-    expect(renderer!.root.findByProps({ 'aria-label': STATIC_RESULTS_COPY.previousPage }).props.disabled).toBe(false)
     act(() => {
-      ;(renderer!.root.findByProps({ 'aria-label': STATIC_RESULTS_COPY.previousPage }).props.onClick as () => void)()
+      (renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.previousPage }).props.onClick as () => void)()
     })
     expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
 
-    filterAnchors = renderer!.root.findAllByType('button')
-      .filter(button => button.props['aria-haspopup'] === 'menu')
-    act(() => { (filterAnchors[0]!.props.onClick as () => void)() })
-    act(() => { (buttonByText(renderer!, '第 3 轮 · 服装与背景变体').props.onClick as () => void)() })
-    expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(3)
-    expect(renderer!.root.findByProps({ 'aria-label': STATIC_RESULTS_COPY.nextPage }).props.disabled).toBe(true)
+    let anchors = renderer!.root.findAllByType('button').filter(button => button.props['aria-haspopup'] === 'menu')
+    act(() => { (anchors[1]!.props.onClick as () => void)() })
+    act(() => { (renderer!.root.findAllByProps({ 'data-menu-open': true })[0]!.props.onBlur as () => void)() })
+    act(() => { (anchors[1]!.props.onClick as () => void)() })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.video).props.onClick as () => void)() })
+    expect(renderer!.root.findAllByType('video')).toHaveLength(1)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_MEDIA_NOT_FOUND"}', {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
+    })))
+    await act(async () => {
+      (renderer!.root.findAllByType('video')[0]!.props.onError as () => void)()
+    })
 
-    const currentFilterAnchors = renderer!.root.findAllByType('button')
-      .filter(button => button.props['aria-haspopup'] === 'menu')
-    act(() => { (currentFilterAnchors[1]!.props.onClick as () => void)() })
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.audio).props.onClick as () => void)() })
-    expect(JSON.stringify(renderer!.toJSON())).toContain(STATIC_RESULTS_COPY.noMedia)
-    expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(0)
-
-    const timeFilter = renderer!.root.findAllByType('button')
-      .filter(button => button.props['aria-haspopup'] === 'menu')[2]!
-    act(() => { (timeFilter.props.onClick as () => void)() })
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.older).props.onClick as () => void)() })
-
-    act(() => { (buttonByText(renderer!, STATIC_RESULTS_COPY.currentTab).props.onClick as () => void)() })
-    expect(buttonByText(renderer!, STATIC_RESULTS_COPY.currentTab).props['aria-selected']).toBe(true)
+    anchors = renderer!.root.findAllByType('button').filter(button => button.props['aria-haspopup'] === 'menu')
+    act(() => { (anchors[0]!.props.onClick as () => void)() })
+    const openMenus = renderer!.root.findAllByProps({ 'data-menu-open': true })
+    act(() => { (openMenus[0]!.props.onBlur as () => void)() })
+    act(() => { (anchors[0]!.props.onClick as () => void)() })
+    act(() => { (buttonByText(renderer!, '第 4 轮').props.onClick as () => void)() })
+    expect(JSON.stringify(renderer!.toJSON())).toContain(RESULTS_COPY.noMedia)
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.currentTab).props.onClick as () => void)() })
     act(() => renderer!.unmount())
   })
 })

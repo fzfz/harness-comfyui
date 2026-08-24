@@ -296,7 +296,7 @@
 - **Status:** completed
 - Actions taken:
   - 用户选择正式采用源数据仓库 v0.82.2 的 raw-passthrough envelope，不再要求源 CLI 输出旧的顶层 `contract_id`、`contract_version`、`source_release_version` wrapper。
-  - 已冻结实施边界：Harness Installation 通过 `source.sourceReleaseVersion: "0.82.2"` 固定版本，live discovery/响应字段由 Harness-owned 结构化合同和 adapter 校验；`expected_output_node_ids_json: null` 继续失败关闭。
+  - 已冻结实施边界：Harness Installation 通过 `source.sourceReleaseVersion: "0.82.2"` 固定版本，live discovery/响应字段由 Harness-owned 结构化合同和 adapter 校验。
   - 已开始同步 CONTEXT、ADR、配置、PRD、父 Issue、Tickets 和 GitHub 正文；源数据仓库保持只读。
   - 已将 `scripts/deploy/preflight.mjs` 与 `scripts/deploy/health.mjs` 的 discovery gate 改为 v0.82.2 Catalog 裸 OpenAPI / Source 成功 envelope，并将 Installation pin 改为 `sourceReleaseVersion: "0.82.2"`。
   - 已更新部署与 composition 测试夹具为两种真实 discovery shape；配置、工程基线和 frozen artifact allowlist 已包含 `config/source-contract-v0.82.2.json`。
@@ -636,3 +636,61 @@
 - 已完成 SQLite 表职责、Run Artifact 目录、Saved Media 两级分片、临时文件原子提交和崩溃恢复边界设计。
 - 已完成 Host 内置同源接口与持久 coordinator 方案；不增加第二个 HTTP 服务，不把 Harness Jobs 当作持久任务系统。
 - 已完成异步状态机、Tool 接纳边界、Client 单一投影轮询与实现顺序设计。Phase 21 完成。
+
+## 2026-08-25 Phase 22
+
+- 已读取 `implement`、`planning-with-files`、`tdd`、`code-review`、`codebase-design` 与 `find-docs` Skill 的完整规则。
+- 已运行 planning session catchup；没有未同步上下文。
+- 已检查当前工作树并按用户要求整体提交为 `e9f78b3 chore: checkpoint harness comfyui prototype`。
+- 已冻结五个 TDD 公开 seam，并建立 Phase 22 目标、验收、非目标、授权和错误记录。
+- 下一步：检查当前 Host、Remote、Client、配置和测试结构，设计第一个 Run Repository 红色测试。
+- 已检查 Host、Catalog Remote、Client slot、右列静态数据、Tool registry、Configuration Profile 与当前测试结构。
+- 已确认第一个纵向切片不需要新增配置字段或第三方依赖；下一步读取 Harness Tool 身份类型、Source CLI TemplateBundle Schema 和已接受 PRD 后编写 Run Repository 红色测试。
+- 第一次针对安装包的类型搜索没有命中实际发布扩展名；已记录该错误，下一步先列出包文件并按真实声明扩展名读取。
+- 已确认各 rc.2 包确实包含 `lib/types/**/*.d.ts`，文件只是被 `rg` 默认 ignore 规则过滤；下一步使用 `--no-ignore` 读取精确 Tool/Agent/Remote 声明。
+- 已核对 `ToolRunContext`、Workspace 和 Typert Service 声明；Tool 的持久调用身份采用当前 Generation Tool `callId`，Workspace 采用 Agent Session `cwd` 的公开 registry 解析。
+- 已读取 Agent/Session 身份声明与 Generation Run 相关 PRD。下一步先实现 Run Repository 的第一条红—绿循环，再逐步增加 Artifact、Source、transport 和 Client 投影。
+- 已只读连接真实 Catalog/Source discovery，确认本机 Host Source operations 和模板数据可用；当前模板的 `expected_output_node_ids_json` 均为 `null`。
+- 用户纠正了输出节点语义：`null` 不是模板不可用，而是不限制输出节点；实现使用目标 ComfyUI 实例 `/object_info` 的 `output_node: true` 活动节点。
+- 第一条 GenerationRuntime 红色测试按预期失败于模块缺失；最小实现后 2 项测试通过，覆盖不同 `callId` 独立 Run、相同 `callId` 幂等重放和不同请求冲突。
+- 同轮 TypeScript 首次检查发现只读 JSON 联合缩窄问题；已用明确 record 类型修正，准备重跑同一测试与类型检查。
+- 已完成第一条 Run Repository TDD seam：不同 Tool `callId` 创建不同 Run 和 Actual Workflow；同一 `callId` 重放返回原 `run_id`；同一 `callId` 的不同请求返回 `RUN_REQUEST_CONFLICT`。
+- 已完成 SourceGenerationPreparer TDD seam：运行参数只通过 TemplateBundle 声明的 `replace_input` binding 改写 UI Workflow；连接 URL 与 Authorization 不进入来源快照。
+- 已撤销错误的 `SOURCE_TEMPLATE_UNAVAILABLE` 门禁；TemplateBundle 输出节点为 `null` 时，preparer 调用 Workflow compiler 并采用其活动输出节点集合。
+- Generation Runtime 与 Source preparer 共 5 项目标测试通过，`pnpm run typecheck` 通过。
+- 下一步：实现 Source CLI 严格解析、UI Workflow→API Workflow 编译器与 Comfy transport，再进入 worker 状态机和媒体分片存储。
+- 已完成真实 ComfyUI HTTP transport、持久 coordinator、Generation Tool、Generation Runs Typert Remote、逐媒体同源内容与 Workflow 路由，以及右列真实 Run/Media 投影的第一条纵向实现。
+- Generation Tool 使用当前原生 `tool/call` 的 `callId` 创建 Run，并验证同一 turn 内存在 `comfyui-generate` Skill Invocation；模型参数不能提供 Workspace、Session、turn 或 callId。
+- 右列已经删除 Session 级 Workflow 下载入口；每张媒体卡片只通过自身 `media_id` 下载所属 Run 的 `actual-workflow.json`。
+- 目标测试已经覆盖 Run 幂等与冲突、Source CLI 严格解析、Workflow 编译、Comfy transport、worker 状态转换、媒体分片、逐媒体 Workflow、Tool 身份、Remote 投影、Client store 和 coordinator 生命周期。
+- Client 目标测试 11 项与 TypeScript 检查通过。Host plugin 集成测试暴露测试夹具仍假设插件无注入服务；实现已正确声明 `tools`、`webServer` 和 `workspaceRegistry`，下一步修正测试夹具后运行全量质量门禁。
+- 用户再次确认 `expected_output_node_ids_json: null` 不是错误。实现与合同现已统一为：`null` 不提供输出过滤器，编译器使用 live `/object_info` 中 `output_node: true` 的活动输出节点；显式非空数组才校验并过滤。
+- 已修正 Host plugin 集成测试夹具：测试提供真实 Cordis `tools`、`webServer` 和 `workspaceRegistry` 服务，验证 `generate_with_comfyui` 与媒体 prefix 路由完成注册；相关 8 项测试和 TypeScript 检查通过。
+- 已按 `skill-creator` 与 `writing-for-agents` 规范新增 `.agents/skills/comfyui-generate/SKILL.md`。该 Skill 从当前消息的可理解上下文字段构造正向提示词，只调用一次异步 Generation Tool；quick validator 与 `git diff --check` 通过。
+- 第一次真实 Source→Compiler 只读验证失败于生产 Source `.mjs` 没有可执行位；已让 Source adapter 明确使用当前 Node 运行 `.mjs`，新增非可执行脚本分支测试，并保持外部数据源文件不变。
+- 第二次真实验证使用实例 2 时发现模板 34 的活动节点 `XB_UNetNameBroadcaster` 不在该实例 `/object_info`；实例 1 包含模板全部所需节点。生产默认实例已固定为 `1`，模板 34 的真实 Source bundle 与实例 1 `/object_info` 编译通过，识别到活动输出节点且未调用 `/prompt`。
+- 已把当前系统文档、Harness 不可变 ADR、Run Repository ADR 和相关 PRD 的权威 Harness 版本统一到 `0.1.1-rc.2`，并记录已实现的 Generation Host/Client/Skill 模块与持久目录。
+- 第一次全量质量门禁通过依赖、advisory和build-script审计后，在 Harness边界检查发现新使用的公开`@deepseek-ai/dsh-workspace`根export没有进入项目安全allowlist；已按type-only公开边界加入并新增允许/拒绝测试。
+- 第二次质量检查的145项unit/integration全部通过，但新增Generation纵向切片把全局覆盖率降到lines 85.31%、functions 87.5%、statements 80.72%、branches 69.52%，低于现有91/100/88/79门禁。
+- 已删除真实投影替换后遗留的静态Run、静态Media和Session级静态Workflow实现，并新增Generation投影合同、Store错误/清理、Client Generation Remote和逐媒体下载UI分支测试；当前目标15项测试与TypeScript检查通过。
+- 已补齐所有 Generation Host 类的 Node strip-only 源码加载兼容；`prod:test` 的 15 项生产测试通过。
+- 完整 `pnpm quality` 通过：162 项 unit/integration、18 项 contract/security、15 项 production 和 27 项 prototype 全部通过；覆盖率为 statements 91.49%、branches 81.58%、functions 100%、lines 94.91%。
+- 浏览器首次验收捕获 Typert 同名 Remote package 重复注册；新增回归测试后把 Catalog 与 Generation 三条 descriptor 合并为一次 `$mount()`，目标测试与 TypeScript 检查通过。
+- 修复后真实 Harness 页面不再显示插件加载错误；点击左侧“ComfyUI 工作台”后右列从 0px 展开到 359px，三列布局和真实空投影均可见。
+- 新 Harness 会话的原生 `/` 候选列表已经显示 `.agents/skills/comfyui-generate`；验证时临时替换的 231 字符原草稿已经原值恢复，未发送消息。
+- 真实生产进程正在 `http://127.0.0.1:4173/` 运行，六项 `prod:health` 检查全部通过。下一步执行最终全量回归、双轴代码审查、语义审查和提交。
+
+## 2026-08-25 Phase 22 — 最终状态与界面收口
+
+- `expected_output_node_ids_json: null` 已通过 Source parser、preparer 和 Workflow compiler 回归测试；compiler 从目标实例 `/object_info` 中选择 `output_node: true` 的活动节点。
+- Tool 只持久接纳 `created` Run 后立即返回 `run_id`；Host coordinator 异步准备、提交、观察和保存媒体。
+- API Workflow 文件读取和 JSON 解析发生在 `submitting` 前；实例 origin 或 Source 前置校验失败标记为明确 `failed`，只有已经开始 `/prompt` 且响应无法确认的运行进入 `submission_unknown`。
+- Host 生命周期取消保留可恢复状态；响应超时覆盖连接、响应头和完整正文读取。
+- 右列只注册 Harness 原生 `details`，已删除空白会话中重复的 `shell.overlay`；每张媒体卡片保留所属 Run 的 Actual Workflow 下载图标。
+- 右列在存在非终态 Run 时轮询；全部 Run 终态后停止轮询，Session 的运行状态或 Tool 调用变化会显式唤醒查询。
+- `config/error-catalog.json` 现在是错误码、标题、原因、下一步、可取消状态和重复执行风险的唯一产品文案来源。
+- `comfyui-generate` Skill、PRD 和 Tool 已统一使用真实 `comfyui-context.data` 合同，并按 `data.parameters` 检查全部必填参数和 `value_type`。
+- 媒体记录、媒体文件、Workflow未准备和Workflow文件缺失现在通过同源路由返回结构化错误码；右列卡片保留并显示`config/error-catalog.json`中的对应文案。
+- 最终`pnpm quality`通过：177项unit/integration、18项contract/security、14项production和27项prototype测试全部通过；覆盖率为statements 90.44%、branches 80.74%、functions 100%、lines 93.62%。
+- Standards、Spec和语义审查均无未解决问题。最终生产进程PID为96322，`http://127.0.0.1:4173/`的process、sourceRuntime、harnessWeb、clientBundle、runRepository和savedMedia健康检查全部通过。
+- 最终浏览器验收在2048×1013视口选择`Modify code` Session并打开“ComfyUI 工作台”；左侧入口、中列原生工作台和宽359px的唯一Harness `details`右列同时可见，DOM中只有一个`harness-comfyui-details`。

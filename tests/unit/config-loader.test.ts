@@ -77,6 +77,30 @@ describe('production Configuration Profile loader', () => {
     throw new Error('expected loadProfile to reject an invalid port')
   })
 
+  it('rejects a Configuration Profile that binds Harness Web outside loopback', () => {
+    const temporaryConfigRoot = copyConfiguration('harness-comfyui-config-loopback-')
+    try {
+      const basePath = join(temporaryConfigRoot, 'base.json')
+      const base = JSON.parse(readFileSync(basePath, 'utf8')) as { server: { host: string } }
+      base.server.host = '0.0.0.0'
+      writeFileSync(basePath, JSON.stringify(base), 'utf8')
+
+      try {
+        loadProfile('production', { configRoot: temporaryConfigRoot, environment: productionEnvironment })
+      } catch (error) {
+        expect(error).toMatchObject({
+          profileName: 'production',
+          property: 'server.host',
+        })
+        return
+      }
+
+      throw new Error('expected a non-loopback Harness Web host to be rejected')
+    } finally {
+      rmSync(temporaryConfigRoot, { recursive: true, force: true })
+    }
+  })
+
   it('requires the runtime paths supplied by the production process manager', () => {
     try {
       loadProfile('production', {
@@ -253,6 +277,7 @@ describe('production Configuration Profile loader', () => {
       'comfyui',
       'source',
       'jobs',
+      'media',
       'client',
       'server',
       'process',
@@ -273,6 +298,7 @@ describe('production Configuration Profile loader', () => {
       'sourceReleaseVersion',
     ])
     expect(Object.keys(schemaDict.jobs.dict!)).toEqual(['pollIntervalMs', 'missingObservationMs'])
+    expect(Object.keys(schemaDict.media.dict!)).toEqual(['maxFileBytes'])
     expect(Object.keys(schemaDict.server.dict!)).toEqual(['host', 'port'])
     expect(Object.keys(schemaDict.client.dict!)).toEqual(['runRefreshIntervalMs'])
     expect(Object.keys(schemaDict.process.dict!)).toEqual(['shutdownTimeoutMs'])

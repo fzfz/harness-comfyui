@@ -17,6 +17,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-sidebar/client', 'type-only'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
+  ['@deepseek-ai/dsh-workspace', 'type-only'],
   ['@deepseek-ai/schemastery', 'value-or-type'],
 ])
 const frozenClientInject = Object.freeze([

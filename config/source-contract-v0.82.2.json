@@ -115,7 +115,7 @@
         "bindings_json": "bindings",
         "expected_output_node_ids_json": "expected_output_node_ids"
       },
-      "expectedOutputNodeIds": {"type": "array", "minItems": 1, "nullBehavior": "SOURCE_TEMPLATE_UNAVAILABLE"},
+      "expectedOutputNodeIds": {"type": ["array", "null"], "arrayMinItems": 1, "nullBehavior": "discover-active-output-nodes-from-live-object-info"},
       "sourceRevision": {"valueFrom": "configuration.source.sourceReleaseVersion"}
     }
   }

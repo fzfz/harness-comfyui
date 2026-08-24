@@ -32,6 +32,9 @@ export interface ConfigurationProfileValues {
     pollIntervalMs: number
     missingObservationMs: number
   }
+  media: {
+    maxFileBytes: number
+  }
   client: {
     runRefreshIntervalMs: number
   }
@@ -70,11 +73,14 @@ const ConfigurationProfileSchema = Schema.object({
     pollIntervalMs: nonNegativeInteger,
     missingObservationMs: nonNegativeInteger,
   }).required(),
+  media: Schema.object({
+    maxFileBytes: positiveInteger,
+  }).required(),
   client: Schema.object({
     runRefreshIntervalMs: positiveInteger,
   }).required(),
   server: Schema.object({
-    host: nonEmptyString,
+    host: Schema.const('127.0.0.1').required(),
     port: Schema.natural().min(0).max(65535).required(),
   }).required(),
   process: Schema.object({

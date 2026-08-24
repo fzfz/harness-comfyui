@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest'
 
-import CATALOG_REMOTE from '../../src/remote.ts'
+import {
+  CATALOG_REMOTE,
+  HARNESS_COMFYUI_REMOTE,
+} from '../../src/remote.ts'
 
 describe('Catalog Remote contribution', () => {
+  it('assembles every plugin method under one Typert package registration', () => {
+    expect(HARNESS_COMFYUI_REMOTE.package).toBe('harness-comfyui')
+    expect(HARNESS_COMFYUI_REMOTE.descriptors.map(descriptor => descriptor.id)).toEqual([
+      'harness-comfyui#harnessComfyuiCatalog/search',
+      'harness-comfyui#harnessComfyuiCatalog/baseModels',
+      'harness-comfyui#harnessComfyuiGeneration/list',
+    ])
+  })
+
   it('mounts strict cancellable catalog and base-model methods', () => {
     expect(CATALOG_REMOTE.package).toBe('harness-comfyui')
     expect(CATALOG_REMOTE.descriptors).toHaveLength(2)

@@ -4,13 +4,15 @@
 
 ## 平台
 
-**Harness Core**：项目依赖的 DeepSeek Harness `0.1.0-rc.8` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
+**Harness Core**：项目依赖的 DeepSeek Harness `0.1.1-rc.2` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
 
-**Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile。
+**Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册 Catalog Remote、Generation Remote、Generation Tool、媒体路由和 Generation Coordinator。
 
-**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action` 与 `conversation.input.dock` 扩展位呈现项目入口和上下文控件。Client Module 不替换 Harness 的 root、sidebar、conversation、details 或 composer，也不自动创建或打开项目 Session。
+**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock` 与 `details` 扩展位呈现项目入口、上下文控件和真实 Generation Run/Media 投影。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
-**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 当前通过该入口注册空的项目 Tool 集合。
+**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `generate_with_comfyui`。
+
+**ComfyUI Generate Skill**：`.agents/skills/comfyui-generate/SKILL.md` 提供的 Harness Skill。rc.2 文件系统 Skill provider 从当前 Workspace Git 根目录发现该 Skill，Harness 原生 `/` 菜单负责显示和调用。
 
 ## 运行
 
@@ -35,6 +37,10 @@
 **Run Repository**：默认位于 `.local/production/shared/data/runs.sqlite` 的运行记录数据库。
 
 **Saved Media**：默认位于 `.local/production/shared/saved-media/` 的已保存媒体。
+
+**Generation Run**：一次 `generate_with_comfyui` Tool Call 对应的持久异步运行。不同 `callId` 创建不同 Run；每个 Run 独立保存请求、来源快照、Actual Workflow 和 API Workflow。
+
+**Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow，Session 和 Chat Turn 只用于筛选。
 
 ## 发布
 

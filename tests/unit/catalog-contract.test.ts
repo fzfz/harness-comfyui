@@ -78,7 +78,7 @@ describe('catalog Remote contract', () => {
       { kind: 'style', id: '12415', name: 'say_hana', prompt_text: 'say_hana' },
       { kind: 'prompt-term', id: '49856', tag: 'ryuujin_no_senpai' },
       { kind: 'artist-string', id: '1', title: 'watercolor', prompt_text: '@artist_a, @artist_b' },
-      { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
+      { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [] },
     ] as const
 
     expect(contexts.map(parseCatalogContext)).toEqual(contexts)

@@ -18,7 +18,7 @@ import {
 const CONTEXT_OPTIONS: readonly CatalogContext[] = [
   { kind: 'model', id: '15', file_name: 'rinSoftsketch_v20.safetensors' },
   { kind: 'lora', id: '91', file_name: 'StS_Age_Slider_Illustrious_v1.safetensors' },
-  { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
+  { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [] },
 ]
 
 function sessionInput(draft = '') {

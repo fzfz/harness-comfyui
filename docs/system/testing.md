@@ -25,7 +25,7 @@ pnpm prod:test
 | 命令 | 范围 |
 | --- | --- |
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
-| `pnpm test:integration` | Host 插件组合 |
+| `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
 | `pnpm test:contract` | package、Git 跟踪、CI 和安全合同 |
 | `pnpm prod:test` | start、stop、restart、status、health、logs、PID、端口和真实 Client ModuleLoader 分支 |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
@@ -35,6 +35,8 @@ pnpm prod:test
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
+
+Generation 测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖 Tool 身份、Run 幂等、状态转换、重启恢复、媒体分片、逐媒体 Workflow 和 Client 单一投影。真实启动验收另外使用生产 Source CLI 与 ComfyUI `/object_info` 完成只读 Workflow 编译验证。
 
 ## CI
 

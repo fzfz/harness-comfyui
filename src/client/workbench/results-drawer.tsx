@@ -1,6 +1,14 @@
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 
-import type { SessionListState } from '@deepseek-ai/dsh-client-runtime/client'
+import type { UseConversationSession } from '@deepseek-ai/dsh-client-runtime/client'
+
+import {
+  generationMediaContentUrl,
+  generationMediaWorkflowUrl,
+  type GenerationMediaProjection,
+  type GenerationRunProjection,
+  type GenerationRunProjectionStatus,
+} from '../../generation/contract.ts'
 
 import {
   Button,
@@ -14,29 +22,22 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import type { WorkbenchController } from './controller.ts'
+import type { GenerationProjectionStore } from './generation-store.ts'
 import {
-  filterStaticMedia,
-  getMediaWorkflowDownloadLabel,
-  STATIC_MEDIA,
-  STATIC_MEDIA_PAGE_SIZE,
-  STATIC_RESULTS_COPY,
-  STATIC_RUNS,
-  type StaticMediaFilters,
-  type StaticMediaItem,
-  type StaticResultTab,
-} from './static-results.ts'
-import { downloadStaticWorkflow } from './static-workflow.ts'
+  MEDIA_PAGE_SIZE,
+  GENERATION_ERROR_COPY,
+  RESULTS_COPY,
+  generationErrorCopy,
+  type ResultTab,
+} from './results-contract.ts'
 
-type FilterKey = keyof StaticMediaFilters
+type FilterKey = 'turn' | 'kind'
 
 export interface WorkbenchDetailsProps {
   readonly sessionId: string
+  readonly useSession: UseConversationSession
   readonly workbench: WorkbenchController
-}
-
-export interface WorkbenchResultsOverlayProps {
-  readonly workbench: WorkbenchController
-  readonly useSessions: <Selected>(selector: (state: SessionListState) => Selected) => Selected
+  readonly generationStore: GenerationProjectionStore
 }
 
 interface FilterMenuProps {
@@ -79,154 +80,216 @@ function FilterMenu(props: FilterMenuProps) {
   )
 }
 
-function StaticRunList() {
-  const [selectedRunId, setSelectedRunId] = useState(STATIC_RUNS[0]!.id)
+const RUN_STATUS_LABELS: Readonly<Record<GenerationRunProjectionStatus, string>> = Object.freeze({
+  created: '已创建',
+  prepared: '已准备',
+  submitting: '提交中',
+  submission_unknown: '提交状态未知',
+  remote_pending: '排队中',
+  remote_running: '生成中',
+  downloading: '保存中',
+  succeeded: '已完成',
+  failed: '失败',
+  cancelling: '取消中',
+  cancelled: '已取消',
+})
+
+function runTone(status: GenerationRunProjectionStatus): string {
+  if (status === 'succeeded') return 'success'
+  if (status === 'failed' || status === 'submission_unknown') return 'danger'
+  if (status === 'cancelled') return 'muted'
+  return 'running'
+}
+
+function ProjectionRunList({ runs }: { readonly runs: readonly GenerationRunProjection[] }) {
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+  if (runs.length === 0) return <div className="harness-comfyui-results-empty">暂无运行</div>
   return (
-    <div className="harness-comfyui-run-list" aria-label="当前轮次运行">
-      {STATIC_RUNS.map(run => (
+    <div className="harness-comfyui-run-list" aria-label="ComfyUI 运行">
+      {runs.map(run => (
         <Button
-          key={run.id}
+          key={run.runId}
           className="harness-comfyui-run-card"
           variant="toolbar"
-          aria-pressed={selectedRunId === run.id}
-          onClick={() => setSelectedRunId(run.id)}
+          aria-pressed={selectedRunId === run.runId}
+          onClick={() => setSelectedRunId(run.runId)}
         >
           <span className="harness-comfyui-run-card-heading">
-            <span>
-              <strong>{run.title}</strong>
-              <code>{run.id}</code>
-            </span>
-            <Pill className={`harness-comfyui-run-status is-${run.tone}`} active={selectedRunId === run.id}>
-              {run.status}
+            <span><strong>{run.title}</strong><code>{run.runId}</code></span>
+            <Pill className={`harness-comfyui-run-status is-${runTone(run.status)}`} active={selectedRunId === run.runId}>
+              {RUN_STATUS_LABELS[run.status]}
             </Pill>
           </span>
           <span className="harness-comfyui-run-meta">
-            <span><small>实例</small><strong>{run.instance}</strong></span>
-            <span><small>工作流</small><strong>{run.workflow}</strong></span>
+            <span><small>实例</small><strong>{run.instanceTitle ?? '—'}</strong></span>
+            <span><small>工作流</small><strong>{run.templateTitle ?? '—'}</strong></span>
           </span>
-          <span className="harness-comfyui-run-progress-copy">
-            <strong>{run.progressLabel}</strong>
-            <small>{run.progress}%</small>
-          </span>
-          <progress value={run.progress} max={100} aria-label={`${run.title} ${run.progressLabel}`} />
-          <small className="harness-comfyui-run-detail">{run.detail}</small>
+          {run.errorCode === null ? null : (
+            <small className="harness-comfyui-run-detail"><code>{run.errorCode}</code> {generationErrorCopy(run.errorCode)}</small>
+          )}
         </Button>
       ))}
     </div>
   )
 }
 
-function MediaPreview({ item }: { readonly item: StaticMediaItem }) {
-  if (item.kind === 'audio') {
-    return (
-      <span className="harness-comfyui-audio-preview" role="img" aria-label={`${item.title} 音频波形`}>
-        {[18, 34, 24, 48, 29, 42, 21, 38, 27, 45, 20, 32].map((height, index) => (
-          <i key={index} style={{ height }} />
-        ))}
-      </span>
-    )
+function MediaPreview({
+  item,
+  sessionId,
+  errorCode,
+  onError,
+}: {
+  readonly item: GenerationMediaProjection
+  readonly sessionId: string
+  readonly errorCode: string | null
+  readonly onError: (source: string) => void
+}) {
+  const source = generationMediaContentUrl(item.mediaId, sessionId)
+  if (errorCode !== null) return <div className="harness-comfyui-media-preview-error"><code>{errorCode}</code></div>
+  if (item.mediaKind === 'video') {
+    return <video src={source} controls preload="metadata" aria-label={`${item.filename} 视频`} onError={() => onError(source)} />
   }
-  return <img src={item.previewUrl ?? ''} alt={`${item.title}${item.kind === 'video' ? '视频封面' : '图片预览'}`} />
+  return <img src={source} alt={`${item.filename} 图片`} onError={() => onError(source)} />
 }
 
-function StaticMediaGallery() {
-  const [filters, setFilters] = useState<StaticMediaFilters>({ turn: 'all', kind: 'all', time: 'all' })
+async function responseErrorCode(response: Response): Promise<string> {
+  try {
+    const body = await response.json() as { code?: unknown }
+    if (typeof body.code === 'string' && GENERATION_ERROR_COPY[body.code] !== undefined) return body.code
+  } catch {
+    // The route response is not a Harness ComfyUI error envelope.
+  }
+  return 'GENERATION_MEDIA_REQUEST_FAILED'
+}
+
+async function inspectMediaError(source: string): Promise<string> {
+  try {
+    const response = await fetch(source)
+    return response.ok ? 'GENERATION_MEDIA_REQUEST_FAILED' : responseErrorCode(response)
+  } catch {
+    return 'GENERATION_MEDIA_REQUEST_FAILED'
+  }
+}
+
+async function downloadMediaWorkflow(item: GenerationMediaProjection, sessionId: string): Promise<string | null> {
+  let response: Response
+  try {
+    response = await fetch(generationMediaWorkflowUrl(item.mediaId, sessionId))
+  } catch {
+    return 'GENERATION_MEDIA_REQUEST_FAILED'
+  }
+  if (!response.ok) return responseErrorCode(response)
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = `comfyui-run-${item.runId}-workflow.json`
+  document.body.append(anchor)
+  try {
+    anchor.click()
+  } finally {
+    anchor.remove()
+    URL.revokeObjectURL(objectUrl)
+  }
+  return null
+}
+
+function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly GenerationMediaProjection[]; readonly sessionId: string }) {
+  const [turn, setTurn] = useState('all')
+  const [kind, setKind] = useState('all')
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null)
   const [page, setPage] = useState(1)
-  const filtered = useMemo(() => filterStaticMedia(STATIC_MEDIA, filters), [filters])
-  const pageCount = Math.max(1, Math.ceil(filtered.length / STATIC_MEDIA_PAGE_SIZE))
+  const [mediaErrors, setMediaErrors] = useState<Readonly<Record<string, string>>>({})
+  const filtered = useMemo(() => media.filter(item => (turn === 'all' || String(item.turn) === turn)
+    && (kind === 'all' || item.mediaKind === kind)), [kind, media, turn])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / MEDIA_PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
-  const pageItems = filtered.slice(
-    (currentPage - 1) * STATIC_MEDIA_PAGE_SIZE,
-    currentPage * STATIC_MEDIA_PAGE_SIZE,
-  )
-  const updateFilter = (key: FilterKey, value: string) => {
-    setFilters(current => ({ ...current, [key]: value }))
+  const pageItems = filtered.slice((currentPage - 1) * MEDIA_PAGE_SIZE, currentPage * MEDIA_PAGE_SIZE)
+  const turnOptions = useMemo(() => [
+    { id: 'all', label: RESULTS_COPY.allTurns },
+    ...[...new Set(media.map(item => item.turn))].sort((left, right) => right - left)
+      .map(value => ({ id: String(value), label: `第 ${value} 轮` })),
+  ], [media])
+  const update = (key: FilterKey, value: string) => {
+    if (key === 'turn') setTurn(value)
+    else setKind(value)
     setPage(1)
     setOpenFilter(null)
   }
-  const turnOptions = useMemo(() => [
-    { id: 'all', label: STATIC_RESULTS_COPY.allTurns },
-    ...Array.from(new Map(STATIC_MEDIA.map(item => [item.turnId, item.turnLabel])))
-      .map(([id, label]) => ({ id, label })),
-  ], [])
 
   return (
     <div className="harness-comfyui-session-results">
-      <div className="harness-comfyui-media-count">
-        {filtered.length} {STATIC_RESULTS_COPY.mediaCount}
-      </div>
+      <div className="harness-comfyui-media-count">{filtered.length} {RESULTS_COPY.mediaCount}</div>
       <div className="harness-comfyui-result-filters">
         <FilterMenu
-          id="turn" label={STATIC_RESULTS_COPY.turnFilter} value={filters.turn} options={turnOptions}
+          id="turn" label={RESULTS_COPY.turnFilter} value={turn} options={turnOptions}
           open={openFilter === 'turn'} onOpen={setOpenFilter} onClose={() => setOpenFilter(null)}
-          onSelect={value => updateFilter('turn', value)}
+          onSelect={value => update('turn', value)}
         />
         <FilterMenu
-          id="kind" label={STATIC_RESULTS_COPY.kindFilter} value={filters.kind}
+          id="kind" label={RESULTS_COPY.kindFilter} value={kind}
           options={[
-            { id: 'all', label: STATIC_RESULTS_COPY.allKinds },
-            { id: 'image', label: STATIC_RESULTS_COPY.image },
-            { id: 'video', label: STATIC_RESULTS_COPY.video },
-            { id: 'audio', label: STATIC_RESULTS_COPY.audio },
+            { id: 'all', label: RESULTS_COPY.allKinds },
+            { id: 'image', label: RESULTS_COPY.image },
+            { id: 'video', label: RESULTS_COPY.video },
           ]}
           open={openFilter === 'kind'} onOpen={setOpenFilter} onClose={() => setOpenFilter(null)}
-          onSelect={value => updateFilter('kind', value)}
-        />
-        <FilterMenu
-          id="time" label={STATIC_RESULTS_COPY.timeFilter} value={filters.time}
-          options={[
-            { id: 'all', label: STATIC_RESULTS_COPY.allTimes },
-            { id: 'today', label: STATIC_RESULTS_COPY.today },
-            { id: 'yesterday', label: STATIC_RESULTS_COPY.yesterday },
-            { id: 'older', label: STATIC_RESULTS_COPY.older },
-          ]}
-          open={openFilter === 'time'} onOpen={setOpenFilter} onClose={() => setOpenFilter(null)}
-          onSelect={value => updateFilter('time', value)}
+          onSelect={value => update('kind', value)}
         />
       </div>
-
-      {pageItems.length === 0 ? (
-        <div className="harness-comfyui-results-empty">{STATIC_RESULTS_COPY.noMedia}</div>
-      ) : (
+      {pageItems.length === 0 ? <div className="harness-comfyui-results-empty">{RESULTS_COPY.noMedia}</div> : (
         <div className="harness-comfyui-media-grid" aria-label="本会话媒体">
           {pageItems.map(item => (
-            <article key={item.id} className="harness-comfyui-media-card">
+            <article key={item.mediaId} className="harness-comfyui-media-card">
               <div className="harness-comfyui-media-preview">
-                <MediaPreview item={item} />
-                <Pill active>{item.kindLabel}</Pill>
+                <MediaPreview
+                  item={item}
+                  sessionId={sessionId}
+                  errorCode={mediaErrors[item.mediaId] ?? null}
+                  onError={source => {
+                    void inspectMediaError(source).then(errorCode => {
+                      setMediaErrors(current => ({ ...current, [item.mediaId]: errorCode }))
+                    })
+                  }}
+                />
+                <Pill active>{item.mediaKind === 'image' ? RESULTS_COPY.image : RESULTS_COPY.video}</Pill>
               </div>
               <div className="harness-comfyui-media-body">
-                <strong>{item.title}</strong>
-                <small>{item.turnLabel}</small>
-                <small>{item.savedAt} · output {item.outputIndex}</small>
+                <strong>{item.filename}</strong>
+                <small>第 {item.turn} 轮</small>
+                <small>{new Date(item.createdAt).toLocaleString('zh-CN')} · {RESULTS_COPY.outputIndex} {item.outputIndex}</small>
                 <div className="harness-comfyui-media-workflow-row">
                   <code>{item.runId}</code>
                   <Button
-                    variant="toolbar"
-                    size="sm"
-                    icon={<IconDownloadOutline16 />}
-                    aria-label={getMediaWorkflowDownloadLabel(item)}
-                    title={STATIC_RESULTS_COPY.downloadWorkflow}
-                    onClick={() => downloadStaticWorkflow(item.runId)}
+                    variant="toolbar" size="sm" icon={<IconDownloadOutline16 />}
+                    aria-label={`下载 ${item.filename} 所属 Workflow`}
+                    title={RESULTS_COPY.downloadWorkflow}
+                    onClick={async () => {
+                      const errorCode = await downloadMediaWorkflow(item, sessionId)
+                      if (errorCode !== null) setMediaErrors(current => ({ ...current, [item.mediaId]: errorCode }))
+                    }}
                   />
                 </div>
+                {mediaErrors[item.mediaId] === undefined ? null : (
+                  <small className="harness-comfyui-media-error">
+                    <code>{mediaErrors[item.mediaId]}</code> {generationErrorCopy(mediaErrors[item.mediaId])}
+                  </small>
+                )}
               </div>
             </article>
           ))}
         </div>
       )}
-
       <nav className="harness-comfyui-media-pagination" aria-label="本会话媒体分页">
         <Button
           variant="outline" size="sm" icon={<IconChevronLeftOutline14 />}
-          aria-label={STATIC_RESULTS_COPY.previousPage} disabled={currentPage <= 1}
+          aria-label={RESULTS_COPY.previousPage} disabled={currentPage <= 1}
           onClick={() => setPage(value => Math.max(1, value - 1))}
         />
         <span>第 {currentPage} / {pageCount} 页</span>
         <Button
           variant="outline" size="sm" icon={<IconChevronRightOutline14 />}
-          aria-label={STATIC_RESULTS_COPY.nextPage} disabled={currentPage >= pageCount}
+          aria-label={RESULTS_COPY.nextPage} disabled={currentPage >= pageCount}
           onClick={() => setPage(value => Math.min(pageCount, value + 1))}
         />
       </nav>
@@ -235,81 +298,68 @@ function StaticMediaGallery() {
 }
 
 interface WorkbenchResultsProps {
-  readonly sessionId?: string
-  readonly surface: 'details' | 'overlay'
+  readonly sessionId: string
   readonly workbench: WorkbenchController
+  readonly generationStore: GenerationProjectionStore
 }
 
-function WorkbenchResults({ sessionId, surface, workbench }: WorkbenchResultsProps) {
-  const [activeTab, setActiveTab] = useState<StaticResultTab>('current')
+function WorkbenchResults({ sessionId, workbench, generationStore }: WorkbenchResultsProps) {
+  const [activeTab, setActiveTab] = useState<ResultTab>('current')
+  const subscribe = useCallback((listener: () => void) => generationStore.subscribe(sessionId, listener), [generationStore, sessionId])
+  const getSnapshot = useCallback(() => generationStore.getSnapshot(sessionId), [generationStore, sessionId])
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  const { runs, media } = snapshot.projection
   return (
     <aside
-      className={`harness-comfyui-results-drawer${surface === 'overlay' ? ' harness-comfyui-results-overlay' : ''}`}
-      data-plugin={`harness-comfyui-${surface}`}
+      className="harness-comfyui-results-drawer"
+      data-plugin="harness-comfyui-details"
       data-session-id={sessionId}
     >
       <header className="harness-comfyui-results-header">
         <div>
-          <strong>{STATIC_RESULTS_COPY.title}</strong>
-          <small>{STATIC_RESULTS_COPY.total}</small>
+          <strong>{RESULTS_COPY.title}</strong>
+          <small>{runs.length} 个运行 · {media.length} 个媒体</small>
         </div>
         <div className="harness-comfyui-results-header-actions">
           <Button
             variant="toolbar" size="sm" icon={<IconCloseOutline16 />}
-            aria-label={STATIC_RESULTS_COPY.close} onClick={() => workbench.closeResults()}
+            aria-label={RESULTS_COPY.close} onClick={() => workbench.closeResults()}
           />
         </div>
       </header>
 
-      <div className="harness-comfyui-results-tabs" role="tablist" aria-label={STATIC_RESULTS_COPY.title}>
+      <div className="harness-comfyui-results-tabs" role="tablist" aria-label={RESULTS_COPY.title}>
         <Button
           variant="toolbar" size="sm" role="tab" aria-selected={activeTab === 'current'}
           onClick={() => setActiveTab('current')}
         >
-          {STATIC_RESULTS_COPY.currentTab}
+          {RESULTS_COPY.currentTab}
         </Button>
         <Button
           variant="toolbar" size="sm" role="tab" aria-selected={activeTab === 'session'}
           onClick={() => setActiveTab('session')}
         >
-          {STATIC_RESULTS_COPY.sessionTab}
+          {RESULTS_COPY.sessionTab}
         </Button>
       </div>
 
       <div className="harness-comfyui-results-scroll">
+        {snapshot.errorCode === null ? null : (
+          <div className="harness-comfyui-results-empty"><code>{snapshot.errorCode}</code> {generationErrorCopy(snapshot.errorCode)}</div>
+        )}
         <section role="tabpanel" hidden={activeTab !== 'current'}>
-          <div className="harness-comfyui-turn-binding">
-            <span>
-              <small>{STATIC_RESULTS_COPY.currentFrom}</small>
-              <strong>{STATIC_RESULTS_COPY.currentTurn}</strong>
-            </span>
-            <code>{STATIC_RESULTS_COPY.currentTurnId}</code>
-          </div>
-          <StaticRunList />
+          <ProjectionRunList runs={runs} />
         </section>
         <section role="tabpanel" hidden={activeTab !== 'session'}>
-          <StaticMediaGallery />
+          <ProjectionMediaGallery media={media} sessionId={sessionId} />
         </section>
       </div>
     </aside>
   )
 }
 
-export function WorkbenchDetails({ sessionId, workbench }: WorkbenchDetailsProps) {
-  return <WorkbenchResults sessionId={sessionId} surface="details" workbench={workbench} />
-}
-
-export function WorkbenchResultsOverlay({ useSessions, workbench }: WorkbenchResultsOverlayProps) {
-  const resultsOpen = useSyncExternalStore(
-    workbench.subscribeResults,
-    workbench.getResultsSnapshot,
-    workbench.getResultsSnapshot,
-  )
-  const blankSession = useSessions(state => {
-    const current = state.current
-    return current === undefined || state.byId[current]?.blank !== false
-  })
-
-  if (!resultsOpen || !blankSession) return null
-  return <WorkbenchResults surface="overlay" workbench={workbench} />
+export function WorkbenchDetails({ sessionId, useSession, workbench, generationStore }: WorkbenchDetailsProps) {
+  const wakeRevision = useSession(snapshot => `${snapshot.running}:${snapshot.runningCalls.length}:${snapshot.turnEnds.size}`)
+  useEffect(() => generationStore.refreshSession(sessionId), [generationStore, sessionId, wakeRevision])
+  return <WorkbenchResults sessionId={sessionId} workbench={workbench} generationStore={generationStore} />
 }
