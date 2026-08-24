@@ -305,7 +305,6 @@ async function buildHostEnvironment(runtime, runtimeTarget) {
     ...environment,
     DSH_HOME: runtimeTarget.dshHome,
     DSH_TOOLS_MODE: 'native',
-    HARNESS_COMFYUI_PACKAGE_VERSION: runtimeTarget.activeVersion,
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: runtime.configurationProfile,
     HARNESS_COMFYUI_DATA_DIR: runtime.paths.dataDir,
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: runtime.paths.runRepositoryFile,

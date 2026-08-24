@@ -1,7 +1,6 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { builtinModules } from 'node:module'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname } from 'node:path'
 
 import { build } from 'tsdown'
 
@@ -74,11 +73,10 @@ const cssInjection = (css: string): string => {
 
 export async function buildClientBundle(options: ClientBundleOptions): Promise<void> {
   const css = await readFile(options.css, 'utf8')
-  const outputDirectory = dirname(options.output)
   await build({
     config: false,
     entry: { client: options.entry },
-    outDir: outputDirectory,
+    outDir: dirname(options.output),
     format: 'cjs',
     platform: 'browser',
     target: 'es2022',
@@ -94,26 +92,4 @@ export async function buildClientBundle(options: ClientBundleOptions): Promise<v
     banner: `window.__ModuleLoader__.load({ id: "harness-comfyui", factory: (require) => { const module = { exports: {} }; const exports = module.exports;\n${cssInjection(css)}\n`,
     footer: '\nreturn module.exports; } });',
   })
-}
-
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const generatedEntry = join(root, '.local/build/client-entry.ts')
-  await mkdir(dirname(generatedEntry), { recursive: true })
-  await writeFile(generatedEntry, [
-    "import { apply, inject, name } from '../../src/client/index.tsx'",
-    '',
-    'export { apply, inject, name }',
-    '',
-  ].join('\n'), 'utf8')
-  try {
-    await buildClientBundle({
-      entry: generatedEntry,
-      css: join(root, 'src/client/styles.css'),
-      output: join(root, 'lib/client.js'),
-    })
-  } finally {
-    await rm(generatedEntry, { force: true })
-  }
 }

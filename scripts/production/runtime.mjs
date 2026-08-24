@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs'
-import { access, copyFile, lstat, mkdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { access, readFile, rm } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -11,6 +11,7 @@ import {
 } from './product-agent.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
 import { loadProfile } from '../../src/config/load-profile.ts'
+import { materializeSourceProfile } from '../profile/source.mjs'
 
 export const SOURCE_RUNTIME_STATE_SCHEMA_VERSION = 1
 export const SOURCE_MANAGED_STATE_SCHEMA_VERSION = 1
@@ -22,7 +23,6 @@ const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '
 const DEFINITION_KEYS = Object.freeze([
   'schemaVersion', 'runtimeId', 'runtimeRelativeRoot', 'configurationProfile', 'source', 'logs',
 ])
-const PROFILE_FILES = Object.freeze(['package.json', 'cordis.patch.yml', 'pnpm-workspace.yaml'])
 const MANAGED_STATE_KEYS = Object.freeze([
   'schemaVersion', 'runtimeId', 'activeVersion', 'runtimeRoot', 'configurationProfile',
   'host', 'port', 'paths', 'comfyui', 'source', 'client', 'process', 'logs',
@@ -360,35 +360,6 @@ async function assertExecutable(path, name) {
   }
 }
 
-async function ensureSourcePackageLink(profileDirectory, repositoryRoot) {
-  const nodeModules = resolve(profileDirectory, 'node_modules')
-  const linkPath = resolve(nodeModules, 'harness-comfyui')
-  await mkdir(nodeModules, { recursive: true })
-  try {
-    const stats = await lstat(linkPath)
-    if (!stats.isSymbolicLink()) throw new Error(`${linkPath} must be a symbolic link to the current source repository`)
-    const target = resolve(dirname(linkPath), await readlink(linkPath))
-    if (target !== repositoryRoot) throw new Error(`${linkPath} points to ${target} instead of ${repositoryRoot}`)
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error
-    await symlink(repositoryRoot, linkPath, 'dir')
-  }
-}
-
-async function materializeSourceProfile(context) {
-  const templateDirectory = resolve(context.repositoryRoot, 'profiles/comfyui-workbench')
-  const profileDirectory = resolve(context.dshHome, 'profiles/comfyui-workbench')
-  await mkdir(profileDirectory, { recursive: true })
-  for (const filename of PROFILE_FILES) {
-    await copyFile(resolve(templateDirectory, filename), resolve(profileDirectory, filename))
-  }
-  const manifestPath = resolve(profileDirectory, 'package.json')
-  const manifest = requireRecord(await readJson(manifestPath, 'source profile manifest'), 'source profile manifest')
-  manifest.dependencies = { 'harness-comfyui': `file:${context.repositoryRoot}` }
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
-  await ensureSourcePackageLink(profileDirectory, context.repositoryRoot)
-}
-
 async function readOptionalRuntimeState(context) {
   try {
     return await readJson(context.sourceRuntimeStatePath, 'source runtime state')
@@ -420,7 +391,7 @@ export async function prepareSourceRuntime(context) {
   await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
   const productAgent = await readProductAgentConfig(context.repositoryRoot)
   await materializeProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot, productAgent)
-  await materializeSourceProfile(context)
+  await materializeSourceProfile(context.repositoryRoot, context.dshHome)
   const readiness = await validateProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot)
   await writeAtomicJson(context.sourceRuntimeStatePath, {
     schemaVersion: SOURCE_RUNTIME_STATE_SCHEMA_VERSION,

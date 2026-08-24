@@ -21,7 +21,6 @@ const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'agentPresetRoster',
   'harnessWeb',
   'clientBundle',
-  'pluginStatus',
   'runRepository',
   'savedMedia',
 ]);
@@ -170,47 +169,6 @@ async function inspectClientBundle(web) {
   }
 }
 
-async function inspectPluginStatus(runtime, packageManifest, web) {
-  const response = await fetchHealth(`${web.baseUrl}/api/pluginStatus/get`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      type: 'client-request',
-      rpcId: 'health',
-      method: 'pluginStatus/get',
-      payload: { args: {} },
-    }),
-  });
-  if (!response.ok) throw new Error('pluginStatus Remote unavailable');
-  let wire;
-  try {
-    wire = await response.json();
-  } catch {
-    throw new Error('pluginStatus Remote response malformed');
-  }
-  const value = wire?.result?.value;
-  const expected = {
-    packageName: packageManifest.name,
-    packageVersion: packageManifest.version,
-    configurationProfile: runtime.configurationProfile,
-    hostLoaded: true,
-  };
-  if (wire?.type !== 'server-response' || wire?.result?.ok !== true
-    || value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('pluginStatus projection mismatch');
-  }
-  const actualKeys = Object.keys(value).sort();
-  const expectedKeys = Object.keys(expected).sort();
-  if (JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys)
-    || value.packageName !== expected.packageName
-    || value.packageVersion !== expected.packageVersion
-    || value.configurationProfile !== expected.configurationProfile
-    || value.hostLoaded !== expected.hostLoaded) {
-    throw new Error('pluginStatus projection mismatch');
-  }
-  return expected;
-}
-
 export async function runSourceHealth(input, runtimeTarget, runtimeResolutionError = undefined) {
   const evidence = initialProductHealthEvidence();
   let runtime;
@@ -285,19 +243,8 @@ export async function runSourceHealth(input, runtimeTarget, runtimeResolutionErr
     } catch {
       evidence.clientBundle = failedCheck('client-bundle-invalid');
     }
-    if (packageManifest !== undefined) {
-      try {
-        const pluginStatus = await inspectPluginStatus(runtime, packageManifest, web);
-        evidence.pluginStatus = { status: 'passed', ...pluginStatus };
-      } catch {
-        evidence.pluginStatus = failedCheck('plugin-status-invalid');
-      }
-    } else {
-      evidence.pluginStatus = failedCheck('source-runtime-required');
-    }
   } else {
     evidence.clientBundle = failedCheck('harness-web-required');
-    evidence.pluginStatus = failedCheck('harness-web-required');
   }
 
   try {

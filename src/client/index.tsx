@@ -1,11 +1,7 @@
-/// <reference path="./remote.d.ts" />
-
 import type { ClientContext, ISessions } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { InputTriggerServiceContract } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
-
-import harnessComfyuiRemote from 'harness-comfyui/remote'
 
 import { LayoutController } from './workbench/layout-contract.ts'
 import { createWorkbenchRoot } from './workbench/root.tsx'
@@ -21,11 +17,10 @@ import {
 } from './workbench/workbench-session-binding.ts'
 
 export const name = 'harness-comfyui'
-export const inject = ['slots', 'sessions', 'remote', 'theme', 'inputTriggers', 'connection'] as const
+export const inject = ['slots', 'sessions', 'theme', 'inputTriggers', 'connection'] as const
 
-/** Mount the generated Remote contribution and compose the project-owned root shell. */
+/** Compose the project-owned workbench shell. */
 export async function apply(ctx: ClientContext & { connection: ConnectionHandle }): Promise<() => Promise<void>> {
-  const remoteUnmount = await ctx.remote.$mount(harnessComfyuiRemote)
   const sessionBinding = startWorkbenchSessionBinding({
     connection: ctx.connection,
     sessions: ctx.sessions as unknown as WorkbenchSessionService,
@@ -48,7 +43,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     )
   } catch (error) {
     sessionBinding.dispose()
-    await remoteUnmount()
     throw error
   }
 
@@ -61,7 +55,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
   } catch (error) {
     sessionBinding.dispose()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -75,7 +68,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     sessionBinding.dispose()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -93,7 +85,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     disposeSidebar()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -113,7 +104,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     disposeSidebar()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -136,7 +126,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     disposeSidebar()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -150,7 +139,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     disposeSidebar()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -166,7 +154,6 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     disposeSidebar()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
     throw error
   }
 
@@ -180,6 +167,5 @@ export async function apply(ctx: ClientContext & { connection: ConnectionHandle 
     disposeSidebar()
     disposeDetails()
     disposeRoot()
-    await remoteUnmount()
   }
 }

@@ -6,7 +6,6 @@ import {
   type ConfigurationProfileName,
 } from '../../config/schema.ts'
 import { loadProfile } from '../config/load-profile.ts'
-import { PluginStatusService } from '../service/plugin-status.ts'
 
 export interface Config {
   readonly configurationProfile: ConfigurationProfileName
@@ -24,13 +23,11 @@ export const Config = Schema.object({
 export const name = 'harness-comfyui'
 export const inject: [] = []
 
-/** Load Configuration Profile before registering the Host Remote service. */
+/** Validate the selected Configuration Profile before Host startup completes. */
 export function apply(ctx: Context, config: Config): void {
   const {
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector,
-    HARNESS_COMFYUI_PACKAGE_VERSION: _packageVersion,
     ...environment
   } = process.env
   loadProfile(config.configurationProfile, { environment })
-  new PluginStatusService(ctx, config.configurationProfile)
 }

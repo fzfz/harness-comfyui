@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -22,11 +22,6 @@ describe('GitHub Actions source quality workflow', () => {
     expect(preinstall).toBeGreaterThanOrEqual(0)
     expect(install).toBeGreaterThan(preinstall)
     expect(quality).toBeGreaterThan(install)
-    expect(source).not.toMatch(/artifact|deploy|package:pack|release:smoke|\.tgz/iu)
-  })
-
-  it('does not define deployment or release packaging workflows', () => {
-    expect(existsSync(resolve(root, '.github/workflows/deploy.yml'))).toBe(false)
-    expect(existsSync(resolve(root, '.github/workflows/release.yml'))).toBe(false)
+    expect(readdirSync(resolve(root, '.github/workflows'))).toEqual(['ci.yml'])
   })
 })

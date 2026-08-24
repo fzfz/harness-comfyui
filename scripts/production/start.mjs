@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { spawnForeground } from '../profile/start.mjs'
+import { spawnForeground } from './spawn.mjs'
 import { validateSourceRuntime } from './contract.mjs'
 import {
   PROCESS_STATE_SCHEMA_VERSION,

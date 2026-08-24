@@ -117,12 +117,24 @@ function agentPresetRuntimeRoot(productAgent) {
   return `${productAgent.agentPresetRuntimeRelativeRoot}/${productAgent.agentPresetId}`
 }
 
-function agentPluginPath(productAgent) {
-  const exportName = productAgent.agentPluginExport.slice(2)
-  if (exportName.length === 0 || exportName.endsWith('/')) {
-    throw new TypeError('product Agent export must identify one source entry')
+async function agentPluginPath(repositoryRoot, productAgent) {
+  const manifest = requireRecord(
+    JSON.parse(await readFile(join(repositoryRoot, 'package.json'), 'utf8')),
+    'source package manifest',
+  )
+  const exports = requireRecord(manifest.exports, 'source package manifest.exports')
+  const agentExport = requireRecord(
+    exports[productAgent.agentPluginExport],
+    `source package manifest.exports.${productAgent.agentPluginExport}`,
+  )
+  const target = requireString(
+    agentExport.default,
+    `source package manifest.exports.${productAgent.agentPluginExport}.default`,
+  )
+  if (!target.startsWith('./src/') || target.includes('\\') || target.includes('..')) {
+    throw new TypeError('product Agent export must identify a source file under src/')
   }
-  return `lib/${exportName}.js`
+  return target.slice(2)
 }
 
 async function assertDirectory(path, name) {
@@ -198,7 +210,7 @@ export async function validateProductAgentRuntime(repositoryRoot, runtimeRoot) {
     await assertFile(join(sourceRoot, file), `Agent Preset source ${file}`)
     await assertFile(join(targetRoot, file), `Agent Preset runtime ${file}`)
   }
-  await assertFile(join(repositoryRoot, agentPluginPath(productAgent)), 'Agent plugin source')
+  await assertFile(join(repositoryRoot, await agentPluginPath(repositoryRoot, productAgent)), 'Agent plugin source')
   await assertFile(join(repositoryRoot, AGENT_PROFILE_PATCH), 'Agent profile patch')
   const settingsPath = join(runtimeRoot, 'dsh-home/settings.yaml')
   await assertFile(settingsPath, 'Agent settings')

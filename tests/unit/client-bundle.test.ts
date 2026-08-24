@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   buildClientBundle,
   CLIENT_BUNDLE_POLICY,
-} from '../../scripts/build/tsdown-client-bundle.ts'
+} from '../../scripts/testing/client-bundle.ts'
 
 const expectedExternals = [
   'react',
@@ -70,15 +70,15 @@ afterEach(async () => {
 })
 
 describe('Client bundle build seam', () => {
-  it('uses the public self-package Remote seam in source and build entry', async () => {
+  it('builds the Client directly from source without a generated Remote entry', async () => {
     const source = await readFile(join(repositoryRoot, 'src/client/index.tsx'), 'utf8')
-    const buildScript = await readFile(join(repositoryRoot, 'scripts/build/tsdown-client-bundle.ts'), 'utf8')
+    const testHelper = await readFile(join(repositoryRoot, 'scripts/testing/client-bundle.ts'), 'utf8')
 
-    expect(source).toMatch(/from ['"]harness-comfyui\/remote['"]/u)
-    expect(source).toContain('ctx.remote.$mount(harnessComfyuiRemote)')
+    expect(source).not.toContain('harness-comfyui/remote')
+    expect(source).not.toContain('ctx.remote.$mount')
     expect(source).not.toContain('applyWithRemote')
-    expect(buildScript).not.toContain('lib/typert.remote-client.js')
-    expect(buildScript).not.toContain('applyWithRemote')
+    expect(testHelper).not.toContain('lib/typert.remote-client.js')
+    expect(testHelper).not.toContain('applyWithRemote')
   })
 
   it('exports the exact external and inline policy as one structured constant', () => {

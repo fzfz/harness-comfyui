@@ -14,7 +14,6 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
   ['@deepseek-ai/dsh-client-connection/client', 'type-only'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
-  ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
   ['@deepseek-ai/schemastery', 'value-or-type'],
   ['@deepseek-ai/dsh-client-ui-input-trigger/client', 'type-only'],
 ])
@@ -70,31 +69,6 @@ function collectSourceFiles(directory, result = []) {
     else if (entry.isFile() && /\.[cm]?tsx?$/u.test(entry.name)) result.push(path)
   }
   return result
-}
-
-function collectGeneratedAgentFiles(directory, result = []) {
-  if (!statSync(directory, { throwIfNoEntry: false })?.isDirectory()) return result
-  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
-    const path = resolve(directory, entry.name)
-    if (entry.isDirectory()) collectGeneratedAgentFiles(path, result)
-    else if (entry.isFile() && /\.(?:d\.ts|js|map)$/u.test(entry.name)) result.push(path)
-  }
-  return result
-}
-
-function assertGeneratedAgentArtifacts(root) {
-  const files = []
-  const bundledAgentPath = resolve(root, 'lib/agent.js')
-  if (statSync(bundledAgentPath, { throwIfNoEntry: false })?.isFile()) files.push(bundledAgentPath)
-  files.push(...collectGeneratedAgentFiles(resolve(root, 'lib/types/src/agent')))
-
-  for (const filePath of files) {
-    const source = readFileSync(filePath, 'utf8')
-    if (/ctx\.tools\.restrict\s*\(\s*\{\s*allow\s*:\s*\[\s*\]\s*\}\s*\)/u.test(source)
-      || source.includes('Restrict inherited Tools')) {
-      throw new Error(`${relative(root, filePath).replaceAll('\\', '/')} contains the removed Agent Tool restriction`)
-    }
-  }
 }
 
 function isDirectRegisterCall(node) {
@@ -304,10 +278,13 @@ function readProductAgentBoundary(path) {
 }
 
 function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
-  const exportTarget = `./lib/${productAgent.agentPluginExport.slice(2)}.js`
+  const exportTarget = './src/agent/plugin.ts'
   const exports = manifest.exports
-  if (!isPlainObject(exports) || !isPlainObject(exports[productAgent.agentPluginExport]) || exports[productAgent.agentPluginExport].default !== exportTarget) {
-    throw new Error(`${manifestPath}.exports[${productAgent.agentPluginExport}] must default to ${exportTarget}`)
+  if (!isPlainObject(exports) || !sameStructuredValue(exports[productAgent.agentPluginExport], {
+    types: exportTarget,
+    default: exportTarget,
+  })) {
+    throw new Error(`${manifestPath}.exports[${productAgent.agentPluginExport}] must expose ${exportTarget}`)
   }
 }
 
@@ -440,7 +417,6 @@ function scan(root) {
     throw new Error(`expected exactly one registerProjectTools() call in ${pluginPath}; found ${registryCalls.length}`)
   }
   validateStructuredHarnessBoundary(root)
-  assertGeneratedAgentArtifacts(root)
 }
 
 export function main(argv = process.argv.slice(2)) {

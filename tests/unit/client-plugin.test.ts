@@ -1,15 +1,8 @@
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { harnessComfyuiRemote } = vi.hoisted(() => ({
-  harnessComfyuiRemote: { package: 'harness-comfyui', descriptors: [] },
-}))
-
 vi.mock('@deepseek-ai/dsh-client-runtime/client', () => ({
   defineStore: (definition: unknown) => definition,
-}))
-vi.mock('harness-comfyui/remote', () => ({
-  default: harnessComfyuiRemote,
 }))
 
 import { apply, inject } from '../../src/client/index.tsx'
@@ -54,7 +47,6 @@ afterEach(() => {
 })
 
 function createContext(options: {
-  mountError?: Error
   registerErrorName?: string
   injectErrorName?: string
   provideError?: Error
@@ -95,15 +87,6 @@ function createContext(options: {
     },
     api: { sessions: { create } },
   }
-  const unmount = vi.fn(async () => undefined)
-  const mount = vi.fn(async (_contribution: unknown) => {
-    events.push('remote:mount')
-    if (options.mountError !== undefined) throw options.mountError
-    return async () => {
-      events.push('remote:unmount')
-      await unmount()
-    }
-  })
   const register = vi.fn((registration: { name?: string }) => {
     events.push(`${registration.name ?? 'unknown'}:register`)
     if (registration.name === options.registerErrorName) {
@@ -140,7 +123,6 @@ function createContext(options: {
   })
   return {
     context: {
-      remote: { $mount: mount },
       connection,
       sessions,
       slots: { register, inject },
@@ -149,8 +131,6 @@ function createContext(options: {
       inputTriggers: { sessionOf: vi.fn() },
       on,
     },
-    mount,
-    unmount,
     register,
     inject,
     provide,
@@ -177,27 +157,22 @@ async function expectApplyRollback(
   expect(fixture.events).toEqual(expectedEvents)
   expect(fixture.createSignals).toHaveLength(1)
   expect(fixture.createSignals[0]?.aborted).toBe(true)
-  expect(fixture.unmount).toHaveBeenCalledOnce()
 }
 
 describe('Client plugin Host projection', () => {
-  it('exports the exact Issue #3 Client service inject contract', () => {
-    expect(inject).toEqual(['slots', 'sessions', 'remote', 'theme', 'inputTriggers', 'connection'])
+  it('exports the exact Client service inject contract', () => {
+    expect(inject).toEqual(['slots', 'sessions', 'theme', 'inputTriggers', 'connection'])
   })
 
   it.each(inject)('waits for the public %s service before activating', async (missingService) => {
     const ctx = new Context()
-    const unmount = vi.fn(async () => undefined)
-    const mount = vi.fn(async () => unmount)
     const register = vi.fn(() => () => undefined)
     const injectSlot = vi.fn((_name: string, callback: () => () => void) => callback())
     const disposers: Array<() => unknown> = []
 
     for (const service of inject) {
       if (service === missingService) continue
-      const value = service === 'remote'
-        ? { $mount: mount }
-        : service === 'slots'
+      const value = service === 'slots'
           ? { register, inject: injectSlot }
           : service === 'theme'
             ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
@@ -224,11 +199,9 @@ describe('Client plugin Host projection', () => {
     }
 
     const fiber = ctx.plugin({ name: 'harness-comfyui', inject, apply })
-    expect(mount).not.toHaveBeenCalled()
+    expect(register).not.toHaveBeenCalled()
 
-    const value = missingService === 'remote'
-      ? { $mount: mount }
-      : missingService === 'slots'
+    const value = missingService === 'slots'
         ? { register, inject: injectSlot }
         : missingService === 'theme'
           ? { getTheme: () => ({ active: { colorScheme: 'light' as const, tokens: {} } }) }
@@ -254,21 +227,18 @@ describe('Client plugin Host projection', () => {
     disposers.push(ctx.provide(missingService, value))
     await fiber
 
-    expect(mount).toHaveBeenCalledOnce()
+    expect(register).toHaveBeenCalledTimes(6)
     await fiber.dispose()
     for (const dispose of disposers.reverse()) await dispose()
     await ctx.fiber.dispose()
   })
 
-  it('mounts the generated Remote contribution, registers the project root, and unmounts once', async () => {
+  it('registers the project workbench and disposes it once', async () => {
     const fixture = createContext()
 
     const dispose = await apply(fixture.context as never)
 
-    expect(fixture.mount).toHaveBeenCalledOnce()
-    expect(fixture.mount).toHaveBeenCalledWith(harnessComfyuiRemote)
     expect(fixture.events).toEqual([
-      'remote:mount',
       'root:register',
       'details:register',
       'sidebar:register',
@@ -322,10 +292,8 @@ describe('Client plugin Host projection', () => {
     )
 
     await dispose()
-    expect(fixture.unmount).toHaveBeenCalledOnce()
     expect(fixture.provide).toHaveBeenCalledWith('layout', expect.anything())
     expect(fixture.events).toEqual([
-      'remote:mount',
       'root:register',
       'details:register',
       'sidebar:register',
@@ -347,36 +315,21 @@ describe('Client plugin Host projection', () => {
       'sidebar:dispose',
       'details:dispose',
       'root:dispose',
-      'remote:unmount',
     ])
   })
 
-  it('fails startup and does not register a slot when the generated contribution cannot mount', async () => {
-    const fixture = createContext({ mountError: new Error('Remote contribution rejected') })
-
-    await expect(apply(fixture.context as never)).rejects.toThrow(
-      'Remote contribution rejected',
-    )
-    expect(fixture.register).not.toHaveBeenCalled()
-    expect(fixture.unmount).not.toHaveBeenCalled()
-  })
-
-  it('reverses root and Remote cleanup when the project details occupant cannot register', async () => {
+  it('reverses root cleanup when the project details occupant cannot register', async () => {
     const fixture = createContext({ registerErrorName: 'details' })
 
     await expect(apply(fixture.context as never)).rejects.toThrow(
       'details registration rejected',
     )
     expect(fixture.events).toEqual([
-      'remote:mount',
       'root:register',
       'details:register',
       'session:abort',
       'root:dispose',
-      'remote:unmount',
     ])
-    expect(fixture.mount).toHaveBeenCalledOnce()
-    expect(fixture.unmount).toHaveBeenCalledOnce()
   })
 
   it('disposes the Session binding and aborts create when details registration fails', async () => {
@@ -390,19 +343,17 @@ describe('Client plugin Host projection', () => {
     expect(fixture.createSignals[0]?.aborted).toBe(true)
   })
 
-  it('rolls back the mounted Remote and details slot when the sidebar occupant rejects', async () => {
+  it('rolls back the details slot when the sidebar occupant rejects', async () => {
     await expectApplyRollback(
       { registerErrorName: 'sidebar' },
       'sidebar registration rejected',
       [
-        'remote:mount',
         'root:register',
         'details:register',
         'sidebar:register',
         'session:abort',
         'details:dispose',
         'root:dispose',
-        'remote:unmount',
       ],
     )
   })
@@ -412,7 +363,6 @@ describe('Client plugin Host projection', () => {
       { injectErrorName: 'conversation.session.header' },
       'conversation.session.header injection rejected',
       [
-        'remote:mount',
         'root:register',
         'details:register',
         'sidebar:register',
@@ -421,7 +371,6 @@ describe('Client plugin Host projection', () => {
         'sidebar:dispose',
         'details:dispose',
         'root:dispose',
-        'remote:unmount',
       ],
     )
   })
@@ -431,7 +380,6 @@ describe('Client plugin Host projection', () => {
       { injectErrorName: 'conversation.view' },
       'conversation.view injection rejected',
       [
-        'remote:mount',
         'root:register',
         'details:register',
         'sidebar:register',
@@ -443,7 +391,6 @@ describe('Client plugin Host projection', () => {
         'sidebar:dispose',
         'details:dispose',
         'root:dispose',
-        'remote:unmount',
       ],
     )
   })
@@ -453,7 +400,6 @@ describe('Client plugin Host projection', () => {
       { injectErrorName: 'conversation.composer.bar' },
       'conversation.composer.bar injection rejected',
       [
-        'remote:mount',
         'root:register',
         'details:register',
         'sidebar:register',
@@ -468,7 +414,6 @@ describe('Client plugin Host projection', () => {
         'sidebar:dispose',
         'details:dispose',
         'root:dispose',
-        'remote:unmount',
       ],
     )
   })
@@ -478,7 +423,6 @@ describe('Client plugin Host projection', () => {
       { provideError: new Error('layout service rejected') },
       'layout service rejected',
       [
-        'remote:mount',
         'root:register',
         'details:register',
         'sidebar:register',
@@ -496,7 +440,6 @@ describe('Client plugin Host projection', () => {
         'sidebar:dispose',
         'details:dispose',
         'root:dispose',
-        'remote:unmount',
       ],
     )
   })
@@ -506,7 +449,6 @@ describe('Client plugin Host projection', () => {
       { themeSubscribeError: new Error('theme subscription rejected') },
       'theme subscription rejected',
       [
-        'remote:mount',
         'root:register',
         'details:register',
         'sidebar:register',
@@ -527,7 +469,6 @@ describe('Client plugin Host projection', () => {
         'sidebar:dispose',
         'details:dispose',
         'root:dispose',
-        'remote:unmount',
       ],
     )
   })

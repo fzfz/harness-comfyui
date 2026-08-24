@@ -35,7 +35,12 @@ function fixture(otherSource = ''): string {
     dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
     devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.8' },
     peerDependencies: {},
-    exports: { './agent': { default: './lib/agent.js' } },
+    exports: {
+      './agent': {
+        types: './src/agent/plugin.ts',
+        default: './src/agent/plugin.ts',
+      },
+    },
     dsh: { bundle: { patch: './cordis.patch.yml' }, client: { platform: 'web', inject: clientInject } },
   }, null, 2)}\n`)
   writeFileSync(join(root, 'config/product-agent.json'), `${JSON.stringify(productAgent, null, 2)}\n`)
@@ -116,7 +121,7 @@ describe('Harness source boundary', () => {
   it('rejects Agent export and profile patch drift', () => {
     const root = fixture()
     try {
-      updateJson(root, 'package.json', value => { value.exports['./agent'].default = './lib/other.js' })
+      updateJson(root, 'package.json', value => { value.exports['./agent'].default = './src/agent/other.ts' })
       expect(run(root).stderr).toContain('package.json.exports[./agent]')
     } finally {
       rmSync(root, { recursive: true, force: true })

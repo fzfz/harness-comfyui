@@ -38,14 +38,16 @@ describe('source runtime git isolation', () => {
       'config/environment-overrides.json',
       'config/product-agent.json',
       'config/source-production.json',
-      'lib/agent.js',
       'profiles/comfyui-workbench/cordis.patch.yml',
       'profiles/comfyui-workbench/package.json',
       'profiles/comfyui-workbench/pnpm-workspace.yaml',
       'src/config/load-profile.ts',
+      'src/agent/plugin.ts',
       'src/host/plugin.ts',
+      'scripts/profile/source.mjs',
       'scripts/production/cli.mjs',
       'scripts/production/runtime.mjs',
+      'scripts/production/spawn.mjs',
       'package.json',
     ]
 

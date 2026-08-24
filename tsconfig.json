@@ -22,5 +22,5 @@
     "tests/**/*.ts",
     "tests/**/*.tsx"
   ],
-  "exclude": ["node_modules", "lib", ".local", ".release", "prototype"]
+  "exclude": ["node_modules", "lib", ".local", "prototype"]
 }
