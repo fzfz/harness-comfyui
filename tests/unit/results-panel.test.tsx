@@ -1,8 +1,41 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { createElement, type ReactElement, type ReactNode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+
+const stateAdapter = vi.hoisted(() => {
+  let initialized = false
+  let state: unknown
+  const setterCalls: unknown[] = []
+
+  return {
+    reset() {
+      initialized = false
+      state = undefined
+      setterCalls.length = 0
+    },
+    useState<T>(initial: T): readonly [T, (next: T | ((previous: T) => T)) => void] {
+      if (!initialized) {
+        initialized = true
+        state = initial
+      }
+      const setState = (next: T | ((previous: T) => T)) => {
+        setterCalls.push(next)
+        state = typeof next === 'function'
+          ? (next as (previous: T) => T)(state as T)
+          : next
+      }
+      return [state as T, setState]
+    },
+    setterCalls,
+  }
+})
+
+vi.mock('react', async importOriginal => {
+  const actual = await importOriginal<typeof import('react')>()
+  return { ...actual, useState: stateAdapter.useState }
+})
 
 import {
   createResultsPanel,
@@ -37,6 +70,10 @@ function viewElements(activeTab: ResultsTab = 'current') {
 }
 
 describe('Issue 3 empty results panel', () => {
+  beforeEach(() => {
+    stateAdapter.reset()
+  })
+
   it('renders accessible current/session tabs and only the two exact empty states', () => {
     const view = viewElements()
     const [currentButton, sessionButton] = view.tabButtons
@@ -114,6 +151,29 @@ describe('Issue 3 empty results panel', () => {
     const video = renderToStaticMarkup(createElement(ResultsPanel, { sessionId: 'video' as SessionId }))
     expect(portrait).toContain('id="tab-current" type="button" role="tab" aria-selected="true"')
     expect(video).toContain('id="tab-current" type="button" role="tab" aria-selected="true"')
+  })
+
+  it('passes the public session action through state and resets the active tab for a different session', () => {
+    const ResultsPanel = createResultsPanel()
+    const portrait = ResultsPanel({ sessionId: 'portrait' as SessionId }) as ReactElement
+    const portraitTabs = childrenOf(childrenOf(portrait)[1] as ReactElement)
+    const portraitSessionButton = portraitTabs[1]
+
+    expect(portraitSessionButton).toBeDefined()
+    portraitSessionButton?.props.onClick()
+    expect(stateAdapter.setterCalls).toEqual([
+      { sessionId: 'portrait', tab: 'session' },
+    ])
+
+    const video = ResultsPanel({ sessionId: 'video' as SessionId }) as ReactElement
+    const videoTabs = childrenOf(childrenOf(video)[1] as ReactElement)
+    expect(videoTabs[0]?.props['aria-selected']).toBe(true)
+    expect(videoTabs[1]?.props['aria-selected']).toBe(false)
+
+    const portraitAgain = ResultsPanel({ sessionId: 'portrait' as SessionId }) as ReactElement
+    const portraitAgainTabs = childrenOf(childrenOf(portraitAgain)[1] as ReactElement)
+    expect(portraitAgainTabs[0]?.props['aria-selected']).toBe(false)
+    expect(portraitAgainTabs[1]?.props['aria-selected']).toBe(true)
   })
 
   it('keeps the result panel desktop CSS limited to the current empty-state surface', () => {
