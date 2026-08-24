@@ -37,10 +37,10 @@ describe('source workspace engineering contract', () => {
       'prod:status': 'node scripts/production/cli.mjs status',
       'prod:health': 'node scripts/production/cli.mjs health',
       'prod:logs': 'node scripts/production/cli.mjs logs',
-      'test:production': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
+      'prod:test': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
       'test:contract': 'vitest run tests/contract tests/security',
       'quality:preinstall': 'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
-      'quality:fast': 'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype',
+      'quality:fast': 'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run prod:test && pnpm run test:prototype',
       quality: 'pnpm run quality:preinstall && pnpm run quality:fast',
     })
     expect(Object.keys(scripts).sort()).toEqual([
@@ -52,6 +52,7 @@ describe('source workspace engineering contract', () => {
       'prod:start',
       'prod:status',
       'prod:stop',
+      'prod:test',
       'quality',
       'quality:fast',
       'quality:preinstall',
@@ -60,7 +61,6 @@ describe('source workspace engineering contract', () => {
       'test:contract',
       'test:coverage',
       'test:integration',
-      'test:production',
       'test:prototype',
       'test:unit',
       'typecheck',

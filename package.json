@@ -17,17 +17,17 @@
     "test:coverage": "vitest run tests/unit tests/integration --coverage --testTimeout=30000",
     "test:contract": "vitest run tests/contract tests/security",
     "test:integration": "vitest run tests/integration",
-    "test:production": "vitest run tests/production --maxWorkers=1 --no-file-parallelism",
     "test:prototype": "node --test prototype/generation-workbench/tests/*.test.mjs",
     "quality:preinstall": "pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts",
-    "quality:fast": "pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype",
+    "quality:fast": "pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run prod:test && pnpm run test:prototype",
     "quality": "pnpm run quality:preinstall && pnpm run quality:fast",
     "prod:start": "node scripts/production/cli.mjs start",
     "prod:stop": "node scripts/production/cli.mjs stop",
     "prod:restart": "node scripts/production/cli.mjs restart",
     "prod:status": "node scripts/production/cli.mjs status",
     "prod:health": "node scripts/production/cli.mjs health",
-    "prod:logs": "node scripts/production/cli.mjs logs"
+    "prod:logs": "node scripts/production/cli.mjs logs",
+    "prod:test": "vitest run tests/production --maxWorkers=1 --no-file-parallelism"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "3.18.1"
