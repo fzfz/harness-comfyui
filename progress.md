@@ -1,5 +1,9 @@
 # Harness ComfyUI 原型方案进度
 
+- 2026-08-24：开始修正上下文弹窗的资源类型选中态、每页9项九宫格和封面完整缩放行为；定向40项测试与TypeScript检查通过。
+- 2026-08-24：用户确认采用原生输入框JSON方案；已删除Harness引用codec与`insertReference()`路径，改用公开`SessionInput.setDraft()`同步结构化上下文JSON和可移除chip。
+- 2026-08-24：真实Harness浏览器终验通过：左侧资源选中态、9项3×3九宫格、LoRA封面完整缩放、2项JSON写入和chip取消同步删除均符合当前要求。
+
 ## Session: 2026-08-20
 
 ### Phase 1: 检查两个仓库的现有接口
@@ -333,3 +337,302 @@
 - 范围复查继续删除源实施文档中的目标仓库消费步骤、模板binding执行语义和`template-run-admission.mjs`修改要求。Source CLI只从当前Workflow revision与runtime config逐字段构造并验证`TemplateBundle`；缺少必要当前记录时只返回CLI合同中的`SOURCE_TEMPLATE_UNAVAILABLE`。
 - 用户推翻此前Q3的独立Catalog namespace决定。`v0.82.0`直接用十个新Catalog operation替换`GET /internal/semantic`及六个旧operation；计划不创建`/internal/catalog`，也不保留旧semantic request、response或Pi Tool扩展。源计划、ADR、Harness原型和PRD路径已经同步为`/internal/semantic/*`。
 - 用户确认原方案要求的两个CLI继续保留：`imagegen-semantic-query`只提供十类安全Catalog投影，`imagegen-comfyui-source-read`只提供Host-only实例源数据和完整模板bundle；不合并为一个命令。
+
+## 2026-08-24 Harness 原生 UI 原型重做
+
+- 已确认任务模式为 change，修改边界限定为现有静态原型、必要测试与任务记录。
+- 已读取 `prototype`、`find-docs`、`planning-with-files` 和 `stop-that-shit` 的完整指令，并创建 Phase 15 的实施与验收边界。
+- 下一步只读核对官方页面、锁定 Harness 源码与 GitHub Issues #3/#4，再修改原型。
+- 已只读取得 GitHub Issues #3/#4 的完整正文、评论、标签与关闭状态；两张票最后的用户结论都明确要求废弃原型能力假设并重新设计。
+- 已取得官方页面 HTML 与本机 Harness 源码搜索结果；已排除替换整个 `sidebar` 的旧设计，并定位 `sidebar.footer.action` 作为左列原生入口候选。
+- 已用 `dsh-v0.1.0-rc.8` 标签源码确认三项可实现的原生机制：`sidebar.footer.action`、`conversation.input.dock` 和 `conversation.view`；同时确认原生 InputBar 必须保留。
+- 用户把原型能力基线改为 DeepSeek Harness `0.1.1-rc.2`；后续调研与修改改用 rc.2 已提交源码，当前项目依赖保持不变。
+- 已确认 rc.2 保留原生左栏、会话视图和输入扩展点，但没有公开跨插件 conversation-view 导航方法；左栏点击进入工作台必须选择另一条可证明的公开组合路径。
+- 已排除用 priority覆盖原生 `conversation.view#chat`的方案；当前可实现方向收敛为左栏入口打开普通 Product Agent Session，中列完全复用原生聊天与输入界面。
+- 用户授权直接实现并运行 Harness plugin；计划已增加 rc.2依赖审计、真实插件实现、完整测试、生产启动和浏览器验证阶段。
+- 已检查当前工作树并确认旧工作台删除属于既有未提交改动；实施将基于空 Client plugin新增最小rc.2原生slot原型，不恢复或改写这些删除。
+- 已确认rc.2原生reference插入与公开UI primitives足以实现上下文原型；20个精确rc.2直接包的发布、integrity、peerDependency和直接lifecycle script初审通过，等待lockfile闭包审计。
+- 已生成rc.2 lockfile并通过manifest、full/prod advisory和build-script门禁；完整与production闭包全部严重级别为0，可以执行frozen install。
+- 已执行`pnpm install --frozen-lockfile`；只运行了已审计的`dsh-subprocess-local@0.1.1-rc.2` postinstall，当前直接Harness依赖全部为精确`0.1.1-rc.2`。
+- 已实现真实Client插件：左栏入口使用`sidebar.footer.action`与原生Button；中列扩展使用`conversation.input.dock`、原生Button/Pill/Modal与原生SessionInput reference insertion，不替换Harness布局、Session浏览、Chat或InputBar。
+- 已新增插件注册、工作台状态、reference codec、原生surface和插入事务测试；`pnpm typecheck`与3个定向测试文件共11项测试通过。
+- 已删除产品界面中的实现说明文案；入口只显示“ComfyUI 工作台”，对话框操作只显示“取消/插入”，错误只显示当前结果。
+- 已修正生产health对rc.2 `globalThis["__DSH_BOOT__"]`启动图语法的读取，真实生产进程六项health通过。
+- 已在1440×1000真实Harness页面完成入口、工作区Session、上下文对话框、原生reference插入与已选上下文展示验收；浏览器没有error或warn日志。
+- 最终`pnpm quality`通过：coverage 7 files/60 tests、contract/security 7 files/17 tests、production 15 tests、prototype 27 tests全部通过；`git diff --check`通过。验证进程已停止，`prod:status`为stopped。
+## Phase 16：真实上下文目录弹窗
+
+- 已确认生产配置中的真实目录 CLI 路径、数据源契约 ID 和数据源发布版本。
+- 已确认当前插件缺少 Host 目录查询接口，Client 仍需移除静态目录选项。
+- 下一步：核对数据源 CLI 的实际参数与 JSON 响应，再按 Harness `0.1.1-rc.2` 公共 Remote API 实现 Host 查询和 Client 原生弹窗。
+- 已核对真实 CLI 版本、十个 operation、参数和退出码；弹窗本次接入八个可插入的 CLI 目录类型。
+- 已确认数据源工作树为 `v0.82.4`，当前仓库结构化契约仍固定 `v0.82.2`；实现将按 live discovery 和当前仓库契约共同校验可用操作。
+- 已定位本机 Harness 源码工作树和当前项目安装的 `0.1.1-rc.2` 包，下一步直接核对已安装包与同版本标签。
+- 已确认 `0.1.1-rc.2` 公共 Remote 实现路径：Host Remote 服务、生成 `/remote` 产物、Client `$mount()` 和卸载 disposer；无需新增网络层或第三方依赖。
+- 已确认当前项目构建尚未生成业务 `/remote`；正在核对生成产物结构和最小 Host-first 构建接入点。
+- 已检查 rc.2 生成的 Remote contribution 与 Host contribution；下一步核对协议公开的源码 JSON fallback，选择不引入新依赖的最小实现。
+- 已确认可使用公开 Host SRC descriptor与严格 Client contribution组合；已把同版本 Harness Typert protocol直接依赖和安全审计纳入Phase 16计划。
+- 已确认真实目录服务监听端口和CLI强制端口要求；将把端口加入当前仓库唯一生产配置链路，而不是让Host读取外部仓库配置。
+- 已通过真实CLI读取八类路径级合同和真实响应；已确定每类标签字段、稳定ID归一化与安全投影，且确认画师串当前为空集合。
+- 已核对现有 Client、测试和原生 Input API；准备先实现结构化目录合同、Host CLI adapter与Remote service，再替换弹窗。
+- 已完成结构化目录合同、严格Client Remote contribution、Host Remote Service、CLI安全执行器与生产Catalog端口配置链路。
+- 已直接声明官方Harness Typert protocol `0.1.1-rc.2`，并在离线且禁用脚本模式下更新lockfile。
+- 已替换Client静态选项弹窗，完成Remote挂载、原生搜索、资源左列、真实候选单选和插入交互。
+- 首次typecheck已执行；生产代码只剩原生Input不支持ref的类型错误，旧测试夹具需要迁移到真实Catalog item与查询器。
+- 已移除原生Input不支持的ref并迁移现有Client、Host和配置测试；当前`pnpm typecheck`通过。
+- 定向测试首次运行27/28通过；正在修正一条旧label断言，并补齐生产fixture和受管快照的Catalog端口。
+- 已补齐生产受管快照Catalog端口和三组Catalog测试；当前定向结果48/49通过，仅剩一条旧显示label断言。
+- 全量unit发现1条预期迁移断言；prod:test发现Node strip-only不支持constructor parameter property。正在改写为源码可直接加载的普通字段和公开Remote函数登记。
+- 已完成strip-only兼容改写并更新Client bundle合同测试；TypeScript、79项unit和15项production测试全部通过。
+- 首次完整质量门禁在函数覆盖率100%要求处停止；83项测试均通过，正在补齐新函数分支测试，不修改覆盖率阈值。
+- 已把coverage测试增至90项；函数覆盖率恢复100%，coverage门禁通过。
+- 完整`pnpm quality`已经通过；下一步重启真实4173 Harness并用真实CLI记录完成浏览器验收。
+- 已按项目生产命令重启Harness；当前进程PID为85876，`prod:status`为running，六项`prod:health`全部通过。
+- 已选用Codex内置浏览器验收本机页面；根据本地Web验收规则，生产构建变更后必须重新导航或刷新并获取新的DOM快照。
+- 已创建独立浏览器标签页并导航到4173；浏览器操作通过标签页的`playwright`表面读取DOM和执行语义定位。
+- 已在真实Harness点击左栏“ComfyUI 工作台”；原生会话视图未被替换，中列输入区显示“插入上下文”。
+- 首次打开真实目录弹窗显示“目录加载失败。”；CLI文件具有执行权限，使用与Host相同参数直接运行可返回15个生成模型，浏览器控制台无error或warn，问题已收敛到Harness Remote调用链。
+- 用户指出当前弹窗偏离已确认原型；实施范围已恢复为顶部底模下拉框、左侧资源类型和右侧封面标题卡片，并恢复原原型的分页与多项选择交互。
+- 已核对原原型实现：候选区每页6项，候选卡片固定包含封面或占位、标题、副标题和选中状态；底模下拉框位于弹窗内容顶部。
+- 已确认Harness `0.1.1-rc.2`公开`Menu` primitive可实现顶部底模下拉框；该实现方式与Harness语言选择等原生下拉交互一致。
+- 已通过live discovery和真实CLI确认底模操作`/internal/semantic/base-models`已实现；当前真实底模为krea2、wai、anima，支持筛选生成模型、LoRA、画师或画风、画师串和Workflow模板。
+- 已核对当前Remote注册与Harness Typert源码：`TypertRemoteService`构造函数公开注册Cordis service，手动执行`Remote()` initializer会把search方法登记到同一公开source-mode discovery。
+- 已核对Gateway实际分派流程：source-mode从活动Cordis service收集Remote标记，按`request`和末位`signal`构造弱Host描述，再由Client严格描述校验输入与结果。
+- 已确认Harness原生Modal通过`className`开放对话框卡片尺寸覆盖，能够在不替换Modal遮罩、标题、关闭、Escape和footer交互的前提下承载原原型三列候选卡片。
+- 已读取八类真实首项字段；卡片标题、封面和副标题将分别由CLI字段直接投影，不向Client透传描述、Prompt、Workflow JSON或其他Host字段。
+- 已完成第一版合同与UI改写：真实底模Remote、6项分页、可选底模过滤、封面/标题/副标题卡片、多选状态和批量插入均已进入源码；当前TypeScript失败仅来自旧测试夹具尚未迁移。
+- 已迁移合同、CLI、Remote、Client注册、Controller和原生surface测试；TypeScript通过，7个定向测试文件共51项全部通过。
+- 已核对卡片CSS使用的Harness主题变量并替换不存在的变量名；选中边框、选中标记底色和前景色全部使用rc.2已定义的原生主题token。
+- 完整质量门禁中100项测试全部通过；门禁仅因新增原生surface的3个回调函数尚未被测试执行而停止，未降低100%函数覆盖率阈值。
+- 已补测Menu关闭和上一页两个外层/内层回调；完整`pnpm quality`通过，100项coverage测试函数覆盖率100%，17项contract/security、15项production和27项prototype全部通过。
+- 已用正式`prod:restart`重启新实现；当前Harness PID为12302，4173状态为running，六项生产health全部通过。
+- 浏览器确认新卡片弹窗布局已加载，但底模与Workflow模板两条Remote同时失败；正在读取Gateway返回的结构化错误码。
+- 已读取真实运行异常：`cannot get property "remote.harnessComfyuiCatalog" without inject`。Client必须在`$mount()`之后通过Cordis动态inject获取新Remote namespace。
+- 已把Client注册移动到`$mount()`后的动态Remote scope；生产源码TypeScript通过，现只需把Client插件测试替身补成Cordis动态inject生命周期。
+- 已补齐动态inject测试替身和卸载顺序；最终完整`pnpm quality`再次通过，100项coverage测试函数覆盖率100%。
+- 已重启并在真实Harness验证Remote修复：Workflow模板第1页从真实CLI加载6张卡片，总计6页，卡片标题、副标题、选择状态和分页均正常。
+- 已验证顶部底模Menu实际返回krea2、wai、anima；选择wai并切换LoRA后，真实CLI返回8项、2页，首屏6张卡片均成功加载封面与作者副标题。
+- 已在真实Harness选择两个LoRA卡片；两张卡片同时显示“已选择”和pressed状态，底部计数为2。搜索Age后结果缩为唯一真实LoRA，跨搜索保留2项选择。
+- 2026-08-24：在真实Harness中完成上下文目录终验：wai底模筛选、LoRA资源切换、`Age`搜索、跨搜索多选、2项批量插入、Workflow模板下一页、画师串空结果和取消交互全部通过。
+- 2026-08-24：`pnpm quality`通过；最终`pnpm prod:status`返回running，`pnpm prod:health`六项通过，`git diff --check`通过。Harness继续运行在`http://127.0.0.1:4173`。
+## 2026-08-24：Phase 17
+
+- 已确认用户要求的 Agent 上下文 JSON 字段范围：可理解的来源名称字段、`prompt_text`、`id`、`tag`，并且每条 JSON 必须自描述上下文用途和数据类型。
+- 已完成 Harness 严格 JSON Schema 能力复核。
+- 正在核对数据源 CLI 的真实路径参数和各数据类型字段映射。
+- 已从本地 CLI 注册表确认八个目录的精确 `--path` 参数，正在读取每类首条真实记录。
+- 已读取八类目录的真实 CLI 首页响应，并确认名称字段按领域原名保留：`file_name`、`name`、`title`；角色和画风的 `prompt_text` 原值保留，提示词条目的 `canonical_tag` 以语义明确的 `tag` 写入 Agent JSON。
+- 正在核对空数据目录 `artist-prompt-strings` 的本地服务契约。
+- 已定位当前问题根因：`serializeWorkbenchContext` 直接序列化 UI `CatalogItem`，导致展示字段进入 Agent JSON，同时丢失源响应的 `prompt_text` 和 `tag`。
+- 下一步将新增按 `kind` 区分的严格 Agent 上下文联合类型，并让卡片仅携带该严格上下文供确认写入。
+- 已确认空画师串目录的响应构建字段；准备开始修改契约、CLI 投影、输入框序列化和测试。
+- 已确定实现结构：`CatalogContext` 使用八个严格分支，`CatalogItem.context` 是卡片与输入框之间的唯一身份来源，序列化只写入 `CatalogContext`。
+- 已根据用户的角色实例补充角色上下文契约：`work_name`、`character_name`、`id`、`prompt_text`。
+- 已完成第一轮代码修改：新增八分支 `CatalogContext`，把角色的 `works.name` 和 `name` 分别投影为 `work_name` 与 `character_name`，输入框序列化不再使用 UI `CatalogItem`。
+- 已更新契约、CLI、控制器和原生弹窗的单元测试夹具，并增加角色 JSON 不含 `label`、`subtitle`、`coverUrl` 的回归断言。
+- 相关 57 个单元测试已通过，覆盖八类 CLI 投影、严格上下文分支、输入框序列化、取消选择和原生弹窗交互。
+- 首轮完整 `pnpm quality` 已执行；安全审计、Harness 边界和 TypeScript 检查通过，覆盖率阶段因一个旧 Remote 测试夹具失败而停止。
+- `git diff --check` 已通过。
+- 已更新 Remote 严格结果解析测试的旧 UI 项目夹具，准备重新执行完整质量门禁。
+- 完整 `pnpm quality` 已通过：单元/集成 113、契约/安全 17、生产 15、原型 27；类型检查、安全审计、Harness 边界检查全部通过。
+- 准备重启 Harness 生产实例并验证真实角色和提示词条目 JSON。
+- Harness 生产实例已在 `http://127.0.0.1:4173` 重启，正在连接现有应用内浏览器标签执行真实交互验收。
+- 已复用现有 Harness 应用内浏览器标签和原生输入框定位器，准备刷新生产页面并执行角色上下文选择。
+- 已把验收视口设置为 1440×1000，并确认 Harness 页面可访问；正在刷新页面和清理重启前保留的旧草稿 JSON。
+- 页面脚本上下文不允许调用 `location.reload()`；已切换为浏览器可见键盘刷新操作，不修改应用状态以外的数据。
+- Harness 页面已通过浏览器快捷键刷新；旧草稿由 Harness 会话持久化恢复，正在通过原生输入框清空该旧值后开始新输出验收。
+- 已清空旧草稿并打开 ComfyUI 工作台，准备进入原生上下文弹窗选择真实角色。
+- 已确认工作台处于选中状态；正在用原生键盘操作删除 Harness 自动恢复的旧草稿。
+- 旧草稿已通过原生全选删除操作清空，输入框当前为空；准备打开上下文弹窗选择角色。
+- 原生上下文弹窗已打开；九宫格首屏显示 9 个真实 Workflow 模板，准备切换到角色目录并搜索 `2b`。
+- 已切换到角色目录；页面同时存在会话搜索框和弹窗搜索框，已将弹窗定位器收紧为精确 `aria-label="搜索"`。
+- 已向真实角色 CLI 数据源提交 `2b` 搜索，正在检查返回卡片与作品名。
+- 已核对角色 ID 39933 的真实 CLI 记录，并确定弹窗检索词 `2B 尼尔机械纪元` 可把该角色返回到首屏。
+- 已在原生弹窗提交 `2B 尼尔机械纪元`，准备选择作品副标题为 `尼尔机械纪元` 的 `2b` 卡片。
+- 弹窗首屏已显示 9 张真实角色卡片；已选择带真实封面的 `2b`，卡片展示作品名 `尼尔机械纪元`。
+- 已在真实 Harness 输入框验证角色 JSON：作品名、角色名、ID、`prompt_text` 均与 CLI 记录一致，UI 展示字段均未写入。
+- 正在验证提示词条目的 `tag` 分支。
+- 已再次打开原生上下文弹窗并切换到提示词条目目录，准备检索真实 `canonical_tag`。
+- 已提交 `ryuujin_no_senpai` 提示词条目搜索，正在检查返回卡片和 `tag` 写入结果。
+- 弹窗返回 5 个真实提示词条目；已选择 `ryuujin_no_senpai`，准备确认写入。
+- 已在真实 Harness 输入框验证提示词条目 JSON 包含 `kind`、`id`、`tag`，并与角色 JSON 并列写入；输入框没有 UI 展示字段。
+- 已读取原生输入框实际 `value` 完成字段级验收：`prompt_text=true`、`tag=true`、`label=false`、`subtitle=false`、`coverUrl=false`。
+- 正在执行最终生产状态、健康检查和工作树差异检查。
+- 最终生产状态和六项健康检查已通过，`git diff --check` 已通过。
+- Phase 17 已完成；Harness 保持运行并停留在角色与提示词条目均已选中的产品状态。
+## 2026-08-24：Phase 18
+
+- 已读取 `find-docs`、`prototype`、`frontend-design` 和 `planning-with-files` 指令。
+- 已完成会话恢复检查；没有需要补同步的上轮上下文。
+- 已建立 Skill 加载和静态右侧抽屉实施计划，正在调研 Harness `0.1.1-rc.2` Skill 发现合同与旧原型右侧列。
+- 已确认仓库内三个 Skill 目录，并定位旧原型右列的结果、媒体筛选、运行状态和分页交互。
+- 已确认右侧抽屉必须建立在 Harness 公开 `details` 扩展位上；正在核对 `0.1.1-rc.2` 的精确 API 和 Skill 根目录配置。
+- 已确认斜杠 Skill 查询携带活动 `sessionId`，正在继续核对 Session header 的工作目录传递和文件系统 Skill provider 的运行配置。
+- 已确认右侧抽屉通过 Harness `layout.openDetails()/closeDetails()` 控制原生 `details` 列。
+- 已确认 base bundle 包含文件系统 Skill provider，无需新增依赖。
+- 正在核对当前 Session header 是否携带仓库工作目录；该值决定 `.agents/skills` 默认根目录是否参与发现。
+- 已从 base Cordis patch 确认 Host Skill 服务与文件系统 provider 均已启用。
+- 已确认生产 Session header 正确携带当前仓库绝对工作目录；正在直接核对 filesystem provider 的扫描结果和 Skill 文件校验结果。
+- 已确认三个项目 Skill 的名称、描述与目录结构符合 `0.1.1-rc.2` 文件系统 provider 的发现合同。
+- 已确认 Web 端斜杠 Skill 插件已启用；正在核对当前 Session 所用 Agent preset 是否包含 `skill-filesystem` 行及 Skill API 是否选择该 preset scope。
+- 已确认用户 Agent preset 目录为空；下一步核对 Web bundle 的随附 preset 配置。
+- 已确认默认 `standard` preset 已加载 `skill-filesystem`；下一步通过运行中的浏览器 RPC 直接检查斜杠菜单与 Skill API 返回值。
+- 已恢复与运行中 Harness 标签页的浏览器连接。
+- 已定位 Skill 缺失根因：当前 Session 使用 Harness 随附“极简模式”，该 preset 没有装载 Skill provider 或 Skill tool。
+- 已确认现有中间工作台仍处于可用状态；斜杠菜单诊断没有提交消息。
+- 已在运行页面复现 `/wai` 不显示 Skill；诊断完成后已恢复原上下文 JSON 草稿。
+- 已检查当前 Client 插件和旧右侧列实现；决定复用旧信息架构，但使用 Harness 原生 `details` 抽屉，不恢复旧自建三列 shell。
+- 已确认本次无需安装依赖；正在设计项目 Agent preset 的 source-production materialization 和右侧抽屉组件测试。
+- 已选择更小且符合 Harness 架构的 Skill 修复：在项目 profile patch 中重新启用 rc.2 已有的全局 `skill-filesystem` 与 `tool-skill`，不创建第二套菜单或自定义 Agent preset。
+- 已从旧原型确认右列需实现双标签、当前轮次运行卡片、三项媒体筛选、两列媒体卡片和独立分页；本阶段全部由静态结构化夹具驱动。
+- 已确认原生 details 列自带初始关闭、Session 切换关闭、拖动宽度和窄屏自动收缩行为；项目只负责 occupant 与打开/关闭动作。
+- 已确认 details 是 Session 作用域单槽位；正在实现项目唯一 occupant、关闭按钮和静态筛选状态。
+- 已确认项目 occupant 使用 priority -10 覆盖上游通用详情面板，插件卸载时上游面板可自动恢复。
+- 已确认 Skill 修复只需修改 source profile patch 和相应安全边界/production 断言，不需要新增运行时复制逻辑。
+- 已完成 Skill profile patch、原生 details occupant、静态运行/媒体夹具、筛选与分页实现。
+- TypeScript 检查通过；5 个定向测试文件共 23 项测试通过。
+- 正在收敛右列 CSS token 到当前项目已经验证使用的 Harness 主题变量。
+- 完整门禁运行到覆盖率阶段；117 项测试通过，当前唯一失败是函数覆盖率未达到仓库 100% 阈值，正在补齐新增交互分支测试。
+- 已补齐全部新增交互回调测试，函数覆盖率恢复为 100%。
+- 完整质量门禁通过；下一步重启生产 Harness 并执行真实浏览器验收。
+- 生产 Harness 已在 127.0.0.1:4173 健康运行，真实页面已经渲染新的右侧结果 occupant。
+- 正在浏览器验证抽屉关闭/入口重开、Session 媒体标签、筛选分页和项目 Skill 斜杠菜单。
+- 已通过真实浏览器验证左侧入口可以同时打开中间工作台和右侧原生 details 抽屉。
+- 已切换到已有 Session 继续验证；未连接 Hero 不显示 details 是 Harness 原生布局规则，不是插件失败。
+- 真实三列截图发现运行卡片受原生 Button 固定高度影响而重叠；正在修复该视觉缺陷后重新验收。
+- 已应用运行卡片自适应高度修复，正在重新设置视口并复查完整截图。
+- 已提高卡片高度规则的作用域优先级，等待 HMR 页面稳定后重新获取完整截图。
+- 完整截图仍未通过；正在读取原生 Button 的实际计算样式与发布 CSS。
+- 已定位 primitives 原始规则为 `.md { height: 36px; }`；正在检查生产页面的计算样式和最新样式表加载状态。
+- 已确认可通过应用内浏览器只读读取 computed style；下一步核对生产页面卡片实际高度来源。
+- 已确认页面仍在使用上一次生产构建的旧 CSS。现在重新构建并重启受管 Harness，再复查任务卡片和完整抽屉。
+- 生产 Harness 已重启并通过健康检查；正在刷新原浏览器页面以载入新 bundle。
+- 任务卡片固定高度问题已修复；正在处理 1440px 视口中右侧抽屉被推到可视区外的问题。
+- 已排除横向溢出：页面刷新后 details 按 Harness 原生状态关闭。现已通过左侧入口和中间按钮重新打开，继续做展开态截图验收。
+- 当前轮次卡片和本会话媒体两种抽屉布局均已通过 1440×1000 实际截图验收；继续验证分页、筛选、收起/展开与 Skill 菜单。
+- 抽屉第二页与媒体种类原生菜单已通过真实交互验收；继续验证筛选结果、收起/重开和 `/` Skill 菜单。
+- 视频筛选、抽屉收起和中间按钮重新展开已通过真实交互验收；现在验证 `.agents/skills` 的原生 `/` 菜单。
+- 旧会话输入 `/` 未显示 Skill menu，草稿已清空。正在核对物化后的 provider 配置、运行日志和新会话行为，定位是会话固定状态还是配置缺口。
+- 源 patch 与运行时物化 patch 已确认一致；继续检查完整 composition 与会话作用域。
+- 已确认原生 Skill 的 server/tool/client 组件均已锁定在 rc.2 且 profile 合成顺序正确；下一步验证新会话与 provider 发现路径。
+- 已再次用 rc.2 bundle 源码确认 host provider 方案受支持；现在创建重启后的本地验证会话，检查原生 `/` 菜单是否读取新 catalog。
+- 新会话草稿保持原样，原生命令按钮只显示命令项；正在读取 rc.2 `ui-skill` 与 filesystem provider 实现，确定 Skill 候选所需的准确会话/工作区条件。
+- rc.2 Skill 相关发布包已定位，继续读取 UI 触发和 provider 根目录逻辑。
+- 已确认 `.agents/skills` 是 rc.2 的原生默认项目根目录；继续检查 `skills.list` Remote 如何从 sessionId 解析 cwd/scope。
+- 已确认 `/` 的前端触发与预期一致；正在定位 `skills.list` 返回空的服务端原因。
+- `skill.list` Remote 的具体发布包已定位，正在检查 handler 如何取得会话 cwd 和 agent scope。
+- 已定位 `dsh-host-apiproxy` 的 skills handler；继续读取 live session/preset 覆盖分支。
+- 已确定历史会话可能被 preset-scoped 空 Skills registry 覆盖；正在检查实际持久化 preset 配置。
+- 已确认工作区 cwd 正确且无用户级 preset 文件；继续定位系统 preset composition，并直接请求现有会话的 `skill.list` 结果。
+- 已取得现有会话 ID 和 Skills API wire format；现在直接读取各会话 catalog。
+- 当前 attached 会话的 Skills API 已确认返回项目三个 Skill。正在用浏览器实际打开 `/` 候选，并保证原 JSON 草稿逐字恢复。
+- `.agents/skills` 的服务端 catalog 和原生 `/` 菜单均已通过实际 Harness 验证，原 JSON 草稿已逐字恢复。下一步完成最终测试、状态检查和浏览器交付标记。
+- 最终完整质量门禁已通过。正在执行生产 status/health、最终三列截图和浏览器交付标记。
+- 新会话下 details 初始为关闭状态；正在通过中间原生按钮重新展开，再生成最终三列截图。
+- 已确认中间按钮本来就是幂等 open 动作；空白新会话 hero 是 Harness 原生不展示 details。正在切回已有对话轮次的 Session 生成最终三列截图。
+- connected Session 的最终三列截图已通过；正在确认输入编辑器清空后的内部 DOM 不保留可提交 slash 草稿。
+- `/` 验证草稿已从 connected Session 完全清除；最终 textarea 的 value/defaultValue 均为空。继续执行生产健康检查和最终交付标记。
+- Phase 18 已完成：项目 Skill 的原生 `/` 菜单、右侧静态抽屉、完整质量门禁、生产健康检查和 1440×1000 浏览器验收全部通过。Harness 保持运行在 `http://127.0.0.1:4173/`。
+- 根据用户现场反馈再次核对默认 1280×720 页面，三列布局和右侧抽屉均处于展开态；Harness 无需再次重启，运行页已重新聚焦。
+- 用户截图确认新会话页面仍缺少右侧列。Phase 19 已开始：计划执行者将分别验证新会话和已连接 Session，不再用已连接 Session 代替用户当前页面验收。
+- Phase 19 已加载调试、Harness 文档检索、原型、文件计划和浏览器验收规范；session catchup 未报告遗漏状态。下一步先建立新会话页面的红色浏览器检查。
+- 第一次自动化检查命中了错误状态（已连接 Session），没有复现用户截图；已停止使用该结果。下一步从“新建会话”按钮进入 hero 并重新建立红色检查。
+- 已稳定进入“探索未至之境”新会话 hero，并复现右侧列宽度为 0。现在将该路径固化为红色检查，再进入原因假设与 Harness rc.2 插槽调研。
+- 已从官方文档确认 `dsh-skill-filesystem.customSkillDirs` 和原生 `details` slot；正在检查当前 source profile 是否安装 Skill provider、是否包含默认项目根，以及 Client 可用的 `ctx.layout` 方法。
+- 已定位 Skill 未加载的首要配置缺口：source profile 没有把源码仓库 `.agents/skills` 加入运行中的 Skill provider 根目录。
+- 已冻结静态右抽屉第一版信息架构：当前轮次结果、本会话结果、媒体筛选、运行状态卡片、媒体卡片和分页；不显示未接后端的任务取消与下载操作。
+- 已确认原生 Skill 与右栏依赖均已安装；下一步从生成配置、运行日志和 Skill frontmatter 确认未发现原因。
+- 已确认三份 Skill 的必填 frontmatter 合法，且没有关闭用户调用；正在检查生成 Cordis 树和生产进程 cwd。
+- 已确认生产 cwd 是仓库根，默认 Skill 根理论上正确；正在沿原生 `/` UI → Skills API → provider `list(cwd)` 链路定位缺失。
+- 已确认右侧列可直接复用 Harness 原生 details 几何、拖动和自动关闭行为，无需自建窗口级抽屉系统。
+## 2026-08-24 Phase 19
+
+- 已纠正验证对象：用户当前位于“新会话”首页，之前看到三列的是已有会话 `Modify code`，不能作为当前页面的验收证据。
+- 已建立可重复的浏览器失败检查 `checkNewSessionDrawer`。连续两次点击“生成结果”后均得到 `drawerWidth: 0` 和 `grid: 280px 1000px 0px`。
+- 下一步：核对 Harness `0.1.1-rc.2` 的 AppFrame 和公开插件挂载点，为未建立会话的首页选择可实现的右侧抽屉机制。
+- 已读取仓库领域上下文和“ Harness core is immutable” ADR；确认本次只允许修改项目 Client 插件。
+- 已确认本机 Context7 CLI 可用，将先用它查询公开文档，再用本机 `0.1.1-rc.2` 安装包源码核对精确行为。
+- 已通过 Context7 定位 DeepSeek Harness 官方文档库 `/deepseek-ai/deepseek-harness`。
+- 官方文档已证伪“调用被生命周期重置”的主要方向并确认最可能根因：`details` 是 Session scope，新会话无 Session 时原生轨道宽度为零。
+- 已定位公开的 root scope `shell.overlay` 候选，下一步核对本机 rc.2 安装包并为该挂载点先写失败测试。
+- 已核对根依赖与 lockfile，确认当前运行和类型检查使用 rc.2 Client 包，不会引用本机 Harness 源码工作树。
+- 已用 rc.2 发布包 README 确认 `details=0` 是 Harness 对未选择 Session 状态的设计行为，不是插件按钮故障。
+- 已发现官方 master 文档与 rc.2 发布包存在 slot 差异；下一步只以 rc.2 类型声明和构建产物为实现权威。
+- 已在 rc.2 类型声明与 `lib/client.js` 中确认 `shell.overlay` 是可用的公开 root-scope list slot。
+- 已确定修复路径：新会话使用 `shell.overlay` 右侧抽屉；已有 Session 继续使用原生 `details`，两者共享同一个结果内容组件和开关状态。
+- 已检查现有控制器、Client 注册、结果组件和测试；准备先增加控制器结果状态与 Hero overlay 的失败测试，再实现最小改动。
+- 已完成 red 阶段：`workbench-controller`、`results-drawer`、`client-plugin` 的新增检查均在对应缺口处失败，既有 11 项检查继续通过。
+- 下一步：实现控制器结果状态、rc.2 `shell.overlay` 注册和 Hero 右侧抽屉样式，然后重跑同一组测试。
+- 已完成 green 阶段实现；相同三份目标测试现为 16/16 通过。
+- 下一步：执行类型检查和相关边界测试，重启生产 Harness，然后在用户截图对应的新会话首页运行浏览器检查。
+- `pnpm run typecheck` 已通过。
+- `pnpm check:harness-boundary` 首次运行准确拦截了新增的非许可 Harness specifier；正在改为 `@deepseek-ai/dsh-client-runtime/client` 的公开类型导出后重跑门禁。
+- 已移除非许可 specifier。`pnpm run typecheck`、`pnpm check:harness-boundary` 和三份目标测试全部通过。
+- 下一步：重启生产 Harness，并运行新会话首页的确定性浏览器检查。
+- 已执行 `pnpm prod:restart`；Harness 已重新提供 `http://127.0.0.1:4173/`，生产进程保持运行。
+- 已重新连接现有 in-app browser 标签并确认目标 URL 未变，准备刷新加载新 Client bundle。
+- 已刷新浏览器标签；首次读取页面时误把标签对象当作 locator 主体，刷新本身已完成。已确认该标签的页面查询入口是持久化的 `harnessTab.playwright`。
+- 修复后的首次检查未找到“生成结果”，原因是刷新后工作台入口恢复为未激活，并非 overlay 失败。下一轮检查会先激活左侧“ComfyUI 工作台”。
+- 已确认刷新后的真实初始几何：Hero 可见、工作台未激活、overlay 不存在、details 轨道为零。下一步点击工作台入口并测量 overlay 实际宽度。
+- 新会话页面第一项浏览器验收已通过：点击“ComfyUI 工作台”后右侧抽屉宽度为 361px，标题、关闭按钮、两个 tab 和静态运行卡片均可见。
+- 已截取修复后的新会话三列页面。下一步验证关闭和中间“生成结果”重新打开，再验证已连接 Session 仍使用原生 details。
+- 新会话的关闭和重新打开交互已通过浏览器验收；输入框 JSON 未被结果抽屉交互修改。
+- 下一步：进入已有 `Modify code` Session，确认 overlay 不重复呈现且原生 details 列仍为 360px。
+- 已有 Session 浏览器验收通过：只显示原生 360px details 列，未重复显示 root overlay。
+- 下一步：运行全量质量门禁、生产状态与健康检查，并执行最终 git diff 检查。
+- 全量质量门禁已通过：unit/integration 120、contract/security 17、production 15、prototype 27。
+- 生产 Harness 运行于 `http://127.0.0.1:4173/`，PID 77911；所有健康检查阶段通过。
+- `git diff --check` 已通过。Phase 19 完成。
+- 验证标签已停留在“新会话”三列状态：Workbench dock 可见、工作台激活、右侧“生成结果”抽屉宽度 361px。
+## 2026-08-24 Phase 20
+
+- 已建立 Phase 20 计划，范围限定为右侧抽屉的 Workflow JSON 图标下载入口。
+- 已定位原原型下载入口、Actual Workflow 约束、文件名合同和 rc.2 原生下载图标。
+- 下一步：查询官方 Button/icon 用法并核对原原型 fixture 与下载处理器，然后先写失败测试。
+- 已确认下载入口位置为右侧抽屉 header；新会话 overlay 与 Session details 共用该 header，因此一次实现覆盖两种布局。
+- 下一步：核对 rc.2 Button/Tooltip 精确属性与原原型浏览器下载实现，随后编写失败测试。
+- 已确认 rc.2 原生实现方案：`Tooltip` 包裹 `Button size="sm" variant="toolbar" icon={<IconDownloadOutline16 />}`，按钮只保留图标并使用“下载 Workflow”作为可访问名称。
+- 已确认浏览器下载实现沿用原原型的 Blob/object URL/临时 anchor 流程，文件名遵守既有 `comfyui-run-<run_id>-workflow.json` 合同。
+- 下一步：选择静态成功运行的 UI Workflow fixture，并先写下载内容与图标交互失败测试。
+- 已重新读取 Phase 20 计划并确认改动范围；现有用户工作树改动保持不动。
+- 已确定测试范围：Workflow JSON 结构与文件名、Blob 下载生命周期、原生图标/tooltip、overlay 与 details 共用按钮。
+- 已添加 `workflow-download.test.ts` 与结果 header 图标测试；修复前目标检查按预期失败。
+- 下一步：新增静态 UI Workflow 唯一数据源和浏览器下载函数，再接入原生 Tooltip/Button/Icon。
+- 已新增静态 Actual Workflow、确定性 JSON 序列化、Blob 下载函数和 header 原生图标按钮。
+- Workflow 下载测试 2/2 已通过；正在修正 icon-only Button 的测试断言后重跑结果抽屉测试。
+- Harness 边界门禁通过。目标运行中的剩余失败来自测试断言和 mock 类型，正在修正后重跑类型检查。
+- 目标测试现为 8/8 通过；`pnpm run typecheck` 与 `pnpm check:harness-boundary` 均通过。
+- 下一步：重启生产 Harness，在新会话右侧抽屉中检查图标/tooltip并捕获实际 `.json` 下载。
+- 已执行生产重启，新 Client bundle 已发布到 `http://127.0.0.1:4173/`，进程保持运行。
+- 已按 Browser skill 连接现有验证标签，准备刷新并执行实际下载验收。
+- 浏览器页面已刷新并重新激活工作台。tooltip 自动化的 hover 与 MouseEvent 两种尝试不受当前浏览器控制接口支持，下一步改用原生 focus 触发后读取 tooltip。
+- 页面级 focus 同样不受支持；已停止重复该路径并定位到受控 locator 的 element-scoped evaluate。下一步用该公开方法触发 focus。
+- 已完成图标按钮几何与可访问名称验收，但 rc.2 Tooltip 未在键盘 press 后呈现。下一步检查 rc.2 Tooltip/Button 实际实现，决定是否改用原生 title tooltip。
+- 已确认 rc.2 Tooltip 不能包裹 rc.2 Button 的版本限制；正在改为 Harness Button 的原生 title tooltip，并同步测试。
+- 原生 title tooltip 方案已经实现并通过目标测试、类型检查与 Harness 边界门禁。
+- 下一步：再次重启生产 bundle，验证 DOM title 和实际下载事件。
+- 生产 bundle 已再次重启；图标、尺寸、aria-label、title 和右栏布局均通过浏览器 DOM 验收。
+- Browser download event 没有捕获 Blob anchor 下载并超时。下一步改用精确下载文件检查与页面内 anchor/Blob 记录，不再重复该事件等待。
+- 已确认页面点击实际产生目标 `.json` 文件，并解析验证其 UI Workflow 结构与 run identity。
+- 下一步：验证已连接 Session 的原生 details header 同样显示图标按钮，然后运行全量质量门禁。
+- 已连接 Session 的原生 details 下载图标与 360px 布局通过浏览器验收，并已截取页面。
+- 下一步：运行全量 `pnpm run quality`、生产状态、生产健康检查和 `git diff --check`。
+- 全量质量门禁通过：unit/integration 123、contract/security 17、production 15、prototype 27。
+- 生产 Harness 运行于 `http://127.0.0.1:4173/`，PID 2812；全部健康阶段通过。
+- `git diff --check` 通过。Phase 20 完成。
+
+## 2026-08-25 Phase 21
+
+- 已恢复“真实媒体、异步 ComfyUI 运行、Tool/Skill 与 Host 启动”讨论。
+- 已把用户确认的 `Session 1 → N Run → N Media` 不变量写入调研记录。每个 Run 独立保存当次 Actual Workflow；媒体下载通过所属 `run_id` 解析。
+- 首次追加记录的补丁使用了不存在的文件尾行，补丁未产生部分写入；重新读取真实尾部后改用精确锚点。
+- 已重读仓库启动、配置、架构、目录、测试规范与 Generation Run/Media 相关 ADR/PRD。当前已接受规格支持单 Host 进程、持久 worker、一个 SQLite、Workspace/Run 文件目录、Typert Remote 查询与同源文件路由。
+- 已检查当前 Host/Remote/Configuration 实现：运行路径和健康检查已就绪，真实 Run Repository、MediaStore、worker、Generation Tool 和 Run Remote 仍为未实现范围。
+- 已通过 Context7 确认官方 Harness 文档库、`defineTool()` 和 `ctx.webServer.register()` 的公开用法。下一步集中查询 rc.2 Jobs 与 Tool Result meta 精确行为，再用已安装包核对。
+- 已完成 Context7 本问题的三次查询上限，并用已安装 `rc.2` 包核对 Jobs 和 Tools 类型。结论：Tool Result meta 可承载 `run_id`；`ctx.jobs` 不是持久运行或重启恢复机制。
+- 已浏览用户指定的 Harness 开发文档、`rc.2` WebServer 标签源码、Harness Tools/Jobs 官方文档与 ComfyUI 官方 server routes。下一步核对本机数据源 Source CLI 与 runtime gateway 的精确操作合同。
+- 已核对生产路径中的真实 Source CLI。它只读取 instance 和 TemplateBundle，不承担异步运行；任务提交、观察、取消与媒体持久化必须由当前仓库实现。
+- 已完成 Session、Run、Media 与 Workflow 的归属模型：每个不同 Harness Tool `callId` 创建一个 Run，每个 Media 通过自己的 `run_id` 解析 Actual Workflow。
+- 已完成 SQLite 表职责、Run Artifact 目录、Saved Media 两级分片、临时文件原子提交和崩溃恢复边界设计。
+- 已完成 Host 内置同源接口与持久 coordinator 方案；不增加第二个 HTTP 服务，不把 Harness Jobs 当作持久任务系统。
+- 已完成异步状态机、Tool 接纳边界、Client 单一投影轮询与实现顺序设计。Phase 21 完成。

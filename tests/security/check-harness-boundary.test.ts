@@ -7,8 +7,6 @@ import { describe, expect, it } from 'vitest'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const script = resolve(repositoryRoot, 'scripts/security/check-harness-boundary.mjs')
-const productAgent = JSON.parse(readFileSync(resolve(repositoryRoot, 'config/product-agent.json'), 'utf8')) as Record<string, any>
-
 const clientInject = [
   '@deepseek-ai/dsh-client-connection',
   '@deepseek-ai/dsh-api-remotes',
@@ -17,17 +15,16 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
-  '@deepseek-ai/dsh-client-ui-theme',
+  '@deepseek-ai/dsh-client-ui-sidebar',
 ]
 
 function fixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-boundary-'))
-  for (const directory of ['src/host/tools', 'src/agent', 'config', 'profiles/comfyui-workbench']) {
+  for (const directory of ['src/host/tools', 'profiles/comfyui-workbench']) {
     mkdirSync(join(root, directory), { recursive: true })
   }
   writeFileSync(join(root, 'src/host/tools/register-project-tools.ts'), 'ctx.tools.register(definition)\n')
-  writeFileSync(join(root, 'src/agent/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
-  writeFileSync(join(root, 'src/host/plugin.ts'), 'ctx.effect(() => undefined)\n')
+  writeFileSync(join(root, 'src/host/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
   if (otherSource) writeFileSync(join(root, 'src/other.ts'), otherSource)
   writeFileSync(join(root, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
@@ -35,15 +32,9 @@ function fixture(otherSource = ''): string {
     dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
     devDependencies: { '@deepseek-ai/dsh': '0.1.0-rc.8' },
     peerDependencies: {},
-    exports: {
-      './agent': {
-        types: './src/agent/plugin.ts',
-        default: './src/agent/plugin.ts',
-      },
-    },
+    exports: {},
     dsh: { bundle: { patch: './cordis.patch.yml' }, client: { platform: 'web', inject: clientInject } },
   }, null, 2)}\n`)
-  writeFileSync(join(root, 'config/product-agent.json'), `${JSON.stringify(productAgent, null, 2)}\n`)
   writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - .\n')
   writeFileSync(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n")
   writeFileSync(join(root, 'cordis.patch.yml'), `- insert:
@@ -51,14 +42,12 @@ function fixture(otherSource = ''): string {
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-
-- id: ui-layout
-  disabled: true
 `)
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets
-  config:
-    default: harness-comfyui
-    includeUserRoot: true
+  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: skill-filesystem
+  disabled: false
+
+- id: tool-skill
+  disabled: false
 `)
   return root
 }
@@ -75,7 +64,7 @@ function updateJson(root: string, path: string, update: (value: Record<string, a
 }
 
 describe('Harness source boundary', () => {
-  it('accepts one project Tool registry and one Agent registration', () => {
+  it('accepts one project Tool registry in the Host plugin', () => {
     const root = fixture()
     try {
       expect(run(root)).toMatchObject({ status: 0, stderr: '' })
@@ -100,7 +89,7 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it('rejects source-bound package dependencies and product Agent traversal', () => {
+  it('rejects source-bound package dependencies', () => {
     const root = fixture()
     try {
       updateJson(root, 'package.json', value => { value.devDependencies['@deepseek-ai/dsh'] = 'file:../dsh' })
@@ -108,31 +97,15 @@ describe('Harness source boundary', () => {
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
-
-    const agentRoot = fixture()
-    try {
-      updateJson(agentRoot, 'config/product-agent.json', value => { value.agentPresetRuntimeRelativeRoot = '../outside' })
-      expect(run(agentRoot).stderr).toMatch(/normalized package-relative path/u)
-    } finally {
-      rmSync(agentRoot, { recursive: true, force: true })
-    }
   })
 
-  it('rejects Agent export and profile patch drift', () => {
+  it('rejects profile patch drift', () => {
     const root = fixture()
     try {
-      updateJson(root, 'package.json', value => { value.exports['./agent'].default = './src/agent/other.ts' })
-      expect(run(root).stderr).toContain('package.json.exports[./agent]')
+      writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), 'invalid: true\n')
+      expect(run(root).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
     } finally {
       rmSync(root, { recursive: true, force: true })
-    }
-
-    const patchRoot = fixture()
-    try {
-      writeFileSync(join(patchRoot, 'profiles/comfyui-workbench/cordis.patch.yml'), 'invalid: true\n')
-      expect(run(patchRoot).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
-    } finally {
-      rmSync(patchRoot, { recursive: true, force: true })
     }
   })
 })

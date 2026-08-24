@@ -5,11 +5,6 @@ import { fileURLToPath } from 'node:url'
 
 import { validateSourceRuntime } from './contract.mjs'
 import { materializeSourceClientModule } from './client-module.mjs'
-import {
-  materializeProductAgentRuntime,
-  readProductAgentConfig,
-  validateProductAgentRuntime,
-} from './product-agent.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
 import { loadProfile } from '../../src/config/load-profile.ts'
 import { materializeSourceProfile } from '../profile/source.mjs'
@@ -102,7 +97,7 @@ export function parseSourceProductionDefinition(value, repositoryRoot = defaultR
   if (definition.schemaVersion !== 1) throw new TypeError('source production definition.schemaVersion must be 1')
 
   const source = requireRecord(definition.source, 'source production definition.source')
-  assertExactKeys(source, ['catalogCliRelativePath', 'sourceCliRelativePath'], 'source production definition.source')
+  assertExactKeys(source, ['catalogPort', 'catalogCliRelativePath', 'sourceCliRelativePath'], 'source production definition.source')
   const logs = parseLogOptions(definition.logs, 'source production definition.logs')
 
   const configurationProfile = requireString(
@@ -122,6 +117,7 @@ export function parseSourceProductionDefinition(value, repositoryRoot = defaultR
       { insideRoot: true },
     ),
     configurationProfile,
+    catalogPort: requirePositiveInteger(source.catalogPort, 'source production definition.source.catalogPort'),
     catalogCliPath: requireRelativePath(
       source.catalogCliRelativePath,
       'source production definition.source.catalogCliRelativePath',
@@ -157,6 +153,7 @@ export async function loadSourceProductionContext(options = {}) {
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: resolve(definition.runtimeRoot, 'shared/saved-media'),
     HARNESS_COMFYUI_LOG_DIRECTORY: resolve(definition.runtimeRoot, 'shared/logs'),
     HARNESS_COMFYUI_CATALOG_CLI_PATH: definition.catalogCliPath,
+    HARNESS_COMFYUI_CATALOG_PORT: String(definition.catalogPort),
     HARNESS_COMFYUI_SOURCE_CLI_PATH: definition.sourceCliPath,
   }
   const configRoot = resolve(repositoryRoot, 'config')
@@ -185,6 +182,7 @@ export async function loadSourceProductionContext(options = {}) {
     },
     comfyui: { defaultInstanceId: profile.comfyui.defaultInstanceId },
     source: {
+      catalogPort: profile.source.catalogPort,
       catalogCliPath: profile.source.catalogCliPath,
       sourceCliPath: profile.source.sourceCliPath,
       contractId: profile.source.contractId,
@@ -321,6 +319,7 @@ export async function loadSavedSourceManagedContext(options = {}) {
       runtimeId: state.runtimeId,
       runtimeRoot: state.runtime.runtimeRoot,
       configurationProfile: state.runtime.configurationProfile,
+      catalogPort: state.runtime.source.catalogPort,
       catalogCliPath: state.runtime.source.catalogCliPath,
       sourceCliPath: state.runtime.source.sourceCliPath,
       logs: state.logs,
@@ -390,11 +389,8 @@ export async function prepareSourceRuntime(context) {
   await assertExecutable(context.dshExecutable, 'source production dsh executable')
   await assertReadable(context.runtime.source.catalogCliPath, 'source production Catalog CLI')
   await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
-  const productAgent = await readProductAgentConfig(context.repositoryRoot)
-  await materializeProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot, productAgent)
   await materializeSourceClientModule(context.repositoryRoot)
   await materializeSourceProfile(context.repositoryRoot, context.dshHome)
-  const readiness = await validateProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot)
   await writeAtomicJson(context.sourceRuntimeStatePath, {
     schemaVersion: SOURCE_RUNTIME_STATE_SCHEMA_VERSION,
     runtimeId: context.definition.runtimeId,
@@ -408,8 +404,6 @@ export async function prepareSourceRuntime(context) {
     packageRoot: context.repositoryRoot,
     dshExecutable: context.dshExecutable,
     dshHome: context.dshHome,
-    productAgent: readiness.productAgent,
-    requiredEntries: readiness.requiredEntries,
   }
 }
 
@@ -419,14 +413,11 @@ export async function loadSourceRuntimeTarget(context, options = {}) {
     ? context.activeVersion
     : validateSourceRuntimeState(stateValue, context).activeVersion
   if (options.validateRuntime === false) return { activeVersion }
-  const readiness = await validateProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot)
   return {
     activeVersion,
     runtimeRoot: context.runtime.runtimeRoot,
     packageRoot: context.repositoryRoot,
     dshExecutable: context.dshExecutable,
     dshHome: context.dshHome,
-    productAgent: readiness.productAgent,
-    requiredEntries: readiness.requiredEntries,
   }
 }

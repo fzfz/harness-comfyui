@@ -223,80 +223,6 @@ function processIdentityMismatch(state, identity) {
   return `process identity mismatch for PID ${state.pid}: expected ${JSON.stringify(state.processIdentity)}, got ${JSON.stringify(identity)}`
 }
 
-function agentPresetApiUrl(runtime) {
-  const host = runtime.host.includes(':') ? `[${runtime.host}]` : runtime.host
-  return `http://${host}:${runtime.port}/api/agentPreset.list`
-}
-
-async function readAgentPresetRoster(runtime) {
-  const rpcId = randomUUID()
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 2_000)
-  let response
-  try {
-    response = await fetch(agentPresetApiUrl(runtime), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-request',
-        rpcId,
-        method: 'agentPreset.list',
-        payload: {},
-      }),
-      signal: controller.signal,
-    })
-  } catch (error) {
-    throw new Error(`agentPreset.list request failed: ${error instanceof Error ? error.message : String(error)}`)
-  } finally {
-    clearTimeout(timeout)
-  }
-  if (!response.ok) throw new Error(`agentPreset.list HTTP request returned status ${response.status}`)
-  let wire
-  try {
-    wire = await response.json()
-  } catch {
-    throw new Error('agentPreset.list response is malformed JSON')
-  }
-  if (!isRecord(wire) || wire.type !== 'server-response' || wire.rpcId !== rpcId) {
-    throw new Error('agentPreset.list response envelope is invalid')
-  }
-  if (!isRecord(wire.result) || wire.result.ok !== true || !isRecord(wire.result.value)) {
-    throw new Error('agentPreset.list response result is invalid')
-  }
-  const value = wire.result.value
-  if (!Array.isArray(value.presets)) throw new Error('agentPreset.list response presets are invalid')
-  return value
-}
-
-function validateAgentPresetRoster(roster, productAgent) {
-  if (!isRecord(roster) || !Array.isArray(roster.presets)) {
-    throw new Error('agentPreset.list response presets are invalid')
-  }
-  const productRows = roster.presets.filter(row => isRecord(row) && row.id === productAgent.agentPresetId)
-  if (productRows.length !== 1) {
-    throw new Error(`agentPreset.list must return exactly one preset with id "${productAgent.agentPresetId}"; found ${productRows.length}`)
-  }
-  const productRow = productRows[0]
-  if (productRow.trust !== 'user') {
-    throw new Error(`agent preset "${productAgent.agentPresetId}" must have trust "user"`)
-  }
-  if (productRow.isDefault !== true) {
-    throw new Error(`agent preset "${productAgent.agentPresetId}" must be the default preset`)
-  }
-  if (productRow.broken !== undefined) {
-    throw new Error(`agent preset "${productAgent.agentPresetId}" is broken: ${String(productRow.broken)}`)
-  }
-  return {
-    id: productRow.id,
-    trust: productRow.trust,
-    isDefault: productRow.isDefault,
-  }
-}
-
-async function validateRunningAgentPresetRoster(runtime, productAgent) {
-  return validateAgentPresetRoster(await readAgentPresetRoster(runtime), productAgent)
-}
-
 async function buildHostEnvironment(runtime, runtimeTarget) {
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
@@ -304,7 +230,6 @@ async function buildHostEnvironment(runtime, runtimeTarget) {
   return {
     ...environment,
     DSH_HOME: runtimeTarget.dshHome,
-    DSH_TOOLS_MODE: 'native',
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: runtime.configurationProfile,
     HARNESS_COMFYUI_DATA_DIR: runtime.paths.dataDir,
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: runtime.paths.runRepositoryFile,
@@ -313,6 +238,7 @@ async function buildHostEnvironment(runtime, runtimeTarget) {
     HARNESS_COMFYUI_LOG_DIRECTORY: runtime.paths.logDirectory,
     HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: runtime.comfyui.defaultInstanceId,
     HARNESS_COMFYUI_CATALOG_CLI_PATH: runtime.source.catalogCliPath,
+    HARNESS_COMFYUI_CATALOG_PORT: String(runtime.source.catalogPort),
     HARNESS_COMFYUI_SOURCE_CLI_PATH: runtime.source.sourceCliPath,
     HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: String(runtime.client.runRefreshIntervalMs),
     HARNESS_COMFYUI_SERVER_HOST: runtime.host,
@@ -592,9 +518,6 @@ export {
   probePort,
   probePortOwnedByProcess,
   operationsPath,
-  readAgentPresetRoster,
-  validateAgentPresetRoster,
-  validateRunningAgentPresetRoster,
   readProcessState,
   removeOwnedProcessState,
   sameProcessIdentity,

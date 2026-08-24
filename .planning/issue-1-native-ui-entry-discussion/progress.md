@@ -1,0 +1,88 @@
+# Progress
+
+## 2026-08-24
+
+- 读取相关 memory registry，确认必须重新核对当前 GitHub Issue、工作树和 Harness 公开接口。
+- 完整读取 `planning-with-files`、`codebase-design`、`DESIGN-IT-TWICE.md` 和 `DEEPENING.md`。
+- 运行规划上下文恢复脚本；当前工作树在调查开始时没有已报告的文件差异。
+- 创建本轮隔离规划目录；未修改 GitHub Issue或产品代码。
+- 只读回读 GitHub Issue #1 与 Issue 列表，确认 #3、#16、#17 已关闭，#1 当前规格要求停用上游 `ui-layout` 并运行唯一项目 root。
+- 列出当前仓库前端文件，确认三列工作台实现已经存在。
+- 回读已关闭 Issue #3 与 #17，并读取当前 Client plugin、root、sidebar 与 conversation 实现。
+- 确认当前实现没有完整 Harness 原生界面入口，且工作台只显示 `harness-comfyui` Preset Session。
+- 读取当前 bundle patch、项目 manifest 与上游 `ui-layout` 公开合同，确认上游 AppFrame 实现不是可嵌入的公开 React 导出。
+- 读取上游 `ui-sidebar`、`ui-settings`、`ui-settings-general`、`ui-model-selection` 与 `ui-conversation` slot 合同。
+- 定位设置入口和模型下拉框消失的直接原因：项目替换父 occupant 时没有重新渲染对应 child slot。
+- 回读 GitHub Issues #4、#10 与 #11，确认后续工作会继续修改 composer 和项目左栏。
+- 检查 Issue #3 的产品与原型截图，确认设置、模型与导航入口的可见放置区域。
+- 读取 rc.8 SlotCore declaration、shadowing 与 disposer 合同，并用内存中的 SlotCore实例验证重复 child declaration 会 fail closed。
+- 纠正初步方案：项目不能在 shadow Sidebar/Composer 中重新声明 `sidebar.settings` 与 `conversation.input.model`。
+- 形成两条可行重构：保留项目 root但恢复原生 SidebarRoot/InputBar；或恢复原生 ui-layout root并用动态 child occupant registrations实现工作台模式。
+- 核对原生 ui-layout实际默认列宽和公开动作，确认路线 A 必须明确废止当前 #3 固定列宽合同，不能同时声称两者保留。
+- 独立审核者初审判定 FAIL，指出路线 B 不能满足 #4 原子提交、路线 A 必须删除项目 root/layout/theme 责任，并要求形成可执行 Issue 图。
+- 根据审核意见重写 findings：区分完整 native Surface 与复用原生控件，补齐唯一 root 迁移、Session binding 生命周期、#4 提交冲突、#18 阻塞顺序和验收清单。
+- 独立审核者复审最终 task_plan.md 与 findings.md，五类问题全部关闭，最终判定 PASS。
+- 本轮只完成方案讨论；未修改 GitHub Issue、产品代码或依赖。
+- 用户把前后两轮合并为四项需求，并要求最小改动、不过度设计；Phase 4 重新打开方案。
+- 确认 rc.8 原生权限插件同时拥有当前 Session `/permission` popup 和新 Session 默认权限 Settings 行。
+- 确认 rc.8 原生 Skill UI 已注册 `/` source，文件系统 Skill provider 已原生扫描项目 Git root 的 `.agents/skills`。
+- 确认 rc.8 原生 InputBar 已内置当前 Session 权限下拉框，并通过 `conversation.input.model` 渲染原生 ModelSelect。
+- 定位第四项需求的唯一 Host 配置冲突：项目 Preset 当前 `includeDefaultRoots: false`，且 #16 明确把默认 Skill roots 排除在项目 Agent之外。
+- 确认 Workbench Session 的 cwd 已使用 Host cwd，满足原生 filesystem Skill provider 的项目根定位前提。
+- 发现 #4 可以使用公开 ReferenceCodec 接缝交给原生 InputBar完成原子序列化和发送；后续需要比较该路线与继续 shadow composer 的总改动量。
+- 三个独立接口设计分别按最小 Interface、最大宿主复用和最少修改文件进行比较；三个设计均推荐原生 SidebarRoot与原生 InputBar。
+- 形成四项需求的最小方案：一个 SurfaceNavigation Module、一项 Preset配置修改、零权限/模型/Skill菜单 Adapter。
+- 重写 #4 调整建议：Message Context使用 `conversation.input.dock`与公开 reference seam，不再 shadow `conversation.composer.bar`。
+- 已派发独立语义审核；本轮仍未修改 GitHub Issue、产品代码或依赖。
+- 独立语义初审判定 FAIL：#4 reference seam被过早承诺，父 Issue四项编号不一致，“全部 Skill”没有在主合同中处理同名遮蔽，计划保留过时 ModelSelect结论。
+- 根据初审意见把 #4改为受控兼容性门禁，恢复四项需求的一一编号，并把 Skill合同限定为 Harness原生名称优先级解析后的用户可调用项。
+- 独立语义复审判定 PASS；四项需求、#4兼容性门禁、Skill同名优先级和最小改动边界均无剩余修订项。
+- Phase 4完成；本轮未修改 GitHub Issue、产品代码或依赖。
+- 用户要求方案编写者在执行前完成 #4接口调研，并删除待定判断；Phase 5重新打开方案。
+- 回读当前 GitHub Issue #1、#4、#10、#11、#14与已关闭 #3、#16、#17，确认项目 root、项目 composer、原型 1:1和隔离 Skill roots条款都需要明确替代。
+- 核对 rc.8公开 `IConversation.input`、`SessionInputResolver`、`SessionInput.insertReference()`、`InputState`、`InputTriggerSource`与 `ReferenceCodec.serialize()`实现。
+- 确认项目可以在 Modal确认后按当前 `draftRev`顺序插入多个原生 reference occurrence；原生 InputBar按 occurrence顺序解析 ContextRef并与原生图片附件完成一次默认提交。
+- 确认原生 InputBar在 ContextRef解析或图片编码失败时保留正文、occurrence与图片，并在成功时清理本次输入。
+- 确认原生 InputBar固定渲染 inline reference chip；#4必须删除项目自绘上方 chip的 1:1条款，并把原生 inline reference chip登记为父 Issue #1的明确原型例外。
+- 删除 #4受控兼容性门禁，改为确定的 #4原生输入路径与验收合同。
+- Phase 5完成；本轮仍未修改 GitHub Issue、产品代码或依赖。
+- 独立语义审核判定 FAIL：#4尚未明确删除自身的 #16隔离 Skill root条款；`ReferenceInsert.ref`被错误写成对象；codec-only source必填成员、部分插入失败和 inline chip验收未写全。
+- 修正 #4：`ReferenceInsert.ref`改为项目唯一 codec生成的 JSON字符串；补齐 `trigger`、`name`、`candidates()`、`onPick()`、`clipboardText()`、`serialize()`；补齐部分插入回滚、错误码与 inline chip验收。
+- 明确删除 #4自身禁止改变 #16 Skill root的段落，并写明 `customSkillDirs`与默认 roots同时生效。
+- 补查 #6与 PRD 05，确认 Execution Route隐藏状态同样依赖项目 composer；新增确定的 `generation-route`原生 reference路线、原型例外和验收条款。
+- 独立语义复审判定 FAIL：先选 route再添加 ContextRef会产生错误 occurrence顺序，用户在 reference后继续输入正文也会破坏旧的正文末尾解析前提；#14缺少 route终验。
+- 修正插入不变量：ContextRef插入到最新 route offset之前；显式 route插入到最新草稿末尾；唯一 route occurrence恒定排在全部 Context occurrence之后。
+- 选择完整消息解析路线：#4与 #6共用的 parser扫描整条 user message并提取有效 Context/Route block，剩余文本作为正文；方案不增加维持 occurrence为草稿后缀的同步逻辑。
+- 补齐 #13完整消息消费条款、#14显式/默认 route终验，以及“先 route、再两个 ContextRef、再继续输入正文”的联合验收场景。
+- 独立语义第三次复审判定 FAIL：confirmed facts仍保留“ContextRef总在草稿末尾插入”的旧描述；完整消息 parser和 route删除规则没有处理 InputMachine自动加入的 ASCII分隔空格。
+- 同步修正 confirmed facts中的 route offset规则；明确 parser、显式 route更新和默认 route删除只移除 occurrence对应的一个机器 ASCII分隔空格，并保留其他用户空格与换行。
+- 增加包含用户空格、换行和三个机器分隔空格的逐字符正文验收。
+- 自检发现 `setDraft()`只能恢复字符，不能重建已经删除的结构化 route occurrence；方案停止使用 `setDraft()`替换 route。
+- 补齐文档责任：#18更新 ADR 0012；#4、#6、#13与 #14分别同步 PRD 03、PRD 05、PRD 12与 PRD 13，避免 Issue正文与仓库产品文档继续保留项目 composer合同。
+- 独立语义最终复审判定 FAIL：公开 `setDraft(text)`没有按 `occurrenceId`删除的参数；相同 route label或普通文本会让文本 diff无法保证删除旧 occurrence。
+- #6改为确定的原生删除行为：存在 route时，控件拒绝直接替换或清空并显示 `EXECUTION_ROUTE_REMOVE_CURRENT_FIRST`；用户通过原生 Backspace/Delete按 occurrence identity删除 route，控件随后回到默认实例并允许重新选择。
+- 独立语义最终复审判定 PASS；公开 Interface、四项需求、#4/#6/#13/#14同步、#16替代条款、相关 PRD/ADR、消息解析、顺序不变量和验收合同均无剩余阻塞项。
+- 用户授权按已确认方案修改现有 GitHub Issue并创建新 Issue；Phase 6开始。
+- 实时 Issue列表确认 Prompt/LoRA Skills属于GitHub Issue #13；GitHub Issue #12属于多媒体结果交付，因此完整用户消息扫描合同写入 #13。
+- `git fetch origin main`确认当前分支与`origin/main`没有领先或落后提交；实施计划提交可以保持精确文件边界。
+- 创建并提交 `plans/issue-1-native-surface-and-input-capabilities.md`；两个提交只包含该实施计划文件。
+- Standards与Spec双轴审查发现并关闭 Surface occupant计数、binding生命周期、剪贴板验收、`CONTEXT.md`同步、`conversation` Cordis service、输入错误文案映射和已关闭 Issue依赖语义问题；最终双轴审查均判定 PASS。
+- 把最终实施计划提交 `5010c2ab832dd7c056ce94b384b92e715414b930`推送到`origin/main`。
+- 创建 GitHub Issue #18，并把不可变计划链接和经过语义审核的顶部修订写入 #1、#4、#6、#10、#11、#13与 #14。
+- 发布后回读确认八张 Issue均为 OPEN、均包含`ready-for-agent`、每张修订标题与不可变提交哈希各出现一次。
+- 独立语义审核者逐张回读 GitHub实际正文并判定 PASS；四项需求、责任分配、依赖关系和完整消息解析合同无剩余问题。
+- Phase 6完成；本轮没有修改产品代码或依赖。
+- 用户要求在 Issue #18中恢复 Harness顶部原生轨迹入口和功能；本机 rc.8证据确认该入口属于 `ui-trajectory`注册的 `conversation.view#trajectory`。
+- 用户随后要求按最新 main提交基线重写 Issue #18；Phase 7开始。
+- `git fetch origin main`确认 `main`、`origin/main`和 tag `v0.2`都指向`4f5a14b`，且当前工作区另有其他任务改动。
+- 确认 v0.2删除旧 Artifact安装发布体系并改为源码 production生命周期；旧 #18不可只追加轨迹条款。
+- 独立语义审核发现 `dsh-web-app`禁用了宿主基础 filesystem与 tool-skill row；修正新版 #18，要求 Product Agent Preset新增唯一 scoped filesystem和 tool-skill，并禁止旧 custom/release Skill目录。
+- 确认项目 Client plugin目标 service合同为 `['slots', 'sessions', 'connection']`；原生 UI插件继续拥有 Settings、ModelSelect、PermissionSelect、Skill菜单和轨迹。
+- 创建 Issue #18的 v0.2完整重写草稿；草稿包含四个强制章节、具体代码与文档责任、错误回滚、Skill真实组合测试、轨迹功能验收和源码生产命令。
+- 独立语义初审判定 FAIL：指出 Skill row禁用事实、Surface事务顺序、同步 `sessions.open()`、平铺 Skill、轨迹完整交互与 health模块名单问题；草稿已经逐项修正并等待复审。
+- 独立语义第二次审查只剩两项修订：增加 `disable-model-invocation: true`的仅用户调用 Skill分支；同步 PRD 03、PRD 04和 PRD 12中的旧 composer、Skill目录和 provider描述。
+- Issue #18草稿已经完成第二次审查提出的两项修订，等待同一名独立语义审核者再次复审。
+- 独立语义第三次复审判定 PASS；四项需求、完整轨迹、v0.2基线、仅用户调用 Skill分支和 PRD 03/04/12同步范围均无剩余阻塞项。
+- 使用经过审核的完整正文只更新 GitHub Issue #18；标题、OPEN状态和 `ready-for-agent`标签保持不变。
+- 回读线上 Issue #18确认正文已经发布；独立语义审核者对实际线上正文判定 PASS。
+- Phase 7完成；本轮没有修改产品代码、依赖或其他 GitHub Issue。

@@ -1,171 +1,96 @@
 import type { ClientContext, ISessions } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
-import type { InputTriggerServiceContract } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
-import { LayoutController } from './workbench/layout-contract.ts'
-import { createWorkbenchRoot } from './workbench/root.tsx'
-import { createSessionSidebar } from './workbench/session-sidebar.tsx'
-import { createSessionHeader } from './workbench/session-header.tsx'
-import { createConversationView } from './workbench/conversation-view.tsx'
-import { createComposerBar } from './workbench/composer-bar.tsx'
-import { createResultsPanel } from './workbench/results-panel.tsx'
-import { installThemeProjection } from './workbench/theme-projection.ts'
+import CATALOG_REMOTE from '../remote.ts'
+import { CATALOG_REMOTE_SERVICE } from '../catalog/contract.ts'
+
 import {
-  startWorkbenchSessionBinding,
-  type WorkbenchSessionService,
-} from './workbench/workbench-session-binding.ts'
+  WORKBENCH_DETAILS_PRIORITY,
+  WORKBENCH_DOCK_ID,
+  WORKBENCH_ENTRY_ID,
+  WORKBENCH_RESULTS_OVERLAY_ID,
+} from './workbench/contract.ts'
+import { WorkbenchController } from './workbench/controller.ts'
+import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
+import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-drawer.tsx'
 
 export const name = 'harness-comfyui'
-export const inject = ['slots', 'sessions', 'theme', 'inputTriggers', 'connection'] as const
+export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout'] as const
 
-/** Compose the project-owned workbench shell. */
-export async function apply(ctx: ClientContext & { connection: ConnectionHandle }): Promise<() => Promise<void>> {
-  const sessionBinding = startWorkbenchSessionBinding({
-    connection: ctx.connection,
-    sessions: ctx.sessions as unknown as WorkbenchSessionService,
-  })
-  const layoutService = new LayoutController()
-  let disposeRoot: (() => void)
-
+export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
+  const workbench = new WorkbenchController(ctx.layout)
+  const clientSessions = ctx.sessions as unknown as ISessions
+  const disposers: Array<() => void | Promise<void>> = []
   try {
-    disposeRoot = ctx.slots.register(
-      {
-        name: 'root',
-        children: {
-          sidebar: { kind: 'single', scope: 'root' },
-          conversation: { kind: 'single', scope: 'session-maybe' },
-          details: { kind: 'single', scope: 'session' },
-          'shell.overlay': { kind: 'list', scope: 'root' },
+    disposers.push(await ctx.remote.$mount(CATALOG_REMOTE))
+    const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE], (remoteContext) => {
+      const remoteCatalog = remoteContext.get(CATALOG_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiCatalog
+      const ensureActive = (signal: AbortSignal) => {
+        if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
+      }
+      const catalog = {
+        search: async (request: Parameters<typeof remoteCatalog.search>[0], signal: AbortSignal) => {
+          ensureActive(signal)
+          const result = await remoteCatalog.search(request)
+          ensureActive(signal)
+          if (!result.ok) throw new Error(result.error.code)
+          return result.value
         },
-      },
-      createWorkbenchRoot(layoutService, sessionBinding),
-    )
+        baseModels: async (signal: AbortSignal) => {
+          ensureActive(signal)
+          const result = await remoteCatalog.baseModels()
+          ensureActive(signal)
+          if (!result.ok) throw new Error(result.error.code)
+          return result.value
+        },
+      }
+      return [
+        ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+          name: 'sidebar.footer.action',
+          id: WORKBENCH_ENTRY_ID,
+          order: 10,
+          inject: () => ({ workbench }),
+        }, WorkbenchEntry)),
+        ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
+          name: 'conversation.input.dock',
+          id: WORKBENCH_DOCK_ID,
+          order: 20,
+          inject: sessionId => {
+            const sessionContext = clientSessions.scope(sessionId)
+            if (!sessionContext) {
+              throw new Error(`Harness did not provide the Session scope for ${sessionId}.`)
+            }
+            return {
+              catalog,
+              workbench,
+              sessionInput: ctx.conversation.input.for(sessionContext),
+            }
+          },
+        }, WorkbenchDock)),
+        ctx.slots.inject('details', () => ctx.slots.register({
+          name: 'details',
+          priority: WORKBENCH_DETAILS_PRIORITY,
+          inject: () => ({ workbench }),
+        }, WorkbenchDetails)),
+        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+          name: 'shell.overlay',
+          id: WORKBENCH_RESULTS_OVERLAY_ID,
+          order: 20,
+          inject: () => ({ workbench }),
+        }, WorkbenchResultsOverlay)),
+      ]
+    })
+    await remoteFiber
+    disposers.push(() => remoteFiber.dispose())
   } catch (error) {
-    sessionBinding.dispose()
-    throw error
-  }
-
-  let disposeDetails: () => void
-  try {
-    disposeDetails = ctx.slots.register(
-      { name: 'details', priority: -10 },
-      createResultsPanel() as never,
-    )
-  } catch (error) {
-    sessionBinding.dispose()
-    disposeRoot()
-    throw error
-  }
-
-  let disposeSidebar: () => void
-  try {
-    disposeSidebar = ctx.slots.register(
-      { name: 'sidebar', priority: -10 },
-      createSessionSidebar(ctx.sessions as unknown as Pick<ISessions, 'open'>),
-    )
-  } catch (error) {
-    sessionBinding.dispose()
-    disposeDetails()
-    disposeRoot()
-    throw error
-  }
-
-  let disposeSessionHeader: () => void
-  try {
-    disposeSessionHeader = ctx.slots.inject(
-      'conversation.session.header' as never,
-      () => ctx.slots.register(
-        { name: 'conversation.session.header', priority: -10 } as never,
-        createSessionHeader() as never,
-      ),
-    )
-  } catch (error) {
-    sessionBinding.dispose()
-    disposeSidebar()
-    disposeDetails()
-    disposeRoot()
-    throw error
-  }
-
-  let disposeService: () => Promise<void>
-  let disposeConversationView: () => void
-  try {
-    disposeConversationView = ctx.slots.inject(
-      'conversation.view' as never,
-      () => ctx.slots.register(
-        { name: 'conversation.view', id: 'chat', order: 0, priority: -10 } as never,
-        createConversationView() as never,
-      ),
-    )
-  } catch (error) {
-    sessionBinding.dispose()
-    disposeSessionHeader()
-    disposeSidebar()
-    disposeDetails()
-    disposeRoot()
-    throw error
-  }
-
-  let disposeComposerBar: () => void
-  try {
-    disposeComposerBar = ctx.slots.inject(
-      'conversation.composer.bar' as never,
-      () => ctx.slots.register(
-        { name: 'conversation.composer.bar', priority: -10 } as never,
-        createComposerBar({
-          sessions: ctx.sessions as unknown as Pick<ISessions, 'scope'>,
-          inputTriggers: ctx.inputTriggers as InputTriggerServiceContract,
-        }) as never,
-      ),
-    )
-  } catch (error) {
-    sessionBinding.dispose()
-    disposeConversationView()
-    disposeSessionHeader()
-    disposeSidebar()
-    disposeDetails()
-    disposeRoot()
-    throw error
-  }
-
-  try {
-    disposeService = ctx.reflect.provide('layout', layoutService)
-  } catch (error) {
-    sessionBinding.dispose()
-    disposeComposerBar()
-    disposeConversationView()
-    disposeSessionHeader()
-    disposeSidebar()
-    disposeDetails()
-    disposeRoot()
-    throw error
-  }
-
-  let disposeTheme: () => void
-  try {
-    disposeTheme = installThemeProjection(ctx)
-  } catch (error) {
-    sessionBinding.dispose()
-    await disposeService()
-    disposeComposerBar()
-    disposeConversationView()
-    disposeSessionHeader()
-    disposeSidebar()
-    disposeDetails()
-    disposeRoot()
+    for (const dispose of disposers.reverse()) await dispose()
     throw error
   }
 
   return async () => {
-    sessionBinding.dispose()
-    disposeTheme()
-    await disposeService()
-    disposeComposerBar()
-    disposeConversationView()
-    disposeSessionHeader()
-    disposeSidebar()
-    disposeDetails()
-    disposeRoot()
+    for (const dispose of disposers.reverse()) await dispose()
   }
 }

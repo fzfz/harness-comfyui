@@ -1,4 +1,5 @@
-- id: agent-presets
-  config:
-    default: harness-comfyui
-    includeUserRoot: true
+- id: skill-filesystem
+  disabled: false
+
+- id: tool-skill
+  disabled: false

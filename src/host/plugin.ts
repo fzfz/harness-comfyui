@@ -6,6 +6,9 @@ import {
   type ConfigurationProfileName,
 } from '../../config/schema.ts'
 import { loadProfile } from '../config/load-profile.ts'
+import { CatalogCli } from './catalog/catalog-cli.ts'
+import { CatalogRemoteService } from './catalog/catalog-service.ts'
+import { registerProjectTools } from './tools/register-project-tools.ts'
 
 export interface Config {
   readonly configurationProfile: ConfigurationProfileName
@@ -29,5 +32,10 @@ export function apply(ctx: Context, config: Config): void {
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector,
     ...environment
   } = process.env
-  loadProfile(config.configurationProfile, { environment })
+  const profile = loadProfile(config.configurationProfile, { environment })
+  new CatalogRemoteService(ctx, new CatalogCli({
+    executable: profile.source.catalogCliPath,
+    port: profile.source.catalogPort,
+  }))
+  ctx.effect(() => registerProjectTools(ctx, []), 'project Tool registry')
 }

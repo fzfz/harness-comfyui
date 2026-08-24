@@ -34,16 +34,12 @@ describe('source runtime git isolation', () => {
       '.local/source-production-managed.json',
     ]
     const productSources = [
-      'agent-presets/harness-comfyui/agent.cordis.yml',
-      'agent-presets/harness-comfyui/preset.yml',
       'config/environment-overrides.json',
-      'config/product-agent.json',
       'config/source-production.json',
       'profiles/comfyui-workbench/cordis.patch.yml',
       'profiles/comfyui-workbench/package.json',
       'profiles/comfyui-workbench/pnpm-workspace.yaml',
       'src/config/load-profile.ts',
-      'src/agent/plugin.ts',
       'src/host/plugin.ts',
       'scripts/profile/source.mjs',
       'scripts/production/cli.mjs',

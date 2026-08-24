@@ -88,26 +88,8 @@ async function createFixture(options = {}) {
 import { createServer } from 'node:http'
 
 const server = createServer((request, response) => {
-  if (request.url !== '/api/agentPreset.list') {
-    response.statusCode = 404
-    response.end()
-    return
-  }
-  let body = ''
-  request.setEncoding('utf8')
-  request.on('data', chunk => { body += chunk })
-  request.on('end', () => {
-    const rpcId = JSON.parse(body).rpcId
-    response.setHeader('content-type', 'application/json')
-    response.end(JSON.stringify({
-      type: 'server-response',
-      rpcId,
-      result: {
-        ok: true,
-        value: { presets: [{ id: 'harness-comfyui', trust: 'user', isDefault: true }] },
-      },
-    }))
-  })
+  response.statusCode = 404
+  response.end()
 })
 server.listen(
   Number(process.env.HARNESS_COMFYUI_SERVER_PORT),
@@ -133,6 +115,7 @@ exec ${JSON.stringify(process.execPath)} ${JSON.stringify(dshHostPath)} "$@"
     runtimeRelativeRoot,
     configurationProfile: 'production',
     source: {
+      catalogPort: 18093,
       catalogCliRelativePath: relative(repositoryRoot, catalogCliPath),
       sourceCliRelativePath: relative(repositoryRoot, sourceCliPath),
     },
@@ -182,6 +165,7 @@ describe('source production commands', () => {
       runtimeRelativeRoot: '.local/production-test',
       configurationProfile: 'production',
       source: {
+        catalogPort: 18093,
         catalogCliRelativePath: '../catalog.mjs',
         sourceCliRelativePath: '../source.mjs',
       },
@@ -190,6 +174,7 @@ describe('source production commands', () => {
     const parsed = parseSourceProductionDefinition(definition, repositoryRoot)
     expect(parsed.runtimeRoot).toBe(resolve(repositoryRoot, '.local/production-test'))
     expect(parsed.catalogCliPath).toBe(resolve(repositoryRoot, '../catalog.mjs'))
+    expect(parsed.catalogPort).toBe(18093)
     expect(() => parseSourceProductionDefinition({ ...definition, runtimeRelativeRoot: '../production-test' }, repositoryRoot))
       .toThrow('must identify a directory inside the source repository')
     expect(() => parseSourceProductionDefinition({ ...definition, schemaVersion: 2 }, repositoryRoot))
@@ -238,6 +223,7 @@ describe('source production commands', () => {
         HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: '/ignored/saved-media',
         HARNESS_COMFYUI_LOG_DIRECTORY: '/ignored/logs',
         HARNESS_COMFYUI_CATALOG_CLI_PATH: '/ignored/catalog.mjs',
+        HARNESS_COMFYUI_CATALOG_PORT: '19093',
         HARNESS_COMFYUI_SOURCE_CLI_PATH: '/ignored/source.mjs',
         HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: 'environment-instance',
         HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '2345',
@@ -255,6 +241,7 @@ describe('source production commands', () => {
       },
       comfyui: { defaultInstanceId: 'environment-instance' },
       source: {
+        catalogPort: 18093,
         catalogCliPath: resolve(fixture.runtimeRoot, 'catalog.mjs'),
         sourceCliPath: resolve(fixture.runtimeRoot, 'source.mjs'),
       },
@@ -291,8 +278,8 @@ describe('source production commands', () => {
     expect(status.evidence.runtimeId).toBe(fixture.context.definition.runtimeId)
     const health = await runSourceProductionCommand('health', { loadContext: async () => fixture.context })
     expect(health.evidence).toHaveProperty('sourceRuntime')
-    expect(health.evidence).toHaveProperty('agentPresetRuntime')
-    expect(health.evidence.agentPresetRuntime).toHaveProperty('agentPresetRelativeRoot')
+    expect(health.evidence).not.toHaveProperty('agentPresetRuntime')
+    expect(health.evidence).not.toHaveProperty('agentPresetRoster')
     const operationLog = await readFile(resolve(fixture.runtimeRoot, 'state/operations.jsonl'), 'utf8')
     expect(operationLog).toContain('"runtimeId"')
 
@@ -300,6 +287,12 @@ describe('source production commands', () => {
     expect(resolve(dirname(profileLink), await readlink(profileLink))).toBe(repositoryRoot)
     const profileManifest = JSON.parse(await readFile(resolve(dirname(dirname(profileLink)), 'package.json'), 'utf8'))
     expect(profileManifest.dependencies).toEqual({ 'harness-comfyui': `file:${repositoryRoot}` })
+    expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe(`- id: skill-filesystem
+  disabled: false
+
+- id: tool-skill
+  disabled: false
+`)
 
     const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
     expect(stop.evidence).toMatchObject({ stage: 'stop', status: 'stopped' })

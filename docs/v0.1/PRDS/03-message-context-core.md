@@ -6,11 +6,11 @@ Ticket 03 — 为一条消息选择 Workflow 模板与角色上下文并原子�
 
 ## Harness 核心零改动与公共接口
 
-本 Ticket扩展 PRD 02的项目 Workbench输入区。输入区按照原型顺序渲染“本次消息上下文”标题、数量、chip、“添加上下文”按钮、正文 textarea、附件预览、发送提示和发送按钮。项目按当前 Session保存尚未发送的正文、`ContextRef[]`、浏览器 `File`和preview object URL；这些临时UI数据不进入Harness Session日志，也不成为第二套Session权威数据。
+本 Ticket扩展 Harness原生InputBar上方的项目Workbench输入区。Workbench输入区渲染“已选中上下文”、可移除chip和“插入上下文”按钮；正文、结构化上下文JSON、图片附件与发送控件继续由Harness原生InputBar负责。
 
-Modal使用 `@deepseek-ai/dsh-client-ui-primitives` 的公开 `Modal`。真实Catalog只通过项目生成的 `harness-comfyui/remote`和公开 `ctx.remote.$mount()`读取。每个已确认chip只保存 `{ kind, id, label }`；Modal内部的 `pendingDialogRefs`只用于未确认选择。用户确认多个卡片后，Client一次性把所选`ContextRef`按原型顺序加入当前Session的临时chip列表并关闭Modal，不使用Harness默认InputBar的私有attachment registry或输入状态内部文件。
+Modal使用 `@deepseek-ai/dsh-client-ui-primitives` 的公开 `Modal`。真实Catalog只通过项目生成的 `harness-comfyui/remote`和公开 `ctx.remote.$mount()`读取。Modal内部选择只在确认时通过公开`SessionInput.setDraft()`写入每行一个`{"type":"comfyui-context","data":<CatalogItem>}`记录；确认与移除都保留草稿中的普通正文。
 
-发送时，项目Context resolver必须按chip顺序用稳定ID读取真实Catalog快照并生成固定`generation-context.v1`文本block；项目必须把正文与全部block放入一个text `PromptContentPart`，把每个临时图片编码为公开image `PromptContentPart`，然后只调用一次当前Session的`SessionFace.prompt(parts, 'queue')`。发送按钮与Enter都固定使用`queue`；本版本不实现Steer手势。Harness Host attachment store负责接收图片，原生`user/message`负责持久化发送结果。任一ContextRef解析或图片编码失败时不得调用`SessionFace.prompt()`；调用失败时保留正文、chip、File与preview。调用成功后只清除本次捕获的发送快照并回收对应object URL。
+用户使用Harness原生发送按钮或Enter提交草稿；结构化上下文JSON与普通正文通过同一条原生消息发送。插件不注册第二个发送按钮，不替换`conversation.composer.bar`，也不直接调用`SessionFace.prompt()`绕过原生InputBar。
 
 Ticket 03必须在产品代码中定义`generation-context.v1`的唯一运行时schema，并由Context resolver与项目Workbench的用户消息renderer直接复用同一个export。每个Context resolver结果必须按顺序输出换行、`<generation-context.v1>`、一行JSON和`</generation-context.v1>`。JSON字段顺序固定为`contract_id`、`contract_version`、`kind`、`id`、`label`、`source_release_version`、`snapshot`；`contract_id`固定为`generation-context`，`contract_version`固定为`1`。项目Workbench的用户消息renderer只解析正文末尾、标签完整且JSON通过该运行时schema的block；renderer把正文和原型折叠快照分开显示。不完整标签、未知版本或schema不匹配的文本必须按普通用户正文显示。`ui-conversation`继续负责标准conversation projection，项目不得注册第二套Session事件定义。
 
@@ -80,14 +80,14 @@ Source TemplateBundle 的 `expected_output_node_ids_json` 必须是非空数组�
 ## 前端交互
 
 1. 打开 Modal 时保留当前草稿正文和已有 chip；`pendingDialogRefs` 只能是 Modal 内临时选择，取消或关闭不能改变草稿 chip。
-2. 中央候选区域在宽屏固定显示 3 列多行卡片。每张卡片固定为 `150 × 160` 像素，封面区固定为 `150 × 88` 像素，每页固定 6 项，形成完整的 3×2 网格；卡片不能因标题或副标题长度改变尺寸。
+2. 中央候选区域在宽屏固定显示 3 列多行卡片。每张卡片固定为 `150 × 160` 像素，封面区固定为 `150 × 88` 像素，每页固定 9 项，形成完整的 3×3 九宫格；封面图片必须在封面区内居中完整缩放，卡片不能因标题或副标题长度改变尺寸。
 3. 卡片显示封面、资源标签、标题、副标题和选择标记。`cover_url` 存在且可读取时显示实际封面；值为空时显示包含资源种类缩写和“暂无封面”的统一占位符；封面读取失败时显示“封面不可用”占位符并保留候选选择能力。
 4. 候选分页显示“第 N / M 页 · T 项”和上一页/下一页。第一页禁用上一页，末页禁用下一页。搜索词、底模或资源种类改变时页码重置为 1；跨页选择必须保留。本版本只验收桌面3列固定卡片。
 5. 切换底模后，Client 重新查询 Workflow 模板；已选择但不符合新筛选的模板必须显示“与当前筛选不一致”并要求用户删除或恢复原筛选，不能静默删除。
 6. 切换资源种类、输入搜索词、翻页、选择候选、查看详情、再次点击取消选择、点击“取消”和点击“添加所选上下文”的布局、样式、选中标记、数量和焦点返回必须与原型一致。
-7. chip 只保存 `{ kind, id, label }`。底模筛选不生成 chip，也不计入 Modal 底部选择数量。
-8. 发送时项目Context resolver按chip顺序以`resolve`模式读取每个稳定ID并生成上述固定`generation-context.v1` block；一次`SessionFace.prompt(parts, 'queue')`把正文、全部block和图片part提交为同一条用户消息。项目不得把临时chip列表当作已发送持久数据，也不得假定Harness会另存chip metadata。
-9. 发送成功后清空正文与 chip；已发送消息折叠块按选择顺序显示资源种类和标题。发送失败时正文、chip 和选择顺序全部保留。
+7. 每个chip由当前原生草稿中的严格`comfyui-context` JSON记录投影。底模筛选不生成JSON或chip，也不计入Modal底部选择数量。
+8. 用户点击chip的移除操作时，插件通过公开`SessionInput.setDraft()`只删除该chip对应的JSON行，并保留草稿中的普通正文和其他上下文JSON。
+9. Harness原生发送成功后清空草稿及其chip投影；发送失败时原生InputBar保留正文和上下文JSON。
 
 ## 错误行为
 
@@ -103,7 +103,7 @@ Source TemplateBundle 的 `expected_output_node_ids_json` 必须是非空数组�
 3. 用户选择一个模板和一个角色并发送；Session只增加一条用户消息和一个 text content，该 content包含正文和两个顺序固定的不可变快照，底模不在快照中。关闭浏览器并重新打开 Session后，项目 user renderer仍从该原生消息显示正文和两个折叠快照。
 4. 删除或隐藏已选来源记录后执行发送，消息提交失败且草稿完整保留；恢复来源后同一草稿可以发送成功。
 5. 生产源码不包含 prototype catalog 数组；运行 Client 断网或数据源停止时不能继续显示一组伪造候选。
-6. 视觉与语义审核者逐项检查 Modal 三栏、3×2 固定卡片、实际封面、无封面占位、第二页、详情、确认区、chip、错误态、折叠快照和文案指代。
+6. 视觉与语义审核者逐项检查 Modal 三栏、3×3 固定卡片、实际封面、无封面占位、第二页、详情、确认区、chip、错误态、折叠快照和文案指代。
 7. 用户在同一输入区添加真实图片附件，查看预览，删除后重新添加，并与正文和Message Context通过一次`SessionFace.prompt(parts, 'queue')`发送；发送失败时File、preview、正文和chip全部保留，发送成功或用户删除附件时回收对应object URL。Harness原生Session只增加一条用户消息，Host attachment store保存该消息的图片。
 8. 真实Harness Tool registry只通过`registerProjectTools()`出现上述三个Catalog Tool；contract test逐项核对Tool名称、description、闭合输入/输出schema、Catalog operation path、CLI参数顺序、search/resolve结果、取消子进程、discovery漂移整组拒绝和Host卸载注销。测试必须确认Tool调用及Tool Result均不存在旧批量字段、来源Pi字段或数据源传输关联字段。
 

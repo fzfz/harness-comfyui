@@ -107,7 +107,11 @@ function assertSchemaFields(value: unknown, schema: ObjectSchema, path: string, 
 }
 
 function parseEnvironmentValue(key: string, value: string): unknown {
-  if (key === 'HARNESS_COMFYUI_SERVER_PORT' || key === 'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS') {
+  if (
+    key === 'HARNESS_COMFYUI_SERVER_PORT'
+    || key === 'HARNESS_COMFYUI_CATALOG_PORT'
+    || key === 'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS'
+  ) {
     if (!/^\d+$/.test(value)) return value
     return Number(value)
   }

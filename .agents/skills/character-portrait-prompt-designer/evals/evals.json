@@ -1,0 +1,40 @@
+{
+  "skill_name": "character-portrait-prompt-designer",
+  "evals": [
+    {
+      "id": 1,
+      "name": "generating-baseline-and-event-prompts",
+      "prompt": "请根据 /tmp/test-book 目录和人物名 “苏婉”，设计她的外观基准和每个事件的立绘提示词，写入 source/media/。",
+      "expected_output": "在 /tmp/test-book/source/media/ 下生成苏婉_外观与立绘提示词.md、苏婉_场景立绘/、苏婉_事件立绘/；外观基准文档单独存放，每个提示词均为一段式完整画面描述，按剧情阶段从外观基准中选取特征融入正文，不整段照抄，不依赖人物名识别角色，不出现“主人物”“这是……之前/之后”或地点专名等不可画信息。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "explicit-sex-scene-detail",
+      "prompt": "为 /tmp/test-book 的人物 “沈夜” 设计立绘提示词，事件中包含裸露性交场面，提示词必须写清身体姿势、动作和裸露程度。",
+      "expected_output": "涉及裸露/性交的事件提示词明确写出体位、动作过程、裸露部位、身体反应和表情情绪；每个提示词单独存文件，并且自包含完整外观。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "skip-non-visual-events-with-readme",
+      "prompt": "从 /tmp/test-book 的人物 “白露” 相关 md 和证据包中生成事件立绘提示词；没有直接画面的技术事件应跳过并在 README 中说明原因。",
+      "expected_output": "只生成有可画画面的事件提示词；无直接人物出场的技术/取证事件不生成提示词，但在对应事件立绘目录 README.md 中说明跳过原因；生成的事件提示词包含完整外观且核心外观融入正文。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "secondary-characters-with-hierarchy",
+      "prompt": "为 /tmp/test-book 的人物 “苏婉” 设计事件立绘提示词，事件中她与另一名男性同框发生互动；画面中其他人物也要设计外观、动作、姿势、表情，但必须突出苏婉为主角。",
+      "expected_output": "事件提示词中同时包含苏婉的完整外观和同框男性的性别/年龄/体型/穿着/站位/动作/表情；并明确写出主次关系，例如主人物位于前景/中心/焦点，其他人物位于后景/边缘/虚化。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "greetings-opening-prompts",
+      "prompt": "使用 skill 为 /tmp/test-book 的人物 “苏婉” 的 source/greetings/ 下每个开场 .md 分别设计一个独立开场立绘提示词，写入 source/media/苏婉_开场立绘/。",
+      "expected_output": "source/greetings/ 下每个 .md 都对应生成一个独立文件，放在 source/media/苏婉_开场立绘/；每个提示词自包含完整外观且核心外观融入正文、必要时包含同框人物与画面主次、裸露/性交细节。",
+      "files": []
+    }
+  ]
+}

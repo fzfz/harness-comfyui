@@ -18,6 +18,7 @@ const productionEnvironment = {
   HARNESS_COMFYUI_LOG_DIRECTORY: '.local/production/logs',
   HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: 'production',
   HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
+  HARNESS_COMFYUI_CATALOG_PORT: '18093',
   HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
   HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '1100',
   HARNESS_COMFYUI_SERVER_HOST: '127.0.0.1',
@@ -43,6 +44,7 @@ describe('production Configuration Profile loader', () => {
     expect(profile.configurationProfile).toBe('production')
     expect(profile.server.port).toBe(4199)
     expect(profile.client.runRefreshIntervalMs).toBe(1200)
+    expect(profile.source.catalogPort).toBe(18093)
     expect(profile.paths.dataDir).toBe('.local/production/data')
   })
 
@@ -264,6 +266,7 @@ describe('production Configuration Profile loader', () => {
     ])
     expect(Object.keys(schemaDict.comfyui.dict!)).toEqual(['defaultInstanceId'])
     expect(Object.keys(schemaDict.source.dict!)).toEqual([
+      'catalogPort',
       'catalogCliPath',
       'sourceCliPath',
       'contractId',

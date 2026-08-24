@@ -5,17 +5,19 @@ import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const registryPath = 'src/host/tools/register-project-tools.ts'
-const pluginPath = 'src/agent/plugin.ts'
+const pluginPath = 'src/host/plugin.ts'
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
   ['@deepseek-ai/dsh-client-runtime/client', 'value-or-type'],
-  ['@deepseek-ai/dsh-client-ui-layout/client', 'value-or-type'],
-  ['@deepseek-ai/dsh-client-ui-theme/client', 'type-only'],
+  ['@deepseek-ai/dsh-api-remotes/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
-  ['@deepseek-ai/dsh-client-connection/client', 'type-only'],
-  ['@deepseek-ai/dsh-tools', 'value-or-type'],
-  ['@deepseek-ai/schemastery', 'value-or-type'],
   ['@deepseek-ai/dsh-client-ui-input-trigger/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-ui-layout/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-ui-primitives', 'value-or-type'],
+  ['@deepseek-ai/dsh-client-ui-sidebar/client', 'type-only'],
+  ['@deepseek-ai/dsh-tools', 'value-or-type'],
+  ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
+  ['@deepseek-ai/schemastery', 'value-or-type'],
 ])
 const frozenClientInject = Object.freeze([
   '@deepseek-ai/dsh-client-connection',
@@ -25,7 +27,7 @@ const frozenClientInject = Object.freeze([
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
-  '@deepseek-ai/dsh-client-ui-theme',
+  '@deepseek-ai/dsh-client-ui-sidebar',
 ])
 const forbiddenSourceProtocols = /^(?:patch|file|link|workspace|npm|git|github|gitlab|bitbucket):/iu
 const forbiddenSourceBinding = /(?:^|[\s{])(?:patch|file|link|workspace|npm):(?:[./*@]|https?:)/iu
@@ -41,9 +43,12 @@ const expectedLoaderPatch = `- insert:
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+`
+const expectedProfilePatch = `- id: skill-filesystem
+  disabled: false
 
-- id: ui-layout
-  disabled: true
+- id: tool-skill
+  disabled: false
 `
 
 function parseArguments(argv) {
@@ -182,14 +187,6 @@ function containsHarnessIdentity(value) {
   return typeof value === 'string' && (value.includes('@deepseek-ai/') || value.includes('harness-comfyui'))
 }
 
-function requireNormalizedRelativePath(config, field, path) {
-  const value = config[field]
-  if (typeof value !== 'string' || value.length === 0 || value.includes('\0') || isAbsolute(value) || value.includes('\\') || value.startsWith('./') || value.split('/').some(segment => segment === '' || segment === '.' || segment === '..')) {
-    throw new Error(`${path}.${field} must be a normalized package-relative path`)
-  }
-  return value
-}
-
 function assertManifestDependencyFields(manifest, manifestPath) {
   for (const field of directDependencyFields) {
     const dependencies = manifest[field]
@@ -197,7 +194,7 @@ function assertManifestDependencyFields(manifest, manifestPath) {
     if (!isPlainObject(dependencies)) throw new Error(`${manifestPath}.${field} must be an object`)
     for (const [packageName, specifier] of Object.entries(dependencies)) {
       const fieldPath = `${manifestPath}.${field}.${packageName}`
-      if (packageName === '@deepseek-ai/dsh-client-ui-sidebar' || packageName === '@deepseek-ai/dsh-client-ui-tool') {
+      if (packageName === '@deepseek-ai/dsh-client-ui-tool') {
         throw new Error(`${fieldPath} is forbidden as a direct project dependency`)
       }
       if (!harnessPackagePattern.test(packageName)) continue
@@ -243,48 +240,6 @@ function assertPublicPackageMetadata(manifest, manifestPath) {
   }
   if (!sameStructuredValue(manifest.dsh, { bundle: expectedBundle, client: expectedClient })) {
     throw new Error(`${manifestPath}.dsh contains an unsupported public configuration field`)
-  }
-}
-
-function readProductAgentBoundary(path) {
-  const config = readJson(path, path)
-  if (!isPlainObject(config)) throw new Error(`${path} must be an object`)
-  const agentPresetId = config.agentPresetId
-  if (typeof agentPresetId !== 'string' || agentPresetId.length === 0 || agentPresetId.includes('/') || agentPresetId.includes('\\')) {
-    throw new Error(`${path}.agentPresetId must be a non-empty single path segment`)
-  }
-  const agentPresetSourceRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetSourceRelativeRoot', path)
-  const agentPresetRuntimeRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetRuntimeRelativeRoot', path)
-  const agentPluginExport = config.agentPluginExport
-  if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
-    throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
-  }
-  const expectedAgentModel = {
-    provider: 'opencode-go',
-    model: 'deepseek-v4-flash',
-    reasoningEffort: 'max',
-    apiKeyEnv: 'OPENCODE_GO_API_KEY',
-  }
-  if (!sameStructuredValue(config.agentModel, expectedAgentModel)) {
-    throw new Error(`${path}.agentModel must select exactly opencode-go/deepseek-v4-flash with reasoningEffort max and apiKeyEnv OPENCODE_GO_API_KEY`)
-  }
-  return {
-    agentPresetId,
-    agentPresetSourceRelativeRoot,
-    agentPresetRuntimeRelativeRoot,
-    agentPluginExport,
-    agentModel: expectedAgentModel,
-  }
-}
-
-function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
-  const exportTarget = './src/agent/plugin.ts'
-  const exports = manifest.exports
-  if (!isPlainObject(exports) || !sameStructuredValue(exports[productAgent.agentPluginExport], {
-    types: exportTarget,
-    default: exportTarget,
-  })) {
-    throw new Error(`${manifestPath}.exports[${productAgent.agentPluginExport}] must expose ${exportTarget}`)
   }
 }
 
@@ -336,7 +291,7 @@ function assertLockFile(path) {
     }
     if (inImporter) {
       if (trimmed === 'packages:' || trimmed === 'snapshots:') inImporter = false
-      if (trimmed.includes('@deepseek-ai/dsh-client-ui-sidebar') || trimmed.includes('@deepseek-ai/dsh-client-ui-tool')) {
+      if (trimmed.includes('@deepseek-ai/dsh-client-ui-tool')) {
         throw new Error(`${path}.importers contains a forbidden direct UI dependency on line ${index + 1}`)
       }
       if (forbiddenSourceBinding.test(trimmed) || /(?:git\+|github:|gitlab:|bitbucket:)/iu.test(trimmed)) {
@@ -363,18 +318,15 @@ function assertPatchFile(path, expected) {
 
 function validateStructuredHarnessBoundary(root) {
   const rootManifestPath = resolve(root, 'package.json')
-  const productAgentPath = resolve(root, 'config/product-agent.json')
   const profileManifestPath = resolve(root, 'profiles/comfyui-workbench/package.json')
   const rootManifest = readJson(rootManifestPath, rootManifestPath)
-  const productAgent = readProductAgentBoundary(productAgentPath)
   assertManifestDependencyFields(rootManifest, 'package.json')
   if (statSync(profileManifestPath, { throwIfNoEntry: false })?.isFile()) {
     assertManifestDependencyFields(readJson(profileManifestPath, profileManifestPath), 'profiles/comfyui-workbench/package.json')
   }
   assertPublicPackageMetadata(rootManifest, 'package.json')
-  assertAgentPackageMetadata(rootManifest, 'package.json', productAgent)
   assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
-  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets\n  config:\n    default: ${productAgent.agentPresetId}\n    includeUserRoot: true\n`)
+  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), expectedProfilePatch)
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))
 }

@@ -8,7 +8,7 @@
 pnpm install
 ```
 
-确认 `config/source-production.json` 中的两个 Source CLI 相对路径指向可读文件。使用 Agent 对话前设置 `OPENCODE_GO_API_KEY`。
+确认 `config/source-production.json` 中的两个 Source CLI 相对路径指向可读文件，并确认Catalog回环服务监听`source.catalogPort`。
 
 ## 启动与验证
 
@@ -47,7 +47,7 @@ pnpm prod:stop
 
 | 路径 | 内容 |
 | --- | --- |
-| `dsh-home/` | 当前进程的 Harness home、profile 和 Agent Preset |
+| `dsh-home/` | 当前进程的 Harness home 和 profile |
 | `state/process.json` | PID、启动时间和进程命令 |
 | `state/operations.jsonl` | 六个命令的操作记录 |
 | `state/last-health.json` | 最近一次健康检查结果 |
@@ -66,7 +66,7 @@ pnpm prod:stop
 | --- | --- |
 | `stopped` | 没有受管进程，端口空闲 |
 | `starting` | PID 存在，端口尚未就绪 |
-| `running` | PID、进程身份、端口和 Agent Preset roster 均通过检查 |
+| `running` | PID、进程身份和端口均通过检查 |
 | `unhealthy` | 端口被其他进程占用，或受管进程与端口状态不一致 |
 
 启动失败时先执行 `pnpm prod:logs` 查看 stdout、stderr 和 operations，再修正配置或端口占用问题。

@@ -26,7 +26,7 @@
 ## Issue图
 
 - 新建 Issue #18：`恢复 Harness 原生界面，并在工作台复用原生输入能力`。
-- Issue #18以已关闭的 Issue #3、#16和 #17交付结果作为迁移基线；这三张已关闭 Issue不构成未完成 blocker，计划执行者不重新打开它们。
+- Issue #18从当前不占用Harness UI slot的最小Client入口开始实现；已关闭的Issue #3、#16和#17不构成未完成blocker，计划执行者不重新打开它们，也不把已经删除的自定义工作台作为迁移基线。
 - Issue #4直接依赖 Issue #18。
 - Issue #6直接依赖 Issue #18和 Issue #4。
 - Issue #10和 Issue #11消费 Issue #18提供的 workbench mode `sidebar.workspaces`内容区。
@@ -172,7 +172,7 @@ Issue #14必须增加以下真实产品验收：
 
 父 Issue #1必须把以下差异登记为明确原型例外：
 
-1. 原生 `ui-layout`的列宽、面板初始状态和调整行为替代 Issue #3的固定 `294px/432px`合同。
+1. 原生 `ui-layout`决定列宽、面板初始状态和调整行为。
 2. 原生 InputBar的 ModelSelect、PermissionSelect、Context inline reference和 Route inline reference替代项目自绘 composer对应区域。
 3. Route reference存在时，用户必须先通过原生 Backspace或 Delete删除当前路线，Execution Route控件才能接受默认实例或另一个显式实例。
 4. Message Context Modal、Catalog候选卡片、候选详情、分页和已发送消息折叠块继续按原型验收。

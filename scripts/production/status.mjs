@@ -7,7 +7,6 @@ import {
   probePortOwnedByProcess,
   readProcessState,
   statusView,
-  validateRunningAgentPresetRoster,
 } from './process.mjs'
 
 export async function runSourceStatus(input, runtimeTarget) {
@@ -29,6 +28,5 @@ export async function runSourceStatus(input, runtimeTarget) {
   if (!(await probePortOwnedByProcess(runtime.host, runtime.port, state.pid))) {
     return statusView(runtime, runtimeTarget.activeVersion, state, 'unhealthy')
   }
-  await validateRunningAgentPresetRoster(runtime, runtimeTarget.productAgent)
   return statusView(runtime, runtimeTarget.activeVersion, state, 'running')
 }

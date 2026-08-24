@@ -1,14 +1,12 @@
 # Harness ComfyUI
 
-Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 图像工作台。项目提供 Host 插件、三列 Client 工作台、项目 Agent Preset，以及直接管理当前源码的生产进程命令。
+Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 集成项目。项目当前提供 Host 插件、使用 Harness 原生扩展位的 Client 插件，以及直接管理当前源码的生产进程命令。当前 Client 只向 `sidebar.footer.action` 和 `conversation.input.dock` 注册项目内容，不替换 Harness 的 root、sidebar、conversation、details 或 composer。
 
 ## 环境要求
 
 - Node.js `22.19.0` 或 `24.0.0` 以上版本
 - pnpm `11.7.0`
 - 两个已发布的 Catalog/Source CLI；默认路径见 [`config/source-production.json`](config/source-production.json)
-
-使用 Agent 对话前还需要设置 `OPENCODE_GO_API_KEY`。
 
 ## 启动
 
@@ -32,7 +30,7 @@ pnpm prod:health
 | `pnpm prod:stop` | 停止受管进程 |
 | `pnpm prod:restart` | 使用当前源码和配置重启 |
 | `pnpm prod:status` | 查看进程状态 |
-| `pnpm prod:health` | 检查进程、Web、Client、Agent Preset 和数据目录 |
+| `pnpm prod:health` | 检查进程、Web、Client 和数据目录 |
 | `pnpm prod:logs` | 读取 Host 与操作日志 |
 | `pnpm prod:test` | 自动测试生产进程的完整生命周期和异常分支 |
 

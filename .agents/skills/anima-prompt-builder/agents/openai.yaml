@@ -1,0 +1,4 @@
+interface:
+  display_name: "ANIMA3 提示词构建器"
+  short_description: "按十二个槽位构建并校验严格的 ANIMA3 提示词"
+  default_prompt: "使用 $anima-prompt-builder 生成十二槽位 ANIMA3 提示词。"

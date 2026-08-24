@@ -16,7 +16,7 @@ Ticket 05 — 使用完整目录准备一条可生成消息。
 
 ## 原型依据与必须修正的缺口
 
-- 继续使用原型 Modal 的顶部底模筛选、左侧资源种类、中央搜索与 3×2 固定候选卡片、右侧详情、底部候选分页与选择汇总和消息 chip。
+- 继续使用原型 Modal 的顶部底模筛选、左侧资源种类、中央搜索与 3×3 固定候选卡片、右侧详情、底部候选分页与选择汇总和消息 chip。
 - 原型缺少“提示词条目”资源导航。正式产品必须在“画师或画风”之后、“画师串”之前增加“提示词条目”行，使用与其他资源行相同的图标、计数、选中态和键盘焦点样式。
 - 原型把“ComfyUI 实例”放进通用上下文选择汇总。正式产品必须从可插入资源导航与上下文计数中移除该行，并在消息输入区的生成选项中提供独立 Execution Route 控件。
 
@@ -99,7 +99,7 @@ Modal左侧资源行的固定顺序、首次负责Ticket和实现步骤如下：
 | 8 | Workflow模板 | `comfyui-template` | Ticket 03 | `query_semantic_comfyui_templates` search显示卡片；confirm保存`ContextRef`；发送时resolve生成revision、LoRA节点类型、权重范围和可见运行参数快照 |
 | 9 | 已保存媒体 | `media` | Ticket 05 | `GenerationRuns.listMedia()`显示当前Workspace卡片；confirm保存`ContextRef`；发送时`getMediaDescriptor()`生成已验证媒体快照 |
 
-Ticket 03先创建同一Registry和`character`、`comfyui-template`两条可插入定义，同时实现顶部底模筛选；Ticket 05只能扩展这一个Registry，补充其余七条定义，不能创建第二个Modal目录或第二套Context resolver。每行统一执行：打开或切换资源行→使用该行保存的search text、page和当前允许筛选查询真实来源→渲染每页6张固定卡片→把用户选择写入`pendingDialogRefs`→确认后按原型顺序转换成草稿`ContextRef[]`和chip→发送时逐项resolve最新真实记录→全部成功后一次`SessionFace.prompt(parts, 'queue')`提交不可变快照。任一resolve失败时不提交消息并保留全部草稿。
+Ticket 03先创建同一Registry和`character`、`comfyui-template`两条可插入定义，同时实现顶部底模筛选；Ticket 05只能扩展这一个Registry，补充其余七条定义，不能创建第二个Modal目录或第二套Context resolver。每行统一执行：打开或切换资源行→使用该行保存的search text、page和当前允许筛选查询真实来源→渲染每页9张固定卡片→把用户选择写入`pendingDialogRefs`→确认后按原型顺序转换成草稿`ContextRef[]`和chip→发送时逐项resolve最新真实记录→全部成功后一次`SessionFace.prompt(parts, 'queue')`提交不可变快照。任一resolve失败时不提交消息并保留全部草稿。
 
 顶部底模筛选不是左侧资源行，不生成`ContextRef`或chip；它只向生成模型、LoRA、画师或画风、画师串和Workflow模板五类search请求附加`base_model_id`。ComfyUI实例不是左侧资源行，只在输入区Execution Route控件中使用`query_semantic_comfyui_instances`安全投影；它不计入Modal数量、chip或`generation-context.v1`。
 

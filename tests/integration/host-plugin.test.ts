@@ -24,6 +24,7 @@ function stubTestProfileEnvironment(): void {
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: join(root, 'media'),
     HARNESS_COMFYUI_LOG_DIRECTORY: join(root, 'logs'),
     HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
+    HARNESS_COMFYUI_CATALOG_PORT: '18093',
     HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
   }
   for (const [key, value] of Object.entries(values)) vi.stubEnv(key, value)

@@ -232,3 +232,390 @@
 - Source TemplateBundle 的 `expected_output_node_ids_json: null` 不得由 Harness 推导或补默认值；模板生成入口必须失败关闭并返回 `SOURCE_TEMPLATE_UNAVAILABLE`，直到真实 Source 响应提供非空、通过 schema 的输出节点数组。
 - 已将 v0.82.2 合同同步到实际部署 gate：`config/base.json`、`config/schema.ts`、`scripts/deploy/contracts.mjs`、`scripts/deploy/preflight.mjs`、`scripts/deploy/health.mjs` 和所有部署测试夹具均使用 `sourceReleaseVersion: "0.82.2"`；Catalog discovery 与 Source discovery 分别按两种 live shape 校验。
 - 已将 `config/source-contract-v0.82.2.json` 纳入 Release Artifact 文件清单，并把同一消费合同同步到 GitHub Issues #1–#15；源数据仓库未被修改。
+
+## 2026-08-24 Harness 原生 UI 原型重做任务
+
+- 用户要求以官方 `develop/basic/` 文档、Harness 源码和失败 Issues #3/#4 为准重做现有静态原型；原型不得出现 Harness 公共插件机制无法实现的界面、交互或功能。
+- 当前仓库已经包含正式 Client 工作台组件和 `prototype/generation-workbench/` 静态原型；原型合同测试位于 `prototype/generation-workbench/tests/prototype-contract.test.mjs`。
+- 本仓库安全规则禁止未经授权下载或执行外部包。`find-docs` 默认使用的 Context7 新版本不能在本任务中下载执行；调研改用用户指定的官方页面、GitHub Issue 与当前项目锁定依赖源码。
+- 本次任务采用 `$stop-that-shit change` 边界：只修改原型、必要测试和任务记录，不修改 Harness 核心、外部源码、依赖或 GitHub Issue。
+- Web 页面读取与站内检索连续两次没有返回可读正文；该结果不能作为接口证据。计划执行者改用只读 HTTP 获取同一官方页面，并把页面陈述与锁定源码逐项交叉核对。
+- GitHub Issue #3 已关闭；最后一条用户评论明确判定“Harness 无法实现原型功能，重新设计新需求”。该票曾要求停用上游 `ui-layout`、注册项目唯一 root、重做三列 Shell，并用项目 occupant 替换 sidebar、details、header、conversation view 与 composer；这些整页替换要求不能继续作为新原型依据。
+- GitHub Issue #4 已关闭；最后一条用户评论同样判定原型无法实现。该票旧正文曾要求项目自建 composer、ContextRef 列表与直接 `SessionFace.prompt()`；最新修订又要求保留原生 InputBar并向 `conversation.input.dock` 注册上下文条。新原型只能保留用户本轮明确要求的“插入上下文”按钮和已选上下文标签，不得沿用该票未被源码重新证明的 Modal、codec、草稿回滚或 composer 替换设计。
+- 两张失败票共同证明“静态原型 1:1 整页复刻”不是有效的 Harness 能力假设；本轮原型必须从 Harness 原生页面结构和现有公开扩展点正向推导，不再从旧原型反推实现机制。
+- 用户指定的官方页面标题是“第一个插件”，页面说明属于 DeepSeek Harness 技术预览开发文档；页面正文需要从服务端渲染 HTML 的主文档区进一步提取，不能把导航或 VitePress 资源清单当作接口证据。
+- Harness 源码生成的 slot catalog 明确说明：`sidebar` 是整个左列，已经由 `ui-sidebar` 的 `SidebarRoot` 占用；插件注册该 slot 会替换整个导航列并使其内部 seat 消失。新增左列入口必须注册到 SidebarRoot 已声明的内部 seat，而不是替换 `sidebar`。
+- 同一 slot catalog 公开了可重复贡献的 `sidebar.footer.action`，owner props 只有 `wide: boolean`，用途是“在 Settings 旁渲染 action”；该 seat 是“ComfyUI 工作台”原生左列入口的首个可实现候选，仍需核对真实声明文件、渲染顺序与导航动作接口。
+- 当前项目依赖和 peerDependency 都精确锁定 DeepSeek Harness `0.1.0-rc.8`。本机 Harness 源码工作树位于 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`（`dsh-v0.1.1-rc.2-dirty`）并含用户未提交修改；本轮不得把 rc.2 才存在的能力当作 rc.8 证据。
+- 官方 `develop/basic/` 正文定义的公共扩展模型是 Cordis 插件：模块导出 `apply(ctx)`，通过 `ctx` 注册能力；依赖必须通过 `inject` 声明，并由框架在依赖服务就绪后加载。该页面没有授权插件重写 Harness DOM 或调用未公开内部模块。
+- `dsh-v0.1.0-rc.8` 标签源码确认 `sidebar.footer.action` 已存在于目标版本，是 `kind: 'list'`、`scope: 'root'` 的正式 slot。`SidebarRoot` 把该 slot 渲染在 Settings 上方；宽列与 56px rail 两种状态都只向贡献者提供 `wide`。
+- rc.8 的 `conversation.input.dock` 是原生 ConversationRoot 在 InputBar 上方渲染的 `kind: 'list'`、`scope: 'session'` slot；Todo 与 Queue 已使用该机制。项目可以把“插入上下文”按钮及数量摘要放入 dock，而无需替换原生 InputBar。
+- rc.8 的 `conversation.view` 是原生 Session 中列视图环：插件可以通过 `ctx.slots.register` 增加带 `id/order/label` 的会话级标签，ConversationSession 使用原生标签与 `only: active.id` 渲染选中视图。该机制能够承载 ComfyUI 工作台内容，但左列入口如何合法切换该原生视图仍需单独证明。
+- rc.8 原生 InputBar 已拥有 textarea、加号命令入口、Permission、Model、上下文计量和发送/停止按钮，并通过装饰层显示结构化 reference chip。新原型不得再次绘制项目 textarea、发送按钮、Skill 菜单或附件输入。
+- 用户随后把本次原型能力基线从当前项目依赖的 rc.8 改为 DeepSeek Harness `0.1.1-rc.2`。rc.8 结论只保留为失败票历史，不再决定新原型；最终原型必须由 `dsh-v0.1.1-rc.2` 标签源码重新证明。
+- 用户随后授权把原型实现为真实Harness插件，并把当前项目依赖升级到精确rc.2；依赖变更已经完成发布元数据、advisory与lifecycle script审计。
+- `dsh-v0.1.1-rc.2` 标签存在，根版本精确为 `0.1.1-rc.2`。官方 `develop/basic/` 文档工作树与该版本一致，本轮后续源码判断只读取该标签。
+- rc.2 继续公开 `sidebar.footer.action`、`conversation.input.dock`、`conversation.view` 和原生 InputBar；`ui-layout` 继续明确禁止用 top-level `sidebar` 或 `conversation` 做“新增内容”，因为注册这些 single slot 会替换原生整列并删除内部 seat。
+- rc.2 的 `ctx.layout` 仍只公开 `toggleSidebar()`、`openDetails()`、`closeDetails()`；它不公开切换 conversation view 或进入项目 Surface 的导航方法。
+- rc.2 的 `ChatStoreState.view` 与 `setView()` 仍属于 `ui-conversation` 每个 Session 的内部 store；左列 root-scope action不能凭 `ctx.layout`直接修改当前 Session 的 active view。原型不能假设左列入口能够调用一个不存在的 `ctx.layout.openWorkbench()`或`selectConversationView()`。
+- rc.2 的原生会话 header仍从 `slots.entries('conversation.view')`读取全部 ledger entry，而不是从 `entriesOfSlot()`读取每个 id的生效 winner。使用同一个 `id: "chat"`优先级覆盖原生 Chat仍会产生重复“聊天”标签；Issue #18在 rc.8暴露的重复标签问题没有被 rc.2修复。新原型不得使用动态覆盖 `conversation.view#chat`进入工作台。
+- rc.2 的 `conversation.view`只能安全增加一个新 id并由用户点击原生 tab切换；左列 `sidebar.footer.action`没有公开API替用户切换该 tab。因此“点击左列入口立即进入工作台”不能建立在新增 conversation view tab上。
+- 可实现的最小组合是：左列 `sidebar.footer.action`切换插件非持久工作台状态；当前原生Session的`conversation.input.dock`根据同一状态显示上下文扩展。该组合不覆盖root、sidebar、conversation、header、chat view或composer，也不跨slot修改内部ChatStore。
+- 用户将交付物从静态原型改为当前仓库中的真实 Harness plugin，并要求启动 Harness验证。后续不再修改 `prototype/generation-workbench/`作为主要产物；正式 Client plugin、必要依赖、测试和生产启动链进入授权范围。
+- 工作树在本轮期间新增了大量用户现有改动：旧 Product Agent、旧 Workbench组件、旧三列测试与验收截图被删除，`src/client/index.tsx`变为不占用slot的空插件；`package.json`、生产脚本与文档也有相关未提交修改。计划执行者必须保留这些改动，不恢复旧文件、不覆盖对应文档，只在当前空插件基线上新增最小原生slot原型。
+- 因为用户现有改动删除了 `harness-comfyui` Product Agent Preset，本轮不得自行恢复该Preset。左列入口将切换一个非持久的插件工作台状态；当前Session存在时，原生 `conversation.input.dock`显示工作台上下文扩展，原生ConversationRoot、Chat与InputBar保持不变。
+- rc.2公开 `ctx.inputTriggers.registerSource()`、`ctx.conversation.input.for(sessionScope)`和 `SessionInput.insertReference()`。插件可以注册一个带codec的 `generation-context` reference source，再把选择结果按当前 `InputState.draftRev`插入原生InputBar；原生InputBar负责occurrence、内联chip、复制、序列化、发送锁定和失败保留。
+- rc.2公开 `Button`、`Pill`、`Modal`及图标等 Cordis-free原生UI primitives。工作台入口、插入按钮、已选上下文展示和选择对话框可以复用这些公开原生组件；项目CSS只负责slot内排列，不重画控件。
+- npm registry确认本次涉及的19个既有DeepSeek直接包与新增 `@deepseek-ai/dsh-client-ui-sidebar` 都发布了精确版本 `0.1.1-rc.2`，registry integrity可用，peerDependency统一要求 `^0.1.1-rc.2`和 Cordis `^4.0.1`。
+- 20个rc.2直接包的npm发布元数据没有 `preinstall`、`install`或`postinstall`；部分包仅声明仓库开发用的 `bundle`/`watch`脚本。该结论只覆盖直接包，lockfile生成后仍必须审计完整闭包的advisory与lifecycle script。
+- rc.2完整lockfile仍包含少量版本为 `0.1.0-rc.7`的DeepSeek内部基础包；这些版本来自 `dsh-v0.1.1-rc.2`官方发布闭包，不是当前项目保留的rc.8残留。所有当前项目直接Harness包已经精确指向 `0.1.1-rc.2`。
+- 更新后的lockfile通过三项安装前门禁：manifest/lock/workspace投影一致；完整闭包与production闭包的critical/high/moderate/low均为0；唯一build-script集合仍是 `dsh-subprocess-local@0.1.1-rc.2`、`@google/genai@1.52.0`、`koffi@3.1.5`、`node-pty@1.2.0-beta.15`与`protobufjs@7.6.5`。
+- `dsh-subprocess-local@0.1.1-rc.2`的postinstall仍是 `node scripts/ensure-spawn-helper.mjs`；rc.8到rc.2在该包的package script与源码没有变化，只有版本与中文文档链接变化。现有安全审计结论可以按精确新版本迁移。
+- 真实Client插件当前只注册`sidebar.footer.action#harness-comfyui-workbench`与`conversation.input.dock#harness-comfyui-context-dock`两个additive list entry，并注册`harness-comfyui-context`引用codec；插件没有注册`root`、`sidebar`、`conversation`、`conversation.view`或`conversation.composer.bar`。
+- 工作台Dock从Harness传入的`InputZone.input.occurrences`筛选已选上下文；确认插入时调用当前Session的公开`SessionInput.insertReference()`，CAS span使用当前`draft.length`与`draftRev`。Harness拒绝和异常分别通过公开`SessionInput.notify()`显示不同错误。
+- rc.2 Web启动页把启动图写入`globalThis["__DSH_BOOT__"]`；生产health读取器已改为该精确rc.2语法。真实`prod:health`的process、sourceRuntime、harnessWeb、clientBundle、runRepository与savedMedia六项全部通过。
+- 1440×1000真实浏览器验收确认：左列原生Session树、工作区和Settings保持存在；点击“ComfyUI 工作台”后`aria-pressed`变为true并显示Dock；选择模型上下文后Dock与原生InputBar同时显示`模型 · flux1-dev-fp8`，InputBar值为`@模型 · flux1-dev-fp8 `，原生命令、权限、模型和发送控件保持存在，浏览器无error或warn日志。
+## Phase 16：真实上下文目录弹窗
+
+- 生产配置 `config/source-production.json` 已将目录 CLI 固定为 `../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs`，源数据 CLI 固定为 `../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-comfyui-source-read.mjs`。
+- `config/base.json` 已固定数据源契约 `imagegen-source-contract` 与发布版本 `0.82.2`。
+- 当前 Host 插件只加载配置，没有注册 Host 到 Client 的目录查询接口；当前 Client 弹窗仍使用三个静态选项。
+- 项目 PRD 已把目录访问边界定义为：Host 调用 `imagegen-semantic-query`，Client 通过 Harness 公共 Remote API 请求 Host；Client 不直接执行 CLI，也不读取数据仓库或数据库。
+- 当前生产启动流程已把 `HARNESS_COMFYUI_CATALOG_CLI_PATH` 和 `HARNESS_COMFYUI_SOURCE_CLI_PATH` 注入 Host 进程。
+- `0.1.1-rc.2` Harness 已在 `http://127.0.0.1:4173` 运行，现有六项生产健康检查全部通过。
+- 配置指向的数据源工作树当前是 detached `v0.82.4`，该工作树只有未跟踪的 `.planning/` 与 `runtime/`；当前仓库的结构化契约仍固定为 `v0.82.2`。
+- 实际 `imagegen-semantic-query` CLI 版本为 `2.0.0`。CLI 只连接 `127.0.0.1`，查询前执行 live discovery；业务查询参数为 `--port`、`--path`、`--mode`、`--query`、`--page`、`--page_size`、可选筛选参数和 `--id`。
+- 实际 CLI 固定暴露十个 Catalog operation；成功时 stdout 是数据源原始 JSON envelope，非零退出时 stderr 是数据源或 CLI 的 JSON 错误。
+- Context 弹窗允许插入的真实目录类型为生成模型、LoRA、作品、角色、画师或画风、提示词条目、画师串、Workflow 模板；底模只用于筛选，ComfyUI 实例只用于执行路线，二者不能形成 ContextRef。已保存媒体来自当前仓库，不属于数据源 CLI，本次不实现。
+- 目录成功 envelope 固定为 `status`、`message`、`results`、`page`、`page_size`、`total_count`。Client 只接收 Host 归一化后的安全条目，不能直接消费数据源记录。
+- 当前仓库已安装全部 Harness `0.1.1-rc.2` 包；本机 Harness 源码工作树位于相邻目录 `../deepseek-harness`，可按该 Git 标签核对公共 Remote API。
+- Harness `0.1.1-rc.2` 的正式 Host→Client 扩展方式是：Host 服务继承 `TypertRemoteService`，公开方法使用 `@Remote`；构建生成业务包 `/remote` 产物；Client 插件将该产物传给公开 `ctx.remote.$mount()`；卸载时调用 mount 返回的 disposer。
+- Remote 方法把末位 `AbortSignal` 作为协作式取消参数；该参数不会进入 JSON 请求或 lookup 字段，适合把浏览器取消传递给 CLI 子进程。
+- `@deepseek-ai/dsh-api-remotes/client` 只挂载 Harness 自带 Remote 贡献，不会自动发现第三方插件 Remote；本插件必须显式挂载自己的生成产物。
+- 当前项目直接从 TypeScript 源码加载 Host 插件，并由自有 `tsdown` 脚本生成 browser Client bundle；项目还没有 Harness Typert generator 的 Host-first 构建步骤，也没有 `./remote` export。
+- Client bundler 已允许打包 `@deepseek-ai/dsh-*/remote`，但尚未允许或生成 `harness-comfyui/remote`；现有 Client bundle 测试仍明确拒绝项目 Remote，这部分必须随真实 Host 查询一起更新。
+- Harness 生成的 `/remote` 是纯浏览器安全 descriptor/codec contribution；Host 侧同时生成 `typert.host` contribution。严格产物为每个 JSON 参数和结果携带运行时 schema，并由 Gateway 在边界验证。
+- Harness 官方包的 Typert 产物由仓库级 Host-first 编译流水线生成，不是 `tsdown` 自己推断；当前独立插件需要增加等价的生成步骤或使用协议支持的源码 JSON fallback，不能伪造私有 HTTP 路由。
+- Gateway Host 在没有严格 Host Typert descriptor时会从公开 `TypertRemoteService` 与 `@Remote` 标记生成 `src-json` descriptor；Client仍要求挂载携带严格运行时 schema 的 Remote contribution。该组合允许独立源码插件在Client边界验证请求与结果，并由Host业务服务再次验证请求和CLI响应。
+- 实现需要把 `@deepseek-ai/dsh-typert-protocol@0.1.1-rc.2` 增加为直接开发/peer依赖。该官方 Harness 包当前已安装且已进入lockfile，MIT许可证、无安装脚本；不需要联网下载或执行外部生命周期脚本。
+- 数据源 CLI 强制要求显式 `--port`；配置指向的数据源生产服务当前监听 `127.0.0.1:18093`。现有 `source-production.json` 只保存CLI路径，没有保存目录端口，因此Host目前无法从自己的配置确定合法查询目标。
+- 目录端口必须进入 `source-production.json`、受管运行快照和 Host Configuration Profile，再由生产启动器注入；Host不能读取数据源仓库 `.env`，也不能按进程或端口列表猜测。
+- Live CLI已验证八类search统一接受`--mode search --query <0..200字符> --page <正整数> --page_size <1..100>`；其中生成模型、LoRA、画师或画风、画师串和Workflow模板还允许可选`base_model_id`，角色允许可选`work_id`。本次弹窗不提供额外筛选，因此只发送统一参数。
+- 八类真实标签字段分别为：生成模型`file_name`、LoRA`file_name`、作品`name`、角色`name`、画师或画风`name`、提示词条目`canonical_tag`、画师串`title`、Workflow模板`title`；稳定ID在live JSON中是正整数，Host必须归一化为十进制字符串。
+- Live数据当前包含15个生成模型、89个LoRA、3760个作品、39936个角色、12413个画师或画风、49856个提示词条目、0个画师串和35个Workflow模板。
+- Live Workflow模板search响应目前仍包含完整`workflow_json`等Host-only字段；Host adapter必须只投影`kind`、字符串`id`和`label`，不能把原始记录透传给Client。
+- 当前 Client 弹窗仅使用静态 `WORKBENCH_CONTEXT_OPTIONS`；需要把目录查询函数作为 `WorkbenchDock` 注入属性，使组件测试可传入受控查询器，生产注入则调用挂载后的 Remote namespace。
+- Harness `0.1.1-rc.2` 原生 primitives 已公开 `Input`，其余现有 `Button`、`Pill`、`Modal`足以实现搜索、左列、候选选择与操作按钮，不需要自制表单控件。
+- 已实现Host目录边界：CLI子进程使用固定argv且禁用shell，单次总超时15秒，stdout/stderr合计上限32MiB，AbortSignal触发SIGTERM；非零退出、空stdout、stderr、无效JSON、错误envelope和错误条目分别进入结构化错误分支。
+- 已实现安全目录投影：Remote只允许八个Catalog kind、0至200字符单行查询、最多20条`{kind,id,label}`和总数；Client与Host复用同一份运行时边界解析器。
+- 已把Catalog端口加入source production definition、Configuration Profile、受管runtime和Host环境映射。
+- 已用offline、ignore-scripts模式更新lockfile；没有下载包，没有执行依赖生命周期脚本。
+- Client已挂载项目严格Remote contribution，并把真实查询器注入原生Dock；弹窗已加入八类左列、原生Input搜索、加载/空/错误状态、候选单选和插入按钮。
+- Harness原生`Input`虽然接受标准input属性，但`0.1.1-rc.2`公开类型不转发React `ref`；弹窗不需要强制聚焦，必须移除该ref而不绕过类型。
+- Client组件测试已迁移到真实Catalog item形状和异步查询器，覆盖初始加载、类型切换、搜索、空集合、错误、选择、插入拒绝、关闭和在途请求AbortSignal清理。
+- Client插件注册测试已加入Remote mount、目录查询注入和Remote disposer；Host插件与配置测试已加入Catalog端口环境值。
+- 首轮定向测试共28项，27项通过；唯一失败是旧测试仍把目录原始label当作ContextRef label，生产逻辑实际按产品需要保存“类型 · 名称”。
+- 生产受管快照恢复路径当前重建`runtime.source`时还未复制`catalogPort`；必须补齐，否则重启后status/stop读取旧形状会被runtime合同拒绝。
+- 已新增Catalog合同、CLI adapter和Remote contribution测试；覆盖八类顺序、严格边界、CLI argv、安全投影、空集合、非零退出、空stdout、非法JSON、错误envelope、错误item、取消和输出上限错误。
+- 第二轮定向检查中TypeScript通过，49项测试中48项通过；剩余断言仍需把Harness reference的显示label改为“类型 · 名称”。
+- 全量unit当前78/79通过；失败的是旧Client bundle测试仍禁止`ctx.remote.$mount()`，该断言与本次真实Host数据源要求冲突，必须改为验证本地严格Remote contribution被显式挂载。
+- 真实Harness源码加载使用Node TypeScript strip-only模式；该模式拒绝TypeScript constructor parameter property。新Catalog CLI与Remote Service必须改用普通class字段。
+- 为兼容源码加载，Host Service也不能依赖需要转译的decorator语法；可以在模块初始化时用公开`Remote()` decorator函数登记同一方法initializer，仍由Harness公开SRC Remote发现机制读取。
+- 新Host代码已改为普通class字段，并在模块加载时调用公开`Remote()`函数登记method initializer；真实Harness生产测试已证明Node strip-only可以直接加载该插件并提供Client bundle。
+- 当前`pnpm typecheck`、79项unit和15项production全部通过。
+- 首次完整`pnpm quality`执行到coverage门禁：83项coverage测试全部通过，语句88.5%、分支82.55%、行92.47%，但函数90.9%低于仓库固定100%门禁；需要补测新代码尚未执行的函数，不能降低阈值。
+- 当前Vitest只保留`coverage/coverage-summary.json`，需要结合报告中的未覆盖行和源码分支补齐Client错误/回滚、Host process runner事件和Remote Service调用测试。
+- 已补测Client目录查询成功/Remote失败/预取消/注册回滚、Host CLI预取消/双流收集/spawn失败/32MiB上限和Host Remote Service公开标记与委托。
+- 当前coverage共90项全部通过：函数100%、语句94.62%、分支86.38%、行96.93%，所有固定阈值通过。
+- 完整`pnpm quality`已通过：依赖清单一致、审计critical/high/moderate/low均为0、构建脚本白名单、Harness公共边界、TypeScript、90项coverage、17项contract/security、15项production和27项prototype全部通过。
+- Harness已在`http://127.0.0.1:4173`启动；当前浏览器验收固定使用`1440×1000`桌面视口，并在最终交付前恢复浏览器默认视口。
+- 浏览器标签页已成功导航到本机Harness；IAB把`waitForLoadState`和`domSnapshot`提供在`tab.playwright`对象上。
+- 左栏工作台入口在真实Harness中可点击并进入pressed状态；工作台只在原生InputBar上方增加region和插入按钮。
+- 真实弹窗的八类左侧列表、搜索框和操作按钮已渲染；首次Host查询失败，但数据源CLI同一可执行文件和参数在终端成功返回`status: ok`与15条模型记录，因此数据源服务和CLI本身可用。
+- 原原型的上下文选择器明确采用顶部底模筛选、左侧资源类型、右侧三列固定尺寸候选卡片、封面或无封面占位、标题与副标题、每页6项和多项选择；当前真实插件必须保留该信息架构，同时把控件替换为Harness原生primitives并接入真实CLI。
+- 当前真实插件合同只返回`kind/id/label`并固定请求第1页20项，无法渲染原原型卡片、分页或底模筛选；合同必须增加封面URL、副标题、页码和可选底模ID，并单独增加真实底模查询。
+- `@deepseek-ai/dsh-client-ui-primitives@0.1.1-rc.2`未公开`Select`，但公开带portal、受控open、selectedId和键盘/遮罩关闭语义的`Menu`；Harness自身语言选择使用`Menu`加锚点按钮，因此底模选择应复用该原生组合。
+- 数据源CLI的live discovery包含`/internal/semantic/base-models`，真实结果为`3/krea2`、`2/wai`、`1/anima`。`generation-models`、`loras`、`styles`、`artist-prompt-strings`和`comfyui-templates`的search请求接受`base_model_id`。
+- LoRA真实结果包含`file_name`、`author`、`version`、`description`、`usage`、`weight`和`cover_url`；Workflow模板包含`title`、`template_type`、`revision_number`和`cover_url`。Host必须继续丢弃完整`workflow_json`等私有大字段。
+- Harness Typert source-mode要求Host方法的运行时参数名与Client descriptor的wire参数一致，并把末位`signal`作为取消参数；当前Host方法`search(request, signal)`符合该结构，仍需从Gateway实际失败结果定位运行问题。
+- Gateway会先寻找严格Host定义；没有时才从活动Cordis service生成SRC描述。SRC仍要求返回值是JSON值，Client严格结果parser会再次验证结果。当前运行失败必须通过实际Remote错误码定位，不能归因给CLI。
+- Harness原生Modal默认宽度为380px，但`className`直接挂在原生dialog卡片上；插件可以只设置桌面宽度和最大高度，继续复用原生遮罩、圆角、关闭按钮、Escape和footer。
+- 真实卡片副标题可由以下CLI字段直接得到：生成模型`file_format`，LoRA`author`，作品`category_name`，角色`works.name`，画师或画风`prompt_text`，提示词条目`post_count`，Workflow模板`template_type`；卡片封面统一读取可选`cover_url`。
+- 新Client卡片使用Harness原生Button作为整张可选择卡片，并在封面右上角显示“选择/已选择”标记；选择状态使用`aria-pressed`，支持跨资源类型保留多个待插入项。
+- 批量插入逐项调用Harness公开`SessionInput.insertReference()`；成功项立即从待插入集合移除，任何失败项保留在弹窗中，避免用户重试时重复插入已成功项。
+- Harness rc.2的选中强调色使用`--dsw-alias-brand-primary`与`--dsw-alias-button-primary-fill`，primary前景色使用`--dsw-alias-label-primary-foreground`；项目卡片不定义第二套颜色常量。
+- 覆盖率报告把3个未执行函数全部定位到`native-surfaces.tsx`；明确缺少底模Menu关闭回调和上一页回调，剩余匿名回调需要JSON coverage函数表定位。
+- JSON coverage函数表确认第三个未执行函数是上一页状态更新器；补测后全仓固定函数覆盖率恢复为100%。
+- 新实现已由生产构建加载到`http://127.0.0.1:4173`，Client bundle健康检查通过。
+- 真实页面已显示顶部底模下拉、左侧八类资源、三列卡片区、分页、多选计数和插入按钮；底模与候选查询同时失败，进一步说明故障位于共享Remote注册或Gateway分派层。
+- `$mount()`已成功提供`remote.harnessComfyuiCatalog`，但原Client插件只静态注入`remote`便直接访问子服务，Cordis权限门禁拒绝该属性。Harness Gateway测试给出的公开模式是`ctx.inject(['remote.<namespace>'], callback)`；本插件需要在mount之后创建该动态scope，并在卸载时先释放scope再卸载contribution。
+- Cordis动态inject返回可等待、可dispose的Fiber；动态scope回调返回的注册disposer由Fiber按逆序清理，因此插件外层只需保存Fiber disposer和Remote mount disposer。
+- Client最终卸载顺序为：conversation dock、sidebar entry、reference source、动态Remote scope、Remote contribution；不会在仍有UI调用者时先撤销Remote namespace。
+- 真实Harness当前弹窗默认打开Workflow模板；live CLI返回35项，Client按每页6项显示为6页。首6个模板的`cover_url`均为null，因此页面正确显示“暂无封面”，不是封面加载失败。
+- 真实Harness的wai底模筛选把LoRA总数从89筛为8；首屏实际显示StS Age Slider、Momlaliberte、GBF、Dramatic Lighting、BreastsILL和RealisticSkin六张带封面卡片，证明`base_model_id`与`cover_url`链路生效。
+- 真实CLI搜索`Age`在wai底模下返回唯一StS Age Slider卡片；先前选中的GBF卡片虽然被搜索结果隐藏，仍保留在待插入集合中，符合原原型跨搜索多选逻辑。
+- 真实Harness浏览器验收确认两个LoRA可同时进入“已选择”状态，弹窗计数显示“已选 2”；点击“插入”后，Dock与原生InputBar同时出现`LoRA · StS_Age_Slider_Illustrious_v1.safetensors`和`LoRA · GBF_Illustrious.safetensors`。
+- 真实Workflow模板目录的下一页操作把页码从`1 / 6`切换为`2 / 6`并显示另一组6项真实模板；真实画师串目录返回0项时显示“无结果”且分页保持`1 / 1`禁用状态。
+- 用户把候选区最终规格修正为每页9项的3×3九宫格；左侧当前资源类型必须具有可见选中态，封面图片必须在固定封面区域内居中完整缩放。
+- Harness `0.1.1-rc.2`的公开`insertReference()`要求每个引用占据草稿中的完整可见显示文本，因此无法实现“保留原生发送路径但隐藏引用文本”。用户确认可直接把选中数据JSON写入输入框；插件改用公开`SessionInput.setDraft()`写入严格`comfyui-context` JSON行，并从同一草稿投影可移除chip。
+- 真实Harness终验确认：Workflow模板首屏返回9张卡片；Workflow模板左侧按钮显示原生primary选中态与勾选；wai底模下的8张LoRA真实封面全部使用容器内完整缩放；选择2项后输入框出现2行`comfyui-context` JSON，点击一个chip的×后对应JSON同步删除且另一项保留。
+## 2026-08-24：Agent 上下文 JSON 字段范围
+
+- 用户明确要求简化 Agent 上下文 JSON，只保留可理解的名称、`prompt_text`、`id`、`tag`。
+- 卡片封面、卡片副标题等展示字段不能进入 Harness 输入框 JSON。
+- DeepSeek Harness 文档确认插件可以定义严格 JSON Schema；本次继续使用严格字段白名单，不传递完整数据源记录。
+- 首次批量 CLI 调研使用了错误的 `--path` 参数值，CLI 返回 `INVALID_ARGUMENT`；后续必须以本地 CLI 源码定义的实际路径重新查询。
+- 本地 CLI 注册表定义的实际目录包括 `/internal/semantic/generation-models`、`/internal/semantic/loras`、`/internal/semantic/works`、`/internal/semantic/characters`、`/internal/semantic/styles`、`/internal/semantic/prompt-terms`、`/internal/semantic/artist-prompt-strings`、`/internal/semantic/comfyui-templates`。
+- 现有插件已经把样式标题映射自 `name`、提示词条目标题映射自 `canonical_tag`；真实响应仍需确认 `prompt_text` 和 `tag` 的来源位置。
+- 真实 CLI 响应确认：角色记录包含 `name`、`prompt_text`、`id`；画风记录包含 `name`、`prompt_text`、`id`；提示词条目包含 `canonical_tag`、`id`，应把 `canonical_tag` 统一映射为 Agent 字段 `tag`。
+- 真实 CLI 响应确认：生成模型和 LoRA 使用 `file_name`；作品使用 `name`；ComfyUI 模板使用 `title`。用户随后明确拒绝机械统一名称字段，输入框 JSON 必须保留这些可理解的领域字段名。
+- 每条输入框 JSON 必须用外层上下文用途和内层 `kind` 说明插入意义；UI 展示数据与 Agent 上下文数据必须分离。
+- ComfyUI 模板响应包含完整 `workflow_json`、校验值和参数定义；这些字段不属于用户指定的 Agent 上下文 JSON，不能写入 Harness 输入框。
+- 当前 `artist-prompt-strings` 数据集为空；必须从本地服务契约确认它的字段，不得根据空响应猜测。
+- 数据源 OpenAPI 把画师串语义检索描述为“标题、说明和 artist string”；画师串精确响应字段仍需从本地响应构建代码确认。
+- 本地画师串查询实现确认响应字段为 `id`、`title`、`description`、`artist_string`、`base_model_id` 和封面；Agent 需要实际画师串内容，因此插入 JSON 应在 `kind: "artist-string"` 语境下把 `artist_string` 映射为用户指定的 `prompt_text`，不写入说明和封面。
+- 严格 Agent 数据联合类型应分别采用：模型/LoRA 的 `file_name`，作品/角色/画风的 `name`，模板/画师串的 `title`，角色/画风/画师串的 `prompt_text`，提示词条目的 `tag`，以及所有类型的 `id`。
+- 数据源画师串的 `artist_string` 是实际提示词内容；为满足用户指定的 Agent 字段集合，插件将在 `kind: "artist-string"` 的明确语境中把该值写入 `prompt_text`。
+- 为满足单一来源约束，UI `CatalogItem` 不应重复保存 `kind` 和 `id`；`CatalogItem.context` 作为唯一身份数据，另行保存 `label`、`subtitle`、`coverUrl` 供卡片展示。
+- 用户给出的角色实例确认：原 JSON 中的 `label`、`subtitle`、`coverUrl` 都是插件 UI 投影，不是 Agent 上下文字段。角色 Agent 上下文必须明确包含 `work_name`、`character_name`、`id`、`prompt_text`。
+- 角色 CLI 响应中的 `works.name` 必须映射为 `work_name`，`name` 必须映射为 `character_name`；不能用宽泛的 `subtitle` 表达作品名。
+- 相关源代码检索确认没有遗留把 UI `CatalogItem.kind` 或 `CatalogItem.id` 当作输入上下文身份的引用；卡片身份现在统一来自 `CatalogItem.context`。
+- 完整质量门禁在 `tests/unit/catalog-remote.test.ts` 发现一个旧 Remote 结果夹具仍使用 UI 项目的旧 `kind`/`id` 结构；生产代码类型检查已经通过，失败属于待更新测试夹具。
+- 更新 Remote 夹具后，完整 `pnpm quality` 通过：113 个单元/集成测试、17 个契约/安全测试、15 个生产测试、27 个原型测试全部成功；函数覆盖率为 100%。
+- Harness 重启后的浏览器标签仍保留旧草稿 JSON；该旧草稿含 `label`、`subtitle`、`coverUrl`，必须刷新页面并清空后再验证新插件输出，不能把旧草稿误认为新序列化结果。
+- Harness 原生输入框的自动恢复会覆盖程序化 `fill('')`；真实清理必须使用用户可见的全选与删除键盘交互。
+- 真实 CLI `resolve --id 39933` 返回：作品名 `尼尔机械纪元`、角色名 `2b`、`prompt_text` 为 `nier2b,`。仅搜索 `2b` 的语义结果不包含该记录，搜索 `2B 尼尔机械纪元` 时该记录出现在首屏。
+- 真实 Harness 输入框已生成角色记录：`{"type":"comfyui-context","data":{"kind":"character","id":"39933","work_name":"尼尔机械纪元","character_name":"2b","prompt_text":"nier2b,"}}`；该记录不含 `label`、`subtitle`、`coverUrl`。
+- 真实 Harness 输入框已生成提示词条目记录：`{"type":"comfyui-context","data":{"kind":"prompt-term","id":"49856","tag":"ryuujin_no_senpai"}}`。已选中上下文区域同时显示可取消的角色和提示词条目原生 Pill。
+- 原生输入框 `value` 精确核对结果：包含 `prompt_text` 和 `tag`，不包含 `label`、`subtitle`、`coverUrl`；两条 JSON 以换行分隔。
+- 最终生产状态：PID 10366，`http://127.0.0.1:4173` 正在运行；生产健康检查的进程、源码运行时、Harness Web、客户端包、运行仓库和保存媒体六项全部通过。
+- `git diff --check` 最终通过；工作树仍包含用户原有的大量未提交修改和删除，均未还原或覆盖。
+- 插件当前把同一个 `CatalogItem` 同时用于弹窗卡片和输入框 JSON，因此 `label`、`subtitle`、`coverUrl` 被写入输入框。实现需要把 UI 卡片数据与严格的 Agent 上下文数据拆成两个契约。
+- 现有输入框外层记录已经使用 `type: "comfyui-context"`；后续内层严格数据必须继续包含 `kind`，共同说明每条 JSON 的用途和来源类型。
+- 用户要求 Harness 原生 `/` Skill 菜单能够发现当前仓库 `.agents/skills` 下的 Skill；实现必须复用 Harness 原生 Skill 发现和选择机制。
+- 用户要求右侧列改为可展开/收起的抽屉；展开后的信息架构、布局和交互必须来自旧原型，视觉细节可以适配 Harness 原生组件。
+- 右侧抽屉本阶段只展示静态数据；真实媒体结果、异步任务查询和任务操作不属于本阶段。
+- `prototype` 的既有页面子形态适用于本任务；用户已经指定唯一布局，因此本阶段不生成三套变体，只在真实 Harness 页面实现一个静态可验收抽屉。
+- `frontend-design` 对本任务的约束是保持 Harness 原生视觉系统，并把抽屉展开/收起作为唯一显著交互；产品文案只命名用户可操作对象。
+- Context7 已把权威文档解析为 `/deepseek-ai/deepseek-harness`；下一次文档查询将限定项目 Skill 发现和原生 `details` 布局扩展。
+- 当前仓库 `.agents/skills` 包含 `anima-prompt-builder`、`character-portrait-prompt-designer`、`wai-sdxl-prompt-builder` 三个 `SKILL.md`。
+- 旧原型右侧列明确包含“当前轮次结果”和“本会话结果”两个视图、媒体种类筛选、固定媒体卡片、独立分页、运行状态卡片和运行详情联动。
+- 旧原型同时包含全局媒体库和全局异步任务弹窗；用户本次只要求右侧列，因此全局弹窗不进入本阶段抽屉。
+- 当前生产架构只注册 `sidebar.footer.action` 和 `conversation.input.dock`；右侧抽屉需要调研 Harness 公开 `details` 扩展位，不能自行覆盖 AppFrame 根布局。
+- 生产配置修改后必须执行 `pnpm prod:restart`；Skill 发现相关运行文件位于 `.local/production/dsh-home` 和源码 profile，由 `scripts/profile/source.mjs` 生成。
+- Harness 官方配置目录确认 `@deepseek-ai/dsh-skill-filesystem` 默认可包含项目根和用户根；`customSkillDirs` 可在项目根之后、用户根之前增加目录，`includeDefaultRoots` 控制是否保留默认根。
+- 官方 Skill 合同确认 Skill 名称必须是 kebab-case，本地文件系统 provider 支持含 `SKILL.md` 的目录 bundle 和单个 Markdown 文件，但不递归发现嵌套 Skill。
+- Harness 官方 `ui-layout` 源码确认 AppFrame 原生声明 `details` 单槽位，作用域为当前 Session；右侧抽屉可以注册 `details` occupant，并通过公开 `ctx.layout` 面板动作服务控制显示，不需要替换 root。
+- `@deepseek-ai/dsh-client-ui-skill` 调用 `connection.api.skills.list({ sessionId })`；Host 在调用文件系统 Skill provider 前通过 Session header 解析项目工作目录。
+- Harness `0.1.1-rc.2` 的公开布局服务提供 `ctx.layout.openDetails()` 和 `ctx.layout.closeDetails()`；插件可以直接控制原生右侧抽屉。
+- `@deepseek-ai/dsh-base@0.1.1-rc.2` 已依赖并装载 `@deepseek-ai/dsh-skill` 与 `@deepseek-ai/dsh-skill-filesystem`；项目 Skill 缺失不是因为生产 profile 未安装文件系统 Skill provider。
+- `SessionHeader.cwd` 是 Harness Session 的可选元数据；Skill 服务的工作区发现依赖该值，后续检查当前 Session 是否缺少 `cwd`。
+- Base bundle 的 `cordis.patch.yml` 明确插入 `skill`、`skill-filesystem`、`skill-badge` 和 `tool-skill`；生产运行配置已经启用完整的 Host Skill 链路。
+- `dsh-api-remotes`、`dsh-host-apiproxy` 和 `dsh-api-gateway` 的发布文件中没有可直接全文命中的 Skill API 实现名，需要从运行 API 或 sourcemap/类型声明继续定位。
+- 生产 Session 持久化目录按仓库工作目录分组，`storages/session_projcache.json` 中三个 Session header 均记录 `cwd: /Volumes/4Tdisk/work/AI2/harness-comfyui`；项目 Skill 缺失不是 Session 工作目录为空造成的。
+- `.local/production/dsh-home/sessions` 中的 Session 文件位于工作目录编码后的三级路径，之前的两级文件查询没有命中实际文件。
+- `dsh-skill-filesystem` 的已安装 `0.1.1-rc.2` 实现确认默认项目根顺序为 `<project>/.dsh/skills` 与 `<project>/.agents/skills`，且 `FileSystemSkillProvider` 可从公开包导出用于只读诊断。
+- 仓库三个 `SKILL.md` 的 frontmatter 均含与目录一致的 kebab-case `name` 和非空 `description`；没有显式关闭用户调用，因此文件表面结构符合 slash 菜单要求。
+- Web bundle 已装载 `ui-input-trigger`、`ui-commands` 与 `ui-skill`，所以斜杠菜单缺失不是浏览器 Skill 插件未启用。
+- Web bundle 明确禁用 Host 全局 `skill-filesystem`，并把本地 Skill discovery 交给每个 Agent preset 的 `skill-filesystem` 行；Skill API 必须在活动 Session 的 preset scope 中读取目录。
+- 生产 `$DSH_HOME/.agent-presets` 当前为空；活动 Session 的投影缓存只显示权限 preset，不显示 Agent preset 字段，因此需要从 Web bundle 的随附 `config/agent-presets` 和 Session 原始日志继续确认实际组装。
+- Web bundle 的随附 Agent preset 位于 `@deepseek-ai/dsh/config/agent-presets`，默认 `standard` preset 明确包含 `skill-filesystem` 与 `tool-skill`；`code` 也包含这两行，只有 `minimal` 不包含 Skill 支持。
+- 生产 Session 日志使用 `session.jsonl.zstd` 压缩存储；不能用文本检索直接读取 Agent preset 字段。
+- 已连接的应用内浏览器仍绑定运行中的 `http://127.0.0.1:4173/` Harness 页面，可以直接执行可见交互验收和页面内只读诊断。
+- 当前活动 Session 顶部明确显示“极简模式”，而随附 `minimal` Agent preset 不含 `skill-filesystem` 和 `tool-skill`；这是当前斜杠菜单没有项目 Skill 的直接配置原因。
+- 当前页面中间工作台与上下文 JSON 草稿仍存在；斜杠菜单验证必须在不发送消息的前提下恢复该草稿。
+- 现有浏览器 locator 不提供 `inputValue()` 方法；后续验证使用已知草稿文本恢复输入框。
+- 在当前“极简模式”Session 中输入 `/wai` 后，DOM 中没有出现任何 Skill 菜单项；页面只保留 `/wai` 草稿和原生“命令”按钮，实测与 preset 配置结论一致。
+- 浏览器诊断已在读取 DOM 后恢复原上下文 JSON 草稿，没有提交消息。
+- 当前 Client 插件只注册 `sidebar.footer.action` 与 `conversation.input.dock`，且 `WorkbenchController` 当前仅控制中间工作台显隐；右侧抽屉需要在同一插件新增 `details` occupant 和 Harness `layout` 注入。
+- Git `HEAD` 中已删除的旧 `results-panel.tsx` 定义了右侧列核心信息架构：标题“生成结果”、会话运行总数、两个标签“当前轮次结果/本会话结果”和各自独立面板。
+- Git `HEAD` 中已删除的旧根布局是自建三列 shell，不能恢复；本次只能复用其信息架构，并把视图挂入 Harness 原生 `details` 插槽。
+- Source production profile materializer 当前只复制 `package.json`、`cordis.patch.yml`、`pnpm-workspace.yaml` 并链接当前仓库包；如新增项目 Agent preset，必须由该 materializer 明确复制项目 preset 目录并覆盖动态根路径，不能依赖已安装 Harness 包内文件修改。
+- 当前项目未引入新增依赖的必要条件：Harness `0.1.1-rc.2` 已提供 Agent preset、Skill provider、Skill tool、布局和原生 UI 依赖；本次无需安装依赖，现有锁文件无需因本需求变化。
+- 当前 `WorkbenchController` 仅有 boolean 状态；可扩展为调用注入的 Harness layout 动作，使左侧入口同时切换中间 dock 与右侧 `details` 抽屉。
+- `dsh` 启动器会在所有 profile patch 之后强制把 Agent preset roster 的 `roots` 设置为 Harness 随附根，因此项目 profile 不能通过静态 `roots` 配置加入额外随附根。项目不需要新增 preset：把 base bundle 已有的 `skill-filesystem` 与 `tool-skill` 两行在最终 profile patch 中重新启用，可把项目 Skill provider/tool作为部署级全局能力提供给“极简模式”。
+- Harness 源码注释明确 Skill registry 合并 global 与 preset scope，并允许 deployment-level provider 注册到 global layer；项目 profile 重新启用这两行属于 `0.1.1-rc.2` 支持的 Cordis patch 机制。
+- 旧原型右列的实际布局为：标题与本会话运行总数；“当前轮次结果/本会话结果”双标签；当前轮次绑定信息与运行卡片列表；本会话媒体数量、聊天轮次/媒体种类/保存时间三个筛选器、两列媒体卡片和独立分页。
+- 旧原型右列的当前轮次运行卡片承载排队、远端运行、保存媒体、成功、失败、提交结果未知、正在取消与已取消状态。当前阶段只展示静态状态，不提供真实取消、下载或打开原文件动作。
+- Harness 原生 AppFrame 始终挂载 conversation/details 列，details 初始关闭；显式详情动作打开默认宽度，切换 Session 会关闭详情，宽度不足时由 Harness concession chain 自动收缩或关闭。
+- `@deepseek-ai/dsh-client-ui-layout` 的发布声明分布在 `lib/types/client/`，后续实现直接引用其 Client export，不读取或修改内部 DOM。
+- Harness `details` 是 `kind: single`、`scope: session` 的原生槽位；占用它会替换上游通用工具详情面板，因此项目右列必须在工作台激活时作为该槽位唯一 occupant 展示，并保留自己的原生关闭按钮。
+- `details` occupant 自动收到 `sessionId`；抽屉显隐仍由 `ctx.layout` 控制，不需要项目读取或复制 AppFrame 的宽度状态。
+- Harness 单槽位使用 ascending priority shadowing；上游通用 DetailsPanel 使用默认 priority 0，项目 `details` occupant 可以使用 priority -10 成为活动右列，同时保留上游 occupant 供插件卸载后恢复。
+- Harness 原生 primitives 提供 `Button`、`Menu`、`Pill`、关闭图标与左右翻页图标；右列筛选、标签、关闭和分页不需要自建控件机制。
+- 仓库边界检查当前把 source profile patch 固定为 `[]`; Skill 修复必须同步把唯一允许的 profile patch 结构更新为重新启用 `skill-filesystem` 与 `tool-skill`，并保留“任何其他 drift 失败”的边界测试。
+- Source production 集成测试已经验证 materialized profile manifest 与仓库包软链接；可追加断言确认运行 profile 收到精确的 Skill patch，无需修改 profile materializer。
+- 首版实现通过 TypeScript 检查；定向测试覆盖 Workbench/原生 layout 联动、details 注册 priority、静态运行选择、双标签、三维媒体筛选、分页、空结果和 profile patch 边界。
+- React renderer 会同时匹配组件实例与其渲染的宿主 button；定向测试已改为只筛选宿主 button，避免重复计数，不改变产品实现。
+- 新增 CSS 中的 `bg-layer-3`、`status-success/error` 与 `font-l/s` token 没有在已安装发布产物中获得直接文本证据；为避免依赖未确认 token，样式应收敛到项目已实际使用的 `bg-layer-1/2`、label、brand 与 `font-xs-13`。
+- 完整质量门禁中的 117 项单元/集成测试全部通过，但新增交互回调使全局函数覆盖率从 100% 降至 95.53%，触发仓库覆盖率门禁。需要补测筛选菜单关闭、三种筛选选择、上一页、当前标签、音频预览和中间“生成结果”按钮，不改产品逻辑。
+- 补充交互测试后，全局函数覆盖率恢复为 100%；右列实现自身语句/函数/行覆盖率均为 100%。
+- 完整 `pnpm run quality` 已通过：依赖锁与 advisories/build-script 审计、Harness 边界、TypeScript、117 项单元/集成测试、17 项 contract/security 测试、15 项 production 测试、27 项旧原型合同测试全部通过。
+- 生产 Harness 已重启为 PID 50308；`prod:status` 为 running，`prod:health` 的 process/sourceRuntime/harnessWeb/clientBundle/runRepository/savedMedia 全部 passed，启动日志没有 Skill 或 details 错误。
+- 重启后的真实 DOM 已加载项目 `details` occupant：标题、会话运行总数、双标签、当前轮次绑定和 4 个静态运行卡片均存在。当前浏览器因热重载保留了此前打开的 details 宽度，需先验证关闭再从 Workbench 入口重新打开。
+- 1440×1000 真实截图确认 details 初始呈现为关闭宽度；DOM 中的 occupant 虽保持挂载但不占可见宽度，符合 Harness AppFrame 合同。
+- 点击左侧原生“ComfyUI 工作台”后，入口出现 pressed 状态，中间显示“生成结果/插入上下文”，右侧抽屉同步打开并显示 4 个运行卡片。
+- Harness 的未连接“新会话”Hero 按合同把 details 渲染宽度强制为 0；此时 DOM occupant 和中间工作台存在，但右列不可见。切换到已有 Session 后，details 才允许显示。
+- 浏览器已切换到已有“Modify code” Session；“生成结果”和“关闭生成结果”的可访问名称存在包含关系，自动验收必须用 exact 匹配点击中间按钮。
+- 已有 Session 中右侧抽屉实际展开为 Harness 原生宽度，双标签、关闭按钮和滚动条可见；但运行卡片使用原生 Button 后继承了固定按钮高度，卡片正文溢出并相互重叠，当前视觉不合格。
+- 修复应保留原生 Button，只在抽屉作用域内把运行卡片高度改为内容自适应并限制 overflow/white-space；不改变信息架构或交互。
+- 已把原生运行卡片高度改为内容自适应并限制溢出；HMR 后 DOM 结构稳定。第一次截图只返回 64×64 片段，需重新设置浏览器验收视口后取得完整截图，不能据此判断视觉结果。
+- 单类选择器仍未覆盖 primitives 后加载的固定高度规则；已增加 details 抽屉作用域双类选择器，并同时解除 max-height、固定主轴对齐和子项伸缩。HMR 瞬间的第二次截图再次只返回 64×64 片段，需等待页面稳定后复查。
+- 页面稳定后的完整截图显示卡片仍保持原生固定高度，说明冲突属性可能不是普通 height/max-height，或者 Button 内部样式具备更高优先级。下一步只读检查该按钮的 computed style 与 primitives CSS，精确修复，避免继续试错。
+- `@deepseek-ai/dsh-client-ui-primitives` 的 `Button.module.css` 已确认 `.md { height: 36px; }` 是卡片高度来源；项目卡片选择器理论上具备更高 specificity，下一步通过浏览器计算样式核对生产页面是否已加载最新 CSS，再决定是否需要显式覆盖 `.md`。
+- 应用内浏览器的 Harness 页面控制对象提供只读 `evaluate`，可直接读取任务卡片的计算样式和命中的样式表，不需要修改 DOM。
+- 生产页面 computed style 显示任务卡片仍为 `height: 36px`、`justify-content: center`、`overflow: visible`；页面样式表中的 `.harness-comfyui-run-card` 只包含旧声明，没有当前源码中的高度覆盖规则。这不是 specificity 失败，而是生产 bundle 尚未包含后续 CSS 修改。
+- 受管 Harness 已重新构建为新进程 PID 51638，健康检查全部通过；原浏览器文档没有因服务重启自动刷新，因此 computed style 仍来自旧文档，必须执行页面 reload 后验收新 bundle。
+- 页面 reload 后任务卡片高度已从 36px 变为 245px，卡片内容不再重叠，证明 CSS 修复生效。当前 1440px 截图中 details 面板位于可视区右侧，仅露出约 26px；需要检查 AppFrame/details 祖先布局尺寸，修复抽屉横向溢出。
+- AppFrame 计算布局为 `280px 1160px 0px`，details 列实际处于原生关闭状态，并非横向溢出。页面刷新会按 Harness 状态关闭工作台和 details；重新点击左侧“ComfyUI 工作台”与中间“生成结果”后，原生状态显示入口 `pressed` 且 details 已重新打开。
+- 右侧展开态实测网格为 `280px 800px 360px`，抽屉宽 359px；当前轮次四张运行卡片高度完整。本会话结果实测显示三个原生筛选菜单、两列固定媒体卡片、图片采用容器裁切缩放、第一页四项和独立 `第 1 / 2 页` 分页。
+- 本会话分页实测第二页只显示“室内逆光肖像”和“角色转身镜头”，页码为 `第 2 / 2 页`；媒体种类按钮展开原生 menu，包含“全部媒体 / 图片 / 视频 / 音频”。
+- 选择“视频”后只显示“雨夜街巷镜头”和“角色转身镜头”，页码自动变为 `第 1 / 1 页`。点击“关闭生成结果”后 AppFrame 变为 `280px 1160px 0px`，工作台仍保持选中；点击中间“生成结果”后恢复 `280px 800px 360px` 和 359px 抽屉宽度。
+- 在重启前已经存在的 `Modify code` 会话中输入 `/` 后没有出现 Skill menu；验证草稿已立即清空且未发送。该会话顶部明确显示 Agent 预设“开始时即固定”，因此需区分旧会话的会话级 provider 快照与新全局配置是否生效。
+- 源 profile patch 与生产目录物化 patch 完全一致，均启用 `skill-filesystem` 和 `tool-skill`；生产目录没有额外 Skill 错误日志命中。下一步检查完整 Cordis composition 和 settings 中的 profile/cwd，再用重启后创建的新会话验证会话固定边界。
+- 生产 profile 的 bundle 顺序为 `dsh-base -> dsh-web-app -> harness-comfyui`，项目 patch 位于最后；依赖锁中 rc.2 的 `dsh-skill-filesystem`、`dsh-tool-skill`、`dsh-client-ui-skill` 和 `dsh-client-ui-input-trigger` 均已存在，不需要安装新依赖。完整 profile 根文件为空是项目既定的 bundle+patch 组合方式。
+- rc.2 源码注释确认：host `skill-filesystem` 注册全局 provider，agent 通过作用域链读取合并后的 catalog；Web 默认关闭 host `skill-filesystem/tool-skill` 并交由 preset。项目末尾 patch 的启用方式符合 rc.2 明确支持的 deployment-level provider 机制。
+- 重启后的“新会话”页面保留用户此前的两段 ComfyUI JSON 草稿，未修改该草稿。点击原生“命令”按钮只列出 compact/export/model 三条命令，没有 Skill；需检查 `ui-skill` 的触发过滤和 filesystem provider 的工作区根目录解析，不能仅凭命令按钮结果判断 catalog。
+- 已定位 rc.2 的三个实际发布包：`dsh-client-ui-skill`、`dsh-skill-filesystem`、`dsh-tool-skill`；项目依赖树同时保留 rc.8 包目录，但生产 Web bundle/profile 引用的是 rc.2 路径，下一步直接读取 rc.2 发布实现。
+- rc.2 `FileSystemSkillProvider.roots(cwd)` 会从 cwd 向上确定 project root，并依次扫描 `<project>/.dsh/skills` 与 `<project>/.agents/skills`；`tool-skill` 用 `agent.session.header.cwd` 查询同一 registry。`ui-skill` 则通过 `api.skills.list({sessionId})` 获取 catalog，说明 UI 是否显示取决于会话 ID 对应的 cwd/scope，而不是前端直接扫描文件。
+- rc.2 `ui-skill` 明确注册 `/` trigger、order 2；输入候选通过 `skills.list({sessionId})` 拉取，并按 `skill.name.startsWith(query)` 过滤。因此输入 `/` 应显示全部 catalog，输入 `/wai` 应显示 WAI Skill；当前空结果说明 `skills.list` 返回空或失败，不是触发格式错误。
+- 已定位 rc.2 `skill.list` 的 API 传输链位于 `dsh-api-remotes` / `dsh-api-gateway` / client connection；继续读取 Remote handler 的会话解析和权限条件。
+- `dsh-host-apiproxy` 的 rc.2 发布实现包含 Skills API 逻辑，并在查询时优先读取 `presets.serviceFor(live, "skills")`，否则使用 host `ctx.get("skills")`。这说明已有 live session 的 preset-scoped skills 服务可能覆盖 host registry，需要检查该分支如何设置 cwd 与 modelInvocable。
+- Skills handler 已确认：attached session 必须有 cwd；live agent 若有 preset-scoped `skills` service，则该 service 完全优先于 host registry。`Modify code` 使用历史自定义 preset `harness-comfyui`，其空 scoped registry 很可能遮蔽了 host provider；需要检查该 preset 的持久化 composition，并用 Harness 原生 preset row补齐 Skill provider/tool。
+- 生产 `$DSH_HOME` 中不存在用户级 `.agent-presets` 文件，session projection 明确记录 cwd 为当前仓库。顶部显示的 `harness-comfyui` 是旧会话 header 中固化的 preset 标识，不是当前生产目录仍存在的可编辑 preset 文档。
+- Skills API 使用 same-origin `POST /api/skill.list` 的 `client-request` envelope。Session projection 给出 `Modify code` 的 ID 为 `session-cce3ee32-5e4f-40fa-a50e-5fc034001a6c`，并确认 cwd 为当前仓库；可直接只读请求该会话和两个空白会话的实际 catalog。
+- 直接请求结果：未 attached 的两个旧 session 返回 `session-not-found`；当前 attached 的空白 session `session-b1778df5-2623-46a5-a0f7-a24f9af30714` 返回 6 个 Skill，其中项目三个 Skill 均存在且 `modelInvocable: true`。其余三个为用户级 Skill，符合 rc.2 默认根目录合并行为。
+- 第一次可逆 UI 验证在读取草稿阶段即停止，因为 Browser locator 不提供 `inputValue()`；此时没有执行 fill，用户 JSON 草稿未发生任何修改。下一步用元素属性/DOM 只读接口取得精确值后再验证。
+- 原生 `/` 菜单已在重启后的 attached 会话中实际打开，出现“技能”分组和项目三个 Skill：`anima-prompt-builder`、`character-portrait-prompt-designer`、`wai-sdxl-prompt-builder`。同时显示用户级 Skill，符合原生合并目录语义。验证用 `try/finally` 恢复草稿，`restoredExactly: true`，没有发送消息。
+- 最终 `pnpm run quality` 全部通过：117 个 unit/integration tests、17 个 contract/security tests、15 个 production tests、27 个 prototype tests；函数覆盖率 100%，完整和 production 依赖审计的 critical/high/moderate/low 均为 0。
+- 切换到新会话后，Harness 原生 details 列按会话状态关闭为 0px；直接点击其隐藏 tab 失败属于正确的不可交互状态。必须从中间“生成结果”按钮重新打开后再制作最终截图。
+- 新会话 hero 即使已有空白 sessionId，AppFrame 仍按 rc.2 的 unconnected 会话布局强制 details 为 0px；中间按钮已经幂等调用公开 `layout.openDetails()`，但原生 hero 不展示 details。该行为与 rc.2 AppFrame 约束一致，最终三列截图必须使用已有对话轮次的 connected Session。
+- 切回 connected `Modify code` 后，最终三列布局为 `280px 800px 360px`；右侧第一页显示 4 张媒体卡、三项默认筛选和 `第 1 / 2 页`。输入框视觉上已清空且没有候选 listbox；locator wrapper 的 textContent 仍返回 `/`，需只读检查其 DOM 结构，确认该字符是否仅为编辑器隐藏状态节点。
+- 输入框实际 textarea 的 value/defaultValue 确实仍为 `/`；`fill('')` 没有被 Harness 控制状态接受。已用原生键盘 `Meta+A` + `Backspace` 恢复，最终 value、defaultValue、textContent 和 outerHTML 均为空。
+- 最终 1440×1000 验收状态：AppFrame `280px 800px 360px`、抽屉 359px、第一页 4 张媒体卡、`第 1 / 2 页`、消息输入框 value 为空。生产 PID 51638 保持运行，最终 status、health 和 `git diff --check` 全部通过，浏览器页面已标记为 deliverable。
+- 用户反馈未看到三列后，已按浏览器恢复后的真实 1280×720 视口再次复查：AppFrame 为 `280px 640px 360px`，右侧抽屉 359px 且媒体网格可见。生产 PID 51638 和 health 仍通过；运行页已重新请求在 Codex 右侧聚焦。
+- 用户提供的 Chrome 截图推翻了上一条交付判断：截图选中的是“新会话”，页面只有左侧工作区列和中间新会话区域；右侧列确实不存在。此前 1280×720 证据来自 `Modify code` 已连接 Session，不能证明新会话状态满足要求。
+- 第一版浏览器检查没有进入用户截图中的“探索未至之境” hero，返回 `newSessionHero: false` 和 359px 抽屉，因此不是有效红色检查。当前应用内浏览器状态与用户 Chrome 截图状态不同，必须先精确进入空白新会话 hero 再建立失败信号。
+- 点击侧栏第一个原生“新建会话”按钮可稳定进入用户截图对应的 hero。该状态计算布局为 `280px 1000px 0px`，`.harness-comfyui-results-drawer` 宽度为 0，DOM 虽挂载 complementary 内容但不可见；用户的上下文 JSON 草稿仍保持原样。
+- 当前 `node_modules/@deepseek-ai` 是 pnpm 符号链接，普通 `rg` 没有跟随链接返回技能源码；下一步将读取链接目标或使用已安装包导出，不重复相同搜索。
+- 当前 source profile 模板的 `profiles/comfyui-workbench/cordis.patch.yml` 是空数组；根级 `cordis.patch.yml` 只插入 `harness-comfyui` 插件，没有为 Skill filesystem provider 指定当前源码仓库的 `.agents/skills`。
+- `scripts/profile/source.mjs` 只复制 profile 三个文件并把 `harness-comfyui` 链接到源码仓库；它没有把仓库 `.agents/skills` 复制或链接到运行目录。
+- lockfile 已包含 Harness `0.1.1-rc.2` 的 `dsh-skill-filesystem` 和 `dsh-client-ui-skill`，说明原生 Skill provider 与 `/` 菜单组件已经在 Harness 依赖闭包中；当前问题优先检查运行 profile 的 provider 配置和项目根解析，不新增依赖。
+- 旧原型右列 CSS 和脚本确认：顶部显示本会话运行总数；两个原生语义视图为“当前轮次结果”和“本会话结果”；当前轮次视图显示 queued/running/downloading/succeeded/failed/submission_unknown/cancelling/cancelled 状态卡片；本会话视图显示媒体种类筛选、媒体卡片和独立分页。
+- 右侧静态抽屉应保留上述两视图与可见筛选/分页状态，但本阶段不能提供取消任务、下载 Workflow、打开原文件等会让用户误认为已经接入真实后端的操作。
+- Source profile 组合 `@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app` 和当前插件；运行目录已经安装 `dsh-skill-filesystem`、`dsh-client-ui-skill` 与 `dsh-client-ui-input-trigger`，因此 Skill 菜单缺失不是依赖缺失。
+- `dsh-skill-filesystem` README 明确项目根是最近包含 `.git` 的祖先；当前运行目录位于仓库 `.local` 下，理论项目根仍应解析到当前仓库。需要继续检查生成的 `cordis.yml` 配置与三份 `SKILL.md` 是否被 provider 拒绝。
+- Harness 原生 AppFrame 已实现右侧列拖拽、让步链和自动关闭；details 关闭时宽度为零，显式打开使用合同默认宽度，切换 Session 时会关闭。插件只需注册 occupant 并调用公开 layout action。
+- 读取 `dsh-client-ui-layout/src/client/*` 失败，因为发布包没有保留该源码路径；后续改读 package exports、类型声明与 README，不重复相同路径。
+- Skill filesystem 发布包明确默认扫描 `<projectRoot>/.agents/skills`，每份现有 `SKILL.md` 的已读 frontmatter至少包含合法 kebab-case `name` 与非空 `description`；未发现 `user-invocable: false`。
+- `pnpm prod:logs` 没有输出 Skill 解析警告，当前日志只保留生产生命周期与 Web 地址；不能用缺少警告证明 Skill provider 已加载。
+- 生成 profile 目录安装了 Skill provider 和原生 Skill UI 包，但上一轮对 `cordis.yml` 的精确包名搜索没有得到可见匹配；需要直接读取生成 Cordis 树确认 provider 是否实际注册。
+- 生成 `cordis.yml` 只有说明和空数组是预期行为：profile bundles 与 patch 在运行时组合，不能据此判断 Skill provider 未注册。
+- 生产进程 cwd 已确认为当前 Git 仓库根目录 `/Volumes/4Tdisk/work/AI2/harness-comfyui`；默认项目根解析应能够到达 `.agents/skills`，因此不能直接把问题归因于 cwd。
+- Skill provider 发布实现确认 `list(options)` 只有在上层传入 `options.cwd` 时才加入项目 `.agents/skills` 根；需要检查原生 Skill API/UI 是否使用当前 Session workspace cwd 请求目录。
+## 2026-08-24 Phase 19 — 新会话页右侧结果抽屉
+
+- 已在 `http://127.0.0.1:4173/` 的“新会话”首页复现用户截图中的问题。
+- 点击中间列“生成结果”后，Harness AppFrame 的网格列仍为 `280px 1000px 0px`，`.harness-comfyui-results-drawer` 的实际宽度仍为 `0px`。
+- 相同检查连续执行两次均失败：`hero=true`、`drawerWidth=0`、`passed=false`。
+- 插件的 `details` 内容已经挂载到 DOM；当前问题是 Harness 在未建立会话的首页把 `details` 布局轨道压缩为零，而不是结果组件缺失。
+- 测试期间输入框中的上下文 JSON 未发生变化。
+- 本机已经安装 Context7 CLI：`/Users/fzfz/.nvm/versions/node/v24.14.0/bin/ctx7`，后续可直接查询技术文档，不需要安装依赖。
+- `CONTEXT.md` 与 ADR 0012 仍把 Harness 权威版本写为 `0.1.0-rc.8`，并记录旧的扩展位边界；当前实现和用户已明确将 `0.1.1-rc.2` 作为权威。Phase 19 不能依据这两处过期描述否定 rc.2 已公开的接口，必须以 rc.2 安装包和官方开发文档为准。
+- ADR 0012 明确禁止修改 Harness 核心源码、导入 `@deepseek-ai/*/src/*` 或替换上游 `ui-layout`。本次修复必须保留该边界。
+- Context7 已将官方仓库解析为高信誉文档库 `/deepseek-ai/deepseek-harness`；查询目标限定为 Client plugin slots、layout details、`openDetails` 和未建立会话页面。
+- 官方 `ui-layout` 注册信息给出根因：`details` 的 scope 是 `session`，而新会话中列 `conversation` 的 scope 是 `session-maybe`。未建立 Session 时，`details` 挂载内容可以存在，但 AppFrame 不会为它分配可见轨道。
+- 官方 `ui-layout` 同时公开根级列表插槽 `shell.overlay`。该插槽不依赖 Session，是当前最符合插件边界的新会话右侧抽屉候选。
+- 在按 pnpm glob 搜索安装包时未直接找到可读源码文本；需要先定位 rc.2 包的实际文件布局，再核对 `shell.overlay` 的导出合同与原生组件用法。
+- 根 `package.json` 与 pnpm lock 均确认 `@deepseek-ai/dsh-client-ui-layout`、`ui-slots`、`ui-primitives` 等直接依赖锁定为 `0.1.1-rc.2`；实际包目录采用 pnpm peer hash 名称。
+- 本机 rc.2 `ui-layout` README 明确说明：Hero 和其他未选择 Session 的状态始终派生出 `0` 的 details 渲染宽度，即使保留了 details 的首选宽度。这与浏览器失败检查完全一致，根因已确认。
+- rc.2 README 声明的 child slots 是 `sidebar`、`conversation`、`details` 和 `conversation.empty`，没有提到 Context7 当前 master 文档中的 `shell.overlay`。因此不能直接按 master 接口实现，必须继续检查 rc.2 发布包导出；若 rc.2 没有 `shell.overlay`，改用 rc.2 实际公开的 `conversation.empty`。
+- rc.2 类型声明和构建产物最终确认 `shell.overlay` 已存在；README 中的 `conversation.empty` 是过期文字。`shell.overlay` 的正式合同是 `kind: list`、`scope: root`，用于浮在整个 AppFrame 上方的插件自有界面，并且明确允许 additive registration。
+- AppFrame 的 overlay 容器是 `position:absolute; inset:0; z-index:20; pointer-events:none`，其直接子项恢复 `pointer-events:auto`。插件可以在该原生根级层内把结果抽屉定位到右侧，不需要改 Harness core，也不遮断抽屉之外的页面交互。
+- AppFrame 源码精确确认 `detailsSession === undefined ? 0 : panels.details`；新会话 Hero 点击任何 `openDetails()` 都不可能显示第三列。这是 Harness rc.2 的明确产品约束。
+- `shell.overlay` 的 root-scope 组件会自动获得全局标准属性 `useSessions`，可以读取 `SessionListState.current` 与 `byId[current].blank`，从而只在当前 Session 尚为空白时呈现 overlay 抽屉，避免已连接 Session 与原生 `details` 重复显示。
+- 当前 `WorkbenchController.openResults()` 只调用 layout，未发布“结果抽屉已打开”状态；overlay 没有可订阅的显示信号。修复需要给控制器增加独立的结果开关快照，并让 `toggle/openResults/closeResults` 同时维护该状态。
+- 当前 Workbench 的静态结果 UI 已集中在 `WorkbenchDetails`，可以抽出共享内容壳；Session details 和 Hero overlay 复用同一个内容组件，不复制交互或静态数据。
+- 已增加修复前回归测试，三类失败与预期一致：控制器缺少结果状态订阅、Client plugin 未注册 `shell.overlay`、结果模块未导出 Hero overlay 组件。目标测试共 16 项，其中 5 项失败、11 项保持通过。
+- 已实现 root overlay：控制器现在发布独立的结果开关状态；`toggle/openResults/closeResults` 同步该状态与 rc.2 layout service；Client plugin 以 additive registration 注册 `shell.overlay`；overlay 通过 `useSessions` 只在当前 Session 为空白或未选择时呈现。
+- 已连接的非空 Session 不呈现 overlay，继续由原生 `details` 列显示同一个共享结果内容组件，因此不会出现重复右栏。
+- 新增 CSS 仅定位 root overlay 中的抽屉到右侧，宽度为最多 `360px`，其余点击穿透行为继续由 Harness AppFrame 的 `shell.overlay` 容器负责。
+- TypeScript 检查通过。Harness 边界门禁随后发现结果组件直接导入了 `@deepseek-ai/dsh-client-ui-slots`；该包虽然是 Harness 包，但项目边界只允许现有 public Client specifier。rc.2 runtime 的公开 `/client` 导出包含 `SessionListState`，可以用它声明组件所需的最小 `useSessions` 只读属性并移除违规导入。
+- 结果 overlay 现仅从 `@deepseek-ai/dsh-client-runtime/client` 读取公开的 `SessionListState` 类型；类型检查、Harness 边界门禁和 16 项目标测试全部通过。
+- 浏览器刷新会重新创建 `WorkbenchController`，因此左侧“ComfyUI 工作台”初始为未激活状态，中间“生成结果”按钮尚不存在。浏览器验收必须先点击左侧工作台入口，再点击中间按钮；这与真实用户进入工作台的交互一致。
+- rc.2 的 session-scoped `details` 内容即使在 Hero 宽度为零时仍保留在可访问性树，因此 DOM snapshot 中会看到一个 `complementary`。几何检查确认修复前初始状态仍是 `overlay=null`、`entryPressed=false`、`dock=false`、`grid=280px 1000px 0px`；验收必须按 class 和实际矩形区分隐藏 details 与可见 overlay。
+- 在新会话 Hero 点击左侧“ComfyUI 工作台”后，root overlay 抽屉实际矩形为 `361×720px`，位于 viewport 右边缘 `left=919`、`right=1280`；抽屉标题和“关闭生成结果”按钮均可见，中间 Workbench dock 同时可见。
+- 新会话 Hero 的底层 AppFrame 仍保持 `details=0`，右侧界面来自 rc.2 公开的 `shell.overlay`，符合 Harness 对 blank Session 的限制；浏览器截图已经显示左侧导航、中间工作台和右侧生成结果抽屉三个可见区域。
+- 新会话页面同时保留一个宽度为零的原生 details occupant 和一个可见 overlay，因此全局按 aria-label 查询“关闭生成结果”会命中两个 DOM 按钮；实际交互和自动化必须在 `.harness-comfyui-results-overlay` 内定位可见抽屉按钮。
+- 新会话关闭/重开验收通过：关闭后 overlay 消失、Workbench dock 和“生成结果”按钮保留；点击中间“生成结果”后 overlay 恢复为 361px。
+- 关闭和重开过程中输入框 JSON 完全未改变，`prompt_text` 与 `tag` 仍保留。
+- 已连接 `Modify code` Session 验收通过：Hero 消失、root overlay 数量为 0、AppFrame 网格为 `280px 640px 360px`、原生 details 列为 360px、结果 drawer 内容宽度为 359px。
+- 已连接 Session 的 Workbench dock 和左侧激活状态均保留，说明 root overlay 条件分支没有破坏原生 Session details 行为。
+- 全量 `pnpm run quality` 通过：120 项 unit/integration、17 项 contract/security、15 项 production、27 项 prototype 全部通过；函数覆盖率为 100%。
+- 最终生产状态为 `running`，PID `77911`，`http://127.0.0.1:4173/`；process、source runtime、Harness Web、Client bundle、Run Repository 和 Saved Media 健康检查全部通过。
+- `git diff --check` 无输出并通过。
+
+## 2026-08-25 Phase 21 — 真实媒体、异步运行与 Host 架构
+
+- 用户确认持久化关联不变量为 `Session 1 → N Run`、`Run 1 → N Media`。同一 Session 中的多次 Skill/Tool 调用会创建不同 `run_id`；每次调用可以改变模板参数，因此每个 Run 必须保存自己的 Actual Workflow。
+- 媒体卡片通过 `media.run_id` 读取所属 Run 的 `actual-workflow.json`。系统不得按 Session 保存或复用一份 Workflow。
+- 仓库已接受的 ADR/PRD 已定义单 Harness Host 进程方案：持久 worker 跟随 Host plugin 前台启停，结构化查询使用项目 Typert Remote，媒体和 Actual Workflow 二进制响应使用 `ctx.webServer.register()` 同源 prefix route；不需要第二个 HTTP 进程。
+- `ctx.jobs` 只表示当前 Agent 进程内的等待/观察，不是持久状态来源。Run Repository 是状态、错误、Workflow 和 Saved Media 的唯一权威来源。
+- 已接受的恢复规则为：`created` 可重新准备，`prepared` 可用已保存文件提交，`submitting` 在重启后只能进入 `submission_unknown`，已有 `prompt_id` 的运行只观察原 Job，不得自动重提。
+- 已接受的文件根路径是 `workspaces/<workspace_id>/runs/<run_id>/`。媒体必须在当前仓库的 MediaStore 中按项目生成的 `media_id` 保存，SQLite 只保存元数据与相对路径，不保存大型二进制。
+- 旧 Phase 20 记录中“下载图标放在结果 header”的结论已被用户纠正并被当前实现取代：每张媒体卡片通过自身 `run_id` 提供 Workflow 下载，结果 header 不提供 Session 级下载。
+- 当前生产启动器已为 `runs.sqlite`、`shared/runs`、`shared/saved-media` 建立经过配置校验的绝对路径和健康检查，但 `src/host/plugin.ts` 目前只创建 Catalog Remote 并以空数组调用 `registerProjectTools()`；Run Repository、MediaStore、worker 与 Generation Tool 尚未实现。
+- 当前 `src/remote.ts` 只包含 Catalog 的 `search/baseModels` unary Remote。Generation Run 的 `get/list/listMedia/resolveToolResultLink` 需要在同一项目 Remote contribution 中增加，Client 不需要创建第二条 RPC 机制。
+- `docs/system/technology-stack.md` 仍标记 Harness `0.1.0-rc.8`，与 `package.json` 已锁定的 `0.1.1-rc.2` 不一致。Phase 21 实现前需同步该系统文档，但本次只记录差异。
+- Context7 把官方 DeepSeek Harness 文档解析为 `/deepseek-ai/deepseek-harness`。官方 `ctx.webServer.register()` 支持 `exact`/`prefix` route、重复路由拒绝与 disposer 清理；项目可以在 Harness 现有 WebServer 内注册媒体/Workflow 路由。
+- 官方 `defineTool()` 把参数、结构化输出、渲染和可取消 `execute(args, exec)` 收敛在同一 Tool 定义中。Generation Tool 可以在 `execute` 内持久接纳 Run 后立即返回 `{ run_id }`，不需要让 Tool promise 等到 ComfyUI 完成。
+- `@deepseek-ai/dsh-tools@0.1.1-rc.2` 的 `ToolRunContext` 公开 `callId`、`agent`、`signal`、`deferContext()` 和 `concludeTurn()`。`ToolOutputDefinition.presentationMeta()` 可把 `{ run_id }` 投影到持久 Tool Result meta，不需要 Client 从文本解析。
+- `@deepseek-ai/dsh-jobs@0.1.1-rc.2` 明确是进程内 registry，owner 或 service 销毁时会取消 live work，且官方 Known Limitations 明确持久/跨进程 backend 需要重新设计身份与恢复语义。因此 `ctx.jobs` 不得作为 ComfyUI Run 的持久权威；它最多代理当前 Agent 的可取消进程内等待，真实远程 Job 生命周期由项目 worker + Run Repository 维护。
+- `ctx.jobs.kill()` 的公开语义是先调用 producer cancellation 再进入 `stopping`。Host 关闭不得通过该路径取消远端 ComfyUI Job；worker 销毁时只停止本地观察，重启后通过持久 `prompt_id` 恢复。
+- 用户指定的 Harness 开发文档确认：插件通过 `apply(ctx)` 注册能力，依赖使用 `inject` 声明，手动资源通过 `ctx.effect()` 在插件卸载时清理。Run worker、Remote、Web route 和 Tool 可以共享同一 Host plugin 生命周期。
+- Harness `dsh-v0.1.1-rc.2` 标签的 WebServer 源码确认 `register()` 返回路由 disposer，并允许 handler 持有响应（包括 SSE）。本方案不需要 SSE；Client 依照现有 ADR 使用可见消费者驱动的 unary Remote 轮询，媒体和 Workflow 使用同源 HTTP 流。
+- ComfyUI 官方 self-hosted 协议使用 `POST /prompt` 提交并返回 `prompt_id`，使用 `/ws` 接收实时进度，使用 `/history/{prompt_id}` 读取完成记录与输出。当前项目已验证的数据源 runtime gateway 暴露 `/api/jobs/{prompt_id}`；项目 Comfy transport 必须封装这一变体，不得让 Run worker 和 UI 直接依赖某一条远端路径。
+- 生产配置的 Host Source CLI 为 `imagegen-comfyui-source-read.mjs` `1.0.0`，它只实现两个只读操作：按稳定 ID 读取 ComfyUI instance source，以及按稳定 ID 读取完整 TemplateBundle。它不实现提交、观察、取消或媒体下载。
+- 因此新增异步运行不得“用 Source CLI 当任务队列”。Source CLI 只在准备/恢复连接时提供实例与模板来源；当前仓库的 Comfy transport adapter 直接使用已解析且仅存于 Host 内存的实例连接执行远程请求。
+- 不同 Harness Tool `callId` 即使属于同一数字 turn，也必须创建不同 Run；相同 `callId` 的重放只能解析到原 Run。每个 Run 独立保存一次请求、来源快照、Actual Workflow 和 API Workflow。
+- 右列媒体卡片必须通过 `media_id → run_id` 下载所属 Run 的 Actual Workflow。Session 与数字 turn 只能作为筛选和分组条件，不能提供共享 Workflow。
+- 持久层采用 SQLite 元数据与文件系统产物组合：SQLite 保存 Run、远端输出和 Media 索引；Run 目录保存请求、来源快照与两份 Workflow；Saved Media 目录按随机 `media_id` 两级前缀分片，并且只在文件原子提交后把媒体标记为 ready。
+- 异步 coordinator 随 Harness Host plugin 启停。Tool 在 SQLite 持久接纳 Run 后返回 `run_id`；coordinator 处理准备、提交、观察、下载和终态转换；Host 退出只停止本地观察，不取消远端 ComfyUI Job；重启扫描非终态 Run。
+- 本机支持的 Node 运行时已经暴露 `node:sqlite`，但当前 Node 24.14.0 仍输出 ExperimentalWarning。实现阶段必须先决定是否接受该运行时状态；本阶段不新增 SQLite 依赖。
+- 推荐实现顺序是：先修正每张媒体绑定独立 Run/Workflow 的静态语义；再实现 Run Repository、ArtifactStore 与 MediaStore；然后用 fake Comfy transport 打通一条 Tool→worker→media→右列纵向切片；最后接入真实 Source CLI 与 ComfyUI HTTP adapter，并补齐多次 Tool 调用、重启、失败和多输出分支。
+## 2026-08-24 Phase 20 — Workflow 下载图标按钮
+
+- 原原型在运行卡片和 Session 媒体卡片中使用 `data-download-workflow` 提供“下载本次 Workflow JSON（可导入 ComfyUI）”。原型合同明确只下载 Actual Workflow，不提供 API Workflow。
+- PRD 04 与 PRD 10 规定下载文件名为 `comfyui-run-<run_id>-workflow.json`；真实功能阶段必须读取该运行已保存的 `actual-workflow.json`，不能重新构建。
+- 当前阶段仍是静态右列数据展示，因此按钮可以下载与静态运行卡片绑定的静态 Actual Workflow fixture；不得伪装为真实 Run Repository 数据。
+- Harness rc.2 primitives 已公开 `IconDownloadOutline16`，可以与原生 `Button` 的 `icon` 属性组合为窄标题栏图标按钮。
+- Context7 已将查询解析到高信誉官方文档库 `/deepseek-ai/deepseek-harness`。
+- Context7 官方资料确认 Client plugin 是浏览器端插件，可在用户点击处理器内执行浏览器动作；本次不需要 Host API 或新增插件机制。
+- 原原型把下载按钮放在成功运行卡片和媒体卡片内；当前用户明确要求右侧列补一个适配窄容器的图标入口，因此实现位置选在右侧抽屉 header 的现有关闭按钮旁。
+- 当前静态结果数据只有运行摘要和媒体摘要，没有 Actual Workflow fixture。Phase 20 需要新增一份结构化静态 Workflow JSON 单一来源，并让 header 图标下载该 fixture。
+- rc.2 `Button` 透传原生 button 属性，支持 `icon`、`size="sm"`、`aria-label` 和 `title`；rc.2 还公开原生 `Tooltip`，其 hover/focus label 与按钮自己的处理器会组合执行。
+- 原原型下载处理器使用确定性的浏览器流程：从静态 run artifact 读取 `uiWorkflow`，以两空格缩进加末尾换行序列化，创建 `application/json` Blob，生成 object URL，点击带 `download` 文件名的临时 `<a>`，随后移除 anchor 并回收 URL。
+- 原原型的静态 Workflow 数据位于 `prototype/generation-workbench/fixtures/workflow-fixtures.mjs`；当前插件不得在运行时导入原型目录，应该把本阶段所需的最小静态 UI Workflow 放入 `src/client/workbench/static-results.ts` 的唯一结构化数据来源。
+- Phase 20 将复用原原型的 UI Workflow fixture 内容，但把该 fixture 作为 Client plugin 自身的静态结构化数据保存；插件不会导入 prototype 目录，也不会包含 API Workflow。
+- 图标按钮放在结果 header 的关闭按钮左侧。它下载当前静态展示绑定的 Actual Workflow fixture；真实 Run 选择与 Run Repository 下载仍属于用户尚未授权的后续功能。
+- 已完成 red 阶段：下载测试因 `static-workflow.ts` 尚不存在而失败，结果 header 测试因“下载 Workflow”文案与图标按钮尚不存在而失败；其余 5 项结果抽屉测试继续通过。
+- 测试 mock 把 icon 与 children 直接组成数组时产生 React key warning；实现阶段会把 mock 改为 Fragment，避免把测试警告带入 green 结果。
+- 首次 green 检查中下载序列化与 Blob 生命周期测试通过；UI 测试仍有一项断言错误：React renderer 的 `findByProps` 命中了 icon-only Button 组件本身，其 `children` 按设计为 `undefined`，图标由 `icon` 属性提供。断言应验证没有文字 children 且存在下载 icon，而不是要求 children 存在。
+- 第二次目标检查暴露两处测试代码问题：对 `undefined` children 重复调用 `toContain`，以及 `vi.fn` 没有显式 Blob 参数导致 TypeScript 将 mock 调用元组推断为空。这两处只影响测试声明，不影响实现；分别删除重复断言并为 mock 增加 Blob 参数类型。
+- 修正测试声明后，8 项目标测试、TypeScript 检查和 Harness 边界门禁全部通过。
+- 浏览器验证中，受控 locator 不提供 `hover()`，页面 evaluate 环境也不允许构造 `MouseEvent`。这两个失败只影响 tooltip 自动触发方式；rc.2 Tooltip 对键盘 focus 立即显示，因此下一次使用 DOM `button.focus()` 验收，不再尝试 hover 或合成鼠标事件。
+- 直接在页面级 evaluate 中调用 `querySelector(...).focus()` 也不受当前隔离环境支持。检查 locator 公共方法后确认它提供 element-scoped `evaluate` 与键盘 `press`；第三次调整改用 `workflowButtonLocator.evaluate(element => element.focus())`，由 locator 解析真实按钮节点。
+- element-scoped evaluate 返回的对象同样不是带 `focus()` 的浏览器 HTMLElement；改用 locator `press('ArrowRight')` 后可以确认按钮存在、`aria-label="下载 Workflow"`、无文字 children、右栏宽 361px，但 Tooltip 没有出现。
+- Tooltip 未出现可能是 rc.2 `Tooltip` 对原生 `Button` 的 ref/事件组合不兼容，或浏览器控制的 focus 事件未到达 Tooltip。下一步核对 rc.2 构建产物和官方内部用法；如果原生组件组合不支持，使用 Button 的原生 `title="下载 Workflow"` 作为浏览器 tooltip，并保留 `aria-label`。
+- rc.2 构建产物确认不兼容根因：`Tooltip` 通过 `cloneElement` 给 child 注入 ref 并依赖该 ref 计算位置；rc.2 `Button` 是普通函数组件，没有 `forwardRef`。官方 sidebar 的 Tooltip 用法也包裹直接的原生 `<button>`，没有包裹 primitives `Button`。
+- Phase 20 必须同时遵守“使用 Harness 原生 Button”和可用提示，因此移除不工作的 Tooltip 组合，改用 `Button` 透传的原生 `title="下载 Workflow"`。该属性会落到真实 `<button>`，提供浏览器系统 tooltip；`aria-label` 继续提供可访问名称。
+- 改用原生 title 后，8 项目标测试、TypeScript 检查和 Harness 边界门禁再次全部通过。
+- 生产浏览器 DOM 验收通过：新会话 Hero 的右栏仍为 361px；下载按钮实际尺寸为 36×28px，包含下载 SVG，文字内容为空，`aria-label` 与 `title` 都是“下载 Workflow”。
+- 浏览器控制层的 `waitForEvent('download')` 在 3 秒内没有捕获程序化 Blob anchor 下载。该接口失败不证明页面下载失败；下一步只读检查精确目标文件路径，并用页面内确定性记录核对 anchor 的 download 属性与 Blob JSON。
+- 实际下载已成功写入 `/Users/fzfz/Downloads/comfyui-run-run_01J8QUEUE42-workflow.json`，文件大小 5803 bytes。
+- 解析下载文件得到 `last_node_id=7`、`last_link_id=9`、7 个 nodes、9 个 links、`run_id=run_01J8QUEUE42`，并确认内容不包含 API Workflow 的 `class_type`。
+- 已连接 `Modify code` Session 验收通过：root overlay 不显示，原生 details 列宽 360px，header 中下载按钮保持图标-only、`aria-label/title="下载 Workflow"`，下载 SVG 可见。
+- 浏览器截图确认下载图标与关闭图标并排位于右侧 header，标题与统计文案没有被挤压或换行。
+- 全量 `pnpm run quality` 通过：123 项 unit/integration、17 项 contract/security、15 项 production、27 项 prototype 全部通过；函数覆盖率 100%。
+- 最终生产状态为 `running`，PID 2812，`http://127.0.0.1:4173/`；process、source runtime、Harness Web、Client bundle、Run Repository 和 Saved Media 健康检查全部通过。
+- `git diff --check` 无输出并通过。

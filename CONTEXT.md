@@ -8,11 +8,9 @@
 
 **Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile。
 
-**Client Workbench**：`src/client/` 提供的三列 Web 工作台。Client Workbench 通过 Harness slots 组合 sidebar、conversation、details 和 overlay，并投影 Harness 主题。
+**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action` 与 `conversation.input.dock` 扩展位呈现项目入口和上下文控件。Client Module 不替换 Harness 的 root、sidebar、conversation、details 或 composer，也不自动创建或打开项目 Session。
 
-**Product Agent**：`src/agent/plugin.ts` 与 `agent-presets/harness-comfyui/` 定义的项目 Agent。当前 Product Agent 使用 `opencode-go/deepseek-v4-flash`，项目 Tool 集合当前为空。
-
-**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Product Agent 通过该入口注册当前项目 Tool 集合。
+**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 当前通过该入口注册空的项目 Tool 集合。
 
 ## 运行
 

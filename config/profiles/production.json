@@ -10,6 +10,7 @@
     "defaultInstanceId": "production"
   },
   "source": {
+    "catalogPort": 0,
     "catalogCliPath": "",
     "sourceCliPath": ""
   },

@@ -22,7 +22,6 @@ describe('source workspace engineering contract', () => {
     expect(manifest.exports).toEqual({
       '.': { types: './src/index.ts', default: './src/index.ts' },
       './client': { types: './src/client/index.tsx', default: './.local/source-client/client.js' },
-      './agent': { types: './src/agent/plugin.ts', default: './src/agent/plugin.ts' },
       './package.json': './package.json',
     })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
@@ -83,10 +82,7 @@ describe('source workspace engineering contract', () => {
 
   it('keeps the public DSH bundle and source profile composition explicit', () => {
     const manifest = readJson('package.json')
-    expect(manifest.exports['./agent']).toEqual({
-      types: './src/agent/plugin.ts',
-      default: './src/agent/plugin.ts',
-    })
+    expect(manifest.exports).not.toHaveProperty('./agent')
     expect(manifest.dsh.bundle).toEqual({ patch: './cordis.patch.yml' })
     expect(manifest.dsh.client.platform).toBe('web')
     expect(readJson('profiles/comfyui-workbench/package.json').dsh.profile.bundles).toEqual([

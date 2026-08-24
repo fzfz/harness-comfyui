@@ -96,7 +96,7 @@ export function validateSourceRuntime(input) {
   const comfyui = requireRecord(runtime.comfyui, 'runtime.comfyui')
   assertExactKeys(comfyui, ['defaultInstanceId'], 'runtime.comfyui')
   const source = requireRecord(runtime.source, 'runtime.source')
-  assertExactKeys(source, ['catalogCliPath', 'sourceCliPath', 'contractId', 'sourceReleaseVersion'], 'runtime.source')
+  assertExactKeys(source, ['catalogPort', 'catalogCliPath', 'sourceCliPath', 'contractId', 'sourceReleaseVersion'], 'runtime.source')
   if (source.contractId !== SOURCE_CONTRACT_ID) {
     throw new TypeError(`runtime.source.contractId must be ${SOURCE_CONTRACT_ID}`)
   }
@@ -118,6 +118,7 @@ export function validateSourceRuntime(input) {
     paths: normalizedPaths,
     comfyui: { defaultInstanceId: requireString(comfyui.defaultInstanceId, 'runtime.comfyui.defaultInstanceId') },
     source: {
+      catalogPort: validatePort(source.catalogPort),
       catalogCliPath: requireAbsolutePath(source.catalogCliPath, 'runtime.source.catalogCliPath'),
       sourceCliPath: requireAbsolutePath(source.sourceCliPath, 'runtime.source.sourceCliPath'),
       contractId: SOURCE_CONTRACT_ID,

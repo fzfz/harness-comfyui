@@ -22,6 +22,7 @@ export interface ConfigurationProfileValues {
     defaultInstanceId: string
   }
   source: {
+    catalogPort: number
     catalogCliPath: string
     sourceCliPath: string
     contractId: string
@@ -59,6 +60,7 @@ const ConfigurationProfileSchema = Schema.object({
     defaultInstanceId: nonEmptyString,
   }).required(),
   source: Schema.object({
+    catalogPort: Schema.natural().min(1).max(65535).required(),
     catalogCliPath: nonEmptyString,
     sourceCliPath: nonEmptyString,
     contractId: Schema.const('imagegen-source-contract').required(),

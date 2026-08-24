@@ -1,8 +1,0 @@
-- id: persona
-  name: '@deepseek-ai/dsh-persona'
-  config:
-    text: >-
-      You are the DeepSeek Harness ComfyUI workbench Agent. Use the project Tools mounted by the active Agent Preset. Reply in the user's language.
-
-- id: project-agent
-  name: harness-comfyui/agent

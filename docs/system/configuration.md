@@ -26,6 +26,7 @@
 | `runtimeRelativeRoot` | 仓库内的相对运行目录；当前为 `.local/production` |
 | `configurationProfile` | 固定为 `production` |
 | `source.catalogCliRelativePath` | 相对仓库根目录的 Catalog CLI 文件 |
+| `source.catalogPort` | Catalog CLI连接的本机回环服务端口 |
 | `source.sourceCliRelativePath` | 相对仓库根目录的 Source CLI 文件 |
 | `logs.source` | `stdout`、`stderr`、`operations` 或 `all` |
 | `logs.lines` | 每个日志来源读取的末尾行数，必须为正整数 |
@@ -41,6 +42,7 @@
 | `paths.logDirectory` | Host 日志目录 |
 | `comfyui.defaultInstanceId` | 默认 ComfyUI 实例 ID |
 | `source.catalogCliPath` | Catalog CLI 绝对路径，由启动器生成 |
+| `source.catalogPort` | Catalog CLI连接的本机回环服务端口 |
 | `source.sourceCliPath` | Source CLI 绝对路径，由启动器生成 |
 | `source.contractId` | 固定为 `imagegen-source-contract` |
 | `source.sourceReleaseVersion` | 固定为 `0.82.2` |
@@ -51,7 +53,7 @@
 | `client.runRefreshIntervalMs` | Client 查询刷新间隔，毫秒 |
 | `process.shutdownTimeoutMs` | 停止进程与释放端口的超时，毫秒 |
 
-启动器通过环境映射写入全部运行值。运行目录和两个 Source CLI 路径始终由 `source-production.json` 生成，调用者设置的同名环境变量不会改变它们。调用者可以覆盖以下四个业务值：
+启动器通过环境映射写入全部运行值。运行目录、Catalog端口和两个 Source CLI 路径始终由 `source-production.json` 生成，调用者设置的同名环境变量不会改变它们。调用者可以覆盖以下四个业务值：
 
 - `HARNESS_COMFYUI_DEFAULT_INSTANCE_ID`
 - `HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS`
@@ -59,10 +61,6 @@
 - `HARNESS_COMFYUI_SERVER_PORT`
 
 `config/environment-overrides.json` 是环境变量名称及其目标字段的唯一结构化来源。加载当前配置时，任何未在该文件中声明的 `HARNESS_COMFYUI_*` 环境变量都会中止配置加载。
-
-## Product Agent
-
-`config/product-agent.json` 定义 Agent Preset 路径、源码 export、Session 列表收敛超时和模型。模型固定为 `opencode-go/deepseek-v4-flash`，API key 从 `OPENCODE_GO_API_KEY` 读取。
 
 ## 配置变更
 

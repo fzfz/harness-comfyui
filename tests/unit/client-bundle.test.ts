@@ -70,12 +70,13 @@ afterEach(async () => {
 })
 
 describe('Client module materialization seam', () => {
-  it('materializes the Client directly from source without a generated Remote entry', async () => {
+  it('materializes the Client from source with its explicit public Remote contribution', async () => {
     const source = await readFile(join(repositoryRoot, 'src/client/index.tsx'), 'utf8')
     const moduleMaterializer = await readFile(join(repositoryRoot, 'scripts/production/client-module.mjs'), 'utf8')
 
     expect(source).not.toContain('harness-comfyui/remote')
-    expect(source).not.toContain('ctx.remote.$mount')
+    expect(source).toContain("import CATALOG_REMOTE from '../remote.ts'")
+    expect(source).toContain('ctx.remote.$mount(CATALOG_REMOTE)')
     expect(source).not.toContain('applyWithRemote')
     expect(moduleMaterializer).not.toContain('lib/typert.remote-client.js')
     expect(moduleMaterializer).not.toContain('applyWithRemote')

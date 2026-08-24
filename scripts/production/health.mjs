@@ -11,15 +11,12 @@ import {
   readProcessIdentity,
   readProcessState,
   sameProcessIdentity,
-  validateRunningAgentPresetRoster,
   writeAtomicJson,
 } from './process.mjs';
 
 const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'process',
   'sourceRuntime',
-  'agentPresetRuntime',
-  'agentPresetRoster',
   'harnessWeb',
   'clientBundle',
   'runRepository',
@@ -28,18 +25,6 @@ const PRODUCT_HEALTH_CHECKS = Object.freeze([
 
 function failedCheck(error) {
   return { status: 'failed', error };
-}
-
-function agentPresetRuntimeEvidence(productAgent, requiredEntries) {
-  const sourceRoot = `${productAgent.agentPresetSourceRelativeRoot}/${productAgent.agentPresetId}`;
-  const sourcePrefix = `${sourceRoot}/`;
-  return {
-    status: 'passed',
-    agentPresetRelativeRoot: `${productAgent.agentPresetRuntimeRelativeRoot}/${productAgent.agentPresetId}`,
-    requiredFiles: requiredEntries
-      .filter(entry => entry.startsWith(sourcePrefix))
-      .map(entry => entry.slice(sourcePrefix.length)),
-  };
 }
 
 function initialProductHealthEvidence() {
@@ -66,7 +51,7 @@ function healthBaseUrl(runtime) {
 }
 
 function parseHealthBootGraph(html) {
-  const match = html.match(/window\.__DSH_BOOT__\s*=\s*(\{[\s\S]*?\})\s*<\/script>/u);
+  const match = html.match(/globalThis\["__DSH_BOOT__"\]\s*=\s*(\{[\s\S]*?\})\s*<\/script>/u);
   if (!match?.[1]) throw new Error('boot graph missing');
   let graph;
   try {
@@ -144,16 +129,13 @@ async function inspectHarnessWeb(runtime) {
   const graph = parseHealthBootGraph(await response.text());
   const requiredIds = [
     '@deepseek-ai/dsh-client-ui-conversation',
+    '@deepseek-ai/dsh-client-ui-layout',
     'harness-comfyui',
   ];
   for (const id of requiredIds) {
     if (!graph.entries.some(entry => entry.id === id)) {
       throw new Error(`Harness Web boot graph missing required bundle "${id}"`);
     }
-  }
-  const disabledId = '@deepseek-ai/dsh-client-ui-layout';
-  if (graph.entries.some(entry => entry.id === disabledId)) {
-    throw new Error(`Harness Web boot graph contains disabled bundle "${disabledId}"`);
   }
   return { baseUrl, graph };
 }
@@ -213,19 +195,13 @@ export async function runSourceHealth(input, runtimeTarget, runtimeResolutionErr
 
   let active = runtimeTarget;
   let packageManifest;
-  let productAgent;
-  let agentPresetRequiredEntries;
   try {
     if (active === undefined) throw runtimeResolutionError ?? new Error('runtime target is unavailable');
     packageManifest = await readProductPackageManifest(active);
     if (packageManifest.version !== active.activeVersion) throw new Error('source runtime version mismatch');
-    productAgent = active.productAgent;
-    agentPresetRequiredEntries = active.requiredEntries;
     evidence.sourceRuntime = { status: 'passed', version: packageManifest.version };
-    evidence.agentPresetRuntime = agentPresetRuntimeEvidence(productAgent, agentPresetRequiredEntries);
   } catch (error) {
     evidence.sourceRuntime = failedCheck('source-runtime-invalid');
-    evidence.agentPresetRuntime = failedCheck(error instanceof Error ? error.message : String(error));
   }
 
   if (active !== undefined) {
@@ -245,19 +221,6 @@ export async function runSourceHealth(input, runtimeTarget, runtimeResolutionErr
     }
   } else {
     evidence.process = failedCheck('source-runtime-required');
-  }
-
-  if (evidence.process.status !== 'passed') {
-    evidence.agentPresetRoster = failedCheck('process readiness required');
-  } else if (active !== undefined && productAgent !== undefined) {
-    try {
-      const roster = await validateRunningAgentPresetRoster(runtime, productAgent);
-      evidence.agentPresetRoster = { status: 'passed', ...roster };
-    } catch (error) {
-      evidence.agentPresetRoster = failedCheck(error instanceof Error ? error.message : String(error));
-    }
-  } else {
-    evidence.agentPresetRoster = failedCheck('source-runtime-required');
   }
 
   let web;

@@ -7,7 +7,7 @@
 计划编写者把已经冻结的Skill Invocation→Generation Tool Call/Result→`ToolResultNode.meta.run_id`→唯一`GenerationRunProjectionStore`链路同步到父Issue和GitHub Issues #2、#5、#7、#8、#13、#14。同步后，独立语义审核者必须确认中列异步摘要与右列详细卡片读取同一Run快照、两处不重复轮询、缺少同轮`comfyui-generate` Skill Invocation时Host拒绝创建Run，并确认Issue执行者不承担接口调研或设计决定。
 
 ## Current Phase
-Phase 14 in progress
+Phase 21 completed
 
 ## Phases
 
@@ -15,6 +15,106 @@ Phase 14 in progress
 - [x] 计划编写者检查 DeepSeek Harness 的 Web 页面、插件、会话事件与 Skill 目录。
 - [x] 计划编写者检查 NoobAI-XL-FZ-PROD-ENV 的查询 CLI、会话 Skill、管理 Skill、ComfyUI 实例与工作流模板数据。
 - [x] 计划编写者把已确认的文件路径、结构化数据字段和缺口写入 findings.md。
+- **Status:** completed
+
+## Phase 21：设计真实媒体存储与异步 ComfyUI 运行链路
+
+### 必须要实现的目标
+
+- 计划编写者必须以 Harness `0.1.1-rc.2` 官方文档、已安装包和当前仓库 ADR/PRD 为证据，确定 Host WebServer、Typert Remote、Jobs、Tool 和 Skill 的责任。
+- 计划编写者必须定义 `Session 1 → N Run`、`Run 1 → N Media`、`Run 1 → 1 Actual Workflow` 的持久化关联，禁止按 Session 共享 Workflow。
+- 计划编写者必须给出 SQLite 表职责、媒体文件分目录结构、异步运行状态机、崩溃恢复策略、Client 投影与同源下载路由。
+- 计划编写者必须给出可执行的实现顺序，优先交付一条单 Run 端到端纵向切片，然后扩展 Session 媒体库与任务列表。
+
+### 验收清单
+
+- 方案中的每个 Harness 能力都对应 `0.1.1-rc.2` 的公开导出或已安装包行为。
+- 任意媒体只能通过自身 `run_id` 下载所属 Run 已持久化的 Actual Workflow。
+- Skill 只指导 Agent 调用 Generation Tool；Tool 只在 Run Repository 接纳成功后返回 `run_id`；Host worker 负责后续观察、保存与恢复。
+- 方案明确是否需要独立 HTTP 进程，并解释进程启停与非终态 Run 恢复。
+
+### 非本次目标
+
+- 本阶段不修改业务源码、数据库 Schema、生产配置或 Harness 进程。
+- 本阶段不实际提交 ComfyUI 任务，不写入真实媒体。
+- 本阶段不修改 Harness 核心、`node_modules/@deepseek-ai/*` 或数据源仓库。
+
+### 已获得的授权
+
+- 用户已授权计划编写者继续媒体存储、异步 ComfyUI 任务、Tool/Skill 与 Host 启动方案的调研与实现顺序设计。
+- 用户已指定 Harness `0.1.1-rc.2` 为可实现性版本权威。
+- 用户已明确同一 Session 可以有多次 Tool 调用和多份不同 Actual Workflow。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 首次记录 Phase 21 时使用了不存在的 `findings.md` 尾行作为补丁锚点 | 1 | 补丁未应用；计划编写者重新读取三个计划文件的真实尾部后使用精确锚点。 |
+
+- **Status:** completed
+
+## Phase 20：补充右侧结果抽屉的 Workflow 下载入口
+
+### 必须要实现的目标
+
+- 右侧“生成结果”抽屉必须提供原原型已有的 Workflow 下载入口。
+- Workflow 下载入口必须使用 Harness `0.1.1-rc.2` 原生图标按钮，并在窄标题栏中保持可用。
+- 下载动作必须生成浏览器可下载的 Workflow JSON 文件，不得修改输入框上下文 JSON 或结果抽屉状态。
+- 新会话 root overlay 与已连接 Session 原生 details 必须共享同一个下载入口和下载实现。
+
+### 验收清单
+
+- 原原型中的 Workflow 下载位置和静态 Workflow 数据来源已经核对。
+- 图标按钮具有“下载 Workflow”可访问名称和原生 tooltip。
+- 点击图标按钮会产生一个 `.json` 下载，文件内容是结构化 Workflow JSON。
+- 新会话与已连接 Session 的右侧结果抽屉均显示图标按钮。
+- 目标测试、`pnpm run quality`、生产健康检查和浏览器实际下载验收全部通过。
+
+### 非本次目标
+
+- 本阶段不接入真实 ComfyUI Run、远端 Workflow 查询接口或按运行记录切换 Workflow。
+- 本阶段不增加文字按钮、不修改右侧结果卡片布局、不改变中间输入框上下文 JSON。
+- 本阶段不修改 Harness 核心源码或 rc.2 安装包。
+
+### 已获得的授权
+
+- 用户已要求补充原原型中的 Workflow 下载按钮，并允许使用图标以适配右侧容器宽度。
+- 用户此前已授权修改、重启并验证当前 Harness 插件和生产实例。
+
+- **Status:** completed
+
+## Phase 19：让新会话页面实际显示右侧结果抽屉
+
+### 当前进度
+
+- 用户截图证明 Chrome 中当前选中的“新会话”页面只有左侧工作区列和中间新会话区域，右侧结果抽屉没有显示。
+- 计划执行者正在建立新会话页面的确定性失败检查，并核对 Harness `0.1.1-rc.2` 对 unconnected 页面开放的原生布局插槽。
+
+### 必须要实现的目标
+
+- “新会话”页面点击中间“生成结果”按钮后必须显示右侧结果抽屉。
+- 右侧结果抽屉必须继续使用 Harness `0.1.1-rc.2` 公开插件机制和原生 UI 组件。
+- 已连接 Session 的三列布局、静态任务卡片、媒体筛选和分页必须保持可用。
+- 计划执行者必须用用户截图对应的新会话状态和已连接 Session 状态分别完成浏览器验收。
+
+### 验收清单
+
+- 自动化失败检查能够在修复前识别“新会话点击生成结果后 details 宽度仍为 0”的具体症状。
+- 新会话页面点击“生成结果”后能够看到右侧“生成结果”标题、关闭按钮、两个结果 tab 和静态内容。
+- 点击“关闭生成结果”后右侧抽屉消失，再次点击中间“生成结果”后右侧抽屉重新出现。
+- `pnpm run quality`、`git diff --check`、生产健康检查和 Chrome 实际页面验收全部通过。
+
+### 非本次目标
+
+- 本阶段不接入真实媒体结果、ComfyUI 异步任务 API、任务取消或媒体下载。
+- 本阶段不修改 Harness 核心源码或 `node_modules/@deepseek-ai/*`。
+- 本阶段不要求新会话页面在用户未点击“生成结果”时默认展开右侧抽屉。
+
+### 已获得的授权
+
+- 用户已要求修复当前截图中的新会话页面，使右侧列实际可见。
+- 用户此前已授权修改并重启当前仓库的 Harness 插件和生产实例。
+
 - **Status:** completed
 
 ### Phase 2: 定义原型页面与模块接口
@@ -126,6 +226,71 @@ Phase 14 in progress
 - [x] 回读并核对 GitHub Issues #1–#14 的可执行正文；只发布 v0.82.2 envelope 的消费规范，不修改源数据仓库。
 - **Status:** completed
 
+### Phase 15: 将工作台原型直接实现为 Harness rc.2 插件并运行验证
+
+#### 必须要实现的目标
+- [x] 计划执行者必须读取用户指定的 DeepSeek Harness `develop/basic/` 官方文档、`dsh-v0.1.1-rc.2` 的 package exports 与已提交 Harness 源码，再为每个新增或保留的原型 UI 元素记录可实现的公开接口证据。
+- [x] 计划执行者必须读取 GitHub Issues #3 和 #4 的正文、评论、标签与失败结论，并删除原型中依赖失败设计的界面和交互。
+- [x] 计划执行者必须先调研并记录 `0.1.1-rc.2` 精确依赖版本的发布元数据、peerDependency、lifecycle script与安全 advisory，再把当前项目的 DeepSeek Harness 依赖闭包升级到精确 rc.2版本。
+- [x] 计划执行者必须在真实 Client plugin中向 `sidebar.footer.action`增加“ComfyUI 工作台”原生入口；用户点击入口后，插件必须切换非持久工作台状态，并在当前原生Session的中列显示工作台上下文扩展。
+- [x] 计划执行者必须保留原生 AppFrame、SidebarRoot、ConversationRoot、Chat view与 InputBar；项目不得注册 root、top-level sidebar、top-level conversation、`conversation.view#chat`或`conversation.composer.bar`替代项。
+- [x] 计划执行者必须向 `conversation.input.dock`注册上下文扩展；中列输入区上方必须同时显示“插入上下文”按钮和从原生 InputState读取的已选上下文展示。
+- [x] 计划执行者必须覆盖插件成功、拒绝、清理和错误分支测试；随后使用 `pnpm prod:start/status/health/logs`启动真实Harness，并在 `1440×1000`浏览器页面验证入口、Session打开、原生中列和上下文扩展。
+
+#### 验收清单
+- [x] 每个原型可见界面元素都能映射到官方文档、`dsh-v0.1.1-rc.2` 的 public export、公开 slot/service 或 Harness 源码中已经存在的原生组件。
+- [x] 左列“ComfyUI 工作台”入口能够进入和退出非持久工作台状态；左列没有替换原生 Session浏览区或 Settings，也没有创建第二套Session导航。
+- [x] 中列完全由原生会话 header、Chat view和 InputBar渲染；输入区上方同时显示“插入上下文”按钮与一个或多个已选上下文标签，原生 Skill、图片、Model、Permission与发送路径保持可用。
+- [x] Issue #3 与 #4 中已证明无法实现的设计没有出现在修改后的原型中。
+- [x] `pnpm test:unit`、`pnpm test:integration`、`pnpm test:contract`、`pnpm prod:test`、`pnpm quality`与 `git diff --check`通过；真实 `prod:health` 与浏览器验收通过后进程被停止。
+
+#### 非本次目标
+- 本次任务不修改 DeepSeek Harness 核心源码、`node_modules/@deepseek-ai/*` 或外部源码目录。
+- 本次任务不实现后端 ComfyUI调用，不修改 GitHub Issue正文或标签，也不恢复静态原型的三列 1:1复刻要求。
+- 本次任务不重做 Harness 原生 Session、Skill 菜单、Agent 消息或 Tool trace 机制。
+
+#### 已获得的授权
+- 用户已经授权计划执行者修改当前仓库中的现有 ComfyUI 工作台原型及其必要测试和本地说明。
+- 用户已经授权计划执行者只读访问官方开发文档、GitHub Issues #3/#4、当前项目依赖与本机 Harness 源码，用于证明原型可实现性。
+- 用户已经明确指定 DeepSeek Harness `0.1.1-rc.2` 作为本次原型可实现性基线。
+- 用户已经授权计划执行者把原型直接实现为当前仓库 Harness plugin，并启动真实 Harness完成可行性验证；该授权包含完成上述目标所必需的精确 rc.2依赖升级。
+
+- **Status:** completed
+
+### Phase 16: 接入数据源CLI并完成原生上下文选择器
+
+#### 必须要实现的目标
+- [x] 计划执行者必须读取当前配置指向的数据源CLI文件、数据源仓库发布合同与当前Host插件边界，确定搜索请求、资源类型、分页参数、成功响应和错误响应的唯一结构化合同。
+- [x] Host插件必须通过已配置的`imagegen-semantic-query` CLI读取真实候选数据；Client不得直接运行CLI，也不得读取数据源仓库文件或数据库。
+- [x] 当前项目必须直接声明 Harness `@deepseek-ai/dsh-typert-protocol@0.1.1-rc.2`，并通过其公开 Remote Service、Remote descriptor和`ctx.remote.$mount()`完成Host到Client调用；依赖更新不得执行生命周期脚本。
+- [x] Client插件必须在原生Modal中实现资源类型左列、搜索输入、候选列表、选择状态和插入操作，并通过原生`SessionInput.setDraft()`把选中记录的结构化JSON写入当前InputBar。
+- [x] 产品界面必须只显示产品名称、数据和必要操作；界面不得显示实现机制、开发说明或交互解释。
+- [x] 测试必须覆盖CLI成功、空结果、非零退出、无效响应、搜索更新、资源类型切换、选择、插入、关闭和插件清理分支。
+- [x] 计划执行者必须重启真实Harness，并在`1440×1000`页面用数据源CLI返回的真实记录验收搜索、左列切换、选择、插入与原生InputBar共存。
+
+#### 验收清单
+- [x] 弹窗左列显示数据源CLI支持的资源类型；搜索只查询当前资源类型；候选列表来自真实CLI响应。
+- [x] 用户选择候选记录后，“插入”把该记录的结构化JSON写入Harness原生草稿；Dock显示可移除标签，用户移除标签时同步删除对应JSON且保留普通正文。
+- [x] CLI错误使用唯一错误码映射为简短产品错误文案；CLI错误不会写入输入框，也不会保留错误选择状态。
+- [x] 插件不注册`root`、top-level `sidebar`、top-level `conversation`、`conversation.view#chat`或`conversation.composer.bar`。
+- [x] `pnpm quality`、`git diff --check`、真实`prod:status`、真实`prod:health`与浏览器验收全部通过。
+
+#### 非本次目标
+- 本次任务不实现ComfyUI生成、任务管理、媒体库、数据源编辑或数据库写入。
+- [x] 计划执行者必须按已确认原型恢复上下文弹窗的信息架构：顶部底模下拉框、左侧资源类型列表、右侧带封面与标题的候选卡片、搜索、分页和多项选择。
+- [x] 计划执行者必须通过真实CLI读取底模和候选资源；底模只作为支持该筛选参数的资源查询条件，不插入消息上下文。
+- [x] 计划执行者必须在真实Harness中验证底模切换、资源类型切换、搜索、分页、多项选择、取消和批量插入。
+- 本次任务不修改数据源仓库、Harness核心源码或`node_modules`。
+- 本次任务不新增Harness之外的第三方依赖，不恢复失败Issue #3/#4的整页替换设计。
+
+#### 已获得的授权
+- 用户已经授权计划执行者修改当前仓库的Host插件、Client插件、测试与必要结构化合同。
+- 用户已经授权当前仓库运行配置中声明的数据源CLI作为只读数据源。
+- 用户已经授权计划执行者重启并保持真实Harness进程，用于完成页面验收。
+- 用户已经授权计划执行者按锁定的 Harness `0.1.1-rc.2` 机制实现插件；计划执行者据此直接声明同版本 `@deepseek-ai/dsh-typert-protocol`，该包来自已安装的官方 Harness 发布、使用 MIT 许可证、没有安装脚本，且当前 lockfile 已包含该精确版本。
+
+- **Status:** completed
+
 ## Key Questions
 1. DeepSeek Harness 当前通过哪个 Web 插件接口向会话页面增加三列式工作台？
 2. DeepSeek Harness 当前如何向浏览器发送用户消息、Agent 增量文本、Tool 调用和 Tool 结果？
@@ -171,3 +336,75 @@ Phase 14 in progress
 | Error | Attempt | Resolution |
 |-------|---------|------------|
 | 当前目标目录不是 Git 仓库 | 1 | 本轮只创建调研文件；用户确认方案后再确定仓库初始化与原型分支策略。 |
+| 官方文档页面通过 Web 检索没有返回可读正文 | 1 | 不重复相同调用；后续用只读 HTTP 获取官方页面，并与当前项目锁定源码交叉核对。 |
+| rc.2源码搜索中的未引用 `packages/client/ui-*` 被 zsh 解释为当前仓库glob | 1 | 后续只使用明确目录或引用后的 Git pathspec；该失败没有修改文件，其他同批只读命令正常完成。 |
+| lockfile-only生成后 pnpm把未授权的占位键写入 `allowBuilds` | 1 | 计划执行者删除 `@deepseek-ai/dsh-subprocess-local: set this to true or false`占位键，保留已审计的精确 `@0.1.1-rc.2`许可，再重新运行三道preinstall门禁。 |
+| 首次Client类型检查把Cordis Host的`SessionStore`声明解析到`ctx.sessions` | 1 | Client插件在边界处把`ctx.sessions`显式收窄为公开`ISessions`，运行时对象不变，之后`pnpm typecheck`通过。 |
+| 首次测试补丁同时删除并新增`client-plugin.test.ts`，补丁工具拒绝同路径重复操作 | 1 | 改为原位更新测试文件；拒绝发生在应用前，没有部分写入。 |
+| 首次定向测试直接加载原生primitives的CSS，且测试替身把Button图标与文字组成数组 | 1 | Client注册测试用无渲染primitives替身隔离CSS；surface测试的Button替身只投影文字，11项定向测试随后通过。 |
+## Phase 17：精简 Agent 上下文 JSON
+
+### 必须要实现的目标
+
+- 插件必须从数据源仓库 CLI 的真实响应中提取 Agent 需要的名称字段、`prompt_text`、`id`、`tag`，并通过上下文类型说明每条 JSON 的语义。
+- 卡片展示数据继续服务原生选择弹窗；写入 Harness 输入框的 JSON 只能包含上下文类型和 Agent 需要的数据。
+- 已选上下文取消操作必须同步删除输入框中的对应 JSON。
+
+### 验收清单
+
+- 每条输入框 JSON 必须包含可识别上下文用途的类型字段。
+- 生成模型和 LoRA 必须保留 `file_name`；作品、角色和画风必须保留 `name`；ComfyUI 模板必须保留 `title`。
+- 角色上下文必须使用 `work_name` 和 `character_name` 分别表达作品名和角色名，并包含 `id` 与 `prompt_text`。
+- 数据源存在的 `prompt_text` 和 `tag` 必须原值写入输入框 JSON。
+- 输入框 JSON 不包含封面地址、卡片副标题或其他 Agent 不需要的展示字段。
+- 角色卡片的 `label`、`subtitle`、`coverUrl` 只能用于 UI 展示，不能进入输入框 JSON。
+- 类型检查、单元测试、生产检查和 Harness 浏览器交互验证全部通过。
+
+### 非本次目标
+
+- 本阶段不修改上下文弹窗的卡片布局、分页方式和原生组件选择。
+- 本阶段不把完整数据源记录或 ComfyUI 工作流 JSON 写入 Harness 输入框。
+
+### 已获得的授权
+
+- 用户已授权直接修改并运行 Harness 插件。
+- 用户已明确要求 Agent 上下文 JSON 只保留可理解的名称、`prompt_text`、`id`、`tag`，并要求每条 JSON 能表达插入用途和数据语义。
+
+状态：已完成
+## Phase 18：加载项目 Skill 并实现静态右侧抽屉
+
+### 当前进度
+
+- Harness 原生 `/` 菜单已经加载当前仓库 `.agents/skills` 中的三个 Skill。
+- 右侧静态结果抽屉已经使用 Harness `details` 插槽和 `layout.openDetails()/closeDetails()` 实现并通过浏览器验收。
+
+### 必须要实现的目标
+
+- 计划执行者必须核对 Harness `0.1.1-rc.2` 文档、已安装包和本机源码，确定项目级 Skill 的发现目录、配置字段和 `/` 选择器加载条件。
+- Harness 生产实例必须加载当前仓库 `.agents/skills` 中符合 Harness Skill 合同的 Skill，并在原生输入框输入 `/` 后显示可用 Skill。
+- Client 插件必须通过 Harness `0.1.1-rc.2` 的公开原生 UI 组件和公开布局插槽实现右侧抽屉。
+- 右侧抽屉展开后必须按旧原型的信息架构展示媒体结果、异步任务和相关静态详情；抽屉必须支持展开和收起。
+- 右侧抽屉本阶段只能读取仓库内静态结构化夹具，不能查询真实媒体结果或异步任务。
+
+### 验收清单
+
+- 原生输入框输入 `/` 后能够看到 `.agents/skills` 中已安装且符合合同的 Skill。
+- 右侧抽屉的展开、收起、媒体结果筛选、任务筛选和静态详情切换均有可见状态变化。
+- 右侧抽屉使用 Harness 原生按钮、标签、菜单或其他公开组件；产品界面不显示实现说明和设计逻辑。
+- 中列原生会话、上下文选择器、输入框、模型选择和发送路径保持可用。
+- 新增代码包含各状态分支测试；`pnpm quality`、`git diff --check`、生产健康检查和浏览器验收全部通过。
+
+### 非本次目标
+
+- 本阶段不接入真实媒体结果、ComfyUI 异步任务 API、任务取消、媒体下载或跨 Session 媒体查询。
+- 本阶段不修改 Harness 核心源码、`node_modules/@deepseek-ai/*` 或数据源仓库。
+- 本阶段不创建第二套 Skill 菜单，也不替换 Harness 原生输入框。
+- 本阶段不提供多个右侧抽屉变体；用户已经要求按旧原型布局与交互实现一个可验收版本。
+
+### 已获得的授权
+
+- 用户已授权计划执行者修改当前仓库的 Harness 配置、插件源码、静态夹具和测试。
+- 用户已授权计划执行者重启并保持 Harness 生产实例运行，用于验证 Skill 菜单和右侧抽屉。
+- 用户已授权右侧抽屉本阶段只展示静态媒体结果和异步任务数据，待样式确认后再接入实际功能。
+
+- **Status:** completed
