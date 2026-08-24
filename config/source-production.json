@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "runtimeId": "harness-comfyui-source-production",
+  "runtimeRelativeRoot": ".local/production",
+  "configurationProfile": "production",
+  "source": {
+    "catalogCliRelativePath": "../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs",
+    "sourceCliRelativePath": "../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-comfyui-source-read.mjs"
+  },
+  "logs": {
+    "source": "all",
+    "lines": 50
+  }
+}

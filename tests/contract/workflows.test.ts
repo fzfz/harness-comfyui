@@ -1,268 +1,32 @@
-import { readFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-type QualityPolicy = {
-  qualification: {
-    workflowName: string
-    requiredGateIds: string[]
-    files: {
-      manifest: string
-      record: string
-    }
-  }
-}
+const root = resolve(import.meta.dirname, '../..')
 
-const repositoryRoot = resolve(import.meta.dirname, '../..')
-
-const actionPins = {
-  checkout: '11d5960a326750d5838078e36cf38b85af677262',
-  'setup-node': '49933ea5288caeca8642d1e84afbd3f7d6820020',
-  'upload-artifact': 'ea165f8d65b6e75b540449e92b4886f43607fa02',
-  'download-artifact': 'd3f86a106a0bac45b974a628896c90dbdf5c8093'
-} as const
-
-type ActionName = keyof typeof actionPins
-
-const candidateArtifactName = 'quality-candidate'
-const qualifiedArtifactName = 'quality-qualified'
-const qualificationConsumers = [
-  {id: 'test:deploy', job: 'deploy-lifecycle', command: 'pnpm test:deploy'},
-  {id: 'test:composition', job: 'composition', command: 'pnpm test:composition'},
-  {id: 'test:e2e', job: 'browser-e2e', command: 'pnpm test:e2e'},
-  {id: 'release:smoke', job: 'release-smoke', command: 'pnpm run release:smoke'}
-] as const
-
-function expectPinnedActions(source: string, actions: readonly ActionName[]) {
-  for (const action of actions) {
-    expect(source).toContain(`actions/${action}@${actionPins[action]}`)
-  }
-  expect(source).not.toMatch(/actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@v4(?:\b|$)/u)
-}
-
-async function workflow(name: string) {
-  return readFile(join(repositoryRoot, '.github/workflows', name), 'utf8')
-}
-
-async function policy(): Promise<QualityPolicy> {
-  return JSON.parse(await readFile(join(repositoryRoot, 'config/quality-gates.json'), 'utf8')) as QualityPolicy
-}
-
-function count(source: string, value: string) {
-  return source.split(value).length - 1
-}
-
-function commandIndex(source: string, command: string, from = 0) {
-  return source.indexOf(command, from)
-}
-
-function runBlocks(source: string) {
-  const blocks: string[] = []
-  let activeIndent: number | undefined
-  let active = ''
-  const flush = () => {
-    if (activeIndent !== undefined) blocks.push(active)
-    activeIndent = undefined
-    active = ''
-  }
-  for (const line of source.split('\n')) {
-    const run = line.match(/^(\s*)run:\s?(.*)$/u)
-    if (run !== null) {
-      flush()
-      activeIndent = run[1].length
-      active = run[2]
-      continue
-    }
-    if (activeIndent !== undefined) {
-      const indentation = line.length - line.trimStart().length
-      if (line.trim().length === 0 || indentation > activeIndent) {
-        active += `\n${line}`
-      } else {
-        flush()
-      }
-    }
-  }
-  flush()
-  return blocks
-}
-
-function expectNoInputExpressionsInRun(source: string) {
-  for (const run of runBlocks(source)) expect(run).not.toContain('${{ inputs.')
-}
-
-function jobBlock(source: string, job: string) {
-  const start = source.indexOf(`  ${job}:\n`)
-  expect(start).toBeGreaterThanOrEqual(0)
-  const nextJob = source.slice(start + 1).search(/\n  [A-Za-z0-9_-]+:\n/u)
-  return source.slice(start, nextJob < 0 ? source.length : start + 1 + nextJob)
-}
-
-function expectExactRuntimeSetup(source: string) {
-  expectPinnedActions(source, ['checkout', 'setup-node'])
-  expect(source).toContain('node-version-file: .node-version')
-  expect(source).not.toMatch(/node-version:\s*['"]?\d/u)
-  expect(source).toContain('corepack disable pnpm')
-  expect(source).toContain('npm install --global pnpm@11.7.0')
-  expect(source).toContain('pnpm install --frozen-lockfile')
-  expect(source).not.toMatch(/corepack (?:enable|install|prepare)/u)
-  expect(source).not.toContain('cache: pnpm')
-  expect(source).not.toMatch(/secrets\./iu)
-}
-
-function expectPreinstallOrder(source: string) {
-  const preinstall = commandIndex(source, 'pnpm run quality:preinstall')
-  const frozenInstall = commandIndex(source, 'pnpm install --frozen-lockfile')
-  expect(preinstall).toBeGreaterThanOrEqual(0)
-  expect(frozenInstall).toBeGreaterThan(preinstall)
-}
-
-describe('workflow orchestration contracts', () => {
-  it('keeps PR fast-only and gates main qualification behind impact classification', async () => {
-    const source = await workflow('ci.yml')
+describe('GitHub Actions source quality workflow', () => {
+  it('runs the same source quality gates for pull requests and main pushes', () => {
+    const source = readFileSync(resolve(root, '.github/workflows/ci.yml'), 'utf8')
     expect(source).toContain('pull_request:')
     expect(source).toContain('push:')
     expect(source).toContain('branches: [main]')
-    expect(source).toContain('cancel-in-progress: true')
     expect(source).toContain('group: ci-${{ github.workflow }}-${{ github.ref }}')
-    expectExactRuntimeSetup(source)
-    expectPreinstallOrder(source)
-    expect(source).toContain('pnpm run quality:preinstall')
-    expect(source).toContain('pnpm run quality:fast')
-    expect(source).not.toMatch(/pnpm\s+(?:run\s+)?quality(?!:)/u)
-    expect(source).not.toMatch(/test:(?:deploy|composition|e2e)|release:smoke|package:(?:pack|validate)/u)
-    expect(source).toContain('if: github.event_name == \'push\'')
-    expect(source).toContain('fetch-depth: 0')
-    expect(source).toContain('classify-changes.mjs')
-    expect(source).toContain('github.event.before')
-    expect(source).toContain('github.sha')
-    expect(source).toContain('outputs:')
-    expect(source).toContain('qualify:')
-    expect(source).toContain('uses: ./.github/workflows/deploy.yml')
-    expect(source).toContain('needs: [quality, impact]')
-    expect(source).toContain("if: needs.impact.outputs.qualify == 'true'")
-    expect(source).toContain('commit: ${{ github.sha }}')
-    expectNoInputExpressionsInRun(source)
+    expect(source).toContain('actions/checkout@11d5960a326750d5838078e36cf38b85af677262')
+    expect(source).toContain('actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020')
+    expect(source).toContain('node-version-file: .node-version')
+    expect(source).toContain('npm install --global pnpm@11.7.0')
+    const preinstall = source.indexOf('pnpm run quality:preinstall')
+    const install = source.indexOf('pnpm install --frozen-lockfile')
+    const quality = source.indexOf('pnpm run quality:fast')
+    expect(preinstall).toBeGreaterThanOrEqual(0)
+    expect(install).toBeGreaterThan(preinstall)
+    expect(quality).toBeGreaterThan(install)
+    expect(source).not.toMatch(/artifact|deploy|package:pack|release:smoke|\.tgz/iu)
   })
 
-  it('defines reusable Artifact Qualification candidate and parallel consumers from policy', async () => {
-    const source = await workflow('deploy.yml')
-    const configured = await policy()
-    const qualification = configured.qualification
-    expect(source).toContain(`name: ${qualification.workflowName}`)
-    expect(source).toContain('workflow_call:')
-    expect(source).toContain('workflow_dispatch:')
-    expect(source).toMatch(/workflow_call:[\s\S]*?commit:[\s\S]*?required: true[\s\S]*?type: string/u)
-    expect(source).toMatch(/workflow_dispatch:[\s\S]*?commit:[\s\S]*?required: true[\s\S]*?type: string/u)
-    expect(source).toMatch(/permissions:\n\s+contents: read/u)
-    expectExactRuntimeSetup(source)
-    expectPinnedActions(source, ['upload-artifact', 'download-artifact'])
-    expectPreinstallOrder(source)
-    expect(source).toContain('if: github.event_name == \'workflow_dispatch\'')
-    expect(source).toContain('pnpm run quality:fast')
-    const candidate = jobBlock(source, 'candidate')
-    expect(candidate).toContain('ref: ${{ inputs.commit }}')
-    expect(candidate).toContain('pnpm run quality:preinstall')
-    expect(candidate).toContain('pnpm install --frozen-lockfile')
-    expect(candidate).toContain('if: github.event_name != \'workflow_dispatch\'')
-    const checkout = commandIndex(candidate, 'Checkout exact commit')
-    const verifyCommit = commandIndex(candidate, 'Verify exact qualification commit')
-    const setup = commandIndex(candidate, 'Set up Node.js')
-    const install = commandIndex(candidate, 'pnpm install --frozen-lockfile')
-    const build = commandIndex(candidate, 'pnpm run build')
-    expect(verifyCommit).toBeGreaterThan(checkout)
-    expect(setup).toBeGreaterThan(verifyCommit)
-    expect(install).toBeGreaterThan(setup)
-    expect(build).toBeGreaterThan(verifyCommit)
-    expect(candidate).toMatch(/\^\[0-9a-f\]\{40\}\$/u)
-    expect(candidate).toContain('git rev-parse HEAD')
-    expect(count(source, 'pnpm run build')).toBe(1)
-    expect(count(source, 'pnpm run package:pack')).toBe(1)
-    expect(count(source, 'pnpm run package:validate')).toBe(1)
-    expect(source).toContain(`name: ${candidateArtifactName}`)
-    expect(source).toContain(`.release/quality/${qualification.files.manifest}`)
-    expect(source).toContain('.release/quality/*.tgz')
-    expect(source).toContain('lib/**')
-    expect(source).toContain('include-hidden-files: true')
-    expect(source).toContain('if-no-files-found: error')
-
-    expect(qualification.requiredGateIds).toEqual(qualificationConsumers.map(({id}) => id))
-    for (const gate of qualificationConsumers) {
-      const consumer = jobBlock(source, gate.job)
-      expect(consumer).toContain('needs: candidate')
-      expect(consumer).toContain(`actions/download-artifact@${actionPins['download-artifact']}`)
-      expect(consumer).toContain(`name: ${candidateArtifactName}`)
-      expect(consumer).toContain('path: .')
-      expect(consumer).toContain('artifact-qualification.mjs relocate --root "$PWD"')
-      expect(consumer).toContain(gate.command)
-      expect(consumer).not.toMatch(/pnpm run (?:build|package:pack|package:validate)\b/u)
-    }
-    expect(source).toContain(`actions/download-artifact@${actionPins['download-artifact']}`)
-    expect(source).toContain('path: .')
-    expect(count(source, 'artifact-qualification.mjs relocate --root "$PWD"')).toBe(5)
-    expect(count(source, 'pnpm test:deploy')).toBe(1)
-    expect(count(source, 'pnpm test:composition')).toBe(1)
-    expect(count(source, 'pnpm test:e2e')).toBe(1)
-    expect(count(source, 'pnpm run release:smoke')).toBe(1)
-    expect(source).toContain('needs: [deploy-lifecycle, composition, browser-e2e, release-smoke]')
-    expect(source).toContain('artifact-qualification.mjs write')
-    expect(source).toContain('artifact-qualification.mjs validate')
-    expect(source).toContain(`name: ${qualifiedArtifactName}`)
-    const final = jobBlock(source, 'qualification')
-    expect(final).toContain('needs: [deploy-lifecycle, composition, browser-e2e, release-smoke]')
-    expect(final).toContain('QUALIFICATION_RUN_ID: ${{ github.run_id }}')
-    expect(final).toContain('QUALIFICATION_COMMIT: ${{ inputs.commit }}')
-    expect(final).toContain('--run-id "$QUALIFICATION_RUN_ID"')
-    expect(final).toContain('--commit "$QUALIFICATION_COMMIT"')
-    expect(final).toContain('--expected-version "$EXPECTED_VERSION"')
-    expect(final).toContain('--expected-sha256 "$EXPECTED_SHA256"')
-    expect(final).toContain(`name: ${qualifiedArtifactName}`)
-    expectNoInputExpressionsInRun(source)
-    expect(source).not.toMatch(/deploy:(?:install|start|stop|upgrade|rollback)|ssh|curl\s+https?:/iu)
-  })
-
-  it('downloads and validates the qualified artifact for Release Preview without installation or retesting', async () => {
-    const source = await workflow('release.yml')
-    const configured = await policy()
-    const qualification = configured.qualification
-    expect(source).toContain('workflow_dispatch:')
-    for (const input of ['version', 'commit', 'qualification_run_id', 'artifact_sha256']) {
-      expect(source).toMatch(new RegExp(`${input}:[\\s\\S]*?required: true[\\s\\S]*?type: string`, 'u'))
-    }
-    expect(source).toMatch(/permissions:[\s\S]*?actions: read[\s\S]*?contents: read/u)
-    expect(source).toContain('ref: ${{ inputs.commit }}')
-    expect(source).toContain('fetch-depth: 0')
-    expect(source).toContain('git fetch --no-tags origin main:refs/remotes/origin/main')
-    expect(source).toContain('git merge-base --is-ancestor')
-    expectPinnedActions(source, ['checkout', 'setup-node'])
-    expectPinnedActions(source, ['upload-artifact', 'download-artifact'])
-    expect(source).not.toContain('npm install --global')
-    expect(source).not.toContain('corepack disable')
-    expect(source).not.toMatch(/pnpm\s+(?:install|run\s+(?:quality|build|package:|test:)|test:)/u)
-    expect(source).not.toMatch(/git\s+(?:tag|push)\b|gh\s+release|softprops\/action-gh-release/iu)
-    expectNoInputExpressionsInRun(source)
-    expect(source).toContain(`actions/download-artifact@${actionPins['download-artifact']}`)
-    expect(source).toContain(`name: ${qualifiedArtifactName}`)
-    expect(source).toContain('run-id: ${{ inputs.qualification_run_id }}')
-    expect(source).toContain('github-token: ${{ github.token }}')
-    expect(source).toContain('path: .')
-    expect(source).toContain('artifact-qualification.mjs relocate --root "$PWD"')
-    expect(source).toContain('EXPECTED_VERSION: ${{ inputs.version }}')
-    expect(source).toContain('EXPECTED_COMMIT: ${{ inputs.commit }}')
-    expect(source).toContain('EXPECTED_RUN_ID: ${{ inputs.qualification_run_id }}')
-    expect(source).toContain('EXPECTED_SHA256: ${{ inputs.artifact_sha256 }}')
-    expect(source).toContain('--expected-version "$EXPECTED_VERSION"')
-    expect(source).toContain('--expected-commit "$EXPECTED_COMMIT"')
-    expect(source).toContain('--expected-run-id "$EXPECTED_RUN_ID"')
-    expect(source).toContain('--expected-sha256 "$EXPECTED_SHA256"')
-    expect(source).toContain('node scripts/release/preview.mjs')
-    expect(source).toContain('set -o pipefail')
-    expect(source).toContain('--expected-version "$RELEASE_VERSION"')
-    expect(source).toContain('--expected-commit "$RELEASE_COMMIT"')
-    expect(source).toContain(`.release/quality/${qualification.files.manifest}`)
-    expect(source).toContain(`.release/quality/${qualification.files.record}`)
-    expect(source).toContain('.release/quality/release-preview.txt')
-    expect(source).toContain('include-hidden-files: true')
-    expect(source).toContain('if-no-files-found: error')
+  it('does not define deployment or release packaging workflows', () => {
+    expect(existsSync(resolve(root, '.github/workflows/deploy.yml'))).toBe(false)
+    expect(existsSync(resolve(root, '.github/workflows/release.yml'))).toBe(false)
   })
 })

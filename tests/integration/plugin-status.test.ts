@@ -74,6 +74,21 @@ describe('Harness ComfyUI Host plugin status', () => {
     }
   })
 
+  it('reports the managed runtime version supplied by the process manager', async () => {
+    stubTestProfileEnvironment()
+    vi.stubEnv('HARNESS_COMFYUI_PACKAGE_VERSION', '0.1.17-source-test')
+    const ctx = new Context()
+    const fiber = await ctx.plugin(harnessComfyui, pluginConfigFromEnvironment() as never)
+
+    try {
+      const status = (ctx as unknown as { pluginStatus: { get(): PluginStatus } }).pluginStatus
+      expect(status.get().packageVersion).toBe('0.1.17-source-test')
+    } finally {
+      await fiber.dispose()
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('rejects a missing Configuration Profile before registering pluginStatus', async () => {
     const ctx = new Context()
 

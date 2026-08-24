@@ -26,7 +26,11 @@ export const inject: [] = []
 
 /** Load Configuration Profile before registering the Host Remote service. */
 export function apply(ctx: Context, config: Config): void {
-  const { HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector, ...environment } = process.env
+  const {
+    HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector,
+    HARNESS_COMFYUI_PACKAGE_VERSION: _packageVersion,
+    ...environment
+  } = process.env
   loadProfile(config.configurationProfile, { environment })
   new PluginStatusService(ctx, config.configurationProfile)
 }

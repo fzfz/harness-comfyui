@@ -16,9 +16,13 @@ export class PluginStatusService extends TypertRemoteService {
 
   constructor(ctx: Context, configurationProfile: ConfigurationProfileName) {
     super(ctx, 'pluginStatus')
+    const runtimePackageVersion = process.env.HARNESS_COMFYUI_PACKAGE_VERSION
+    if (runtimePackageVersion !== undefined && runtimePackageVersion.trim().length === 0) {
+      throw new TypeError('HARNESS_COMFYUI_PACKAGE_VERSION must be a non-empty string')
+    }
     this.status = Object.freeze({
       packageName: packageManifest.name,
-      packageVersion: packageManifest.version,
+      packageVersion: runtimePackageVersion ?? packageManifest.version,
       configurationProfile,
       hostLoaded: true,
     })

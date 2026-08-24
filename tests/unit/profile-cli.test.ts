@@ -428,7 +428,7 @@ describe('profile CLI seams', () => {
     const binDirectory = writeFakePnpm(root)
     const dshExecutable = join(binDirectory, 'pnpm')
     const child = spawn(process.execPath, [startScript,
-      '--configuration', 'release-smoke',
+      '--configuration', 'production',
       '--dsh-home', targetHome,
       '--dsh-executable', dshExecutable,
       '--host', '127.0.0.1',

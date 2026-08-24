@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Fast quality gates
+    name: Source quality gates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,29 +39,3 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Run fast quality gates
         run: pnpm run quality:fast
-
-  impact:
-    name: Classify main change impact
-    if: github.event_name == 'push'
-    needs: quality
-    runs-on: ubuntu-latest
-    outputs:
-      qualify: ${{ steps.classify.outputs.qualify }}
-    steps:
-      - name: Checkout full history
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-      - name: Classify changed paths
-        id: classify
-        run: |
-          qualify="$(node scripts/ci/classify-changes.mjs --root "$PWD" --before "${{ github.event.before }}" --after "${{ github.sha }}")"
-          echo "qualify=$qualify" >> "$GITHUB_OUTPUT"
-
-  qualify:
-    name: Artifact qualification
-    if: needs.impact.outputs.qualify == 'true'
-    needs: [quality, impact]
-    uses: ./.github/workflows/deploy.yml
-    with:
-      commit: ${{ github.sha }}

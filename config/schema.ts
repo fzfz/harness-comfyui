@@ -7,7 +7,6 @@ const positiveInteger = Schema.natural().min(1).required()
 export const configurationProfileNames = [
   'development',
   'test',
-  'release-smoke',
   'production',
 ] as const
 

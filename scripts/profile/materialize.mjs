@@ -12,7 +12,7 @@ const profileBundles = [
   '@deepseek-ai/dsh-web-app',
   'harness-comfyui',
 ]
-const configurationProfiles = new Set(['development', 'test', 'release-smoke', 'production'])
+const configurationProfiles = new Set(['development', 'test', 'production'])
 const templateFiles = ['package.json', 'cordis.patch.yml', 'pnpm-workspace.yaml']
 const defaultDshHome = resolve(homedir(), '.dsh')
 const defaultProfileManifestPath = resolve(defaultDshHome, 'profiles', profileName, 'package.json')
@@ -36,7 +36,7 @@ function parseArguments(argv) {
   }
   const configuration = values.get('--configuration')
   if (!configurationProfiles.has(configuration)) {
-    throw new Error(`invalid --configuration ${JSON.stringify(configuration)}; expected development, test, release-smoke, or production`)
+    throw new Error(`invalid --configuration ${JSON.stringify(configuration)}; expected development, test, or production`)
   }
   for (const flag of ['--dsh-executable', '--pnpm-executable']) {
     if (!isAbsolute(values.get(flag))) throw new Error(`${flag} must be an absolute path`)

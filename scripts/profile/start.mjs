@@ -5,7 +5,7 @@ import { delimiter, dirname, isAbsolute, resolve } from 'node:path'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const profileName = 'comfyui-workbench'
-const configurationProfiles = new Set(['development', 'test', 'release-smoke', 'production'])
+const configurationProfiles = new Set(['development', 'test', 'production'])
 const signalNumbers = { SIGINT: 2, SIGTERM: 15 }
 
 function parseArguments(argv) {
@@ -27,7 +27,7 @@ function parseArguments(argv) {
   }
   const configuration = values.get('--configuration')
   if (!configurationProfiles.has(configuration)) {
-    throw new Error(`invalid --configuration ${JSON.stringify(configuration)}; expected development, test, release-smoke, or production`)
+    throw new Error(`invalid --configuration ${JSON.stringify(configuration)}; expected development, test, or production`)
   }
   const port = values.get('--port')
   if (!/^\d+$/.test(port) || Number(port) > 65535) throw new Error(`invalid --port ${JSON.stringify(port)}`)

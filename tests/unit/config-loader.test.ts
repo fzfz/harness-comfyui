@@ -60,7 +60,7 @@ describe('Configuration Profile loader', () => {
     }
   })
 
-  it.each(['development', 'test', 'release-smoke', 'production'] as const)(
+  it.each(['development', 'test', 'production'] as const)(
     'loads the %s profile with isolated values and never falls back to development values',
     (configurationProfile) => {
       const profile = loadProfile(configurationProfile, {
@@ -76,7 +76,7 @@ describe('Configuration Profile loader', () => {
     },
   )
 
-  it.each(['test', 'release-smoke', 'production'] as const)(
+  it.each(['test', 'production'] as const)(
     'requires isolated values for %s instead of inheriting development paths',
     (configurationProfile) => {
       expect(() => loadProfile(configurationProfile, {

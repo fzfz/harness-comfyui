@@ -311,18 +311,6 @@ function assertAgentPackageMetadata(manifest, manifestPath, productAgent) {
   if (!isPlainObject(exports) || !isPlainObject(exports[productAgent.agentPluginExport]) || exports[productAgent.agentPluginExport].default !== exportTarget) {
     throw new Error(`${manifestPath}.exports[${productAgent.agentPluginExport}] must default to ${exportTarget}`)
   }
-  if (!Array.isArray(manifest.files)) throw new Error(`${manifestPath}.files must be an array`)
-  const requiredFiles = [
-    exportTarget.slice(2),
-    `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}/preset.yml`,
-    `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}/agent.cordis.yml`,
-    'config/product-agent.json',
-    'profiles/comfyui-workbench/cordis.patch.yml',
-    `${productAgent.skillRelativeRoot}/**`,
-  ]
-  for (const entry of requiredFiles) {
-    if (!manifest.files.includes(entry)) throw new Error(`${manifestPath}.files must contain ${entry}`)
-  }
 }
 
 function readLines(path) {
@@ -401,13 +389,10 @@ function assertPatchFile(path, expected) {
 function validateStructuredHarnessBoundary(root) {
   const rootManifestPath = resolve(root, 'package.json')
   const productAgentPath = resolve(root, 'config/product-agent.json')
-  const runtimeManifestPath = resolve(root, 'deployment/runtime/package.json')
   const profileManifestPath = resolve(root, 'profiles/comfyui-workbench/package.json')
   const rootManifest = readJson(rootManifestPath, rootManifestPath)
   const productAgent = readProductAgentBoundary(productAgentPath)
-  const runtimeManifest = readJson(runtimeManifestPath, runtimeManifestPath)
   assertManifestDependencyFields(rootManifest, 'package.json')
-  assertManifestDependencyFields(runtimeManifest, 'deployment/runtime/package.json')
   if (statSync(profileManifestPath, { throwIfNoEntry: false })?.isFile()) {
     assertManifestDependencyFields(readJson(profileManifestPath, profileManifestPath), 'profiles/comfyui-workbench/package.json')
   }
@@ -416,9 +401,7 @@ function validateStructuredHarnessBoundary(root) {
   assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
   assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: agent-presets\n  config:\n    default: ${productAgent.agentPresetId}\n    includeUserRoot: true\n`)
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
-  assertWorkspaceFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))
-  assertLockFile(resolve(root, 'deployment/runtime/pnpm-lock.yaml'))
 }
 
 function scan(root) {

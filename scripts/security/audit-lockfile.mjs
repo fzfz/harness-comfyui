@@ -2,47 +2,16 @@ import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { runtimeDirectory } from './check-manifest-lock.mjs'
-
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const registry = 'https://registry.npmjs.org'
 const severities = ['critical', 'high', 'moderate', 'low']
 
 function parseArguments(argv) {
-  const values = new Map()
-  for (let index = 0; index < argv.length; index += 1) {
-    const flag = argv[index]
-    if (flag !== '--root') throw new Error(`unknown argument ${flag}`)
-    if (values.has(flag)) throw new Error('duplicate argument --root')
-    const value = argv[index + 1]
-    if (value === undefined || value.startsWith('--') || value.length === 0) {
-      throw new Error('--root requires a non-empty value')
-    }
-    values.set(flag, value)
-    index += 1
+  if (argv.length === 0) return repositoryRoot
+  if (argv.length !== 2 || argv[0] !== '--root' || argv[1].length === 0) {
+    throw new Error('usage: audit-lockfile [--root <repository>]')
   }
-  return resolve(values.get('--root') ?? repositoryRoot)
-}
-
-function runPnpmAudit(workspaceRoot, workspaceName, production) {
-  const command = process.env.PNPM_BIN ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
-  const args = ['audit']
-  if (production) args.push('--prod')
-  args.push('--json', `--registry=${registry}`)
-  const result = spawnSync(command, args, {
-    cwd: workspaceRoot,
-    env: { ...process.env },
-    encoding: 'utf8',
-    shell: false,
-  })
-  if (result.error !== undefined) {
-    throw new Error(`${workspaceName} ${production ? 'production' : 'full'} audit could not execute pnpm: ${String(result.error)}`)
-  }
-  const output = String(result.stdout ?? '')
-  if (result.status !== 0) {
-    throw new Error(`${workspaceName} ${production ? 'production' : 'full'} audit exited with code ${String(result.status)}\n${output}${String(result.stderr ?? '')}`)
-  }
-  return output
+  return resolve(argv[1])
 }
 
 export function parseAuditJson(output, scope) {
@@ -56,37 +25,29 @@ export function parseAuditJson(output, scope) {
   if (vulnerabilities === null || typeof vulnerabilities !== 'object' || Array.isArray(vulnerabilities)) {
     throw new Error(`${scope} audit JSON is missing metadata.vulnerabilities`)
   }
-  const counts = {}
-  for (const severity of severities) {
+  const counts = Object.fromEntries(severities.map(severity => {
     const count = vulnerabilities[severity]
-    if (typeof count !== 'number' || !Number.isFinite(count) || !Number.isInteger(count) || count < 0) {
-      throw new Error(`${scope} audit JSON has invalid metadata.vulnerabilities.${severity}`)
-    }
-    counts[severity] = count
-  }
+    if (!Number.isSafeInteger(count) || count < 0) throw new Error(`${scope} audit has invalid ${severity} count`)
+    return [severity, count]
+  }))
   const nonZero = severities.filter(severity => counts[severity] !== 0)
-  if (nonZero.length > 0) {
-    throw new Error(`${scope} audit found vulnerabilities: ${nonZero.map(severity => `${severity}=${counts[severity]}`).join(', ')}`)
-  }
+  if (nonZero.length > 0) throw new Error(`${scope} audit found vulnerabilities: ${nonZero.map(key => `${key}=${counts[key]}`).join(', ')}`)
   return counts
 }
 
+function runAudit(root, production) {
+  const command = process.env.PNPM_BIN ?? (process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm')
+  const args = ['audit']
+  if (production) args.push('--prod')
+  args.push('--json', `--registry=${registry}`)
+  const result = spawnSync(command, args, { cwd: root, env: { ...process.env }, encoding: 'utf8', shell: false })
+  if (result.error !== undefined) throw new Error(`cannot execute pnpm audit: ${String(result.error)}`)
+  if (result.status !== 0) throw new Error(`pnpm audit exited with code ${String(result.status)}\n${String(result.stdout ?? '')}${String(result.stderr ?? '')}`)
+  return parseAuditJson(String(result.stdout ?? ''), production ? 'production' : 'full')
+}
+
 export function auditLockfile(root = repositoryRoot) {
-  const workspaces = [
-    { name: 'root', path: resolve(root) },
-    { name: 'runtime', path: resolve(root, runtimeDirectory) },
-  ]
-  const summaries = {}
-  for (const workspace of workspaces) {
-    const full = parseAuditJson(runPnpmAudit(workspace.path, workspace.name, false), `${workspace.name} full`)
-    const production = parseAuditJson(runPnpmAudit(workspace.path, workspace.name, true), `${workspace.name} production`)
-    summaries[workspace.name] = { full, production }
-  }
-  return {
-    ...summaries,
-    full: summaries.root.full,
-    production: summaries.root.production,
-  }
+  return { full: runAudit(root, false), production: runAudit(root, true) }
 }
 
 function formatCounts(counts) {
@@ -95,11 +56,9 @@ function formatCounts(counts) {
 
 export function main(argv = process.argv.slice(2)) {
   const root = parseArguments(argv)
-  const summaries = auditLockfile(root)
-  process.stdout.write(`full: ${formatCounts(summaries.root.full)} (root)\n`)
-  process.stdout.write(`production: ${formatCounts(summaries.root.production)} (root)\n`)
-  process.stdout.write(`runtime full: ${formatCounts(summaries.runtime.full)}\n`)
-  process.stdout.write(`runtime production: ${formatCounts(summaries.runtime.production)}\n`)
+  const result = auditLockfile(root)
+  process.stdout.write(`full: ${formatCounts(result.full)}\n`)
+  process.stdout.write(`production: ${formatCounts(result.production)}\n`)
   return 0
 }
 

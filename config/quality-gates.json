@@ -9,21 +9,5 @@
       "statements": 88,
       "branches": 79
     }
-  },
-  "fastOnlyFiles": ["README.md"],
-  "fastOnlyPrefixes": ["docs/", "prototype/", ".planning/"],
-  "qualification": {
-    "schemaVersion": 1,
-    "workflowName": "Artifact Qualification",
-    "requiredGateIds": [
-      "test:deploy",
-      "test:composition",
-      "test:e2e",
-      "release:smoke"
-    ],
-    "files": {
-      "manifest": "artifact.json",
-      "record": "qualification.json"
-    }
   }
 }

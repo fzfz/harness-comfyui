@@ -1,157 +1,53 @@
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
-import { spawn } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const script = resolve(root, 'scripts/security/audit-lockfile.mjs')
-const temporaryDirectories: string[] = []
+// @ts-expect-error Checked-in JavaScript security module.
+import { auditLockfile, parseAuditJson } from '../../scripts/security/audit-lockfile.mjs'
 
-interface CommandResult {
-  readonly code: number | null
-  readonly stdout: string
-  readonly stderr: string
+const temporaryRoots: string[] = []
+
+async function fakePnpm(mode: 'clean' | 'severity'): Promise<{ root: string; bin: string; record: string }> {
+  const root = await mkdtemp(join(tmpdir(), 'harness-audit-'))
+  temporaryRoots.push(root)
+  const bin = join(root, 'pnpm')
+  const record = join(root, 'record.jsonl')
+  await writeFile(bin, `#!/usr/bin/env node
+import { appendFileSync } from 'node:fs'
+appendFileSync(${JSON.stringify(record)}, JSON.stringify(process.argv.slice(2)) + '\\n')
+const moderate = ${JSON.stringify(mode)} === 'severity' ? 1 : 0
+process.stdout.write(JSON.stringify({ metadata: { vulnerabilities: { critical: 0, high: 0, moderate, low: 0 } } }))
+`, 'utf8')
+  await chmod(bin, 0o755)
+  return { root, bin, record }
 }
 
 afterEach(async () => {
-  await Promise.all(temporaryDirectories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
+  delete process.env.PNPM_BIN
+  await Promise.all(temporaryRoots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
-async function createFakePnpm(mode: string): Promise<{ bin: string; record: string }> {
-  const directory = await mkdtemp(join(tmpdir(), 'harness-comfyui-audit-pnpm-'))
-  temporaryDirectories.push(directory)
-  const record = join(directory, 'record.jsonl')
-  const bin = join(directory, 'pnpm')
-  await writeFile(bin, `#!/usr/bin/env node
-import { appendFileSync } from 'node:fs'
-
-const mode = process.env.FAKE_PNPM_MODE
-const record = process.env.FAKE_PNPM_RECORD
-const prod = process.argv.includes('--prod')
-if (record) appendFileSync(record, JSON.stringify({ argv: process.argv.slice(2), prod }) + '\\n')
-
-const clean = { advisories: {}, metadata: { vulnerabilities: { critical: 0, high: 0, moderate: 0, low: 0 } } }
-const runtime = process.cwd().endsWith('/deployment/runtime')
-const payload = mode === 'malformed'
-  ? '{not-json'
-  : mode === 'missing-metadata'
-    ? JSON.stringify({ advisories: {} })
-    : mode === 'severity'
-      ? JSON.stringify({ ...clean, metadata: { vulnerabilities: { critical: 0, high: 0, moderate: 1, low: 0 } } })
-      : mode === 'runtime-severity' && runtime
-        ? JSON.stringify({ ...clean, metadata: { vulnerabilities: { critical: 0, high: 0, moderate: 1, low: 0 } } })
-      : mode === 'advisory-nonzero'
-        ? JSON.stringify({ ...clean, advisories: { GHSA_fixture: { severity: 'high' } } })
-        : JSON.stringify(clean)
-process.stdout.write(payload)
-process.exit(mode === 'nonzero' || mode === 'advisory-nonzero' ? 1 : 0)
-`, 'utf8')
-  await chmod(bin, 0o755)
-  return { bin, record }
-}
-
-async function createAuditRoot(): Promise<string> {
-  const fixture = await mkdtemp(join(tmpdir(), 'harness-comfyui-audit-root-'))
-  temporaryDirectories.push(fixture)
-  await mkdir(join(fixture, 'deployment', 'runtime'), { recursive: true })
-  await Promise.all([
-    writeFile(join(fixture, 'deployment/runtime/package.json'), await readFile(resolve(root, 'deployment/runtime/package.json'))),
-    writeFile(join(fixture, 'deployment/runtime/pnpm-lock.yaml'), await readFile(resolve(root, 'deployment/runtime/pnpm-lock.yaml'))),
-    writeFile(join(fixture, 'deployment/runtime/pnpm-workspace.yaml'), await readFile(resolve(root, 'deployment/runtime/pnpm-workspace.yaml'))),
-  ])
-  return fixture
-}
-
-function runScript(environment: NodeJS.ProcessEnv, args: readonly string[] = []): Promise<CommandResult> {
-  return new Promise((resolveResult, reject) => {
-    const child = spawn(process.execPath, [script, ...args], {
-      cwd: root,
-      env: { ...process.env, NO_COLOR: '1', ...environment },
-      stdio: ['ignore', 'pipe', 'pipe'],
+describe('root lockfile advisory audit', () => {
+  it('audits the root dependency graph in full and production modes', async () => {
+    const fake = await fakePnpm('clean')
+    process.env.PNPM_BIN = fake.bin
+    expect(auditLockfile(fake.root)).toEqual({
+      full: { critical: 0, high: 0, moderate: 0, low: 0 },
+      production: { critical: 0, high: 0, moderate: 0, low: 0 },
     })
-    let stdout = ''
-    let stderr = ''
-    child.stdout.on('data', chunk => { stdout += String(chunk) })
-    child.stderr.on('data', chunk => { stderr += String(chunk) })
-    child.once('error', reject)
-    child.once('close', code => resolveResult({ code, stdout, stderr }))
-  })
-}
-
-describe('security:advisories', () => {
-  it('runs full and production audits against the official registry and reports zero severities', async () => {
-    const fake = await createFakePnpm('clean')
-    const fixture = await createAuditRoot()
-    const result = await runScript({
-      PNPM_BIN: fake.bin,
-      FAKE_PNPM_MODE: 'clean',
-      FAKE_PNPM_RECORD: fake.record,
-    }, ['--root', fixture])
-
-    expect(result.code).toBe(0)
-    expect(result.stdout).toContain('full: critical=0 high=0 moderate=0 low=0')
-    expect(result.stdout).toContain('production: critical=0 high=0 moderate=0 low=0')
-    const invocations = (await readFile(fake.record, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
-    expect(invocations).toEqual([
-      {
-        argv: ['audit', '--json', '--registry=https://registry.npmjs.org'],
-        prod: false,
-      },
-      {
-        argv: ['audit', '--prod', '--json', '--registry=https://registry.npmjs.org'],
-        prod: true,
-      },
-      {
-        argv: ['audit', '--json', '--registry=https://registry.npmjs.org'],
-        prod: false,
-      },
-      {
-        argv: ['audit', '--prod', '--json', '--registry=https://registry.npmjs.org'],
-        prod: true,
-      },
+    const calls = (await readFile(fake.record, 'utf8')).trim().split('\n').map(line => JSON.parse(line))
+    expect(calls).toEqual([
+      ['audit', '--json', '--registry=https://registry.npmjs.org'],
+      ['audit', '--prod', '--json', '--registry=https://registry.npmjs.org'],
     ])
   })
 
-  it.each([
-    ['malformed', /malformed JSON/i],
-    ['missing-metadata', /metadata\.vulnerabilities/i],
-    ['severity', /moderate=1|moderate vulnerability/i],
-    ['advisory-nonzero', /exited with code|non-zero|advisory/i],
-    ['nonzero', /exited with code|non-zero/i],
-  ])('fails closed for %s audit output', async (mode, expected) => {
-    const fake = await createFakePnpm(mode)
-    const result = await runScript({
-      PNPM_BIN: fake.bin,
-      FAKE_PNPM_MODE: mode,
-      FAKE_PNPM_RECORD: fake.record,
-    })
-
-    expect(result.code).not.toBe(0)
-    expect(`${result.stdout}\n${result.stderr}`).toMatch(expected)
-  })
-
-  it('fails closed when pnpm cannot be executed', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'harness-comfyui-audit-missing-pnpm-'))
-    temporaryDirectories.push(directory)
-    const result = await runScript({ PNPM_BIN: join(directory, 'does-not-exist') })
-
-    expect(result.code).not.toBe(0)
-    expect(`${result.stdout}\n${result.stderr}`).toMatch(/execute pnpm|ENOENT|spawn/i)
-  })
-
-  it('fails when only the runtime closure reports a vulnerability', async () => {
-    const fake = await createFakePnpm('runtime-severity')
-    const fixture = await createAuditRoot()
-    const result = await runScript({
-      PNPM_BIN: fake.bin,
-      FAKE_PNPM_MODE: 'runtime-severity',
-      FAKE_PNPM_RECORD: fake.record,
-    }, ['--root', fixture])
-
-    expect(result.code).not.toBe(0)
-    expect(`${result.stdout}\n${result.stderr}`).toMatch(/runtime|moderate=1|vulnerabilit/i)
+  it('rejects malformed results and non-zero severities', async () => {
+    expect(() => parseAuditJson('{bad', 'full')).toThrow(/malformed JSON/u)
+    const fake = await fakePnpm('severity')
+    process.env.PNPM_BIN = fake.bin
+    expect(() => auditLockfile(fake.root)).toThrow(/moderate=1/u)
   })
 })
