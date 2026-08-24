@@ -154,6 +154,41 @@ describe('registerProjectTools', () => {
     ])
   })
 
+  it('reports registration and rollback failures while attempting remaining reverse cleanup', () => {
+    const calls: string[] = []
+    const registrationError = new Error('third registration failed')
+    const cleanupError = new Error('second cleanup failed')
+    let registrationCount = 0
+    const context = createContext((value) => {
+      const name = (value as ToolDefinitionFixture).name!
+      registrationCount += 1
+      calls.push(`register:${name}`)
+      if (registrationCount === 3) throw registrationError
+      return () => {
+        calls.push(`dispose:${name}`)
+        if (name === 'second') throw cleanupError
+      }
+    })
+
+    let thrown: unknown
+    try {
+      register(context, [definition('first'), definition('second'), definition('third')])
+    } catch (error) {
+      thrown = error
+    }
+
+    expect(thrown).toBeInstanceOf(AggregateError)
+    expect(thrown).toMatchObject({ message: 'project Tool registration and rollback failed' })
+    expect((thrown as AggregateError).errors).toEqual([registrationError, cleanupError])
+    expect(calls).toEqual([
+      'register:first',
+      'register:second',
+      'register:third',
+      'dispose:second',
+      'dispose:first',
+    ])
+  })
+
   it('returns an idempotent disposer that unregisters all definitions in reverse order', () => {
     const calls: string[] = []
     const context = createContext((value) => {
