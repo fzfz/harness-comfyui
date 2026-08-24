@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { createElement, type ReactElement, type ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   ISessions,
@@ -14,38 +14,27 @@ import {
   renderSessionSidebar,
 } from '../../src/client/workbench/session-sidebar.tsx'
 
-const stateAdapter = vi.hoisted(() => {
-  let initialized = false
-  let state: unknown
-
-  return {
-    reset() {
-      initialized = false
-      state = undefined
-    },
-    useState<T>(initial: T): readonly [T, (next: T | ((previous: T) => T)) => void] {
-      if (!initialized) {
-        initialized = true
-        state = initial
-      }
-      const setState = (next: T | ((previous: T) => T)) => {
-        state = typeof next === 'function'
-          ? (next as (previous: T) => T)(state as T)
-          : next
-      }
-      return [state as T, setState]
-    },
-  }
-})
-
-vi.mock('react', async importOriginal => {
-  const actual = await importOriginal<typeof import('react')>()
-  return { ...actual, useState: stateAdapter.useState }
-})
-
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
   renderToStaticMarkup(node: ReactNode): string
 }
+
+type TestRendererNode = {
+  props: Record<string, unknown>
+}
+
+type TestRenderer = {
+  root: {
+    findByProps(props: Record<string, unknown>): TestRendererNode
+  }
+  unmount(): void
+}
+
+type TestRendererApi = {
+  act(callback: () => void): void
+  create(element: ReactNode): TestRenderer
+}
+
+const { act, create: createTestRenderer } = createRequire(import.meta.url)('react-test-renderer') as TestRendererApi
 
 function summary(id: string, title: string, updatedAt: number): SessionSummary {
   return {
@@ -85,10 +74,6 @@ function findElements(node: ReactNode, predicate: (element: ReactElement) => boo
 }
 
 describe('real Harness Session sidebar', () => {
-  beforeEach(() => {
-    stateAdapter.reset()
-  })
-
   it('renders public session state, searches it, and opens a selected row', () => {
     const sessions = {
       open: vi.fn(),
@@ -207,19 +192,33 @@ describe('real Harness Session sidebar', () => {
       summary('portrait', '角色立绘调整', 1_723_300_320_000),
       summary('video', '测试视频工作流', 1_723_296_480_000),
     ])
-    const view = Sidebar({
-      collapsed: false,
-      width: 294,
-      useSessions: <S,>(selector: (current: SessionListState) => S) => selector(snapshot),
-    }) as ReactElement
-    const row = findElements(view, element => (
-      element.type === 'button' && element.props['data-session-id'] === 'video'
-    ))[0]
+    let renderer: TestRenderer | undefined
 
-    expect(row).toBeDefined()
-    row?.props.onClick()
-    expect(open).toHaveBeenCalledOnce()
-    expect(open).toHaveBeenCalledWith('video')
+    try {
+      act(() => {
+        renderer = createTestRenderer(createElement(Sidebar, {
+          collapsed: false,
+          width: 294,
+          useSessions: <S,>(selector: (current: SessionListState) => S) => selector(snapshot),
+        }))
+      })
+      if (renderer === undefined) throw new Error('sidebar renderer did not mount')
+      const mountedRenderer = renderer
+      const row = mountedRenderer.root.findByProps({ 'data-session-id': 'video' })
+
+      act(() => {
+        const onClick = row.props.onClick as () => void
+        onClick()
+      })
+      expect(open).toHaveBeenCalledOnce()
+      expect(open).toHaveBeenCalledWith('video')
+    } finally {
+      if (renderer !== undefined) {
+        act(() => {
+          renderer?.unmount()
+        })
+      }
+    }
   })
 
   it('keeps the owned sidebar CSS at prototype desktop values', () => {

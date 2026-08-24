@@ -58,7 +58,6 @@ function createContext(options: {
   registerErrorName?: string
   injectErrorName?: string
   provideError?: Error
-  themeGetError?: Error
   themeSubscribeError?: Error
 } = {}) {
   const events: string[] = []
@@ -130,7 +129,6 @@ function createContext(options: {
   })
   const getTheme = vi.fn(() => {
     events.push('theme:get')
-    if (options.themeGetError !== undefined) throw options.themeGetError
     return themeSnapshot
   })
   const on = vi.fn((_event: string, _listener: (snapshot: typeof themeSnapshot) => void) => {

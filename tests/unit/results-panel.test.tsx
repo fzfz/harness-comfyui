@@ -1,47 +1,33 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { createElement, type ReactElement, type ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-
-const stateAdapter = vi.hoisted(() => {
-  let initialized = false
-  let state: unknown
-  const setterCalls: unknown[] = []
-
-  return {
-    reset() {
-      initialized = false
-      state = undefined
-      setterCalls.length = 0
-    },
-    useState<T>(initial: T): readonly [T, (next: T | ((previous: T) => T)) => void] {
-      if (!initialized) {
-        initialized = true
-        state = initial
-      }
-      const setState = (next: T | ((previous: T) => T)) => {
-        setterCalls.push(next)
-        state = typeof next === 'function'
-          ? (next as (previous: T) => T)(state as T)
-          : next
-      }
-      return [state as T, setState]
-    },
-    setterCalls,
-  }
-})
-
-vi.mock('react', async importOriginal => {
-  const actual = await importOriginal<typeof import('react')>()
-  return { ...actual, useState: stateAdapter.useState }
-})
 
 import {
   createResultsPanel,
   renderResultsPanel,
   type ResultsTab,
 } from '../../src/client/workbench/results-panel.tsx'
+
+type TestRendererNode = {
+  props: Record<string, unknown>
+}
+
+type TestRenderer = {
+  root: {
+    findByProps(props: Record<string, unknown>): TestRendererNode
+  }
+  update(element: ReactNode): void
+  unmount(): void
+}
+
+type TestRendererApi = {
+  act(callback: () => void): void
+  create(element: ReactNode): TestRenderer
+}
+
+const { act, create: createTestRenderer } = createRequire(import.meta.url)('react-test-renderer') as TestRendererApi
 
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
   renderToStaticMarkup(node: ReactNode): string
@@ -70,10 +56,6 @@ function viewElements(activeTab: ResultsTab = 'current') {
 }
 
 describe('Issue 3 empty results panel', () => {
-  beforeEach(() => {
-    stateAdapter.reset()
-  })
-
   it('renders accessible current/session tabs and only the two exact empty states', () => {
     const view = viewElements()
     const [currentButton, sessionButton] = view.tabButtons
@@ -145,35 +127,48 @@ describe('Issue 3 empty results panel', () => {
     expect(switchedPanels[1]?.props.hidden).toBe(true)
   })
 
-  it('starts every session-scoped occupant on the current tab', () => {
+  it('keeps session tab state across updates and resets it for a different session', () => {
     const ResultsPanel = createResultsPanel()
-    const portrait = renderToStaticMarkup(createElement(ResultsPanel, { sessionId: 'portrait' as SessionId }))
-    const video = renderToStaticMarkup(createElement(ResultsPanel, { sessionId: 'video' as SessionId }))
-    expect(portrait).toContain('id="tab-current" type="button" role="tab" aria-selected="true"')
-    expect(video).toContain('id="tab-current" type="button" role="tab" aria-selected="true"')
-  })
+    let renderer: TestRenderer | undefined
 
-  it('passes the public session action through state and resets the active tab for a different session', () => {
-    const ResultsPanel = createResultsPanel()
-    const portrait = ResultsPanel({ sessionId: 'portrait' as SessionId }) as ReactElement
-    const portraitTabs = childrenOf(childrenOf(portrait)[1] as ReactElement)
-    const portraitSessionButton = portraitTabs[1]
+    try {
+      act(() => {
+        renderer = createTestRenderer(createElement(ResultsPanel, {
+          sessionId: 'portrait' as SessionId,
+        }))
+      })
+      if (renderer === undefined) throw new Error('results renderer did not mount')
+      const mountedRenderer = renderer
+      const sessionTab = mountedRenderer.root.findByProps({ 'data-result-tab': 'session' })
+      expect(sessionTab.props['aria-selected']).toBe(false)
 
-    expect(portraitSessionButton).toBeDefined()
-    portraitSessionButton?.props.onClick()
-    expect(stateAdapter.setterCalls).toEqual([
-      { sessionId: 'portrait', tab: 'session' },
-    ])
+      act(() => {
+        const onClick = sessionTab.props.onClick as () => void
+        onClick()
+      })
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'session' }).props['aria-selected']).toBe(true)
 
-    const video = ResultsPanel({ sessionId: 'video' as SessionId }) as ReactElement
-    const videoTabs = childrenOf(childrenOf(video)[1] as ReactElement)
-    expect(videoTabs[0]?.props['aria-selected']).toBe(true)
-    expect(videoTabs[1]?.props['aria-selected']).toBe(false)
+      act(() => {
+        mountedRenderer.update(createElement(ResultsPanel, {
+          sessionId: 'video' as SessionId,
+        }))
+      })
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'current' }).props['aria-selected']).toBe(true)
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'session' }).props['aria-selected']).toBe(false)
 
-    const portraitAgain = ResultsPanel({ sessionId: 'portrait' as SessionId }) as ReactElement
-    const portraitAgainTabs = childrenOf(childrenOf(portraitAgain)[1] as ReactElement)
-    expect(portraitAgainTabs[0]?.props['aria-selected']).toBe(false)
-    expect(portraitAgainTabs[1]?.props['aria-selected']).toBe(true)
+      act(() => {
+        mountedRenderer.update(createElement(ResultsPanel, {
+          sessionId: 'portrait' as SessionId,
+        }))
+      })
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'session' }).props['aria-selected']).toBe(true)
+    } finally {
+      if (renderer !== undefined) {
+        act(() => {
+          renderer?.unmount()
+        })
+      }
+    }
   })
 
   it('keeps the result panel desktop CSS limited to the current empty-state surface', () => {
