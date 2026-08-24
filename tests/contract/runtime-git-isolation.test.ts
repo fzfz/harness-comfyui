@@ -30,6 +30,7 @@ describe('source runtime git isolation', () => {
       '.local/production/state/process.json',
       '.local/production/state/operations.jsonl',
       '.local/production/shared/logs/host.stdout.log',
+      '.local/source-client/client.js',
       '.local/source-production-managed.json',
     ]
     const productSources = [
@@ -46,6 +47,8 @@ describe('source runtime git isolation', () => {
       'src/host/plugin.ts',
       'scripts/profile/source.mjs',
       'scripts/production/cli.mjs',
+      'scripts/production/client-module.mjs',
+      'scripts/production/client-module.d.mts',
       'scripts/production/runtime.mjs',
       'scripts/production/spawn.mjs',
       'package.json',

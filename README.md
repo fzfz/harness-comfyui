@@ -36,7 +36,7 @@ pnpm prod:health
 | `pnpm prod:logs` | 读取 Host 与操作日志 |
 | `pnpm prod:test` | 自动测试生产进程的完整生命周期和异常分支 |
 
-这些命令不执行构建、打包或版本安装。完整配置和运行目录说明见[系统启动](docs/system/startup.md)与[配置规范](docs/system/configuration.md)。
+这些命令不要求单独执行构建、打包或版本安装。`prod:start` 和 `prod:restart` 会根据当前 `src/client/` 自动更新 `.local/source-client/client.js`，供 Harness 浏览器 ModuleLoader 加载。完整配置和运行目录说明见[系统启动](docs/system/startup.md)与[配置规范](docs/system/configuration.md)。
 
 ## 测试
 

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access, lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import vm from 'node:vm';
 import { validateSourceRuntime } from './contract.mjs';
 import {
   assertProcessStateOwnership,
@@ -157,6 +158,35 @@ async function inspectHarnessWeb(runtime) {
   return { baseUrl, graph };
 }
 
+export function inspectClientModuleRegistration(source, id, url) {
+  const registrations = [];
+  let executionError;
+  try {
+    vm.runInNewContext(source, {
+      window: {
+        __ModuleLoader__: {
+          load(registration) {
+            registrations.push(registration);
+          },
+        },
+      },
+    }, { timeout: 1_000 });
+  } catch (error) {
+    executionError = error;
+  }
+  const registration = registrations.find(candidate => candidate?.id === id);
+  if (registration === undefined) {
+    throw new Error(
+      `client-modules: bundle ${url} loaded without registering "${id}" via __ModuleLoader__.load`,
+      executionError === undefined ? undefined : { cause: executionError },
+    );
+  }
+  if (registrations.length !== 1 || typeof registration.factory !== 'function') {
+    throw new Error(`client-modules: bundle ${url} registered an invalid factory for "${id}"`);
+  }
+  return registration;
+}
+
 async function inspectClientBundle(web) {
   const entry = web.graph.entries.find(candidate => candidate.id === 'harness-comfyui');
   if (entry === undefined) throw new Error('Harness Client bundle entry missing');
@@ -164,9 +194,11 @@ async function inspectClientBundle(web) {
   const base = new URL(web.baseUrl);
   if (url.origin !== base.origin) throw new Error('Harness Client bundle escaped Harness Web');
   const response = await fetchHealth(url);
-  if (!response.ok || (await response.text()).trim().length === 0) {
+  const source = await response.text();
+  if (!response.ok || source.trim().length === 0) {
     throw new Error('Harness Client bundle unavailable');
   }
+  inspectClientModuleRegistration(source, entry.id, url.href);
 }
 
 export async function runSourceHealth(input, runtimeTarget, runtimeResolutionError = undefined) {
@@ -240,8 +272,8 @@ export async function runSourceHealth(input, runtimeTarget, runtimeResolutionErr
     try {
       await inspectClientBundle(web);
       evidence.clientBundle = { status: 'passed' };
-    } catch {
-      evidence.clientBundle = failedCheck('client-bundle-invalid');
+    } catch (error) {
+      evidence.clientBundle = failedCheck(error instanceof Error ? error.message : String(error));
     }
   } else {
     evidence.clientBundle = failedCheck('harness-web-required');

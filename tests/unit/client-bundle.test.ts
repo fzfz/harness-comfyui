@@ -7,9 +7,9 @@ import vm from 'node:vm'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
-  buildClientBundle,
-  CLIENT_BUNDLE_POLICY,
-} from '../../scripts/testing/client-bundle.ts'
+  materializeClientModule,
+  CLIENT_MODULE_POLICY,
+} from '../../scripts/production/client-module.mjs'
 
 const expectedExternals = [
   'react',
@@ -69,26 +69,26 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map(path => rm(path, { recursive: true, force: true })))
 })
 
-describe('Client bundle build seam', () => {
-  it('builds the Client directly from source without a generated Remote entry', async () => {
+describe('Client module materialization seam', () => {
+  it('materializes the Client directly from source without a generated Remote entry', async () => {
     const source = await readFile(join(repositoryRoot, 'src/client/index.tsx'), 'utf8')
-    const testHelper = await readFile(join(repositoryRoot, 'scripts/testing/client-bundle.ts'), 'utf8')
+    const moduleMaterializer = await readFile(join(repositoryRoot, 'scripts/production/client-module.mjs'), 'utf8')
 
     expect(source).not.toContain('harness-comfyui/remote')
     expect(source).not.toContain('ctx.remote.$mount')
     expect(source).not.toContain('applyWithRemote')
-    expect(testHelper).not.toContain('lib/typert.remote-client.js')
-    expect(testHelper).not.toContain('applyWithRemote')
+    expect(moduleMaterializer).not.toContain('lib/typert.remote-client.js')
+    expect(moduleMaterializer).not.toContain('applyWithRemote')
   })
 
   it('exports the exact external and inline policy as one structured constant', () => {
-    expect(CLIENT_BUNDLE_POLICY).toEqual({
+    expect(CLIENT_MODULE_POLICY).toEqual({
       externals: expectedExternals,
       inlineRules: expectedInlineRules,
     })
   })
 
-  it('builds a lazy ModuleLoader factory and injects one deterministic style tag', async () => {
+  it('materializes a lazy ModuleLoader factory and injects one deterministic style tag', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'harness-comfyui-client-'))
     temporaryDirectories.push(directory)
 
@@ -98,7 +98,7 @@ describe('Client bundle build seam', () => {
     await writeFile(entry, 'export const apply = () => undefined\n', 'utf8')
     await writeFile(css, '[data-plugin="harness-comfyui-details"] { color: red; }\n', 'utf8')
 
-    await buildClientBundle({ entry, css, output })
+    await materializeClientModule({ entry, css, output })
 
     const source = await readFile(output, 'utf8')
     let handoff: { id: string; factory: (require: (specifier: string) => unknown) => Record<string, unknown> } | undefined
@@ -144,7 +144,7 @@ describe('Client bundle build seam', () => {
   it.each(expectedExternals)('keeps exact external %s outside the client bundle', async (specifier) => {
     const fixture = await createFixture(`import * as imported from '${specifier}'\nexport const value = imported\n`)
 
-    await buildClientBundle({
+    await materializeClientModule({
       entry: join(fixture.directory, 'fixture.ts'),
       css: join(fixture.directory, 'styles.css'),
       output: fixture.output,
@@ -162,7 +162,7 @@ describe('Client bundle build seam', () => {
     const fixture = await createFixture(`import { marker } from '${specifier}'\nexport const value = marker\n`)
     await writeInlinePackage(fixture.directory, specifier, 'export const marker = "inlined"\n')
 
-    await buildClientBundle({
+    await materializeClientModule({
       entry: join(fixture.directory, 'fixture.ts'),
       css: join(fixture.directory, 'styles.css'),
       output: fixture.output,
@@ -177,7 +177,7 @@ describe('Client bundle build seam', () => {
     const fixture = await createFixture("import { marker } from './ordinary.ts'\nexport const value = marker\n")
     await writeFile(join(fixture.directory, 'ordinary.ts'), 'export const marker = "ordinary-inline"\n', 'utf8')
 
-    await buildClientBundle({
+    await materializeClientModule({
       entry: join(fixture.directory, 'fixture.ts'),
       css: join(fixture.directory, 'styles.css'),
       output: fixture.output,
@@ -190,7 +190,7 @@ describe('Client bundle build seam', () => {
   it.each(['node:fs', 'fs'])('rejects Node builtin value imports: %s', async (specifier) => {
     const fixture = await createFixture(`import { readFile } from '${specifier}'\nexport const value = readFile\n`)
 
-    await expect(buildClientBundle({
+    await expect(materializeClientModule({
       entry: join(fixture.directory, 'fixture.ts'),
       css: join(fixture.directory, 'styles.css'),
       output: fixture.output,
@@ -201,7 +201,7 @@ describe('Client bundle build seam', () => {
     const specifier = '@deepseek-ai/dsh-forbidden'
     const fixture = await createFixture(`import imported from '${specifier}'\nexport const value = imported\n`)
 
-    await expect(buildClientBundle({
+    await expect(materializeClientModule({
       entry: join(fixture.directory, 'fixture.ts'),
       css: join(fixture.directory, 'styles.css'),
       output: fixture.output,
@@ -212,7 +212,7 @@ describe('Client bundle build seam', () => {
     const specifier = '@deepseek-ai/dsh-type-only'
     const fixture = await createFixture(`import type { Missing } from '${specifier}'\nexport const value = 1\n`)
 
-    await buildClientBundle({
+    await materializeClientModule({
       entry: join(fixture.directory, 'fixture.ts'),
       css: join(fixture.directory, 'styles.css'),
       output: fixture.output,

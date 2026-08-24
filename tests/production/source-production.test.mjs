@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { parseArguments, runSourceProductionCommand } from '../../scripts/production/cli.mjs'
+import { inspectClientModuleRegistration } from '../../scripts/production/health.mjs'
 import {
   SOURCE_PRODUCTION_COMMANDS,
   loadSourceProductionContext,
@@ -70,7 +71,7 @@ async function waitForRunning(context, timeoutMs = 10_000) {
   throw new Error(`timed out waiting for source production status running; last status was ${lastStatus}`)
 }
 
-async function createFixture() {
+async function createFixture(options = {}) {
   const temporaryRoot = await mkdtemp(join(tmpdir(), 'harness-source-production-'))
   temporaryPaths.push(temporaryRoot)
   const runtimeRelativeRoot = `.local/source-production-test-${randomUUID()}`
@@ -117,12 +118,14 @@ const shutdown = () => server.close(() => process.exit(0))
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
 `, 'utf8')
-  await mkdir(dirname(dshExecutable), { recursive: true })
-  await writeFile(dshExecutable, `#!/bin/sh
+  if (options.realDsh !== true) {
+    await mkdir(dirname(dshExecutable), { recursive: true })
+    await writeFile(dshExecutable, `#!/bin/sh
 sleep 0.1
 exec ${JSON.stringify(process.execPath)} ${JSON.stringify(dshHostPath)} "$@"
 `, 'utf8')
-  await chmod(dshExecutable, 0o755)
+    await chmod(dshExecutable, 0o755)
+  }
 
   const definition = {
     schemaVersion: 1,
@@ -144,7 +147,7 @@ exec ${JSON.stringify(process.execPath)} ${JSON.stringify(dshHostPath)} "$@"
     managedStatePath,
     environment: { ...process.env, HARNESS_COMFYUI_SERVER_PORT: String(await findFreePort()) },
   })
-  context.dshExecutable = dshExecutable
+  if (options.realDsh !== true) context.dshExecutable = dshExecutable
   const fixture = { context, definition, definitionPath, managedStatePath, runtimeRoot }
   activeFixtures.push(fixture)
   return fixture
@@ -302,6 +305,37 @@ describe('source production commands', () => {
     expect(stop.evidence).toMatchObject({ stage: 'stop', status: 'stopped' })
     expect((await start).evidence).toMatchObject({ stage: 'start', status: 'stopped' })
     expect(await pathExists(processStatePath)).toBe(false)
+  })
+
+  it('serves a real Harness Client bundle that registers with ModuleLoader', async () => {
+    const invalidUrl = 'http://127.0.0.1:4173/plugins/harness-comfyui/client.js'
+    expect(() => inspectClientModuleRegistration(
+      'import { apply } from "./client.tsx"',
+      'harness-comfyui',
+      invalidUrl,
+    )).toThrow(
+      `client-modules: bundle ${invalidUrl} loaded without registering "harness-comfyui" via __ModuleLoader__.load`,
+    )
+
+    const fixture = await createFixture({ realDsh: true })
+    const processStatePath = resolve(fixture.runtimeRoot, 'state/process.json')
+    const start = runSourceProductionCommand('start', { loadContext: async () => fixture.context })
+    await waitForPath(processStatePath)
+    await waitForRunning(fixture.context)
+
+    const bundleUrl = `http://${fixture.context.runtime.host}:${fixture.context.runtime.port}/plugins/harness-comfyui/client.js`
+    const response = await fetch(bundleUrl)
+    expect(response.ok).toBe(true)
+    const source = await response.text()
+    const registration = inspectClientModuleRegistration(source, 'harness-comfyui', bundleUrl)
+    expect(registration.factory).toBeTypeOf('function')
+
+    const health = await runSourceProductionCommand('health', { loadContext: async () => fixture.context })
+    expect(health.evidence).toMatchObject({ status: 'passed', clientBundle: { status: 'passed' } })
+
+    const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
+    expect(stop.evidence).toMatchObject({ status: 'stopped' })
+    expect((await start).evidence).toMatchObject({ status: 'stopped' })
   })
 
   it.each([

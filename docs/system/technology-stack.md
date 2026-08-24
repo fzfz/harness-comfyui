@@ -10,7 +10,7 @@
 | 配置校验 | Schemastery | `3.18.1` |
 | Web UI | React / React DOM | `18.3.1` |
 | 自动化测试 | Vitest / V8 coverage | `4.1.8`；阈值来自 `config/quality-gates.json` |
-| Client 打包测试 | tsdown | `0.22.2`；只在自动化测试的临时目录中验证 Client import policy |
+| Client 模块转换 | tsdown | `0.22.2`；`prod:start` 和 `prod:restart` 生成本地浏览器模块，自动化测试验证 ModuleLoader 与 import policy |
 | CI | GitHub Actions | 对 pull request 和 `main` push 执行同一套源码质量门禁 |
 
 所有直接依赖在 `package.json` 中使用精确版本，完整解析结果保存在 `pnpm-lock.yaml`。

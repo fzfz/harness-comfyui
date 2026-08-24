@@ -21,7 +21,7 @@ describe('source workspace engineering contract', () => {
     expect(manifest).not.toHaveProperty('files')
     expect(manifest.exports).toEqual({
       '.': { types: './src/index.ts', default: './src/index.ts' },
-      './client': { types: './src/client/index.tsx', default: './src/client/index.tsx' },
+      './client': { types: './src/client/index.tsx', default: './.local/source-client/client.js' },
       './agent': { types: './src/agent/plugin.ts', default: './src/agent/plugin.ts' },
       './package.json': './package.json',
     })

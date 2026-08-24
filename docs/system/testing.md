@@ -18,7 +18,7 @@ pnpm prod:stop
 pnpm prod:test
 ```
 
-`prod:test` 使用临时目录和端口调用同一套生产进程逻辑，不创建另一套运行环境。
+`prod:test` 使用临时目录和端口调用同一套生产进程逻辑，并启动一次真实 DSH Host，验证真实 Client 路由通过 ModuleLoader 注册；该命令不提供独立的开发或测试启动流程。
 
 ## 自动化测试
 
@@ -27,7 +27,7 @@ pnpm prod:test
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合 |
 | `pnpm test:contract` | package、Git 跟踪、CI 和安全合同 |
-| `pnpm prod:test` | start、stop、restart、status、health、logs、PID 和端口分支 |
+| `pnpm prod:test` | start、stop、restart、status、health、logs、PID、端口和真实 Client ModuleLoader 分支 |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
 | `pnpm test:coverage` | unit 与 integration 覆盖率 |
 | `pnpm quality` | 依赖检查、类型检查和全部必需测试 |

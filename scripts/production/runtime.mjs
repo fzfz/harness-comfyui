@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { validateSourceRuntime } from './contract.mjs'
+import { materializeSourceClientModule } from './client-module.mjs'
 import {
   materializeProductAgentRuntime,
   readProductAgentConfig,
@@ -391,6 +392,7 @@ export async function prepareSourceRuntime(context) {
   await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
   const productAgent = await readProductAgentConfig(context.repositoryRoot)
   await materializeProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot, productAgent)
+  await materializeSourceClientModule(context.repositoryRoot)
   await materializeSourceProfile(context.repositoryRoot, context.dshHome)
   const readiness = await validateProductAgentRuntime(context.repositoryRoot, context.runtime.runtimeRoot)
   await writeAtomicJson(context.sourceRuntimeStatePath, {

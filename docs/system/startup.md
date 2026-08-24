@@ -18,7 +18,7 @@ pnpm install
 pnpm prod:start
 ```
 
-`prod:start` 是前台命令。保持该终端运行，并在另一个终端执行：
+`prod:start` 先根据当前 `src/client/` 更新 `.local/source-client/client.js`，再以前台方式运行 Host。保持该终端运行，并在另一个终端执行：
 
 ```sh
 pnpm prod:status
@@ -37,7 +37,7 @@ pnpm prod:stop
 
 `restart` 先停止当前受管 PID，再使用当前源码和当前配置以前台方式启动。`stop` 成功后，原 `prod:start` 或 `prod:restart` 终端一并退出。
 
-六个生命周期命令均不接受附加参数。`start` 与 `restart` 从固定配置文件读取启动目标；运行中的 `stop`、`status`、`health` 和 `logs` 从受管快照读取同一目标。调用者不需要指定安装文件，命令也不执行构建、打包、版本安装或版本升级。
+六个生命周期命令均不接受附加参数。`start` 与 `restart` 从固定配置文件读取启动目标并自动更新浏览器 Client 模块；运行中的 `stop`、`status`、`health` 和 `logs` 从受管快照读取同一目标。调用者不需要指定安装文件，也不需要执行独立构建、打包、版本安装或版本升级命令。
 
 生产进程自动化验证使用 `pnpm prod:test`。该命令使用临时目录和端口覆盖六个生命周期操作及其异常分支。
 
@@ -57,6 +57,8 @@ pnpm prod:stop
 | `shared/logs/` | Host stdout 与 stderr |
 
 `.local/source-production-managed.json` 保存正在运行的配置快照。以上文件都是本地运行状态，不进入 Git。
+
+`.local/source-client/client.js` 与 source map 是当前 Client 源码的浏览器运行文件。`prod:start` 和 `prod:restart` 每次都会更新它们，Harness 不直接把 TypeScript/TSX 文件作为浏览器脚本返回。
 
 ## 状态含义
 

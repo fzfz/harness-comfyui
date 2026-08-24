@@ -18,7 +18,7 @@
 
 **Source Process Manager**：`scripts/production/` 实现的当前源码进程管理器。它提供 start、stop、restart、status、health 和 logs 六种生命周期操作；`prod:test` 自动验证这些操作及其异常分支。package 命令统一使用 `prod:*`。
 
-**Source Runtime**：当前源码进程使用的本地运行状态。默认根目录是 `.local/production/`，其中保存 DSH home、进程状态、操作日志、Run Repository、Run 文件和 Saved Media；目录中不保存另一份产品源码。
+**Source Runtime**：当前源码进程使用的本地运行状态。`.local/production/` 保存 DSH home、进程状态、操作日志、Run Repository、Run 文件和 Saved Media；`.local/source-client/client.js` 是 `prod:start` 或 `prod:restart` 根据当前 Client 源码生成的浏览器 ModuleLoader 输入。以上目录不保存另一份产品源码。
 
 **Configuration Profile**：Host 使用的一组结构化配置。当前系统只有 `production`，其结构由 `config/schema.ts` 定义，其值由 `config/base.json`、`config/profiles/production.json` 和允许的环境变量合成。
 

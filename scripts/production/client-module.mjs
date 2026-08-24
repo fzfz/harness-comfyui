@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { builtinModules } from 'node:module'
-import { dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 
 import { build } from 'tsdown'
 
-export const CLIENT_BUNDLE_POLICY = Object.freeze({
+export const CLIENT_MODULE_POLICY = Object.freeze({
   externals: Object.freeze([
     'react',
     'react/jsx-runtime',
@@ -25,26 +25,26 @@ export const CLIENT_BUNDLE_POLICY = Object.freeze({
   ]),
 })
 
-const isNodeBuiltin = (specifier: string): boolean =>
+const isNodeBuiltin = specifier =>
   specifier.startsWith('node:') || builtinModules.includes(specifier)
 
-const isExactExternal = (specifier: string): boolean =>
-  CLIENT_BUNDLE_POLICY.externals.includes(specifier)
+const isExactExternal = specifier =>
+  CLIENT_MODULE_POLICY.externals.includes(specifier)
 
-const isInlineDeepSeekSpecifier = (specifier: string): boolean =>
-  CLIENT_BUNDLE_POLICY.inlineRules.some(rule => rule.test(specifier))
+const isInlineDeepSeekSpecifier = specifier =>
+  CLIENT_MODULE_POLICY.inlineRules.some(rule => rule.test(specifier))
 
 const clientImportPolicy = {
   name: 'harness-comfyui-client-import-policy',
-  resolveId(specifier: string, importer?: string) {
+  resolveId(specifier, importer) {
     if (!importer) return undefined
     if (isNodeBuiltin(specifier)) {
       throw new Error(`Client bundle cannot import Node builtin ${specifier}`)
     }
     if (
-      specifier.startsWith('@deepseek-ai/') &&
-      !isExactExternal(specifier) &&
-      !isInlineDeepSeekSpecifier(specifier)
+      specifier.startsWith('@deepseek-ai/')
+      && !isExactExternal(specifier)
+      && !isInlineDeepSeekSpecifier(specifier)
     ) {
       throw new Error(`Client bundle cannot value-import disallowed ${specifier}`)
     }
@@ -52,13 +52,7 @@ const clientImportPolicy = {
   },
 }
 
-interface ClientBundleOptions {
-  readonly entry: string
-  readonly css: string
-  readonly output: string
-}
-
-const cssInjection = (css: string): string => {
+const cssInjection = css => {
   const serializedCss = JSON.stringify(css)
   return [
     'const __harnessComfyuiStyle = document.querySelector(\'style[data-plugin="harness-comfyui"]\');',
@@ -71,17 +65,18 @@ const cssInjection = (css: string): string => {
   ].join('\n')
 }
 
-export async function buildClientBundle(options: ClientBundleOptions): Promise<void> {
+export async function materializeClientModule(options) {
   const css = await readFile(options.css, 'utf8')
   await build({
     config: false,
+    logLevel: 'silent',
     entry: { client: options.entry },
     outDir: dirname(options.output),
     format: 'cjs',
     platform: 'browser',
     target: 'es2022',
     deps: {
-      neverBundle: [...CLIENT_BUNDLE_POLICY.externals],
+      neverBundle: [...CLIENT_MODULE_POLICY.externals],
       alwaysBundle: () => true,
     },
     sourcemap: true,
@@ -92,4 +87,19 @@ export async function buildClientBundle(options: ClientBundleOptions): Promise<v
     banner: `window.__ModuleLoader__.load({ id: "harness-comfyui", factory: (require) => { const module = { exports: {} }; const exports = module.exports;\n${cssInjection(css)}\n`,
     footer: '\nreturn module.exports; } });',
   })
+}
+
+export function sourceClientModulePath(repositoryRoot) {
+  return resolve(repositoryRoot, '.local/source-client/client.js')
+}
+
+export async function materializeSourceClientModule(repositoryRoot) {
+  const sourceRoot = resolve(repositoryRoot)
+  const output = sourceClientModulePath(sourceRoot)
+  await materializeClientModule({
+    entry: resolve(sourceRoot, 'src/client/index.tsx'),
+    css: resolve(sourceRoot, 'src/client/styles.css'),
+    output,
+  })
+  return output
 }

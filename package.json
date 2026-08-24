@@ -130,7 +130,7 @@
     },
     "./client": {
       "types": "./src/client/index.tsx",
-      "default": "./src/client/index.tsx"
+      "default": "./.local/source-client/client.js"
     },
     "./agent": {
       "types": "./src/agent/plugin.ts",
