@@ -12,13 +12,13 @@ Ticket 12 — 在普通 Harness 会话中使用迁移的 Prompt 与 LoRA 调整 
 
 ## Harness 核心零改动与公共接口
 
-本 Ticket 使用 rc.8 已有 `@deepseek-ai/dsh-skill-filesystem` provider 和 Host `dsh-tool-skill` 校验。Release Artifact 保存以下三个目录：
+本 Ticket 使用 rc.8 已有 `@deepseek-ai/dsh-skill-filesystem` provider 和 Host `dsh-tool-skill` 校验。项目源码保存以下三个目录：
 
 - `skills/anima-prompt-builder/`
 - `skills/wai-sdxl-prompt-builder/`
 - `skills/lora-adjustment/`
 
-Release Artifact把三个目录保存在每个release自己的`package/skills/`。Ticket 15交付的`harness-comfyui` Agent Preset必须通过`includeDefaultRoots: false`与`customSkillDirs: [HARNESS_COMFYUI_SKILL_DIR]`只读取该目录；安装程序不得把项目Skill复制到`DSH_HOME/skills`。Harness随附`ui-input-trigger`与`ui-skill`把这些Skill加入当前Session的原生`/`菜单；用户选择后，Harness把普通`/<skill-name> `文本写入项目输入框。Host在执行前按当前Session的cwd与preset scope重新发现并校验Skill。
+`harness-comfyui` Agent Preset必须通过`includeDefaultRoots: false`与项目Skill目录配置只读取上述源码目录。Harness随附`ui-input-trigger`与`ui-skill`把这些Skill加入当前Session的原生`/`菜单；用户选择后，Harness把普通`/<skill-name> `文本写入项目输入框。Host在执行前按当前Session的cwd与preset scope重新发现并校验Skill。
 
 项目不得调用SkillsApi实现Skill候选菜单，不得保存Skill选择状态，也不得注册第二个Skill provider、invocation policy或Skill调用结果存储。项目必须保留ConversationRoot、原生`conversation.input.overlay`以及`ui-input-trigger`与`ui-skill`的`/`选择交互。三个迁移Skill使用Harness原生Session历史、AgentLoop、Tool调用和普通assistant消息。项目不得修改Harness Skill package。
 
@@ -146,8 +146,8 @@ LoRA 结果必须遵守以下规则：
 2. Anima与WAI各完成一项真实Catalog辅助的Prompt任务；中列显示各自最终Prompt，当前轮次右列均没有新运行，Run Repository计数不变。
 3. `lora-adjustment`分别完成`LoraLoader`、`LoraLoaderModelOnly`、临时停用、独立CLIP权重、多LoRA有序返回和同Session连续调整；中列结果符合本PRD结构，当前轮次右列没有新运行，Run Repository计数不变。
 4. 用户在后续消息选择`comfyui-generate`，重新附加同一Workflow与LoRA上下文并引用上一条LoRA调整结果；同一数字`turn`保存Skill Invocation、一次Generation Tool Call和含合法`run_id` meta的Tool Result。中列Tool行持续显示该运行的异步状态摘要，右列只显示同一Store快照的详细运行卡片。Prompt与LoRA结果没有被复制成右列卡片。
-5. tarball-only installation在来源checkout不存在时仍能从当前release的`package/skills`发现并运行三个迁移Skill，其他Preset不能从默认Skill roots发现这些项目Skill。
-6. 包内容包含三个迁移Skill需要的`SKILL.md`和references，不包含三个来源Skill的validation/report脚本、agents配置、来源数据库、绝对路径、凭据、旧调用标识字段、`run_skill_script`或任何finalizer协议。
+5. 源码生产进程在来源checkout不存在时仍能从项目Skill目录发现并运行三个迁移Skill，其他Preset不能从默认Skill roots发现这些项目Skill。
+6. 项目源码包含三个迁移Skill需要的`SKILL.md`和references，不包含三个来源Skill的validation/report脚本、agents配置、来源数据库、绝对路径、凭据、旧调用标识字段、`run_skill_script`或任何finalizer协议。
 7. 非实现者独立语义审核者检查两个Prompt的画面语义、LoRA调整的顺序/权重/触发词/连续修改语义，以及全部失败文案，并逐项给出PASS/FAIL。
 8. Skill黑盒测试必须运行真实Harness Skill provider和Tool registry并记录实际Tool Call与Tool Result：Anima和WAI分别覆盖单目标、多目标、空结果、Catalog错误和无需查询；每个查询目标恰好产生一次闭合`search`调用。LoRA分别覆盖单个、多个、有序resolve、Catalog错误和连续调整；每个快照恰好产生一次闭合`resolve`调用。断言不能只扫描Skill文本。
 9. 黑盒测试必须确认三个迁移Skill从未调用数据源CLI、旧Skill脚本执行器、任何finalizer、来源系统旧LoRA查询Tool或`generate_with_comfyui`；Prompt与LoRA消息不产生`run_id`，Run Repository计数不变。

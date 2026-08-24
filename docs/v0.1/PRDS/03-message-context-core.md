@@ -34,9 +34,9 @@ Skill选择继续使用Ticket 02项目composer渲染的Harness原生input overla
 | Workflow 模板候选 | 同一数据源的模板、当前 revision 和运行参数安全摘要 | `/internal/semantic/comfyui-templates`，`querySemanticComfyuiTemplatesForSkill`，Tool `query_semantic_comfyui_templates` | 消费已发布安全摘要并实现当前仓库Host adapter、Tool注册与Modal投影；不得读取完整Workflow JSON |
 | 角色候选 | 同一数据源的 `characters` 语义目录 | `/internal/semantic/characters`，`querySemanticCharactersForSkill`，Tool `query_semantic_characters` | 消费已发布`search`/`resolve`合同并实现当前仓库Host adapter、Tool注册与Modal投影 |
 
-数据源仓库的OpenAPI、只读handler、Catalog discovery、CLI和版本发布不属于本Ticket执行范围。它们已经由数据源仓库发布 v0.82.2；本Ticket只能通过Installation配置的`source.catalogCliPath`消费该已发布CLI，并按`config/source-contract-v0.82.2.json`校验，不得进入数据源checkout修改文件或伪造第二份来源schema或CLI。
+数据源仓库的OpenAPI、只读handler、Catalog discovery、CLI和版本发布不属于本Ticket执行范围。它们已经由数据源仓库发布 v0.82.2；本Ticket只能通过 `production` Configuration Profile 的`source.catalogCliPath`消费该已发布CLI，并按`config/source-contract-v0.82.2.json`校验，不得进入数据源checkout修改文件或伪造第二份来源schema或CLI。
 
-> v0.82.2 已正式采用：本 PRD 中旧的 `contract_id`/`contract_version` wrapper 与 CLI 业务 Schema 校验表述由 `docs/v0.1/source-contract-v0.82.2.md` 和 `config/source-contract-v0.82.2.json` 取代。Harness 读取 v0.82.2 raw-passthrough envelope，source pin 来自 Installation，不来自 live body。
+> v0.82.2 已正式采用：本 PRD 中旧的 `contract_id`/`contract_version` wrapper 与 CLI 业务 Schema 校验表述由 `docs/v0.1/source-contract-v0.82.2.md` 和 `config/source-contract-v0.82.2.json` 取代。Harness 读取 v0.82.2 raw-passthrough envelope，source pin 来自 `production` Configuration Profile，不来自 live body。
 
 ## Catalog 请求与响应
 
@@ -45,7 +45,7 @@ Skill选择继续使用Ticket 02项目composer渲染的Harness原生input overla
 - `search`：接受 `query`、`page`、`page_size` 和该资源允许的筛选；Workflow 模板允许 `base_model_id`，角色允许 `work_id`，底模没有 `base_model_id` 筛选。
 - `resolve`：接受唯一稳定 `id`，不接受名称回搜；不存在时返回 `CATALOG_REF_NOT_FOUND`。
 
-Catalog CLI 成功 body 采用 v0.82.2 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope。Harness adapter 将 `results` 映射为内部 `items`，从 Installation pin 写入内部 `source_release_version`，从 `config/source-contract-v0.82.2.json` 的 operation manifest 写入 `kind` 与 `result_contract_id`。每个内部 item 至少包含稳定字符串`id`、`title`、可选`subtitle`、可为空的浏览器安全`cover_url`和安全`data`；`cover_url`不得是本机文件路径或凭据。live body 不要求返回 `contract_id`、`contract_version`、`source_release_version` 或 `items`。
+Catalog CLI 成功 body 采用 v0.82.2 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope。Harness adapter 将 `results` 映射为内部 `items`，从 `production` Configuration Profile 写入内部 `source_release_version`，从 `config/source-contract-v0.82.2.json` 的 operation manifest 写入 `kind` 与 `result_contract_id`。每个内部 item 至少包含稳定字符串`id`、`title`、可选`subtitle`、可为空的浏览器安全`cover_url`和安全`data`；`cover_url`不得是本机文件路径或凭据。live body 不要求返回 `contract_id`、`contract_version`、`source_release_version` 或 `items`。
 
 ## Catalog CLI 与 Harness Tool 落地
 
@@ -63,7 +63,7 @@ Catalog CLI 成功 body 采用 v0.82.2 `status: "ok"`、`message: null`、`resul
 
 Catalog Tool参数只能是以下两个闭合对象之一：`search`对象为`{ mode: "search", query?, page?, page_size?, <manifest允许的筛选>? }`；`resolve`对象为`{ mode: "resolve", id }`。一次Tool Call只能查询一个资源目标。Tool参数不得出现批量`queries`、批量`groups`、CLI路径、OpenAPI path、operationId、Workspace ID、Session ID、数字turn、Tool call identity或数据源传输关联字段。`resolve`成功时`items`必须恰好包含一项，并且`page`、`page_size`和`total_count`都等于`1`。
 
-`StructuredCliGenerationCatalog`只能从Host Configuration读取`source.catalogCliPath`。Host启动时先以前台子进程执行`imagegen-semantic-query --discovery-json`，要求 v0.82.2 Catalog 裸 OpenAPI 3.1 shape，再完成 `config/source-contract-v0.82.2.json` manifest 核对。每次Tool调用执行同一已配置 CLI 的 operation 参数；CLI路径、operationId、HTTP path和宿主身份只能来自 manifest/Installation，不能由 Agent、Skill、浏览器或Tool参数提供。adapter必须把Harness Tool执行的`AbortSignal`传给子进程，取消Tool时终止该子进程。
+`StructuredCliGenerationCatalog`只能从Host Configuration读取`source.catalogCliPath`。Host启动时先以前台子进程执行`imagegen-semantic-query --discovery-json`，要求 v0.82.2 Catalog 裸 OpenAPI 3.1 shape，再完成 `config/source-contract-v0.82.2.json` manifest 核对。每次Tool调用执行同一已配置 CLI 的 operation 参数；CLI路径、operationId、HTTP path和宿主身份只能来自 manifest或Configuration Profile，不能由 Agent、Skill、浏览器或Tool参数提供。adapter必须把Harness Tool执行的`AbortSignal`传给子进程，取消Tool时终止该子进程。
 
 CLI非零退出、空stdout、stdout含多个JSON值、响应schema不匹配或operation identity不匹配时，Catalog Tool必须返回固定Catalog错误码和可执行的用户说明。Tool Result、日志和浏览器错误不得包含CLI stderr、可执行文件路径、数据库路径、凭据或数据源传输关联值。Catalog查询不允许静默重试、回退到原型数组或改用另一个operation。
 
@@ -71,9 +71,9 @@ CLI非零退出、空stdout、stdout含多个JSON值、响应schema不匹配或o
 
 本节是本 PRD 中关于源数据响应和 discovery 的最新规范，优先于本文件前面引用旧 `contract_id`/`contract_version` wrapper、直接 `items` 响应或 CLI 业务 Schema 校验的句子；唯一结构化字段来源是 `config/source-contract-v0.82.2.json`。
 
-Harness Installation 固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`。Catalog discovery 必须是顶层字段为 `openapi`、`info`、`x-imagegen-media-origin`、`paths`、`components` 的 OpenAPI 3.1 对象；Source discovery 必须是 `status`、`message`、`results`、`page`、`page_size`、`total_count` 成功 envelope，OpenAPI 位于 `results[0]`。live body 不要求返回 source pin 字段。
+`production` Configuration Profile 固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`。Catalog discovery 必须是顶层字段为 `openapi`、`info`、`x-imagegen-media-origin`、`paths`、`components` 的 OpenAPI 3.1 对象；Source discovery 必须是 `status`、`message`、`results`、`page`、`page_size`、`total_count` 成功 envelope，OpenAPI 位于 `results[0]`。live body 不要求返回 source pin 字段。
 
-Catalog 与 Source 目标成功响应都必须先通过 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope 校验。Catalog adapter 将 `results` 映射为内部 `items`，从 Installation 写入内部 `source_release_version`，从 operation manifest 写入内部 `kind` 与 `result_contract_id`；Source adapter 以 `results` 单项记录为输入。CLI 只做非空、严格 UTF-8、单个 JSON 值检查，Harness adapter 负责业务 Schema 校验。
+Catalog 与 Source 目标成功响应都必须先通过 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope 校验。Catalog adapter 将 `results` 映射为内部 `items`，从 `production` Configuration Profile 写入内部 `source_release_version`，从 operation manifest 写入内部 `kind` 与 `result_contract_id`；Source adapter 以 `results` 单项记录为输入。CLI 只做非空、严格 UTF-8、单个 JSON 值检查，Harness adapter 负责业务 Schema 校验。
 
 Source TemplateBundle 的 `expected_output_node_ids_json` 必须是非空数组；`null`、空数组、缺失或非法值统一返回 `SOURCE_TEMPLATE_UNAVAILABLE`，不得从 `workflow_json` 推导或补默认值。
 
@@ -102,7 +102,7 @@ Source TemplateBundle 的 `expected_output_node_ids_json` 必须是非空数组�
 2. 数据源数据库或服务记录在查询、选择、解析和发送期间没有写操作。
 3. 用户选择一个模板和一个角色并发送；Session只增加一条用户消息和一个 text content，该 content包含正文和两个顺序固定的不可变快照，底模不在快照中。关闭浏览器并重新打开 Session后，项目 user renderer仍从该原生消息显示正文和两个折叠快照。
 4. 删除或隐藏已选来源记录后执行发送，消息提交失败且草稿完整保留；恢复来源后同一草稿可以发送成功。
-5. Release Artifact 不包含 prototype catalog 数组；运行 Client 断网或数据源停止时不能继续显示一组伪造候选。
+5. 生产源码不包含 prototype catalog 数组；运行 Client 断网或数据源停止时不能继续显示一组伪造候选。
 6. 视觉与语义审核者逐项检查 Modal 三栏、3×2 固定卡片、实际封面、无封面占位、第二页、详情、确认区、chip、错误态、折叠快照和文案指代。
 7. 用户在同一输入区添加真实图片附件，查看预览，删除后重新添加，并与正文和Message Context通过一次`SessionFace.prompt(parts, 'queue')`发送；发送失败时File、preview、正文和chip全部保留，发送成功或用户删除附件时回收对应object URL。Harness原生Session只增加一条用户消息，Host attachment store保存该消息的图片。
 8. 真实Harness Tool registry只通过`registerProjectTools()`出现上述三个Catalog Tool；contract test逐项核对Tool名称、description、闭合输入/输出schema、Catalog operation path、CLI参数顺序、search/resolve结果、取消子进程、discovery漂移整组拒绝和Host卸载注销。测试必须确认Tool调用及Tool Result均不存在旧批量字段、来源Pi字段或数据源传输关联字段。

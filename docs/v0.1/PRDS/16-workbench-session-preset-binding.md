@@ -63,7 +63,7 @@ Ticket 02当前Client插件的`inject`必须增加公开`connection` service。�
 
 ## 产品验收
 
-1. 在本 Ticket自己的Git worktree中复用产品管理CLI创建`runtime/production/` installation，启动真实Host与Client。
+1. 在仓库根目录执行`pnpm prod:start`，启动当前源码中的真实Host与Client。
 2. 初始没有Session时，浏览器只创建一个`harness-comfyui` Session；左列出现该记录并自动打开。
 3. 用户在原型对应输入区发送普通文本；真实Harness Agent接收消息并产生流式回复，中列保留Ticket 02的原型1:1布局与状态。
 4. 同时存在`standard`、`minimal`、subagent与两个`harness-comfyui` Session时，左列只显示两个项目Session，并按Harness列表数据打开符合规则的项目Session。

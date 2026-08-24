@@ -6,7 +6,7 @@ Ticket 04 — 通过 Agent 生成一张图片并下载可导入 Workflow。
 
 ## Harness 核心零改动与公共接口
 
-Release Artifact必须包含`skills/comfyui-generate/`。Ticket 15交付的`harness-comfyui` Agent Preset必须通过`includeDefaultRoots: false`与`customSkillDirs: [HARNESS_COMFYUI_SKILL_DIR]`只读取当前release的`package/skills`；安装程序不得把项目Skill复制到`DSH_HOME/skills`。用户必须通过Ticket 02保留的Harness原生`/` Skill菜单选择`comfyui-generate`；项目不得调用SkillsApi重做该菜单或保存Skill选择状态。Host `dsh-tool-skill`在执行前重新发现并校验。
+项目源码必须包含`skills/comfyui-generate/`。`harness-comfyui` Agent Preset必须通过`includeDefaultRoots: false`与项目Skill目录配置只读取当前源码中的项目Skill。用户必须通过Ticket 02保留的Harness原生`/` Skill菜单选择`comfyui-generate`；项目不得调用SkillsApi重做该菜单或保存Skill选择状态。Host `dsh-tool-skill`在执行前重新发现并校验。
 
 本Ticket只使用`@deepseek-ai/dsh-tools`的`defineTool()`和`ToolRunContext.callId`构造`generate_with_comfyui`，并通过PRD 01的`registerProjectTools()`注册；项目从`exec.agent.id`、`exec.agent.session.events`与`@deepseek-ai/dsh-workspace`的`ctx.workspaceRegistry.list()`取得Session、数字turn与Workspace关联。Tool Host adapter必须先按`exec.callId`在公开事件序列中唯一找到原生`tool/call`，读取该事件的数字`turn`与`seq`；然后唯一找到同一数字`turn`且`seq`小于Tool Call的最近一条`turn/start`边界；最后只扫描`turn/start.seq < event.seq < tool/call.seq`范围内的`user/message.source`，要求至少一条完全等于`{ kind: "skill-invocation", name: "comfyui-generate", form: "instructions" }`。`tool/call`、`turn/start`或边界无法唯一确定，或者该范围没有目标Context时，Host返回`GENERATION_SKILL_INVOCATION_REQUIRED`并且不得创建Run、持久映射或调用`/prompt`。Host不得扫描整个Session，也不得把上一数字turn的Skill Invocation用于当前Tool Call。模型参数不得包含`call_id`、Session ID、数字turn或Workspace ID。
 
@@ -26,7 +26,7 @@ Release Artifact必须包含`skills/comfyui-generate/`。Ticket 15交付的`harn
 
 浏览器用户在中列项目输入框输入`/`并从Harness原生Skill菜单选择`comfyui-generate`，发送包含真实Workflow模板、角色和图片要求的消息；Agent调用一次`generate_with_comfyui`。Tool运行期间中列显示“正在创建 ComfyUI 运行”；Tool Result返回合法meta后，中列持续显示该`run_id`的异步状态摘要，右列显示同一Store快照的详细图片生成状态与结果；用户下载该运行保存的Actual Workflow。
 
-tarball-only验收必须在来源 checkout不存在时完成 Skill发现与选择；测试不得从当前仓库 `skills/`、用户全局 `DSH_HOME` 或测试 fixture补入该 Skill。
+源码生产验收必须从当前源码配置的项目Skill目录完成Skill发现与选择；测试不得从用户全局`DSH_HOME`或测试fixture补入该Skill。
 
 ## 原型依据
 
@@ -36,14 +36,14 @@ tarball-only验收必须在来源 checkout不存在时完成 Skill发现与选�
 
 ## Host-only Source Operation
 
-以下两个`audience: source-host`只读operation及`imagegen-comfyui-source-read`必须先按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`在数据源仓库自己的计划、测试和发布流程中实现。本Ticket不得修改数据源checkout；本Ticket只实现当前仓库`ComfyuiSourceCatalog`并消费Installation中`source.sourceCliPath`指向的已发布CLI。未取得受支持的数据源contract版本时，本Ticket状态为阻塞：
+以下两个`audience: source-host`只读operation及`imagegen-comfyui-source-read`必须先按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`在数据源仓库自己的计划、测试和发布流程中实现。本Ticket不得修改数据源checkout；本Ticket只实现当前仓库`ComfyuiSourceCatalog`并消费`production` Configuration Profile中`source.sourceCliPath`指向的已发布CLI。未取得受支持的数据源contract版本时，本Ticket状态为阻塞：
 
 | Source GET path | operationId | 输入 | Host-only 输出 |
 |---|---|---|---|
 | `/internal/comfyui-source/instances/{instance_id}` | `getComfyuiInstanceSourceForHost` | 稳定 `instance_id` | v0.82.2 `results[0]` 实例记录；adapter 映射为内部 InstanceSnapshot，不把 `authorization` 写入持久快照；不存在和凭据不可用分别返回`SOURCE_INSTANCE_NOT_FOUND`与`SOURCE_CREDENTIAL_UNAVAILABLE` |
 | `/internal/comfyui-source/templates/{template_id}/bundle` | `getComfyuiTemplateBundleForHost` | 稳定 `template_id` | v0.82.2 `results[0]` 模板记录；adapter 映射为内部 TemplateBundle；不存在或 `expected_output_node_ids_json` 缺失/空/非法分别返回`SOURCE_TEMPLATE_NOT_FOUND`与`SOURCE_TEMPLATE_UNAVAILABLE` |
 
-Source discovery固定为 v0.82.2 `imagegen-comfyui-source-read --discovery-json` 成功 envelope；Harness adapter 要求顶层 `status`、`message`、`results`、`page`、`page_size`、`total_count`，并要求 `results[0]` 为 OpenAPI 3.1 文档。Harness Installation pin 来自 `source.contractId` 与 `source.sourceReleaseVersion`，不从 live body 读取。两个Source Operation不声明Harness Tool名，不生成Client remote contribution，也不出现在Agent Tool、Skill Tool或`ctx.remote`。
+Source discovery固定为 v0.82.2 `imagegen-comfyui-source-read --discovery-json` 成功 envelope；Harness adapter 要求顶层 `status`、`message`、`results`、`page`、`page_size`、`total_count`，并要求 `results[0]` 为 OpenAPI 3.1 文档。source pin 来自 `production` Configuration Profile的`source.contractId`与`source.sourceReleaseVersion`，不从 live body 读取。两个Source Operation不声明Harness Tool名，不生成Client remote contribution，也不出现在Agent Tool、Skill Tool或`ctx.remote`。
 
 `ComfyuiSourceCatalog`必须逐字段采用源数据实施文档规定的`InstanceSource -> PrivateComfyuiInstanceSnapshot`映射，并逐错误采用以下唯一映射：四个实例错误和两个模板错误保持同名；discovery identity或版本不匹配返回`SOURCE_CONTRACT_UNSUPPORTED`；`SOURCE_REQUEST_INVALID`、`SOURCE_DATABASE_BUSY`和`SOURCE_INTERNAL_ERROR`逐项返回`SOURCE_PROTOCOL_ERROR`；CLI连接、超时、未声明服务错误、非JSON、空stdout、多JSON或响应Schema错误也返回`SOURCE_PROTOCOL_ERROR`。Issue执行者不得为缺失字段提供默认值，也不得把禁用与未验证合并。
 
@@ -53,7 +53,7 @@ Source discovery固定为 v0.82.2 `imagegen-comfyui-source-read --discovery-json
 
 本节是本 PRD 中 Source discovery、InstanceSource 和 TemplateBundle 的最新规范，优先于本文件前面要求旧 `contract_id`/`contract_version` wrapper 或直接 Source response 的句子；唯一结构化字段来源是 `config/source-contract-v0.82.2.json`。
 
-Harness Installation 固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`。`imagegen-comfyui-source-read --port <source-service-port> --discovery-json` 必须返回成功 Source envelope，顶层字段为 `status`、`message`、`results`、`page`、`page_size`、`total_count`，且 `results[0]` 是 OpenAPI 3.1 文档；live body 不要求返回 source pin 字段。Source 目标成功响应同样先通过 v0.82.2 envelope 校验，再从 `results` 读取一条记录。
+`production` Configuration Profile固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`。`imagegen-comfyui-source-read --port <source-service-port> --discovery-json` 必须返回成功 Source envelope，顶层字段为 `status`、`message`、`results`、`page`、`page_size`、`total_count`，且 `results[0]` 是 OpenAPI 3.1 文档；live body 不要求返回 source pin 字段。Source 目标成功响应同样先通过 v0.82.2 envelope 校验，再从 `results` 读取一条记录。
 
 InstanceSource 的 `results[0]` 必须包含 `id`、`title`、`url`、`credential_type` 和 `authorization`；`authorization` 只保存在 Host 进程内存，持久快照不保存它。TemplateBundle 的 `results[0]` 必须包含 `id`、`title`、`revision_number`、`workflow_sha256`、`workflow_json`、`config_revision`、`dimension_strategy`、`parameters_json`、`bindings_json` 和 `expected_output_node_ids_json`。Harness adapter 按结构化合同映射这些字段，不从源数据库读取或推导字段。
 

@@ -19,7 +19,7 @@ Harness 只消费以下已发布源数据版本：
 - Host-only Source CLI：`imagegen-comfyui-source-read`
 - source service：调用方通过 `--port` 指定的本机回环服务
 
-`source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"` 是 Harness Installation 的固定 pin。它们不是 v0.82.2 live discovery 或目标响应中必须出现的字段，Harness 不从响应 body 猜测或补读这两个值。
+`source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"` 是 `production` Configuration Profile 的固定 pin。它们不是 v0.82.2 live discovery 或目标响应中必须出现的字段，Harness 不从响应 body 猜测或补读这两个值。
 
 # CLI 传输合同
 
@@ -31,7 +31,7 @@ Harness 只消费以下已发布源数据版本：
 4. 非零退出、空 stdout、多 JSON 值、非法 UTF-8、连接、超时和取消由 CLI 退出码表达；Harness adapter 把这些情况映射为 `SOURCE_PROTOCOL_ERROR`，但不得把 CLI stderr、路径、数据库位置或凭据写入 Tool Result、日志或浏览器。
 5. Harness 不直接请求 HTTP，不调用源仓库内部模块，不执行源仓库脚本，也不根据原型 fixture 补齐响应。
 
-Catalog CLI 只使用安装配置的绝对可执行路径和当前 Source service port；调用参数由结构化 operation manifest 生成。Source CLI 只允许 `instance --id` 与 `template-bundle --id` 两种读取命令。
+Catalog CLI 只使用生产配置的可执行路径和当前 Source service port；调用参数由结构化 operation manifest 生成。Source CLI 只允许 `instance --id` 与 `template-bundle --id` 两种读取命令。
 
 # Discovery 合同
 
@@ -91,7 +91,7 @@ Catalog adapter 必须：
 
 1. 先校验 Catalog discovery，再注册全部十个 Catalog Tool。
 2. 将成功响应的 `results` 映射为内部 `items`；不能要求源 body 提供 `items`、`kind`、`source_release_version` 或 `result_contract_id`。
-3. 从 Installation 的 `source.sourceReleaseVersion` 写入内部 `source_release_version`，从本地 operation manifest 写入 `kind` 与 `result_contract_id`。
+3. 从 `production` Configuration Profile 的 `source.sourceReleaseVersion` 写入内部 `source_release_version`，从本地 operation manifest 写入 `kind` 与 `result_contract_id`。
 4. 对每个 operation 按 live OpenAPI 业务 Schema校验字段；Schema 不匹配、结果记录缺少必需字段或 `resolve` 不是单项时返回 `SOURCE_PROTOCOL_ERROR`。
 5. 保留合法空集合；空集合不是错误，也不能用 prototype fixture 补齐。
 6. 不把 ComfyUI Instance 转为 `ContextRef`；Instance 只提供 Execution Route 安全投影。
@@ -102,7 +102,7 @@ Catalog adapter 必须：
 
 ## InstanceSource
 
-`results` 必须恰好包含一条记录，并且记录至少包含 `id`、`title`、`url`、`credential_type` 和 `authorization`。`authorization` 只进入 Host 进程内存；持久快照只保存 `id`、`title` 和 `credential_type`，不得写入 Client、Session、Tool Result、日志或 Release Artifact。
+`results` 必须恰好包含一条记录，并且记录至少包含 `id`、`title`、`url`、`credential_type` 和 `authorization`。`authorization` 只进入 Host 进程内存；持久快照只保存 `id`、`title` 和 `credential_type`，不得写入 Client、Session、Tool Result、日志或本地运行文件。
 
 ## TemplateBundle
 
@@ -123,7 +123,7 @@ Catalog adapter 必须：
 
 `expected_output_node_ids_json` 必须是非空数组。值为 `null`、空数组、非法 JSON 或缺失时，adapter 返回 `SOURCE_TEMPLATE_UNAVAILABLE`；Harness 不从 `workflow_json` 推导节点、不补默认节点、不读取源数据库内部表，也不调用 ComfyUI。
 
-当前模板结果没有独立 `source_revision` 字段。Harness 快照使用 Installation pin `source_release_version: "0.82.2"` 作为来源发布标识，不把它伪装成 Workflow revision 或 runtime config revision。
+当前模板结果没有独立 `source_revision` 字段。Harness 快照使用 Configuration Profile pin `source_release_version: "0.82.2"` 作为来源发布标识，不把它伪装成 Workflow revision 或 runtime config revision。
 
 # Ticket 状态门禁
 
