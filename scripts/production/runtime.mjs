@@ -10,7 +10,7 @@ import {
   validateProductAgentRuntime,
 } from './product-agent.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
-import { loadProfile } from '../../lib/config-profile-validator.js'
+import { loadProfile } from '../../src/config/load-profile.ts'
 
 export const SOURCE_RUNTIME_STATE_SCHEMA_VERSION = 1
 export const SOURCE_MANAGED_STATE_SCHEMA_VERSION = 1

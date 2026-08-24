@@ -20,6 +20,10 @@ function isIgnored(relativePath: string): boolean {
   return gitSucceeds(['check-ignore', '--no-index', '--quiet', '--', relativePath])
 }
 
+function isTracked(relativePath: string): boolean {
+  return gitSucceeds(['ls-files', '--error-unmatch', '--', relativePath])
+}
+
 describe('source runtime git isolation', () => {
   it('ignores generated source runtime state while keeping product source files tracked', () => {
     const runtimeArtifacts = [
@@ -28,7 +32,13 @@ describe('source runtime git isolation', () => {
       '.local/production/shared/logs/host.stdout.log',
       '.local/source-production-managed.json',
     ]
-    const productSources = ['src/host/plugin.ts', 'scripts/production/cli.mjs', 'package.json']
+    const productSources = [
+      'src/config/load-profile.ts',
+      'src/host/plugin.ts',
+      'scripts/production/cli.mjs',
+      'scripts/production/runtime.mjs',
+      'package.json',
+    ]
 
     for (const relativePath of runtimeArtifacts) {
       expect(isIgnored(relativePath), `${relativePath} must be ignored`).toBe(true)
@@ -37,6 +47,7 @@ describe('source runtime git isolation', () => {
     for (const relativePath of productSources) {
       expect(existsSync(resolve(repositoryRoot, relativePath)), `${relativePath} must exist`).toBe(true)
       expect(isIgnored(relativePath), `${relativePath} must not be ignored`).toBe(false)
+      expect(isTracked(relativePath), `${relativePath} must be tracked`).toBe(true)
     }
   })
 })
