@@ -134,6 +134,7 @@ describe('workbench theme projection', () => {
     expect(body.style.getPropertyValue('--unrelated-token')).toBe('unrelated')
 
     dispose()
+    dispose()
     expect(off).toHaveBeenCalledOnce()
     expect(documentElement.style.getPropertyValue('color-scheme')).toBe('pre-existing')
     expect(body.getAttribute('data-ds-dark-theme')).toBe('pre-existing')
@@ -141,5 +142,64 @@ describe('workbench theme projection', () => {
     expect(body.style.getPropertyValue('--stale-token')).toBe('')
     expect(body.style.getPropertyValue('--fresh-token')).toBe('')
     expect(body.style.getPropertyValue('--unrelated-token')).toBe('unrelated')
+  })
+
+  it('preserves external mutations when disposal no longer owns the projected values', () => {
+    const documentElement = createElement()
+    const body = createElement()
+    documentElement.style.setProperty('color-scheme', 'pre-existing')
+    body.setAttribute('data-ds-dark-theme', 'pre-existing')
+    body.style.setProperty('--owned-token', 'pre-existing')
+    setDocument({ documentElement, body })
+
+    const dispose = installThemeProjection({
+      theme: {
+        getTheme: () => ({
+          active: {
+            colorScheme: 'dark',
+            tokens: { '--owned-token': 'projected' },
+          },
+        }),
+      },
+      on: () => () => undefined,
+    } as never)
+
+    documentElement.style.setProperty('color-scheme', 'external')
+    body.setAttribute('data-ds-dark-theme', 'external')
+    body.style.setProperty('--owned-token', 'external')
+
+    dispose()
+
+    expect(documentElement.style.getPropertyValue('color-scheme')).toBe('external')
+    expect(body.getAttribute('data-ds-dark-theme')).toBe('external')
+    expect(body.style.getPropertyValue('--owned-token')).toBe('external')
+  })
+
+  it('restores the document when theme subscription setup fails', () => {
+    const documentElement = createElement()
+    const body = createElement()
+    documentElement.style.setProperty('color-scheme', 'pre-existing')
+    body.style.setProperty('--owned-token', 'pre-existing')
+    setDocument({ documentElement, body })
+    const subscriptionError = new Error('theme subscription failed')
+
+    expect(() => installThemeProjection({
+      theme: {
+        getTheme: () => ({
+          active: {
+            colorScheme: 'dark',
+            tokens: { '--owned-token': 'projected', '--new-token': 'new' },
+          },
+        }),
+      },
+      on: () => {
+        throw subscriptionError
+      },
+    } as never)).toThrow(subscriptionError)
+
+    expect(documentElement.style.getPropertyValue('color-scheme')).toBe('pre-existing')
+    expect(body.hasAttribute('data-ds-dark-theme')).toBe(false)
+    expect(body.style.getPropertyValue('--owned-token')).toBe('pre-existing')
+    expect(body.style.getPropertyValue('--new-token')).toBe('')
   })
 })
