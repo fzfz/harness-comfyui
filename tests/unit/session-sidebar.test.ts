@@ -18,6 +18,24 @@ const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/serve
   renderToStaticMarkup(node: ReactNode): string
 }
 
+type TestRendererNode = {
+  props: Record<string, unknown>
+}
+
+type TestRenderer = {
+  root: {
+    findByProps(props: Record<string, unknown>): TestRendererNode
+  }
+  unmount(): void
+}
+
+type TestRendererApi = {
+  act(callback: () => void): void
+  create(element: ReactNode): TestRenderer
+}
+
+const { act, create: createTestRenderer } = createRequire(import.meta.url)('react-test-renderer') as TestRendererApi
+
 function summary(id: string, title: string, updatedAt: number): SessionSummary {
   return {
     id: id as SessionSummary['id'],
@@ -80,6 +98,8 @@ describe('real Harness Session sidebar', () => {
     expect(initial).toContain('data-session-id="video"')
     expect(initial).toContain('data-session-id="comparison"')
     expect(initial).toContain('class="session-row is-current"')
+    expect(initial).toContain('data-sidebar-collapsed="false"')
+    expect(initial).toContain('data-sidebar-width="294"')
     expect(initial).toContain('<div class="session-heading-copy">')
     expect(initial).toContain('<p class="section-kicker">SESSION</p>')
     expect(initial).toContain('<svg viewBox="0 0 20 20" aria-hidden="true">')
@@ -89,6 +109,14 @@ describe('real Harness Session sidebar', () => {
     expect(initial).toContain('<span>会话历史由 Harness 保存</span>')
     expect(initial).toContain('placeholder="搜索会话"')
     expect(initial).toContain('0 项运行')
+
+    const collapsed = renderToStaticMarkup(createElement(sidebar, {
+      collapsed: true,
+      width: 320,
+      useSessions: <S,>(selector: (snapshot: SessionListState) => S) => selector(initialState),
+    }))
+    expect(collapsed).toContain('data-sidebar-collapsed="true"')
+    expect(collapsed).toContain('data-sidebar-width="320"')
 
     const today = new Date()
     today.setHours(12, 0, 0, 0)
@@ -154,6 +182,43 @@ describe('real Harness Session sidebar', () => {
     expect(updatedMarkup).toContain('class="session-row is-current"')
     expect(updatedMarkup).not.toContain('data-session-id="portrait"')
     expect(updatedMarkup).not.toContain('data-session-id="comparison"')
+  })
+
+  it('opens the exact session id through the public sidebar wrapper row handler', () => {
+    const open = vi.fn()
+    const sessions = { open } as unknown as ISessions
+    const Sidebar = createSessionSidebar(sessions)
+    const snapshot = state('portrait', [
+      summary('portrait', '角色立绘调整', 1_723_300_320_000),
+      summary('video', '测试视频工作流', 1_723_296_480_000),
+    ])
+    let renderer: TestRenderer | undefined
+
+    try {
+      act(() => {
+        renderer = createTestRenderer(createElement(Sidebar, {
+          collapsed: false,
+          width: 294,
+          useSessions: <S,>(selector: (current: SessionListState) => S) => selector(snapshot),
+        }))
+      })
+      if (renderer === undefined) throw new Error('sidebar renderer did not mount')
+      const mountedRenderer = renderer
+      const row = mountedRenderer.root.findByProps({ 'data-session-id': 'video' })
+
+      act(() => {
+        const onClick = row.props.onClick as () => void
+        onClick()
+      })
+      expect(open).toHaveBeenCalledOnce()
+      expect(open).toHaveBeenCalledWith('video')
+    } finally {
+      if (renderer !== undefined) {
+        act(() => {
+          renderer?.unmount()
+        })
+      }
+    }
   })
 
   it('keeps the owned sidebar CSS at prototype desktop values', () => {

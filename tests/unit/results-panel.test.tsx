@@ -10,6 +10,25 @@ import {
   type ResultsTab,
 } from '../../src/client/workbench/results-panel.tsx'
 
+type TestRendererNode = {
+  props: Record<string, unknown>
+}
+
+type TestRenderer = {
+  root: {
+    findByProps(props: Record<string, unknown>): TestRendererNode
+  }
+  update(element: ReactNode): void
+  unmount(): void
+}
+
+type TestRendererApi = {
+  act(callback: () => void): void
+  create(element: ReactNode): TestRenderer
+}
+
+const { act, create: createTestRenderer } = createRequire(import.meta.url)('react-test-renderer') as TestRendererApi
+
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
   renderToStaticMarkup(node: ReactNode): string
 }
@@ -83,6 +102,10 @@ describe('Issue 3 empty results panel', () => {
   })
 
   it('switches tabs through the public view handler and resets to current for a new Session', () => {
+    const currentView = viewElements()
+    currentView.tabButtons[0]?.props.onClick()
+    expect(currentView.onTabChange).toHaveBeenCalledWith('current')
+
     const sessionView = viewElements('session')
     const [, sessionButton] = sessionView.tabButtons
     sessionButton?.props.onClick()
@@ -104,12 +127,48 @@ describe('Issue 3 empty results panel', () => {
     expect(switchedPanels[1]?.props.hidden).toBe(true)
   })
 
-  it('starts every session-scoped occupant on the current tab', () => {
+  it('keeps session tab state across updates and resets it for a different session', () => {
     const ResultsPanel = createResultsPanel()
-    const portrait = renderToStaticMarkup(createElement(ResultsPanel, { sessionId: 'portrait' as SessionId }))
-    const video = renderToStaticMarkup(createElement(ResultsPanel, { sessionId: 'video' as SessionId }))
-    expect(portrait).toContain('id="tab-current" type="button" role="tab" aria-selected="true"')
-    expect(video).toContain('id="tab-current" type="button" role="tab" aria-selected="true"')
+    let renderer: TestRenderer | undefined
+
+    try {
+      act(() => {
+        renderer = createTestRenderer(createElement(ResultsPanel, {
+          sessionId: 'portrait' as SessionId,
+        }))
+      })
+      if (renderer === undefined) throw new Error('results renderer did not mount')
+      const mountedRenderer = renderer
+      const sessionTab = mountedRenderer.root.findByProps({ 'data-result-tab': 'session' })
+      expect(sessionTab.props['aria-selected']).toBe(false)
+
+      act(() => {
+        const onClick = sessionTab.props.onClick as () => void
+        onClick()
+      })
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'session' }).props['aria-selected']).toBe(true)
+
+      act(() => {
+        mountedRenderer.update(createElement(ResultsPanel, {
+          sessionId: 'video' as SessionId,
+        }))
+      })
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'current' }).props['aria-selected']).toBe(true)
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'session' }).props['aria-selected']).toBe(false)
+
+      act(() => {
+        mountedRenderer.update(createElement(ResultsPanel, {
+          sessionId: 'portrait' as SessionId,
+        }))
+      })
+      expect(mountedRenderer.root.findByProps({ 'data-result-tab': 'session' }).props['aria-selected']).toBe(true)
+    } finally {
+      if (renderer !== undefined) {
+        act(() => {
+          renderer?.unmount()
+        })
+      }
+    }
   })
 
   it('keeps the result panel desktop CSS limited to the current empty-state surface', () => {
