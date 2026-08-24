@@ -53,7 +53,14 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function createContext(options: { mountError?: Error; registerErrorName?: string } = {}) {
+function createContext(options: {
+  mountError?: Error
+  registerErrorName?: string
+  injectErrorName?: string
+  provideError?: Error
+  themeGetError?: Error
+  themeSubscribeError?: Error
+} = {}) {
   const events: string[] = []
   const themeSnapshot = { active: { colorScheme: 'light' as const, tokens: {} } }
   const sessionState = {
@@ -74,7 +81,12 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
   }
   const createSignals: AbortSignal[] = []
   const create = vi.fn((_payload: unknown, signal?: AbortSignal) => {
-    if (signal !== undefined) createSignals.push(signal)
+    if (signal !== undefined) {
+      createSignals.push(signal)
+      signal.addEventListener('abort', () => {
+        events.push('session:abort')
+      }, { once: true })
+    }
     return new Promise<unknown>(() => undefined)
   })
   const connection = {
@@ -104,20 +116,26 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
   })
   const inject = vi.fn((name: string, callback: () => () => void) => {
     events.push(`${name}:inject`)
+    if (name === options.injectErrorName) {
+      throw new Error(`${name} injection rejected`)
+    }
     return callback()
   })
   const provide = vi.fn(() => {
     events.push('layout:provide')
+    if (options.provideError !== undefined) throw options.provideError
     return async () => {
       events.push('layout:dispose')
     }
   })
   const getTheme = vi.fn(() => {
     events.push('theme:get')
+    if (options.themeGetError !== undefined) throw options.themeGetError
     return themeSnapshot
   })
   const on = vi.fn((_event: string, _listener: (snapshot: typeof themeSnapshot) => void) => {
     events.push('theme:subscribe')
+    if (options.themeSubscribeError !== undefined) throw options.themeSubscribeError
     return () => {
       events.push('theme:unsubscribe')
     }
@@ -146,6 +164,22 @@ function createContext(options: { mountError?: Error; registerErrorName?: string
     createSignals,
     sessions,
   }
+}
+
+type ApplyFailureOptions = NonNullable<Parameters<typeof createContext>[0]>
+
+async function expectApplyRollback(
+  options: ApplyFailureOptions,
+  rejection: string,
+  expectedEvents: readonly string[],
+) {
+  const fixture = createContext(options)
+
+  await expect(apply(fixture.context as never)).rejects.toThrow(rejection)
+  expect(fixture.events).toEqual(expectedEvents)
+  expect(fixture.createSignals).toHaveLength(1)
+  expect(fixture.createSignals[0]?.aborted).toBe(true)
+  expect(fixture.unmount).toHaveBeenCalledOnce()
 }
 
 describe('Client plugin Host projection', () => {
@@ -306,6 +340,7 @@ describe('Client plugin Host projection', () => {
       'layout:provide',
       'theme:get',
       'theme:subscribe',
+      'session:abort',
       'theme:unsubscribe',
       'layout:dispose',
       'conversation.composer.bar:dispose',
@@ -338,6 +373,7 @@ describe('Client plugin Host projection', () => {
       'remote:mount',
       'root:register',
       'details:register',
+      'session:abort',
       'root:dispose',
       'remote:unmount',
     ])
@@ -354,5 +390,147 @@ describe('Client plugin Host projection', () => {
     expect(fixture.create).toHaveBeenCalledOnce()
     expect(fixture.createSignals).toHaveLength(1)
     expect(fixture.createSignals[0]?.aborted).toBe(true)
+  })
+
+  it('rolls back the mounted Remote and details slot when the sidebar occupant rejects', async () => {
+    await expectApplyRollback(
+      { registerErrorName: 'sidebar' },
+      'sidebar registration rejected',
+      [
+        'remote:mount',
+        'root:register',
+        'details:register',
+        'sidebar:register',
+        'session:abort',
+        'details:dispose',
+        'root:dispose',
+        'remote:unmount',
+      ],
+    )
+  })
+
+  it('rolls back the sidebar and earlier slots when the Session header injection rejects', async () => {
+    await expectApplyRollback(
+      { injectErrorName: 'conversation.session.header' },
+      'conversation.session.header injection rejected',
+      [
+        'remote:mount',
+        'root:register',
+        'details:register',
+        'sidebar:register',
+        'conversation.session.header:inject',
+        'session:abort',
+        'sidebar:dispose',
+        'details:dispose',
+        'root:dispose',
+        'remote:unmount',
+      ],
+    )
+  })
+
+  it('rolls back the Session header and earlier slots when the conversation view injection rejects', async () => {
+    await expectApplyRollback(
+      { injectErrorName: 'conversation.view' },
+      'conversation.view injection rejected',
+      [
+        'remote:mount',
+        'root:register',
+        'details:register',
+        'sidebar:register',
+        'conversation.session.header:inject',
+        'conversation.session.header:register',
+        'conversation.view:inject',
+        'session:abort',
+        'conversation.session.header:dispose',
+        'sidebar:dispose',
+        'details:dispose',
+        'root:dispose',
+        'remote:unmount',
+      ],
+    )
+  })
+
+  it('rolls back the conversation view and earlier slots when the composer injection rejects', async () => {
+    await expectApplyRollback(
+      { injectErrorName: 'conversation.composer.bar' },
+      'conversation.composer.bar injection rejected',
+      [
+        'remote:mount',
+        'root:register',
+        'details:register',
+        'sidebar:register',
+        'conversation.session.header:inject',
+        'conversation.session.header:register',
+        'conversation.view:inject',
+        'conversation.view:register',
+        'conversation.composer.bar:inject',
+        'session:abort',
+        'conversation.view:dispose',
+        'conversation.session.header:dispose',
+        'sidebar:dispose',
+        'details:dispose',
+        'root:dispose',
+        'remote:unmount',
+      ],
+    )
+  })
+
+  it('rolls back all slots when the public layout service cannot be provided', async () => {
+    await expectApplyRollback(
+      { provideError: new Error('layout service rejected') },
+      'layout service rejected',
+      [
+        'remote:mount',
+        'root:register',
+        'details:register',
+        'sidebar:register',
+        'conversation.session.header:inject',
+        'conversation.session.header:register',
+        'conversation.view:inject',
+        'conversation.view:register',
+        'conversation.composer.bar:inject',
+        'conversation.composer.bar:register',
+        'layout:provide',
+        'session:abort',
+        'conversation.composer.bar:dispose',
+        'conversation.view:dispose',
+        'conversation.session.header:dispose',
+        'sidebar:dispose',
+        'details:dispose',
+        'root:dispose',
+        'remote:unmount',
+      ],
+    )
+  })
+
+  it('rolls back the layout service and all slots when theme installation rejects', async () => {
+    await expectApplyRollback(
+      { themeSubscribeError: new Error('theme subscription rejected') },
+      'theme subscription rejected',
+      [
+        'remote:mount',
+        'root:register',
+        'details:register',
+        'sidebar:register',
+        'conversation.session.header:inject',
+        'conversation.session.header:register',
+        'conversation.view:inject',
+        'conversation.view:register',
+        'conversation.composer.bar:inject',
+        'conversation.composer.bar:register',
+        'layout:provide',
+        'theme:get',
+        'theme:subscribe',
+        'session:abort',
+        'layout:dispose',
+        'conversation.composer.bar:dispose',
+        'conversation.view:dispose',
+        'conversation.session.header:dispose',
+        'sidebar:dispose',
+        'details:dispose',
+        'root:dispose',
+        'remote:unmount',
+      ],
+    )
   })
 })
