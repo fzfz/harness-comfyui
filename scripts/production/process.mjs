@@ -13,8 +13,6 @@ import { spawn } from 'node:child_process'
 import { createConnection, createServer } from 'node:net'
 import { dirname, join, resolve } from 'node:path'
 
-import { readProductAgentConfig } from './product-agent.mjs'
-
 export const PROCESS_STATE_SCHEMA_VERSION = 1
 export const OPERATION_SCHEMA_VERSION = 1
 const HARNESS_ENVIRONMENT_PREFIX = 'HARNESS_COMFYUI_'
@@ -299,8 +297,7 @@ async function validateRunningAgentPresetRoster(runtime, productAgent) {
   return validateAgentPresetRoster(await readAgentPresetRoster(runtime), productAgent)
 }
 
-async function buildHostEnvironment(runtime, runtimeTarget, productAgent = undefined) {
-  const resolvedProductAgent = productAgent ?? await readProductAgentConfig(runtimeTarget.packageRoot)
+async function buildHostEnvironment(runtime, runtimeTarget) {
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
   )
@@ -309,7 +306,6 @@ async function buildHostEnvironment(runtime, runtimeTarget, productAgent = undef
     DSH_HOME: runtimeTarget.dshHome,
     DSH_TOOLS_MODE: 'native',
     HARNESS_COMFYUI_PACKAGE_VERSION: runtimeTarget.activeVersion,
-    HARNESS_COMFYUI_SKILL_DIR: resolve(runtimeTarget.packageRoot, resolvedProductAgent.skillRelativeRoot),
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: runtime.configurationProfile,
     HARNESS_COMFYUI_DATA_DIR: runtime.paths.dataDir,
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: runtime.paths.runRepositoryFile,

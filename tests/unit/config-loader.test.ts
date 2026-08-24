@@ -279,20 +279,6 @@ describe('Configuration Profile loader', () => {
     throw new Error('expected an unlisted HARNESS_COMFYUI override to be rejected')
   })
 
-  it('allows the Agent composition Skill directory to pass through without adding a Profile field', () => {
-    const profile = loadProfile('production', {
-      configRoot: 'config',
-      environment: {
-        ...isolatedEnvironment,
-        HARNESS_COMFYUI_SKILL_DIR: '/release/package/skills',
-      },
-    })
-
-    expect(profile.paths.dataDir).toBe('.local/isolated/data')
-    expect('HARNESS_COMFYUI_SKILL_DIR' in profile).toBe(false)
-    expect(Object.keys(profile)).not.toContain('HARNESS_COMFYUI_SKILL_DIR')
-  })
-
   it('rejects an unknown profile name before reading profile configuration', () => {
     try {
       loadProfile('preview', {

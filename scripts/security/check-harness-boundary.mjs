@@ -279,9 +279,8 @@ function readProductAgentBoundary(path) {
   if (typeof agentPresetId !== 'string' || agentPresetId.length === 0 || agentPresetId.includes('/') || agentPresetId.includes('\\')) {
     throw new Error(`${path}.agentPresetId must be a non-empty single path segment`)
   }
-  const agentPresetArtifactRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetArtifactRelativeRoot', path)
-  const agentPresetInstallRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetInstallRelativeRoot', path)
-  const skillRelativeRoot = requireNormalizedRelativePath(config, 'skillRelativeRoot', path)
+  const agentPresetSourceRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetSourceRelativeRoot', path)
+  const agentPresetRuntimeRelativeRoot = requireNormalizedRelativePath(config, 'agentPresetRuntimeRelativeRoot', path)
   const agentPluginExport = config.agentPluginExport
   if (typeof agentPluginExport !== 'string' || !agentPluginExport.startsWith('./') || agentPluginExport.length <= 2 || agentPluginExport.includes('\\') || agentPluginExport.includes('..')) {
     throw new Error(`${path}.agentPluginExport must be a package-relative export without traversal`)
@@ -297,9 +296,8 @@ function readProductAgentBoundary(path) {
   }
   return {
     agentPresetId,
-    agentPresetArtifactRelativeRoot,
-    agentPresetInstallRelativeRoot,
-    skillRelativeRoot,
+    agentPresetSourceRelativeRoot,
+    agentPresetRuntimeRelativeRoot,
     agentPluginExport,
     agentModel: expectedAgentModel,
   }

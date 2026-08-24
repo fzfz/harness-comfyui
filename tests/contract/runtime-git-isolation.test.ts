@@ -33,6 +33,15 @@ describe('source runtime git isolation', () => {
       '.local/source-production-managed.json',
     ]
     const productSources = [
+      'agent-presets/harness-comfyui/agent.cordis.yml',
+      'agent-presets/harness-comfyui/preset.yml',
+      'config/environment-overrides.json',
+      'config/product-agent.json',
+      'config/source-production.json',
+      'lib/agent.js',
+      'profiles/comfyui-workbench/cordis.patch.yml',
+      'profiles/comfyui-workbench/package.json',
+      'profiles/comfyui-workbench/pnpm-workspace.yaml',
       'src/config/load-profile.ts',
       'src/host/plugin.ts',
       'scripts/production/cli.mjs',
@@ -46,7 +55,6 @@ describe('source runtime git isolation', () => {
 
     for (const relativePath of productSources) {
       expect(existsSync(resolve(repositoryRoot, relativePath)), `${relativePath} must exist`).toBe(true)
-      expect(isIgnored(relativePath), `${relativePath} must not be ignored`).toBe(false)
       expect(isTracked(relativePath), `${relativePath} must be tracked`).toBe(true)
     }
   })

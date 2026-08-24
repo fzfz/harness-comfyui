@@ -28,7 +28,7 @@ export async function runSourceStart(input, runtimeTarget, operation = {}) {
   }
   await mkdir(runtime.paths.logDirectory, { recursive: true })
 
-  const environment = await buildHostEnvironment(runtime, runtimeTarget, runtimeTarget.productAgent)
+  const environment = await buildHostEnvironment(runtime, runtimeTarget)
   const child = spawnForeground({
     dshExecutable: runtimeTarget.dshExecutable,
     dshHome: runtimeTarget.dshHome,

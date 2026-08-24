@@ -2,8 +2,8 @@ import { copyFile, lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/pr
 import { isAbsolute, join, resolve } from 'node:path'
 
 const CONFIG_KEYS = Object.freeze([
-  'agentPresetId', 'agentPresetArtifactRelativeRoot', 'agentPresetInstallRelativeRoot',
-  'skillRelativeRoot', 'agentPluginExport', 'sessionListConvergenceTimeoutMs', 'agentModel',
+  'agentPresetId', 'agentPresetSourceRelativeRoot', 'agentPresetRuntimeRelativeRoot',
+  'agentPluginExport', 'sessionListConvergenceTimeoutMs', 'agentModel',
 ])
 const AGENT_MODEL_KEYS = Object.freeze(['provider', 'model', 'reasoningEffort', 'apiKeyEnv'])
 const AGENT_PRESET_FILES = Object.freeze(['preset.yml', 'agent.cordis.yml'])
@@ -74,15 +74,14 @@ export function parseProductAgentConfig(value, source = 'config/product-agent.js
   }
   return {
     agentPresetId,
-    agentPresetArtifactRelativeRoot: requireRelativePath(
-      config.agentPresetArtifactRelativeRoot,
-      `${source}.agentPresetArtifactRelativeRoot`,
+    agentPresetSourceRelativeRoot: requireRelativePath(
+      config.agentPresetSourceRelativeRoot,
+      `${source}.agentPresetSourceRelativeRoot`,
     ),
-    agentPresetInstallRelativeRoot: requireRelativePath(
-      config.agentPresetInstallRelativeRoot,
-      `${source}.agentPresetInstallRelativeRoot`,
+    agentPresetRuntimeRelativeRoot: requireRelativePath(
+      config.agentPresetRuntimeRelativeRoot,
+      `${source}.agentPresetRuntimeRelativeRoot`,
     ),
-    skillRelativeRoot: requireRelativePath(config.skillRelativeRoot, `${source}.skillRelativeRoot`),
     agentPluginExport,
     sessionListConvergenceTimeoutMs: config.sessionListConvergenceTimeoutMs,
     agentModel: parseAgentModelConfig(config.agentModel, `${source}.agentModel`),
@@ -111,11 +110,11 @@ export function renderAgentSettings(productAgent) {
 }
 
 function agentPresetSourceRoot(productAgent) {
-  return `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}`
+  return `${productAgent.agentPresetSourceRelativeRoot}/${productAgent.agentPresetId}`
 }
 
 function agentPresetRuntimeRoot(productAgent) {
-  return `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`
+  return `${productAgent.agentPresetRuntimeRelativeRoot}/${productAgent.agentPresetId}`
 }
 
 function agentPluginPath(productAgent) {
@@ -182,7 +181,6 @@ async function copyDirectoryContents(source, target) {
 export async function materializeProductAgentRuntime(repositoryRoot, runtimeRoot, productAgent) {
   const sourceRoot = join(repositoryRoot, agentPresetSourceRoot(productAgent))
   await assertDirectory(sourceRoot, 'Agent Preset source')
-  await assertDirectory(join(repositoryRoot, productAgent.skillRelativeRoot), 'skill source')
   const targetRoot = await ensureDirectoryPath(runtimeRoot, agentPresetRuntimeRoot(productAgent), 'Agent Preset target')
   await copyDirectoryContents(sourceRoot, targetRoot)
   const dshHome = await ensureDirectoryPath(runtimeRoot, 'dsh-home', 'dsh home')
@@ -202,7 +200,6 @@ export async function validateProductAgentRuntime(repositoryRoot, runtimeRoot) {
   }
   await assertFile(join(repositoryRoot, agentPluginPath(productAgent)), 'Agent plugin source')
   await assertFile(join(repositoryRoot, AGENT_PROFILE_PATCH), 'Agent profile patch')
-  await assertDirectory(join(repositoryRoot, productAgent.skillRelativeRoot), 'skill source')
   const settingsPath = join(runtimeRoot, 'dsh-home/settings.yaml')
   await assertFile(settingsPath, 'Agent settings')
   if (await readFile(settingsPath, 'utf8') !== renderAgentSettings(productAgent)) {

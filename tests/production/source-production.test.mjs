@@ -241,7 +241,6 @@ describe('source production commands', () => {
         HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '2345',
         HARNESS_COMFYUI_SERVER_HOST: '127.0.0.2',
         HARNESS_COMFYUI_SERVER_PORT: String(await findFreePort()),
-        HARNESS_COMFYUI_SKILL_DIR: '/accepted/pass-through',
       },
     })
     expect(overridden.profile).toMatchObject({

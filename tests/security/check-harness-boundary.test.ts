@@ -106,7 +106,7 @@ describe('Harness source boundary', () => {
 
     const agentRoot = fixture()
     try {
-      updateJson(agentRoot, 'config/product-agent.json', value => { value.agentPresetInstallRelativeRoot = '../outside' })
+      updateJson(agentRoot, 'config/product-agent.json', value => { value.agentPresetRuntimeRelativeRoot = '../outside' })
       expect(run(agentRoot).stderr).toMatch(/normalized package-relative path/u)
     } finally {
       rmSync(agentRoot, { recursive: true, force: true })

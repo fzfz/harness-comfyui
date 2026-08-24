@@ -31,15 +31,14 @@ function failedCheck(error) {
 }
 
 function agentPresetRuntimeEvidence(productAgent, requiredEntries) {
-  const artifactRoot = `${productAgent.agentPresetArtifactRelativeRoot}/${productAgent.agentPresetId}`;
-  const artifactPrefix = `${artifactRoot}/`;
+  const sourceRoot = `${productAgent.agentPresetSourceRelativeRoot}/${productAgent.agentPresetId}`;
+  const sourcePrefix = `${sourceRoot}/`;
   return {
     status: 'passed',
-    agentPresetRelativeRoot: `${productAgent.agentPresetInstallRelativeRoot}/${productAgent.agentPresetId}`,
+    agentPresetRelativeRoot: `${productAgent.agentPresetRuntimeRelativeRoot}/${productAgent.agentPresetId}`,
     requiredFiles: requiredEntries
-      .filter(entry => entry.startsWith(artifactPrefix))
-      .map(entry => entry.slice(artifactPrefix.length)),
-    skillRelativeRoot: productAgent.skillRelativeRoot,
+      .filter(entry => entry.startsWith(sourcePrefix))
+      .map(entry => entry.slice(sourcePrefix.length)),
   };
 }
 

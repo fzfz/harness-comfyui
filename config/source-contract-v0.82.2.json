@@ -5,7 +5,7 @@
   "sourceReleaseVersion": "0.82.2",
   "identity": {
     "owner": "harness-comfyui",
-    "source": "installation.source",
+    "source": "configuration.source",
     "notReadFromLiveResponse": true
   },
   "cli": {
@@ -79,7 +79,7 @@
     ],
     "normalization": {
       "itemsFrom": "results",
-      "sourceReleaseVersionFrom": "installation.source.sourceReleaseVersion",
+      "sourceReleaseVersionFrom": "configuration.source.sourceReleaseVersion",
       "resultContractIdFrom": "catalog-operation-manifest",
       "resolveRequires": {"resultsLength": 1, "page": 1, "page_size": 1, "total_count": 1}
     }
@@ -116,7 +116,7 @@
         "expected_output_node_ids_json": "expected_output_node_ids"
       },
       "expectedOutputNodeIds": {"type": "array", "minItems": 1, "nullBehavior": "SOURCE_TEMPLATE_UNAVAILABLE"},
-      "sourceRevision": {"valueFrom": "installation.source.sourceReleaseVersion"}
+      "sourceRevision": {"valueFrom": "configuration.source.sourceReleaseVersion"}
     }
   }
 }
