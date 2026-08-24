@@ -60,6 +60,7 @@ describe('Issue #2 public package and composition contracts', () => {
       tsdown: '0.22.2',
       typescript: '6.0.3',
       '@vitest/coverage-v8': '4.1.8',
+      'react-test-renderer': '18.3.1',
       vitest: '4.1.8',
     })
 
