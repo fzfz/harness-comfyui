@@ -14,3 +14,33 @@
 - 发现全局 functions 缺口为 11，而已定位模块合计 8；Phase 2 仍需核对顶层 entrypoint 的 3 个函数来源后才能派发 Executor。
 - 核对顶层 `src/agent.ts`、`src/index.ts`、`src/types.ts` 的 public entrypoint 结构；CI report 的三个 0% 顶层模块与剩余 3 个 function totals 对齐。把 runtime-safe public entrypoint import/export contract 纳入 Slice C。
 - Phase 2 完成。固定三个互斥 worktree/分支与测试文件 allowlist；三个 Luna max Executor 将并行执行 test-only vertical slices。
+- Slice A `9a58dd0`：2 files / 19 tests PASS；Slice B `d9b8563`：3 files / 9 tests PASS；Slice C `f837a7d`：4 files / 51 tests PASS。三者均仅修改 allowlist 测试文件并通过 diff check。
+- 主线程逐 hunk 接受三个 slice；没有 production、threshold、coverage config、dependency、timeout 或 planning 越界变更。
+- 三个 slice 合入 remediation integration branch，HEAD `5ce6dbc`；三个执行 worktree 与 symlink 已删除。第一次从 main 删除分支因 ancestry 判断失败，随后从 integration worktree 使用非强制 `git branch -d` 成功清理。
+- Phase 3/4/5 完成，Phase 6 进行中。下一步只运行一次完整 coverage gate，依据真实 residual 决定是否需要精确 test-only 返修。
+- 完整 coverage 首次调用在 Vitest 启动前因 broken `node_modules/vitest` symlink 失败；0 tests ran，未生成 coverage。诊断确认主 `.pnpm` 内容完整，仅 5 个 direct dependency symlink 指向已删除 Slice A worktree。
+- 下一步先用现有 `.pnpm` 精确恢复这 5 个链接并运行秒级 Vitest file probe；该 probe 变绿后再重新派发真正的唯一完整 coverage gate。
+- 五个 direct dependency symlink 已机械恢复到主仓库现有 `.pnpm`；没有安装或网络访问。Vitest 4.1.8 version probe PASS，integration worktree 的共享链接重新可用。
+- 完整命令随后加载 17/25 files；其余 8 files 因缺少顶层 DeepSeek dependency links 在 collection 阶段失败，coverage report 未生成。没有以该环境失败作为候选代码结论，也没有重复命令。
+- 计划先核对全部 direct dependency exact pins、lock 完整性、已有 pnpm 11.7.0 与 offline store；只允许 `--offline --frozen-lockfile --ignore-scripts` 重建链接，不新增/升级依赖或运行 lifecycle scripts。
+- Audit PASS：31 个 direct specs 全部 exact，package/lock clean，pnpm 11.7.0，既有 CI security preinstall PASS。
+- Planned offline/frozen/ignore-scripts install 因 no-TTY 在 purge 前停止。没有设置 CI 自动 purge；下一步从完整 `.pnpm/node_modules` 验证每个 direct target 后机械恢复缺失 links。
+- 根 importer 为每个 direct dependency 固定了精确 peer context；`cordis`、`dsh-tools`、`dsh-workspace`、`schemastery` 的对应 virtual package 目录均存在。下一步对 31 个 direct dependencies 做结构化唯一性审计：只有目标全部唯一时才机械恢复；任何多义目标都改用 offline/frozen/ignore-scripts 的隔离临时 modules 目录，不触碰主 `node_modules`。
+- Direct target 唯一性审计 PASS：31/31 exact dependencies 的 virtual package target 均存在且各自唯一，missing=0、ambiguous=0。允许按该映射机械重建顶层 symlink；无需临时 install。
+- 顶层 direct symlink 恢复完成：26 个失效链接按唯一目标替换，先前恢复的 5 个链接保持不变。`cordis`、`dsh-tools`、`schemastery`、`dsh-workspace` 四个动态导入探针全部 PASS；未安装依赖或执行 lifecycle scripts。
+- 主 worktree diff boundary PASS：只有三份 coverage planning 文档有 tracked diff；package/lock、`src/**`、quality gate 与 Vitest config 均无变化。Integration worktree 的四个 direct import 与 Vitest version probe PASS，允许派发一次完整 coverage。
+- 完整 coverage 有效执行完成：25/25 files、256/256 tests PASS；statements 94.53%、branches 85.67%、lines 97.37% 均 PASS，functions 98.52% FAIL。唯一两个 function deficits 是 `results-panel.tsx:102` 与 `session-sidebar.tsx:156`；Phase 6 只对这两个公共 UI 回调派发定向 test-only 返修。
+- 读取残差组件与既有测试确认：SSR 已创建两个 wrapper callback，但不会触发它们。Coverage 配置只保留 `coverage-summary.json`，没有 `coverage-final.json`；已由 summary 的 function location 和源码精确定位，不重跑收集。下一步核对现有 React mount/test dependency，再固定最小测试接缝。
+- 现有依赖没有 React 测试 renderer/DOM 环境；固定返修为测试模块内隔离 `useState` 适配，通过两个 public factory component 触发 public view handler。返修所有权仅限 results/sidebar 两个测试文件，不新增依赖或产品 seam。
+- 建立 residual worktree `/Volumes/4Tdisk/work/AI2/harness-comfyui-coverage-residual-v0.1.17`，branch `codex/coverage-residual-v0.1.17`，精确基于 integration HEAD `5ce6dbc`。Slice B Luna max Executor 只拥有 results/sidebar 两个测试文件与定向测试/coverage。
+- Residual commit `aba3448` 经主线程逐 hunk review 接受：仅修改 results/sidebar 两个测试，8/8 PASS，两份目标源文件四项 coverage 均 100%。已 merge 到 integration HEAD `2c51a02`；residual worktree 与 branch 已删除。
+- Phase 6 完成，Phase 7 进行中：对 fixed point `ee05caa...2c51a02` 并行执行 Standards 与授权 Spec 两个只读审查。
+- 双轴 review 返回阻断：两个 fake `useState` residual tests 不证明真实 React lifecycle；Spec 还要求删除无 coverage 贡献的 public-entrypoints test，双方发现 client fixture 的 unused `themeGetError` branch。
+- Reviewer 复核仓库不存在能在 Node coverage 进程内使用的现成真实 renderer；Chrome/CDP seam 在独立进程，不能修复 functions total。主线程完成 `react-test-renderer@18.3.1` 及三个精确传递版本的 official registry/GitHub Advisory audit，均无 install lifecycle 或已知 advisory；计划允许这一项 exact test dependency 例外。
+- Review repair commit `281f2ae` 完成：真实 renderer 定向 7/7 PASS 且两个目标源文件四项 100%；client-plugin 17/17、typecheck、quality:preinstall PASS。主线程逐 hunk 确认 package/lock 只含审计过的 renderer 解析，fake hook、0/0 entrypoint test 与 unused fixture 精确删除。
+- 修复合入 integration HEAD `14a5aae` 后，Standards 复审 PASS。Spec 复审只剩一个 P1：`tests/contract/engineering-baseline.test.ts` 的 exact devDependencies contract 未加入已授权 renderer，`test:contract` 将确定性失败；派发单文件 contract 修订。
+- Contract repair `b997c15` 仅新增 exact renderer expectation，focused contract 5/5 PASS；合入 integration HEAD `eb9c5c6`。Standards final PASS、Spec final PASS，Phase 7 完成。
+- Phase 8 进行中：解除 integration 的共享 dependency symlink，按 candidate frozen lock 独立安装且禁用 scripts；秒级 renderer probe 后执行一次最终完整 coverage。
+- Integration shared symlink 已按精确目标解除；`pnpm install --frozen-lockfile --ignore-scripts` PASS，636 packages 全部从本地 store 复用、downloaded=0、lifecycle scripts 未执行。下一步只做版本/import/diff probe。
+- Final candidate `eb9c5c6` 完整 coverage PASS：24/24 files、256/256 tests；statements 94.83%（642/677）、branches 85.93%（336/391）、functions 100%（136/136）、lines 97.70%（596/610）。Integration worktree 无 tracked mutation。
+- Phase 8 的本地 coverage 门禁完成；下一步提交 planning、merge integration 到 local main、删除 remediation worktree/branch、push main 并等待唯一 clean CI/qualification。
