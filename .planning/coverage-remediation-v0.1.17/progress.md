@@ -44,3 +44,12 @@
 - Integration shared symlink 已按精确目标解除；`pnpm install --frozen-lockfile --ignore-scripts` PASS，636 packages 全部从本地 store 复用、downloaded=0、lifecycle scripts 未执行。下一步只做版本/import/diff probe。
 - Final candidate `eb9c5c6` 完整 coverage PASS：24/24 files、256/256 tests；statements 94.83%（642/677）、branches 85.93%（336/391）、functions 100%（136/136）、lines 97.70%（596/610）。Integration worktree 无 tracked mutation。
 - Phase 8 的本地 coverage 门禁完成；下一步提交 planning、merge integration 到 local main、删除 remediation worktree/branch、push main 并等待唯一 clean CI/qualification。
+
+- Phase 8 clean main CI 与 coverage qualification 已完成：CI run `32683439210` 为 `success`，候选 commit 是 `ff9aefaa211726fad12dd35436f43313a3f021a4`。
+- 同一 qualification 产出的 qualified artifact 是 `harness-comfyui-0.1.17.tgz`，byte length 是 `802398`，SHA-256 是 `c326d60352a50c48f8d180a3da9c3b67ecce5c1cd8c7eccb85a553a3fea1daba`。
+- Phase 9 identity Preview 已完成：Preview run `32684542046` 为 `success`，并绑定版本 `0.1.17`、候选 commit、qualified artifact filename、byte length 与 SHA-256。
+- 用户最新裁决确认：父 Issue #14/#15 的顺序约束适用于最终完整交付，不禁止已验收中间版本发布；用户在查看 Preview exact identity 后明确批准创建 `v0.1.17`。
+- Phase 9 complete：Preview run `32684542046` success，release notes、四项 qualification gate、coverage 与 Issue #17 verified scope 已纳入发布证据。
+- Phase 10 complete：annotated tag `v0.1.17` 的 tag object 是 `a75e4eba6ad0d3cb0294c6cbdb0e23780f4783d6`，peeled commit 是 `ff9aefaa211726fad12dd35436f43313a3f021a4`；GitHub Release 是 https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.17。
+- GitHub Release 只包含唯一 asset `harness-comfyui-0.1.17.tgz`，大小 `802398` bytes，digest 是 `sha256:c326d60352a50c48f8d180a3da9c3b67ecce5c1cd8c7eccb85a553a3fea1daba`，下载地址是 https://github.com/fzfz/harness-comfyui/releases/download/v0.1.17/harness-comfyui-0.1.17.tgz；本次发布没有重建、重打包或安装。
+- v0.1.17 只声明 Issue #17 verified scope 与 repository-wide coverage remediation，不声明 Issues #4–#13 已由此中间版本实现，也不把这些 Issue 作为本次中间版本发布阻断；release notes 已正确记录该边界。

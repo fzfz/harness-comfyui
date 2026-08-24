@@ -31,9 +31,9 @@
 | 5. 纵向切片 C：Session/config/tool/entrypoints | complete | 四个互斥测试文件与一个新 entrypoint 测试；51/51 PASS，binding functions 100%、tool lines 100% |
 | 6. 主线程 diff review 与精确返修 | complete | 三个首轮 slice 与 residual 均由主线程逐 hunk 接受；residual 8/8 PASS、两个目标源文件 functions 100%，integration HEAD `2c51a02` |
 | 7. 双轴独立审查 | complete | Standards final PASS、Spec final PASS；renderer lifecycle、dependency boundary 与 exact engineering contract 均无 finding |
-| 8. 最终 coverage 与 clean CI | in_progress | Candidate `eb9c5c6` 完整 coverage 24/24 files、256/256 tests、四项阈值 PASS；等待 merge 后 main clean CI |
-| 9. Artifact qualification 与 Release Preview | pending | 同一 commit 单次 build/pack；deploy/composition/e2e/release-smoke PASS；Preview 固定 manifest identity |
-| 10. Release Approval 与发布 | pending | 用户按 exact identity 批准后创建 annotated tag、推送 tag、创建只附加同一 tarball 的 GitHub Release |
+| 8. 最终 coverage 与 clean CI | complete | Candidate `eb9c5c6` 完整 coverage 24/24 files、256/256 tests、四项阈值 PASS；clean main CI 与 qualification run `32683439210` success；候选 commit 为 `ff9aefaa211726fad12dd35436f43313a3f021a4` |
+| 9. Artifact qualification 与 Release Preview | complete | qualified artifact 与 Preview 固定同一 manifest identity；Preview run `32684542046` success；release notes、四项 qualification gate、coverage 与 Issue #17 的 verified scope 已纳入发布证据 |
+| 10. Release Approval 与发布 | complete | 用户查看 Preview exact identity 后明确批准中间版本发布；annotated tag `v0.1.17` 已推送并精确指向 `ff9aefaa211726fad12dd35436f43313a3f021a4`，GitHub Release 已创建并只附加同一 tarball；未重建、重打包或安装 |
 
 ## Error ledger
 
@@ -48,3 +48,13 @@
 | 读取 `coverage/coverage-final.json` 返回 ENOENT | 1 | 当前配置只生成 `coverage-summary.json`；使用已报告的精确 function locations 与源码固定残差，不为获取重复报告重跑 coverage |
 | 双轴 review 判定 residual fake `useState` 不属于真实 public React behavior | 1 | 现有 Chrome seam 无法向 Node V8 coverage 回传；经安全审计后只新增 exact `react-test-renderer@18.3.1`，用真实 renderer lifecycle/click/rerender 替换两个 fake |
 | Spec 复审发现 engineering baseline exact devDependencies 未含 renderer | 1 | 只在 `tests/contract/engineering-baseline.test.ts` 的唯一 expected devDependencies object 加入 exact `react-test-renderer: 18.3.1`，运行该 focused contract test |
+
+## Final qualification and release boundary
+
+- Phase 8 已完成。clean main CI 与 coverage qualification run `32683439210` 为 `success`；候选 commit 是 `ff9aefaa211726fad12dd35436f43313a3f021a4`。本地最终 coverage 为 24/24 test files、256/256 tests，四项固定阈值全部 PASS。
+- qualified artifact `harness-comfyui-0.1.17.tgz` 的 byte length 是 `802398`，SHA-256 是 `c326d60352a50c48f8d180a3da9c3b67ecce5c1cd8c7eccb85a553a3fea1daba`。
+- Phase 9 已完成 artifact identity Preview。Preview run `32684542046` 为 `success`，且 Preview 绑定版本 `0.1.17`、commit `ff9aefaa211726fad12dd35436f43313a3f021a4`、qualified artifact filename、byte length 与 SHA-256。
+- 用户最新裁决确认：父 Issue #14/#15 的顺序约束适用于最终完整交付，不禁止已验收中间版本发布；用户在查看 Preview exact identity 后明确批准创建 `v0.1.17`。
+- Release acceptance 已通过。annotated tag `v0.1.17` 的 tag object 是 `a75e4eba6ad0d3cb0294c6cbdb0e23780f4783d6`，peeled commit 是 `ff9aefaa211726fad12dd35436f43313a3f021a4`；GitHub Release 是 https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.17。
+- GitHub Release 的唯一 asset 是 `harness-comfyui-0.1.17.tgz`，大小 `802398` bytes，digest 是 `sha256:c326d60352a50c48f8d180a3da9c3b67ecce5c1cd8c7eccb85a553a3fea1daba`，下载地址是 https://github.com/fzfz/harness-comfyui/releases/download/v0.1.17/harness-comfyui-0.1.17.tgz。
+- 本次发布没有重建、重打包或安装；v0.1.17 只声明 Issue #17 verified scope 与 repository-wide coverage remediation，不声明 Issues #4–#13 已由此中间版本实现，也不把这些 Issue 作为本次中间版本发布阻断。

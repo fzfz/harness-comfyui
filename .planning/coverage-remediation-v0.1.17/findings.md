@@ -72,6 +72,16 @@
 - PRD 13 要求任一测试门禁失败即 NO-GO；coverage 必须在 tag/Release 前真实通过。
 - PRD 14 要求 Release Preview 后的单独批准绑定 SemVer、commit、artifact filename、byte length、SHA-256、qualification、视觉证据和 release notes。
 
+## Final qualification and Preview evidence
+
+- Phase 8 clean main CI 与 coverage qualification 已完成。CI run `32683439210` 为 `success`，候选 commit 是 `ff9aefaa211726fad12dd35436f43313a3f021a4`。
+- qualified artifact 是 `harness-comfyui-0.1.17.tgz`，byte length 是 `802398`，SHA-256 是 `c326d60352a50c48f8d180a3da9c3b67ecce5c1cd8c7eccb85a553a3fea1daba`。
+- Phase 9 identity Preview 已完成。Preview run `32684542046` 为 `success`，并验证了 `0.1.17`、候选 commit、qualified artifact filename、byte length 与 SHA-256 的同一性。
+- 用户最新裁决确认：父 Issue #14/#15 的顺序约束适用于最终完整交付，不禁止已验收中间版本发布；用户在查看 Preview exact identity 后明确批准创建 `v0.1.17`。
+- Release acceptance 已通过。annotated tag `v0.1.17` 的 tag object 是 `a75e4eba6ad0d3cb0294c6cbdb0e23780f4783d6`，peeled commit 是 `ff9aefaa211726fad12dd35436f43313a3f021a4`；GitHub Release 是 https://github.com/fzfz/harness-comfyui/releases/tag/v0.1.17。
+- GitHub Release 的唯一 asset 是 `harness-comfyui-0.1.17.tgz`，大小 `802398` bytes，digest 是 `sha256:c326d60352a50c48f8d180a3da9c3b67ecce5c1cd8c7eccb85a553a3fea1daba`，下载地址是 https://github.com/fzfz/harness-comfyui/releases/download/v0.1.17/harness-comfyui-0.1.17.tgz。
+- 本次发布没有重建、重打包或安装；v0.1.17 只声明 Issue #17 verified scope 与 repository-wide coverage remediation，不声明 Issues #4–#13 已由此中间版本实现，也不把这些 Issue 作为本次中间版本发布阻断。
+
 ## Final coverage acceptance
 
 - Candidate `eb9c5c6e14b2101de4ca517ea7841ec3ddc15a25` 在独立 dependency tree 中完成一次最终 coverage：24/24 test files 与 256/256 tests PASS。
