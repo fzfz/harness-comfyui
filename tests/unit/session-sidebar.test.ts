@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { createElement, type ReactElement, type ReactNode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISessions,
@@ -13,6 +13,35 @@ import {
   createSessionSidebar,
   renderSessionSidebar,
 } from '../../src/client/workbench/session-sidebar.tsx'
+
+const stateAdapter = vi.hoisted(() => {
+  let initialized = false
+  let state: unknown
+
+  return {
+    reset() {
+      initialized = false
+      state = undefined
+    },
+    useState<T>(initial: T): readonly [T, (next: T | ((previous: T) => T)) => void] {
+      if (!initialized) {
+        initialized = true
+        state = initial
+      }
+      const setState = (next: T | ((previous: T) => T)) => {
+        state = typeof next === 'function'
+          ? (next as (previous: T) => T)(state as T)
+          : next
+      }
+      return [state as T, setState]
+    },
+  }
+})
+
+vi.mock('react', async importOriginal => {
+  const actual = await importOriginal<typeof import('react')>()
+  return { ...actual, useState: stateAdapter.useState }
+})
 
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as {
   renderToStaticMarkup(node: ReactNode): string
@@ -56,6 +85,10 @@ function findElements(node: ReactNode, predicate: (element: ReactElement) => boo
 }
 
 describe('real Harness Session sidebar', () => {
+  beforeEach(() => {
+    stateAdapter.reset()
+  })
+
   it('renders public session state, searches it, and opens a selected row', () => {
     const sessions = {
       open: vi.fn(),
@@ -164,6 +197,29 @@ describe('real Harness Session sidebar', () => {
     expect(updatedMarkup).toContain('class="session-row is-current"')
     expect(updatedMarkup).not.toContain('data-session-id="portrait"')
     expect(updatedMarkup).not.toContain('data-session-id="comparison"')
+  })
+
+  it('opens the exact session id through the public sidebar wrapper row handler', () => {
+    const open = vi.fn()
+    const sessions = { open } as unknown as ISessions
+    const Sidebar = createSessionSidebar(sessions)
+    const snapshot = state('portrait', [
+      summary('portrait', '角色立绘调整', 1_723_300_320_000),
+      summary('video', '测试视频工作流', 1_723_296_480_000),
+    ])
+    const view = Sidebar({
+      collapsed: false,
+      width: 294,
+      useSessions: <S,>(selector: (current: SessionListState) => S) => selector(snapshot),
+    }) as ReactElement
+    const row = findElements(view, element => (
+      element.type === 'button' && element.props['data-session-id'] === 'video'
+    ))[0]
+
+    expect(row).toBeDefined()
+    row?.props.onClick()
+    expect(open).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith('video')
   })
 
   it('keeps the owned sidebar CSS at prototype desktop values', () => {
