@@ -80,6 +80,8 @@ describe('real Harness Session sidebar', () => {
     expect(initial).toContain('data-session-id="video"')
     expect(initial).toContain('data-session-id="comparison"')
     expect(initial).toContain('class="session-row is-current"')
+    expect(initial).toContain('data-sidebar-collapsed="false"')
+    expect(initial).toContain('data-sidebar-width="294"')
     expect(initial).toContain('<div class="session-heading-copy">')
     expect(initial).toContain('<p class="section-kicker">SESSION</p>')
     expect(initial).toContain('<svg viewBox="0 0 20 20" aria-hidden="true">')
@@ -89,6 +91,14 @@ describe('real Harness Session sidebar', () => {
     expect(initial).toContain('<span>会话历史由 Harness 保存</span>')
     expect(initial).toContain('placeholder="搜索会话"')
     expect(initial).toContain('0 项运行')
+
+    const collapsed = renderToStaticMarkup(createElement(sidebar, {
+      collapsed: true,
+      width: 320,
+      useSessions: <S,>(selector: (snapshot: SessionListState) => S) => selector(initialState),
+    }))
+    expect(collapsed).toContain('data-sidebar-collapsed="true"')
+    expect(collapsed).toContain('data-sidebar-width="320"')
 
     const today = new Date()
     today.setHours(12, 0, 0, 0)

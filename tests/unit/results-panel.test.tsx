@@ -83,6 +83,10 @@ describe('Issue 3 empty results panel', () => {
   })
 
   it('switches tabs through the public view handler and resets to current for a new Session', () => {
+    const currentView = viewElements()
+    currentView.tabButtons[0]?.props.onClick()
+    expect(currentView.onTabChange).toHaveBeenCalledWith('current')
+
     const sessionView = viewElements('session')
     const [, sessionButton] = sessionView.tabButtons
     sessionButton?.props.onClick()
