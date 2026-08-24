@@ -40,7 +40,7 @@ describe('Harness ComfyUI Host plugin', () => {
   it('loads a valid Configuration Profile from source', async () => {
     stubTestProfileEnvironment()
     const ctx = new Context()
-    const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'test' })
+    const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'production' })
 
     expect((ctx as unknown as { pluginStatus?: unknown }).pluginStatus).toBeUndefined()
     await fiber.dispose()

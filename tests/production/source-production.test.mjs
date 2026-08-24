@@ -191,7 +191,7 @@ describe('source production commands', () => {
       .toThrow('must identify a directory inside the source repository')
     expect(() => parseSourceProductionDefinition({ ...definition, schemaVersion: 2 }, repositoryRoot))
       .toThrow('schemaVersion must be 1')
-    expect(() => parseSourceProductionDefinition({ ...definition, configurationProfile: 'development' }, repositoryRoot))
+    expect(() => parseSourceProductionDefinition({ ...definition, configurationProfile: 'invalid' }, repositoryRoot))
       .toThrow('configurationProfile must be production')
     expect(() => parseSourceProductionDefinition({ ...definition, extra: true }, repositoryRoot))
       .toThrow('must contain exactly')
