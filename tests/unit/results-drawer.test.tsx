@@ -15,6 +15,17 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
     IconChevronRightOutline14: () => React.createElement('i'),
     IconCloseOutline16: () => React.createElement('i'),
     IconDownloadOutline16: () => React.createElement('i', { 'data-icon': 'download' }),
+    Modal: ({ open, onClose, title, children, footer }: Record<string, unknown>) => (
+      open
+        ? React.createElement(
+          'div',
+          { role: 'dialog', 'aria-label': title },
+          children as ReactNode,
+          React.createElement('footer', null, footer as ReactNode),
+          React.createElement('button', { 'aria-label': '关闭错误详情', onClick: onClose }),
+        )
+        : null
+    ),
     Menu: ({ open, anchor, items, onSelect, onClose }: Record<string, unknown>) => React.createElement(
       'div',
       { 'data-menu-open': open, onBlur: onClose },
@@ -32,7 +43,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
 import { RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
-import type { GenerationProjection } from '../../src/generation/contract.ts'
+import { generationMediaContentUrl, type GenerationProjection } from '../../src/generation/contract.ts'
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
@@ -50,8 +61,8 @@ const { act, create } = createRequire(import.meta.url)('react-test-renderer') as
 const projection: GenerationProjection = {
   sessionId: 'session-1',
   runs: [
-    { runId: 'run_1', turn: 4, title: '运行一', instanceTitle: 'ComfyUI', templateTitle: 'Anima', status: 'remote_running', errorCode: null, createdAt: 1, updatedAt: 2 },
-    { runId: 'run_2', turn: 3, title: '运行二', instanceTitle: 'ComfyUI', templateTitle: 'Anima', status: 'failed', errorCode: 'COMFYUI_REMOTE_ERROR', createdAt: 1, updatedAt: 2 },
+    { runId: 'run_1', turn: 4, title: '运行一', instanceTitle: 'ComfyUI', templateTitle: 'Anima', status: 'remote_running', errorCode: null, errorMessage: null, createdAt: 1, updatedAt: 2 },
+    { runId: 'run_2', turn: 3, title: '运行二', instanceTitle: 'ComfyUI', templateTitle: 'Anima', status: 'failed', errorCode: 'COMFYUI_REMOTE_ERROR', errorMessage: 'ComfyUI node 12 rejected positive_prompt because its model input is missing.', createdAt: 1, updatedAt: 2 },
   ],
   media: Array.from({ length: 6 }, (_, index) => ({
     mediaId: `media_${index + 1}`,
@@ -154,10 +165,18 @@ describe('native Generation result drawer', () => {
     act(() => { renderer = renderDetails(workbench) })
     expect(renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')).toHaveLength(2)
     expect(JSON.stringify(renderer!.toJSON())).toContain('COMFYUI_REMOTE_ERROR')
-    expect(JSON.stringify(renderer!.toJSON())).toContain('ComfyUI 执行 Workflow 时失败。检查 ComfyUI 任务日志和 Workflow。')
+    expect(JSON.stringify(renderer!.toJSON())).toContain('错误详情')
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
     expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
     expect(renderer!.root.findAllByProps({ 'data-icon': 'download' })).toHaveLength(4)
+    const originalMediaLinks = renderer!.root.findAllByProps({ className: 'harness-comfyui-media-original-link' })
+    expect(originalMediaLinks).toHaveLength(4)
+    expect(originalMediaLinks[0]!.props).toMatchObject({
+      href: generationMediaContentUrl('media_1', 'session-1'),
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      'aria-label': `${RESULTS_COPY.openOriginalMedia}：result-1.webp`,
+    })
     expect(renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.title)
       .toBe(RESULTS_COPY.downloadWorkflow)
     const anchor = { href: '', download: 'unset', click: vi.fn(), remove: vi.fn() }
@@ -178,6 +197,30 @@ describe('native Generation result drawer', () => {
       expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:workflow')
       renderer!.unmount()
     })
+  })
+
+  it('opens the complete Run error in a native error-details dialog', () => {
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+
+    act(() => { (buttonByText(renderer!, '错误详情').props.onClick as () => void)() })
+    renderer!.root.findByProps({ role: 'dialog', 'aria-label': '错误详情' })
+    const rendered = JSON.stringify(renderer!.toJSON())
+    expect(rendered).toContain('运行 ID')
+    expect(rendered).toContain('错误码')
+    expect(rendered).toContain('run_2')
+    expect(rendered).toContain('COMFYUI_REMOTE_ERROR')
+    expect(rendered).toContain('ComfyUI node 12 rejected positive_prompt because its model input is missing.')
+
+    act(() => { (buttonByText(renderer!, '关闭').props.onClick as () => void)() })
+    expect(renderer!.root.findAllByProps({ role: 'dialog', 'aria-label': '错误详情' })).toHaveLength(0)
+    act(() => { (buttonByText(renderer!, '错误详情').props.onClick as () => void)() })
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': '关闭错误详情' }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByProps({ role: 'dialog', 'aria-label': '错误详情' })).toHaveLength(0)
+    act(() => renderer!.unmount())
   })
 
   it('keeps a media card visible and shows catalog copy when its preview or Workflow is missing', async () => {
@@ -252,6 +295,9 @@ describe('native Generation result drawer', () => {
     act(() => { (anchors[1]!.props.onClick as () => void)() })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.video).props.onClick as () => void)() })
     expect(renderer!.root.findAllByType('video')).toHaveLength(1)
+    expect(renderer!.root.findByProps({
+      'aria-label': `${RESULTS_COPY.openOriginalMedia}：result.mp4`,
+    }).props).toMatchObject({ target: '_blank', rel: 'noopener noreferrer' })
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_MEDIA_NOT_FOUND"}', {
       status: 404,
       headers: { 'content-type': 'application/json' },

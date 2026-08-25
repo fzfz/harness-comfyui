@@ -46,7 +46,10 @@ export function workbenchContextKey(context: CatalogContext): string {
 }
 
 export function serializeWorkbenchContext(context: CatalogContext): string {
-  return JSON.stringify({ type: WORKBENCH_CONTEXT_RECORD_TYPE, data: context })
+  const data = context.kind === 'comfyui-template'
+    ? { kind: context.kind, id: context.id, title: context.title }
+    : context
+  return JSON.stringify({ type: WORKBENCH_CONTEXT_RECORD_TYPE, data })
 }
 
 export function parseWorkbenchContext(line: string): CatalogContext | null {

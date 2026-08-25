@@ -59,6 +59,15 @@ function widgetDescriptor(value: readonly unknown[] | undefined): boolean {
   return Array.isArray(value[0]) || WIDGET_TYPES.has(String(value[0]))
 }
 
+function instanceComboValue(value: JsonValue, definition: readonly unknown[] | undefined): JsonValue {
+  const choices = definition?.[0]
+  if (typeof value !== 'string' || !Array.isArray(choices) || choices.includes(value)) return value
+  if (!value.includes('/') && !value.includes('\\')) return value
+  const normalized = value.replaceAll('\\', '/')
+  const matches = choices.filter(choice => typeof choice === 'string' && choice.replaceAll('\\', '/') === normalized)
+  return matches.length === 1 ? matches[0] as string : value
+}
+
 function namedWidgetInputs(node: UnknownRecord): readonly string[] {
   const names: string[] = []
   for (const value of array(node.inputs)) {
@@ -86,7 +95,7 @@ function mapWidgets(node: UnknownRecord, definition: UnknownRecord): Readonly<Re
   let cursor = 0
   for (const name of names) {
     if (cursor >= values.length) break
-    mapped[name] = structuredClone(values[cursor]!)
+    mapped[name] = structuredClone(instanceComboValue(values[cursor]!, descriptor(definition, name)))
     cursor += 1
     const config = descriptor(definition, name)?.[1]
     const options = config === null || typeof config !== 'object' || Array.isArray(config) ? {} : config as UnknownRecord
@@ -130,10 +139,6 @@ function compile(
       const link = links.get(String(input.link))
       if (link === undefined) fail(`Workflow node "${nodeId}" references a missing link.`)
       inputs[input.name] = [String(link[1]), Number(link[2])]
-    }
-    const definitions = inputDefinitions(definition)
-    for (const requiredName of inputOrder(definition).slice(0, Object.keys(definitions.required).length)) {
-      if (inputs[requiredName] === undefined) fail(`Workflow node "${nodeId}" is missing required input "${requiredName}".`)
     }
     apiWorkflow[nodeId] = {
       class_type: nodeType,

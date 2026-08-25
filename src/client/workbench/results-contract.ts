@@ -5,7 +5,12 @@ export type ResultTab = 'current' | 'session'
 export const RESULTS_COPY = Object.freeze({
   title: '生成结果',
   close: '关闭生成结果',
+  errorDetails: '错误详情',
+  closeErrorDetails: '关闭错误详情',
+  runId: '运行 ID',
+  errorCode: '错误码',
   downloadWorkflow: '下载所属运行的 Workflow',
+  openOriginalMedia: '在新窗口打开原文件',
   currentTab: '运行状态',
   sessionTab: '本会话媒体',
   turnFilter: '聊天轮次',

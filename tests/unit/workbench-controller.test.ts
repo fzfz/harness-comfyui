@@ -18,7 +18,7 @@ import {
 const CONTEXT_OPTIONS: readonly CatalogContext[] = [
   { kind: 'model', id: '15', file_name: 'rinSoftsketch_v20.safetensors' },
   { kind: 'lora', id: '91', file_name: 'StS_Age_Slider_Illustrious_v1.safetensors' },
-  { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [] },
+  { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
 ]
 
 function sessionInput(draft = '') {
@@ -123,6 +123,25 @@ describe('ComfyUI workbench controller', () => {
         character_name: '2b',
         prompt_text: '2b, yorha no. 2 type b',
       },
+    })
+  })
+
+  it('serializes a Workflow template with only its identity and title', () => {
+    const templateWithCatalogParameters = {
+      kind: 'comfyui-template',
+      id: '37',
+      title: 'wai_txt2img_lora',
+      parameters: [{ parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false }],
+    } as unknown as CatalogContext
+
+    const line = serializeWorkbenchContext(templateWithCatalogParameters)
+
+    expect(JSON.parse(line)).toEqual({
+      type: WORKBENCH_CONTEXT_RECORD_TYPE,
+      data: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
+    })
+    expect(parseWorkbenchContext(line)).toEqual({
+      kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
     })
   })
 

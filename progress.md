@@ -1,5 +1,48 @@
 # Harness ComfyUI 原型方案进度
 
+## Phase 29：发布 v0.3
+
+- [x] 读取仓库发布规范，确认 `0.3.0` 对应标签 `v0.3`，GitHub Release 只包含标签和 Release 记录。
+- [x] 明确本次提交包含当前已验证的插件源码、测试、PRD 与计划记录，并排除现有未跟踪的 `docs/research/`。
+- [x] 第一次质量门禁定位到工程合同仍固定断言 `0.2.0`；已把该合同同步为 `0.3.0`。
+- [ ] 更新根版本为 `0.3.0`，执行完整质量门禁，提交并推送源码变更。
+- [ ] 等待源码提交的 GitHub CI 成功。
+- [ ] 更新 README、v0.3 发布说明和发布系统文档，完成独立语义审核与第二次完整质量门禁。
+- [ ] 提交并推送文档变更，等待最终 GitHub CI 成功。
+- [ ] 创建并推送 `v0.3` 注释标签，创建 GitHub Release，并完成远端核验。
+
+## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
+
+- [x] 确认 Generation Tool Host 已支持同一数字 turn 中由一项 Skill Invocation 授权多个不同 `call_id`；新增测试证明两个 Tool Call 创建两个独立 Run 请求。
+- [x] 修改 `comfyui-generate` Skill：先识别并校验全部 Generation Request，再按用户声明顺序为每项请求调用一次 `generate_with_comfyui`。
+- [x] 修改 PRD 04 和 PRD 12，使单请求一次 Tool Call、多请求多次 Tool Call、任一 Generation Request 校验失败时不创建任何 Run 成为当前产品合同。
+- [x] 在真实 Harness 的一个用户轮次中提交 384×512 与 512×384 两项独立生成请求；Harness 轨迹显示一项 `comfyui-generate` Skill Invocation 和两项 `generate_with_comfyui` Tool Call。
+- [x] 验证两个不同 `run_id` 的异步终态、媒体内容和分片存储记录；两个 Run 同属 Session `session-e5821714-a06f-4e61-9b3c-b1f444e78e38` 的第 1 轮，并分别保存 384×512 雪景白发少女和 512×384 花田红发少女图片。
+- [x] 通过每张媒体的 Workflow 下载接口取得两个 Actual Workflow；两个响应的正向提示词、宽度、高度和 Seed 分别等于请求值，规范化 JSON 的 SHA-256 也不同。
+- [x] 独立语义审核最终为 PASS；`pnpm run quality` 通过 195 项单元/集成测试、18 项合同/安全测试、14 项生产测试和 27 项原型测试，函数覆盖率为 100%；生产进程 PID 63965 的六项健康检查通过；真实 Harness 浏览器右栏显示 2 个运行、2 个媒体和两个逐媒体 Workflow 下载按钮。
+
+## Phase 27：多模板真实实例覆盖验证
+
+- [x] Catalog CLI 返回的 36 个 Workflow 模板全部完成清点；模板覆盖六类流程和五类运行参数。
+- [x] 两个真实实例的 72 个 `/object_info` 编译组合全部完成：`mac mini` 27 个成功、9 个缺节点，`win3080` 29 个成功、7 个缺节点；每个模板至少兼容一个实例。
+- [x] Workflow 编译器根据目标实例 COMBO 枚举唯一匹配路径分隔符；正斜杠、反斜杠双向回归测试和歧义分支测试通过。
+- [x] 模板 37 在 `mac mini` 使用正斜杠 LoRA 路径完成真实生成；`run_3f64c8e1-569b-41c8-87db-f80087c33e6e` 保存媒体 `media_9bf0ca3c-6beb-49a0-a395-0703ce50621d`。
+- [x] 模板 38 在 `mac mini` 完成真实生成；`run_a7a56265-d079-4264-8113-74aa21c2d5ff` 保存媒体 `media_04cb4d51-aa35-44a2-806d-703be2c2cdae`。
+- [x] 模板 28 通过原生提问交互分别确认两个 Seed 参数，在 `mac mini` 完成二阶段真实生成；`run_fb85ca3c-a040-4c05-ad1c-9ed48f7f2c5f` 保存媒体 `media_f99bc597-fb8d-4e0c-b2e2-5cb5e4bed616`。
+- [x] 模板 34 到达真实 `/prompt`；`run_c8e182e5-60d2-4e2d-9c94-74d56ced0c19` 保存实例返回的 2298 字符 VAE 与节点连线错误，右栏错误详情 Modal 完整展示错误正文。
+- [x] 模板 37 显式路由到 `win3080`，使用该实例的反斜杠 LoRA 路径完成真实生成；`run_a66891dc-a470-4c8f-8dee-932668c92a95` 保存媒体 `media_97583c51-d700-4ca4-b659-e1afcf1f2714`。
+- [x] 真实 Harness 右栏显示 5 个独立 Run、4 个分片保存媒体、4 个逐媒体 Actual Workflow 下载图标和 1 个完整实例错误详情。
+- [x] 最终 `pnpm run quality` 通过：194 项单元/集成测试、18 项合同/安全测试、14 项生产测试和 27 项原型测试全部通过，函数覆盖率为 100%。
+- [x] 生产进程 PID 16715 保持运行；process、sourceRuntime、harnessWeb、clientBundle、runRepository 和 savedMedia 六项健康检查全部通过。
+- [x] 独立语义审核确认 Phase 27 的路径分隔符根因、5 个 Run、4 个媒体、模板 34 实例错误、授权边界和非本次目标表述准确，审核结果为 PASS。
+
+## Phase 25：评估 dsh-routing-suite 兼容性
+
+- [x] 确认当前工作树在调研开始前没有未提交修改。
+- [x] 检查 `dsh-routing-suite@21a7260d961571c77a11705d2b0e6cf7015cc48b` 的公开仓库结构、声明和接入代码。
+- [x] 对照 Harness `0.1.1-rc.2` 官方接口与当前项目插件边界。
+- [x] 完成 `docs/research/dsh-routing-suite-compatibility.md` 与独立语义复核。
+
 ## Phase 24：修复 Workflow 模板目录加载与错误展示
 
 - [x] 使用真实数据源 CLI 复现 Workflow 模板第一页失败。
@@ -167,6 +210,23 @@
   - `progress.md`（更新）
 
 ## Test Results
+| Phase 27 Catalog 模板清点 | 数据源 Catalog CLI 全量查询 | 取得全部可用模板、参数类型和节点结构 | 36 个模板、6 类流程、5 类运行参数、2 个已登记实例 | PASS |
+| Phase 27 全模板真实编译矩阵 | 36 个模板 × 2 个实例的真实 Source 与 `/object_info` | 每个模板至少在一个实例编译或返回具体缺失节点 | mac mini 27/36、win3080 29/36；全部 36 个模板至少有一个可编译实例 | PASS |
+| Phase 27 跨实例路径回归测试 | 模板与实例 COMBO 使用相反路径分隔符 | API Workflow 使用目标实例精确枚举；非唯一匹配保持原值 | 9 项 Workflow compiler 测试和 TypeScript 检查通过 | PASS |
+| Phase 27 模板 37 真实路径复验 | 同一模板分别编译到 mac mini 和 win3080 | macOS 使用 `/`，Windows 使用 `\` | 两个 API Workflow 的 `lora_name` 均与对应实例枚举精确相等 | PASS |
+| Phase 26 初始复现 | 模板 ID 37 的真实 Source CLI TemplateBundle | 缺少 `widgets_values` 的连接型节点能够进入实例编译阶段 | Host 返回 `SOURCE_PROTOCOL_ERROR / Template Workflow node 6 is invalid.`，且没有 `prompt_id` | FAIL |
+| Phase 26 错误投影检查 | 生产 Run Repository 与 `GenerationRemoteService.list()` | 右侧能够取得具体 `errorMessage` | SQLite 保存具体错误，Remote 投影明确删除 `errorMessage` | FAIL |
+| Phase 26 真实实例端到端基线 | 当前测试套件 | 至少一次真实模板、真实实例、真实媒体完整运行 | 现有成功生命周期只使用 mock transport 或 mock fetch | FAIL |
+| Phase 26 五项回归测试 | `pnpm exec vitest run` 执行 5 个目标测试文件 | 5 个用户症状在修复前稳定失败 | 43 项通过、5 项分别按预期失败 | RED |
+| Phase 26 目标绿测 | 8 个相关单元测试文件 | 最小模板上下文、模板 ID Tool、合法节点、完整实例错误和错误详情全部通过 | 62/62 通过 | PASS |
+| Phase 26 完整质量门禁 | `pnpm run quality` | 依赖审计、边界、类型、覆盖率、合同、安全、生产和原型全部通过 | unit/integration 190、contract/security 18、production 14、prototype 27；functions 100% | PASS |
+| Phase 26 生产重启 | `pnpm run prod:restart/status/health` | 最新 Host、Client 与 Skill 在 4173 运行 | PID 47650；process、sourceRuntime、harnessWeb、clientBundle、runRepository、savedMedia 全部通过 | PASS |
+| Phase 26 最小模板上下文 | Harness 原生上下文选择器选择模板 37 | 输入框只包含模板 ID 和标题 | 精确得到 `comfyui-template/id/title` JSON；原生 `/` 菜单显示 `comfyui-generate` | PASS |
+| Phase 26 真实实例错误详情 | 模板 37 默认值提交到 `mac mini` | Host 到达实例并显示实例具体错误 | `run_782452dd-bc13-463f-bc1d-88525229b4f3` 返回 `COMFYUI_PROMPT_REJECTED`；Modal 完整显示 LoRA `value_not_in_list` 的 `node_errors` | PASS |
+| Phase 26 真实实例完整生成 | 模板 37、真实提示词、实例实际 LoRA 路径 | 完成解析、编译、提交、观察、下载、分片保存和右栏展示 | `run_df5e56e4-57b1-4011-b03f-c366ae957727` 成功；保存 1 张 1024×1344 PNG；右栏显示图片和逐媒体 Workflow 下载图标 | PASS |
+| Phase 26 独立语义复审修复 | prompt ID 不一致、Resolver Tool 输出合同、错误详情标签、12,000 字符错误 | 每个值的用途清晰且实例错误保持完整 | 4 个回归分支全部通过；复审没有剩余问题 | PASS |
+| Phase 26 最终完整质量门禁 | `pnpm run quality` | 全部代码、合同、安全、生产和原型门禁通过 | unit/integration 191、contract/security 18、production 14、prototype 27；functions 100% | PASS |
+| Phase 26 最终生产与浏览器复验 | `prod:restart/status/health` 与真实失败 Run Modal | 最新 Client 显示错误标签和完整实例正文 | PID 93087；六项健康检查通过；真实 `COMFYUI_PROMPT_REJECTED` Modal 完整显示运行 ID、错误码和 `node_errors` | PASS |
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
 | 目标目录检查 | `ls -la` 与 `git status` | 确认目录状态且不修改文件 | 目录为空且不是 Git 仓库 | PASS |
@@ -201,6 +261,12 @@
 | 工作区差异格式 | `git diff --check` | 没有空白错误 | 无输出 | PASS |
 
 ## Error Log
+| 2026-08-25 | Catalog CLI 已支持 `resolve --id`，但当前 Host 没有对应 Agent Tool；消息上下文因 Skill 缺少查询入口而携带模板参数全集 | 1 | Phase 26 将新增只返回安全参数摘要的模板解析 Tool，并删除模板上下文中的参数数组。 |
+| 2026-08-25 | Generation Service 回归 fixture 改成终态 `failed` 后仍沿用旧的 `hasActiveRuns: true` 断言 | 1 | 把该断言修正为终态运行应返回 `hasActiveRuns: false`，不改变产品实现。 |
+| 2026-08-25 | `pnpm run typecheck` 首次发现 Catalog Tool readonly 输出与 Schema 推导不一致，并发现测试直接索引可选 `widgets_values` | 1 | Tool 输出边界复制数组；测试先检查 `widgets_values` 是否为数组。 |
+| 2026-08-25 | `pnpm run quality` 首次执行的 189 项测试通过，但函数覆盖率 99.52% 未达到 100% 门槛 | 1 | 增加 Catalog Tool renderer 和错误弹窗底部关闭回调的交互断言。 |
+| 2026-08-25 | 第二次 `pnpm run quality` 在类型检查发现测试中的通用 Tool 结果仍为 `unknown` | 2 | renderer 断言在调用边界把已经验证的结果收窄为其 JSON 输出类型。 |
+| 2026-08-25 | 第三次 `pnpm run quality` 的函数覆盖率为 99.76%，未覆盖错误 Modal 的原生 `onClose` 回调 | 3 | 错误详情交互测试同时执行 footer 关闭和原生 Modal 关闭。 |
 | Timestamp | Error | Attempt | Resolution |
 |-----------|-------|---------|------------|
 | 2026-08-20 | 当前目标目录不是 Git 仓库 | 1 | 本轮不创建提交或分支；用户确认方案后确定初始化方式。 |

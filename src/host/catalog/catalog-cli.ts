@@ -10,6 +10,7 @@ import {
   parseBaseModelList,
   parseCatalogPage,
   parseCatalogQueryRequest,
+  parseCatalogResolvedTemplate,
   type BaseModelItem,
   type BaseModelList,
   type CatalogItem,
@@ -17,6 +18,7 @@ import {
   type CatalogErrorCode,
   type CatalogPage,
   type CatalogQueryRequest,
+  type CatalogResolvedTemplate,
   type CatalogTemplateParameter,
 } from '../../catalog/contract.ts'
 
@@ -204,9 +206,32 @@ function sourceContext(kind: CatalogQueryRequest['kind'], id: string, result: Re
         kind,
         id,
         title: sourceLabel(result.title),
-        parameters: sourceTemplateParameters(result.parameters_json),
       })
   }
+}
+
+function normalizeResolvedTemplate(value: unknown): CatalogResolvedTemplate {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog response must be an object.')
+  }
+  const envelope = value as Record<string, unknown>
+  if (
+    envelope.status !== 'ok'
+    || envelope.message !== null
+    || !Array.isArray(envelope.results)
+    || envelope.results.length !== 1
+    || envelope.page !== 1
+    || envelope.page_size !== 1
+    || envelope.total_count !== 1
+  ) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template resolve response is invalid.')
+  }
+  const result = sourceRecord(envelope.results[0])
+  return parseCatalogResolvedTemplate({
+    id: sourceId(result.id),
+    title: sourceLabel(result.title),
+    parameters: sourceTemplateParameters(result.parameters_json),
+  })
 }
 
 function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): CatalogPage {
@@ -323,5 +348,18 @@ export class CatalogCli {
     ]
     const result = await this.execute(this.options.executable, args, signal)
     return normalizeBaseModels(parseCliJson(result))
+  }
+
+  async resolveTemplate(id: string, signal: AbortSignal): Promise<CatalogResolvedTemplate> {
+    const templateId = sourceId(id)
+    const args = [
+      '--port', String(this.options.port),
+      '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
+      '--path', catalogDefinition('comfyui-template').path,
+      '--mode', 'resolve',
+      '--id', templateId,
+    ]
+    const result = await this.execute(this.options.executable, args, signal)
+    return normalizeResolvedTemplate(parseCliJson(result))
   }
 }

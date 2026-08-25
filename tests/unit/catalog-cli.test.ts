@@ -52,11 +52,6 @@ describe('Catalog CLI adapter', () => {
         items: [{
           context: {
             kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
-            parameters: [
-              { parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true },
-              { parameter_id: 'sampler', kind: 'sampler_name', value_type: 'enum', required: true },
-              { parameter_id: 'reference', kind: 'image', value_type: 'image_reference', required: false },
-            ],
           },
           label: 'wai_txt2img_lora',
           subtitle: 'text_to_image',
@@ -80,6 +75,40 @@ describe('Catalog CLI adapter', () => {
     )))).not.toContain('workflow_json')
   })
 
+  it('resolves one Workflow template by id and removes its full Workflow from the Agent projection', async () => {
+    const execute = vi.fn<CatalogCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: response([{
+        id: 37,
+        title: 'wai_txt2img_lora',
+        workflow_json: { hostOnlyGraph: true },
+        parameters_json: [
+          { parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false, visible: true },
+          { parameter_id: 'seed', kind: 'seed', value_type: 'integer', required: false, visible: true },
+        ],
+      }], 1, 1, 1),
+      stderr: '',
+    }))
+    const controller = new AbortController()
+
+    await expect(catalog(execute).resolveTemplate('37', controller.signal)).resolves.toEqual({
+      id: '37',
+      title: 'wai_txt2img_lora',
+      parameters: [
+        { parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false },
+        { parameter_id: 'seed', kind: 'seed', value_type: 'integer', required: false },
+      ],
+    })
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+      '--port', '18093',
+      '--timeout-ms', '15000',
+      '--path', '/internal/semantic/comfyui-templates',
+      '--mode', 'resolve',
+      '--id', '37',
+    ], controller.signal)
+    expect(JSON.stringify(await catalog(execute).resolveTemplate('37', controller.signal))).not.toContain('workflow_json')
+  })
+
   it.each([
     ['model', { id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null }, { kind: 'model', id: '15', file_name: 'model.safetensors' }],
     ['lora', { id: 91, file_name: 'lora.safetensors', author: 'author', cover_url: null }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
@@ -97,7 +126,7 @@ describe('Catalog CLI adapter', () => {
       kind: 'artist-string', id: '7', title: 'watercolor', prompt_text: '@artist_a, @artist_b',
     }],
     ['comfyui-template', { id: 37, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, parameters_json: [] }, {
-      kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [],
+      kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
     }],
   ] as const)('projects the %s CLI record into exact Agent context data', async (kind, source, context) => {
     const execute: CatalogCliProcess = async () => ({ exitCode: 0, stdout: response([source]), stderr: '' })

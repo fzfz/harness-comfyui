@@ -61,9 +61,9 @@ InstanceSource 的 `results[0]` 必须包含 `id`、`title`、`url`、`credentia
 
 ## `comfyui-generate` Skill 合同
 
-`comfyui-generate`是与Prompt Skill、LoRA调整Skill并列的普通Harness Skill。它只负责把当前用户消息、当前消息的不可变上下文快照、可选Execution Route和用户明确引用的先前Skill结果转换为一次Generation Tool调用；它不实现Workflow节点写入、远端状态观察、媒体保存或右列renderer。
+`comfyui-generate`是与Prompt Skill、LoRA调整Skill并列的普通Harness Skill。它只负责把当前用户消息、当前消息的不可变上下文快照、可选Execution Route和用户明确引用的先前Skill结果转换为一项或多项Generation Tool调用；每项Tool调用创建一个独立Generation Run。Skill不实现Workflow节点写入、远端状态观察、媒体保存或右列renderer。
 
-本Ticket的单图路径要求当前用户消息包含一项`type: "comfyui-context"`且`data.kind: "comfyui-template"`的上下文 JSON 和具体画面要求。该模板对象使用`data.id`、`data.title`和`data.parameters`。Skill按以下优先级确定正向Prompt：
+本Ticket要求当前用户消息包含一项`type: "comfyui-context"`且`data.kind: "comfyui-template"`的上下文 JSON 和具体画面要求。该模板对象只包含`data.id`和`data.title`。Skill使用`data.id`调用一次`query_semantic_comfyui_templates`，确认Tool返回的模板ID相同后读取模板参数定义。Skill对每项Generation Request按以下优先级确定正向Prompt：
 
 1. 当前用户消息明确给出的完整Prompt；
 2. 当前用户明确指向的同一Session内最近一条Prompt Skill单行输出；
@@ -71,13 +71,13 @@ InstanceSource 的 `results[0]` 必须包含 `id`、`title`、`url`、`credentia
 
 Skill先选择最高的可用优先级，忽略更低优先级候选。同一优先级存在多个完整Prompt候选且当前用户没有明确指向时，Skill必须请求用户选择，不能调用Generation Tool。Skill不得自行调用另一个Skill，也不得把Prompt Skill或LoRA调整Skill作为隐式前置步骤。
 
-Workflow 模板上下文的`data.parameters`数组每项固定包含`parameter_id`、`kind`、`value_type`和`required`。`value_type`只允许`string`、`integer`、`number`、`boolean`或`asset_reference`。可供`comfyui-generate`使用的模板必须恰好声明一个`kind: "positive_prompt"`参数。
+`query_semantic_comfyui_templates`返回的`parameters`数组每项固定包含`parameter_id`、`kind`、`value_type`和`required`。`value_type`只允许`string`、`integer`、`number`、`boolean`、`enum`、`image_reference`或`asset_reference`。可供`comfyui-generate`使用的模板必须恰好声明一个`kind: "positive_prompt"`参数。
 
 Skill只按模板声明的`parameter_id`构造`parameters`。正向Prompt写入`kind: "positive_prompt"`对应的`parameter_id`；用户明确给出的尺寸、像素、CFG、seed和其他值只写入匹配`kind`的参数。Skill逐项检查所有`required: true`参数。缺少必填值、出现多个同一单值语义参数或用户值不符合`value_type`时，Skill在中列报告具体`parameter_id`并停止。Skill不得猜测节点ID、input name、widget index或未声明参数。
 
 当前`generate_with_comfyui` Tool不接受 LoRA 应用或生成模型切换。当前消息包含`data.kind: "lora"`或`data.kind: "model"`上下文时，`comfyui-generate`必须在 Tool 调用前指出对应`data.file_name`，请用户取消该选择并结束本次执行。`data.kind: "work"`的`data.name`作为作品语境参与正向Prompt。
 
-Skill对本Ticket的单张图片任务只调用一次`generate_with_comfyui`。Tool Result返回`{run_id}`后，中列显示原型Tool Call行和“定位结果”；右侧第三列按相同`run_id`显示运行卡片。Skill不得把Prompt或LoRA调整JSON渲染为右列结果。
+Skill为当前消息中的每项独立图片要求调用一次`generate_with_comfyui`。当前消息包含多项独立图片要求时，Skill必须在第一次Tool调用前完成全部要求的参数映射和必填校验，再按用户声明顺序调用多次Tool。用户明确归属于某项图片要求的运行值只写入该Generation Request；用户明确声明由多项图片要求共享的运行值分别写入每项Generation Request。每项Tool Result分别返回自己的`{run_id}`。后续Tool Call失败时，Skill报告已经创建的每个`run_id`、失败的Generation Request和Tool错误，并且不重试已经成功的Tool Call。中列显示每项Tool Call及其运行链接；右侧第三列按每个`run_id`显示独立运行卡片。Skill不得把多项图片要求合并为一个Run，也不得把Prompt或LoRA调整JSON渲染为右列结果。
 
 ## Generation Tool
 
@@ -120,14 +120,14 @@ Tool 在 Run Repository 持久接纳后立即返回 `{ run_id }`。持久worker�
 
 1. Source contract test 调用两个真实只读 CLI operation，并确认查询前后数据源数据库与媒体目录没有变化。
 2. Harness Tool registry只通过PRD 01的`registerProjectTools()`包含`generate_with_comfyui`，其description和闭合输入/输出schema与本PRD完全一致；Agent Tool、Skill Tool和浏览器remote都不包含两个Source Operation。Host plugin卸载后该Tool不存在，重复名称或统一registry中任一Tool注册失败时Host启动失败并反向注销本次已注册Tool。
-3. 浏览器完成一次真实Harness消息与Tool Call；Session同一数字`turn`包含名为`comfyui-generate`的`skill-invocation`Context、`generate_with_comfyui` Tool Call和Tool Result。Tool Result的canonical output只包含`{ run_id }`，`ToolResultNode.meta`符合本PRD固定合同；项目Tool renderer显示相同ID并能定位右列卡片。上一数字turn存在目标Skill Invocation、当前数字turn不存在但调用Tool时，Host必须返回`GENERATION_SKILL_INVOCATION_REQUIRED`，Run Repository、持久映射和Fake Jobs API `/prompt`调用数都不增加。历史窗口只包含Tool Result且`ToolResultNode.call === null`时，Client必须通过`resolveToolResultLink()`核对持久映射后恢复同一链接；伪造`call_id`或`run_id`必须返回`GENERATION_RUN_LINK_INVALID`。注销项目Client plugin后，默认AppFrame和上游Tool UI恢复。
-4. Fake Jobs API 只收到一次 `/prompt`；请求中的 API Workflow 等于当前运行保存的 `api-workflow.json`。
+3. 浏览器完成一次真实Harness消息与一项或多项Tool Call；Session同一数字`turn`包含名为`comfyui-generate`的`skill-invocation`Context，以及每项图片要求对应的`generate_with_comfyui` Tool Call和Tool Result。每项Tool Result的canonical output只包含自己的`{ run_id }`，`ToolResultNode.meta`符合本PRD固定合同；项目Tool renderer显示相同ID并能定位右列卡片。上一数字turn存在目标Skill Invocation、当前数字turn不存在但调用Tool时，Host必须返回`GENERATION_SKILL_INVOCATION_REQUIRED`，Run Repository、持久映射和Fake Jobs API `/prompt`调用数都不增加。历史窗口只包含Tool Result且`ToolResultNode.call === null`时，Client必须通过`resolveToolResultLink()`核对持久映射后恢复同一链接；伪造`call_id`或`run_id`必须返回`GENERATION_RUN_LINK_INVALID`。注销项目Client plugin后，默认AppFrame和上游Tool UI恢复。
+4. Fake Jobs API 为每个已接纳Run分别收到一次`/prompt`；`/prompt`调用总数等于已接纳Run数量，每次请求中的API Workflow等于对应Run保存的`api-workflow.json`。
 5. 下载的 JSON 等于当前运行保存的 `actual-workflow.json`，可以重新导入 ComfyUI 前端，并保留节点、widget、连接和画布信息。
 6. 修改数据源当前模板后再次下载，结果仍与原运行保存文件一致。
 7. 视觉审核者并排检查 Tool Call 行、定位动作、成功卡片、图片、状态 badge、元数据和下载按钮。
-8. Skill黑盒测试证明当前消息只有Prompt Skill输出或LoRA调整结果时不会创建Run；用户显式选择`comfyui-generate`并提供唯一模板与完整Prompt后才调用一次Generation Tool。当前消息包含LoRA时，Skill在Tool调用前请用户取消LoRA选择。
+8. Skill黑盒测试证明当前消息只有Prompt Skill输出或LoRA调整结果时不会创建Run；用户显式选择`comfyui-generate`并提供唯一模板与一项完整图片要求时调用一次Generation Tool，提供多项边界明确且全部校验通过的图片要求时按要求数量调用Generation Tool。多项要求中的任一项校验失败时，Skill在第一次Generation Tool调用前报告具体要求和参数。用户明确声明由多项图片要求共享的运行值时，每项Tool Call都包含该值；用户把运行值明确归属于一项图片要求时，其他Tool Call不包含该值。后续Tool Call失败时，Skill报告已经创建的每个`run_id`、失败的Generation Request和Tool错误，并且不重试已经成功的Tool Call。当前消息包含LoRA时，Skill在Tool调用前请用户取消LoRA选择。
 9. Fake Jobs API驱动同一`run_id`依次进入`remote_pending`、`remote_running`、`downloading`和`succeeded`；每次Remote刷新后，中列Tool行和右列卡片必须在同一Client Store revision下显示相同状态。只显示中列时状态继续刷新；中列和右列同时显示时每个`refreshAfterMs`周期只产生一次网络查询。
 
 ## 不属于本 Ticket
 
-本 Ticket 只要求图片输出和默认或 Tool 输入提供的安全实例 ID；完整目录 UI、显式 Execution Route 控件、视频/音频、多运行投影和版本发布后的用户环境操作不属于本 Ticket。
+本 Ticket 只要求图片输出和默认或 Tool 输入提供的安全实例 ID；完整目录 UI、显式 Execution Route 控件、视频/音频和版本发布后的用户环境操作不属于本 Ticket。

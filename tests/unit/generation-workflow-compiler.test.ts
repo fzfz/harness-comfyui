@@ -114,6 +114,96 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.activeOutputNodeIds).toEqual(['3'])
   })
 
+  it('leaves missing instance-required inputs for the ComfyUI prompt endpoint to validate', async () => {
+    const missingImagesWorkflow = structuredClone(workflow)
+    const saveNode = missingImagesWorkflow.nodes[2] as { inputs: Array<{ link: number | null }> }
+    saveNode.inputs[0]!.link = null
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: missingImagesWorkflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+    })
+
+    expect(compiled.apiWorkflow['3']).toEqual({
+      class_type: 'SaveImage',
+      inputs: { filename_prefix: 'harness-comfyui' },
+    })
+  })
+
+  it.each([
+    ['wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors', 'wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors'],
+    ['wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors', 'wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors'],
+  ])('uses the target instance path separator for COMBO asset values', async (templateValue, instanceValue) => {
+    const assetWorkflow = structuredClone(workflow)
+    ;(assetWorkflow.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'LoraLoader',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: [templateValue, 0.8, 0.8],
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        LoraLoader: {
+          input: {
+            required: {
+              lora_name: [[instanceValue], {}],
+              strength_model: ['FLOAT', {}],
+              strength_clip: ['FLOAT', {}],
+            },
+          },
+          input_order: { required: ['lora_name', 'strength_model', 'strength_clip'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: assetWorkflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+    })
+
+    expect((compiled.apiWorkflow['4'] as { inputs: { lora_name: string } }).inputs.lora_name).toBe(instanceValue)
+  })
+
+  it('keeps the template COMBO value when separator-insensitive matching is not unique', async () => {
+    const templateValue = 'root\\folder/file.safetensors'
+    const assetWorkflow = structuredClone(workflow)
+    ;(assetWorkflow.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'LoraLoader',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: [templateValue],
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        LoraLoader: {
+          input: { required: { lora_name: [['root/folder/file.safetensors', 'root\\folder\\file.safetensors'], {}] } },
+          input_order: { required: ['lora_name'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: assetWorkflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+    })
+
+    expect((compiled.apiWorkflow['4'] as { inputs: { lora_name: string } }).inputs.lora_name).toBe(templateValue)
+  })
+
   it('rejects a declared output node that is not an active ComfyUI output node', async () => {
     const compiler = new ComfyWorkflowCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),

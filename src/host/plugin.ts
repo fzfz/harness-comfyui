@@ -8,6 +8,7 @@ import {
 import { loadProfile } from '../config/load-profile.ts'
 import { CatalogCli } from './catalog/catalog-cli.ts'
 import { CatalogRemoteService } from './catalog/catalog-service.ts'
+import { createTemplateResolverTool } from './catalog/catalog-tool.ts'
 import { ComfyHttpTransport } from './generation/comfy-http-transport.ts'
 import { GenerationCoordinator } from './generation/generation-coordinator.ts'
 import { GenerationRemoteService } from './generation/generation-service.ts'
@@ -42,10 +43,11 @@ export function apply(ctx: Context, config: Config): void {
     ...environment
   } = process.env
   const profile = loadProfile(config.configurationProfile, { environment })
-  new CatalogRemoteService(ctx, new CatalogCli({
+  const catalog = new CatalogCli({
     executable: profile.source.catalogCliPath,
     port: profile.source.catalogPort,
-  }))
+  })
+  new CatalogRemoteService(ctx, catalog)
   const source = new GenerationSourceCli({
     executable: profile.source.sourceCliPath,
     port: profile.source.catalogPort,
@@ -69,7 +71,10 @@ export function apply(ctx: Context, config: Config): void {
     pollIntervalMs: profile.jobs.pollIntervalMs,
     onError: generationLogger.error.bind(generationLogger),
   })
-  ctx.effect(() => registerProjectTools(ctx, [generationToolForContext(ctx, runtime)]), 'project Tool registry')
+  ctx.effect(() => registerProjectTools(ctx, [
+    createTemplateResolverTool(catalog),
+    generationToolForContext(ctx, runtime),
+  ]), 'project Tool registry')
   ctx.effect(() => registerGenerationMediaRoutes({
     webServer: (ctx as unknown as { webServer: GenerationWebServer }).webServer,
     runtime,

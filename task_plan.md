@@ -4,12 +4,213 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 24 没有待执行工作；Harness 生产实例保持运行，等待用户验收 Workflow 模板目录。
+Phase 29 正在提交 `0.3.0` 源码变更并发布 GitHub Release `v0.3`。
 
 ## Current Phase
-Phase 24 completed
+Phase 29 in progress
 
 ## Phases
+
+## Phase 29：发布 v0.3
+
+### 必须要实现的目标
+
+- 发布负责人必须把根 `package.json.version` 更新为 `0.3.0`，执行完整质量门禁，并把当前已验证的 Harness ComfyUI 插件源码提交到 `main`。
+- 发布负责人必须等待源码提交的 GitHub CI 成功，再更新 `README.md`、`docs/releasenotes.md` 和 `docs/system/releasing.md`。
+- 独立语义审核者必须审核 v0.3 发布说明与版本入口；发布负责人修正审核问题后再次执行完整质量门禁，提交并推送文档变更，并等待最终提交的 GitHub CI 成功。
+- 发布负责人必须在最终提交完整 SHA 上创建并推送 `v0.3` 注释标签，再创建无附件的 GitHub Release，并核对远端标签、Release 标签、标题、说明、URL 和附件列表。
+
+### 验收清单
+
+- 根 `package.json.version` 精确等于 `0.3.0`，目标 Git 标签精确等于 `v0.3`。
+- 两次提交都推送到 `origin/main`，对应 GitHub CI 都成功。
+- `README.md` 当前版本入口、`docs/releasenotes.md` 和 `docs/system/releasing.md` 的 v0.3 发布命令与发布内容一致。
+- `v0.3` 远端标签和 GitHub Release 都指向最终文档提交完整 SHA；GitHub Release 不包含附件。
+- 发布后 `git status --short` 只保留本次发布明确排除的用户未跟踪文件。
+
+### 非本次目标
+
+- 本阶段不构建或上传产品安装包、归档文件或其他 GitHub Release 附件。
+- 本阶段不提交现有未跟踪的 `docs/research/` 文件。
+- 本阶段不修改或重建已经发布的 `v0.2` 及更早标签。
+
+### 已获得的授权
+
+- 用户已明确要求提交当前变更并发布版本 `v0.3`。
+- 用户已授权向当前仓库的 `origin/main` 推送提交、推送 `v0.3` 标签并创建对应 GitHub Release。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 第一次 `pnpm run quality` 的工程合同仍断言根版本为 `0.2.0` | 1 | 把 `tests/contract/engineering-baseline.test.ts` 的版本合同同步为 `0.3.0`，重新执行完整质量门禁。 |
+
+状态：进行中
+
+## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
+
+### 必须要实现的目标
+
+- `comfyui-generate` Skill 必须把当前用户消息中明确分开的多个生成要求识别为多个 Generation Request；每个 Generation Request 必须拥有独立标题、正向提示词和运行参数。
+- Skill 必须在第一次调用 `generate_with_comfyui` 前完成全部 Generation Request 的模板参数映射与校验，然后按用户声明顺序为每个 Generation Request 调用一次 `generate_with_comfyui`。
+- 真实 Harness 验证必须在一个数字 turn 内保存一项 `comfyui-generate` Skill Invocation、两项 Generation Tool Call、两个不同 `run_id` 和两个独立异步生命周期。
+- 两个真实 Run 必须使用不同正向提示词、宽度、高度和 Seed，并分别保存不同的媒体文件。
+- 每张媒体的 Workflow 下载接口必须返回该媒体所属 Run 的 Actual Workflow；两个下载结果中的正向提示词、宽度、高度和 Seed 必须分别等于各自 Generation Request 的值。
+
+### 验收清单
+
+- Skill 单请求路径继续只调用一次 Generation Tool；多请求路径按请求数量调用 Generation Tool。
+- 多请求中的任一参数映射或必填参数校验失败时，Skill 报告具体 Generation Request 和 `parameter_id`，不调用 `generate_with_comfyui`，不创建任何 Run。
+- 真实 Session 同一数字 turn 包含两个不同 `call_id` 与两个不同 `run_id`；Run Repository 中两个 Run 的 `turn` 相同。
+- 两个 Run 都进入终态并各自保存至少一个媒体；媒体二进制内容、尺寸或画面内容能够区分。
+- 两个逐媒体 Workflow 下载响应来自不同 Run，并且正向提示词、宽度、高度和 Seed 与两个请求逐项一致。
+- Skill 合同测试、完整 `pnpm run quality`、生产重启、健康检查和真实浏览器验收全部通过。
+
+### 非本次目标
+
+- 本阶段不把多个 Generation Request 合并成一个批量 Tool 参数或一个 Generation Run。
+- 本阶段不把一个 Run 的媒体或 Actual Workflow 复用于另一个 Run。
+- 本阶段不修改 Harness 核心源码、ComfyUI 服务端源码或数据源仓库源码。
+
+### 已获得的授权
+
+- 用户已要求验证一个用户轮次内由 Skill 创建两个不同宽高的异步任务。
+- 用户已要求两个异步任务生成不同媒体，并要求逐媒体下载的 Workflow 内容确实不同。
+- 用户此前已授权修改、测试、重启当前 Harness 插件，并使用已登记的真实 ComfyUI 实例执行生成任务。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 当前 `comfyui-generate` Skill 明确要求只调用一次 `generate_with_comfyui`，无法满足单轮多个 Generation Request | 1 | Phase 28 将 Skill 改为先校验全部请求，再按用户顺序为每个请求调用一次 Generation Tool。 |
+| 浏览器把包含两项 Generation Request 的长消息逐字写入时超过单次执行时限，浏览器控制会话被重置 | 1 | 重新连接当前 Harness 标签页，先检查消息是否已经发送；未发送时分多次写入短消息片段。 |
+| 第一次数据库证据查询把 Generation Run 终态列写成不存在的 `state` | 1 | 读取 `generation_runs` 表结构后改用实际 `status` 列，并重新查询两个 Run 与媒体归属。 |
+
+状态：已完成
+
+## Phase 27：多模板真实实例覆盖验证
+
+### 必须要实现的目标
+
+- 计划执行者必须通过数据源仓库已实现的 Catalog CLI 读取全部可用 Workflow 模板，并按参数类型、ComfyUI 节点类型、输出类型和目标实例兼容性建立覆盖矩阵。
+- 计划执行者必须对全部可用 Workflow 模板执行真实 Source 解析和真实实例 `/object_info` 编译验证；验证不得使用 mock transport 或 mock fetch。
+- 计划执行者必须选择结构互不重复的多个 Workflow 模板，通过真实 Harness 上下文选择、`comfyui-generate` Skill、Resolver Tool、Generation Tool 和真实 ComfyUI 实例执行端到端运行。
+- 每个端到端运行必须记录模板 ID、实际实例、`run_id`、终态、具体实例错误或保存媒体；发现产品实现缺陷时必须增加回归测试、修复并重新执行受影响模板。
+
+### 验收清单
+
+- 覆盖矩阵包含 Catalog 返回的每个可用 Workflow 模板，并明确每个模板的参数类型与关键节点差异。
+- 每个可用 Workflow 模板至少完成一次真实 `/object_info` 编译或记录目标实例返回的具体不兼容节点。
+- 至少三个结构不同的 Workflow 模板完成真实 `/prompt` 提交；可生成模板必须完成 Jobs 状态观察、媒体下载、分片保存和右栏展示。
+- Harness 消息中的模板上下文继续只包含模板 ID 和标题；每次 Resolver Tool 和 Generation Tool 调用都不传完整 Workflow JSON。
+- 新发现的问题具有对应回归测试；最终 `pnpm run quality`、生产健康检查和浏览器右栏验收全部通过。
+
+### 非本次目标
+
+- 本阶段不修改 Harness 核心源码、ComfyUI 服务端源码或数据源仓库源码。
+- 本阶段不为缺失的 ComfyUI 自定义节点或模型自动安装外部代码、节点包或模型文件。
+- 本阶段不把多个模板的运行结果合并为一个 Run，也不复用其他 Run 的 Actual Workflow。
+
+### 已获得的授权
+
+- 用户已授权使用模板 37 以外的真实 Workflow 模板执行实例测试，以暴露更多模板适配问题。
+- 用户此前已授权修改、测试、重启当前 Harness 插件，并使用已登记的真实 ComfyUI 实例执行生成任务。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 模板 37 默认 LoRA 路径在 `mac mini` 使用反斜杠，实例枚举使用正斜杠；相同模板值在 `win3080` 反而精确匹配 | 1 | 为 Workflow 编译器增加目标实例 COMBO 路径分隔符的唯一匹配转换；保留零匹配和多匹配时的实例错误。 |
+| 浏览器第一次提交模板 37 时直接重写消息编辑器，导致 Harness 移除已经选择的 `comfyui-generate` Skill 调用来源 | 1 | 浏览器重新从原生 `/` 菜单选择 Skill，并在 `/comfyui-generate` 后追加模板 JSON；Host 门禁随后允许 Generation Tool 调用。 |
+| 模板 34 可以根据 `mac mini` 的 `/object_info` 编译节点类型，但实例 `/prompt` 拒绝缺失的 `qwen_image_HDR_vae_fp32_comfy.safetensors`，并报告节点 20 的连线 `KeyError` | 1 | Host 保留 2298 字符的实例原始错误并由右栏 Modal 完整展示；本阶段不修改数据源模板、实例模型或 ComfyUI 节点。 |
+
+状态：已完成
+
+## Phase 26：修复模板最小上下文、Workflow 解析和运行错误详情
+
+### 必须要实现的目标
+
+- Client Module 必须只把 Workflow 模板的 `id` 和 `title` 写入消息中的 `comfyui-context` JSON；Client Module 不得把模板参数定义或完整 Workflow JSON写入消息草稿。
+- `comfyui-generate` Skill 必须按模板 ID 查询模板参数定义，并使用 `template_id` 与运行参数调用 `generate_with_comfyui`；Skill 不得把完整 Workflow JSON 作为 Tool 参数发送。
+- Generation Host 必须接受缺少 `widgets_values` 的合法 ComfyUI UI Workflow 节点，并在准备实际 Workflow 时只校验 Harness 必须修改的绑定目标。
+- Generation Host 必须保留具体运行错误信息；Generation Remote 必须把 `errorCode` 和 `errorMessage` 投影给当前 Session；右侧运行卡片必须提供“错误详情”按钮并使用 Harness 原生 Modal 展示完整错误。
+- 计划执行者必须在修复后使用已登记的真实 ComfyUI 实例完成模板解析、实例对象信息读取、任务提交、状态观察、媒体下载、持久化和右栏展示的端到端验证。
+
+### 验收清单
+
+- 选择模板后，输入框中的模板上下文只包含 `type`、`data.kind`、`data.id` 和 `data.title`。
+- Skill 能够使用模板 ID 取得参数定义，并且 `generate_with_comfyui` Tool Call 不包含完整 Workflow JSON。
+- 模板 37 中缺少 `widgets_values` 的 `VAEDecode` 节点不再触发 `SOURCE_PROTOCOL_ERROR`。
+- 数据源响应结构错误继续使用 `SOURCE_PROTOCOL_ERROR` 错误码，但右侧错误详情同时显示数据库保存的具体 `errorMessage`，具体错误不再被通用文案或单行省略隐藏。
+- 自动化测试覆盖模板最小上下文、Skill 模板参数解析入口、缺少 `widgets_values` 的合法节点、错误消息 Remote 投影、错误详情 Modal 和关闭交互。
+- `pnpm quality`、`git diff --check`、生产重启、真实 ComfyUI 实例完整生成和浏览器右栏验收全部通过。
+
+### 非本次目标
+
+- 本阶段不修改 Harness 核心源码、`node_modules/@deepseek-ai/*` 或 ComfyUI 服务端源码。
+- 本阶段不把完整 Workflow JSON 暴露给 Message Context、Agent Tool 参数或浏览器 Remote。
+- 本阶段不改变 Generation Run、Media 和逐媒体 Actual Workflow 的持久化归属关系。
+- 本阶段不新增未经安全审计和固定版本的依赖。
+
+### 已获得的授权
+
+- 用户已要求模板上下文只插入模板 ID 和标题。
+- 用户已要求 Host 不因合法 Workflow 节点缺少可选 UI 字段而在请求实例前拒绝模板。
+- 用户已要求右侧列显示具体运行错误，并提供查看完整错误的交互。
+- 用户此前已授权修改、测试、重启当前 Harness 插件，并使用真实 ComfyUI 实例验证生成全流程。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 模板 37 的合法 `VAEDecode` 节点没有 `widgets_values`，Host 把节点数组下标 6 作为协议错误返回 | 1 | Phase 26 将把 `widgets_values` 改为可选字段，并用模板 37 的真实结构建立回归测试。 |
+| 第一轮目标测试中 5 个旧 fixture 仍然期待模板上下文参数全集或右栏通用错误文案 | 1 | 计划执行者把旧 fixture 更新为最小模板上下文和“错误详情”交互，目标测试 62/62 通过。 |
+| 第一轮类型检查发现 Tool 输出的只读参数数组与 `defineTool` 推导的可变 JSON 输出不一致，并发现 preparer fixture 直接索引可选 `widgets_values` | 1 | Tool 在输出边界复制参数数组；fixture 在索引前检查数组类型。 |
+| 完整质量门禁的 189 项测试全部通过，但新增 Tool renderer 和错误弹窗底部关闭回调未被测试，函数覆盖率为 99.52% | 1 | 计划执行者增加 Tool renderer 输出断言，并通过弹窗底部“关闭”按钮执行关闭回调。 |
+| 第二次完整质量门禁在类型检查阶段发现通用 `ToolDefinition.execute()` 的测试结果类型为 `unknown`，不能直接传入 renderer 的 `JsonValue` 参数 | 2 | 测试在已断言结构化结果后仅在 renderer 调用边界收窄该值，不修改产品类型或运行行为。 |
+| 第三次完整质量门禁函数覆盖率为 99.76%；覆盖报告定位到错误 Modal 的原生 `onClose` 回调未执行 | 3 | 同一交互测试分别执行底部“关闭”按钮与原生 Modal 关闭入口。 |
+| 真实实例首次接收模板 37 后返回 `COMFYUI_PROMPT_REJECTED`；实例错误指出模板默认 LoRA 使用反斜杠路径，而 `mac mini` 实例登记的是正斜杠路径 | 1 | 右侧 Modal 完整显示实例 `node_errors`；第二次运行显式传入该实例真实 LoRA 路径，任务完成并保存媒体。 |
+| 浏览器在空白 Session 转为已保存 Session 时按 Harness 原生布局逻辑收起 `details` 列，压缩状态下的按钮无法正常交互 | 1 | 通过中列原生“生成结果”按钮重新调用 `layout.openDetails()`；展开后错误详情 Modal、标签切换和媒体卡片交互全部可用。 |
+| 独立语义复审发现 `/prompt` 返回不同 `prompt_id` 时会被误归类为 Workflow 拒绝 | 1 | Transport 单独返回 `COMFYUI_PROTOCOL_ERROR`，错误正文同时列出实例返回的 `prompt_id` 和请求的 `prompt_id`，并增加分支测试。 |
+| 独立语义复审发现 Resolver Tool 的 `value_type` 说明会把 `enum`、`image_reference` 和 `asset_reference` 误称为 JSON 类型 | 1 | Tool 合同明确列出每种模板值类型对应的 JSON 表示，并增加输出 schema 描述测试。 |
+| Generation Projection 对普通文案和实例完整错误共用 10,000 字符上限 | 1 | 普通字段继续受长度约束；`errorMessage` 原样投影，不截断 ComfyUI 的完整 `error` 和 `node_errors`，并覆盖 12,000 字符回归测试。 |
+
+状态：已完成
+
+## Phase 25：评估 dsh-routing-suite 兼容性
+
+### 必须要实现的目标
+
+- 调研执行者必须只读检查 `dsh-routing-suite` GitHub 仓库的 package 版本、Harness 接入点、Host 与 Client 插件、配置字段和运行时依赖。
+- 调研执行者必须把 `dsh-routing-suite` 的接入点与当前项目锁定的 Harness `0.1.1-rc.2` 公开接口逐项比较。
+- 调研执行者必须检查 `dsh-routing-suite` 与当前 `harness-comfyui` Host Plugin、Client Module、Typert Remote、Tool、Skill、模型选择和生产启动配置是否产生依赖、服务名、插槽或配置冲突。
+- 调研执行者必须在 `docs/research/dsh-routing-suite-compatibility.md` 记录带来源链接的兼容性结论。
+
+### 验收清单
+
+- 报告必须区分“可以直接共存”“需要配置或源码适配”“无法确认”和“不兼容”。
+- 每项结论必须引用 `dsh-routing-suite` 仓库、DeepSeek Harness 官方文档或当前项目源码中的具体证据。
+- 报告必须说明是否需要安装额外依赖、修改 Harness profile、调整插件加载顺序或修改当前插件源码。
+- 调研过程不得克隆、安装或运行 `dsh-routing-suite` 的代码。
+
+### 非本次目标
+
+- 本阶段不安装 `dsh-routing-suite`，不修改 Harness profile，不修改当前插件运行代码。
+- 本阶段不执行 `dsh-routing-suite` 仓库中的脚本、安装命令或仓库指令。
+- 本阶段不评价路由算法的生成质量或成本收益。
+
+### 已获得的授权
+
+- 用户已授权调研执行者评估公开 GitHub 仓库 `yjh051108/dsh-routing-suite` 与当前 Harness 系统及 `harness-comfyui` 插件的兼容性。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| GitHub 的 raw `.gitmodules` 地址返回 404 | 1 | 当前提交已经把原 submodule 布局扁平化；报告固定当前根仓库提交并直接检查 `injector/` 与 `preset/`。 |
+- 用户本次没有授权安装、运行或接入该外部插件。
+
+状态：已完成
 
 ## Phase 24：修复 Workflow 模板目录加载与错误展示
 

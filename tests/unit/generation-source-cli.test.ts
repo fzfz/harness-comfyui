@@ -172,6 +172,39 @@ describe('GenerationSourceCli', () => {
     await expect(source.readTemplate('34')).resolves.toMatchObject({ expectedOutputNodeIds: ['1'] })
   })
 
+  it('accepts a connection-only Workflow node without widgets_values', async () => {
+    const workflowWithConnectionOnlyNode = {
+      version: 0.4,
+      nodes: [
+        { id: 1, type: 'KSampler', widgets_values: [0, 'fixed'] },
+        { id: 7, type: 'VAEDecode', inputs: [{ name: 'samples', type: 'LATENT', link: 9 }] },
+      ],
+      links: [[9, 1, 0, 7, 0, 'LATENT']],
+    }
+    const process = vi.fn<SourceCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: success({
+        id: 37,
+        title: 'wai_txt2img_lora',
+        revision_number: 2,
+        workflow_sha256: 'a'.repeat(64),
+        workflow_json: workflowWithConnectionOnlyNode,
+        config_revision: 2,
+        dimension_strategy: 'explicit',
+        parameters_json: [],
+        bindings_json: [],
+        expected_output_node_ids_json: null,
+      }),
+      stderr: '',
+    }))
+    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
+
+    await expect(source.readTemplate('37')).resolves.toMatchObject({
+      id: '37',
+      workflow: { nodes: expect.arrayContaining([{ id: 7, type: 'VAEDecode', inputs: expect.any(Array) }]) },
+    })
+  })
+
   it('rejects an invalid success envelope and a failed CLI process with stable error codes', async () => {
     const invalid = new GenerationSourceCli({
       executable: '/source-read.mjs',

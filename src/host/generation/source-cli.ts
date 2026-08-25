@@ -186,9 +186,6 @@ function parseWorkflow(value: unknown): UiWorkflow {
   if (!Array.isArray(source.nodes)) throw sourceError('SOURCE_PROTOCOL_ERROR', 'Template Workflow nodes are invalid.')
   const nodes: WorkflowNode[] = source.nodes.map((value, index) => {
     const node = record(value, `Template Workflow node ${index}`) as Record<string, JsonValue>
-    if ((typeof node.id !== 'string' && typeof node.id !== 'number') || typeof node.type !== 'string' || !Array.isArray(node.widgets_values)) {
-      throw sourceError('SOURCE_PROTOCOL_ERROR', `Template Workflow node ${index} is invalid.`)
-    }
     return node as WorkflowNode
   })
   return { ...source, nodes }
@@ -197,7 +194,9 @@ function parseWorkflow(value: unknown): UiWorkflow {
 function parseParameter(value: unknown): RuntimeParameterDefinition {
   const source = record(value, 'Template parameter')
   const valueType = source.value_type
-  const accepted: readonly RuntimeParameterValueType[] = ['string', 'integer', 'number', 'boolean', 'asset_reference']
+  const accepted: readonly RuntimeParameterValueType[] = [
+    'string', 'integer', 'number', 'boolean', 'enum', 'image_reference', 'asset_reference',
+  ]
   if (!accepted.includes(valueType as RuntimeParameterValueType) || typeof source.required !== 'boolean') {
     throw sourceError('SOURCE_PROTOCOL_ERROR', 'Template parameter contract is invalid.')
   }

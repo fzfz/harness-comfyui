@@ -18,6 +18,7 @@ import {
   IconCloseOutline16,
   IconDownloadOutline16,
   Menu,
+  Modal,
   Pill,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
@@ -108,33 +109,69 @@ function runTone(status: GenerationRunProjectionStatus): string {
 
 function ProjectionRunList({ runs }: { readonly runs: readonly GenerationRunProjection[] }) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+  const [errorRunId, setErrorRunId] = useState<string | null>(null)
+  const errorRun = runs.find(run => run.runId === errorRunId) ?? null
   if (runs.length === 0) return <div className="harness-comfyui-results-empty">暂无运行</div>
   return (
-    <div className="harness-comfyui-run-list" aria-label="ComfyUI 运行">
-      {runs.map(run => (
-        <Button
-          key={run.runId}
-          className="harness-comfyui-run-card"
-          variant="toolbar"
-          aria-pressed={selectedRunId === run.runId}
-          onClick={() => setSelectedRunId(run.runId)}
-        >
-          <span className="harness-comfyui-run-card-heading">
-            <span><strong>{run.title}</strong><code>{run.runId}</code></span>
-            <Pill className={`harness-comfyui-run-status is-${runTone(run.status)}`} active={selectedRunId === run.runId}>
-              {RUN_STATUS_LABELS[run.status]}
-            </Pill>
-          </span>
-          <span className="harness-comfyui-run-meta">
-            <span><small>实例</small><strong>{run.instanceTitle ?? '—'}</strong></span>
-            <span><small>工作流</small><strong>{run.templateTitle ?? '—'}</strong></span>
-          </span>
-          {run.errorCode === null ? null : (
-            <small className="harness-comfyui-run-detail"><code>{run.errorCode}</code> {generationErrorCopy(run.errorCode)}</small>
-          )}
-        </Button>
-      ))}
-    </div>
+    <>
+      <div className="harness-comfyui-run-list" aria-label="ComfyUI 运行">
+        {runs.map(run => (
+          <article
+            key={run.runId}
+            className="harness-comfyui-run-card-shell"
+            data-selected={selectedRunId === run.runId}
+          >
+            <Button
+              className="harness-comfyui-run-card"
+              variant="toolbar"
+              aria-pressed={selectedRunId === run.runId}
+              onClick={() => setSelectedRunId(run.runId)}
+            >
+              <span className="harness-comfyui-run-card-heading">
+                <span><strong>{run.title}</strong><code>{run.runId}</code></span>
+                <Pill className={`harness-comfyui-run-status is-${runTone(run.status)}`} active={selectedRunId === run.runId}>
+                  {RUN_STATUS_LABELS[run.status]}
+                </Pill>
+              </span>
+              <span className="harness-comfyui-run-meta">
+                <span><small>实例</small><strong>{run.instanceTitle ?? '—'}</strong></span>
+                <span><small>工作流</small><strong>{run.templateTitle ?? '—'}</strong></span>
+              </span>
+            </Button>
+            {run.errorCode === null ? null : (
+              <div className="harness-comfyui-run-error-summary">
+                <code>{run.errorCode}</code>
+                <Button variant="outline" size="sm" onClick={() => setErrorRunId(run.runId)}>
+                  {RESULTS_COPY.errorDetails}
+                </Button>
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+      <Modal
+        open={errorRun !== null}
+        onClose={() => setErrorRunId(null)}
+        title={RESULTS_COPY.errorDetails}
+        closeLabel={RESULTS_COPY.closeErrorDetails}
+        className="harness-comfyui-run-error-modal"
+        footer={(
+          <Button variant="primary" onClick={() => setErrorRunId(null)}>
+            关闭
+          </Button>
+        )}
+      >
+        {errorRun === null ? null : (
+          <div className="harness-comfyui-run-error-content">
+            <div className="harness-comfyui-run-error-identifiers">
+              <span><small>{RESULTS_COPY.runId}</small><code>{errorRun.runId}</code></span>
+              <span><small>{RESULTS_COPY.errorCode}</small><code>{errorRun.errorCode}</code></span>
+            </div>
+            <pre>{errorRun.errorMessage ?? generationErrorCopy(errorRun.errorCode ?? '')}</pre>
+          </div>
+        )}
+      </Modal>
+    </>
   )
 }
 
@@ -151,10 +188,19 @@ function MediaPreview({
 }) {
   const source = generationMediaContentUrl(item.mediaId, sessionId)
   if (errorCode !== null) return <div className="harness-comfyui-media-preview-error"><code>{errorCode}</code></div>
-  if (item.mediaKind === 'video') {
-    return <video src={source} controls preload="metadata" aria-label={`${item.filename} 视频`} onError={() => onError(source)} />
-  }
-  return <img src={source} alt={`${item.filename} 图片`} onError={() => onError(source)} />
+  return (
+    <a
+      className="harness-comfyui-media-original-link"
+      href={source}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${RESULTS_COPY.openOriginalMedia}：${item.filename}`}
+    >
+      {item.mediaKind === 'video'
+        ? <video src={source} preload="metadata" aria-label={`${item.filename} 视频`} onError={() => onError(source)} />
+        : <img src={source} alt={`${item.filename} 图片`} onError={() => onError(source)} />}
+    </a>
+  )
 }
 
 async function responseErrorCode(response: Response): Promise<string> {

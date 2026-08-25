@@ -1,5 +1,86 @@
 # Harness ComfyUI 原型方案调研结果
 
+## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
+
+- 修改前的 `comfyui-generate` Skill 把当前消息限定为一个 Generation Request，并要求只调用一次 `generate_with_comfyui`；该合同无法表达用户在同一轮中明确要求的多个独立图片结果。
+- 修改后的 Skill 先识别并校验当前消息中的全部 Generation Request，再按用户声明顺序为每项请求调用一次 `generate_with_comfyui`；任一请求校验失败时，第一次 Tool Call 之前停止。
+- 真实 Harness Session `session-e5821714-a06f-4e61-9b3c-b1f444e78e38` 的第 1 轮只包含一项 `comfyui-generate` Skill Invocation，并产生两项独立 Generation Tool Call。
+- 竖幅请求对应 `call_id=chatcmpl-tool-b851b018c3c3072d` 和 `run_id=run_f079b3d2-c5c7-4218-9c6d-b2debc0373b6`；横幅请求对应 `call_id=chatcmpl-tool-8b14e8fcbfd0de6f` 和 `run_id=run_ee43d68a-1727-45cb-983c-3012d3ef5b64`。两个 Run 的数据库 `turn` 都是 1，终态都是 `succeeded`。
+- 竖幅 Run 的请求参数为正向提示词 `1girl, solo, white hair, blue eyes, winter coat, falling snow, close portrait`、宽 384、高 512、Seed 28201；横幅 Run 的请求参数为正向提示词 `1girl, solo, red hair, green dress, flower meadow, full body, wide landscape`、宽 512、高 384、Seed 28202。
+- 竖幅 Run 保存媒体 `media_7e62ae91-56d9-4634-831b-313d8cfde7f2`，分片路径为 `7e/62/media_7e62ae91-56d9-4634-831b-313d8cfde7f2.png`，实际尺寸为 384×512，文件大小为 276,762 字节。
+- 横幅 Run 保存媒体 `media_220aca41-1c8f-4d88-922c-4d95e072818d`，分片路径为 `22/0a/media_220aca41-1c8f-4d88-922c-4d95e072818d.png`，实际尺寸为 512×384，文件大小为 351,950 字节。
+- 两张图片的 SHA-256 分别为 `0edb9ccc1eec69e9b0a12aa07437e12e5088a2f2a5271d05fcdc27305ffde6a3` 和 `312922f0f704379efe7fad3fe4caef1e63462d58a411d3607f0886cf4ba4710b`；人工视觉检查确认一张为雪景白发近景，一张为花田红发全身图，画面内容不同。
+- 逐媒体 Workflow 下载接口返回各自 Run 的 Actual Workflow。竖幅媒体响应包含提示词、384×512 和 Seed 28201；横幅媒体响应包含提示词、512×384 和 Seed 28202；两个规范化 JSON 的 SHA-256 分别为 `6b5aa4ed840f1bab72dde0bbb32b7a9857fcce0579008e9cbf6ccd702c160c99` 和 `67c998dece5537c44032c19ba39a634da87992a608f948c00e172d46ee729528`。
+- 右栏“本会话媒体”显示两张独立媒体卡片；每张卡片分别显示所属 `run_id`、原文件新窗口入口和“下载该媒体所属 Workflow”按钮。
+
+## Phase 27：多模板真实实例覆盖验证
+
+- Catalog CLI 当前返回 36 个可用 Workflow 模板，ID 为 1–4、6–30、32–38；已登记实例为 ID 1 `mac mini` 和 ID 2 `win3080`。
+- 模板集合包含 `text_to_image`、`text_to_image_lora`、`text_to_image_second_pass`、`text_to_image_hires_fix`、`controlnet` 和 `image_to_image` 六类流程。
+- 运行参数覆盖 `string`、`integer`、`number`、`asset_reference` 和 `image_reference`。模板 2、21、20、19、30、36 的 `reference_image` 为必填 `image_reference`。
+- 节点结构至少覆盖基础 KSampler、LoRA、LatentUpscale、ESRGAN、ControlNet、Krea2 Identity Edit、GGUF Loader、UltimateSDUpscale、Impact Detailer、rgthree 节点和 Anima 自定义采样节点；只重复跑基础文生图无法覆盖这些编译路径。
+- 36 个 Catalog 记录都把 `expected_output_node_ids_json` 设为 `null`；Host 必须通过每个目标实例的真实 `/object_info` 发现活动输出节点。
+- 多模板验证分为两层：全部 36 个模板分别针对两个已登记实例执行真实 `/object_info` 编译；随后选择结构互不重复的模板执行真实 Harness Skill/Tool `/prompt` 端到端运行。
+- 72 个真实编译组合中，`mac mini` 编译 27 个、缺节点 9 个；`win3080` 编译 29 个、缺节点 7 个。每个失败都返回具体缺失节点名称，不是通用 Source 错误。
+- `mac mini` 缺少模板 35 的 `WildcardPromptFromString`，并缺少模板 6–11、15–16 使用的 `SimpleMathDual+`。`win3080` 缺少模板 19–21、36 使用的 `TextInput_`，模板 35 的 `ResolutionMaster`，模板 34 的 `XB_UNetNameBroadcaster`，模板 33 的 `ClownsharKSampler_Beta`。
+- 36 个模板都至少能在一个已登记实例上完成真实 `/object_info` 编译；不存在两个实例都无法编译的模板。
+- 代表性端到端候选应优先覆盖模板 38（Anima 基础文生图）、28（WAI 二阶段 LatentUpscale）、34（Anima 自定义节点）、27（Krea2 UNET）和 3（Anima ESRGAN）。这些路径与已经成功的模板 37 LoRA 基础路线结构不同。
+- 模板 37 失败 Run 的 `request.json` 没有 `lora_model` 参数，证明 Generation Tool 没有生成或多次转义该路径；Host 使用了模板默认值。
+- 失败 Run 的 Actual Workflow 中 LoRA 路径只有一个 Unicode `U+005C` 反斜杠。错误详情 JSON 中显示的 `\\` 是一个反斜杠的 JSON 转义表示。
+- 当前 `mac mini` 的 `/object_info/LoraLoader` 只接受 `wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors`，当前 `win3080` 只接受 `wai\USNR_STYLE_ILL_V1_lokr3-000024.safetensors`。同一模板默认值无法同时精确匹配两个实例。
+- 修复层应位于 Generation Tool 的 Workflow 编译边界：当实例 COMBO 枚举与 Workflow 字符串只有路径分隔符不同且存在唯一匹配时，API Workflow 使用实例返回的精确枚举值；零个或多个匹配时保留原值并让实例 `/prompt` 返回具体错误。
+- Workflow 编译器现在使用目标实例 COMBO 枚举完成路径分隔符的唯一匹配转换；该转换同时支持模板反斜杠到实例正斜杠、模板正斜杠到实例反斜杠。
+- 修复后的真实模板 37 在 `mac mini` 编译为 `wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors`，在 `win3080` 编译为 `wai\USNR_STYLE_ILL_V1_lokr3-000024.safetensors`；结果与两台实例当前 `/object_info/LoraLoader` 精确一致。
+- Harness 真实会话中的模板 37 默认参数运行 `run_3f64c8e1-569b-41c8-87db-f80087c33e6e` 在 `mac mini` 成功；Actual API Workflow 使用正斜杠 LoRA 路径，媒体保存为 `media_9bf0ca3c-6beb-49a0-a395-0703ce50621d`。
+- Harness 真实会话中的模板 37 运行 `run_a66891dc-a470-4c8f-8dee-932668c92a95` 显式路由到 `win3080` 并成功；Actual API Workflow 使用反斜杠 LoRA 路径，媒体保存为 `media_97583c51-d700-4ca4-b659-e1afcf1f2714`。
+- 模板 38 `anima-aesthetic-v1-1-txt2img` 的真实运行 `run_a7a56265-d079-4264-8113-74aa21c2d5ff` 成功，媒体保存为 `media_04cb4d51-aa35-44a2-806d-703be2c2cdae`。
+- 模板 28 `wai_2pass_upscale` 暴露两个 `seed` 参数；Harness 原生提问交互把 2728 分别写入 `seed` 与 `seed_7`。真实运行 `run_fb85ca3c-a040-4c05-ad1c-9ed48f7f2c5f` 完成二阶段 LatentUpscale，媒体保存为 `media_f99bc597-fb8d-4e0c-b2e2-5cb5e4bed616`，文件大小为 2,358,238 字节。
+- 上述四个成功媒体分别写入 `9b/f0`、`04/cb`、`f9/9b` 和 `97/58` 分片目录；右栏按 Session 展示四张图片，并为每张图片显示独立的 Actual Workflow 下载图标。
+- 模板 34 `Anima Aesthetic 1.1｜文生图` 的真实运行 `run_c8e182e5-60d2-4e2d-9c94-74d56ced0c19` 到达 `mac mini` 的 `/prompt` 后失败。实例明确返回 `qwen_image_HDR_vae_fp32_comfy.safetensors` 不在该实例 VAE 枚举中，并返回节点 20 的连线 `KeyError`；Run Repository 保存的 `errorMessage` 长度为 2298，右栏原生错误详情 Modal 显示完整正文。
+- 同一 Harness Session 最终包含 5 个独立 Run：4 个成功 Run 各自拥有媒体和 Actual Workflow，1 个失败 Run 保留自己的实例错误；实现没有把同一会话的多次 Tool 调用合并为一个异步任务。
+
+## Phase 26：模板最小上下文、Workflow 解析和运行错误详情
+
+- 当前 `comfyui-generate` Skill 依赖模板上下文中的 `data.parameters` 构造 Generation Tool 参数；该依赖导致消息草稿保存完整参数定义，而不是只保存模板 ID 和标题。
+- `SourceGenerationPreparer.prepare()` 已经使用 `request.templateId` 通过 Host Source CLI 获取完整 TemplateBundle；Generation Tool 不需要且不接受完整 Workflow JSON。
+- 模板 37 的 UI Workflow 节点数组下标 6 对应节点 ID 7、类型 `VAEDecode`。该节点全部输入来自连线，因此没有 `widgets_values` 是合法结构。
+- `GenerationSourceCli.parseWorkflow()` 当前要求每个节点都存在数组类型的 `widgets_values`；该前置条件产生 `SOURCE_PROTOCOL_ERROR / Template Workflow node 6 is invalid.`，并在调用目标实例 `/object_info` 和 `/prompt` 前终止运行。
+- `GenerationRemoteService.list()` 当前只返回 `errorCode`，没有返回 Run Repository 已保存的 `errorMessage`；右侧卡片只能显示错误目录中的通用文案。
+- 当前运行卡片本身使用 Harness 原生 `Button`；增加“错误详情”按钮前必须把卡片外层改为非按钮容器，避免嵌套交互控件。
+- 现有成功生命周期测试使用 mock transport 或 mock fetch；当前仓库还没有真实 ComfyUI 实例端到端生成测试结果。
+- Catalog CLI adapter 当前只有 `search()` 和 `baseModels()`；Host 只注册了 `generate_with_comfyui`，因此 Skill 目前没有按模板 ID 查询参数定义的 Agent Tool。
+- 当前 Catalog CLI 的 `resolve --id 37` 响应包含完整 `workflow_json`，但 Harness 可以在 Host adapter 中只投影模板 ID、标题和参数定义，避免把完整 Workflow 进入 Agent Tool 输出。
+- `ComfyWorkflowCompiler.compile()` 会先请求真实实例的 `/object_info`，再根据实例节点定义把 UI Workflow 编译为 API Workflow；Host 必须保留这项转换，但不应把每个 UI 节点都具有 `widgets_values` 当成模板合法性的前置条件。
+- `ComfyHttpTransport.requestPrompt()` 当前收到 ComfyUI 4xx 的 `error` 和 `node_errors` 后只保存固定文本 `ComfyUI rejected the API Workflow.`；`observe()` 当前收到 Jobs API 的 `execution_error` 后只保存固定文本 `ComfyUI remote execution failed.`。这两处会在进入 Run Repository 前丢失实例返回的具体错误，必须改为保存实例错误 JSON。
+- 修复后的 Workflow 模板上下文经真实 Harness 输入框验证为 `{"type":"comfyui-context","data":{"kind":"comfyui-template","id":"37","title":"wai_txt2img_lora"}}`；消息不再包含参数定义或 Workflow JSON。
+- `query_semantic_comfyui_templates` 在真实 Harness 轨迹中按 ID 37 返回模板标题和八个参数定义；Tool 输出没有 Workflow JSON。Generation Host 随后仍按 `template_id` 从 Host Source CLI 获取完整模板。
+- `ComfyWorkflowCompiler` 现在只负责根据真实 `/object_info` 把 UI Workflow 转换为 API Workflow，不再根据 `/object_info` 的 required 列表提前拒绝缺少实例必填输入的 API Workflow；具体校验结果由实例 `/prompt` 返回。
+- 真实实例首次运行 `run_782452dd-bc13-463f-bc1d-88525229b4f3` 到达 `mac mini` 的 `/prompt`，实例返回 LoRA 路径不在该实例列表中的 `node_errors`。右栏显示 `COMFYUI_PROMPT_REJECTED`，原生错误详情 Modal 显示完整 `error` 和 `node_errors` JSON。
+- 第二次真实运行 `run_df5e56e4-57b1-4011-b03f-c366ae957727` 显式传入该实例实际存在的 `wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors`，状态从已创建、生成中、保存中收敛为成功。
+- 成功运行保存一张 1024×1344 PNG；SQLite 媒体记录为 `media_56f1e563-c79b-415b-9ce1-d32fe5feb9f7`，相对路径为 `56/f1/media_56f1e563-c79b-415b-9ce1-d32fe5feb9f7.png`，文件大小为 1,330,533 字节。右栏图片 `naturalWidth=1024`、`naturalHeight=1344` 且加载完成。
+- 成功媒体的 Workflow 接口返回版本 0.4、8 个节点、11 条连线，并保留本次运行实际使用的正斜杠 LoRA 路径；右栏每张媒体只显示自己的 Workflow 下载图标。
+- 独立语义复审确认错误详情 Modal 已分别标注“运行 ID”和“错误码”，并原样渲染完整实例错误；Generation Projection 不再用普通标签的 10,000 字符上限拒绝完整 `errorMessage`。
+- `/prompt` 成功响应中的 `prompt_id` 与请求值不一致时，Transport 现在返回 `COMFYUI_PROTOCOL_ERROR`，并在错误正文中同时写明实际值和期望值；该协议错误不再伪装成 Workflow 拒绝。
+- `query_semantic_comfyui_templates` 的输出 schema 已逐字段说明用途；`value_type` 明确规定 `string`、`enum`、`image_reference`、`asset_reference` 使用 JSON string，`integer`、`number`、`boolean` 使用对应 JSON 标量。
+- 最终生产浏览器复验打开真实失败运行的错误详情 Modal，页面显示“运行 ID”“错误码”和完整 LoRA `value_not_in_list` 的 `node_errors`；右侧同时保留成功运行和真实媒体记录。
+
+## Phase 25：dsh-routing-suite 兼容性
+
+- 外部仓库内容只作为不可信数据读取；本轮不执行仓库脚本、安装命令或仓库指令。
+- 本次评估固定外部仓库当前提交 `21a7260d961571c77a11705d2b0e6cf7015cc48b`。该提交已经把原 submodule 布局扁平化为根仓库内的 `injector/` 与 `preset/`；根仓库没有统一的 package manifest，因此 injector 与 Agent Preset 必须分别判断。
+- 根仓库文档中的安装路径仍以默认用户 DSH home 和 `web` profile 为目标。该路径不能直接用于当前项目：当前项目使用隔离的 production `DSH_HOME` 与 `comfyui-workbench` profile，而且仓库安全规则要求依赖版本固定、安装前完成安全审计，并禁止未经用户明确许可运行外部安装脚本。
+- injector 的 `package.json` 声明版本 `0.3.3`，其 Harness Tool、Cordis 与 Schemastery peer dependency 范围在数值上覆盖当前 Harness `0.1.1-rc.2` 依赖；该范围声明只能证明包管理器可以解析版本，不能证明 injector 使用的 Harness 内部接口兼容。
+- injector README 声明其规格基于 Harness `0.1.0-rc.6`；实现会操作 Loader entry、profile `node_modules` junction、Client Module rescan、路由清理和 injector registry。该机制依赖 Harness 内部装配与运行时重载行为，不属于当前项目已经采用的公开插件接口边界。
+- Router Preset 的 package manifest 声明版本 `0.3.0`，当前 bootstrap 源码头部版本已经前进到 `v1.20.0`，扁平化文档仍把研发线描述为 `v1.19.1 / v34`，根仓库当前只有旧布局的 `v0.1.0` Release。移动的 `main` 不能作为可复现的发布版本使用。
+- Router 预设本身以 `agent.cordis.yml`、`preset.yml` 和本地 `.mjs` 组成，不声明 npm runtime dependency；其主要兼容面是 Agent Preset 组合、Harness Tool 服务和系统提示词事件。
+- 当前 production profile 名称是 `comfyui-workbench`，profile 的 `cordis.patch.yml` 只加载 `harness-comfyui` 与所需 Harness 包。injector 在空配置下把插件目录固定解析为 `$DSH_HOME/profiles/web/node_modules`；根仓库安装脚本也固定执行 `dsh plugin --profile web add`。因此 suite 的默认安装配置不会操作当前正在运行的 profile。
+- injector 没有把运行时操作限制在 Harness 的公开插件 API：它直接读取 `ctx.loader.internal.loadCache`，调用 `ctx.loader.create()` 与 `ctx.loader.import()`，删除 `ctx.webServer.exact`、`prefixes`、`upgrades` 内部路由表项，并可重写目标 profile 的 `cordis.patch.yml`。这些行为会让 Harness 升级兼容、路由所有权和插件卸载顺序无法由公开合同保证。
+- Harness `0.1.1-rc.2` 已安装包确实提供 Router 使用的 `tools.presentAs()`、`tools.restrict()`、`tools.view()`、`agent/inbox/claimed`、`agent/pre-step` 与 `system-prompt/assemble`。这些 API 只能证明 Router 脚本可以通过类型与运行时成员检查，不能证明 Router 的 Tool 策略满足当前产品流程。
+- `router-standard` 的前三个阶段通过 `tools.restrict()` 只开放阶段白名单和元工具；这些白名单与全局安全列表都不含当前项目的 `generate_with_comfyui`。Router 在阶段 3 释放 restriction 后会开放完整 Tool 目录，因此“前三阶段不可见”本身不构成兼容性故障：按用户确认的产品流程，Agent 可以在前几阶段完成理解、提示词设计和参数准备，再在最终阶段调用 Generation Tool。
+- Router Standard 对 Generation Tool 仍有一项需要实测的时序约束：用户在阶段 0 至阶段 2 直接调用 `/comfyui-generate` 时，Skill 合同要求当前轮调用一次 `generate_with_comfyui`，但该 Tool 当时不可见。阶段 2 的自动晋级只识别 `delivery_check`，Agent 也可以显式调用 `phase_advance` 进入阶段 3；兼容性验收应验证 Agent 会在需要出图前可靠进入阶段 3。
+- injector Client 只注册 `settings.section` 的 `super-injector-plugins`，当前 Client 注册 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay`；双方没有直接 slot ID 冲突。当前 Host 的 Typert Remote 名称、`generate_with_comfyui` Tool 名称和 `/api/harness-comfyui/media` 路由也没有在 suite 精确 revision 中发现同名定义。
+- 综合结论为整套 suite 当前不能直接接入 production；该结论只来自 injector 默认使用错误的 `profiles/web`、injector 依赖 Harness 内部 API，以及 injector 直接改写本项目启动器拥有的 Profile。安装脚本的平台差异、Router 版本状态和 Generation Tool 在阶段 0 至阶段 2 不可见都不是该 NO-GO 判定的依据。若继续试验，可以先只复制 Router preset 到项目隔离的 Agent Preset 根并固定精确 revision，不接入依赖 Harness 内部 API 和直接改写项目 Profile 的 super-injector；Router Standard 的阶段 3 生成路径必须通过真实会话验收。
+
 ## Phase 24：Workflow 模板目录加载失败
 
 - 数据源 CLI 的 `/internal/semantic/comfyui-templates` 查询能够返回第一页 9 条记录；ID 36 和 ID 30 的可见参数使用 `value_type: "image_reference"`。

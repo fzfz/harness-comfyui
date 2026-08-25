@@ -108,6 +108,12 @@ export interface CatalogTemplateParameter {
   readonly required: boolean
 }
 
+export interface CatalogResolvedTemplate {
+  readonly id: string
+  readonly title: string
+  readonly parameters: readonly CatalogTemplateParameter[]
+}
+
 export type CatalogContext =
   | (CatalogContextIdentity & { readonly kind: 'model'; readonly file_name: string })
   | (CatalogContextIdentity & { readonly kind: 'lora'; readonly file_name: string })
@@ -121,11 +127,7 @@ export type CatalogContext =
   | (CatalogContextIdentity & { readonly kind: 'style'; readonly name: string; readonly prompt_text: string })
   | (CatalogContextIdentity & { readonly kind: 'prompt-term'; readonly tag: string })
   | (CatalogContextIdentity & { readonly kind: 'artist-string'; readonly title: string; readonly prompt_text: string })
-  | (CatalogContextIdentity & {
-    readonly kind: 'comfyui-template'
-    readonly title: string
-    readonly parameters: readonly CatalogTemplateParameter[]
-  })
+  | (CatalogContextIdentity & { readonly kind: 'comfyui-template'; readonly title: string })
 
 export interface CatalogItem {
   readonly context: CatalogContext
@@ -294,33 +296,43 @@ export function parseCatalogContext(value: unknown): CatalogContext {
         prompt_text: itemText(input.prompt_text, 'catalog context prompt text', 100_000),
       })
     case 'comfyui-template':
-      exactKeys(input, ['kind', 'id', 'title', 'parameters'], 'catalog context')
-      if (!Array.isArray(input.parameters) || input.parameters.length > 100) {
-        throw new TypeError('catalog context template parameters are invalid')
-      }
+      exactKeys(input, ['kind', 'id', 'title'], 'catalog context')
       return Object.freeze({
         kind,
         id,
         title: itemText(input.title, 'catalog context title', 500),
-        parameters: Object.freeze(input.parameters.map((value, index) => {
-          const parameter = record(value, `catalog context template parameter ${index}`)
-          exactKeys(parameter, ['parameter_id', 'kind', 'value_type', 'required'], `catalog context template parameter ${index}`)
-          const valueType = parameter.value_type
-          if (!isCatalogTemplateValueType(valueType)) {
-            throw new TypeError(`catalog context template parameter ${index} value type is invalid`)
-          }
-          if (typeof parameter.required !== 'boolean') {
-            throw new TypeError(`catalog context template parameter ${index} required flag is invalid`)
-          }
-          return Object.freeze({
-            parameter_id: itemText(parameter.parameter_id, `catalog context template parameter ${index} id`, 500),
-            kind: itemText(parameter.kind, `catalog context template parameter ${index} kind`, 500),
-            value_type: valueType,
-            required: parameter.required,
-          })
-        })),
       })
   }
+}
+
+function parseCatalogTemplateParameter(value: unknown, index: number): CatalogTemplateParameter {
+  const parameter = record(value, `catalog template parameter ${index}`)
+  exactKeys(parameter, ['parameter_id', 'kind', 'value_type', 'required'], `catalog template parameter ${index}`)
+  if (!isCatalogTemplateValueType(parameter.value_type)) {
+    throw new TypeError(`catalog template parameter ${index} value type is invalid`)
+  }
+  if (typeof parameter.required !== 'boolean') {
+    throw new TypeError(`catalog template parameter ${index} required flag is invalid`)
+  }
+  return Object.freeze({
+    parameter_id: itemText(parameter.parameter_id, `catalog template parameter ${index} id`, 500),
+    kind: itemText(parameter.kind, `catalog template parameter ${index} kind`, 500),
+    value_type: parameter.value_type,
+    required: parameter.required,
+  })
+}
+
+export function parseCatalogResolvedTemplate(value: unknown): CatalogResolvedTemplate {
+  const input = record(value, 'resolved Workflow template')
+  exactKeys(input, ['id', 'title', 'parameters'], 'resolved Workflow template')
+  if (!Array.isArray(input.parameters) || input.parameters.length > 100) {
+    throw new TypeError('resolved Workflow template parameters are invalid')
+  }
+  return Object.freeze({
+    id: stableId(input.id),
+    title: itemText(input.title, 'resolved Workflow template title', 500),
+    parameters: Object.freeze(input.parameters.map(parseCatalogTemplateParameter)),
+  })
 }
 
 export function parseCatalogItem(value: unknown): CatalogItem {

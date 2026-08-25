@@ -145,7 +145,7 @@ LoRA 结果必须遵守以下规则：
 1. 真实Harness Host provider发现三个迁移Skill；用户在项目输入框输入`/`后，Harness原生Skill菜单显示当前Session全部获授权的user-invocable Skill，其中包含三个迁移Skill和Ticket 04的`comfyui-generate`。选择任一Skill后输入区出现普通`/<skill-name> `文本，Host执行前重新校验对应Skill；项目bundle中不存在第二套Skill菜单或Skill选择存储。
 2. Anima与WAI各完成一项真实Catalog辅助的Prompt任务；中列显示各自最终Prompt，当前轮次右列均没有新运行，Run Repository计数不变。
 3. `lora-adjustment`分别完成`LoraLoader`、`LoraLoaderModelOnly`、临时停用、独立CLIP权重、多LoRA有序返回和同Session连续调整；中列结果符合本PRD结构，当前轮次右列没有新运行，Run Repository计数不变。
-4. 用户在后续消息选择`comfyui-generate`，重新附加同一Workflow并引用上一条Prompt Skill输出；同一数字`turn`保存Skill Invocation、一次Generation Tool Call和含合法`run_id` meta的Tool Result。中列Tool行持续显示该运行的异步状态摘要，右列只显示同一Store快照的详细运行卡片。Prompt与LoRA结果没有被复制成右列卡片。
+4. 用户在后续消息选择`comfyui-generate`，重新附加同一Workflow并引用上一条Prompt Skill输出；同一数字`turn`保存Skill Invocation，并为当前消息中每项独立图片要求保存一项Generation Tool Call和含合法`run_id` meta的Tool Result。每个中列Tool行持续显示对应运行的异步状态摘要，右列只显示同一Store快照中的独立运行卡片。Prompt与LoRA结果没有被复制成右列卡片。
 5. 源码生产进程在来源checkout不存在时仍能从项目Skill目录发现并运行三个迁移Skill，其他Preset不能从默认Skill roots发现这些项目Skill。
 6. 项目源码包含三个迁移Skill需要的`SKILL.md`和references，不包含三个来源Skill的validation/report脚本、agents配置、来源数据库、绝对路径、凭据、旧调用标识字段、`run_skill_script`或任何finalizer协议。
 7. 非实现者独立语义审核者检查两个Prompt的画面语义、LoRA调整的顺序/权重/触发词/连续修改语义，以及全部失败文案，并逐项给出PASS/FAIL。

@@ -90,7 +90,13 @@ function normalizeOutputs(value: unknown, outputNodeIds: readonly string[]): rea
 }
 
 function remoteErrorMessage(job: Record<string, unknown>): string {
-  return job.status === 'cancelled' ? 'ComfyUI remote job was cancelled.' : 'ComfyUI remote execution failed.'
+  if (job.status === 'cancelled') return 'ComfyUI Job status is cancelled.'
+  const detail = job.execution_error ?? job.error ?? job
+  return `ComfyUI Job failed: ${JSON.stringify(detail)}`
+}
+
+function promptRejectionMessage(error: unknown, nodeErrors: unknown): string {
+  return `ComfyUI rejected the API Workflow: ${JSON.stringify({ error: error ?? null, node_errors: nodeErrors ?? null })}`
 }
 
 function bytesMatch(bytes: Uint8Array, offset: number, expected: readonly number[]): boolean {
@@ -157,8 +163,14 @@ export class ComfyHttpTransport implements GenerationTransport {
       signal: input.signal,
     })
     const nodeErrors = body.node_errors === undefined ? {} : record(body.node_errors, 'ComfyUI node errors')
-    if (body.error !== undefined || Object.keys(nodeErrors).length > 0 || body.prompt_id !== input.promptId) {
-      throw new GenerationRuntimeError('COMFYUI_PROMPT_REJECTED', 'ComfyUI rejected the API Workflow.')
+    if (body.error !== undefined || Object.keys(nodeErrors).length > 0) {
+      throw new GenerationRuntimeError('COMFYUI_PROMPT_REJECTED', promptRejectionMessage(body.error, nodeErrors))
+    }
+    if (body.prompt_id !== input.promptId) {
+      throw new GenerationRuntimeError(
+        'COMFYUI_PROTOCOL_ERROR',
+        `ComfyUI /prompt returned prompt_id "${String(body.prompt_id)}" for requested prompt_id "${input.promptId}".`,
+      )
     }
     return Object.freeze({ promptId: input.promptId })
   }
@@ -246,7 +258,7 @@ export class ComfyHttpTransport implements GenerationTransport {
           && source !== null
           && (source.error !== undefined || nodeErrors !== undefined)
         ) {
-          throw new GenerationRuntimeError('COMFYUI_PROMPT_REJECTED', 'ComfyUI rejected the API Workflow.')
+          throw new GenerationRuntimeError('COMFYUI_PROMPT_REJECTED', promptRejectionMessage(source.error, nodeErrors))
         }
         throw new ComfyHttpError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /prompt.`, response.status)
       }

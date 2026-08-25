@@ -73,13 +73,13 @@ const { act, create } = createRequire(import.meta.url)('react-test-renderer') as
 
 const CONTEXT_OPTIONS: readonly CatalogItem[] = [
   {
-    context: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [] },
+    context: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
     label: 'wai_txt2img_lora',
     subtitle: 'text_to_image',
     coverUrl: 'http://127.0.0.1:18092/media/images/template.webp',
   },
   {
-    context: { kind: 'comfyui-template', id: '36', title: 'wai_txt2img', parameters: [] },
+    context: { kind: 'comfyui-template', id: '36', title: 'wai_txt2img' },
     label: 'wai_txt2img',
     subtitle: 'text_to_image',
     coverUrl: null,

@@ -79,7 +79,9 @@ describe('SourceGenerationPreparer', () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
       apiWorkflow: {
         '3': { class_type: 'SaveImage', inputs: { source: '2' } },
-        actual_prompt: input.workflow.nodes[0]?.widgets_values[0] ?? null,
+        actual_prompt: Array.isArray(input.workflow.nodes[0]?.widgets_values)
+          ? input.workflow.nodes[0]?.widgets_values[0] ?? null
+          : null,
       },
       activeOutputNodeIds: ['3'],
     }))

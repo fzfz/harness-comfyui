@@ -197,8 +197,14 @@ describe('ComfyHttpTransport', () => {
     await expect(observe()).resolves.toEqual({ status: 'pending', outputs: [] })
     await expect(observe()).resolves.toEqual({ status: 'running', outputs: [] })
     await expect(observe()).resolves.toEqual({ status: 'unknown', outputs: [] })
-    await expect(observe()).resolves.toMatchObject({ status: 'error', error: { message: 'ComfyUI remote execution failed.' } })
-    await expect(observe()).resolves.toMatchObject({ status: 'error', error: { message: 'ComfyUI remote job was cancelled.' } })
+    await expect(observe()).resolves.toMatchObject({
+      status: 'error',
+      error: { message: 'ComfyUI Job failed: {"exception_message":"node failed"}' },
+    })
+    await expect(observe()).resolves.toMatchObject({
+      status: 'error',
+      error: { message: 'ComfyUI Job status is cancelled.' },
+    })
   })
 
   it('classifies timeout, caller cancellation and connection failures', async () => {
@@ -265,7 +271,23 @@ describe('ComfyHttpTransport', () => {
       }), { status: 400 })),
     })
     await expect(rejectedWithHttp400.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, onRequestStart: () => true }))
-      .rejects.toMatchObject({ code: 'COMFYUI_PROMPT_REJECTED' })
+      .rejects.toMatchObject({
+        code: 'COMFYUI_PROMPT_REJECTED',
+        message: 'ComfyUI rejected the API Workflow: {"error":{"type":"prompt_outputs_failed_validation"},"node_errors":{"3":{"errors":[]}}}',
+      })
+    const mismatchedPromptId = '30f70d6d-8449-4a11-a8d0-26f846a7614b'
+    const mismatched = new ComfyHttpTransport({
+      source,
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        prompt_id: mismatchedPromptId,
+        node_errors: {},
+      }), { status: 200 })),
+    })
+    await expect(mismatched.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, onRequestStart: () => true }))
+      .rejects.toMatchObject({
+        code: 'COMFYUI_PROTOCOL_ERROR',
+        message: `ComfyUI /prompt returned prompt_id "${mismatchedPromptId}" for requested prompt_id "${promptId}".`,
+      })
     const invalidJson = new ComfyHttpTransport({
       source,
       fetchImplementation: vi.fn(async () => new Response('{', { status: 200 })),

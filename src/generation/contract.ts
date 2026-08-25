@@ -31,6 +31,7 @@ export interface GenerationRunProjection {
   readonly templateTitle: string | null
   readonly status: GenerationRunProjectionStatus
   readonly errorCode: string | null
+  readonly errorMessage: string | null
   readonly createdAt: number
   readonly updatedAt: number
 }
@@ -66,9 +67,11 @@ function exactKeys(value: Record<string, unknown>, expected: readonly string[], 
   if (keys.length !== wanted.length || keys.some((key, index) => key !== wanted[index])) throw new TypeError(`${label} has invalid properties`)
 }
 
-function text(value: unknown, label: string, nullable = false): string | null {
+function text(value: unknown, label: string, nullable = false, maxLength: number | null = 10_000): string | null {
   if (nullable && value === null) return null
-  if (typeof value !== 'string' || value.length === 0 || value.length > 10_000) throw new TypeError(`${label} is invalid`)
+  if (typeof value !== 'string' || value.length === 0 || maxLength !== null && value.length > maxLength) {
+    throw new TypeError(`${label} is invalid`)
+  }
   return value
 }
 
@@ -92,7 +95,7 @@ function parseRun(value: unknown): GenerationRunProjection {
   const source = record(value, 'Generation Run projection')
   exactKeys(source, [
     'runId', 'turn', 'title', 'instanceTitle', 'templateTitle', 'status',
-    'errorCode', 'createdAt', 'updatedAt',
+    'errorCode', 'errorMessage', 'createdAt', 'updatedAt',
   ], 'Generation Run projection')
   if (!GENERATION_RUN_STATUSES.includes(source.status as GenerationRunProjectionStatus)) throw new TypeError('Generation Run status is invalid')
   return Object.freeze({
@@ -103,6 +106,7 @@ function parseRun(value: unknown): GenerationRunProjection {
     templateTitle: text(source.templateTitle, 'Generation Run template title', true),
     status: source.status as GenerationRunProjectionStatus,
     errorCode: text(source.errorCode, 'Generation Run error code', true),
+    errorMessage: text(source.errorMessage, 'Generation Run error message', true, null),
     createdAt: natural(source.createdAt, 'Generation Run created time'),
     updatedAt: natural(source.updatedAt, 'Generation Run updated time'),
   })

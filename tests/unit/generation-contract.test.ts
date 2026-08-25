@@ -11,7 +11,7 @@ const projection = {
   sessionId: 'session_1',
   runs: [{
     runId: 'run_1', turn: 2, title: '肖像', instanceTitle: null, templateTitle: 'Anima',
-    status: 'succeeded', errorCode: null, createdAt: 1, updatedAt: 2,
+    status: 'succeeded', errorCode: null, errorMessage: null, createdAt: 1, updatedAt: 2,
   }],
   media: [{
     mediaId: 'media_1', runId: 'run_1', turn: 2, outputIndex: 0, mediaKind: 'image',
@@ -48,6 +48,20 @@ describe('Generation projection contract', () => {
       ...projection,
       media: [{ ...projection.media[0], byteSize: -1 }],
     })).toThrow('byte size')
+  })
+
+  it('preserves a complete ComfyUI error detail larger than ordinary labels', () => {
+    const errorMessage = `ComfyUI rejected the API Workflow: ${'x'.repeat(12_000)}`
+
+    expect(parseGenerationProjection({
+      ...projection,
+      runs: [{
+        ...projection.runs[0],
+        status: 'failed',
+        errorCode: 'COMFYUI_PROMPT_REJECTED',
+        errorMessage,
+      }],
+    }).runs[0]?.errorMessage).toBe(errorMessage)
   })
 
   it('builds same-origin content and per-media Workflow URLs', () => {

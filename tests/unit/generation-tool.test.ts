@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createGenerationTool } from '../../src/host/generation/generation-tool.ts'
 
-function execution(events: readonly unknown[]) {
+function execution(events: readonly unknown[], callId = 'call_generation_1') {
   return {
-    callId: 'call_generation_1',
-    rootCallId: 'call_generation_1',
+    callId,
+    rootCallId: callId,
     name: 'generate_with_comfyui',
     arguments: {},
     signal: new AbortController().signal,
@@ -86,6 +86,54 @@ describe('generate_with_comfyui Tool', () => {
       code: 'GENERATION_SKILL_INVOCATION_REQUIRED',
     })
     expect(acceptGeneration).not.toHaveBeenCalled()
+  })
+
+  it('creates independent Runs for multiple Tool calls after one same-turn Skill invocation', async () => {
+    const acceptGeneration = vi.fn()
+      .mockResolvedValueOnce({ runId: 'run_portrait' })
+      .mockResolvedValueOnce({ runId: 'run_landscape' })
+    const tool = createGenerationTool({
+      runtime: { acceptGeneration } as never,
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+      } as never,
+    })
+    const events = [
+      { type: 'turn/start', seq: 0, data: { turn: 8 } },
+      {
+        type: 'user/message',
+        seq: 1,
+        data: { turn: 8, content: [], source: { kind: 'skill-invocation', name: 'comfyui-generate', form: 'instructions' } },
+      },
+      { type: 'tool/call', seq: 2, data: { turn: 8, step: 0, callId: 'call_portrait', name: 'generate_with_comfyui', arguments: '{}' } },
+      { type: 'tool/result', seq: 3, data: { turn: 8, step: 0, callId: 'call_portrait', name: 'generate_with_comfyui' } },
+      { type: 'tool/call', seq: 4, data: { turn: 8, step: 1, callId: 'call_landscape', name: 'generate_with_comfyui', arguments: '{}' } },
+    ]
+    const portrait = {
+      ...toolArguments,
+      title: '竖图',
+      parameters: { positive_prompt: 'white-haired girl', width: 384, height: 512, seed: 28101 },
+    }
+    const landscape = {
+      ...toolArguments,
+      title: '横图',
+      parameters: { positive_prompt: 'black-haired girl', width: 512, height: 384, seed: 28102 },
+    }
+
+    await expect(tool.execute(portrait, execution(events, 'call_portrait') as never))
+      .resolves.toEqual({ run_id: 'run_portrait' })
+    await expect(tool.execute(landscape, execution(events, 'call_landscape') as never))
+      .resolves.toEqual({ run_id: 'run_landscape' })
+    expect(acceptGeneration).toHaveBeenNthCalledWith(1,
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 8, callId: 'call_portrait' },
+      expect.objectContaining({ title: '竖图', parameters: portrait.parameters }),
+      expect.any(AbortSignal),
+    )
+    expect(acceptGeneration).toHaveBeenNthCalledWith(2,
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 8, callId: 'call_landscape' },
+      expect.objectContaining({ title: '横图', parameters: landscape.parameters }),
+      expect.any(AbortSignal),
+    )
   })
 
   it('publishes closed input and output JSON schemas', () => {

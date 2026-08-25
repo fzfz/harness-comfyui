@@ -49,6 +49,7 @@ export class GenerationRemoteService extends TypertRemoteService {
       templateTitle: run.templateTitle,
       status: run.status,
       errorCode: run.errorCode,
+      errorMessage: run.errorMessage,
       createdAt: run.createdAt,
       updatedAt: run.updatedAt,
     }))

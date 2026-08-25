@@ -7,7 +7,14 @@ import {
   type PreparedGeneration,
 } from './generation-runtime.ts'
 
-export type RuntimeParameterValueType = 'string' | 'integer' | 'number' | 'boolean' | 'asset_reference'
+export type RuntimeParameterValueType =
+  | 'string'
+  | 'integer'
+  | 'number'
+  | 'boolean'
+  | 'enum'
+  | 'image_reference'
+  | 'asset_reference'
 
 export interface RuntimeParameterDefinition {
   readonly parameterId: string
@@ -35,11 +42,7 @@ export interface ComposeTextBinding {
 
 export type RuntimeBinding = ReplaceInputBinding | ComposeTextBinding
 
-export type WorkflowNode = Readonly<Record<string, JsonValue>> & {
-  readonly id: string | number
-  readonly type: string
-  readonly widgets_values: readonly JsonValue[]
-}
+export type WorkflowNode = Readonly<Record<string, JsonValue>>
 
 export type UiWorkflow = Readonly<Record<string, JsonValue>> & {
   readonly nodes: readonly WorkflowNode[]
@@ -113,6 +116,8 @@ function fail(message: string): never {
 function valueMatches(definition: RuntimeParameterDefinition, value: JsonValue): boolean {
   switch (definition.valueType) {
     case 'string':
+    case 'enum':
+    case 'image_reference':
     case 'asset_reference':
       return typeof value === 'string'
     case 'integer':
@@ -170,7 +175,7 @@ function buildActualWorkflow(
       fail(`Workflow binding for "${binding.parameterId}" has an invalid widget index.`)
     }
     const node = findNode(nodes, binding.nodeId)
-    if (binding.widgetIndex >= node.widgets_values.length) {
+    if (!Array.isArray(node.widgets_values) || binding.widgetIndex >= node.widgets_values.length) {
       fail(`Workflow binding for "${binding.parameterId}" does not resolve to a widget value.`)
     }
     const widgets = node.widgets_values as JsonValue[]

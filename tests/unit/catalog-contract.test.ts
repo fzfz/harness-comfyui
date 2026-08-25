@@ -84,10 +84,6 @@ describe('catalog Remote contract', () => {
         kind: 'comfyui-template',
         id: '37',
         title: 'wai_txt2img_lora',
-        parameters: [
-          { parameter_id: 'sampler', kind: 'sampler_name', value_type: 'enum', required: true },
-          { parameter_id: 'reference', kind: 'image', value_type: 'image_reference', required: false },
-        ],
       },
     ] as const
 
