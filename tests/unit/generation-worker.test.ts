@@ -24,6 +24,7 @@ const request: GenerationRequest = {
   title: '两个结果',
   instanceId: '2',
   templateId: '34',
+  model: null,
   parameters: { positive_prompt: 'first prompt' },
   loras: [],
 }

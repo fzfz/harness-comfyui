@@ -867,6 +867,33 @@
 - The real Catalog Tool chain confirms template 37, LoRA 68, and generation model 1 share the required model identity. Resolver output preserves the LoRA introduction, usage, trigger words, default weight, and basename without inventing presentation aliases.
 - Semantic review now passes with no remaining issue after assigning the resolver `weight` description to `generate_with_comfyui.loras[].weight`.
 
+## Phase 32 real dual-LoRA validation
+
+- The current production catalog no longer contains historical template 35. Base-model family 2 currently exposes templates 28, 29, 37, and 40; template 40 is the new candidate for a real multi-LoRA Workflow.
+- Base-model family 2 currently exposes LoRA IDs 68, 69, 71, 72, 74, 89, 90, and 91. The next selection step must intersect their resolved `model_id` values and basenames with the candidate instance's live `/object_info` resource options.
+- Template 40 contains one active `Power Lora Loader (rgthree)` node whose UI state already contains two enabled LoRAs. The current compiler only recognizes standard `lora_name`/`strength_model` widgets and LoraManager text inputs, so it cannot yet inject structured selections into this real multi-LoRA node.
+- LoRA IDs 68 and 69 are compatible with template/model family 2 and generation model 1, expose trigger words `usnr` and `gthan`, and are present on the registered WAI instances as `wai/<basename>` or `wai\\<basename>` paths. They are the selected semantic pair for the real validation.
+- Template 40 currently provides the only catalog Workflow with native multi-LoRA capacity; proving the requested behavior requires deterministic `Power Lora Loader (rgthree)` serialization support rather than adding a node or relying on obsolete template 35.
+- The official rgthree README defines Power Lora Loader as an unlimited dynamic LoRA loader. Its `Show Strengths: Single Strength` mode applies one strength value to both model and CLIP, matching template 40's current UI property.
+- The repository `find-docs` Skill cannot be executed because its only lookup route downloads and runs unpinned `ctx7@latest`; official GitHub source pages are the allowed read-only fallback under the repository security rules.
+- Official `py/power_lora_loader.py` defines the server contract exactly: every dynamic input key whose uppercase form starts with `LORA_` is accepted when its value contains `on`, `lora`, and `strength`; optional `strengthTwo` overrides CLIP strength, otherwise CLIP uses `strength`.
+- The server ignores a disabled dynamic LoRA (`on: false`) and ignores zero-strength selections. A valid compiler representation is therefore `lora_01`, `lora_02`, ... with `{on:true,lora:<instance path>,strength:<weight>,strengthTwo:null}` in template 40's single-strength mode.
+- The official frontend counter starts at zero and names the first dynamic input `lora_1`, not `lora_01`. Saved UI Workflows keep only the LoRA objects in `widgets_values`; `configure()` rebuilds the dynamic widgets in object order.
+- The official API-JSON restore path filters node `inputs` for values containing a string `lora` property. The Host must serialize template 40 as `lora_N: {on:true,lora:<instance path>,strength:<weight>}`; `strengthTwo` is omitted in Single Strength mode.
+- The compiler now replaces the Power Lora Loader's saved UI objects with the selected LoRAs, resolves every basename to the target instance path, and emits ordered `lora_N` API inputs. The real node's dynamic capacity is not reduced to the number of objects present in the template.
+- Real template 40 node 27 contains `widgets_values` entries for the divider, header, two LoRAs, spacer, and button, plus a `widgets_values_named` mirror. Actual Workflow generation must update both LoRA representations while preserving the native non-LoRA entries.
+- Real template 40 compilation against instance 2 now succeeds with LoRA 68 at 0.85 and LoRA 69 at 0.65. Both resolve to `wai\\<basename>` and are present identically in Actual Workflow and API Workflow.
+- Compiler compatibility alone was insufficient evidence. The real template Resolver returns `model_id: 15` for template 40, so LoRAs 68 and 69 (`model_id: 1`) are semantically incompatible under the current `comfyui-generate` Skill contract even though the target instance contains their files.
+- The complete WAI catalog matrix has no valid dual-LoRA test combination under the current Skill contract: templates 28/29 have no LoRA input, template 37 has one standard LoRA input, and template 40 has a dynamic Power loader but no catalog LoRA with its fixed `model_id: 15`.
+- That no-valid-combination conclusion depended on an incorrect Skill rule. `template.model_id` identifies the generation model currently serialized in the Workflow; it does not prevent replacement by another generation model with the same `base_model_id`.
+- The current Generation Tool does not carry a selected generation model. Removing the Skill rejection alone would therefore leave template 40 on model 15. The corrected data flow must persist model ID and basename and replace the Workflow model resource with the target instance's native path.
+- Template 40's width and height bindings point to connected `EmptyLatentImage.width/height` widgets. The executable values come from upstream `easy int` nodes titled `Width` and `Height`; their live input name is `value` and their current values differ from the template parameter defaults.
+- Template 40's seed binding points to connected `KSampler.seed`; the executable seed comes from node 40 `Seed (rgthree)`. Runtime targeting must resolve active upstream scalar sources instead of mutating connected widgets whose API values are links.
+- After connected-widget correction, template 40's executable positive Prompt is `ImpactWildcardProcessor.wildcard_text` at node 3 and its negative Prompt is the same input at node 4. `CLIPTextEncode.text` remains a link, so the generated API Workflow now carries the final Prompt through the actual execution chain.
+- Real Run `run_2e0a24c0-5eb1-49ed-a1d1-aff53173f0dd` proved the corrected Skill path and model/LoRA request contract, then ComfyUI rejected two compiler projections. Several UI widgets save display label `Select Wildcard 🟢 Full Cache` while the live API combo has one accepted value `Select the Wildcard to add to the text`; the compiler must project the sole live choice.
+- Template 40 contains mode-4 bypass nodes 29, 69, 70, 71, and 73. The current API compiler omits those nodes but leaves downstream links pointing to their IDs. Bypass nodes with matching input/output types must redirect downstream links to their upstream source; bypassed scalar primitive node 73 must inline its saved scalar value.
+- Template 39 fixes Anima model 3 and contains an active `Lora Loader (LoraManager)` text input. Catalog LoRAs 88 and 87 both fix model 3; LoRA 88 supplies six explicit trigger words and LoRA 87 supplies style semantics without a trigger word, which together exercise trigger insertion plus trigger-free semantic rewriting.
+
 ## Phase 31：安装 Router Standard Agent Preset
 
 - Router Standard 来自 `dsh-routing-suite` 固定提交 `21a7260d961571c77a11705d2b0e6cf7015cc48b` 的 `preset/router-standard`；生产目标目录包含 8 个已审计文件。
@@ -874,3 +901,13 @@
 - 生产 Harness 启动页同时注册 `@deepseek-ai/dsh-client-ui-agent-preset` 与 `harness-comfyui` Client；`pnpm prod:status` 和六项 `pnpm prod:health` 检查通过。
 - 浏览器控制连接拒绝重新加载 `127.0.0.1`，因此本轮没有通过自动化浏览器截图重复验证选择器；Harness 的预设列表每次调用都会重新扫描本机 Agent Preset 根目录。
 - 生产 `dsh-home` 中不存在 `dsh-super-injector`；本轮没有执行 Router Standard 的外部安装脚本、自测脚本或模型工具。
+## 2026-08-25 — Template 40 实例拒绝根因修复
+
+- ComfyUI `/prompt` 拒绝不是模型族校验导致的；错误来自 UI Workflow 保存的 COMBO 展示值与实例当前唯一合法值不同，以及 mode=4 节点被移除后下游 API Workflow 仍引用已移除节点。
+- 编译器现在使用实例提供的唯一 COMBO 值，并重建跳过节点的可执行数据流。
+- 真实模板 40 还包含 bypass 节点 66；编译器必须根据该节点的真实输入输出结构扩展透传规则，不能把无法解析的 bypass 链接提交给实例。
+- 实例 `/object_info` 声明 `ImpactSwitch.input1` 为动态 optional 输入，Workflow 可扩展为 `input2`、`input3`；节点 66 的未解析 LATENT 分支连接到 `input2`，而该开关选择值为 1。编译器可以省略无法解析且不属于实例 `required` 集合的动态输入，但 required 输入仍必须报错。
+- `bypassScalarValue()` 不能把所有“无输入且只有一个 widget”的节点都当成标量：模板 40 的 bypassed `VAELoader` 会因此把 `vae_name` 字符串错误写入需要 VAE 对象的链接。标量内联必须限于实例定义的输出类型与 widget 输入类型一致的节点，例如 `PrimitiveInt` 的 INT 输出和 INT `value`。
+- ComfyUI 官方 `graphToPrompt()` 对 `node.resolveInput(i)` 无结果的输入直接跳过，并在最后删除仍指向未序列化节点的连接；它不会把被跳过的普通后端节点 widget 值当作该节点输出。Host 应保留活动目标节点已经映射的 widget 值，删除无法解析的 optional 分支，并在 required 输入既没有可执行连接也没有自身 widget 值时失败。
+- 被跳过的 `PrimitiveInt` 不能被统一内联。模板 40 的两个 `ImpactSwitch` 本身保存 `select: 1`；删除来自 bypassed `PrimitiveInt(value=2)` 的连接后应继续使用开关自身的 `select: 1`，从活动 `input1` 执行。
+- 媒体卡实现本身为每个媒体生成独立原文件 `<a target="_blank">`，并按该媒体的 `runId` 下载所属 Actual Workflow；对应单元测试覆盖 4 个媒体卡、4 个下载图标和新窗口属性。本次 Chrome tab 点击未改变 React `activeTab`，需要与真实点击环境分开诊断。

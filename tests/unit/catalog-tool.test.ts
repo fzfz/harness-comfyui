@@ -38,7 +38,7 @@ describe('query_semantic_comfyui_templates Tool', () => {
         id: { description: expect.stringContaining('template') },
         title: { description: expect.stringContaining('title') },
         base_model_id: { description: expect.stringContaining('Base-model') },
-        model_id: { description: expect.stringContaining('Generation-model') },
+        model_id: { description: expect.stringMatching(/Generation-model.*default/u) },
         parameters: {
           description: expect.stringContaining('runtime parameter'),
           items: {

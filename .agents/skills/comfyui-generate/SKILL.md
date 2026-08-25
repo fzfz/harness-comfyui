@@ -34,9 +34,7 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 ## 3. 校验模型兼容性
 
-模板、生成模型与每项 LoRA 的 `base_model_id` 必须相同。模板返回 `model_id` 时，所选生成模型 ID与每项 LoRA 的 `model_id` 必须等于该值。没有选择生成模型时，仍使用模板 `model_id` 校验每项 LoRA。
-
-模板没有返回 `model_id` 且用户选择了生成模型时，检查模板 `parameters` 是否声明能够接收该生成模型文件名的运行参数；没有对应参数时，报告模板 ID 与生成模型 ID 不兼容并结束本次执行。兼容性检查完成的标志是每个已选生成模型和 LoRA 都能指向当前模板接受的模型族。
+模板、所选生成模型与每项 LoRA 的 `base_model_id` 必须相同。模板 `model_id` 表示 Workflow 当前保存的默认生成模型；所选生成模型的 `id` 与每项 LoRA 的 `model_id` 均不需要等于模板 `model_id`。任一 `base_model_id` 不同时，报告模板 ID、冲突的生成模型或 LoRA ID 及各自的 `base_model_id`，然后结束本次执行。
 
 ## 4. 建立 Generation Request
 
@@ -52,7 +50,7 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 ## 5. 重写最终 Prompt 和 LoRA 执行值
 
-对每项 Generation Request 依次处理其适用 LoRA。结合基础 Prompt、生成模型的 `description` 与 `usage`、每项 LoRA 的 `description`、`usage` 和 `trigger_words`，重写适配当前生成模型与全部 LoRA 的完整最终 Prompt。保留用户的主体、动作、构图和场景意图；根据 LoRA 用途调整相关表现，并只使用该结果实际需要的触发词。最终 Prompt 必须包含每项 LoRA 实际采用的触发词，且同一触发词只出现一次。
+对每项 Generation Request 依次处理其适用 LoRA。存在所选生成模型时，结合基础 Prompt、生成模型 resolve 返回的 `description` 与 `usage`、每项 LoRA 的 `description`、`usage` 和 `trigger_words`，重写适配当前生成模型与全部 LoRA 的完整最终 Prompt。没有选择生成模型时，结合基础 Prompt 与每项 LoRA 的 `description`、`usage` 和 `trigger_words` 重写完整最终 Prompt。保留用户的主体、动作、构图和场景意图；根据 LoRA 用途调整相关表现，并只使用该结果实际需要的触发词。最终 Prompt 必须包含每项 LoRA 实际采用的触发词，且同一触发词只出现一次。
 
 为每项适用 LoRA 建立一个执行对象：
 
@@ -60,6 +58,8 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 - `file_name` 使用 resolve 返回的 `file_name`，保持原字符串，不拼接目录或路径分隔符；
 - `weight` 优先使用用户明确指定给该 LoRA 和该结果的权重，否则使用 resolve 返回的 `weight`；
 - `trigger_words` 只保存该结果最终 Prompt 实际采用的触发词，顺序与最终 Prompt 一致。
+
+存在所选生成模型时，为每项 Generation Request 建立同一个生成模型执行对象：`id` 和 `file_name` 分别使用生成模型 resolve 返回的同名字段。`file_name` 保持原字符串，不拼接目录或路径分隔符。没有选择生成模型时不建立生成模型执行对象，Workflow 使用模板保存的默认生成模型。
 
 ## 6. 映射模板运行参数
 
@@ -75,6 +75,7 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 - `title` 使用该项 Generation Request 的简短标题；
 - `template_id` 使用模板上下文的 `data.id`；
+- 存在生成模型执行对象时，`model` 使用该对象；没有生成模型执行对象时省略 `model`；
 - `parameters` 只包含模板返回的非 LoRA `parameter_id` 与该项请求的对应值；
 - `loras` 使用该项请求的 LoRA 执行对象数组。
 

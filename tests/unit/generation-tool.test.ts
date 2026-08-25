@@ -27,6 +27,10 @@ const toolArguments = {
   title: '角色立绘',
   instance_id: '2',
   template_id: '34',
+  model: {
+    id: '1',
+    file_name: 'waiIllustriousSDXL_v170.safetensors',
+  },
   parameters: { positive_prompt: '1girl' },
   loras: [{
     id: '68',
@@ -63,6 +67,10 @@ describe('generate_with_comfyui Tool', () => {
         title: '角色立绘',
         instanceId: '2',
         templateId: '34',
+        model: {
+          id: '1',
+          fileName: 'waiIllustriousSDXL_v170.safetensors',
+        },
         parameters: { positive_prompt: '1girl' },
         loras: [{
           id: '68',
@@ -98,6 +106,34 @@ describe('generate_with_comfyui Tool', () => {
       code: 'GENERATION_SKILL_INVOCATION_REQUIRED',
     })
     expect(acceptGeneration).not.toHaveBeenCalled()
+  })
+
+  it('uses the template default model when the Tool call omits a selected model', async () => {
+    const acceptGeneration = vi.fn(async () => ({ runId: 'run_default_model' }))
+    const tool = createGenerationTool({
+      runtime: { acceptGeneration } as never,
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+      } as never,
+    })
+    const events = [
+      { type: 'turn/start', seq: 0, data: { turn: 7 } },
+      {
+        type: 'user/message',
+        seq: 1,
+        data: { turn: 7, content: [], source: { kind: 'skill-invocation', name: 'comfyui-generate', form: 'instructions' } },
+      },
+      { type: 'tool/call', seq: 2, data: { turn: 7, step: 0, callId: 'call_generation_1', name: 'generate_with_comfyui', arguments: '{}' } },
+    ]
+    const { model: _model, ...withoutModel } = toolArguments
+
+    await tool.execute(withoutModel, execution(events) as never)
+
+    expect(acceptGeneration).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ model: null }),
+      expect.any(AbortSignal),
+    )
   })
 
   it('creates independent Runs for multiple Tool calls after one same-turn Skill invocation', async () => {
@@ -157,6 +193,10 @@ describe('generate_with_comfyui Tool', () => {
     expect(tool.parameters).toMatchObject({ type: 'object', additionalProperties: false })
     expect(tool.parameters).toMatchObject({
       properties: {
+        model: {
+          type: 'object',
+          additionalProperties: false,
+        },
         loras: {
           type: 'array',
           items: { type: 'object', additionalProperties: false },

@@ -80,6 +80,7 @@ export interface WorkflowCompilerInput {
   readonly expectedOutputNodeIds: readonly string[] | null
   readonly runtimeParameters?: readonly ResolvedRuntimeParameter[]
   readonly bindingHints?: readonly RuntimeBinding[]
+  readonly model?: GenerationRequest['model']
   readonly loras: GenerationRequest['loras']
   readonly signal?: AbortSignal
 }
@@ -211,6 +212,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
       expectedOutputNodeIds: bundle.expectedOutputNodeIds,
       runtimeParameters,
       bindingHints: bundle.bindings,
+      model: request.model,
       loras: request.loras,
       signal,
     })

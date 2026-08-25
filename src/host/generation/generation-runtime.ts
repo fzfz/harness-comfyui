@@ -14,10 +14,16 @@ export interface GenerationLoraSelection {
   readonly triggerWords: readonly string[]
 }
 
+export interface GenerationModelSelection {
+  readonly id: string
+  readonly fileName: string
+}
+
 export interface GenerationRequest {
   readonly title: string
   readonly instanceId: string | null
   readonly templateId: string
+  readonly model: GenerationModelSelection | null
   readonly parameters: Readonly<Record<string, JsonValue>>
   readonly loras: readonly GenerationLoraSelection[]
 }
@@ -311,10 +317,22 @@ function generationRequest(document: string): GenerationRequest {
       triggerWords: Object.freeze(selection.triggerWords as string[]),
     })
   })
+  let model: GenerationModelSelection | null = null
+  if (source.model !== undefined && source.model !== null) {
+    if (typeof source.model !== 'object' || Array.isArray(source.model)) {
+      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation model is invalid.')
+    }
+    const selection = source.model as Readonly<Record<string, JsonValue>>
+    if (typeof selection.id !== 'string' || typeof selection.fileName !== 'string') {
+      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation model is invalid.')
+    }
+    model = Object.freeze({ id: selection.id, fileName: selection.fileName })
+  }
   return Object.freeze({
     title: source.title,
     instanceId: source.instanceId,
     templateId: source.templateId,
+    model,
     parameters: source.parameters as Readonly<Record<string, JsonValue>>,
     loras: Object.freeze(loras),
   })

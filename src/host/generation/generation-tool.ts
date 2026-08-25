@@ -72,11 +72,20 @@ async function deriveIdentity(
 export function createGenerationTool(options: CreateGenerationToolOptions): ToolDefinition {
   const definition = defineTool({
     name: GENERATION_TOOL_NAME,
-    description: 'Create one durable ComfyUI Generation Run from one approved template, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.',
+    description: 'Create one durable ComfyUI Generation Run from one approved template, an optional resolved generation model, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.',
     parameters: {
       title: { type: 'string', required: true, description: 'Title shown for this Generation Run.' },
       instance_id: { type: 'string', description: 'Approved ComfyUI instance identity.' },
       template_id: { type: 'string', required: true, description: 'Approved ComfyUI template identity.' },
+      model: {
+        type: 'object',
+        additionalProperties: false,
+        description: 'Generation model resolved by query_semantic_generation_models; the Host replaces the template default model with this model on the target ComfyUI instance.',
+        properties: {
+          id: { type: 'string', required: true, description: 'Resolved generation-model catalog identity.' },
+          file_name: { type: 'string', required: true, description: 'Resolved catalog file name; the Host maps it to the target instance path.' },
+        },
+      },
       parameters: {
         type: 'object',
         additionalProperties: true,
@@ -117,6 +126,10 @@ export function createGenerationTool(options: CreateGenerationToolOptions): Tool
         title: args.title,
         instanceId: args.instance_id ?? null,
         templateId: args.template_id,
+        model: args.model === undefined ? null : Object.freeze({
+          id: args.model.id,
+          fileName: args.model.file_name,
+        }),
         parameters: args.parameters as Readonly<Record<string, JsonValue>>,
         loras: Object.freeze((args.loras ?? []).map(lora => Object.freeze({
           id: lora.id,

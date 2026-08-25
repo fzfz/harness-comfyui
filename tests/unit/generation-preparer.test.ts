@@ -13,6 +13,10 @@ const request: GenerationRequest = {
   title: '角色立绘',
   instanceId: '2',
   templateId: '34',
+  model: {
+    id: '1',
+    fileName: 'waiIllustriousSDXL_v170.safetensors',
+  },
   parameters: {
     positive_prompt: '1girl, white hair',
     width: 1024,
@@ -131,6 +135,7 @@ describe('SourceGenerationPreparer', () => {
         },
       ],
       bindingHints: template().bindings,
+      model: request.model,
       loras: [],
     }))
   })

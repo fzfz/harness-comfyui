@@ -11,16 +11,16 @@
 - [x] 20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；主 Harness 健康检查通过。
 - [ ] 完整 quality 的 218 项 unit/integration 测试全部通过，但当前 HEAD 中正在进行的 Phase 30 新增代码使函数覆盖率为 99.2%，低于全局 100% 门禁；该覆盖率缺口由 Phase 30 继续处理。
 
-## Phase 29：发布 v0.3
+## Phase 29：发布 v0.30.1
 
-- [x] 读取仓库发布规范，确认 `0.3.0` 对应标签 `v0.3`，GitHub Release 只包含标签和 Release 记录。
+- [x] 读取仓库发布规范，确认 `0.30.1` 对应标签 `v0.30.1`，GitHub Release 只包含标签和 Release 记录。
 - [x] 明确本次提交包含当前已验证的插件源码、测试、PRD 与计划记录，并排除现有未跟踪的 `docs/research/`。
-- [x] 第一次质量门禁定位到工程合同仍固定断言 `0.2.0`；已把该合同同步为 `0.3.0`。
-- [x] 更新根版本为 `0.3.0`，执行完整质量门禁，提交源码变更 `16101f6` 并推送到 `origin/main`。
-- [x] 源码提交的 GitHub CI run `32815045325` 成功。
-- [x] 更新 README、v0.3 发布说明和发布系统文档；独立语义审核最终为 PASS，第二次完整质量门禁通过。
+- [x] 第一次质量门禁定位到工程合同仍固定断言 `0.3.0`；已把该合同同步为 `0.30.1`。
+- [ ] 更新根版本为 `0.30.1`，执行完整质量门禁，提交源码变更并推送到 `origin/main`。
+- [ ] 源码提交的 GitHub CI 成功。
+- [ ] 更新 README、v0.30.1 发布说明和发布系统文档；独立语义审核最终为 PASS，第二次完整质量门禁通过。
 - [ ] 提交并推送文档变更，等待最终 GitHub CI 成功。
-- [ ] 创建并推送 `v0.3` 注释标签，创建 GitHub Release，并完成远端核验。
+- [ ] 创建并推送 `v0.30.1` 注释标签，创建 GitHub Release，并完成远端核验。
 
 ## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
 
@@ -876,6 +876,69 @@
 - Re-ran the complete quality gate after the semantic correction; all tests, coverage thresholds, TypeScript, security checks, production tests, prototype tests, and `git diff --check` pass.
 - Restarted production Harness from the final working tree. PID 78385 is running at `http://127.0.0.1:4173/`; all six health stages pass and current logs contain no Generation failure.
 
+## 2026-08-25 — Phase 32 real dual-LoRA Skill E2E
+
+- Started the user-requested real validation for two LoRAs with distinct weights, semantic Prompt rewriting, one real asynchronous Run, persisted media, and per-Run Actual Workflow inspection.
+- Read the current `comfyui-generate`, planning, and browser-control Skill contracts before executing the validation.
+- Queried the real catalog. Historical template 35 is unavailable; current compatible template candidates are 28, 29, 37, and 40, and eight base-model-2 LoRA candidates are available for instance-path intersection.
+- Resolved all eight real LoRA records and inspected template 40 plus both target instances. Selected IDs 68 and 69 because both match template model 1, have distinct semantic effects and trigger words, and exist in the instance resource list.
+- Found the first real multi-LoRA blocker: template 40 uses `Power Lora Loader (rgthree)`, which the current structured LoRA compiler does not recognize.
+- Confirmed from the official rgthree repository that Power Lora Loader supports a dynamic number of LoRAs and that template 40's single-strength mode should apply each selected weight to both model and CLIP.
+- Read the official Power Lora Loader backend contract. It consumes dynamic `lora_*` API inputs containing `on`, `lora`, `strength`, and optional `strengthTwo`; this provides a deterministic serialization target for the Host compiler.
+- Read the official Power Lora Loader frontend restore code. It establishes exact input names `lora_1`, `lora_2`, keeps LoRA objects in UI `widgets_values`, and reconstructs them in the same order when loading a Workflow.
+- Applied the repository TDD contract at the already authorized public seams: `ComfyWorkflowCompiler.compile()` for deterministic Workflow projection, followed by a real Harness Skill/Tool/Run lifecycle for end-to-end evidence.
+- Added the first red test at `ComfyWorkflowCompiler.compile()`: template 40's Power Lora Loader initially failed with `COMFYUI_LORA_INPUT_UNAVAILABLE`.
+- Implemented the official dynamic projection and completed the green step. The focused compiler suite now passes 26 tests and TypeScript checking passes.
+- Located the production composition used by the Host. The live compiler check will reuse `loadProfile('production')`, `GenerationSourceCli`, `SourceGenerationPreparer`, and `ComfyWorkflowCompiler`; it will not bypass the data source or use a mock transport.
+- The first live diagnostic command selected `tsx`, which is not installed. The dependency set remains unchanged; subsequent diagnostics use Node's built-in TypeScript type stripping.
+- The first built-in Node diagnostic omitted managed environment overrides and correctly failed profile validation. The live check now reads the same materialized production paths and source settings used by `prod:status` and `prod:health`.
+- Read the real template 40 node 27. Its current ComfyUI serialization includes divider/header/button values plus `widgets_values_named`; the compiler now preserves non-LoRA UI values and updates both positional and named LoRA projections.
+- Completed the second red/green slice. The test proves both Actual Workflow representations use the two selected instance paths and weights while API Workflow contains exact `lora_1` and `lora_2` inputs; 26 tests and TypeScript pass.
+- Restarted the production Harness on current source as PID 80064. Process, source runtime, Harness Web, client bundle, Run Repository, and saved-media health stages pass.
+- The installed browser client exposes `setupBrowserRuntime` instead of the older `BrowserClient.create()` constructor. Browser control remains on the required node-repl path while initialization is adjusted to the installed API.
+- Browser discovery found one previously usable Harness tab, but reloading that pre-restart tab timed out and reset the browser-control session. The recovery path will use a fresh local tab after reading the packaged troubleshooting guidance.
+- A fresh in-app-browser tab also timed out on localhost despite the production HTTP health check passing. Browser-family selection was not user-constrained, so the next UI attempt uses the connected external Chrome surface.
+- Connected through Chrome, opened a fresh Harness tab, and confirmed a writable new Session with DeepSeek V4 Flash selected. The native composer, `/` command button, ComfyUI Workbench entry, and empty right results column are all present.
+- Live production preparation for template 40 succeeded before submission. Node 27 contains both instance-native Windows paths at weights 0.85 and 0.65; API Workflow exposes the same values as `lora_1` and `lora_2`, and output discovery returns nodes 50, 53, 57, and 59.
+- The actual Harness Skill invocation and all four Resolver Tool calls occurred in order. Resolver output exposed a real compatibility blocker hidden by compiler-only testing: template 40 fixes generation model 15, while model 1 and LoRAs 68/69 fix generation model 1.
+- The real Skill correctly stopped before `generate_with_comfyui`; the right column remained at zero Runs and zero media. Removed the Router-created test-only Markdown file after the turn ended.
+- Exhaustively checked all four base-model-2 templates and all eight base-model-2 LoRAs. Template 40 is the only native multi-LoRA Workflow but fixes model 15; the catalog has zero model-15 LoRAs. Template 37 fixes model 1 but contains one standard LoRA slot.
+- Expanded the matrix across all three base-model families. Template 39 is a genuine compatible candidate: it fixes Anima model 3, uses an active dynamic LoraManager input, and the catalog contains six model-3 LoRAs.
+- The first live template 39 preparation exposed another real compiler branch: the advisory `seed` binding targets node 25, but that target did not enter the active widget candidate set; unsuffixed `seed` then matched eight other widgets and failed as ambiguous. No ComfyUI task was submitted.
+- User corrected the compatibility contract: template 40's `model_id: 15` is its serialized default, while selected model 1 and LoRA 68/69 are valid replacements because all belong to the same `base_model_id`.
+- The active implementation scope now carries the selected model through the Skill, Generation Tool, persisted request, source preparer, and Workflow compiler; the real acceptance run returns to template 40 with model 1 and LoRA 68/69.
+- Read the skill-writing mechanics required by `writing-for-agents`; `comfyui-generate` remains model-invoked and its existing discovery contract does not need a frontmatter change.
+- Located the missing execution seam: `GenerationRequest` persists only `loras`, and `SourceGenerationPreparer` forwards no selected model to `ComfyWorkflowCompiler`. Tests will first make this new structured model route fail before implementation.
+- Reviewed Tool, runtime, preparer, compiler, error catalog, and Skill contracts. Model replacement will reuse the live `/object_info` combo choices, update both `widgets_values` and `widgets_values_named`, and preserve the target instance's native path separator.
+- The red-test surface covers Tool projection, persisted request restoration, preparer forwarding, successful checkpoint replacement, optional no-model behavior, and specific missing/ambiguous model errors.
+- Confirmed the red state: eight assertions failed because the Tool, Run parser, preparer, and compiler ignored the selected model. Implemented the structured model route and reached green with 45 focused tests plus TypeScript.
+- Existing saved production artifacts prove current catalog templates use both `CheckpointLoaderSimple.ckpt_name` and `UNETLoader.unet_name`; the compiler recognizes these two concrete generation-model resource inputs without treating CLIP, VAE, or LoRA resources as model targets.
+- Added optional-model, invalid-persisted-model, missing/ambiguous asset, missing/ambiguous model input, checkpoint replacement, UNET replacement, and native-separator coverage. The five focused suites now pass 61 tests; TypeScript and the shared error-catalog JSON parse pass.
+- Reconfirmed the production composition and managed runtime snapshot. Live preparation will instantiate the same `GenerationSourceCli`, `SourceGenerationPreparer`, and `ComfyWorkflowCompiler` classes with source CLI port 18093 and explicit instance 2; no mock or alternate backend will be used.
+- Read template 40 through the real source CLI. It has one active `CheckpointLoaderSimple.ckpt_name` at node 45, a native Power LoRA Loader, five runtime parameters, and target instance 2 is the registered `win3080` ComfyUI service.
+- The current template Workflow already serializes `waiIllustriousSDXL_v170.safetensors` despite catalog metadata `model_id: 15`; this independently confirms `template.model_id` is not a reliable hard execution gate and the Actual Workflow is the execution authority.
+- Located the production resolver methods used by the real Harness Tools. The next diagnostic resolves model 1 and LoRA 68/69 through `CatalogCli`, then passes those exact basenames into the same source preparer used by the Host.
+- Real source-to-compiler preparation for template 40 on instance 2 succeeds with model 1, LoRA 68 at 0.85, and LoRA 69 at 0.65. Actual/API Workflow use the instance-native `wai\\...` LoRA paths, model node 45 contains `waiIllustriousSDXL_v170.safetensors`, and output IDs are 50/53/57/59.
+- The live diagnostic exposed a second execution issue before submission: template bindings target connected `CLIPTextEncode.text` widgets, while API Workflow executes the upstream links from nodes 39 and 4. The compiler must reject connected widgets as runtime-parameter targets and rewrite the executable upstream string input.
+- Independent semantic review found four contract defects: selected-model `id` was misnamed, template Resolver still said `fixed`, one recovery action told the user to cancel the model, and the no-selected-model Prompt path referenced unavailable model semantics. These findings will be corrected before rerunning review.
+- Corrected all four semantic findings and added a catalog Tool schema assertion for the default-model meaning.
+- The connected-Prompt red test failed on the stale CLIP binding and then passed after serialized named-widget mappings became authoritative and connected widgets were excluded from runtime-parameter targets.
+- The next real template 40 preparation reached dimension mapping and exposed a separate connected-width branch: fallback currently sees three face-detailer `guide_size` defaults. No task was submitted; node 25's upstream dimension source must be mapped before real generation.
+- Traced template 40's executable scalar sources: node 1 `easy int` titled `Width`, node 11 `easy int` titled `Height`, and node 40 `Seed (rgthree)`. This provides deterministic marker/input evidence for the next regression tests.
+- Added and passed a connected-dimension regression. Scalar sources named `value` are selected by their concrete `Width`, `Height`, or `Seed` marker only when direct input-name candidates do not exist.
+- Real template 40 preparation now compiles the complete request: API nodes 1/11 contain 512×512, node 40 contains seed 832041, nodes 3/4 contain the final positive/negative Prompt inputs, node 45 contains model 1, and node 27 contains both LoRAs at 0.85/0.65.
+- Independent semantic re-review passes after all four corrections.
+- Full quality reached 233 passing unit/integration tests and all security checks, then stopped only because one new compiler callback reduced function coverage to 99.8%. Function-level coverage metadata is being generated to add the missing public branch fixture.
+- Function-level metadata identified the sole uncovered callback: locating the Power LoRA header when the saved Workflow contains no existing LoRA value objects. The next fixture selects one LoRA into that empty native loader state.
+- Added the empty Power LoRA Loader fixture. Full `pnpm quality` now passes: 234 unit/integration tests, 20 contract/security tests, 14 production tests, 27 prototype tests, TypeScript, dependency audits, and 100% function coverage.
+- Restarted production Harness on PID 7825. `prod:status` reports running and all six `prod:health` stages pass. The restart parent remains attached to the long-lived Harness process, which is expected for this launched production session.
+- Reconnected to the existing Chrome Harness tab at `http://127.0.0.1:4173/`; the next action refreshes the page state and creates a fresh Session for the real Skill turn.
+- Opened a fresh writable Harness Session after restart. The native composer has DeepSeek V4 Flash selected, the right results column shows zero Runs/media, and the Session uses standard mode, avoiding the previous Router Standard phase artifact path.
+- Opened the native `/` menu and selected `comfyui-generate`; the composer contains the native Skill mark, so the same-turn Tool ownership guard can observe a real Skill Invocation event.
+- Submitted the real standard-mode Skill turn. Resolver Tools accepted template 40, model 1, LoRA 68, and LoRA 69 solely by shared `base_model_id`; the Agent rewrote the Prompt with `usnr` and `gthan` once each and created Run `run_2e0a24c0-5eb1-49ed-a1d1-aff53173f0dd` with the new structured model object.
+- The Run reached `failed` with `COMFYUI_PROMPT_REJECTED` before media creation. The right column exposes the Run and error-details button; the persisted full ComfyUI response is being inspected to identify the exact rejected input.
+- Persisted error details identify the exact validation failures: sole-choice wildcard combo labels were not normalized, and links to bypassed nodes 29/69/70/71/73 remained in API Workflow after those nodes were omitted. The next TDD slice corrects these UI-to-API semantics before a second real Run.
+
 ## Phase 31：安装 Router Standard Agent Preset
 
 - [x] 创建安装前回滚提交 `5546251`。
@@ -884,3 +947,36 @@
 - [x] 重启生产 Harness；PID `17180` 监听 `127.0.0.1:4173`，六项健康检查全部通过。
 - [x] 使用 Harness `0.1.1-rc.2` 的预设发现器确认 `router-standard` 没有 `broken` 原因；启动页继续注册 Agent Preset UI 和 ComfyUI Client。
 - [ ] 用户刷新生产页面后，浏览器验收必须确认 Agent Preset 选择器显示 Router Standard，并确认 ComfyUI 工作台入口、中列会话界面与右侧结果列可用。
+## 2026-08-25 Phase 32 — ComfyUI 拒绝后的编译器修复验证
+
+- `generation-workflow-compiler.test.ts` 的 38 个测试通过。
+- `pnpm typecheck` 通过。
+- 编译器已覆盖 ComfyUI 实例单一 COMBO 选项替换，以及 mode=4 跳过节点的输入透传和标量内联。
+- 已确认生产启动由 `scripts/production/cli.mjs` 注入 Source CLI 路径与运行目录；真实预编译将复用 `.local/source-production-managed.json` 的当前受管配置。
+- 已读取当前受管生产快照：Source CLI 使用端口 18093，默认实例为 1；本次模板 40 验证将显式选择实例 2，并使用生产数据源的真实模板与实例定义。
+- 第一次修复后真实预编译继续失败：模板 40 还包含 mode=4 节点 66，其输出 0 不能按当前“同索引/同名/唯一同类型”规则解析。没有向 ComfyUI 提交任务；下一步检查节点 66 的实际输入输出和下游连线。
+- 节点 66 是被跳过的 `VAEEncode`，其 LATENT 输出没有同类型输入，且只连接到活动 `ImpactSwitch` 的 `input2`；该开关同时从活动节点 25 接收 `input1`。下一步使用实例 `/object_info` 判断 `input2` 是否为可省略输入，并在编译器中只省略实例声明为可选且无法解析的 bypass 分支。
+- 现有 bypass 测试已覆盖同类型链路和无输入标量节点；将新增一个活动节点同时包含 required 链接与无法解析 optional bypass 链接的回归，确保只删除 optional 分支，required 分支继续失败。
+- 新增 optional bypass 分支测试并确认红灯：当前编译器仍对可选 `latent` 输入抛出 `WORKFLOW_COMPILE_FAILED`，证明测试命中了真实缺口。
+- optional bypass 行为测试已转绿，但首次 TypeScript 检查因测试夹具的窄字面量类型不允许把 `latent` 从 optional 改为 required 而失败；生产代码没有类型错误，测试夹具改为独立 required 定义后重跑。
+- 第二次真实预编译已做到零悬空节点引用，模型、双 LoRA、权重、Prompt、尺寸和 seed 均正确；但进一步检查发现 `ImpactSwitch` 选择值为 2，而其 bypassed VAE 分支被省略，同时 bypassed `VAELoader` 被错误内联为字符串。当前 Workflow 仍不能提交。
+- 已对照 ComfyUI 官方 `executionUtil.ts` 的 `graphToPrompt()`：官方转换会忽略 `resolveInput()` 无结果的输入并清理指向未输出节点的连接，不会内联普通 bypass 节点。下一轮 TDD 将撤销通用标量内联，并测试目标 widget 值优先保留。
+- 新回归已确认红灯：bypassed `PrimitiveInt` 的值 2 覆盖了活动目标节点保存的 widget 值 1。该行为与官方 `graphToPrompt()` 不一致。
+- 第三次真实预编译通过：API Workflow 没有悬空节点引用；两个 `ImpactSwitch` 均保留 `select: 1` 并只引用活动 `input1`；模型 1、LoRA 68/69、权重 0.85/0.65、Prompt、512×512 和 seed 832041 均投影正确。
+- 最新完整 `pnpm quality` 通过：237 个 unit/integration、20 个 contract/security、14 个 production、27 个 prototype 测试通过；TypeScript、依赖审计、Harness 边界和 100% function coverage 均通过。
+- 生产 Harness 已重启为 PID 29293，六项健康检查通过。Chrome 中已刷新当前源码并创建新的标准模式 Session；右栏初始状态为 0 个运行、0 个媒体，输入框可写且模型为 DeepSeek V4 Flash Max。
+- 原生 `/` 菜单已显示并可选择 `comfyui-generate`。已复核当前 Skill 合同：模板 `model_id` 仅为 Workflow 默认模型，同 `base_model_id` 的所选模型和 LoRA 可替换；Tool 前必须完成 resolve、Prompt 重写和全部参数校验。
+- 已在新 Session 原生选择 `/comfyui-generate` 并提交真实请求：模板 40、实例 2、模型 1、LoRA 68/69（0.85/0.65）、512×512、seed 832041。25 秒时 Agent 仍在 resolve/思考阶段，尚未创建 Run。
+- Resolver 结果确认模板、所选模型和两个 LoRA 的 `base_model_id` 都为 2；Agent 正按所选模型关联的 `wai-sdxl-prompt-builder` 输入合同生成 WAI 标签式最终 Prompt。此时仍为 0 Run，未提前调用 Tool。
+- WAI Prompt Skill 的完整输入合同与本轮 `comfyui-context` 不同；Agent 没有停止任务，而是以 `comfyui-generate` 为主流程并读取 WAI 构图、质量、机位和光照参考来重写 Prompt。3 分钟时仍未创建 Run。
+- Skill 已创建 Run `run_c9d44326-0fd8-4d50-ac18-3d010c0df851`。最终 Prompt 中 `gthan` 和 `usnr` 各出现一次；Tool 显示模型 1、LoRA 68=0.85、LoRA 69=0.65、512×512、seed 832041。右栏状态已从“已准备”进入“生成中”。
+- Run `run_c9d44326-0fd8-4d50-ac18-3d010c0df851` 已完成，右栏显示 1 个运行、1 个媒体。首次切换媒体 tab 被状态刷新切回运行状态；Run 完成后将重新切换并核对媒体卡。
+- SQLite 与落盘文件核对通过：Run 状态 `succeeded`，prompt_id `02cf8506-68d0-4bac-a2fe-af889fa1c853`，无错误；Actual/API Workflow 均使用模型 1 和实例原生 `wai\\...` 双 LoRA 路径，权重 0.85/0.65；两个触发词各一次，零悬空引用。
+- 媒体 `media_d06d8e81-0358-4ea7-b812-0de8be9ccaad` 已分片保存到 `d0/6d/`，数据库字节数与文件字节数均为 326740；文件是有效 512×512 RGB PNG。
+- 已视觉检查落盘 PNG：画面是低机位、黑色哥特长裙女性、月光教堂窗景，符合本轮核心构图与光照要求，文件可正常解码。
+- Chrome 自动化对唯一“本会话媒体”tab 执行普通点击和强制点击后，`aria-selected` 仍为 false；媒体数据和文件均已存在。该现象记录为独立 UI 交互异常，不影响本轮真实生成和持久化结论。
+- 已确认产品实现为每个媒体提供两个独立能力：原文件链接使用 `target="_blank"`；Workflow 下载 URL 由该媒体 ID 解析到该媒体所属 Run 的 `actual-workflow.json`。下一步直接请求本次真实媒体的两条 Host 路由并与落盘文件比对。
+- 媒体内容和 Workflow 路由均返回 HTTP 200；内容类型、Content-Disposition 和长度正确。HTTP 响应与本地 PNG、Actual Workflow 的 SHA-256 分别完全一致。
+- 浏览器封装器不支持 locator `focus()`，该次自动化尝试失败；直接向“本会话媒体”tab 发送 Enter 后成功切换。媒体卡显示原文件新窗口链接和该媒体所属 Workflow 下载按钮。
+- 真实媒体卡属性核对通过：原文件 URL 指向本次 `media_id`，`target=_blank`、`rel=noopener noreferrer`；该媒体卡精确显示一个“下载 ComfyUI_00099_.png 所属 Workflow”按钮。
+- 最终 `git diff --check` 通过；生产 Harness PID 29293 继续运行，process、source runtime、Harness Web、client bundle、Run Repository、saved media 六项健康检查全部通过。Phase 32 已完成。

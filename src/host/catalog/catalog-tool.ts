@@ -44,7 +44,7 @@ export function createTemplateResolverTool(catalog: TemplateResolverCatalog): To
           id: { type: 'string', required: true, description: 'Stable identity of the resolved ComfyUI Workflow template.' },
           title: { type: 'string', required: true, description: 'Human-readable title of the resolved ComfyUI Workflow template.' },
           base_model_id: { type: 'string', required: true, description: 'Base-model family ID required by the resolved Workflow template.' },
-          model_id: { type: 'string', description: 'Generation-model ID fixed by the resolved Workflow template when the template declares one.' },
+          model_id: { type: 'string', description: 'Generation-model ID currently saved as the resolved Workflow template default when the template declares one.' },
           parameters: {
             type: 'array',
             required: true,

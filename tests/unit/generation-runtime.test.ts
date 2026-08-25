@@ -35,6 +35,7 @@ function request(prompt: string): GenerationRequest {
     title: '角色立绘',
     instanceId: null,
     templateId: '34',
+    model: null,
     parameters: { positive_prompt: prompt, width: 1024, height: 1024 },
     loras: [],
   }
@@ -123,6 +124,66 @@ describe('GenerationRuntime acceptance', () => {
     await runtime.advance()
 
     expect(preparedLoras).toEqual([generationRequest.loras])
+    runtime.close()
+  })
+
+  it('restores the selected generation model from the persisted Generation request', async () => {
+    const preparedModels: unknown[] = []
+    const runtime = createRuntime({
+      async prepare(generationRequest) {
+        preparedModels.push(generationRequest.model)
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Model replacement template',
+          sourceSnapshot: { template_id: generationRequest.templateId },
+          actualWorkflow: { version: 0.4 },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const generationRequest = {
+      ...request('1girl'),
+      model: {
+        id: '1',
+        fileName: 'waiIllustriousSDXL_v170.safetensors',
+      },
+    }
+
+    await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_model' },
+      generationRequest,
+    )
+    await runtime.advance()
+
+    expect(preparedModels).toEqual([generationRequest.model])
+    runtime.close()
+  })
+
+  it('rejects an invalid selected model in the persisted Generation request', async () => {
+    const runtime = createRuntime({
+      async prepare() {
+        throw new Error('unreachable')
+      },
+    })
+    const invalidRequest = {
+      ...request('1girl'),
+      model: { id: '1', fileName: 37 },
+    }
+
+    await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_invalid_model' },
+      invalidRequest as never,
+    )
+    await runtime.advance()
+
+    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
+      status: 'failed',
+      errorCode: 'GENERATION_REQUEST_INVALID',
+      errorMessage: 'The persisted Generation model is invalid.',
+    })
     runtime.close()
   })
 

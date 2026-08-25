@@ -11,7 +11,7 @@ describe('source workspace engineering contract', () => {
     const manifest = readJson('package.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.3.0',
+      version: '0.30.1',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
