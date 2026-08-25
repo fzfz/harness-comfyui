@@ -4,10 +4,10 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 31 正在移除 Workbench Profile 对 Harness Skill 插件的重复注册，并验证 Standard 与 Router Agent Preset 各自只注入一次 `comfyui-generate`。
+Phase 30 已完成；保持生产 Harness 运行，等待用户继续验收。
 
 ## Current Phase
-Phase 31 in progress
+Phase 30 completed
 
 ## Phases
 
@@ -25,7 +25,7 @@ Phase 31 in progress
 - Standard Session 调用 `/comfyui-generate` 后，Session 事件中 `name: "comfyui-generate"` 且 `form: "instructions"` 的 `skill-invocation` 数量精确等于 1。
 - Router Session 调用 `/comfyui-generate` 后，Session 事件中 `name: "comfyui-generate"` 且 `form: "instructions"` 的 `skill-invocation` 数量精确等于 1。
 - 两种 Agent Preset 仍能在允许 Generation Tool 的阶段调用 `query_semantic_comfyui_templates` 和 `generate_with_comfyui`。
-- 定向测试、完整质量门禁和 Harness 健康检查通过。
+- Phase 31 定向测试、20 项 contract/security 测试、14 项 production 测试、27 项 prototype 测试、Standard 与 Router 真实 Session 验收和 Harness 健康检查必须通过；完整 quality 的 unit/integration 测试必须全部通过，并且 coverage 报告必须确认剩余覆盖率缺口只来自当前 HEAD 中正在进行的 Phase 30 新增代码。
 
 ### 非本次目标
 
@@ -41,9 +41,10 @@ Phase 31 in progress
 
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| Standard Session 与 Router Session 都保存了两项完全相同的 `comfyui-generate` instructions 类型 Skill Invocation | 1 | 待验证 Workbench Profile 与所选 Agent Preset 同时注册 `skill-filesystem` 和 `tool-skill` 是否构成重复事件来源。 |
+| Standard Session 与 Router Session 都保存了两项完全相同的 `comfyui-generate` instructions 类型 Skill Invocation | 1 | rc.2 `tool-skill` 源码证明每个插件实例都注册一项 slash `agent/pre-step` 监听器；移除 Workbench Profile 的宿主层实例后，两种 Agent Preset 都只保存一项 Skill Invocation。 |
+| 完整 `pnpm quality` 在 coverage 阶段失败 | 1 | 25 个文件和 218 项 unit/integration 测试全部通过，但当前 HEAD 中正在进行的 Phase 30 新增代码使函数覆盖率为 99.2%，低于全局 100% 门禁；Phase 31 的 20 项 contract/security、14 项 production、27 项 prototype 和真实 Session 验收均通过。 |
 
-状态：进行中
+状态：已完成；工作树全局函数覆盖率缺口由正在进行的 Phase 30 继续处理。
 
 ## Phase 30：修复 LoRA 与生成模型上下文的实例参数注入
 
@@ -101,8 +102,11 @@ Phase 31 in progress
 | 第一轮目标测试 79 项全部通过，但 TypeScript 报告内部 `compile()` 返回值缺少外层才添加的 `actualWorkflow` | 1 | 把内部 `compile()` 返回类型收窄为 `Omit<WorkflowCompilerResult, 'actualWorkflow'>`；公开 compiler 仍返回完整结果。 |
 | 参数编译职责移入 Workflow compiler 后，旧 preparer 测试仍断言 preparer 已直接修改 `widgets_values` | 1 | 更新测试职责边界：preparer 断言传递已解析参数与 binding 提示，Workflow compiler 测试断言 Actual Workflow 和 API Workflow 的最终参数值。 |
 | 浏览器重启后复用的旧 Session 保留了一个不可提交的受控草稿；发送按钮保持禁用，两个“新建会话”按钮也没有离开该 Session | 1 | 不继续修改该旧 Session；切换到已有可发送的生成 Session，或通过 Harness 公开会话接口创建新 Session 后再执行真实 Tool 验证。 |
+| 完整质量门禁首次报告函数覆盖率 99.2% | 1 | 为持久 LoRA 恢复、重复 binding 提示去重和参考图参数定位补充显式分支测试；最终函数覆盖率为 100%。 |
+| JSON coverage 诊断首次复用了 zsh 只读变量 `status` | 1 | 重试时使用任务专用变量 `coverage_exit_code`，成功定位四个未覆盖回调。 |
+| LoRA resolver 的 `weight` 描述仍指向模板 `lora_model_weight` 参数 | 1 | 把字段归属修正为当前 `generate_with_comfyui.loras` 项的默认模型权重；定向测试和独立语义复审均通过。 |
 
-状态：进行中
+状态：已完成
 
 ## Phase 29：发布 v0.3
 
@@ -394,6 +398,34 @@ Phase 31 in progress
 | 浏览器首次加载新增 Generation Remote 时，Typert 拒绝第二次注册同名 `harness-comfyui` package | 1 | 计划执行者新增单次 `$mount()` 回归测试，并把 Catalog 与 Generation descriptors 合并为一份 Remote contribution。 |
 
 - **Status:** completed
+
+## Phase 31：安装 Router Standard Agent Preset
+
+### 必须要实现的目标
+
+- 计划执行者必须把 `dsh-routing-suite` 固定提交 `21a7260d961571c77a11705d2b0e6cf7015cc48b` 中的 `preset/router-standard` 复制到生产 Harness 的 Agent Preset 目录。
+- 计划执行者必须在复制前核对 Router Standard 文件清单与已审计 SHA-256；计划执行者不得执行外部仓库中的安装脚本、自测脚本或其他程序。
+- 计划执行者必须重启 `http://127.0.0.1:4173/` 的 Harness 生产进程，并验证 Router Standard 预设入口与 ComfyUI 工作台能够同时加载。
+
+### 验收清单
+
+- 生产目录 `.local/production/dsh-home/.agent-presets/router-standard` 只包含已审计的 Router Standard 文件。
+- 生产 Harness 的 Agent Preset 选择器显示 Router Standard；ComfyUI 工作台入口、中列会话界面与右侧结果列继续可用。
+- `pnpm prod:status`、`pnpm prod:health` 与 `git diff --check` 全部通过。
+- `dsh-super-injector` 没有被下载、复制、安装或运行。
+
+### 非本次目标
+
+- 本阶段不修改 Router Standard 源码、`comfyui-workbench` Profile、项目 Skill 或 Host Tool。
+- 本阶段不运行 Router Standard 的模型会话，不触发 ComfyUI 生成任务，也不调用 `dev_reload_preset_live`。
+- 本阶段不解决当前 Profile 与 Agent Preset 同时挂载项目 Skill 时产生的重复 Skill Invocation。
+
+### 已获得的授权
+
+- 用户已授权计划执行者按已验证方案安装 Router Standard，并明确要求不安装 `dsh-super-injector`。
+- 用户已授权计划执行者先提交当前主工作树作为回滚点，再复制 Router Standard 并重启生产 Harness。
+
+- **Status:** in_progress（安装、预设发现、生产重启与健康检查已完成；生产页面浏览器验收待完成）
 
 ## Phase 23：修复空白 Session 的右侧结果列
 

@@ -4,9 +4,12 @@
 
 - [x] 复核 Standard 与 Router Session 的持久事件，两种 Session 均包含两项完全相同的 `comfyui-generate` instructions 类型 Skill Invocation。
 - [x] 定位 Workbench Profile 与两个 Agent Preset 都注册 `skill-filesystem` 和 `tool-skill` 的组合边界。
-- [ ] 添加 Profile Skill 所有权回归测试，并确认测试在修改前失败。
-- [ ] 移除 Workbench Profile 的重复 Skill 插件注册，同步生产物化与安全边界合同。
-- [ ] 使用 Standard 与 Router Agent Preset 验证每次斜杠调用只保存一项 Skill Invocation，并执行质量门禁与健康检查。
+- [x] 添加 Profile Skill 所有权回归测试；修改前测试收到两个启用行并按预期失败，修改后定向测试 7 项全部通过。
+- [x] 把 Workbench Profile patch 改为空数组，保留 Agent Preset 的唯一 Skill 注册；生产物化与 Harness 边界合同已同步。
+- [x] Standard Session `session-2a67c7c8-6263-41f9-b324-57b1a146523a` 只保存一项 `comfyui-generate` Skill Invocation。
+- [x] Router Session `session-932a0548-b797-4784-8db0-b00adc1515f1` 只保存一项 `comfyui-generate` Skill Invocation；本地确定性模型探针继续在同一轮调用 `phase_begin`、三次 `phase_advance`、模板查询 Tool 和 Generation Tool。
+- [x] 20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；主 Harness 健康检查通过。
+- [ ] 完整 quality 的 218 项 unit/integration 测试全部通过，但当前 HEAD 中正在进行的 Phase 30 新增代码使函数覆盖率为 99.2%，低于全局 100% 门禁；该覆盖率缺口由 Phase 30 继续处理。
 
 ## Phase 29：发布 v0.3
 
@@ -850,3 +853,34 @@
 - The selected old Session cannot submit the prepared draft; next action is to open a fresh Workspace Session and submit the same explicit template/model/LoRA request there.
 - The browser-control troubleshooting path did not unlock that stale controlled composer. Next: navigate to a different existing Workspace Session with a normal composer, preserving the production process and the prepared request text outside the page.
 - Switched to a standard-mode Session and confirmed its composer is clean. Harness model discovery is currently pending there, so the next browser attempt will use an existing generation Session that already has a selected model.
+- Existing generation Sessions also require a newly selected model after restart, and model discovery remains pending. No test Run was created.
+- Switching the real-instance E2E to the Generation Tool black-box boundary: use the real Tool contract and same-turn Skill invocation events with production Host classes in an isolated run repository, then inspect terminal status, media, and Actual Workflow.
+- Confirmed the final binding contract with the user: a valid binding is the preferred target/default hint, while every declared runtime parameter remains eligible for deterministic compiler resolution when that hint is absent or stale.
+- Located the public Runtime and Coordinator lifecycle needed for the isolated real Tool E2E: `acceptGeneration`, `queryRuns`, `queryMedia`, `readActualWorkflow`, `start`, `stop`, and `close`.
+- Confirmed the isolated verifier can instantiate the exact production composition from `src/host/plugin.ts`; it needs no additional HTTP service or dependency installation.
+- Confirmed `createGenerationTool()` accepts multiple same-turn Tool calls with independent call IDs, so the verifier can exercise the required single-turn portrait/landscape pair through the real Tool boundary.
+- Read the live source bundles for templates 37 and 29. Both expose explicit prompt, width, height, and seed parameters; template 37 additionally exposes legacy LoRA defaults while the real request will use authoritative structured `loras[]`.
+- Completed a real single-turn, two-Tool-call template 37 run against instance 2. Both asynchronous Runs succeeded, downloaded one PNG each, and persisted distinct Actual Workflows and media.
+- Verified the two Runs used dimensions 640×896 and 896×640, seeds 830001 and 830002, distinct final prompts, and distinct output bytes. Both resolved LoRA ID 68 to the instance-native `wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors` path with weight 1.
+- Completed a second real Tool E2E with template 29 on instance 1. The Run succeeded, saved an 799,857-byte PNG in a sharded media directory, and persisted the supplied 640×768 dimensions, seed 830029, positive prompt, and negative prompt.
+- Re-ran the focused Phase 30 catalog, Source, compiler, Tool, worker, and Skill ownership suites after both real runs: 9 files and 108 tests passed.
+- `pnpm quality` reached 218 passing unit/integration tests but stopped at the 100% function-coverage gate: `generation-runtime.ts` has two uncovered functions and `workflow-compiler.ts` has two.
+- The first JSON coverage diagnostic reused zsh's read-only `status` variable and stopped before printing the function map. The retry will use a task-specific variable name.
+- Located the four uncovered callbacks: persisted LoRA array parsing, persisted trigger-word validation, `reference_image` LoadImage preference, and duplicate binding-hint target de-duplication.
+- Added explicit tests for persisted structured LoRA restoration, duplicate advisory binding de-duplication, and binding-free `reference_image` resolution to `LoadImage.image`.
+- The two edited suites now pass 31 tests, and TypeScript checking passes.
+- Full `pnpm quality` now passes: 220 unit/integration tests, 20 contract/security tests, 14 production tests, 27 prototype tests, TypeScript, dependency/security checks, and all coverage thresholds including 100% functions.
+- Real resolver Tool calls returned template 37 model ID 1, LoRA 68 model ID 1, and generation model 1; the template, LoRA, and selected model are compatible. The LoRA Tool returned the actual introduction, usage, trigger word `usnr`, weight 1, and catalog basename used by the successful real Runs.
+- Independent semantic review found and then cleared one Tool-schema wording issue: LoRA `weight` now explicitly belongs to the current `generate_with_comfyui.loras` item instead of a template `lora_model_weight` parameter.
+- Production status and all six production health stages pass on version 0.3.0.
+- Re-ran the complete quality gate after the semantic correction; all tests, coverage thresholds, TypeScript, security checks, production tests, prototype tests, and `git diff --check` pass.
+- Restarted production Harness from the final working tree. PID 78385 is running at `http://127.0.0.1:4173/`; all six health stages pass and current logs contain no Generation failure.
+
+## Phase 31：安装 Router Standard Agent Preset
+
+- [x] 创建安装前回滚提交 `5546251`。
+- [x] 只检出并复核 `dsh-routing-suite@21a7260d961571c77a11705d2b0e6cf7015cc48b` 的 `preset/router-standard` 文件清单与 SHA-256。
+- [x] 把 Router Standard 复制到 `.local/production/dsh-home/.agent-presets/router-standard`；没有安装或运行 `dsh-super-injector`。
+- [x] 重启生产 Harness；PID `17180` 监听 `127.0.0.1:4173`，六项健康检查全部通过。
+- [x] 使用 Harness `0.1.1-rc.2` 的预设发现器确认 `router-standard` 没有 `broken` 原因；启动页继续注册 Agent Preset UI 和 ComfyUI Client。
+- [ ] 用户刷新生产页面后，浏览器验收必须确认 Agent Preset 选择器显示 Router Standard，并确认 ComfyUI 工作台入口、中列会话界面与右侧结果列可用。

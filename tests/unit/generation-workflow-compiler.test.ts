@@ -137,6 +137,12 @@ describe('ComfyWorkflowCompiler', () => {
         nodeId: '2',
         inputName: 'text',
         widgetIndex: 0,
+      }, {
+        parameterId: 'positive_prompt',
+        operation: 'replace_input',
+        nodeId: '2',
+        inputName: 'text',
+        widgetIndex: 0,
       }],
       loras: [],
     })
@@ -217,6 +223,49 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: 'negative final' } })
     expect(compiled.apiWorkflow['5']).toMatchObject({ inputs: { width: 768, height: 1024 } })
     expect(compiled.apiWorkflow['6']).toMatchObject({ inputs: { seed: 42 } })
+  })
+
+  it('resolves a reference image to the LoadImage widget without a binding hint', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'LoadImage',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: ['source.png', 'image'],
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        LoadImage: {
+          input: { required: { image: ['STRING', {}] } },
+          input_order: { required: ['image'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: {
+          parameterId: 'reference_image',
+          kind: 'reference_image',
+          valueType: 'image_reference',
+          defaultValue: 'source.png',
+          required: true,
+        },
+        value: 'input.png',
+      }],
+      bindingHints: [],
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual(['input.png', 'image'])
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { image: 'input.png' } })
   })
 
   it('uses node-id suffixes to resolve multiple parameters of the same kind', async () => {

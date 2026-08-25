@@ -89,6 +89,43 @@ describe('GenerationRuntime acceptance', () => {
     runtime.close()
   })
 
+  it('restores structured LoRA selections from the persisted Generation request', async () => {
+    const preparedLoras: GenerationRequest['loras'][] = []
+    const runtime = createRuntime({
+      async prepare(generationRequest) {
+        preparedLoras.push(generationRequest.loras)
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'LoRA Template',
+          sourceSnapshot: { template_id: generationRequest.templateId },
+          actualWorkflow: { version: 0.4 },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const generationRequest = {
+      ...request('usnr, 1girl'),
+      loras: [{
+        id: '68',
+        fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+        weight: 1,
+        triggerWords: ['usnr'],
+      }],
+    }
+
+    await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_lora' },
+      generationRequest,
+    )
+    await runtime.advance()
+
+    expect(preparedLoras).toEqual([generationRequest.loras])
+    runtime.close()
+  })
+
   it('rejects a different request for an already accepted Tool callId', async () => {
     const runtime = createRuntime({
       async prepare(generationRequest) {

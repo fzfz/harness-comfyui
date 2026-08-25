@@ -118,7 +118,7 @@ export function createLoraResolverTool(catalog: LoraResolverCatalog): ToolDefini
             description: 'Catalog trigger words available for the Agent to select while rewriting the final prompt.',
             items: { type: 'string' },
           },
-          weight: { type: 'number', required: true, description: 'Default value for the Workflow template lora_model_weight parameter unless the user specifies another weight.' },
+          weight: { type: 'number', required: true, description: 'Default model weight for the current generate_with_comfyui loras item when the user does not specify another weight.' },
         },
       },
       render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],

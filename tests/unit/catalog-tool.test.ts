@@ -96,7 +96,7 @@ describe('query_semantic_loras Tool', () => {
         description: { description: expect.stringContaining('visual effect') },
         usage: { description: expect.stringContaining('prompt') },
         trigger_words: { description: expect.stringContaining('rewriting') },
-        weight: { description: expect.stringContaining('lora_model_weight') },
+        weight: { description: expect.stringMatching(/generate_with_comfyui loras.*user does not specify/u) },
       },
     })
     expect(tool.output.render({ id: '68' }, result as never)).toEqual([

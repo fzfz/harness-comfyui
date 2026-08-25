@@ -3,8 +3,14 @@
 ## Phase 31：Agent Preset 与 Workbench Profile 重复注入 Skill
 
 - Standard 对照 Session 与 Router Session 都保存了两项完全相同的 `{"kind":"skill-invocation","name":"comfyui-generate","form":"instructions"}` 事件。
-- `profiles/comfyui-workbench/cordis.patch.yml` 当前在 Profile 层启用 `skill-filesystem` 与 `tool-skill`；Standard Agent Preset 和 Router Agent Preset 也分别注册这两个插件。
+- 修改前的 `profiles/comfyui-workbench/cordis.patch.yml` 在 Profile 层启用 `skill-filesystem` 与 `tool-skill`；Standard Agent Preset 和 Router Agent Preset 也分别注册这两个插件。
 - 修复必须保留 Agent Preset 对 Skill 发现和斜杠调用的所有权，只移除 Workbench Profile 的重复注册。
+- Harness `0.1.1-rc.2` 的 `dsh-web-app` patch 已禁用宿主层 `skill-filesystem` 和 `tool-skill`；Standard 与 Router Agent Preset 各自注册完整的一套。Workbench Profile 再次启用宿主层行会产生第二个 `tool-skill` 实例。
+- rc.2 `tool-skill` 的每个实例都会注册一个显式 slash `agent/pre-step` 监听器；监听器分别根据同一条 `/comfyui-generate` 追加一项 `skill-invocation` user message。该实现与修改前两项完全相同的持久事件一致。
+- `profiles/comfyui-workbench/cordis.patch.yml` 修改为空 patch `[]` 后，Agent Preset 成为 Skill 发现和 slash 注入的唯一注册来源。
+- 主服务 Standard Session `session-2a67c7c8-6263-41f9-b324-57b1a146523a` 只保存一项 `comfyui-generate` instructions 类型 Skill Invocation；界面也只显示一个对应上下文注入。
+- 独立 Router Session `session-932a0548-b797-4784-8db0-b00adc1515f1` 只保存一项相同 Skill Invocation；本地确定性模型探针仍在同一轮完成 `phase_begin`、三次 `phase_advance`、模板查询和 `generate_with_comfyui`。
+- 20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过。完整 quality 的 218 项 unit/integration 测试也全部通过，但当前 HEAD 中正在进行的 Phase 30 新增代码使函数覆盖率为 99.2%，未达到全局 100% 门禁。
 
 ## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
 
@@ -847,3 +853,24 @@
 - The first browser attempt reused an old completed Session whose composer retains the new draft but keeps its send button disabled. The `/comfyui-generate` command suggestion can be selected, but this old Session does not accept the new turn; real verification should use a fresh Workspace Session rather than mutating its prior state further.
 - Browser inspection confirmed the disabled composer is Session-specific controlled state: Playwright locates one visible textarea, but `fill()` cannot commit a new value and both visible “新建会话” controls leave the same tree item selected. This is not a Generation Host failure because no Tool call or Run has been created.
 - A different existing standard-mode Session has an empty writable composer, but it has no selected model and its model menu remains at “正在刷新模型列表…”. This Session also cannot submit until Harness supplies a model; the Generation plugin and right-panel projection remain loaded normally.
+- Production logs contain no Generation plugin, Source CLI, or ComfyUI errors for the browser attempts because Harness never created a Tool call. The blocker is Harness model discovery after restart, outside the Generation execution path.
+- `createGenerationTool()` can be black-box executed with the exact same-turn Skill invocation events used by Harness. It accepts the Run immediately, while `GenerationCoordinator` drives the same production `GenerationRuntime`, `SourceGenerationPreparer`, `ComfyWorkflowCompiler`, and `ComfyHttpTransport` asynchronously.
+- The user-defined binding semantics are now explicit: valid `bindings_json` entries rank first as advisory targets; they never suppress, reject, or exclude a runtime parameter declared in `parameters_json`.
+- `GenerationRuntime` exposes all read-only verification surfaces needed after a real run: per-Session Run snapshots, per-Run media snapshots, saved media paths, and per-Run Actual Workflow JSON.
+- Template 37 live bindings remain suitable reference/default mappings for nodes 2–6, but the verifier will prove the compiler receives all declared parameters and preserves the structured LoRA override independently of those mappings.
+- Real template 37 Tool E2E produced prompt IDs `dc98fda4-3b61-430b-bdba-2c12acee2181` and `d8d13f76-1e54-4ccb-98a5-a5d85a644b3c`; both reached `succeeded` with no error code or message.
+- The saved PNGs differed in filename, byte size, and exact binary content; each media row remained attached to its own Run and therefore its own persisted Actual Workflow.
+- Real template 29 Tool E2E reached `succeeded` with prompt ID `31ecd52f-ad29-47ef-b5dc-a04d14a58120`; its media row points to `32/9c/media_329c8756-167c-4dcf-ae9e-595494f0cf3f.png`, confirming sharded storage in the real lifecycle.
+- The focused verification set currently passes 108 tests across nine files, including advisory binding parsing, stale-hint fallback, all generic parameter target branches, structured/legacy LoRA branches, same-turn multiple Tool calls, worker error persistence, and Skill ownership.
+- The 100% function-coverage failure does not indicate a failed behavior assertion. It identifies four arrow-callback branches that need explicit fixtures: nonempty persisted `loras[]`, invalid persisted trigger words, `reference_image`, and repeated advisory bindings resolving to one widget.
+- After the explicit fixtures, global coverage is 91.58% statements, 82.27% branches, 100% functions, and 94.39% lines; all repository thresholds pass.
+- The real Catalog Tool chain confirms template 37, LoRA 68, and generation model 1 share the required model identity. Resolver output preserves the LoRA introduction, usage, trigger words, default weight, and basename without inventing presentation aliases.
+- Semantic review now passes with no remaining issue after assigning the resolver `weight` description to `generate_with_comfyui.loras[].weight`.
+
+## Phase 31：安装 Router Standard Agent Preset
+
+- Router Standard 来自 `dsh-routing-suite` 固定提交 `21a7260d961571c77a11705d2b0e6cf7015cc48b` 的 `preset/router-standard`；生产目标目录包含 8 个已审计文件。
+- Harness `0.1.1-rc.2` 的 `discoverPresets()` 把生产目录识别为健康的 `router-standard`，显示名称为 `Router Standard`，结果中没有 `broken` 原因。
+- 生产 Harness 启动页同时注册 `@deepseek-ai/dsh-client-ui-agent-preset` 与 `harness-comfyui` Client；`pnpm prod:status` 和六项 `pnpm prod:health` 检查通过。
+- 浏览器控制连接拒绝重新加载 `127.0.0.1`，因此本轮没有通过自动化浏览器截图重复验证选择器；Harness 的预设列表每次调用都会重新扫描本机 Agent Preset 根目录。
+- 生产 `dsh-home` 中不存在 `dsh-super-injector`；本轮没有执行 Router Standard 的外部安装脚本、自测脚本或模型工具。
