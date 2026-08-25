@@ -4,6 +4,20 @@ export const CATALOG_QUERY_TIMEOUT_MS = 15_000
 export const CATALOG_REMOTE_NAMESPACE = 'harnessComfyuiCatalog'
 export const CATALOG_REMOTE_SERVICE = `remote.${CATALOG_REMOTE_NAMESPACE}`
 export const CATALOG_BASE_MODEL_PATH = '/internal/semantic/base-models'
+export const CATALOG_ERROR_CODES = Object.freeze([
+  'CATALOG_QUERY_FAILED',
+  'CATALOG_RESPONSE_TOO_LARGE',
+  'CATALOG_PROTOCOL_ERROR',
+] as const)
+export const CATALOG_TEMPLATE_VALUE_TYPES = Object.freeze([
+  'string',
+  'integer',
+  'number',
+  'boolean',
+  'enum',
+  'image_reference',
+  'asset_reference',
+] as const)
 
 export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
@@ -73,6 +87,8 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
 ] as const)
 
 export type CatalogKind = (typeof CATALOG_KIND_DEFINITIONS)[number]['kind']
+export type CatalogErrorCode = (typeof CATALOG_ERROR_CODES)[number]
+export type CatalogTemplateValueType = (typeof CATALOG_TEMPLATE_VALUE_TYPES)[number]
 
 export interface CatalogQueryRequest {
   readonly kind: CatalogKind
@@ -88,7 +104,7 @@ interface CatalogContextIdentity {
 export interface CatalogTemplateParameter {
   readonly parameter_id: string
   readonly kind: string
-  readonly value_type: 'string' | 'integer' | 'number' | 'boolean' | 'asset_reference'
+  readonly value_type: CatalogTemplateValueType
   readonly required: boolean
 }
 
@@ -135,6 +151,15 @@ export interface BaseModelList {
   readonly items: readonly BaseModelItem[]
 }
 
+export interface CatalogOperationError {
+  readonly code: CatalogErrorCode
+  readonly message: string
+}
+
+export type CatalogOperationResult<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: CatalogOperationError }
+
 const definitionByKind = new Map<CatalogKind, (typeof CATALOG_KIND_DEFINITIONS)[number]>(
   CATALOG_KIND_DEFINITIONS.map(definition => [definition.kind, definition]),
 )
@@ -159,6 +184,10 @@ function catalogKind(value: unknown): CatalogKind {
     throw new TypeError('catalog kind is invalid')
   }
   return value as CatalogKind
+}
+
+export function isCatalogTemplateValueType(value: unknown): value is CatalogTemplateValueType {
+  return typeof value === 'string' && CATALOG_TEMPLATE_VALUE_TYPES.includes(value as CatalogTemplateValueType)
 }
 
 function queryText(value: unknown): string {
@@ -277,7 +306,7 @@ export function parseCatalogContext(value: unknown): CatalogContext {
           const parameter = record(value, `catalog context template parameter ${index}`)
           exactKeys(parameter, ['parameter_id', 'kind', 'value_type', 'required'], `catalog context template parameter ${index}`)
           const valueType = parameter.value_type
-          if (!['string', 'integer', 'number', 'boolean', 'asset_reference'].includes(String(valueType))) {
+          if (!isCatalogTemplateValueType(valueType)) {
             throw new TypeError(`catalog context template parameter ${index} value type is invalid`)
           }
           if (typeof parameter.required !== 'boolean') {
@@ -286,7 +315,7 @@ export function parseCatalogContext(value: unknown): CatalogContext {
           return Object.freeze({
             parameter_id: itemText(parameter.parameter_id, `catalog context template parameter ${index} id`, 500),
             kind: itemText(parameter.kind, `catalog context template parameter ${index} kind`, 500),
-            value_type: valueType as CatalogTemplateParameter['value_type'],
+            value_type: valueType,
             required: parameter.required,
           })
         })),
@@ -344,6 +373,48 @@ export function parseBaseModelList(value: unknown): BaseModelList {
     throw new TypeError('base model list items are invalid')
   }
   return Object.freeze({ items: Object.freeze(input.items.map(parseBaseModelItem)) })
+}
+
+function parseCatalogOperationResult<T>(
+  value: unknown,
+  parseValue: (input: unknown) => T,
+  subject: string,
+): CatalogOperationResult<T> {
+  const input = record(value, subject)
+  if (input.ok === true) {
+    exactKeys(input, ['ok', 'value'], subject)
+    return Object.freeze({ ok: true, value: parseValue(input.value) })
+  }
+  if (input.ok !== false) throw new TypeError(`${subject} status is invalid`)
+  exactKeys(input, ['ok', 'error'], subject)
+  const error = record(input.error, `${subject} error`)
+  exactKeys(error, ['code', 'message'], `${subject} error`)
+  if (!CATALOG_ERROR_CODES.includes(error.code as CatalogErrorCode)) {
+    throw new TypeError(`${subject} error code is invalid`)
+  }
+  return Object.freeze({
+    ok: false,
+    error: Object.freeze({
+      code: error.code as CatalogErrorCode,
+      message: itemText(error.message, `${subject} error message`, 1_000),
+    }),
+  })
+}
+
+export function parseCatalogPageResult(value: unknown): CatalogOperationResult<CatalogPage> {
+  return parseCatalogOperationResult(value, parseCatalogPage, 'catalog page result')
+}
+
+export function parseBaseModelResult(value: unknown): CatalogOperationResult<BaseModelList> {
+  return parseCatalogOperationResult(value, parseBaseModelList, 'base model result')
+}
+
+export function catalogOperationSuccess<T>(value: T): CatalogOperationResult<T> {
+  return Object.freeze({ ok: true, value })
+}
+
+export function catalogOperationFailure(error: CatalogOperationError): CatalogOperationResult<never> {
+  return Object.freeze({ ok: false, error: Object.freeze({ ...error }) })
 }
 
 export function catalogPageCount(totalCount: number): number {

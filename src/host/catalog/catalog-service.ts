@@ -3,11 +3,14 @@ import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 
 import {
   CATALOG_REMOTE_NAMESPACE,
+  catalogOperationFailure,
+  catalogOperationSuccess,
   type BaseModelList,
+  type CatalogOperationResult,
   type CatalogPage,
   type CatalogQueryRequest,
 } from '../../catalog/contract.ts'
-import type { CatalogCli } from './catalog-cli.ts'
+import { CatalogCliError, type CatalogCli } from './catalog-cli.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -24,12 +27,26 @@ export class CatalogRemoteService extends TypertRemoteService {
     for (const initialize of catalogRemoteInitializers) initialize(this)
   }
 
-  search(request: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {
-    return this.catalog.search(request, signal)
+  async search(request: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogOperationResult<CatalogPage>> {
+    try {
+      return catalogOperationSuccess(await this.catalog.search(request, signal))
+    } catch (error) {
+      if (error instanceof CatalogCliError) {
+        return catalogOperationFailure({ code: error.code, message: error.message })
+      }
+      throw error
+    }
   }
 
-  baseModels(signal: AbortSignal): Promise<BaseModelList> {
-    return this.catalog.baseModels(signal)
+  async baseModels(signal: AbortSignal): Promise<CatalogOperationResult<BaseModelList>> {
+    try {
+      return catalogOperationSuccess(await this.catalog.baseModels(signal))
+    } catch (error) {
+      if (error instanceof CatalogCliError) {
+        return catalogOperationFailure({ code: error.code, message: error.message })
+      }
+      throw error
+    }
   }
 }
 

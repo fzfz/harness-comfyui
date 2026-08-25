@@ -1,4 +1,8 @@
 {
+  "CATALOG_PROTOCOL_ERROR": { "code": "CATALOG_PROTOCOL_ERROR", "title": "目录数据格式错误", "reason": "数据源返回的目录响应格式或目录记录内容无效。", "next_step": "检查目录 CLI 输出、目录响应结构和目录记录内容后重试。", "cancellable": false, "confirm_repeat": false },
+  "CATALOG_QUERY_FAILED": { "code": "CATALOG_QUERY_FAILED", "title": "目录查询失败", "reason": "目录 CLI 未能返回可用的目录查询结果。", "next_step": "确认数据源服务正在运行且目录 CLI 可以执行，并检查目录 CLI 错误输出后重试。", "cancellable": false, "confirm_repeat": false },
+  "CATALOG_REMOTE_FAILED": { "code": "CATALOG_REMOTE_FAILED", "title": "目录读取失败", "reason": "Harness Client 无法从插件后端读取目录结果。", "next_step": "检查 Harness 服务状态和 Harness ComfyUI 插件日志后重试。", "cancellable": false, "confirm_repeat": false },
+  "CATALOG_RESPONSE_TOO_LARGE": { "code": "CATALOG_RESPONSE_TOO_LARGE", "title": "目录输出过大", "reason": "目录 CLI 的标准输出与错误输出总量超过 Harness 读取上限。", "next_step": "检查目录 CLI 是否输出了异常大的目录记录或错误日志，修正后重试。", "cancellable": false, "confirm_repeat": false },
   "COMFYUI_CONNECTION_FAILED": { "code": "COMFYUI_CONNECTION_FAILED", "title": "无法连接 ComfyUI", "reason": "ComfyUI 实例连接失败。", "next_step": "检查实例地址和运行状态后重新生成。", "cancellable": false, "confirm_repeat": false },
   "COMFYUI_HTTP_ERROR": { "code": "COMFYUI_HTTP_ERROR", "title": "ComfyUI 请求失败", "reason": "ComfyUI 返回了失败的 HTTP 状态。", "next_step": "检查实例日志后重新生成。", "cancellable": false, "confirm_repeat": false },
   "COMFYUI_INSTANCE_SOURCE_CHANGED": { "code": "COMFYUI_INSTANCE_SOURCE_CHANGED", "title": "ComfyUI 实例已变更", "reason": "实例地址与运行准备时的地址不同。", "next_step": "检查默认 ComfyUI 实例配置后重新生成。", "cancellable": false, "confirm_repeat": false },

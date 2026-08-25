@@ -5,8 +5,10 @@ import {
   catalogPageCount,
   contextLabel,
   parseBaseModelList,
+  parseBaseModelResult,
   parseCatalogContext,
   parseCatalogPage,
+  parseCatalogPageResult,
   parseCatalogQueryRequest,
 } from '../../src/catalog/contract.ts'
 
@@ -78,10 +80,36 @@ describe('catalog Remote contract', () => {
       { kind: 'style', id: '12415', name: 'say_hana', prompt_text: 'say_hana' },
       { kind: 'prompt-term', id: '49856', tag: 'ryuujin_no_senpai' },
       { kind: 'artist-string', id: '1', title: 'watercolor', prompt_text: '@artist_a, @artist_b' },
-      { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora', parameters: [] },
+      {
+        kind: 'comfyui-template',
+        id: '37',
+        title: 'wai_txt2img_lora',
+        parameters: [
+          { parameter_id: 'sampler', kind: 'sampler_name', value_type: 'enum', required: true },
+          { parameter_id: 'reference', kind: 'image', value_type: 'image_reference', required: false },
+        ],
+      },
     ] as const
 
     expect(contexts.map(parseCatalogContext)).toEqual(contexts)
+  })
+
+  it('parses successful values and stable Catalog business failures', () => {
+    const page = { kind: 'model', query: '', page: 1, items: [], totalCount: 0 } as const
+    expect(parseCatalogPageResult({ ok: true, value: page })).toEqual({ ok: true, value: page })
+    expect(parseBaseModelResult({ ok: true, value: { items: [] } }))
+      .toEqual({ ok: true, value: { items: [] } })
+    expect(parseCatalogPageResult({
+      ok: false,
+      error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog result item is invalid.' },
+    })).toEqual({
+      ok: false,
+      error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog result item is invalid.' },
+    })
+    expect(() => parseCatalogPageResult({
+      ok: false,
+      error: { code: 'internal', message: 'unexpected' },
+    })).toThrow('error code')
   })
 
   it.each([

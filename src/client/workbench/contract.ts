@@ -1,3 +1,4 @@
+import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
 import { parseCatalogContext, type CatalogContext } from '../../catalog/contract.ts'
 
 export const WORKBENCH_ENTRY_ID = 'harness-comfyui-workbench'
@@ -27,8 +28,18 @@ export const WORKBENCH_COPY = Object.freeze({
   selectedItem: '已选择',
   loading: '加载中',
   empty: '无结果',
-  loadFailed: '目录加载失败。',
 })
+
+function errorCode(value: unknown): string {
+  if (value instanceof Error && 'code' in value && typeof value.code === 'string') return value.code
+  return 'CATALOG_REMOTE_FAILED'
+}
+
+export function catalogFailureText(error: unknown): string {
+  const code = errorCode(error)
+  const entry = errorCatalog[code as keyof typeof errorCatalog] ?? errorCatalog.CATALOG_REMOTE_FAILED
+  return `${entry.code}：${entry.reason}${entry.next_step}`
+}
 
 export function workbenchContextKey(context: CatalogContext): string {
   return `${context.kind}:${context.id}`

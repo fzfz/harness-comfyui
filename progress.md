@@ -1,5 +1,16 @@
 # Harness ComfyUI 原型方案进度
 
+## Phase 24：修复 Workflow 模板目录加载与错误展示
+
+- [x] 使用真实数据源 CLI 复现 Workflow 模板第一页失败。
+- [x] 定位 `enum` 和 `image_reference` 未进入 Catalog 参数类型白名单。
+- [x] 核对 Harness `0.1.1-rc.2` Typert Gateway 的 Remote 错误返回行为。
+- [x] 编写 Catalog 参数类型与错误传播失败测试。
+- [x] 修改 Catalog 合同、Host adapter、Remote 返回合同和弹窗错误展示。
+- [x] 独立语义审核确认四条 Catalog 错误文案与实际触发分支一致。
+- [x] `pnpm quality` 通过：184 项 Unit/Integration 测试、18 项 Contract/Security 测试、14 项 Production 测试和 27 项 Prototype 测试全部通过。
+- [x] 生产健康检查通过；Harness 上下文弹窗显示 Workflow 模板第一页 9 张真实卡片，其中包含 `image_reference` 模板，弹窗不显示目录错误。
+
 - 2026-08-24：开始修正上下文弹窗的资源类型选中态、每页9项九宫格和封面完整缩放行为；定向40项测试与TypeScript检查通过。
 - 2026-08-24：用户确认采用原生输入框JSON方案；已删除Harness引用codec与`insertReference()`路径，改用公开`SessionInput.setDraft()`同步结构化上下文JSON和可移除chip。
 - 2026-08-24：真实Harness浏览器终验通过：左侧资源选中态、9项3×3九宫格、LoRA封面完整缩放、2项JSON写入和chip取消同步删除均符合当前要求。

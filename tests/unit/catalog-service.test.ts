@@ -3,6 +3,7 @@ import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CatalogRemoteService } from '../../src/host/catalog/catalog-service.ts'
+import { CatalogCliError } from '../../src/host/catalog/catalog-cli.ts'
 
 describe('Catalog Remote service', () => {
   it('registers its public Remote marker and delegates the cancellable query', async () => {
@@ -19,10 +20,48 @@ describe('Catalog Remote service', () => {
       { method: 'baseModels', invocation: { kind: 'direct' } },
     ])
     const request = { kind: 'model', query: '', page: 1, baseModelId: null } as const
-    await expect(service.search(request, controller.signal)).resolves.toBe(page)
+    await expect(service.search(request, controller.signal)).resolves.toEqual({ ok: true, value: page })
     expect(search).toHaveBeenCalledWith(request, controller.signal)
-    await expect(service.baseModels(controller.signal)).resolves.toBe(baseModelList)
+    await expect(service.baseModels(controller.signal)).resolves.toEqual({ ok: true, value: baseModelList })
     expect(baseModels).toHaveBeenCalledWith(controller.signal)
+    await context.fiber.dispose()
+  })
+
+  it('returns Catalog CLI failures with their stable code and message', async () => {
+    const context = new Context()
+    const failure = new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
+    const service = new CatalogRemoteService(context, {
+      search: vi.fn(async () => { throw failure }),
+      baseModels: vi.fn(async () => { throw failure }),
+    } as never)
+
+    await expect(service.search(
+      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null },
+      new AbortController().signal,
+    )).resolves.toEqual({
+      ok: false,
+      error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog template parameter is invalid.' },
+    })
+    await expect(service.baseModels(new AbortController().signal)).resolves.toEqual({
+      ok: false,
+      error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog template parameter is invalid.' },
+    })
+    await context.fiber.dispose()
+  })
+
+  it('does not convert cancellation or unexpected implementation errors into Catalog business failures', async () => {
+    const context = new Context()
+    const abort = new DOMException('cancelled', 'AbortError')
+    const service = new CatalogRemoteService(context, {
+      search: vi.fn(async () => { throw abort }),
+      baseModels: vi.fn(async () => { throw new Error('unexpected') }),
+    } as never)
+
+    await expect(service.search(
+      { kind: 'model', query: '', page: 1, baseModelId: null },
+      new AbortController().signal,
+    )).rejects.toBe(abort)
+    await expect(service.baseModels(new AbortController().signal)).rejects.toThrow('unexpected')
     await context.fiber.dispose()
   })
 })

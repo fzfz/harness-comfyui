@@ -4,12 +4,43 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 22 没有待执行工作；Harness 生产实例保持运行，等待用户验收真实运行与媒体结果。
+Phase 24 没有待执行工作；Harness 生产实例保持运行，等待用户验收 Workflow 模板目录。
 
 ## Current Phase
-Phase 22 completed
+Phase 24 completed
 
 ## Phases
+
+## Phase 24：修复 Workflow 模板目录加载与错误展示
+
+### 必须要实现的目标
+
+- Catalog CLI adapter 必须接受数据源合同已经定义的 `enum` 和 `image_reference` Workflow 模板参数类型。
+- Catalog Remote 必须通过 Harness `0.1.1-rc.2` Typert Remote 的公开返回合同，把 `CatalogOperationResult.error.code` 和 `CatalogOperationResult.error.message` 传给 Client Module。
+- 上下文弹窗必须根据 Catalog 错误码显示 `config/error-catalog.json` 中的 `reason` 和 `next_step`。
+- `config/error-catalog.json` 必须作为 Catalog UI 错误文案的唯一来源。
+
+### 验收清单
+
+- Workflow 模板目录第一页能够显示数据源 CLI 返回的 9 张模板卡片。
+- 包含 `enum`、`image_reference`、`asset_reference`、`string`、`integer`、`number` 或 `boolean` 参数的模板均能通过 Host 和 Client 边界校验。
+- Catalog 查询失败时，上下文弹窗必须显示 `CATALOG_*` 错误码以及 `config/error-catalog.json` 中的 `reason` 和 `next_step`；上下文弹窗不得继续显示固定文案“目录加载失败。”。
+- 底模目录请求失败时，模型选择区域必须显示该请求的错误码、原因和处理提示；资源目录请求失败时，资源卡片区域必须显示该请求的错误码、原因和处理提示。
+- 测试必须覆盖 Catalog CLI 查询失败、输出超限和协议错误，Catalog Remote 成功结果与业务失败结果，Client adapter 的 Remote 失败与 Catalog 业务失败，以及上下文弹窗的底模目录错误与资源目录错误。
+- `pnpm quality`、`git diff --check`、生产健康检查和 Harness 浏览器交互验证全部通过。
+
+### 非本次目标
+
+- 本阶段不修改数据源仓库、Harness 核心源码或 `node_modules/@deepseek-ai/*`。
+- 本阶段不改变上下文弹窗的卡片布局、选择逻辑、分页方式或 Agent 上下文 JSON。
+- 本阶段不增加 Workflow 模板编辑或运行参数表单。
+
+### 已获得的授权
+
+- 用户已授权计划执行者修复 Workflow 模板目录加载失败和弹窗缺少具体错误的问题。
+- 用户已授权计划执行者重启 Harness 生产实例并通过浏览器验证修复结果。
+
+状态：已完成
 
 ## Phase 22：实现真实 Generation Run、媒体存储与右列异步投影
 

@@ -22,6 +22,16 @@ import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-d
 export const name = 'harness-comfyui'
 export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout'] as const
 
+class CatalogRequestError extends Error {
+  readonly code: string
+
+  constructor(code: string, message: string) {
+    super(message)
+    this.name = 'CatalogRequestError'
+    this.code = code
+  }
+}
+
 export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const workbench = new WorkbenchController(ctx.layout)
   const clientSessions = ctx.sessions as unknown as ISessions
@@ -39,15 +49,17 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           ensureActive(signal)
           const result = await remoteCatalog.search(request)
           ensureActive(signal)
-          if (!result.ok) throw new Error(result.error.code)
-          return result.value
+          if (!result.ok) throw new CatalogRequestError(result.error.code, `${result.error.code}: ${result.error.message}`)
+          if (!result.value.ok) throw new CatalogRequestError(result.value.error.code, result.value.error.message)
+          return result.value.value
         },
         baseModels: async (signal: AbortSignal) => {
           ensureActive(signal)
           const result = await remoteCatalog.baseModels()
           ensureActive(signal)
-          if (!result.ok) throw new Error(result.error.code)
-          return result.value
+          if (!result.ok) throw new CatalogRequestError(result.error.code, `${result.error.code}: ${result.error.message}`)
+          if (!result.value.ok) throw new CatalogRequestError(result.value.error.code, result.value.error.message)
+          return result.value.value
         },
       }
       const generationStore = new GenerationProjectionStore({

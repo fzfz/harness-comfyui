@@ -81,9 +81,12 @@ describe('Harness Client plugin registration', () => {
     const remoteDispose = vi.fn()
     const remoteSearch = vi.fn(async () => ({
       ok: true,
-      value: { kind: 'model', query: '', page: 1, items: [], totalCount: 0 },
+      value: { ok: true, value: { kind: 'model', query: '', page: 1, items: [], totalCount: 0 } },
     }))
-    const remoteBaseModels = vi.fn(async () => ({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } }))
+    const remoteBaseModels = vi.fn(async () => ({
+      ok: true,
+      value: { ok: true, value: { items: [{ id: '2', label: 'wai' }] } },
+    }))
     const remoteGenerationList = vi.fn(async () => ({
       ok: true,
       value: { sessionId: 'session-1', runs: [], media: [], hasActiveRuns: false, refreshAfterMs: 1000 },
@@ -250,6 +253,52 @@ describe('Harness Client plugin registration', () => {
       controller.signal,
     ))
       .rejects.toMatchObject({ name: 'AbortError' })
+    await dispose()
+  })
+
+  it('preserves Catalog business error codes and messages returned by the Host service', async () => {
+    const registrations = new Map<string, Registration>()
+    const catalogFailure = vi.fn(async () => ({
+      ok: true,
+      value: {
+        ok: false,
+        error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog template parameter is invalid.' },
+      },
+    }))
+    const context = {
+      slots: {
+        inject: (_slotName: string, setup: () => () => void) => setup(),
+        register: (registration: Registration) => {
+          registrations.set(registration.name, registration)
+          return vi.fn()
+        },
+      },
+      sessions: { scope: vi.fn(() => ({ sessionId: 'session-1' })) },
+      conversation: { input: { for: vi.fn(() => ({})) } },
+      remote: {
+        $mount: vi.fn(async () => vi.fn()),
+        harnessComfyuiCatalog: { search: catalogFailure, baseModels: catalogFailure },
+        harnessComfyuiGeneration: { list: vi.fn() },
+      },
+      layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
+    }
+    installImmediateInject(context)
+    const dispose = await apply(context as never)
+    const dock = registrations.get('conversation.input.dock')!.inject('session-1' as never) as {
+      catalog: { search: Function; baseModels: Function }
+    }
+
+    await expect(dock.catalog.search(
+      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null },
+      new AbortController().signal,
+    )).rejects.toMatchObject({
+      code: 'CATALOG_PROTOCOL_ERROR',
+      message: 'Catalog template parameter is invalid.',
+    })
+    await expect(dock.catalog.baseModels(new AbortController().signal)).rejects.toMatchObject({
+      code: 'CATALOG_PROTOCOL_ERROR',
+      message: 'Catalog template parameter is invalid.',
+    })
     await dispose()
   })
 })

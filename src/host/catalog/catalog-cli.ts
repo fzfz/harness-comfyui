@@ -6,6 +6,7 @@ import {
   CATALOG_PAGE_SIZE,
   CATALOG_QUERY_TIMEOUT_MS,
   catalogDefinition,
+  isCatalogTemplateValueType,
   parseBaseModelList,
   parseCatalogPage,
   parseCatalogQueryRequest,
@@ -13,6 +14,7 @@ import {
   type BaseModelList,
   type CatalogItem,
   type CatalogContext,
+  type CatalogErrorCode,
   type CatalogPage,
   type CatalogQueryRequest,
   type CatalogTemplateParameter,
@@ -20,10 +22,7 @@ import {
 
 const MAX_CLI_OUTPUT_BYTES = 32 * 1024 * 1024
 
-export type CatalogCliErrorCode =
-  | 'CATALOG_QUERY_FAILED'
-  | 'CATALOG_RESPONSE_TOO_LARGE'
-  | 'CATALOG_PROTOCOL_ERROR'
+export type CatalogCliErrorCode = CatalogErrorCode
 
 export class CatalogCliError extends Error {
   readonly code: CatalogCliErrorCode
@@ -156,14 +155,14 @@ function sourceTemplateParameters(value: unknown): readonly CatalogTemplateParam
     const parameter = sourceRecord(entry)
     if (parameter.visible !== true) return []
     const valueType = parameter.value_type
-    if (!['string', 'integer', 'number', 'boolean', 'asset_reference'].includes(String(valueType))
+    if (!isCatalogTemplateValueType(valueType)
       || typeof parameter.required !== 'boolean') {
       throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
     }
     return [Object.freeze({
       parameter_id: sourceLabel(parameter.parameter_id),
       kind: sourceLabel(parameter.kind),
-      value_type: valueType as CatalogTemplateParameter['value_type'],
+      value_type: valueType,
       required: parameter.required,
     })]
   }))

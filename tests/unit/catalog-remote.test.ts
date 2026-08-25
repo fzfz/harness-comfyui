@@ -49,31 +49,37 @@ describe('Catalog Remote contribution', () => {
     expect(request.schema.parse({ kind: 'model', query: '', page: 1, baseModelId: null }))
       .toEqual({ kind: 'model', query: '', page: 1, baseModelId: null })
     expect(descriptor.result.schema.parse({
-      kind: 'model',
-      query: '',
-      page: 1,
-      items: [{
-        context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
-        label: 'model.safetensors',
-        subtitle: 'safetensors',
-        coverUrl: null,
-      }],
-      totalCount: 1,
+      ok: true,
+      value: {
+        kind: 'model',
+        query: '',
+        page: 1,
+        items: [{
+          context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          label: 'model.safetensors',
+          subtitle: 'safetensors',
+          coverUrl: null,
+        }],
+        totalCount: 1,
+      },
     })).toEqual({
-      kind: 'model',
-      query: '',
-      page: 1,
-      items: [{
-        context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
-        label: 'model.safetensors',
-        subtitle: 'safetensors',
-        coverUrl: null,
-      }],
-      totalCount: 1,
+      ok: true,
+      value: {
+        kind: 'model',
+        query: '',
+        page: 1,
+        items: [{
+          context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          label: 'model.safetensors',
+          subtitle: 'safetensors',
+          coverUrl: null,
+        }],
+        totalCount: 1,
+      },
     })
     const baseModels = CATALOG_REMOTE.descriptors[1]!
     if (baseModels.result.mode !== 'strict') throw new Error('strict codec required')
-    expect(baseModels.result.schema.parse({ items: [{ id: '2', label: 'wai' }] }))
-      .toEqual({ items: [{ id: '2', label: 'wai' }] })
+    expect(baseModels.result.schema.parse({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } }))
+      .toEqual({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } })
   })
 })

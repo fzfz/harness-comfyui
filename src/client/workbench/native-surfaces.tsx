@@ -27,6 +27,7 @@ import {
 
 import {
   WORKBENCH_COPY,
+  catalogFailureText,
   workbenchContextsFromDraft,
   workbenchContextKey,
 } from './contract.ts'
@@ -90,6 +91,7 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
   const [baseModelMenuOpen, setBaseModelMenuOpen] = useState(false)
   const [baseModels, setBaseModels] = useState<BaseModelList | null>(null)
   const [baseModelStatus, setBaseModelStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [baseModelError, setBaseModelError] = useState<string | null>(null)
   const [selectedBaseModelId, setSelectedBaseModelId] = useState<string | null>(null)
   const [selectedKind, setSelectedKind] = useState<CatalogKind>(INITIAL_KIND)
   const [queryText, setQueryText] = useState('')
@@ -99,19 +101,22 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
   const [page, setPage] = useState<CatalogPage | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<ReadonlyMap<string, CatalogContext>>(new Map())
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [catalogError, setCatalogError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!dialogOpen) return
     const controller = new AbortController()
     let current = true
     setBaseModelStatus('loading')
+    setBaseModelError(null)
     setBaseModels(null)
     void catalog.baseModels(controller.signal).then(result => {
       if (!current || controller.signal.aborted) return
       setBaseModels(result)
       setBaseModelStatus('ready')
-    }).catch(() => {
+    }).catch((error: unknown) => {
       if (!current || controller.signal.aborted) return
+      setBaseModelError(catalogFailureText(error))
       setBaseModelStatus('error')
     })
     return () => {
@@ -126,6 +131,7 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
     let current = true
     const definition = catalogDefinition(selectedKind)
     setStatus('loading')
+    setCatalogError(null)
     setPage(null)
     void catalog.search({
       kind: selectedKind,
@@ -136,8 +142,9 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
       if (!current || controller.signal.aborted) return
       setPage(result)
       setStatus('ready')
-    }).catch(() => {
+    }).catch((error: unknown) => {
       if (!current || controller.signal.aborted) return
+      setCatalogError(catalogFailureText(error))
       setStatus('error')
     })
     return () => {
@@ -281,7 +288,7 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
               </Button>
             )}
           />
-          {baseModelStatus === 'error' ? <span>{WORKBENCH_COPY.loadFailed}</span> : null}
+          {baseModelStatus === 'error' ? <span>{baseModelError}</span> : null}
         </div>
 
         <div className="harness-comfyui-catalog">
@@ -322,7 +329,7 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
 
             <div className="harness-comfyui-catalog-items" aria-label="资源卡片">
               {status === 'loading' ? <span className="harness-comfyui-catalog-state">{WORKBENCH_COPY.loading}</span> : null}
-              {status === 'error' ? <span className="harness-comfyui-catalog-state">{WORKBENCH_COPY.loadFailed}</span> : null}
+              {status === 'error' ? <span className="harness-comfyui-catalog-state">{catalogError}</span> : null}
               {status === 'ready' && page?.items.length === 0 ? <span className="harness-comfyui-catalog-state">{WORKBENCH_COPY.empty}</span> : null}
               {status === 'ready' ? page?.items.map(option => {
                 const selected = selectedOptions.has(workbenchContextKey(option.context))

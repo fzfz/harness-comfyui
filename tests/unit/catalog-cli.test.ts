@@ -32,7 +32,11 @@ describe('Catalog CLI adapter', () => {
         template_type: 'text_to_image',
         cover_url: 'http://127.0.0.1:18092/media/images/template.webp',
         workflow_json: { secretHostOnlyGraph: true },
-        parameters_json: [{ parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true, visible: true }],
+        parameters_json: [
+          { parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true, visible: true },
+          { parameter_id: 'sampler', kind: 'sampler_name', value_type: 'enum', required: true, visible: true },
+          { parameter_id: 'reference', kind: 'image', value_type: 'image_reference', required: false, visible: true },
+        ],
       }], 35, 2),
       stderr: '',
     }))
@@ -48,7 +52,11 @@ describe('Catalog CLI adapter', () => {
         items: [{
           context: {
             kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
-            parameters: [{ parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true }],
+            parameters: [
+              { parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true },
+              { parameter_id: 'sampler', kind: 'sampler_name', value_type: 'enum', required: true },
+              { parameter_id: 'reference', kind: 'image', value_type: 'image_reference', required: false },
+            ],
           },
           label: 'wai_txt2img_lora',
           subtitle: 'text_to_image',

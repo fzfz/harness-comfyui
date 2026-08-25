@@ -1,5 +1,13 @@
 # Harness ComfyUI 原型方案调研结果
 
+## Phase 24：Workflow 模板目录加载失败
+
+- 数据源 CLI 的 `/internal/semantic/comfyui-templates` 查询能够返回第一页 9 条记录；ID 36 和 ID 30 的可见参数使用 `value_type: "image_reference"`。
+- 数据源 OpenAPI 合同允许 `string`、`integer`、`number`、`boolean`、`enum`、`image_reference` 和 `asset_reference`。
+- 修改前的 `src/host/catalog/catalog-cli.ts` 与 `src/catalog/contract.ts` 只允许其中五种类型，因此一条类型不匹配的目录记录会使整页 Catalog 投影抛出 `CATALOG_PROTOCOL_ERROR`。
+- Harness `0.1.1-rc.2` Typert Gateway 会把 Catalog Remote 抛出的 `CatalogCliError` 转换为 `code: "internal"` 的 `RemoteResult`，同时把 `CatalogCliError.message` 写入 `RemoteResult.error.message`。Catalog Remote 必须把 `CatalogCliError` 转换为经过严格 schema 校验的 `CatalogOperationResult` 失败值，才能让 Client Module 稳定收到 `CATALOG_*` 错误码。
+- 修改前的 Client adapter 只把 `result.error.code` 写入 `Error.message`；修改前的 `WorkbenchDock` 又忽略该 `Error`，并固定显示“目录加载失败。”。
+
 ## 2026-08-21 Harness 核心零改动审核
 
 - 用户要求 DeepSeek Harness 核心仓库和已安装的 `@deepseek-ai/*` package 保持不变；当前项目的全部 Host 功能、Client UI、会话输入扩展、Tool、Jobs、Skill、媒体访问和生命周期组合只能使用 Harness 对外导出的插件接口。

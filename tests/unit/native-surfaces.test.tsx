@@ -46,6 +46,7 @@ import {
   type CatalogQueryRequest,
 } from '../../src/catalog/contract.ts'
 import {
+  catalogFailureText,
   serializeWorkbenchContext,
   WORKBENCH_COPY,
   workbenchContextsFromDraft,
@@ -338,9 +339,15 @@ describe('native Harness workbench surfaces', () => {
   })
 
   it('renders query and base-model failures and aborts both active requests on close', async () => {
+    const queryFailure = Object.assign(new Error('Catalog template parameter is invalid.'), {
+      code: 'CATALOG_PROTOCOL_ERROR',
+    })
+    const baseFailure = Object.assign(new Error('Catalog CLI output exceeded the limit.'), {
+      code: 'CATALOG_RESPONSE_TOO_LARGE',
+    })
     const failedApi = {
-      search: vi.fn(async () => { throw new Error('query unavailable') }),
-      baseModels: vi.fn(async () => { throw new Error('base unavailable') }),
+      search: vi.fn(async () => { throw queryFailure }),
+      baseModels: vi.fn(async () => { throw baseFailure }),
     }
     let renderer: ReturnType<typeof create>
     act(() => {
@@ -349,7 +356,10 @@ describe('native Harness workbench surfaces', () => {
       }))
     })
     await openDialog(renderer!)
-    expect(JSON.stringify(renderer!.toJSON()).match(new RegExp(WORKBENCH_COPY.loadFailed, 'g'))?.length).toBe(2)
+    const renderedFailure = JSON.stringify(renderer!.toJSON())
+    expect(renderedFailure).toContain(catalogFailureText(queryFailure))
+    expect(renderedFailure).toContain(catalogFailureText(baseFailure))
+    expect(renderedFailure).not.toContain('目录加载失败。')
     act(() => renderer!.unmount())
 
     const activeSignals: AbortSignal[] = []
