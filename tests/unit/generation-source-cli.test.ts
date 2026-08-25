@@ -151,6 +151,40 @@ describe('GenerationSourceCli', () => {
     })
   })
 
+  it.each([
+    ['missing', undefined],
+    ['malformed', [{ parameter_id: 'positive_prompt', operation: 'unknown' }]],
+  ])('keeps template parameters usable when advisory bindings are %s', async (_label, bindingsJson) => {
+    const process = vi.fn<SourceCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: success({
+        id: 34,
+        title: 'Anima',
+        revision_number: 7,
+        workflow_sha256: 'a'.repeat(64),
+        workflow_json: workflow,
+        config_revision: 2,
+        dimension_strategy: 'explicit',
+        parameters_json: [{
+          parameter_id: 'positive_prompt',
+          kind: 'positive_prompt',
+          value_type: 'string',
+          default_value: 'default prompt',
+          required: false,
+        }],
+        bindings_json: bindingsJson,
+        expected_output_node_ids_json: null,
+      }),
+      stderr: '',
+    }))
+    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
+
+    await expect(source.readTemplate('34')).resolves.toMatchObject({
+      parameters: [{ parameterId: 'positive_prompt', defaultValue: 'default prompt' }],
+      bindings: [],
+    })
+  })
+
   it('validates an explicit non-empty output-node filter', async () => {
     const process = vi.fn<SourceCliProcess>(async () => ({
       exitCode: 0,

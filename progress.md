@@ -1,5 +1,13 @@
 # Harness ComfyUI 原型方案进度
 
+## Phase 31：修复 Agent Preset 与 Workbench Profile 重复注入 Skill
+
+- [x] 复核 Standard 与 Router Session 的持久事件，两种 Session 均包含两项完全相同的 `comfyui-generate` instructions 类型 Skill Invocation。
+- [x] 定位 Workbench Profile 与两个 Agent Preset 都注册 `skill-filesystem` 和 `tool-skill` 的组合边界。
+- [ ] 添加 Profile Skill 所有权回归测试，并确认测试在修改前失败。
+- [ ] 移除 Workbench Profile 的重复 Skill 插件注册，同步生产物化与安全边界合同。
+- [ ] 使用 Standard 与 Router Agent Preset 验证每次斜杠调用只保存一项 Skill Invocation，并执行质量门禁与健康检查。
+
 ## Phase 29：发布 v0.3
 
 - [x] 读取仓库发布规范，确认 `0.3.0` 对应标签 `v0.3`，GitHub Release 只包含标签和 Release 记录。
@@ -785,3 +793,60 @@
 - 生产浏览器验收通过：空白 Session 显示一个宽 `361px` 的 `shell.overlay` 结果列，原生 `details` 保持 `0px`；已保存 Session 不显示 overlay，并显示一个宽 `359px` 的原生 `details` 结果列；关闭按钮把可见结果列数量降为零。
 - 最终 `pnpm quality` 通过：180 项 unit/integration、18 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；覆盖率为 statements 90.57%、branches 81%、functions 100%、lines 93.66%。
 - 生产 Harness 运行于 `http://127.0.0.1:4173/`，PID `26463`；process、sourceRuntime、Harness Web、Client bundle、Run Repository 和 Saved Media 健康检查全部通过。
+### Phase 30: 修复 LoRA 与生成模型上下文的实例参数注入
+- **Status:** in_progress
+- Actions taken:
+  - 用户确认当前 Skill 的取消规则错误；正确流程是按上下文 ID 调用数据源 CLI resolve，再把解析结果写入当前 Workflow 模板声明的参数。
+  - 用户确认 LoRA resolve 必须同时提供文件名、触发词、默认权重、用途和介绍；Agent 使用用途、介绍和触发词进行语义理解。
+  - 用户确认数据源文件名不是实例实际资源路径；Host 必须根据目标实例资源枚举解析 `底模名/文件名` 并保留实例路径分隔符。
+  - 用户确认 `comfyui-generate` Skill 必须使用 LoRA 介绍、用途和触发词重写此前 Prompt Builder Skill 已生成的 Prompt，再把最终 Prompt 写入 Workflow 模板。
+  - 计划执行者已定位当前 Skill 阻断规则、数据源合同中既有的 LoRA/生成模型 operation、当前仅有模板 Resolver Tool 的 Host 缺口，以及 Workflow 编译器现有的路径分隔符匹配边界。
+  - 计划执行者已调用生产数据源 CLI 的 LoRA resolve 和生成模型 search，确认 LoRA 真实字段包含 `description`、`usage`、`trigger_words_json` 和 `weight`，生成模型真实字段包含 `description`、`usage` 与 `skill_name`。
+  - 计划执行者已核对模板 37 的真实参数：`lora_model`、`lora_model_weight`、`lora_trigger_word` 与 `positive_prompt`；当前 Workflow compiler 尚不能把纯文件名映射为实例的 `底模名/文件名`。
+  - 计划执行者已清点 36 个生产模板的可见参数；当前没有模板声明生成模型覆盖参数，因此生成模型选择必须解析后与模板 `model_id` 校验，不得隐式改固定 Checkpoint 节点。
+  - 计划执行者已确认模板 37 的 `lora_trigger_word` 通过 `compose_text` 指向 `positive_prompt`；数据源 ADR 与用户要求都规定最终 Prompt 已包含实际触发词，因此 Host 保持不重复执行该文本组合。
+  - 计划执行者已核对数据源 Catalog serializer 与 OpenAPI，固定了 LoRA Resolver、生成模型 Resolver 和模板兼容性字段的真实来源与用途。
+  - 计划执行者已检查用户提供的 Actual Workflow，确认该文件没有 LoRA 节点；Phase 30 将按模板 binding 支持不同 LoRA 节点，并对无 LoRA binding 的模板在创建 Run 前返回具体不兼容信息。
+  - 计划执行者已开始实现 LoRA/生成模型 Resolver Tool、模板兼容字段与实例 basename 路径映射，并同步补充合同和单元测试。
+  - 计划执行者已检查 `Standard_V37.json` 的 LoraManager 自定义节点结构，并确认该文件尚未登记为生产数据源 Workflow 模板；下一步将只读核对已登记实例的 LoraManager `/object_info` 定义。
+  - 计划执行者已取得两个真实实例的 LoraManager `/object_info`：仅 `win3080` 支持该节点，且可执行 LoRA 入口是 `<lora:lora_name:strength>` 格式的 `text` 或 `lora_syntax` 字符串。
+  - 用户明确否定数据源旧 binding 作为 LoRA 注入依据；计划已改为结构化 Generation Tool LoRA 选择与实例节点输入适配。
+  - Generation Tool、持久化 Generation Request、Source preparer 与 Workflow compiler 的结构化 LoRA 数据流已经开始实现；compiler 将同时返回注入后的 Actual Workflow 和 API Workflow。
+  - Workflow compiler 已实现标准 LoRA 槽位、LoraManager 文本入口、实例 basename 唯一路径解析、无输入/多输入/容量错误分支；目标测试 fixture 正在同步新合同。
+  - 用户进一步明确 binding 只作为参考值和旧模板默认映射；Source bundle 保留 binding 提示，Compiler 不再把 binding 当成参数可用性限制。
+  - 第一轮 7 个目标测试文件 79 项全部通过；TypeScript 的内部返回类型错误已经定位并修正。
+- Files created/modified:
+  - `task_plan.md`（更新）
+  - `findings.md`（更新）
+  - `progress.md`（更新）
+## 2026-08-25 — Phase 30 non-restrictive binding hints
+
+- Inspected the current source parser, source preparer, and Workflow compiler.
+- Confirmed the current implementation treats binding as the only runtime mutation path.
+- Next: change the compiler contract so valid bindings are preferred hints and deterministic parameter target selection handles every declared parameter without a usable hint.
+- Located every TypeScript binding reference. The source parser will preserve valid hints; the preparer and compiler must stop treating those hints as an allowlist.
+- Reviewed all current Workflow compiler test fixtures to preserve node serialization, output discovery, path separator handling, and structured LoRA behavior while adding parameter assignment.
+- Queried the live source for template 37 and every available template ID from 1 through 60.
+- Reduced the generic parameter implementation scope to the ten parameter kinds that the data source actually returns; no speculative parameter vocabulary is required.
+- Inspected representative multi-pass, resolution-preset, image-edit, and complex Workflow templates plus the live target instance definitions for their relevant node types.
+- Defined the deterministic target rules: exact parameter/input names, known kind aliases, prompt polarity markers, latent-dimension preference, serialized default equality, node-ID suffix reservation, and explicit missing/ambiguous errors.
+- Corrected the implementation scope after the user clarified that bindings remain useful as advisory defaults; no binding data will be deleted.
+- Implemented the new preparer/compiler contract: the preparer passes resolved runtime parameters and advisory bindings; the compiler applies valid hints first and falls back to live widget resolution.
+- Added legacy LoRA parameter projection when structured `loras[]` is absent; structured selections remain authoritative.
+- The first three-suite run passed source parsing and Workflow compiler tests. The only failure is the obsolete preparer assertion that still expects preparer-side widget mutation.
+- Updated the preparer test to assert the corrected responsibility boundary.
+- Added source and compiler branch tests; all 29 focused tests and TypeScript checks now pass.
+- Next: complete error catalog coverage, LoRA ambiguity/capacity branches, live template compilation, and real generation runs.
+- Added all Phase 30 parameter and LoRA error codes to the shared error catalog.
+- Expanded the focused suites to 36 passing tests; TypeScript and error-catalog JSON parsing also pass.
+- Next: run the production template bundles through the live target instance compiler before starting real asynchronous generation.
+- Verified the asynchronous preparation failure path persists the specific Phase 30 error code and full compiler message.
+- Re-read the production startup/configuration contract; no dependency, external service, or data-source change is required for live verification.
+- Completed read-only live compiler validation for templates 29, 33, and 37 across both registered instances.
+- Completed read-only live compilation of template 37 with structured LoRA ID 68 and the user-provided LoraManager Workflow; both preserved the Windows instance path separator and exact instance directory.
+- Next: execute real asynchronous Runs through the Harness Tool path, verify persisted media and per-media Actual Workflow, and repeat with another template where practical.
+- Restarted the production Harness with current code and confirmed all six health stages.
+- Connected to the existing local Harness browser page using the browser-control Skill.
+- The selected old Session cannot submit the prepared draft; next action is to open a fresh Workspace Session and submit the same explicit template/model/LoRA request there.
+- The browser-control troubleshooting path did not unlock that stale controlled composer. Next: navigate to a different existing Workspace Session with a normal composer, preserving the production process and the prepared request text outside the page.
+- Switched to a standard-mode Session and confirmed its composer is clean. Harness model discovery is currently pending there, so the next browser attempt will use an existing generation Session that already has a selected model.

@@ -10,6 +10,8 @@ import {
   parseBaseModelList,
   parseCatalogPage,
   parseCatalogQueryRequest,
+  parseCatalogResolvedGenerationModel,
+  parseCatalogResolvedLora,
   parseCatalogResolvedTemplate,
   type BaseModelItem,
   type BaseModelList,
@@ -18,6 +20,8 @@ import {
   type CatalogErrorCode,
   type CatalogPage,
   type CatalogQueryRequest,
+  type CatalogResolvedGenerationModel,
+  type CatalogResolvedLora,
   type CatalogResolvedTemplate,
   type CatalogTemplateParameter,
 } from '../../catalog/contract.ts'
@@ -117,6 +121,10 @@ function sourceId(value: unknown): string {
   return normalized
 }
 
+function sourceNullableId(value: unknown): string | null {
+  return value === null ? null : sourceId(value)
+}
+
 function sourceLabel(value: unknown): string {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > 500) {
     throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog result label is invalid.')
@@ -145,6 +153,28 @@ function sourceCoverUrl(value: unknown): string | null {
 function sourcePromptText(value: unknown): string {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > 100_000) {
     throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog result prompt text is invalid.')
+  }
+  return value
+}
+
+function sourceNullableLabel(value: unknown): string | null {
+  return value === null ? null : sourceLabel(value)
+}
+
+function sourceTriggerWords(value: unknown): readonly string[] {
+  if (!Array.isArray(value) || value.length > 100) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog LoRA trigger words are invalid.')
+  }
+  const words = value.map(sourceLabel)
+  if (new Set(words).size !== words.length) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog LoRA trigger words are duplicated.')
+  }
+  return Object.freeze(words)
+}
+
+function sourceNumber(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', `${label} is invalid.`)
   }
   return value
 }
@@ -210,7 +240,7 @@ function sourceContext(kind: CatalogQueryRequest['kind'], id: string, result: Re
   }
 }
 
-function normalizeResolvedTemplate(value: unknown): CatalogResolvedTemplate {
+function resolvedRecord(value: unknown, label: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog response must be an object.')
   }
@@ -224,13 +254,45 @@ function normalizeResolvedTemplate(value: unknown): CatalogResolvedTemplate {
     || envelope.page_size !== 1
     || envelope.total_count !== 1
   ) {
-    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template resolve response is invalid.')
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', `Catalog ${label} resolve response is invalid.`)
   }
-  const result = sourceRecord(envelope.results[0])
+  return sourceRecord(envelope.results[0])
+}
+
+function normalizeResolvedTemplate(value: unknown): CatalogResolvedTemplate {
+  const result = resolvedRecord(value, 'template')
   return parseCatalogResolvedTemplate({
     id: sourceId(result.id),
     title: sourceLabel(result.title),
+    base_model_id: sourceId(result.base_model_id),
+    model_id: sourceNullableId(result.model_id),
     parameters: sourceTemplateParameters(result.parameters_json),
+  })
+}
+
+function normalizeResolvedLora(value: unknown): CatalogResolvedLora {
+  const result = resolvedRecord(value, 'LoRA')
+  return parseCatalogResolvedLora({
+    id: sourceId(result.id),
+    base_model_id: sourceId(result.base_model_id),
+    model_id: sourceId(result.model_id),
+    file_name: sourceLabel(result.file_name),
+    description: sourcePromptText(result.description),
+    usage: sourcePromptText(result.usage),
+    trigger_words: sourceTriggerWords(result.trigger_words_json),
+    weight: sourceNumber(result.weight, 'Catalog LoRA weight'),
+  })
+}
+
+function normalizeResolvedGenerationModel(value: unknown): CatalogResolvedGenerationModel {
+  const result = resolvedRecord(value, 'generation model')
+  return parseCatalogResolvedGenerationModel({
+    id: sourceId(result.id),
+    base_model_id: sourceId(result.base_model_id),
+    file_name: sourceLabel(result.file_name),
+    description: sourcePromptText(result.description),
+    usage: sourcePromptText(result.usage),
+    skill_name: sourceNullableLabel(result.skill_name),
   })
 }
 
@@ -361,5 +423,31 @@ export class CatalogCli {
     ]
     const result = await this.execute(this.options.executable, args, signal)
     return normalizeResolvedTemplate(parseCliJson(result))
+  }
+
+  async resolveLora(id: string, signal: AbortSignal): Promise<CatalogResolvedLora> {
+    const loraId = sourceId(id)
+    const args = [
+      '--port', String(this.options.port),
+      '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
+      '--path', catalogDefinition('lora').path,
+      '--mode', 'resolve',
+      '--id', loraId,
+    ]
+    const result = await this.execute(this.options.executable, args, signal)
+    return normalizeResolvedLora(parseCliJson(result))
+  }
+
+  async resolveGenerationModel(id: string, signal: AbortSignal): Promise<CatalogResolvedGenerationModel> {
+    const modelId = sourceId(id)
+    const args = [
+      '--port', String(this.options.port),
+      '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
+      '--path', catalogDefinition('model').path,
+      '--mode', 'resolve',
+      '--id', modelId,
+    ]
+    const result = await this.execute(this.options.executable, args, signal)
+    return normalizeResolvedGenerationModel(parseCliJson(result))
   }
 }

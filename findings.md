@@ -1,5 +1,11 @@
 # Harness ComfyUI 原型方案调研结果
 
+## Phase 31：Agent Preset 与 Workbench Profile 重复注入 Skill
+
+- Standard 对照 Session 与 Router Session 都保存了两项完全相同的 `{"kind":"skill-invocation","name":"comfyui-generate","form":"instructions"}` 事件。
+- `profiles/comfyui-workbench/cordis.patch.yml` 当前在 Profile 层启用 `skill-filesystem` 与 `tool-skill`；Standard Agent Preset 和 Router Agent Preset 也分别注册这两个插件。
+- 修复必须保留 Agent Preset 对 Skill 发现和斜杠调用的所有权，只移除 Workbench Profile 的重复注册。
+
 ## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
 
 - 修改前的 `comfyui-generate` Skill 把当前消息限定为一个 Generation Request，并要求只调用一次 `generate_with_comfyui`；该合同无法表达用户在同一轮中明确要求的多个独立图片结果。
@@ -773,3 +779,71 @@
 - 全量 `pnpm run quality` 通过：123 项 unit/integration、17 项 contract/security、15 项 production、27 项 prototype 全部通过；函数覆盖率 100%。
 - 最终生产状态为 `running`，PID 2812，`http://127.0.0.1:4173/`；process、source runtime、Harness Web、Client bundle、Run Repository 和 Saved Media 健康检查全部通过。
 - `git diff --check` 无输出并通过。
+## Phase 30：LoRA 与生成模型上下文解析
+
+- `.agents/skills/comfyui-generate/SKILL.md` 第 12 行当前要求用户取消 `data.kind: "lora"` 与 `data.kind: "model"` 上下文；该规则直接阻断了用户要求的解析与 Workflow 注入流程。
+- `config/source-contract-v0.82.2.json` 已经声明 `query_semantic_generation_models` 与 `query_semantic_loras` 两项数据源语义 operation；当前 Host 只注册了 `query_semantic_comfyui_templates` Resolver Tool，因此缺少把 LoRA 与生成模型 resolve 能力暴露给 Skill 的 Host 接入。
+- `src/catalog/contract.ts` 当前消息上下文只保存 LoRA 或生成模型的 `id` 与 `file_name`；LoRA 的介绍、用途、触发词和默认权重必须在 Skill 执行时按 `id` 通过数据源 CLI resolve，不能写入消息上下文或用 Client 自造字段替代。
+- `src/host/generation/workflow-compiler.ts` 已经能根据目标实例 `/object_info` 对路径分隔符不同但完整相对路径相同的 COMBO 值做唯一匹配；本阶段还必须支持数据源只提供文件名、实例实际值为 `底模名/文件名` 的精确 basename 唯一匹配。
+- LoRA 信息具有两个明确用途：介绍、用途和触发词供 Agent 进行语义选择与 Prompt 编写；文件名和默认权重供模板参数注入。实例实际资源路径必须由 Host 根据目标实例枚举解析，Skill 不得拼接目录或路径分隔符。
+- 用户工作流通常在前一轮已经由 Prompt Builder Skill 生成 Prompt；`comfyui-generate` 必须把该 Prompt 与 LoRA resolve 返回的介绍、用途和触发词一起进行语义重写，生成最终 `positive_prompt`。Host 不承担 Prompt 语义重写。
+- 生产数据源 CLI 对 LoRA ID 91 的真实 resolve 返回 `base_model_id`、`model_id`、`file_name`、`description`、`usage`、`trigger_words_json`、`weight` 等字段。该记录的 `file_name` 是 `StS_Age_Slider_Illustrious_v1.safetensors`，`weight` 是 `1`，说明 Host Tool 必须保留字段原义，不能把列表卡片的 `subtitle` 当成语义数据。
+- 生产数据源 CLI 的生成模型搜索结果真实返回 `id`、`base_model_id`、`file_name`、`description`、`usage` 和 `skill_name` 等字段；生成模型 Resolver Tool 应当使用同一 resolve operation 取得单项详情，而不是依赖搜索卡片内容。
+- 生产运行时实际使用 `/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs` 和本机端口 18093；本阶段只调用该已经配置并运行的本地 CLI，不修改数据源仓库。
+- LoRA ID 68 的真实记录证明 `trigger_words_json` 是字符串数组，`weight` 是数值；该记录提供触发词 `usnr`、默认权重 `1`、中文介绍和用途。LoRA ID 90、89、72、71、69 等记录覆盖单触发词、多触发词、空触发词与不同默认权重，适合建立解析分支测试。
+- 模板 37 的真实参数 `kind` 包含 `lora_model`、`lora_model_weight`、`lora_trigger_word` 和 `positive_prompt`；模板默认 LoRA 路径是 `wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors`。该模板只公开一个 LoRA 权重参数，Skill 应按该模板声明写入 `lora_model_weight`，不能编造独立 CLIP 权重参数。
+- `GenerationSourceCli` 的模板 bundle 已包含 `parameters_json` 与 `bindings_json`；`SourceGenerationPreparer` 先把请求参数写入 UI Workflow，再由 `ComfyWorkflowCompiler` 使用目标实例 `/object_info` 编译 API Workflow。因此实例目录解析位于 Workflow compiler 的 COMBO 选项映射边界最合适。
+- `ComfyWorkflowCompiler.instanceComboValue()` 当前只在输入值本身含路径分隔符时执行分隔符无关的完整相对路径匹配；数据源仅提供文件名时函数直接返回原值，无法映射到实例枚举的 `底模名/文件名`。
+- 生产 Catalog 返回的 36 个 Workflow 模板没有任何一个公开 `generation_model`、`checkpoint` 或同类生成模型运行参数。模板 resolver 必须额外提供模板绑定的 `model_id`；Skill 对已选生成模型执行 ID 一致性校验。当前模板没有声明生成模型参数时，系统不能未经模板声明修改固定 Checkpoint 节点。
+- 生产 Source CLI `.mjs` 文件没有可执行权限；Host 的 `GenerationSourceCli` 已规定 `.mjs` 通过 `process.execPath` 执行，人工验证也必须使用 Node.js 调用。
+- 模板 37 的 Source bundle 证明 `lora_trigger_word` 使用 `compose_text` binding 指向 `positive_prompt`；数据源仓库 ADR 0005 明确说明迭代生成的最终 `prompt_text` 已经包含实际采用触发词，运行准备逻辑保留触发词用于校验和追溯，但不再执行该 `compose_text` binding。用户要求 `comfyui-generate` 重写最终 Prompt 与该边界一致。
+- `comfyui-generate` 的正确职责是根据 LoRA 介绍、用途和触发词重写包含实际采用触发词的最终 Prompt，并把同一组触发词写入 `lora_trigger_word` 请求参数用于追溯。Host 不应再次拼接触发词。
+- 模板 37 的生产 Source bundle 没有投影 `model_id`，但 Catalog template resolve 记录包含 `model_id: 1`；生成模型兼容性必须使用 Catalog Resolver Tool 的安全投影，不能依赖 Host-only Source bundle。
+- 模板 35 真实存在两组按数组顺序排列的 `lora_model`、`lora_model_weight` 和 `lora_trigger_word` 参数；多 LoRA 映射必须按消息选择顺序与同类参数出现顺序逐项对应，不能把重复 `kind` 一律当成冲突。
+- 数据源实现的 `generationModelCatalogItem()` 固定返回 `id`、`base_model_id`、`file_name`、`description`、`usage` 与可空 `skill_name`；`loraCatalogItem()` 固定返回 `id`、`base_model_id`、`model_id`、`file_name`、`description`、`usage`、`trigger_words_json` 与 `weight`。当前 Host adapter 可以按这些真实字段建立闭合 resolver 类型。
+- 数据源 LoRA 写入合同明确 `weight` 是“未显式指定运行权重时写入 ComfyUI strength_model 的默认数值”，因此 Skill 把 resolve `weight` 写入模板 `lora_model_weight` 与数据源字段定义一致。
+- 数据源 Catalog template item 固定包含 `base_model_id`、可空 `model_id`、revision 与可见 parameters；当前模板 Resolver Tool 删除了 `base_model_id` 与 `model_id`，导致 Skill 无法校验所选生成模型。Phase 30 必须恢复这两个安全字段。
+- 用户提供的 `/Users/fzfz/Downloads/comfyui-run-run_01J8MEDIA01-workflow.json` 是 UI Workflow 0.4，包含 `CheckpointLoaderSimple`、`CLIPTextEncode`、`EmptyLatentImage`、`KSampler`、`VAEDecode` 和 `SaveImage`，不包含任何 LoRA 节点。选中 LoRA 时该模板不能由 Host 隐式新增节点；Skill 必须在 Run 创建前报告模板没有 `lora_model` 参数。
+- 用户明确规定本项目的 LoRA 注入不遵守数据源旧 `bindings_json`。Generation Tool 需要新增结构化 LoRA 选择；Workflow compiler 必须根据目标实例 `/object_info` 与当前 Workflow 实际节点输入识别标准 LoRA 槽位或 LoraManager 文本入口。
+- Source preparer 的现有单元测试位于 `tests/unit/generation-preparer.test.ts`；Phase 30 应在该文件验证无 LoRA 参数模板拒绝 `lora_model` 请求，在 Workflow compiler 测试中分别验证 `LoraLoader` 与 `LoraLoaderModelOnly` 的实例路径映射。
+- 用户提供的 `/Users/fzfz/Downloads/comfyuiImage_v37/Standard_V37.json` 含 99 个节点；LoRA 相关节点是自定义 `Lora Loader (LoraManager)` 与 `TriggerWord Toggle (LoraManager)`。前者的 `widgets_values` 包含元数据对象、文本和 LoRA 数组，不等价于标准 `LoraLoader` 的文件名与两个数值 widget。
+- `Standard_V37.json` 的 SHA-256 是 `af1a2c872719d5b31fd57923e351553f79f3724496771bcb25f182e7aa97d926`；生产数据源模板 Catalog 搜索 `Standard V37` 返回 0 项，数据源仓库可检索文件中也没有该文件名或两种 LoraManager 节点类型。当前用户样本尚未成为可选择的已配置模板，也没有 `parameters_json/bindings_json` 可供 Host 执行。
+- 当前 `RuntimeParameterDefinition.value_type` 只接受字符串、数值、布尔、enum、图片引用和资源引用；LoraManager 的结构化 LoRA 数组不能用现有 `asset_reference` 字符串合同直接表达。需要先取得目标实例 `/object_info` 的真实 API 输入定义，才能判断是否存在可由现有模板 binding 表达的字符串入口。
+- 两个已登记真实实例的 `/object_info` 显示：`mac mini` 不安装 LoraManager；`win3080` 安装 LoraManager。`Lora Loader (LoraManager)` 的 API 必填输入为 `model` 与 `text`，其中 `text` 的 widgetType 是 `AUTOCOMPLETE_TEXT_LORAS`，tooltip 定义格式为 `<lora:lora_name:strength>`。`LoRA Text Loader (LoraManager)` 使用 `lora_syntax` 字符串输入，格式相同。
+- `Standard_V37.json` 的 `Lora Loader (LoraManager)` UI 节点包含 `properties.__lm_widget_ids = ["__lm_autocomplete_meta_text", "text", "loras"]`；`widgets_values[1]` 对应可执行 `text` 字符串。编译器需要使用该 widget ID 映射，不能把 `widgets_values[0]` 的元数据对象当成 API `text`。
+- Generation Tool 当前只接受 `title`、`instance_id`、`template_id` 和模板 `parameters`；Phase 30 新增闭合 `loras[]`，每项包含 Catalog ID、`file_name`、采用权重和实际采用触发词。持久化 `request.json` 保存同一结构，确保恢复与逐媒体 Actual Workflow 可追溯。
+- `SourceGenerationPreparer` 当前先通过旧 binding 写入模板参数，再调用 `WorkflowCompiler`。Phase 30 的 LoRA 注入位于 compiler：compiler 已取得目标实例 `/object_info`，能够识别标准 `lora_name/strength_model/strength_clip` 与 LoraManager `text/lora_syntax`，并返回注入后的 Actual Workflow 与 API Workflow。
+- Workflow compiler 必须返回注入后的 `actualWorkflow`，否则右栏逐媒体 Workflow 下载只会保存注入前模板，无法证明每次异步任务使用了不同 LoRA。
+- `generation-runtime.ts` 的持久化 `request_json` 是 Run 恢复与幂等冲突判断的权威输入；`loras[]` 必须进入 `GenerationRequest` 并参与 canonical JSON，而不能只作为编译期临时值。
+- `generation-tool.test.ts` 原合同明确断言不存在旧 `lora_applications`；Phase 30 保留对该旧字段的拒绝，同时新增名称与结构都闭合的 `loras[]`，避免恢复旧的来源系统对象合同。
+- 用户明确说明 `bindings_json` 是旧模板参数目标的参考值和默认映射，不是参数可用性门禁。`ComfyTemplateBundle` 继续保留 binding 提示；`ComfyWorkflowCompiler` 优先使用有效提示，并在提示缺失或旧目标失效时使用参数 `parameter_id`、`kind`、默认值、Workflow widget 元数据和实例 `/object_info` 定位目标输入。
+- binding 之外的参数定位必须是闭合的确定性过程：优先匹配 `parameter_id`/`kind` 对应输入名；Prompt 使用节点标题或 `Node name for S&R` 的 positive/negative 标识；其余参数使用参数默认值与当前 widget 值的唯一匹配；没有唯一目标时返回具体参数错误。
+## 2026-08-25 — Phase 30 non-restrictive binding hints
+
+- `src/host/generation/source-cli.ts` currently requires `bindings_json`; the corrected contract keeps valid bindings as advisory hints and permits a missing binding array.
+- `src/host/generation/source-preparer.ts` currently treats bindings as the only mutation path. The preparer must pass resolved parameter definitions, values, and binding hints to the compiler so the compiler can use live instance definitions.
+- `src/host/generation/workflow-compiler.ts` already derives serialized widget names from Workflow node inputs, `__lm_widget_ids`, and target-instance `/object_info`; this existing mapping is the correct deterministic source for applying runtime parameters without bindings.
+- `GenerationSourceCli` should preserve valid binding hints returned by the source, while the compiler remains able to resolve parameters from `workflow_json`, `parameters_json`, and the target instance definitions when no usable hint exists.
+- Existing compiler tests cover Workflow widget serialization and LoRA injection but pass no runtime parameter assignments. Existing preparer tests explicitly assert binding-based mutation and must be inverted to assert that the preparer passes definitions and resolved values to the compiler.
+- Existing source-CLI tests must continue proving valid binding projection and add a branch proving a missing legacy `bindings_json` value does not disable template parameters.
+- The live source currently exposes only these runtime parameter kinds: `positive_prompt`, `negative_prompt`, `width`, `height`, `seed`, `resolution_preset`, `reference_image`, `lora_model`, `lora_model_weight`, and `lora_trigger_word`. Some templates declare multiple parameters with kind `seed` and distinct `parameter_id` values such as `seed_12`.
+- Template 37 proves deterministic location without bindings: prompt nodes are distinguished by `properties["Node name for S&R"]`, width/height/seed use exact `/object_info` input names, and each parameter default matches the corresponding serialized widget value.
+- Template 37 legacy LoRA parameters coexist with the new structured `loras[]` route. Structured selections must remain authoritative; legacy LoRA parameter kinds still need deterministic behavior when callers supply them without `loras[]`.
+- Multi-stage templates encode secondary parameter targets in `parameter_id` suffixes: `seed_12` targets Workflow node 12, `seed_7` targets node 7, and `seed_6` targets node 6. The unsuffixed parameter targets the remaining same-kind widget.
+- Live Workflow examples require node-type-independent prompt aliases: `CLIPTextEncode.text` and `ImpactWildcardProcessor.wildcard_text`. Positive/negative node identity is available in node title or `properties["Node name for S&R"]`.
+- Dimension parameters should prefer latent-construction inputs named `width`/`height`; template 36 contains several unrelated resize widgets with the same numeric default, while `EmptySD3LatentImage` is the generation dimension target.
+- `resolution_preset` maps to `SDXLEmptyLatentSizePicker+.resolution`; `reference_image` maps to `LoadImage.image`.
+- A safe fallback resolver can reserve suffix-addressed targets first, then resolve unsuffixed same-kind parameters against the remaining candidates. This preserves multi-stage seed behavior when no usable binding hint exists.
+- `config/error-catalog.json` currently contains only the pre-validation code `GENERATION_PARAMETER_INVALID`; the new compiler target errors and Phase 30 LoRA errors require catalog entries so the right panel can show specific product copy while retaining the full backend message in error details.
+- The three focused suites now pass 29 tests. They prove valid binding priority, missing and malformed advisory binding tolerance, stale binding fallback, prompt/dimension/seed injection, same-kind node suffixes, and specific missing/ambiguous target errors.
+- Phase 30 error codes now have dedicated product copy in `config/error-catalog.json`; the right-panel error-details interaction can pair that copy with the persisted full backend message.
+- Expanded Workflow compiler coverage now proves LoraManager `text` and `lora_syntax`, instance file missing/ambiguous paths, standard-slot capacity, standard/manager ambiguity, multiple manager ambiguity, legacy LoRA defaults, and structured LoRA precedence.
+- `GenerationRuntime.errorFacts()` preserves every `GenerationRuntimeError.code` and full `message` in `generation_runs.error_code/error_message`; Phase 30 compiler errors will therefore reach the right-panel error-details dialog without being converted to `GENERATION_PREPARATION_FAILED`.
+- Production uses default instance ID 1, but read-only compiler validation can explicitly select instance 2 for template 37 because that instance exposes both the standard `LoraLoader` resource choices and LoraManager definitions.
+- Live source-to-compiler validation now succeeds for three different templates: template 29 on instance 1, template 33 on instance 1, and template 37 on instance 2. Output discovery returned 7, 10/12, and 8 respectively.
+- Live template 37 structured LoRA compilation resolved catalog basename `USNR_STYLE_ILL_V1_lokr3-000024.safetensors` to instance path `wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors`, wrote weight 1 to both standard strength widgets, and wrote the supplied final prompt without duplicating `usnr`.
+- The user-provided `Standard_V37.json` compiles against live instance 2 without binding metadata. Its LoraManager executable text became `<lora:wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors:1>`, and live output discovery returned nodes 35, 36, 54, and 64.
+- Production restarted on current source as PID 15467; process, source runtime, Harness Web, client bundle, Run Repository, and saved-media health checks all pass.
+- The first browser attempt reused an old completed Session whose composer retains the new draft but keeps its send button disabled. The `/comfyui-generate` command suggestion can be selected, but this old Session does not accept the new turn; real verification should use a fresh Workspace Session rather than mutating its prior state further.
+- Browser inspection confirmed the disabled composer is Session-specific controlled state: Playwright locates one visible textarea, but `fill()` cannot commit a new value and both visible “新建会话” controls leave the same tree item selected. This is not a Generation Host failure because no Tool call or Run has been created.
+- A different existing standard-mode Session has an empty writable composer, but it has no selected model and its model menu remains at “正在刷新模型列表…”. This Session also cannot submit until Harness supplies a model; the Generation plugin and right-panel projection remain loaded normally.

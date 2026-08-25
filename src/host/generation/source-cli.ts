@@ -234,11 +234,17 @@ function parseBinding(value: unknown): RuntimeBinding {
   throw sourceError('SOURCE_PROTOCOL_ERROR', 'Template binding operation is invalid.')
 }
 
+function parseBindingHint(value: unknown): RuntimeBinding | null {
+  try {
+    return parseBinding(value)
+  } catch {
+    return null
+  }
+}
+
 function parseTemplate(value: unknown): ComfyTemplateBundle {
   const source = record(value, 'ComfyUI template bundle')
-  if (!Array.isArray(source.parameters_json) || !Array.isArray(source.bindings_json)) {
-    throw sourceError('SOURCE_PROTOCOL_ERROR', 'ComfyUI template runtime configuration is invalid.')
-  }
+  if (!Array.isArray(source.parameters_json)) throw sourceError('SOURCE_PROTOCOL_ERROR', 'ComfyUI template parameters are invalid.')
   const outputIds = source.expected_output_node_ids_json
   if (outputIds !== null && (!Array.isArray(outputIds) || outputIds.length === 0)) {
     throw sourceError('SOURCE_PROTOCOL_ERROR', 'ComfyUI template output node identities are invalid.')
@@ -252,7 +258,10 @@ function parseTemplate(value: unknown): ComfyTemplateBundle {
     configRevision: integer(source.config_revision, 'ComfyUI template config revision', 1),
     dimensionStrategy: text(source.dimension_strategy, 'ComfyUI template dimension strategy'),
     parameters: Object.freeze(source.parameters_json.map(parseParameter)),
-    bindings: Object.freeze(source.bindings_json.map(parseBinding)),
+    bindings: Object.freeze((Array.isArray(source.bindings_json) ? source.bindings_json : []).flatMap(value => {
+      const binding = parseBindingHint(value)
+      return binding === null ? [] : [binding]
+    })),
     expectedOutputNodeIds: outputIds === null
       ? null
       : Object.freeze(outputIds.map((id, index) => sourceId(id, `ComfyUI template output node id ${index}`))),

@@ -78,10 +78,19 @@ export interface WorkflowCompilerInput {
   readonly workflow: UiWorkflow
   readonly connection: ComfyConnection
   readonly expectedOutputNodeIds: readonly string[] | null
+  readonly runtimeParameters?: readonly ResolvedRuntimeParameter[]
+  readonly bindingHints?: readonly RuntimeBinding[]
+  readonly loras: GenerationRequest['loras']
   readonly signal?: AbortSignal
 }
 
+export interface ResolvedRuntimeParameter {
+  readonly definition: RuntimeParameterDefinition
+  readonly value: JsonValue
+}
+
 export interface WorkflowCompilerResult {
+  readonly actualWorkflow: UiWorkflow
   readonly apiWorkflow: Readonly<Record<string, JsonValue>>
   readonly activeOutputNodeIds: readonly string[]
 }
@@ -155,35 +164,6 @@ function resolveParameterValues(
   return Object.freeze(values)
 }
 
-function findNode(nodes: readonly WorkflowNode[], nodeId: string): WorkflowNode {
-  const matches = nodes.filter(node => String(node.id) === nodeId)
-  if (matches.length !== 1) fail(`Workflow node "${nodeId}" does not match exactly one node.`)
-  return matches[0]!
-}
-
-function buildActualWorkflow(
-  bundle: ComfyTemplateBundle,
-  values: Readonly<Record<string, JsonValue>>,
-): UiWorkflow {
-  const workflow = structuredClone(bundle.workflow) as UiWorkflow
-  const nodes = workflow.nodes
-  for (const binding of bundle.bindings) {
-    if (binding.operation === 'compose_text') continue
-    const value = values[binding.parameterId]
-    if (value === undefined) continue
-    if (!Number.isSafeInteger(binding.widgetIndex) || binding.widgetIndex < 0) {
-      fail(`Workflow binding for "${binding.parameterId}" has an invalid widget index.`)
-    }
-    const node = findNode(nodes, binding.nodeId)
-    if (!Array.isArray(node.widgets_values) || binding.widgetIndex >= node.widgets_values.length) {
-      fail(`Workflow binding for "${binding.parameterId}" does not resolve to a widget value.`)
-    }
-    const widgets = node.widgets_values as JsonValue[]
-    widgets[binding.widgetIndex] = value
-  }
-  return workflow
-}
-
 function safeSourceSnapshot(
   bundle: ComfyTemplateBundle,
   instance: ComfyInstanceSource,
@@ -215,7 +195,10 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
     const bundle = await this.options.source.readTemplate(request.templateId, signal)
     const instanceId = request.instanceId ?? this.options.defaultInstanceId
     const values = resolveParameterValues(bundle.parameters, request.parameters)
-    const actualWorkflow = buildActualWorkflow(bundle, values)
+    const runtimeParameters = Object.freeze(bundle.parameters.flatMap(definition => {
+      const value = values[definition.parameterId]
+      return value === undefined ? [] : [Object.freeze({ definition, value })]
+    }))
     const instance = await this.options.source.readInstance(instanceId, signal)
     const connection = Object.freeze({
       url: instance.url,
@@ -223,9 +206,12 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
       authorization: instance.authorization,
     })
     const compiled = await this.options.compiler.compile({
-      workflow: actualWorkflow,
+      workflow: bundle.workflow,
       connection,
       expectedOutputNodeIds: bundle.expectedOutputNodeIds,
+      runtimeParameters,
+      bindingHints: bundle.bindings,
+      loras: request.loras,
       signal,
     })
     return Object.freeze({
@@ -233,7 +219,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
       instanceTitle: instance.title,
       templateTitle: bundle.title,
       sourceSnapshot: safeSourceSnapshot(bundle, instance, connection.origin),
-      actualWorkflow,
+      actualWorkflow: compiled.actualWorkflow,
       apiWorkflow: compiled.apiWorkflow,
       expectedOutputNodeIds: compiled.activeOutputNodeIds,
       connection,

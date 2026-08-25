@@ -111,7 +111,29 @@ export interface CatalogTemplateParameter {
 export interface CatalogResolvedTemplate {
   readonly id: string
   readonly title: string
+  readonly base_model_id: string
+  readonly model_id: string | null
   readonly parameters: readonly CatalogTemplateParameter[]
+}
+
+export interface CatalogResolvedLora {
+  readonly id: string
+  readonly base_model_id: string
+  readonly model_id: string
+  readonly file_name: string
+  readonly description: string
+  readonly usage: string
+  readonly trigger_words: readonly string[]
+  readonly weight: number
+}
+
+export interface CatalogResolvedGenerationModel {
+  readonly id: string
+  readonly base_model_id: string
+  readonly file_name: string
+  readonly description: string
+  readonly usage: string
+  readonly skill_name: string | null
 }
 
 export type CatalogContext =
@@ -211,6 +233,10 @@ function stableId(value: unknown): string {
     throw new TypeError('catalog item id is invalid')
   }
   return value
+}
+
+function nullableStableId(value: unknown): string | null {
+  return value === null ? null : stableId(value)
 }
 
 function itemText(value: unknown, subject: string, maxLength: number): string {
@@ -324,14 +350,62 @@ function parseCatalogTemplateParameter(value: unknown, index: number): CatalogTe
 
 export function parseCatalogResolvedTemplate(value: unknown): CatalogResolvedTemplate {
   const input = record(value, 'resolved Workflow template')
-  exactKeys(input, ['id', 'title', 'parameters'], 'resolved Workflow template')
+  exactKeys(input, ['id', 'title', 'base_model_id', 'model_id', 'parameters'], 'resolved Workflow template')
   if (!Array.isArray(input.parameters) || input.parameters.length > 100) {
     throw new TypeError('resolved Workflow template parameters are invalid')
   }
   return Object.freeze({
     id: stableId(input.id),
     title: itemText(input.title, 'resolved Workflow template title', 500),
+    base_model_id: stableId(input.base_model_id),
+    model_id: nullableStableId(input.model_id),
     parameters: Object.freeze(input.parameters.map(parseCatalogTemplateParameter)),
+  })
+}
+
+function resolvedTriggerWords(value: unknown): readonly string[] {
+  if (!Array.isArray(value) || value.length > 100) {
+    throw new TypeError('resolved LoRA trigger words are invalid')
+  }
+  const words = value.map((word, index) => itemText(word, `resolved LoRA trigger word ${index}`, 500))
+  if (new Set(words).size !== words.length) throw new TypeError('resolved LoRA trigger words are duplicated')
+  return Object.freeze(words)
+}
+
+export function parseCatalogResolvedLora(value: unknown): CatalogResolvedLora {
+  const input = record(value, 'resolved LoRA')
+  exactKeys(input, [
+    'id', 'base_model_id', 'model_id', 'file_name', 'description', 'usage', 'trigger_words', 'weight',
+  ], 'resolved LoRA')
+  if (typeof input.weight !== 'number' || !Number.isFinite(input.weight)) {
+    throw new TypeError('resolved LoRA weight is invalid')
+  }
+  return Object.freeze({
+    id: stableId(input.id),
+    base_model_id: stableId(input.base_model_id),
+    model_id: stableId(input.model_id),
+    file_name: itemText(input.file_name, 'resolved LoRA file name', 500),
+    description: itemText(input.description, 'resolved LoRA description', 100_000),
+    usage: itemText(input.usage, 'resolved LoRA usage', 100_000),
+    trigger_words: resolvedTriggerWords(input.trigger_words),
+    weight: input.weight,
+  })
+}
+
+export function parseCatalogResolvedGenerationModel(value: unknown): CatalogResolvedGenerationModel {
+  const input = record(value, 'resolved generation model')
+  exactKeys(input, [
+    'id', 'base_model_id', 'file_name', 'description', 'usage', 'skill_name',
+  ], 'resolved generation model')
+  return Object.freeze({
+    id: stableId(input.id),
+    base_model_id: stableId(input.base_model_id),
+    file_name: itemText(input.file_name, 'resolved generation model file name', 500),
+    description: itemText(input.description, 'resolved generation model description', 100_000),
+    usage: itemText(input.usage, 'resolved generation model usage', 100_000),
+    skill_name: input.skill_name === null
+      ? null
+      : itemText(input.skill_name, 'resolved generation model Skill name', 500),
   })
 }
 

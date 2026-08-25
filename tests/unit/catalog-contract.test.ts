@@ -10,6 +10,9 @@ import {
   parseCatalogPage,
   parseCatalogPageResult,
   parseCatalogQueryRequest,
+  parseCatalogResolvedGenerationModel,
+  parseCatalogResolvedLora,
+  parseCatalogResolvedTemplate,
 } from '../../src/catalog/contract.ts'
 
 const COVER = 'http://127.0.0.1:18092/media/images/model.webp'
@@ -106,6 +109,66 @@ describe('catalog Remote contract', () => {
       ok: false,
       error: { code: 'internal', message: 'unexpected' },
     })).toThrow('error code')
+  })
+
+  it('parses closed Agent resolver values for templates, LoRAs, and generation models', () => {
+    expect(parseCatalogResolvedTemplate({
+      id: '37',
+      title: 'wai_txt2img_lora',
+      base_model_id: '2',
+      model_id: '1',
+      parameters: [{ parameter_id: 'lora_model', kind: 'lora_model', value_type: 'asset_reference', required: false }],
+    })).toEqual({
+      id: '37',
+      title: 'wai_txt2img_lora',
+      base_model_id: '2',
+      model_id: '1',
+      parameters: [{ parameter_id: 'lora_model', kind: 'lora_model', value_type: 'asset_reference', required: false }],
+    })
+    expect(parseCatalogResolvedLora({
+      id: '68',
+      base_model_id: '2',
+      model_id: '1',
+      file_name: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+      description: '手绘质感。',
+      usage: '使用 usnr。',
+      trigger_words: ['usnr'],
+      weight: 1,
+    })).toEqual({
+      id: '68',
+      base_model_id: '2',
+      model_id: '1',
+      file_name: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+      description: '手绘质感。',
+      usage: '使用 usnr。',
+      trigger_words: ['usnr'],
+      weight: 1,
+    })
+    expect(parseCatalogResolvedGenerationModel({
+      id: '1',
+      base_model_id: '2',
+      file_name: 'waiIllustriousSDXL_v170.safetensors',
+      description: 'WAI model.',
+      usage: 'Use WAI prompts.',
+      skill_name: 'wai-sdxl-prompt-builder',
+    })).toEqual({
+      id: '1',
+      base_model_id: '2',
+      file_name: 'waiIllustriousSDXL_v170.safetensors',
+      description: 'WAI model.',
+      usage: 'Use WAI prompts.',
+      skill_name: 'wai-sdxl-prompt-builder',
+    })
+  })
+
+  it('rejects resolver values with missing semantic fields or duplicated LoRA trigger words', () => {
+    expect(() => parseCatalogResolvedLora({
+      id: '68', base_model_id: '2', model_id: '1', file_name: 'lora.safetensors',
+      description: 'effect', usage: 'usage', trigger_words: ['usnr', 'usnr'], weight: 1,
+    })).toThrow('duplicated')
+    expect(() => parseCatalogResolvedGenerationModel({
+      id: '1', base_model_id: '2', file_name: 'model.safetensors', description: 'model', skill_name: null,
+    })).toThrow('properties')
   })
 
   it.each([

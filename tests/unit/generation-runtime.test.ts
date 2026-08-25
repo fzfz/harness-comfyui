@@ -36,6 +36,7 @@ function request(prompt: string): GenerationRequest {
     instanceId: null,
     templateId: '34',
     parameters: { positive_prompt: prompt, width: 1024, height: 1024 },
+    loras: [],
   }
 }
 

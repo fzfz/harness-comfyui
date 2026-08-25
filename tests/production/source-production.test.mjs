@@ -287,12 +287,7 @@ describe('source production commands', () => {
     expect(resolve(dirname(profileLink), await readlink(profileLink))).toBe(repositoryRoot)
     const profileManifest = JSON.parse(await readFile(resolve(dirname(dirname(profileLink)), 'package.json'), 'utf8'))
     expect(profileManifest.dependencies).toEqual({ 'harness-comfyui': `file:${repositoryRoot}` })
-    expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe(`- id: skill-filesystem
-  disabled: false
-
-- id: tool-skill
-  disabled: false
-`)
+    expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
 
     const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
     expect(stop.evidence).toMatchObject({ stage: 'stop', status: 'stopped' })

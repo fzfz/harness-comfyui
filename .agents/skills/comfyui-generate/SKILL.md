@@ -1,44 +1,81 @@
 ---
 name: comfyui-generate
-description: 使用当前消息中已选的 ComfyUI Workflow 模板和画面要求创建异步图片生成运行。用户要求开始生成、出图或运行已选 Workflow 时使用。
+description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 LoRA，重写最终 Prompt，并创建一个或多个异步图片生成运行。用户要求开始生成、出图或运行已选 Workflow 时使用。
 ---
 
 # ComfyUI Generate
 
-从当前用户消息读取 `type: "comfyui-context"` 的 JSON。每个对象的 `data.kind` 表示该上下文的用途，`data.id` 是数据源记录 ID。
+## 1. 解析当前消息上下文
 
-当前消息必须恰好包含一个 `data.kind: "comfyui-template"` 对象。使用 `data.id` 作为 `template_id`，使用 `data.title` 识别 Workflow 模板。缺少模板或存在多个模板时，请用户选择一个 Workflow 模板并结束本次执行。
+读取当前用户消息中的 `type: "comfyui-context"` JSON。每个对象的 `data.kind` 表示上下文用途，`data.id` 是数据源记录 ID。
 
-当前消息包含 `data.kind: "lora"` 对象时，使用 `data.file_name` 识别当前 LoRA，请用户取消当前 LoRA 选择并结束本次执行。当前消息包含 `data.kind: "model"` 对象时，使用 `data.file_name` 识别当前生成模型，请用户取消当前生成模型选择并结束本次执行。以上检查必须在 Tool 调用前完成。
+当前消息恰好包含一个 `data.kind: "comfyui-template"` 对象时进入下一步。缺少模板或存在多个模板时，请用户选择一个 Workflow 模板并结束本次执行。
 
-使用模板对象的 `data.id` 调用一次 `query_semantic_comfyui_templates`。该 Tool 返回模板 `id`、`title` 和 `parameters`。Tool 返回的 `id` 必须与模板对象的 `data.id` 相同；查询失败或 ID 不相同时，报告模板查询错误并结束本次执行。
+当前消息最多包含一个 `data.kind: "model"` 对象。存在多个生成模型时，请用户选择一个生成模型并结束本次执行。按消息顺序保存全部 `data.kind: "lora"` 对象；每个 LoRA 的 `data.id` 是后续 resolve 的唯一身份，`data.file_name` 只用于向用户指明具体选择。
 
-从当前消息识别一项或多项 Generation Request。用户明确要求多个独立生成结果时，按用户声明的顺序为每个结果建立一项 Generation Request；否则建立一项 Generation Request。每项 Generation Request 分别保存简短标题、正向提示词候选和用户明确归属于该结果的运行值。用户明确声明多个结果共享的运行值时，把该值分别写入每项 Generation Request。无法确定多个结果的边界或运行值归属时，请用户明确每项结果并结束本次执行。
+## 2. Resolve 模板、生成模型和 LoRA
 
-对每项 Generation Request 按以下优先级取得正向提示词：
+使用模板 `data.id` 调用一次 `query_semantic_comfyui_templates`。取得模板 `id`、`title`、`base_model_id`、可选 `model_id` 和 `parameters`。返回 `id` 与消息模板 ID 不同、查询失败或结果不完整时，报告具体模板查询错误并结束本次执行。
 
-1. 用户在当前消息中为该结果明确提供的完整提示词；
+存在生成模型上下文时，使用该对象的 `data.id` 调用一次 `query_semantic_generation_models`。取得 `id`、`base_model_id`、`file_name`、`description`、`usage` 和可选 `skill_name`。返回 ID 与消息生成模型 ID 不同或查询失败时，报告具体生成模型查询错误并结束本次执行。
+
+按消息顺序为每个 LoRA 使用 `data.id` 调用一次 `query_semantic_loras`。每项结果包含：
+
+- `id`：LoRA 数据源身份；
+- `base_model_id`：LoRA 所属底模；
+- `model_id`：LoRA 关联的生成模型；
+- `file_name`：Host 用于解析目标实例实际路径的文件名；
+- `description`：LoRA 的视觉效果、适用主体和适用场景；
+- `usage`：LoRA 的使用方式与触发词选择说明；
+- `trigger_words`：可用于重写 Prompt 的触发词；
+- `weight`：用户没有指定权重时采用的模型权重。
+
+任一 LoRA 返回 ID 与消息 ID 不同、查询失败或缺少上述字段时，报告该 LoRA 的消息 ID 与具体查询错误并结束本次执行。
+
+## 3. 校验模型兼容性
+
+模板、生成模型与每项 LoRA 的 `base_model_id` 必须相同。模板返回 `model_id` 时，所选生成模型 ID与每项 LoRA 的 `model_id` 必须等于该值。没有选择生成模型时，仍使用模板 `model_id` 校验每项 LoRA。
+
+模板没有返回 `model_id` 且用户选择了生成模型时，检查模板 `parameters` 是否声明能够接收该生成模型文件名的运行参数；没有对应参数时，报告模板 ID 与生成模型 ID 不兼容并结束本次执行。兼容性检查完成的标志是每个已选生成模型和 LoRA 都能指向当前模板接受的模型族。
+
+## 4. 建立 Generation Request
+
+用户明确要求多个独立生成结果时，按声明顺序建立多项 Generation Request；否则建立一项。每项分别保存简短标题、正向提示词候选、运行值和适用 LoRA。用户没有为不同结果分配 LoRA 时，全部已选 LoRA 适用于每项 Generation Request。无法确定多个结果的边界、运行值或 LoRA 归属时，请用户明确每项结果并结束本次执行。
+
+按以下优先级取得每项 Generation Request 的基础 Prompt：
+
+1. 用户在当前消息中为该结果明确提供的完整 Prompt；
 2. 用户在当前消息中为该结果明确引用的本 Session 最近一条 Prompt Skill 输出；
-3. 用户为该结果提供的画面要求与当前消息中的以下上下文共同构成的完整提示词：
+3. 用户的画面要求与当前消息的角色、画风、画师串、提示词条目和作品上下文共同构成的完整 Prompt。
 
-每项 Generation Request 选择最高的可用优先级并忽略该项更低优先级的候选。同一 Generation Request 的同一优先级存在多个完整提示词候选且用户没有明确指定时，请用户选择一个并结束本次执行。多个 Generation Request 各自拥有一个完整提示词不构成提示词冲突。
+同一优先级存在多个完整 Prompt 候选且用户没有指定时，请用户选择一个并结束本次执行。无法得到非空基础 Prompt 时，请用户补充该项 Generation Request 的画面要求并结束本次执行。
 
-- `data.kind: "character"`：`data.work_name` 是作品名，`data.character_name` 是角色名，`data.prompt_text` 是角色提示词；
-- `data.kind: "style"`：`data.name` 是画风名，`data.prompt_text` 是画风提示词；
-- `data.kind: "artist-string"`：`data.title` 是画师串名称，`data.prompt_text` 是画师串提示词；
-- `data.kind: "prompt-term"`：`data.tag` 是提示词条目。
-- `data.kind: "work"`：`data.name` 是作品名，用于确定用户要求的作品语境。
+## 5. 重写最终 Prompt 和 LoRA 执行值
 
-同一 `data.kind` 出现多项时全部处理。任一 Generation Request 不能得到非空正向提示词时，请用户补充该项 Generation Request 的画面要求并结束本次执行。
+对每项 Generation Request 依次处理其适用 LoRA。结合基础 Prompt、生成模型的 `description` 与 `usage`、每项 LoRA 的 `description`、`usage` 和 `trigger_words`，重写适配当前生成模型与全部 LoRA 的完整最终 Prompt。保留用户的主体、动作、构图和场景意图；根据 LoRA 用途调整相关表现，并只使用该结果实际需要的触发词。最终 Prompt 必须包含每项 LoRA 实际采用的触发词，且同一触发词只出现一次。
 
-读取 `query_semantic_comfyui_templates` 返回的 `parameters`。该数组每项包含 `parameter_id`、`kind`、`value_type` 和 `required`。对每项 Generation Request 分别执行以下映射和校验：`kind: "positive_prompt"` 必须恰好出现一次；把该项完整正向提示词写入对应 `parameter_id`。该项每个运行值必须按语义匹配唯一 `kind`，并写入对应 `parameter_id`。`value_type: "string"`、`"enum"`、`"asset_reference"` 或 `"image_reference"` 接受字符串，`"integer"` 接受整数，`"number"` 接受数字，`"boolean"` 接受布尔值。逐项检查所有 `required: true` 参数；必填参数没有对应值时，报告该 Generation Request 和参数的 `parameter_id`。用户值没有匹配参数时，报告该 Generation Request 和缺少的 `kind`。同一单值 `kind` 存在多个参数时，报告该 Generation Request 和全部冲突的 `parameter_id`。值不符合 `value_type` 时，报告该 Generation Request 和该值对应的 `parameter_id`。
+为每项适用 LoRA 建立一个执行对象：
 
-必须在第一次调用 `generate_with_comfyui` 前完成全部 Generation Request 的映射和校验。任一 Generation Request 校验失败时结束本次执行，不创建任何 Run。
+- `id` 使用 resolve 返回的 `id`；
+- `file_name` 使用 resolve 返回的 `file_name`，保持原字符串，不拼接目录或路径分隔符；
+- `weight` 优先使用用户明确指定给该 LoRA 和该结果的权重，否则使用 resolve 返回的 `weight`；
+- `trigger_words` 只保存该结果最终 Prompt 实际采用的触发词，顺序与最终 Prompt 一致。
 
-全部 Generation Request 校验通过后，按用户声明顺序为每项 Generation Request 调用一次 `generate_with_comfyui`：
+## 6. 映射模板运行参数
 
-- `title` 是该项 Generation Request 的简短标题；
-- `template_id` 是所选 Workflow 模板的 `data.id`；
-- `parameters` 只包含 `query_semantic_comfyui_templates` 返回的 `parameter_id` 与该项 Generation Request 的对应值。
+读取模板 `parameters` 中每项 `parameter_id`、`kind`、`value_type` 和 `required`。LoRA 文件、权重和触发词通过 Generation Tool 的 `loras` 数组传递，因此不把 `lora_model`、`lora_model_weight`、`lora_clip_weight` 或 `lora_trigger_word` 写入模板 `parameters`。
 
-每项 Tool Call 返回 `run_id` 后记录该 Generation Request 与 `run_id`。全部 Tool Call 成功后，按用户声明顺序返回每项 Generation Request 的 `run_id` 和已进入异步处理的状态。后续 Tool Call 失败时，返回已经创建的每个 `run_id`、失败的 Generation Request 和 Tool 错误；不自动重复已经成功的 Tool Call。
+对每项 Generation Request，把完整最终 Prompt 写入全部 `kind: "positive_prompt"` 参数。其余用户运行值按语义匹配模板 `kind`：字符串类 value type 接受字符串，`integer` 接受整数，`number` 接受数字，`boolean` 接受布尔值。逐项校验除四种 LoRA kind 以外的全部 `required: true` 参数。用户值没有对应模板 kind、值类型不符或一个不可广播的单值 kind 对应多个参数时，报告该 Generation Request、具体 kind 和相关 `parameter_id`。
+
+在第一次调用 `generate_with_comfyui` 前完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象、参数映射和校验。任一请求失败时结束本次执行，不创建 Run。
+
+## 7. 创建异步运行
+
+按用户声明顺序为每项 Generation Request 调用一次 `generate_with_comfyui`：
+
+- `title` 使用该项 Generation Request 的简短标题；
+- `template_id` 使用模板上下文的 `data.id`；
+- `parameters` 只包含模板返回的非 LoRA `parameter_id` 与该项请求的对应值；
+- `loras` 使用该项请求的 LoRA 执行对象数组。
+
+每项 Tool Call 返回 `run_id` 后记录该请求与 `run_id`。全部调用成功后，按用户声明顺序返回每项请求的 `run_id` 和异步处理状态。后续调用失败时，返回已经创建的每个 `run_id`、失败的 Generation Request 和 Tool 错误；已成功的 Tool Call 不重复提交。

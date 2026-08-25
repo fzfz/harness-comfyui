@@ -72,7 +72,7 @@ async function deriveIdentity(
 export function createGenerationTool(options: CreateGenerationToolOptions): ToolDefinition {
   const definition = defineTool({
     name: GENERATION_TOOL_NAME,
-    description: 'Create one durable ComfyUI Generation Run from one approved template, explicit runtime parameters, and an optional safe instance route; return the accepted run_id without waiting for remote completion.',
+    description: 'Create one durable ComfyUI Generation Run from one approved template, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.',
     parameters: {
       title: { type: 'string', required: true, description: 'Title shown for this Generation Run.' },
       instance_id: { type: 'string', description: 'Approved ComfyUI instance identity.' },
@@ -82,6 +82,20 @@ export function createGenerationTool(options: CreateGenerationToolOptions): Tool
         additionalProperties: true,
         required: true,
         description: 'Runtime values keyed by the template parameter_id.',
+      },
+      loras: {
+        type: 'array',
+        description: 'LoRAs resolved by query_semantic_loras and applied to the current Workflow through the target ComfyUI instance node definitions.',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            id: { type: 'string', required: true, description: 'Resolved LoRA catalog identity.' },
+            file_name: { type: 'string', required: true, description: 'Resolved catalog file name; the Host maps it to the target instance path.' },
+            weight: { type: 'number', required: true, description: 'Model weight selected for this LoRA.' },
+            trigger_words: { type: 'array', required: true, description: 'Trigger words actually used in the rewritten final prompt.', items: { type: 'string' } },
+          },
+        },
       },
     },
     output: {
@@ -104,6 +118,12 @@ export function createGenerationTool(options: CreateGenerationToolOptions): Tool
         instanceId: args.instance_id ?? null,
         templateId: args.template_id,
         parameters: args.parameters as Readonly<Record<string, JsonValue>>,
+        loras: Object.freeze((args.loras ?? []).map(lora => Object.freeze({
+          id: lora.id,
+          fileName: lora.file_name,
+          weight: lora.weight,
+          triggerWords: Object.freeze([...lora.trigger_words]),
+        }))),
       }
       const accepted = await options.runtime.acceptGeneration(identity, request, exec.signal)
       return Object.freeze({ run_id: accepted.runId })

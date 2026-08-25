@@ -28,6 +28,8 @@ describe('Catalog CLI adapter', () => {
       exitCode: 0,
       stdout: response([{
         id: 37,
+        base_model_id: 2,
+        model_id: 1,
         title: 'wai_txt2img_lora',
         template_type: 'text_to_image',
         cover_url: 'http://127.0.0.1:18092/media/images/template.webp',
@@ -80,6 +82,8 @@ describe('Catalog CLI adapter', () => {
       exitCode: 0,
       stdout: response([{
         id: 37,
+        base_model_id: 2,
+        model_id: 1,
         title: 'wai_txt2img_lora',
         workflow_json: { hostOnlyGraph: true },
         parameters_json: [
@@ -94,6 +98,8 @@ describe('Catalog CLI adapter', () => {
     await expect(catalog(execute).resolveTemplate('37', controller.signal)).resolves.toEqual({
       id: '37',
       title: 'wai_txt2img_lora',
+      base_model_id: '2',
+      model_id: '1',
       parameters: [
         { parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false },
         { parameter_id: 'seed', kind: 'seed', value_type: 'integer', required: false },
@@ -107,6 +113,75 @@ describe('Catalog CLI adapter', () => {
       '--id', '37',
     ], controller.signal)
     expect(JSON.stringify(await catalog(execute).resolveTemplate('37', controller.signal))).not.toContain('workflow_json')
+  })
+
+  it('resolves one LoRA with semantic guidance, trigger words, default weight, and the catalog file name', async () => {
+    const execute = vi.fn<CatalogCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: response([{
+        id: 68,
+        base_model_id: 2,
+        model_id: 1,
+        file_name: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+        description: '手绘质感、块面化明暗和冷暖对比。',
+        usage: '使用 usnr，默认模型权重 1.0。',
+        trigger_words_json: ['usnr'],
+        weight: 1,
+        cover_url: 'http://127.0.0.1:18092/media/images/lora.webp',
+      }], 1, 1, 1),
+      stderr: '',
+    }))
+    const controller = new AbortController()
+
+    await expect(catalog(execute).resolveLora('68', controller.signal)).resolves.toEqual({
+      id: '68',
+      base_model_id: '2',
+      model_id: '1',
+      file_name: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+      description: '手绘质感、块面化明暗和冷暖对比。',
+      usage: '使用 usnr，默认模型权重 1.0。',
+      trigger_words: ['usnr'],
+      weight: 1,
+    })
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+      '--port', '18093',
+      '--timeout-ms', '15000',
+      '--path', '/internal/semantic/loras',
+      '--mode', 'resolve',
+      '--id', '68',
+    ], controller.signal)
+  })
+
+  it('resolves one generation model with its semantic guidance and Prompt Skill', async () => {
+    const execute = vi.fn<CatalogCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: response([{
+        id: 1,
+        base_model_id: 2,
+        file_name: 'waiIllustriousSDXL_v170.safetensors',
+        description: 'WAI Illustrious generation model.',
+        usage: 'Use the WAI Prompt Skill.',
+        skill_name: 'wai-sdxl-prompt-builder',
+      }], 1, 1, 1),
+      stderr: '',
+    }))
+    const controller = new AbortController()
+
+    await expect(catalog(execute).resolveGenerationModel('1', controller.signal)).resolves.toEqual({
+      id: '1',
+      base_model_id: '2',
+      file_name: 'waiIllustriousSDXL_v170.safetensors',
+      description: 'WAI Illustrious generation model.',
+      usage: 'Use the WAI Prompt Skill.',
+      skill_name: 'wai-sdxl-prompt-builder',
+    })
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+      '--port', '18093',
+      '--timeout-ms', '15000',
+      '--path', '/internal/semantic/generation-models',
+      '--mode', 'resolve',
+      '--id', '1',
+    ], controller.signal)
   })
 
   it.each([

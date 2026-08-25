@@ -43,12 +43,7 @@ function fixture(otherSource = ''): string {
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
 `)
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: skill-filesystem
-  disabled: false
-
-- id: tool-skill
-  disabled: false
-`)
+  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
   return root
 }
 
@@ -112,6 +107,21 @@ describe('Harness source boundary', () => {
     const root = fixture()
     try {
       writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), 'invalid: true\n')
+      expect(run(root).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects Profile-level Skill plugins that duplicate the selected Agent Preset', () => {
+    const root = fixture()
+    try {
+      writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: skill-filesystem
+  disabled: false
+
+- id: tool-skill
+  disabled: false
+`)
       expect(run(root).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
     } finally {
       rmSync(root, { recursive: true, force: true })

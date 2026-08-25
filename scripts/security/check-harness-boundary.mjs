@@ -45,11 +45,7 @@ const expectedLoaderPatch = `- insert:
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
 `
-const expectedProfilePatch = `- id: skill-filesystem
-  disabled: false
-
-- id: tool-skill
-  disabled: false
+const expectedProfilePatch = `[]
 `
 
 function parseArguments(argv) {

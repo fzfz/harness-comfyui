@@ -4,12 +4,105 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 29 正在提交 `0.3.0` 源码变更并发布 GitHub Release `v0.3`。
+Phase 31 正在移除 Workbench Profile 对 Harness Skill 插件的重复注册，并验证 Standard 与 Router Agent Preset 各自只注入一次 `comfyui-generate`。
 
 ## Current Phase
-Phase 29 in progress
+Phase 31 in progress
 
 ## Phases
+
+## Phase 31：修复 Agent Preset 与 Workbench Profile 重复注入 Skill
+
+### 必须要实现的目标
+
+- `comfyui-workbench` Profile 必须停止注册由所选 Agent Preset 负责注册的 `skill-filesystem` 和 `tool-skill` Harness 插件。
+- Standard Agent Preset 与 Router Agent Preset 必须继续发现工作区 `.agents/skills/comfyui-generate/SKILL.md`，并在用户调用 `/comfyui-generate` 时各自只保存一项 `skill-invocation` 事件。
+- 修复不得修改 `comfyui-generate` Skill 内容、Router 阶段策略、Generation Tool 注册或 Harness 源码。
+
+### 验收清单
+
+- 自动化测试拒绝 `profiles/comfyui-workbench/cordis.patch.yml` 再次启用 `skill-filesystem` 或 `tool-skill`。
+- Standard Session 调用 `/comfyui-generate` 后，Session 事件中 `name: "comfyui-generate"` 且 `form: "instructions"` 的 `skill-invocation` 数量精确等于 1。
+- Router Session 调用 `/comfyui-generate` 后，Session 事件中 `name: "comfyui-generate"` 且 `form: "instructions"` 的 `skill-invocation` 数量精确等于 1。
+- 两种 Agent Preset 仍能在允许 Generation Tool 的阶段调用 `query_semantic_comfyui_templates` 和 `generate_with_comfyui`。
+- 定向测试、完整质量门禁和 Harness 健康检查通过。
+
+### 非本次目标
+
+- 本阶段不修改 Router Agent Preset 的阶段数量、阶段 Tool 白名单或阶段切换条件。
+- 本阶段不修改 Standard Agent Preset、Router Agent Preset、Harness 核心包或外部 `dsh-routing-suite` 仓库文件。
+- 本阶段不修改 Generation Run、媒体存储、上下文弹窗或右侧栏实现。
+
+### 已获得的授权
+
+- 用户已明确要求先修复 Standard Session 与 Router Session 重复注入同一份 `comfyui-generate` Skill 的问题。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| Standard Session 与 Router Session 都保存了两项完全相同的 `comfyui-generate` instructions 类型 Skill Invocation | 1 | 待验证 Workbench Profile 与所选 Agent Preset 同时注册 `skill-filesystem` 和 `tool-skill` 是否构成重复事件来源。 |
+
+状态：进行中
+
+## Phase 30：修复 LoRA 与生成模型上下文的实例参数注入
+
+### 必须要实现的目标
+
+- `comfyui-generate` Skill 必须使用当前消息中 `data.kind: "lora"` 与 `data.kind: "model"` 对象的 `data.id` 调用数据源 Catalog CLI 对应的 resolve Agent Tool；Skill 不得要求用户取消已经选择的 LoRA 或生成模型。
+- LoRA resolve Agent Tool 必须向 Agent 返回数据源 CLI 的 LoRA 标识、文件名、介绍、用途、触发词和默认权重；生成模型 resolve Agent Tool 必须返回数据源 CLI 中用于识别和选择生成模型的语义信息与文件名。
+- Skill 必须使用 LoRA 的介绍、用途和触发词理解 LoRA 对当前画面要求的作用，并以此前 Prompt Builder Skill 已生成的 Prompt 为输入重写该 Generation Request 的最终正向提示词；Skill 必须把最终正向提示词写入模板的 `positive_prompt` 参数，并把默认权重映射到当前 Workflow 模板明确声明的 LoRA 权重参数。
+- Generation Host 必须把数据源文件名与目标 ComfyUI 实例 `/object_info` 返回的资源选项进行精确文件名匹配，把实际 `底模名/文件名` 及目标实例使用的路径分隔符写入 API Workflow；Skill 不得拼接实例目录或路径分隔符。
+- Generation Host 必须把数据源 `bindings_json` 作为旧模板参数目标的优先提示；binding 缺失或旧目标失效时，Host 必须继续使用模板参数的 `parameter_id`、`kind`、默认值、当前 Workflow widget 结构和目标实例 `/object_info` 定位实际输入。binding 不得限制模板声明参数的可用性。参数目标不存在或不唯一时，Host 必须返回包含具体 `parameter_id` 的错误。
+- Skill 必须把每项解析后的 LoRA ID、文件名、实际采用权重和实际采用触发词作为结构化 LoRA 选择传入 `generate_with_comfyui`。Generation Host 必须使用目标实例 `/object_info` 与当前 Workflow 的实际节点输入结构注入 LoRA；LoRA 注入不得依赖数据源 `bindings_json`。
+- Skill 必须把解析后的生成模型 ID 与模板 resolver 返回的 `model_id` 比较；两者一致时继续生成，两者不一致时报告所选生成模型与模板绑定模型不兼容。当前模板没有声明生成模型覆盖能力时，Host 保留模板模型节点值。
+- Skill 必须把已经包含实际采用触发词的最终 Prompt 写入 `positive_prompt` 参数，并把同一组实际采用触发词写入对应的 `lora_trigger_word` 参数用于请求追溯。Generation Host 不得通过 `compose_text` 再次重复写入触发词。
+- 计划执行者必须使用真实 Harness、真实数据源 CLI、真实 Workflow 模板和真实 ComfyUI 实例验证 LoRA 与生成模型上下文能够完成解析、模板参数注入、异步生成、媒体保存和逐媒体 Actual Workflow 下载。
+
+### 验收清单
+
+- 当前消息包含 LoRA 或生成模型上下文时，Skill 在任何 `generate_with_comfyui` Tool 调用前完成对应 resolve Agent Tool 调用；Skill 不再输出取消选择或结束执行的要求。
+- LoRA resolve 结果中的文件名、介绍、用途、触发词和默认权重均保留数据源 CLI 的实际字段语义；Agent Tool 不创建 `subtitle` 或其他替代字段。
+- Actual Workflow 中的标准 LoRA 节点路径精确等于目标实例 `/object_info` 返回的可选值，并满足 `底模名/文件名` 目录结构；LoraManager 节点使用目标实例可识别的 `<lora:底模名/文件名:权重>` 文本。macOS 与 Windows 实例分别保留各自路径分隔符。
+- Actual Workflow 中的 LoRA 权重等于 Agent 采用的 resolve 默认权重或用户明确覆盖值；正向提示词是 Skill 根据此前 Prompt Builder 结果、LoRA 介绍、用途和触发词重写后的最终 Prompt。
+- 当前消息选择的生成模型 ID 与模板 resolver 的 `model_id` 一致时，Skill 能够继续生成；不一致时 Skill 在创建 Run 前报告两个具体 ID。模板明确声明生成模型运行参数时，Actual Workflow 中的生成模型节点值必须等于目标实例实际枚举的模型路径。
+- Actual Workflow 的正向提示词节点必须包含 Skill 重写的 Prompt 与 Skill 根据每项 LoRA 语义选用的触发词；同一触发词不得因 `lora_trigger_word` 参数再次重复写入。
+- 自动化测试覆盖 LoRA resolve、生成模型 resolve、缺失或歧义实例资源路径、正反路径分隔符、模板缺少对应参数、默认权重与用户覆盖权重。
+- 自动化测试覆盖正向 Prompt、负向 Prompt、宽度、高度、Seed、参考图与当前数据源声明的其他 Workflow 参数；测试必须覆盖有效 binding 优先提示、缺少 binding、旧 binding 目标失效、目标不存在和目标歧义分支。
+- 自动化测试覆盖标准 `lora_name` 输入、`LoraLoaderModelOnly`、LoraManager `text`/`lora_syntax` 输入以及用户提供的无 LoRA 节点 Workflow；产品代码不得依赖数据源 LoRA binding 或固定节点 ID 注入参数。
+- 至少一次同时包含真实 LoRA 上下文与兼容生成模型上下文的运行完成异步终态、媒体保存、右栏展示与逐媒体 Workflow 内容核对；完整 `pnpm run quality`、生产重启和健康检查通过。
+
+### 非本次目标
+
+- 本阶段不修改数据源仓库、Harness 核心源码、ComfyUI 服务端源码或实例模型文件。
+- 本阶段不在 Skill 中硬编码 ComfyUI 实例目录、底模名或路径分隔符。
+- 本阶段不为没有可执行 LoRA 输入的 Workflow 自动新增 ComfyUI 节点。
+- 本阶段不增加未经安全审计和固定版本的依赖。
+
+### 已获得的授权
+
+- 用户已明确要求 Skill 调用数据源 CLI 取得 LoRA 触发词、默认权重、用途和介绍，并设置 Workflow 模板对应节点的值。
+- 用户已明确要求 `comfyui-generate` Skill 根据 LoRA 语义重写此前 Prompt Builder Skill 已生成的 Prompt，而不是只机械追加触发词。
+- 用户已明确指出数据源文件名不是实例实际资源路径；实际 LoRA 路径必须使用 `底模名/文件名` 目录结构并适配不同实例的路径分隔符。
+- 用户此前已授权修改、测试、重启当前 Harness 插件，并使用已登记的真实 ComfyUI 实例执行完整生成验证。
+- 用户已明确说明 `bindings_json` 可以作为旧模板参数目标的参考值和默认映射，但 binding 不得限制任何模板声明参数的使用。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 当前 Skill 把 LoRA 与生成模型上下文视为不可执行选择，并要求用户取消选择后结束本次执行 | 1 | Phase 30 将改为通过数据源 resolve Agent Tool 取得语义与执行数据，再按模板参数和目标实例资源枚举完成注入。 |
+| 生产数据源 Source CLI 文件没有可执行权限，直接调用返回 `permission denied` | 1 | 按 `GenerationSourceCli.runSourceCliProcess()` 的既有规则使用当前 Node.js 运行该本地 `.mjs` 文件。 |
+| 当前 36 个 Workflow 模板均未公开生成模型运行参数 | 1 | Skill 解析生成模型后校验其 ID 与模板绑定的 `model_id`；当前模板没有声明生成模型参数时不改固定节点，模板明确声明参数后才执行参数覆盖。 |
+| 初次定位 Source preparer 测试时使用了不存在的 `tests/unit/generation-source-preparer.test.ts` 文件名 | 1 | 使用 `rg` 定位到实际测试文件 `tests/unit/generation-preparer.test.ts`。 |
+| 初始运行参数实现把数据源旧 `bindings_json` 当成唯一参数目标 | 1 | Phase 30 保留 binding 作为优先提示，并增加模板参数定义、Workflow widget 结构和目标实例 `/object_info` 驱动的非限制性参数目标定位。 |
+| 使用包含反引号的未引用 `rg` 搜索表达式时，zsh 尝试执行 `bindings_json` | 1 | 后续 shell 搜索表达式使用单引号或不包含反引号的固定文本；该只读命令仍返回了文件内容，没有修改文件。 |
+| 只读实例节点调研首次尝试 `pnpm exec tsx`，当前项目没有安装 `tsx` | 1 | 不安装依赖；改用 Node.js 内置 `child_process` 调用本地 Source CLI，并在内存中请求实例 `/object_info`。 |
+| 第一轮目标测试 79 项全部通过，但 TypeScript 报告内部 `compile()` 返回值缺少外层才添加的 `actualWorkflow` | 1 | 把内部 `compile()` 返回类型收窄为 `Omit<WorkflowCompilerResult, 'actualWorkflow'>`；公开 compiler 仍返回完整结果。 |
+| 参数编译职责移入 Workflow compiler 后，旧 preparer 测试仍断言 preparer 已直接修改 `widgets_values` | 1 | 更新测试职责边界：preparer 断言传递已解析参数与 binding 提示，Workflow compiler 测试断言 Actual Workflow 和 API Workflow 的最终参数值。 |
+| 浏览器重启后复用的旧 Session 保留了一个不可提交的受控草稿；发送按钮保持禁用，两个“新建会话”按钮也没有离开该 Session | 1 | 不继续修改该旧 Session；切换到已有可发送的生成 Session，或通过 Harness 公开会话接口创建新 Session 后再执行真实 Tool 验证。 |
+
+状态：进行中
 
 ## Phase 29：发布 v0.3
 
@@ -46,7 +139,7 @@ Phase 29 in progress
 | 第一次 `pnpm run quality` 的工程合同仍断言根版本为 `0.2.0` | 1 | 把 `tests/contract/engineering-baseline.test.ts` 的版本合同同步为 `0.3.0`，重新执行完整质量门禁。 |
 | 第一轮发布文档审核发现发布说明错误宣称 transport 能发起 Jobs 取消，并把 Host 运行错误码错误归属为实例返回值 | 1 | 发布说明改为 transport 识别实例取消状态，并区分 Host 运行错误码与实例返回的 `error`、`node_errors`。 |
 
-状态：进行中
+状态：已完成
 
 ## Phase 28：单轮多次异步生成与逐媒体 Workflow 验证
 

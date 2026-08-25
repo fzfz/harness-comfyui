@@ -25,6 +25,7 @@ const request: GenerationRequest = {
   instanceId: '2',
   templateId: '34',
   parameters: { positive_prompt: 'first prompt' },
+  loras: [],
 }
 
 const webpBytes = Uint8Array.from([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50])

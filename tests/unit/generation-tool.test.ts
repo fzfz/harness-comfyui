@@ -28,6 +28,12 @@ const toolArguments = {
   instance_id: '2',
   template_id: '34',
   parameters: { positive_prompt: '1girl' },
+  loras: [{
+    id: '68',
+    file_name: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+    weight: 1,
+    trigger_words: ['usnr'],
+  }],
 }
 
 describe('generate_with_comfyui Tool', () => {
@@ -58,6 +64,12 @@ describe('generate_with_comfyui Tool', () => {
         instanceId: '2',
         templateId: '34',
         parameters: { positive_prompt: '1girl' },
+        loras: [{
+          id: '68',
+          fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors',
+          weight: 1,
+          triggerWords: ['usnr'],
+        }],
       },
       expect.any(AbortSignal),
     )
@@ -143,6 +155,14 @@ describe('generate_with_comfyui Tool', () => {
     })
 
     expect(tool.parameters).toMatchObject({ type: 'object', additionalProperties: false })
+    expect(tool.parameters).toMatchObject({
+      properties: {
+        loras: {
+          type: 'array',
+          items: { type: 'object', additionalProperties: false },
+        },
+      },
+    })
     expect(tool.parameters).not.toHaveProperty('lora_applications')
     expect(tool.output.schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['run_id'] })
   })

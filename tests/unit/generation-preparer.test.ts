@@ -17,6 +17,7 @@ const request: GenerationRequest = {
     positive_prompt: '1girl, white hair',
     width: 1024,
   },
+  loras: [],
 }
 
 const instance: ComfyInstanceSource = {
@@ -75,8 +76,9 @@ function source(bundle: ComfyTemplateBundle): GenerationSource {
 }
 
 describe('SourceGenerationPreparer', () => {
-  it('builds the Actual Workflow only through declared bindings and excludes connection secrets from the source snapshot', async () => {
+  it('passes resolved parameters and advisory bindings to the compiler and excludes connection secrets from the source snapshot', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
+      actualWorkflow: input.workflow,
       apiWorkflow: {
         '3': { class_type: 'SaveImage', inputs: { source: '2' } },
         actual_prompt: Array.isArray(input.workflow.nodes[0]?.widgets_values)
@@ -100,7 +102,7 @@ describe('SourceGenerationPreparer', () => {
     })
     expect((prepared.actualWorkflow as unknown as { nodes: readonly unknown[] }).nodes[0]).toMatchObject({
       id: 2,
-      widgets_values: ['1girl, white hair', 1024],
+      widgets_values: ['old prompt', 512],
     })
     expect(prepared.sourceSnapshot).toEqual({
       instance: { id: '2', title: 'ComfyUI', origin: 'http://127.0.0.1:8188' },
@@ -116,11 +118,26 @@ describe('SourceGenerationPreparer', () => {
     })
     expect(JSON.stringify(prepared.sourceSnapshot)).not.toContain('secret-token')
     expect(JSON.stringify(prepared.sourceSnapshot)).toContain('http://127.0.0.1:8188')
-    expect(compile).toHaveBeenCalledOnce()
+    expect(compile).toHaveBeenCalledWith(expect.objectContaining({
+      workflow: template().workflow,
+      runtimeParameters: [
+        {
+          definition: expect.objectContaining({ parameterId: 'positive_prompt', kind: 'positive_prompt' }),
+          value: '1girl, white hair',
+        },
+        {
+          definition: expect.objectContaining({ parameterId: 'width', kind: 'width' }),
+          value: 1024,
+        },
+      ],
+      bindingHints: template().bindings,
+      loras: [],
+    }))
   })
 
   it('uses the compiler active output nodes when the source template does not declare an output-node filter', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({
+      actualWorkflow: template(null).workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))

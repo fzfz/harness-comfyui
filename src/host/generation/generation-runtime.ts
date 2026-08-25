@@ -7,11 +7,19 @@ import { DatabaseSync } from 'node:sqlite'
 export type JsonPrimitive = string | number | boolean | null
 export type JsonValue = JsonPrimitive | { readonly [key: string]: JsonValue } | readonly JsonValue[]
 
+export interface GenerationLoraSelection {
+  readonly id: string
+  readonly fileName: string
+  readonly weight: number
+  readonly triggerWords: readonly string[]
+}
+
 export interface GenerationRequest {
   readonly title: string
   readonly instanceId: string | null
   readonly templateId: string
   readonly parameters: Readonly<Record<string, JsonValue>>
+  readonly loras: readonly GenerationLoraSelection[]
 }
 
 export interface GenerationIdentity {
@@ -277,14 +285,38 @@ function generationRequest(document: string): GenerationRequest {
     || source.parameters === null
     || typeof source.parameters !== 'object'
     || Array.isArray(source.parameters)
+    || !Array.isArray(source.loras)
   ) {
     throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation request is invalid.')
   }
+  const loras = source.loras.map((value, index): GenerationLoraSelection => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', `Persisted Generation LoRA ${index} is invalid.`)
+    }
+    const selection = value as Readonly<Record<string, JsonValue>>
+    if (
+      typeof selection.id !== 'string'
+      || typeof selection.fileName !== 'string'
+      || typeof selection.weight !== 'number'
+      || !Number.isFinite(selection.weight)
+      || !Array.isArray(selection.triggerWords)
+      || selection.triggerWords.some(word => typeof word !== 'string')
+    ) {
+      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', `Persisted Generation LoRA ${index} is invalid.`)
+    }
+    return Object.freeze({
+      id: selection.id,
+      fileName: selection.fileName,
+      weight: selection.weight,
+      triggerWords: Object.freeze(selection.triggerWords as string[]),
+    })
+  })
   return Object.freeze({
     title: source.title,
     instanceId: source.instanceId,
     templateId: source.templateId,
     parameters: source.parameters as Readonly<Record<string, JsonValue>>,
+    loras: Object.freeze(loras),
   })
 }
 
