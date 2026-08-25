@@ -53,6 +53,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.3 发布说明](docs/releasenotes.md)
+- [v0.30.1 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.3.0`，对应 GitHub Release [`v0.3`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.3)。
+当前产品版本是 `0.30.1`，对应 GitHub Release [`v0.30.1`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.30.1)。
