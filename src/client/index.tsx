@@ -12,11 +12,12 @@ import {
   WORKBENCH_DETAILS_PRIORITY,
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
+  WORKBENCH_RESULTS_OVERLAY_ID,
 } from './workbench/contract.ts'
 import { WorkbenchController } from './workbench/controller.ts'
 import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
-import { WorkbenchDetails } from './workbench/results-drawer.tsx'
+import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-drawer.tsx'
 
 export const name = 'harness-comfyui'
 export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout'] as const
@@ -87,6 +88,12 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           priority: WORKBENCH_DETAILS_PRIORITY,
           inject: () => ({ workbench, generationStore }),
         }, WorkbenchDetails)),
+        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+          name: 'shell.overlay',
+          id: WORKBENCH_RESULTS_OVERLAY_ID,
+          order: 20,
+          inject: () => ({ workbench }),
+        }, WorkbenchResultsOverlay)),
       ]
     })
     await remoteFiber

@@ -19,6 +19,7 @@ import { apply, inject, name } from '../../src/client/index.tsx'
 import {
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
+  WORKBENCH_RESULTS_OVERLAY_ID,
 } from '../../src/client/workbench/contract.ts'
 
 type Registration = {
@@ -108,6 +109,7 @@ describe('Harness Client plugin registration', () => {
       'sidebar.footer.action',
       'conversation.input.dock',
       'details',
+      'shell.overlay',
     ])
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
@@ -118,10 +120,15 @@ describe('Harness Client plugin registration', () => {
       order: 20,
     })
     expect(registrations.get('details')).toMatchObject({ priority: -10 })
+    expect(registrations.get('shell.overlay')).toMatchObject({
+      id: WORKBENCH_RESULTS_OVERLAY_ID,
+      order: 20,
+    })
 
     const entryFace = registrations.get('sidebar.footer.action')!.inject()
     const dockFace = registrations.get('conversation.input.dock')!.inject('session-1' as never)
     const detailsFace = registrations.get('details')!.inject('session-1' as never)
+    const overlayFace = registrations.get('shell.overlay')!.inject()
     expect(entryFace).toMatchObject({ workbench: expect.any(Object) })
     expect(dockFace).toMatchObject({
       catalog: expect.objectContaining({ search: expect.any(Function), baseModels: expect.any(Function) }),
@@ -129,6 +136,7 @@ describe('Harness Client plugin registration', () => {
       sessionInput,
     })
     expect(detailsFace).toMatchObject({ workbench: expect.any(Object), generationStore: expect.any(Object) })
+    expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)
     const catalog = (dockFace as { catalog: { search: Function; baseModels: Function } }).catalog
@@ -149,9 +157,11 @@ describe('Harness Client plugin registration', () => {
     expect(injectionDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('details')).toHaveBeenCalledOnce()
+    expect(injectionDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('details')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
     expect(remoteDispose).toHaveBeenCalledOnce()
   })
 

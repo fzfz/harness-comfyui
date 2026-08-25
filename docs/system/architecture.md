@@ -33,6 +33,8 @@ pnpm prod:start|restart
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
+Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示真实 Generation Run/Media 投影。Harness `0.1.1-rc.2` 不为尚未保存的空白 Session 分配 `details` 列宽；Client 仅在该状态通过公开 `shell.overlay` 扩展位显示空结果列。Session 保存后，`shell.overlay` 结果列退出，原生 `details` 结果列接管，页面只保留一个可见结果列。
+
 ## 进程与状态
 
 `prod:start` 和 `prod:restart` 先更新浏览器 Client 模块，再以前台子进程运行 DSH。进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有。`prod:stop` 只停止匹配该身份的进程。`prod:health` 检查源码版本、Harness Web、Client ModuleLoader 注册、Run Repository 和 Saved Media。

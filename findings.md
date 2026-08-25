@@ -640,6 +640,14 @@
 - 当前迭代链路对非空 `lora_applications` 先返回 `GENERATION_LORA_APPLICATION_INVALID`，直到多 LoRA 确定性转换及分支测试完成；系统不会忽略 LoRA 请求或假装成功。
 - Configuration Profile把`server.host`固定为`127.0.0.1`；`HARNESS_COMFYUI_SERVER_HOST`只把该验证值透传给Harness子进程，调用者不能把当前插件绑定到非回环地址。
 - Saved Media记录存在但媒体文件缺失时，媒体路由返回404和`GENERATION_MEDIA_NOT_FOUND`；Actual Workflow尚未准备时返回409和`GENERATION_ARTIFACT_NOT_READY`；文件缺失时返回404和`GENERATION_ARTIFACT_NOT_FOUND`。右列从同一错误目录读取产品文案。
+
+## 2026-08-25 Phase 23 — 空白 Session 右侧列根因
+
+- Harness `0.1.1-rc.2` 的 `@deepseek-ai/dsh-client-ui-layout` 只在当前 Session 的 `blank === false` 时把 `detailsSession` 传给列布局；空白 Session 的 `details` 列宽被固定计算为 `0px`，即使插件已经调用 `layout.openDetails()`。
+- 浏览器复现确认空白 Session 中 `harness-comfyui-details` 已挂载，但宽度为 `0px`；这排除了结果组件未注册和项目 CSS 隐藏两种假设。
+- 历史回滚基线提交 `e9f78b3` 曾使用公开 `shell.overlay` 提供空白 Session fallback，并以 `blank !== false` 与原生 `details` 的 `blank === false` 条件互斥。该方案符合 rc.2 的公开插槽机制。
+- 修复应只让空白 Session 使用 `shell.overlay`；已保存 Session 继续使用原生 `details`，避免同一状态出现两个可见结果列。
+- 通用 `.harness-comfyui-results-drawer` 规则包含 `width: 100%`。空白 Session overlay 必须使用组合选择器 `.harness-comfyui-results-drawer.harness-comfyui-results-overlay`，才能稳定覆盖通用宽度并保持约 `360px`。
 ## 2026-08-24 Phase 20 — Workflow 下载图标按钮
 
 - 原原型在运行卡片和 Session 媒体卡片中使用 `data-download-workflow` 提供“下载本次 Workflow JSON（可导入 ComfyUI）”。原型合同明确只下载 Actual Workflow，不提供 API Workflow。

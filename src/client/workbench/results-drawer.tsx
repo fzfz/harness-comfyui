@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 
-import type { UseConversationSession } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionListState, UseConversationSession } from '@deepseek-ai/dsh-client-runtime/client'
 
 import {
   generationMediaContentUrl,
@@ -22,7 +22,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import type { WorkbenchController } from './controller.ts'
-import type { GenerationProjectionStore } from './generation-store.ts'
+import type { GenerationProjectionStore, GenerationStoreSnapshot } from './generation-store.ts'
 import {
   MEDIA_PAGE_SIZE,
   GENERATION_ERROR_COPY,
@@ -38,6 +38,11 @@ export interface WorkbenchDetailsProps {
   readonly useSession: UseConversationSession
   readonly workbench: WorkbenchController
   readonly generationStore: GenerationProjectionStore
+}
+
+export interface WorkbenchResultsOverlayProps {
+  readonly workbench: WorkbenchController
+  readonly useSessions: <Selected>(selector: (state: SessionListState) => Selected) => Selected
 }
 
 interface FilterMenuProps {
@@ -299,20 +304,18 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
 
 interface WorkbenchResultsProps {
   readonly sessionId: string
+  readonly surface: 'details' | 'overlay'
   readonly workbench: WorkbenchController
-  readonly generationStore: GenerationProjectionStore
+  readonly snapshot: GenerationStoreSnapshot
 }
 
-function WorkbenchResults({ sessionId, workbench, generationStore }: WorkbenchResultsProps) {
+function WorkbenchResults({ sessionId, surface, workbench, snapshot }: WorkbenchResultsProps) {
   const [activeTab, setActiveTab] = useState<ResultTab>('current')
-  const subscribe = useCallback((listener: () => void) => generationStore.subscribe(sessionId, listener), [generationStore, sessionId])
-  const getSnapshot = useCallback(() => generationStore.getSnapshot(sessionId), [generationStore, sessionId])
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   const { runs, media } = snapshot.projection
   return (
     <aside
-      className="harness-comfyui-results-drawer"
-      data-plugin="harness-comfyui-details"
+      className={`harness-comfyui-results-drawer${surface === 'overlay' ? ' harness-comfyui-results-overlay' : ''}`}
+      data-plugin={`harness-comfyui-${surface}`}
       data-session-id={sessionId}
     >
       <header className="harness-comfyui-results-header">
@@ -361,5 +364,41 @@ function WorkbenchResults({ sessionId, workbench, generationStore }: WorkbenchRe
 export function WorkbenchDetails({ sessionId, useSession, workbench, generationStore }: WorkbenchDetailsProps) {
   const wakeRevision = useSession(snapshot => `${snapshot.running}:${snapshot.runningCalls.length}:${snapshot.turnEnds.size}`)
   useEffect(() => generationStore.refreshSession(sessionId), [generationStore, sessionId, wakeRevision])
-  return <WorkbenchResults sessionId={sessionId} workbench={workbench} generationStore={generationStore} />
+  const subscribe = useCallback((listener: () => void) => generationStore.subscribe(sessionId, listener), [generationStore, sessionId])
+  const getSnapshot = useCallback(() => generationStore.getSnapshot(sessionId), [generationStore, sessionId])
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  return <WorkbenchResults sessionId={sessionId} surface="details" workbench={workbench} snapshot={snapshot} />
+}
+
+export function WorkbenchResultsOverlay({ useSessions, workbench }: WorkbenchResultsOverlayProps) {
+  const resultsOpen = useSyncExternalStore(
+    workbench.subscribeResults,
+    workbench.getResultsSnapshot,
+    workbench.getResultsSnapshot,
+  )
+  const blankSessionId = useSessions(state => {
+    const current = state.current
+    if (current === undefined || state.byId[current]?.blank === false) return undefined
+    return current
+  })
+  const snapshot = useMemo<GenerationStoreSnapshot>(() => Object.freeze({
+    projection: Object.freeze({
+      sessionId: blankSessionId ?? '',
+      runs: Object.freeze([]),
+      media: Object.freeze([]),
+      hasActiveRuns: false,
+      refreshAfterMs: 0,
+    }),
+    errorCode: null,
+  }), [blankSessionId])
+
+  if (!resultsOpen || blankSessionId === undefined) return null
+  return (
+    <WorkbenchResults
+      sessionId={blankSessionId}
+      surface="overlay"
+      workbench={workbench}
+      snapshot={snapshot}
+    />
+  )
 }

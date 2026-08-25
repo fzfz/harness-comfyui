@@ -69,6 +69,35 @@ Phase 22 completed
 
 - **Status:** completed
 
+## Phase 23：修复空白 Session 的右侧结果列
+
+### 必须要实现的目标
+
+- Client 插件必须在 Harness `0.1.1-rc.2` 的空白 Session 中显示可展开、可关闭的 ComfyUI 结果列。
+- Client 插件必须在已保存 Session 中继续使用 Harness 原生 `details` 列。
+- 空白 Session 与已保存 Session 只能各显示一个可见的 ComfyUI 结果列。
+
+### 验收清单
+
+- 空白 Session 点击“ComfyUI 工作台”后，右侧结果列的可见宽度大于 `0px`。
+- 空白 Session 关闭右侧结果列后，右侧结果列不再显示。
+- 已保存 Session 点击“ComfyUI 工作台”后，Harness 原生 `details` 列的可见宽度大于 `0px`，且 `shell.overlay` 结果列不显示。
+- 新增测试覆盖空白 Session、已保存 Session、展开和关闭分支。
+- `pnpm quality`、`git diff --check`、生产健康检查和浏览器验收全部通过。
+
+### 非本次目标
+
+- 本阶段不修改 Harness 核心源码或 `node_modules/@deepseek-ai/*`。
+- 本阶段不修改 Generation Run、Media 或 Workflow 的 Host 数据合同。
+- 本阶段不新增产品文案或第二套结果列交互。
+
+### 已获得的授权
+
+- 用户已要求修复当前无法打开的右侧列。
+- 用户已授权继续修改、重启并验证当前 Harness 插件。
+
+状态：已完成
+
 ### Phase 1: 检查两个仓库的现有接口
 - [x] 计划编写者检查 DeepSeek Harness 的 Web 页面、插件、会话事件与 Skill 目录。
 - [x] 计划编写者检查 NoobAI-XL-FZ-PROD-ENV 的查询 CLI、会话 Skill、管理 Skill、ComfyUI 实例与工作流模板数据。

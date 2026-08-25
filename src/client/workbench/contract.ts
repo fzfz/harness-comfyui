@@ -2,6 +2,7 @@ import { parseCatalogContext, type CatalogContext } from '../../catalog/contract
 
 export const WORKBENCH_ENTRY_ID = 'harness-comfyui-workbench'
 export const WORKBENCH_DOCK_ID = 'harness-comfyui-context-dock'
+export const WORKBENCH_RESULTS_OVERLAY_ID = 'harness-comfyui-results-overlay'
 export const WORKBENCH_DETAILS_PRIORITY = -10
 export const WORKBENCH_CONTEXT_RECORD_TYPE = 'comfyui-context'
 

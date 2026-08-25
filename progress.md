@@ -694,3 +694,17 @@
 - 最终`pnpm quality`通过：177项unit/integration、18项contract/security、14项production和27项prototype测试全部通过；覆盖率为statements 90.44%、branches 80.74%、functions 100%、lines 93.62%。
 - Standards、Spec和语义审查均无未解决问题。最终生产进程PID为96322，`http://127.0.0.1:4173/`的process、sourceRuntime、harnessWeb、clientBundle、runRepository和savedMedia健康检查全部通过。
 - 最终浏览器验收在2048×1013视口选择`Modify code` Session并打开“ComfyUI 工作台”；左侧入口、中列原生工作台和宽359px的唯一Harness `details`右列同时可见，DOM中只有一个`harness-comfyui-details`。
+
+## 2026-08-25 Phase 23
+
+- 已在空白新 Session 中稳定复现用户报告：点击“ComfyUI 工作台”后控制器状态为打开，结果组件已挂载，但 Harness 把原生 `details` 列宽计算为 `0px`。
+- 已核对 Harness `0.1.1-rc.2` 安装包并确认根因是 `detailsSession` 对空白 Session 的公开布局限制，不是项目组件或 CSS 回归。
+- 已检查基线 `e9f78b3` 的条件式 `shell.overlay` 实现，确认它可以作为空白 Session fallback，并与已保存 Session 的原生 `details` 条件互斥。
+- 下一步先增加空白 Session 与已保存 Session 的回归测试，再恢复条件式 overlay 并执行生产浏览器验收。
+- 红色测试按预期失败：当前插件未注册 `shell.overlay`，且 `WorkbenchResultsOverlay` 未导出；原有结果抽屉测试继续通过。
+- 首次绿色测试只剩一项测试断言失败：React renderer 把结果统计拆成四个 children，字符串序列化断言没有对应连续文本；`WorkbenchResultsOverlay` 已经渲染正确的 `0 个运行 · 0 个媒体` 结构，测试改为直接验证 children 数组。
+- 首次生产浏览器验收确认 fallback 已显示且只有一个可见结果列，但通用 `.harness-comfyui-results-drawer` 的 `width: 100%` 覆盖了前置 overlay 规则，导致 overlay 宽度为 `1281px`。下一步使用组合选择器固定 overlay 宽度，并增加样式合同测试。
+- 组合选择器修复及样式合同测试完成。定向结果抽屉、插件注册、TypeScript 和 `git diff --check` 均通过。
+- 生产浏览器验收通过：空白 Session 显示一个宽 `361px` 的 `shell.overlay` 结果列，原生 `details` 保持 `0px`；已保存 Session 不显示 overlay，并显示一个宽 `359px` 的原生 `details` 结果列；关闭按钮把可见结果列数量降为零。
+- 最终 `pnpm quality` 通过：180 项 unit/integration、18 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；覆盖率为 statements 90.57%、branches 81%、functions 100%、lines 93.66%。
+- 生产 Harness 运行于 `http://127.0.0.1:4173/`，PID `26463`；process、sourceRuntime、Harness Web、Client bundle、Run Repository 和 Saved Media 健康检查全部通过。

@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { readFileSync } from 'node:fs'
 import { createElement, type ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -29,7 +30,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 })
 
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
-import { WorkbenchDetails } from '../../src/client/workbench/results-drawer.tsx'
+import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
 import { RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
 import type { GenerationProjection } from '../../src/generation/contract.ts'
 
@@ -93,6 +94,60 @@ function renderDetails(workbench: WorkbenchController) {
 }
 
 describe('native Generation result drawer', () => {
+  it('keeps the blank Session overlay narrower than the shared result drawer', () => {
+    const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
+    expect(styles).toContain('.harness-comfyui-results-drawer.harness-comfyui-results-overlay {')
+  })
+
+  it('renders a closable fallback drawer for an open blank Session', () => {
+    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
+    const workbench = new WorkbenchController(layout)
+    workbench.openResults()
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchResultsOverlay, {
+        workbench,
+        useSessions: (selector: (state: unknown) => unknown) => selector({
+          current: 'session-blank',
+          byId: { 'session-blank': { blank: true } },
+        }),
+      } as never))
+    })
+
+    expect(renderer!.root.findAllByProps({
+      className: 'harness-comfyui-results-drawer harness-comfyui-results-overlay',
+    })).toHaveLength(1)
+    expect(renderer!.root.findByProps({ 'data-plugin': 'harness-comfyui-overlay' }).props['data-session-id'])
+      .toBe('session-blank')
+    expect(renderer!.root.findAllByType('small')[0]!.props.children)
+      .toEqual([0, ' 个运行 · ', 0, ' 个媒体'])
+
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.close }).props.onClick as () => void)()
+    })
+    expect(layout.closeDetails).toHaveBeenCalledOnce()
+    expect(renderer!.toJSON()).toBeNull()
+    act(() => renderer!.unmount())
+  })
+
+  it('does not render the fallback drawer for a saved Session', () => {
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    workbench.openResults()
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchResultsOverlay, {
+        workbench,
+        useSessions: (selector: (state: unknown) => unknown) => selector({
+          current: 'session-saved',
+          byId: { 'session-saved': { blank: false } },
+        }),
+      } as never))
+    })
+
+    expect(renderer!.toJSON()).toBeNull()
+    act(() => renderer!.unmount())
+  })
+
   it('shows real Run projections and one Workflow download icon on every visible media card', () => {
     const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
     let renderer: ReturnType<typeof create>
