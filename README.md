@@ -1,6 +1,6 @@
 # Harness ComfyUI
 
-Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 集成项目。项目当前提供 Host 插件、使用 Harness 原生扩展位的 Client 插件，以及直接管理当前源码的生产进程命令。当前 Client 只向 `sidebar.footer.action` 和 `conversation.input.dock` 注册项目内容，不替换 Harness 的 root、sidebar、conversation、details 或 composer。
+Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 集成项目。项目当前提供 Host 插件、使用 Harness 原生扩展位的 Client 插件，以及直接管理当前源码的生产进程命令。当前 Client 使用 `sidebar.footer.action`、`conversation.input.dock`、`details` 和 `shell.overlay` 提供 ComfyUI 工作台入口、上下文选择器与生成结果列，并保留 Harness 的 AppFrame、Session 列表、会话区和原生 composer。
 
 ## 环境要求
 
@@ -53,6 +53,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.2 发布说明](docs/releasenotes.md)
+- [v0.3 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.2.0`，对应 GitHub Release [`v0.2`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.2)。
+当前产品版本是 `0.3.0`，对应 GitHub Release [`v0.3`](https://github.com/fzfz/harness-comfyui/releases/tag/v0.3)。

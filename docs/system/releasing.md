@@ -16,16 +16,16 @@ GitHub Release 只发布 Git tag 与 Release 记录，不构建或附加产品�
 10. 在该完整 SHA 上创建并 push 目标 Git tag，再创建 GitHub Release。
 11. 核对远端标签指向该完整 SHA，GitHub Release 指向该标签，并确认 Release 没有附件。
 
-`package.json.version` 是产品版本的唯一结构化来源。正式版本使用 `x.y.0`，对应 Git tag `vx.y`；因此 `0.2.0` 对应 `v0.2`。发布负责人不得更新或删除已经发布的标签；最终提交发生变化时，发布负责人必须使用新的产品版本和标签。
+`package.json.version` 是产品版本的唯一结构化来源。正式版本使用 `x.y.0`，对应 Git tag `vx.y`；因此 `0.3.0` 对应 `v0.3`。发布负责人不得更新或删除已经发布的标签；最终提交发生变化时，发布负责人必须使用新的产品版本和标签。
 
 本次发布命令：
 
 ```sh
-git tag --annotate v0.2 <最终提交完整SHA> --message "Harness ComfyUI v0.2"
-git push origin refs/tags/v0.2
-gh release create v0.2 \
+git tag --annotate v0.3 <最终提交完整SHA> --message "Harness ComfyUI v0.3"
+git push origin refs/tags/v0.3
+gh release create v0.3 \
   --verify-tag \
-  --title "Harness ComfyUI v0.2" \
+  --title "Harness ComfyUI v0.3" \
   --notes-file docs/releasenotes.md
 ```
 

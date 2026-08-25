@@ -44,6 +44,7 @@ Phase 29 in progress
 | Error | Attempt | Resolution |
 |-------|---------|------------|
 | 第一次 `pnpm run quality` 的工程合同仍断言根版本为 `0.2.0` | 1 | 把 `tests/contract/engineering-baseline.test.ts` 的版本合同同步为 `0.3.0`，重新执行完整质量门禁。 |
+| 第一轮发布文档审核发现发布说明错误宣称 transport 能发起 Jobs 取消，并把 Host 运行错误码错误归属为实例返回值 | 1 | 发布说明改为 transport 识别实例取消状态，并区分 Host 运行错误码与实例返回的 `error`、`node_errors`。 |
 
 状态：进行中
 

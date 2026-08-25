@@ -36,7 +36,7 @@ pnpm prod:test
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
 
-Generation 测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖 Tool 身份、Run 幂等、状态转换、重启恢复、媒体分片、逐媒体 Workflow 和 Client 单一投影。真实启动验收另外使用生产 Source CLI 与 ComfyUI `/object_info` 完成只读 Workflow 编译验证。
+Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖 Tool 身份、Run 幂等、状态转换、重启恢复、媒体分片、逐媒体 Workflow 和 Client 单一投影。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、`/prompt` 和 Jobs API 验证模板编译、异步运行、媒体保存、逐媒体 Workflow 和实例错误展示。
 
 ## CI
 
