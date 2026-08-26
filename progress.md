@@ -17,6 +17,9 @@
 - 最终文档提交准备推送，随后等待该提交的 GitHub CI。
 - 最终文档提交 `d018c8d2b32187e6ce1e7acf90dc367682c7d689` 已推送；GitHub CI Run `32929188639` 已成功。
 - 目标 `v0.30.2` 标签与 GitHub Release 尚未创建；最终状态记录后的本地质量门禁已通过，准备提交最终清单并等待该提交的 GitHub CI。
+- 已在最终提交 `d2de5d245ac8dd5d0e43d202b2f7fcfa77faa3a5` 上创建并推送注释标签 `v0.30.2`；远端 peeled tag SHA 核对一致。
+- GitHub Release `https://github.com/fzfz/harness-comfyui/releases/tag/v0.30.2` 已创建，标题为 `Harness ComfyUI v0.30.2`，说明来自 `docs/releasenotes.md`，`draft=false`、`prerelease=false`、附件数量为 0。
+- Phase 37 已完成。
 
 ## Phase 31：修复 Agent Preset 与 Workbench Profile 重复注入 Skill
 

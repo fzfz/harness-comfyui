@@ -9,6 +9,8 @@
 - Release documentation now describes only the four shipped behavior changes and points the README version link to `v0.30.2`.
 - Independent Reviewer returned `PASS` with no issues for the release-document facts, version references, behavior coverage, error-code wording, verification counts, and attachment policy.
 - Final documentation commit `d018c8d2b32187e6ce1e7acf90dc367682c7d689` passed GitHub Actions CI run `32929188639`; the release tag and GitHub Release remain absent before publication.
+- Annotated tag `v0.30.2` was pushed; its peeled remote commit is `d2de5d245ac8dd5d0e43d202b2f7fcfa77faa3a5` and its tag object is `716d5fb822c721d428732f8542bbf6429523cdac`.
+- GitHub Release `v0.30.2` is published at `https://github.com/fzfz/harness-comfyui/releases/tag/v0.30.2` with the expected title and body, and has zero assets.
 
 ## Phase 31：Agent Preset 与 Workbench Profile 重复注入 Skill
 
