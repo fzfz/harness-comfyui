@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  CATALOG_COMFYUI_INSTANCE_QUERY,
   CATALOG_KIND_DEFINITIONS,
   catalogPageCount,
   contextLabel,
   parseBaseModelList,
   parseBaseModelResult,
+  parseCatalogComfyuiInstancePage,
+  parseCatalogComfyuiInstanceQueryRequest,
   parseCatalogContext,
   parseCatalogPage,
   parseCatalogPageResult,
@@ -53,6 +56,49 @@ describe('catalog Remote contract', () => {
     expect(contextLabel(page.items[0].context)).toBe('生成模型 · rinSoftsketch_v20.safetensors')
     expect(catalogPageCount(0)).toBe(1)
     expect(catalogPageCount(13)).toBe(2)
+  })
+
+  it('parses the fixed ComfyUI instance query and its closed safe response', () => {
+    expect(parseCatalogComfyuiInstanceQueryRequest(CATALOG_COMFYUI_INSTANCE_QUERY))
+      .toBe(CATALOG_COMFYUI_INSTANCE_QUERY)
+    expect(parseCatalogComfyuiInstancePage({
+      status: 'ok',
+      message: null,
+      results: [{ id: '2' }],
+      page: 1,
+      page_size: 100,
+      total_count: 1,
+    })).toEqual({
+      status: 'ok',
+      message: null,
+      results: [{ id: '2' }],
+      page: 1,
+      page_size: 100,
+      total_count: 1,
+    })
+  })
+
+  it.each([
+    [{ mode: 'resolve', query: '', page: 1, page_size: 100 }, 'fixed search request'],
+    [{ mode: 'search', query: 'win', page: 1, page_size: 100 }, 'fixed search request'],
+    [{ mode: 'search', query: '', page: 2, page_size: 100 }, 'fixed search request'],
+    [{ mode: 'search', query: '', page: 1, page_size: 99 }, 'fixed search request'],
+    [{ ...CATALOG_COMFYUI_INSTANCE_QUERY, extra: true }, 'properties'],
+  ])('rejects invalid fixed ComfyUI instance query %j', (value, message) => {
+    expect(() => parseCatalogComfyuiInstanceQueryRequest(value)).toThrow(message)
+  })
+
+  it.each([
+    [{ status: 'error', message: null, results: [], page: 1, page_size: 100, total_count: 0 }, 'envelope'],
+    [{ status: 'ok', message: 'failed', results: [], page: 1, page_size: 100, total_count: 0 }, 'envelope'],
+    [{ status: 'ok', message: null, results: [], page: 2, page_size: 100, total_count: 0 }, 'envelope'],
+    [{ status: 'ok', message: null, results: [], page: 1, page_size: 99, total_count: 0 }, 'envelope'],
+    [{ status: 'ok', message: null, results: [{ id: '0' }], page: 1, page_size: 100, total_count: 1 }, 'id'],
+    [{ status: 'ok', message: null, results: [{ id: '2', title: 'hidden' }], page: 1, page_size: 100, total_count: 1 }, 'properties'],
+    [{ status: 'ok', message: null, results: [{ id: '2' }], page: 1, page_size: 100, total_count: 0 }, 'total count'],
+    [{ status: 'ok', message: null, results: [], page: 1, page_size: 100, total_count: 0, extra: true }, 'properties'],
+  ])('rejects invalid ComfyUI instance response %j', (value, message) => {
+    expect(() => parseCatalogComfyuiInstancePage(value)).toThrow(message)
   })
 
   it('accepts one complete nine-card page and rejects a tenth card', () => {

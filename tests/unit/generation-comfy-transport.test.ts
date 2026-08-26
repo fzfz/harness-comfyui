@@ -43,6 +43,7 @@ describe('ComfyHttpTransport', () => {
       instanceId: '2', instanceOrigin,
       promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
+      actualWorkflow: { version: 0.4, nodes: [{ id: 3, type: 'SaveImage' }] },
       onRequestStart: () => true,
     })
     const observed = await transport.observe({
@@ -63,7 +64,15 @@ describe('ComfyHttpTransport', () => {
       }],
     })
     const submitBody = JSON.parse(String(fetchImplementation.mock.calls[0]?.[1]?.body)) as Record<string, unknown>
-    expect(submitBody).toMatchObject({ prompt_id: submitted.promptId, prompt: { '3': { class_type: 'SaveImage' } } })
+    expect(submitBody).toMatchObject({
+      prompt_id: submitted.promptId,
+      prompt: { '3': { class_type: 'SaveImage' } },
+      extra_data: {
+        extra_pnginfo: {
+          workflow: { version: 0.4, nodes: [{ id: 3, type: 'SaveImage' }] },
+        },
+      },
+    })
     expect(fetchImplementation.mock.calls[0]?.[1]?.headers).toEqual(expect.objectContaining({ authorization: 'Bearer token' }))
   })
 
@@ -127,7 +136,7 @@ describe('ComfyHttpTransport', () => {
     const submitting = transport.submit({
       instanceId: '2', instanceOrigin,
       promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
-      apiWorkflow: {}, onRequestStart: requestStarted, signal: controller.signal,
+      apiWorkflow: {}, actualWorkflow: {}, onRequestStart: requestStarted, signal: controller.signal,
     })
     controller.abort()
     await expect(submitting).rejects.toMatchObject({ name: 'AbortError' })
@@ -261,7 +270,7 @@ describe('ComfyHttpTransport', () => {
       source,
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({ prompt_id: promptId, node_errors: { 3: {} } }), { status: 200 })),
     })
-    await expect(rejected.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, onRequestStart: () => true }))
+    await expect(rejected.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, actualWorkflow: {}, onRequestStart: () => true }))
       .rejects.toMatchObject({ code: 'COMFYUI_PROMPT_REJECTED' })
     const rejectedWithHttp400 = new ComfyHttpTransport({
       source,
@@ -270,7 +279,7 @@ describe('ComfyHttpTransport', () => {
         node_errors: { 3: { errors: [] } },
       }), { status: 400 })),
     })
-    await expect(rejectedWithHttp400.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, onRequestStart: () => true }))
+    await expect(rejectedWithHttp400.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, actualWorkflow: {}, onRequestStart: () => true }))
       .rejects.toMatchObject({
         code: 'COMFYUI_PROMPT_REJECTED',
         message: 'ComfyUI rejected the API Workflow: {"error":{"type":"prompt_outputs_failed_validation"},"node_errors":{"3":{"errors":[]}}}',
@@ -283,7 +292,7 @@ describe('ComfyHttpTransport', () => {
         node_errors: {},
       }), { status: 200 })),
     })
-    await expect(mismatched.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, onRequestStart: () => true }))
+    await expect(mismatched.submit({ instanceId: '2', instanceOrigin, promptId, apiWorkflow: {}, actualWorkflow: {}, onRequestStart: () => true }))
       .rejects.toMatchObject({
         code: 'COMFYUI_PROTOCOL_ERROR',
         message: `ComfyUI /prompt returned prompt_id "${mismatchedPromptId}" for requested prompt_id "${promptId}".`,

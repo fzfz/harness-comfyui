@@ -159,6 +159,11 @@ export class ComfyHttpTransport implements GenerationTransport {
         prompt: input.apiWorkflow,
         prompt_id: input.promptId,
         client_id: `harness-comfyui-${randomUUID()}`,
+        extra_data: {
+          extra_pnginfo: {
+            workflow: input.actualWorkflow,
+          },
+        },
       }),
       signal: input.signal,
     })

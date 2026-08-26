@@ -936,6 +936,92 @@ describe('ComfyWorkflowCompiler', () => {
     })
   })
 
+  it('uses the live BOOLEAN default when a serialized named widget contains an incompatible array', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 37,
+      type: 'TriggerWord Toggle (LoraManager)',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: [true, false, [], [], ''],
+      widgets_values_named: {
+        group_mode: true,
+        default_active: false,
+        allow_strength_adjustment: [],
+        toggle_trigger_words: [],
+        orinalMessage: '',
+      },
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'TriggerWord Toggle (LoraManager)': {
+          input: {
+            required: {
+              group_mode: ['BOOLEAN', { default: true }],
+              default_active: ['BOOLEAN', { default: false }],
+              allow_strength_adjustment: ['BOOLEAN', { default: false }],
+            },
+          },
+          input_order: {
+            required: ['group_mode', 'default_active', 'allow_strength_adjustment'],
+            optional: [],
+          },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow['37']).toMatchObject({
+      inputs: {
+        group_mode: true,
+        default_active: false,
+        allow_strength_adjustment: false,
+      },
+    })
+  })
+
+  it('rejects an incompatible serialized BOOLEAN when the live definition has no BOOLEAN default', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 37,
+      type: 'BooleanNode',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: [[]],
+      widgets_values_named: { enabled: [] },
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        BooleanNode: {
+          input: { required: { enabled: ['BOOLEAN', {}] } },
+          input_order: { required: ['enabled'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'WORKFLOW_COMPILE_FAILED',
+      message: expect.stringContaining('no live BOOLEAN default'),
+    })
+  })
+
   it.each([
     ['wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors', 'wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors'],
     ['wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors', 'wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors'],

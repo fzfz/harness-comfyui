@@ -31,7 +31,7 @@ function stubTestProfileEnvironment(): void {
 }
 
 function provideHostServices(ctx: Context) {
-  const registerTool = vi.fn(() => vi.fn())
+  const registerTool = vi.fn((_definition: { readonly name: string }) => vi.fn())
   const registerRoute = vi.fn(() => vi.fn())
   ctx.provide('tools', { register: registerTool })
   ctx.provide('webServer', { register: registerRoute })
@@ -55,7 +55,13 @@ describe('Harness ComfyUI Host plugin', () => {
     const { registerRoute, registerTool } = provideHostServices(ctx)
     const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'production' })
 
-    expect(registerTool).toHaveBeenCalledWith(expect.objectContaining({ name: 'generate_with_comfyui' }))
+    expect(registerTool.mock.calls.map(([definition]) => definition.name)).toEqual([
+      'query_semantic_comfyui_templates',
+      'query_semantic_loras',
+      'query_semantic_generation_models',
+      'query_semantic_comfyui_instances',
+      'generate_with_comfyui',
+    ])
     expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'prefix',
       path: '/api/harness-comfyui/media',

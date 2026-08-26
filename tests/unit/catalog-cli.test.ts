@@ -23,6 +23,59 @@ function catalog(process: CatalogCliProcess): CatalogCli {
 }
 
 describe('Catalog CLI adapter', () => {
+  it('queries the ComfyUI instance directory with the fixed CLI request and returns only instance ids', async () => {
+    const execute = vi.fn<CatalogCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: response([{
+        id: 2,
+        title: 'win3080',
+        url: 'http://127.0.0.1:8188',
+        authorization: 'not-agent-visible',
+      }], 1, 1, 100),
+      stderr: '',
+    }))
+    const controller = new AbortController()
+    const request = { mode: 'search', query: '', page: 1, page_size: 100 } as const
+
+    await expect(catalog(execute).queryComfyuiInstances(request, controller.signal)).resolves.toEqual({
+      status: 'ok',
+      message: null,
+      results: [{ id: '2' }],
+      page: 1,
+      page_size: 100,
+      total_count: 1,
+    })
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+      '--port', '18093',
+      '--timeout-ms', '15000',
+      '--path', '/internal/semantic/comfyui-instances',
+      '--mode', 'search',
+      '--query', '',
+      '--page', '1',
+      '--page_size', '100',
+    ], controller.signal)
+  })
+
+  it.each([
+    [response([], 0, 1, 9), 'envelope'],
+    [response([{ id: 0, title: 'win3080' }], 1, 1, 100), 'id'],
+  ])('rejects an invalid ComfyUI instance CLI response %#', async (stdout, message) => {
+    const execute: CatalogCliProcess = async () => ({ exitCode: 0, stdout, stderr: '' })
+    await expect(catalog(execute).queryComfyuiInstances(
+      { mode: 'search', query: '', page: 1, page_size: 100 },
+      new AbortController().signal,
+    )).rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR', message: expect.stringContaining(message) })
+  })
+
+  it('rejects a non-fixed ComfyUI instance request before calling the CLI', async () => {
+    const execute = vi.fn<CatalogCliProcess>()
+    await expect(catalog(execute).queryComfyuiInstances(
+      { mode: 'search', query: '', page: 1, page_size: 99 } as never,
+      new AbortController().signal,
+    )).rejects.toThrow('fixed search request')
+    expect(execute).not.toHaveBeenCalled()
+  })
+
   it('uses fixed CLI arguments and returns only the safe catalog projection', async () => {
     const execute = vi.fn<CatalogCliProcess>(async () => ({
       exitCode: 0,

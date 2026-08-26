@@ -1,14 +1,20 @@
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 
 import type {
+  CatalogComfyuiInstancePage,
+  CatalogComfyuiInstanceQueryRequest,
   CatalogResolvedGenerationModel,
   CatalogResolvedLora,
   CatalogResolvedTemplate,
+} from '../../catalog/contract.ts'
+import {
+  CATALOG_COMFYUI_INSTANCE_QUERY,
 } from '../../catalog/contract.ts'
 
 export const TEMPLATE_RESOLVER_TOOL_NAME = 'query_semantic_comfyui_templates'
 export const LORA_RESOLVER_TOOL_NAME = 'query_semantic_loras'
 export const GENERATION_MODEL_RESOLVER_TOOL_NAME = 'query_semantic_generation_models'
+export const COMFYUI_INSTANCE_QUERY_TOOL_NAME = 'query_semantic_comfyui_instances'
 
 export interface TemplateResolverCatalog {
   resolveTemplate(id: string, signal: AbortSignal): Promise<CatalogResolvedTemplate>
@@ -20,6 +26,13 @@ export interface LoraResolverCatalog {
 
 export interface GenerationModelResolverCatalog {
   resolveGenerationModel(id: string, signal: AbortSignal): Promise<CatalogResolvedGenerationModel>
+}
+
+export interface ComfyuiInstanceCatalog {
+  queryComfyuiInstances(
+    input: CatalogComfyuiInstanceQueryRequest,
+    signal: AbortSignal,
+  ): Promise<CatalogComfyuiInstancePage>
 }
 
 function closedDefinition(definition: ToolDefinition): ToolDefinition {
@@ -171,6 +184,57 @@ export function createGenerationModelResolverTool(catalog: GenerationModelResolv
         description: model.description,
         usage: model.usage,
         ...(model.skill_name === null ? {} : { skill_name: model.skill_name }),
+      }
+    },
+  })
+  return closedDefinition(definition)
+}
+
+export function createComfyuiInstanceQueryTool(catalog: ComfyuiInstanceCatalog): ToolDefinition {
+  const definition = defineTool({
+    name: COMFYUI_INSTANCE_QUERY_TOOL_NAME,
+    description: 'List the current approved ComfyUI instance IDs for generate_with_comfyui.',
+    parameters: {
+      mode: { type: 'string', required: true, const: CATALOG_COMFYUI_INSTANCE_QUERY.mode, description: 'Fixed Catalog search mode.' },
+      query: { type: 'string', required: true, const: CATALOG_COMFYUI_INSTANCE_QUERY.query, description: 'Fixed empty instance search text.' },
+      page: { type: 'integer', required: true, const: CATALOG_COMFYUI_INSTANCE_QUERY.page, description: 'Fixed first Catalog result page.' },
+      page_size: { type: 'integer', required: true, const: CATALOG_COMFYUI_INSTANCE_QUERY.page_size, description: 'Fixed maximum number of instance records returned by the Catalog CLI.' },
+    },
+    output: {
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          status: { type: 'string', required: true, const: 'ok', description: 'Successful Catalog response status.' },
+          message: { type: 'null', required: true, const: null, description: 'Null error message for a successful Catalog response.' },
+          results: {
+            type: 'array',
+            required: true,
+            description: 'Current approved ComfyUI instance IDs in Catalog CLI order.',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                id: { type: 'string', required: true, description: 'Positive decimal ComfyUI instance identity.' },
+              },
+            },
+          },
+          page: { type: 'integer', required: true, const: CATALOG_COMFYUI_INSTANCE_QUERY.page, description: 'Catalog result page.' },
+          page_size: { type: 'integer', required: true, const: CATALOG_COMFYUI_INSTANCE_QUERY.page_size, description: 'Catalog result page size.' },
+          total_count: { type: 'integer', required: true, description: 'Total number of matching ComfyUI instances.' },
+        },
+      },
+      render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
+    },
+    execute: async (args, exec) => {
+      const response = await catalog.queryComfyuiInstances(args, exec.signal)
+      return {
+        status: response.status,
+        message: response.message,
+        results: response.results.map(instance => ({ ...instance })),
+        page: response.page,
+        page_size: response.page_size,
+        total_count: response.total_count,
       }
     },
   })

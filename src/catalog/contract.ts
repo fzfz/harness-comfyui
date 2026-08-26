@@ -1,9 +1,17 @@
 export const CATALOG_PAGE_SIZE = 9
 export const CATALOG_BASE_MODEL_PAGE_SIZE = 20
+export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = 100
 export const CATALOG_QUERY_TIMEOUT_MS = 15_000
 export const CATALOG_REMOTE_NAMESPACE = 'harnessComfyuiCatalog'
 export const CATALOG_REMOTE_SERVICE = `remote.${CATALOG_REMOTE_NAMESPACE}`
 export const CATALOG_BASE_MODEL_PATH = '/internal/semantic/base-models'
+export const CATALOG_COMFYUI_INSTANCE_PATH = '/internal/semantic/comfyui-instances'
+export const CATALOG_COMFYUI_INSTANCE_QUERY = Object.freeze({
+  mode: 'search',
+  query: '',
+  page: 1,
+  page_size: CATALOG_COMFYUI_INSTANCE_PAGE_SIZE,
+} as const)
 export const CATALOG_ERROR_CODES = Object.freeze([
   'CATALOG_QUERY_FAILED',
   'CATALOG_RESPONSE_TOO_LARGE',
@@ -95,6 +103,21 @@ export interface CatalogQueryRequest {
   readonly query: string
   readonly page: number
   readonly baseModelId: string | null
+}
+
+export type CatalogComfyuiInstanceQueryRequest = typeof CATALOG_COMFYUI_INSTANCE_QUERY
+
+export interface CatalogComfyuiInstanceItem {
+  readonly id: string
+}
+
+export interface CatalogComfyuiInstancePage {
+  readonly status: 'ok'
+  readonly message: null
+  readonly results: readonly CatalogComfyuiInstanceItem[]
+  readonly page: 1
+  readonly page_size: typeof CATALOG_COMFYUI_INSTANCE_PAGE_SIZE
+  readonly total_count: number
 }
 
 interface CatalogContextIdentity {
@@ -278,6 +301,59 @@ export function parseCatalogQueryRequest(value: unknown): CatalogQueryRequest {
     query: queryText(input.query),
     page: pageNumber(input.page),
     baseModelId,
+  })
+}
+
+export function parseCatalogComfyuiInstanceQueryRequest(value: unknown): CatalogComfyuiInstanceQueryRequest {
+  const input = record(value, 'ComfyUI instance catalog query')
+  exactKeys(input, ['mode', 'query', 'page', 'page_size'], 'ComfyUI instance catalog query')
+  if (
+    input.mode !== CATALOG_COMFYUI_INSTANCE_QUERY.mode
+    || input.query !== CATALOG_COMFYUI_INSTANCE_QUERY.query
+    || input.page !== CATALOG_COMFYUI_INSTANCE_QUERY.page
+    || input.page_size !== CATALOG_COMFYUI_INSTANCE_QUERY.page_size
+  ) {
+    throw new TypeError('ComfyUI instance catalog query must use the fixed search request')
+  }
+  return CATALOG_COMFYUI_INSTANCE_QUERY
+}
+
+function parseCatalogComfyuiInstanceItem(value: unknown, index: number): CatalogComfyuiInstanceItem {
+  const input = record(value, `ComfyUI instance catalog result ${index}`)
+  exactKeys(input, ['id'], `ComfyUI instance catalog result ${index}`)
+  return Object.freeze({
+    id: stableId(input.id),
+  })
+}
+
+export function parseCatalogComfyuiInstancePage(value: unknown): CatalogComfyuiInstancePage {
+  const input = record(value, 'ComfyUI instance catalog response')
+  exactKeys(
+    input,
+    ['status', 'message', 'results', 'page', 'page_size', 'total_count'],
+    'ComfyUI instance catalog response',
+  )
+  if (
+    input.status !== 'ok'
+    || input.message !== null
+    || input.page !== CATALOG_COMFYUI_INSTANCE_QUERY.page
+    || input.page_size !== CATALOG_COMFYUI_INSTANCE_QUERY.page_size
+    || !Array.isArray(input.results)
+    || input.results.length > CATALOG_COMFYUI_INSTANCE_PAGE_SIZE
+  ) {
+    throw new TypeError('ComfyUI instance catalog response envelope is invalid')
+  }
+  const results = input.results.map(parseCatalogComfyuiInstanceItem)
+  if (!Number.isSafeInteger(input.total_count) || (input.total_count as number) < results.length) {
+    throw new TypeError('ComfyUI instance catalog response total count is invalid')
+  }
+  return Object.freeze({
+    status: 'ok',
+    message: null,
+    results: Object.freeze(results),
+    page: CATALOG_COMFYUI_INSTANCE_QUERY.page,
+    page_size: CATALOG_COMFYUI_INSTANCE_QUERY.page_size,
+    total_count: input.total_count as number,
   })
 }
 

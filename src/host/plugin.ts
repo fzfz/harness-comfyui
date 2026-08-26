@@ -9,6 +9,7 @@ import { loadProfile } from '../config/load-profile.ts'
 import { CatalogCli } from './catalog/catalog-cli.ts'
 import { CatalogRemoteService } from './catalog/catalog-service.ts'
 import {
+  createComfyuiInstanceQueryTool,
   createGenerationModelResolverTool,
   createLoraResolverTool,
   createTemplateResolverTool,
@@ -79,6 +80,7 @@ export function apply(ctx: Context, config: Config): void {
     createTemplateResolverTool(catalog),
     createLoraResolverTool(catalog),
     createGenerationModelResolverTool(catalog),
+    createComfyuiInstanceQueryTool(catalog),
     generationToolForContext(ctx, runtime),
   ]), 'project Tool registry')
   ctx.effect(() => registerGenerationMediaRoutes({

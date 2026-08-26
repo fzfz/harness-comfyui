@@ -3,11 +3,15 @@ import { spawn } from 'node:child_process'
 import {
   CATALOG_BASE_MODEL_PAGE_SIZE,
   CATALOG_BASE_MODEL_PATH,
+  CATALOG_COMFYUI_INSTANCE_PATH,
+  CATALOG_COMFYUI_INSTANCE_QUERY,
   CATALOG_PAGE_SIZE,
   CATALOG_QUERY_TIMEOUT_MS,
   catalogDefinition,
   isCatalogTemplateValueType,
   parseBaseModelList,
+  parseCatalogComfyuiInstancePage,
+  parseCatalogComfyuiInstanceQueryRequest,
   parseCatalogPage,
   parseCatalogQueryRequest,
   parseCatalogResolvedGenerationModel,
@@ -16,6 +20,8 @@ import {
   type BaseModelItem,
   type BaseModelList,
   type CatalogItem,
+  type CatalogComfyuiInstancePage,
+  type CatalogComfyuiInstanceQueryRequest,
   type CatalogContext,
   type CatalogErrorCode,
   type CatalogPage,
@@ -357,6 +363,44 @@ function normalizeBaseModels(value: unknown): BaseModelList {
   return parseBaseModelList({ items })
 }
 
+function normalizeComfyuiInstances(value: unknown): CatalogComfyuiInstancePage {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'ComfyUI instance catalog response must be an object.')
+  }
+  const envelope = value as Record<string, unknown>
+  if (
+    envelope.status !== 'ok'
+    || envelope.message !== null
+    || !Array.isArray(envelope.results)
+    || envelope.results.length > CATALOG_COMFYUI_INSTANCE_QUERY.page_size
+    || envelope.page !== CATALOG_COMFYUI_INSTANCE_QUERY.page
+    || envelope.page_size !== CATALOG_COMFYUI_INSTANCE_QUERY.page_size
+    || !Number.isSafeInteger(envelope.total_count)
+    || (envelope.total_count as number) < envelope.results.length
+  ) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'ComfyUI instance catalog response envelope is invalid.')
+  }
+  try {
+    return parseCatalogComfyuiInstancePage({
+      status: 'ok',
+      message: null,
+      results: envelope.results.map((value) => {
+        const result = sourceRecord(value)
+        return { id: sourceId(result.id) }
+      }),
+      page: CATALOG_COMFYUI_INSTANCE_QUERY.page,
+      page_size: CATALOG_COMFYUI_INSTANCE_QUERY.page_size,
+      total_count: envelope.total_count,
+    })
+  } catch (error) {
+    if (error instanceof CatalogCliError) throw error
+    throw new CatalogCliError(
+      'CATALOG_PROTOCOL_ERROR',
+      error instanceof Error ? error.message : 'ComfyUI instance catalog response is invalid.',
+    )
+  }
+}
+
 function parseCliJson(result: CatalogCliProcessResult): unknown {
   if (result.exitCode !== 0 || result.stderr.length > 0 || result.stdout.length === 0) {
     throw new CatalogCliError('CATALOG_QUERY_FAILED', 'Catalog CLI query failed.', result.exitCode)
@@ -410,6 +454,24 @@ export class CatalogCli {
     ]
     const result = await this.execute(this.options.executable, args, signal)
     return normalizeBaseModels(parseCliJson(result))
+  }
+
+  async queryComfyuiInstances(
+    input: CatalogComfyuiInstanceQueryRequest,
+    signal: AbortSignal,
+  ): Promise<CatalogComfyuiInstancePage> {
+    const request = parseCatalogComfyuiInstanceQueryRequest(input)
+    const args = [
+      '--port', String(this.options.port),
+      '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
+      '--path', CATALOG_COMFYUI_INSTANCE_PATH,
+      '--mode', request.mode,
+      '--query', request.query,
+      '--page', String(request.page),
+      '--page_size', String(request.page_size),
+    ]
+    const result = await this.execute(this.options.executable, args, signal)
+    return normalizeComfyuiInstances(parseCliJson(result))
   }
 
   async resolveTemplate(id: string, signal: AbortSignal): Promise<CatalogResolvedTemplate> {

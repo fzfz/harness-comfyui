@@ -86,6 +86,22 @@ function instanceComboValue(value: JsonValue, definition: readonly unknown[] | u
   return matches.length === 1 ? matches[0] as string : value
 }
 
+function instanceWidgetValue(
+  name: string,
+  value: JsonValue,
+  definition: readonly unknown[] | undefined,
+): JsonValue {
+  if (definition?.[0] !== 'BOOLEAN' || typeof value === 'boolean') {
+    return instanceComboValue(value, definition)
+  }
+  const config = definition[1]
+  if (config !== null && typeof config === 'object' && !Array.isArray(config)) {
+    const defaultValue = (config as UnknownRecord).default
+    if (typeof defaultValue === 'boolean') return defaultValue
+  }
+  fail(`Workflow BOOLEAN widget "${name}" has an invalid serialized value and no live BOOLEAN default.`)
+}
+
 function namedWidgetInputs(node: UnknownRecord): readonly string[] {
   const names: string[] = []
   for (const value of array(node.inputs)) {
@@ -157,7 +173,8 @@ function mapWidgets(node: UnknownRecord, definition: UnknownRecord): Readonly<Re
   const values = array(node.widgets_values) as readonly JsonValue[]
   const mapped: Record<string, JsonValue> = {}
   for (const mapping of widgetMappings(node, definition)) {
-    mapped[mapping.name] = structuredClone(instanceComboValue(
+    mapped[mapping.name] = structuredClone(instanceWidgetValue(
+      mapping.name,
       values[mapping.index]!,
       descriptor(definition, mapping.name),
     ))

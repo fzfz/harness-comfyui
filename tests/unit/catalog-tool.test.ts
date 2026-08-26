@@ -1,10 +1,87 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  createComfyuiInstanceQueryTool,
   createGenerationModelResolverTool,
   createLoraResolverTool,
   createTemplateResolverTool,
 } from '../../src/host/catalog/catalog-tool.ts'
+
+describe('query_semantic_comfyui_instances Tool', () => {
+  it('exposes the fixed request and returns the safe Catalog CLI instance directory', async () => {
+    const queryComfyuiInstances = vi.fn(async () => Object.freeze({
+      status: 'ok' as const,
+      message: null,
+      results: Object.freeze([Object.freeze({ id: '2' })]),
+      page: 1 as const,
+      page_size: 100 as const,
+      total_count: 1,
+    }))
+    const tool = createComfyuiInstanceQueryTool({ queryComfyuiInstances })
+    const signal = new AbortController().signal
+    const args = { mode: 'search', query: '', page: 1, page_size: 100 }
+
+    const result = await tool.execute(args, { signal } as never)
+
+    expect(tool.name).toBe('query_semantic_comfyui_instances')
+    expect(queryComfyuiInstances).toHaveBeenCalledWith(args, signal)
+    expect(result).toEqual({
+      status: 'ok',
+      message: null,
+      results: [{ id: '2' }],
+      page: 1,
+      page_size: 100,
+      total_count: 1,
+    })
+    expect(tool.parameters).toMatchObject({
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        mode: { const: 'search' },
+        query: { const: '' },
+        page: { const: 1 },
+        page_size: { const: 100 },
+      },
+    })
+    expect(tool.output.schema).toMatchObject({
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        status: { const: 'ok' },
+        message: { type: 'null', const: null },
+        results: {
+          items: {
+            additionalProperties: false,
+            properties: {
+              id: { type: 'string' },
+            },
+          },
+        },
+        page: { const: 1 },
+        page_size: { const: 100 },
+      },
+    })
+    const resultProperties = (tool.output.schema as unknown as {
+      properties: { results: { items: { properties: Record<string, unknown> } } }
+    }).properties.results.items.properties
+    expect(Object.keys(resultProperties)).toEqual(['id'])
+    expect(tool.output.render(args, result as never)).toEqual([
+      { type: 'text', text: JSON.stringify(result) },
+    ])
+  })
+
+  it('propagates a Catalog CLI failure without creating an instance response', async () => {
+    const failure = new Error('Catalog CLI query failed.')
+    const tool = createComfyuiInstanceQueryTool({
+      queryComfyuiInstances: vi.fn(async () => Promise.reject(failure)),
+    })
+
+    await expect(tool.execute(
+      { mode: 'search', query: '', page: 1, page_size: 100 },
+      { signal: new AbortController().signal } as never,
+    )).rejects.toBe(failure)
+  })
+})
 
 describe('query_semantic_comfyui_templates Tool', () => {
   it('resolves one template id through the Catalog CLI and excludes Workflow JSON', async () => {

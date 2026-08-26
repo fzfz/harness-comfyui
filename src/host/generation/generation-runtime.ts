@@ -76,6 +76,7 @@ export interface GenerationTransport {
     readonly instanceOrigin: string
     readonly promptId: string
     readonly apiWorkflow: Readonly<Record<string, JsonValue>>
+    readonly actualWorkflow: Readonly<Record<string, JsonValue>>
     readonly onRequestStart: () => boolean
     readonly signal?: AbortSignal
   }): Promise<{ readonly promptId: string }>
@@ -730,11 +731,17 @@ export class GenerationRuntime {
 
   private async submitRun(row: RunRow, signal?: AbortSignal): Promise<void> {
     const transport = this.requireTransport()
-    if (row.instance_id === null || row.instance_origin === null || row.api_workflow_path === null) {
+    if (
+      row.instance_id === null
+      || row.instance_origin === null
+      || row.actual_workflow_path === null
+      || row.api_workflow_path === null
+    ) {
       throw new GenerationRuntimeError('GENERATION_ARTIFACT_NOT_READY', 'Prepared Generation Run is missing submission data.')
     }
     const promptId = this.createPromptId()
     if (promptId.trim().length === 0) throw new TypeError('promptId is invalid')
+    const actualWorkflow = await readJsonArtifact(join(this.options.runDirectory, row.actual_workflow_path), 'Actual Workflow')
     const apiWorkflow = await readJsonArtifact(join(this.options.runDirectory, row.api_workflow_path), 'API Workflow')
     let requestStarted = false
     const submitted = await transport.submit({
@@ -742,6 +749,7 @@ export class GenerationRuntime {
       instanceOrigin: row.instance_origin,
       promptId,
       apiWorkflow,
+      actualWorkflow,
       onRequestStart: () => {
         if (signal?.aborted === true) return false
         const changed = this.database.prepare(`
