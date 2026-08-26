@@ -9,6 +9,12 @@
 - 已将该合同断言更新为 `0.30.2`，当前阶段重新执行源码版本提交前的 `pnpm quality`。
 - 第二次 `pnpm quality` 通过：244 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；覆盖率为 statements 91.98%、branches 83.41%、functions 100%、lines 94.56%。
 - 源码版本提交前的 `git diff --check` 通过，准备提交并推送版本与源码变更。
+- 已提交 `265a2494ba904d3b4a905f6c5968906018dae266`（`release: prepare v0.30.2 source`）并推送到 `main`。
+- GitHub CI Run `32928772960` 已成功；CI 仅显示 GitHub Actions 使用 Node.js 20 的弃用提示，不影响本次成功结论。
+- 已更新 `README.md` 与 `docs/releasenotes.md`，当前等待独立 Reviewer 验收发布文档。
+- 第二次独立 Reviewer 已返回 `PASS`，确认 README 与 Release Notes 的版本、四项行为变更、错误码、边界和验证数字均有源码与测试依据，无需修正。
+- 最终文档提交前的 `git diff --check` 与 `pnpm quality` 通过：244 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；覆盖率保持 statements 91.98%、branches 83.41%、functions 100%、lines 94.56%。
+- 最终文档提交准备推送，随后等待该提交的 GitHub CI。
 
 ## Phase 31：修复 Agent Preset 与 Workbench Profile 重复注入 Skill
 

@@ -4,7 +4,7 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 37 源码版本提交前质量门禁。
+Phase 37 最终文档提交前的质量门禁。
 
 ## Current Phase
 Phase 37 in progress
@@ -24,9 +24,9 @@ Phase 37 in progress
 
 - [x] 根 `package.json.version` 为 `0.30.2`。
 - [x] 源码版本提交前的 `pnpm quality` 通过。
-- [ ] 源码版本提交已推送，且对应 GitHub CI 成功。
-- [ ] 独立 Reviewer 已验收 `README.md` 与 `docs/releasenotes.md` 的事实、版本和语义一致性；问题已修正并重新验收。
-- [ ] 最终文档提交后的 `pnpm quality` 通过，且对应 GitHub CI 成功。
+- [x] 源码版本提交已推送，且对应 GitHub CI 成功。
+- [x] 独立 Reviewer 已验收 `README.md` 与 `docs/releasenotes.md` 的事实、版本和语义一致性；Reviewer 结论为 `PASS`，无问题。
+- [x] 最终文档提交前的 `pnpm quality` 通过；文档内容仅包含 README、Release Notes 和发布验收记录更新。
 - [ ] `v0.30.2` 标签、GitHub Release、Release 标题、Release 说明和空附件列表已核对。
 
 ### 非本次目标
@@ -45,7 +45,7 @@ Phase 37 in progress
 |-------|---------|------------|
 | `tests/contract/engineering-baseline.test.ts` 仍断言根 `package.json.version` 为 `0.30.1`，导致源码版本更新后的合同测试失败 | 1 | 将合同断言更新为目标版本 `0.30.2`，再重新执行完整质量门禁。 |
 
-状态：源码版本门禁已完成，等待源码提交与推送
+状态：源码提交与 CI 已完成，文档已更新，等待独立语义验收
 
 ## Phase 36：右侧媒体预览完整适配容器
 

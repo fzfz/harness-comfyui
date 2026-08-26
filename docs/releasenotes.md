@@ -1,16 +1,17 @@
-# Harness ComfyUI v0.30.1
+# Harness ComfyUI v0.30.2
 
-v0.30.1 交付生成模型选择、复杂 Workflow 编译和 LoRA 输入处理增强。
+v0.30.2 修复 Generation Tool 上下文校验、Workflow 参数保留、随机种子实例化和结果媒体预览问题。
 
 ## 主要变更
 
-- `comfyui-generate` Skill 支持将已解析的生成模型传入 `generate_with_comfyui`，并把模板 `model_id` 解释为 Workflow 当前保存的默认生成模型；模板、生成模型和 LoRA 继续按 `base_model_id` 校验兼容性。
-- Workflow compiler 支持在唯一的 `ckpt_name` 或 `unet_name` 输入中替换生成模型，并按目标 ComfyUI 实例的资源路径解析模型文件名；模型输入缺失、输入不唯一、资源缺失和资源路径不唯一时返回独立错误码。
-- Workflow compiler 支持序列化命名控件值、Power Lora Loader、绕过节点链接解析，以及对已连接输入的参数写入保护；参数更新同时维护 `widgets_values` 与 `widgets_values_named`。
-- Workflow compiler 扩展宽度、高度和 Seed 参数的目标匹配规则，并保留现有模板参数、LoRA 输入、输出节点和异步 Generation Run 链路。
-- 错误目录新增生成模型输入与生成模型资源错误文案，单元测试覆盖模型替换、复杂 LoRA 输入、绕过链接、命名控件和参数分支。
+- `generate_with_comfyui` 现在根据当前 Session 中匹配的 Generation Tool Call 建立 Generation Run，不再要求用户消息携带 `skill-invocation` source；缺少匹配 Tool Call 时返回 `GENERATION_TOOL_CONTEXT_INVALID`。
+- `SourceGenerationPreparer` 只把 Generation Request 显式提供的参数交给 Workflow compiler。请求省略非必填参数时，Workflow compiler 保留模板 Workflow 的原始值；请求省略必填参数时，Host 返回 `GENERATION_PARAMETER_INVALID`。
+- Workflow compiler 在提交 API Workflow 前，把活动 `Seed (rgthree)` 节点中的前端随机标记 `seed=-1` 实例化为本次 Generation Run 的非负整数，并把同一个整数保存到 Actual Workflow 与 API Workflow。固定的 `Seed (rgthree)` 值、普通 ComfyUI seed 节点和 bypassed `Seed (rgthree)` 节点保持原值。
+- 右侧结果列的图片和视频预览使用 `object-fit: contain`，在预览容器内保持原始宽高比并显示完整媒体画面。
+- 回归测试覆盖 Generation Tool 上下文、必填与非必填参数、`Seed (rgthree)` 随机标记和图片/视频预览样式合同。
 
 ## 验证
 
-- `pnpm quality` 通过后，发布负责人在源码提交和最终发布提交的 GitHub CI 均成功时创建 GitHub Release。
-- 发布标签 `v0.30.1` 指向最终发布提交的完整 SHA，GitHub Release 不附加产品包。
+- 本地 `pnpm quality` 通过：244 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过。
+- 源码版本提交 `265a2494ba904d3b4a905f6c5968906018dae266` 的 GitHub CI 已成功。
+- 本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。

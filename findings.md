@@ -5,6 +5,9 @@
 - `docs/system/releasing.md` requires `package.json.version` to be the sole structured product-version source, requires the `v`-prefixed tag to match that value, and requires a GitHub Release with no attachments.
 - The current repository state is `main` at `9765706` with published tag `v0.30.1`; no local `v0.30.2` tag or GitHub Release exists.
 - The current pending changes cover Generation Tool context validation, omitted template parameter preservation, active `Seed (rgthree)` random-seed materialization, and uncropped right-column media previews.
+- Source commit `265a2494ba904d3b4a905f6c5968906018dae266` was pushed to `main`; GitHub Actions CI run `32928772960` completed successfully.
+- Release documentation now describes only the four shipped behavior changes and points the README version link to `v0.30.2`.
+- Independent Reviewer returned `PASS` with no issues for the release-document facts, version references, behavior coverage, error-code wording, verification counts, and attachment policy.
 
 ## Phase 31：Agent Preset 与 Workbench Profile 重复注入 Skill
 
