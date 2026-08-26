@@ -2,7 +2,7 @@
 
 | 路径 | 内容 |
 | --- | --- |
-| `src/host/catalog/` | Catalog CLI adapter、Workflow 模板参数查询 Tool 与 Catalog Remote |
+| `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
 | `src/host/generation/` | Generation Runtime、Source、Workflow、Comfy transport、Tool、Remote、coordinator 和媒体路由 |
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
 | `src/generation/` | Generation Host/Client 共享合同 |

@@ -24,7 +24,7 @@ pnpm prod:start|restart
 | --- | --- |
 | `scripts/production/` | Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
-| `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，并向 Client 提供 Catalog Typert Remote |
+| `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/generation/` | Run Repository、Source adapter、Workflow compiler、Comfy transport、coordinator、Generation Tool、Generation Remote 和媒体路由 |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host 与 Client 共用的 Generation Remote 和媒体 URL 合同 |
@@ -45,6 +45,10 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## Generation 生命周期
 
+`query_semantic_comfyui_instances` 使用固定 search 请求读取 Catalog CLI 当前返回的 ComfyUI 实例目录，并且每个实例结果项只向 Agent 投影 `id`。`comfyui-generate` 把当前查询的首个有效 ID 传给 `generate_with_comfyui`；Host 不根据 Workflow、生成模型、LoRA、运行参数或已有 Run 记录选择实例。
+
 `generate_with_comfyui` 在 Run Repository 持久接纳当前 Tool `callId` 后立即返回 `run_id`。Host 内的 Generation Coordinator 继续执行准备、提交、观察和媒体保存。Host 停止时 coordinator 中止本地观察但不取消远端 ComfyUI 任务；Host 重启后从非终态 Run 继续观察。
+
+Workflow compiler 根据实时 `/object_info` 生成 API Workflow。实时输入定义为 `BOOLEAN` 且 UI Workflow 序列化值不是布尔值时，compiler 使用该输入定义中的布尔默认值；实时定义没有布尔默认值时终止编译。Comfy transport 向 `/prompt` 发送 API Workflow，并把同一 Run 的 Actual Workflow 放入 `extra_data.extra_pnginfo.workflow`，供读取 `EXTRA_PNGINFO` 的节点使用。
 
 Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体内容与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|workflow` 提供。

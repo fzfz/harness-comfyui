@@ -16,17 +16,18 @@ GitHub Release 只发布 Git tag 与 Release 记录，不构建或附加产品�
 10. 记录最终提交的完整 SHA，并确认目标标签和 GitHub Release 都不存在。
 11. 在该完整 SHA 上创建并 push 目标 Git tag，再创建 GitHub Release。
 12. 核对远端标签指向该完整 SHA，GitHub Release 指向该标签，并确认 Release 没有附件。
+13. 生产部署负责人从该最终发布提交更新生产运行目录，保留生产专属配置和运行状态，使用 `pnpm prod:start` 或 `pnpm prod:restart` 启动该发布提交，然后执行 `pnpm prod:status`、`pnpm prod:health` 和真实实例验收。生产部署负责人不得直接编辑生产运行目录中的源码、测试、包元数据或发布文档。
 
 `package.json.version` 是产品版本的唯一结构化来源。Git tag 必须使用 `v` 加完整 `package.json.version` 的形式；因此 `0.30.1` 对应 `v0.30.1`。发布负责人不得更新或删除已经发布的标签；最终提交发生变化时，发布负责人必须使用新的产品版本和标签。
 
 本次发布命令：
 
 ```sh
-git tag --annotate v0.30.1 <最终提交完整SHA> --message "Harness ComfyUI v0.30.1"
-git push origin refs/tags/v0.30.1
-gh release create v0.30.1 \
+git tag --annotate v0.30.4 <最终提交完整SHA> --message "Harness ComfyUI v0.30.4"
+git push origin refs/tags/v0.30.4
+gh release create v0.30.4 \
   --verify-tag \
-  --title "Harness ComfyUI v0.30.1" \
+  --title "Harness ComfyUI v0.30.4" \
   --notes-file docs/releasenotes.md
 ```
 
