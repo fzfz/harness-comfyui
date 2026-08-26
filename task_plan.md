@@ -26,7 +26,7 @@ Phase 37 in progress
 - [x] 源码版本提交前的 `pnpm quality` 通过。
 - [x] 源码版本提交已推送，且对应 GitHub CI 成功。
 - [x] 独立 Reviewer 已验收 `README.md` 与 `docs/releasenotes.md` 的事实、版本和语义一致性；Reviewer 结论为 `PASS`，无问题。
-- [x] 最终文档提交前的 `pnpm quality` 通过；文档内容仅包含 README、Release Notes 和发布验收记录更新。
+- [x] 最终文档提交后的 `pnpm quality` 通过；提交 `d018c8d2b32187e6ce1e7acf90dc367682c7d689` 的 GitHub CI Run `32929188639` 成功。
 - [ ] `v0.30.2` 标签、GitHub Release、Release 标题、Release 说明和空附件列表已核对。
 
 ### 非本次目标
@@ -45,7 +45,7 @@ Phase 37 in progress
 |-------|---------|------------|
 | `tests/contract/engineering-baseline.test.ts` 仍断言根 `package.json.version` 为 `0.30.1`，导致源码版本更新后的合同测试失败 | 1 | 将合同断言更新为目标版本 `0.30.2`，再重新执行完整质量门禁。 |
 
-状态：源码提交与 CI 已完成，文档已更新，等待独立语义验收
+状态：源码、文档和最终 CI 已完成，等待创建标签与 GitHub Release
 
 ## Phase 36：右侧媒体预览完整适配容器
 

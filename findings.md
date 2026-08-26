@@ -8,6 +8,7 @@
 - Source commit `265a2494ba904d3b4a905f6c5968906018dae266` was pushed to `main`; GitHub Actions CI run `32928772960` completed successfully.
 - Release documentation now describes only the four shipped behavior changes and points the README version link to `v0.30.2`.
 - Independent Reviewer returned `PASS` with no issues for the release-document facts, version references, behavior coverage, error-code wording, verification counts, and attachment policy.
+- Final documentation commit `d018c8d2b32187e6ce1e7acf90dc367682c7d689` passed GitHub Actions CI run `32929188639`; the release tag and GitHub Release remain absent before publication.
 
 ## Phase 31：Agent Preset 与 Workbench Profile 重复注入 Skill
 
