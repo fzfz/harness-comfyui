@@ -69,11 +69,22 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 在第一次调用 `generate_with_comfyui` 前完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象、参数映射和校验。任一请求失败时结束本次执行，不创建 Run。
 
-## 7. 创建异步运行
+## 7. 查询实例并创建异步运行
 
-按用户声明顺序为每项 Generation Request 调用一次 `generate_with_comfyui`：
+完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象、参数映射和校验后，按用户声明顺序逐项创建运行。每项 Generation Request 都先调用一次 `query_semantic_comfyui_instances`，使用以下 search 请求读取该 Tool 当前返回的实例目录：
+
+```json
+{"mode":"search","query":"","page":1,"page_size":100}
+```
+
+成功响应必须满足 `status: "ok"`、`message: null`、`results` 是非空数组，且 `results[0].id` 是正整数或正十进制整数字符串。把 `results[0].id` 转为十进制字符串，作为该项 Generation Request 的实例 ID。实例 ID 的唯一来源是本次查询的 `results[0].id`；模板、生成模型、LoRA 和运行参数不参与实例选择。
+
+实例查询失败、成功响应结构无效、`results` 为空或第一个实例 ID 无效时，结束本次执行，不为当前及后续 Generation Request 调用 `generate_with_comfyui`。此前已经成功创建 Run 时，返回每个已创建的 `run_id`、当前失败的 Generation Request 和具体实例查询错误。
+
+实例查询通过后，立即为当前 Generation Request 调用一次 `generate_with_comfyui`：
 
 - `title` 使用该项 Generation Request 的简短标题；
+- `instance_id` 使用本次实例查询得到的十进制字符串 ID；
 - `template_id` 使用模板上下文的 `data.id`；
 - 存在生成模型执行对象时，`model` 使用该对象；没有生成模型执行对象时省略 `model`；
 - `parameters` 只包含模板返回的非 LoRA `parameter_id` 与该项请求的对应值；
