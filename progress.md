@@ -1,5 +1,15 @@
 # Harness ComfyUI 原型方案进度
 
+## 2026-08-26 Phase 37 — 发布 v0.30.2
+
+- 已读取 `docs/system/releasing.md`，确认发布顺序为根 `package.json.version`、源码质量门禁、源码提交与 CI、发布文档及独立语义验收、最终提交与 CI、标签和 GitHub Release。
+- 已确认当前分支为 `main`，HEAD 为 `9765706`、已发布标签为 `v0.30.1`；`v0.30.2` 本地标签和 GitHub Release 均不存在。
+- 已把根 `package.json.version` 修改为 `0.30.2`，保留当前工作区的源码、测试和规划记录变更。
+- 首次 `pnpm quality` 在 `tests/contract/engineering-baseline.test.ts` 失败，因为合同断言仍固定为 `0.30.1`；类型检查、244 项 unit/integration、依赖安全检查和构建脚本检查已通过。
+- 已将该合同断言更新为 `0.30.2`，当前阶段重新执行源码版本提交前的 `pnpm quality`。
+- 第二次 `pnpm quality` 通过：244 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；覆盖率为 statements 91.98%、branches 83.41%、functions 100%、lines 94.56%。
+- 源码版本提交前的 `git diff --check` 通过，准备提交并推送版本与源码变更。
+
 ## Phase 31：修复 Agent Preset 与 Workbench Profile 重复注入 Skill
 
 - [x] 复核 Standard 与 Router Session 的持久事件，两种 Session 均包含两项完全相同的 `comfyui-generate` instructions 类型 Skill Invocation。
@@ -980,3 +990,53 @@
 - 浏览器封装器不支持 locator `focus()`，该次自动化尝试失败；直接向“本会话媒体”tab 发送 Enter 后成功切换。媒体卡显示原文件新窗口链接和该媒体所属 Workflow 下载按钮。
 - 真实媒体卡属性核对通过：原文件 URL 指向本次 `media_id`，`target=_blank`、`rel=noopener noreferrer`；该媒体卡精确显示一个“下载 ComfyUI_00099_.png 所属 Workflow”按钮。
 - 最终 `git diff --check` 通过；生产 Harness PID 29293 继续运行，process、source runtime、Harness Web、client bundle、Run Repository、saved media 六项健康检查全部通过。Phase 32 已完成。
+## 2026-08-25 Phase 33 — 删除 Generation Tool 手动 Skill 门禁
+
+- TDD 红灯确认：没有 `skill-invocation user/message` 时，五条合法 Tool 路径均被 `GENERATION_SKILL_INVOCATION_REQUIRED` 阻断。
+- 已删除用户消息 source 检查和 turn/start 前置检查；Generation Tool 现在只校验匹配的 Tool Call、Session、Workspace 和 Run 所有权。
+- Agent-side Skill Tool Call 后的 Generation Tool Call、无手动 Skill Invocation 的直接合法 Tool Call、默认模型和同 turn 多次调用测试均通过。
+- 旧错误码 `GENERATION_SKILL_INVOCATION_REQUIRED` 已删除；缺少匹配 Tool Call 时使用具体错误码 `GENERATION_TOOL_CONTEXT_INVALID`。
+- `generation-tool.test.ts` 6 项测试和 TypeScript 检查通过。
+- 完整 `pnpm quality` 通过：单元与集成测试 238 项、契约与安全测试 20 项、生产测试 14 项、原型测试 27 项全部通过。
+- 生产 Harness 已使用 PID 87617 在 `127.0.0.1:4173` 重启；HTTP 返回 200，process、source runtime、Harness Web、client bundle、Run Repository、saved media 六项健康检查全部通过。
+- `git diff --check` 通过，仓库中不存在 `GENERATION_SKILL_INVOCATION_REQUIRED`、`exactSkillInvocation` 或手动 Skill Invocation 门禁残留。
+- Phase 33 已完成。
+
+## 2026-08-25 Phase 34 — 保留 Workflow 原始参数值
+
+- 数据源 CLI、Run Repository、Actual Workflow、API Workflow 和真实 PNG 已交叉核对；模板 40 最近 12 次成功运行稳定复现负面提示词为空、尺寸变为 512×512、随机种子变为固定值的问题。
+- 已确定修复边界：调整所有模板共用的参数解析规则，不修改模板 40 数据，不按模板 ID、节点 ID或参数 kind 写特例。
+- 回归测试红灯通过：当前实现把省略的 `negative_prompt`、`width`、`height` 和 `seed` 元数据默认值全部加入运行时覆盖集合，并允许元数据默认值绕过 `required: true`。
+- 公共参数解析函数已改为使用参数 ID 的显式存在性：请求未提供的非必填参数不进入编译器覆盖集合；请求未提供的必填参数直接返回 `GENERATION_PARAMETER_INVALID`。
+- `generation-preparer` 与 `generation-workflow-compiler` 共 44 项聚焦测试和 TypeScript 检查通过。
+- 真实模板 40 在实例 2 上完成只读预编译：正面提示词使用请求值；负面提示词保留 Workflow 原文；宽度 1024、高度 1536、种子 -1 均保留 Workflow 原始值。
+- 完整 `pnpm quality` 通过：单元与集成测试 240 项、契约与安全测试 20 项、生产测试 14 项、原型测试 27 项全部通过。
+- 生产 Harness 已重启为 PID 12484；`127.0.0.1:4173` 返回 HTTP 200，process、source runtime、Harness Web、client bundle、Run Repository、saved media 六项健康检查全部通过。
+- `git diff --check` 通过；`source-preparer.ts` 不再存在把 `definition.defaultValue` 自动转换为运行时覆盖值的逻辑。Phase 34 已完成。
+## 2026-08-25 Phase 35 — 实例化 API Workflow 随机种子
+
+- 使用真实模板 40 API Workflow 建立了可重复的实例反馈回路：同一 Workflow 只改变 seed，`-1` 稳定保留模板旧 `populated_text`，固定整数稳定把新 `wildcard_text` 转换为新的 `populated_text`。
+- 独立队员已完成最近 12 张媒体的盲测；结果与内嵌 Workflow 证据一致，12 张都没有体现各自的新单人场景 Prompt。
+- 官方 rgthree 源码确认 `Seed (rgthree)` 的 `-1` 是前端排队钩子负责替换的特殊值；后端只提供不推荐的 API 补救。实现范围已收窄为活动 `Seed (rgthree).seed=-1`，其他 seed 节点不受影响。
+- 已确定实现规则：编译时为每个活动 `Seed (rgthree).seed=-1` 生成一个具体非负整数；不直接修改 `populated_text`，不按模板 ID、节点 ID 或标题写特例。
+- 下一步先在 `generation-workflow-compiler.test.ts` 增加红灯回归，再实现随机种子实例化并运行聚焦测试。
+- 已增加编译器公共入口回归，夹具同时包含 `Seed (rgthree).seed=-1`、固定 rgthree seed 和普通 `KSampler.seed=-1`。红灯稳定收到随机数函数调用 0 次，证明当前编译器保留了导致实机错误的 `-1`。
+- 编译器现在只把活动 `Seed (rgthree).seed=-1` 转换为 `[0, 2^50)` 的具体整数，并同步修改 Actual Workflow 的位置值、命名值和 API Workflow 投影；固定 rgthree seed、普通 KSampler 和 bypassed rgthree 节点保持原值。
+- 42 项编译器测试通过；首次 TypeScript 检查只发现新增测试未收窄 JSON 联合类型，测试已改为逐层对象收窄后重跑。
+- JSON 联合类型收窄修正后，42 项编译器测试、`pnpm typecheck` 和 `git diff --check` 全部通过。
+- 完整 `pnpm quality` 通过：243 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试通过；函数覆盖率保持 100%。
+- 生产默认随机数源在每次 `compile()` 命中 `Seed (rgthree).seed=-1` 时重新取样；测试注入固定值只用于确定性断言。真实验收将要求三个 Run 的 seed 非 `-1` 且两两不同。
+- 生产 Harness 已重启为 PID 39636；`prod:status` 为 running，`prod:health` 的 process、source runtime、Harness Web、client bundle、Run Repository 和 saved media 六项检查全部通过。
+- in-app Browser 安全策略禁止刷新 localhost；未绕过该策略。改用同一生产 Host 模块和真实数据源/实例，在隔离临时 Repository 中接纳三个模板 40 Run。
+- 三个真实 Run 全部到达 `succeeded` 并分别保存一张 PNG；三次随机 seed 为 `381922942878829`、`755850269072327`、`584854350565245`，Actual/API/ComfyUI history 三处一致且两两不同。
+- 三个 ComfyUI history 的正面节点均为 `mode=reproduce`，`populated_text` 等于请求的新 Prompt。视觉检查确认三张媒体分别准确呈现厨房、海滩和雪夜街道场景。
+- 三个原始 PNG 的内嵌 Prompt 与 ComfyUI history 一致，三个文件的 SHA-256 各不相同。最终 `git diff --check` 和生产六项健康检查通过。Phase 35 已完成。
+## 2026-08-25 Phase 36 — 右侧媒体预览完整适配容器
+
+- Phase 36 的生产样式检查定位到 `src/client/styles.css`：右栏图片和视频共用 `object-fit: cover`，这与用户观察到的裁剪完全一致。
+- `tests/unit/results-drawer.test.tsx` 新增了生产 CSS 合同断言；修改前测试因 `object-fit: cover` 失败，稳定复现了裁剪问题。
+- 右栏图片和视频现使用 `object-fit: contain`，在固定预览容器内保持原始宽高比并显示媒体全貌；竖图以容器高度为上限，横图在宽度达到容器边界时自动受宽度约束。
+- 右栏 9 项聚焦测试、TypeScript 检查和 `git diff --check` 已通过。
+- 完整 `pnpm quality` 通过：244 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；函数覆盖率保持 100%。
+- 生产 Harness 已重启为 PID 64602；`prod:status` 为 running，`prod:health` 的 process、source runtime、Harness Web、client bundle、Run Repository 和 saved media 六项检查全部通过。
+- 生产生成的 `.local/source-client/client.js` 已包含右栏图片和视频的 `object-fit: contain` 规则。Phase 36 已完成。

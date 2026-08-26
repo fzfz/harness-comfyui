@@ -1,5 +1,11 @@
 # Harness ComfyUI 原型方案调研结果
 
+## Phase 37 release facts
+
+- `docs/system/releasing.md` requires `package.json.version` to be the sole structured product-version source, requires the `v`-prefixed tag to match that value, and requires a GitHub Release with no attachments.
+- The current repository state is `main` at `9765706` with published tag `v0.30.1`; no local `v0.30.2` tag or GitHub Release exists.
+- The current pending changes cover Generation Tool context validation, omitted template parameter preservation, active `Seed (rgthree)` random-seed materialization, and uncropped right-column media previews.
+
 ## Phase 31：Agent Preset 与 Workbench Profile 重复注入 Skill
 
 - Standard 对照 Session 与 Router Session 都保存了两项完全相同的 `{"kind":"skill-invocation","name":"comfyui-generate","form":"instructions"}` 事件。
@@ -911,3 +917,28 @@
 - ComfyUI 官方 `graphToPrompt()` 对 `node.resolveInput(i)` 无结果的输入直接跳过，并在最后删除仍指向未序列化节点的连接；它不会把被跳过的普通后端节点 widget 值当作该节点输出。Host 应保留活动目标节点已经映射的 widget 值，删除无法解析的 optional 分支，并在 required 输入既没有可执行连接也没有自身 widget 值时失败。
 - 被跳过的 `PrimitiveInt` 不能被统一内联。模板 40 的两个 `ImpactSwitch` 本身保存 `select: 1`；删除来自 bypassed `PrimitiveInt(value=2)` 的连接后应继续使用开关自身的 `select: 1`，从活动 `input1` 执行。
 - 媒体卡实现本身为每个媒体生成独立原文件 `<a target="_blank">`，并按该媒体的 `runId` 下载所属 Actual Workflow；对应单元测试覆盖 4 个媒体卡、4 个下载图标和新窗口属性。本次 Chrome tab 点击未改变 React `activeTab`，需要与真实点击环境分开诊断。
+## 2026-08-25 — Generation Tool Invocation 门禁
+
+- `skill` Tool Call 不会生成 `user/message source=skill-invocation`。要求该事件会阻断 Agent 在执行 Skill 后调用 `generate_with_comfyui`，因此该检查不是有效的 Skill 执行证明。
+- Generation Tool 的必要身份依据是当前执行上下文中的匹配 `tool/call`、Session ID、Workspace Registry 归属、turn 和 call ID；这些字段足以建立持久化 Run 所有权。
+
+## 2026-08-25 — 模板参数默认值覆盖错误
+
+- 模板 40 的 `workflow_json` 保存负面提示词、宽度 1024、高度 1536 和随机种子 -1；这些 Workflow 节点输入才是模板默认执行值。同一记录的 `parameters_json.default_value` 分别为 `""`、512、512 和 1022776966395948，但该元数据字段不是模板默认执行值。
+- 最近 12 个成功 Run 的 `request_json.parameters` 只包含 `positive_prompt`；保存的 API Workflow 把负面提示词运行输入改成空字符串，把尺寸改成 512×512，把种子改成固定值 1022776966395948。
+- `resolveParameterValues()` 当前使用 `suppliedValue ?? definition.defaultValue`，因此把未提供参数错误转换为运行时覆盖。正确通用规则是：请求显式值覆盖 Workflow；未提供的非必填参数不进入运行时覆盖集合；`parameters_json.default_value` 不得自动写入 Workflow，也不得满足 `required: true`。
+- 2026-08-25 Phase 35：最近 12 个模板 40 Run 的 Generation Request 和 API Workflow 均包含新的正面 `wildcard_text`，但是生成媒体没有体现各自的新单人场景语义。
+- 独立盲测把最近 12 张媒体判定为 4 张可成像、8 张崩坏；4 张可成像媒体仍呈现模板旧双人场景语义，没有一张符合各自的新正面 Prompt。
+- 真实 ComfyUI 最小对照只改变节点 40 的 seed：`-1` 时任务成功但正面节点保持 `mode=populate` 和模板旧 `populated_text`；固定为 `38521047` 时任务成功、正面节点变为 `mode=reproduce`，并且 `populated_text` 等于新的 `wildcard_text`。
+- 两张真实对照媒体进一步证明执行语义：`-1` 任务生成崩坏点阵，固定整数任务生成符合新 Prompt 的黑发、粉色上衣、绿色花卉围裙、单人室内全身像。
+- Host coordinator 在一次轮询中顺序提交所有 prepared Run；单独重发同一份 `seed=-1` API Workflow 仍稳定复现旧 `populated_text`，因此批量提交不是根因。
+- rgthree 官方前端在 `comfy-api-queue-prompt-before` 事件中把 `Seed (rgthree)` 的 `-1` 替换为随机 seed；rgthree 后端只为 API 直接传入 `-1/-2/-3` 提供补救，并明确记录该路径不应该由正常前端排队产生。
+- Impact Pack 在 Prompt 预处理阶段先读取链接到 `Seed (rgthree)` 的 `-1` 并调用 wildcard 处理；rgthree 后端随后才把 `-1` 替换为随机 seed，因此后端补救无法恢复已经保留旧值的 `populated_text`。
+- 正确修复边界是仅把活动 `Seed (rgthree).seed=-1` 前端随机标记在 Host 编译阶段转换为本 Run 的具体非负整数，并把同一个整数写入 Actual Workflow 与 API Workflow。其他 seed 节点不受影响。
+- 修复后的生产 Host 模块连续完成三个真实模板 40 Run。三个 Run 均使用实例 2，均省略 seed，并分别得到随机值 `381922942878829`、`755850269072327`、`584854350565245`；三个值非 `-1` 且两两不同。
+- 每个真实 Run 的 Actual Workflow、API Workflow 和 ComfyUI history 中节点 40 seed 完全相同；每个 Run 的 ComfyUI 正面节点均为 `mode=reproduce`，`wildcard_text` 与 `populated_text` 均等于该 Run 的请求正面 Prompt。
+- 三项真实媒体均由 Host transport 下载并写入分片目录。视觉检查分别确认红发黄围裙厨房烹饪、蓝发白裙海滩、白发黑冬装雪夜霓虹街道，三张图片内容不同并符合各自 Prompt。
+- 三个已保存原始 PNG 的内嵌 API Prompt 再次确认节点 40 seed 分别为 `381922942878829`、`755850269072327`、`584854350565245`；三个正面节点均为 `mode=reproduce` 且 `wildcard_text == populated_text`。
+- 三个媒体文件的 SHA-256 分别为 `416773c804ac225537cd025eb604bec9e570d4c88ebc48a7ee94289b05c06020`、`8a295c55ef721e6dbd35eba47921ec7312477ddc6716fc319a5944ae9cfd2afa`、`c10a5ebe200a7c5fc6b95d2883a666ab03c69846933854864dbde78e743ab93e`，证明保存结果是三个不同文件。
+- 2026-08-25 Phase 36：`src/client/styles.css` 原先把右侧结果列 `.harness-comfyui-media-preview img, video` 设为 `object-fit: cover`；该规则会按固定预览容器比例裁剪纵向或横向媒体。
+- 右侧媒体预览现使用 `object-fit: contain`，媒体元素同时受容器宽度与高度约束；该组合会保持原始宽高比并显示完整画面。

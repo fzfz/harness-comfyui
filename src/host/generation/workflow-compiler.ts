@@ -16,10 +16,14 @@ const WIDGET_TYPES = new Set([
 const CONTROL_AFTER_GENERATE = new Set(['fixed', 'increment', 'decrement', 'randomize'])
 const POWER_LORA_LOADER_TYPE = 'Power Lora Loader (rgthree)'
 const MODEL_INPUT_NAMES = new Set(['ckpt_name', 'unet_name'])
+const RGTHREE_SEED_TYPE = 'Seed (rgthree)'
+const RGTHREE_RANDOM_SEED_SENTINEL = -1
+const RGTHREE_RANDOM_SEED_MAX_EXCLUSIVE = 1125899906842624
 
 export interface ComfyWorkflowCompilerOptions {
   readonly fetchImplementation?: typeof fetch
   readonly timeoutMs?: number
+  readonly createRandomSeed?: () => number
 }
 
 type UnknownRecord = Record<string, unknown>
@@ -159,6 +163,34 @@ function mapWidgets(node: UnknownRecord, definition: UnknownRecord): Readonly<Re
     ))
   }
   return mapped
+}
+
+function defaultCreateRandomSeed(): number {
+  return Math.floor(Math.random() * RGTHREE_RANDOM_SEED_MAX_EXCLUSIVE)
+}
+
+function materializeRgthreeRandomSeeds(
+  workflow: UiWorkflow,
+  nodeDefinitions: UnknownRecord,
+  createRandomSeed: () => number,
+): void {
+  for (const rawNode of workflow.nodes) {
+    const node = rawNode as UnknownRecord
+    if (node.type !== RGTHREE_SEED_TYPE || node.mode === 2 || node.mode === 4) continue
+    const definition = record(nodeDefinitions[RGTHREE_SEED_TYPE], `ComfyUI node definition "${RGTHREE_SEED_TYPE}"`)
+    const mapping = widgetMappings(node, definition).find(candidate => candidate.name === 'seed')
+    if (mapping === undefined || !Array.isArray(node.widgets_values)) continue
+    if (node.widgets_values[mapping.index] !== RGTHREE_RANDOM_SEED_SENTINEL) continue
+    const seed = createRandomSeed()
+    if (!Number.isSafeInteger(seed) || seed < 0 || seed >= RGTHREE_RANDOM_SEED_MAX_EXCLUSIVE) {
+      fail('Seed (rgthree) random seed generator returned an invalid seed.')
+    }
+    ;(node.widgets_values as JsonValue[])[mapping.index] = seed
+    const named = node.widgets_values_named
+    if (named !== null && typeof named === 'object' && !Array.isArray(named)) {
+      ;(named as UnknownRecord)[mapping.name] = seed
+    }
+  }
 }
 
 function loraError(code: string, message: string): never {
@@ -805,10 +837,12 @@ function compile(
 export class ComfyWorkflowCompiler implements WorkflowCompiler {
   private readonly fetchImplementation: typeof fetch
   private readonly timeoutMs: number
+  private readonly createRandomSeed: () => number
 
   constructor(options: ComfyWorkflowCompilerOptions = {}) {
     this.fetchImplementation = options.fetchImplementation ?? fetch
     this.timeoutMs = options.timeoutMs ?? 120_000
+    this.createRandomSeed = options.createRandomSeed ?? defaultCreateRandomSeed
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1) throw new TypeError('ComfyUI compiler timeout is invalid.')
   }
 
@@ -841,6 +875,7 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
       const runtimeParameters = input.runtimeParameters ?? []
       applyRuntimeParameters(actualWorkflow, definitions, runtimeParameters, input.bindingHints ?? [])
+      materializeRgthreeRandomSeeds(actualWorkflow, definitions, this.createRandomSeed)
       if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, definitions, input.model)
       const loras = input.loras.length > 0 ? input.loras : legacyLoraSelections(runtimeParameters)
       applyLoras(actualWorkflow, definitions, loras)

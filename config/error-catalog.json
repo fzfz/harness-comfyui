@@ -38,7 +38,7 @@
   "GENERATION_REQUEST_INVALID": { "code": "GENERATION_REQUEST_INVALID", "title": "生成请求无效", "reason": "已保存的生成请求无法读取。", "next_step": "创建新的生成运行。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_RUN_NOT_FOUND": { "code": "GENERATION_RUN_NOT_FOUND", "title": "运行不存在", "reason": "请求的生成运行不存在。", "next_step": "刷新运行列表。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_SESSION_NOT_FOUND": { "code": "GENERATION_SESSION_NOT_FOUND", "title": "会话不存在", "reason": "Harness 无法找到该会话。", "next_step": "重新打开会话。", "cancellable": false, "confirm_repeat": false },
-  "GENERATION_SKILL_INVOCATION_REQUIRED": { "code": "GENERATION_SKILL_INVOCATION_REQUIRED", "title": "需要生成 Skill", "reason": "当前调用没有经过 comfyui-generate Skill。", "next_step": "在当前消息中运行 comfyui-generate。", "cancellable": false, "confirm_repeat": false },
+  "GENERATION_TOOL_CONTEXT_INVALID": { "code": "GENERATION_TOOL_CONTEXT_INVALID", "title": "生成调用上下文无效", "reason": "系统无法确认当前 Generation Tool Call 的会话身份。", "next_step": "请重新提交当前生成请求。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_TRANSPORT_UNAVAILABLE": { "code": "GENERATION_TRANSPORT_UNAVAILABLE", "title": "生成服务未就绪", "reason": "ComfyUI 生成服务尚未就绪。", "next_step": "检查 Harness ComfyUI 服务状态。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_WORKSPACE_REQUIRED": { "code": "GENERATION_WORKSPACE_REQUIRED", "title": "需要工作区", "reason": "当前会话没有关联 Harness 工作区。", "next_step": "在工作区中重新打开会话。", "cancellable": false, "confirm_repeat": false },
   "RUN_REQUEST_CONFLICT": { "code": "RUN_REQUEST_CONFLICT", "title": "运行请求冲突", "reason": "同一个 Tool 调用已接纳了不同的生成请求。", "next_step": "发送新消息创建新的 Tool 调用。", "cancellable": false, "confirm_repeat": false },

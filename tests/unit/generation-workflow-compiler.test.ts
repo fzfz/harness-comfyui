@@ -450,6 +450,159 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.actualWorkflow.nodes[0]?.widgets_values_named).toMatchObject({ wildcard_text: 'usnr, gthan, 1girl' })
   })
 
+  it('materializes only the rgthree frontend random seed sentinel before API Workflow compilation', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push(
+      {
+        id: 40,
+        type: 'Seed (rgthree)',
+        mode: 0,
+        inputs: [],
+        outputs: [{ name: 'SEED', type: 'INT', links: [] }],
+        widgets_values: [-1],
+        widgets_values_named: { seed: -1 },
+      },
+      {
+        id: 41,
+        type: 'Seed (rgthree)',
+        mode: 0,
+        inputs: [],
+        outputs: [{ name: 'SEED', type: 'INT', links: [] }],
+        widgets_values: [7711],
+        widgets_values_named: { seed: 7711 },
+      },
+      {
+        id: 42,
+        type: 'KSampler',
+        mode: 0,
+        inputs: [],
+        outputs: [],
+        widgets_values: [-1, 'fixed'],
+        widgets_values_named: { seed: -1 },
+      },
+      {
+        id: 43,
+        type: 'Seed (rgthree)',
+        mode: 4,
+        inputs: [],
+        outputs: [{ name: 'SEED', type: 'INT', links: [] }],
+        widgets_values: [-1],
+        widgets_values_named: { seed: -1 },
+      },
+    )
+    const createRandomSeed = vi.fn(() => 38_521_047)
+    const compiler = new ComfyWorkflowCompiler({
+      createRandomSeed,
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Seed (rgthree)': {
+          input: { required: { seed: ['INT', { default: 0, min: -1125899906842624, max: 1125899906842624 }] } },
+          input_order: { required: ['seed'], optional: [] },
+          output_node: false,
+        },
+        KSampler: {
+          input: { required: { seed: ['INT', { control_after_generate: true }] } },
+          input_order: { required: ['seed'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    expect(createRandomSeed).toHaveBeenCalledOnce()
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 40)?.widgets_values).toEqual([38_521_047])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 40)?.widgets_values_named).toEqual({ seed: 38_521_047 })
+    expect(compiled.apiWorkflow['40']).toMatchObject({ inputs: { seed: 38_521_047 } })
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 41)?.widgets_values).toEqual([7711])
+    expect(compiled.apiWorkflow['41']).toMatchObject({ inputs: { seed: 7711 } })
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 42)?.widgets_values).toEqual([-1, 'fixed'])
+    expect(compiled.apiWorkflow['42']).toMatchObject({ inputs: { seed: -1 } })
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 43)?.widgets_values).toEqual([-1])
+    expect(compiled.apiWorkflow).not.toHaveProperty('43')
+  })
+
+  it('uses the default rgthree random seed generator within the frontend seed range', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 40,
+      type: 'Seed (rgthree)',
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: 'SEED', type: 'INT', links: [] }],
+      widgets_values: [-1],
+      widgets_values_named: { seed: -1 },
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Seed (rgthree)': {
+          input: { required: { seed: ['INT', { default: 0, min: -1125899906842624, max: 1125899906842624 }] } },
+          input_order: { required: ['seed'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+    const apiNode = compiled.apiWorkflow['40']
+    const inputs = apiNode !== null && typeof apiNode === 'object' && !Array.isArray(apiNode)
+      ? (apiNode as Readonly<Record<string, JsonValue>>).inputs
+      : undefined
+    const value = inputs !== null && typeof inputs === 'object' && !Array.isArray(inputs)
+      ? (inputs as Readonly<Record<string, JsonValue>>).seed
+      : undefined
+
+    expect(value).toEqual(expect.any(Number))
+    expect(Number.isSafeInteger(value)).toBe(true)
+    expect(value).toBeGreaterThanOrEqual(0)
+    expect(value).toBeLessThan(1125899906842624)
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 40)?.widgets_values).toEqual([value as number])
+  })
+
+  it('rejects an invalid concrete seed returned for the rgthree frontend random sentinel', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 40,
+      type: 'Seed (rgthree)',
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: 'SEED', type: 'INT', links: [] }],
+      widgets_values: [-1],
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      createRandomSeed: () => -1,
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Seed (rgthree)': {
+          input: { required: { seed: ['INT', { default: 0, min: -1125899906842624, max: 1125899906842624 }] } },
+          input_order: { required: ['seed'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'WORKFLOW_COMPILE_FAILED',
+      message: 'Seed (rgthree) random seed generator returned an invalid seed.',
+    })
+  })
+
   it('rewrites an upstream dimension scalar when the latent-image binding points to a connected widget', async () => {
     const actual: UiWorkflow = {
       version: 0.4,

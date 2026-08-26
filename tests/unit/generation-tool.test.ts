@@ -41,7 +41,7 @@ const toolArguments = {
 }
 
 describe('generate_with_comfyui Tool', () => {
-  it('derives Run ownership from the current Tool call and matching same-turn Skill invocation', async () => {
+  it('derives Run ownership from the current Tool call without a user-triggered Skill invocation', async () => {
     const acceptGeneration = vi.fn(async () => ({ runId: 'run_1' }))
     const tool = createGenerationTool({
       runtime: { acceptGeneration } as never,
@@ -52,11 +52,6 @@ describe('generate_with_comfyui Tool', () => {
     const events = [
       { type: 'turn/start', seq: 0, data: { turn: 7 } },
       { type: 'turn/start', seq: -1, data: { turn: 7 } },
-      {
-        type: 'user/message',
-        seq: 1,
-        data: { turn: 7, content: [], source: { kind: 'skill-invocation', name: 'comfyui-generate', form: 'instructions' } },
-      },
       { type: 'tool/call', seq: 2, data: { turn: 7, step: 0, callId: 'call_generation_1', name: 'generate_with_comfyui', arguments: '{}' } },
     ]
 
@@ -91,7 +86,24 @@ describe('generate_with_comfyui Tool', () => {
     ])
   })
 
-  it('rejects a Tool call without the same-turn comfyui-generate invocation before creating a Run', async () => {
+  it('accepts a Generation Tool call after an Agent-side Skill Tool call without an injected user message', async () => {
+    const acceptGeneration = vi.fn(async () => ({ runId: 'run_agent_skill' }))
+    const tool = createGenerationTool({
+      runtime: { acceptGeneration } as never,
+      workspaceRegistry: { resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })) } as never,
+    })
+    const events = [
+      { type: 'turn/start', seq: 0, data: { turn: 7 } },
+      { type: 'tool/call', seq: 1, data: { turn: 7, step: 0, callId: 'call_skill_1', name: 'skill', arguments: '{"name":"comfyui-generate"}' } },
+      { type: 'tool/result', seq: 2, data: { turn: 7, step: 0, callId: 'call_skill_1', name: 'skill' } },
+      { type: 'tool/call', seq: 3, data: { turn: 7, step: 1, callId: 'call_generation_1', name: 'generate_with_comfyui', arguments: '{}' } },
+    ]
+
+    await expect(tool.execute(toolArguments, execution(events) as never)).resolves.toEqual({ run_id: 'run_agent_skill' })
+    expect(acceptGeneration).toHaveBeenCalledOnce()
+  })
+
+  it('rejects an execution context without the matching Generation Tool call', async () => {
     const acceptGeneration = vi.fn()
     const tool = createGenerationTool({
       runtime: { acceptGeneration } as never,
@@ -99,11 +111,11 @@ describe('generate_with_comfyui Tool', () => {
     })
     const events = [
       { type: 'turn/start', seq: 0, data: { turn: 7 } },
-      { type: 'tool/call', seq: 1, data: { turn: 7, step: 0, callId: 'call_generation_1', name: 'generate_with_comfyui', arguments: '{}' } },
+      { type: 'tool/call', seq: 1, data: { turn: 7, step: 0, callId: 'call_other', name: 'generate_with_comfyui', arguments: '{}' } },
     ]
 
     await expect(tool.execute(toolArguments, execution(events) as never)).rejects.toMatchObject({
-      code: 'GENERATION_SKILL_INVOCATION_REQUIRED',
+      code: 'GENERATION_TOOL_CONTEXT_INVALID',
     })
     expect(acceptGeneration).not.toHaveBeenCalled()
   })
@@ -118,11 +130,6 @@ describe('generate_with_comfyui Tool', () => {
     })
     const events = [
       { type: 'turn/start', seq: 0, data: { turn: 7 } },
-      {
-        type: 'user/message',
-        seq: 1,
-        data: { turn: 7, content: [], source: { kind: 'skill-invocation', name: 'comfyui-generate', form: 'instructions' } },
-      },
       { type: 'tool/call', seq: 2, data: { turn: 7, step: 0, callId: 'call_generation_1', name: 'generate_with_comfyui', arguments: '{}' } },
     ]
     const { model: _model, ...withoutModel } = toolArguments
@@ -136,7 +143,7 @@ describe('generate_with_comfyui Tool', () => {
     )
   })
 
-  it('creates independent Runs for multiple Tool calls after one same-turn Skill invocation', async () => {
+  it('creates independent Runs for multiple same-turn Tool calls', async () => {
     const acceptGeneration = vi.fn()
       .mockResolvedValueOnce({ runId: 'run_portrait' })
       .mockResolvedValueOnce({ runId: 'run_landscape' })
@@ -148,11 +155,6 @@ describe('generate_with_comfyui Tool', () => {
     })
     const events = [
       { type: 'turn/start', seq: 0, data: { turn: 8 } },
-      {
-        type: 'user/message',
-        seq: 1,
-        data: { turn: 8, content: [], source: { kind: 'skill-invocation', name: 'comfyui-generate', form: 'instructions' } },
-      },
       { type: 'tool/call', seq: 2, data: { turn: 8, step: 0, callId: 'call_portrait', name: 'generate_with_comfyui', arguments: '{}' } },
       { type: 'tool/result', seq: 3, data: { turn: 8, step: 0, callId: 'call_portrait', name: 'generate_with_comfyui' } },
       { type: 'tool/call', seq: 4, data: { turn: 8, step: 1, callId: 'call_landscape', name: 'generate_with_comfyui', arguments: '{}' } },

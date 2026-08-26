@@ -110,6 +110,16 @@ describe('native Generation result drawer', () => {
     expect(styles).toContain('.harness-comfyui-results-drawer.harness-comfyui-results-overlay {')
   })
 
+  it('fits image and video previews inside the media container without cropping', () => {
+    const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
+    const mediaRule = styles.match(/\.harness-comfyui-media-preview img,\s*\.harness-comfyui-media-preview video\s*\{(?<body>[^}]*)\}/u)
+
+    expect(mediaRule?.groups?.body).toContain('width: 100%;')
+    expect(mediaRule?.groups?.body).toContain('height: 100%;')
+    expect(mediaRule?.groups?.body).toContain('object-fit: contain;')
+    expect(mediaRule?.groups?.body).not.toContain('object-fit: cover;')
+  })
+
   it('renders a closable fallback drawer for an open blank Session', () => {
     const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
     const workbench = new WorkbenchController(layout)

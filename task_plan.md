@@ -4,12 +4,183 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 32 已完成；等待用户提出下一项产品变更。
+Phase 37 源码版本提交前质量门禁。
 
 ## Current Phase
-Phase 32 complete
+Phase 37 in progress
 
 ## Phases
+
+## Phase 37：发布 v0.30.2
+
+### 必须要实现的目标
+
+- 计划执行者必须把根 `package.json` 的 `version` 修改为 `0.30.2`，并保留当前工作区中已经存在的源码与测试变更。
+- 计划执行者必须按照 `docs/system/releasing.md` 完成源码提交、GitHub CI 等待、发布文档更新、独立语义验收、最终提交、目标标签和 GitHub Release。
+- 计划执行者必须让 `README.md`、`docs/releasenotes.md` 和根 `package.json` 一致指向 `0.30.2` 与 `v0.30.2`。
+- 计划执行者必须让 `v0.30.2` 标签指向最终文档提交的完整 SHA，GitHub Release 使用该标签且不包含附件。
+
+### 验收清单
+
+- [x] 根 `package.json.version` 为 `0.30.2`。
+- [x] 源码版本提交前的 `pnpm quality` 通过。
+- [ ] 源码版本提交已推送，且对应 GitHub CI 成功。
+- [ ] 独立 Reviewer 已验收 `README.md` 与 `docs/releasenotes.md` 的事实、版本和语义一致性；问题已修正并重新验收。
+- [ ] 最终文档提交后的 `pnpm quality` 通过，且对应 GitHub CI 成功。
+- [ ] `v0.30.2` 标签、GitHub Release、Release 标题、Release 说明和空附件列表已核对。
+
+### 非本次目标
+
+- 本阶段不修改数据源仓库、ComfyUI 实例文件或未受本次源码变更影响的系统模块。
+- 本阶段不构建或上传产品包；仓库发布规范只要求 Git tag 与 GitHub Release 记录。
+- 本阶段不删除或移动已经发布的 `v0.30.1` 标签或 Release。
+
+### 已获得的授权
+
+- 用户明确要求提交当前变更并发布版本 `v0.30.2`。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| `tests/contract/engineering-baseline.test.ts` 仍断言根 `package.json.version` 为 `0.30.1`，导致源码版本更新后的合同测试失败 | 1 | 将合同断言更新为目标版本 `0.30.2`，再重新执行完整质量门禁。 |
+
+状态：源码版本门禁已完成，等待源码提交与推送
+
+## Phase 36：右侧媒体预览完整适配容器
+
+### 必须要实现的目标
+
+- 右侧结果列的图片和视频必须完整显示媒体画面，不得按媒体卡宽高比裁剪原文件。
+- 图片和视频必须以预览容器高度为主要缩放约束，并在媒体过宽时受容器宽度限制。
+- 图片和视频必须保持原始宽高比；容器内未被媒体占用的区域可以留空。
+
+### 验收清单
+
+- [x] 回归测试必须拒绝右侧媒体预览继续使用 `object-fit: cover`。
+- [x] 生产样式必须使用 `object-fit: contain`，并让媒体元素同时受预览容器宽度和高度约束。
+- [x] 图片与视频必须共享同一套完整显示规则。
+- [x] 完整质量门禁、生产重启、六项健康检查和 `git diff --check` 必须通过。
+
+### 非本次目标
+
+- 本阶段不修改媒体卡分页、筛选、下载、原文件新窗口打开或 Workflow 下载功能。
+- 本阶段不修改上下文选择弹窗的封面图缩放规则。
+- 本阶段不修改静态 prototype 的独立样式。
+
+### 已获得的授权
+
+- 用户明确要求右侧结果列媒体缩放到容器内、以高度优先并显示媒体全貌。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 首次状态记录补丁使用了与 `progress.md` 不一致的标题文本，补丁校验失败 | 1 | 重新读取 Phase 36 的准确标题和现有条目后，使用精确上下文写入；失败补丁没有修改文件。 |
+
+状态：已完成
+
+## Phase 35：实例化 API Workflow 中的随机种子标记
+
+### 必须要实现的目标
+
+- `ComfyWorkflowCompiler` 必须在提交前把活动 `Seed (rgthree)` 节点的 `seed=-1` 前端随机标记转换为非负整数。
+- 每次 Generation Run 编译必须独立生成随机 seed；同一个 Run 的 Actual Workflow 与 API Workflow 必须保存该 Run 实际生成的相同 seed，以支持媒体复现。
+- Generation Request 显式提供的非负种子必须保持不变。
+- 修复不得改变其他 ComfyUI seed 节点；修复不得按模板 ID、ComfyUI 节点 ID 或节点标题写特例。
+
+### 验收清单
+
+- [x] 回归测试复现 `-1` 导致 Impact Wildcard Processor 保留模板旧 `populated_text` 的提交前条件。
+- [x] 回归测试证明注入的确定性随机数测试替身产生的 seed 同时进入 Actual Workflow 和 API Workflow；生产默认随机数源不得固定 seed。
+- [x] 回归测试覆盖 `Seed (rgthree)` 显式种子保持不变、其他 seed 节点的 `-1` 保持不变和无效随机数源拒绝。
+- [x] 完整质量门禁、生产重启和六项健康检查通过。
+- [x] 三个真实模板 40 Generation Run 分别产生非 `-1` 且两两不同的随机 seed；每个 Run 的新 `wildcard_text` 均被实例转换为新的 `populated_text`，最终媒体体现各自正面提示词。
+
+### 非本次目标
+
+- 本阶段不修改数据源仓库中的模板 40 Workflow。
+- 本阶段不直接覆盖 Impact Wildcard Processor 的 `populated_text`。
+- 本阶段不修改 rgthree、Impact Pack 或 ComfyUI 实例文件。
+
+### 已获得的授权
+
+- 用户明确要求修复已确认的 `Seed (rgthree)=-1` 与 Impact Prompt 预处理顺序问题。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 计划修正补丁把 `findings.md` 行误放入 `task_plan.md` 上下文，补丁校验失败 | 1 | 分别定位三个规划文件中的 Phase 35 行并使用精确上下文修正；失败补丁没有修改文件。 |
+| 默认随机数测试直接读取 `JsonValue.inputs`，TypeScript 无法证明该值为对象 | 2 | `Array.isArray` 不能排除只读数组联合；测试在运行时对象检查后显式收窄为只读 JSON record。生产代码没有类型错误。 |
+| in-app Browser 安全策略禁止刷新 `127.0.0.1:4173` | 1 | 不绕过浏览器策略；使用生产 Host 的真实 Source CLI、compiler、transport 和 runtime 在隔离临时 Repository 中执行三次完整模板 40 调用。 |
+
+状态：已完成
+
+## Phase 34：保留未覆盖模板参数的 Workflow 原始值
+
+### 必须要实现的目标
+
+- Generation Request 没有提供某个模板参数时，Host 不得把 `parameters_json.default_value` 作为运行时覆盖值写入 Workflow。
+- Generation Request 显式提供某个模板参数时，Host 必须继续校验参数 ID、值类型和数值范围，并把该值写入 Workflow。
+- `required: true` 的模板参数在 Generation Request 缺少显式值时必须继续返回具体错误。
+- 通用规则必须覆盖提示词、尺寸、种子和其他模板参数，不得按模板 ID、ComfyUI 节点 ID 或参数 kind 写特例。
+
+### 验收清单
+
+- [x] 回归测试复现元数据 `default_value` 与 Workflow 原始值不一致时，未提供参数导致 Workflow 被错误覆盖。
+- [x] 回归测试证明未提供的非必填参数不会进入编译器运行时覆盖集合。
+- [x] 回归测试证明显式参数覆盖和 `required: true` 缺值错误保持有效。
+- [x] 使用真实模板 40 预编译验证负面提示词、1024×1536 和随机种子原值被保留。
+- [x] 完整质量门禁、生产重启和六项健康检查通过。
+
+### 非本次目标
+
+- 本阶段不修改数据源仓库中的模板 40 记录。
+- 本阶段不为模板 40、`negative_prompt` 或任何 ComfyUI 节点 ID 增加硬编码分支。
+- 本阶段不重新生成此前已经错误完成的媒体。
+
+### 已获得的授权
+
+- 用户明确要求修复模板默认值处理的根本规则，并拒绝模板级或参数级硬编码。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+
+状态：已完成
+
+## Phase 33：删除 Generation Tool 的手动 Skill Invocation 门禁
+
+### 必须要实现的目标
+
+- `generate_with_comfyui` 必须允许 Agent 在当前 turn 内通过 Skill Tool 取得生成指令后直接创建 Run，不要求用户消息包含 `skill-invocation` source。
+- Generation Tool 必须继续从当前 Tool Call、Session 和 Workspace Registry 建立 Run 所有权。
+- 项目必须删除不再可达的 `GENERATION_SKILL_INVOCATION_REQUIRED` 错误码和前端文案。
+
+### 验收清单
+
+- [x] 单元测试证明没有 `skill-invocation user/message` 的合法 Generation Tool Call 可以创建 Run。
+- [x] 单元测试证明 Agent-side Skill Tool Call 后的 Generation Tool Call 可以创建 Run。
+- [x] 单元测试证明缺少匹配 Generation Tool Call 的执行上下文仍被拒绝。
+- [x] 完整质量门禁、生产重启和六项健康检查通过。
+
+### 非本次目标
+
+- 本阶段不修改 ComfyUI Workflow 编译、Resolver Tool、Prompt 重写、媒体存储或右侧栏。
+- 本阶段不修改 Harness 核心事件模型或 Skill Tool 实现。
+
+### 已获得的授权
+
+- 用户明确拒绝要求手动 `/comfyui-generate` 或 UI 点选技能才能调用 Generation Tool 的事件门禁。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+
+状态：已完成
 
 ## Phase 32：真实双 LoRA Skill 生成验收
 

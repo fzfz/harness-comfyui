@@ -173,4 +173,86 @@ describe('SourceGenerationPreparer', () => {
       parameters: { ...request.parameters, sampler_name: 'euler' },
     })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
   })
+
+  it('does not turn metadata defaults into runtime overrides for omitted optional parameters', async () => {
+    const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
+      actualWorkflow: input.workflow,
+      apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
+      activeOutputNodeIds: ['3'],
+    }))
+    const bundle: ComfyTemplateBundle = {
+      ...template(),
+      parameters: [
+        template().parameters[0]!,
+        {
+          parameterId: 'negative_prompt',
+          kind: 'negative_prompt',
+          valueType: 'string',
+          defaultValue: '',
+          required: false,
+        },
+        {
+          parameterId: 'width',
+          kind: 'width',
+          valueType: 'integer',
+          defaultValue: 512,
+          required: false,
+        },
+        {
+          parameterId: 'height',
+          kind: 'height',
+          valueType: 'integer',
+          defaultValue: 512,
+          required: false,
+        },
+        {
+          parameterId: 'seed',
+          kind: 'seed',
+          valueType: 'integer',
+          defaultValue: 1022776966395948,
+          required: false,
+        },
+      ],
+    }
+    const preparer = new SourceGenerationPreparer({
+      defaultInstanceId: '1',
+      source: source(bundle),
+      compiler: { compile },
+    })
+
+    await preparer.prepare({
+      ...request,
+      parameters: { positive_prompt: '1girl, white hair' },
+    })
+
+    expect(compile).toHaveBeenCalledWith(expect.objectContaining({
+      runtimeParameters: [{
+        definition: expect.objectContaining({ parameterId: 'positive_prompt' }),
+        value: '1girl, white hair',
+      }],
+    }))
+  })
+
+  it('requires an explicit request value for required parameters even when metadata declares a default', async () => {
+    const bundle: ComfyTemplateBundle = {
+      ...template(),
+      parameters: [{
+        parameterId: 'positive_prompt',
+        kind: 'positive_prompt',
+        valueType: 'string',
+        defaultValue: 'metadata prompt',
+        required: true,
+      }],
+    }
+    const preparer = new SourceGenerationPreparer({
+      defaultInstanceId: '1',
+      source: source(bundle),
+      compiler: { compile: vi.fn() },
+    })
+
+    await expect(preparer.prepare({ ...request, parameters: {} })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: 'Generation parameter "positive_prompt" is required.',
+    })
+  })
 })

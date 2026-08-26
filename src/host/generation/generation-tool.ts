@@ -17,42 +17,23 @@ export interface CreateGenerationToolOptions {
   readonly workspaceRegistry: Pick<WorkspaceRegistry, 'resolveByPath'>
 }
 
-function invocationRequired(): never {
+function toolContextInvalid(): never {
   throw new GenerationRuntimeError(
-    'GENERATION_SKILL_INVOCATION_REQUIRED',
-    'The current turn must invoke the comfyui-generate Skill before calling generate_with_comfyui.',
+    'GENERATION_TOOL_CONTEXT_INVALID',
+    'The Generation Tool execution context does not contain one matching generate_with_comfyui Tool Call.',
   )
-}
-
-function exactSkillInvocation(source: unknown): boolean {
-  if (source === null || typeof source !== 'object' || Array.isArray(source)) return false
-  const record = source as Record<string, unknown>
-  return Object.keys(record).length === 3
-    && record.kind === 'skill-invocation'
-    && record.name === 'comfyui-generate'
-    && record.form === 'instructions'
 }
 
 async function deriveIdentity(
   workspaceRegistry: Pick<WorkspaceRegistry, 'resolveByPath'>,
   exec: ToolRunContext,
 ): Promise<GenerationIdentity> {
-  if (exec.agent === undefined) invocationRequired()
+  if (exec.agent === undefined) toolContextInvalid()
   const session = exec.agent.session
   const calls = session.events.flatMap(event => event.type === 'tool/call' && String(event.data.callId) === String(exec.callId) ? [event] : [])
-  if (calls.length !== 1) invocationRequired()
+  if (calls.length !== 1) toolContextInvalid()
   const call = calls[0]!
-  if (call.data.name !== GENERATION_TOOL_NAME) invocationRequired()
-  const starts = session.events
-    .flatMap(event => event.type === 'turn/start' && event.data.turn === call.data.turn && event.seq < call.seq ? [event] : [])
-    .sort((left, right) => right.seq - left.seq)
-  const start = starts[0]
-  if (start === undefined) invocationRequired()
-  const invoked = session.events.some(event => event.type === 'user/message'
-    && event.seq > start.seq
-    && event.seq < call.seq
-    && exactSkillInvocation(event.data.source))
-  if (!invoked) invocationRequired()
+  if (call.data.name !== GENERATION_TOOL_NAME) toolContextInvalid()
   const cwd = session.header.cwd
   if (typeof cwd !== 'string' || cwd.length === 0) {
     throw new GenerationRuntimeError('GENERATION_WORKSPACE_REQUIRED', 'The current Session does not declare a Workspace directory.')

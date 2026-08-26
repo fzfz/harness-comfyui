@@ -149,12 +149,11 @@ function resolveParameterValues(
   }
   const values: Record<string, JsonValue> = {}
   for (const definition of definitions) {
-    const suppliedValue = supplied[definition.parameterId]
-    const value = suppliedValue ?? definition.defaultValue
-    if (value === undefined) {
+    if (!Object.hasOwn(supplied, definition.parameterId)) {
       if (definition.required) fail(`Generation parameter "${definition.parameterId}" is required.`)
       continue
     }
+    const value = supplied[definition.parameterId]!
     if (!valueMatches(definition, value)) fail(`Generation parameter "${definition.parameterId}" has an invalid value type.`)
     if (typeof value === 'number') {
       if (definition.minimum !== undefined && value < definition.minimum) fail(`Generation parameter "${definition.parameterId}" is below its minimum.`)
