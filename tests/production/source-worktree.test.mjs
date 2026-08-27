@@ -27,6 +27,14 @@ async function temporaryDirectory(prefix) {
   return path
 }
 
+async function linkedWorktreeRepository(prefix) {
+  const root = await temporaryDirectory(prefix)
+  await writeFile(resolve(root, '.git'), 'gitdir: /test-only/linked-worktree\n', 'utf8')
+  await symlink(resolve(repositoryRoot, 'config'), resolve(root, 'config'), 'dir')
+  await symlink(resolve(repositoryRoot, 'package.json'), resolve(root, 'package.json'), 'file')
+  return root
+}
+
 async function pathExists(path) {
   try {
     await lstat(path)
@@ -99,48 +107,47 @@ describe('source worktree development definition', () => {
   })
 
   it('loads a worktree-only context while retaining the production source definition', async () => {
-    const root = await temporaryDirectory('harness-worktree-context-')
+    const root = await linkedWorktreeRepository('harness-worktree-context-')
     const environmentFile = resolve(root, '.env')
     const definitionPath = resolve(root, 'worktree-development.json')
     await writeFile(environmentFile, 'TEST_ONLY_KEY=value\n', { encoding: 'utf8', mode: 0o600 })
     await writeFile(definitionPath, `${JSON.stringify(definition(environmentFile), null, 2)}\n`, 'utf8')
 
     const context = await loadSourceWorktreeContext({
-      repositoryRoot,
+      repositoryRoot: root,
       definitionPath,
       environment: { HARNESS_COMFYUI_SERVER_PORT: '18173' },
     })
 
     expect(context.definition.runtimeId).toBe('harness-comfyui-worktree-development')
-    expect(context.runtime.runtimeRoot).toBe(resolve(repositoryRoot, '.local/worktree-development'))
-    expect(context.dshHome).toBe(resolve(repositoryRoot, '.local/worktree-development/dsh-home'))
+    expect(context.runtime.runtimeRoot).toBe(resolve(root, '.local/worktree-development'))
+    expect(context.dshHome).toBe(resolve(root, '.local/worktree-development/dsh-home'))
     expect(context.sourceManagedStatePath).toBe(
-      resolve(repositoryRoot, '.local/worktree-development/state/source-managed.json'),
+      resolve(root, '.local/worktree-development/state/source-managed.json'),
     )
     expect(context.dshProfile).toBe('comfyui-workbench-development')
     expect(context.userEnvironmentFilePath).toBe(environmentFile)
     expect(context.startupWorkspacePath).toBe('/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness')
     expect(context.configReadOrder[0]).toBe(definitionPath)
-    expect(context.configReadOrder[1]).toBe(resolve(repositoryRoot, 'config/source-production.json'))
+    expect(context.configReadOrder[1]).toBe(resolve(root, 'config/source-production.json'))
     expect(context.definition.catalogCliPath).toBe(
-      resolve(repositoryRoot, '../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs'),
+      resolve(root, '../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs'),
     )
   })
 
   it('rejects an unavailable configured user environment file without creating the DSH home', async () => {
-    const root = await temporaryDirectory('harness-worktree-missing-env-')
+    const root = await linkedWorktreeRepository('harness-worktree-missing-env-')
     const environmentFile = resolve(root, 'missing.env')
     const definitionPath = resolve(root, 'worktree-development.json')
     const runtimeRelativeRoot = `.local/missing-env-${randomUUID()}`
-    const runtimeRoot = resolve(repositoryRoot, runtimeRelativeRoot)
-    temporaryPaths.push(runtimeRoot)
+    const runtimeRoot = resolve(root, runtimeRelativeRoot)
     await writeFile(
       definitionPath,
       `${JSON.stringify(definition(environmentFile, { runtimeRelativeRoot }), null, 2)}\n`,
       'utf8',
     )
 
-    await expect(loadSourceWorktreeContext({ repositoryRoot, definitionPath }))
+    await expect(loadSourceWorktreeContext({ repositoryRoot: root, definitionPath }))
       .rejects.toThrow('worktree development user environment file is unavailable')
     expect(await pathExists(resolve(runtimeRoot, 'dsh-home'))).toBe(false)
   })
@@ -176,11 +183,10 @@ describe('source worktree development definition', () => {
       message: 'worktree development startup workspace is unavailable',
     },
   ])('rejects $name before creating the configured runtime', async ({ prepare, message }) => {
-    const root = await temporaryDirectory('harness-invalid-worktree-input-')
+    const root = await linkedWorktreeRepository('harness-invalid-worktree-input-')
     const definitionPath = resolve(root, 'worktree-development.json')
     const runtimeRelativeRoot = `.local/invalid-input-${randomUUID()}`
-    const runtimeRoot = resolve(repositoryRoot, runtimeRelativeRoot)
-    temporaryPaths.push(runtimeRoot)
+    const runtimeRoot = resolve(root, runtimeRelativeRoot)
     const value = await prepare(root)
     await writeFile(
       definitionPath,
@@ -188,7 +194,7 @@ describe('source worktree development definition', () => {
       'utf8',
     )
 
-    await expect(loadSourceWorktreeContext({ repositoryRoot, definitionPath })).rejects.toThrow(message)
+    await expect(loadSourceWorktreeContext({ repositoryRoot: root, definitionPath })).rejects.toThrow(message)
     expect(await pathExists(runtimeRoot)).toBe(false)
   })
 })
@@ -317,12 +323,10 @@ describe('source worktree command adapter', () => {
   })
 
   it('uses the saved worktree context for process management without revalidating current startup inputs', async () => {
-    const root = await temporaryDirectory('harness-saved-worktree-context-')
+    const root = await linkedWorktreeRepository('harness-saved-worktree-context-')
     const environmentFile = resolve(root, '.env')
     const definitionPath = resolve(root, 'worktree-development.json')
     const runtimeRelativeRoot = `.local/saved-worktree-${randomUUID()}`
-    const runtimeRoot = resolve(repositoryRoot, runtimeRelativeRoot)
-    temporaryPaths.push(runtimeRoot)
     await writeFile(environmentFile, 'TEST_ONLY_KEY=value\n', 'utf8')
     await writeFile(
       definitionPath,
@@ -330,7 +334,7 @@ describe('source worktree command adapter', () => {
       'utf8',
     )
     const savedContext = await loadSourceWorktreeContext({
-      repositoryRoot,
+      repositoryRoot: root,
       definitionPath,
       environment: { HARNESS_COMFYUI_SERVER_PORT: '18175' },
     })
