@@ -12,7 +12,7 @@
 
 ## Research Findings
 
-- 独立 worktree 最初从提交 `1d40cd9` 创建；首次调查期间快进到 `64149eb`；本次修订又快进到 Harness `v0.30.5` 提交 `eea9c4d`，并与当前 `main`、`origin/main` 对齐。
+- 独立 worktree 最初从提交 `1d40cd9` 创建；首次调查期间快进到 `64149eb`，计划修订时快进到 Harness `v0.30.5` 提交 `eea9c4d`，实施期间又 rebase 到 Harness `v0.30.6` 提交 `1528167`。
 - 原工作区包含大量未提交删除和新增文件；本次工作使用独立 worktree，避免修改或覆盖这些用户改动。
 - 独立 worktree 位于 `/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-insert-context-cover-gallery`。
 - 独立分支为 `codex/plan-insert-context-cover-gallery`。
@@ -131,6 +131,8 @@
 - Source 生产 PID 文件的权威路径是 `runtime/run/app.pid`；计划可以通过该文件读取 PID，并用 `lsof -a -p "$SOURCE_PID" -d cwd -Fn` 核对进程工作目录。
 - 使用 Source 生产 CLI 对八个目标 operation 的第一页进行只读复核：每类均返回 9 条结果，每条都显式提供数组类型的 `sample_image_urls`，封面重复计数均为 0；generation model 单条最大样例数为 5，LoRA 单条最大样例数为 4。
 - 修订计划中的 Source Git/tag/version、`npm run prod:status`、PID cwd 和三组 live CLI 命令已经按计划文本逐条执行；live CLI 的 10 个 `jq -e` 断言全部退出 0。
+- Harness v0.30.6 在本次实施期间新增按 Session 隔离的弹窗导航存储。画廊实现已经在 `1528167` 之上完成合并；`openDialog()` 不会重置持久化导航，画廊关闭只切换画廊状态并恢复封面焦点。
+- v0.30.7 集成基线的 `pnpm quality` 已通过：321 项 unit/integration、22 项 contract/security、14 项 production、27 项 prototype，函数覆盖率为 100%。
 
 ## Issues Encountered
 
@@ -172,4 +174,5 @@
 
 ## Visual/Browser Findings
 
-- 尚未进行浏览器或图片检查。
+- 独立 worktree 的生产进程状态与健康检查在 rebase 前通过。
+- 本地界面验收在“添加工作区”操作触发系统目录选择器后无法继续读取页面结构；该次尝试没有作为最终界面验收证据。

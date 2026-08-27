@@ -14,5 +14,5 @@ v0.30.7 为“插入上下文”资源卡片增加封面与样例图片画廊，
 ## 验证
 
 - Catalog 合同、CLI、Remote 和 Client 定向回归覆盖八个 operation、URL 拒绝分支、预览与选择隔离、准确 `CatalogContext` 插入、按钮与键盘切图、边界禁用、图片错误、焦点恢复、单图和无封面记录。
-- 完整 `pnpm quality` 的最终结果在合并 v0.30.6 导航存储后重新记录。
+- 完整 `pnpm quality` 已通过：321 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。
 - 本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。

@@ -136,7 +136,7 @@
 
 - **Status:** in_progress
 - Actions taken:
-  - 确认 Harness `main`、`origin/main` 与独立 worktree 当前都位于 `eea9c4d`，相关运行文件没有新的基线差异。
+  - 实施开始时确认 Harness `main`、`origin/main` 与独立 worktree 都位于 `eea9c4d`；实施期间 `main` 发布 v0.30.6 后，把画廊提交 rebase 到 `1528167`。
   - 定位当前资源卡片的 `toggleOption()`、`aria-pressed`、封面 `<img>`、选择状态 CSS 和现有单元测试。
   - 读取 `CatalogItem` exact-key parser、Catalog CLI 安全投影、Workbench 文案、卡片 CSS 和现有 Catalog/Client 单元测试。
   - 确认实现必须同时扩展所有 `CatalogItem` fixture，并把旧整卡按钮拆为同级封面预览按钮与记录选择按钮。
@@ -149,7 +149,11 @@
   - 新增 `docs/v0.1/source-contract-v0.84.0.md`、ADR 0013、当前 PRD 与系统文档，并把产品版本更新为 `0.30.7`。
   - 完整 `pnpm quality` 通过：297 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过，函数覆盖率为 100%。
   - 独立 Reviewer 首轮指出 Catalog 错误码、Source 历史文档状态、实施前基线措辞和每页数量四项文档问题；全部修正后，Reviewer 最终复验结论为 PASS。
-  - Worktree v0.30.7 的 `prod:status` 与 `prod:health` 通过；本地浏览器在目录选择器打开后无法继续获取页面快照，该次浏览器检查没有作为验收证据。
+  - Rebase 前 worktree 生产进程的 `prod:status` 与 `prod:health` 通过；本地浏览器在目录选择器打开后无法继续获取页面快照，该次浏览器检查没有作为验收证据。
+  - 解决 `native-surfaces.tsx` 的并行变更时，同时保留 v0.30.6 的导航持久化错误显示、按 Session 重挂载、打开弹窗不重置导航，以及 v0.30.7 的画廊状态、焦点恢复和选择隔离。
+  - 独立 Reviewer 复验指出缺少“非默认 Session 导航状态 + gallery”组合回归；新增两个测试，覆盖画廊关闭保持五项导航值，以及画廊打开时切换 Session 清理监听和未确认选择。
+  - v0.30.7 集成基线的完整 `pnpm quality` 通过：321 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过，函数覆盖率为 100%。
+  - 独立 Reviewer 对两项组合回归、选择隔离、v0.30.6 导航兼容、测试数量、错误码和 Source 范围完成最终复验，结论为 PASS。
 - Files created/modified:
   - `src/catalog/contract.ts`
   - `src/host/catalog/catalog-cli.ts`
@@ -178,6 +182,7 @@
 | 修订计划独立复验 | 当前 `implementation-plan.md` | Source 已完成范围、现场、Harness 工作和授权边界完整 | Reviewer 最终结论 PASS，无剩余问题 | pass |
 | 初始 Harness 合同与画廊定向测试 | 4 个合同、CLI 和 Client 测试文件 | 新字段严格校验且选择与预览互不污染 | 4 个文件、91 个测试全部通过 | pass |
 | Harness 完整质量门禁 | `pnpm quality` | 依赖、安全、类型、覆盖率、合同、生产与原型测试全部通过 | 297 项 unit/integration、22 项 contract/security、14 项 production、27 项 prototype 全部通过；函数覆盖率 100% | pass |
+| v0.30.6 集成后的 Harness 完整质量门禁 | `pnpm quality` | 画廊与按 Session 导航行为同时通过全部门禁 | 321 项 unit/integration、22 项 contract/security、14 项 production、27 项 prototype 全部通过；函数覆盖率 100% | pass |
 | 最终独立语义复验 | 当前计划、PRD、Source 合同、ADR、系统文档、发布说明与 Client 文案 | 选择隔离、错误码、外部 Source 边界、版本和验收标准一致 | Reviewer 最终结论 PASS，首轮四项问题全部关闭 | pass |
 
 ## Error Log
@@ -202,13 +207,15 @@
 | 2026-08-27 | 文档总补丁中的一个 PRD 原文空格与补丁上下文不一致，`apply_patch` 整体拒绝该补丁 | 1 | 拆分为新文件补丁和按精确原文定位的小补丁；合同文档、ADR、PRD 与系统文档已分别完成。 |
 | 2026-08-27 | 首次完整 `pnpm quality` 的 297 项 unit/integration 测试全部通过，但新增“上一张”按钮处理函数未被直接调用，函数覆盖率为 99.83% | 1 | 增加“下一张→上一张→下一张”的按钮回归，再继续运行完整质量门禁。 |
 | 2026-08-27 | 本地浏览器在点击“添加工作区”后打开系统目录选择器，后续页面结构与可见 DOM 快照连续超时 | 1 | 停止重复浏览器操作；使用通过的 worktree `prod:status`、`prod:health` 和覆盖完整交互分支的 Client 自动化测试作为发布前证据，生产部署后再进行可用页面验收。 |
+| 2026-08-27 | 实施期间远端 `main` 已发布 v0.30.6，并修改同一个弹窗组件 | 1 | 把画廊提交 rebase 到 v0.30.6，保留 Session 导航行为，把本需求版本顺延为 v0.30.7，并重新运行完整质量门禁。 |
+| 2026-08-27 | Reviewer 发现画廊测试与非默认 Session 导航测试彼此独立 | 1 | 新增画廊关闭保持五项导航值和画廊打开时切换 Session 的组合回归，再次运行完整质量门禁。 |
 
 ## 5-Question Reboot Check
 
 | Question | Answer |
 |---|---|
-| Where am I? | Phase 8 的 Harness 实现、文档和本地完整质量门禁已完成。 |
-| Where am I going? | 完成独立语义复验、真实界面验收、提交、Harness GitHub CI、v0.30.7 发布和生产部署。 |
+| Where am I? | Phase 8 的 Harness 实现、v0.30.6 集成、文档和本地完整质量门禁已完成。 |
+| Where am I going? | 完成集成后的独立语义复验、Harness GitHub CI、v0.30.7 发布、生产部署和可用界面验收。 |
 | What's the goal? | 发布并部署不破坏记录选择交互的封面图样例画廊。 |
 | What have I learned? | 见 `findings.md`。 |
 | What have I done? | 已完成独立 worktree、Source v0.84.0 合同适配、画廊实现、完整分支测试、文档和 v0.30.7 版本更新。 |

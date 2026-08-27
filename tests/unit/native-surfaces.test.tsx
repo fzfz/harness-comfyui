@@ -495,6 +495,51 @@ describe('native Harness workbench surfaces', () => {
     act(() => renderer!.unmount())
   })
 
+  it('keeps all persisted navigation values while opening, moving, and closing the gallery', async () => {
+    const storage = new MemoryStorage()
+    const navigationStore = new ContextDialogNavigationStore(() => storage)
+    const dialogNavigation = navigationStore.for('session-a')
+    const persistedNavigation = {
+      selectedBaseModelId: '2',
+      selectedKind: 'lora' as const,
+      queryText: 'Age refined',
+      submittedQuery: 'Age',
+      currentPage: 2,
+    }
+    dialogNavigation.update(() => persistedNavigation)
+    const api = catalog([CONTEXT_OPTIONS[2]!], 13)
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: api,
+        dialogNavigation,
+        input: inputState() as never,
+        sessionId: 'session-a',
+        sessionInput: sessionInput() as never,
+        workbench: activeController(),
+      }))
+    })
+
+    await openDialog(renderer!)
+    const option = CONTEXT_OPTIONS[2]!
+    act(() => {
+      ;(renderer!.root.findByProps({
+        'aria-label': `${WORKBENCH_COPY.openGallery} ${option.label}`,
+      }).props.onClick as () => void)()
+    })
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
+    })
+    act(() => { (renderer!.root.findByProps({ role: 'dialog' }).props.onClick as () => void)() })
+
+    expect(dialogNavigation.getSnapshot().state).toEqual(persistedNavigation)
+    expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
+    expect(api.search).toHaveBeenLastCalledWith({
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+    }, expect.any(AbortSignal))
+    act(() => renderer!.unmount())
+  })
+
   it('resets a removed base model before querying the current Catalog', async () => {
     const storage = new MemoryStorage()
     const navigationStore = new ContextDialogNavigationStore(() => storage)
@@ -700,6 +745,73 @@ describe('native Harness workbench surfaces', () => {
     })).toBeDefined()
     expect(renderer!.root.findByProps({
       'aria-label': `${WORKBENCH_COPY.selectedItem} ${CONTEXT_OPTIONS[0]!.label}`,
+    })).toBeDefined()
+    act(() => renderer!.unmount())
+  })
+
+  it('cleans up an open gallery and pending selection when the reused Dock changes Session', async () => {
+    const removeListener = vi.spyOn(documentTarget, 'removeEventListener')
+    const storage = new MemoryStorage()
+    const navigationStore = new ContextDialogNavigationStore(() => storage)
+    const sessionA = navigationStore.for('session-a')
+    const sessionANavigation = {
+      selectedBaseModelId: '2',
+      selectedKind: 'lora' as const,
+      queryText: 'Age refined',
+      submittedQuery: 'Age',
+      currentPage: 2,
+    }
+    sessionA.update(() => sessionANavigation)
+    const sessionB = navigationStore.for('session-b')
+    sessionB.update(() => ({
+      selectedBaseModelId: null,
+      selectedKind: 'work',
+      queryText: 'city refined',
+      submittedQuery: 'city',
+      currentPage: 3,
+    }))
+    const api = catalog([CONTEXT_OPTIONS[2]!], 30)
+    const workbench = activeController()
+    const renderDock = (
+      sessionId: string,
+      dialogNavigation: ReturnType<ContextDialogNavigationStore['for']>,
+    ) => createElement(WorkbenchDock, {
+      catalog: api,
+      dialogNavigation,
+      input: inputState() as never,
+      sessionId,
+      sessionInput: sessionInput() as never,
+      workbench,
+    })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = create(renderDock('session-a', sessionA)) })
+    await openDialog(renderer!)
+
+    const option = CONTEXT_OPTIONS[2]!
+    act(() => {
+      ;(renderer!.root.findByProps({
+        'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,
+      }).props.onClick as () => void)()
+    })
+    act(() => {
+      ;(renderer!.root.findByProps({
+        'aria-label': `${WORKBENCH_COPY.openGallery} ${option.label}`,
+      }).props.onClick as () => void)()
+    })
+
+    act(() => { renderer!.update(renderDock('session-b', sessionB)) })
+    expect(renderer!.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(removeListener).toHaveBeenCalledWith('keydown', expect.any(Function))
+
+    act(() => { renderer!.update(renderDock('session-a', sessionA)) })
+    await openDialog(renderer!)
+    expect(sessionA.getSnapshot().state).toEqual(sessionANavigation)
+    expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
+    expect(api.search).toHaveBeenLastCalledWith({
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+    }, expect.any(AbortSignal))
+    expect(renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,
     })).toBeDefined()
     act(() => renderer!.unmount())
   })

@@ -81,7 +81,9 @@ Phase 8
 - [x] 实现单一 Modal 画廊、左右箭头、键盘、焦点和图片错误状态。
 - [x] 补齐数据合同、Client 和交互分支测试。
 - [x] 更新 Harness `0.30.7` 文档、版本和 ADR，并完成独立语义审查。
-- [ ] 运行质量门禁、提交、push、等待 CI、创建 release 并部署生产。
+- [x] 在 v0.30.6 集成基线上运行完整 Harness 质量门禁。
+- [x] 由独立 Reviewer 复验非默认 Session 导航与画廊组合回归，最终结论为 PASS。
+- [ ] 完成提交、push、CI、release、生产部署和可用界面验收。
 - **Status:** in_progress
 
 ## 验收清单
@@ -122,13 +124,14 @@ Phase 8
 | Decision | Rationale |
 |---|---|
 | 本轮只进行调查与计划编写 | 用户要求审评通过后再执行。 |
-| 新 worktree 从 `main` 创建，并在本次修订时快进到当前 `main` 提交 `eea9c4d` | 原工作区包含大量用户未提交改动；独立 worktree 隔离计划文件，同时保持计划基线与当前主分支一致。 |
+| 新 worktree 从 `main` 创建，实施提交 rebase 到 v0.30.6 提交 `1528167` | 原工作区包含大量用户未提交改动；独立 worktree 隔离用户改动，并让画廊保留 v0.30.6 的 Session 导航行为。 |
 | 独立 Reviewer 最终结论为 PASS | Reviewer 的首轮问题清单已全部修正；复验确认计划可以交给用户审评。 |
 | Source 已完成版本按实际 tag `v0.84.0` 进入修订计划 | Source `main`、`origin/main`、tag `v0.84.0` 与 `package.json.version: 0.84.0` 已经一致；计划不能继续要求实现或发布先前假定的 Source 版本。 |
 | Source 生产状态按最终现场 `v0.84.0/a3d1a8c` 进入计划 | Source 生产部署由外部流程在本轮调研期间完成；Harness 直接消费已完成合同，不把 Source 仓库状态扩展为本仓库门禁。 |
 | 本次修订的独立 Reviewer 最终结论为 PASS | Reviewer 确认 Source 已完成范围、生产/live 现状、Harness 合同、交互分支、命令、文件路径和授权边界完整。 |
 | Source 仓库 CI 不属于 Harness 实施门禁 | 用户明确指出 Source 是另一个仓库；Harness 计划只消费已经完成并部署的 Source `v0.84.0` 数据合同。 |
 | 封面预览与记录选择必须使用同级交互区域 | 用户批准执行时明确要求封面点击不能破坏每条记录原有的选择交互；封面预览不得调用 `toggleOption()`，记录选择继续维护原状态。 |
+| Harness 画廊版本使用 v0.30.7 | v0.30.6 已由并行提交发布；本次提交不能覆盖已发布 tag，并且必须在 v0.30.6 之上集成。 |
 
 ## Errors Encountered
 

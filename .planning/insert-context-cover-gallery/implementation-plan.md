@@ -5,12 +5,12 @@
 - 状态：用户已批准执行。
 - 用户补充验收要求：封面预览按钮不能破坏每条记录原有的选择交互；封面预览按钮不得调用 `toggleOption()`，记录选择按钮必须继续维护 `aria-pressed`、待确认数量和最终插入结果。
 - 独立语义审查：最终结论 PASS；Reviewer 的四项文档一致性问题已经全部修正并复验关闭。
-- Harness 基线：`main` 提交 `eea9c4d307e90c6d68bd2da37b69fe0891a9992f`，tag `v0.30.5`，产品版本 `0.30.5`。
+- Harness 集成基线：`main` 提交 `15281679b2522bdaf5a47ea4b7f2ec4f9616d21d`，tag `v0.30.6`，产品版本 `0.30.6`。本次实现已经在该提交之上保留按 Harness Session 隔离的弹窗导航存储。
 - 已完成的 Source 合同基线：提交 `a3d1a8ceea39edebde0e0b70dbbc07dd31e1b4a4`，tag `v0.84.0`，产品版本 `0.84.0`。
 - Source 生产基线：提交 `a3d1a8ceea39edebde0e0b70dbbc07dd31e1b4a4`，tag `v0.84.0`，产品版本 `0.84.0`；生产 PID `14974` 当前健康，cwd 为 Source 生产 checkout，内部监听端口为 `18093`。
 - Harness 必须固定消费的 Source 版本：`0.84.0`。
 - 计划目标 Harness 版本：`0.30.7`。
-- 如果用户批准执行时 Harness `main` 已经修改本计划涉及的 Client、Catalog 或 Source Contract 文件，计划执行者必须先更新本计划中的基线与受影响步骤，再交给用户确认。
+- 用户批准后 Harness `main` 发布了 v0.30.6。计划执行者已经把画廊实现 rebase 到 v0.30.6，并保留其 Session 导航状态、存储错误和 Session 切换行为；本需求版本因此使用 v0.30.7。
 
 ## 必须要实现的目标
 
