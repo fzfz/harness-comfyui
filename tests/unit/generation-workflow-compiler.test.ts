@@ -103,6 +103,132 @@ describe('ComfyWorkflowCompiler', () => {
     )
   })
 
+  it('inlines serialized TextInput_ and Float value sources that are absent from the live instance', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'TextInput_',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [10] }],
+          widgets_values: ['a blue ceramic teapot'],
+        },
+        {
+          id: 2,
+          type: 'Float',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'FLOAT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'FLOAT', type: 'FLOAT', links: [11] }],
+          widgets_values: [0.72],
+        },
+        {
+          id: 3,
+          type: 'ValueConsumer',
+          mode: 0,
+          inputs: [
+            { name: 'text', type: 'STRING', link: 10 },
+            { name: 'strength', type: 'FLOAT', link: 11 },
+          ],
+          outputs: [],
+          widgets_values: [],
+        },
+        {
+          id: 4,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 3, 0, 'STRING'],
+        [11, 2, 0, 3, 1, 'FLOAT'],
+      ],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ValueConsumer: {
+          input: { required: { text: ['STRING', {}], strength: ['FLOAT', {}] } },
+          input_order: { required: ['text', 'strength'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['4'],
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow).not.toHaveProperty('1')
+    expect(compiled.apiWorkflow).not.toHaveProperty('2')
+    expect(compiled.apiWorkflow['3']).toMatchObject({
+      inputs: { text: 'a blue ceramic teapot', strength: 0.72 },
+    })
+  })
+
+  it('keeps a TextInput_ API node when the live instance provides its backend definition', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'TextInput_',
+      mode: 0,
+      inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+      outputs: [{ name: 'STRING', type: 'STRING', links: [] }],
+      widgets_values: ['backend value'],
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        TextInput_: {
+          input: { required: { text: ['STRING', {}] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow['4']).toEqual({ class_type: 'TextInput_', inputs: { text: 'backend value' } })
+  })
+
+  it('rejects a malformed serialized value source instead of guessing its API value', async () => {
+    const malformed = structuredClone(workflow)
+    ;(malformed.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'TextInput_',
+      mode: 0,
+      inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+      outputs: [{ name: 'STRING', type: 'STRING', links: [] }],
+      widgets_values: [],
+    })
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: malformed,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'WORKFLOW_COMPILE_FAILED',
+      message: expect.stringContaining('TextInput_'),
+    })
+  })
+
   it('uses the sole live COMBO choice when a saved UI label is not an API value', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
@@ -133,6 +259,102 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { choice: 'Only accepted API value' } })
+  })
+
+  it('maps dynamic-combo child widgets immediately after their serialized parent widget', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'ImageProducer',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [10] }],
+          widgets_values: ['source.png'],
+        },
+        {
+          id: 2,
+          type: 'IntValue',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [11, 12] }],
+          widgets_values: [1024],
+        },
+        {
+          id: 3,
+          type: 'ResizeImageMaskNode',
+          mode: 0,
+          inputs: [
+            { name: 'input', type: 'IMAGE,MASK', link: 10 },
+            { name: 'resize_type', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'resize_type' } },
+            { name: 'scale_method', type: 'COMBO', link: null, widget: { name: 'scale_method' } },
+            { name: 'resize_type.width', type: 'INT', link: 11, widget: { name: 'resize_type.width' } },
+            { name: 'resize_type.height', type: 'INT', link: 12, widget: { name: 'resize_type.height' } },
+            { name: 'resize_type.crop', type: 'COMBO', link: null, widget: { name: 'resize_type.crop' } },
+          ],
+          outputs: [{ name: 'resized', type: '*', links: [13] }],
+          widgets_values: ['scale dimensions', 1024, 1024, 'center', 'area'],
+        },
+        {
+          id: 4,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [
+            { name: 'images', type: 'IMAGE', link: 13 },
+            { name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } },
+          ],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 3, 0, 'IMAGE'],
+        [11, 2, 0, 3, 2, 'INT'],
+        [12, 2, 0, 3, 3, 'INT'],
+        [13, 3, 0, 4, 0, 'IMAGE'],
+      ],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ImageProducer: objectInfo.ImageProducer,
+        IntValue: {
+          input: { required: { value: ['INT', {}] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        ResizeImageMaskNode: {
+          input: {
+            required: {
+              input: ['IMAGE,MASK'],
+              resize_type: ['COMFY_DYNAMICCOMBO_V3', {}],
+              scale_method: [['nearest-exact', 'bilinear', 'area', 'bicubic', 'lanczos'], {}],
+            },
+          },
+          input_order: { required: ['input', 'resize_type', 'scale_method'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['4'],
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow['3']).toMatchObject({
+      inputs: {
+        input: ['1', 0],
+        resize_type: 'scale dimensions',
+        'resize_type.width': ['2', 0],
+        'resize_type.height': ['2', 0],
+        'resize_type.crop': 'center',
+        scale_method: 'area',
+      },
+    })
   })
 
   it('projects bypassed links to their upstream source and keeps the target widget value for an unresolved bypass source', async () => {
@@ -368,7 +590,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual(['1girl, white hair'])
   })
 
-  it('rewrites the executable upstream Prompt when a binding points to a connected CLIP widget', async () => {
+  it('rewrites the executable upstream positive Prompt without replacing connected LoraManager text', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -390,13 +612,34 @@ describe('ComfyWorkflowCompiler', () => {
           },
         },
         {
+          id: 4,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 5,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: 11 },
+            { name: 'string_b', type: 'STRING', link: 10 },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [12] }],
+          widgets_values: [','],
+          widgets_values_named: { delimiter: ',' },
+        },
+        {
           id: 2,
           type: 'CLIPTextEncode',
           title: 'CLIP Text Encode (Positive)',
           mode: 0,
           inputs: [
             { name: 'clip', type: 'CLIP', link: null },
-            { name: 'text', type: 'STRING', link: 10, widget: { name: 'text' } },
+            { name: 'text', type: 'STRING', link: 12, widget: { name: 'text' } },
           ],
           outputs: [],
           widgets_values: ['template prompt'],
@@ -411,7 +654,11 @@ describe('ComfyWorkflowCompiler', () => {
           widgets_values: ['output'],
         },
       ],
-      links: [[10, 1, 0, 2, 1, 'STRING']],
+      links: [
+        [10, 1, 0, 5, 1, 'STRING'],
+        [11, 4, 0, 5, 0, 'STRING'],
+        [12, 5, 0, 2, 1, 'STRING'],
+      ],
     }
     const compiler = new ComfyWorkflowCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
@@ -424,6 +671,16 @@ describe('ComfyWorkflowCompiler', () => {
             'Select to add Wildcard': [['Select Wildcard'], {}],
           } },
           input_order: { required: ['wildcard_text', 'populated_text', 'mode', 'seed', 'Select to add Wildcard'], optional: [] },
+          output_node: false,
+        },
+        'Lora Loader (LoraManager)': {
+          input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        StringConcatenate: {
+          input: { required: { string_a: ['STRING', {}], string_b: ['STRING', {}], delimiter: ['STRING', {}] } },
+          input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
@@ -444,10 +701,569 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'usnr, gthan, 1girl' } })
-    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { text: ['1', 0] } })
+    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { text: ['5', 0] } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '<lora:template-lora:1>' } })
     const upstreamValues = compiled.actualWorkflow.nodes[0]?.widgets_values
     expect(Array.isArray(upstreamValues) ? upstreamValues[0] : undefined).toBe('usnr, gthan, 1girl')
     expect(compiled.actualWorkflow.nodes[0]?.widgets_values_named).toMatchObject({ wildcard_text: 'usnr, gthan, 1girl' })
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values_named)
+      .toMatchObject({ text: '<lora:template-lora:1>' })
+  })
+
+  it('rewrites the executable upstream negative Prompt without replacing connected LoraManager text', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'ImpactWildcardProcessor',
+          title: 'NEGATIVE',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'processed text', type: 'STRING', links: [10] }],
+          widgets_values: ['template negative', 'template negative', 'populate'],
+          widgets_values_named: {
+            wildcard_text: 'template negative',
+            populated_text: 'template negative',
+            mode: 'populate',
+          },
+        },
+        {
+          id: 4,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 5,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: 11 },
+            { name: 'string_b', type: 'STRING', link: 10 },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [12] }],
+          widgets_values: [','],
+          widgets_values_named: { delimiter: ',' },
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          title: 'CLIP Text Encode (Negative)',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 12, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: [''],
+          widgets_values_named: { text: '' },
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 5, 1, 'STRING'],
+        [11, 4, 0, 5, 0, 'STRING'],
+        [12, 5, 0, 2, 0, 'STRING'],
+      ],
+    }
+    const definitions = {
+      ImpactWildcardProcessor: {
+        input: { required: {
+          wildcard_text: ['STRING', {}],
+          populated_text: ['STRING', {}],
+          mode: [['populate', 'fixed'], {}],
+        } },
+        input_order: { required: ['wildcard_text', 'populated_text', 'mode'], optional: [] },
+        output_node: false,
+      },
+      'Lora Loader (LoraManager)': {
+        input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+        input_order: { required: ['text'], optional: [] },
+        output_node: false,
+      },
+      StringConcatenate: {
+        input: { required: { string_a: ['STRING', {}], string_b: ['STRING', {}], delimiter: ['STRING', {}] } },
+        input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
+        output_node: false,
+      },
+      CLIPTextEncode: objectInfo.CLIPTextEncode,
+      SaveImage: objectInfo.SaveImage,
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'negative_prompt', kind: 'negative_prompt', valueType: 'string', required: false },
+        value: 'low quality, blurry',
+      }],
+      bindingHints: [{ parameterId: 'negative_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'low quality, blurry' } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '<lora:template-lora:1>' } })
+  })
+
+  it('rejects a connected Prompt binding with multiple semantic upstream widgets', async () => {
+    const promptNode = (id: number, link: number): UiWorkflow['nodes'][number] => ({
+      id,
+      type: 'ImpactWildcardProcessor',
+      title: `POSITIVE ${id}`,
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: 'processed text', type: 'STRING', links: [link] }],
+      widgets_values: [`template prompt ${id}`, `template prompt ${id}`, 'populate'],
+      widgets_values_named: {
+        wildcard_text: `template prompt ${id}`,
+        populated_text: `template prompt ${id}`,
+        mode: 'populate',
+      },
+    })
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        promptNode(1, 10),
+        promptNode(4, 11),
+        {
+          id: 5,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: 10 },
+            { name: 'string_b', type: 'STRING', link: 11 },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [12] }],
+          widgets_values: [','],
+          widgets_values_named: { delimiter: ',' },
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          title: 'CLIP Text Encode (Positive)',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 12, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: [''],
+          widgets_values_named: { text: '' },
+        },
+        {
+          id: 6,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 5, 0, 'STRING'],
+        [11, 4, 0, 5, 1, 'STRING'],
+        [12, 5, 0, 2, 0, 'STRING'],
+      ],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ImpactWildcardProcessor: {
+          input: { required: {
+            wildcard_text: ['STRING', {}],
+            populated_text: ['STRING', {}],
+            mode: [['populate', 'fixed'], {}],
+          } },
+          input_order: { required: ['wildcard_text', 'populated_text', 'mode'], optional: [] },
+          output_node: false,
+        },
+        StringConcatenate: {
+          input: { required: { string_a: ['STRING', {}], string_b: ['STRING', {}], delimiter: ['STRING', {}] } },
+          input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
+          output_node: false,
+        },
+        'Lora Loader (LoraManager)': {
+          input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
+        value: 'requested prompt',
+      }],
+      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+      message: expect.stringMatching(/positive_prompt.*1:ImpactWildcardProcessor\.wildcard_text.*4:ImpactWildcardProcessor\.wildcard_text/u),
+    })
+  })
+
+  it('rejects a connected Prompt binding without an upstream Prompt widget', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [12] }],
+          widgets_values: [','],
+          widgets_values_named: { delimiter: ',' },
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          title: 'CLIP Text Encode (Positive)',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 12, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: [''],
+          widgets_values_named: { text: '' },
+        },
+        {
+          id: 4,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [[12, 1, 0, 2, 0, 'STRING']],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        StringConcatenate: {
+          input: { required: { delimiter: ['STRING', {}] } },
+          input_order: { required: ['delimiter'], optional: [] },
+          output_node: false,
+        },
+        'Lora Loader (LoraManager)': {
+          input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
+        value: 'requested prompt',
+      }],
+      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringContaining('connected binding "2:text" does not resolve to an upstream Prompt widget'),
+    })
+  })
+
+  it('rejects a connected Prompt binding whose only upstream text widget is LoraManager syntax', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'trigger_words', type: 'STRING', links: [10] }],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          title: 'CLIP Text Encode (Positive)',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 10, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: [''],
+          widgets_values_named: { text: '' },
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [[10, 1, 0, 2, 0, 'STRING']],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        'Lora Loader (LoraManager)': {
+          input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
+        value: 'requested prompt',
+      }],
+      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringContaining('connected binding "2:text" does not resolve to an upstream Prompt widget'),
+    })
+    expect(actual.nodes[0]?.widgets_values_named).toMatchObject({ text: '<lora:template-lora:1>' })
+  })
+
+  it('selects an unmarked upstream Prompt widget and excludes reachable LoraManager syntax', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'ImpactWildcardProcessor',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'processed text', type: 'STRING', links: [10] }],
+          widgets_values: ['template prompt', 'template prompt', 'populate'],
+          widgets_values_named: { wildcard_text: 'template prompt', populated_text: 'template prompt', mode: 'populate' },
+        },
+        {
+          id: 4,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 5,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: 11 },
+            { name: 'string_b', type: 'STRING', link: 10 },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [12] }],
+          widgets_values: [','],
+          widgets_values_named: { delimiter: ',' },
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 12, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: [''],
+          widgets_values_named: { text: '' },
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 5, 1, 'STRING'],
+        [11, 4, 0, 5, 0, 'STRING'],
+        [12, 5, 0, 2, 0, 'STRING'],
+      ],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ImpactWildcardProcessor: {
+          input: { required: {
+            wildcard_text: ['STRING', {}],
+            populated_text: ['STRING', {}],
+            mode: [['populate', 'fixed'], {}],
+          } },
+          input_order: { required: ['wildcard_text', 'populated_text', 'mode'], optional: [] },
+          output_node: false,
+        },
+        'Lora Loader (LoraManager)': {
+          input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        StringConcatenate: {
+          input: { required: { string_a: ['STRING', {}], string_b: ['STRING', {}], delimiter: ['STRING', {}] } },
+          input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
+        value: 'requested prompt',
+      }],
+      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'requested prompt' } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '<lora:template-lora:1>' } })
+  })
+
+  it('follows only the effective input of a bypassed upstream Prompt branch', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'ImpactWildcardProcessor',
+          title: 'POSITIVE',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'processed text', type: 'STRING', links: [10] }],
+          widgets_values: ['template prompt', 'template prompt', 'populate'],
+          widgets_values_named: { wildcard_text: 'template prompt', populated_text: 'template prompt', mode: 'populate' },
+        },
+        {
+          id: 4,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
+          widgets_values: ['<lora:template-lora:1>'],
+          widgets_values_named: { text: '<lora:template-lora:1>' },
+        },
+        {
+          id: 5,
+          type: 'StringConcatenate',
+          mode: 4,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: 11 },
+            { name: 'string_b', type: 'STRING', link: 10 },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [12] }],
+          widgets_values: [','],
+          widgets_values_named: { delimiter: ',' },
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          title: 'CLIP Text Encode (Positive)',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 12, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: [''],
+          widgets_values_named: { text: '' },
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 5, 1, 'STRING'],
+        [11, 4, 0, 5, 0, 'STRING'],
+        [12, 5, 0, 2, 0, 'STRING'],
+      ],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ImpactWildcardProcessor: {
+          input: { required: {
+            wildcard_text: ['STRING', {}],
+            populated_text: ['STRING', {}],
+            mode: [['populate', 'fixed'], {}],
+          } },
+          input_order: { required: ['wildcard_text', 'populated_text', 'mode'], optional: [] },
+          output_node: false,
+        },
+        'Lora Loader (LoraManager)': {
+          input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        StringConcatenate: {
+          input: { required: { string_a: ['STRING', {}], string_b: ['STRING', {}], delimiter: ['STRING', {}] } },
+          input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
+        value: 'requested prompt',
+      }],
+      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringContaining('connected binding "2:text" does not resolve to an upstream Prompt widget'),
+    })
   })
 
   it('materializes only the rgthree frontend random seed sentinel before API Workflow compilation', async () => {
@@ -667,6 +1483,299 @@ describe('ComfyWorkflowCompiler', () => {
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { value: 640 } })
     expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: ['1', 0] } })
+  })
+
+  it('disconnects a dimension-selector link when an exact width or height cannot be represented upstream', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'ResolutionSelector',
+          title: 'Resolution selector',
+          mode: 0,
+          inputs: [
+            { name: 'aspect_ratio', type: 'COMBO', link: null, widget: { name: 'aspect_ratio' } },
+            { name: 'megapixels', type: 'FLOAT', link: null, widget: { name: 'megapixels' } },
+            { name: 'multiple', type: 'INT', link: null, widget: { name: 'multiple' } },
+          ],
+          outputs: [
+            { name: 'width', type: 'INT', links: [10] },
+            { name: 'height', type: 'INT', links: [11] },
+          ],
+          widgets_values: ['9:16', 1, 8],
+        },
+        {
+          id: 2,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: 10, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: 11, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [],
+          widgets_values: [1024, 1024, 1],
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 2, 0, 'INT'],
+        [11, 1, 1, 2, 1, 'INT'],
+      ],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ResolutionSelector: {
+          input: {
+            required: {
+              aspect_ratio: [['9:16'], {}],
+              megapixels: ['FLOAT', {}],
+              multiple: ['INT', {}],
+            },
+          },
+          input_order: { required: ['aspect_ratio', 'megapixels', 'multiple'], optional: [] },
+          output_node: false,
+        },
+        EmptyLatentImage: {
+          input: { required: { width: ['INT', {}], height: ['INT', {}], batch_size: ['INT', {}] } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [
+        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 1024, required: false }, value: 640 },
+        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1024, required: false }, value: 768 },
+      ],
+      bindingHints: [
+        { parameterId: 'width', operation: 'replace_input', nodeId: '2', inputName: 'width', widgetIndex: 0 },
+        { parameterId: 'height', operation: 'replace_input', nodeId: '2', inputName: 'height', widgetIndex: 1 },
+      ],
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.links).toEqual([])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.outputs).toEqual([
+      { name: 'width', type: 'INT', links: [] },
+      { name: 'height', type: 'INT', links: [] },
+    ])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.inputs).toEqual([
+      { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+      { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+      { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+    ])
+    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: 640, height: 768, batch_size: 1 } })
+  })
+
+  it('preserves an absolute latent-upscale multiplier when the source dimensions change', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [10] }],
+          widgets_values: [768, 1008, 1],
+        },
+        {
+          id: 2,
+          type: 'LatentUpscale',
+          mode: 0,
+          inputs: [
+            { name: 'samples', type: 'LATENT', link: 10 },
+            { name: 'upscale_method', type: 'COMBO', link: null, widget: { name: 'upscale_method' } },
+            { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+            { name: 'crop', type: 'COMBO', link: null, widget: { name: 'crop' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [] }],
+          widgets_values: ['bicubic', 1152, 1512, 'disabled'],
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [[10, 1, 0, 2, 0, 'LATENT']],
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        EmptyLatentImage: {
+          input: { required: { width: ['INT', {}], height: ['INT', {}], batch_size: ['INT', {}] } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+        LatentUpscale: {
+          input: { required: {
+            samples: ['LATENT'],
+            upscale_method: [['nearest-exact', 'bilinear', 'area', 'bicubic'], {}],
+            width: ['INT', { step: 8 }],
+            height: ['INT', { step: 8 }],
+            crop: [['disabled', 'center'], {}],
+          } },
+          input_order: { required: ['samples', 'upscale_method', 'width', 'height', 'crop'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [
+        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 768, required: false }, value: 704 },
+        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1008, required: false }, value: 832 },
+      ],
+      bindingHints: [
+        { parameterId: 'width', operation: 'replace_input', nodeId: '1', inputName: 'width', widgetIndex: 0 },
+        { parameterId: 'height', operation: 'replace_input', nodeId: '1', inputName: 'height', widgetIndex: 1 },
+      ],
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual([704, 832, 1])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual([
+      'bicubic', 1056, 1248, 'disabled',
+    ])
+    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: 1056, height: 1248 } })
+
+    const fixedAspectWorkflow = structuredClone(actual)
+    const fixedAspectUpscale = fixedAspectWorkflow.nodes.find(node => node.id === 2) as { widgets_values: JsonValue[] }
+    fixedAspectUpscale.widgets_values = ['bicubic', 1152, 1536, 'disabled']
+    const fixedAspect = await compiler.compile({
+      workflow: fixedAspectWorkflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [
+        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 768, required: false }, value: 704 },
+        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1008, required: false }, value: 832 },
+      ],
+      bindingHints: [
+        { parameterId: 'width', operation: 'replace_input', nodeId: '1', inputName: 'width', widgetIndex: 0 },
+        { parameterId: 'height', operation: 'replace_input', nodeId: '1', inputName: 'height', widgetIndex: 1 },
+      ],
+      loras: [],
+    })
+    expect(fixedAspect.apiWorkflow['2']).toMatchObject({ inputs: { width: 1152, height: 1536 } })
+  })
+
+  it('rewrites the connected upstream seed source instead of an unrelated seed widget', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'SeedNode',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'seed', type: 'INT', links: [10] }],
+          widgets_values: [101, 'fixed'],
+        },
+        {
+          id: 2,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [{ name: 'seed', type: 'INT', link: 10, widget: { name: 'seed' } }],
+          outputs: [],
+          widgets_values: [999, 'fixed'],
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+        {
+          id: 4,
+          type: 'SeedNode',
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          widgets_values: [202, 'fixed'],
+        },
+      ],
+      links: [[10, 1, 0, 2, 0, 'INT']],
+    }
+    const seedDefinition = {
+      input: { required: { seed: ['INT', { control_after_generate: true }] } },
+      input_order: { required: ['seed'], optional: [] },
+      output_node: false,
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        SeedNode: seedDefinition,
+        KSampler: seedDefinition,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [{
+        definition: { parameterId: 'seed_2', kind: 'seed', valueType: 'integer', defaultValue: 999, required: false },
+        value: 303,
+      }],
+      bindingHints: [{ parameterId: 'seed_2', operation: 'replace_input', nodeId: '2', inputName: 'seed', widgetIndex: 0 }],
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual([303, 'fixed'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([202, 'fixed'])
+    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { seed: ['1', 0] } })
+
+    await expect(compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [
+        {
+          definition: { parameterId: 'seed', kind: 'seed', valueType: 'integer', defaultValue: 101, required: false },
+          value: 404,
+        },
+        {
+          definition: { parameterId: 'seed_2', kind: 'seed', valueType: 'integer', defaultValue: 999, required: false },
+          value: 303,
+        },
+      ],
+      bindingHints: [
+        { parameterId: 'seed', operation: 'replace_input', nodeId: '1', inputName: 'seed', widgetIndex: 0 },
+        { parameterId: 'seed_2', operation: 'replace_input', nodeId: '2', inputName: 'seed', widgetIndex: 0 },
+      ],
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+      message: expect.stringContaining('seed_2'),
+    })
   })
 
   it('resolves every declared generation parameter when a stale binding cannot resolve', async () => {
@@ -913,6 +2022,44 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.activeOutputNodeIds).toEqual(['3'])
+  })
+
+  it('omits disconnected output nodes during output discovery', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push(
+      {
+        id: 4,
+        type: 'ImageProducer',
+        mode: 0,
+        inputs: [],
+        outputs: [],
+        widgets_values: ['unused.png'],
+      },
+      {
+        id: 5,
+        type: 'SaveImage',
+        mode: 0,
+        inputs: [
+          { name: 'images', type: 'IMAGE', link: null },
+          { name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } },
+        ],
+        outputs: [],
+        widgets_values: ['disconnected'],
+      },
+    )
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: null,
+      loras: [],
+    })
+
+    expect(compiled.activeOutputNodeIds).toEqual(['3'])
+    expect(compiled.apiWorkflow).not.toHaveProperty('5')
   })
 
   it('leaves missing instance-required inputs for the ComfyUI prompt endpoint to validate', async () => {
@@ -1555,6 +2702,55 @@ describe('ComfyWorkflowCompiler', () => {
       expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 1, triggerWords: ['usnr'] }],
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_UNAVAILABLE' })
+  })
+
+  it('activates a bypassed LoRA loader that the template binds as its runtime LoRA input', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'LoraLoaderModelOnly',
+      mode: 4,
+      inputs: [
+        { name: 'model', type: 'MODEL', link: null },
+        { name: 'lora_name', type: 'COMBO', link: null, widget: { name: 'lora_name' } },
+        { name: 'strength_model', type: 'FLOAT', link: null, widget: { name: 'strength_model' } },
+      ],
+      outputs: [{ name: 'MODEL', type: 'MODEL', links: [] }],
+      widgets_values: ['template.safetensors', 0.8],
+    })
+    const instancePath = 'Krea2-功能\\selected.safetensors'
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        LoraLoaderModelOnly: {
+          input: { required: {
+            model: ['MODEL'],
+            lora_name: [[instancePath], {}],
+            strength_model: ['FLOAT', {}],
+          } },
+          input_order: { required: ['model', 'lora_name', 'strength_model'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      bindingHints: [
+        { parameterId: 'lora_model', operation: 'replace_input', nodeId: '4', inputName: 'lora_name', widgetIndex: 0 },
+      ],
+      loras: [{ id: '68', fileName: 'selected.safetensors', weight: 0.65, triggerWords: [] }],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)).toMatchObject({
+      mode: 0,
+      widgets_values: [instancePath, 0.65],
+    })
+    expect(compiled.apiWorkflow['4']).toMatchObject({
+      inputs: { lora_name: instancePath, strength_model: 0.65 },
+    })
   })
 
   it('replaces the template checkpoint with the selected model using the target instance path', async () => {

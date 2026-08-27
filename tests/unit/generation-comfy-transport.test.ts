@@ -76,6 +76,39 @@ describe('ComfyHttpTransport', () => {
     expect(fetchImplementation.mock.calls[0]?.[1]?.headers).toEqual(expect.objectContaining({ authorization: 'Bearer token' }))
   })
 
+  it('ignores temporary preview media when a completed job also contains saved output media', async () => {
+    const promptId = '0193f85c-86fb-4ad9-8d2b-28cf39e8b042'
+    const transport = new ComfyHttpTransport({
+      source,
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        id: promptId,
+        status: 'completed',
+        outputs: {
+          '10': {
+            images: [{ filename: 'ComfyUI_temp_pxndl_00001_.png', subfolder: '', type: 'temp' }],
+          },
+          '12': {
+            images: [{ filename: 'ComfyUI_00158_.png', subfolder: '', type: 'output' }],
+          },
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(transport.observe({
+      instanceId: '2', instanceOrigin, promptId, outputNodeIds: ['10', '12'],
+    })).resolves.toEqual({
+      status: 'success',
+      outputs: [{
+        nodeId: '12',
+        outputIndex: 0,
+        mediaKind: 'image',
+        filename: 'ComfyUI_00158_.png',
+        subfolder: '',
+        type: 'output',
+      }],
+    })
+  })
+
   it('downloads one validated output descriptor through the ComfyUI view route', async () => {
     const fetchImplementation = vi.fn<typeof fetch>(async () => new Response(webpBytes, {
       status: 200,
@@ -185,6 +218,22 @@ describe('ComfyHttpTransport', () => {
       instanceId: '2', instanceOrigin,
       promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
       outputNodeIds: ['3'],
+    })).rejects.toMatchObject({ code: 'COMFYUI_OUTPUT_INVALID' })
+  })
+
+  it('rejects unrecognized remote output descriptor types', async () => {
+    const promptId = '0193f85c-86fb-4ad9-8d2b-28cf39e8b042'
+    const transport = new ComfyHttpTransport({
+      source,
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        id: promptId,
+        status: 'completed',
+        outputs: { '3': { images: [{ filename: 'result.webp', subfolder: '', type: 'cache' }] } },
+      }), { status: 200 })),
+    })
+
+    await expect(transport.observe({
+      instanceId: '2', instanceOrigin, promptId, outputNodeIds: ['3'],
     })).rejects.toMatchObject({ code: 'COMFYUI_OUTPUT_INVALID' })
   })
 

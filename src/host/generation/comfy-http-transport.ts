@@ -43,8 +43,9 @@ function outputDescriptor(
   nodeId: string,
   outputIndex: number,
   mediaKind: 'image' | 'video',
-): GenerationOutputDescriptor {
+): GenerationOutputDescriptor | null {
   const source = record(value, 'ComfyUI output descriptor')
+  if (source.type === 'temp') return null
   if (
     typeof source.filename !== 'string'
     || source.filename.length === 0
@@ -83,7 +84,10 @@ function normalizeOutputs(value: unknown, outputNodeIds: readonly string[]): rea
     for (const [mediaKind, key] of collections) {
       if (node[key] === undefined) continue
       if (!Array.isArray(node[key])) throw new GenerationRuntimeError('COMFYUI_OUTPUT_INVALID', `ComfyUI output node "${nodeId}" ${key} is invalid.`)
-      node[key].forEach((item, index) => outputs.push(outputDescriptor(item, nodeId, index, mediaKind)))
+      node[key].forEach((item, index) => {
+        const descriptor = outputDescriptor(item, nodeId, index, mediaKind)
+        if (descriptor !== null) outputs.push(descriptor)
+      })
     }
   }
   return Object.freeze(outputs)
@@ -211,6 +215,7 @@ export class ComfyHttpTransport implements GenerationTransport {
 
   async download(input: Parameters<GenerationTransport['download']>[0]): Promise<{ readonly bytes: Uint8Array; readonly mediaType: string }> {
     const output = outputDescriptor(input.output, input.output.nodeId, input.output.outputIndex, input.output.mediaKind)
+    if (output === null) throw new GenerationRuntimeError('COMFYUI_OUTPUT_INVALID', 'ComfyUI returned a temporary media descriptor for download.')
     const instance = await this.instance(input.instanceId, input.instanceOrigin, input.signal)
     const query = new URLSearchParams({ filename: output.filename, subfolder: output.subfolder, type: output.type })
     return this.withResponse(instance, `/view?${query}`, { signal: input.signal, accept: '*/*' }, async response => {
