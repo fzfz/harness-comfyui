@@ -2,9 +2,9 @@
 
 ## Session：2026-08-27
 
-### Phase 1：建立红色反馈回路
+### Phase 1–4：诊断、修复和验证
 
-- **Status:** in_progress
+- **Status:** complete
 - 已创建独立修复分支与持久化计划文件。
 - 已确认实际画廊 DOM 类名、Modal class 注入点和现有测试缺少的布局断言。
 - 已确认 primitive Modal 的 header 和关闭按钮位于被画廊内容 class 修饰的内容容器内。
@@ -14,7 +14,15 @@
 - 已完成 1280×720 真实浏览器验收；横竖图切换时箭头位置不变，关闭按钮可见，大图提供双轴滚动。
 - 已完成 480×420 固定尺寸 iframe 验收；横竖图切换后箭头位置不变，关闭按钮完整可见，双轴溢出成立。
 - 已删除临时浏览器夹具；`pnpm quality` 在 v0.30.8 源码提交前完整通过。
-- 下一步：提交并 push 源码、测试和版本变更，等待第一轮 GitHub CI。
+
+### Phase 5：发布和生产部署
+
+- **Status:** in_progress
+- 已提交并 push 源码、测试和版本变更；GitHub CI run 33052912081 成功。
+- 已更新 v0.30.8 的 README、发布说明、系统上下文、架构、测试和发布命令。
+- 独立语义 Reviewer 已出具第一轮问题清单；文档已根据四项问题修正，复验结论为 PASS 且无剩余问题。
+- 最终 `pnpm quality` 已完整通过。
+- 下一步：提交最终发布文档并等待最终 CI。
 
 ## 测试结果
 
@@ -25,6 +33,9 @@
 | 浏览器 1280×720 横图/竖图几何测量 | 箭头偏差 ≤1px、关闭按钮在 viewport 内、双轴溢出 | 箭头偏差 0px；关闭按钮在内；双轴溢出成立 | passed |
 | 浏览器 480×420 横图/竖图几何测量 | 箭头偏差 ≤1px、关闭按钮在 viewport 内、双轴溢出 | 箭头偏差 0px；关闭按钮在内；双轴溢出成立 | passed |
 | `pnpm quality`（源码提交前） | 所有仓库门禁通过 | 324 unit/integration、22 contract/security、14 production、27 prototype；函数覆盖率 100% | passed |
+| GitHub CI run 33052912081 | 源码提交的 CI 成功 | Harness GitHub workflow job `Source quality gates`：success | passed |
+| 独立语义 Reviewer 复验 | 四项问题全部修正且无剩余问题 | PASS；无问题 | passed |
+| `pnpm quality`（最终发布文档） | 所有仓库门禁通过 | 324 unit/integration、22 contract/security、14 production、27 prototype；函数覆盖率 100% | passed |
 
 ## 错误记录
 
