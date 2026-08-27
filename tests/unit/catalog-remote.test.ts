@@ -59,6 +59,7 @@ describe('Catalog Remote contribution', () => {
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,
+          sampleImageUrls: [],
         }],
         totalCount: 1,
       },
@@ -73,6 +74,7 @@ describe('Catalog Remote contribution', () => {
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,
+          sampleImageUrls: [],
         }],
         totalCount: 1,
       },
@@ -81,5 +83,26 @@ describe('Catalog Remote contribution', () => {
     if (baseModels.result.mode !== 'strict') throw new Error('strict codec required')
     expect(baseModels.result.schema.parse({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } }))
       .toEqual({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } })
+  })
+
+  it('rejects an old Host result that omits sampleImageUrls', () => {
+    const descriptor = CATALOG_REMOTE.descriptors[0]!
+    const result = descriptor.result
+    if (result.mode !== 'strict') throw new Error('strict codec required')
+    expect(() => result.schema.parse({
+      ok: true,
+      value: {
+        kind: 'model',
+        query: '',
+        page: 1,
+        items: [{
+          context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          label: 'model.safetensors',
+          subtitle: 'safetensors',
+          coverUrl: null,
+        }],
+        totalCount: 1,
+      },
+    })).toThrow('properties')
   })
 })

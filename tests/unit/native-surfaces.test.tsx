@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
   const React = await import('react')
@@ -10,6 +10,8 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
     ),
     IconCheckOutline16: () => React.createElement('i', { 'data-icon': 'check' }),
     IconChevronDownOutline14: () => React.createElement('i', { 'data-icon': 'chevron' }),
+    IconChevronLeftOutline14: () => React.createElement('i', { 'data-icon': 'chevron-left' }),
+    IconChevronRightOutline14: () => React.createElement('i', { 'data-icon': 'chevron-right' }),
     IconSparkle16: () => React.createElement('i', { 'data-icon': 'sparkle' }),
     IconSearchOutline16: () => React.createElement('i', { 'data-icon': 'search' }),
     Input: ({ icon: _icon, ...props }: Record<string, unknown>) => React.createElement('input', props),
@@ -61,7 +63,7 @@ import {
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
-  create: (node: ReactNode) => {
+  create: (node: ReactNode, options?: { createNodeMock?: (element: { props: Record<string, unknown> }) => unknown }) => {
     root: {
       findAllByType(type: string): Array<{ props: Record<string, unknown> }>
       findAllByProps(props: Record<string, unknown>): Array<{ props: Record<string, unknown> }>
@@ -79,18 +81,24 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
     label: 'wai_txt2img_lora',
     subtitle: 'text_to_image',
     coverUrl: 'http://127.0.0.1:18092/media/images/template.webp',
+    sampleImageUrls: [
+      'http://127.0.0.1:18092/media/images/template-2.webp',
+      'http://127.0.0.1:18092/media/images/template-3.webp',
+    ],
   },
   {
     context: { kind: 'comfyui-template', id: '36', title: 'wai_txt2img' },
     label: 'wai_txt2img',
     subtitle: 'text_to_image',
     coverUrl: null,
+    sampleImageUrls: [],
   },
   {
     context: { kind: 'lora', id: '91', file_name: 'StS_Age_Slider_Illustrious_v1.safetensors' },
     label: 'StS_Age_Slider_Illustrious_v1.safetensors',
     subtitle: 'Shed_The_Skin',
     coverUrl: 'http://127.0.0.1:18092/media/images/lora.jpg',
+    sampleImageUrls: ['http://127.0.0.1:18092/media/images/lora-2.jpg'],
   },
 ]
 
@@ -168,9 +176,15 @@ async function openDialog(renderer: ReturnType<typeof create>): Promise<void> {
 }
 
 describe('native Harness workbench surfaces', () => {
+  let documentTarget: EventTarget
+
   beforeEach(() => {
     vi.clearAllMocks()
+    documentTarget = new EventTarget()
+    vi.stubGlobal('document', documentTarget)
   })
+
+  afterEach(() => vi.unstubAllGlobals())
 
   it('renders a native left entry in wide and rail modes and toggles its active state', () => {
     const controller = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
@@ -252,6 +266,161 @@ describe('native Harness workbench surfaces', () => {
     expect(workbenchContextsFromDraft(input.setDraft.mock.calls[0]![0] as string))
       .toEqual(CONTEXT_OPTIONS.slice(0, 2).map(option => option.context))
     expect(renderer!.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    act(() => renderer!.unmount())
+  })
+
+  it('keeps cover preview separate from record selection and inserts the exact selected context', async () => {
+    const input = sessionInput()
+    const openerFocus = vi.fn()
+    const galleryFocus = vi.fn()
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: catalog(), dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: input as never, workbench: activeController(),
+      }), {
+        createNodeMock: element => {
+          if (element.props.className === 'harness-comfyui-gallery-current') return { focus: galleryFocus }
+          if (element.props.className === 'harness-comfyui-catalog-card') {
+            return { querySelector: () => ({ focus: openerFocus }) }
+          }
+          return null
+        },
+      })
+    })
+    await openDialog(renderer!)
+
+    const option = CONTEXT_OPTIONS[0]!
+    const preview = renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.openGallery} ${option.label}`,
+    })
+    act(() => { (preview.props.onClick as () => void)() })
+    expect(galleryFocus).toHaveBeenCalledOnce()
+    expect(input.setDraft).not.toHaveBeenCalled()
+    expect(renderer!.root.findByProps({ role: 'dialog' }).props['aria-label'])
+      .toBe(`${WORKBENCH_COPY.galleryTitle}：${option.label}`)
+
+    act(() => { (renderer!.root.findByProps({ role: 'dialog' }).props.onClick as () => void)() })
+    expect(openerFocus).toHaveBeenCalledOnce()
+    expect(renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,
+    })).toBeDefined()
+
+    const select = renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,
+    })
+    act(() => { (select.props.onClick as () => void)() })
+    expect(renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectedItem} ${option.label}`,
+    }).props['aria-pressed']).toBe(true)
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-selection-count' }).props.children)
+      .toEqual([WORKBENCH_COPY.selected, ' ', 1])
+
+    act(() => {
+      ;(renderer!.root.findByProps({
+        'aria-label': `${WORKBENCH_COPY.selectedItem} ${option.label}`,
+      }).props.onClick as () => void)()
+    })
+    expect(buttonByText(renderer!, WORKBENCH_COPY.confirm).props.disabled).toBe(true)
+    expect(input.setDraft).not.toHaveBeenCalled()
+
+    act(() => {
+      ;(renderer!.root.findByProps({
+        'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,
+      }).props.onClick as () => void)()
+    })
+    act(() => { (buttonByText(renderer!, WORKBENCH_COPY.confirm).props.onClick as () => void)() })
+    expect(workbenchContextsFromDraft(input.setDraft.mock.calls[0]![0] as string)).toEqual([option.context])
+    act(() => renderer!.unmount())
+  })
+
+  it('navigates gallery images with buttons and keyboard, reports failures, and removes the listener on close', async () => {
+    const removeListener = vi.spyOn(documentTarget, 'removeEventListener')
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: catalog(), dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: activeController(),
+      }))
+    })
+    await openDialog(renderer!)
+    const option = CONTEXT_OPTIONS[0]!
+    const preview = renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.openGallery} ${option.label}`,
+    })
+    act(() => { (preview.props.onClick as () => void)() })
+
+    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.coverUrl)
+    expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.disabled).toBe(true)
+    expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(false)
+
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[0])
+
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.coverUrl)
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[0])
+
+    const right = new Event('keydown', { cancelable: true })
+    Object.defineProperty(right, 'key', { value: 'ArrowRight' })
+    act(() => { documentTarget.dispatchEvent(right) })
+    expect(right.defaultPrevented).toBe(true)
+    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[1])
+    expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(true)
+
+    const left = new Event('keydown', { cancelable: true })
+    Object.defineProperty(left, 'key', { value: 'ArrowLeft' })
+    act(() => { documentTarget.dispatchEvent(left) })
+    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[0])
+
+    act(() => { (renderer!.root.findAllByType('img')[0]!.props.onError as () => void)() })
+    expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.imageLoadFailed)
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
+    })
+    expect(JSON.stringify(renderer!.toJSON())).not.toContain(WORKBENCH_COPY.imageLoadFailed)
+
+    act(() => { (renderer!.root.findByProps({ role: 'dialog' }).props.onClick as () => void)() })
+    expect(removeListener).toHaveBeenCalledWith('keydown', expect.any(Function))
+    expect(renderer!.root.findByProps({ role: 'dialog' }).props['aria-label']).toBe(WORKBENCH_COPY.dialogTitle)
+    act(() => renderer!.unmount())
+  })
+
+  it('disables both gallery arrows for one image and leaves no-cover records selectable', async () => {
+    const single = { ...CONTEXT_OPTIONS[0]!, sampleImageUrls: [] }
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: catalog([single, CONTEXT_OPTIONS[1]!]),
+        dialogNavigation: freshDialogNavigation(),
+        input: inputState() as never,
+        sessionId: 'session-1',
+        sessionInput: sessionInput() as never,
+        workbench: activeController(),
+      }))
+    })
+    await openDialog(renderer!)
+    expect(renderer!.root.findAllByProps({
+      'aria-label': `${WORKBENCH_COPY.openGallery} ${CONTEXT_OPTIONS[1]!.label}`,
+    })).toHaveLength(0)
+    expect(renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectItem} ${CONTEXT_OPTIONS[1]!.label}`,
+    })).toBeDefined()
+
+    act(() => {
+      ;(renderer!.root.findByProps({
+        'aria-label': `${WORKBENCH_COPY.openGallery} ${single.label}`,
+      }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.disabled).toBe(true)
+    expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(true)
     act(() => renderer!.unmount())
   })
 

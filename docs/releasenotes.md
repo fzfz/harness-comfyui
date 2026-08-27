@@ -1,17 +1,18 @@
-# Harness ComfyUI v0.30.6
+# Harness ComfyUI v0.30.7
 
-v0.30.6 为“插入上下文”弹窗增加按 Harness Session 隔离的筛选位置记忆。用户关闭并重新打开弹窗、切换 Session 后返回、刷新浏览器或重启 Client 时，弹窗恢复该 Session 上次保存的底模、资源种类、搜索输入、已提交搜索词和页码。
+v0.30.7 为“插入上下文”资源卡片增加封面与样例图片画廊，并保持每条记录原有的选择、取消选择和确认插入行为。
 
 ## 主要变更
 
-- Client 插件为每个 Session 使用独立的版本化浏览器存储记录。弹窗只持久化导航位置；Catalog 响应、加载状态、错误对象和未确认候选不会写入浏览器存储。
-- 弹窗打开时按照保存的筛选位置重新查询当前 Catalog。Catalog 删除已保存的底模后，Client 先把该 Session 的底模恢复为“全部底模”并把页码恢复为第一页，再发起查询。
-- 浏览器拒绝存储访问、持久化 JSON 无效或写入失败时，弹窗显示 `CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED` 对应的原因和处理动作。写入失败不会把未保存的新导航位置发布为当前状态。
-- Harness 复用同一个 Dock 渲染不同 Session 时，Client 关闭旧 Session 的弹窗、中止其 Catalog 请求并丢弃未确认候选；两个 Session 的已保存筛选位置不会相互覆盖。
+- Harness 固定消费 Source Contract v0.84.0。Host 把八个可插入 Catalog operation 的 `sample_image_urls` 严格映射为只读 `CatalogItem.sampleImageUrls`，并拒绝缺失字段、非法本机图片 URL、重复 URL 和重复封面 URL。
+- 资源卡片使用同级的封面预览按钮与记录选择按钮。点击封面只打开图片画廊，不改变待确认选择集合；选择按钮继续维护 `aria-pressed`、待确认数量和最终插入的 `CatalogContext`。
+- 图片画廊在原 Catalog `Modal` 内显示封面和 Source 排序后的样例图。用户可以点击左右箭头或按键盘 `ArrowLeft`、`ArrowRight` 非循环切换图片；画廊显示当前序号，在首图、末图和单图状态禁用相应箭头。
+- 关闭画廊会恢复资源类型、底模筛选、搜索词、页码和待确认选择，并把焦点还给原封面预览按钮。图片加载失败时，画廊保留关闭与切图操作并显示明确错误。
+- 画廊继续使用 v0.30.6 的 Session 导航存储。打开或关闭画廊不会覆盖该 Session 已保存的底模、资源种类、搜索输入、已提交搜索词和页码。
+- `coverUrl` 与 `sampleImageUrls` 只属于 Client 展示投影，不进入 `CatalogContext`、composer 草稿、`generation-context.v1` 或生成提示词。
 
 ## 验证
 
-- `ContextDialogNavigationStore` 单元测试覆盖跨 Client store 重建恢复、Session 隔离、严格 JSON 校验、Storage resolver/read/write 失败、成功重试和 dispose。
-- Client 与 `WorkbenchDock` 单元测试覆盖关闭重开、Session 切换、请求中止、失效底模修正、修正写入失败和存储属性访问失败。
-- 本地 `pnpm quality` 通过：305 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过。
-- 真实 Chrome 验收确认 Session A 的 Workflow 模板、搜索词 `a` 和第 2 页，以及 Session B 的 `wai` 底模、LoRA、搜索词 `age` 和第 1 页，在关闭重开、Session 切换、浏览器刷新和 Client/Host 重启后分别恢复。
+- Catalog 合同、CLI、Remote 和 Client 定向回归覆盖八个 operation、URL 拒绝分支、预览与选择隔离、准确 `CatalogContext` 插入、按钮与键盘切图、边界禁用、图片错误、焦点恢复、单图和无封面记录。
+- 完整 `pnpm quality` 的最终结果在合并 v0.30.6 导航存储后重新记录。
+- 本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。

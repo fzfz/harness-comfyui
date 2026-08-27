@@ -40,24 +40,24 @@ Ticket 04 — 通过 Agent 生成一张图片并下载可导入 Workflow。
 
 | Source GET path | operationId | 输入 | Host-only 输出 |
 |---|---|---|---|
-| `/internal/comfyui-source/instances/{instance_id}` | `getComfyuiInstanceSourceForHost` | 稳定 `instance_id` | v0.82.2 `results[0]` 实例记录；adapter 映射为内部 InstanceSnapshot，不把 `authorization` 写入持久快照；不存在和凭据不可用分别返回`SOURCE_INSTANCE_NOT_FOUND`与`SOURCE_CREDENTIAL_UNAVAILABLE` |
-| `/internal/comfyui-source/templates/{template_id}/bundle` | `getComfyuiTemplateBundleForHost` | 稳定 `template_id` | v0.82.2 `results[0]` 模板记录；adapter 映射为内部 TemplateBundle；不存在返回 `SOURCE_TEMPLATE_NOT_FOUND`；输出节点字段缺失、空数组或非法返回 `SOURCE_PROTOCOL_ERROR` |
+| `/internal/comfyui-source/instances/{instance_id}` | `getComfyuiInstanceSourceForHost` | 稳定 `instance_id` | v0.84.0 `results[0]` 实例记录；adapter 映射为内部 InstanceSnapshot，不把 `authorization` 写入持久快照；不存在和凭据不可用分别返回`SOURCE_INSTANCE_NOT_FOUND`与`SOURCE_CREDENTIAL_UNAVAILABLE` |
+| `/internal/comfyui-source/templates/{template_id}/bundle` | `getComfyuiTemplateBundleForHost` | 稳定 `template_id` | v0.84.0 `results[0]` 模板记录；adapter 映射为内部 TemplateBundle；不存在返回 `SOURCE_TEMPLATE_NOT_FOUND`；输出节点字段缺失、空数组或非法返回 `SOURCE_PROTOCOL_ERROR` |
 
-Source discovery固定为 v0.82.2 `imagegen-comfyui-source-read --discovery-json` 成功 envelope；Harness adapter 要求顶层 `status`、`message`、`results`、`page`、`page_size`、`total_count`，并要求 `results[0]` 为 OpenAPI 3.1 文档。source pin 来自 `production` Configuration Profile的`source.contractId`与`source.sourceReleaseVersion`，不从 live body 读取。两个Source Operation不声明Harness Tool名，不生成Client remote contribution，也不出现在Agent Tool、Skill Tool或`ctx.remote`。
+Source discovery固定为 v0.84.0 `imagegen-comfyui-source-read --discovery-json` 成功 envelope；Harness adapter 要求顶层 `status`、`message`、`results`、`page`、`page_size`、`total_count`，并要求 `results[0]` 为 OpenAPI 3.1 文档。source pin 来自 `production` Configuration Profile的`source.contractId`与`source.sourceReleaseVersion`，不从 live body 读取。两个Source Operation不声明Harness Tool名，不生成Client remote contribution，也不出现在Agent Tool、Skill Tool或`ctx.remote`。
 
 `ComfyuiSourceCatalog`必须逐字段采用源数据实施文档规定的`InstanceSource -> PrivateComfyuiInstanceSnapshot`映射，并逐错误采用以下唯一映射：四个实例错误和两个模板错误保持同名；discovery identity或版本不匹配返回`SOURCE_CONTRACT_UNSUPPORTED`；`SOURCE_REQUEST_INVALID`、`SOURCE_DATABASE_BUSY`和`SOURCE_INTERNAL_ERROR`逐项返回`SOURCE_PROTOCOL_ERROR`；CLI连接、超时、未声明服务错误、非JSON、空stdout、多JSON或响应Schema错误也返回`SOURCE_PROTOCOL_ERROR`。Issue执行者不得为缺失字段提供默认值，也不得把禁用与未验证合并。
 
 当前仓库合同测试必须让Source CLI分别以退出码`7`返回`SOURCE_REQUEST_INVALID`、`SOURCE_DATABASE_BUSY`和`SOURCE_INTERNAL_ERROR`，并断言三者都产生项目`SOURCE_PROTOCOL_ERROR`；Generation Run必须在调用`/prompt`前停止并保存相同结构化错误。
 
-## v0.82.2 正式 Source 消费合同
+## v0.84.0 正式 Source 消费合同
 
-本节是本 PRD 中 Source discovery、InstanceSource 和 TemplateBundle 的最新规范，优先于本文件前面要求旧 `contract_id`/`contract_version` wrapper 或直接 Source response 的句子；唯一结构化字段来源是 `config/source-contract-v0.82.2.json`。
+本节是本 PRD 中 Source discovery、InstanceSource 和 TemplateBundle 的最新规范，优先于本文件前面要求旧 `contract_id`/`contract_version` wrapper 或直接 Source response 的句子；唯一结构化字段来源是 `config/source-contract-v0.84.0.json`。
 
-`production` Configuration Profile固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`。`imagegen-comfyui-source-read --port <source-service-port> --discovery-json` 必须返回成功 Source envelope，顶层字段为 `status`、`message`、`results`、`page`、`page_size`、`total_count`，且 `results[0]` 是 OpenAPI 3.1 文档；live body 不要求返回 source pin 字段。Source 目标成功响应同样先通过 v0.82.2 envelope 校验，再从 `results` 读取一条记录。
+`production` Configuration Profile固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.84.0"`。`imagegen-comfyui-source-read --port <source-service-port> --discovery-json` 必须返回成功 Source envelope，顶层字段为 `status`、`message`、`results`、`page`、`page_size`、`total_count`，且 `results[0]` 是 OpenAPI 3.1 文档；live body 不要求返回 source pin 字段。Source 目标成功响应同样先通过 v0.84.0 envelope 校验，再从 `results` 读取一条记录。
 
 InstanceSource 的 `results[0]` 必须包含 `id`、`title`、`url`、`credential_type` 和 `authorization`；`authorization` 只保存在 Host 进程内存，持久快照不保存它。TemplateBundle 的 `results[0]` 必须包含 `id`、`title`、`revision_number`、`workflow_sha256`、`workflow_json`、`config_revision`、`dimension_strategy`、`parameters_json`、`bindings_json` 和 `expected_output_node_ids_json`。Harness adapter 按结构化合同映射这些字段，不从源数据库读取或推导字段。
 
-`expected_output_node_ids_json` 可以是非空数组或 `null`。非空数组限制观察范围；`null` 表示 Workflow compiler 使用目标 ComfyUI 实例 `/object_info` 中 `output_node: true` 的活动节点。空数组、缺失或非法值返回 `SOURCE_PROTOCOL_ERROR`，在 `/prompt` 前停止。Workflow compiler 不按节点名称推导或补默认输出节点。v0.82.2 CLI 只验证非空、严格 UTF-8 和单个 JSON 值，业务 Schema 由 Harness adapter 验证。
+`expected_output_node_ids_json` 可以是非空数组或 `null`。非空数组限制观察范围；`null` 表示 Workflow compiler 使用目标 ComfyUI 实例 `/object_info` 中 `output_node: true` 的活动节点。空数组、缺失或非法值返回 `SOURCE_PROTOCOL_ERROR`，在 `/prompt` 前停止。Workflow compiler 不按节点名称推导或补默认输出节点。v0.84.0 CLI 只验证非空、严格 UTF-8 和单个 JSON 值，业务 Schema 由 Harness adapter 验证。
 
 ## `comfyui-generate` Skill 合同
 

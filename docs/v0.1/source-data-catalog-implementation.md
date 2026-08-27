@@ -1,18 +1,18 @@
 ---
 doc_id: harness-source-data-catalog-implementation
-title: 源数据目录 Catalog Tool 定义实施文档
-status: draft
+title: 源数据目录 Catalog Tool 定义历史实施记录
+status: completed
 version: v0.1
-lifecycle: implementation-handoff
+lifecycle: historical-record
 ---
 
-# 源数据目录 Catalog Tool 定义实施文档
+# 源数据目录 Catalog Tool 定义历史实施记录
 
-本文档交给 `/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV` 仓库的执行者实施。执行者必须在源数据仓库自己的分支、Issue、测试流程和版本发布流程中完成本文档的修改、测试和发布。`harness-comfyui` 的 Issue 不得直接修改源数据仓库的代码、Schema、CLI、测试、版本号或发布材料。
+本文档记录 Source v0.84.0 发布前的责任边界与实施来源。对应 Source 工作已经完成并部署；当前 Harness 实施不得执行本文档中的历史 Source 修改、测试、CI、发布或部署步骤。
 
-> 本文档的源数据实施任务已经由源数据仓库 `v0.82.2` 完成。当前 Harness 消费者不得把本文早期设计中的 `items` 响应、`<manifest-path>` 参数、顶层 `contract_id`/`contract_version` wrapper 或 CLI 业务 Schema 校验当作 live contract；现行消费合同是 [`source-contract-v0.82.2.md`](source-contract-v0.82.2.md) 与 [`config/source-contract-v0.82.2.json`](../../config/source-contract-v0.82.2.json)。本文保留源仓库责任边界和实施来源记录，不授权当前仓库修改源数据仓库。
+> 本文档的源数据实施任务已经由源数据仓库 `v0.84.0` 完成。当前 Harness 消费者不得把本文早期设计中的 `items` 响应、`<manifest-path>` 参数、顶层 `contract_id`/`contract_version` wrapper 或 CLI 业务 Schema 校验当作 live contract；现行消费合同是 [`source-contract-v0.84.0.md`](source-contract-v0.84.0.md) 与 [`config/source-contract-v0.84.0.json`](../../config/source-contract-v0.84.0.json)。本文保留源仓库责任边界和实施来源记录，不授权当前仓库修改源数据仓库。
 
-本文档依据源数据仓库 revision `6bc3fc6a027eecf45ccf86dd681e30621c4bc591` 的已提交文件编写。源数据仓库的执行者开始实施前，必须重新确认目标分支仍基于该 revision 或记录实际基线 revision；不能把工作区未提交文件当作契约依据。
+本文档依据 Source 历史 revision `6bc3fc6a027eecf45ccf86dd681e30621c4bc591` 编写。Source v0.84.0 的最终发布合同与该历史基线之间的差异以当前 `source-contract-v0.84.0.md` 和 `config/source-contract-v0.84.0.json` 为准。
 
 ## 1. 两个仓库的责任边界
 

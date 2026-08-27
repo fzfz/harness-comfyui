@@ -6,7 +6,7 @@ Ticket 02 与 Ticket 16 的需求文档及实现已经删除。下表中的 Tick
 
 静态原型只提供布局、样式、控件、交互顺序和可见状态的设计证据。生产源码不得导入原型静态目录数组或状态切换器作为运行数据。自动化测试可以使用受控 fixture；系统验收必须通过真实 Harness Host、Client、Run Repository 和配置的只读数据源完成。
 
-源数据仓库已经发布 `v0.82.2`。Harness 按 [v0.82.2 envelope 合同](../source-contract-v0.82.2.md)和唯一结构化合同 [`config/source-contract-v0.82.2.json`](../../../config/source-contract-v0.82.2.json)消费两个 CLI。`contractId` 与 `sourceReleaseVersion` 由 `production` Configuration Profile 固定，不从 live response 读取。
+源数据仓库已经发布 `v0.84.0`。Harness 按 [v0.84.0 envelope 合同](../source-contract-v0.84.0.md)和唯一结构化合同 [`config/source-contract-v0.84.0.json`](../../../config/source-contract-v0.84.0.json)消费两个 CLI。`contractId` 与 `sourceReleaseVersion` 由 `production` Configuration Profile 固定，不从 live response 读取。
 
 | 编号 | 功能需求 |
 | --- | --- |

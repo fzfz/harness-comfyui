@@ -67,7 +67,7 @@ const ConfigurationProfileSchema = Schema.object({
     catalogCliPath: nonEmptyString,
     sourceCliPath: nonEmptyString,
     contractId: Schema.const('imagegen-source-contract').required(),
-    sourceReleaseVersion: Schema.const('0.82.2').required(),
+    sourceReleaseVersion: Schema.const('0.84.0').required(),
   }).required(),
   jobs: Schema.object({
     pollIntervalMs: nonNegativeInteger,

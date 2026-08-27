@@ -156,6 +156,18 @@ function sourceCoverUrl(value: unknown): string | null {
   return value
 }
 
+function sourceSampleImageUrls(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) {
+    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog result sample image URLs are invalid.')
+  }
+  return Object.freeze(value.map((item) => {
+    if (typeof item !== 'string') {
+      throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog result sample image URL is invalid.')
+    }
+    return item
+  }))
+}
+
 function sourcePromptText(value: unknown): string {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > 100_000) {
     throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog result prompt text is invalid.')
@@ -328,15 +340,24 @@ function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): Catalo
       label: sourceLabel(result[definition.labelField]),
       subtitle: sourceSubtitle(result, definition.subtitleFields, definition.label),
       coverUrl: sourceCoverUrl(result.cover_url),
+      sampleImageUrls: sourceSampleImageUrls(result.sample_image_urls),
     })
   })
-  return parseCatalogPage({
-    kind: request.kind,
-    query: request.query,
-    page: request.page,
-    items,
-    totalCount: envelope.total_count,
-  })
+  try {
+    return parseCatalogPage({
+      kind: request.kind,
+      query: request.query,
+      page: request.page,
+      items,
+      totalCount: envelope.total_count,
+    })
+  } catch (error) {
+    if (error instanceof CatalogCliError) throw error
+    throw new CatalogCliError(
+      'CATALOG_PROTOCOL_ERROR',
+      error instanceof Error ? error.message : 'Catalog response is invalid.',
+    )
+  }
 }
 
 function normalizeBaseModels(value: unknown): BaseModelList {

@@ -40,19 +40,23 @@ Ticket 05 — 使用完整目录准备一条可生成消息。
 
 正式 runtime 不得从 `prototype/generation-workbench/app.js` 的 `catalog`、`baseModelFilters` 或 `workflow-fixtures.mjs` 取得任何候选、计数、稳定 ID、状态或详情。测试可以使用受控 Catalog/Source fixture，但源码生产验收必须能切换到真实只读 CLI。
 
-## v0.82.2 正式 Catalog 消费合同
+## v0.84.0 正式 Catalog 消费合同
 
-本节是本 PRD 中 Catalog discovery、Catalog response 和十个 operation 的最新规范，优先于本文件前面要求旧 `contract_id`/`contract_version` wrapper 或直接 `items` response 的句子；唯一结构化字段来源是 `config/source-contract-v0.82.2.json`。
+本节是本 PRD 中 Catalog discovery、Catalog response 和十个 operation 的最新规范，优先于本文件前面要求旧 `contract_id`/`contract_version` wrapper 或直接 `items` response 的句子；唯一结构化字段来源是 `config/source-contract-v0.84.0.json`。
 
-`production` Configuration Profile 固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.82.2"`。Catalog CLI discovery 是顶层字段为 `openapi`、`info`、`x-imagegen-media-origin`、`paths`、`components` 的 OpenAPI 3.1 对象，不要求返回 source pin 字段。每个 Catalog operation 的成功 body 是 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope；Catalog adapter 将 `results` 映射为内部 `items`，并从 Configuration Profile 与 operation manifest补充内部 `source_release_version`、`kind` 和 `result_contract_id`。
+`production` Configuration Profile 固定 `source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.84.0"`。Catalog CLI discovery 是顶层字段为 `openapi`、`info`、`x-imagegen-media-origin`、`paths`、`components` 的 OpenAPI 3.1 对象，不要求返回 source pin 字段。每个 Catalog operation 的成功 body 是 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope；Catalog adapter 将 `results` 映射为内部 `items`，并从 Configuration Profile 与 operation manifest补充内部 `source_release_version`、`kind` 和 `result_contract_id`。
 
-v0.82.2 CLI 只验证非空、严格 UTF-8 和单个 JSON 值并原始透传；Harness adapter 负责业务 Schema、operation 字段和 `resolve` 单项约束。CLI 退出码为0但 envelope或业务字段不符合结构化合同时返回 `SOURCE_PROTOCOL_ERROR`；discovery shape、operation metadata或Configuration Profile中的source pin不支持时返回 `SOURCE_CONTRACT_UNSUPPORTED`。
+v0.84.0 CLI 只验证非空、严格 UTF-8 和单个 JSON 值并原始透传；Harness adapter 负责业务 Schema、operation 字段和 `resolve` 单项约束。CLI 退出码为0但 Catalog envelope或业务字段不符合结构化合同时返回 `CATALOG_PROTOCOL_ERROR`；discovery shape、operation metadata或Configuration Profile中的source pin不支持时返回 `SOURCE_CONTRACT_UNSUPPORTED`。
+
+生成模型、LoRA、作品、角色、画师或画风、提示词条目、画师串和 Workflow 模板的每条结果必须包含 `sample_image_urls`。Source 使用现有 `item_images` 按 `sort_order, id` 生成该数组，并排除封面 URL 与重复 URL。Harness Host 将该字段严格映射为 `CatalogItem.sampleImageUrls`；Client Module 只把该字段用于封面图片画廊。Base model 与 ComfyUI instance 结果不需要该字段。
 
 ## 十个 Catalog Operation 契约
 
 十个`audience: catalog` operation必须先按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`在数据源仓库自己的计划、测试和版本发布流程中完成。本Ticket不得修改数据源checkout；本Ticket只消费`production` Configuration Profile中`source.catalogCliPath`指向的已发布CLI。未取得包含以下十项合同的受支持数据源版本时，本Ticket状态为阻塞，Issue执行者不得在当前仓库复制数据源schema、handler或CLI。
 
-每个operation使用PRD 03的`mode: search | resolve`、分页、稳定ID、浏览器安全`cover_url`和结构化错误规则。十个operation共享 v0.82.2 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope；`contractId`与`sourceReleaseVersion`只来自 `production` Configuration Profile，不要求 live body 返回，不允许Client组件直接读取数据源表字段。
+每个operation使用PRD 03的`mode: search | resolve`、分页、稳定ID、浏览器安全`cover_url`和结构化错误规则。十个operation共享 v0.84.0 `status: "ok"`、`message: null`、`results`、`page`、`page_size`、`total_count` envelope；`contractId`与`sourceReleaseVersion`只来自 `production` Configuration Profile，不要求 live body 返回，不允许Client组件直接读取数据源表字段。
+
+具有 `coverUrl` 的资源卡片必须使用同级的封面预览按钮和记录选择按钮。封面预览按钮只打开 `[coverUrl, ...sampleImageUrls]` 图片画廊，不能调用记录选择逻辑。记录选择按钮继续维护 `aria-pressed`、待确认数量和最终 `CatalogContext`。图片 URL 不能进入 `CatalogContext`、composer 草稿、`generation-context.v1` 或生成提示词。
 
 ### 十个 Tool 的固定manifest
 
@@ -122,7 +126,7 @@ Ticket 05必须在产品代码中定义`generation-route.v1`的唯一运行时sc
 - 切换资源种类时每类保留自己的搜索词和分页位置，关闭 Modal 后不保留未确认选择。
 - 某一类查询失败不能删除其他种类已经确认的 chip；发送时任一已选引用解析失败必须阻止整条消息。
 - 数据源不可用时，Saved Media 候选仍可从当前仓库读取；新的数据源资源和新的 Generation Run 必须明确失败，不能用 fixture 补齐。
-- 九类可插入资源全部复用 PRD 03 的 `150 × 160` 固定卡片、`150 × 88` 封面区、每页 6 项和 3 列多行布局。Saved Media 使用当前仓库的安全预览 URL；其他资源使用 Catalog `cover_url`。没有封面时显示统一占位符，不能用任意示例图片填充。
+- 九类可插入资源全部复用 PRD 03 的 `150 × 160` 固定卡片、`150 × 88` 封面区、每页 9 项和 3×3 布局。Saved Media 使用当前仓库的安全预览 URL；其他资源使用 Catalog `cover_url`。没有封面时显示统一占位符，不能用任意示例图片填充。
 
 ## 产品验收
 

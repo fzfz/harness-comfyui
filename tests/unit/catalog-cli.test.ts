@@ -86,6 +86,10 @@ describe('Catalog CLI adapter', () => {
         title: 'wai_txt2img_lora',
         template_type: 'text_to_image',
         cover_url: 'http://127.0.0.1:18092/media/images/template.webp',
+        sample_image_urls: [
+          'http://127.0.0.1:18092/media/images/template-2.webp',
+          'http://127.0.0.1:18092/media/images/template-3.webp',
+        ],
         workflow_json: { secretHostOnlyGraph: true },
         parameters_json: [
           { parameter_id: 'prompt', kind: 'positive_prompt', value_type: 'string', required: true, visible: true },
@@ -111,6 +115,10 @@ describe('Catalog CLI adapter', () => {
           label: 'wai_txt2img_lora',
           subtitle: 'text_to_image',
           coverUrl: 'http://127.0.0.1:18092/media/images/template.webp',
+          sampleImageUrls: [
+            'http://127.0.0.1:18092/media/images/template-2.webp',
+            'http://127.0.0.1:18092/media/images/template-3.webp',
+          ],
         }],
         totalCount: 35,
       })
@@ -238,22 +246,22 @@ describe('Catalog CLI adapter', () => {
   })
 
   it.each([
-    ['model', { id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null }, { kind: 'model', id: '15', file_name: 'model.safetensors' }],
-    ['lora', { id: 91, file_name: 'lora.safetensors', author: 'author', cover_url: null }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
-    ['work', { id: 3761, name: '.flow', category_name: '.flow', cover_url: null }, { kind: 'work', id: '3761', name: '.flow' }],
-    ['character', { id: 39933, name: '2b', 'works.name': '尼尔机械纪元', prompt_text: '2b, yorha no. 2 type b', cover_url: null }, {
+    ['model', { id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'model', id: '15', file_name: 'model.safetensors' }],
+    ['lora', { id: 91, file_name: 'lora.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
+    ['work', { id: 3761, name: '.flow', category_name: '.flow', cover_url: null, sample_image_urls: [] }, { kind: 'work', id: '3761', name: '.flow' }],
+    ['character', { id: 39933, name: '2b', 'works.name': '尼尔机械纪元', prompt_text: '2b, yorha no. 2 type b', cover_url: null, sample_image_urls: [] }, {
       kind: 'character', id: '39933', work_name: '尼尔机械纪元', character_name: '2b', prompt_text: '2b, yorha no. 2 type b',
     }],
-    ['style', { id: 12415, name: 'say_hana', prompt_text: 'say_hana', cover_url: null }, {
+    ['style', { id: 12415, name: 'say_hana', prompt_text: 'say_hana', cover_url: null, sample_image_urls: [] }, {
       kind: 'style', id: '12415', name: 'say_hana', prompt_text: 'say_hana',
     }],
-    ['prompt-term', { id: 49856, canonical_tag: 'ryuujin_no_senpai', post_count: 50 }, {
+    ['prompt-term', { id: 49856, canonical_tag: 'ryuujin_no_senpai', post_count: 50, sample_image_urls: [] }, {
       kind: 'prompt-term', id: '49856', tag: 'ryuujin_no_senpai',
     }],
-    ['artist-string', { id: 7, title: 'watercolor', description: 'watercolor artists', artist_string: '@artist_a, @artist_b', cover_url: null }, {
+    ['artist-string', { id: 7, title: 'watercolor', description: 'watercolor artists', artist_string: '@artist_a, @artist_b', cover_url: null, sample_image_urls: [] }, {
       kind: 'artist-string', id: '7', title: 'watercolor', prompt_text: '@artist_a, @artist_b',
     }],
-    ['comfyui-template', { id: 37, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, parameters_json: [] }, {
+    ['comfyui-template', { id: 37, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, sample_image_urls: [], parameters_json: [] }, {
       kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
     }],
   ] as const)('projects the %s CLI record into exact Agent context data', async (kind, source, context) => {
@@ -264,7 +272,24 @@ describe('Catalog CLI adapter', () => {
     )
 
     expect(result.items[0]?.context).toEqual(context)
-    expect(JSON.stringify(result.items[0]?.context)).not.toMatch(/label|subtitle|coverUrl|description/u)
+    expect(JSON.stringify(result.items[0]?.context)).not.toMatch(/label|subtitle|coverUrl|sampleImageUrls|description/u)
+  })
+
+  it.each([
+    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null }, 'sample image URLs'],
+    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: null }, 'sample image URLs'],
+    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['https://example.com/x.webp'] }, 'sample image URL'],
+    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['http://127.0.0.1:18092/x.webp', 'http://127.0.0.1:18092/x.webp'] }, 'duplicated'],
+    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: 'http://127.0.0.1:18092/x.webp', sample_image_urls: ['http://127.0.0.1:18092/x.webp'] }, 'cover URL'],
+  ])('rejects invalid sample image projection %#', async (source, message) => {
+    const execute: CatalogCliProcess = async () => ({ exitCode: 0, stdout: response([source]), stderr: '' })
+    await expect(catalog(execute).search(
+      { kind: 'model', query: '', page: 1, baseModelId: null },
+      new AbortController().signal,
+    )).rejects.toMatchObject({
+      code: 'CATALOG_PROTOCOL_ERROR',
+      message: expect.stringContaining(message),
+    })
   })
 
   it('returns an empty real page without inserting fixtures', async () => {

@@ -179,6 +179,7 @@ export interface CatalogItem {
   readonly label: string
   readonly subtitle: string
   readonly coverUrl: string | null
+  readonly sampleImageUrls: readonly string[]
 }
 
 export interface CatalogPage {
@@ -269,19 +270,34 @@ function itemText(value: unknown, subject: string, maxLength: number): string {
   return value
 }
 
-function coverUrl(value: unknown): string | null {
-  if (value === null) return null
-  if (typeof value !== 'string' || value.length > 2_000) throw new TypeError('catalog item cover URL is invalid')
+function catalogImageUrl(value: unknown, subject: string): string {
+  if (typeof value !== 'string' || value.length > 2_000) throw new TypeError(`${subject} is invalid`)
   let parsed: URL
   try {
     parsed = new URL(value)
   } catch {
-    throw new TypeError('catalog item cover URL is invalid')
+    throw new TypeError(`${subject} is invalid`)
   }
   if (parsed.protocol !== 'http:' || parsed.hostname !== '127.0.0.1') {
-    throw new TypeError('catalog item cover URL is invalid')
+    throw new TypeError(`${subject} is invalid`)
   }
   return parsed.href
+}
+
+function coverUrl(value: unknown): string | null {
+  return value === null ? null : catalogImageUrl(value, 'catalog item cover URL')
+}
+
+function sampleImageUrls(value: unknown, cover: string | null): readonly string[] {
+  if (!Array.isArray(value)) throw new TypeError('catalog item sample image URLs are invalid')
+  const urls = value.map(item => catalogImageUrl(item, 'catalog item sample image URL'))
+  if (new Set(urls).size !== urls.length) {
+    throw new TypeError('catalog item sample image URLs are duplicated')
+  }
+  if (cover !== null && urls.includes(cover)) {
+    throw new TypeError('catalog item sample image URLs contain the cover URL')
+  }
+  return Object.freeze(urls)
 }
 
 export function catalogDefinition(kind: CatalogKind): (typeof CATALOG_KIND_DEFINITIONS)[number] {
@@ -487,12 +503,14 @@ export function parseCatalogResolvedGenerationModel(value: unknown): CatalogReso
 
 export function parseCatalogItem(value: unknown): CatalogItem {
   const input = record(value, 'catalog item')
-  exactKeys(input, ['context', 'label', 'subtitle', 'coverUrl'], 'catalog item')
+  exactKeys(input, ['context', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
+  const parsedCoverUrl = coverUrl(input.coverUrl)
   return Object.freeze({
     context: parseCatalogContext(input.context),
     label: itemText(input.label, 'catalog item label', 500),
     subtitle: itemText(input.subtitle, 'catalog item subtitle', 500),
-    coverUrl: coverUrl(input.coverUrl),
+    coverUrl: parsedCoverUrl,
+    sampleImageUrls: sampleImageUrls(input.sampleImageUrls, parsedCoverUrl),
   })
 }
 

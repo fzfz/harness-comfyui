@@ -2,7 +2,7 @@ import { isIP } from 'node:net'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 
 export const SOURCE_CONTRACT_ID = 'imagegen-source-contract'
-export const SOURCE_RELEASE_VERSION = '0.82.2'
+export const SOURCE_RELEASE_VERSION = '0.84.0'
 
 const RUNTIME_KEYS = [
   'schemaVersion', 'runtimeId', 'runtimeRoot', 'configurationProfile', 'host', 'port',

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import {
   Button,
   IconCheckOutline16,
   IconChevronDownOutline14,
+  IconChevronLeftOutline14,
+  IconChevronRightOutline14,
   IconSearchOutline16,
   IconSparkle16,
   Input,
@@ -123,6 +125,13 @@ function WorkbenchDockSession({
   const [selectedOptions, setSelectedOptions] = useState<ReadonlyMap<string, CatalogContext>>(new Map())
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [galleryItem, setGalleryItem] = useState<CatalogItem | null>(null)
+  const [galleryIndex, setGalleryIndex] = useState(0)
+  const [galleryLoadFailed, setGalleryLoadFailed] = useState(false)
+  const galleryFocusRef = useRef<HTMLDivElement | null>(null)
+  const galleryOpenerCardRef = useRef<HTMLDivElement | null>(null)
+  const galleryOpenerKeyRef = useRef<string | null>(null)
+  const restoreGalleryFocusRef = useRef(false)
 
   useEffect(() => {
     if (!dialogOpen) return
@@ -221,10 +230,49 @@ function WorkbenchDockSession({
   const navigationPersistenceError = navigationSnapshot.persistenceErrorCode === null
     ? null
     : workbenchErrorText(navigationSnapshot.persistenceErrorCode)
+  const galleryImageUrls = useMemo(() => (
+    galleryItem?.coverUrl === null || galleryItem?.coverUrl === undefined
+      ? []
+      : [galleryItem.coverUrl, ...galleryItem.sampleImageUrls]
+  ), [galleryItem])
+  const galleryCurrentUrl = galleryImageUrls[galleryIndex] ?? null
+  const moveGallery = useCallback((offset: -1 | 1) => {
+    setGalleryIndex(current => Math.max(0, Math.min(galleryImageUrls.length - 1, current + offset)))
+    setGalleryLoadFailed(false)
+  }, [galleryImageUrls.length])
+
+  useEffect(() => {
+    if (!dialogOpen || galleryItem === null || typeof document === 'undefined') return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+      moveGallery(event.key === 'ArrowLeft' ? -1 : 1)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [dialogOpen, galleryItem, moveGallery])
+
+  useEffect(() => {
+    if (galleryItem !== null) {
+      galleryFocusRef.current?.focus()
+      return
+    }
+    if (!restoreGalleryFocusRef.current) return
+    restoreGalleryFocusRef.current = false
+    galleryOpenerCardRef.current
+      ?.querySelector<HTMLButtonElement>('.harness-comfyui-card-preview')
+      ?.focus()
+  }, [galleryItem])
 
   if (!active) return null
 
   const closeDialog = () => {
+    restoreGalleryFocusRef.current = false
+    galleryOpenerCardRef.current = null
+    galleryOpenerKeyRef.current = null
+    setGalleryItem(null)
+    setGalleryIndex(0)
+    setGalleryLoadFailed(false)
     setDialogOpen(false)
     setBaseModelMenuOpen(false)
     setSelectedOptions(new Map())
@@ -237,6 +285,12 @@ function WorkbenchDockSession({
     setPage(null)
     setStatus('idle')
     setCatalogError(null)
+    restoreGalleryFocusRef.current = false
+    galleryOpenerCardRef.current = null
+    galleryOpenerKeyRef.current = null
+    setGalleryItem(null)
+    setGalleryIndex(0)
+    setGalleryLoadFailed(false)
     setSelectedOptions(new Map(selectedContexts.map(option => [workbenchContextKey(option), option])))
     setDialogOpen(true)
   }
@@ -275,6 +329,21 @@ function WorkbenchDockSession({
     })
   }
 
+  const openGallery = (option: CatalogItem) => {
+    if (option.coverUrl === null) return
+    galleryOpenerKeyRef.current = workbenchContextKey(option.context)
+    setGalleryIndex(0)
+    setGalleryLoadFailed(false)
+    setGalleryItem(option)
+  }
+
+  const closeGallery = () => {
+    restoreGalleryFocusRef.current = true
+    setGalleryItem(null)
+    setGalleryIndex(0)
+    setGalleryLoadFailed(false)
+  }
+
   return (
     <section className="harness-comfyui-dock" aria-label={WORKBENCH_COPY.entry}>
       <div className="harness-comfyui-dock-row">
@@ -309,12 +378,12 @@ function WorkbenchDockSession({
 
       <Modal
         open={dialogOpen}
-        onClose={closeDialog}
-        title={WORKBENCH_COPY.dialogTitle}
-        closeLabel={WORKBENCH_COPY.closeDialog}
-        className="harness-comfyui-catalog-modal"
-        contentClassName="harness-comfyui-catalog-modal-content"
-        footer={(
+        onClose={galleryItem === null ? closeDialog : closeGallery}
+        title={galleryItem === null ? WORKBENCH_COPY.dialogTitle : `${WORKBENCH_COPY.galleryTitle}：${galleryItem.label}`}
+        closeLabel={galleryItem === null ? WORKBENCH_COPY.closeDialog : WORKBENCH_COPY.closeGallery}
+        className={`harness-comfyui-catalog-modal${galleryItem === null ? '' : ' harness-comfyui-gallery-modal'}`}
+        contentClassName={`harness-comfyui-catalog-modal-content${galleryItem === null ? '' : ' harness-comfyui-gallery-modal-content'}`}
+        footer={galleryItem === null ? (
           <>
             <span className="harness-comfyui-selection-count">
               {WORKBENCH_COPY.selected} {selectedOptions.size}
@@ -326,12 +395,14 @@ function WorkbenchDockSession({
               {WORKBENCH_COPY.confirm}
             </Button>
           </>
-        )}
+        ) : null}
       >
-        {navigationPersistenceError === null ? null : (
-          <span className="harness-comfyui-catalog-state">{navigationPersistenceError}</span>
-        )}
-        <div className="harness-comfyui-base-model-row">
+        {galleryItem === null ? (
+          <>
+            {navigationPersistenceError === null ? null : (
+              <span className="harness-comfyui-catalog-state">{navigationPersistenceError}</span>
+            )}
+            <div className="harness-comfyui-base-model-row">
           <span>{WORKBENCH_COPY.baseModel}</span>
           <Menu
             open={baseModelMenuOpen}
@@ -362,9 +433,9 @@ function WorkbenchDockSession({
             )}
           />
           {baseModelStatus === 'error' ? <span>{baseModelError}</span> : null}
-        </div>
+            </div>
 
-        <div className="harness-comfyui-catalog">
+            <div className="harness-comfyui-catalog">
           <nav className="harness-comfyui-catalog-kinds" aria-label="资源类型">
             {CATALOG_KIND_DEFINITIONS.map(definition => (
               <Button
@@ -408,32 +479,46 @@ function WorkbenchDockSession({
               {status === 'error' ? <span className="harness-comfyui-catalog-state">{catalogError}</span> : null}
               {status === 'ready' && page?.items.length === 0 ? <span className="harness-comfyui-catalog-state">{WORKBENCH_COPY.empty}</span> : null}
               {status === 'ready' ? page?.items.map(option => {
-                const selected = selectedOptions.has(workbenchContextKey(option.context))
+                const optionKey = workbenchContextKey(option.context)
+                const selected = selectedOptions.has(optionKey)
                 return (
-                  <Button
-                    key={workbenchContextKey(option.context)}
+                  <div
+                    key={optionKey}
+                    ref={galleryOpenerKeyRef.current === optionKey ? galleryOpenerCardRef : undefined}
                     className="harness-comfyui-catalog-card"
-                    variant="toolbar"
-                    aria-pressed={selected}
-                    aria-label={`${selected ? WORKBENCH_COPY.selectedItem : WORKBENCH_COPY.selectItem} ${option.label}`}
-                    onClick={() => toggleOption(option)}
+                    data-selected={selected ? 'true' : 'false'}
                   >
-                    <span className="harness-comfyui-card-cover">
-                      {option.coverUrl === null ? (
+                    {option.coverUrl === null ? (
+                      <span className="harness-comfyui-card-cover harness-comfyui-card-cover-placeholder">
                         <span className="harness-comfyui-card-placeholder">{WORKBENCH_COPY.noCover}</span>
-                      ) : (
+                      </span>
+                    ) : (
+                      <Button
+                        className="harness-comfyui-card-cover harness-comfyui-card-preview"
+                        variant="toolbar"
+                        aria-label={`${WORKBENCH_COPY.openGallery} ${option.label}`}
+                        onClick={() => openGallery(option)}
+                      >
                         <img src={option.coverUrl} alt={`${option.label} 封面`} loading="lazy" />
-                      )}
+                      </Button>
+                    )}
+                    <Button
+                      className="harness-comfyui-card-select"
+                      variant="toolbar"
+                      aria-pressed={selected}
+                      aria-label={`${selected ? WORKBENCH_COPY.selectedItem : WORKBENCH_COPY.selectItem} ${option.label}`}
+                      onClick={() => toggleOption(option)}
+                    >
                       <span className="harness-comfyui-card-selection" aria-hidden="true">
                         {selected ? <IconCheckOutline16 /> : null}
                         {selected ? WORKBENCH_COPY.selectedItem : WORKBENCH_COPY.selectItem}
                       </span>
-                    </span>
-                    <span className="harness-comfyui-card-copy">
-                      <strong>{option.label}</strong>
-                      <small>{option.subtitle}</small>
-                    </span>
-                  </Button>
+                      <span className="harness-comfyui-card-copy">
+                        <strong>{option.label}</strong>
+                        <small>{option.subtitle}</small>
+                      </span>
+                    </Button>
+                  </div>
                 )
               }) : null}
             </div>
@@ -464,7 +549,54 @@ function WorkbenchDockSession({
               </Button>
             </div>
           </div>
-        </div>
+            </div>
+          </>
+        ) : (
+          <div className="harness-comfyui-gallery">
+            <div className="harness-comfyui-gallery-stage">
+              <Button
+                className="harness-comfyui-gallery-arrow"
+                variant="toolbar"
+                aria-label={WORKBENCH_COPY.previousImage}
+                disabled={galleryIndex === 0}
+                onClick={() => moveGallery(-1)}
+              >
+                <IconChevronLeftOutline14 />
+              </Button>
+              <div
+                ref={galleryFocusRef}
+                className="harness-comfyui-gallery-current"
+                tabIndex={-1}
+                aria-label={`${WORKBENCH_COPY.currentImage} ${galleryIndex + 1} / ${galleryImageUrls.length}`}
+              >
+                {galleryLoadFailed || galleryCurrentUrl === null ? (
+                  <span className="harness-comfyui-gallery-error" role="status">
+                    {WORKBENCH_COPY.imageLoadFailed}
+                  </span>
+                ) : (
+                  <img
+                    key={galleryCurrentUrl}
+                    src={galleryCurrentUrl}
+                    alt={`${galleryItem.label} ${WORKBENCH_COPY.image} ${galleryIndex + 1}`}
+                    onError={() => setGalleryLoadFailed(true)}
+                  />
+                )}
+              </div>
+              <Button
+                className="harness-comfyui-gallery-arrow"
+                variant="toolbar"
+                aria-label={WORKBENCH_COPY.nextImage}
+                disabled={galleryIndex >= galleryImageUrls.length - 1}
+                onClick={() => moveGallery(1)}
+              >
+                <IconChevronRightOutline14 />
+              </Button>
+            </div>
+            <span className="harness-comfyui-gallery-count" aria-live="polite">
+              {galleryIndex + 1} / {galleryImageUrls.length}
+            </span>
+          </div>
+        )}
       </Modal>
     </section>
   )

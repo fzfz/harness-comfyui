@@ -207,7 +207,7 @@ describe('source production commands', () => {
       comfyui: { defaultInstanceId: '1' },
       source: {
         contractId: 'imagegen-source-contract',
-        sourceReleaseVersion: '0.82.2',
+        sourceReleaseVersion: '0.84.0',
       },
       client: { runRefreshIntervalMs: 1000 },
       process: { shutdownTimeoutMs: 10_000 },

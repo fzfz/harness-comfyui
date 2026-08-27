@@ -24,7 +24,7 @@
 
 **Managed Source State**：`.local/source-production-managed.json` 保存的运行中配置快照。stop、status、health 和 logs 使用该快照定位已启动的进程。
 
-**Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.82.2`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。
+**Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.84.0`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
 
 ## 数据
 
@@ -44,6 +44,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.2.0`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.30.7`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。当前发布标签为 `v0.2`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.30.7`；发布不创建或附加产品包。
