@@ -16,13 +16,13 @@
 
 ## 运行
 
-**Source Process Manager**：`scripts/production/` 实现的当前源码进程管理器。它提供 start、stop、restart、status、health 和 logs 六种生命周期操作；`prod:test` 自动验证这些操作及其异常分支。package 命令统一使用 `prod:*`。
+**Source Process Manager**：`scripts/production/` 实现的当前源码进程管理器。它提供 start、stop、restart、status、health 和 logs 六种共享生命周期操作；`prod:*` 管理生产 checkout，`scripts/worktree/` 提供独立 linked worktree 的 `worktree:*` 适配入口。`prod:test` 自动验证这些操作及其异常分支。
 
-**Source Runtime**：当前源码进程使用的本地运行状态。`.local/production/` 保存 DSH home、进程状态、操作日志、Run Repository、Run 文件和 Saved Media；`.local/source-client/client.js` 是 `prod:start` 或 `prod:restart` 根据当前 Client 源码生成的浏览器 ModuleLoader 输入。以上目录不保存另一份产品源码。
+**Source Runtime**：当前源码进程使用的本地运行状态。生产 checkout 使用 `.local/production/`；独立 linked worktree 使用 `.local/worktree-development/`。每个运行目录保存自己的 DSH home、进程状态、操作日志、Run Repository、Run 文件和 Saved Media；`.local/source-client/client.js` 是 start 或 restart 根据当前 Client 源码生成的浏览器 ModuleLoader 输入。以上目录不保存另一份产品源码。
 
 **Configuration Profile**：Host 使用的一组结构化配置。当前系统只有 `production`，其结构由 `config/schema.ts` 定义，其值由 `config/base.json`、`config/profiles/production.json` 和允许的环境变量合成。
 
-**Managed Source State**：`.local/source-production-managed.json` 保存的运行中配置快照。stop、status、health 和 logs 使用该快照定位已启动的进程。
+**Managed Source State**：生产入口把运行中配置快照保存在 `.local/source-production-managed.json`，独立 linked worktree 入口把运行中配置快照保存在 `.local/worktree-development/state/source-managed.json`。`prod:stop`、`prod:status`、`prod:health` 和 `prod:logs` 使用生产快照；对应的 `worktree:*` 命令使用 worktree 快照。
 
 **Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.84.0`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
 
@@ -54,6 +54,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.31.0`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.31.1`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.31.0`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.31.1`；发布不创建或附加产品包。

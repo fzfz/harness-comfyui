@@ -1,23 +1,26 @@
-# Harness ComfyUI v0.31.0
+# Harness ComfyUI v0.31.1
 
-v0.31.0 让 Harness Host 使用目标 ComfyUI 官方前端生成最终 API Workflow，并使用本地缓存复用官方导出结果。该版本修复模板 39 的 `Lora Loader (LoraManager)` 结构化 LoRA 输入缺失，同时保留旧 Workflow compiler 已经通过回归测试的通用参数改写能力。
+v0.31.1 为 Agent 提供独立 linked worktree 的开发启动入口。Agent 使用 `pnpm worktree:start` 启动未发布源码时，系统使用预先配置的模型 provider 和 startup workspace，避免 Harness 再次要求选择模型、输入 DeepSeek API 密钥或选择 workspace 目录。
 
 ## 主要变更
 
-- `ComfyWorkflowCompiler` 继续负责参数 binding、连接上游 Prompt 定位、尺寸倍率、seed、模型路径、标准 LoRA、Power LoRA、LoRA Text Loader、bypass 和活动输出节点筛选。旧手写结果现在只作为运行时 API Workflow 投影，不再直接提交给 `/prompt`。
-- Official API Workflow Cache 未命中时，`ChromeComfyFrontend` 启动配置的本机 Chrome 或 Chromium，通过 Chrome DevTools Protocol 在导航前设置实例认证 header，等待目标页面与自定义节点完成初始化，再调用官方 `loadGraphData()` 与 `graphToPrompt()`。
-- Official API Workflow Cache 命中时，Host 不启动浏览器。Host 深拷贝缓存的 Official Base API Workflow，再覆盖本次请求的非连接输入；官方连接 tuple、虚拟节点、额外输入和 `{ "__value__": ... }` 包装结构保持不变。
-- 缓存 identity 包含实例 ID、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希和执行结构哈希。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。同一 Host 的并发 miss 合并为一次官方导出；损坏缓存、浏览器启动、前端 readiness、导出和覆盖失败返回独立错误码，不触发静默回退。
-- 浏览器只给目标 ComfyUI 实例同 origin 的页面、API 和子资源请求注入实例认证头；跨 origin 子资源和重定向不会携带该认证头。并发 cache miss 的每个调用者独立取消，只有全部等待者取消时才终止共享导出且不写缓存。
-- 精确 `Lora Loader (LoraManager)` 节点同时更新 `text` 与结构化 `loras` widget。空 LoRA 选择会清除模板默认值；非空选择会把 LoRA 名称、模型权重、CLIP 权重和 active 状态写入官方导出的 `inputs.loras.__value__`。
-- 生产运行合同新增 Official API Workflow Cache 受管目录、浏览器可执行文件、Host 级缓存代次和前端编译超时。`prod:health` 现在验证缓存目录的读写能力。
-- 本版本使用 Node 22 内置 WebSocket、文件系统和 SHA-256，没有新增 npm 依赖，也没有修改 `pnpm-lock.yaml`。
+- 新增 `worktree:start`、`worktree:stop`、`worktree:restart`、`worktree:status`、`worktree:health` 和 `worktree:logs` 六个命令。命令只接受 Git linked worktree，并复用生产进程管理器的生命周期、PID、端口、状态、健康和日志能力。
+- 新增结构化开发定义 [`config/worktree-development.json`](https://github.com/fzfz/harness-comfyui/blob/v0.31.1/config/worktree-development.json)。该文件指定独立的 runtime ID、`.local/worktree-development/` 运行目录、开发 DSH Profile、主开发 worktree `.env` 路径和 startup workspace `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。
+- `worktree:start` 在开发 DSH home 的 `.env` 不存在时创建指向主开发 worktree `.env` 的符号链接。正确链接可以重复使用；普通文件或指向其他目标的链接会让启动明确失败。启动器只验证目标是可读普通文件，不读取、复制或记录 `.env` 内容。
+- 新增 `comfyui-workbench-development` DSH Profile。该 Profile 把默认模型设为 `opencode-go/deepseek-v4-flash`，通过 `OPENCODE_GO_API_KEY` 引用读取 provider 凭据，并在 Host 暴露项目 Tool 和路由前注册配置的 startup workspace。
+- Host Plugin 接受开发 Profile 传入的 startup workspace 路径，并通过 Harness Workspace Registry 的公共接口注册该目录。相同 workspace 重复启动后仍保持单条记录。
+- [`AGENTS.md`](https://github.com/fzfz/harness-comfyui/blob/v0.31.1/AGENTS.md) 和 [`docs/agents/worktree-development.md`](https://github.com/fzfz/harness-comfyui/blob/v0.31.1/docs/agents/worktree-development.md) 规定 Agent 必须使用 `worktree:*` 验证独立 worktree、保持启动终端在前台、从第二个终端检查 status 与 health，并在任务结束前停止开发 Host。
+
+## 生产隔离
+
+- `prod:*` 继续使用 `.local/production/dsh-home` 和 `comfyui-workbench` Profile。生产入口不读取 `config/worktree-development.json`，不创建主开发 worktree `.env` 链接，也不注册开发 startup workspace。
+- 开发运行目录和生产运行目录不共享 DSH home、settings、Workspace Registry、Session、Run Repository、Saved Media、进程状态或日志。
+- 本版本没有新增 npm 依赖，也没有修改 `pnpm-lock.yaml`。
 
 ## 验证
 
-- Workflow compiler 的原有参数化回归用例继续执行旧逻辑，并通过透传 `officialApiWorkflowCompiler.compile()` 测试替身观察运行时投影；新增的端到端编译用例比较空、单个和多个 LoraManager 选择在 cache hit 与新鲜官方导出路径中的最终结果。
-- 新增缓存、不可变 Runtime Input Overlay、cache hit 与新鲜导出等价、浏览器/CDP 生命周期、统一超时、LoraManager 结构化输入和生产配置分支测试。
-- 完整 `pnpm quality` 已通过：378 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
-- 122 实例运行 ComfyUI `0.33.3` 与 Frontend `1.49.6`。模板 39 的首次请求完成官方 cache miss，第二个不同 LoRA 权重请求 cache hit 且没有再次调用浏览器。
-- 受控真实请求 `29f91894-e160-4b3f-abb6-565f8f7e9617` 成功完成。服务器 history 记录节点 5 的结构化 LoRA 为 `strength=3`、`clipStrength=3`、`active=true`；节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，完成后实例队列为 running 0、pending 0。
+- 自动化测试覆盖 linked-worktree 门禁、开发定义字段、无效 `.env`、不可读 `.env`、错误符号链接、无效 workspace、开发 Profile 物化、startup workspace 注册、重复注册、受管状态恢复和生产入口隔离。
+- worktree 测试使用自己的 linked-worktree 元数据和临时 workspace fixture，不依赖执行测试的 checkout 形态或开发者机器上的固定目录。
+- 完整 `pnpm quality` 已通过：382 项 unit/integration、23 项 contract/security、40 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 独立 worktree 中的两次真实启动均通过 `worktree:status` 和 `worktree:health`。Harness Web 自动打开 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`，默认模型显示为 DeepSeek V4 Flash，没有出现 DeepSeek API 密钥设置弹窗或 workspace 目录选择框；第二次启动后 Workspace Registry 仍只有一条目标 workspace 记录。
 - 本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。
