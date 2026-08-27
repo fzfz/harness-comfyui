@@ -20,6 +20,7 @@ const PRODUCT_HEALTH_CHECKS = Object.freeze([
   'harnessWeb',
   'clientBundle',
   'runRepository',
+  'apiWorkflowCache',
   'savedMedia',
 ]);
 
@@ -120,6 +121,10 @@ async function probeRunRepository(runtime) {
 
 async function probeSavedMedia(runtime) {
   await probeDirectory(runtime.paths.savedMediaDirectory);
+}
+
+async function probeApiWorkflowCache(runtime) {
+  await probeDirectory(runtime.paths.apiWorkflowCacheDirectory);
 }
 
 async function inspectHarnessWeb(runtime) {
@@ -247,6 +252,12 @@ export async function runSourceHealth(input, runtimeTarget, runtimeResolutionErr
     evidence.runRepository = { status: 'passed' };
   } catch {
     evidence.runRepository = failedCheck('run-repository-invalid');
+  }
+  try {
+    await probeApiWorkflowCache(runtime);
+    evidence.apiWorkflowCache = { status: 'passed' };
+  } catch {
+    evidence.apiWorkflowCache = failedCheck('api-workflow-cache-invalid');
   }
   try {
     await probeSavedMedia(runtime);

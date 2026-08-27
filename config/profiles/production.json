@@ -1,13 +1,19 @@
 {
   "paths": {
     "dataDir": "",
+    "apiWorkflowCacheDirectory": "",
     "runRepositoryFile": "",
     "runDirectory": "",
     "savedMediaDirectory": "",
     "logDirectory": ""
   },
   "comfyui": {
-    "defaultInstanceId": "1"
+    "defaultInstanceId": "1",
+    "frontendCompiler": {
+      "browserExecutablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "instanceCacheEpoch": "1",
+      "timeoutMs": 120000
+    }
   },
   "source": {
     "catalogPort": 0,

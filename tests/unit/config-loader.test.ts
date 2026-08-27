@@ -12,11 +12,15 @@ import { ConfigurationProfileError, loadProfile } from '../../src/config/load-pr
 
 const productionEnvironment = {
   HARNESS_COMFYUI_DATA_DIR: '.local/production/data',
+  HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY: '.local/production/data/api-workflow-cache',
   HARNESS_COMFYUI_RUN_REPOSITORY_FILE: '.local/production/data/runs.sqlite',
   HARNESS_COMFYUI_RUN_DIRECTORY: '.local/production/runs',
   HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: '.local/production/saved-media',
   HARNESS_COMFYUI_LOG_DIRECTORY: '.local/production/logs',
   HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: 'production',
+  HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH: '1',
+  HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS: '120000',
   HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
   HARNESS_COMFYUI_CATALOG_PORT: '18093',
   HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
@@ -46,6 +50,12 @@ describe('production Configuration Profile loader', () => {
     expect(profile.client.runRefreshIntervalMs).toBe(1200)
     expect(profile.source.catalogPort).toBe(18093)
     expect(profile.paths.dataDir).toBe('.local/production/data')
+    expect(profile.paths.apiWorkflowCacheDirectory).toBe('.local/production/data/api-workflow-cache')
+    expect(profile.comfyui.frontendCompiler).toEqual({
+      browserExecutablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      instanceCacheEpoch: '1',
+      timeoutMs: 120000,
+    })
   })
 
   it('reports the production file and property when an override is invalid', () => {
@@ -116,6 +126,16 @@ describe('production Configuration Profile loader', () => {
     }
 
     throw new Error('expected production runtime paths to be required')
+  })
+
+  it('requires the official API Workflow cache directory to be inside paths.dataDir', () => {
+    expect(() => loadProfile('production', {
+      configRoot: 'config',
+      environment: {
+        ...productionEnvironment,
+        HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY: '.local/production/outside-cache',
+      },
+    })).toThrowError(expect.objectContaining({ property: 'paths.apiWorkflowCacheDirectory' }))
   })
 
   it('rejects an unknown JSON property with file and property evidence', () => {
@@ -284,12 +304,18 @@ describe('production Configuration Profile loader', () => {
     ])
     expect(Object.keys(schemaDict.paths.dict!)).toEqual([
       'dataDir',
+      'apiWorkflowCacheDirectory',
       'runRepositoryFile',
       'runDirectory',
       'savedMediaDirectory',
       'logDirectory',
     ])
-    expect(Object.keys(schemaDict.comfyui.dict!)).toEqual(['defaultInstanceId'])
+    expect(Object.keys(schemaDict.comfyui.dict!)).toEqual(['defaultInstanceId', 'frontendCompiler'])
+    expect(Object.keys(schemaDict.comfyui.dict!.frontendCompiler!.dict!)).toEqual([
+      'browserExecutablePath',
+      'instanceCacheEpoch',
+      'timeoutMs',
+    ])
     expect(Object.keys(schemaDict.source.dict!)).toEqual([
       'catalogPort',
       'catalogCliPath',

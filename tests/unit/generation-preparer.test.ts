@@ -123,6 +123,7 @@ describe('SourceGenerationPreparer', () => {
     expect(JSON.stringify(prepared.sourceSnapshot)).not.toContain('secret-token')
     expect(JSON.stringify(prepared.sourceSnapshot)).toContain('http://127.0.0.1:8188')
     expect(compile).toHaveBeenCalledWith(expect.objectContaining({
+      instanceId: '2',
       workflow: template().workflow,
       runtimeParameters: [
         {

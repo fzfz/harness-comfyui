@@ -13,6 +13,7 @@ export type ConfigurationProfileName = (typeof configurationProfileNames)[number
 export interface ConfigurationProfileValues {
   paths: {
     dataDir: string
+    apiWorkflowCacheDirectory: string
     runRepositoryFile: string
     runDirectory: string
     savedMediaDirectory: string
@@ -20,6 +21,11 @@ export interface ConfigurationProfileValues {
   }
   comfyui: {
     defaultInstanceId: string
+    frontendCompiler: {
+      browserExecutablePath: string
+      instanceCacheEpoch: string
+      timeoutMs: number
+    }
   }
   source: {
     catalogPort: number
@@ -54,6 +60,7 @@ export interface ConfigurationProfile extends ConfigurationProfileValues {
 const ConfigurationProfileSchema = Schema.object({
   paths: Schema.object({
     dataDir: nonEmptyString,
+    apiWorkflowCacheDirectory: nonEmptyString,
     runRepositoryFile: nonEmptyString,
     runDirectory: nonEmptyString,
     savedMediaDirectory: nonEmptyString,
@@ -61,6 +68,11 @@ const ConfigurationProfileSchema = Schema.object({
   }).required(),
   comfyui: Schema.object({
     defaultInstanceId: nonEmptyString,
+    frontendCompiler: Schema.object({
+      browserExecutablePath: nonEmptyString,
+      instanceCacheEpoch: nonEmptyString,
+      timeoutMs: positiveInteger,
+    }).required(),
   }).required(),
   source: Schema.object({
     catalogPort: Schema.natural().min(1).max(65535).required(),

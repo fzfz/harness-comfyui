@@ -8,7 +8,7 @@ const RUNTIME_KEYS = [
   'schemaVersion', 'runtimeId', 'runtimeRoot', 'configurationProfile', 'host', 'port',
   'paths', 'comfyui', 'source', 'client', 'process',
 ]
-const PATH_KEYS = ['dataDir', 'runRepositoryFile', 'runDirectory', 'savedMediaDirectory', 'logDirectory']
+const PATH_KEYS = ['dataDir', 'apiWorkflowCacheDirectory', 'runRepositoryFile', 'runDirectory', 'savedMediaDirectory', 'logDirectory']
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -84,6 +84,7 @@ export function validateSourceRuntime(input) {
   )
   const expectedPaths = {
     dataDir: resolve(runtimeRoot, 'shared/data'),
+    apiWorkflowCacheDirectory: resolve(runtimeRoot, 'shared/data/api-workflow-cache'),
     runDirectory: resolve(runtimeRoot, 'shared/runs'),
     savedMediaDirectory: resolve(runtimeRoot, 'shared/saved-media'),
     logDirectory: resolve(runtimeRoot, 'shared/logs'),
@@ -92,9 +93,16 @@ export function validateSourceRuntime(input) {
     if (normalizedPaths[key] !== expected) throw new TypeError(`runtime.paths.${key} must equal ${expected}`)
   }
   requirePathInside(normalizedPaths.runRepositoryFile, normalizedPaths.dataDir, 'runtime.paths.runRepositoryFile')
+  requirePathInside(normalizedPaths.apiWorkflowCacheDirectory, normalizedPaths.dataDir, 'runtime.paths.apiWorkflowCacheDirectory')
 
   const comfyui = requireRecord(runtime.comfyui, 'runtime.comfyui')
-  assertExactKeys(comfyui, ['defaultInstanceId'], 'runtime.comfyui')
+  assertExactKeys(comfyui, ['defaultInstanceId', 'frontendCompiler'], 'runtime.comfyui')
+  const frontendCompiler = requireRecord(comfyui.frontendCompiler, 'runtime.comfyui.frontendCompiler')
+  assertExactKeys(
+    frontendCompiler,
+    ['browserExecutablePath', 'instanceCacheEpoch', 'timeoutMs'],
+    'runtime.comfyui.frontendCompiler',
+  )
   const source = requireRecord(runtime.source, 'runtime.source')
   assertExactKeys(source, ['catalogPort', 'catalogCliPath', 'sourceCliPath', 'contractId', 'sourceReleaseVersion'], 'runtime.source')
   if (source.contractId !== SOURCE_CONTRACT_ID) {
@@ -116,7 +124,23 @@ export function validateSourceRuntime(input) {
     host: validateHost(runtime.host),
     port: validatePort(runtime.port),
     paths: normalizedPaths,
-    comfyui: { defaultInstanceId: requireString(comfyui.defaultInstanceId, 'runtime.comfyui.defaultInstanceId') },
+    comfyui: {
+      defaultInstanceId: requireString(comfyui.defaultInstanceId, 'runtime.comfyui.defaultInstanceId'),
+      frontendCompiler: {
+        browserExecutablePath: requireAbsolutePath(
+          frontendCompiler.browserExecutablePath,
+          'runtime.comfyui.frontendCompiler.browserExecutablePath',
+        ),
+        instanceCacheEpoch: requireString(
+          frontendCompiler.instanceCacheEpoch,
+          'runtime.comfyui.frontendCompiler.instanceCacheEpoch',
+        ),
+        timeoutMs: requirePositiveInteger(
+          frontendCompiler.timeoutMs,
+          'runtime.comfyui.frontendCompiler.timeoutMs',
+        ),
+      },
+    },
     source: {
       catalogPort: validatePort(source.catalogPort),
       catalogCliPath: requireAbsolutePath(source.catalogCliPath, 'runtime.source.catalogCliPath'),

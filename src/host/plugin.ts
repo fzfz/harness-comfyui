@@ -15,11 +15,13 @@ import {
   createTemplateResolverTool,
 } from './catalog/catalog-tool.ts'
 import { ComfyHttpTransport } from './generation/comfy-http-transport.ts'
+import { ChromeComfyFrontend } from './generation/comfy-frontend-browser.ts'
 import { GenerationCoordinator } from './generation/generation-coordinator.ts'
 import { GenerationRemoteService } from './generation/generation-service.ts'
 import { GenerationRuntime } from './generation/generation-runtime.ts'
 import { generationToolForContext } from './generation/generation-tool.ts'
 import { registerGenerationMediaRoutes, type GenerationWebServer } from './generation/media-routes.ts'
+import { OfficialApiWorkflowCompiler } from './generation/official-api-workflow.ts'
 import { GenerationSourceCli } from './generation/source-cli.ts'
 import { SourceGenerationPreparer } from './generation/source-preparer.ts'
 import { ComfyWorkflowCompiler } from './generation/workflow-compiler.ts'
@@ -57,6 +59,15 @@ export function apply(ctx: Context, config: Config): void {
     executable: profile.source.sourceCliPath,
     port: profile.source.catalogPort,
   })
+  const frontendCompiler = new ChromeComfyFrontend({
+    browserExecutablePath: profile.comfyui.frontendCompiler.browserExecutablePath,
+    timeoutMs: profile.comfyui.frontendCompiler.timeoutMs,
+  })
+  const officialApiWorkflowCompiler = new OfficialApiWorkflowCompiler({
+    cacheDirectory: profile.paths.apiWorkflowCacheDirectory,
+    instanceCacheEpoch: profile.comfyui.frontendCompiler.instanceCacheEpoch,
+    frontend: frontendCompiler,
+  })
   const runtime = new GenerationRuntime({
     runRepositoryFile: profile.paths.runRepositoryFile,
     runDirectory: profile.paths.runDirectory,
@@ -64,7 +75,10 @@ export function apply(ctx: Context, config: Config): void {
     preparer: new SourceGenerationPreparer({
       defaultInstanceId: profile.comfyui.defaultInstanceId,
       source,
-      compiler: new ComfyWorkflowCompiler(),
+      compiler: new ComfyWorkflowCompiler({
+        timeoutMs: profile.comfyui.frontendCompiler.timeoutMs,
+        officialApiWorkflowCompiler,
+      }),
     }),
     transport: new ComfyHttpTransport({ source, maxMediaBytes: profile.media.maxFileBytes }),
     missingObservationMs: profile.jobs.missingObservationMs,

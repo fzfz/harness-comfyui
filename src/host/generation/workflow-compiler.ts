@@ -1,5 +1,9 @@
 import { GenerationRuntimeError, type JsonValue } from './generation-runtime.ts'
 import type {
+  OfficialApiWorkflowCompileInput,
+  OfficialApiWorkflowCompileResult,
+} from './official-api-workflow.ts'
+import type {
   ResolvedRuntimeParameter,
   RuntimeBinding,
   RuntimeParameterDefinition,
@@ -15,6 +19,7 @@ const WIDGET_TYPES = new Set([
 ])
 const CONTROL_AFTER_GENERATE = new Set(['fixed', 'increment', 'decrement', 'randomize'])
 const POWER_LORA_LOADER_TYPE = 'Power Lora Loader (rgthree)'
+const LORA_MANAGER_LOADER_TYPE = 'Lora Loader (LoraManager)'
 const MODEL_INPUT_NAMES = new Set(['ckpt_name', 'unet_name'])
 const RGTHREE_SEED_TYPE = 'Seed (rgthree)'
 const RGTHREE_RANDOM_SEED_SENTINEL = -1
@@ -25,6 +30,9 @@ const SERIALIZED_VALUE_SOURCE_TYPES = Object.freeze({
 } as const)
 
 export interface ComfyWorkflowCompilerOptions {
+  readonly officialApiWorkflowCompiler: {
+    compile(input: OfficialApiWorkflowCompileInput): Promise<OfficialApiWorkflowCompileResult>
+  }
   readonly fetchImplementation?: typeof fetch
   readonly timeoutMs?: number
   readonly createRandomSeed?: () => number
@@ -333,6 +341,7 @@ interface ManagerLoraSlot {
   readonly node: UnknownRecord
   readonly activate: boolean
   readonly text: WidgetMapping
+  readonly structured?: WidgetMapping
 }
 
 interface PowerLoraSlot {
@@ -349,6 +358,28 @@ function isPowerLoraWidget(value: unknown): value is UnknownRecord {
 
 function powerLoraWidgetValues(node: UnknownRecord): readonly UnknownRecord[] {
   return array(node.widgets_values).filter(isPowerLoraWidget)
+}
+
+function loraManagerStructuredMapping(node: UnknownRecord): WidgetMapping {
+  const nodeId = String(node.id)
+  const properties = node.properties
+  if (properties === null || typeof properties !== 'object' || Array.isArray(properties)) {
+    loraError('COMFYUI_LORA_INPUT_INVALID', `Workflow LoraManager node "${nodeId}" properties are invalid.`)
+  }
+  const ids = (properties as UnknownRecord).__lm_widget_ids
+  if (!Array.isArray(ids)) {
+    loraError('COMFYUI_LORA_INPUT_INVALID', `Workflow LoraManager node "${nodeId}" serialized widget identities are invalid.`)
+  }
+  const indexes = ids.flatMap((name, index) => name === 'loras' ? [index] : [])
+  if (indexes.length !== 1) {
+    loraError('COMFYUI_LORA_INPUT_INVALID', `Workflow LoraManager node "${nodeId}" must contain one serialized "loras" widget identity.`)
+  }
+  const values = node.widgets_values
+  const index = indexes[0]!
+  if (!Array.isArray(values) || index >= values.length || !Array.isArray(values[index])) {
+    loraError('COMFYUI_LORA_INPUT_INVALID', `Workflow LoraManager node "${nodeId}" serialized "loras" widget value is invalid.`)
+  }
+  return { name: 'loras', index }
 }
 
 function powerLoraValue(value: UnknownRecord): JsonValue {
@@ -1016,7 +1047,6 @@ function applyLoras(
   selections: WorkflowCompilerInput['loras'],
   bindingHints: readonly RuntimeBinding[],
 ): void {
-  if (selections.length === 0) return
   const boundLoraNodeIds = new Set(bindingHints.flatMap(binding => (
     binding.operation === 'replace_input' && binding.parameterId.startsWith('lora_model')
       ? [binding.nodeId]
@@ -1035,6 +1065,14 @@ function applyLoras(
       continue
     }
     const mappings = widgetMappings(node, definition)
+    if (node.type === LORA_MANAGER_LOADER_TYPE) {
+      const text = managerLoraInput(definition, mappings)
+      if (text === undefined) {
+        loraError('COMFYUI_LORA_INPUT_INVALID', `Workflow LoraManager node "${String(node.id)}" does not contain a serialized LoRA text widget.`)
+      }
+      manager.push({ node, activate, text, structured: loraManagerStructuredMapping(node) })
+      continue
+    }
     const byName = new Map(mappings.map(mapping => [mapping.name, mapping]))
     const file = byName.get('lora_name')
     const modelWeight = byName.get('strength_model')
@@ -1056,6 +1094,15 @@ function applyLoras(
   if (power.length > 1) {
     loraError('COMFYUI_LORA_INPUT_AMBIGUOUS', 'The Workflow contains multiple Power Lora Loader inputs.')
   }
+  if (selections.length === 0) {
+    const exactManager = manager.find(slot => slot.structured !== undefined)
+    if (exactManager !== undefined) {
+      if (exactManager.activate) exactManager.node.mode = 0
+      setWidget(exactManager.node, exactManager.text, '')
+      setWidget(exactManager.node, exactManager.structured!, [])
+    }
+    return
+  }
   if (standard.length === 0 && manager.length === 0 && power.length === 0) {
     loraError('COMFYUI_LORA_INPUT_UNAVAILABLE', 'The Workflow does not contain an executable LoRA input.')
   }
@@ -1068,6 +1115,14 @@ function applyLoras(
     const syntax = resolved.map(selection => `<lora:${selection.instancePath}:${selection.weight}>`).join(' ')
     if (manager[0]!.activate) manager[0]!.node.mode = 0
     setWidget(manager[0]!.node, manager[0]!.text, syntax)
+    if (manager[0]!.structured !== undefined) {
+      setWidget(manager[0]!.node, manager[0]!.structured, resolved.map(selection => ({
+        name: selection.instancePath,
+        strength: selection.weight,
+        clipStrength: selection.weight,
+        active: true,
+      })))
+    }
     return
   }
   if (power.length === 1) {
@@ -1204,6 +1259,10 @@ function compile(
       ...mapWidgets(node, definition),
       ...(nodeType === POWER_LORA_LOADER_TYPE ? powerLoraInputs(node) : {}),
     }
+    if (nodeType === LORA_MANAGER_LOADER_TYPE) {
+      const mapping = loraManagerStructuredMapping(node)
+      inputs.loras = structuredClone((node.widgets_values as readonly JsonValue[])[mapping.index]!)
+    }
     for (const rawInput of array(node.inputs)) {
       const input = record(rawInput, `Workflow node "${nodeId}" input`)
       if (input.link === null || input.link === undefined) continue
@@ -1253,11 +1312,13 @@ function compile(
 }
 
 export class ComfyWorkflowCompiler implements WorkflowCompiler {
+  private readonly officialApiWorkflowCompiler: ComfyWorkflowCompilerOptions['officialApiWorkflowCompiler']
   private readonly fetchImplementation: typeof fetch
   private readonly timeoutMs: number
   private readonly createRandomSeed: () => number
 
-  constructor(options: ComfyWorkflowCompilerOptions = {}) {
+  constructor(options: ComfyWorkflowCompilerOptions) {
+    this.officialApiWorkflowCompiler = options.officialApiWorkflowCompiler
     this.fetchImplementation = options.fetchImplementation ?? fetch
     this.timeoutMs = options.timeoutMs ?? 120_000
     this.createRandomSeed = options.createRandomSeed ?? defaultCreateRandomSeed
@@ -1265,6 +1326,7 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
   }
 
   async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
+    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
     const signal = input.signal === undefined ? controller.signal : AbortSignal.any([controller.signal, input.signal])
@@ -1298,7 +1360,19 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       const loras = input.loras.length > 0 ? input.loras : legacyLoraSelections(runtimeParameters)
       applyLoras(actualWorkflow, definitions, loras, input.bindingHints ?? [])
       const compiled = compile(actualWorkflow, definitions, input.expectedOutputNodeIds)
-      return Object.freeze({ ...compiled, actualWorkflow })
+      const finalized = await this.officialApiWorkflowCompiler.compile({
+        instanceId: input.instanceId,
+        connection: input.connection,
+        templateWorkflow: input.workflow,
+        actualWorkflow,
+        runtimeProjection: compiled.apiWorkflow,
+        ...(input.signal === undefined ? {} : { signal: input.signal }),
+      })
+      return Object.freeze({
+        apiWorkflow: finalized.apiWorkflow,
+        activeOutputNodeIds: compiled.activeOutputNodeIds,
+        actualWorkflow,
+      })
     } finally {
       clearTimeout(timeout)
     }

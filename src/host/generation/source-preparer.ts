@@ -75,6 +75,7 @@ export interface GenerationSource {
 }
 
 export interface WorkflowCompilerInput {
+  readonly instanceId: string
   readonly workflow: UiWorkflow
   readonly connection: ComfyConnection
   readonly expectedOutputNodeIds: readonly string[] | null
@@ -206,6 +207,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
       authorization: instance.authorization,
     })
     const compiled = await this.options.compiler.compile({
+      instanceId: instance.id,
       workflow: bundle.workflow,
       connection,
       expectedOutputNodeIds: bundle.expectedOutputNodeIds,

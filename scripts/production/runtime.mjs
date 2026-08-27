@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs'
-import { access, readFile, rm } from 'node:fs/promises'
+import { access, mkdir, readFile, rm } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -148,6 +148,7 @@ export async function loadSourceProductionContext(options = {}) {
   const profileEnvironment = {
     ...(options.environment ?? process.env),
     HARNESS_COMFYUI_DATA_DIR: dataDir,
+    HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY: resolve(dataDir, 'api-workflow-cache'),
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: resolve(dataDir, 'runs.sqlite'),
     HARNESS_COMFYUI_RUN_DIRECTORY: resolve(definition.runtimeRoot, 'shared/runs'),
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: resolve(definition.runtimeRoot, 'shared/saved-media'),
@@ -175,12 +176,16 @@ export async function loadSourceProductionContext(options = {}) {
     port: profile.server.port,
     paths: {
       dataDir: profile.paths.dataDir,
+      apiWorkflowCacheDirectory: profile.paths.apiWorkflowCacheDirectory,
       runRepositoryFile: profile.paths.runRepositoryFile,
       runDirectory: profile.paths.runDirectory,
       savedMediaDirectory: profile.paths.savedMediaDirectory,
       logDirectory: profile.paths.logDirectory,
     },
-    comfyui: { defaultInstanceId: profile.comfyui.defaultInstanceId },
+    comfyui: {
+      defaultInstanceId: profile.comfyui.defaultInstanceId,
+      frontendCompiler: profile.comfyui.frontendCompiler,
+    },
     source: {
       catalogPort: profile.source.catalogPort,
       catalogCliPath: profile.source.catalogCliPath,
@@ -389,6 +394,7 @@ export async function prepareSourceRuntime(context) {
   await assertExecutable(context.dshExecutable, 'source production dsh executable')
   await assertReadable(context.runtime.source.catalogCliPath, 'source production Catalog CLI')
   await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
+  await mkdir(context.runtime.paths.apiWorkflowCacheDirectory, { recursive: true })
   await materializeSourceClientModule(context.repositoryRoot)
   await materializeSourceProfile(context.repositoryRoot, context.dshHome)
   await writeAtomicJson(context.sourceRuntimeStatePath, {

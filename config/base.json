@@ -1,13 +1,19 @@
 {
   "paths": {
     "dataDir": "",
+    "apiWorkflowCacheDirectory": "",
     "runRepositoryFile": "",
     "runDirectory": "",
     "savedMediaDirectory": "",
     "logDirectory": ""
   },
   "comfyui": {
-    "defaultInstanceId": ""
+    "defaultInstanceId": "",
+    "frontendCompiler": {
+      "browserExecutablePath": "",
+      "instanceCacheEpoch": "1",
+      "timeoutMs": 120000
+    }
   },
   "source": {
     "catalogPort": 0,

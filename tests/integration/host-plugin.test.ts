@@ -19,6 +19,7 @@ function stubTestProfileEnvironment(): void {
   temporaryDirectories.push(root)
   const values: Record<string, string> = {
     HARNESS_COMFYUI_DATA_DIR: join(root, 'data'),
+    HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY: join(root, 'data/api-workflow-cache'),
     HARNESS_COMFYUI_RUN_REPOSITORY_FILE: join(root, 'runs.sqlite'),
     HARNESS_COMFYUI_RUN_DIRECTORY: join(root, 'runs'),
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: join(root, 'media'),

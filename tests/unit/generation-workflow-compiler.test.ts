@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { JsonValue } from '../../src/host/generation/generation-runtime.ts'
-import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compiler.ts'
+import { overlayRuntimeApiWorkflow } from '../../src/host/generation/official-api-workflow.ts'
+import {
+  ComfyWorkflowCompiler,
+  type ComfyWorkflowCompilerOptions,
+} from '../../src/host/generation/workflow-compiler.ts'
 import type { UiWorkflow } from '../../src/host/generation/source-preparer.ts'
 
 const workflow: UiWorkflow = {
@@ -63,15 +67,68 @@ const objectInfo = {
   },
 }
 
+function createCompiler(
+  options: Omit<ComfyWorkflowCompilerOptions, 'officialApiWorkflowCompiler'> = {},
+): ComfyWorkflowCompiler {
+  return new ComfyWorkflowCompiler({
+    ...options,
+    officialApiWorkflowCompiler: {
+      compile: async input => ({
+        apiWorkflow: input.runtimeProjection,
+        cacheKey: 'test-cache-key',
+        cacheStatus: 'miss',
+      }),
+    },
+  })
+}
+
 describe('ComfyWorkflowCompiler', () => {
+  it('uses the official finalizer output and preserves an official virtual connection rewrite', async () => {
+    const officialApiWorkflowCompiler = {
+      compile: vi.fn(async input => {
+        const base = structuredClone(input.runtimeProjection) as Record<string, JsonValue>
+        const promptNode = base['2'] as { inputs: Record<string, JsonValue> }
+        promptNode.inputs.clip = ['official-virtual-node', 3]
+        base['official-virtual-node'] = { class_type: 'OfficialVirtualNode', inputs: { source: ['1', 0] } }
+        return {
+          apiWorkflow: overlayRuntimeApiWorkflow(base, input.runtimeProjection),
+          cacheKey: 'official-cache-key',
+          cacheStatus: 'miss' as const,
+        }
+      }),
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
+      officialApiWorkflowCompiler,
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'win3080',
+      workflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    expect((compiled.apiWorkflow['2'] as { inputs: { clip: JsonValue } }).inputs.clip).toEqual(['official-virtual-node', 3])
+    expect(compiled.apiWorkflow['official-virtual-node']).toBeDefined()
+    expect(officialApiWorkflowCompiler.compile).toHaveBeenCalledWith(expect.objectContaining({
+      instanceId: 'win3080',
+      templateWorkflow: workflow,
+      actualWorkflow: compiled.actualWorkflow,
+      runtimeProjection: expect.objectContaining({ '2': expect.any(Object) }),
+    }))
+  })
+
   it('compiles connected inputs and widget values from the UI Workflow with live node definitions', async () => {
     const fetchImplementation = vi.fn(async () => new Response(JSON.stringify(objectInfo), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     }))
-    const compiler = new ComfyWorkflowCompiler({ fetchImplementation })
+    const compiler = createCompiler({ fetchImplementation })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188/', origin: 'http://127.0.0.1:8188', authorization: 'Bearer token' },
       expectedOutputNodeIds: ['3'],
@@ -148,7 +205,7 @@ describe('ComfyWorkflowCompiler', () => {
         [11, 2, 0, 3, 1, 'FLOAT'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ValueConsumer: {
           input: { required: { text: ['STRING', {}], strength: ['FLOAT', {}] } },
@@ -160,6 +217,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['4'],
@@ -183,7 +241,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [{ name: 'STRING', type: 'STRING', links: [] }],
       widgets_values: ['backend value'],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         TextInput_: {
@@ -195,6 +253,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -214,11 +273,12 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [{ name: 'STRING', type: 'STRING', links: [] }],
       widgets_values: [],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: malformed,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -240,7 +300,7 @@ describe('ComfyWorkflowCompiler', () => {
       widgets_values: ['Saved display label'],
       widgets_values_named: { choice: 'Saved display label' },
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         ChoiceNode: {
@@ -252,6 +312,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -315,7 +376,7 @@ describe('ComfyWorkflowCompiler', () => {
         [13, 3, 0, 4, 0, 'IMAGE'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ImageProducer: objectInfo.ImageProducer,
         IntValue: {
@@ -339,6 +400,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['4'],
@@ -428,7 +490,7 @@ describe('ComfyWorkflowCompiler', () => {
         [13, 6, 0, 7, 0, 'INT'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ImageProducer: objectInfo.ImageProducer,
         PrimitiveInt: {
@@ -446,6 +508,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -510,11 +573,12 @@ describe('ComfyWorkflowCompiler', () => {
         output_node: true,
       },
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -524,7 +588,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['3']).toMatchObject({ inputs: { images: ['1', 0] } })
     expect((compiled.apiWorkflow['3'] as { inputs: Record<string, JsonValue> }).inputs).not.toHaveProperty('latent')
 
-    const requiredCompiler = new ComfyWorkflowCompiler({
+    const requiredCompiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...definitions,
         OptionalSave: {
@@ -535,6 +599,7 @@ describe('ComfyWorkflowCompiler', () => {
       }), { status: 200 })),
     })
     await expect(requiredCompiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -552,11 +617,12 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['1girl, white hair'],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -590,7 +656,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual(['1girl, white hair'])
   })
 
-  it('rewrites the executable upstream positive Prompt without replacing connected LoraManager text', async () => {
+  it('rewrites the executable upstream positive Prompt and clears an unselected connected LoraManager input', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -617,8 +683,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 5,
@@ -660,7 +727,7 @@ describe('ComfyWorkflowCompiler', () => {
         [12, 5, 0, 2, 1, 'STRING'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ImpactWildcardProcessor: {
           input: { required: {
@@ -689,6 +756,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -702,15 +770,15 @@ describe('ComfyWorkflowCompiler', () => {
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'usnr, gthan, 1girl' } })
     expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { text: ['5', 0] } })
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '<lora:template-lora:1>' } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
     const upstreamValues = compiled.actualWorkflow.nodes[0]?.widgets_values
     expect(Array.isArray(upstreamValues) ? upstreamValues[0] : undefined).toBe('usnr, gthan, 1girl')
     expect(compiled.actualWorkflow.nodes[0]?.widgets_values_named).toMatchObject({ wildcard_text: 'usnr, gthan, 1girl' })
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values_named)
-      .toMatchObject({ text: '<lora:template-lora:1>' })
+      .toMatchObject({ text: '', loras: [] })
   })
 
-  it('rewrites the executable upstream negative Prompt without replacing connected LoraManager text', async () => {
+  it('rewrites the executable upstream negative Prompt and clears an unselected connected LoraManager input', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -734,8 +802,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 5,
@@ -797,11 +866,12 @@ describe('ComfyWorkflowCompiler', () => {
       CLIPTextEncode: objectInfo.CLIPTextEncode,
       SaveImage: objectInfo.SaveImage,
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -814,7 +884,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'low quality, blurry' } })
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '<lora:template-lora:1>' } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
   })
 
   it('rejects a connected Prompt binding with multiple semantic upstream widgets', async () => {
@@ -865,8 +935,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 3,
@@ -883,7 +954,7 @@ describe('ComfyWorkflowCompiler', () => {
         [12, 5, 0, 2, 0, 'STRING'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ImpactWildcardProcessor: {
           input: { required: {
@@ -910,6 +981,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -954,8 +1026,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 3,
@@ -968,7 +1041,7 @@ describe('ComfyWorkflowCompiler', () => {
       ],
       links: [[12, 1, 0, 2, 0, 'STRING']],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         StringConcatenate: {
           input: { required: { delimiter: ['STRING', {}] } },
@@ -986,6 +1059,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1011,8 +1085,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [{ name: 'trigger_words', type: 'STRING', links: [10] }],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 2,
@@ -1035,7 +1110,7 @@ describe('ComfyWorkflowCompiler', () => {
       ],
       links: [[10, 1, 0, 2, 0, 'STRING']],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         'Lora Loader (LoraManager)': {
           input: { required: { text: ['AUTOCOMPLETE_TEXT_LORAS', { tooltip: 'Use <lora:name:weight> syntax.' }] } },
@@ -1048,6 +1123,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1083,8 +1159,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 5,
@@ -1122,7 +1199,7 @@ describe('ComfyWorkflowCompiler', () => {
         [12, 5, 0, 2, 0, 'STRING'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ImpactWildcardProcessor: {
           input: { required: {
@@ -1149,6 +1226,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1161,7 +1239,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'requested prompt' } })
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '<lora:template-lora:1>' } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
   })
 
   it('follows only the effective input of a bypassed upstream Prompt branch', async () => {
@@ -1184,8 +1262,9 @@ describe('ComfyWorkflowCompiler', () => {
           mode: 0,
           inputs: [],
           outputs: [{ name: 'trigger_words', type: 'STRING', links: [11] }],
-          widgets_values: ['<lora:template-lora:1>'],
-          widgets_values_named: { text: '<lora:template-lora:1>' },
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          widgets_values: [{}, '<lora:template-lora:1>', [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }]],
+          widgets_values_named: { __lm_autocomplete_meta_text: {}, text: '<lora:template-lora:1>', loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }] },
         },
         {
           id: 5,
@@ -1224,7 +1303,7 @@ describe('ComfyWorkflowCompiler', () => {
         [12, 5, 0, 2, 0, 'STRING'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ImpactWildcardProcessor: {
           input: { required: {
@@ -1251,6 +1330,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1307,7 +1387,7 @@ describe('ComfyWorkflowCompiler', () => {
       },
     )
     const createRandomSeed = vi.fn(() => 38_521_047)
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       createRandomSeed,
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
@@ -1325,6 +1405,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1354,7 +1435,7 @@ describe('ComfyWorkflowCompiler', () => {
       widgets_values: [-1],
       widgets_values_named: { seed: -1 },
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'Seed (rgthree)': {
@@ -1366,6 +1447,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1396,7 +1478,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [{ name: 'SEED', type: 'INT', links: [] }],
       widgets_values: [-1],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       createRandomSeed: () => -1,
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
@@ -1409,6 +1491,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1453,7 +1536,7 @@ describe('ComfyWorkflowCompiler', () => {
       ],
       links: [[10, 1, 0, 2, 0, 'INT']],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         'easy int': {
           input: { required: { value: ['INT', {}] } },
@@ -1470,6 +1553,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1531,7 +1615,7 @@ describe('ComfyWorkflowCompiler', () => {
         [11, 1, 1, 2, 1, 'INT'],
       ],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ResolutionSelector: {
           input: {
@@ -1554,6 +1638,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1622,7 +1707,7 @@ describe('ComfyWorkflowCompiler', () => {
       ],
       links: [[10, 1, 0, 2, 0, 'LATENT']],
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         EmptyLatentImage: {
           input: { required: { width: ['INT', {}], height: ['INT', {}], batch_size: ['INT', {}] } },
@@ -1645,6 +1730,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1669,6 +1755,7 @@ describe('ComfyWorkflowCompiler', () => {
     const fixedAspectUpscale = fixedAspectWorkflow.nodes.find(node => node.id === 2) as { widgets_values: JsonValue[] }
     fixedAspectUpscale.widgets_values = ['bicubic', 1152, 1536, 'disabled']
     const fixedAspect = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: fixedAspectWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1729,7 +1816,7 @@ describe('ComfyWorkflowCompiler', () => {
       input_order: { required: ['seed'], optional: [] },
       output_node: false,
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         SeedNode: seedDefinition,
         KSampler: seedDefinition,
@@ -1738,6 +1825,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1754,6 +1842,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { seed: ['1', 0] } })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1823,11 +1912,12 @@ describe('ComfyWorkflowCompiler', () => {
         output_node: false,
       },
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1862,7 +1952,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['source.png', 'image'],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoadImage: {
@@ -1874,6 +1964,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1901,7 +1992,7 @@ describe('ComfyWorkflowCompiler', () => {
       { id: 6, type: 'KSampler', mode: 0, inputs: [], outputs: [], widgets_values: [0, 'fixed'] },
       { id: 7, type: 'KSampler', mode: 0, inputs: [], outputs: [], widgets_values: [0, 'fixed'] },
     )
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         KSampler: {
@@ -1913,6 +2004,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1941,7 +2033,7 @@ describe('ComfyWorkflowCompiler', () => {
       input_order: { required: ['seed'], optional: [] },
       output_node: false,
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         SeedNode: seedDefinition,
@@ -1950,6 +2042,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1968,10 +2061,11 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('reports the parameter id and candidate widgets when structural resolution is missing or ambiguous', async () => {
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -1994,6 +2088,7 @@ describe('ComfyWorkflowCompiler', () => {
       widgets_values: ['same default'],
     })
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: ambiguous,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2010,11 +2105,12 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('discovers active output nodes when the template output declaration is null', async () => {
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: null,
@@ -2047,11 +2143,12 @@ describe('ComfyWorkflowCompiler', () => {
         widgets_values: ['disconnected'],
       },
     )
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: null,
@@ -2066,11 +2163,12 @@ describe('ComfyWorkflowCompiler', () => {
     const missingImagesWorkflow = structuredClone(workflow)
     const saveNode = missingImagesWorkflow.nodes[2] as { inputs: Array<{ link: number | null }> }
     saveNode.inputs[0]!.link = null
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: missingImagesWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2100,7 +2198,7 @@ describe('ComfyWorkflowCompiler', () => {
         orinalMessage: '',
       },
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'TriggerWord Toggle (LoraManager)': {
@@ -2121,6 +2219,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2147,7 +2246,7 @@ describe('ComfyWorkflowCompiler', () => {
       widgets_values: [[]],
       widgets_values_named: { enabled: [] },
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         BooleanNode: {
@@ -2159,6 +2258,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2182,7 +2282,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: [templateValue, 0.8, 0.8],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoader: {
@@ -2200,6 +2300,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: assetWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2220,7 +2321,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: [templateValue],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoader: {
@@ -2232,6 +2333,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: assetWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2259,7 +2361,7 @@ describe('ComfyWorkflowCompiler', () => {
       ...(hasClipWeight ? { strength_clip: ['FLOAT', {}] } : {}),
     }
     const order = ['lora_name', 'strength_model', ...(hasClipWeight ? ['strength_clip'] : [])]
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         [nodeType]: {
@@ -2271,6 +2373,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2310,7 +2413,7 @@ describe('ComfyWorkflowCompiler', () => {
       input_order: { required: ['model', 'text'], optional: [] },
       output_node: false,
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'Lora Loader (LoraManager)': managerDefinition,
@@ -2326,6 +2429,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2336,10 +2440,85 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const syntax = '<lora:wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors:1> <lora:wai\\GTHAN-EQ.safetensors:0.8>'
+    const structuredLoras = [
+      { name: 'wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors', strength: 1, clipStrength: 1, active: true },
+      { name: 'wai\\GTHAN-EQ.safetensors', strength: 0.8, clipStrength: 0.8, active: true },
+    ]
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([
-      { version: 1, textWidgetName: 'text' }, syntax, [],
+      { version: 1, textWidgetName: 'text' }, syntax, structuredLoras,
     ])
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: syntax } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: syntax, loras: structuredLoras } })
+  })
+
+  it('clears template LoraManager text and structured LoRAs when the request selects no LoRA', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'Lora Loader (LoraManager)',
+      mode: 0,
+      properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+      inputs: [],
+      outputs: [],
+      widgets_values: [
+        { version: 1, textWidgetName: 'text' },
+        '<lora:wai\\template.safetensors:1>',
+        [{ name: 'wai\\template.safetensors', strength: 1, clipStrength: 1, active: true }],
+      ],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Lora Loader (LoraManager)': {
+          input: { required: { model: ['MODEL'], text: ['AUTOCOMPLETE_TEXT_LORAS', {}] } },
+          input_order: { required: ['model', 'text'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([
+      { version: 1, textWidgetName: 'text' }, '', [],
+    ])
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
+  })
+
+  it('rejects an exact LoraManager node whose serialized loras widget identity is missing', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'Lora Loader (LoraManager)',
+      mode: 0,
+      properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text'] },
+      inputs: [],
+      outputs: [],
+      widgets_values: [{ version: 1, textWidgetName: 'text' }, ''],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Lora Loader (LoraManager)': {
+          input: { required: { model: ['MODEL'], text: ['AUTOCOMPLETE_TEXT_LORAS', {}] } },
+          input_order: { required: ['model', 'text'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_INVALID' })
   })
 
   it('replaces a Power Lora Loader with resolved dynamic LoRA inputs in selection order', async () => {
@@ -2367,7 +2546,7 @@ describe('ComfyWorkflowCompiler', () => {
         '➕ Add Lora': '',
       },
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'Power Lora Loader (rgthree)': {
@@ -2387,6 +2566,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2440,7 +2620,7 @@ describe('ComfyWorkflowCompiler', () => {
       },
     })
     const instancePath = 'wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors'
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'Power Lora Loader (rgthree)': {
@@ -2457,6 +2637,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2481,7 +2662,7 @@ describe('ComfyWorkflowCompiler', () => {
       widgets_values: [''],
     })
     const instancePath = 'wai/USNR_STYLE_ILL_V1_lokr3-000024.safetensors'
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'LoRA Text Loader (LoraManager)': {
@@ -2498,6 +2679,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2525,7 +2707,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['old.safetensors', 0.5, 0.5],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoader: {
@@ -2541,6 +2723,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2558,7 +2741,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['old.safetensors', 0.5, 0.5],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoader: {
@@ -2574,6 +2757,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2611,7 +2795,7 @@ describe('ComfyWorkflowCompiler', () => {
     } else {
       ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push(managerNode(5))
     }
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         'Lora Loader (LoraManager)': {
@@ -2632,6 +2816,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2649,7 +2834,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['old.safetensors', 0.5, 0.5],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoader: {
@@ -2669,6 +2854,7 @@ describe('ComfyWorkflowCompiler', () => {
     ]
 
     const legacy = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2680,6 +2866,7 @@ describe('ComfyWorkflowCompiler', () => {
     ])
 
     const structured = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2692,11 +2879,12 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('reports a Workflow without an executable LoRA input before submitting it to ComfyUI', async () => {
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2724,7 +2912,7 @@ describe('ComfyWorkflowCompiler', () => {
     )
     const firstPath = 'Krea2-功能\\selected-first.safetensors'
     const secondPath = 'Krea2-功能\\selected-second.safetensors'
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoaderModelOnly: {
@@ -2740,6 +2928,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2762,6 +2951,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const multiple = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2794,7 +2984,7 @@ describe('ComfyWorkflowCompiler', () => {
       widgets_values: ['wai\\rinSoftsketch_v20.safetensors'],
       widgets_values_named: { ckpt_name: 'wai\\rinSoftsketch_v20.safetensors' },
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         CheckpointLoaderSimple: {
@@ -2809,6 +2999,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2837,7 +3028,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['wai/default.safetensors'],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         CheckpointLoaderSimple: {
@@ -2849,6 +3040,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2858,11 +3050,12 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('reports a Workflow without one unique executable model input', async () => {
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2891,7 +3084,7 @@ describe('ComfyWorkflowCompiler', () => {
         widgets_values: ['wai/default.safetensors'],
       },
     )
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         CheckpointLoaderSimple: {
@@ -2908,6 +3101,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2926,7 +3120,7 @@ describe('ComfyWorkflowCompiler', () => {
       outputs: [],
       widgets_values: ['anima\\default.safetensors'],
     })
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         UNETLoader: {
@@ -2938,6 +3132,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     const compiled = await compiler.compile({
+      instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
@@ -2949,11 +3144,12 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('rejects a declared output node that is not an active ComfyUI output node', async () => {
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['2'],
@@ -2962,13 +3158,14 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('aborts a live node-definition request at the configured timeout', async () => {
-    const compiler = new ComfyWorkflowCompiler({
+    const compiler = createCompiler({
       timeoutMs: 1,
       fetchImplementation: vi.fn<typeof fetch>(async (_url, init) => new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true })
       })),
     })
     await expect(compiler.compile({
+      instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: null,
@@ -2977,14 +3174,14 @@ describe('ComfyWorkflowCompiler', () => {
   })
 
   it('rejects invalid timeout, HTTP status and node-definition JSON', async () => {
-    expect(() => new ComfyWorkflowCompiler({ timeoutMs: 0 })).toThrow('timeout')
-    await expect(new ComfyWorkflowCompiler({
+    expect(() => createCompiler({ timeoutMs: 0 })).toThrow('timeout')
+    await expect(createCompiler({
       fetchImplementation: vi.fn(async () => new Response('{}', { status: 503 })),
-    }).compile({ workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, expectedOutputNodeIds: null, loras: [] }))
+    }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, expectedOutputNodeIds: null, loras: [] }))
       .rejects.toMatchObject({ code: 'COMFYUI_HTTP_ERROR' })
-    await expect(new ComfyWorkflowCompiler({
+    await expect(createCompiler({
       fetchImplementation: vi.fn(async () => new Response('{', { status: 200 })),
-    }).compile({ workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, expectedOutputNodeIds: null, loras: [] }))
+    }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, expectedOutputNodeIds: null, loras: [] }))
       .rejects.toMatchObject({ code: 'COMFYUI_PROTOCOL_ERROR' })
   })
 })

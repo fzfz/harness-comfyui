@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
@@ -111,6 +111,7 @@ function parseEnvironmentValue(key: string, value: string): unknown {
     key === 'HARNESS_COMFYUI_SERVER_PORT'
     || key === 'HARNESS_COMFYUI_CATALOG_PORT'
     || key === 'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS'
+    || key === 'HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS'
   ) {
     if (!/^\d+$/.test(value)) return value
     return Number(value)
@@ -151,6 +152,7 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
   try {
     overrideMap = readJson(overridesPath)
   } catch (error) {
+    if (error instanceof ConfigurationProfileError) throw error
     const message = error instanceof Error ? error.message : String(error)
     throw new ConfigurationProfileError(profileName, overridesPath, '<file>', message)
   }
@@ -175,11 +177,30 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
 
   assertSchemaFields(merged, ConfigurationProfileSchema, '', profileName, profilePath)
   try {
+    const parsed = parseConfigurationProfile(merged)
+    const cacheRelativePath = relative(resolve(parsed.paths.dataDir), resolve(parsed.paths.apiWorkflowCacheDirectory))
+    if (cacheRelativePath.length === 0 || cacheRelativePath === '..' || cacheRelativePath.startsWith('../') || isAbsolute(cacheRelativePath)) {
+      throw new ConfigurationProfileError(
+        profileName,
+        profilePath,
+        'paths.apiWorkflowCacheDirectory',
+        'must be a child directory of paths.dataDir',
+      )
+    }
+    if (!isAbsolute(parsed.comfyui.frontendCompiler.browserExecutablePath)) {
+      throw new ConfigurationProfileError(
+        profileName,
+        profilePath,
+        'comfyui.frontendCompiler.browserExecutablePath',
+        'must be an absolute path',
+      )
+    }
     return {
-      ...parseConfigurationProfile(merged),
+      ...parsed,
       configurationProfile: profileName,
     }
   } catch (error) {
+    if (error instanceof ConfigurationProfileError) throw error
     const message = error instanceof Error ? error.message : String(error)
     const propertyMatch = /\$\.([A-Za-z0-9_.]+)/.exec(message)
     const property = propertyMatch?.[1] ?? 'profile'

@@ -1,0 +1,55 @@
+# ComfyUI 官方前端编译与本地 API Workflow 缓存实施进度
+
+## 2026-08-27
+
+- 完成：读取用户指定的 `planning-with-files` 与 `implement` 技能。
+- 完成：读取 `implement` 要求的 `tdd` 与 `code-review` 技能。
+- 完成：运行 `planning-with-files` 会话恢复检查；当前 worktree 没有未同步会话内容。
+- 完成：创建独立实施计划目录和 `task_plan.md`、`findings.md`、`progress.md`。
+- 进行中：读取仓库架构、配置、测试、发布规范和 Generation Source Preparer 数据流，固定完整实施文件清单。
+- 完成：读取 `CONTEXT.md`、系统架构、配置、测试、技术栈、发布、目录结构和 GitHub Issue 规范。
+- 完成：确认 `SourceGenerationPreparer` 把 UI Workflow、运行时参数、binding、模型和 LoRA 一次性交给旧 `WorkflowCompiler`；生产切换需要把 Actual Workflow 参数写入与官方前端 API 导出拆成两个阶段。
+- 完成：确认 Configuration Profile 当前没有浏览器或编译缓存字段，Run Repository schema 位于 `generation-runtime.ts`，错误文案唯一来源为 `config/error-catalog.json`。
+- 完成：确认 `ComfyWorkflowCompiler.compile()` 同时承担 Actual Workflow 参数化与手写 API Workflow 序列化；本次实施必须拆开这两个职责。
+- 完成：确认 `src/host/plugin.ts` 是新参数化器、官方前端编译缓存和运行时参数写入器的生产装配位置。
+- 完成：对比模板 39 的官方 API Workflow 与受控旧编译结果；两个结果节点集合相同，官方结果额外保留八组自定义节点序列化输入。
+- 决定：缓存保存官方 API Workflow 基础对象；每次请求只把旧编译阶段明确产生的运行时输入覆盖到深拷贝，不能用旧编译结果替换官方对象。
+- 决定：缓存键加入参数化后执行结构指纹，以区分 bypass、连接断开和动态输入键变化。
+- 完成：使用本机 Context7 查询 Node.js 文档库；查询没有返回官方 Node.js 结果，未安装或升级 Context7，也未采用第三方浏览器项目。
+- 完成：通过 Node.js 官方 v22 文档确认仓库固定 Node 22.19.0 提供非实验 WebSocket 和支持 AbortSignal 的 `child_process.spawn()`。
+- 完成：依赖安全审计结论为零新增 npm 依赖；本次不修改 lockfile、不执行安装脚本、不使用关闭 Chrome sandbox 的启动参数。
+- 完成：确认 origin/main 与 worktree 起点一致，GitHub CLI 已登录，目标 `v0.31.0` tag 与 Release 不存在。
+- 完成：确认生产 checkout 处于当前发布提交的 detached HEAD，只有生产专属 `config/base.json` 修改；后续部署必须保留该配置。
+- 进行中：独立语义 Reviewer 正在审核完整计划；通过前不开始业务源码修改。
+- 审核待修：独立 Reviewer 指出运行时投影连接不能覆盖官方连接，否则会破坏虚拟节点展开；计划还需要补充官方额外输入跨请求等价合同、template hash 对象来源和缓存 I/O/覆盖错误码。
+- 完成：把运行时覆盖限制为非连接请求值；mode、bypass、连接断开和动态输入名称变化通过 execution structure hash 触发 cache miss，官方连接始终保留。
+- 完成：新增 cache hit 与新鲜官方导出的代表 Workflow 等价合同，覆盖 Prompt、seed、尺寸、模型和四类 LoRA 路线。
+- 完成：明确 template hash 来源为原始 `WorkflowCompilerInput.workflow`，instance ID 来源为 `ComfyInstanceSource.id`，并修正缓存示例。
+- 完成：新增 `COMFYUI_API_WORKFLOW_CACHE_IO_FAILED` 与 `COMFYUI_API_WORKFLOW_OVERLAY_FAILED`，覆盖缓存权限/写入与官方对象不兼容分支。
+- 完成：把具体文件修改清单中的错误码数量修正为六个，使文件清单与错误码章节一致。
+- 完成：独立语义 Reviewer 复审确认四个问题全部关闭，并批准进入实施。
+- 完成：Reviewer 验收计划包含四个必备章节、明确字段来源、无静默降级、无新依赖和完整发布顺序。
+- 进行中：按 TDD seam 1 编写官方 API Workflow 缓存与运行时覆盖 RED 测试。
+- 完成：seam 1 RED 因 `official-api-workflow.ts` 不存在而失败；实现后 10 个缓存与覆盖测试通过。
+- 完成：缓存实现覆盖 miss、跨实例 hit、并发 miss 合并、失败不写入、损坏缓存拒绝、identity 与 credential 隔离。
+- 完成：seam 2 运行时覆盖保留官方连接与额外节点，只替换 scalar 或官方 `__value__`，并保持官方基础对象不可变。
+- 完成：`pnpm run typecheck` 在缓存与覆盖 vertical slice 后通过。
+- 进行中：按 TDD seam 4 编写 Chrome DevTools Protocol Adapter 的 RED 测试。
+- 完成：seam 4 RED 因 `comfy-frontend-browser.ts` 不存在而失败；实现后浏览器与缓存合计 20 个测试通过。
+- 完成：Chrome Adapter 使用 Node 22 原生 WebSocket 和 CDP，授权头在页面导航前设置；适配器覆盖就绪等待、官方导出、取消、SIGTERM 与精确 SIGKILL。
+- 完成：seam 3 RED 证明旧编译器没有调用官方 finalizer、没有更新结构化 `loras`、没有清除空选择默认值且 Source Preparer 没有传实例 ID。
+- 完成：`ComfyWorkflowCompiler` 现在把手写结果限制为运行时投影，并把 Actual Workflow、原始模板、实例 ID 和投影交给官方缓存 finalizer。
+- 完成：精确 `Lora Loader (LoraManager)` 同步 `text` 与 `loras` widget；空选择清除两个 widget；缺少 `__lm_widget_ids.loras` 返回 `COMFYUI_LORA_INPUT_INVALID`。
+- 完成：Configuration Profile RED→GREEN；新增缓存目录、浏览器路径、实例 cache epoch 和 compiler timeout，缓存目录必须位于 `paths.dataDir` 内。
+- 完成：84 个 compiler、preparer、config 和 Host plugin 相关测试通过，`pnpm run typecheck` 通过。
+- 进行中：增加生产进程受管路径、环境透传、health 检查、错误文案和系统文档。
+- 完成：生产进程测试先因缓存目录环境缺失产生 RED；实现 Managed Source State、Host 环境和 health 探针后 14 个生产测试通过。
+- 完成：缓存等价测试覆盖普通 Prompt/seed/尺寸/BOOLEAN/enum/模型、标准 Loader、Power Loader、LoRA Text Loader 和模板 39 LoraManager。
+- 完成：使用 `comfyui-remote-operator` 的 122 规则重新建立只读 SSH 连接；主机密钥检查通过，实例版本为 ComfyUI 0.33.3、前端 1.49.6，预检队列为 0/0。
+- 完成：生产源码的真实 122 cache miss/cache hit 测试在 16.02 秒通过；不同权重请求只调用一次浏览器，节点 5 使用官方 `loras.__value__`，基础缓存保持第一次权重不变。
+- 完成：受控 cache-hit 请求 `29f91894-e160-4b3f-abb6-565f8f7e9617` 由最终 `ComfyHttpTransport` 提交并成功完成。
+- 完成：服务器 history 的节点 5 收到 `anima\\MatureFemaleSliderAnima.safetensors`、`strength=3`、`clipStrength=3`、`active=true`；节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`。
+- 完成：受控生成结束后 122 队列恢复 running 0、pending 0；没有修改远端源码、配置、模型或进程。
+- 完成：对照 `origin/main` 核对旧编译器边界；旧文件的通用函数没有删除，原有 49 个编译器回归用例继续执行，当前新增到 52 个。
+- 完成：确认旧编译器继续负责参数 binding、Prompt 上游定位、尺寸倍率、seed、模型、LoRA、bypass 和活动输出节点；官方前端只接管最终 API Workflow 拓扑与序列化。
+- 完成：新增 CDP readiness 与 `graphToPrompt()` 永久等待的 RED 测试；实现统一 operation AbortSignal 后，15 个浏览器适配器测试和类型检查通过。
