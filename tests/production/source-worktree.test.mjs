@@ -30,6 +30,7 @@ async function temporaryDirectory(prefix) {
 async function linkedWorktreeRepository(prefix) {
   const root = await temporaryDirectory(prefix)
   await writeFile(resolve(root, '.git'), 'gitdir: /test-only/linked-worktree\n', 'utf8')
+  await mkdir(resolve(root, 'startup-workspace'))
   await symlink(resolve(repositoryRoot, 'config'), resolve(root, 'config'), 'dir')
   await symlink(resolve(repositoryRoot, 'package.json'), resolve(root, 'package.json'), 'file')
   return root
@@ -110,8 +111,13 @@ describe('source worktree development definition', () => {
     const root = await linkedWorktreeRepository('harness-worktree-context-')
     const environmentFile = resolve(root, '.env')
     const definitionPath = resolve(root, 'worktree-development.json')
+    const startupWorkspacePath = resolve(root, 'startup-workspace')
     await writeFile(environmentFile, 'TEST_ONLY_KEY=value\n', { encoding: 'utf8', mode: 0o600 })
-    await writeFile(definitionPath, `${JSON.stringify(definition(environmentFile), null, 2)}\n`, 'utf8')
+    await writeFile(
+      definitionPath,
+      `${JSON.stringify(definition(environmentFile, { startupWorkspacePath }), null, 2)}\n`,
+      'utf8',
+    )
 
     const context = await loadSourceWorktreeContext({
       repositoryRoot: root,
@@ -127,7 +133,7 @@ describe('source worktree development definition', () => {
     )
     expect(context.dshProfile).toBe('comfyui-workbench-development')
     expect(context.userEnvironmentFilePath).toBe(environmentFile)
-    expect(context.startupWorkspacePath).toBe('/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness')
+    expect(context.startupWorkspacePath).toBe(startupWorkspacePath)
     expect(context.configReadOrder[0]).toBe(definitionPath)
     expect(context.configReadOrder[1]).toBe(resolve(root, 'config/source-production.json'))
     expect(context.definition.catalogCliPath).toBe(
@@ -327,10 +333,11 @@ describe('source worktree command adapter', () => {
     const environmentFile = resolve(root, '.env')
     const definitionPath = resolve(root, 'worktree-development.json')
     const runtimeRelativeRoot = `.local/saved-worktree-${randomUUID()}`
+    const startupWorkspacePath = resolve(root, 'startup-workspace')
     await writeFile(environmentFile, 'TEST_ONLY_KEY=value\n', 'utf8')
     await writeFile(
       definitionPath,
-      `${JSON.stringify(definition(environmentFile, { runtimeRelativeRoot }), null, 2)}\n`,
+      `${JSON.stringify(definition(environmentFile, { runtimeRelativeRoot, startupWorkspacePath }), null, 2)}\n`,
       'utf8',
     )
     const savedContext = await loadSourceWorktreeContext({
