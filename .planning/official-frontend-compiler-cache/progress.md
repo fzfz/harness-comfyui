@@ -57,11 +57,13 @@
 - 完成：更新 README、CONTEXT、架构、配置、目录、启动、测试、技术栈、发布规范和 v0.31.0 发布说明。
 - 完成：独立语义 Reviewer 提出的 2 项 Medium 与 2 项 Low 均已修正；Reviewer 最终复审批准全部文档和六个新增错误文案。
 - 进行中：执行文档提交前全量质量门禁和 Standards/Spec 双轴代码审查。
-- 完成：文档语义修订后的第二次 `pnpm run quality` 通过；358 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%。
+- 完成：审查前文档语义修订后的第二次 `pnpm run quality` 通过；当时 358 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%。
 - 完成：发布前 Standards/Spec 双轴审查确认认证头 origin 边界、浏览器异步启动失败、空 LoRA 选择、并发 miss 取消、`/object_info` 调用者取消和结构化环境映射问题。
 - 完成：认证头改为 CDP Fetch 逐请求处理，同 origin 注入实例凭据，跨 origin 请求与重定向删除该凭据；浏览器异步 `error` 事件转换为 `COMFYUI_FRONTEND_BROWSER_FAILED`。
 - 完成：并发 cache miss 使用共享导出控制器和独立等待者取消；仅全部等待者取消时终止导出且不写缓存，取消后的新请求可以立即重试。
 - 完成：空 LoRA 选择在歧义判断前清空全部精确 LoraManager 默认值并保留标准、Power 与普通文本 Loader 状态；`/object_info` 调用者取消返回 `COMFYUI_REQUEST_CANCELED`，内部超时仍返回连接失败。
 - 完成：新增真实 `ComfyWorkflowCompiler` 到 `OfficialApiWorkflowCompiler` 的代表 Workflow 等价测试，覆盖 Prompt、尺寸倍率、模型、bypass、活动输出以及空、单个和多个精确 LoraManager 选择。
 - 完成：`config/environment-overrides.json` 统一声明环境变量目标字段、值类型和 Host 运行值路径；Configuration Profile loader 与生产进程不再维护重复环境变量名单。
-- 完成：审查修复后的 `pnpm run quality` 通过；370 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。
+- 完成：第一轮审查修复后的 `pnpm run quality` 通过；当时 370 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。
+- 完成：补充 Chrome readiness/导出阶段提前退出、缓存 identity/API 结构/读取/目录创建/临时写入/rename 和 LoraManager 索引越界/非数组测试。
+- 完成：最终 `pnpm run quality` 通过；377 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。
