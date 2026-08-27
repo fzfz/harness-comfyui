@@ -6,6 +6,7 @@ Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 集成项目。项�
 
 - Node.js `22.19.0` 或 `24.0.0` 以上版本
 - pnpm `11.7.0`
+- 本机 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，其他安装路径通过 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` 配置
 - 两个已发布的 Catalog/Source CLI；默认路径见 [`config/source-production.json`](config/source-production.json)
 
 ## 启动
@@ -36,6 +37,8 @@ pnpm prod:health
 
 这些命令不要求单独执行构建、打包或版本安装。`prod:start` 和 `prod:restart` 会根据当前 `src/client/` 自动更新 `.local/source-client/client.js`，供 Harness 浏览器 ModuleLoader 加载。完整配置和运行目录说明见[系统启动](docs/system/startup.md)与[配置规范](docs/system/configuration.md)。
 
+Generation 请求只要求导入 UI Workflow。Host 保留原 Workflow compiler 的参数 binding、Prompt 上游定位、尺寸、seed、模型、LoRA、bypass 和活动输出节点能力；Host 不再把手写 UI-to-API 序列化结果直接提交给 ComfyUI。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 直接复制本地基础对象并覆盖本次非连接参数。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
+
 ## 测试
 
 ```sh
@@ -53,6 +56,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.30.8 发布说明](docs/releasenotes.md)
+- [v0.31.0 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.30.8`。对应发布记录在最终提交、`v0.30.8` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.31.0`。对应发布记录在最终提交、`v0.31.0` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

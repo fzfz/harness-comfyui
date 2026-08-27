@@ -8,7 +8,7 @@
 pnpm install
 ```
 
-确认 `config/source-production.json` 中的两个 Source CLI 相对路径指向可读文件，并确认Catalog回环服务监听`source.catalogPort`。
+确认 `config/source-production.json` 中的两个 Source CLI 相对路径指向可读文件，并确认 Catalog 回环服务监听 `source.catalogPort`。确认 `comfyui.frontendCompiler.browserExecutablePath` 指向本机可执行的 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`。
 
 ## 启动与验证
 
@@ -25,7 +25,7 @@ pnpm prod:status
 pnpm prod:health
 ```
 
-默认 Web 地址是 `http://127.0.0.1:4173`。`status` 应返回 `running`，`health` 应返回 `passed`。
+默认 Web 地址是 `http://127.0.0.1:4173`。`status` 应返回 `running`，`health` 应返回 `passed`。`health` 会验证 Official API Workflow Cache 目录的读写能力。
 
 ## 日常管理
 
@@ -52,6 +52,7 @@ pnpm prod:stop
 | `state/operations.jsonl` | 六个命令的操作记录 |
 | `state/last-health.json` | 最近一次健康检查结果 |
 | `shared/data/runs.sqlite` | Run Repository |
+| `shared/data/api-workflow-cache/` | 目标 ComfyUI 官方前端生成的基础 API Workflow 缓存 |
 | `shared/runs/` | Run 文件 |
 | `shared/saved-media/` | Saved Media |
 | `shared/logs/` | Host stdout 与 stderr |
@@ -69,4 +70,4 @@ pnpm prod:stop
 | `running` | PID、进程身份和端口均通过检查 |
 | `unhealthy` | 端口被其他进程占用，或受管进程与端口状态不一致 |
 
-启动失败时先执行 `pnpm prod:logs` 查看 stdout、stderr 和 operations，再修正配置或端口占用问题。
+启动失败时先执行 `pnpm prod:logs` 查看 stdout、stderr 和 operations，再修正配置或端口占用问题。Generation 请求在 Official API Workflow Cache 未命中时还会启动配置的本机浏览器；浏览器不可启动、目标前端未就绪或 `graphToPrompt()` 导出失败时，Host 日志和 Generation Run 错误码会分别说明失败阶段。

@@ -34,10 +34,10 @@
 
 ## 旧编译器回归能力核对
 
-- `origin/main` 的 `workflow-compiler.ts` 包含 49 个编译器回归用例；当前实现包含 52 个。原有用例通过透传 official finalizer 继续验证旧参数化和运行时投影结果。
-- 当前源码没有删除旧编译器中的通用函数。参数 binding、连接上游 Prompt 解析、尺寸倍率保持、rgthree seed、实例模型路径、标准 LoRA、Power LoRA、LoRA Text Loader、bypass 解析和活动输出节点筛选仍在官方 finalizer 之前执行。
-- 旧 `compile()` 仍然生成运行时 API Workflow 投影。官方 finalizer 使用该投影计算执行结构指纹，并且只把非连接运行时值写入官方基础 API Workflow 的副本。
-- 官方 finalizer 保留官方连接 tuple、官方虚拟节点和官方自定义 widget 序列化。旧编译器不再拥有最终 `/prompt` 请求拓扑的决定权。
+- `origin/main` 的 `workflow-compiler.ts` 包含 49 个编译器回归用例；当前实现包含 52 个。原有用例通过透传 `officialApiWorkflowCompiler.compile()` 测试替身继续验证旧参数化和运行时投影结果。
+- 当前源码没有删除旧编译器中的通用函数。参数 binding、连接上游 Prompt 解析、尺寸倍率保持、rgthree seed、实例模型路径、标准 LoRA、Power LoRA、LoRA Text Loader、bypass 解析和活动输出节点筛选仍在调用 `OfficialApiWorkflowCompiler.compile()` 之前执行。
+- 旧 `compile()` 仍然生成运行时 API Workflow 投影。`OfficialApiWorkflowCompiler` 使用该投影计算执行结构指纹，并且只把非连接运行时值写入官方基础 API Workflow 的副本。
+- `OfficialApiWorkflowCompiler` 保留官方连接 tuple、官方虚拟节点和官方自定义 widget 序列化。旧编译器不再拥有最终 `/prompt` 请求拓扑的决定权。
 
 ## 官方输出与旧编译结果对比
 

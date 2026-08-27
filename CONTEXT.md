@@ -42,8 +42,18 @@
 
 **Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow，Session 和 Chat Turn 只用于筛选。
 
+**运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据目标实例的 `/object_info`、模板 binding、请求参数、模型和 LoRA 选择生成的输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
+
+**Official Base API Workflow**：目标 ComfyUI 实例的官方前端加载 Actual Workflow 后，通过 `graphToPrompt()` 返回的 API Workflow。该对象是最终节点拓扑、连接 tuple、虚拟节点和自定义 widget 序列化结构的权威来源。
+
+**Official API Workflow Cache**：默认位于 `.local/production/shared/data/api-workflow-cache/` 的本地 JSON 缓存。每个缓存项保存实例身份、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希、执行结构哈希和 Official Base API Workflow；缓存项不保存认证信息，也不保存覆盖后的本次请求值。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。
+
+**Runtime Input Overlay**：Host 深拷贝 Official Base API Workflow，并使用运行时 API Workflow 投影覆盖已经存在的同名非连接输入。Runtime Input Overlay 保留官方连接 tuple、虚拟节点和额外输入；官方值使用 `{ "__value__": ... }` 包装时只替换 `__value__`。
+
+**ChromeComfyFrontend**：`src/host/generation/comfy-frontend-browser.ts` 实现的官方前端导出适配器。该适配器只在 Official API Workflow Cache 未命中时启动配置的本机 Chrome 或 Chromium，通过 Chrome DevTools Protocol 在导航前设置实例认证信息，等待前端与自定义节点完成初始化，再调用 `loadGraphData()` 与 `graphToPrompt()`。
+
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.30.8`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.31.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.30.8`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.31.0`；发布不创建或附加产品包。

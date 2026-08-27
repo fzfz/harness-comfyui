@@ -31,14 +31,14 @@
 - 完成：Reviewer 验收计划包含四个必备章节、明确字段来源、无静默降级、无新依赖和完整发布顺序。
 - 进行中：按 TDD seam 1 编写官方 API Workflow 缓存与运行时覆盖 RED 测试。
 - 完成：seam 1 RED 因 `official-api-workflow.ts` 不存在而失败；实现后 10 个缓存与覆盖测试通过。
-- 完成：缓存实现覆盖 miss、跨实例 hit、并发 miss 合并、失败不写入、损坏缓存拒绝、identity 与 credential 隔离。
+- 完成：缓存实现覆盖 miss、同一目标实例在重建 `OfficialApiWorkflowCompiler` 对象后的持久 hit、并发 miss 合并、失败不写入、损坏缓存拒绝、目标实例 identity 与 credential 隔离。
 - 完成：seam 2 运行时覆盖保留官方连接与额外节点，只替换 scalar 或官方 `__value__`，并保持官方基础对象不可变。
 - 完成：`pnpm run typecheck` 在缓存与覆盖 vertical slice 后通过。
 - 进行中：按 TDD seam 4 编写 Chrome DevTools Protocol Adapter 的 RED 测试。
 - 完成：seam 4 RED 因 `comfy-frontend-browser.ts` 不存在而失败；实现后浏览器与缓存合计 20 个测试通过。
 - 完成：Chrome Adapter 使用 Node 22 原生 WebSocket 和 CDP，授权头在页面导航前设置；适配器覆盖就绪等待、官方导出、取消、SIGTERM 与精确 SIGKILL。
-- 完成：seam 3 RED 证明旧编译器没有调用官方 finalizer、没有更新结构化 `loras`、没有清除空选择默认值且 Source Preparer 没有传实例 ID。
-- 完成：`ComfyWorkflowCompiler` 现在把手写结果限制为运行时投影，并把 Actual Workflow、原始模板、实例 ID 和投影交给官方缓存 finalizer。
+- 完成：seam 3 RED 证明旧编译器没有调用 `OfficialApiWorkflowCompiler.compile()`、没有更新结构化 `loras`、没有清除空选择默认值且 Source Preparer 没有传实例 ID。
+- 完成：`ComfyWorkflowCompiler` 现在把手写结果限制为运行时投影，并把 Actual Workflow、原始模板、实例 ID 和投影交给 `OfficialApiWorkflowCompiler.compile()`。
 - 完成：精确 `Lora Loader (LoraManager)` 同步 `text` 与 `loras` widget；空选择清除两个 widget；缺少 `__lm_widget_ids.loras` 返回 `COMFYUI_LORA_INPUT_INVALID`。
 - 完成：Configuration Profile RED→GREEN；新增缓存目录、浏览器路径、实例 cache epoch 和 compiler timeout，缓存目录必须位于 `paths.dataDir` 内。
 - 完成：84 个 compiler、preparer、config 和 Host plugin 相关测试通过，`pnpm run typecheck` 通过。
@@ -53,3 +53,8 @@
 - 完成：对照 `origin/main` 核对旧编译器边界；旧文件的通用函数没有删除，原有 49 个编译器回归用例继续执行，当前新增到 52 个。
 - 完成：确认旧编译器继续负责参数 binding、Prompt 上游定位、尺寸倍率、seed、模型、LoRA、bypass 和活动输出节点；官方前端只接管最终 API Workflow 拓扑与序列化。
 - 完成：新增 CDP readiness 与 `graphToPrompt()` 永久等待的 RED 测试；实现统一 operation AbortSignal 后，15 个浏览器适配器测试和类型检查通过。
+- 完成：源码提交 `d4ad4d3c396fd13824bcd4373cef13fdde597b22` 已推送到发布分支和 `main`，GitHub CI `33081834591` 成功。
+- 完成：更新 README、CONTEXT、架构、配置、目录、启动、测试、技术栈、发布规范和 v0.31.0 发布说明。
+- 完成：独立语义 Reviewer 提出的 2 项 Medium 与 2 项 Low 均已修正；Reviewer 最终复审批准全部文档和六个新增错误文案。
+- 进行中：执行文档提交前全量质量门禁和 Standards/Spec 双轴代码审查。
+- 完成：文档语义修订后的第二次 `pnpm run quality` 通过；358 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%。

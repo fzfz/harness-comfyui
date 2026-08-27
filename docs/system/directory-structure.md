@@ -3,7 +3,7 @@
 | 路径 | 内容 |
 | --- | --- |
 | `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
-| `src/host/generation/` | Generation Runtime、Source、Workflow、Comfy transport、Tool、Remote、coordinator 和媒体路由 |
+| `src/host/generation/` | Generation Runtime、Source、Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、Tool、Remote、coordinator 和媒体路由 |
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
 | `src/generation/` | Generation Host/Client 共享合同 |
 | `src/client/` | Harness 原生扩展位、上下文选择器和真实 Run/Media 结果列 |
@@ -23,4 +23,6 @@
 | `prototype/` | 工作台静态原型与原型测试；不是运行时数据来源 |
 | `docs/system/` | 当前系统规范 |
 
-运行后生成的 `.local/production/shared/data/runs.sqlite`、`.local/production/shared/runs/`、`.local/production/shared/saved-media/`、`.local/source-client/`、`.local/source-production-managed.json`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。生产启动不会生成 `lib/`。
+运行后生成的 `.local/production/shared/data/runs.sqlite`、`.local/production/shared/data/api-workflow-cache/`、`.local/production/shared/runs/`、`.local/production/shared/saved-media/`、`.local/source-client/`、`.local/source-production-managed.json`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。生产启动不会生成 `lib/`。
+
+`src/host/generation/workflow-compiler.ts` 保留运行时参数解析、Actual Workflow 改写、活动输出节点筛选和运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 负责 cache miss 的官方前端导出。`src/host/generation/official-api-workflow.ts` 负责缓存 identity、持久化、并发 miss 合并和 Runtime Input Overlay。

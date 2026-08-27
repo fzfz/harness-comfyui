@@ -3,7 +3,7 @@
 ## 必须要实现的目标
 
 - 计划执行者必须让 Harness Host 后端使用普通 Node 运行时启动本机 Chrome 或 Chromium，并通过 Chrome DevTools Protocol 调用目标 ComfyUI 实例前端提供的 `loadGraphData()` 与 `graphToPrompt()`。
-- 计划执行者必须根据规范化 UI Workflow JSON、目标 ComfyUI 实例身份、实例缓存代次和编译器 schema 版本生成本地缓存键。
+- 计划执行者必须根据规范化 UI Workflow JSON、目标 ComfyUI 实例身份、Host 级缓存代次和编译器 schema 版本生成本地缓存键。
 - 计划执行者必须在缓存未命中时等待目标 ComfyUI 前端和自定义节点扩展完成注册，生成并保存基础 API Workflow；缓存命中时不得启动或连接浏览器。
 - 计划执行者必须复制基础 API Workflow，再把本次请求的 Prompt、seed、尺寸、LoRA 和其他运行时参数写入副本；计划执行者不得把本次请求参数写回基础缓存。
 - 计划执行者必须让模板 39 的 `Lora Loader (LoraManager)` 节点通过官方前端导出得到 `inputs.loras.__value__`，并让用户选择的 LoRA 名称、模型权重、CLIP 权重和 active 状态进入最终 `/prompt` 请求。
@@ -101,7 +101,7 @@ SourceGenerationPreparer
 
 - `paths.apiWorkflowCacheDirectory`：生产进程管理器固定生成 `<runtimeRoot>/shared/data/api-workflow-cache`，Host 对该目录执行原子 JSON 读写。
 - `comfyui.frontendCompiler.browserExecutablePath`：本机 Chrome 或 Chromium 可执行文件的绝对路径。生产 profile 默认使用 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，允许通过已登记环境变量覆盖。
-- `comfyui.frontendCompiler.instanceCacheEpoch`：非空字符串。ComfyUI 前端或自定义节点版本变化后，生产维护者递增该值，使旧缓存不再命中。
+- `comfyui.frontendCompiler.instanceCacheEpoch`：Host 级非空字符串。任一已登记 ComfyUI 实例的前端或自定义节点版本变化后，生产维护者修改该值，使全部已登记实例的旧缓存均不再命中。
 - `comfyui.frontendCompiler.timeoutMs`：正整数，统一限制 Chrome DevTools 启动、页面扩展就绪和官方导出步骤；生产默认值为 `120000`。
 - `config/environment-overrides.json` 新增 `HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY`、`HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH`、`HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH` 和 `HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS` 的唯一映射。
 - `scripts/production/runtime.mjs` 生成缓存目录并把三个 frontend compiler 配置写入 Managed Source State；`scripts/production/process.mjs` 只从受管 runtime 对象向 Host 子进程透传这些值。
@@ -163,25 +163,25 @@ SourceGenerationPreparer
 | 4. 按 seam 2 实现 API Workflow 参数写入 | 已完成 | RED 测试、不可变副本写入、LoRA 包装结构测试 |
 | 5. 按 seam 4 实现官方前端 CDP 适配器 | 已完成 | RED 测试、浏览器生命周期、前端就绪和导出实现 |
 | 6. 按 seam 3 接入 Generation Source Preparer | 已完成 | RED 测试、生产数据流切换、手写结果直接提交路径移除、旧参数化能力保留 |
-| 7. 完成配置、错误码、运行产物和系统文档 | 进行中 | 配置 schema、唯一错误文案、架构/配置/测试文档 |
+| 7. 完成配置、错误码、运行产物和系统文档 | 已完成 | 配置 schema、唯一错误文案、架构/配置/测试文档、独立语义验收 |
 | 8. 完成 122 实例集成验证 | 已完成 | cache miss、cache hit、模板 39 API Workflow、受控生成证据 |
-| 9. 完成全量质量门禁与双轴代码审查 | 待开始 | quality 输出、Standards 报告、Spec 报告、修订结果 |
+| 9. 完成全量质量门禁与双轴代码审查 | 进行中 | quality 输出、Standards 报告、Spec 报告、修订结果 |
 | 10. 提交、推送、发布和生产部署验证 | 待开始 | Git commit、GitHub CI、版本、Release、生产 commit 与健康检查 |
 
 ## 验收清单
 
-- [ ] 同一目标实例和同一 UI Workflow 的第一次调用返回 cache miss，并且只调用一次官方前端编译适配器。
-- [ ] 同一目标实例和同一 UI Workflow 的第二次调用返回 cache hit，并且不调用浏览器编译适配器。
-- [ ] UI Workflow 内容、目标实例身份、实例缓存代次或编译器 schema 版本变化时产生新的缓存键。
-- [ ] 并发请求同一缓存键时最多执行一次官方前端编译，其余请求读取同一成功结果；编译失败不得写入缓存。
-- [ ] 运行时参数只修改基础 API Workflow 的副本，基础缓存 JSON 在不同请求之间保持不变。
-- [ ] 原有参数 binding、Prompt 上游定位、尺寸倍率、seed、模型、LoRA、bypass 和活动输出节点回归用例继续通过；官方 finalizer 只接管最终 API Workflow 拓扑与序列化。
-- [ ] 模板 39 节点 5 的最终 API Workflow 包含 `inputs.loras.__value__`，并与本次 LoRA 选择一致。
-- [ ] 目标前端未就绪、Chrome 不可启动、Workflow 无法加载或 `graphToPrompt()` 失败时，后端返回唯一错误码对应的清晰错误文案。
-- [ ] 生产执行路径没有 Skill、Codex Browser Tool、Playwright、Puppeteer 或外部下载脚本依赖。
-- [ ] 缓存未命中测试证明 Harness Host 普通 Node 进程能够调用 122 官方前端；缓存命中测试证明不存在浏览器调用。
-- [ ] 新增正常、错误、并发、缓存失效、参数不可变和 LoraManager 分支测试全部通过。
-- [ ] `pnpm run typecheck`、相关单文件测试和 `pnpm run quality` 全部通过。
+- [x] 同一目标实例和同一 UI Workflow 的第一次调用返回 cache miss，并且只调用一次官方前端编译适配器。
+- [x] 同一目标实例和同一 UI Workflow 的第二次调用返回 cache hit，并且不调用浏览器编译适配器。
+- [x] UI Workflow 内容、目标实例身份、Host 级缓存代次或编译器 schema 版本变化时产生新的缓存键。
+- [x] 并发请求同一缓存键时最多执行一次官方前端编译，其余请求读取同一成功结果；编译失败不得写入缓存。
+- [x] 运行时参数只修改基础 API Workflow 的副本，基础缓存 JSON 在不同请求之间保持不变。
+- [x] 原有参数 binding、Prompt 上游定位、尺寸倍率、seed、模型、LoRA、bypass 和活动输出节点回归用例继续通过；`OfficialApiWorkflowCompiler` 只接管最终 API Workflow 拓扑与序列化。
+- [x] 模板 39 节点 5 的最终 API Workflow 包含 `inputs.loras.__value__`，并与本次 LoRA 选择一致。
+- [x] 目标前端未就绪、Chrome 不可启动、Workflow 无法加载或 `graphToPrompt()` 失败时，后端返回唯一错误码对应的清晰错误文案。
+- [x] 生产执行路径没有 Skill、Codex Browser Tool、Playwright、Puppeteer 或外部下载脚本依赖。
+- [x] 缓存未命中测试证明 Harness Host 普通 Node 进程能够调用 122 官方前端；缓存命中测试证明不存在浏览器调用。
+- [x] 新增正常、错误、并发、缓存失效、参数不可变和 LoraManager 分支测试全部通过。
+- [x] `pnpm run typecheck`、相关单文件测试和 `pnpm run quality` 全部通过。
 - [ ] 双轴代码审查没有未处理的 Standards 或 Spec 缺陷。
 - [ ] 最终发布提交已推送，GitHub CI 通过，版本已发布并部署到生产 checkout，生产健康检查和模板 39 验证通过。
 
