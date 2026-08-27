@@ -49,6 +49,8 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 `generate_with_comfyui` 在 Run Repository 持久接纳当前 Tool `callId` 后立即返回 `run_id`。Host 内的 Generation Coordinator 继续执行准备、提交、观察和媒体保存。Host 停止时 coordinator 中止本地观察但不取消远端 ComfyUI 任务；Host 重启后从非终态 Run 继续观察。
 
-Workflow compiler 根据实时 `/object_info` 生成 API Workflow。实时输入定义为 `BOOLEAN` 且 UI Workflow 序列化值不是布尔值时，compiler 使用该输入定义中的布尔默认值；实时定义没有布尔默认值时终止编译。Comfy transport 向 `/prompt` 发送 API Workflow，并把同一 Run 的 Actual Workflow 放入 `extra_data.extra_pnginfo.workflow`，供读取 `EXTRA_PNGINFO` 的节点使用。
+Workflow compiler 根据实时 `/object_info` 和 UI Workflow 连接生成 API Workflow。`replace_input` binding 指向已连接输入时，compiler 沿对应端口类型解析真正生效的唯一上游 widget；Prompt 和非分辨率参数存在零目标、多目标，或多个参数对同一 widget 写入不同值时终止编译。Connected width/height 无法解析唯一上游目标时，compiler 断开 binding 指定输入的 selector 连接并把请求值写入该输入的本地 widget。模板明确绑定 bypass LoRA Loader 时，compiler 优先使用并激活该 Loader，再使用未绑定的 active LoRA Loader 容量。下游 `LatentUpscale` 的默认宽高使用同一倍率时，compiler 以新源尺寸保持该倍率。实时输入定义为 `BOOLEAN` 且 UI Workflow 序列化值不是布尔值时，compiler 使用该输入定义中的布尔默认值；实时定义没有布尔默认值时终止编译。
+
+Comfy transport 向 `/prompt` 发送 API Workflow，并把同一 Run 的 Actual Workflow 放入 `extra_data.extra_pnginfo.workflow`，供读取 `EXTRA_PNGINFO` 的节点使用。Jobs API 完成响应中的 `type=temp` 预览不进入 Saved Media；`type=output` 图片或视频继续执行 descriptor 路径、响应媒体类型、大小和文件签名校验。
 
 Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体内容与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|workflow` 提供。
