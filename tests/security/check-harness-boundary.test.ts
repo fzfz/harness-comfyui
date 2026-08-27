@@ -20,7 +20,11 @@ const clientInject = [
 
 function fixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-boundary-'))
-  for (const directory of ['src/host/tools', 'profiles/comfyui-workbench']) {
+  for (const directory of [
+    'src/host/tools',
+    'profiles/comfyui-workbench',
+    'profiles/comfyui-workbench-development',
+  ]) {
     mkdirSync(join(root, directory), { recursive: true })
   }
   writeFileSync(join(root, 'src/host/tools/register-project-tools.ts'), 'ctx.tools.register(definition)\n')
@@ -44,6 +48,22 @@ function fixture(otherSource = ''): string {
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
 `)
   writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
+  writeFileSync(join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'), `- id: harness-comfyui
+  config:
+    configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+    startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+
+- id: agent-default-model
+  config:
+    provider: opencode-go
+    model: deepseek-v4-flash
+
+- id: llm-pi-ai
+  config:
+    providers:
+      opencode-go:
+        apiKeyEnv: OPENCODE_GO_API_KEY
+`)
   return root
 }
 
@@ -108,6 +128,19 @@ describe('Harness source boundary', () => {
     try {
       writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), 'invalid: true\n')
       expect(run(root).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects development Profile patch drift', () => {
+    const root = fixture()
+    try {
+      writeFileSync(
+        join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'),
+        '- id: agent-default-model\n  config:\n    provider: deepseek-official\n    model: deepseek-v4-flash\n',
+      )
+      expect(run(root).stderr).toContain('profiles/comfyui-workbench-development/cordis.patch.yml')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

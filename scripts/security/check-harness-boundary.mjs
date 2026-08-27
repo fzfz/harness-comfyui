@@ -47,6 +47,22 @@ const expectedLoaderPatch = `- insert:
 `
 const expectedProfilePatch = `[]
 `
+const expectedDevelopmentProfilePatch = `- id: harness-comfyui
+  config:
+    configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+    startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+
+- id: agent-default-model
+  config:
+    provider: opencode-go
+    model: deepseek-v4-flash
+
+- id: llm-pi-ai
+  config:
+    providers:
+      opencode-go:
+        apiKeyEnv: OPENCODE_GO_API_KEY
+`
 
 function parseArguments(argv) {
   const values = new Map()
@@ -316,14 +332,25 @@ function assertPatchFile(path, expected) {
 function validateStructuredHarnessBoundary(root) {
   const rootManifestPath = resolve(root, 'package.json')
   const profileManifestPath = resolve(root, 'profiles/comfyui-workbench/package.json')
+  const developmentProfileManifestPath = resolve(root, 'profiles/comfyui-workbench-development/package.json')
   const rootManifest = readJson(rootManifestPath, rootManifestPath)
   assertManifestDependencyFields(rootManifest, 'package.json')
   if (statSync(profileManifestPath, { throwIfNoEntry: false })?.isFile()) {
     assertManifestDependencyFields(readJson(profileManifestPath, profileManifestPath), 'profiles/comfyui-workbench/package.json')
   }
+  if (statSync(developmentProfileManifestPath, { throwIfNoEntry: false })?.isFile()) {
+    assertManifestDependencyFields(
+      readJson(developmentProfileManifestPath, developmentProfileManifestPath),
+      'profiles/comfyui-workbench-development/package.json',
+    )
+  }
   assertPublicPackageMetadata(rootManifest, 'package.json')
   assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
   assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), expectedProfilePatch)
+  const developmentProfilePatchPath = resolve(root, 'profiles/comfyui-workbench-development/cordis.patch.yml')
+  if (statSync(developmentProfilePatchPath, { throwIfNoEntry: false })?.isFile()) {
+    assertPatchFile(developmentProfilePatchPath, expectedDevelopmentProfilePatch)
+  }
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))
 }

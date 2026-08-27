@@ -3,13 +3,11 @@ import { delimiter, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const profileName = 'comfyui-workbench'
-
 export function spawnForeground(options) {
   const environment = options.environment ?? process.env
   return spawn(
     options.dshExecutable,
-    ['--profile', profileName, '--host', options.host, '--port', options.port, '--no-open'],
+    ['--profile', options.profile, '--host', options.host, '--port', options.port, '--no-open'],
     {
       cwd: options.cwd ?? process.cwd(),
       env: {

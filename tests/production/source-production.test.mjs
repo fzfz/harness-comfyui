@@ -295,6 +295,10 @@ describe('source production commands', () => {
     const status = await waitForRunning(fixture.context)
     expect(status.evidence).toMatchObject({ status: 'running', activeVersion: fixture.context.activeVersion })
     expect(status.evidence.runtimeId).toBe(fixture.context.definition.runtimeId)
+    await expect(runSourceProductionCommand('start', {
+      loadContext: async () => fixture.context,
+      commandPrefix: 'worktree',
+    })).rejects.toThrow('run pnpm worktree:stop or pnpm worktree:restart')
     const health = await runSourceProductionCommand('health', { loadContext: async () => fixture.context })
     expect(health.evidence).toHaveProperty('sourceRuntime')
     expect(health.evidence).not.toHaveProperty('agentPresetRuntime')
@@ -307,6 +311,7 @@ describe('source production commands', () => {
     const profileManifest = JSON.parse(await readFile(resolve(dirname(dirname(profileLink)), 'package.json'), 'utf8'))
     expect(profileManifest.dependencies).toEqual({ 'harness-comfyui': `file:${repositoryRoot}` })
     expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
+    expect(await pathExists(resolve(fixture.runtimeRoot, 'dsh-home/.env'))).toBe(false)
 
     const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
     expect(stop.evidence).toMatchObject({ stage: 'stop', status: 'stopped' })

@@ -2,23 +2,23 @@
 
 ## 系统验证
 
-源码运行、配置变更和界面联调统一使用生产进程命令：
+独立 linked worktree 中的源码运行、配置变更和界面联调使用开发进程命令：
 
 ```sh
-pnpm prod:start
-pnpm prod:status
-pnpm prod:health
-pnpm prod:logs
-pnpm prod:stop
+pnpm worktree:start
+pnpm worktree:status
+pnpm worktree:health
+pnpm worktree:logs
+pnpm worktree:stop
 ```
 
-系统没有独立的开发或测试启动命令。生产进程自动化验证使用：
+生产 checkout 的进程管理继续使用 `pnpm prod:*`。Agent 不得使用生产入口验证独立 worktree 中的未发布源码。生产进程和共享生命周期自动化验证使用：
 
 ```sh
 pnpm prod:test
 ```
 
-`prod:test` 使用临时目录和端口调用同一套生产进程逻辑，并启动一次真实 DSH Host，验证真实 Client 路由通过 ModuleLoader 注册；该命令不提供独立的开发或测试启动流程。
+`prod:test` 使用临时目录和端口调用共享进程逻辑，并启动一次真实 DSH Host，验证真实 Client 路由通过 ModuleLoader 注册。该测试还覆盖 worktree 配置、开发 Profile、`.env` 链接、Profile 传参、linked-worktree 门禁和生产隔离；真实界面验收使用 `docs/agents/worktree-development.md` 的开发命令流程。
 
 ## 自动化测试
 

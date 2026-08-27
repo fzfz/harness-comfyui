@@ -140,10 +140,33 @@ export function parseSourceProductionDefinition(value, repositoryRoot = defaultR
 export async function loadSourceProductionContext(options = {}) {
   const repositoryRoot = resolve(options.repositoryRoot ?? defaultRepositoryRoot)
   const definitionPath = resolve(options.definitionPath ?? resolve(repositoryRoot, 'config/source-production.json'))
-  const definition = parseSourceProductionDefinition(
+  const parsedDefinition = parseSourceProductionDefinition(
     await readJson(definitionPath, 'source production definition'),
     repositoryRoot,
   )
+  const runtimeOverride = options.runtimeOverride
+  let definition = parsedDefinition
+  if (runtimeOverride !== undefined) {
+    const override = requireRecord(runtimeOverride, 'source runtime override')
+    assertExactKeys(override, ['runtimeId', 'runtimeRoot'], 'source runtime override')
+    const rawRuntimeRoot = requireString(override.runtimeRoot, 'source runtime override.runtimeRoot')
+    if (!isAbsolute(rawRuntimeRoot)) throw new TypeError('source runtime override.runtimeRoot must be an absolute path')
+    const runtimeRoot = resolve(rawRuntimeRoot)
+    const fromRepository = relative(repositoryRoot, runtimeRoot)
+    if (
+      fromRepository === ''
+      || fromRepository === '..'
+      || fromRepository.startsWith(`..${sep}`)
+      || isAbsolute(fromRepository)
+    ) {
+      throw new TypeError('source runtime override.runtimeRoot must identify a directory inside the source repository')
+    }
+    definition = {
+      ...parsedDefinition,
+      runtimeId: requireString(override.runtimeId, 'source runtime override.runtimeId'),
+      runtimeRoot,
+    }
+  }
   const dataDir = resolve(definition.runtimeRoot, 'shared/data')
   const profileEnvironment = {
     ...(options.environment ?? process.env),
@@ -210,6 +233,9 @@ export async function loadSourceProductionContext(options = {}) {
     runtime,
     dshExecutable: resolve(repositoryRoot, 'node_modules/.bin/dsh'),
     dshHome: resolve(definition.runtimeRoot, 'dsh-home'),
+    dshProfile: options.dshProfile ?? 'comfyui-workbench',
+    userEnvironmentFilePath: options.userEnvironmentFilePath,
+    startupWorkspacePath: options.startupWorkspacePath,
     sourceRuntimeStatePath: resolve(definition.runtimeRoot, 'state/source-runtime.json'),
     sourceManagedStatePath: resolve(
       options.managedStatePath ?? resolve(repositoryRoot, '.local/source-production-managed.json'),
@@ -338,6 +364,9 @@ export async function loadSavedSourceManagedContext(options = {}) {
     runtime: state.runtime,
     dshExecutable: resolve(repositoryRoot, 'node_modules/.bin/dsh'),
     dshHome: resolve(state.runtime.runtimeRoot, 'dsh-home'),
+    dshProfile: 'comfyui-workbench',
+    userEnvironmentFilePath: undefined,
+    startupWorkspacePath: undefined,
     sourceRuntimeStatePath: resolve(state.runtime.runtimeRoot, 'state/source-runtime.json'),
     sourceManagedStatePath,
     managedStatePresent: true,
@@ -396,7 +425,12 @@ export async function prepareSourceRuntime(context) {
   await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
   await mkdir(context.runtime.paths.apiWorkflowCacheDirectory, { recursive: true })
   await materializeSourceClientModule(context.repositoryRoot)
-  await materializeSourceProfile(context.repositoryRoot, context.dshHome)
+  await materializeSourceProfile(context.repositoryRoot, context.dshHome, {
+    profileName: context.dshProfile,
+    ...(context.userEnvironmentFilePath === undefined
+      ? {}
+      : { userEnvironmentFilePath: context.userEnvironmentFilePath }),
+  })
   await writeAtomicJson(context.sourceRuntimeStatePath, {
     schemaVersion: SOURCE_RUNTIME_STATE_SCHEMA_VERSION,
     runtimeId: context.definition.runtimeId,
@@ -410,6 +444,10 @@ export async function prepareSourceRuntime(context) {
     packageRoot: context.repositoryRoot,
     dshExecutable: context.dshExecutable,
     dshHome: context.dshHome,
+    dshProfile: context.dshProfile,
+    ...(context.startupWorkspacePath === undefined
+      ? {}
+      : { startupWorkspacePath: context.startupWorkspacePath }),
   }
 }
 
@@ -425,5 +463,9 @@ export async function loadSourceRuntimeTarget(context, options = {}) {
     packageRoot: context.repositoryRoot,
     dshExecutable: context.dshExecutable,
     dshHome: context.dshHome,
+    dshProfile: context.dshProfile,
+    ...(context.startupWorkspacePath === undefined
+      ? {}
+      : { startupWorkspacePath: context.startupWorkspacePath }),
   }
 }

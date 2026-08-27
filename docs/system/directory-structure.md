@@ -11,6 +11,7 @@
 | `.agents/skills/comfyui-generate/` | Harness 原生 Skill provider 发现的项目生成 Skill |
 | `config/` | 生产配置、schema、质量阈值和数据源合同 |
 | `scripts/production/` | Client 模块生成和六个生产生命周期操作的实现 |
+| `scripts/worktree/` | 独立 linked worktree 开发配置与六个生命周期命令的适配入口 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
 | `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |
 | `scripts/testing/` | 自动化测试使用的辅助模块 |
@@ -23,6 +24,6 @@
 | `prototype/` | 工作台静态原型与原型测试；不是运行时数据来源 |
 | `docs/system/` | 当前系统规范 |
 
-运行后生成的 `.local/production/shared/data/runs.sqlite`、`.local/production/shared/data/api-workflow-cache/`、`.local/production/shared/runs/`、`.local/production/shared/saved-media/`、`.local/source-client/`、`.local/source-production-managed.json`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。生产启动不会生成 `lib/`。
+运行后生成的 `.local/production/`、`.local/worktree-development/`、`.local/source-client/`、`.local/source-production-managed.json`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
 
 `src/host/generation/workflow-compiler.ts` 保留运行时参数解析、Actual Workflow 改写、活动输出节点筛选和运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 负责 cache miss 的官方前端导出。`src/host/generation/official-api-workflow.ts` 负责缓存 identity、持久化、并发 miss 合并和 Runtime Input Overlay。

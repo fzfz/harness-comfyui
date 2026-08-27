@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.31.0",
+  "version": "0.31.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
@@ -27,6 +27,12 @@
     "prod:status": "node scripts/production/cli.mjs status",
     "prod:health": "node scripts/production/cli.mjs health",
     "prod:logs": "node scripts/production/cli.mjs logs",
+    "worktree:start": "node scripts/worktree/cli.mjs start",
+    "worktree:stop": "node scripts/worktree/cli.mjs stop",
+    "worktree:restart": "node scripts/worktree/cli.mjs restart",
+    "worktree:status": "node scripts/worktree/cli.mjs status",
+    "worktree:health": "node scripts/worktree/cli.mjs health",
+    "worktree:logs": "node scripts/worktree/cli.mjs logs",
     "prod:test": "vitest run tests/production --maxWorkers=1 --no-file-parallelism"
   },
   "dependencies": {

@@ -73,13 +73,16 @@ async function loadNonValidatingTarget(context) {
 }
 
 export async function runSourceProductionCommand(command, options = {}) {
+  const commandPrefix = options.commandPrefix ?? 'prod'
   let currentContext
   let managedContext
   const loadCurrentContext = async () => {
     currentContext ??= await (options.loadContext ?? loadSourceProductionContext)(options.contextOptions)
     return currentContext
   }
-  if (options.loadContext === undefined) {
+  if (options.loadSavedContext !== undefined) {
+    managedContext = await options.loadSavedContext(options.contextOptions)
+  } else if (options.loadContext === undefined) {
     managedContext = await loadSavedSourceManagedContext(options.contextOptions)
   } else {
     const loadedContext = await loadCurrentContext()
@@ -88,7 +91,9 @@ export async function runSourceProductionCommand(command, options = {}) {
   }
   if (command === 'start') {
     if (managedContext !== undefined) {
-      throw new Error('a source production process is already registered; run pnpm prod:stop or pnpm prod:restart')
+      throw new Error(
+        `a source production process is already registered; run pnpm ${commandPrefix}:stop or pnpm ${commandPrefix}:restart`,
+      )
     }
     const context = await loadCurrentContext()
     try {

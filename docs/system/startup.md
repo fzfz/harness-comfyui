@@ -10,6 +10,27 @@ pnpm install
 
 确认 `config/source-production.json` 中的两个 Source CLI 相对路径指向可读文件，并确认 Catalog 回环服务监听 `source.catalogPort`。确认 `comfyui.frontendCompiler.browserExecutablePath` 指向本机可执行的 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`。
 
+## 独立 worktree 开发启动
+
+Agent 在独立 linked worktree 中验证未发布源码时使用：
+
+```sh
+pnpm worktree:start
+```
+
+该命令验证当前 checkout 的 `.git` 是 linked-worktree 元数据文件，然后读取 `config/worktree-development.json`。命令使用 `.local/worktree-development/dsh-home` 与 `comfyui-workbench-development` Profile；Profile 物化器只在该 DSH home 创建 `.env` 符号链接。开发 Profile 把默认模型设为 `opencode-go/deepseek-v4-flash`，通过 `OPENCODE_GO_API_KEY` 引用解析凭据，并在 Host 暴露 Tool 和路由前注册配置的 startup workspace。
+
+保持启动终端运行，并在第二个终端执行：
+
+```sh
+pnpm worktree:status
+pnpm worktree:health
+pnpm worktree:logs
+pnpm worktree:stop
+```
+
+开发验证的完整 Agent 流程和结束条件位于 `docs/agents/worktree-development.md`。`worktree:*` 与 `prod:*` 使用不同的 runtime root、DSH home、Profile 和受管状态文件。
+
 ## 启动与验证
 
 在仓库根目录启动当前源码：
@@ -17,6 +38,8 @@ pnpm install
 ```sh
 pnpm prod:start
 ```
+
+`prod:*` 是生产进程入口。该入口继续使用 `.local/production/dsh-home` 与 `comfyui-workbench` Profile，不读取 `config/worktree-development.json`，不链接主开发 `.env`，也不注册开发 startup workspace。
 
 `prod:start` 先根据当前 `src/client/` 更新 `.local/source-client/client.js`，再以前台方式运行 Host。保持该终端运行，并在另一个终端执行：
 
@@ -58,6 +81,8 @@ pnpm prod:stop
 | `shared/logs/` | Host stdout 与 stderr |
 
 `.local/source-production-managed.json` 保存正在运行的配置快照。以上文件都是本地运行状态，不进入 Git。
+
+独立 worktree 的对应运行根目录是 `.local/worktree-development/`，开发受管状态位于 `.local/worktree-development/state/source-managed.json`。开发与生产运行目录不共享 settings、凭据、Workspace Registry、Session 或日志。
 
 `.local/source-client/client.js` 与 source map 是当前 Client 源码的浏览器运行文件。`prod:start` 和 `prod:restart` 每次都会更新它们，Harness 不直接把 TypeScript/TSX 文件作为浏览器脚本返回。
 

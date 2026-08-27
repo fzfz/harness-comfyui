@@ -28,10 +28,16 @@ export async function runSourceStart(input, runtimeTarget, operation = {}) {
   }
   await mkdir(runtime.paths.logDirectory, { recursive: true })
 
-  const environment = await buildHostEnvironment(runtime, runtimeTarget)
+  const environment = {
+    ...await buildHostEnvironment(runtime, runtimeTarget),
+    ...(runtimeTarget.startupWorkspacePath === undefined
+      ? {}
+      : { HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: runtimeTarget.startupWorkspacePath }),
+  }
   const child = spawnForeground({
     dshExecutable: runtimeTarget.dshExecutable,
     dshHome: runtimeTarget.dshHome,
+    profile: runtimeTarget.dshProfile,
     configuration: runtime.configurationProfile,
     host: runtime.host,
     port: String(runtime.port),

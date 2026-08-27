@@ -29,6 +29,7 @@ import { registerProjectTools } from './tools/register-project-tools.ts'
 
 export interface Config {
   readonly configurationProfile: ConfigurationProfileName
+  readonly startupWorkspacePath?: string
 }
 
 const configurationProfileSchema = Schema.union(
@@ -38,18 +39,23 @@ const configurationProfileSchema = Schema.union(
 /** Standard Schema validated Host plugin configuration. */
 export const Config = Schema.object({
   configurationProfile: configurationProfileSchema,
+  startupWorkspacePath: Schema.string().min(1).pattern(/\S/u),
 })
 
 export const name = 'harness-comfyui'
 export const inject = ['tools', 'webServer', 'workspaceRegistry'] as const
 
 /** Validate the selected Configuration Profile before Host startup completes. */
-export function apply(ctx: Context, config: Config): void {
+export async function apply(ctx: Context, config: Config): Promise<void> {
   const {
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector,
+    HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: _startupWorkspacePath,
     ...environment
   } = process.env
   const profile = loadProfile(config.configurationProfile, { environment })
+  if (config.startupWorkspacePath !== undefined) {
+    await ctx.workspaceRegistry.create(config.startupWorkspacePath)
+  }
   const catalog = new CatalogCli({
     executable: profile.source.catalogCliPath,
     port: profile.source.catalogPort,

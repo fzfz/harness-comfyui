@@ -11,7 +11,7 @@ describe('source workspace engineering contract', () => {
     const manifest = readJson('package.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.31.0',
+      version: '0.31.1',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
@@ -36,6 +36,12 @@ describe('source workspace engineering contract', () => {
       'prod:status': 'node scripts/production/cli.mjs status',
       'prod:health': 'node scripts/production/cli.mjs health',
       'prod:logs': 'node scripts/production/cli.mjs logs',
+      'worktree:start': 'node scripts/worktree/cli.mjs start',
+      'worktree:stop': 'node scripts/worktree/cli.mjs stop',
+      'worktree:restart': 'node scripts/worktree/cli.mjs restart',
+      'worktree:status': 'node scripts/worktree/cli.mjs status',
+      'worktree:health': 'node scripts/worktree/cli.mjs health',
+      'worktree:logs': 'node scripts/worktree/cli.mjs logs',
       'prod:test': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
       'test:contract': 'vitest run tests/contract tests/security',
       'quality:preinstall': 'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
@@ -63,6 +69,12 @@ describe('source workspace engineering contract', () => {
       'test:prototype',
       'test:unit',
       'typecheck',
+      'worktree:health',
+      'worktree:logs',
+      'worktree:restart',
+      'worktree:start',
+      'worktree:status',
+      'worktree:stop',
     ].sort())
   })
 
@@ -86,6 +98,11 @@ describe('source workspace engineering contract', () => {
     expect(manifest.dsh.bundle).toEqual({ patch: './cordis.patch.yml' })
     expect(manifest.dsh.client.platform).toBe('web')
     expect(readJson('profiles/comfyui-workbench/package.json').dsh.profile.bundles).toEqual([
+      '@deepseek-ai/dsh-base',
+      '@deepseek-ai/dsh-web-app',
+      'harness-comfyui',
+    ])
+    expect(readJson('profiles/comfyui-workbench-development/package.json').dsh.profile.bundles).toEqual([
       '@deepseek-ai/dsh-base',
       '@deepseek-ai/dsh-web-app',
       'harness-comfyui',

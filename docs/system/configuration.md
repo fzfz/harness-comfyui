@@ -15,6 +15,26 @@
 
 当前系统只有 `production` Configuration Profile。
 
+独立 worktree 的 `worktree:start` 和 `worktree:restart` 先读取 `config/worktree-development.json`，再按上述顺序读取 `config/source-production.json` 与三个 Configuration Profile 文件。开发定义只替换 runtime ID、runtime root、DSH Profile、用户环境文件和 startup workspace；Source CLI、Catalog port、Configuration Profile 和日志参数继续以 `config/source-production.json` 为唯一来源。
+
+## 独立 worktree 开发配置
+
+`config/worktree-development.json` 必须包含以下字段：
+
+| 字段 | 规则 |
+| --- | --- |
+| `schemaVersion` | 固定为 `1` |
+| `runtimeId` | 非空开发进程标识 |
+| `runtimeRelativeRoot` | 当前 worktree 内的相对运行目录；当前为 `.local/worktree-development` |
+| `sourceProductionDefinitionRelativePath` | 当前 worktree 内的生产 Source 定义路径；当前为 `config/source-production.json` |
+| `dshProfile` | 只包含小写字母、数字和连字符的开发 DSH Profile 名称 |
+| `userEnvironmentFilePath` | 主开发 worktree `.env` 的绝对路径；目标必须是可读普通文件 |
+| `startupWorkspacePath` | Host 启动时注册的绝对目录；目标必须存在、可读且可进入 |
+
+`worktree:start` 在开发 DSH home 的 `.env` 不存在时创建指向 `userEnvironmentFilePath` 的符号链接。正确链接重复启动时保持不变；既有普通文件或指向其他目标的链接会中止启动，启动器不会删除或覆盖该路径。启动器只验证文件类型和可读性，不读取、复制或记录 `.env` 内容。
+
+`comfyui-workbench-development` Profile 精确声明 `opencode-go/deepseek-v4-flash` 与 `OPENCODE_GO_API_KEY` 引用。启动器通过 `HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH` 把 `startupWorkspacePath` 传给该 Profile；该变量只属于开发启动参数，不属于可由调用者覆盖的 Configuration Profile 环境变量。
+
 ## 源码进程配置
 
 `config/source-production.json` 必须包含以下字段：

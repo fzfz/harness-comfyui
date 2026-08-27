@@ -14,6 +14,19 @@ pnpm prod:start|restart
   → .local/production/ 中的进程状态、日志和业务数据
 ```
 
+独立 worktree 开发入口复用同一生命周期深模块：
+
+```text
+pnpm worktree:start|restart
+  → scripts/worktree/cli.mjs
+  → config/worktree-development.json 与 linked-worktree 门禁
+  → scripts/production/cli.mjs 的共享生命周期
+  → .local/worktree-development/dsh-home
+      → 主开发 worktree .env 的符号链接
+      → comfyui-workbench-development Profile
+  → Host 注册 startup workspace 后暴露项目能力
+```
+
 `prod:stop`、`prod:status`、`prod:health` 和 `prod:logs` 使用受管运行快照定位当前进程，不生成 Client 模块。
 
 `package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口指向 `prod:start` 或 `prod:restart` 根据当前 Client 源码生成的 `.local/source-client/client.js`。启动与重启链路不读取 `lib/` 或发布产物。
@@ -23,6 +36,7 @@ pnpm prod:start|restart
 | 模块 | 职责 |
 | --- | --- |
 | `scripts/production/` | Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志 |
+| `scripts/worktree/` | linked-worktree 门禁、开发定义解析和共享生命周期命令适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation Tool、Generation Remote 和媒体路由 |
@@ -39,11 +53,11 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 和 `prod:restart` 先更新浏览器 Client 模块，再以前台子进程运行 DSH。进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有。`prod:stop` 只停止匹配该身份的进程。`prod:health` 检查源码版本、Harness Web、Client ModuleLoader 注册、Run Repository、Official API Workflow Cache 和 Saved Media。
+`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 先更新浏览器 Client 模块，再以前台子进程运行 DSH。进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有。stop 只停止匹配该入口 runtime ID 和进程身份的进程。health 检查源码版本、Harness Web、Client ModuleLoader 注册、Run Repository、Official API Workflow Cache 和 Saved Media。
 
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 
-运行状态默认写入 `.local/production/`，源码仍保留在仓库根目录。配置变更在下一次 `prod:start` 或 `prod:restart` 时生效。
+生产运行状态写入 `.local/production/`；独立 worktree 开发状态写入当前 worktree 的 `.local/worktree-development/`。源码仍保留在仓库根目录。配置变更在下一次对应入口的 start 或 restart 时生效。
 
 ## Generation 生命周期
 

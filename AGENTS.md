@@ -21,6 +21,13 @@ This repo uses a single-context domain layout. See `docs/agents/domain.md`.
 - For version changes, release notes, tags, or GitHub Releases, read `docs/system/releasing.md`.
 - For dependency or framework changes, read `docs/system/technology-stack.md`.
 
+### Independent worktree development verification
+
+- Before an Agent starts Harness from an independent git worktree for implementation or UI verification, the Agent must read and follow `docs/agents/worktree-development.md`.
+- The Agent must use `pnpm worktree:start`, `pnpm worktree:status`, `pnpm worktree:health`, `pnpm worktree:logs`, and `pnpm worktree:stop` for independent-worktree verification. The Agent must not use `pnpm prod:*` as a development startup path.
+- The Agent must keep the `worktree:start` terminal in the foreground, verify `status` and `health` from a second terminal, and stop the development Host before completing or abandoning the task.
+- The Agent must not copy `.env` contents into the independent worktree, commit a `.env` file, share a DSH home between worktrees, or modify the production checkout to test unreleased source.
+
 ### Production source discipline
 
 - Agents must implement bug fixes, features, tests, version changes, and release documentation in this repository.

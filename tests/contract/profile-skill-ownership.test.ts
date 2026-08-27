@@ -13,5 +13,12 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
     )
 
     expect(profilePatch).toBe('[]\n')
+
+    const developmentProfilePatch = readFileSync(
+      resolve(repositoryRoot, 'profiles/comfyui-workbench-development/cordis.patch.yml'),
+      'utf8',
+    )
+    expect(developmentProfilePatch).not.toMatch(/skill-filesystem|tool-skill/u)
+    expect(developmentProfilePatch).toContain('apiKeyEnv: OPENCODE_GO_API_KEY')
   })
 })
