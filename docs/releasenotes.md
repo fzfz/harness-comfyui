@@ -17,7 +17,7 @@ v0.31.0 让 Harness Host 使用目标 ComfyUI 官方前端生成最终 API Workf
 
 - Workflow compiler 的原有参数化回归用例继续执行旧逻辑，并通过透传 `officialApiWorkflowCompiler.compile()` 测试替身观察运行时投影；新增的端到端编译用例比较空、单个和多个 LoraManager 选择在 cache hit 与新鲜官方导出路径中的最终结果。
 - 新增缓存、不可变 Runtime Input Overlay、cache hit 与新鲜导出等价、浏览器/CDP 生命周期、统一超时、LoraManager 结构化输入和生产配置分支测试。
-- 完整 `pnpm quality` 已通过：377 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 完整 `pnpm quality` 已通过：378 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 - 122 实例运行 ComfyUI `0.33.3` 与 Frontend `1.49.6`。模板 39 的首次请求完成官方 cache miss，第二个不同 LoRA 权重请求 cache hit 且没有再次调用浏览器。
 - 受控真实请求 `29f91894-e160-4b3f-abb6-565f8f7e9617` 成功完成。服务器 history 记录节点 5 的结构化 LoRA 为 `strength=3`、`clipStrength=3`、`active=true`；节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，完成后实例队列为 running 0、pending 0。
 - 本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。

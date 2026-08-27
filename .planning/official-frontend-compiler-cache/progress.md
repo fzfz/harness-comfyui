@@ -66,4 +66,5 @@
 - 完成：`config/environment-overrides.json` 统一声明环境变量目标字段、值类型和 Host 运行值路径；Configuration Profile loader 与生产进程不再维护重复环境变量名单。
 - 完成：第一轮审查修复后的 `pnpm run quality` 通过；当时 370 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。
 - 完成：补充 Chrome readiness/导出阶段提前退出、缓存 identity/API 结构/读取/目录创建/临时写入/rename 和 LoraManager 索引越界/非数组测试。
-- 完成：最终 `pnpm run quality` 通过；377 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。
+- 完成：补充整个 `__lm_widget_ids` 字段缺失时返回 `COMFYUI_LORA_INPUT_INVALID` 的测试。
+- 完成：最终 `pnpm run quality` 通过；378 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。
