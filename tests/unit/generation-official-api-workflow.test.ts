@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -265,19 +265,19 @@ describe('official API Workflow cache', () => {
 
     const writeRoot = await temporaryDirectory()
     const writeFrontend = exporter()
-    writeFrontend.exportWorkflow.mockImplementationOnce(async () => {
-      await chmod(writeRoot, 0o500)
-      return structuredClone(officialApiWorkflow)
-    })
-    try {
-      await expect(new OfficialApiWorkflowCompiler({
-        cacheDirectory: writeRoot,
-        instanceCacheEpoch: '1',
-        frontend: writeFrontend,
-      }).compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_IO_FAILED' })
-    } finally {
-      await chmod(writeRoot, 0o700)
-    }
+    let partialTemporaryPath: string | undefined
+    await expect(new OfficialApiWorkflowCompiler({
+      cacheDirectory: writeRoot,
+      instanceCacheEpoch: '1',
+      frontend: writeFrontend,
+      writeCacheFile: async (path, contents) => {
+        partialTemporaryPath = path
+        await writeFile(path, contents.slice(0, 8), 'utf8')
+        throw new Error('deterministic temporary write failure')
+      },
+    }).compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_IO_FAILED' })
+    expect(partialTemporaryPath).toBeDefined()
+    await expect(readFile(partialTemporaryPath!, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
 
     const renameRoot = await temporaryDirectory()
     const renameFrontend = exporter()

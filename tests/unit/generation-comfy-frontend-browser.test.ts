@@ -316,9 +316,9 @@ describe('ChromeComfyFrontend', () => {
 
   it('reports a browser process error during frontend readiness as a browser failure', async () => {
     const fixture = frontendOptions()
-    fixture.cdp.evaluate.mockReset().mockImplementation(async () => {
+    fixture.cdp.evaluate.mockReset().mockImplementation(() => {
       fixture.child.emit('error', new Error('browser crashed during readiness'))
-      return { documentReady: false, hasApp: false, splashVisible: true }
+      return new Promise(() => undefined)
     })
 
     await expect(new ChromeComfyFrontend(fixture.options).exportWorkflow({
@@ -370,10 +370,10 @@ describe('ChromeComfyFrontend', () => {
     const fixture = frontendOptions()
     fixture.cdp.evaluate.mockReset()
       .mockResolvedValueOnce({ documentReady: true, hasApp: true, splashVisible: false })
-      .mockImplementationOnce(async () => {
+      .mockImplementationOnce(() => {
         fixture.child.exitCode = 9
         fixture.child.emit('close', 9, null)
-        return { output: { '1': { class_type: 'PromptNode', inputs: { text: 'never returned' } } } }
+        return new Promise(() => undefined)
       })
 
     await expect(new ChromeComfyFrontend(fixture.options).exportWorkflow({

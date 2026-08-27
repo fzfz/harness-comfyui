@@ -61,6 +61,7 @@ export interface OfficialApiWorkflowCompilerOptions {
   readonly cacheDirectory: string
   readonly instanceCacheEpoch: string
   readonly frontend: ComfyFrontendExporter
+  readonly writeCacheFile?: (path: string, contents: string) => Promise<void>
 }
 
 interface CacheItem {
@@ -241,6 +242,7 @@ export class OfficialApiWorkflowCompiler {
   private readonly cacheDirectory: string
   private readonly instanceCacheEpoch: string
   private readonly frontend: ComfyFrontendExporter
+  private readonly writeCacheFile: NonNullable<OfficialApiWorkflowCompilerOptions['writeCacheFile']>
   private readonly inFlight = new Map<string, InFlightExport>()
 
   constructor(options: OfficialApiWorkflowCompilerOptions) {
@@ -249,6 +251,9 @@ export class OfficialApiWorkflowCompiler {
     this.cacheDirectory = options.cacheDirectory
     this.instanceCacheEpoch = options.instanceCacheEpoch
     this.frontend = options.frontend
+    this.writeCacheFile = options.writeCacheFile ?? (async (path, contents) => {
+      await writeFile(path, contents, { encoding: 'utf8', flag: 'wx' })
+    })
   }
 
   async compile(input: OfficialApiWorkflowCompileInput): Promise<OfficialApiWorkflowCompileResult> {
@@ -378,7 +383,7 @@ export class OfficialApiWorkflowCompiler {
     const temporaryPath = `${path}.${randomUUID()}.tmp`
     try {
       await mkdir(this.cacheDirectory, { recursive: true })
-      await writeFile(temporaryPath, `${JSON.stringify(item)}\n`, { encoding: 'utf8', flag: 'wx' })
+      await this.writeCacheFile(temporaryPath, `${JSON.stringify(item)}\n`)
       throwIfAborted(signal)
       await rename(temporaryPath, path)
     } catch (error) {
