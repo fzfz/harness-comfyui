@@ -130,6 +130,66 @@ describe('official API Workflow cache', () => {
     expect(frontend.exportWorkflow).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    ['first waiter', 0],
+    ['second waiter', 1],
+  ] as const)('cancels the %s without canceling the other waiter', async (_label, canceledIndex) => {
+    const cacheDirectory = await temporaryDirectory()
+    let release!: () => void
+    const pending = new Promise<void>(resolve => { release = resolve })
+    const frontend = exporter()
+    frontend.exportWorkflow.mockImplementation(async () => {
+      await pending
+      return structuredClone(officialApiWorkflow)
+    })
+    const compiler = new OfficialApiWorkflowCompiler({ cacheDirectory, instanceCacheEpoch: '1', frontend })
+    const controllers = [new AbortController(), new AbortController()]
+    const calls = controllers.map(controller => compiler.compile({ ...compileInput(), signal: controller.signal }))
+    const outcomes = Promise.allSettled(calls)
+
+    await vi.waitFor(() => expect(frontend.exportWorkflow).toHaveBeenCalledTimes(1))
+    controllers[canceledIndex]!.abort()
+    release()
+
+    const results = await outcomes
+    expect(results[canceledIndex]).toMatchObject({ status: 'rejected', reason: { code: 'COMFYUI_REQUEST_CANCELED' } })
+    expect(results[1 - canceledIndex]).toMatchObject({ status: 'fulfilled', value: { cacheStatus: 'miss' } })
+    expect(frontend.exportWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts an export when all waiters cancel, writes no cache, and permits a clean retry', async () => {
+    const cacheDirectory = await temporaryDirectory()
+    const frontend = exporter()
+    frontend.exportWorkflow.mockImplementationOnce(async input => new Promise((_resolve, reject) => {
+      input.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true })
+    }))
+    const compiler = new OfficialApiWorkflowCompiler({ cacheDirectory, instanceCacheEpoch: '1', frontend })
+    const controllers = [new AbortController(), new AbortController()]
+    const calls = controllers.map(controller => compiler.compile({ ...compileInput(), signal: controller.signal }))
+    const outcomes = Promise.allSettled(calls)
+
+    await vi.waitFor(() => expect(frontend.exportWorkflow).toHaveBeenCalledTimes(1))
+    controllers.forEach(controller => controller.abort())
+    const retry = compiler.compile(compileInput())
+
+    expect(await outcomes).toEqual([
+      expect.objectContaining({ status: 'rejected', reason: expect.objectContaining({ code: 'COMFYUI_REQUEST_CANCELED' }) }),
+      expect.objectContaining({ status: 'rejected', reason: expect.objectContaining({ code: 'COMFYUI_REQUEST_CANCELED' }) }),
+    ])
+    await vi.waitFor(() => expect(frontend.exportWorkflow.mock.calls[0]?.[0].signal?.aborted).toBe(true))
+
+    const address = createOfficialApiWorkflowCacheIdentity({
+      instanceId: 'win3080',
+      instanceOrigin: 'http://192.168.110.122:8188',
+      instanceCacheEpoch: '1',
+      templateWorkflow,
+      runtimeProjection,
+    })
+    await expect(readFile(join(cacheDirectory, `${address.cacheKey}.json`), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(retry).resolves.toMatchObject({ cacheStatus: 'miss' })
+    expect(frontend.exportWorkflow).toHaveBeenCalledTimes(2)
+  })
+
   it('does not persist a failed frontend export', async () => {
     const cacheDirectory = await temporaryDirectory()
     const frontend = exporter()

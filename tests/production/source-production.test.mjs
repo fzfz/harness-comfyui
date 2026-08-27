@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { parseArguments, runSourceProductionCommand } from '../../scripts/production/cli.mjs'
 import { inspectClientModuleRegistration } from '../../scripts/production/health.mjs'
+import { buildHostEnvironment } from '../../scripts/production/process.mjs'
 import {
   SOURCE_PRODUCTION_COMMANDS,
   loadSourceProductionContext,
@@ -253,6 +254,24 @@ describe('source production commands', () => {
       definitionPath: fixture.context.definitionPath,
       environment: { ...process.env, HARNESS_COMFYUI_UNDECLARED: 'rejected' },
     })).rejects.toThrow('environment override is not allowed')
+  })
+
+  it('derives every managed Host environment variable from the structured override map', async () => {
+    const fixture = await createFixture()
+    const overrideMap = JSON.parse(await readFile(resolve(repositoryRoot, 'config/environment-overrides.json'), 'utf8'))
+    const expectedKeys = Object.entries(overrideMap)
+      .filter(([, value]) => typeof value?.hostRuntimePath === 'string')
+      .map(([key]) => key)
+      .sort()
+    const environment = await buildHostEnvironment(fixture.context.runtime, {
+      packageRoot: repositoryRoot,
+      dshHome: resolve(fixture.runtimeRoot, 'dsh-home'),
+    })
+
+    expect(Object.keys(environment).filter(key => key.startsWith('HARNESS_COMFYUI_')).sort()).toEqual(expectedKeys)
+    expect(environment.HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS).toBe(
+      String(fixture.context.runtime.comfyui.frontendCompiler.timeoutMs),
+    )
   })
 
   it('reports a stopped source process without preparing a profile', async () => {

@@ -36,8 +36,11 @@ interface ObjectSchema {
   dict?: Record<string, ObjectSchema>
 }
 
-interface EnvironmentPassThrough {
-  readonly passThrough: true
+interface EnvironmentOverride {
+  readonly target?: string
+  readonly valueType: 'string' | 'number'
+  readonly passThrough?: true
+  readonly hostRuntimePath?: string
 }
 
 function locatePackageConfigurationRoot(): string {
@@ -106,25 +109,26 @@ function assertSchemaFields(value: unknown, schema: ObjectSchema, path: string, 
   }
 }
 
-function parseEnvironmentValue(key: string, value: string): unknown {
-  if (
-    key === 'HARNESS_COMFYUI_SERVER_PORT'
-    || key === 'HARNESS_COMFYUI_CATALOG_PORT'
-    || key === 'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS'
-    || key === 'HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS'
-  ) {
+function parseEnvironmentValue(override: EnvironmentOverride, value: string): unknown {
+  if (override.valueType === 'number') {
     if (!/^\d+$/.test(value)) return value
     return Number(value)
   }
   return value
 }
 
-function isEnvironmentPassThrough(value: unknown): value is EnvironmentPassThrough {
-  return value !== null
-    && typeof value === 'object'
-    && !Array.isArray(value)
-    && Object.keys(value).length === 1
-    && (value as Record<string, unknown>).passThrough === true
+function environmentOverride(value: unknown): EnvironmentOverride | undefined {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const candidate = value as Record<string, unknown>
+  if (candidate.valueType !== 'string' && candidate.valueType !== 'number') return undefined
+  if (candidate.passThrough === true) {
+    if (candidate.target !== undefined) return undefined
+  } else if (typeof candidate.target !== 'string' || candidate.target.length === 0) {
+    return undefined
+  }
+  if (candidate.hostRuntimePath !== undefined
+    && (typeof candidate.hostRuntimePath !== 'string' || candidate.hostRuntimePath.length === 0)) return undefined
+  return candidate as unknown as EnvironmentOverride
 }
 
 function isProfileName(value: string): value is ConfigurationProfileName {
@@ -158,8 +162,7 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
   }
   const allowedEnvironmentKeys = new Set(Object.keys(overrideMap))
   for (const key of allowedEnvironmentKeys) {
-    if (isEnvironmentPassThrough(overrideMap[key])) continue
-    if (typeof overrideMap[key] !== 'string' || !overrideMap[key]) {
+    if (environmentOverride(overrideMap[key]) === undefined) {
       throw new ConfigurationProfileError(profileName, overridesPath, key, 'environment override is not allowed')
     }
   }
@@ -171,8 +174,9 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
       }
       continue
     }
-    if (isEnvironmentPassThrough(overrideMap[key])) continue
-    assignPath(merged, overrideMap[key] as string, parseEnvironmentValue(key, rawValue))
+    const override = environmentOverride(overrideMap[key])!
+    if (override.passThrough === true) continue
+    assignPath(merged, override.target!, parseEnvironmentValue(override, rawValue))
   }
 
   assertSchemaFields(merged, ConfigurationProfileSchema, '', profileName, profilePath)

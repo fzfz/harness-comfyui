@@ -70,6 +70,13 @@ interface CacheItem {
   readonly apiWorkflow: JsonObject
 }
 
+interface InFlightExport {
+  readonly controller: AbortController
+  readonly promise: Promise<JsonObject>
+  waiters: number
+  settled: boolean
+}
+
 function runtimeError(code: string, message: string): never {
   throw new GenerationRuntimeError(code, message)
 }
@@ -234,7 +241,7 @@ export class OfficialApiWorkflowCompiler {
   private readonly cacheDirectory: string
   private readonly instanceCacheEpoch: string
   private readonly frontend: ComfyFrontendExporter
-  private readonly inFlight = new Map<string, Promise<JsonObject>>()
+  private readonly inFlight = new Map<string, InFlightExport>()
 
   constructor(options: OfficialApiWorkflowCompilerOptions) {
     if (options.cacheDirectory.trim().length === 0) throw new TypeError('Official API Workflow cache directory is invalid.')
@@ -255,6 +262,7 @@ export class OfficialApiWorkflowCompiler {
     })
     const path = join(this.cacheDirectory, `${address.cacheKey}.json`)
     const existing = await this.read(path, address)
+    throwIfAborted(input.signal)
     if (existing !== undefined) {
       return Object.freeze({
         apiWorkflow: overlayRuntimeApiWorkflow(existing, input.runtimeProjection),
@@ -293,14 +301,54 @@ export class OfficialApiWorkflowCompiler {
     address: OfficialApiWorkflowCacheAddress,
     input: OfficialApiWorkflowCompileInput,
   ): Promise<JsonObject> {
-    const existing = this.inFlight.get(address.cacheKey)
-    if (existing !== undefined) return existing
-    const pending = this.exportAndWrite(path, address, input)
-    this.inFlight.set(address.cacheKey, pending)
-    try {
-      return await pending
-    } finally {
+    let shared = this.inFlight.get(address.cacheKey)
+    if (shared?.controller.signal.aborted === true) {
       this.inFlight.delete(address.cacheKey)
+      shared = undefined
+    }
+    if (shared === undefined) {
+      const controller = new AbortController()
+      shared = {
+        controller,
+        promise: this.exportAndWrite(path, address, input, controller.signal),
+        waiters: 0,
+        settled: false,
+      }
+      this.inFlight.set(address.cacheKey, shared)
+      void shared.promise.then(
+        () => this.finishInFlight(address.cacheKey, shared!),
+        () => this.finishInFlight(address.cacheKey, shared!),
+      )
+    }
+    shared.waiters += 1
+    try {
+      return await this.waitForSharedExport(shared.promise, input.signal)
+    } finally {
+      shared.waiters -= 1
+      if (shared.waiters === 0 && !shared.settled) shared.controller.abort()
+    }
+  }
+
+  private finishInFlight(cacheKey: string, shared: InFlightExport): void {
+    shared.settled = true
+    if (this.inFlight.get(cacheKey) === shared) this.inFlight.delete(cacheKey)
+  }
+
+  private async waitForSharedExport(pending: Promise<JsonObject>, signal: AbortSignal | undefined): Promise<JsonObject> {
+    if (signal === undefined) return pending
+    throwIfAborted(signal)
+    let rejectAbort!: () => void
+    const aborted = new Promise<never>((_resolve, reject) => {
+      rejectAbort = () => reject(new GenerationRuntimeError(
+        'COMFYUI_REQUEST_CANCELED',
+        'Official ComfyUI frontend compilation was canceled.',
+      ))
+    })
+    signal.addEventListener('abort', rejectAbort, { once: true })
+    try {
+      return await Promise.race([pending, aborted])
+    } finally {
+      signal.removeEventListener('abort', rejectAbort)
     }
   }
 
@@ -308,18 +356,19 @@ export class OfficialApiWorkflowCompiler {
     path: string,
     address: OfficialApiWorkflowCacheAddress,
     input: OfficialApiWorkflowCompileInput,
+    signal: AbortSignal,
   ): Promise<JsonObject> {
-    throwIfAborted(input.signal)
+    throwIfAborted(signal)
     const exported = apiWorkflow(
       await this.frontend.exportWorkflow({
         workflow: input.actualWorkflow,
         connection: input.connection,
-        ...(input.signal === undefined ? {} : { signal: input.signal }),
+        signal,
       }),
       'COMFYUI_FRONTEND_EXPORT_FAILED',
       `Official API Workflow exported by "${input.connection.origin}"`,
     )
-    throwIfAborted(input.signal)
+    throwIfAborted(signal)
     const item: CacheItem = {
       schemaVersion: OFFICIAL_API_WORKFLOW_COMPILER_SCHEMA_VERSION,
       cacheKey: address.cacheKey,
@@ -330,7 +379,7 @@ export class OfficialApiWorkflowCompiler {
     try {
       await mkdir(this.cacheDirectory, { recursive: true })
       await writeFile(temporaryPath, `${JSON.stringify(item)}\n`, { encoding: 'utf8', flag: 'wx' })
-      throwIfAborted(input.signal)
+      throwIfAborted(signal)
       await rename(temporaryPath, path)
     } catch (error) {
       try {

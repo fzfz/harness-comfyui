@@ -1,7 +1,15 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import type { JsonValue } from '../../src/host/generation/generation-runtime.ts'
-import { overlayRuntimeApiWorkflow } from '../../src/host/generation/official-api-workflow.ts'
+import {
+  OfficialApiWorkflowCompiler,
+  overlayRuntimeApiWorkflow,
+  type ComfyFrontendExporter,
+} from '../../src/host/generation/official-api-workflow.ts'
 import {
   ComfyWorkflowCompiler,
   type ComfyWorkflowCompilerOptions,
@@ -118,6 +126,194 @@ describe('ComfyWorkflowCompiler', () => {
       actualWorkflow: compiled.actualWorkflow,
       runtimeProjection: expect.objectContaining({ '2': expect.any(Object) }),
     }))
+  })
+
+  it('makes cached official output equal fresh export after common parameter, model, LoRA, bypass, and dimension compilation', async () => {
+    const cacheDirectories: string[] = []
+    const makeCache = async () => {
+      const directory = await mkdtemp(join(tmpdir(), 'harness-comfyui-representative-'))
+      cacheDirectories.push(directory)
+      return directory
+    }
+    const representative = structuredClone(workflow)
+    ;(representative.nodes as Array<UiWorkflow['nodes'][number]>).push(
+      {
+        id: 4,
+        type: 'EmptyLatentImage',
+        mode: 0,
+        inputs: [],
+        outputs: [{ name: 'LATENT', type: 'LATENT', links: [12] }],
+        widgets_values: [512, 768, 1],
+      },
+      {
+        id: 5,
+        type: 'Lora Loader (LoraManager)',
+        mode: 4,
+        properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+        inputs: [],
+        outputs: [],
+        widgets_values: [
+          { version: 1, textWidgetName: 'text' },
+          '<lora:wai\\template.safetensors:1>',
+          [{ name: 'wai\\template.safetensors', strength: 1, clipStrength: 1, active: true }],
+        ],
+      },
+      {
+        id: 6,
+        type: 'SaveImage',
+        mode: 2,
+        inputs: [],
+        outputs: [],
+        widgets_values: ['inactive-output'],
+      },
+      {
+        id: 7,
+        type: 'CheckpointLoaderSimple',
+        mode: 0,
+        inputs: [],
+        outputs: [],
+        widgets_values: ['models\\template.safetensors'],
+      },
+      {
+        id: 8,
+        type: 'LatentUpscale',
+        mode: 0,
+        inputs: [{ name: 'samples', type: 'LATENT', link: 12 }],
+        outputs: [],
+        widgets_values: ['nearest-exact', 1024, 1536, 'disabled'],
+      },
+    )
+    ;(representative.links as JsonValue[]).push([12, 4, 0, 8, 0, 'LATENT'])
+    const definitions = {
+      ...objectInfo,
+      EmptyLatentImage: {
+        input: { required: { width: ['INT', {}], height: ['INT', {}], batch_size: ['INT', {}] } },
+        input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+        output_node: false,
+      },
+      'Lora Loader (LoraManager)': {
+        input: { required: { model: ['MODEL'], text: ['AUTOCOMPLETE_TEXT_LORAS', {}] } },
+        input_order: { required: ['model', 'text'], optional: [] },
+        output_node: false,
+      },
+      LoraLoader: {
+        input: { required: { lora_name: [[
+          'wai\\one.safetensors',
+          'wai\\two.safetensors',
+        ], {}] } },
+        input_order: { required: ['lora_name'], optional: [] },
+        output_node: false,
+      },
+      CheckpointLoaderSimple: {
+        input: { required: { ckpt_name: [[
+          'models\\first.safetensors',
+          'models\\second.safetensors',
+        ], {}] } },
+        input_order: { required: ['ckpt_name'], optional: [] },
+        output_node: false,
+      },
+      LatentUpscale: {
+        input: { required: {
+          samples: ['LATENT'],
+          upscale_method: [['nearest-exact'], {}],
+          width: ['INT', {}],
+          height: ['INT', {}],
+          crop: [['disabled'], {}],
+        } },
+        input_order: { required: ['samples', 'upscale_method', 'width', 'height', 'crop'], optional: [] },
+        output_node: false,
+      },
+    }
+    const officialExporter = (): ComfyFrontendExporter & { exportWorkflow: ReturnType<typeof vi.fn> } => ({
+      exportWorkflow: vi.fn<ComfyFrontendExporter['exportWorkflow']>(async input => {
+        const nodes = new Map(input.workflow.nodes.map(node => [String(node.id), node]))
+        const widgets = (id: string): readonly JsonValue[] => {
+          const value = nodes.get(id)?.widgets_values
+          if (!Array.isArray(value)) throw new Error(`Workflow node ${id} has no widgets_values array.`)
+          return value as readonly JsonValue[]
+        }
+        return {
+          '1': { class_type: 'ImageProducer', inputs: { source: widgets('1')[0]! }, _meta: { title: 'Image source' } },
+          '2': { class_type: 'CLIPTextEncode', inputs: { clip: ['official-virtual', 4], text: widgets('2')[0]! } },
+          '3': { class_type: 'SaveImage', inputs: { images: ['1', 0], filename_prefix: widgets('3')[0]! } },
+          '4': { class_type: 'EmptyLatentImage', inputs: { width: widgets('4')[0]!, height: widgets('4')[1]!, batch_size: widgets('4')[2]! } },
+          '5': { class_type: 'Lora Loader (LoraManager)', inputs: { text: widgets('5')[1]!, loras: { __value__: widgets('5')[2]! } } },
+          '7': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: widgets('7')[0]! } },
+          '8': { class_type: 'LatentUpscale', inputs: { samples: ['4', 0], upscale_method: widgets('8')[0]!, width: widgets('8')[1]!, height: widgets('8')[2]!, crop: widgets('8')[3]! } },
+          'official-virtual': { class_type: 'OfficialVirtualNode', inputs: { source: ['1', 0] } },
+        }
+      }),
+    })
+    const cachedExporter = officialExporter()
+    const cachedCompiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
+      officialApiWorkflowCompiler: new OfficialApiWorkflowCompiler({
+        cacheDirectory: await makeCache(),
+        instanceCacheEpoch: '1',
+        frontend: cachedExporter,
+      }),
+    })
+    const request = (
+      prompt: string,
+      width: number,
+      height: number,
+      model: string,
+      loras: readonly { id: string; fileName: string; weight: number; triggerWords: readonly string[] }[],
+    ) => ({
+      instanceId: 'test-instance',
+      workflow: representative,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: [
+        { definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string' as const, required: true }, value: prompt },
+        { definition: { parameterId: 'width', kind: 'width', valueType: 'number' as const, required: true }, value: width },
+        { definition: { parameterId: 'height', kind: 'height', valueType: 'number' as const, required: true }, value: height },
+      ],
+      bindingHints: [
+        { parameterId: 'positive_prompt', operation: 'replace_input' as const, nodeId: '2', inputName: 'text', widgetIndex: 0 },
+        { parameterId: 'width', operation: 'replace_input' as const, nodeId: '4', inputName: 'width', widgetIndex: 0 },
+        { parameterId: 'height', operation: 'replace_input' as const, nodeId: '4', inputName: 'height', widgetIndex: 1 },
+        { parameterId: 'lora_model', operation: 'replace_input' as const, nodeId: '5', inputName: 'text', widgetIndex: 1 },
+      ],
+      model: { id: model, fileName: model },
+      loras,
+    })
+    const variants = [
+      request('first prompt', 640, 960, 'first.safetensors', [{ id: '1', fileName: 'one.safetensors', weight: 0.8, triggerWords: [] }]),
+      request('second prompt', 832, 1216, 'second.safetensors', [
+        { id: '1', fileName: 'one.safetensors', weight: 0.7, triggerWords: [] },
+        { id: '2', fileName: 'two.safetensors', weight: 0.6, triggerWords: [] },
+      ]),
+      request('empty LoRA prompt', 768, 1152, 'first.safetensors', []),
+    ]
+
+    try {
+      for (const [index, variant] of variants.entries()) {
+        const cached = await cachedCompiler.compile(variant)
+        const freshExporter = officialExporter()
+        const fresh = await new ComfyWorkflowCompiler({
+          fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
+          officialApiWorkflowCompiler: new OfficialApiWorkflowCompiler({
+            cacheDirectory: await makeCache(),
+            instanceCacheEpoch: '1',
+            frontend: freshExporter,
+          }),
+        }).compile(variant)
+
+        expect(cached.apiWorkflow).toEqual(fresh.apiWorkflow)
+        expect(cached.actualWorkflow.nodes.find(node => node.id === 5)?.mode).toBe(0)
+        expect(cached.apiWorkflow).not.toHaveProperty('6')
+        expect(cached.apiWorkflow['8']).toMatchObject({ inputs: {
+          width: Number(variant.runtimeParameters[1]!.value) * 2,
+          height: Number(variant.runtimeParameters[2]!.value) * 2,
+        } })
+        expect(freshExporter.exportWorkflow).toHaveBeenCalledOnce()
+        if (index === 0) expect(cachedExporter.exportWorkflow).toHaveBeenCalledOnce()
+      }
+      expect(cachedExporter.exportWorkflow).toHaveBeenCalledOnce()
+    } finally {
+      await Promise.all(cacheDirectories.map(directory => rm(directory, { recursive: true, force: true })))
+    }
   })
 
   it('compiles connected inputs and widget values from the UI Workflow with live node definitions', async () => {
@@ -2490,6 +2686,99 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
   })
 
+  it.each([
+    ['standard and Power loaders', ['standard', 'power']],
+    ['LoraManager and standard loaders', ['manager', 'standard']],
+    ['multiple LoraManager loaders', ['manager', 'manager']],
+  ] as const)('preserves empty-selection behavior for %s without reporting LoRA ambiguity', async (_label, routes) => {
+    const actual = structuredClone(workflow)
+    const routeList: readonly ('manager' | 'standard' | 'power')[] = routes
+    const addedNodes = routeList.map((route, index): UiWorkflow['nodes'][number] => {
+      const id = index + 4
+      if (route === 'manager') {
+        return {
+          id,
+          type: 'Lora Loader (LoraManager)',
+          mode: 0,
+          properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+          inputs: [],
+          outputs: [],
+          widgets_values: [
+            { version: 1, textWidgetName: 'text' },
+            `<lora:wai\\template-${id}.safetensors:1>`,
+            [{ name: `wai\\template-${id}.safetensors`, strength: 1, clipStrength: 1, active: true }],
+          ],
+        }
+      }
+      if (route === 'standard') {
+        return {
+          id,
+          type: 'LoraLoader',
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          widgets_values: ['wai\\standard.safetensors', 0.5, 0.5],
+        }
+      }
+      return {
+        id,
+        type: 'Power Lora Loader (rgthree)',
+        mode: 0,
+        inputs: [],
+        outputs: [],
+        widgets_values: [
+          {},
+          { type: 'PowerLoraLoaderHeaderWidget' },
+          { on: true, lora: 'wai\\power.safetensors', strength: 0.7, strengthTwo: null },
+          {},
+          '',
+        ],
+      }
+    })
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push(...addedNodes)
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Lora Loader (LoraManager)': {
+          input: { required: { model: ['MODEL'], text: ['AUTOCOMPLETE_TEXT_LORAS', {}] } },
+          input_order: { required: ['model', 'text'], optional: [] },
+          output_node: false,
+        },
+        LoraLoader: {
+          input: { required: {
+            lora_name: [['wai\\standard.safetensors'], {}],
+            strength_model: ['FLOAT', {}],
+            strength_clip: ['FLOAT', {}],
+          } },
+          input_order: { required: ['lora_name', 'strength_model', 'strength_clip'], optional: [] },
+          output_node: false,
+        },
+        'Power Lora Loader (rgthree)': {
+          input: { required: { model: ['MODEL'], clip: ['CLIP'] } },
+          input_order: { required: ['model', 'clip'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    for (const [index, route] of routeList.entries()) {
+      const widgets = compiled.actualWorkflow.nodes.find(node => node.id === index + 4)?.widgets_values
+      if (route === 'manager') {
+        expect(widgets).toEqual([{ version: 1, textWidgetName: 'text' }, '', []])
+      } else {
+        expect(widgets).toEqual(addedNodes[index]?.widgets_values)
+      }
+    }
+  })
+
   it('rejects an exact LoraManager node whose serialized loras widget identity is missing', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
@@ -3171,6 +3460,28 @@ describe('ComfyWorkflowCompiler', () => {
       expectedOutputNodeIds: null,
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_CONNECTION_FAILED' })
+  })
+
+  it.each(['before', 'during'] as const)('reports caller cancellation %s the node-definition request', async timing => {
+    const controller = new AbortController()
+    if (timing === 'before') controller.abort()
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn<typeof fetch>(async (_url, init) => new Promise<Response>((_resolve, reject) => {
+        const abort = () => reject(new DOMException('aborted', 'AbortError'))
+        init?.signal?.addEventListener('abort', abort, { once: true })
+        if (init?.signal?.aborted === true) abort()
+        if (timing === 'during') queueMicrotask(() => controller.abort())
+      })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: null,
+      loras: [],
+      signal: controller.signal,
+    })).rejects.toMatchObject({ code: 'COMFYUI_REQUEST_CANCELED' })
   })
 
   it('rejects invalid timeout, HTTP status and node-definition JSON', async () => {

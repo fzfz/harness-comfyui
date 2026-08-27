@@ -42,20 +42,25 @@ function workflow(): UiWorkflow {
 interface TestCdpSession extends CdpSession {
   readonly connect: ReturnType<typeof vi.fn<CdpSession['connect']>>
   readonly send: ReturnType<typeof vi.fn<CdpSession['send']>>
+  readonly onEvent: ReturnType<typeof vi.fn<CdpSession['onEvent']>>
   readonly evaluate: ReturnType<typeof vi.fn<CdpSession['evaluate']>>
   readonly close: ReturnType<typeof vi.fn<CdpSession['close']>>
+  emitEvent(method: string, params: Readonly<Record<string, unknown>>): void
 }
 
 function session(output: Readonly<Record<string, JsonValue>> = {
   '1': { class_type: 'PromptNode', inputs: { text: 'a prompt' } },
 }): TestCdpSession {
+  const listeners = new Map<string, (params: Readonly<Record<string, unknown>>) => void>()
   return {
     connect: vi.fn<CdpSession['connect']>(async () => undefined),
     send: vi.fn<CdpSession['send']>(async () => ({})),
+    onEvent: vi.fn<CdpSession['onEvent']>((method, listener) => { listeners.set(method, listener) }),
     evaluate: vi.fn<CdpSession['evaluate']>()
       .mockResolvedValueOnce({ documentReady: true, hasApp: true, splashVisible: false })
       .mockResolvedValueOnce({ output }),
     close: vi.fn<CdpSession['close']>(),
+    emitEvent: (method, params) => { listeners.get(method)?.(params) },
   }
 }
 
@@ -134,8 +139,21 @@ describe('ChromeComfyFrontend', () => {
     expect(socket.close).toHaveBeenCalledOnce()
   })
 
-  it('opens a blank DevTools target, sets authorization before navigation, exports, and cleans its own browser', async () => {
+  it('opens a blank DevTools target, scopes authorization to the instance origin, exports, and cleans its own browser', async () => {
     const fixture = frontendOptions()
+    fixture.cdp.send.mockImplementation(async method => {
+      if (method === 'Page.navigate') {
+        fixture.cdp.emitEvent('Fetch.requestPaused', {
+          requestId: 'same-origin',
+          request: { url: 'http://192.168.110.122:8188/api/object_info', headers: { Accept: 'application/json' } },
+        })
+        fixture.cdp.emitEvent('Fetch.requestPaused', {
+          requestId: 'cross-origin',
+          request: { url: 'https://untrusted.example/extension.js', headers: { Authorization: 'must-remove', Accept: '*/*' } },
+        })
+      }
+      return {}
+    })
     const frontend = new ChromeComfyFrontend(fixture.options)
 
     const result = await frontend.exportWorkflow({
@@ -166,11 +184,24 @@ describe('ChromeComfyFrontend', () => {
       'Page.enable',
       'Runtime.enable',
       'Network.enable',
-      'Network.setExtraHTTPHeaders',
+      'Fetch.enable',
       'Page.navigate',
+      'Fetch.continueRequest',
+      'Fetch.continueRequest',
     ])
-    expect(fixture.cdp.send.mock.calls[3]?.[1]).toEqual({ headers: { Authorization: 'Bearer secret' } })
+    expect(fixture.cdp.send.mock.calls[3]?.[1]).toEqual({ patterns: [{ urlPattern: '*' }] })
     expect(fixture.cdp.send.mock.calls[4]?.[1]).toEqual({ url: 'http://192.168.110.122:8188/' })
+    expect(fixture.cdp.send.mock.calls[5]?.[1]).toEqual({
+      requestId: 'same-origin',
+      headers: [
+        { name: 'Accept', value: 'application/json' },
+        { name: 'Authorization', value: 'Bearer secret' },
+      ],
+    })
+    expect(fixture.cdp.send.mock.calls[6]?.[1]).toEqual({
+      requestId: 'cross-origin',
+      headers: [{ name: 'Accept', value: '*/*' }],
+    })
     expect(fixture.cdp.evaluate).toHaveBeenCalledTimes(2)
     expect(fixture.cdp.close).toHaveBeenCalledOnce()
     expect(fixture.child.kill).toHaveBeenCalledWith('SIGTERM')
@@ -186,7 +217,30 @@ describe('ChromeComfyFrontend', () => {
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
     })
 
-    expect(fixture.cdp.send.mock.calls.map(call => call[0])).not.toContain('Network.setExtraHTTPHeaders')
+    expect(fixture.cdp.send.mock.calls.map(call => call[0])).not.toContain('Fetch.enable')
+    expect(fixture.cdp.onEvent).not.toHaveBeenCalled()
+  })
+
+  it('reports an authorization interception failure and cleans the browser', async () => {
+    const fixture = frontendOptions()
+    fixture.cdp.send.mockImplementation(async method => {
+      if (method === 'Fetch.continueRequest') throw new Error('continue failed')
+      if (method === 'Page.navigate') {
+        fixture.cdp.emitEvent('Fetch.requestPaused', {
+          requestId: 'same-origin',
+          request: { url: 'http://127.0.0.1:8188/object_info', headers: {} },
+        })
+        await new Promise<void>(resolve => queueMicrotask(resolve))
+      }
+      return {}
+    })
+
+    await expect(new ChromeComfyFrontend(fixture.options).exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: 'Bearer secret' },
+    })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_BROWSER_FAILED' })
+    expect(fixture.cdp.close).toHaveBeenCalledOnce()
+    expect(fixture.child.kill).toHaveBeenCalledWith('SIGTERM')
   })
 
   it('returns the browser error code when Chrome cannot start', async () => {
@@ -198,6 +252,37 @@ describe('ChromeComfyFrontend', () => {
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
     })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_BROWSER_FAILED' })
     expect(fixture.options.removeDirectory).toHaveBeenCalledOnce()
+  })
+
+  it('converts an asynchronous child-process startup error and removes its temporary directory', async () => {
+    const fixture = frontendOptions()
+    fixture.options.spawnImplementation = vi.fn(() => {
+      queueMicrotask(() => fixture.child.emit('error', new Error('spawn ENOENT')))
+      return fixture.child
+    })
+    fixture.options.readTextFile = vi.fn(async () => {
+      const error = new Error('missing') as NodeJS.ErrnoException
+      error.code = 'ENOENT'
+      throw error
+    })
+
+    await expect(new ChromeComfyFrontend(fixture.options).exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_BROWSER_FAILED' })
+    expect(fixture.options.removeDirectory).toHaveBeenCalledWith('/tmp/harness-comfyui-browser-test')
+  })
+
+  it('keeps the Host process alive when the configured browser executable does not exist', async () => {
+    const frontend = new ChromeComfyFrontend({
+      browserExecutablePath: '/definitely-missing-harness-comfyui-browser',
+      timeoutMs: 2_000,
+    })
+
+    await expect(frontend.exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_BROWSER_FAILED' })
   })
 
   it('returns the browser error code when Chrome exits before exposing its DevTools port', async () => {
@@ -352,12 +437,16 @@ describe('WebSocketCdpSession', () => {
   it('connects, sends CDP commands, evaluates values, and closes the socket', async () => {
     const socket = new FakeWebSocket()
     const cdp = new WebSocketCdpSession('ws://127.0.0.1/devtools/page/1', () => socket)
+    const receivedEvent = vi.fn()
+    cdp.onEvent('Fetch.requestPaused', receivedEvent)
     const connecting = cdp.connect()
     socket.emit('open')
     await connecting
 
     await expect(cdp.send('Page.enable')).resolves.toEqual({ acknowledged: true })
     await expect(cdp.evaluate('1 + 1')).resolves.toBe('evaluated')
+    socket.emit('message', { data: JSON.stringify({ method: 'Fetch.requestPaused', params: { requestId: 'request-1' } }) })
+    expect(receivedEvent).toHaveBeenCalledWith({ requestId: 'request-1' })
     expect(socket.send).toHaveBeenCalledWith(expect.stringContaining('Runtime.evaluate'))
     cdp.close()
     expect(socket.close).toHaveBeenCalledOnce()

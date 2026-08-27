@@ -227,26 +227,27 @@ async function buildHostEnvironment(runtime, runtimeTarget) {
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
   )
+  const overrideMap = await readJsonFile(
+    resolve(runtimeTarget.packageRoot, 'config/environment-overrides.json'),
+    'environment override map',
+  )
+  const managedEnvironment = {}
+  for (const [key, rawOverride] of Object.entries(overrideMap)) {
+    const override = requireRecord(rawOverride, `environment override map.${key}`)
+    if (typeof override.hostRuntimePath !== 'string') continue
+    let value = runtime
+    for (const segment of override.hostRuntimePath.split('.')) {
+      value = requireRecord(value, `runtime path for ${key}`)[segment]
+    }
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      throw new Error(`runtime path for ${key} must resolve to a string or number`)
+    }
+    managedEnvironment[key] = String(value)
+  }
   return {
     ...environment,
     DSH_HOME: runtimeTarget.dshHome,
-    HARNESS_COMFYUI_CONFIGURATION_PROFILE: runtime.configurationProfile,
-    HARNESS_COMFYUI_DATA_DIR: runtime.paths.dataDir,
-    HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY: runtime.paths.apiWorkflowCacheDirectory,
-    HARNESS_COMFYUI_RUN_REPOSITORY_FILE: runtime.paths.runRepositoryFile,
-    HARNESS_COMFYUI_RUN_DIRECTORY: runtime.paths.runDirectory,
-    HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: runtime.paths.savedMediaDirectory,
-    HARNESS_COMFYUI_LOG_DIRECTORY: runtime.paths.logDirectory,
-    HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: runtime.comfyui.defaultInstanceId,
-    HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH: runtime.comfyui.frontendCompiler.browserExecutablePath,
-    HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH: runtime.comfyui.frontendCompiler.instanceCacheEpoch,
-    HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS: String(runtime.comfyui.frontendCompiler.timeoutMs),
-    HARNESS_COMFYUI_CATALOG_CLI_PATH: runtime.source.catalogCliPath,
-    HARNESS_COMFYUI_CATALOG_PORT: String(runtime.source.catalogPort),
-    HARNESS_COMFYUI_SOURCE_CLI_PATH: runtime.source.sourceCliPath,
-    HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: String(runtime.client.runRefreshIntervalMs),
-    HARNESS_COMFYUI_SERVER_HOST: runtime.host,
-    HARNESS_COMFYUI_SERVER_PORT: String(runtime.port),
+    ...managedEnvironment,
   }
 }
 

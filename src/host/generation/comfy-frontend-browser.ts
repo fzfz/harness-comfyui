@@ -14,6 +14,8 @@ type UnknownRecord = Record<string, unknown>
 export interface BrowserChildProcess {
   readonly exitCode: number | null
   once(event: 'exit', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this
+  once(event: 'close', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this
+  once(event: 'error', listener: (error: Error) => void): this
   kill(signal?: NodeJS.Signals | number): boolean
 }
 
@@ -30,6 +32,7 @@ export interface WebSocketLike {
 export interface CdpSession {
   connect(signal?: AbortSignal): Promise<void>
   send(method: string, params?: Readonly<Record<string, unknown>>): Promise<unknown>
+  onEvent(method: string, listener: (params: Readonly<Record<string, unknown>>) => void): void
   evaluate(expression: string): Promise<unknown>
   close(): void
 }
@@ -42,6 +45,7 @@ interface PendingCdpCommand {
 export class WebSocketCdpSession implements CdpSession {
   private readonly socket: WebSocketLike
   private readonly pending = new Map<number, PendingCdpCommand>()
+  private readonly eventListeners = new Map<string, Set<(params: Readonly<Record<string, unknown>>) => void>>()
   private nextId = 1
 
   constructor(webSocketUrl: string, socketFactory: (url: string) => WebSocketLike = defaultSocketFactory) {
@@ -67,6 +71,12 @@ export class WebSocketCdpSession implements CdpSession {
       this.pending.set(id, { resolve, reject })
       this.socket.send(JSON.stringify({ id, method, params }))
     })
+  }
+
+  onEvent(method: string, listener: (params: Readonly<Record<string, unknown>>) => void): void {
+    const listeners = this.eventListeners.get(method) ?? new Set()
+    listeners.add(listener)
+    this.eventListeners.set(method, listeners)
   }
 
   async evaluate(expression: string): Promise<unknown> {
@@ -100,6 +110,10 @@ export class WebSocketCdpSession implements CdpSession {
     } catch {
       return
     }
+    if (typeof message.method === 'string') {
+      const params = isUnknownRecord(message.params) ? message.params : {}
+      for (const listener of this.eventListeners.get(message.method) ?? []) listener(params)
+    }
     if (typeof message.id !== 'number') return
     const pending = this.pending.get(message.id)
     if (pending === undefined) return
@@ -111,6 +125,12 @@ export class WebSocketCdpSession implements CdpSession {
     }
     pending.resolve(message.result)
   }
+}
+
+interface BrowserLifecycle {
+  closed: boolean
+  failure: Error | undefined
+  readonly closedPromise: Promise<void>
 }
 
 export interface ChromeComfyFrontendOptions {
@@ -133,6 +153,10 @@ export interface ChromeComfyFrontendOptions {
 function record(value: unknown, label: string): UnknownRecord {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} is invalid.`)
   return value as UnknownRecord
+}
+
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function defaultSocketFactory(url: string): WebSocketLike {
@@ -192,6 +216,46 @@ function runtimeError(code: string, message: string, cause?: unknown): Generatio
 
 function callerCanceled(signal: AbortSignal | undefined): GenerationRuntimeError {
   return runtimeError('COMFYUI_REQUEST_CANCELED', 'Official ComfyUI frontend compilation was canceled by the caller.')
+}
+
+function observeBrowser(browser: BrowserChildProcess): BrowserLifecycle {
+  let resolveClosed!: () => void
+  const lifecycle: BrowserLifecycle = {
+    closed: browser.exitCode !== null,
+    failure: undefined,
+    closedPromise: new Promise<void>(resolve => { resolveClosed = resolve }),
+  }
+  const close = () => {
+    if (lifecycle.closed) return
+    lifecycle.closed = true
+    resolveClosed()
+  }
+  browser.once('error', error => {
+    lifecycle.failure = error
+  })
+  browser.once('exit', close)
+  browser.once('close', close)
+  if (lifecycle.closed) resolveClosed()
+  return lifecycle
+}
+
+function requestHeaders(
+  params: Readonly<Record<string, unknown>>,
+  instanceOrigin: string,
+  authorization: string,
+): { readonly requestId: string; readonly headers: readonly { readonly name: string; readonly value: string }[] } {
+  const requestId = params.requestId
+  if (typeof requestId !== 'string' || requestId.length === 0) {
+    throw new Error('Chrome DevTools Fetch.requestPaused requestId is invalid.')
+  }
+  const request = record(params.request, 'Chrome DevTools Fetch.requestPaused request')
+  if (typeof request.url !== 'string') throw new Error('Chrome DevTools paused request URL is invalid.')
+  const rawHeaders = record(request.headers, 'Chrome DevTools paused request headers')
+  const headers = Object.entries(rawHeaders)
+    .filter(([name]) => name.toLowerCase() !== 'authorization')
+    .map(([name, value]) => ({ name, value: String(value) }))
+  if (new URL(request.url).origin === instanceOrigin) headers.push({ name: 'Authorization', value: authorization })
+  return { requestId, headers }
 }
 
 function throwIfCallerCanceled(signal: AbortSignal | undefined): void {
@@ -267,6 +331,7 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
     throwIfCallerCanceled(input.signal)
     let userDataDirectory: string | undefined
     let browser: BrowserChildProcess | undefined
+    let browserLifecycle: BrowserLifecycle | undefined
     let cdp: CdpSession | undefined
     try {
       try {
@@ -279,17 +344,22 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
           `--user-data-dir=${userDataDirectory}`,
           'about:blank',
         ], { stdio: 'ignore' })
+        browserLifecycle = observeBrowser(browser)
       } catch (error) {
         throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not start browser "${this.browserExecutablePath}".`, error)
       }
 
       const deadline = this.now() + this.timeoutMs
       const timeoutSignal = AbortSignal.timeout(this.timeoutMs)
-      const operationSignal = input.signal === undefined
-        ? timeoutSignal
-        : AbortSignal.any([input.signal, timeoutSignal])
+      const authorizationFailure = new AbortController()
+      let authorizationError: unknown
+      const operationSignal = AbortSignal.any([
+        timeoutSignal,
+        authorizationFailure.signal,
+        ...(input.signal === undefined ? [] : [input.signal]),
+      ])
       try {
-        const port = await this.waitForDevToolsPort(userDataDirectory, browser, deadline, input.signal)
+        const port = await this.waitForDevToolsPort(userDataDirectory, browser, browserLifecycle, deadline, input.signal)
         const response = await this.fetchImplementation(
           `http://127.0.0.1:${port}/json/new?${encodeURIComponent('about:blank')}`,
           { method: 'PUT', signal: operationSignal },
@@ -305,9 +375,25 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
         await resolveBeforeAbort(cdp.send('Runtime.enable'), operationSignal)
         await resolveBeforeAbort(cdp.send('Network.enable'), operationSignal)
         if (input.connection.authorization !== null) {
-          await resolveBeforeAbort(cdp.send('Network.setExtraHTTPHeaders', {
-            headers: { Authorization: input.connection.authorization },
-          }), operationSignal)
+          cdp.onEvent('Fetch.requestPaused', params => {
+            let continued: Promise<unknown>
+            try {
+              continued = cdp!.send('Fetch.continueRequest', requestHeaders(
+                params,
+                input.connection.origin,
+                input.connection.authorization!,
+              ))
+            } catch (error) {
+              authorizationError = error
+              authorizationFailure.abort()
+              return
+            }
+            void continued.catch(error => {
+              authorizationError = error
+              authorizationFailure.abort()
+            })
+          })
+          await resolveBeforeAbort(cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*' }] }), operationSignal)
         }
         await resolveBeforeAbort(cdp.send('Page.navigate', { url: `${input.connection.origin}/` }), operationSignal)
       } catch (error) {
@@ -316,7 +402,14 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
         throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not connect to the Chrome DevTools target for "${input.connection.origin}".`, error)
       }
 
-      await this.waitForFrontend(cdp, deadline, input.connection.origin, input.signal, operationSignal)
+      try {
+        await this.waitForFrontend(cdp, deadline, input.connection.origin, input.signal, operationSignal)
+      } catch (error) {
+        if (authorizationError !== undefined) {
+          throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not authorize browser requests for "${input.connection.origin}".`, authorizationError)
+        }
+        throw error
+      }
       try {
         throwIfCallerCanceled(input.signal)
         return exportedApiWorkflow(
@@ -332,7 +425,7 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
       try {
         cdp?.close()
       } finally {
-        if (browser !== undefined) await this.stopBrowser(browser)
+        if (browser !== undefined && browserLifecycle !== undefined) await this.stopBrowser(browser, browserLifecycle)
         if (userDataDirectory !== undefined) await this.removeDirectory(userDataDirectory)
       }
     }
@@ -341,12 +434,19 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
   private async waitForDevToolsPort(
     userDataDirectory: string,
     browser: BrowserChildProcess,
+    lifecycle: BrowserLifecycle,
     deadline: number,
     callerSignal: AbortSignal | undefined,
   ): Promise<number> {
     const portFile = join(userDataDirectory, 'DevToolsActivePort')
     while (this.now() <= deadline) {
       throwIfCallerCanceled(callerSignal)
+      if (lifecycle.failure !== undefined) {
+        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', 'Browser process failed before Chrome DevTools became ready.', lifecycle.failure)
+      }
+      if (lifecycle.closed) {
+        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser closed before Chrome DevTools became ready.`)
+      }
       if (browser.exitCode !== null) {
         throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser exited with code ${browser.exitCode} before Chrome DevTools became ready.`)
       }
@@ -355,6 +455,9 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
         const port = Number(portText)
         if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
           throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Chrome DevTools port file "${portFile}" is invalid.`)
+        }
+        if (lifecycle.failure !== undefined) {
+          throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', 'Browser process failed before Chrome DevTools became ready.', lifecycle.failure)
         }
         return port
       } catch (error) {
@@ -386,16 +489,13 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
     throw runtimeError('COMFYUI_FRONTEND_NOT_READY', `ComfyUI frontend "${origin}" did not become ready within ${this.timeoutMs}ms.`)
   }
 
-  private async stopBrowser(browser: BrowserChildProcess): Promise<void> {
-    if (browser.exitCode !== null) return
-    const exited = new Promise<void>(resolve => {
-      browser.once('exit', () => resolve())
-    })
+  private async stopBrowser(browser: BrowserChildProcess, lifecycle: BrowserLifecycle): Promise<void> {
+    if (browser.exitCode !== null || lifecycle.closed) return
     browser.kill('SIGTERM')
-    await Promise.race([exited, this.delay(5_000)])
-    if (browser.exitCode === null) {
+    await Promise.race([lifecycle.closedPromise, this.delay(5_000)])
+    if (browser.exitCode === null && !lifecycle.closed) {
       browser.kill('SIGKILL')
-      await exited
+      await Promise.race([lifecycle.closedPromise, this.delay(5_000)])
     }
   }
 }

@@ -1084,6 +1084,15 @@ function applyLoras(
     if (text !== undefined) manager.push({ node, activate, text })
   }
 
+  if (selections.length === 0) {
+    for (const exactManager of manager.filter(slot => slot.structured !== undefined)) {
+      if (exactManager.activate) exactManager.node.mode = 0
+      setWidget(exactManager.node, exactManager.text, '')
+      setWidget(exactManager.node, exactManager.structured!, [])
+    }
+    return
+  }
+
   const inputKinds = [standard.length > 0, manager.length > 0, power.length > 0].filter(Boolean).length
   if (inputKinds > 1) {
     loraError('COMFYUI_LORA_INPUT_AMBIGUOUS', 'The Workflow contains multiple executable LoRA input types.')
@@ -1093,15 +1102,6 @@ function applyLoras(
   }
   if (power.length > 1) {
     loraError('COMFYUI_LORA_INPUT_AMBIGUOUS', 'The Workflow contains multiple Power Lora Loader inputs.')
-  }
-  if (selections.length === 0) {
-    const exactManager = manager.find(slot => slot.structured !== undefined)
-    if (exactManager !== undefined) {
-      if (exactManager.activate) exactManager.node.mode = 0
-      setWidget(exactManager.node, exactManager.text, '')
-      setWidget(exactManager.node, exactManager.structured!, [])
-    }
-    return
   }
   if (standard.length === 0 && manager.length === 0 && power.length === 0) {
     loraError('COMFYUI_LORA_INPUT_UNAVAILABLE', 'The Workflow does not contain an executable LoRA input.')
@@ -1342,6 +1342,9 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
           },
         })
       } catch {
+        if (input.signal?.aborted === true) {
+          throw new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'ComfyUI node definitions request was canceled by the caller.')
+        }
         throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
       }
       if (!response.ok) throw new GenerationRuntimeError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`)
