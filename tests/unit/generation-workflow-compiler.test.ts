@@ -2704,28 +2704,33 @@ describe('ComfyWorkflowCompiler', () => {
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_UNAVAILABLE' })
   })
 
-  it('activates a bypassed LoRA loader that the template binds as its runtime LoRA input', async () => {
+  it('prioritizes a bound bypass LoRA loader before active standard LoRA capacity', async () => {
     const actual = structuredClone(workflow)
-    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
-      id: 4,
+    const loraNode = (id: number, mode: number, fileName: string, weight: number): UiWorkflow['nodes'][number] => ({
+      id,
       type: 'LoraLoaderModelOnly',
-      mode: 4,
+      mode,
       inputs: [
         { name: 'model', type: 'MODEL', link: null },
         { name: 'lora_name', type: 'COMBO', link: null, widget: { name: 'lora_name' } },
         { name: 'strength_model', type: 'FLOAT', link: null, widget: { name: 'strength_model' } },
       ],
       outputs: [{ name: 'MODEL', type: 'MODEL', links: [] }],
-      widgets_values: ['template.safetensors', 0.8],
+      widgets_values: [fileName, weight],
     })
-    const instancePath = 'Krea2-功能\\selected.safetensors'
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push(
+      loraNode(4, 0, 'active.safetensors', 0.4),
+      loraNode(5, 4, 'template.safetensors', 0.8),
+    )
+    const firstPath = 'Krea2-功能\\selected-first.safetensors'
+    const secondPath = 'Krea2-功能\\selected-second.safetensors'
     const compiler = new ComfyWorkflowCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...objectInfo,
         LoraLoaderModelOnly: {
           input: { required: {
             model: ['MODEL'],
-            lora_name: [[instancePath], {}],
+            lora_name: [['active.safetensors', firstPath, secondPath], {}],
             strength_model: ['FLOAT', {}],
           } },
           input_order: { required: ['model', 'lora_name', 'strength_model'], optional: [] },
@@ -2739,17 +2744,42 @@ describe('ComfyWorkflowCompiler', () => {
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
       bindingHints: [
-        { parameterId: 'lora_model', operation: 'replace_input', nodeId: '4', inputName: 'lora_name', widgetIndex: 0 },
+        { parameterId: 'lora_model', operation: 'replace_input', nodeId: '5', inputName: 'lora_name', widgetIndex: 0 },
       ],
-      loras: [{ id: '68', fileName: 'selected.safetensors', weight: 0.65, triggerWords: [] }],
+      loras: [{ id: '68', fileName: 'selected-first.safetensors', weight: 0.65, triggerWords: [] }],
     })
 
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)).toMatchObject({
       mode: 0,
-      widgets_values: [instancePath, 0.65],
+      widgets_values: ['active.safetensors', 0.4],
     })
-    expect(compiled.apiWorkflow['4']).toMatchObject({
-      inputs: { lora_name: instancePath, strength_model: 0.65 },
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 5)).toMatchObject({
+      mode: 0,
+      widgets_values: [firstPath, 0.65],
+    })
+    expect(compiled.apiWorkflow['5']).toMatchObject({
+      inputs: { lora_name: firstPath, strength_model: 0.65 },
+    })
+
+    const multiple = await compiler.compile({
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      bindingHints: [
+        { parameterId: 'lora_model', operation: 'replace_input', nodeId: '5', inputName: 'lora_name', widgetIndex: 0 },
+      ],
+      loras: [
+        { id: '68', fileName: 'selected-first.safetensors', weight: 0.65, triggerWords: [] },
+        { id: '69', fileName: 'selected-second.safetensors', weight: 0.75, triggerWords: [] },
+      ],
+    })
+    expect(multiple.actualWorkflow.nodes.find(node => node.id === 5)).toMatchObject({
+      mode: 0,
+      widgets_values: [firstPath, 0.65],
+    })
+    expect(multiple.actualWorkflow.nodes.find(node => node.id === 4)).toMatchObject({
+      mode: 0,
+      widgets_values: [secondPath, 0.75],
     })
   })
 

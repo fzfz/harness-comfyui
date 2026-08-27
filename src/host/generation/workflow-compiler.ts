@@ -1079,14 +1079,18 @@ function applyLoras(
     })))
     return
   }
-  if (resolved.length > standard.length) {
+  const prioritizedStandard = [
+    ...standard.filter(slot => slot.activate),
+    ...standard.filter(slot => !slot.activate),
+  ]
+  if (resolved.length > prioritizedStandard.length) {
     loraError(
       'COMFYUI_LORA_CAPACITY_EXCEEDED',
-      `The Workflow contains ${standard.length} standard LoRA input${standard.length === 1 ? '' : 's'} but received ${resolved.length} LoRA selections.`,
+      `The Workflow contains ${prioritizedStandard.length} standard LoRA input${prioritizedStandard.length === 1 ? '' : 's'} but received ${resolved.length} LoRA selections.`,
     )
   }
   resolved.forEach((selection, index) => {
-    const slot = standard[index]!
+    const slot = prioritizedStandard[index]!
     if (slot.activate) slot.node.mode = 0
     setWidget(slot.node, slot.file, selection.instancePath)
     setWidget(slot.node, slot.modelWeight, selection.weight)
