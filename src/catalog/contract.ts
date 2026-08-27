@@ -237,21 +237,21 @@ export function isCatalogTemplateValueType(value: unknown): value is CatalogTemp
   return typeof value === 'string' && CATALOG_TEMPLATE_VALUE_TYPES.includes(value as CatalogTemplateValueType)
 }
 
-function queryText(value: unknown): string {
+export function parseCatalogQueryText(value: unknown): string {
   if (typeof value !== 'string' || value.length > 200 || /[\u0000-\u001f\u007f-\u009f]/u.test(value)) {
     throw new TypeError('catalog query is invalid')
   }
   return value
 }
 
-function pageNumber(value: unknown): number {
+export function parseCatalogPageNumber(value: unknown): number {
   if (!Number.isSafeInteger(value) || (value as number) < 1 || (value as number) > 100_000) {
     throw new TypeError('catalog page is invalid')
   }
   return value as number
 }
 
-function stableId(value: unknown): string {
+export function parseCatalogStableId(value: unknown): string {
   if (typeof value !== 'string' || !/^[1-9][0-9]{0,19}$/u.test(value)) {
     throw new TypeError('catalog item id is invalid')
   }
@@ -259,7 +259,7 @@ function stableId(value: unknown): string {
 }
 
 function nullableStableId(value: unknown): string | null {
-  return value === null ? null : stableId(value)
+  return value === null ? null : parseCatalogStableId(value)
 }
 
 function itemText(value: unknown, subject: string, maxLength: number): string {
@@ -292,14 +292,14 @@ export function parseCatalogQueryRequest(value: unknown): CatalogQueryRequest {
   const input = record(value, 'catalog query')
   exactKeys(input, ['kind', 'query', 'page', 'baseModelId'], 'catalog query')
   const kind = catalogKind(input.kind)
-  const baseModelId = input.baseModelId === null ? null : stableId(input.baseModelId)
+  const baseModelId = input.baseModelId === null ? null : parseCatalogStableId(input.baseModelId)
   if (baseModelId !== null && !catalogDefinition(kind).baseModelScoped) {
     throw new TypeError('catalog base model filter is invalid')
   }
   return Object.freeze({
     kind,
-    query: queryText(input.query),
-    page: pageNumber(input.page),
+    query: parseCatalogQueryText(input.query),
+    page: parseCatalogPageNumber(input.page),
     baseModelId,
   })
 }
@@ -322,7 +322,7 @@ function parseCatalogComfyuiInstanceItem(value: unknown, index: number): Catalog
   const input = record(value, `ComfyUI instance catalog result ${index}`)
   exactKeys(input, ['id'], `ComfyUI instance catalog result ${index}`)
   return Object.freeze({
-    id: stableId(input.id),
+    id: parseCatalogStableId(input.id),
   })
 }
 
@@ -360,7 +360,7 @@ export function parseCatalogComfyuiInstancePage(value: unknown): CatalogComfyuiI
 export function parseCatalogContext(value: unknown): CatalogContext {
   const input = record(value, 'catalog context')
   const kind = catalogKind(input.kind)
-  const id = stableId(input.id)
+  const id = parseCatalogStableId(input.id)
   switch (kind) {
     case 'model':
     case 'lora':
@@ -431,9 +431,9 @@ export function parseCatalogResolvedTemplate(value: unknown): CatalogResolvedTem
     throw new TypeError('resolved Workflow template parameters are invalid')
   }
   return Object.freeze({
-    id: stableId(input.id),
+    id: parseCatalogStableId(input.id),
     title: itemText(input.title, 'resolved Workflow template title', 500),
-    base_model_id: stableId(input.base_model_id),
+    base_model_id: parseCatalogStableId(input.base_model_id),
     model_id: nullableStableId(input.model_id),
     parameters: Object.freeze(input.parameters.map(parseCatalogTemplateParameter)),
   })
@@ -457,9 +457,9 @@ export function parseCatalogResolvedLora(value: unknown): CatalogResolvedLora {
     throw new TypeError('resolved LoRA weight is invalid')
   }
   return Object.freeze({
-    id: stableId(input.id),
-    base_model_id: stableId(input.base_model_id),
-    model_id: stableId(input.model_id),
+    id: parseCatalogStableId(input.id),
+    base_model_id: parseCatalogStableId(input.base_model_id),
+    model_id: parseCatalogStableId(input.model_id),
     file_name: itemText(input.file_name, 'resolved LoRA file name', 500),
     description: itemText(input.description, 'resolved LoRA description', 100_000),
     usage: itemText(input.usage, 'resolved LoRA usage', 100_000),
@@ -474,8 +474,8 @@ export function parseCatalogResolvedGenerationModel(value: unknown): CatalogReso
     'id', 'base_model_id', 'file_name', 'description', 'usage', 'skill_name',
   ], 'resolved generation model')
   return Object.freeze({
-    id: stableId(input.id),
-    base_model_id: stableId(input.base_model_id),
+    id: parseCatalogStableId(input.id),
+    base_model_id: parseCatalogStableId(input.base_model_id),
     file_name: itemText(input.file_name, 'resolved generation model file name', 500),
     description: itemText(input.description, 'resolved generation model description', 100_000),
     usage: itemText(input.usage, 'resolved generation model usage', 100_000),
@@ -500,8 +500,8 @@ export function parseCatalogPage(value: unknown): CatalogPage {
   const input = record(value, 'catalog page')
   exactKeys(input, ['kind', 'query', 'page', 'items', 'totalCount'], 'catalog page')
   const kind = catalogKind(input.kind)
-  const query = queryText(input.query)
-  const page = pageNumber(input.page)
+  const query = parseCatalogQueryText(input.query)
+  const page = parseCatalogPageNumber(input.page)
   if (!Array.isArray(input.items) || input.items.length > CATALOG_PAGE_SIZE) {
     throw new TypeError('catalog page items are invalid')
   }
@@ -523,7 +523,7 @@ export function parseBaseModelItem(value: unknown): BaseModelItem {
   const input = record(value, 'base model item')
   exactKeys(input, ['id', 'label'], 'base model item')
   return Object.freeze({
-    id: stableId(input.id),
+    id: parseCatalogStableId(input.id),
     label: itemText(input.label, 'base model label', 500),
   })
 }

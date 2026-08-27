@@ -11,11 +11,14 @@ import {
   parseCatalogComfyuiInstanceQueryRequest,
   parseCatalogContext,
   parseCatalogPage,
+  parseCatalogPageNumber,
   parseCatalogPageResult,
   parseCatalogQueryRequest,
+  parseCatalogQueryText,
   parseCatalogResolvedGenerationModel,
   parseCatalogResolvedLora,
   parseCatalogResolvedTemplate,
+  parseCatalogStableId,
 } from '../../src/catalog/contract.ts'
 
 const COVER = 'http://127.0.0.1:18092/media/images/model.webp'
@@ -56,6 +59,15 @@ describe('catalog Remote contract', () => {
     expect(contextLabel(page.items[0].context)).toBe('生成模型 · rinSoftsketch_v20.safetensors')
     expect(catalogPageCount(0)).toBe(1)
     expect(catalogPageCount(13)).toBe(2)
+  })
+
+  it('exposes the query scalar contract for persisted Client navigation state', () => {
+    expect(parseCatalogQueryText('Age refined')).toBe('Age refined')
+    expect(parseCatalogPageNumber(100_000)).toBe(100_000)
+    expect(parseCatalogStableId('12345678901234567890')).toBe('12345678901234567890')
+    expect(() => parseCatalogQueryText('Age\u0000')).toThrow('query')
+    expect(() => parseCatalogPageNumber(100_001)).toThrow('page')
+    expect(() => parseCatalogStableId('model-2')).toThrow('id')
   })
 
   it('parses the fixed ComfyUI instance query and its closed safe response', () => {

@@ -15,6 +15,7 @@ import {
   WORKBENCH_RESULTS_OVERLAY_ID,
 } from './workbench/contract.ts'
 import { WorkbenchController } from './workbench/controller.ts'
+import { ContextDialogNavigationStore } from './workbench/context-dialog-navigation.ts'
 import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-drawer.tsx'
@@ -34,8 +35,9 @@ class CatalogRequestError extends Error {
 
 export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const workbench = new WorkbenchController(ctx.layout)
+  const contextDialogNavigationStore = new ContextDialogNavigationStore(() => globalThis.localStorage)
   const clientSessions = ctx.sessions as unknown as ISessions
-  const disposers: Array<() => void | Promise<void>> = []
+  const disposers: Array<() => void | Promise<void>> = [() => contextDialogNavigationStore.dispose()]
   try {
     disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
     const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE, GENERATION_REMOTE_SERVICE], (remoteContext) => {
@@ -90,6 +92,8 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
             }
             return {
               catalog,
+              dialogNavigation: contextDialogNavigationStore.for(sessionId),
+              sessionId,
               workbench,
               sessionInput: ctx.conversation.input.for(sessionContext),
             }

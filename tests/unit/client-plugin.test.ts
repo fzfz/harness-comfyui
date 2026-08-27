@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Button: () => null,
@@ -28,6 +28,26 @@ type Registration = {
   order: number
   inject: (...args: never[]) => unknown
 }
+
+class MemoryStorage {
+  private readonly values = new Map<string, string>()
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null
+  }
+
+  setItem(key: string, value: string): void {
+    this.values.set(key, value)
+  }
+}
+
+beforeEach(() => {
+  vi.stubGlobal('localStorage', new MemoryStorage())
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 function installImmediateInject(context: Record<string, any>): void {
   context.get = vi.fn((service: string) => {
@@ -135,6 +155,12 @@ describe('Harness Client plugin registration', () => {
     expect(entryFace).toMatchObject({ workbench: expect.any(Object) })
     expect(dockFace).toMatchObject({
       catalog: expect.objectContaining({ search: expect.any(Function), baseModels: expect.any(Function) }),
+      sessionId: 'session-1',
+      dialogNavigation: expect.objectContaining({
+        getSnapshot: expect.any(Function),
+        subscribe: expect.any(Function),
+        update: expect.any(Function),
+      }),
       workbench: expect.any(Object),
       sessionInput,
     })
@@ -142,6 +168,16 @@ describe('Harness Client plugin registration', () => {
     expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)
+    const sessionTwoDock = registrations.get('conversation.input.dock')!.inject('session-2' as never) as {
+      dialogNavigation: {
+        getSnapshot: () => { state: { currentPage: number } }
+        update: (updater: (state: Record<string, unknown>) => Record<string, unknown>) => void
+      }
+    }
+    const sessionOneNavigation = (dockFace as { dialogNavigation: typeof sessionTwoDock.dialogNavigation }).dialogNavigation
+    sessionOneNavigation.update(state => ({ ...state, currentPage: 2 }))
+    expect(sessionOneNavigation.getSnapshot().state.currentPage).toBe(2)
+    expect(sessionTwoDock.dialogNavigation.getSnapshot().state.currentPage).toBe(1)
     const catalog = (dockFace as { catalog: { search: Function; baseModels: Function } }).catalog
     await expect(catalog.search(
       { kind: 'model', query: '', page: 1, baseModelId: null },
@@ -166,6 +202,41 @@ describe('Harness Client plugin registration', () => {
     expect(registrationDisposers.get('details')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
     expect(remoteDispose).toHaveBeenCalledOnce()
+  })
+
+  it('registers the Session dock when reading the browser localStorage property throws', async () => {
+    const registrations = new Map<string, Registration>()
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get: () => { throw new DOMException('storage access denied', 'SecurityError') },
+    })
+    const context = {
+      slots: {
+        inject: (_slotName: string, setup: () => () => void) => setup(),
+        register: (registration: Registration) => {
+          registrations.set(registration.name, registration)
+          return vi.fn()
+        },
+      },
+      sessions: { scope: vi.fn(() => ({ sessionId: 'session-1' })) },
+      conversation: { input: { for: vi.fn(() => ({})) } },
+      remote: {
+        $mount: vi.fn(async () => vi.fn()),
+        harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
+      },
+      layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
+    }
+    installImmediateInject(context)
+
+    const dispose = await apply(context as never)
+    const dock = registrations.get('conversation.input.dock')!.inject('session-1' as never) as {
+      dialogNavigation: { getSnapshot: () => { persistenceErrorCode: string | null } }
+    }
+
+    expect(dock.dialogNavigation.getSnapshot().persistenceErrorCode)
+      .toBe('CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED')
+    await dispose()
   })
 
   it('fails loudly when Harness renders a Session dock without a Session scope', async () => {

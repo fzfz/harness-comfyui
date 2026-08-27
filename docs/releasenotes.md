@@ -1,18 +1,17 @@
-# Harness ComfyUI v0.30.5
+# Harness ComfyUI v0.30.6
 
-v0.30.5 修复 connected runtime binding 没有改写真实上游 widget、模板序列化结构与实时节点定义不一致、派生分辨率没有同步，以及临时预览媒体阻断保存图下载导致的生成错误。
+v0.30.6 为“插入上下文”弹窗增加按 Harness Session 隔离的筛选位置记忆。用户关闭并重新打开弹窗、切换 Session 后返回、刷新浏览器或重启 Client 时，弹窗恢复该 Session 上次保存的底模、资源种类、搜索输入、已提交搜索词和页码。
 
 ## 主要变更
 
-- Workflow compiler 沿 `replace_input` binding 的连接解析真正生效的上游 Prompt、seed、width、height 和其他 widget。正负 Prompt 不再写入 LoRA Manager 配置文本；Prompt 和非分辨率参数的零目标或多目标结构返回包含参数 ID 与候选目标的明确错误。Connected width/height 无法解析唯一上游目标时，compiler 断开对应 selector 连接并把请求值写入 binding 指定的本地 widget。
-- 多个 runtime 参数解析到同一个 widget 时，相同值只写入一次，不同值返回冲突错误。模板明确绑定 bypass LoRA Loader 时，compiler 激活该 Loader 并写入 LoRA 文件名和权重。
-- Compiler 只对缺少实时 `/object_info` 定义且满足严格序列化形状的 `TextInput_` 与 `Float` 节点内联常量；动态 COMBO widget 顺序、断开输出节点、connected 分辨率输入和同倍率 `LatentUpscale` 派生尺寸均按实际 Workflow 结构编译。
-- Comfy transport 在同一个完成响应包含 `PreviewImage(type=temp)` 与 `SaveImage(type=output)` 时忽略临时预览并保存正式输出。未知 descriptor type、不安全路径、媒体类型错误和媒体签名错误继续返回 `COMFYUI_OUTPUT_INVALID`。
+- Client 插件为每个 Session 使用独立的版本化浏览器存储记录。弹窗只持久化导航位置；Catalog 响应、加载状态、错误对象和未确认候选不会写入浏览器存储。
+- 弹窗打开时按照保存的筛选位置重新查询当前 Catalog。Catalog 删除已保存的底模后，Client 先把该 Session 的底模恢复为“全部底模”并把页码恢复为第一页，再发起查询。
+- 浏览器拒绝存储访问、持久化 JSON 无效或写入失败时，弹窗显示 `CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED` 对应的原因和处理动作。写入失败不会把未保存的新导航位置发布为当前状态。
+- Harness 复用同一个 Dock 渲染不同 Session 时，Client 关闭旧 Session 的弹窗、中止其 Catalog 请求并丢弃未确认候选；两个 Session 的已保存筛选位置不会相互覆盖。
 
 ## 验证
 
-- 本地 `pnpm quality` 通过：283 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过。
-- 生产数据源的 32 个现有模板全部通过声明参数单探针、组合参数和 LoRA 编译矩阵；32 个模板均完成真实生成，34 次成功运行下载的 46 张图片均完成人工查看，Actual Workflow 与 API Workflow 中的请求参数均逐项一致。
-- 当前数据源声明的 runtime parameter kind 为正面提示词、负面提示词、宽度、高度、种子、分辨率预设、参考图、LoRA 模型、LoRA 权重和 LoRA 触发词。数据源没有声明 steps、CFG、denoise、batch size、宽高比或放大倍数参数，因此本次验收没有把这些未声明参数计为公开请求通过。
-- 源码版本提交 `dd9f0fb41f87c81ad041370c9bdb8374c2c19ff2` 的 GitHub CI 已成功。
-- 本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。
+- `ContextDialogNavigationStore` 单元测试覆盖跨 Client store 重建恢复、Session 隔离、严格 JSON 校验、Storage resolver/read/write 失败、成功重试和 dispose。
+- Client 与 `WorkbenchDock` 单元测试覆盖关闭重开、Session 切换、请求中止、失效底模修正、修正写入失败和存储属性访问失败。
+- 本地 `pnpm quality` 通过：305 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过。
+- 真实 Chrome 验收确认 Session A 的 Workflow 模板、搜索词 `a` 和第 2 页，以及 Session B 的 `wai` 底模、LoRA、搜索词 `age` 和第 1 页，在关闭重开、Session 切换、浏览器刷新和 Client/Host 重启后分别恢复。

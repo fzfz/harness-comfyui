@@ -28,6 +28,7 @@ import {
 import {
   WORKBENCH_COPY,
   catalogFailureText,
+  workbenchErrorText,
   workbenchContextsFromDraft,
   workbenchContextKey,
 } from './contract.ts'
@@ -37,6 +38,7 @@ import {
   type WorkbenchController,
   type WorkbenchSessionInput,
 } from './controller.ts'
+import type { ContextDialogNavigation } from './context-dialog-navigation.ts'
 
 export interface WorkbenchEntryProps {
   readonly wide: boolean
@@ -73,30 +75,49 @@ export interface CatalogApi {
 
 export interface WorkbenchDockProps {
   readonly catalog: CatalogApi
+  readonly dialogNavigation: ContextDialogNavigation
   readonly input: ReturnType<WorkbenchSessionInput['state']['getSnapshot']>
+  readonly sessionId: string
   readonly sessionInput: WorkbenchSessionInput
   readonly workbench: WorkbenchController
 }
 
-const INITIAL_KIND: CatalogKind = 'comfyui-template'
+type WorkbenchDockSessionProps = Omit<WorkbenchDockProps, 'sessionId'>
 
-export function WorkbenchDock({ catalog, input, sessionInput, workbench }: WorkbenchDockProps) {
+export function WorkbenchDock({ sessionId, ...props }: WorkbenchDockProps) {
+  return <WorkbenchDockSession key={sessionId} {...props} />
+}
+
+function WorkbenchDockSession({
+  catalog,
+  dialogNavigation,
+  input,
+  sessionInput,
+  workbench,
+}: WorkbenchDockSessionProps) {
   const active = useSyncExternalStore(
     workbench.subscribe,
     workbench.getSnapshot,
     workbench.getSnapshot,
   )
+  const navigationSnapshot = useSyncExternalStore(
+    dialogNavigation.subscribe,
+    dialogNavigation.getSnapshot,
+    dialogNavigation.getSnapshot,
+  )
+  const {
+    selectedBaseModelId,
+    selectedKind,
+    queryText,
+    submittedQuery,
+    currentPage,
+  } = navigationSnapshot.state
   const selectedContexts = workbenchContextsFromDraft(input.draft)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [baseModelMenuOpen, setBaseModelMenuOpen] = useState(false)
   const [baseModels, setBaseModels] = useState<BaseModelList | null>(null)
   const [baseModelStatus, setBaseModelStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [baseModelError, setBaseModelError] = useState<string | null>(null)
-  const [selectedBaseModelId, setSelectedBaseModelId] = useState<string | null>(null)
-  const [selectedKind, setSelectedKind] = useState<CatalogKind>(INITIAL_KIND)
-  const [queryText, setQueryText] = useState('')
-  const [submittedQuery, setSubmittedQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
   const [requestVersion, setRequestVersion] = useState(0)
   const [page, setPage] = useState<CatalogPage | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<ReadonlyMap<string, CatalogContext>>(new Map())
@@ -114,6 +135,18 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
       if (!current || controller.signal.aborted) return
       setBaseModels(result)
       setBaseModelStatus('ready')
+      if (
+        selectedBaseModelId !== null
+        && !result.items.some(item => item.id === selectedBaseModelId)
+      ) {
+        setPage(null)
+        setStatus('idle')
+        dialogNavigation.update(navigation => (
+          navigation.selectedBaseModelId === selectedBaseModelId
+            ? { ...navigation, selectedBaseModelId: null, currentPage: 1 }
+            : navigation
+        ))
+      }
     }).catch((error: unknown) => {
       if (!current || controller.signal.aborted) return
       setBaseModelError(catalogFailureText(error))
@@ -125,11 +158,25 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
     }
   }, [catalog, dialogOpen])
 
+  const selectedCatalogDefinition = catalogDefinition(selectedKind)
+  const baseModelQueryReadiness = !selectedCatalogDefinition.baseModelScoped || selectedBaseModelId === null
+    ? 'ready'
+    : baseModelStatus !== 'ready'
+      ? 'pending'
+      : baseModels?.items.some(item => item.id === selectedBaseModelId)
+        ? 'ready'
+        : 'invalid'
+
   useEffect(() => {
     if (!dialogOpen) return
+    if (baseModelQueryReadiness !== 'ready') {
+      setStatus('idle')
+      setCatalogError(null)
+      setPage(null)
+      return
+    }
     const controller = new AbortController()
     let current = true
-    const definition = catalogDefinition(selectedKind)
     setStatus('loading')
     setCatalogError(null)
     setPage(null)
@@ -137,7 +184,7 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
       kind: selectedKind,
       query: submittedQuery,
       page: currentPage,
-      baseModelId: definition.baseModelScoped ? selectedBaseModelId : null,
+      baseModelId: selectedCatalogDefinition.baseModelScoped ? selectedBaseModelId : null,
     }, controller.signal).then(result => {
       if (!current || controller.signal.aborted) return
       setPage(result)
@@ -151,7 +198,17 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
       current = false
       controller.abort()
     }
-  }, [catalog, currentPage, dialogOpen, requestVersion, selectedBaseModelId, selectedKind, submittedQuery])
+  }, [
+    baseModelQueryReadiness,
+    catalog,
+    currentPage,
+    dialogOpen,
+    requestVersion,
+    selectedBaseModelId,
+    selectedKind,
+    selectedCatalogDefinition,
+    submittedQuery,
+  ])
 
   const activeBaseModelLabel = selectedBaseModelId === null
     ? WORKBENCH_COPY.allBaseModels
@@ -161,6 +218,9 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
     ...(baseModels?.items.map(item => ({ id: item.id, label: item.label })) ?? []),
   ], [baseModels])
   const totalPages = catalogPageCount(page?.totalCount ?? 0)
+  const navigationPersistenceError = navigationSnapshot.persistenceErrorCode === null
+    ? null
+    : workbenchErrorText(navigationSnapshot.persistenceErrorCode)
 
   if (!active) return null
 
@@ -171,11 +231,12 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
   }
 
   const openDialog = () => {
-    setSelectedKind(INITIAL_KIND)
-    setSelectedBaseModelId(null)
-    setQueryText('')
-    setSubmittedQuery('')
-    setCurrentPage(1)
+    setBaseModels(null)
+    setBaseModelStatus('idle')
+    setBaseModelError(null)
+    setPage(null)
+    setStatus('idle')
+    setCatalogError(null)
     setSelectedOptions(new Map(selectedContexts.map(option => [workbenchContextKey(option), option])))
     setDialogOpen(true)
   }
@@ -186,15 +247,21 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
   }
 
   const selectKind = (kind: CatalogKind) => {
-    setSelectedKind(kind)
-    setQueryText('')
-    setSubmittedQuery('')
-    setCurrentPage(1)
+    dialogNavigation.update(current => ({
+      ...current,
+      selectedKind: kind,
+      queryText: '',
+      submittedQuery: '',
+      currentPage: 1,
+    }))
   }
 
   const search = () => {
-    setSubmittedQuery(queryText.trim())
-    setCurrentPage(1)
+    dialogNavigation.update(current => ({
+      ...current,
+      submittedQuery: current.queryText.trim(),
+      currentPage: 1,
+    }))
     setRequestVersion(version => version + 1)
   }
 
@@ -261,6 +328,9 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
           </>
         )}
       >
+        {navigationPersistenceError === null ? null : (
+          <span className="harness-comfyui-catalog-state">{navigationPersistenceError}</span>
+        )}
         <div className="harness-comfyui-base-model-row">
           <span>{WORKBENCH_COPY.baseModel}</span>
           <Menu
@@ -269,8 +339,11 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
             items={baseModelMenuItems}
             selectedId={selectedBaseModelId ?? 'all'}
             onSelect={id => {
-              setSelectedBaseModelId(id === 'all' ? null : id)
-              setCurrentPage(1)
+              dialogNavigation.update(current => ({
+                ...current,
+                selectedBaseModelId: id === 'all' ? null : id,
+                currentPage: 1,
+              }))
               setBaseModelMenuOpen(false)
             }}
             portal
@@ -320,7 +393,10 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
                 maxLength={200}
                 placeholder={`${WORKBENCH_COPY.search}${catalogDefinition(selectedKind).label}`}
                 aria-label={WORKBENCH_COPY.search}
-                onChange={event => setQueryText(event.currentTarget.value)}
+                onChange={event => dialogNavigation.update(current => ({
+                  ...current,
+                  queryText: event.currentTarget.value,
+                }))}
               />
               <Button variant="outline" size="sm" type="submit">
                 {WORKBENCH_COPY.search}
@@ -367,7 +443,10 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
                 variant="outline"
                 size="sm"
                 disabled={status !== 'ready' || currentPage <= 1}
-                onClick={() => setCurrentPage(value => value - 1)}
+                onClick={() => dialogNavigation.update(current => ({
+                  ...current,
+                  currentPage: current.currentPage - 1,
+                }))}
               >
                 {WORKBENCH_COPY.previousPage}
               </Button>
@@ -376,7 +455,10 @@ export function WorkbenchDock({ catalog, input, sessionInput, workbench }: Workb
                 variant="outline"
                 size="sm"
                 disabled={status !== 'ready' || currentPage >= totalPages}
-                onClick={() => setCurrentPage(value => value + 1)}
+                onClick={() => dialogNavigation.update(current => ({
+                  ...current,
+                  currentPage: current.currentPage + 1,
+                }))}
               >
                 {WORKBENCH_COPY.nextPage}
               </Button>

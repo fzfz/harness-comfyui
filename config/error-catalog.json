@@ -26,6 +26,7 @@
   "COMFYUI_REQUEST_CANCELED": { "code": "COMFYUI_REQUEST_CANCELED", "title": "ComfyUI 请求已取消", "reason": "本次 ComfyUI 请求已取消。", "next_step": "需要该结果时重新生成。", "cancellable": false, "confirm_repeat": false },
   "COMFYUI_REQUEST_TIMEOUT": { "code": "COMFYUI_REQUEST_TIMEOUT", "title": "ComfyUI 请求超时", "reason": "ComfyUI 没有在限定时间内完成响应。", "next_step": "检查实例负载和网络后重新生成。", "cancellable": false, "confirm_repeat": false },
   "COMFYUI_SUBMISSION_RESULT_UNKNOWN": { "code": "COMFYUI_SUBMISSION_RESULT_UNKNOWN", "title": "提交状态未知", "reason": "Harness 无法确认 ComfyUI 是否接收了该任务。", "next_step": "先在 ComfyUI 中检查任务；再次生成可能产生重复结果。", "cancellable": false, "confirm_repeat": true },
+  "CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED": { "code": "CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED", "title": "会话筛选记忆不可用", "reason": "浏览器无法读取、校验或保存当前会话的插入上下文筛选位置。", "next_step": "允许当前站点使用本地存储，或清除当前站点数据后重新选择筛选条件。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_ARTIFACT_INVALID": { "code": "GENERATION_ARTIFACT_INVALID", "title": "运行文件无效", "reason": "已保存的运行文件无法读取。", "next_step": "创建新的生成运行。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_ARTIFACT_NOT_FOUND": { "code": "GENERATION_ARTIFACT_NOT_FOUND", "title": "运行文件不存在", "reason": "请求的运行文件不存在。", "next_step": "刷新会话媒体列表。", "cancellable": false, "confirm_repeat": false },
   "GENERATION_ARTIFACT_NOT_READY": { "code": "GENERATION_ARTIFACT_NOT_READY", "title": "运行文件尚未就绪", "reason": "该运行尚未生成所需文件。", "next_step": "等待运行准备完成。", "cancellable": true, "confirm_repeat": false },

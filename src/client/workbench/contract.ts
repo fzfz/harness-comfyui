@@ -36,7 +36,10 @@ function errorCode(value: unknown): string {
 }
 
 export function catalogFailureText(error: unknown): string {
-  const code = errorCode(error)
+  return workbenchErrorText(errorCode(error))
+}
+
+export function workbenchErrorText(code: string): string {
   const entry = errorCatalog[code as keyof typeof errorCatalog] ?? errorCatalog.CATALOG_REMOTE_FAILED
   return `${entry.code}：${entry.reason}${entry.next_step}`
 }

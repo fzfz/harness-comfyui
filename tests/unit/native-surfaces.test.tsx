@@ -52,6 +52,7 @@ import {
   workbenchContextsFromDraft,
 } from '../../src/client/workbench/contract.ts'
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
+import { ContextDialogNavigationStore } from '../../src/client/workbench/context-dialog-navigation.ts'
 import {
   WorkbenchDock,
   WorkbenchEntry,
@@ -68,6 +69,7 @@ const { act, create } = createRequire(import.meta.url)('react-test-renderer') as
     }
     toJSON(): unknown
     unmount(): void
+    update(node: ReactNode): void
   }
 }
 
@@ -91,6 +93,25 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
     coverUrl: 'http://127.0.0.1:18092/media/images/lora.jpg',
   },
 ]
+
+class MemoryStorage {
+  private readonly values = new Map<string, string>()
+  failWrites = false
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null
+  }
+
+  setItem(key: string, value: string): void {
+    if (this.failWrites) throw new DOMException('storage write denied', 'SecurityError')
+    this.values.set(key, value)
+  }
+}
+
+function freshDialogNavigation(sessionId = 'session-1') {
+  const storage = new MemoryStorage()
+  return new ContextDialogNavigationStore(() => storage).for(sessionId)
+}
 
 function catalog(items: readonly CatalogItem[] = CONTEXT_OPTIONS, totalCount?: number): CatalogApi & {
   search: ReturnType<typeof vi.fn>
@@ -179,7 +200,8 @@ describe('native Harness workbench surfaces', () => {
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: catalog(), input: inputState(draft) as never, sessionInput: input as never, workbench: controller,
+        catalog: catalog(), dialogNavigation: freshDialogNavigation(), input: inputState(draft) as never,
+        sessionId: 'session-1', sessionInput: input as never, workbench: controller,
       }))
     })
     expect(renderer!.toJSON()).toBeNull()
@@ -202,7 +224,8 @@ describe('native Harness workbench surfaces', () => {
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: api, input: inputState() as never, sessionInput: input as never, workbench: activeController(),
+        catalog: api, dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: input as never, workbench: activeController(),
       }))
     })
     await openDialog(renderer!)
@@ -238,7 +261,8 @@ describe('native Harness workbench surfaces', () => {
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: catalog(), input: inputState(draft) as never, sessionInput: input as never, workbench: activeController(),
+        catalog: catalog(), dialogNavigation: freshDialogNavigation(), input: inputState(draft) as never,
+        sessionId: 'session-1', sessionInput: input as never, workbench: activeController(),
       }))
     })
     await openDialog(renderer!)
@@ -262,12 +286,127 @@ describe('native Harness workbench surfaces', () => {
     act(() => renderer!.unmount())
   })
 
+  it('opens with the persisted navigation state for the current Session', async () => {
+    const storage = new MemoryStorage()
+    const navigationStore = new ContextDialogNavigationStore(() => storage)
+    const dialogNavigation = navigationStore.for('session-a')
+    dialogNavigation.update(() => ({
+      selectedBaseModelId: '2',
+      selectedKind: 'lora',
+      queryText: 'Age refined',
+      submittedQuery: 'Age',
+      currentPage: 2,
+    }))
+    const api = catalog([CONTEXT_OPTIONS[2]!], 13)
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: api,
+        dialogNavigation,
+        input: inputState() as never,
+        sessionId: 'session-a',
+        sessionInput: sessionInput() as never,
+        workbench: activeController(),
+      } as never))
+    })
+
+    await openDialog(renderer!)
+
+    expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
+    expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[1].label).props.variant).toBe('primary')
+    expect(api.search).toHaveBeenLastCalledWith({
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+    }, expect.any(AbortSignal))
+    act(() => { (buttonByText(renderer!, WORKBENCH_COPY.cancel).props.onClick as () => void)() })
+    api.search.mockClear()
+    await openDialog(renderer!)
+    expect(api.search).toHaveBeenLastCalledWith({
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+    }, expect.any(AbortSignal))
+    act(() => renderer!.unmount())
+  })
+
+  it('resets a removed base model before querying the current Catalog', async () => {
+    const storage = new MemoryStorage()
+    const navigationStore = new ContextDialogNavigationStore(() => storage)
+    const dialogNavigation = navigationStore.for('session-a')
+    dialogNavigation.update(() => ({
+      selectedBaseModelId: '9',
+      selectedKind: 'lora',
+      queryText: 'Age',
+      submittedQuery: 'Age',
+      currentPage: 2,
+    }))
+    const api = catalog([CONTEXT_OPTIONS[2]!], 1)
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: api,
+        dialogNavigation,
+        input: inputState() as never,
+        sessionId: 'session-a',
+        sessionInput: sessionInput() as never,
+        workbench: activeController(),
+      }))
+    })
+
+    await openDialog(renderer!)
+
+    expect(api.search).not.toHaveBeenCalledWith(expect.objectContaining({ baseModelId: '9' }), expect.anything())
+    expect(api.search).toHaveBeenLastCalledWith({
+      kind: 'lora', query: 'Age', page: 1, baseModelId: null,
+    }, expect.any(AbortSignal))
+    expect(dialogNavigation.getSnapshot().state).toMatchObject({
+      selectedBaseModelId: null,
+      currentPage: 1,
+    })
+    act(() => renderer!.unmount())
+  })
+
+  it('blocks a removed base model query when the corrected state cannot be persisted', async () => {
+    const storage = new MemoryStorage()
+    const navigationStore = new ContextDialogNavigationStore(() => storage)
+    const dialogNavigation = navigationStore.for('session-a')
+    dialogNavigation.update(() => ({
+      selectedBaseModelId: '9',
+      selectedKind: 'lora',
+      queryText: 'Age',
+      submittedQuery: 'Age',
+      currentPage: 2,
+    }))
+    storage.failWrites = true
+    const api = catalog([CONTEXT_OPTIONS[2]!], 1)
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: api,
+        dialogNavigation,
+        input: inputState() as never,
+        sessionId: 'session-a',
+        sessionInput: sessionInput() as never,
+        workbench: activeController(),
+      }))
+    })
+
+    await openDialog(renderer!)
+
+    expect(api.search).not.toHaveBeenCalled()
+    expect(dialogNavigation.getSnapshot()).toMatchObject({
+      state: { selectedBaseModelId: '9', currentPage: 2 },
+      persistenceErrorCode: 'CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED',
+    })
+    expect(JSON.stringify(renderer!.toJSON())).toContain('CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED')
+    expect(JSON.stringify(renderer!.toJSON())).not.toContain(CONTEXT_OPTIONS[2]!.label)
+    act(() => renderer!.unmount())
+  })
+
   it('searches, switches type, filters by base model, paginates, and renders empty state', async () => {
     const api = catalog([CONTEXT_OPTIONS[2]!], 13)
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: api, input: inputState() as never, sessionInput: sessionInput() as never, workbench: activeController(),
+        catalog: api, dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: activeController(),
       }))
     })
     await openDialog(renderer!)
@@ -330,11 +469,103 @@ describe('native Harness workbench surfaces', () => {
 
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: catalog([]), input: inputState() as never, sessionInput: sessionInput() as never, workbench: activeController(),
+        catalog: catalog([]), dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: activeController(),
       }))
     })
     await openDialog(renderer!)
     expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.empty)
+    act(() => renderer!.unmount())
+  })
+
+  it('isolates navigation and discards pending candidates when the reused Dock changes Session', async () => {
+    const storage = new MemoryStorage()
+    const navigationStore = new ContextDialogNavigationStore(() => storage)
+    const sessionA = navigationStore.for('session-a')
+    const sessionB = navigationStore.for('session-b')
+    sessionB.update(() => ({
+      selectedBaseModelId: null,
+      selectedKind: 'work',
+      queryText: 'city refined',
+      submittedQuery: 'city',
+      currentPage: 3,
+    }))
+    const api = catalog(CONTEXT_OPTIONS, 30)
+    const workbench = activeController()
+    const draftA = serializeWorkbenchContext(CONTEXT_OPTIONS[0]!.context)
+    const renderDock = (
+      sessionId: string,
+      dialogNavigation: ReturnType<ContextDialogNavigationStore['for']>,
+      draft = '',
+    ) => createElement(WorkbenchDock, {
+      catalog: api,
+      dialogNavigation,
+      input: inputState(draft) as never,
+      sessionId,
+      sessionInput: sessionInput(draft) as never,
+      workbench,
+    })
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(renderDock('session-a', sessionA, draftA))
+    })
+    await openDialog(renderer!)
+    const pending = renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectItem} ${CONTEXT_OPTIONS[1]!.label}`,
+    })
+    act(() => { (pending.props.onClick as () => void)() })
+
+    act(() => { renderer!.update(renderDock('session-b', sessionB)) })
+    expect(renderer!.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    await openDialog(renderer!)
+    expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('city refined')
+    expect(api.search).toHaveBeenLastCalledWith({
+      kind: 'work', query: 'city', page: 3, baseModelId: null,
+    }, expect.any(AbortSignal))
+
+    act(() => { renderer!.update(renderDock('session-a', sessionA, draftA)) })
+    await openDialog(renderer!)
+    expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('')
+    expect(renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectItem} ${CONTEXT_OPTIONS[1]!.label}`,
+    })).toBeDefined()
+    expect(renderer!.root.findByProps({
+      'aria-label': `${WORKBENCH_COPY.selectedItem} ${CONTEXT_OPTIONS[0]!.label}`,
+    })).toBeDefined()
+    act(() => renderer!.unmount())
+  })
+
+  it('aborts the previous Session requests when the reused Dock changes Session', async () => {
+    const activeSignals: AbortSignal[] = []
+    const pendingApi = {
+      search: vi.fn((_request: CatalogQueryRequest, signal: AbortSignal) => {
+        activeSignals.push(signal)
+        return new Promise<never>(() => undefined)
+      }),
+      baseModels: vi.fn((signal: AbortSignal) => {
+        activeSignals.push(signal)
+        return new Promise<never>(() => undefined)
+      }),
+    }
+    const navigationStore = new ContextDialogNavigationStore(() => new MemoryStorage())
+    const workbench = activeController()
+    const renderDock = (sessionId: string) => createElement(WorkbenchDock, {
+      catalog: pendingApi,
+      dialogNavigation: navigationStore.for(sessionId),
+      input: inputState() as never,
+      sessionId,
+      sessionInput: sessionInput() as never,
+      workbench,
+    })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = create(renderDock('session-a')) })
+    await openDialog(renderer!)
+
+    act(() => { renderer!.update(renderDock('session-b')) })
+
+    expect(activeSignals).toHaveLength(2)
+    expect(activeSignals.every(signal => signal.aborted)).toBe(true)
+    expect(renderer!.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
     act(() => renderer!.unmount())
   })
 
@@ -352,7 +583,8 @@ describe('native Harness workbench surfaces', () => {
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: failedApi, input: inputState() as never, sessionInput: sessionInput() as never, workbench: activeController(),
+        catalog: failedApi, dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: activeController(),
       }))
     })
     await openDialog(renderer!)
@@ -375,7 +607,8 @@ describe('native Harness workbench surfaces', () => {
     }
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
-        catalog: pendingApi, input: inputState() as never, sessionInput: sessionInput() as never, workbench: activeController(),
+        catalog: pendingApi, dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: activeController(),
       }))
     })
     await openDialog(renderer!)

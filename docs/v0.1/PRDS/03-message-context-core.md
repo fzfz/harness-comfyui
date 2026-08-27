@@ -88,6 +88,9 @@ Source TemplateBundle 的 `expected_output_node_ids_json` 可以是非空数组�
 7. 每个chip由当前原生草稿中的严格`comfyui-context` JSON记录投影。底模筛选不生成JSON或chip，也不计入Modal底部选择数量。
 8. 用户点击chip的移除操作时，插件通过公开`SessionInput.setDraft()`只删除该chip对应的JSON行，并保留草稿中的普通正文和其他上下文JSON。
 9. Harness原生发送成功后清空草稿及其chip投影；发送失败时原生InputBar保留正文和上下文JSON。
+10. Client必须按 Harness Session ID 分别持久化 Modal 的底模 ID、资源种类、编辑中搜索词、已提交搜索词和当前页码。用户关闭并重新打开 Modal、切换 Session 后返回、刷新浏览器或重启同一 Client 时，Modal必须恢复当前 Session 保存的五个值并重新查询当前 Catalog。Client不得持久化 Catalog 响应、加载状态、错误对象或未确认候选。
+11. Harness复用同一个 Workbench Dock 渲染另一个 Session 时，Client必须关闭旧 Session 的 Modal、中止旧 Session 的底模与资源查询并丢弃未确认候选。新 Session只能读取自己的五个导航值；切回旧 Session 时只能恢复旧 Session 自己的五个导航值和草稿中已经确认的上下文。
+12. Client从Catalog读取底模列表后必须校验当前 Session 保存的底模 ID。保存的底模不存在时，Client必须先持久化`selectedBaseModelId: null`和`currentPage: 1`，再使用“全部底模”和第一页查询资源；该修正无法写入浏览器存储时，Client不得使用失效底模 ID 或未保存的修正状态查询资源。
 
 ## 错误行为
 
@@ -95,6 +98,7 @@ Source TemplateBundle 的 `expected_output_node_ids_json` 可以是非空数组�
 - `contract_id` 或 `contract_version` 不受支持时返回 `SOURCE_CONTRACT_UNSUPPORTED`，并阻止打开候选结果或发送引用。
 - 任何引用在发送时不存在、类型不允许或响应不符合 schema 时，整条消息不写入 Session；页面指出失败的资源种类、稳定 ID 和可执行的重新选择动作。
 - `base-model` 和 `comfyui-instance` 传给项目Context resolver时返回 `CONTEXT_KIND_NOT_INSERTABLE`。
+- 浏览器存储不可访问、保存记录不符合严格导航schema或导航更新无法写入时，Modal显示`CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED`对应的原因和处理动作。Client读取失败时使用初始导航值；Client写入失败时保留写入前的导航值。用户允许站点使用浏览器存储或清除当前站点数据后，下一次成功更新必须清除该错误。清除当前站点数据后，每个 Session 从初始导航值开始。
 
 ## 产品验收
 
@@ -106,6 +110,8 @@ Source TemplateBundle 的 `expected_output_node_ids_json` 可以是非空数组�
 6. 视觉与语义审核者逐项检查 Modal 三栏、3×3 固定卡片、实际封面、无封面占位、第二页、详情、确认区、chip、错误态、折叠快照和文案指代。
 7. 用户在同一输入区添加真实图片附件，查看预览，删除后重新添加，并与正文和Message Context通过一次`SessionFace.prompt(parts, 'queue')`发送；发送失败时File、preview、正文和chip全部保留，发送成功或用户删除附件时回收对应object URL。Harness原生Session只增加一条用户消息，Host attachment store保存该消息的图片。
 8. 真实Harness Tool registry只通过`registerProjectTools()`出现上述三个Catalog Tool；contract test逐项核对Tool名称、description、闭合输入/输出schema、Catalog operation path、CLI参数顺序、search/resolve结果、取消子进程、discovery漂移整组拒绝和Host卸载注销。测试必须确认Tool调用及Tool Result均不存在旧批量字段、来源Pi字段或数据源传输关联字段。
+9. 用户在 Session A 中选择底模、资源种类、搜索词和第二页后关闭并重新打开 Modal；Modal恢复 Session A 的五个导航值。用户切换到 Session B 设置另一组值后切回 Session A，刷新浏览器并重启当前 worktree 的 Client；Modal每次都恢复 Session A 的值，Session B 的值保持不变。
+10. 验收者阻止当前站点访问浏览器存储并重新打开 Modal；Modal显示`CONTEXT_DIALOG_NAVIGATION_STORAGE_FAILED`文案且仍可关闭。验收者恢复存储权限后完成一次导航更新；错误消失且该更新在刷新后恢复。验收者清除当前站点数据并重新打开两个 Session；两个 Session 都显示初始导航值。
 
 ## 不属于本 Ticket
 
