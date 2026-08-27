@@ -50,7 +50,7 @@
 - 完成：受控 cache-hit 请求 `29f91894-e160-4b3f-abb6-565f8f7e9617` 由最终 `ComfyHttpTransport` 提交并成功完成。
 - 完成：服务器 history 的节点 5 收到 `anima\\MatureFemaleSliderAnima.safetensors`、`strength=3`、`clipStrength=3`、`active=true`；节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`。
 - 完成：受控生成结束后 122 队列恢复 running 0、pending 0；没有修改远端源码、配置、模型或进程。
-- 完成：对照 `origin/main` 核对旧编译器边界；旧文件的通用函数没有删除，原有 49 个编译器回归用例继续执行，当前新增到 52 个。
+- 完成：对照 `origin/main` 核对旧编译器边界；旧文件的通用函数和原有编译器回归用例均未删除。
 - 完成：确认旧编译器继续负责参数 binding、Prompt 上游定位、尺寸倍率、seed、模型、LoRA、bypass 和活动输出节点；官方前端只接管最终 API Workflow 拓扑与序列化。
 - 完成：新增 CDP readiness 与 `graphToPrompt()` 永久等待的 RED 测试；实现统一 operation AbortSignal 后，15 个浏览器适配器测试和类型检查通过。
 - 完成：源码提交 `d4ad4d3c396fd13824bcd4373cef13fdde597b22` 已推送到发布分支和 `main`，GitHub CI `33081834591` 成功。
@@ -58,3 +58,10 @@
 - 完成：独立语义 Reviewer 提出的 2 项 Medium 与 2 项 Low 均已修正；Reviewer 最终复审批准全部文档和六个新增错误文案。
 - 进行中：执行文档提交前全量质量门禁和 Standards/Spec 双轴代码审查。
 - 完成：文档语义修订后的第二次 `pnpm run quality` 通过；358 项 unit/integration、22 项 contract/security、14 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%。
+- 完成：发布前 Standards/Spec 双轴审查确认认证头 origin 边界、浏览器异步启动失败、空 LoRA 选择、并发 miss 取消、`/object_info` 调用者取消和结构化环境映射问题。
+- 完成：认证头改为 CDP Fetch 逐请求处理，同 origin 注入实例凭据，跨 origin 请求与重定向删除该凭据；浏览器异步 `error` 事件转换为 `COMFYUI_FRONTEND_BROWSER_FAILED`。
+- 完成：并发 cache miss 使用共享导出控制器和独立等待者取消；仅全部等待者取消时终止导出且不写缓存，取消后的新请求可以立即重试。
+- 完成：空 LoRA 选择在歧义判断前清空全部精确 LoraManager 默认值并保留标准、Power 与普通文本 Loader 状态；`/object_info` 调用者取消返回 `COMFYUI_REQUEST_CANCELED`，内部超时仍返回连接失败。
+- 完成：新增真实 `ComfyWorkflowCompiler` 到 `OfficialApiWorkflowCompiler` 的代表 Workflow 等价测试，覆盖 Prompt、尺寸倍率、模型、bypass、活动输出以及空、单个和多个精确 LoraManager 选择。
+- 完成：`config/environment-overrides.json` 统一声明环境变量目标字段、值类型和 Host 运行值路径；Configuration Profile loader 与生产进程不再维护重复环境变量名单。
+- 完成：审查修复后的 `pnpm run quality` 通过；370 项 unit/integration、22 项 contract/security、15 项 production 和 27 项 prototype 测试通过，函数覆盖率 100%，依赖审计各严重级别均为 0。

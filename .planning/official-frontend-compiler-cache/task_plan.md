@@ -78,7 +78,7 @@ SourceGenerationPreparer
 - 同一 Host 进程使用按缓存键保存的 in-flight Promise 合并并发 cache miss。编译失败时删除 in-flight 记录且不创建缓存文件。
 - 缓存文件不存在表示 cache miss。缓存 JSON 解析失败、identity 不匹配或 API Workflow 结构无效时返回 `COMFYUI_API_WORKFLOW_CACHE_INVALID`；实现不得删除损坏文件并静默重编译。
 - `templateWorkflowHash` 的输入只能是运行时修改前的原始 `WorkflowCompilerInput.workflow`；`instanceId` 只能来自 `ComfyInstanceSource.id`。Prompt、seed、尺寸或 LoRA 权重变化不得改变 template hash。
-- `executionStructureHash` 保留每个连接 tuple 的节点 ID 和输出索引，并用类型标记替代非连接普通值。mode、bypass、连接断开、活动节点集合或动态输入名称变化必须改变 execution structure hash。
+- `executionStructureHash` 保留每个连接 tuple 的节点 ID 和输出索引，并用类型标记替代非连接普通值。mode、bypass、连接断开、活动节点集合或动态输入名称变化只要改变运行时 API Workflow 投影，就必须改变 execution structure hash。单独返回且不改变最终 API Workflow 的 `activeOutputNodeIds` 列表不进入缓存 identity。
 
 ## 缓存正确性合同
 
