@@ -53,14 +53,22 @@ export class WebSocketCdpSession implements CdpSession {
   }
 
   async connect(signal?: AbortSignal): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-      this.socket.addEventListener('open', () => resolve(), { once: true })
-      this.socket.addEventListener('error', () => reject(new Error('Chrome DevTools WebSocket connection failed.')), { once: true })
-      signal?.addEventListener('abort', () => {
-        this.socket.close()
-        reject(new Error('Chrome DevTools WebSocket connection was canceled.'))
-      }, { once: true })
-    })
+    let rejectConnection!: (error: Error) => void
+    const handleAbort = () => {
+      this.socket.close()
+      rejectConnection(new Error('Chrome DevTools WebSocket connection was canceled.'))
+    }
+    try {
+      await new Promise<void>((resolve, reject) => {
+        rejectConnection = reject
+        this.socket.addEventListener('open', () => resolve(), { once: true })
+        this.socket.addEventListener('error', () => reject(new Error('Chrome DevTools WebSocket connection failed.')), { once: true })
+        signal?.addEventListener('abort', handleAbort, { once: true })
+        if (signal?.aborted === true) handleAbort()
+      })
+    } finally {
+      signal?.removeEventListener('abort', handleAbort)
+    }
     this.socket.addEventListener('message', event => this.receive(event.data))
   }
 
@@ -131,6 +139,7 @@ interface BrowserLifecycle {
   closed: boolean
   failure: Error | undefined
   readonly closedPromise: Promise<void>
+  readonly signal: AbortSignal
 }
 
 export interface ChromeComfyFrontendOptions {
@@ -220,23 +229,39 @@ function callerCanceled(signal: AbortSignal | undefined): GenerationRuntimeError
 
 function observeBrowser(browser: BrowserChildProcess): BrowserLifecycle {
   let resolveClosed!: () => void
+  const controller = new AbortController()
   const lifecycle: BrowserLifecycle = {
     closed: browser.exitCode !== null,
     failure: undefined,
     closedPromise: new Promise<void>(resolve => { resolveClosed = resolve }),
+    signal: controller.signal,
   }
   const close = () => {
     if (lifecycle.closed) return
     lifecycle.closed = true
+    controller.abort()
     resolveClosed()
   }
   browser.once('error', error => {
     lifecycle.failure = error
+    controller.abort()
   })
   browser.once('exit', close)
   browser.once('close', close)
-  if (lifecycle.closed) resolveClosed()
+  if (lifecycle.closed) {
+    controller.abort()
+    resolveClosed()
+  }
   return lifecycle
+}
+
+function throwIfBrowserStopped(browser: BrowserChildProcess, lifecycle: BrowserLifecycle, origin: string): void {
+  if (lifecycle.failure !== undefined) {
+    throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser process for "${origin}" failed.`, lifecycle.failure)
+  }
+  if (lifecycle.closed || browser.exitCode !== null) {
+    throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser process for "${origin}" exited before official frontend compilation completed.`)
+  }
 }
 
 function requestHeaders(
@@ -356,6 +381,7 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
       const operationSignal = AbortSignal.any([
         timeoutSignal,
         authorizationFailure.signal,
+        browserLifecycle.signal,
         ...(input.signal === undefined ? [] : [input.signal]),
       ])
       try {
@@ -403,8 +429,9 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
       }
 
       try {
-        await this.waitForFrontend(cdp, deadline, input.connection.origin, input.signal, operationSignal)
+        await this.waitForFrontend(cdp, browser, browserLifecycle, deadline, input.connection.origin, input.signal, operationSignal)
       } catch (error) {
+        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin)
         if (authorizationError !== undefined) {
           throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not authorize browser requests for "${input.connection.origin}".`, authorizationError)
         }
@@ -412,12 +439,15 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
       }
       try {
         throwIfCallerCanceled(input.signal)
-        return exportedApiWorkflow(
+        const exported = exportedApiWorkflow(
           await resolveBeforeAbort(cdp.evaluate(exportExpression(input.workflow)), operationSignal),
           input.connection.origin,
         )
+        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin)
+        return exported
       } catch (error) {
         throwIfCallerCanceled(input.signal)
+        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin)
         if (errorCode(error) === 'COMFYUI_FRONTEND_EXPORT_FAILED') throw error
         throw runtimeError('COMFYUI_FRONTEND_EXPORT_FAILED', `ComfyUI frontend "${input.connection.origin}" could not export the Actual Workflow.`, error)
       }
@@ -470,6 +500,8 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
 
   private async waitForFrontend(
     cdp: CdpSession,
+    browser: BrowserChildProcess,
+    lifecycle: BrowserLifecycle,
     deadline: number,
     origin: string,
     callerSignal: AbortSignal | undefined,
@@ -478,11 +510,13 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
     try {
       while (this.now() <= deadline) {
         throwIfCallerCanceled(callerSignal)
+        throwIfBrowserStopped(browser, lifecycle, origin)
         if (isReady(await resolveBeforeAbort(cdp.evaluate(READINESS_EXPRESSION), operationSignal))) return
         await this.delay(100)
       }
     } catch (error) {
       throwIfCallerCanceled(callerSignal)
+      throwIfBrowserStopped(browser, lifecycle, origin)
       if (errorCode(error) === 'COMFYUI_FRONTEND_NOT_READY') throw error
       throw runtimeError('COMFYUI_FRONTEND_NOT_READY', `ComfyUI frontend "${origin}" did not finish initializing.`, error)
     }

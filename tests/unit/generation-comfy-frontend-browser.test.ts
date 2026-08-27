@@ -314,6 +314,20 @@ describe('ChromeComfyFrontend', () => {
     expect(cdp.close).toHaveBeenCalledOnce()
   })
 
+  it('reports a browser process error during frontend readiness as a browser failure', async () => {
+    const fixture = frontendOptions()
+    fixture.cdp.evaluate.mockReset().mockImplementation(async () => {
+      fixture.child.emit('error', new Error('browser crashed during readiness'))
+      return { documentReady: false, hasApp: false, splashVisible: true }
+    })
+
+    await expect(new ChromeComfyFrontend(fixture.options).exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_BROWSER_FAILED' })
+    expect(fixture.cdp.close).toHaveBeenCalledOnce()
+  })
+
   it('times out a pending frontend readiness evaluation and cleans the browser', async () => {
     const cdp = session()
     cdp.evaluate.mockReset().mockImplementation(async () => new Promise(() => undefined))
@@ -350,6 +364,23 @@ describe('ChromeComfyFrontend', () => {
       workflow: workflow(),
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
     })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_EXPORT_FAILED' })
+  })
+
+  it('reports a browser close during graphToPrompt as a browser failure', async () => {
+    const fixture = frontendOptions()
+    fixture.cdp.evaluate.mockReset()
+      .mockResolvedValueOnce({ documentReady: true, hasApp: true, splashVisible: false })
+      .mockImplementationOnce(async () => {
+        fixture.child.exitCode = 9
+        fixture.child.emit('close', 9, null)
+        return { output: { '1': { class_type: 'PromptNode', inputs: { text: 'never returned' } } } }
+      })
+
+    await expect(new ChromeComfyFrontend(fixture.options).exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_BROWSER_FAILED' })
+    expect(fixture.cdp.close).toHaveBeenCalledOnce()
   })
 
   it('times out a pending graphToPrompt evaluation and cleans the browser', async () => {

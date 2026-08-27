@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -210,6 +210,88 @@ describe('official API Workflow cache', () => {
 
     await expect(compiler.compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_INVALID' })
     expect(frontend.exportWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['identity mismatch', (item: Record<string, unknown>) => {
+      item.identity = { ...(item.identity as Record<string, unknown>), instanceId: 'wrong-instance' }
+    }],
+    ['invalid API Workflow structure', (item: Record<string, unknown>) => {
+      item.apiWorkflow = { '1': { class_type: 'PromptNode', inputs: null } }
+    }],
+  ] as const)('rejects a cache entry with %s', async (_label, mutate) => {
+    const cacheDirectory = await temporaryDirectory()
+    const frontend = exporter()
+    const compiler = new OfficialApiWorkflowCompiler({ cacheDirectory, instanceCacheEpoch: '1', frontend })
+    const first = await compiler.compile(compileInput())
+    const path = join(cacheDirectory, `${first.cacheKey}.json`)
+    const item = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>
+    mutate(item)
+    await writeFile(path, `${JSON.stringify(item)}\n`, 'utf8')
+
+    await expect(compiler.compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_INVALID' })
+    expect(frontend.exportWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports cache read, directory creation, temporary write, and rename failures', async () => {
+    const address = createOfficialApiWorkflowCacheIdentity({
+      instanceId: 'win3080',
+      instanceOrigin: 'http://192.168.110.122:8188',
+      instanceCacheEpoch: '1',
+      templateWorkflow,
+      runtimeProjection,
+    })
+
+    const readRoot = await temporaryDirectory()
+    await mkdir(join(readRoot, `${address.cacheKey}.json`))
+    await expect(new OfficialApiWorkflowCompiler({
+      cacheDirectory: readRoot,
+      instanceCacheEpoch: '1',
+      frontend: exporter(),
+    }).compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_IO_FAILED' })
+
+    const createRoot = await temporaryDirectory()
+    const blockedDirectory = join(createRoot, 'cache')
+    const createFrontend = exporter()
+    createFrontend.exportWorkflow.mockImplementationOnce(async () => {
+      await writeFile(blockedDirectory, 'not a directory', 'utf8')
+      return structuredClone(officialApiWorkflow)
+    })
+    await expect(new OfficialApiWorkflowCompiler({
+      cacheDirectory: blockedDirectory,
+      instanceCacheEpoch: '1',
+      frontend: createFrontend,
+    }).compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_IO_FAILED' })
+
+    const writeRoot = await temporaryDirectory()
+    const writeFrontend = exporter()
+    writeFrontend.exportWorkflow.mockImplementationOnce(async () => {
+      await chmod(writeRoot, 0o500)
+      return structuredClone(officialApiWorkflow)
+    })
+    try {
+      await expect(new OfficialApiWorkflowCompiler({
+        cacheDirectory: writeRoot,
+        instanceCacheEpoch: '1',
+        frontend: writeFrontend,
+      }).compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_IO_FAILED' })
+    } finally {
+      await chmod(writeRoot, 0o700)
+    }
+
+    const renameRoot = await temporaryDirectory()
+    const renameFrontend = exporter()
+    renameFrontend.exportWorkflow.mockImplementationOnce(async () => {
+      const destination = join(renameRoot, `${address.cacheKey}.json`)
+      await mkdir(destination)
+      await writeFile(join(destination, 'marker'), 'occupied', 'utf8')
+      return structuredClone(officialApiWorkflow)
+    })
+    await expect(new OfficialApiWorkflowCompiler({
+      cacheDirectory: renameRoot,
+      instanceCacheEpoch: '1',
+      frontend: renameFrontend,
+    }).compile(compileInput())).rejects.toMatchObject({ code: 'COMFYUI_API_WORKFLOW_CACHE_IO_FAILED' })
   })
 
   it('writes the declared cache identity and never writes authorization', async () => {

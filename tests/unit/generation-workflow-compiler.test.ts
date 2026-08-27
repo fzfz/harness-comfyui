@@ -2810,6 +2810,40 @@ describe('ComfyWorkflowCompiler', () => {
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_INVALID' })
   })
 
+  it.each([
+    ['out-of-range', [{ version: 1, textWidgetName: 'text' }, '']],
+    ['non-array', [{ version: 1, textWidgetName: 'text' }, '', { invalid: true }]],
+  ] as const)('rejects an exact LoraManager node whose serialized loras widget value is %s', async (_label, widgetsValues) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4,
+      type: 'Lora Loader (LoraManager)',
+      mode: 0,
+      properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
+      inputs: [],
+      outputs: [],
+      widgets_values: widgetsValues,
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        'Lora Loader (LoraManager)': {
+          input: { required: { model: ['MODEL'], text: ['AUTOCOMPLETE_TEXT_LORAS', {}] } },
+          input_order: { required: ['model', 'text'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_INVALID' })
+  })
+
   it('replaces a Power Lora Loader with resolved dynamic LoRA inputs in selection order', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
