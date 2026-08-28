@@ -51,6 +51,10 @@ ChromeComfyFrontend 测试使用注入的子进程、文件系统、HTTP 和 CDP
 
 v0.31.3 发布文档提交前的完整 `pnpm quality` 结果为 406 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。
 
+2026-08-28 的 v0.31.4 实例 122 验证覆盖当前 Source Catalog 的 18 个 Workflow 模板。矩阵对每个列表型输入从该模板使用的节点类型和实时 `/object_info` 选择合法测试值，不使用跨节点类型的固定显示值。矩阵执行 270 个单参数检查；191 个基线支持参数通过，79 个基线不支持参数返回 `GENERATION_PARAMETER_TARGET_NOT_FOUND`。18 个模板的组合参数编译、官方页面 cache miss、同模板 cache hit、单次前端导出和基础对象一致性验证全部通过。
+
+v0.31.4 发布文档提交前的完整 `pnpm quality` 结果为 416 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。`/object_info` 缓存测试验证 40 个并发 compile 合并为一个请求、10 分钟 TTL、实例隔离和失败响应不缓存。
+
 ## CI
 
 `.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 都执行：
