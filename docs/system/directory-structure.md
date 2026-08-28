@@ -9,7 +9,9 @@
 | `src/client/` | Harness 原生扩展位、上下文选择器和真实 Run/Media 结果列 |
 | `src/config/` | Configuration Profile 加载器 |
 | `.agents/skills/comfyui-generate/` | Harness 原生 Skill provider 发现的项目生成 Skill |
-| `config/` | 生产配置、schema、质量阈值和数据源合同 |
+| `agent-presets/harness-comfyui-tool-canary/` | worktree A/B 验证使用的项目自有 B Agent Preset canonical source |
+| `config/product-agent.json` | 项目自有 Agent Preset ID、canonical source 根目录和开发 DSH home 安装根目录 |
+| `config/` | 生产配置、开发配置、schema、质量阈值和数据源合同 |
 | `scripts/production/` | Client 模块生成和六个生产生命周期操作的实现 |
 | `scripts/worktree/` | 独立 linked worktree 开发配置与六个生命周期命令的适配入口 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |

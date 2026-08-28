@@ -5,7 +5,11 @@ import { fileURLToPath } from 'node:url'
 
 import { runSourceProductionCommand } from '../production/cli.mjs'
 import { SOURCE_PRODUCTION_COMMANDS } from '../production/runtime.mjs'
-import { loadSavedSourceWorktreeContext, loadSourceWorktreeContext } from './runtime.mjs'
+import {
+  loadSavedSourceWorktreeContext,
+  loadSourceWorktreeContext,
+  prepareSourceWorktreeRuntime,
+} from './runtime.mjs'
 
 export function helpText() {
   return [
@@ -35,6 +39,7 @@ export async function runSourceWorktreeCommand(command, options = {}) {
     ...options,
     loadContext: options.loadContext ?? loadSourceWorktreeContext,
     loadSavedContext: options.loadSavedContext ?? loadSavedSourceWorktreeContext,
+    prepareRuntime: options.prepareRuntime ?? prepareSourceWorktreeRuntime,
     commandPrefix: 'worktree',
   })
 }

@@ -3,7 +3,12 @@ import { access, lstat, readFile, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { loadSavedSourceManagedContext, loadSourceProductionContext } from '../production/runtime.mjs'
+import {
+  loadSavedSourceManagedContext,
+  loadSourceProductionContext,
+  prepareSourceRuntime,
+} from '../production/runtime.mjs'
+import { materializeSourceAgentToolCanary } from '../profile/agent-preset.mjs'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const DEFINITION_KEYS = Object.freeze([
@@ -202,4 +207,10 @@ export async function loadSavedSourceWorktreeContext(options = {}) {
     definitionPath: worktreeDefinition.sourceProductionDefinitionPath,
     managedStatePath: resolve(worktreeDefinition.runtimeRoot, 'state/source-managed.json'),
   })
+}
+
+export async function prepareSourceWorktreeRuntime(context, options = {}) {
+  const runtimeTarget = await (options.prepareRuntime ?? prepareSourceRuntime)(context)
+  const agentToolCanary = await materializeSourceAgentToolCanary(context.repositoryRoot, context.dshHome)
+  return { ...runtimeTarget, agentToolCanary }
 }

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "toolCanary": {
+    "presetId": "harness-comfyui-tool-canary",
+    "sourceRootRelativePath": "agent-presets",
+    "installRootRelativePath": ".agent-presets"
+  }
+}

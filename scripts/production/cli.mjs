@@ -74,6 +74,7 @@ async function loadNonValidatingTarget(context) {
 
 export async function runSourceProductionCommand(command, options = {}) {
   const commandPrefix = options.commandPrefix ?? 'prod'
+  const prepareRuntime = options.prepareRuntime ?? prepareSourceRuntime
   let currentContext
   let managedContext
   const loadCurrentContext = async () => {
@@ -97,7 +98,7 @@ export async function runSourceProductionCommand(command, options = {}) {
     }
     const context = await loadCurrentContext()
     try {
-      const runtimeTarget = await prepareSourceRuntime(context)
+      const runtimeTarget = await prepareRuntime(context)
       return await runOperation(context, command, runtimeTarget.activeVersion, operation => (
         runSourceStart(context.runtime, runtimeTarget, operation)
       ))
@@ -124,7 +125,7 @@ export async function runSourceProductionCommand(command, options = {}) {
         await runSourceStop(previousContext.runtime, previousTarget)
         previousStopped = true
         await clearSourceManagedState(previousContext)
-        const runtimeTarget = await prepareSourceRuntime(context)
+        const runtimeTarget = await prepareRuntime(context)
         const evidence = await runSourceStart(context.runtime, runtimeTarget, operation)
         return { ...evidence, stage: 'restart' }
       })
