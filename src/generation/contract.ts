@@ -17,6 +17,7 @@ export const GENERATION_RUN_STATUSES = [
 ] as const
 
 export type GenerationRunProjectionStatus = (typeof GENERATION_RUN_STATUSES)[number]
+export type GenerationMediaKind = 'image' | 'video'
 
 export interface GenerationProjectionRequest {
   readonly sessionId: string
@@ -41,7 +42,7 @@ export interface GenerationMediaProjection {
   readonly runId: string
   readonly turn: number
   readonly outputIndex: number
-  readonly mediaKind: 'image' | 'video'
+  readonly mediaKind: GenerationMediaKind
   readonly filename: string
   readonly mediaType: string
   readonly byteSize: number

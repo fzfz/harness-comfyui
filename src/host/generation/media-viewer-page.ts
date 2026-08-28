@@ -1,6 +1,8 @@
+import type { GenerationMediaKind } from '../../generation/contract.ts'
+
 export interface GenerationMediaViewerItem {
   readonly mediaId: string
-  readonly mediaKind: 'image' | 'video'
+  readonly mediaKind: GenerationMediaKind
   readonly filename: string
   readonly createdAt: number
   readonly contentUrl: string
@@ -23,7 +25,6 @@ const VIEWER_STYLES = `:root {
   --viewer-surface: #1a2430;
   --viewer-text: #edf2f8;
   --viewer-muted: #9ba9ba;
-  --viewer-action: #2855d9;
   --viewer-focus: #8fb3ff;
   --viewer-body-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
   --viewer-display-font: ui-rounded, "SF Pro Rounded", "PingFang SC", var(--viewer-body-font);
@@ -210,7 +211,7 @@ button:focus-visible, video:focus-visible {
   .nav-newer { left: 6px; }
   .nav-older { right: 6px; }
   .nav-copy, .nav-time { display: none; }
-  .prompt-panel { max-height: none; padding: 16px 18px 22px; }
+  .prompt-panel { padding: 16px 18px 22px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-button { transition: none; }
@@ -282,6 +283,7 @@ const VIEWER_SCRIPT = `(() => {
       media.alt = item.filename + ' 图片'
     }
     media.addEventListener('error', () => {
+      if (mediaContent.children[0] !== media) return
       mediaContent.hidden = true
       mediaError.hidden = false
     })

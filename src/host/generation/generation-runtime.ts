@@ -4,6 +4,8 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, extname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
+import type { GenerationMediaKind } from '../../generation/contract.ts'
+
 export type JsonPrimitive = string | number | boolean | null
 export type JsonValue = JsonPrimitive | { readonly [key: string]: JsonValue } | readonly JsonValue[]
 
@@ -59,7 +61,7 @@ export interface GenerationPreparationAdapter {
 export interface GenerationOutputDescriptor {
   readonly nodeId: string
   readonly outputIndex: number
-  readonly mediaKind: 'image' | 'video'
+  readonly mediaKind: GenerationMediaKind
   readonly filename: string
   readonly subfolder: string
   readonly type: 'output'
@@ -149,7 +151,7 @@ export interface GenerationMediaSnapshot {
   readonly turn: number
   readonly nodeId: string
   readonly outputIndex: number
-  readonly mediaKind: 'image' | 'video'
+  readonly mediaKind: GenerationMediaKind
   readonly filename: string
   readonly relativePath: string
   readonly mediaType: string
@@ -200,7 +202,7 @@ interface OutputRow {
   run_id: string
   node_id: string
   output_index: number
-  media_kind: 'image' | 'video'
+  media_kind: GenerationMediaKind
   filename: string
   subfolder: string
   output_type: 'output'
@@ -214,7 +216,7 @@ interface MediaRow {
   turn: number
   node_id: string
   output_index: number
-  media_kind: 'image' | 'video'
+  media_kind: GenerationMediaKind
   filename: string
   relative_path: string
   media_type: string

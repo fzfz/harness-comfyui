@@ -29,12 +29,18 @@ describe('Generation media HTTP routes', () => {
         mediaType: 'image/webp', byteSize: 100, createdAt: 1_725_000_000_000,
       },
       {
+        mediaId: 'media_new_second', runId: 'run_new', workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4,
+        nodeId: '10', outputIndex: 0, mediaKind: 'image' as const, filename: 'new-second.webp', relativePath: 'private/new-second.webp',
+        mediaType: 'image/webp', byteSize: 90, createdAt: 1_725_000_000_000,
+      },
+      {
         mediaId: 'media_old', runId: 'run_old', workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3,
         nodeId: '11', outputIndex: 0, mediaKind: 'video' as const, filename: 'old.mp4', relativePath: 'private/old.mp4',
         mediaType: 'video/mp4', byteSize: 200, createdAt: 1_724_999_000_000,
       },
     ]
     let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    const promptLookups: string[] = []
     registerGenerationMediaRoutes({
       webServer: {
         register(route) {
@@ -45,7 +51,10 @@ describe('Generation media HTTP routes', () => {
       runtime: {
         getMedia: mediaId => media.find(item => item.mediaId === mediaId)!,
         queryMedia: () => media,
-        positivePromptForRun: runId => runId === 'run_new' ? 'new prompt' : null,
+        positivePromptForRun: runId => {
+          promptLookups.push(runId)
+          return runId === 'run_new' ? 'new prompt' : null
+        },
         mediaContentPath: () => { throw new Error('content path is not used by the viewer') },
         mediaRunId: () => { throw new Error('Run lookup is not used by the viewer') },
         actualWorkflowPath: () => { throw new Error('Workflow path is not used by the viewer') },
@@ -77,12 +86,18 @@ describe('Generation media HTTP routes', () => {
           viewerUrl: '/api/harness-comfyui/media/media_new/view?session_id=session_1', positivePrompt: 'new prompt',
         },
         {
+          mediaId: 'media_new_second', mediaKind: 'image', filename: 'new-second.webp', createdAt: 1_725_000_000_000,
+          contentUrl: '/api/harness-comfyui/media/media_new_second/content?session_id=session_1',
+          viewerUrl: '/api/harness-comfyui/media/media_new_second/view?session_id=session_1', positivePrompt: 'new prompt',
+        },
+        {
           mediaId: 'media_old', mediaKind: 'video', filename: 'old.mp4', createdAt: 1_724_999_000_000,
           contentUrl: '/api/harness-comfyui/media/media_old/content?session_id=session_1',
           viewerUrl: '/api/harness-comfyui/media/media_old/view?session_id=session_1', positivePrompt: null,
         },
       ],
     })
+    expect(promptLookups).toEqual(['run_new', 'run_old'])
     expect(html).not.toContain('private/old.mp4')
     expect(html).not.toContain('run_old')
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))

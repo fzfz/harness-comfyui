@@ -72,6 +72,14 @@
 - 已把自动化合同和浏览器布局验收分开描述，把媒体显示定义为保持原始宽高比且不裁切，把修饰键输入与页面结果写完整，并把排序主体修正为 `GenerationRuntime.queryMedia()`。
 - 第二轮发布文档语义复验通过；独立审核员确认 7 份发布文档没有 blocker、medium 或 minor 级别的残留问题。
 - 发布文档复验后的最终 `pnpm quality` 通过：426 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- 双轴代码审查的 Standards 轴发现 0 项硬性违规和 3 项 low 判断性问题；Spec 轴发现 2 项 medium 与 1 项 low，分别涉及窄屏长提示词滚动、旧媒体迟到错误和测试分支覆盖。
+- 已通过红—绿测试修复窄屏提示词独立滚动和旧媒体迟到错误；已补齐左右按钮、裸左右方向键、三键媒体排序、同 Run 提示词去重和共享媒体类型合同，并删除未使用的 CSS 令牌。
+- 390 × 844 超长提示词浏览器验证通过：提示词面板 `clientHeight` 为 227、`scrollHeight` 为 3603、`overflow-y` 为 `auto`；页面 `scrollHeight` 等于 844，页面没有水平或额外纵向扩张，左右箭头中心与媒体舞台中心均为 341.0625。
+- 审查修正后的完整 `pnpm quality` 通过：428 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- 审查修正文档的独立语义验收发现 1 项 minor：测试规范中的“三键媒体排序”和“同 Run 正面提示词去重”可能被误解为键盘输入或删除提示词内容。
+- 已把测试规范改为明确的三个降序排序字段，并明确说明同一个 Run 的正面提示词只读取一次且仍投影到该 Run 的每项媒体。
+- 双轴审查修正文档的最终语义复验通过；blocker、medium 和 minor 均为 0。
+- 最终语义复验后的完整 `pnpm quality` 通过：428 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
 
 ## 验证记录
 

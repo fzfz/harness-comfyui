@@ -120,15 +120,19 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
           return
         }
         if (match[2] === 'view') {
-          const items: readonly GenerationMediaViewerItem[] = options.runtime.queryMedia({ workspaceId, sessionId })
-            .map(item => Object.freeze({
+          const sessionMedia = options.runtime.queryMedia({ workspaceId, sessionId })
+          const positivePrompts = new Map(
+            [...new Set(sessionMedia.map(item => item.runId))]
+              .map(runId => [runId, options.runtime.positivePromptForRun(runId)] as const),
+          )
+          const items: readonly GenerationMediaViewerItem[] = sessionMedia.map(item => Object.freeze({
               mediaId: item.mediaId,
               mediaKind: item.mediaKind,
               filename: item.filename,
               createdAt: item.createdAt,
               contentUrl: generationMediaContentUrl(item.mediaId, sessionId),
               viewerUrl: generationMediaViewerUrl(item.mediaId, sessionId),
-              positivePrompt: options.runtime.positivePromptForRun(item.runId),
+              positivePrompt: positivePrompts.get(item.runId)!,
             }))
           sendViewerPage(response, renderGenerationMediaViewerPage({ items, currentMediaId: mediaId }))
           return

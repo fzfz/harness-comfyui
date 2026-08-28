@@ -138,6 +138,7 @@ describe('Generation media viewer page', () => {
     expect(styles).toContain('align-self: center;')
     expect(styles).toContain('overflow-y: auto;')
     expect(styles).toContain('@media (max-width: 640px)')
+    expect(styles).not.toContain('.prompt-panel { max-height: none;')
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
     expect(styles).toContain(':focus-visible')
   })
@@ -168,12 +169,25 @@ describe('Generation media viewer page', () => {
     expect(elements['media-announcement'].textContent).toContain(videoItem.filename)
     expect(replacedUrls).toEqual([videoItem.viewerUrl])
 
+    elements['nav-newer'].listeners.get('click')?.({})
+    expect(elements['media-content'].children[0]?.tagName).toBe('IMG')
+    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl])
+
+    let rightPrevented = false
+    windowListeners.get('keydown')?.({
+      key: 'ArrowRight', altKey: false, ctrlKey: false, metaKey: false, shiftKey: false,
+      preventDefault() { rightPrevented = true },
+    })
+    expect(rightPrevented).toBe(true)
+    expect(elements['media-content'].children[0]?.tagName).toBe('VIDEO')
+    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl, videoItem.viewerUrl])
+
     elements['media-content'].children[0]?.listeners.get('error')?.({})
     expect(elements['media-content'].hidden).toBe(true)
     expect(elements['media-error'].hidden).toBe(false)
 
     elements['nav-older'].listeners.get('click')?.({})
-    expect(replacedUrls).toEqual([videoItem.viewerUrl])
+    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl, videoItem.viewerUrl])
 
     let prevented = false
     windowListeners.get('keydown')?.({
@@ -182,7 +196,7 @@ describe('Generation media viewer page', () => {
     })
     expect(prevented).toBe(true)
     expect(elements['media-content'].children[0]?.tagName).toBe('IMG')
-    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl])
+    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl, videoItem.viewerUrl, imageItem.viewerUrl])
 
     for (const modifier of ['altKey', 'ctrlKey', 'metaKey', 'shiftKey'] as const) {
       windowListeners.get('keydown')?.({
@@ -191,7 +205,28 @@ describe('Generation media viewer page', () => {
         preventDefault() { throw new Error('modified direction key must not be handled') },
       })
     }
-    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl])
+    expect(replacedUrls).toEqual([videoItem.viewerUrl, imageItem.viewerUrl, videoItem.viewerUrl, imageItem.viewerUrl])
+  })
+
+  it('ignores a late load error from media that is no longer current', () => {
+    const html = renderGenerationMediaViewerPage({
+      items: [imageItem, videoItem],
+      currentMediaId: imageItem.mediaId,
+    })
+    const { elements } = runViewer(html)
+    const previousMedia = elements['media-content'].children[0]!
+
+    elements['nav-older'].listeners.get('click')?.({})
+    const currentMedia = elements['media-content'].children[0]!
+    previousMedia.listeners.get('error')?.({})
+
+    expect(elements['media-content'].children[0]).toBe(currentMedia)
+    expect(elements['media-content'].hidden).toBe(false)
+    expect(elements['media-error'].hidden).toBe(true)
+
+    currentMedia.listeners.get('error')?.({})
+    expect(elements['media-content'].hidden).toBe(true)
+    expect(elements['media-error'].hidden).toBe(false)
   })
 
   it('opens a refreshed viewer on the media identified by the current viewer URL', () => {
