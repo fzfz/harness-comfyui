@@ -525,6 +525,7 @@ interface ParameterTarget {
   readonly mapping: WidgetMapping
   readonly marker: string
   readonly loraSyntax: boolean
+  readonly multilineString: boolean
 }
 
 interface RuntimeParameterAssignment {
@@ -543,6 +544,16 @@ function parameterMarker(node: UnknownRecord): string {
     ? String((properties as UnknownRecord)['Node name for S&R'] ?? '')
     : ''
   return `${String(node.title ?? '')} ${searchName}`.toLowerCase()
+}
+
+function isMultilineStringWidget(definition: UnknownRecord, name: string): boolean {
+  const inputDescriptor = descriptor(definition, name)
+  if (inputDescriptor?.[0] !== 'STRING') return false
+  const options = inputDescriptor[1]
+  return options !== null
+    && typeof options === 'object'
+    && !Array.isArray(options)
+    && (options as UnknownRecord).multiline === true
 }
 
 function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord): readonly ParameterTarget[] {
@@ -570,6 +581,7 @@ function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord):
         mapping,
         marker: parameterMarker(node),
         loraSyntax: loraSyntax?.name === mapping.name,
+        multilineString: isMultilineStringWidget(definition, mapping.name),
       })
     }
   }
@@ -761,6 +773,11 @@ function resolveParameterTarget(
 ): ParameterTarget {
   const names = inputNames(assignment)
   let candidates: readonly ParameterTarget[] = allTargets.filter(target => names.includes(target.mapping.name))
+  if (candidates.length === 0 && (assignment.kind === 'positive_prompt' || assignment.kind === 'negative_prompt')) {
+    candidates = allTargets.filter(target => (
+      target.multilineString && targetFeedsParameter(workflow, target, assignment.kind)
+    ))
+  }
   if (candidates.length === 0 && UPSTREAM_VALUE_PARAMETER_KINDS.has(assignment.kind)) {
     candidates = allTargets.filter(target => (
       target.mapping.name === 'value'

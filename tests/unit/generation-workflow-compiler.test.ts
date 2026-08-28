@@ -1104,6 +1104,187 @@ describe('ComfyWorkflowCompiler', () => {
       .toEqual(actual.nodes.find(node => node.id === 4)?.widgets_values_named)
   })
 
+  it('rewrites the only multiline STRING widget feeding a connected positive Prompt', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 33,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: null, widget: { name: 'string_a' } },
+            { name: 'string_b', type: 'STRING', link: 56, widget: { name: 'string_b' } },
+            { name: 'delimiter', type: 'STRING', link: null, widget: { name: 'delimiter' } },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [55] }],
+          widgets_values: ['template prompt', '', ''],
+        },
+        {
+          id: 34,
+          type: 'StringConstant',
+          mode: 0,
+          inputs: [{ name: 'string', type: 'STRING', link: null, widget: { name: 'string' } }],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [56] }],
+          widgets_values: ['supplement'],
+        },
+        {
+          id: 10,
+          type: 'CLIPTextEncode',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 55, widget: { name: 'text' } }],
+          outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: [12] }],
+          widgets_values: ['template prompt'],
+        },
+        {
+          id: 9,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [{ name: 'positive', type: 'CONDITIONING', link: 12 }],
+          outputs: [],
+          widgets_values: [],
+        },
+        {
+          id: 16,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [12, 10, 0, 9, 0, 'CONDITIONING'],
+        [55, 33, 0, 10, 0, 'STRING'],
+        [56, 34, 0, 33, 1, 'STRING'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        StringConcatenate: {
+          input: { required: {
+            string_a: ['STRING', { multiline: true }],
+            string_b: ['STRING', { multiline: true }],
+            delimiter: ['STRING', { multiline: false }],
+          } },
+          input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
+          output_node: false,
+        },
+        StringConstant: {
+          input: { required: { string: ['STRING', { multiline: false }] } },
+          input_order: { required: ['string'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        KSampler: {
+          input: { required: { positive: ['CONDITIONING'] } },
+          input_order: { required: ['positive'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['16'],
+      runtimeParameters: { positive_prompt: 'runtime prompt' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 33)?.widgets_values)
+      .toEqual(['runtime prompt', '', ''])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 34)?.widgets_values).toEqual(['supplement'])
+    expect(compiled.apiWorkflow['33']).toMatchObject({ inputs: {
+      string_a: 'runtime prompt',
+      string_b: ['34', 0],
+      delimiter: '',
+    } })
+    expect(compiled.apiWorkflow['10']).toMatchObject({ inputs: { text: ['33', 0] } })
+  })
+
+  it('rejects multiple multiline STRING widgets feeding one connected positive Prompt', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 33,
+          type: 'StringConcatenate',
+          mode: 0,
+          inputs: [
+            { name: 'string_a', type: 'STRING', link: null, widget: { name: 'string_a' } },
+            { name: 'string_b', type: 'STRING', link: null, widget: { name: 'string_b' } },
+            { name: 'delimiter', type: 'STRING', link: null, widget: { name: 'delimiter' } },
+          ],
+          outputs: [{ name: 'STRING', type: 'STRING', links: [55] }],
+          widgets_values: ['first prompt fragment', 'second prompt fragment', ''],
+        },
+        {
+          id: 10,
+          type: 'CLIPTextEncode',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: 55, widget: { name: 'text' } }],
+          outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: [12] }],
+          widgets_values: ['template prompt'],
+        },
+        {
+          id: 9,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [{ name: 'positive', type: 'CONDITIONING', link: 12 }],
+          outputs: [],
+          widgets_values: [],
+        },
+        {
+          id: 16,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [12, 10, 0, 9, 0, 'CONDITIONING'],
+        [55, 33, 0, 10, 0, 'STRING'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        StringConcatenate: {
+          input: { required: {
+            string_a: ['STRING', { multiline: true }],
+            string_b: ['STRING', { multiline: true }],
+            delimiter: ['STRING', { multiline: false }],
+          } },
+          input_order: { required: ['string_a', 'string_b', 'delimiter'], optional: [] },
+          output_node: false,
+        },
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        KSampler: {
+          input: { required: { positive: ['CONDITIONING'] } },
+          input_order: { required: ['positive'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['16'],
+      runtimeParameters: { positive_prompt: 'runtime prompt' },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+      message: expect.stringMatching(/positive_prompt.*33:StringConcatenate\.string_a.*33:StringConcatenate\.string_b/u),
+    })
+  })
+
   it('rewrites the executable upstream negative Prompt and preserves an unselected connected LoraManager input', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
