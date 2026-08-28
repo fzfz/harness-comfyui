@@ -39,7 +39,7 @@ pnpm prod:test
 
 Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、实例 ID 安全投影、Run 幂等、状态转换、重启恢复、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。Catalog 自动化测试覆盖 Source v0.84.0 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
 
-Workflow compiler 的回归用例覆盖正负 Prompt 极性、连接上游控件、精确尺寸、Seed、采样参数、重复目标、不可达候选、模型、标准 LoRA、Power LoRA、LoraManager、空 LoRA、bypass 和活动输出节点筛选。测试给运行时参数化阶段注入透传 `officialApiWorkflowCompiler.compile()` 测试替身，因此这些用例直接观察运行时 API Workflow 投影。端到端编译用例使用真实 `ComfyWorkflowCompiler` 与 `OfficialApiWorkflowCompiler`，比较空、单个和多个 LoraManager 选择的 cache hit 结果与新鲜官方导出结果，并同时核对 Prompt、尺寸、模型、bypass、活动输出与官方连接。独立 `OfficialApiWorkflowCompiler` 测试验证最终返回值来自官方基础对象，并保留官方虚拟节点、连接改写和字面量载体值。
+Workflow compiler 的回归用例覆盖正负 Prompt 极性、连接上游控件、上游 multiline `STRING` Prompt 控件、多个 multiline `STRING` 候选拒绝、精确尺寸、Seed、采样参数、重复目标、不可达候选、模型、标准 LoRA、Power LoRA、LoraManager、空 LoRA、bypass 和活动输出节点筛选。测试给运行时参数化阶段注入透传 `officialApiWorkflowCompiler.compile()` 测试替身，因此这些用例直接观察运行时 API Workflow 投影。端到端编译用例使用真实 `ComfyWorkflowCompiler` 与 `OfficialApiWorkflowCompiler`，比较空、单个和多个 LoraManager 选择的 cache hit 结果与新鲜官方导出结果，并同时核对 Prompt、尺寸、模型、bypass、活动输出与官方连接。独立 `OfficialApiWorkflowCompiler` 测试验证最终返回值来自官方基础对象，并保留官方虚拟节点、连接改写和字面量载体值。
 
 Official API Workflow Cache 与 Runtime Input Overlay 测试覆盖 cache miss、同一 `OfficialApiWorkflowCompiler` 对象内的 cache hit、重建该对象后对同一目标 ComfyUI 实例的持久 cache hit、不同目标实例 identity 隔离、并发 miss 合并、失败不写入、损坏缓存拒绝、identity 变化、基础对象不可变、官方连接保留、`__value__` 覆盖、字面量载体保留值、非零载体输出拒绝、未引用同形对象拒绝，以及 cache hit 与新鲜官方导出在 Prompt、seed、尺寸、BOOLEAN、enum、模型、标准 LoRA、Power LoRA、LoRA Text Loader 和模板 39 LoraManager 路线中的等价性。
 
@@ -47,7 +47,9 @@ ChromeComfyFrontend 测试使用注入的子进程、文件系统、HTTP 和 CDP
 
 2026-08-27 的 122 实例验收使用 ComfyUI `0.33.3`、Frontend `1.49.6` 和模板 39。第一次请求完成官方前端 cache miss，第二个不同 LoRA 权重请求从本地 cache hit 且没有再次启动浏览器。最终 transport 提交请求 `29f91894-e160-4b3f-abb6-565f8f7e9617`；服务器 history 返回 `success` 和 `completed=true`，节点 5 的 `inputs.loras.__value__` 包含请求的 LoRA 名称、`strength=3`、`clipStrength=3` 与 `active=true`，节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，请求结束后队列为 running 0、pending 0。
 
-v0.31.2 发布文档提交前的完整 `pnpm quality` 结果为 404 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。
+2026-08-28 的 122 实例验证覆盖当前 Source Catalog 的 21 个 Workflow 模板。矩阵逐模板核对 15 个公开参数，共 315 项结果符合精确非空支持集合；21 个模板的组合参数编译、官方页面 cache miss、同模板 cache hit 和基础对象一致性验证全部通过。保存的失败 Run `run_8a0642e4-43c8-4c5d-a54f-988a2a61050a` 请求使用当前模板 42、实时 `/object_info`、原 Prompt、原 Seed 和两个 LoRA 重放后完成 Workflow 编译。
+
+v0.31.3 发布文档提交前的完整 `pnpm quality` 结果为 406 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。
 
 ## CI
 
