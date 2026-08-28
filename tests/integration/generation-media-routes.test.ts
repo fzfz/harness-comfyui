@@ -10,11 +10,84 @@ import { registerGenerationMediaRoutes } from '../../src/host/generation/media-r
 
 const temporaryDirectories: string[] = []
 
+function viewerData(html: string): unknown {
+  const match = html.match(/<script id="media-viewer-data" type="application\/json">(?<data>[^<]*)<\/script>/u)
+  if (match?.groups?.data === undefined) throw new Error('media viewer startup data is missing')
+  return JSON.parse(match.groups.data) as unknown
+}
+
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { recursive: true, force: true })
 })
 
 describe('Generation media HTTP routes', () => {
+  it('serves a same-Session media viewer with ordered minimal data and locked response headers', async () => {
+    const media = [
+      {
+        mediaId: 'media_new', runId: 'run_new', workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4,
+        nodeId: '10', outputIndex: 1, mediaKind: 'image' as const, filename: 'new.webp', relativePath: 'private/new.webp',
+        mediaType: 'image/webp', byteSize: 100, createdAt: 1_725_000_000_000,
+      },
+      {
+        mediaId: 'media_old', runId: 'run_old', workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3,
+        nodeId: '11', outputIndex: 0, mediaKind: 'video' as const, filename: 'old.mp4', relativePath: 'private/old.mp4',
+        mediaType: 'video/mp4', byteSize: 200, createdAt: 1_724_999_000_000,
+      },
+    ]
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    registerGenerationMediaRoutes({
+      webServer: {
+        register(route) {
+          handler = route.handler
+          return () => undefined
+        },
+      },
+      runtime: {
+        getMedia: mediaId => media.find(item => item.mediaId === mediaId)!,
+        queryMedia: () => media,
+        positivePromptForRun: runId => runId === 'run_new' ? 'new prompt' : null,
+        mediaContentPath: () => { throw new Error('content path is not used by the viewer') },
+        mediaRunId: () => { throw new Error('Run lookup is not used by the viewer') },
+        actualWorkflowPath: () => { throw new Error('Workflow path is not used by the viewer') },
+      },
+      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
+    })
+    const server = createServer((request, response) => void handler!(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
+
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_old/view?session_id=session_1`)
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('text/html; charset=utf-8')
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(response.headers.get('referrer-policy')).toBe('no-referrer')
+    expect(response.headers.get('content-security-policy')).toBe(
+      "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    )
+    expect(viewerData(html)).toEqual({
+      currentMediaId: 'media_old',
+      items: [
+        {
+          mediaId: 'media_new', mediaKind: 'image', filename: 'new.webp', createdAt: 1_725_000_000_000,
+          contentUrl: '/api/harness-comfyui/media/media_new/content?session_id=session_1',
+          viewerUrl: '/api/harness-comfyui/media/media_new/view?session_id=session_1', positivePrompt: 'new prompt',
+        },
+        {
+          mediaId: 'media_old', mediaKind: 'video', filename: 'old.mp4', createdAt: 1_724_999_000_000,
+          contentUrl: '/api/harness-comfyui/media/media_old/content?session_id=session_1',
+          viewerUrl: '/api/harness-comfyui/media/media_old/view?session_id=session_1', positivePrompt: null,
+        },
+      ],
+    })
+    expect(html).not.toContain('private/old.mp4')
+    expect(html).not.toContain('run_old')
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
   it('serves each media file and the Actual Workflow of that media own Run', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-routes-'))
     temporaryDirectories.push(root)
@@ -105,12 +178,16 @@ describe('Generation media HTTP routes', () => {
     expect(workflowNotReady.status).toBe(409)
     expect(await workflowNotReady.json()).toEqual({ code: 'GENERATION_ARTIFACT_NOT_READY' })
     expect(internalFailure.status).toBe(500)
-    const [missingSession, wrongWorkspace] = await Promise.all([
+    const [missingSession, wrongWorkspace, missingViewer, wrongWorkspaceViewer] = await Promise.all([
       fetch(`${origin}/api/harness-comfyui/media/media_a/content`),
       fetch(`${origin}/api/harness-comfyui/media/media_a/content?session_id=session_2`),
+      fetch(`${origin}/api/harness-comfyui/media/missing/view?session_id=session_1`),
+      fetch(`${origin}/api/harness-comfyui/media/media_a/view?session_id=session_2`),
     ])
     expect(missingSession.status).toBe(404)
     expect(wrongWorkspace.status).toBe(404)
+    expect(missingViewer.status).toBe(404)
+    expect(wrongWorkspaceViewer.status).toBe(404)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 })

@@ -3,10 +3,21 @@ import { stat } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 
+import {
+  GENERATION_MEDIA_URL_PREFIX,
+  generationMediaContentUrl,
+  generationMediaViewerUrl,
+} from '../../generation/contract.ts'
 import { GenerationRuntimeError, type GenerationRuntime } from './generation-runtime.ts'
+import {
+  renderGenerationMediaViewerPage,
+  type GenerationMediaViewerItem,
+} from './media-viewer-page.ts'
 import { workspaceIdForSession, type WorkspaceRegistryProjection } from './workspace-access.ts'
 
-export const GENERATION_MEDIA_ROUTE_PREFIX = '/api/harness-comfyui/media'
+export const GENERATION_MEDIA_ROUTE_PREFIX = GENERATION_MEDIA_URL_PREFIX
+
+const MEDIA_VIEWER_CONTENT_SECURITY_POLICY = "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
 
 export interface GenerationWebServer {
   register(route: {
@@ -18,7 +29,8 @@ export interface GenerationWebServer {
 
 export interface RegisterGenerationMediaRoutesOptions {
   readonly webServer: GenerationWebServer
-  readonly runtime: Pick<GenerationRuntime, 'getMedia' | 'mediaContentPath' | 'mediaRunId' | 'actualWorkflowPath'>
+  readonly runtime: Pick<GenerationRuntime,
+    'getMedia' | 'queryMedia' | 'positivePromptForRun' | 'mediaContentPath' | 'mediaRunId' | 'actualWorkflowPath'>
   readonly workspaceRegistry: WorkspaceRegistryProjection
 }
 
@@ -34,6 +46,17 @@ function sendError(response: ServerResponse, status: number, code: string): void
   response.setHeader('content-type', 'application/json; charset=utf-8')
   response.setHeader('content-length', String(Buffer.byteLength(body)))
   response.setHeader('x-content-type-options', 'nosniff')
+  response.end(body)
+}
+
+function sendViewerPage(response: ServerResponse, body: string): void {
+  response.statusCode = 200
+  response.setHeader('content-type', 'text/html; charset=utf-8')
+  response.setHeader('content-length', String(Buffer.byteLength(body)))
+  response.setHeader('cache-control', 'no-store')
+  response.setHeader('x-content-type-options', 'nosniff')
+  response.setHeader('referrer-policy', 'no-referrer')
+  response.setHeader('content-security-policy', MEDIA_VIEWER_CONTENT_SECURITY_POLICY)
   response.end(body)
 }
 
@@ -78,7 +101,7 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
       }
       const url = new URL(request.url ?? '/', 'http://127.0.0.1')
       const pathname = url.pathname
-      const match = pathname.match(/^\/api\/harness-comfyui\/media\/([A-Za-z0-9_-]{1,128})\/(content|workflow)$/u)
+      const match = pathname.match(new RegExp(`^${GENERATION_MEDIA_ROUTE_PREFIX}/([A-Za-z0-9_-]{1,128})/(content|workflow|view)$`, 'u'))
       if (match === null) {
         send(response, 404, 'Not Found')
         return
@@ -94,6 +117,20 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
         const media = options.runtime.getMedia(mediaId)
         if (media.workspaceId !== workspaceId || media.sessionId !== sessionId) {
           send(response, 404, 'Not Found')
+          return
+        }
+        if (match[2] === 'view') {
+          const items: readonly GenerationMediaViewerItem[] = options.runtime.queryMedia({ workspaceId, sessionId })
+            .map(item => Object.freeze({
+              mediaId: item.mediaId,
+              mediaKind: item.mediaKind,
+              filename: item.filename,
+              createdAt: item.createdAt,
+              contentUrl: generationMediaContentUrl(item.mediaId, sessionId),
+              viewerUrl: generationMediaViewerUrl(item.mediaId, sessionId),
+              positivePrompt: options.runtime.positivePromptForRun(item.runId),
+            }))
+          sendViewerPage(response, renderGenerationMediaViewerPage({ items, currentMediaId: mediaId }))
           return
         }
         if (match[2] === 'content') {

@@ -628,6 +628,11 @@ export class GenerationRuntime {
     return mediaSnapshot(this.getMediaRow(mediaId))
   }
 
+  positivePromptForRun(runId: string): string | null {
+    const value = generationRequest(this.getRow(runId).request_json).parameters.positive_prompt
+    return typeof value === 'string' && value.trim().length > 0 ? value : null
+  }
+
   async advance(signal?: AbortSignal): Promise<void> {
     if (this.advanceInFlight !== undefined) return this.advanceInFlight
     const work = this.advanceOnce(signal).finally(() => {

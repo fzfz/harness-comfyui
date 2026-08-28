@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   generationMediaContentUrl,
+  generationMediaViewerUrl,
   generationMediaWorkflowUrl,
   parseGenerationProjection,
   parseGenerationProjectionRequest,
@@ -64,7 +65,9 @@ describe('Generation projection contract', () => {
     }).runs[0]?.errorMessage).toBe(errorMessage)
   })
 
-  it('builds same-origin content and per-media Workflow URLs', () => {
+  it('builds same-origin viewer, content and per-media Workflow URLs', () => {
+    expect(generationMediaViewerUrl('media / 1', 'session / 1'))
+      .toBe('/api/harness-comfyui/media/media%20%2F%201/view?session_id=session%20%2F%201')
     expect(generationMediaContentUrl('media / 1', 'session / 1'))
       .toBe('/api/harness-comfyui/media/media%20%2F%201/content?session_id=session%20%2F%201')
     expect(generationMediaWorkflowUrl('media / 1', 'session / 1'))

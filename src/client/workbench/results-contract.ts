@@ -10,7 +10,7 @@ export const RESULTS_COPY = Object.freeze({
   runId: '运行 ID',
   errorCode: '错误码',
   downloadWorkflow: '下载所属运行的 Workflow',
-  openOriginalMedia: '在新窗口打开原文件',
+  openMediaViewer: '在新标签页打开媒体查看页',
   currentTab: '运行状态',
   sessionTab: '本会话媒体',
   turnFilter: '聊天轮次',

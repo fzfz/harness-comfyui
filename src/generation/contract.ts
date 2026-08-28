@@ -151,6 +151,10 @@ export function generationMediaContentUrl(mediaId: string, sessionId: string): s
   return `${GENERATION_MEDIA_URL_PREFIX}/${encodeURIComponent(mediaId)}/content?session_id=${encodeURIComponent(sessionId)}`
 }
 
+export function generationMediaViewerUrl(mediaId: string, sessionId: string): string {
+  return `${GENERATION_MEDIA_URL_PREFIX}/${encodeURIComponent(mediaId)}/view?session_id=${encodeURIComponent(sessionId)}`
+}
+
 export function generationMediaWorkflowUrl(mediaId: string, sessionId: string): string {
   return `${GENERATION_MEDIA_URL_PREFIX}/${encodeURIComponent(mediaId)}/workflow?session_id=${encodeURIComponent(sessionId)}`
 }
