@@ -24,7 +24,7 @@ v0.32.0 为结果列中的 Generation Media 新增方案 A 的本会话媒体查
 
 ## 验证
 
-- 完整 `pnpm quality` 已通过：428 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 完整 `pnpm quality` 已通过：429 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 - 独立 worktree Host 的 `worktree:status` 和 `worktree:health` 通过，验证结束后的 `worktree:stop` 和停止状态检查通过。
 - 1280 × 720 与 390 × 844 浏览器验收覆盖图片、原生控件视频、首项、末项、正面提示词缺失、超长正面提示词内部滚动、媒体文件不存在、点击导航、裸方向键和无水平溢出；用户按带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键时，页面不切换媒体。
 - 独立语义审核确认生产文案、边界指代、无障碍名称、缺失提示词和媒体文件不存在状态没有 blocker、medium 或 minor 级别问题。

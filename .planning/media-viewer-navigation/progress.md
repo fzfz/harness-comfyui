@@ -80,6 +80,9 @@
 - 已把测试规范改为明确的三个降序排序字段，并明确说明同一个 Run 的正面提示词只读取一次且仍投影到该 Run 的每项媒体。
 - 双轴审查修正文档的最终语义复验通过；blocker、medium 和 minor 均为 0。
 - 最终语义复验后的完整 `pnpm quality` 通过：428 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- Standards 复审通过，硬性违规和判断性发现均为 0；Spec 复审确认两个 medium 与原 low 的导航、排序分支已关闭，同时发现超长提示词缺少逐字符自动化断言这一项 low。
+- 已新增 128 行超长正面提示词测试，逐项断言启动 JSON、页面渲染文本、总长度、首行和末尾内容完整一致。
+- 超长正面提示词定向测试 8 项通过，类型检查通过；完整 `pnpm quality` 通过：429 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%。
 
 ## 验证记录
 

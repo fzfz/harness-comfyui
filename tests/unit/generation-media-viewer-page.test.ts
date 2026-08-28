@@ -143,6 +143,23 @@ describe('Generation media viewer page', () => {
     expect(styles).toContain(':focus-visible')
   })
 
+  it('preserves and renders a long positive prompt without truncation', () => {
+    const longPrompt = Array.from(
+      { length: 128 },
+      (_, index) => `第 ${index + 1} 行：cinematic portrait, intricate details, balanced composition`,
+    ).join('\n')
+    const longPromptItem = { ...imageItem, positivePrompt: longPrompt }
+    const html = renderGenerationMediaViewerPage({ items: [longPromptItem], currentMediaId: longPromptItem.mediaId })
+    const data = viewerData(html) as { readonly items: readonly GenerationMediaViewerItem[] }
+    const { elements } = runViewer(html)
+
+    expect(data.items[0]?.positivePrompt).toBe(longPrompt)
+    expect(elements['positive-prompt'].textContent).toBe(longPrompt)
+    expect(elements['positive-prompt'].textContent).toHaveLength(longPrompt.length)
+    expect(elements['positive-prompt'].textContent.startsWith('第 1 行：')).toBe(true)
+    expect(elements['positive-prompt'].textContent.endsWith('balanced composition')).toBe(true)
+  })
+
   it('switches image and video media through buttons and bare arrow keys without wrapping', () => {
     const html = renderGenerationMediaViewerPage({
       items: [imageItem, videoItem],
