@@ -1076,3 +1076,10 @@
 - Spec Reviewer发现`config/error-catalog.json`仍要求用户修改已删除的模板binding。当前两条参数目标错误文案只引用显式运行参数键、候选ComfyUI节点输入、UI Workflow、目标实例节点定义和节点编号后缀；文案合同测试明确拒绝旧术语。
 - 最终`pnpm quality`通过：404项unit/integration、24项contract/security、40项production和27项prototype测试全部通过；函数覆盖率为100%。
 - 独立Standards Reviewer、Spec Reviewer和语义Reviewer最终均返回PASS；`git diff --check`通过。
+
+## 2026-08-28 Phase 39 — 发布 v0.31.2
+
+- 用户授权把Phase 38已验收提交合入本地main、push并发布下一个版本；目标版本按SemVer补丁递增确定为`0.31.2`。
+- 本地main在发布前包含80项用户删除和一个未跟踪计划目录；其中4个PRD文件与Phase 38修复重叠。发布流程必须先保存可恢复stash，不能把用户改动纳入发布提交。
+- `origin/main`仍指向`011b64b2acb94d78de349da0a999029812fc4261`；本地和远端均不存在`v0.31.2`标签，GitHub不存在`v0.31.2` Release。
+- 根`package.json.version`和工程合同已更新为`0.31.2`。源码版本提交前的`pnpm quality`通过：404项unit/integration、24项contract/security、40项production和27项prototype测试全部通过，函数覆盖率为100%。

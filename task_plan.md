@@ -4,12 +4,53 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 38 已完成；等待用户决定是否把独立 worktree 提交合并或发布。
+Phase 39 修改结构化版本、执行源码质量门禁，并把源码版本提交 fast-forward 合入本地 main 后推送。
 
 ## Current Phase
-Phase 38 completed
+Phase 39 in progress
 
 ## Phases
+
+## Phase 39：发布 v0.31.2 并部署生产 checkout
+
+### 必须要实现的目标
+
+- 发布负责人必须把根`package.json.version`和对应工程合同更新为`0.31.2`，执行`pnpm quality`，提交源码版本，并把已验收源码提交fast-forward合入本地`main`后推送`origin/main`。
+- 发布负责人必须等待源码版本提交的GitHub CI成功，再更新`README.md`、`docs/releasenotes.md`、`docs/system/releasing.md`和受影响的系统测试文档，使发布说明准确描述Source模板运行元数据移除、Official API Workflow cache、结构化参数解析、33模板真实矩阵和浏览器端到端结果。
+- 独立语义Reviewer必须验收发布文档；发布负责人必须在文档验收和最终`pnpm quality`通过后提交并推送文档，等待最终提交的GitHub CI成功。
+- 发布负责人必须确认`v0.31.2`标签和GitHub Release不存在，在最终发布提交上创建并推送annotated tag，创建不含附件的GitHub Release，并核对远端标签、Release标题、说明、URL和附件列表。
+- 生产部署负责人必须从最终发布提交更新`/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env`，保留生产专属配置和运行状态，重启生产Host，并验证`prod:status`、`prod:health`和实例122的真实生成路径。
+- 发布负责人必须在合入前保存本地`main`现有的80项删除和一个未跟踪计划目录，发布后恢复这些用户改动，并核对恢复后的路径状态与发布前一致。
+
+### 验收清单
+
+- [ ] 根`package.json.version`和工程合同均为`0.31.2`；源码版本提交的`pnpm quality`与GitHub CI通过。
+- [ ] 本地`main`包含修复提交和版本提交，`origin/main`指向已推送的源码版本提交；本地`main`原有用户改动已通过可恢复stash保存。
+- [ ] `README.md`、`docs/releasenotes.md`、`docs/system/releasing.md`和`docs/system/testing.md`与`v0.31.2`事实一致；独立语义Reviewer返回PASS。
+- [ ] 最终文档提交的`pnpm quality`与GitHub CI通过；`git diff --check`通过。
+- [ ] 远端`v0.31.2`annotated tag与GitHub Release都指向最终发布提交；Release没有附件。
+- [ ] 生产checkout从最终发布提交更新并通过`prod:status`、`prod:health`和真实实例验收。
+- [ ] 本地`main`发布前的80项删除和一个未跟踪计划目录均已恢复；发布stash在恢复核对通过后删除。
+
+### 非本次目标
+
+- 本阶段不修改Source数据库、Source CLI、ComfyUI服务端、自定义节点、目标实例模型文件或生产专属配置。
+- 本阶段不构建或上传产品包；GitHub Release只包含tag与Release记录。
+- 本阶段不删除、移动或重写既有tag与GitHub Release。
+- 本阶段不把本地`main`发布前的用户删除和未跟踪计划目录纳入`v0.31.2`提交。
+
+### 已获得的授权
+
+- 用户明确要求把已验收修复合入本地`main`、提交并push`main`、发布下一个版本。
+- 仓库`AGENTS.md`授权发布负责人在用户要求发布时提交并推送已批准变更、等待GitHub CI、发布版本，并从最终发布提交部署生产checkout。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 本地`main`包含80项未提交删除和一个未跟踪计划目录，其中4个PRD文件与修复提交重叠 | 1 | 发布负责人在合入前使用包含未跟踪文件的命名stash保存用户现场，发布完成后应用stash并核对全部路径状态；这些用户改动不进入发布提交。 |
+
+状态：进行中
 
 ## Phase 38：删除 Source 模板运行元数据依赖并以 Official API Workflow 为执行基准
 
