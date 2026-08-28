@@ -65,6 +65,13 @@
 - 已保存首项边界、末项边界、文件加载失败、最终桌面和最终窄屏生产页面截图；窄屏页面宽度为 390px，没有水平溢出，方向按钮保留完整无障碍名称。
 - 语义修正后的完整 `pnpm quality` 再次通过：426 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
 - 第二轮生产语义验收通过；独立审核员确认 blocker、medium 和 minor 均为 0，正式实现可以进入提交与发布阶段。
+- 源码、测试、静态原型和证据已提交为 `6207ba178b23667a6a740db85cd226fab05d8059`，并推送到功能分支与 `main`。
+- 源码提交的 GitHub CI `33185456038` 通过；CI 完成预安装质量门禁、冻结依赖安装和完整快速质量门禁。
+- 已把 `README.md`、`CONTEXT.md`、`docs/releasenotes.md`、`docs/system/architecture.md`、`docs/system/directory-structure.md`、`docs/system/testing.md` 和 `docs/system/releasing.md` 更新为 v0.32.0 与 Session Media Viewer 的实际合同。
+- 第一轮发布文档语义验收发现 1 项 medium 与 3 项 minor：自动测试与浏览器响应式验收范围混淆、媒体显示行为不够具体、修饰键验收缺少完整输入与结果、媒体排序执行主体不精确。
+- 已把自动化合同和浏览器布局验收分开描述，把媒体显示定义为保持原始宽高比且不裁切，把修饰键输入与页面结果写完整，并把排序主体修正为 `GenerationRuntime.queryMedia()`。
+- 第二轮发布文档语义复验通过；独立审核员确认 7 份发布文档没有 blocker、medium 或 minor 级别的残留问题。
+- 发布文档复验后的最终 `pnpm quality` 通过：426 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
 
 ## 验证记录
 

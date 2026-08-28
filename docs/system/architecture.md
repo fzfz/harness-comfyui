@@ -39,7 +39,7 @@ pnpm worktree:start|restart
 | `scripts/worktree/` | linked-worktree 门禁、开发定义解析和共享生命周期命令适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
-| `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation Tool、Generation Remote 和媒体路由 |
+| `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host 与 Client 共用的 Generation Remote 和媒体 URL 合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器与 Generation Run/Media 投影 |
@@ -97,3 +97,7 @@ Official API Workflow Cache 的 identity 包含目标实例 ID、实例 origin�
 Comfy transport 向 `/prompt` 发送 API Workflow，并把同一 Run 的 Actual Workflow 放入 `extra_data.extra_pnginfo.workflow`，供读取 `EXTRA_PNGINFO` 的节点使用。Jobs API 完成响应中的 `type=temp` 预览不进入 Saved Media；`type=output` 图片或视频继续执行 descriptor 路径、响应媒体类型、大小和文件签名校验。
 
 Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体内容与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|workflow` 提供。
+
+Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>`，缩略图仍从该媒体的 `/content` 路由读取。Host 在返回查看页前验证 HTTP 方法、Session、workspace 和媒体归属。查看页的启动数据只包含当前 Session 的媒体 ID、媒体类型、文件名、生成时间、同源内容 URL、查看页 URL 和所属 Run 保存的原始 `parameters.positive_prompt`；启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
+
+Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。

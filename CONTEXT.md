@@ -42,6 +42,8 @@
 
 **Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow，Session 和 Chat Turn 只用于筛选。
 
+**Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，显示当前媒体所属 Generation Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。
+
 **运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据目标实例的 `/object_info`、模板 binding、请求参数、模型和 LoRA 选择生成的输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
 
 **Official Base API Workflow**：目标 ComfyUI 实例的官方前端加载 Actual Workflow 后，通过 `graphToPrompt()` 返回的 API Workflow。该对象是最终节点拓扑、连接 tuple、虚拟节点和自定义 widget 序列化结构的权威来源。
@@ -54,6 +56,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.31.1`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.32.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.31.1`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.32.0`；发布不创建或附加产品包。
