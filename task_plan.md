@@ -24,9 +24,9 @@ Phase 39 in progress
 
 ### 验收清单
 
-- [ ] 根`package.json.version`和工程合同均为`0.31.2`；源码版本提交的`pnpm quality`与GitHub CI通过。
-- [ ] 本地`main`包含修复提交和版本提交，`origin/main`指向已推送的源码版本提交；本地`main`原有用户改动已通过可恢复stash保存。
-- [ ] `README.md`、`docs/releasenotes.md`、`docs/system/releasing.md`和`docs/system/testing.md`与`v0.31.2`事实一致；独立语义Reviewer返回PASS。
+- [x] 根`package.json.version`和工程合同均为`0.31.2`；源码版本提交的`pnpm quality`与GitHub CI通过。
+- [x] 本地`main`包含修复提交和版本提交，`origin/main`指向已推送的源码版本提交；本地`main`原有用户改动已通过可恢复stash保存。
+- [x] `README.md`、`docs/releasenotes.md`、`docs/system/releasing.md`和`docs/system/testing.md`与`v0.31.2`事实一致；独立语义Reviewer返回PASS。
 - [ ] 最终文档提交的`pnpm quality`与GitHub CI通过；`git diff --check`通过。
 - [ ] 远端`v0.31.2`annotated tag与GitHub Release都指向最终发布提交；Release没有附件。
 - [ ] 生产checkout从最终发布提交更新并通过`prod:status`、`prod:health`和真实实例验收。
@@ -49,6 +49,8 @@ Phase 39 in progress
 | Error | Attempt | Resolution |
 |-------|---------|------------|
 | 本地`main`包含80项未提交删除和一个未跟踪计划目录，其中4个PRD文件与修复提交重叠 | 1 | 发布负责人在合入前使用包含未跟踪文件的命名stash保存用户现场，发布完成后应用stash并核对全部路径状态；这些用户改动不进入发布提交。 |
+| 首次文档补丁同时删除并新增`docs/releasenotes.md`，补丁工具拒绝同一路径的重复操作 | 1 | 发布负责人保留其他文件未修改的原状态，把发布说明改为单独的原位更新补丁。 |
+| 首次发布文档语义验收发现Prompt候选过滤表述过强，并发现参数目标错误文案对象列表遗漏目标实例节点定义 | 1 | 发布负责人把断开候选行为改写为已连接候选优先规则，并把目标实例节点定义加入错误文案对象列表后重新提交独立语义验收。 |
 
 状态：进行中
 

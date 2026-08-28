@@ -50,7 +50,7 @@ pnpm worktree:stop
 
 `worktree:start` 使用独立的 `.local/worktree-development/` 运行目录和 `comfyui-workbench-development` DSH Profile。启动器根据 [`config/worktree-development.json`](config/worktree-development.json) 在开发 DSH home 中创建指向主开发 worktree `.env` 的符号链接，并在 Host 暴露项目能力前注册 startup workspace。启动器不读取或复制 `.env` 内容，也不会覆盖已经存在的普通文件或指向其他目标的符号链接。`prod:*` 不读取该开发定义，不创建该符号链接，也不注册开发 workspace。完整操作步骤见[独立 worktree 开发验证流程](docs/agents/worktree-development.md)。
 
-Generation 请求只要求导入 UI Workflow。Host 保留原 Workflow compiler 的参数 binding、Prompt 上游定位、尺寸、seed、模型、LoRA、bypass 和活动输出节点能力；Host 不再把手写 UI-to-API 序列化结果直接提交给 ComfyUI。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 直接复制本地基础对象并覆盖本次非连接参数。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
+Generation 请求只要求导入 UI Workflow。Host 使用当前 UI Workflow、目标实例实时 `/object_info`、节点输入名称、活动状态和上下游连线定位显式运行参数，不读取 Source 模板记录中的参数定义或 binding 元数据。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 复制本地基础对象并覆盖本次已确认的运行输入。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
 
 ## 测试
 
@@ -69,6 +69,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.31.1 发布说明](docs/releasenotes.md)
+- [v0.31.2 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.31.1`。对应发布记录在最终提交、`v0.31.1` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.31.2`。对应发布记录在最终提交、`v0.31.2` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

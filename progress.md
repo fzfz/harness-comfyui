@@ -1083,3 +1083,8 @@
 - 本地main在发布前包含80项用户删除和一个未跟踪计划目录；其中4个PRD文件与Phase 38修复重叠。发布流程必须先保存可恢复stash，不能把用户改动纳入发布提交。
 - `origin/main`仍指向`011b64b2acb94d78de349da0a999029812fc4261`；本地和远端均不存在`v0.31.2`标签，GitHub不存在`v0.31.2` Release。
 - 根`package.json.version`和工程合同已更新为`0.31.2`。源码版本提交前的`pnpm quality`通过：404项unit/integration、24项contract/security、40项production和27项prototype测试全部通过，函数覆盖率为100%。
+- 本地main已fast-forward到源码版本提交`c00eb672a5576534c38dff70e1f7b7cbcadbc34d`并推送`origin/main`；发布前用户现场保存在stash`codex-preserve-main-before-v0.31.2-release-20260828`中。
+- 源码版本提交的GitHub CI Run `33143548613`成功，Source quality gates全部通过。
+- 首次发布文档语义验收指出两处事实边界问题：普通断开Prompt候选不是无条件排除，参数目标错误文案还引用目标实例节点定义。发布说明已按实现边界修正并等待复审。
+- 独立语义Reviewer复审修正文档后返回PASS；版本、矩阵、组合编译、Official cache、真实浏览器、空LoRA、测试数量、依赖、lockfile和发布命令均与证据一致。
+- 发布文档提交前的最终`pnpm quality`通过：404项unit/integration、24项contract/security、40项production和27项prototype测试全部通过，函数覆盖率为100%。

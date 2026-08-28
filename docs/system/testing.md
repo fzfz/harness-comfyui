@@ -47,7 +47,7 @@ ChromeComfyFrontend 测试使用注入的子进程、文件系统、HTTP 和 CDP
 
 2026-08-27 的 122 实例验收使用 ComfyUI `0.33.3`、Frontend `1.49.6` 和模板 39。第一次请求完成官方前端 cache miss，第二个不同 LoRA 权重请求从本地 cache hit 且没有再次启动浏览器。最终 transport 提交请求 `29f91894-e160-4b3f-abb6-565f8f7e9617`；服务器 history 返回 `success` 和 `completed=true`，节点 5 的 `inputs.loras.__value__` 包含请求的 LoRA 名称、`strength=3`、`clipStrength=3` 与 `active=true`，节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，请求结束后队列为 running 0、pending 0。
 
-v0.31.1 发布文档提交前的完整 `pnpm quality` 结果为 382 项 unit/integration、23 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。
+v0.31.2 发布文档提交前的完整 `pnpm quality` 结果为 404 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。
 
 ## CI
 
