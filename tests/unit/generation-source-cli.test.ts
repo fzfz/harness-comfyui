@@ -105,7 +105,7 @@ describe('GenerationSourceCli', () => {
     )
   })
 
-  it('projects a TemplateBundle and preserves the missing output-node declaration for the preparer gate', async () => {
+  it('projects only Workflow execution data from a TemplateBundle response', async () => {
     const process = vi.fn<SourceCliProcess>(async () => ({
       exitCode: 0,
       stdout: success({
@@ -116,22 +116,8 @@ describe('GenerationSourceCli', () => {
         workflow_json: workflow,
         config_revision: 2,
         dimension_strategy: 'explicit',
-        parameters_json: [{
-          parameter_id: 'positive_prompt',
-          kind: 'positive_prompt',
-          value_type: 'string',
-          default_value: '',
-          required: false,
-          visible: true,
-        }],
-        bindings_json: [{
-          binding_id: 'binding:positive_prompt',
-          parameter_id: 'positive_prompt',
-          operation: 'replace_input',
-          node_id: '1',
-          input_name: 'filename_prefix',
-          widget_index: 0,
-        }],
+        parameters_json: { stale: true },
+        bindings_json: 'stale',
         expected_output_node_ids_json: null,
       }),
       stderr: '',
@@ -145,16 +131,17 @@ describe('GenerationSourceCli', () => {
       title: 'Anima',
       revisionNumber: 7,
       configRevision: 2,
-      parameters: [{ parameterId: 'positive_prompt', defaultValue: '' }],
-      bindings: [{ parameterId: 'positive_prompt', nodeId: '1', widgetIndex: 0 }],
       expectedOutputNodeIds: null,
     })
+    expect(bundle).not.toHaveProperty('parameters')
+    expect(bundle).not.toHaveProperty('bindings')
   })
 
   it.each([
-    ['missing', undefined],
-    ['malformed', [{ parameter_id: 'positive_prompt', operation: 'unknown' }]],
-  ])('keeps template parameters usable when advisory bindings are %s', async (_label, bindingsJson) => {
+    ['missing', undefined, undefined],
+    ['malformed', { invalid: true }, [{ parameter_id: 'positive_prompt', operation: 'unknown' }]],
+    ['contradictory', [{ parameter_id: 'seed', kind: 'seed' }], [{ parameter_id: 'prompt', operation: 'unknown' }]],
+  ])('ignores %s parameter and binding response metadata', async (_label, parametersJson, bindingsJson) => {
     const process = vi.fn<SourceCliProcess>(async () => ({
       exitCode: 0,
       stdout: success({
@@ -165,13 +152,7 @@ describe('GenerationSourceCli', () => {
         workflow_json: workflow,
         config_revision: 2,
         dimension_strategy: 'explicit',
-        parameters_json: [{
-          parameter_id: 'positive_prompt',
-          kind: 'positive_prompt',
-          value_type: 'string',
-          default_value: 'default prompt',
-          required: false,
-        }],
+        parameters_json: parametersJson,
         bindings_json: bindingsJson,
         expected_output_node_ids_json: null,
       }),
@@ -179,10 +160,9 @@ describe('GenerationSourceCli', () => {
     }))
     const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
 
-    await expect(source.readTemplate('34')).resolves.toMatchObject({
-      parameters: [{ parameterId: 'positive_prompt', defaultValue: 'default prompt' }],
-      bindings: [],
-    })
+    const bundle = await source.readTemplate('34')
+    expect(bundle).not.toHaveProperty('parameters')
+    expect(bundle).not.toHaveProperty('bindings')
   })
 
   it('validates an explicit non-empty output-node filter', async () => {

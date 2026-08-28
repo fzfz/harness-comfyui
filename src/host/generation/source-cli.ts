@@ -5,9 +5,6 @@ import type {
   ComfyInstanceSource,
   ComfyTemplateBundle,
   GenerationSource,
-  RuntimeBinding,
-  RuntimeParameterDefinition,
-  RuntimeParameterValueType,
   UiWorkflow,
   WorkflowNode,
 } from './source-preparer.ts'
@@ -191,60 +188,8 @@ function parseWorkflow(value: unknown): UiWorkflow {
   return { ...source, nodes }
 }
 
-function parseParameter(value: unknown): RuntimeParameterDefinition {
-  const source = record(value, 'Template parameter')
-  const valueType = source.value_type
-  const accepted: readonly RuntimeParameterValueType[] = [
-    'string', 'integer', 'number', 'boolean', 'enum', 'image_reference', 'asset_reference',
-  ]
-  if (!accepted.includes(valueType as RuntimeParameterValueType) || typeof source.required !== 'boolean') {
-    throw sourceError('SOURCE_PROTOCOL_ERROR', 'Template parameter contract is invalid.')
-  }
-  const parameter: RuntimeParameterDefinition = {
-    parameterId: text(source.parameter_id, 'Template parameter id'),
-    kind: text(source.kind, 'Template parameter kind'),
-    valueType: valueType as RuntimeParameterValueType,
-    required: source.required,
-    ...(source.default_value === undefined ? {} : { defaultValue: jsonValue(source.default_value, 'Template parameter default value') }),
-    ...(source.minimum === undefined ? {} : { minimum: Number(source.minimum) }),
-    ...(source.maximum === undefined ? {} : { maximum: Number(source.maximum) }),
-  }
-  return Object.freeze(parameter)
-}
-
-function parseBinding(value: unknown): RuntimeBinding {
-  const source = record(value, 'Template binding')
-  const operation = source.operation
-  if (operation === 'replace_input') {
-    return Object.freeze({
-      parameterId: text(source.parameter_id, 'Template binding parameter id'),
-      operation,
-      nodeId: sourceId(source.node_id, 'Template binding node id'),
-      inputName: text(source.input_name, 'Template binding input name'),
-      widgetIndex: integer(source.widget_index, 'Template binding widget index'),
-    })
-  }
-  if (operation === 'compose_text') {
-    return Object.freeze({
-      parameterId: text(source.parameter_id, 'Template binding parameter id'),
-      operation,
-      targetParameterId: text(source.target_parameter_id, 'Template binding target parameter id'),
-    })
-  }
-  throw sourceError('SOURCE_PROTOCOL_ERROR', 'Template binding operation is invalid.')
-}
-
-function parseBindingHint(value: unknown): RuntimeBinding | null {
-  try {
-    return parseBinding(value)
-  } catch {
-    return null
-  }
-}
-
 function parseTemplate(value: unknown): ComfyTemplateBundle {
   const source = record(value, 'ComfyUI template bundle')
-  if (!Array.isArray(source.parameters_json)) throw sourceError('SOURCE_PROTOCOL_ERROR', 'ComfyUI template parameters are invalid.')
   const outputIds = source.expected_output_node_ids_json
   if (outputIds !== null && (!Array.isArray(outputIds) || outputIds.length === 0)) {
     throw sourceError('SOURCE_PROTOCOL_ERROR', 'ComfyUI template output node identities are invalid.')
@@ -257,11 +202,6 @@ function parseTemplate(value: unknown): ComfyTemplateBundle {
     workflow: parseWorkflow(source.workflow_json),
     configRevision: integer(source.config_revision, 'ComfyUI template config revision', 1),
     dimensionStrategy: text(source.dimension_strategy, 'ComfyUI template dimension strategy'),
-    parameters: Object.freeze(source.parameters_json.map(parseParameter)),
-    bindings: Object.freeze((Array.isArray(source.bindings_json) ? source.bindings_json : []).flatMap(value => {
-      const binding = parseBindingHint(value)
-      return binding === null ? [] : [binding]
-    })),
     expectedOutputNodeIds: outputIds === null
       ? null
       : Object.freeze(outputIds.map((id, index) => sourceId(id, `ComfyUI template output node id ${index}`))),

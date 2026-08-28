@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { GenerationRuntimeError, type ComfyConnection, type JsonValue } from './generation-runtime.ts'
 import type { UiWorkflow } from './source-preparer.ts'
 
-export const OFFICIAL_API_WORKFLOW_COMPILER_SCHEMA_VERSION = 1
+export const OFFICIAL_API_WORKFLOW_COMPILER_SCHEMA_VERSION = 2
 
 type JsonObject = Readonly<Record<string, JsonValue>>
 type MutableJsonObject = Record<string, JsonValue>
@@ -156,6 +156,48 @@ function apiWorkflow(value: unknown, errorCode: string, label: string): JsonObje
     }
   }
   return value as JsonObject
+}
+
+function officialLiteralCarrier(value: unknown): JsonValue | undefined {
+  if (!isRecord(value) || Object.hasOwn(value, 'class_type') || !isRecord(value.inputs)) return undefined
+  const nodeKeys = Object.keys(value)
+  const inputKeys = Object.keys(value.inputs)
+  if (nodeKeys.some(key => key !== 'inputs' && key !== '_meta')
+    || inputKeys.length !== 1
+    || inputKeys[0] !== 'UNKNOWN') return undefined
+  return structuredClone(value.inputs.UNKNOWN as JsonValue)
+}
+
+function normalizeOfficialApiWorkflow(value: unknown, errorCode: string, label: string): JsonObject {
+  if (!isRecord(value) || Object.keys(value).length === 0) runtimeError(errorCode, `${label} is invalid.`)
+  const normalized = structuredClone(value) as MutableJsonObject
+  const carriers = new Map<string, JsonValue>()
+  for (const [nodeId, rawNode] of Object.entries(value)) {
+    const literal = officialLiteralCarrier(rawNode)
+    if (literal !== undefined) carriers.set(nodeId, literal)
+  }
+  if (carriers.size === 0) return apiWorkflow(normalized, errorCode, label)
+
+  const consumedCarriers = new Set<string>()
+  for (const [nodeId, rawNode] of Object.entries(normalized)) {
+    if (carriers.has(nodeId)
+      || !isRecord(rawNode)
+      || typeof rawNode.class_type !== 'string'
+      || !isRecord(rawNode.inputs)) continue
+    for (const [inputName, inputValue] of Object.entries(rawNode.inputs)) {
+      if (!isConnectionTuple(inputValue)) continue
+      const carrierNodeId = String(inputValue[0])
+      const carrier = carriers.get(carrierNodeId)
+      if (carrier === undefined) continue
+      if (inputValue[1] !== 0) {
+        runtimeError(errorCode, `${label} node "${nodeId}" input "${inputName}" references an invalid literal-carrier output.`)
+      }
+      ;(rawNode.inputs as MutableJsonObject)[inputName] = structuredClone(carrier)
+      consumedCarriers.add(carrierNodeId)
+    }
+  }
+  for (const nodeId of consumedCarriers) delete normalized[nodeId]
+  return apiWorkflow(normalized, errorCode, label)
 }
 
 function sameIdentity(left: unknown, right: OfficialApiWorkflowCacheIdentity): boolean {
@@ -364,7 +406,7 @@ export class OfficialApiWorkflowCompiler {
     signal: AbortSignal,
   ): Promise<JsonObject> {
     throwIfAborted(signal)
-    const exported = apiWorkflow(
+    const exported = normalizeOfficialApiWorkflow(
       await this.frontend.exportWorkflow({
         workflow: input.actualWorkflow,
         connection: input.connection,

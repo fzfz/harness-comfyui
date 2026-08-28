@@ -48,26 +48,6 @@ function template(expectedOutputNodeIds: readonly string[] | null = ['3']): Comf
       ],
       links: [],
     },
-    parameters: [
-      {
-        parameterId: 'positive_prompt',
-        kind: 'positive_prompt',
-        valueType: 'string',
-        required: true,
-      },
-      {
-        parameterId: 'width',
-        kind: 'width',
-        valueType: 'integer',
-        required: true,
-        minimum: 64,
-        maximum: 4096,
-      },
-    ],
-    bindings: [
-      { parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 },
-      { parameterId: 'width', operation: 'replace_input', nodeId: '2', inputName: 'width', widgetIndex: 1 },
-    ],
     expectedOutputNodeIds,
   }
 }
@@ -80,7 +60,7 @@ function source(bundle: ComfyTemplateBundle): GenerationSource {
 }
 
 describe('SourceGenerationPreparer', () => {
-  it('passes resolved parameters and advisory bindings to the compiler and excludes connection secrets from the source snapshot', async () => {
+  it('passes request parameters directly to the compiler and excludes connection secrets from the source snapshot', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
       actualWorkflow: input.workflow,
       apiWorkflow: {
@@ -125,17 +105,7 @@ describe('SourceGenerationPreparer', () => {
     expect(compile).toHaveBeenCalledWith(expect.objectContaining({
       instanceId: '2',
       workflow: template().workflow,
-      runtimeParameters: [
-        {
-          definition: expect.objectContaining({ parameterId: 'positive_prompt', kind: 'positive_prompt' }),
-          value: '1girl, white hair',
-        },
-        {
-          definition: expect.objectContaining({ parameterId: 'width', kind: 'width' }),
-          value: 1024,
-        },
-      ],
-      bindingHints: template().bindings,
+      runtimeParameters: request.parameters,
       model: request.model,
       loras: [],
     }))
@@ -162,98 +132,25 @@ describe('SourceGenerationPreparer', () => {
     expect(compile).toHaveBeenCalledWith(expect.objectContaining({ expectedOutputNodeIds: null }))
   })
 
-  it('rejects unknown runtime parameters instead of editing undeclared workflow values', async () => {
-    const preparer = new SourceGenerationPreparer({
-      defaultInstanceId: '1',
-      source: source(template()),
-      compiler: { compile: vi.fn() },
-    })
-
-    await expect(preparer.prepare({
-      ...request,
-      parameters: { ...request.parameters, sampler_name: 'euler' },
-    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
-  })
-
-  it('does not turn metadata defaults into runtime overrides for omitted optional parameters', async () => {
+  it('does not require request parameters to be declared by Source metadata', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
       actualWorkflow: input.workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))
-    const bundle: ComfyTemplateBundle = {
-      ...template(),
-      parameters: [
-        template().parameters[0]!,
-        {
-          parameterId: 'negative_prompt',
-          kind: 'negative_prompt',
-          valueType: 'string',
-          defaultValue: '',
-          required: false,
-        },
-        {
-          parameterId: 'width',
-          kind: 'width',
-          valueType: 'integer',
-          defaultValue: 512,
-          required: false,
-        },
-        {
-          parameterId: 'height',
-          kind: 'height',
-          valueType: 'integer',
-          defaultValue: 512,
-          required: false,
-        },
-        {
-          parameterId: 'seed',
-          kind: 'seed',
-          valueType: 'integer',
-          defaultValue: 1022776966395948,
-          required: false,
-        },
-      ],
-    }
     const preparer = new SourceGenerationPreparer({
       defaultInstanceId: '1',
-      source: source(bundle),
+      source: source(template()),
       compiler: { compile },
     })
 
     await preparer.prepare({
       ...request,
-      parameters: { positive_prompt: '1girl, white hair' },
+      parameters: { ...request.parameters, sampler_name: 'euler' },
     })
 
     expect(compile).toHaveBeenCalledWith(expect.objectContaining({
-      runtimeParameters: [{
-        definition: expect.objectContaining({ parameterId: 'positive_prompt' }),
-        value: '1girl, white hair',
-      }],
+      runtimeParameters: { positive_prompt: '1girl, white hair', width: 1024, sampler_name: 'euler' },
     }))
-  })
-
-  it('requires an explicit request value for required parameters even when metadata declares a default', async () => {
-    const bundle: ComfyTemplateBundle = {
-      ...template(),
-      parameters: [{
-        parameterId: 'positive_prompt',
-        kind: 'positive_prompt',
-        valueType: 'string',
-        defaultValue: 'metadata prompt',
-        required: true,
-      }],
-    }
-    const preparer = new SourceGenerationPreparer({
-      defaultInstanceId: '1',
-      source: source(bundle),
-      compiler: { compile: vi.fn() },
-    })
-
-    await expect(preparer.prepare({ ...request, parameters: {} })).rejects.toMatchObject({
-      code: 'GENERATION_PARAMETER_INVALID',
-      message: 'Generation parameter "positive_prompt" is required.',
-    })
   })
 })

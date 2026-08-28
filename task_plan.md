@@ -4,12 +4,49 @@
 计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
 
 ## Next Step
-Phase 37 最终文档提交前的质量门禁。
+Phase 38 已完成；等待用户决定是否把独立 worktree 提交合并或发布。
 
 ## Current Phase
-Phase 37 in progress
+Phase 38 completed
 
 ## Phases
+
+## Phase 38：删除 Source 模板运行元数据依赖并以 Official API Workflow 为执行基准
+
+### 必须要实现的目标
+
+- Generation Source adapter 和 Catalog Source adapter 不得读取、校验、投影或暴露 Source 模板响应中的 `parameters_json` 与 `bindings_json`。
+- Generation Tool 必须把显式运行参数原样交给 Workflow compiler；Workflow compiler 必须使用当前 UI Workflow和目标实例`/object_info`定位运行输入，再把已确认的运行值覆盖到Official Base API Workflow。
+- Workflow compiler 必须使用节点输入名、节点标题、活动状态、绕过连线、上下游连线和参数键中的节点编号后缀消除目标歧义；目标不存在或仍不唯一时必须返回包含具体运行参数键的错误。
+- Official API Workflow cache 必须继续按实例身份、实例 origin、实例缓存代次、模板 Workflow 内容和执行结构隔离；缓存命中时只覆盖已确认的运行值，缓存未命中时必须由目标实例 ComfyUI 页面导出 Official API Workflow。
+- 计划执行者必须在独立 git worktree 中启动当前系统，并使用真实浏览器检查启动工作区、Agent 模型、上下文选择器和 Generation 工作台。
+
+### 验收清单
+
+- [x] Source adapter 测试证明 `parameters_json` 与 `bindings_json` 缺失、损坏或互相矛盾时不会改变 TemplateBundle。
+- [x] Catalog resolver 测试证明模板参数元数据缺失、损坏或互相矛盾时仍只返回模板 ID、标题、底模 ID 和可选模型 ID。
+- [x] Workflow compiler 测试覆盖正向 Prompt、负向 Prompt、宽度、高度、Seed、参考图、未知参数、重复目标、目标歧义、连接输入、多源输入、不可达分支、绕过分支、模型、标准 LoRA、LoraManager、Power LoRA、空 LoRA 和 Official API Workflow cache 命中。
+- [x] 当前 Catalog 的 33 个真实模板全部完成实例 122 页面 Official API Workflow 导出和缓存 miss→hit 一致性验证。
+- [x] 当前 Catalog 的 33 个真实模板完成 15 类单参数矩阵、`config/verification/comfyui-workflow-parameter-support.json`精确支持面比较和每个模板全部可解析参数的组合矩阵；精确支持面比较与组合矩阵没有参数支持面偏差、重复目标、目标歧义或编译异常。
+- [x] `pnpm quality`、独立语义审核、独立代码审核和 `git diff --check` 全部通过。
+- [x] `pnpm worktree:start` 保持前台运行期间，`pnpm worktree:status` 与 `pnpm worktree:health` 全部通过。
+- [x] 真实浏览器打开 `http://127.0.0.1:4173/` 后显示启动工作区 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness` 和模型 `opencode-go/deepseek-v4-flash`，且页面不显示工作区选择或 API Key 配置门禁。
+- [x] 真实浏览器调用`/comfyui-generate`并通过模板39提交10个显式运行参数；Run进入`succeeded`并保存一张512×512 PNG，Actual/API Workflow中的Prompt、seed、宽高与采样参数一致，空LoRA请求保留模板LoraManager内容。
+
+### 非本次目标
+
+- 本阶段不修改 Source 数据库、Source CLI、ComfyUI 服务端、自定义节点或实例模型文件。
+- 本阶段不根据模板 ID 编写参数目标特例，也不为连接尺寸强制断开连线或自动修改独立下游放大尺寸。
+- 本阶段不清空用户未选择的模板 LoRA，也不把普通运行参数重新解释为结构化 LoRA 选择。
+- 本阶段不安装新依赖，不修改 Harness 核心包和 `node_modules/@deepseek-ai/*`。
+
+### 已获得的授权
+
+- 用户明确要求删除 Harness 对 `parameters_json` 与 `bindings_json` 的所有依赖和检查。
+- 用户明确要求保留经过既有模板回归验证且不依赖节点特例的旧编译器逻辑。
+- 用户明确要求新建独立 worktree、修复、在 worktree 内启动真实系统并使用真实浏览器测试。
+
+状态：已完成
 
 ## Phase 37：发布 v0.30.2
 
@@ -121,7 +158,7 @@ Phase 37 in progress
 
 ### 必须要实现的目标
 
-- Generation Request 没有提供某个模板参数时，Host 不得把 `parameters_json.default_value` 作为运行时覆盖值写入 Workflow。
+- Generation Request 没有提供某个运行参数时，Host 必须保留 Workflow 对应输入的保存值。
 - Generation Request 显式提供某个模板参数时，Host 必须继续校验参数 ID、值类型和数值范围，并把该值写入 Workflow。
 - `required: true` 的模板参数在 Generation Request 缺少显式值时必须继续返回具体错误。
 - 通用规则必须覆盖提示词、尺寸、种子和其他模板参数，不得按模板 ID、ComfyUI 节点 ID 或参数 kind 写特例。
@@ -290,8 +327,8 @@ Phase 37 in progress
 - LoRA resolve Agent Tool 必须向 Agent 返回数据源 CLI 的 LoRA 标识、文件名、介绍、用途、触发词和默认权重；生成模型 resolve Agent Tool 必须返回数据源 CLI 中用于识别和选择生成模型的语义信息与文件名。
 - Skill 必须使用 LoRA 的介绍、用途和触发词理解 LoRA 对当前画面要求的作用，并以此前 Prompt Builder Skill 已生成的 Prompt 为输入重写该 Generation Request 的最终正向提示词；Skill 必须把最终正向提示词写入模板的 `positive_prompt` 参数，并把默认权重映射到当前 Workflow 模板明确声明的 LoRA 权重参数。
 - Generation Host 必须把数据源文件名与目标 ComfyUI 实例 `/object_info` 返回的资源选项进行精确文件名匹配，把实际 `底模名/文件名` 及目标实例使用的路径分隔符写入 API Workflow；Skill 不得拼接实例目录或路径分隔符。
-- Generation Host 必须把数据源 `bindings_json` 作为旧模板参数目标的优先提示；binding 缺失或旧目标失效时，Host 必须继续使用模板参数的 `parameter_id`、`kind`、默认值、当前 Workflow widget 结构和目标实例 `/object_info` 定位实际输入。binding 不得限制模板声明参数的可用性。参数目标不存在或不唯一时，Host 必须返回包含具体 `parameter_id` 的错误。
-- Skill 必须把每项解析后的 LoRA ID、文件名、实际采用权重和实际采用触发词作为结构化 LoRA 选择传入 `generate_with_comfyui`。Generation Host 必须使用目标实例 `/object_info` 与当前 Workflow 的实际节点输入结构注入 LoRA；LoRA 注入不得依赖数据源 `bindings_json`。
+- Generation Host 必须使用当前 Workflow widget 结构、活动连线和目标实例 `/object_info` 定位显式运行参数。参数目标不存在或不唯一时，Host 必须返回包含具体运行参数键的错误。
+- Skill 必须把每项解析后的 LoRA ID、文件名、实际采用权重和实际采用触发词作为结构化 LoRA 选择传入 `generate_with_comfyui`。Generation Host 必须使用目标实例 `/object_info` 与当前 Workflow 的实际节点输入结构注入 LoRA。
 - Skill 必须把解析后的生成模型 ID 与模板 resolver 返回的 `model_id` 比较；两者一致时继续生成，两者不一致时报告所选生成模型与模板绑定模型不兼容。当前模板没有声明生成模型覆盖能力时，Host 保留模板模型节点值。
 - Skill 必须把已经包含实际采用触发词的最终 Prompt 写入 `positive_prompt` 参数，并把同一组实际采用触发词写入对应的 `lora_trigger_word` 参数用于请求追溯。Generation Host 不得通过 `compose_text` 再次重复写入触发词。
 - 计划执行者必须使用真实 Harness、真实数据源 CLI、真实 Workflow 模板和真实 ComfyUI 实例验证 LoRA 与生成模型上下文能够完成解析、模板参数注入、异步生成、媒体保存和逐媒体 Actual Workflow 下载。
@@ -322,7 +359,7 @@ Phase 37 in progress
 - 用户已明确要求 `comfyui-generate` Skill 根据 LoRA 语义重写此前 Prompt Builder Skill 已生成的 Prompt，而不是只机械追加触发词。
 - 用户已明确指出数据源文件名不是实例实际资源路径；实际 LoRA 路径必须使用 `底模名/文件名` 目录结构并适配不同实例的路径分隔符。
 - 用户此前已授权修改、测试、重启当前 Harness 插件，并使用已登记的真实 ComfyUI 实例执行完整生成验证。
-- 用户已明确说明 `bindings_json` 可以作为旧模板参数目标的参考值和默认映射，但 binding 不得限制任何模板声明参数的使用。
+- 用户已明确要求 Generation Host 不得读取或检查 Source 模板参数与绑定元数据。
 
 ### Errors Encountered
 
@@ -332,7 +369,7 @@ Phase 37 in progress
 | 生产数据源 Source CLI 文件没有可执行权限，直接调用返回 `permission denied` | 1 | 按 `GenerationSourceCli.runSourceCliProcess()` 的既有规则使用当前 Node.js 运行该本地 `.mjs` 文件。 |
 | 当前 36 个 Workflow 模板均未公开生成模型运行参数 | 1 | Skill 解析生成模型后校验其 ID 与模板绑定的 `model_id`；当前模板没有声明生成模型参数时不改固定节点，模板明确声明参数后才执行参数覆盖。 |
 | 初次定位 Source preparer 测试时使用了不存在的 `tests/unit/generation-source-preparer.test.ts` 文件名 | 1 | 使用 `rg` 定位到实际测试文件 `tests/unit/generation-preparer.test.ts`。 |
-| 初始运行参数实现把数据源旧 `bindings_json` 当成唯一参数目标 | 1 | Phase 30 保留 binding 作为优先提示，并增加模板参数定义、Workflow widget 结构和目标实例 `/object_info` 驱动的非限制性参数目标定位。 |
+| 初始运行参数实现把 Source 模板绑定元数据当成参数目标 | 1 | Phase 38 删除该数据流，并使用 Workflow widget 结构、活动连线和目标实例 `/object_info` 定位运行输入。 |
 | 使用包含反引号的未引用 `rg` 搜索表达式时，zsh 尝试执行 `bindings_json` | 1 | 后续 shell 搜索表达式使用单引号或不包含反引号的固定文本；该只读命令仍返回了文件内容，没有修改文件。 |
 | 只读实例节点调研首次尝试 `pnpm exec tsx`，当前项目没有安装 `tsx` | 1 | 不安装依赖；改用 Node.js 内置 `child_process` 调用本地 Source CLI，并在内存中请求实例 `/object_info`。 |
 | 第一轮目标测试 79 项全部通过，但 TypeScript 报告内部 `compile()` 返回值缺少外层才添加的 `actualWorkflow` | 1 | 把内部 `compile()` 返回类型收窄为 `Omit<WorkflowCompilerResult, 'actualWorkflow'>`；公开 compiler 仍返回完整结果。 |

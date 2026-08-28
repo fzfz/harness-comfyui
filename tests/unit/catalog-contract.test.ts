@@ -180,13 +180,11 @@ describe('catalog Remote contract', () => {
       title: 'wai_txt2img_lora',
       base_model_id: '2',
       model_id: '1',
-      parameters: [{ parameter_id: 'lora_model', kind: 'lora_model', value_type: 'asset_reference', required: false }],
     })).toEqual({
       id: '37',
       title: 'wai_txt2img_lora',
       base_model_id: '2',
       model_id: '1',
-      parameters: [{ parameter_id: 'lora_model', kind: 'lora_model', value_type: 'asset_reference', required: false }],
     })
     expect(parseCatalogResolvedLora({
       id: '68',

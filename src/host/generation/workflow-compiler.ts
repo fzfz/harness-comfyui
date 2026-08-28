@@ -4,14 +4,12 @@ import type {
   OfficialApiWorkflowCompileResult,
 } from './official-api-workflow.ts'
 import type {
-  ResolvedRuntimeParameter,
-  RuntimeBinding,
-  RuntimeParameterDefinition,
   UiWorkflow,
   WorkflowCompiler,
   WorkflowCompilerInput,
   WorkflowCompilerResult,
 } from './source-preparer.ts'
+import { STANDARD_RUNTIME_PARAMETER_KINDS } from './runtime-parameters.ts'
 
 const EDITOR_ONLY_NODE_TYPES = new Set(['Fast Groups Bypasser (rgthree)', 'Label (rgthree)', 'MarkdownNote', 'Note', '孤海注释'])
 const WIDGET_TYPES = new Set([
@@ -525,10 +523,14 @@ interface ParameterTarget {
   readonly nodeType: string
   readonly node: UnknownRecord
   readonly mapping: WidgetMapping
-  readonly currentValue: JsonValue
   readonly marker: string
   readonly loraSyntax: boolean
-  readonly disconnectInputName?: string
+}
+
+interface RuntimeParameterAssignment {
+  readonly parameterId: string
+  readonly kind: string
+  readonly value: JsonValue
 }
 
 function parameterError(code: string, parameterId: string, message: string): never {
@@ -566,7 +568,6 @@ function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord):
         nodeType,
         node,
         mapping,
-        currentValue: values[mapping.index]!,
         marker: parameterMarker(node),
         loraSyntax: loraSyntax?.name === mapping.name,
       })
@@ -581,6 +582,7 @@ const PARAMETER_INPUT_ALIASES: Readonly<Record<string, readonly string[]>> = Obj
   width: Object.freeze(['width', 'width_override']),
   height: Object.freeze(['height', 'height_override']),
   seed: Object.freeze(['seed', 'noise_seed']),
+  sampler_name: Object.freeze(['sampler_name', 'sampler']),
   resolution_preset: Object.freeze(['resolution', 'resolution_preset']),
   reference_image: Object.freeze(['image', 'reference_image']),
 })
@@ -589,13 +591,37 @@ function uniqueNames(values: readonly string[]): readonly string[] {
   return [...new Set(values.filter(value => value.length > 0))]
 }
 
-function inputNames(definition: RuntimeParameterDefinition): readonly string[] {
+function runtimeParameterKind(parameterId: string): string {
+  return STANDARD_RUNTIME_PARAMETER_KINDS.find(kind => parameterId === kind || parameterId.startsWith(`${kind}_`)) ?? parameterId
+}
+
+function inputNames(assignment: RuntimeParameterAssignment): readonly string[] {
   return uniqueNames([
-    definition.parameterId,
-    definition.kind,
-    ...(PARAMETER_INPUT_ALIASES[definition.kind] ?? []),
+    assignment.parameterId,
+    assignment.kind,
+    ...(PARAMETER_INPUT_ALIASES[assignment.kind] ?? []),
   ])
 }
+
+function normalizedParameterMarker(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/gu, '_').replace(/^_+|_+$/gu, '')
+}
+
+function markerMatchesParameter(marker: string, kind: string): boolean {
+  const normalizedMarker = normalizedParameterMarker(marker)
+  const normalizedKind = normalizedParameterMarker(kind)
+  return normalizedKind.length > 0 && `_${normalizedMarker}_`.includes(`_${normalizedKind}_`)
+}
+
+function targetFeedsParameter(workflow: UiWorkflow, target: ParameterTarget, kind: string): boolean {
+  const downstreamNames = downstreamInputNames(workflow, target.nodeId)
+  return uniqueNames([kind, ...(PARAMETER_INPUT_ALIASES[kind] ?? [])])
+    .some(name => downstreamNames.has(name.toLowerCase()))
+}
+
+const UPSTREAM_VALUE_PARAMETER_KINDS = new Set([
+  'width', 'height', 'seed', 'cfg', 'steps', 'denoise', 'batch_size',
+])
 
 function jsonEquals(left: JsonValue, right: JsonValue): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
@@ -604,6 +630,115 @@ function jsonEquals(left: JsonValue, right: JsonValue): boolean {
 function nodeIdSuffix(parameterId: string): string | null {
   const match = /_([0-9]+)$/u.exec(parameterId)
   return match?.[1] ?? null
+}
+
+function downstreamNodeIds(workflow: UiWorkflow, sourceNodeId: string): ReadonlySet<string> {
+  const adjacency = new Map<string, Set<string>>()
+  for (const rawLink of array(workflow.links)) {
+    if (!Array.isArray(rawLink) || rawLink.length < 6) continue
+    const source = String(rawLink[1])
+    const target = String(rawLink[3])
+    const targets = adjacency.get(source) ?? new Set<string>()
+    targets.add(target)
+    adjacency.set(source, targets)
+  }
+  const discovered = new Set<string>()
+  const pending = [...(adjacency.get(sourceNodeId) ?? [])]
+  while (pending.length > 0) {
+    const nodeId = pending.shift()!
+    if (discovered.has(nodeId)) continue
+    discovered.add(nodeId)
+    pending.push(...(adjacency.get(nodeId) ?? []))
+  }
+  return discovered
+}
+
+function downstreamInputNames(workflow: UiWorkflow, sourceNodeId: string): ReadonlySet<string> {
+  const links = array(workflow.links).filter((value): value is readonly unknown[] => Array.isArray(value) && value.length >= 6)
+  const nodes = workflowNodes(workflow)
+  const discoveredNodes = new Set<string>()
+  const names = new Set<string>()
+  const pending = [sourceNodeId]
+  while (pending.length > 0) {
+    const currentNodeId = pending.shift()!
+    if (discoveredNodes.has(currentNodeId)) continue
+    discoveredNodes.add(currentNodeId)
+    for (const link of links.filter(candidate => String(candidate[1]) === currentNodeId)) {
+      const targetNodeId = String(link[3])
+      const targetNode = nodes.get(targetNodeId)
+      const targetInput = targetNode === undefined ? undefined : array(targetNode.inputs)[Number(link[4])]
+      if (targetInput !== null && typeof targetInput === 'object' && !Array.isArray(targetInput)) {
+        const inputName = (targetInput as UnknownRecord).name
+        if (typeof inputName === 'string') names.add(inputName.toLowerCase())
+      }
+      pending.push(targetNodeId)
+    }
+  }
+  return names
+}
+
+function promptTargetMatchesPolarity(
+  workflow: UiWorkflow,
+  target: ParameterTarget,
+  polarity: 'positive' | 'negative',
+): boolean {
+  const opposite = polarity === 'positive' ? 'negative' : 'positive'
+  if (markerMatchesParameter(target.marker, polarity)) return true
+  if (markerMatchesParameter(target.marker, opposite)) return false
+  const downstreamNames = downstreamInputNames(workflow, target.nodeId)
+  return downstreamNames.has(polarity) && !downstreamNames.has(opposite)
+}
+
+function properSubset(left: ReadonlySet<string>, right: ReadonlySet<string>): boolean {
+  if (left.size >= right.size) return false
+  for (const value of left) if (!right.has(value)) return false
+  return true
+}
+
+const PRIMARY_PIPELINE_PARAMETER_KINDS = new Set([
+  'seed', 'cfg', 'sampler_name', 'scheduler', 'steps', 'denoise', 'batch_size',
+])
+
+function preferPrimaryPipelineTarget(
+  workflow: UiWorkflow,
+  kind: string,
+  candidates: readonly ParameterTarget[],
+): readonly ParameterTarget[] {
+  if (!PRIMARY_PIPELINE_PARAMETER_KINDS.has(kind) || candidates.length < 2) return candidates
+  let preferred = prefer(candidates, target => /^KSampler(?:Advanced)?$/u.test(target.nodeType))
+  if (kind === 'batch_size') {
+    preferred = prefer(preferred, target => /empty.*latent|latent.*empty/iu.test(`${target.nodeType} ${target.marker}`))
+  }
+  const downstream = new Map(preferred.map(target => [target.key, downstreamNodeIds(workflow, target.nodeId)]))
+  preferred = prefer(preferred, target => !preferred.some(other => (
+    other.key !== target.key && downstream.get(other.key)!.has(target.nodeId)
+  )))
+  preferred = prefer(preferred, target => !preferred.some(other => (
+    other.key !== target.key && properSubset(downstream.get(target.key)!, downstream.get(other.key)!)
+  )))
+  return preferred
+}
+
+function feedsOnlyIneffectiveBypassInputs(workflow: UiWorkflow, sourceNodeId: string): boolean {
+  const nodes = workflowNodes(workflow)
+  const links = workflowLinks(workflow)
+  const sourceNode = nodes.get(sourceNodeId)
+  if (sourceNode === undefined) return false
+  const outgoingLinkIds = array(sourceNode.outputs).flatMap(rawOutput => {
+    const output = record(rawOutput, `Workflow node "${sourceNodeId}" output`)
+    return array(output.links).map(String)
+  })
+  if (outgoingLinkIds.length === 0) return false
+  return outgoingLinkIds.every(linkId => {
+    const link = links.get(linkId)
+    if (link === undefined) return false
+    const target = nodes.get(String(link[3]))
+    if (target === undefined || target.mode !== 4) return false
+    return array(target.outputs).every((_output, outputIndex) => {
+      const selectedInput = compatibleBypassInput(target, outputIndex)
+      return selectedInput === undefined || String(selectedInput.link) !== linkId
+    })
+  })
 }
 
 function prefer(
@@ -619,218 +754,96 @@ function targetLabel(target: ParameterTarget): string {
 }
 
 function resolveParameterTarget(
-  assignment: ResolvedRuntimeParameter,
+  assignment: RuntimeParameterAssignment,
+  workflow: UiWorkflow,
   allTargets: readonly ParameterTarget[],
   reserved: ReadonlySet<string>,
 ): ParameterTarget {
-  const { definition } = assignment
-  const names = inputNames(definition)
+  const names = inputNames(assignment)
   let candidates: readonly ParameterTarget[] = allTargets.filter(target => names.includes(target.mapping.name))
-  if (candidates.length === 0 && (definition.kind === 'width' || definition.kind === 'height' || definition.kind === 'seed')) {
-    candidates = allTargets.filter(target => target.mapping.name === 'value')
-    candidates = prefer(candidates, target => target.marker.includes(definition.kind))
+  if (candidates.length === 0 && UPSTREAM_VALUE_PARAMETER_KINDS.has(assignment.kind)) {
+    candidates = allTargets.filter(target => (
+      target.mapping.name === 'value'
+      && (
+        markerMatchesParameter(target.marker, assignment.kind)
+        || targetFeedsParameter(workflow, target, assignment.kind)
+      )
+    ))
   }
-  if (candidates.length === 0 && definition.defaultValue !== undefined) {
-    candidates = allTargets.filter(target => jsonEquals(target.currentValue, definition.defaultValue!))
-  }
-  if (definition.kind === 'positive_prompt' || definition.kind === 'negative_prompt') {
+  if (assignment.kind === 'positive_prompt' || assignment.kind === 'negative_prompt') {
     candidates = candidates.filter(target => !target.loraSyntax)
   }
   if (candidates.length === 0) {
-    parameterError('GENERATION_PARAMETER_TARGET_NOT_FOUND', definition.parameterId, 'does not match a Workflow widget on the target ComfyUI instance.')
+    parameterError('GENERATION_PARAMETER_TARGET_NOT_FOUND', assignment.parameterId, 'does not match a Workflow widget on the target ComfyUI instance.')
   }
 
-  const exactParameterName = candidates.filter(target => target.mapping.name === definition.parameterId)
+  const exactParameterName = candidates.filter(target => target.mapping.name === assignment.parameterId)
   if (exactParameterName.length > 0) candidates = exactParameterName
   else {
-    const exactKindName = candidates.filter(target => target.mapping.name === definition.kind)
+    const exactKindName = candidates.filter(target => target.mapping.name === assignment.kind)
     if (exactKindName.length > 0) candidates = exactKindName
     else {
-      const aliases = PARAMETER_INPUT_ALIASES[definition.kind] ?? []
+      const aliases = PARAMETER_INPUT_ALIASES[assignment.kind] ?? []
       const firstAlias = aliases.find(alias => candidates.some(target => target.mapping.name === alias))
       if (firstAlias !== undefined) candidates = candidates.filter(target => target.mapping.name === firstAlias)
     }
   }
 
-  const suffix = nodeIdSuffix(definition.parameterId)
-  if (suffix !== null) candidates = prefer(candidates, target => target.nodeId === suffix)
-  if (definition.kind === 'seed' && suffix === null) {
+  candidates = candidates.filter(target => !feedsOnlyIneffectiveBypassInputs(workflow, target.nodeId))
+  if (candidates.length === 0) {
+    parameterError('GENERATION_PARAMETER_TARGET_NOT_FOUND', assignment.parameterId, 'does not match an executable Workflow widget on the target ComfyUI instance.')
+  }
+  candidates = prefer(candidates, target => downstreamNodeIds(workflow, target.nodeId).size > 0)
+
+  const suffix = nodeIdSuffix(assignment.parameterId)
+  if (suffix !== null) {
+    candidates = candidates.filter(target => (
+      target.nodeId === suffix || downstreamNodeIds(workflow, target.nodeId).has(suffix)
+    ))
+    if (candidates.length === 0) {
+      parameterError(
+        'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+        assignment.parameterId,
+        `does not resolve to Workflow node "${suffix}" or an explicit upstream value connected to that node.`,
+      )
+    }
+  }
+  if (assignment.kind === 'seed' && suffix === null) {
     candidates = prefer(candidates, target => target.nodeType === 'SeedNode')
   }
-  if (definition.kind === 'positive_prompt') candidates = prefer(candidates, target => target.marker.includes('positive'))
-  if (definition.kind === 'negative_prompt') candidates = prefer(candidates, target => target.marker.includes('negative'))
-  if (definition.kind === 'width' || definition.kind === 'height') {
+  if (assignment.kind === 'positive_prompt' || assignment.kind === 'negative_prompt') {
+    const polarity = assignment.kind === 'positive_prompt' ? 'positive' : 'negative'
+    const semanticCandidates = candidates.filter(target => promptTargetMatchesPolarity(workflow, target, polarity))
+    if (semanticCandidates.length > 0) {
+      candidates = semanticCandidates
+    } else if (polarity === 'negative') {
+      candidates = []
+    } else {
+      candidates = candidates.filter(target => !promptTargetMatchesPolarity(workflow, target, 'negative'))
+    }
+    if (candidates.length === 0) {
+      parameterError(
+        'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+        assignment.parameterId,
+        `does not match a ${polarity} Prompt widget in the executable Workflow.`,
+      )
+    }
+  }
+  if (assignment.kind === 'width' || assignment.kind === 'height') {
     candidates = prefer(candidates, target => /empty.*latent|latent.*empty/iu.test(`${target.nodeType} ${target.marker}`))
   }
-  if (definition.kind === 'reference_image') candidates = prefer(candidates, target => target.nodeType === 'LoadImage')
-  if (definition.defaultValue !== undefined) {
-    candidates = prefer(candidates, target => jsonEquals(target.currentValue, definition.defaultValue!))
-  }
+  if (assignment.kind === 'reference_image') candidates = prefer(candidates, target => target.nodeType === 'LoadImage')
+  candidates = preferPrimaryPipelineTarget(workflow, assignment.kind, candidates)
   candidates = prefer(candidates, target => !reserved.has(target.key))
 
   if (candidates.length !== 1) {
     parameterError(
       'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
-      definition.parameterId,
+      assignment.parameterId,
       `matches multiple Workflow widgets: ${candidates.map(targetLabel).join(', ')}.`,
     )
   }
   return candidates[0]!
-}
-
-function validBindingTargets(
-  assignment: ResolvedRuntimeParameter,
-  bindingHints: readonly RuntimeBinding[],
-  targets: readonly ParameterTarget[],
-  workflow: UiWorkflow,
-  nodeDefinitions: UnknownRecord,
-): readonly ParameterTarget[] {
-  const matches: ParameterTarget[] = []
-  for (const binding of bindingHints) {
-    if (binding.parameterId !== assignment.definition.parameterId || binding.operation !== 'replace_input') continue
-    const target = targets.find(candidate => candidate.nodeId === binding.nodeId && candidate.mapping.name === binding.inputName)
-    const resolved = target === undefined
-      ? connectedBindingTargets(assignment, binding, targets, workflow, nodeDefinitions)
-      : [target]
-    for (const candidate of resolved ?? []) {
-      if (!matches.some(existing => existing.key === candidate.key)) matches.push(candidate)
-    }
-  }
-  return matches
-}
-
-function normalizedPortType(value: unknown): string {
-  return String(value ?? '').trim().toUpperCase()
-}
-
-function compatiblePortType(left: unknown, right: unknown): boolean {
-  const normalizedLeft = normalizedPortType(left)
-  const normalizedRight = normalizedPortType(right)
-  return normalizedLeft.length > 0
-    && normalizedRight.length > 0
-    && (normalizedLeft === normalizedRight || normalizedLeft === '*' || normalizedRight === '*')
-}
-
-function connectedUpstreamNodeIds(
-  workflow: UiWorkflow,
-  initialLinkId: string,
-  portType: string,
-): ReadonlySet<string> {
-  const links = workflowLinks(workflow)
-  const nodes = workflowNodes(workflow)
-  const reachable = new Set<string>()
-  const visited = new Set<string>()
-  const visiting = new Set<string>()
-
-  const visit = (linkId: string): void => {
-    if (visiting.has(linkId)) fail(`Workflow connected binding link "${linkId}" contains a cycle.`)
-    if (visited.has(linkId)) return
-    const link = links.get(linkId)
-    if (link === undefined) fail(`Workflow references missing link "${linkId}".`)
-    if (!compatiblePortType(link[5], portType)) return
-    const sourceNodeId = String(link[1])
-    const sourceOutputIndex = Number(link[2])
-    const sourceNode = nodes.get(sourceNodeId)
-    if (sourceNode === undefined) fail(`Workflow link "${linkId}" references missing source node "${sourceNodeId}".`)
-    const sourceOutput = record(array(sourceNode.outputs)[sourceOutputIndex], `Workflow node "${sourceNodeId}" output`)
-    if (!compatiblePortType(sourceOutput.type, portType)) return
-
-    visiting.add(linkId)
-    if (sourceNode.mode === 4) {
-      const input = compatibleBypassInput(sourceNode, sourceOutputIndex)
-      if (input?.link !== null && input?.link !== undefined && compatiblePortType(input.type, portType)) {
-        visit(String(input.link))
-      }
-      visiting.delete(linkId)
-      visited.add(linkId)
-      return
-    }
-    if (sourceNode.mode !== 2 && sourceNode.mode !== 4 && !EDITOR_ONLY_NODE_TYPES.has(String(sourceNode.type))) {
-      reachable.add(sourceNodeId)
-    }
-    for (const rawInput of array(sourceNode.inputs)) {
-      const input = record(rawInput, `Workflow node "${sourceNodeId}" input`)
-      if (input.link === null || input.link === undefined || !compatiblePortType(input.type, portType)) continue
-      visit(String(input.link))
-    }
-    visiting.delete(linkId)
-    visited.add(linkId)
-  }
-
-  visit(initialLinkId)
-  return reachable
-}
-
-function connectedBindingTargets(
-  assignment: ResolvedRuntimeParameter,
-  binding: Extract<RuntimeBinding, { operation: 'replace_input' }>,
-  targets: readonly ParameterTarget[],
-  workflow: UiWorkflow,
-  nodeDefinitions: UnknownRecord,
-): readonly ParameterTarget[] | null {
-  const kind = assignment.definition.kind
-  const bindingNode = workflowNodes(workflow).get(binding.nodeId)
-  if (bindingNode === undefined || bindingNode.mode === 2 || bindingNode.mode === 4) return null
-  const bindingInput = array(bindingNode.inputs)
-    .map(value => record(value, `Workflow node "${binding.nodeId}" input`))
-    .find(input => input.name === binding.inputName)
-  if (bindingInput === undefined || bindingInput.link === null || bindingInput.link === undefined) return null
-  const portType = normalizedPortType(bindingInput.type)
-  if (portType.length === 0) return null
-
-  const reachableNodeIds = connectedUpstreamNodeIds(workflow, String(bindingInput.link), portType)
-  const reachableTargets = targets.filter(target => reachableNodeIds.has(target.nodeId))
-  if (kind !== 'positive_prompt' && kind !== 'negative_prompt') {
-    try {
-      return [resolveParameterTarget(assignment, reachableTargets, new Set())]
-    } catch (error) {
-      if (
-        (kind !== 'width' && kind !== 'height')
-        || !(error instanceof GenerationRuntimeError)
-        || (error.code !== 'GENERATION_PARAMETER_TARGET_NOT_FOUND' && error.code !== 'GENERATION_PARAMETER_TARGET_AMBIGUOUS')
-      ) throw error
-      const definition = nodeDefinition(nodeDefinitions, String(bindingNode.type))
-      const values = array(bindingNode.widgets_values) as readonly JsonValue[]
-      const mapping = widgetMappings(bindingNode, definition).find(candidate => (
-        candidate.name === binding.inputName && candidate.index === binding.widgetIndex
-      ))
-      if (mapping === undefined || mapping.index >= values.length) throw error
-      return [{
-        key: `${binding.nodeId}:${mapping.name}:${mapping.index}`,
-        nodeId: binding.nodeId,
-        nodeType: String(bindingNode.type),
-        node: bindingNode,
-        mapping,
-        currentValue: values[mapping.index]!,
-        marker: parameterMarker(bindingNode),
-        loraSyntax: false,
-        disconnectInputName: binding.inputName,
-      }]
-    }
-  }
-  const names = inputNames(assignment.definition)
-  let candidates = reachableTargets.filter(target => (
-    names.includes(target.mapping.name)
-    && !target.loraSyntax
-  ))
-  const marker = kind === 'positive_prompt' ? 'positive' : 'negative'
-  const semantic = candidates.filter(target => target.marker.includes(marker))
-  if (semantic.length > 0) candidates = semantic
-  if (candidates.length === 0) {
-    parameterError(
-      'GENERATION_PARAMETER_TARGET_NOT_FOUND',
-      assignment.definition.parameterId,
-      `connected binding "${binding.nodeId}:${binding.inputName}" does not resolve to an upstream Prompt widget.`,
-    )
-  }
-  if (candidates.length > 1) {
-    parameterError(
-      'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
-      assignment.definition.parameterId,
-      `connected binding "${binding.nodeId}:${binding.inputName}" resolves to multiple upstream Prompt widgets: ${candidates.map(targetLabel).join(', ')}.`,
-    )
-  }
-  return candidates
 }
 
 function setParameterWidget(target: ParameterTarget, value: JsonValue, parameterId: string): void {
@@ -844,221 +857,60 @@ function setParameterWidget(target: ParameterTarget, value: JsonValue, parameter
   }
 }
 
-function disconnectParameterTarget(workflow: UiWorkflow, target: ParameterTarget): void {
-  if (target.disconnectInputName === undefined) return
-  const input = array(target.node.inputs)
-    .map(value => record(value, `Workflow node "${target.nodeId}" input`))
-    .find(candidate => candidate.name === target.disconnectInputName)
-  if (input === undefined || input.link === null || input.link === undefined) return
-  const linkId = String(input.link)
-  const links = array(workflow.links)
-  const link = links.find(candidate => Array.isArray(candidate) && String(candidate[0]) === linkId)
-  if (Array.isArray(link)) {
-    const sourceNode = workflowNodes(workflow).get(String(link[1]))
-    const sourceOutput = sourceNode === undefined ? undefined : array(sourceNode.outputs)[Number(link[2])]
-    if (sourceOutput !== null && typeof sourceOutput === 'object' && !Array.isArray(sourceOutput)) {
-      const outputLinks = array((sourceOutput as UnknownRecord).links)
-      ;(sourceOutput as UnknownRecord).links = outputLinks.filter(candidate => String(candidate) !== linkId) as JsonValue
-    }
-  }
-  input.link = null
-  ;(workflow as UnknownRecord).links = links.filter(candidate => !Array.isArray(candidate) || String(candidate[0]) !== linkId) as JsonValue
-}
-
-function downstreamNodeIds(workflow: UiWorkflow, sourceNodeId: string): ReadonlySet<string> {
-  const downstream = new Map<string, Set<string>>()
-  for (const link of workflowLinks(workflow).values()) {
-    const source = String(link[1])
-    const target = String(link[3])
-    const targets = downstream.get(source) ?? new Set<string>()
-    targets.add(target)
-    downstream.set(source, targets)
-  }
-  const reachable = new Set<string>()
-  const pending = [...(downstream.get(sourceNodeId) ?? [])]
-  while (pending.length > 0) {
-    const nodeId = pending.shift()!
-    if (reachable.has(nodeId)) continue
-    reachable.add(nodeId)
-    pending.push(...(downstream.get(nodeId) ?? []))
-  }
-  return reachable
-}
-
-function currentTargetValue(target: ParameterTarget): JsonValue | undefined {
-  return array(target.node.widgets_values)[target.mapping.index] as JsonValue | undefined
-}
-
-function scaledDimensionValue(
-  sourceValue: number,
-  scale: number,
-  target: ParameterTarget,
-  nodeDefinitions: UnknownRecord,
-): number {
-  const input = descriptor(nodeDefinition(nodeDefinitions, target.nodeType), target.mapping.name)
-  const rawConfig = input?.[1]
-  const config = rawConfig !== null && typeof rawConfig === 'object' && !Array.isArray(rawConfig)
-    ? rawConfig as UnknownRecord
-    : {}
-  const step = typeof config.step === 'number' && Number.isSafeInteger(config.step) && config.step > 0
-    ? config.step
-    : 1
-  const value = Math.round(sourceValue * scale / step) * step
-  if (!Number.isSafeInteger(value) || value < 1) {
-    fail(`Workflow derived dimension for "${targetLabel(target)}" is invalid.`)
-  }
-  return value
-}
-
-function preserveLatentUpscaleMultipliers(
-  workflow: UiWorkflow,
-  nodeDefinitions: UnknownRecord,
-  targets: readonly ParameterTarget[],
-  changedDimensionNodeIds: ReadonlySet<string>,
-  claims: ReadonlyMap<string, unknown>,
-): void {
-  const dimensionsByNode = new Map<string, { width?: ParameterTarget; height?: ParameterTarget }>()
-  for (const target of targets) {
-    if (target.mapping.name !== 'width' && target.mapping.name !== 'height') continue
-    const dimensions = dimensionsByNode.get(target.nodeId) ?? {}
-    dimensions[target.mapping.name] = target
-    dimensionsByNode.set(target.nodeId, dimensions)
-  }
-
-  for (const sourceNodeId of changedDimensionNodeIds) {
-    const source = dimensionsByNode.get(sourceNodeId)
-    if (source?.width === undefined || source.height === undefined) continue
-    if (
-      typeof source.width.currentValue !== 'number'
-      || typeof source.height.currentValue !== 'number'
-      || source.width.currentValue <= 0
-      || source.height.currentValue <= 0
-    ) continue
-    const currentWidth = currentTargetValue(source.width)
-    const currentHeight = currentTargetValue(source.height)
-    if (typeof currentWidth !== 'number' || typeof currentHeight !== 'number') continue
-    const reachable = downstreamNodeIds(workflow, sourceNodeId)
-
-    for (const [nodeId, destination] of dimensionsByNode) {
-      if (
-        !reachable.has(nodeId)
-        || destination.width?.nodeType !== 'LatentUpscale'
-        || destination.height?.nodeType !== 'LatentUpscale'
-        || claims.has(destination.width.key)
-        || claims.has(destination.height.key)
-        || typeof destination.width.currentValue !== 'number'
-        || typeof destination.height.currentValue !== 'number'
-      ) continue
-      const widthScale = destination.width.currentValue / source.width.currentValue
-      const heightScale = destination.height.currentValue / source.height.currentValue
-      if (!Number.isFinite(widthScale) || widthScale <= 0 || Math.abs(widthScale - heightScale) > 1e-9) continue
-      setParameterWidget(
-        destination.width,
-        scaledDimensionValue(currentWidth, widthScale, destination.width, nodeDefinitions),
-        'width',
-      )
-      setParameterWidget(
-        destination.height,
-        scaledDimensionValue(currentHeight, heightScale, destination.height, nodeDefinitions),
-        'height',
-      )
-    }
-  }
-}
-
 function applyRuntimeParameters(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
-  assignments: readonly ResolvedRuntimeParameter[],
-  bindingHints: readonly RuntimeBinding[],
+  supplied: Readonly<Record<string, JsonValue>>,
 ): void {
+  const assignments: readonly RuntimeParameterAssignment[] = Object.entries(supplied).map(([parameterId, value]) => ({
+    parameterId,
+    kind: runtimeParameterKind(parameterId),
+    value,
+  }))
   const targets = parameterTargets(workflow, nodeDefinitions)
   const reserved = new Set<string>()
   const claims = new Map<string, { readonly parameterId: string; readonly value: JsonValue }>()
-  const changedDimensionNodeIds = new Set<string>()
-  const unresolved: ResolvedRuntimeParameter[] = []
-  const assign = (target: ParameterTarget, assignment: ResolvedRuntimeParameter): void => {
+  const assign = (target: ParameterTarget, assignment: RuntimeParameterAssignment): void => {
     const claimed = claims.get(target.key)
     if (claimed !== undefined) {
       if (!jsonEquals(claimed.value, assignment.value)) {
         parameterError(
           'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
-          assignment.definition.parameterId,
+          assignment.parameterId,
           `resolves to ${targetLabel(target)}, which is already assigned by generation parameter "${claimed.parameterId}" with a different value.`,
         )
       }
       return
     }
-    disconnectParameterTarget(workflow, target)
-    setParameterWidget(target, assignment.value, assignment.definition.parameterId)
-    claims.set(target.key, { parameterId: assignment.definition.parameterId, value: assignment.value })
+    setParameterWidget(target, assignment.value, assignment.parameterId)
+    claims.set(target.key, { parameterId: assignment.parameterId, value: assignment.value })
     reserved.add(target.key)
-    if (assignment.definition.kind === 'width' || assignment.definition.kind === 'height') {
-      changedDimensionNodeIds.add(target.nodeId)
-    }
   }
 
-  for (const assignment of assignments) {
-    if (assignment.definition.kind.startsWith('lora_')) continue
-    const hinted = validBindingTargets(assignment, bindingHints, targets, workflow, nodeDefinitions)
-    if (hinted.length === 0) {
-      unresolved.push(assignment)
-      continue
-    }
-    for (const target of hinted) {
-      assign(target, assignment)
-    }
-  }
-
-  const ordered = [...unresolved].sort((left, right) => {
-    const leftHasSuffix = nodeIdSuffix(left.definition.parameterId) === null ? 1 : 0
-    const rightHasSuffix = nodeIdSuffix(right.definition.parameterId) === null ? 1 : 0
+  const ordered = [...assignments].sort((left, right) => {
+    const leftHasSuffix = nodeIdSuffix(left.parameterId) === null ? 1 : 0
+    const rightHasSuffix = nodeIdSuffix(right.parameterId) === null ? 1 : 0
     return leftHasSuffix - rightHasSuffix
   })
   for (const assignment of ordered) {
-    const target = resolveParameterTarget(assignment, targets, reserved)
+    const target = resolveParameterTarget(assignment, workflow, targets, reserved)
     assign(target, assignment)
   }
-  preserveLatentUpscaleMultipliers(workflow, nodeDefinitions, targets, changedDimensionNodeIds, claims)
-}
-
-function legacyLoraSelections(
-  assignments: readonly ResolvedRuntimeParameter[],
-): WorkflowCompilerInput['loras'] {
-  const models = assignments.filter(assignment => assignment.definition.kind === 'lora_model')
-  const weights = assignments.filter(assignment => assignment.definition.kind === 'lora_model_weight')
-  const triggers = assignments.filter(assignment => assignment.definition.kind === 'lora_trigger_word')
-  return models.flatMap((model, index) => {
-    if (typeof model.value !== 'string') return []
-    const weight = weights[index]?.value
-    const trigger = triggers[index]?.value
-    return [{
-      id: model.definition.parameterId,
-      fileName: model.value,
-      weight: typeof weight === 'number' ? weight : 1,
-      triggerWords: typeof trigger === 'string' && trigger.trim().length > 0 ? [trigger] : [],
-    }]
-  })
 }
 
 function applyLoras(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
   selections: WorkflowCompilerInput['loras'],
-  bindingHints: readonly RuntimeBinding[],
 ): void {
-  const boundLoraNodeIds = new Set(bindingHints.flatMap(binding => (
-    binding.operation === 'replace_input' && binding.parameterId.startsWith('lora_model')
-      ? [binding.nodeId]
-      : []
-  )))
+  if (selections.length === 0) return
   const standard: StandardLoraSlot[] = []
   const manager: ManagerLoraSlot[] = []
   const power: PowerLoraSlot[] = []
   for (const rawNode of workflow.nodes) {
     const node = rawNode as UnknownRecord
-    const activate = node.mode === 4 && boundLoraNodeIds.has(String(node.id))
-    if (node.mode === 2 || (node.mode === 4 && !activate) || EDITOR_ONLY_NODE_TYPES.has(String(node.type))) continue
+    const activate = false
+    if (node.mode === 2 || node.mode === 4 || EDITOR_ONLY_NODE_TYPES.has(String(node.type))) continue
     const definition = nodeDefinition(nodeDefinitions, String(node.type))
     if (node.type === POWER_LORA_LOADER_TYPE) {
       power.push({ node, activate })
@@ -1082,15 +934,6 @@ function applyLoras(
     }
     const text = managerLoraInput(definition, mappings)
     if (text !== undefined) manager.push({ node, activate, text })
-  }
-
-  if (selections.length === 0) {
-    for (const exactManager of manager.filter(slot => slot.structured !== undefined)) {
-      if (exactManager.activate) exactManager.node.mode = 0
-      setWidget(exactManager.node, exactManager.text, '')
-      setWidget(exactManager.node, exactManager.structured!, [])
-    }
-    return
   }
 
   const inputKinds = [standard.length > 0, manager.length > 0, power.length > 0].filter(Boolean).length
@@ -1356,12 +1199,11 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       }
       const definitions = record(nodeDefinitions, 'ComfyUI node definitions')
       const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
-      const runtimeParameters = input.runtimeParameters ?? []
-      applyRuntimeParameters(actualWorkflow, definitions, runtimeParameters, input.bindingHints ?? [])
+      const runtimeParameters = input.runtimeParameters ?? {}
+      applyRuntimeParameters(actualWorkflow, definitions, runtimeParameters)
       materializeRgthreeRandomSeeds(actualWorkflow, definitions, this.createRandomSeed)
       if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, definitions, input.model)
-      const loras = input.loras.length > 0 ? input.loras : legacyLoraSelections(runtimeParameters)
-      applyLoras(actualWorkflow, definitions, loras, input.bindingHints ?? [])
+      applyLoras(actualWorkflow, definitions, input.loras)
       const compiled = compile(actualWorkflow, definitions, input.expectedOutputNodeIds)
       const finalized = await this.officialApiWorkflowCompiler.compile({
         instanceId: input.instanceId,

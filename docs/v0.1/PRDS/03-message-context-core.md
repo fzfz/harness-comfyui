@@ -31,7 +31,7 @@ Skill选择继续使用Ticket 02项目composer渲染的Harness原生input overla
 | UI 对象 | 正式产品数据所有者 | Catalog operation | 本 Ticket 的责任 |
 |---|---|---|---|
 | 底模筛选 | `fzfz/NoobAI-XL-FZ` 的 `generation_base_models` | `/internal/semantic/base-models`，`querySemanticBaseModelsForSkill`，Tool `query_semantic_base_models` | 消费已发布Catalog contract并实现当前仓库Host adapter、Tool注册与Modal投影 |
-| Workflow 模板候选 | 同一数据源的模板、当前 revision 和运行参数安全摘要 | `/internal/semantic/comfyui-templates`，`querySemanticComfyuiTemplatesForSkill`，Tool `query_semantic_comfyui_templates` | 消费已发布安全摘要并实现当前仓库Host adapter、Tool注册与Modal投影；不得读取完整Workflow JSON |
+| Workflow 模板候选 | 同一数据源的模板ID、标题、底模ID和可选默认模型ID | `/internal/semantic/comfyui-templates`，`querySemanticComfyuiTemplatesForSkill`，Tool `query_semantic_comfyui_templates` | 消费已发布安全身份字段并实现当前仓库Host adapter、Tool注册与Modal投影；不得读取完整Workflow JSON或模板运行元数据 |
 | 角色候选 | 同一数据源的 `characters` 语义目录 | `/internal/semantic/characters`，`querySemanticCharactersForSkill`，Tool `query_semantic_characters` | 消费已发布`search`/`resolve`合同并实现当前仓库Host adapter、Tool注册与Modal投影 |
 
 数据源仓库的OpenAPI、只读handler、Catalog discovery、CLI和版本发布不属于本Ticket执行范围。它们已经由数据源仓库发布 v0.84.0；本Ticket只能通过 `production` Configuration Profile 的`source.catalogCliPath`消费该已发布CLI，并按`config/source-contract-v0.84.0.json`校验，不得进入数据源checkout修改文件或伪造第二份来源schema或CLI。
@@ -58,7 +58,7 @@ Client Module 将 Source `sample_image_urls` 映射后的 `CatalogItem.sampleIma
 | Tool名称 | operationId | Catalog path | 允许筛选 | 安全结果用途 |
 |---|---|---|---|---|
 | `query_semantic_base_models` | `querySemanticBaseModelsForSkill` | `/internal/semantic/base-models` | 无 | Modal顶部底模筛选；不得生成`ContextRef` |
-| `query_semantic_comfyui_templates` | `querySemanticComfyuiTemplatesForSkill` | `/internal/semantic/comfyui-templates` | `base_model_id` | Workflow模板卡片、详情和不可变快照；不得包含完整Workflow或bindings |
+| `query_semantic_comfyui_templates` | `querySemanticComfyuiTemplatesForSkill` | `/internal/semantic/comfyui-templates` | `base_model_id` | Workflow模板卡片、详情和不可变快照；不得包含完整Workflow或模板运行元数据 |
 | `query_semantic_characters` | `querySemanticCharactersForSkill` | `/internal/semantic/characters` | `work_id` | 角色卡片、详情和不可变快照 |
 
 已发布数据源OpenAPI中的每个Catalog operation必须按`/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ/plans/source-data-catalog-implementation.md`提供`x-harness-tool-name`、非空`description`、闭合request schema和闭合response schema。当前仓库的`createCatalogTool()`必须核对discovery中的`x-harness-tool-name`、`operationId`、path和schema identity与manifest完全一致，使用Harness公开`defineTool()`生成Tool，并把定义交给PRD 01的`registerProjectTools()`。任一记录不匹配时Host启动返回`SOURCE_CONTRACT_UNSUPPORTED`，三个Catalog Tool均不得部分注册。当前实现不得读取来源OpenAPI的`x-noobai-pi-tool-name`或旧Pi Tool contract。

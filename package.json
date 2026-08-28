@@ -18,6 +18,7 @@
     "test:contract": "vitest run tests/contract tests/security",
     "test:integration": "vitest run tests/integration",
     "test:prototype": "node --test prototype/generation-workbench/tests/*.test.mjs",
+    "verify:comfyui-workflows": "node --experimental-strip-types scripts/verification/comfyui-workflow-matrix.mjs",
     "quality:preinstall": "pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts",
     "quality:fast": "pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run prod:test && pnpm run test:prototype",
     "quality": "pnpm run quality:preinstall && pnpm run quality:fast",

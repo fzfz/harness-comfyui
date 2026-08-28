@@ -7,41 +7,6 @@ import {
   type PreparedGeneration,
 } from './generation-runtime.ts'
 
-export type RuntimeParameterValueType =
-  | 'string'
-  | 'integer'
-  | 'number'
-  | 'boolean'
-  | 'enum'
-  | 'image_reference'
-  | 'asset_reference'
-
-export interface RuntimeParameterDefinition {
-  readonly parameterId: string
-  readonly kind: string
-  readonly valueType: RuntimeParameterValueType
-  readonly defaultValue?: JsonValue
-  readonly required: boolean
-  readonly minimum?: number
-  readonly maximum?: number
-}
-
-export interface ReplaceInputBinding {
-  readonly parameterId: string
-  readonly operation: 'replace_input'
-  readonly nodeId: string
-  readonly inputName: string
-  readonly widgetIndex: number
-}
-
-export interface ComposeTextBinding {
-  readonly parameterId: string
-  readonly operation: 'compose_text'
-  readonly targetParameterId: string
-}
-
-export type RuntimeBinding = ReplaceInputBinding | ComposeTextBinding
-
 export type WorkflowNode = Readonly<Record<string, JsonValue>>
 
 export type UiWorkflow = Readonly<Record<string, JsonValue>> & {
@@ -64,8 +29,6 @@ export interface ComfyTemplateBundle {
   readonly configRevision: number
   readonly dimensionStrategy: string
   readonly workflow: UiWorkflow
-  readonly parameters: readonly RuntimeParameterDefinition[]
-  readonly bindings: readonly RuntimeBinding[]
   readonly expectedOutputNodeIds: readonly string[] | null
 }
 
@@ -79,16 +42,10 @@ export interface WorkflowCompilerInput {
   readonly workflow: UiWorkflow
   readonly connection: ComfyConnection
   readonly expectedOutputNodeIds: readonly string[] | null
-  readonly runtimeParameters?: readonly ResolvedRuntimeParameter[]
-  readonly bindingHints?: readonly RuntimeBinding[]
+  readonly runtimeParameters?: Readonly<Record<string, JsonValue>>
   readonly model?: GenerationRequest['model']
   readonly loras: GenerationRequest['loras']
   readonly signal?: AbortSignal
-}
-
-export interface ResolvedRuntimeParameter {
-  readonly definition: RuntimeParameterDefinition
-  readonly value: JsonValue
 }
 
 export interface WorkflowCompilerResult {
@@ -118,51 +75,6 @@ export function comfyInstanceOrigin(url: string): string {
     throw new GenerationRuntimeError('SOURCE_PROTOCOL_ERROR', 'ComfyUI instance URL protocol is invalid.')
   }
   return parsed.origin
-}
-
-function fail(message: string): never {
-  throw new GenerationRuntimeError('GENERATION_PARAMETER_INVALID', message)
-}
-
-function valueMatches(definition: RuntimeParameterDefinition, value: JsonValue): boolean {
-  switch (definition.valueType) {
-    case 'string':
-    case 'enum':
-    case 'image_reference':
-    case 'asset_reference':
-      return typeof value === 'string'
-    case 'integer':
-      return typeof value === 'number' && Number.isSafeInteger(value)
-    case 'number':
-      return typeof value === 'number' && Number.isFinite(value)
-    case 'boolean':
-      return typeof value === 'boolean'
-  }
-}
-
-function resolveParameterValues(
-  definitions: readonly RuntimeParameterDefinition[],
-  supplied: Readonly<Record<string, JsonValue>>,
-): Readonly<Record<string, JsonValue>> {
-  const definitionsById = new Map(definitions.map(definition => [definition.parameterId, definition]))
-  for (const parameterId of Object.keys(supplied)) {
-    if (!definitionsById.has(parameterId)) fail(`Generation parameter "${parameterId}" is not declared by the template.`)
-  }
-  const values: Record<string, JsonValue> = {}
-  for (const definition of definitions) {
-    if (!Object.hasOwn(supplied, definition.parameterId)) {
-      if (definition.required) fail(`Generation parameter "${definition.parameterId}" is required.`)
-      continue
-    }
-    const value = supplied[definition.parameterId]!
-    if (!valueMatches(definition, value)) fail(`Generation parameter "${definition.parameterId}" has an invalid value type.`)
-    if (typeof value === 'number') {
-      if (definition.minimum !== undefined && value < definition.minimum) fail(`Generation parameter "${definition.parameterId}" is below its minimum.`)
-      if (definition.maximum !== undefined && value > definition.maximum) fail(`Generation parameter "${definition.parameterId}" is above its maximum.`)
-    }
-    values[definition.parameterId] = value
-  }
-  return Object.freeze(values)
 }
 
 function safeSourceSnapshot(
@@ -195,11 +107,6 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
   async prepare(request: GenerationRequest, signal?: AbortSignal): Promise<PreparedGeneration> {
     const bundle = await this.options.source.readTemplate(request.templateId, signal)
     const instanceId = request.instanceId ?? this.options.defaultInstanceId
-    const values = resolveParameterValues(bundle.parameters, request.parameters)
-    const runtimeParameters = Object.freeze(bundle.parameters.flatMap(definition => {
-      const value = values[definition.parameterId]
-      return value === undefined ? [] : [Object.freeze({ definition, value })]
-    }))
     const instance = await this.options.source.readInstance(instanceId, signal)
     const connection = Object.freeze({
       url: instance.url,
@@ -211,8 +118,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
       workflow: bundle.workflow,
       connection,
       expectedOutputNodeIds: bundle.expectedOutputNodeIds,
-      runtimeParameters,
-      bindingHints: bundle.bindings,
+      runtimeParameters: request.parameters,
       model: request.model,
       loras: request.loras,
       signal,

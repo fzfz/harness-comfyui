@@ -17,16 +17,6 @@ export const CATALOG_ERROR_CODES = Object.freeze([
   'CATALOG_RESPONSE_TOO_LARGE',
   'CATALOG_PROTOCOL_ERROR',
 ] as const)
-export const CATALOG_TEMPLATE_VALUE_TYPES = Object.freeze([
-  'string',
-  'integer',
-  'number',
-  'boolean',
-  'enum',
-  'image_reference',
-  'asset_reference',
-] as const)
-
 export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'model',
@@ -96,7 +86,6 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
 
 export type CatalogKind = (typeof CATALOG_KIND_DEFINITIONS)[number]['kind']
 export type CatalogErrorCode = (typeof CATALOG_ERROR_CODES)[number]
-export type CatalogTemplateValueType = (typeof CATALOG_TEMPLATE_VALUE_TYPES)[number]
 
 export interface CatalogQueryRequest {
   readonly kind: CatalogKind
@@ -124,19 +113,11 @@ interface CatalogContextIdentity {
   readonly id: string
 }
 
-export interface CatalogTemplateParameter {
-  readonly parameter_id: string
-  readonly kind: string
-  readonly value_type: CatalogTemplateValueType
-  readonly required: boolean
-}
-
 export interface CatalogResolvedTemplate {
   readonly id: string
   readonly title: string
   readonly base_model_id: string
   readonly model_id: string | null
-  readonly parameters: readonly CatalogTemplateParameter[]
 }
 
 export interface CatalogResolvedLora {
@@ -232,10 +213,6 @@ function catalogKind(value: unknown): CatalogKind {
     throw new TypeError('catalog kind is invalid')
   }
   return value as CatalogKind
-}
-
-export function isCatalogTemplateValueType(value: unknown): value is CatalogTemplateValueType {
-  return typeof value === 'string' && CATALOG_TEMPLATE_VALUE_TYPES.includes(value as CatalogTemplateValueType)
 }
 
 export function parseCatalogQueryText(value: unknown): string {
@@ -423,35 +400,14 @@ export function parseCatalogContext(value: unknown): CatalogContext {
   }
 }
 
-function parseCatalogTemplateParameter(value: unknown, index: number): CatalogTemplateParameter {
-  const parameter = record(value, `catalog template parameter ${index}`)
-  exactKeys(parameter, ['parameter_id', 'kind', 'value_type', 'required'], `catalog template parameter ${index}`)
-  if (!isCatalogTemplateValueType(parameter.value_type)) {
-    throw new TypeError(`catalog template parameter ${index} value type is invalid`)
-  }
-  if (typeof parameter.required !== 'boolean') {
-    throw new TypeError(`catalog template parameter ${index} required flag is invalid`)
-  }
-  return Object.freeze({
-    parameter_id: itemText(parameter.parameter_id, `catalog template parameter ${index} id`, 500),
-    kind: itemText(parameter.kind, `catalog template parameter ${index} kind`, 500),
-    value_type: parameter.value_type,
-    required: parameter.required,
-  })
-}
-
 export function parseCatalogResolvedTemplate(value: unknown): CatalogResolvedTemplate {
   const input = record(value, 'resolved Workflow template')
-  exactKeys(input, ['id', 'title', 'base_model_id', 'model_id', 'parameters'], 'resolved Workflow template')
-  if (!Array.isArray(input.parameters) || input.parameters.length > 100) {
-    throw new TypeError('resolved Workflow template parameters are invalid')
-  }
+  exactKeys(input, ['id', 'title', 'base_model_id', 'model_id'], 'resolved Workflow template')
   return Object.freeze({
     id: parseCatalogStableId(input.id),
     title: itemText(input.title, 'resolved Workflow template title', 500),
     base_model_id: parseCatalogStableId(input.base_model_id),
     model_id: nullableStableId(input.model_id),
-    parameters: Object.freeze(input.parameters.map(parseCatalogTemplateParameter)),
   })
 }
 

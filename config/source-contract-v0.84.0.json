@@ -122,14 +122,12 @@
     },
     "templateBundleNormalization": {
       "itemsFrom": "results",
-      "requiredResultFields": ["id", "title", "revision_number", "workflow_sha256", "workflow_json", "config_revision", "dimension_strategy", "parameters_json", "bindings_json", "expected_output_node_ids_json"],
+      "requiredResultFields": ["id", "title", "revision_number", "workflow_sha256", "workflow_json", "config_revision", "dimension_strategy", "expected_output_node_ids_json"],
       "mapping": {
         "id": "template_id",
         "revision_number": "workflow_revision",
         "workflow_json": "source_workflow",
         "config_revision": "runtime_config_revision",
-        "parameters_json": "parameters",
-        "bindings_json": "bindings",
         "expected_output_node_ids_json": "expected_output_node_ids"
       },
       "expectedOutputNodeIds": {"type": ["array", "null"], "arrayMinItems": 1, "nullBehavior": "discover-active-output-nodes-from-live-object-info"},

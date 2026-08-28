@@ -42,7 +42,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
-import { RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
+import { GENERATION_ERROR_COPY, RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
 import { generationMediaContentUrl, type GenerationProjection } from '../../src/generation/contract.ts'
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
@@ -105,6 +105,21 @@ function renderDetails(workbench: WorkbenchController) {
 }
 
 describe('native Generation result drawer', () => {
+  it('gives executable Workflow guidance for generation parameter target errors', () => {
+    expect(GENERATION_ERROR_COPY.GENERATION_PARAMETER_TARGET_AMBIGUOUS).toMatchObject({
+      reason: '显式运行参数键在当前 UI Workflow 中匹配到多个可执行输入。',
+      next_step: '检查错误详情中的运行参数键和候选 ComfyUI 节点输入；修改 UI Workflow 使目标唯一，或在运行参数键后添加目标节点编号后缀（例如 seed_31）后重试。',
+    })
+    expect(GENERATION_ERROR_COPY.GENERATION_PARAMETER_TARGET_NOT_FOUND).toMatchObject({
+      reason: '显式运行参数键在当前 UI Workflow 和目标实例节点定义中没有匹配的可执行输入。',
+      next_step: '检查错误详情中的运行参数键；确认 UI Workflow 包含对应的活动可执行输入，或把运行参数键改为指向现有目标节点编号的后缀形式（例如 seed_31）后重试。',
+    })
+    expect(JSON.stringify([
+      GENERATION_ERROR_COPY.GENERATION_PARAMETER_TARGET_AMBIGUOUS,
+      GENERATION_ERROR_COPY.GENERATION_PARAMETER_TARGET_NOT_FOUND,
+    ])).not.toMatch(/binding|模板参数|参数 ID/u)
+  })
+
   it('keeps the blank Session overlay narrower than the shared result drawer', () => {
     const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
     expect(styles).toContain('.harness-comfyui-results-drawer.harness-comfyui-results-overlay {')

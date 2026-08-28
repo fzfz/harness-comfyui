@@ -9,8 +9,10 @@ import {
   type GenerationRuntime,
   type JsonValue,
 } from './generation-runtime.ts'
+import { STANDARD_RUNTIME_PARAMETER_KINDS } from './runtime-parameters.ts'
 
 export const GENERATION_TOOL_NAME = 'generate_with_comfyui'
+const STANDARD_RUNTIME_PARAMETER_DESCRIPTION = STANDARD_RUNTIME_PARAMETER_KINDS.join(', ')
 
 export interface CreateGenerationToolOptions {
   readonly runtime: Pick<GenerationRuntime, 'acceptGeneration'>
@@ -71,7 +73,7 @@ export function createGenerationTool(options: CreateGenerationToolOptions): Tool
         type: 'object',
         additionalProperties: true,
         required: true,
-        description: 'Runtime values keyed by the template parameter_id.',
+        description: `Explicit Workflow runtime values. Standard semantic keys include ${STANDARD_RUNTIME_PARAMETER_DESCRIPTION}. An exact user-supplied Workflow input key is also accepted. The Host resolves every supplied key against the executable Workflow and the target ComfyUI instance.`,
       },
       loras: {
         type: 'array',

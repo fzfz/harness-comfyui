@@ -45,7 +45,7 @@ function closedDefinition(definition: ToolDefinition): ToolDefinition {
 export function createTemplateResolverTool(catalog: TemplateResolverCatalog): ToolDefinition {
   const definition = defineTool({
     name: TEMPLATE_RESOLVER_TOOL_NAME,
-    description: 'Resolve one approved ComfyUI Workflow template ID to its title and safe runtime parameter definitions.',
+    description: 'Resolve one approved ComfyUI Workflow template ID to its title and model compatibility identities.',
     parameters: {
       id: { type: 'string', required: true, description: 'Approved ComfyUI Workflow template identity.' },
     },
@@ -58,37 +58,6 @@ export function createTemplateResolverTool(catalog: TemplateResolverCatalog): To
           title: { type: 'string', required: true, description: 'Human-readable title of the resolved ComfyUI Workflow template.' },
           base_model_id: { type: 'string', required: true, description: 'Base-model family ID required by the resolved Workflow template.' },
           model_id: { type: 'string', description: 'Generation-model ID currently saved as the resolved Workflow template default when the template declares one.' },
-          parameters: {
-            type: 'array',
-            required: true,
-            description: 'Definitions for each runtime parameter accepted by the resolved ComfyUI Workflow template.',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              properties: {
-                parameter_id: {
-                  type: 'string',
-                  required: true,
-                  description: 'Exact key to write in generate_with_comfyui.parameters.',
-                },
-                kind: {
-                  type: 'string',
-                  required: true,
-                  description: 'Semantic purpose used to match a user value to this runtime parameter.',
-                },
-                value_type: {
-                  type: 'string',
-                  required: true,
-                  description: 'Template-declared runtime value type: string, enum, image_reference, and asset_reference use JSON strings; integer, number, and boolean use their corresponding JSON scalar values.',
-                },
-                required: {
-                  type: 'boolean',
-                  required: true,
-                  description: 'Whether generate_with_comfyui must receive a value for this runtime parameter.',
-                },
-              },
-            },
-          },
         },
       },
       render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
@@ -100,7 +69,6 @@ export function createTemplateResolverTool(catalog: TemplateResolverCatalog): To
         title: template.title,
         base_model_id: template.base_model_id,
         ...(template.model_id === null ? {} : { model_id: template.model_id }),
-        parameters: template.parameters.map(parameter => ({ ...parameter })),
       }
     },
   })

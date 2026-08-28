@@ -148,7 +148,7 @@ describe('ComfyWorkflowCompiler', () => {
       {
         id: 5,
         type: 'Lora Loader (LoraManager)',
-        mode: 4,
+        mode: 0,
         properties: { __lm_widget_ids: ['__lm_autocomplete_meta_text', 'text', 'loras'] },
         inputs: [],
         outputs: [],
@@ -264,17 +264,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: representative,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string' as const, required: true }, value: prompt },
-        { definition: { parameterId: 'width', kind: 'width', valueType: 'number' as const, required: true }, value: width },
-        { definition: { parameterId: 'height', kind: 'height', valueType: 'number' as const, required: true }, value: height },
-      ],
-      bindingHints: [
-        { parameterId: 'positive_prompt', operation: 'replace_input' as const, nodeId: '2', inputName: 'text', widgetIndex: 0 },
-        { parameterId: 'width', operation: 'replace_input' as const, nodeId: '4', inputName: 'width', widgetIndex: 0 },
-        { parameterId: 'height', operation: 'replace_input' as const, nodeId: '4', inputName: 'height', widgetIndex: 1 },
-        { parameterId: 'lora_model', operation: 'replace_input' as const, nodeId: '5', inputName: 'text', widgetIndex: 1 },
-      ],
+      runtimeParameters: { "positive_prompt": prompt, "width": width, "height": height },
+
       model: { id: model, fileName: model },
       loras,
     })
@@ -303,10 +294,7 @@ describe('ComfyWorkflowCompiler', () => {
         expect(cached.apiWorkflow).toEqual(fresh.apiWorkflow)
         expect(cached.actualWorkflow.nodes.find(node => node.id === 5)?.mode).toBe(0)
         expect(cached.apiWorkflow).not.toHaveProperty('6')
-        expect(cached.apiWorkflow['8']).toMatchObject({ inputs: {
-          width: Number(variant.runtimeParameters[1]!.value) * 2,
-          height: Number(variant.runtimeParameters[2]!.value) * 2,
-        } })
+        expect(cached.apiWorkflow['8']).toMatchObject({ inputs: { width: 1024, height: 1536 } })
         expect(freshExporter.exportWorkflow).toHaveBeenCalledOnce()
         if (index === 0) expect(cachedExporter.exportWorkflow).toHaveBeenCalledOnce()
       }
@@ -803,7 +791,7 @@ describe('ComfyWorkflowCompiler', () => {
     })).rejects.toMatchObject({ code: 'WORKFLOW_COMPILE_FAILED' })
   })
 
-  it('uses a valid binding as the preferred target without making the binding mandatory', async () => {
+  it('reports ambiguous prompt widgets when the Workflow contains no structural distinction', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
       id: 4,
@@ -817,42 +805,184 @@ describe('ComfyWorkflowCompiler', () => {
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
-    const compiled = await compiler.compile({
+    await expect(compiler.compile({
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: {
-          parameterId: 'positive_prompt',
-          kind: 'positive_prompt',
-          valueType: 'string',
-          defaultValue: '1girl, white hair',
-          required: false,
+      runtimeParameters: { "positive_prompt": '1girl, black hair' },
+
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+      message: expect.stringMatching(/positive_prompt.*2:CLIPTextEncode\.text.*4:CLIPTextEncode\.text/u),
+    })
+  })
+
+  it('distinguishes unnamed positive and negative Prompt widgets by downstream input ports', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'CLIPTextEncode',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: [10] }],
+          widgets_values: ['template positive'],
         },
-        value: '1girl, black hair',
-      }],
-      bindingHints: [{
-        parameterId: 'positive_prompt',
-        operation: 'replace_input',
-        nodeId: '2',
-        inputName: 'text',
-        widgetIndex: 0,
-      }, {
-        parameterId: 'positive_prompt',
-        operation: 'replace_input',
-        nodeId: '2',
-        inputName: 'text',
-        widgetIndex: 0,
-      }],
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: [11] }],
+          widgets_values: ['template negative'],
+        },
+        {
+          id: 3,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [
+            { name: 'positive', type: 'CONDITIONING', link: 10 },
+            { name: 'negative', type: 'CONDITIONING', link: 11 },
+          ],
+          outputs: [],
+          widgets_values: [],
+        },
+        {
+          id: 4,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+        {
+          id: 5,
+          type: 'CLIPTextEncode',
+          title: 'Unused negative Prompt',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: ['disconnected prompt'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 3, 0, 'CONDITIONING'],
+        [11, 2, 0, 3, 1, 'CONDITIONING'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        KSampler: {
+          input: { required: { positive: ['CONDITIONING'], negative: ['CONDITIONING'] } },
+          input_order: { required: ['positive', 'negative'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['4'],
+      runtimeParameters: { positive_prompt: 'runtime positive', negative_prompt: 'runtime negative' },
       loras: [],
     })
 
-    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual(['1girl, black hair'])
-    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual(['1girl, white hair'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual(['runtime positive'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual(['runtime negative'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 5)?.widgets_values).toEqual(['disconnected prompt'])
   })
 
-  it('rewrites the executable upstream positive Prompt and clears an unselected connected LoraManager input', async () => {
+  it('exposes one shared Prompt control as positive when its second branch is zeroed for negative conditioning', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'CLIPTextEncode',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: [10, 11] }],
+          widgets_values: ['template prompt'],
+        },
+        {
+          id: 2,
+          type: 'ConditioningZeroOut',
+          mode: 0,
+          inputs: [{ name: 'conditioning', type: 'CONDITIONING', link: 11 }],
+          outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: [12] }],
+          widgets_values: [],
+        },
+        {
+          id: 3,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [
+            { name: 'positive', type: 'CONDITIONING', link: 10 },
+            { name: 'negative', type: 'CONDITIONING', link: 12 },
+          ],
+          outputs: [],
+          widgets_values: [],
+        },
+        {
+          id: 4,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [
+        [10, 1, 0, 3, 0, 'CONDITIONING'],
+        [11, 1, 0, 2, 0, 'CONDITIONING'],
+        [12, 2, 0, 3, 1, 'CONDITIONING'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        CLIPTextEncode: objectInfo.CLIPTextEncode,
+        ConditioningZeroOut: {
+          input: { required: { conditioning: ['CONDITIONING'] } },
+          input_order: { required: ['conditioning'], optional: [] },
+          output_node: false,
+        },
+        KSampler: {
+          input: { required: { positive: ['CONDITIONING'], negative: ['CONDITIONING'] } },
+          input_order: { required: ['positive', 'negative'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const positive = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['4'],
+      runtimeParameters: { positive_prompt: 'runtime prompt' },
+      loras: [],
+    })
+    expect(positive.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual(['runtime prompt'])
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['4'],
+      runtimeParameters: { negative_prompt: 'must not replace the shared positive Prompt' },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND' })
+  })
+
+  it('rewrites the executable upstream positive Prompt and preserves an unselected connected LoraManager input', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -956,25 +1086,25 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
-        value: 'usnr, gthan, 1girl',
-      }],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'usnr, gthan, 1girl' },
+
       loras: [],
     })
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'usnr, gthan, 1girl' } })
     expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { text: ['5', 0] } })
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: {
+      text: '<lora:template-lora:1>',
+      loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }],
+    } })
     const upstreamValues = compiled.actualWorkflow.nodes[0]?.widgets_values
     expect(Array.isArray(upstreamValues) ? upstreamValues[0] : undefined).toBe('usnr, gthan, 1girl')
     expect(compiled.actualWorkflow.nodes[0]?.widgets_values_named).toMatchObject({ wildcard_text: 'usnr, gthan, 1girl' })
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values_named)
-      .toMatchObject({ text: '', loras: [] })
+      .toEqual(actual.nodes.find(node => node.id === 4)?.widgets_values_named)
   })
 
-  it('rewrites the executable upstream negative Prompt and clears an unselected connected LoraManager input', async () => {
+  it('rewrites the executable upstream negative Prompt and preserves an unselected connected LoraManager input', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -1071,16 +1201,16 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'negative_prompt', kind: 'negative_prompt', valueType: 'string', required: false },
-        value: 'low quality, blurry',
-      }],
-      bindingHints: [{ parameterId: 'negative_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "negative_prompt": 'low quality, blurry' },
+
       loras: [],
     })
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'low quality, blurry' } })
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: {
+      text: '<lora:template-lora:1>',
+      loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }],
+    } })
   })
 
   it('rejects a connected Prompt binding with multiple semantic upstream widgets', async () => {
@@ -1181,11 +1311,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
-        value: 'requested prompt',
-      }],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'requested prompt' },
+
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
@@ -1193,7 +1320,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
   })
 
-  it('rejects a connected Prompt binding without an upstream Prompt widget', async () => {
+  it('rejects a connected Prompt input without an executable upstream Prompt widget', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -1259,19 +1386,16 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
-        value: 'requested prompt',
-      }],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'requested prompt' },
+
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
-      message: expect.stringContaining('connected binding "2:text" does not resolve to an upstream Prompt widget'),
+      message: expect.stringContaining('does not match a Workflow widget'),
     })
   })
 
-  it('rejects a connected Prompt binding whose only upstream text widget is LoraManager syntax', async () => {
+  it('rejects a connected Prompt input whose only upstream text widget is LoraManager syntax', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -1323,15 +1447,12 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
-        value: 'requested prompt',
-      }],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'requested prompt' },
+
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
-      message: expect.stringContaining('connected binding "2:text" does not resolve to an upstream Prompt widget'),
+      message: expect.stringContaining('does not match a Workflow widget'),
     })
     expect(actual.nodes[0]?.widgets_values_named).toMatchObject({ text: '<lora:template-lora:1>' })
   })
@@ -1426,16 +1547,16 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
-        value: 'requested prompt',
-      }],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'requested prompt' },
+
       loras: [],
     })
 
     expect(compiled.apiWorkflow['1']).toMatchObject({ inputs: { wildcard_text: 'requested prompt' } })
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: {
+      text: '<lora:template-lora:1>',
+      loras: [{ name: 'template-lora', strength: 1, clipStrength: 1, active: true }],
+    } })
   })
 
   it('follows only the effective input of a bypassed upstream Prompt branch', async () => {
@@ -1530,15 +1651,12 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', required: false },
-        value: 'requested prompt',
-      }],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '2', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'requested prompt' },
+
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
-      message: expect.stringContaining('connected binding "2:text" does not resolve to an upstream Prompt widget'),
+      message: expect.stringContaining('does not match an executable Workflow widget'),
     })
   })
 
@@ -1705,7 +1823,6 @@ describe('ComfyWorkflowCompiler', () => {
         {
           id: 1,
           type: 'easy int',
-          title: 'Width',
           mode: 0,
           inputs: [],
           outputs: [{ name: 'int', type: 'INT', links: [10] }],
@@ -1753,11 +1870,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 512, required: false },
-        value: 640,
-      }],
-      bindingHints: [{ parameterId: 'width', operation: 'replace_input', nodeId: '2', inputName: 'width', widgetIndex: 0 }],
+      runtimeParameters: { "width": 640 },
+
       loras: [],
     })
 
@@ -1765,7 +1879,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: ['1', 0] } })
   })
 
-  it('disconnects a dimension-selector link when an exact width or height cannot be represented upstream', async () => {
+  it('rejects exact dimensions when a connected selector cannot represent width and height widgets', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -1833,36 +1947,22 @@ describe('ComfyWorkflowCompiler', () => {
       }), { status: 200 })),
     })
 
-    const compiled = await compiler.compile({
+    await expect(compiler.compile({
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 1024, required: false }, value: 640 },
-        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1024, required: false }, value: 768 },
-      ],
-      bindingHints: [
-        { parameterId: 'width', operation: 'replace_input', nodeId: '2', inputName: 'width', widgetIndex: 0 },
-        { parameterId: 'height', operation: 'replace_input', nodeId: '2', inputName: 'height', widgetIndex: 1 },
-      ],
-      loras: [],
-    })
+      runtimeParameters: { "width": 640, "height": 768 },
 
-    expect(compiled.actualWorkflow.links).toEqual([])
-    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.outputs).toEqual([
-      { name: 'width', type: 'INT', links: [] },
-      { name: 'height', type: 'INT', links: [] },
-    ])
-    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.inputs).toEqual([
-      { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
-      { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
-      { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
-    ])
-    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: 640, height: 768, batch_size: 1 } })
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringContaining('width'),
+    })
+    expect(actual.links).toHaveLength(2)
   })
 
-  it('preserves an absolute latent-upscale multiplier when the source dimensions change', async () => {
+  it('does not rewrite independent latent-upscale dimensions when source dimensions change', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -1930,22 +2030,16 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 768, required: false }, value: 704 },
-        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1008, required: false }, value: 832 },
-      ],
-      bindingHints: [
-        { parameterId: 'width', operation: 'replace_input', nodeId: '1', inputName: 'width', widgetIndex: 0 },
-        { parameterId: 'height', operation: 'replace_input', nodeId: '1', inputName: 'height', widgetIndex: 1 },
-      ],
+      runtimeParameters: { "width": 704, "height": 832 },
+
       loras: [],
     })
 
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual([704, 832, 1])
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual([
-      'bicubic', 1056, 1248, 'disabled',
+      'bicubic', 1152, 1512, 'disabled',
     ])
-    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: 1056, height: 1248 } })
+    expect(compiled.apiWorkflow['2']).toMatchObject({ inputs: { width: 1152, height: 1512 } })
 
     const fixedAspectWorkflow = structuredClone(actual)
     const fixedAspectUpscale = fixedAspectWorkflow.nodes.find(node => node.id === 2) as { widgets_values: JsonValue[] }
@@ -1955,20 +2049,14 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: fixedAspectWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 768, required: false }, value: 704 },
-        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1008, required: false }, value: 832 },
-      ],
-      bindingHints: [
-        { parameterId: 'width', operation: 'replace_input', nodeId: '1', inputName: 'width', widgetIndex: 0 },
-        { parameterId: 'height', operation: 'replace_input', nodeId: '1', inputName: 'height', widgetIndex: 1 },
-      ],
+      runtimeParameters: { "width": 704, "height": 832 },
+
       loras: [],
     })
     expect(fixedAspect.apiWorkflow['2']).toMatchObject({ inputs: { width: 1152, height: 1536 } })
   })
 
-  it('rewrites the connected upstream seed source instead of an unrelated seed widget', async () => {
+  it('uses a parameter node suffix to rewrite the seed source connected to that consumer', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -2025,11 +2113,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'seed_2', kind: 'seed', valueType: 'integer', defaultValue: 999, required: false },
-        value: 303,
-      }],
-      bindingHints: [{ parameterId: 'seed_2', operation: 'replace_input', nodeId: '2', inputName: 'seed', widgetIndex: 0 }],
+      runtimeParameters: { "seed_2": 303 },
+
       loras: [],
     })
 
@@ -2042,24 +2127,12 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        {
-          definition: { parameterId: 'seed', kind: 'seed', valueType: 'integer', defaultValue: 101, required: false },
-          value: 404,
-        },
-        {
-          definition: { parameterId: 'seed_2', kind: 'seed', valueType: 'integer', defaultValue: 999, required: false },
-          value: 303,
-        },
-      ],
-      bindingHints: [
-        { parameterId: 'seed', operation: 'replace_input', nodeId: '1', inputName: 'seed', widgetIndex: 0 },
-        { parameterId: 'seed_2', operation: 'replace_input', nodeId: '2', inputName: 'seed', widgetIndex: 0 },
-      ],
+      runtimeParameters: { "seed": 404, "seed_2": 303 },
+
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
-      message: expect.stringContaining('seed_2'),
+      message: expect.stringMatching(/seed.*seed_2/u),
     })
   })
 
@@ -2117,14 +2190,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'positive_prompt', kind: 'positive_prompt', valueType: 'string', defaultValue: 'positive default', required: false }, value: 'positive final' },
-        { definition: { parameterId: 'negative_prompt', kind: 'negative_prompt', valueType: 'string', defaultValue: 'negative default', required: false }, value: 'negative final' },
-        { definition: { parameterId: 'width', kind: 'width', valueType: 'integer', defaultValue: 1024, required: false }, value: 768 },
-        { definition: { parameterId: 'height', kind: 'height', valueType: 'integer', defaultValue: 1344, required: false }, value: 1024 },
-        { definition: { parameterId: 'seed', kind: 'seed', valueType: 'integer', defaultValue: 0, required: false }, value: 42 },
-      ],
-      bindingHints: [{ parameterId: 'positive_prompt', operation: 'replace_input', nodeId: '999', inputName: 'text', widgetIndex: 0 }],
+      runtimeParameters: { "positive_prompt": 'positive final', "negative_prompt": 'negative final', "width": 768, "height": 1024, "seed": 42 },
+
       loras: [],
     })
 
@@ -2164,17 +2231,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: {
-          parameterId: 'reference_image',
-          kind: 'reference_image',
-          valueType: 'image_reference',
-          defaultValue: 'source.png',
-          required: true,
-        },
-        value: 'input.png',
-      }],
-      bindingHints: [],
+      runtimeParameters: { "reference_image": 'input.png' },
+
       loras: [],
     })
 
@@ -2204,16 +2262,367 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'seed', kind: 'seed', valueType: 'integer', defaultValue: 0, required: false }, value: 11 },
-        { definition: { parameterId: 'seed_7', kind: 'seed', valueType: 'integer', defaultValue: 0, required: false }, value: 22 },
-      ],
-      bindingHints: [],
+      runtimeParameters: { "seed": 11, "seed_7": 22 },
+
       loras: [],
     })
 
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 6)?.widgets_values).toEqual([11, 'fixed'])
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 7)?.widgets_values).toEqual([22, 'fixed'])
+  })
+
+  it('applies node-id suffixes to every published standard runtime parameter', async () => {
+    const controls = [
+      ['positive_prompt', 101, 'positive prompt'],
+      ['negative_prompt', 102, 'negative prompt'],
+      ['width', 103, 768],
+      ['height', 104, 1024],
+      ['seed', 105, 41],
+      ['cfg', 106, 7],
+      ['steps', 107, 20],
+      ['sampler_name', 108, 'euler'],
+      ['scheduler', 109, 'normal'],
+      ['denoise', 110, 1],
+      ['batch_size', 111, 1],
+      ['resolution_preset', 112, '1024x1024'],
+      ['reference_image', 113, 'source.png'],
+      ['aspect_ratio', 114, '1:1'],
+      ['megapixels', 115, 1],
+    ] as const
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        ...controls.map(([kind, id, initial]) => ({
+          id,
+          type: `Control${id}`,
+          title: kind,
+          mode: 0,
+          inputs: [{ name: kind, type: 'ANY', link: null, widget: { name: kind } }],
+          outputs: [],
+          widgets_values: [initial],
+        })),
+        {
+          id: 200,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [],
+    }
+    const definitions = Object.fromEntries(controls.map(([kind, id]) => [
+      `Control${id}`,
+      {
+        input: { required: { [kind]: ['ANY', {}] } },
+        input_order: { required: [kind], optional: [] },
+        output_node: false,
+      },
+    ]))
+    const runtimeParameters = Object.fromEntries(controls.map(([kind, id], index) => [
+      `${kind}_${id}`,
+      typeof controls[index]![2] === 'number' ? 900 + index : `runtime-${kind}`,
+    ]))
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...definitions,
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['200'],
+      runtimeParameters,
+      loras: [],
+    })
+
+    controls.forEach(([kind, id]) => {
+      expect(compiled.actualWorkflow.nodes.find(node => node.id === id)?.widgets_values).toEqual([
+        runtimeParameters[`${kind}_${id}`],
+      ])
+    })
+  })
+
+  it('rejects a node-id suffix that does not identify a matching target', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 6,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: [101, 'fixed'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: { seed: ['INT', { control_after_generate: true }] } },
+          input_order: { required: ['seed'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { seed_999: 303 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringMatching(/seed_999.*999/u),
+    })
+  })
+
+  it('rejects canonical and suffixed advanced parameters that claim the same target with different values', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 7,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      widgets_values: [20],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: { steps: ['INT', {}] } },
+          input_order: { required: ['steps'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { steps: 21, steps_7: 22 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+      message: expect.stringMatching(/steps.*steps_7|steps_7.*steps/u),
+    })
+  })
+
+  it('uses the upstream sampling stage as the canonical unsuffixed parameter target', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [{ name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } }],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [10] }],
+          widgets_values: [101, 'fixed'],
+        },
+        {
+          id: 2,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [
+            { name: 'samples', type: 'LATENT', link: 10 },
+            { name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } },
+          ],
+          outputs: [],
+          widgets_values: [202, 'fixed'],
+        },
+        {
+          id: 3,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [[10, 1, 0, 2, 0, 'LATENT']],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        KSampler: {
+          input: { required: { seed: ['INT', { control_after_generate: true }] }, optional: { samples: ['LATENT'] } },
+          input_order: { required: ['seed'], optional: ['samples'] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { seed: 303 },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual([303, 'fixed'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual([202, 'fixed'])
+  })
+
+  it('resolves connected sampler controls through explicitly named upstream value widgets', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 10,
+          type: 'PrimitiveFloat',
+          title: 'CFG',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'FLOAT', type: 'FLOAT', links: [20] }],
+          widgets_values: [1.8],
+        },
+        {
+          id: 11,
+          type: 'EasyInt',
+          title: 'Batch Size',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'INT', type: 'INT', links: [21] }],
+          widgets_values: [1],
+        },
+        {
+          id: 12,
+          type: 'InputParameters',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'sampler', type: 'COMBO', links: [22] }],
+          widgets_values: ['euler'],
+        },
+        {
+          id: 13,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [
+            { name: 'cfg', type: 'FLOAT', link: 20, widget: { name: 'cfg' } },
+            { name: 'sampler_name', type: 'COMBO', link: 22, widget: { name: 'sampler_name' } },
+          ],
+          outputs: [],
+          widgets_values: [1.8, 'euler'],
+        },
+        {
+          id: 14,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [{ name: 'batch_size', type: 'INT', link: 21, widget: { name: 'batch_size' } }],
+          outputs: [],
+          widgets_values: [1],
+        },
+        ...workflow.nodes,
+      ],
+      links: [
+        [20, 10, 0, 13, 0, 'FLOAT'],
+        [21, 11, 0, 14, 0, 'INT'],
+        [22, 12, 0, 13, 1, 'COMBO'],
+        ...(workflow.links as JsonValue[]),
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        PrimitiveFloat: {
+          input: { required: { value: ['FLOAT', {}] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        EasyInt: {
+          input: { required: { value: ['INT', {}] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        InputParameters: {
+          input: { required: { sampler: [['euler', 'dpmpp_2m'], {}] } },
+          input_order: { required: ['sampler'], optional: [] },
+          output_node: false,
+        },
+        KSampler: {
+          input: { required: { cfg: ['FLOAT', {}], sampler_name: [['euler', 'dpmpp_2m'], {}] } },
+          input_order: { required: ['cfg', 'sampler_name'], optional: [] },
+          output_node: false,
+        },
+        EmptyLatentImage: {
+          input: { required: { batch_size: ['INT', {}] } },
+          input_order: { required: ['batch_size'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { cfg: 5.5, batch_size: 2, sampler_name: 'dpmpp_2m' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 10)?.widgets_values).toEqual([5.5])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 11)?.widgets_values).toEqual([2])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 12)?.widgets_values).toEqual(['dpmpp_2m'])
+  })
+
+  it('prefers the latent-construction batch size over an unrelated batch widget', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push(
+      {
+        id: 10,
+        type: 'EmptyLatentImage',
+        mode: 0,
+        inputs: [{ name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } }],
+        outputs: [],
+        widgets_values: [1],
+      },
+      {
+        id: 11,
+        type: 'BatchConsumer',
+        mode: 0,
+        inputs: [{ name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } }],
+        outputs: [],
+        widgets_values: [4],
+      },
+    )
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        EmptyLatentImage: {
+          input: { required: { batch_size: ['INT', {}] } },
+          input_order: { required: ['batch_size'], optional: [] },
+          output_node: false,
+        },
+        BatchConsumer: {
+          input: { required: { batch_size: ['INT', {}] } },
+          input_order: { required: ['batch_size'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { batch_size: 2 },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 10)?.widgets_values).toEqual([2])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 11)?.widgets_values).toEqual([4])
   })
 
   it('uses an active SeedNode when an unsuffixed seed binding targets a bypassed node', async () => {
@@ -2242,11 +2651,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [
-        { definition: { parameterId: 'seed', kind: 'seed', valueType: 'integer', required: false, defaultValue: 801 }, value: 101 },
-        { definition: { parameterId: 'seed_6', kind: 'seed', valueType: 'integer', required: false, defaultValue: 601 }, value: 202 },
-      ],
-      bindingHints: [{ parameterId: 'seed', operation: 'replace_input', nodeId: '25', inputName: 'seed', widgetIndex: 0 }],
+      runtimeParameters: { "seed": 101, "seed_6": 202 },
+
       loras: [],
     })
 
@@ -2265,8 +2671,8 @@ describe('ComfyWorkflowCompiler', () => {
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{ definition: { parameterId: 'unknown_value', kind: 'unknown_value', valueType: 'string', required: true }, value: 'x' }],
-      bindingHints: [],
+      runtimeParameters: { "unknown_value": 'x' },
+
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
@@ -2288,15 +2694,12 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: ambiguous,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters: [{
-        definition: { parameterId: 'custom_value', kind: 'custom_value', valueType: 'string', defaultValue: 'same default', required: true },
-        value: 'changed',
-      }],
-      bindingHints: [],
+      runtimeParameters: { "custom_value": 'changed' },
+
       loras: [],
     })).rejects.toMatchObject({
-      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
-      message: expect.stringMatching(/custom_value.*1:ImageProducer\.source.*4:ImageProducer\.source/u),
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringContaining('custom_value'),
     })
   })
 
@@ -2646,7 +3049,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: syntax, loras: structuredLoras } })
   })
 
-  it('clears template LoraManager text and structured LoRAs when the request selects no LoRA', async () => {
+  it('preserves template LoraManager text and structured LoRAs when the request selects no LoRA', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
       id: 4,
@@ -2681,9 +3084,14 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([
-      { version: 1, textWidgetName: 'text' }, '', [],
+      { version: 1, textWidgetName: 'text' },
+      '<lora:wai\\template.safetensors:1>',
+      [{ name: 'wai\\template.safetensors', strength: 1, clipStrength: 1, active: true }],
     ])
-    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { text: '', loras: [] } })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: {
+      text: '<lora:wai\\template.safetensors:1>',
+      loras: [{ name: 'wai\\template.safetensors', strength: 1, clipStrength: 1, active: true }],
+    } })
   })
 
   it.each([
@@ -2769,13 +3177,9 @@ describe('ComfyWorkflowCompiler', () => {
       loras: [],
     })
 
-    for (const [index, route] of routeList.entries()) {
+    for (const [index] of routeList.entries()) {
       const widgets = compiled.actualWorkflow.nodes.find(node => node.id === index + 4)?.widgets_values
-      if (route === 'manager') {
-        expect(widgets).toEqual([{ version: 1, textWidgetName: 'text' }, '', []])
-      } else {
-        expect(widgets).toEqual(addedNodes[index]?.widgets_values)
-      }
+      expect(widgets).toEqual(addedNodes[index]?.widgets_values)
     }
   })
 
@@ -3178,7 +3582,7 @@ describe('ComfyWorkflowCompiler', () => {
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_AMBIGUOUS' })
   })
 
-  it('uses legacy LoRA parameters as defaults only when structured selections are absent', async () => {
+  it('does not reinterpret ordinary runtime parameters as structured LoRA selections', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
       id: 4,
@@ -3202,29 +3606,28 @@ describe('ComfyWorkflowCompiler', () => {
         },
       }), { status: 200 })),
     })
-    const runtimeParameters = [
-      { definition: { parameterId: 'lora_model', kind: 'lora_model', valueType: 'asset_reference' as const, required: false }, value: 'default.safetensors' },
-      { definition: { parameterId: 'lora_model_weight', kind: 'lora_model_weight', valueType: 'number' as const, required: false }, value: 0.7 },
-    ]
+    const runtimeParameters = {
+      lora_model: 'default.safetensors',
+      lora_model_weight: 0.7,
+    }
 
-    const legacy = await compiler.compile({
+    await expect(compiler.compile({
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
       runtimeParameters,
       loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND',
+      message: expect.stringContaining('lora_model'),
     })
-    expect(legacy.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([
-      'wai/default.safetensors', 0.7, 0.7,
-    ])
 
     const structured = await compiler.compile({
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      runtimeParameters,
       loras: [{ id: '68', fileName: 'selected.safetensors', weight: 1, triggerWords: ['selected'] }],
     })
     expect(structured.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([
@@ -3246,7 +3649,7 @@ describe('ComfyWorkflowCompiler', () => {
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_UNAVAILABLE' })
   })
 
-  it('prioritizes a bound bypass LoRA loader before active standard LoRA capacity', async () => {
+  it('uses active LoRA capacity and leaves bypass loaders unchanged', async () => {
     const actual = structuredClone(workflow)
     const loraNode = (id: number, mode: number, fileName: string, weight: number): UiWorkflow['nodes'][number] => ({
       id,
@@ -3286,45 +3689,34 @@ describe('ComfyWorkflowCompiler', () => {
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      bindingHints: [
-        { parameterId: 'lora_model', operation: 'replace_input', nodeId: '5', inputName: 'lora_name', widgetIndex: 0 },
-      ],
+
       loras: [{ id: '68', fileName: 'selected-first.safetensors', weight: 0.65, triggerWords: [] }],
     })
 
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)).toMatchObject({
       mode: 0,
-      widgets_values: ['active.safetensors', 0.4],
-    })
-    expect(compiled.actualWorkflow.nodes.find(node => node.id === 5)).toMatchObject({
-      mode: 0,
       widgets_values: [firstPath, 0.65],
     })
-    expect(compiled.apiWorkflow['5']).toMatchObject({
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 5)).toMatchObject({
+      mode: 4,
+      widgets_values: ['template.safetensors', 0.8],
+    })
+    expect(compiled.apiWorkflow['4']).toMatchObject({
       inputs: { lora_name: firstPath, strength_model: 0.65 },
     })
+    expect(compiled.apiWorkflow).not.toHaveProperty('5')
 
-    const multiple = await compiler.compile({
+    await expect(compiler.compile({
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
       expectedOutputNodeIds: ['3'],
-      bindingHints: [
-        { parameterId: 'lora_model', operation: 'replace_input', nodeId: '5', inputName: 'lora_name', widgetIndex: 0 },
-      ],
+
       loras: [
         { id: '68', fileName: 'selected-first.safetensors', weight: 0.65, triggerWords: [] },
         { id: '69', fileName: 'selected-second.safetensors', weight: 0.75, triggerWords: [] },
       ],
-    })
-    expect(multiple.actualWorkflow.nodes.find(node => node.id === 5)).toMatchObject({
-      mode: 0,
-      widgets_values: [firstPath, 0.65],
-    })
-    expect(multiple.actualWorkflow.nodes.find(node => node.id === 4)).toMatchObject({
-      mode: 0,
-      widgets_values: [secondPath, 0.75],
-    })
+    })).rejects.toMatchObject({ code: 'COMFYUI_LORA_CAPACITY_EXCEEDED' })
   })
 
   it('replaces the template checkpoint with the selected model using the target instance path', async () => {

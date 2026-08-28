@@ -948,3 +948,23 @@
 - 三个媒体文件的 SHA-256 分别为 `416773c804ac225537cd025eb604bec9e570d4c88ebc48a7ee94289b05c06020`、`8a295c55ef721e6dbd35eba47921ec7312477ddc6716fc319a5944ae9cfd2afa`、`c10a5ebe200a7c5fc6b95d2883a666ab03c69846933854864dbde78e743ab93e`，证明保存结果是三个不同文件。
 - 2026-08-25 Phase 36：`src/client/styles.css` 原先把右侧结果列 `.harness-comfyui-media-preview img, video` 设为 `object-fit: cover`；该规则会按固定预览容器比例裁剪纵向或横向媒体。
 - 右侧媒体预览现使用 `object-fit: contain`，媒体元素同时受容器宽度与高度约束；该组合会保持原始宽高比并显示完整画面。
+
+## 2026-08-28 — Official API Workflow 与运行参数结构解析
+
+- 当前 Catalog 返回 33 个 ComfyUI 模板；当前可用实例记录 ID 为 `2`，该记录指向获准调试的实例 122。
+- Generation Source adapter、Catalog Source adapter、当前 Source contract 和 `comfyui-generate` Skill 的运行路径不再读取、校验、投影或暴露 Source 模板参数元数据。
+- 实例 122 的 ComfyUI 页面使用 `graphToPrompt().output` 导出的模板 36、21、20 和 19 包含没有 `class_type` 的 `UNKNOWN` 字面量载体节点。Official API Workflow compiler 必须把载体值折叠到引用它的输入，并在严格校验前删除载体节点。
+- Official API Workflow cache 的 compiler schema version 已修改为 `2`。旧 compiler schema 生成的缓存不会参与新编译器的缓存命中。
+- 33 个真实模板全部完成 ComfyUI 页面 Official API Workflow 导出和相同模板的缓存命中复用；33 个模板均通过，失败数量为 0。
+- 33×15 单参数矩阵覆盖正向 Prompt、负向 Prompt、宽度、高度、Seed、CFG、采样步数、采样器、调度器、去噪强度、批量大小、分辨率预设、参考图、宽高比和百万像素数。矩阵没有目标歧义或其他编译异常。
+- `config/verification/comfyui-workflow-parameter-support.json`保存当前33个模板各自必须支持的非空精确参数集合。矩阵拒绝空支持集合，要求预期支持参数返回`passed`，并要求预期不支持参数只返回`GENERATION_PARAMETER_TARGET_NOT_FOUND`；全部参数退化为不可达时，矩阵必定失败。
+- Source Catalog在本轮验证期间新增模板41。精确模板ID集合检查拒绝继续使用32模板基线；模板41加入基线后支持11个参数，另外4个参数明确不可达，实际结果与结构化基线一致。
+- 模板 36、21、20 和 19 使用 `ResolutionSelector.aspect_ratio` 与 `ResolutionSelector.megapixels` 生成尺寸。这四个模板不存在可写的精确宽度和高度控件；精确 `width` 或 `height` 必须返回 `GENERATION_PARAMETER_TARGET_NOT_FOUND`，不能改写无关的 resize 控件。
+- 单参数矩阵不能发现两个参数占用同一控件。第一次组合矩阵发现 23 个模板把 `positive_prompt` 和 `negative_prompt` 解析到同一控件；修复后的解析器只把同时影响正向分支和零化负向分支的共享 Prompt 控件暴露为 `positive_prompt`。
+- 参数解析器优先选择具有下游执行连线的候选控件。断开的 Prompt 节点不会压过连接到采样路径的 Prompt 节点。
+- 修复后的组合矩阵为每个模板同时提交该模板全部可解析参数；33 个模板全部通过，每个模板同时解析 10 至 12 个运行参数，没有重复目标、目标歧义或其他编译异常。
+- 旧节点后缀筛选使用“没有后缀匹配时保留原候选”的偏好函数，因此`seed_999`可以错误写入唯一Seed widget。节点后缀属于显式目标选择合同，正确行为是严格筛选；后缀没有匹配目标或没有匹配目标的上游标量源时必须返回`GENERATION_PARAMETER_TARGET_NOT_FOUND`。
+- 15个公开标准参数键现在由`src/host/generation/runtime-parameters.ts`唯一列出，Workflow compiler和Generation Tool description共同读取该常量。`steps`、`sampler_name`、`scheduler`、`denoise`和`batch_size`的节点后缀不再被当作未知参数键。
+- 同一个临时缓存目录验证全部模板时，内容完全相同的不同模板会合法复用同一Workflow内容哈希，后序模板首调用可能直接命中。真实矩阵命令为每个模板建立独立临时缓存目录，以分别验证每个模板的页面导出miss和同模板hit；产品缓存仍按Workflow内容与执行结构共享。
+- 模板39的真实浏览器Run证明空LoRA请求不会清空或重建LoraManager。保存的Actual Workflow保留模板节点5的`text`和结构化`loras`，最终Official API Workflow保留同一`text`并由官方页面生成`inputs.loras.__value__`。
+- 当前UI错误目录原先要求用户通过模板binding解决参数目标歧义和缺失，但Harness已不读取该机制。两条错误文案现在只提供修改UI Workflow或使用严格节点编号后缀的可执行路径。

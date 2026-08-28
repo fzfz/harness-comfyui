@@ -1051,3 +1051,28 @@
 - 完整 `pnpm quality` 通过：244 项 unit/integration、20 项 contract/security、14 项 production 和 27 项 prototype 测试全部通过；函数覆盖率保持 100%。
 - 生产 Harness 已重启为 PID 64602；`prod:status` 为 running，`prod:health` 的 process、source runtime、Harness Web、client bundle、Run Repository 和 saved media 六项检查全部通过。
 - 生产生成的 `.local/source-client/client.js` 已包含右栏图片和视频的 `object-fit: contain` 规则。Phase 36 已完成。
+
+## 2026-08-28 Phase 38 — 删除 Source 模板运行元数据依赖
+
+- 已创建独立 worktree `/Volumes/4Tdisk/work/AI2/harness-comfyui-wt-official-api-no-source-metadata` 和分支 `codex/remove-source-runtime-metadata`；主工作区的用户变更未被修改。
+- 依赖安全门禁通过；`pnpm install --frozen-lockfile` 复用锁定依赖，没有下载或安装新版本。
+- 已删除 Generation Source、Catalog Source、TemplateBundle、Catalog Tool 和 Workflow compiler 对 Source 模板参数元数据的读取、检查、投影和运行依赖。
+- Workflow compiler 现在从当前 UI Workflow、目标实例 `/object_info`、活动状态、上下游连线和参数键定位运行值；Official API Workflow compiler随后把已确认值覆盖到Official Base API Workflow。
+- 已增加上游标量控件、正负 Prompt 极性、共享 Prompt、不可达 Prompt、重复目标、多源目标、绕过分支、空 LoRA 和 Official API Workflow 字面量载体回归测试。
+- 已使用主仓库 `.env` 和独立 worktree 的 DSH home 读取真实 Source 数据；测试脚本没有输出 `.env` 内容。
+- 33 个真实模板的 ComfyUI 页面 Official API Workflow 导出与缓存 miss→hit 验证全部通过。
+- 33×15 单参数矩阵没有目标歧义或其他编译错误；不支持的参数明确返回 `GENERATION_PARAMETER_TARGET_NOT_FOUND`。
+- 第一次全参数组合矩阵发现 23 个模板的正负 Prompt 重复占用问题；增加共享 Prompt 与不可达 Prompt 测试并修复结构解析后，33 个模板的全参数组合矩阵全部通过。
+- `generation-workflow-compiler.test.ts` 当前 76 项测试和 TypeScript 检查通过。
+- 完整 `pnpm quality` 通过：390 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。
+- 当前修复源码已使用 `pnpm worktree:start` 在前台启动；PID 87624 监听 `127.0.0.1:4173`，`pnpm worktree:status` 和 `pnpm worktree:health` 全部通过。
+- 真实 in-app Browser 刷新当前页面后显示工作区 `run-comfyui-workflows-harness`、模型 `DeepSeek V4 Flash · Default`、可写输入框、ComfyUI 工作台和空生成结果栏；页面没有 API Key 文案和对话框。
+- 仓库新增`pnpm verify:comfyui-workflows -- --instance-id 2 --output <path>`。该命令从当前Source枚举全部33个模板，读取实例122的实时`/object_info`，执行15类单参数编译、逐项比较`config/verification/comfyui-workflow-parameter-support.json`精确支持面、执行每个模板全部支持参数的组合编译、真实页面Official API Workflow导出和每模板独立缓存miss→hit对比；最终报告`failed: false`。
+- Source Catalog新增模板41时，精确支持面门禁先拒绝32模板基线。计划执行者依据模板41的活动Prompt、尺寸、Seed和采样执行链把11个应支持参数加入结构化基线；重新运行后33个模板的495项结果全部与基线一致，参数错误、支持面偏差、组合错误和Official cache错误均为0。
+- 节点ID后缀现在覆盖Generation Tool公布的15个标准参数键。不存在的后缀（例如`seed_999`）返回`GENERATION_PARAMETER_TARGET_NOT_FOUND`，不会回退到唯一同类widget；规范参数与后缀参数以不同值占用同一widget时返回`GENERATION_PARAMETER_TARGET_AMBIGUOUS`。
+- Official API Workflow载体测试现在直接核对缓存中的模板字面量，并覆盖非零载体输出、未引用同形对象和失败不写缓存分支。
+- 真实浏览器通过`/comfyui-generate`提交模板39、实例2和10个显式参数，创建Run`run_a58f1a47-fe85-4e9f-87b4-255e9e76944b`。该Run以远端prompt ID`7b83ebfd-bca3-4e97-ab60-a8bc4cc45a18`进入`succeeded`，保存一张445425字节的512×512 PNG。
+- 真实Run的Request、Actual Workflow和API Workflow核对通过：Prompt为`1girl, solo, simple background`，seed为880028，宽高为512×512，steps/cfg/denoise/batch均为1，sampler为`euler`，scheduler为`normal`；空LoRA数组没有修改模板39的LoraManager`text`与`loras.__value__`。
+- Spec Reviewer发现`config/error-catalog.json`仍要求用户修改已删除的模板binding。当前两条参数目标错误文案只引用显式运行参数键、候选ComfyUI节点输入、UI Workflow、目标实例节点定义和节点编号后缀；文案合同测试明确拒绝旧术语。
+- 最终`pnpm quality`通过：404项unit/integration、24项contract/security、40项production和27项prototype测试全部通过；函数覆盖率为100%。
+- 独立Standards Reviewer、Spec Reviewer和语义Reviewer最终均返回PASS；`git diff --check`通过。

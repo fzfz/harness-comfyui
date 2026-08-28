@@ -49,4 +49,17 @@ describe('Source Contract Identity v0.84.0', () => {
       },
     })
   })
+
+  it('keeps Source template runtime metadata outside the Harness normalization contract', () => {
+    const source = contract.source as {
+      templateBundleNormalization: {
+        requiredResultFields: readonly string[]
+        mapping: Record<string, string>
+      }
+    }
+    expect(source.templateBundleNormalization.requiredResultFields).not.toContain('parameters_json')
+    expect(source.templateBundleNormalization.requiredResultFields).not.toContain('bindings_json')
+    expect(source.templateBundleNormalization.mapping).not.toHaveProperty('parameters_json')
+    expect(source.templateBundleNormalization.mapping).not.toHaveProperty('bindings_json')
+  })
 })

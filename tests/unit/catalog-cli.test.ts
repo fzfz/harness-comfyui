@@ -138,7 +138,7 @@ describe('Catalog CLI adapter', () => {
     )))).not.toContain('workflow_json')
   })
 
-  it('resolves one Workflow template by id and removes its full Workflow from the Agent projection', async () => {
+  it('resolves one Workflow template by id without reading Workflow or parameter metadata', async () => {
     const execute = vi.fn<CatalogCliProcess>(async () => ({
       exitCode: 0,
       stdout: response([{
@@ -147,10 +147,7 @@ describe('Catalog CLI adapter', () => {
         model_id: 1,
         title: 'wai_txt2img_lora',
         workflow_json: { hostOnlyGraph: true },
-        parameters_json: [
-          { parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false, visible: true },
-          { parameter_id: 'seed', kind: 'seed', value_type: 'integer', required: false, visible: true },
-        ],
+        parameters_json: 'malformed metadata that the adapter must ignore',
       }], 1, 1, 1),
       stderr: '',
     }))
@@ -161,10 +158,6 @@ describe('Catalog CLI adapter', () => {
       title: 'wai_txt2img_lora',
       base_model_id: '2',
       model_id: '1',
-      parameters: [
-        { parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false },
-        { parameter_id: 'seed', kind: 'seed', value_type: 'integer', required: false },
-      ],
     })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
       '--port', '18093',
@@ -174,6 +167,32 @@ describe('Catalog CLI adapter', () => {
       '--id', '37',
     ], controller.signal)
     expect(JSON.stringify(await catalog(execute).resolveTemplate('37', controller.signal))).not.toContain('workflow_json')
+    expect(JSON.stringify(await catalog(execute).resolveTemplate('37', controller.signal))).not.toContain('parameters_json')
+  })
+
+  it.each([
+    undefined,
+    null,
+    [{ parameter_id: 'seed', kind: 'seed' }, { parameter_id: 'seed_6', kind: 'seed', contradicts: 'seed' }],
+  ])('ignores absent, null, or contradictory template parameter metadata %#', async (parametersJson) => {
+    const execute: CatalogCliProcess = async () => ({
+      exitCode: 0,
+      stdout: response([{
+        id: 37,
+        base_model_id: 2,
+        model_id: null,
+        title: 'wai_txt2img',
+        ...(parametersJson === undefined ? {} : { parameters_json: parametersJson }),
+      }], 1, 1, 1),
+      stderr: '',
+    })
+
+    await expect(catalog(execute).resolveTemplate('37', new AbortController().signal)).resolves.toEqual({
+      id: '37',
+      title: 'wai_txt2img',
+      base_model_id: '2',
+      model_id: null,
+    })
   })
 
   it('resolves one LoRA with semantic guidance, trigger words, default weight, and the catalog file name', async () => {

@@ -8,7 +8,6 @@ import {
   CATALOG_PAGE_SIZE,
   CATALOG_QUERY_TIMEOUT_MS,
   catalogDefinition,
-  isCatalogTemplateValueType,
   parseBaseModelList,
   parseCatalogComfyuiInstancePage,
   parseCatalogComfyuiInstanceQueryRequest,
@@ -29,7 +28,6 @@ import {
   type CatalogResolvedGenerationModel,
   type CatalogResolvedLora,
   type CatalogResolvedTemplate,
-  type CatalogTemplateParameter,
 } from '../../catalog/contract.ts'
 
 const MAX_CLI_OUTPUT_BYTES = 32 * 1024 * 1024
@@ -197,27 +195,6 @@ function sourceNumber(value: unknown, label: string): number {
   return value
 }
 
-function sourceTemplateParameters(value: unknown): readonly CatalogTemplateParameter[] {
-  if (!Array.isArray(value) || value.length > 100) {
-    throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameters are invalid.')
-  }
-  return Object.freeze(value.flatMap((entry) => {
-    const parameter = sourceRecord(entry)
-    if (parameter.visible !== true) return []
-    const valueType = parameter.value_type
-    if (!isCatalogTemplateValueType(valueType)
-      || typeof parameter.required !== 'boolean') {
-      throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
-    }
-    return [Object.freeze({
-      parameter_id: sourceLabel(parameter.parameter_id),
-      kind: sourceLabel(parameter.kind),
-      value_type: valueType,
-      required: parameter.required,
-    })]
-  }))
-}
-
 function sourceContext(kind: CatalogQueryRequest['kind'], id: string, result: Record<string, unknown>): CatalogContext {
   switch (kind) {
     case 'model':
@@ -284,7 +261,6 @@ function normalizeResolvedTemplate(value: unknown): CatalogResolvedTemplate {
     title: sourceLabel(result.title),
     base_model_id: sourceId(result.base_model_id),
     model_id: sourceNullableId(result.model_id),
-    parameters: sourceTemplateParameters(result.parameters_json),
   })
 }
 

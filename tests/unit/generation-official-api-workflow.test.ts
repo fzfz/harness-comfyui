@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -109,6 +109,104 @@ describe('official API Workflow cache', () => {
     expect(firstExporter.exportWorkflow).toHaveBeenCalledTimes(1)
     expect(secondExporter.exportWorkflow).not.toHaveBeenCalled()
     expect(hit.apiWorkflow).toEqual(miss.apiWorkflow)
+  })
+
+  it('folds official UNKNOWN literal carriers into their consumer inputs before caching', async () => {
+    const cacheDirectory = await temporaryDirectory()
+    const officialWithLiteralCarriers: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: { prompt: ['97', 0] } },
+      '97': { inputs: { UNKNOWN: 'template prompt' }, _meta: { title: 'prompt' } },
+      '100': { class_type: 'IdentityEditOptions', inputs: { ref_boost: ['112', 0] } },
+      '112': { inputs: { UNKNOWN: 6 }, _meta: {} },
+    }
+    const firstProjection: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: { prompt: 'first runtime prompt' } },
+      '100': { class_type: 'IdentityEditOptions', inputs: { ref_boost: 7 } },
+    }
+    const secondProjection: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: { prompt: 'second runtime prompt' } },
+      '100': { class_type: 'IdentityEditOptions', inputs: { ref_boost: 8 } },
+    }
+    const firstExporter = exporter(officialWithLiteralCarriers)
+    const first = new OfficialApiWorkflowCompiler({ cacheDirectory, instanceCacheEpoch: '1', frontend: firstExporter })
+    const miss = await first.compile(compileInput(firstProjection))
+    const secondExporter = exporter(officialWithLiteralCarriers)
+    const second = new OfficialApiWorkflowCompiler({ cacheDirectory, instanceCacheEpoch: '1', frontend: secondExporter })
+    const hit = await second.compile(compileInput(secondProjection))
+
+    expect(miss.apiWorkflow).not.toHaveProperty('97')
+    expect(miss.apiWorkflow).not.toHaveProperty('112')
+    expect(miss.apiWorkflow['84']).toMatchObject({ inputs: { prompt: 'first runtime prompt' } })
+    expect(miss.apiWorkflow['100']).toMatchObject({ inputs: { ref_boost: 7 } })
+    expect(hit.apiWorkflow['84']).toMatchObject({ inputs: { prompt: 'second runtime prompt' } })
+    expect(hit.apiWorkflow['100']).toMatchObject({ inputs: { ref_boost: 8 } })
+    expect(firstExporter.exportWorkflow).toHaveBeenCalledOnce()
+    expect(secondExporter.exportWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('preserves literal carrier values in the cached official base when runtime projection does not overlay them', async () => {
+    const cacheDirectory = await temporaryDirectory()
+    const officialWithLiteralCarriers: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: { prompt: ['97', 0] } },
+      '97': { inputs: { UNKNOWN: 'template prompt' }, _meta: { title: 'prompt' } },
+      '100': { class_type: 'IdentityEditOptions', inputs: { ref_boost: ['112', 0] } },
+      '112': { inputs: { UNKNOWN: 6 }, _meta: {} },
+    }
+    const projection: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: {} },
+      '100': { class_type: 'IdentityEditOptions', inputs: {} },
+    }
+    const compiler = new OfficialApiWorkflowCompiler({
+      cacheDirectory,
+      instanceCacheEpoch: '1',
+      frontend: exporter(officialWithLiteralCarriers),
+    })
+
+    const result = await compiler.compile(compileInput(projection))
+
+    expect(result.apiWorkflow['84']).toMatchObject({ inputs: { prompt: 'template prompt' } })
+    expect(result.apiWorkflow['100']).toMatchObject({ inputs: { ref_boost: 6 } })
+    const cached = JSON.parse(await readFile(join(cacheDirectory, `${result.cacheKey}.json`), 'utf8')) as {
+      apiWorkflow: Readonly<Record<string, JsonValue>>
+    }
+    expect(cached.apiWorkflow['84']).toMatchObject({ inputs: { prompt: 'template prompt' } })
+    expect(cached.apiWorkflow['100']).toMatchObject({ inputs: { ref_boost: 6 } })
+  })
+
+  it('rejects a nonzero literal-carrier output and writes no cache file', async () => {
+    const cacheDirectory = await temporaryDirectory()
+    const invalidOfficial: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: { prompt: ['97', 1] } },
+      '97': { inputs: { UNKNOWN: 'template prompt' }, _meta: { title: 'prompt' } },
+    }
+    const compiler = new OfficialApiWorkflowCompiler({
+      cacheDirectory,
+      instanceCacheEpoch: '1',
+      frontend: exporter(invalidOfficial),
+    })
+
+    await expect(compiler.compile(compileInput({
+      '84': { class_type: 'IdentityEdit', inputs: {} },
+    }))).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_EXPORT_FAILED' })
+    await expect(readdir(cacheDirectory)).resolves.toEqual([])
+  })
+
+  it('rejects an unreferenced UNKNOWN-shaped object instead of silently deleting it', async () => {
+    const cacheDirectory = await temporaryDirectory()
+    const invalidOfficial: Readonly<Record<string, JsonValue>> = {
+      '84': { class_type: 'IdentityEdit', inputs: { prompt: 'template prompt' } },
+      '97': { inputs: { UNKNOWN: 'unreferenced' }, _meta: { title: 'not a carrier without a consumer' } },
+    }
+    const compiler = new OfficialApiWorkflowCompiler({
+      cacheDirectory,
+      instanceCacheEpoch: '1',
+      frontend: exporter(invalidOfficial),
+    })
+
+    await expect(compiler.compile(compileInput({
+      '84': { class_type: 'IdentityEdit', inputs: {} },
+    }))).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_EXPORT_FAILED' })
+    await expect(readdir(cacheDirectory)).resolves.toEqual([])
   })
 
   it('coalesces concurrent misses for the same cache identity', async () => {
@@ -304,13 +402,13 @@ describe('official API Workflow cache', () => {
     const parsed = JSON.parse(contents) as Record<string, unknown>
 
     expect(parsed).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       cacheKey: result.cacheKey,
       identity: {
         instanceId: 'win3080',
         instanceOrigin: 'http://192.168.110.122:8188',
         instanceCacheEpoch: 'epoch-7',
-        compilerSchemaVersion: 1,
+        compilerSchemaVersion: 2,
       },
     })
     expect(contents).not.toContain('Bearer secret')

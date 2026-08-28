@@ -30,7 +30,7 @@ Ticket 12 — 在普通 Harness 会话中使用迁移的 Prompt 与 LoRA 调整 
 |---|---|---|---|
 | `skills/anima-prompt-builder/` | `skills/anima-prompt-builder/` | Prompt 构造知识和本次任务需要的 `references/` | 重写 `SKILL.md` 的输入、Tool和直接输出协议；不迁移 `agents/openai.yaml`、`scripts/validate-output.mjs`、`run_skill_script`、`finalize_skill_error`、`noobai_user_prompt` 或来源运行时说明 |
 | `skills/wai-sdxl-prompt-builder/` | `skills/wai-sdxl-prompt-builder/` | Prompt 构造知识和本次任务需要的 `references/` | 重写 `SKILL.md` 的输入、Tool和直接输出协议；不迁移 `agents/openai.yaml`、`scripts/validate-output.mjs`、`run_skill_script`、`finalize_skill_error`、旧调用标识字段或来源运行时说明 |
-| `management-skills/lora-adjustment/` | `skills/lora-adjustment/` | LoRA 权重、MODEL/CLIP、停用成员、触发词和连续调整语义；`references/weight-guidance.md` | 重写 `SKILL.md` 为普通 Harness Skill；不迁移 `config/result-contract.json`、`scripts/`、`run_skill_script`、`finalize_management_skill_success`、`finalize_management_skill_error`、专用管理 Pi 或专用管理 Skill 会话 |
+| `management-skills/lora-adjustment/` | `skills/lora-adjustment/` | LoRA 权重、停用成员、触发词和连续调整语义；`references/weight-guidance.md` | 重写 `SKILL.md` 为普通 Harness Skill；不迁移 `config/result-contract.json`、`scripts/`、`run_skill_script`、`finalize_management_skill_success`、`finalize_management_skill_error`、专用管理 Pi 或专用管理 Skill 会话 |
 
 迁移后的 Skill 目录只能引用自身相对文件和 Harness 向当前 Agent 授权的 Tool。Skill 文件不得引用来源 checkout、当前仓库业务模块、SQLite、ComfyUI URL、本机绝对路径或用户全局 Skill 目录。
 
@@ -42,7 +42,7 @@ Ticket 12 — 在普通 Harness 会话中使用迁移的 Prompt 与 LoRA 调整 
 |---|---|---|---|
 | `skills/anima-prompt-builder/` | 重写`SKILL.md`、`references/01-quick-start.md`和`references/02-role.md`；新建`references/catalog-tools.md`和`references/output-format.md` | `references/00-template-header.md`、`04-final-self-check.md`至`17-examples.md`以及`artist-style-query-vocabulary.md`中不依赖旧输入、Tool或finalizer的Prompt知识 | `agents/`、`scripts/`、`references/03-output-protocol.md`、`references/semantic-query-interfaces.md` |
 | `skills/wai-sdxl-prompt-builder/` | 重写`SKILL.md`；新建`references/catalog-tools.md`、`references/message-input.md`和`references/prompt-output-format.md`；把所有指向旧`semantic-tool-orchestration.md`的链接改为`catalog-tools.md` | composition、action、spatial、position、artist adoption、storyboard和examples等纯Prompt知识文件，但文件内容必须改为从当前消息不可变快照或新Catalog Tool结果取得角色/画师数据 | `agents/`、`scripts/`、`references/semantic-tool-orchestration.md`、`references/input-contract.md`、`references/prompt-format-validator.md` |
-| `skills/lora-adjustment/` | 重写`SKILL.md`；保留并按新输入字段修订`references/weight-guidance.md` | LoRA的MODEL/CLIP权重、停用成员、触发词和连续调整语义 | `config/`、`scripts/`、来源专用管理Pi和来源专用管理Skill会话说明 |
+| `skills/lora-adjustment/` | 重写`SKILL.md`；保留并按新输入字段修订`references/weight-guidance.md` | LoRA权重、停用成员、触发词和连续调整语义 | `config/`、`scripts/`、来源专用管理Pi和来源专用管理Skill会话说明 |
 
 目标`SKILL.md`必须只描述Harness Skill执行者能够看到的当前普通用户消息、`generation-context.v1`快照、普通Session历史、相对references和获授权Tool。Anima和WAI的Prompt输出必须由Skill直接写入最终assistant消息；LoRA调整结果必须由Skill直接写入最终assistant消息。三个目录都不能包含或调用旧Skill脚本执行器、成功finalizer、错误finalizer、来源输入包装对象或旧批量Tool协议。
 
@@ -83,7 +83,7 @@ Anima与WAI对一个查询目标发出一次调用：
 - 至少一项 `lora` 的 `generation-context.v1` 快照；
 - 当前完整提示词。当前提示词可以由用户在本条消息中明确提供，也可以是同一 Harness Session 中最近一条成功 Prompt Skill 或 `lora-adjustment` 回复；存在多个候选且用户没有指明时，Skill 必须请求用户选择，不能猜测。
 
-Workflow模板安全快照必须提供 `base_lora_node_type: "LoraLoader" | "LoraLoaderModelOnly"`、`weight_ranges.model` 和 `weight_ranges.clip`。每项 LoRA 快照必须提供 `source_lora_id`、`file_name`、`description`、`usage`、`trigger_words` 和默认 `weight`。这些字段由 PRD 05 的真实 Catalog `resolve` 响应产生；原型数组或模型猜测不能补齐缺失字段。
+Workflow模板安全快照只提供模板ID、标题、底模ID和可选默认模型ID。每项 LoRA 快照必须提供 `source_lora_id`、`file_name`、`description`、`usage`、`trigger_words` 和默认 `weight`。这些字段由 PRD 05 的真实 Catalog `resolve` 响应产生；`lora-adjustment`不读取Workflow模板运行元数据，也不根据Workflow节点类型推断权重合同。
 
 `lora-adjustment` 必须按消息中的 LoRA 快照顺序处理全部成员，并为每个 `source_lora_id` 调用一次 `query_semantic_loras` 的 `resolve` 模式。Catalog结果只用于理解当前说明；它不能增加、删除、替换或重排本条消息的不可变 LoRA 快照，也不能替换快照中的 `file_name` 或允许触发词。
 
@@ -95,8 +95,7 @@ Workflow模板安全快照必须提供 `base_lora_node_type: "LoraLoader" | "Lor
   "loras": [
     {
       "source_lora_id": "17",
-      "model_weight": 0.8,
-      "clip_weight": 0.8,
+      "weight": 0.8,
       "trigger_words": ["portrait_token"]
     }
   ]
@@ -106,20 +105,18 @@ Workflow模板安全快照必须提供 `base_lora_node_type: "LoraLoader" | "Lor
 LoRA 结果必须遵守以下规则：
 
 - `loras` 与输入快照数量、顺序和 `source_lora_id` 完全一致。
-- `model_weight` 与适用的 `clip_weight` 必须是各自闭区间内的有限数值。
-- `LoraLoader` 的每项结果必须包含 `clip_weight`；`usage` 没有独立 CLIP 说明时，`clip_weight` 等于 `model_weight`。
-- `LoraLoaderModelOnly` 的每项结果不得包含 `clip_weight`。
-- 本次停用的 LoRA 使用零权重和空 `trigger_words`；`LoraLoader` 同时把 MODEL 与 CLIP 权重设为零。
+- `weight` 必须是有限数值；Skill根据同一LoRA的`usage`、默认`weight`和用户明确要求确定该值。
+- 本次停用的 LoRA 使用零`weight`和空 `trigger_words`。
 - 每个返回触发词必须来自同一 LoRA 快照的允许集合、不得重复，并原样出现在 `prompt_text` 中。
 - 连续调整以同一 Session 中最近一次成功 LoRA 调整结果为当前基线；新的追加要求保留当前基线，明确替换或删除的要求只修改对应内容。Skill 不恢复已经被后续结果替换的旧提示词。
 
-输入不完整、模板不支持 LoRA、Catalog查询失败或结果无法满足上述规则时，Skill 在中列返回具体失败原因和需要用户补充或重选的对象；Skill 不创建 Generation Run。
+输入不完整、LoRA与Workflow模板的底模ID不兼容、Catalog查询失败或结果无法满足上述规则时，Skill 在中列返回具体失败原因和需要用户补充或重选的对象；Skill 不创建 Generation Run。Workflow是否包含可执行LoRA Loader只由Generation Host在实际编译时判断；目标缺失时Generation Tool返回包含具体LoRA输入错误码的失败结果。
 
 ## 与 `comfyui-generate` 的交接
 
-用户需要实际生成时，必须在一条新的用户消息中显式选择 `comfyui-generate`，附加本次使用的 Workflow模板，并明确引用要使用的Prompt Skill输出。`comfyui-generate` 根据当前消息和Session历史组装 `generate_with_comfyui` 参数；Prompt Skill和LoRA调整Skill不得代替用户发起该调用。当前消息包含LoRA上下文时，`comfyui-generate`请用户取消LoRA选择，不调用Tool。
+用户需要实际生成时，必须在一条新的用户消息中显式选择 `comfyui-generate`，附加本次使用的 Workflow模板，并明确引用要使用的Prompt Skill或LoRA调整结果。`comfyui-generate` 根据当前消息和Session历史组装 `generate_with_comfyui` 参数；Prompt Skill和LoRA调整Skill不得代替用户发起该调用。当前消息包含LoRA上下文时，`comfyui-generate`解析LoRA安全快照；用户明确引用LoRA调整结果时，使用该结果的`weight`和`trigger_words`。
 
-只有同一数字`turn`同时包含`comfyui-generate`的原生`skill-invocation`Context和`generate_with_comfyui` Tool Call时，Host才允许创建`run_id`。Tool Result的公开meta必须符合PRD 04固定合同；中列Tool行与右列运行卡片必须按该meta中的同一`run_id`读取同一`GenerationRunProjectionStore`快照。
+Host只根据同一数字`turn`中名称与`call_id`匹配的`generate_with_comfyui` Tool Call派生运行归属，不读取或检查`skill-invocation`Context。Tool Result的公开meta必须符合PRD 04固定合同；中列Tool行与右列运行卡片必须按该meta中的同一`run_id`读取同一`GenerationRunProjectionStore`快照。
 
 ## 三列可见结果
 
@@ -137,14 +134,14 @@ LoRA 结果必须遵守以下规则：
 - Skill不在公开SkillsApi结果或Host重新校验失败时，Workbench保留用户正文与上下文并显示具体Skill名称；不得调用另一个Skill代替。
 - Catalog contract不兼容或查询失败时，三个迁移Skill不得编造目录记录。
 - Prompt Skill和LoRA调整Skill即使成功，也不得出现`generate_with_comfyui` Tool Call、`run_id`或右列新运行。
-- `lora-adjustment` 不得接受空LoRA集合、重复`source_lora_id`、不包含零的权重范围、未知节点类型、越界权重或快照外触发词。
+- `lora-adjustment` 不得接受空LoRA集合、重复`source_lora_id`、非有限权重或快照外触发词。
 - Skill输出结构可以由确定性测试检查；提示词、LoRA用途、权重和触发词的语义质量必须由非实现者独立语义审核，程序测试不能替代。
 
 ## 产品验收
 
 1. 真实Harness Host provider发现三个迁移Skill；用户在项目输入框输入`/`后，Harness原生Skill菜单显示当前Session全部获授权的user-invocable Skill，其中包含三个迁移Skill和Ticket 04的`comfyui-generate`。选择任一Skill后输入区出现普通`/<skill-name> `文本，Host执行前重新校验对应Skill；项目bundle中不存在第二套Skill菜单或Skill选择存储。
 2. Anima与WAI各完成一项真实Catalog辅助的Prompt任务；中列显示各自最终Prompt，当前轮次右列均没有新运行，Run Repository计数不变。
-3. `lora-adjustment`分别完成`LoraLoader`、`LoraLoaderModelOnly`、临时停用、独立CLIP权重、多LoRA有序返回和同Session连续调整；中列结果符合本PRD结构，当前轮次右列没有新运行，Run Repository计数不变。
+3. `lora-adjustment`分别完成默认权重调整、临时停用、多LoRA有序返回和同Session连续调整；中列结果符合本PRD结构，当前轮次右列没有新运行，Run Repository计数不变。
 4. 用户在后续消息选择`comfyui-generate`，重新附加同一Workflow并引用上一条Prompt Skill输出；同一数字`turn`保存Skill Invocation，并为当前消息中每项独立图片要求保存一项Generation Tool Call和含合法`run_id` meta的Tool Result。每个中列Tool行持续显示对应运行的异步状态摘要，右列只显示同一Store快照中的独立运行卡片。Prompt与LoRA结果没有被复制成右列卡片。
 5. 源码生产进程在来源checkout不存在时仍能从项目Skill目录发现并运行三个迁移Skill，其他Preset不能从默认Skill roots发现这些项目Skill。
 6. 项目源码包含三个迁移Skill需要的`SKILL.md`和references，不包含三个来源Skill的validation/report脚本、agents配置、来源数据库、绝对路径、凭据、旧调用标识字段、`run_skill_script`或任何finalizer协议。

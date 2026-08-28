@@ -206,6 +206,12 @@ describe('generate_with_comfyui Tool', () => {
       },
     })
     expect(tool.parameters).not.toHaveProperty('lora_applications')
+    const parameterSchema = (tool.parameters as { properties: { parameters: { description: string } } }).properties.parameters
+    expect(parameterSchema.description).toContain('positive_prompt')
+    expect(parameterSchema.description).toContain('sampler_name')
+    expect(parameterSchema.description).toContain('batch_size')
+    expect(parameterSchema.description).toContain('exact user-supplied Workflow input key')
+    expect(parameterSchema.description).not.toContain('template parameter_id')
     expect(tool.output.schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['run_id'] })
   })
 })

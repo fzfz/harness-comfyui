@@ -15,7 +15,7 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 ## 2. Resolve 模板、生成模型和 LoRA
 
-使用模板 `data.id` 调用一次 `query_semantic_comfyui_templates`。取得模板 `id`、`title`、`base_model_id`、可选 `model_id` 和 `parameters`。返回 `id` 与消息模板 ID 不同、查询失败或结果不完整时，报告具体模板查询错误并结束本次执行。
+使用模板 `data.id` 调用一次 `query_semantic_comfyui_templates`。取得模板 `id`、`title`、`base_model_id` 和可选 `model_id`。返回 `id` 与消息模板 ID 不同、查询失败或结果不完整时，报告具体模板查询错误并结束本次执行。
 
 存在生成模型上下文时，使用该对象的 `data.id` 调用一次 `query_semantic_generation_models`。取得 `id`、`base_model_id`、`file_name`、`description`、`usage` 和可选 `skill_name`。返回 ID 与消息生成模型 ID 不同或查询失败时，报告具体生成模型查询错误并结束本次执行。
 
@@ -61,17 +61,17 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 存在所选生成模型时，为每项 Generation Request 建立同一个生成模型执行对象：`id` 和 `file_name` 分别使用生成模型 resolve 返回的同名字段。`file_name` 保持原字符串，不拼接目录或路径分隔符。没有选择生成模型时不建立生成模型执行对象，Workflow 使用模板保存的默认生成模型。
 
-## 6. 映射模板运行参数
+## 6. 建立运行参数
 
-读取模板 `parameters` 中每项 `parameter_id`、`kind`、`value_type` 和 `required`。LoRA 文件、权重和触发词通过 Generation Tool 的 `loras` 数组传递，因此不把 `lora_model`、`lora_model_weight`、`lora_clip_weight` 或 `lora_trigger_word` 写入模板 `parameters`。
+对每项 Generation Request 建立一个 `parameters` 对象，并把完整最终 Prompt 写入 `positive_prompt`。用户明确提供负向 Prompt、宽度、高度、Seed、CFG、采样步数、采样器、调度器、去噪强度、批量大小、分辨率预设、参考图、宽高比或百万像素数时，分别使用 `negative_prompt`、`width`、`height`、`seed`、`cfg`、`steps`、`sampler_name`、`scheduler`、`denoise`、`batch_size`、`resolution_preset`、`reference_image`、`aspect_ratio` 或 `megapixels` 保存对应 JSON 标量。用户以明确参数键提供其他 Workflow 运行值时，保持该参数键和 JSON 值写入 `parameters`。用户没有明确提供的运行值不得写入 `parameters`，Workflow 继续使用模板保存的值。
 
-对每项 Generation Request，把完整最终 Prompt 写入全部 `kind: "positive_prompt"` 参数。其余用户运行值按语义匹配模板 `kind`：字符串类 value type 接受字符串，`integer` 接受整数，`number` 接受数字，`boolean` 接受布尔值。逐项校验除四种 LoRA kind 以外的全部 `required: true` 参数。用户值没有对应模板 kind、值类型不符或一个不可广播的单值 kind 对应多个参数时，报告该 Generation Request、具体 kind 和相关 `parameter_id`。
+LoRA 文件、权重和触发词只通过 Generation Tool 的 `loras` 数组传递。`parameters` 不保存 LoRA 文件、LoRA 权重或 LoRA 触发词。Skill 不读取模板参数定义，不自行构造 ComfyUI 节点 ID、input name 或 widget index。Host 根据当前 UI Workflow 和目标实例节点定义定位每个已提供运行值的 widget；Host 无法唯一定位时，当前 Generation Tool Call 返回包含具体运行参数键的错误。Host 随后把已确认的运行值覆盖到 Official Base API Workflow 的同名非连接输入。
 
-在第一次调用 `generate_with_comfyui` 前完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象、参数映射和校验。任一请求失败时结束本次执行，不创建 Run。
+在第一次调用 `generate_with_comfyui` 前完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象和运行参数建立。任一请求失败时结束本次执行，不创建 Run。
 
 ## 7. 查询实例并创建异步运行
 
-完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象、参数映射和校验后，按用户声明顺序逐项创建运行。每项 Generation Request 都先调用一次 `query_semantic_comfyui_instances`，使用以下 search 请求读取该 Tool 当前返回的实例目录：
+完成全部 Generation Request 的 resolve、Prompt 重写、LoRA 执行对象和运行参数建立后，按用户声明顺序逐项创建运行。每项 Generation Request 都先调用一次 `query_semantic_comfyui_instances`，使用以下 search 请求读取该 Tool 当前返回的实例目录：
 
 ```json
 {"mode":"search","query":"","page":1,"page_size":100}
@@ -87,7 +87,7 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 - `instance_id` 使用本次实例查询得到的十进制字符串 ID；
 - `template_id` 使用模板上下文的 `data.id`；
 - 存在生成模型执行对象时，`model` 使用该对象；没有生成模型执行对象时省略 `model`；
-- `parameters` 只包含模板返回的非 LoRA `parameter_id` 与该项请求的对应值；
+- `parameters` 只包含第 6 节建立的显式运行值；
 - `loras` 使用该项请求的 LoRA 执行对象数组。
 
 每项 Tool Call 返回 `run_id` 后记录该请求与 `run_id`。全部调用成功后，按用户声明顺序返回每项请求的 `run_id` 和异步处理状态。后续调用失败时，返回已经创建的每个 `run_id`、失败的 Generation Request 和 Tool 错误；已成功的 Tool Call 不重复提交。

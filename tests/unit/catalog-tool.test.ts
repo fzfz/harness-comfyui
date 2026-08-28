@@ -84,15 +84,12 @@ describe('query_semantic_comfyui_instances Tool', () => {
 })
 
 describe('query_semantic_comfyui_templates Tool', () => {
-  it('resolves one template id through the Catalog CLI and excludes Workflow JSON', async () => {
+  it('resolves one template id through the Catalog CLI without Workflow or parameter metadata', async () => {
     const resolveTemplate = vi.fn(async () => Object.freeze({
       id: '37',
       title: 'wai_txt2img_lora',
       base_model_id: '2',
       model_id: '1',
-      parameters: Object.freeze([
-        Object.freeze({ parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string' as const, required: false }),
-      ]),
     }))
     const tool = createTemplateResolverTool({ resolveTemplate })
     const signal = new AbortController().signal
@@ -106,7 +103,6 @@ describe('query_semantic_comfyui_templates Tool', () => {
       title: 'wai_txt2img_lora',
       base_model_id: '2',
       model_id: '1',
-      parameters: [{ parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', required: false }],
     })
     expect(JSON.stringify(result)).not.toContain('workflow')
     expect(tool.parameters).toMatchObject({ type: 'object', additionalProperties: false })
@@ -116,19 +112,9 @@ describe('query_semantic_comfyui_templates Tool', () => {
         title: { description: expect.stringContaining('title') },
         base_model_id: { description: expect.stringContaining('Base-model') },
         model_id: { description: expect.stringMatching(/Generation-model.*default/u) },
-        parameters: {
-          description: expect.stringContaining('runtime parameter'),
-          items: {
-            properties: {
-              parameter_id: { description: expect.stringContaining('generate_with_comfyui.parameters') },
-              kind: { description: expect.stringContaining('user value') },
-              value_type: { description: expect.stringContaining('string, enum, image_reference, and asset_reference use JSON strings') },
-              required: { description: expect.stringContaining('must receive') },
-            },
-          },
-        },
       },
     })
+    expect((tool.output.schema as { properties: Record<string, unknown> }).properties).not.toHaveProperty('parameters')
     expect(tool.output.render({ id: '37' }, result as never)).toEqual([
       { type: 'text', text: JSON.stringify(result) },
     ])

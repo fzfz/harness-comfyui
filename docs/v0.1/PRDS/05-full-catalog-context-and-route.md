@@ -73,7 +73,7 @@ Ticket 05必须扩展PRD 03的`src/host/tools/catalog-tool-manifest.ts`，使其
 | `query_semantic_prompt_terms` | `querySemanticPromptTermsForSkill` / `/internal/semantic/prompt-terms` | 无 | `Search or resolve canonical prompt-term records and their aliases.` | 稳定ID、规范tag、别名和安全说明 |
 | `query_semantic_artist_prompt_strings` | `querySemanticArtistPromptStringsForSkill` / `/internal/semantic/artist-prompt-strings` | `base_model_id` | `Search or resolve curated artist prompt strings compatible with an optional base model.` | 稳定ID、底模ID、标题和安全prompt string |
 | `query_semantic_comfyui_instances` | `querySemanticComfyuiInstancesForSkill` / `/internal/semantic/comfyui-instances` | 无 | `Search or resolve safe ComfyUI instance routes without exposing connection details or credentials.` | 稳定ID、安全名称、`enabled`和`validated` |
-| `query_semantic_comfyui_templates` | `querySemanticComfyuiTemplatesForSkill` / `/internal/semantic/comfyui-templates` | `base_model_id` | `Search or resolve safe ComfyUI template summaries and visible runtime parameter definitions.` | template_id、revision、底模ID和可见参数定义；无Workflow或bindings |
+| `query_semantic_comfyui_templates` | `querySemanticComfyuiTemplatesForSkill` / `/internal/semantic/comfyui-templates` | `base_model_id` | `Resolve one approved ComfyUI Workflow template ID to its title and model compatibility identities.` | 模板ID、标题、底模ID和可选默认模型ID；无Workflow或模板运行元数据 |
 
 Ticket 05复用PRD 03的`createCatalogTool()`、`StructuredCliGenerationCatalog`和PRD 01的`registerProjectTools()`，不得创建第二个Catalog adapter或第二个Tool registry。Host启动时必须先核对已发布discovery的十项`x-harness-tool-name`、description、operationId、path、request schema和response schema与manifest完全一致，再一次性构造并注册十个Tool；任一项缺失或漂移时返回`SOURCE_CONTRACT_UNSUPPORTED`并且一个Catalog Tool都不注册。
 
@@ -83,7 +83,7 @@ Ticket 05复用PRD 03的`createCatalogTool()`、`StructuredCliGenerationCatalog`
 
 实例安全投影只包含稳定ID、安全名称、`enabled`和`validated`。Catalog CLI按查询条件返回源数据库记录，不替调用方排除禁用或未验证实例，也不决定Execution Route。该投影不得包含URL、origin、Authorization、header、credential、数据库路径、本机路径或没有权威来源的能力字段。
 
-LoRA的`resolve`响应和对应`generation-context.v1.snapshot`必须固定包含`source_lora_id`、`file_name`、`description`、`usage`、`trigger_words`和默认`weight`。Workflow模板的`resolve`响应和对应快照必须固定包含`template_id`、revision、`base_lora_node_type`、MODEL/CLIP闭区间，以及PRD 04定义的可见`RuntimeParameterDefinition[]`。浏览器安全模板快照不得包含Workflow节点、binding目标、实例连接或凭据；Host-only bundle继续拥有完整Workflow与bindings。
+LoRA的`resolve`响应和对应`generation-context.v1.snapshot`必须固定包含`source_lora_id`、`file_name`、`description`、`usage`、`trigger_words`和默认`weight`。Workflow模板的`resolve`响应只包含模板ID、标题、底模ID和可选默认模型ID。浏览器安全模板快照不得包含Workflow节点、模板运行元数据、实例连接或凭据；Host-only TemplateBundle只保留完整Workflow、修订身份、维度策略和输出节点范围。
 
 ## Message Context Resource Registry
 
@@ -100,7 +100,7 @@ Modal左侧资源行的固定顺序、首次负责Ticket和实现步骤如下：
 | 5 | 画师或画风 | `style` | Ticket 05 | `query_semantic_styles` search显示卡片；confirm保存`ContextRef`；发送时resolve生成画师或画风语义快照 |
 | 6 | 提示词条目 | `prompt-term` | Ticket 05 | `query_semantic_prompt_terms` search显示卡片；confirm保存`ContextRef`；发送时resolve生成规范tag与别名快照 |
 | 7 | 画师串 | `artist-string` | Ticket 05 | `query_semantic_artist_prompt_strings` search显示卡片；confirm保存`ContextRef`；发送时resolve生成安全prompt string快照 |
-| 8 | Workflow模板 | `comfyui-template` | Ticket 03 | `query_semantic_comfyui_templates` search显示卡片；confirm保存`ContextRef`；发送时resolve生成revision、LoRA节点类型、权重范围和可见运行参数快照 |
+| 8 | Workflow模板 | `comfyui-template` | Ticket 03 | `query_semantic_comfyui_templates` search显示卡片；confirm保存`ContextRef`；发送时resolve只返回模板ID、标题、底模ID和可选默认模型ID |
 | 9 | 已保存媒体 | `media` | Ticket 05 | `GenerationRuns.listMedia()`显示当前Workspace卡片；confirm保存`ContextRef`；发送时`getMediaDescriptor()`生成已验证媒体快照 |
 
 Ticket 03先创建同一Registry和`character`、`comfyui-template`两条可插入定义，同时实现顶部底模筛选；Ticket 05只能扩展这一个Registry，补充其余七条定义，不能创建第二个Modal目录或第二套Context resolver。每行统一执行：打开或切换资源行→使用该行保存的search text、page和当前允许筛选查询真实来源→渲染每页9张固定卡片→把用户选择写入`pendingDialogRefs`→确认后按原型顺序转换成草稿`ContextRef[]`和chip→发送时逐项resolve最新真实记录→全部成功后一次`SessionFace.prompt(parts, 'queue')`提交不可变快照。任一resolve失败时不提交消息并保留全部草稿。
@@ -138,7 +138,7 @@ Ticket 05必须在产品代码中定义`generation-route.v1`的唯一运行时sc
 6. 停止数据源服务后，Modal 的来源类显示明确错误，Saved Media 类仍显示当前 Workspace 的真实已保存媒体。
 7. 视觉与语义审核者检查新增提示词条目行、移除实例上下文行后的导航顺序、Execution Route 控件、九类候选的固定三列卡片、封面/占位、分页、详情、chip、空态和错误态。
 8. 用户在选择Execution Route和九类Message Context的同一输入区添加真实图片附件；项目显示preview，并通过一次`SessionFace.prompt(parts, 'queue')`发送正文、上下文、独立route block和图片。发送失败时保留Execution Route、File、preview、正文和chip；发送成功或删除附件时回收对应object URL；Harness Host attachment store保存已发送图片。
-9. LoRA与Workflow模板的真实`resolve`快照包含PRD 12需要的全部安全字段；`lora-adjustment`不需要读取来源路径、数据库或Host-only template bundle即可完成`LoraLoader`与`LoraLoaderModelOnly`结果。
+9. LoRA真实`resolve`快照包含`source_lora_id`、`file_name`、`description`、`usage`、`trigger_words`和默认`weight`；Workflow模板真实`resolve`快照只包含模板ID、标题、底模ID和可选默认模型ID。`lora-adjustment`不读取来源路径、数据库、Host-only TemplateBundle或Workflow模板运行元数据。
 10. 真实Harness Tool registry通过唯一`registerProjectTools()`恰好注册上述十个Catalog Tool；逐Tool测试核对名称、description、闭合schema、operation/path、允许筛选、CLI参数顺序、search/resolve输出和Host卸载注销。discovery缺少任一Tool、description不同、schema开放或operation/path漂移时，Host启动失败且registry中不存在部分Catalog Tool。
 
 ## 不属于本 Ticket
