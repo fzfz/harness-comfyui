@@ -9,7 +9,10 @@ import type {
   WorkflowCompilerInput,
   WorkflowCompilerResult,
 } from './source-preparer.ts'
-import { STANDARD_RUNTIME_PARAMETER_KINDS } from './runtime-parameters.ts'
+import {
+  RUNTIME_PARAMETER_INPUT_ALIASES,
+  STANDARD_RUNTIME_PARAMETER_KINDS,
+} from './runtime-parameters.ts'
 
 const EDITOR_ONLY_NODE_TYPES = new Set(['Fast Groups Bypasser (rgthree)', 'Label (rgthree)', 'MarkdownNote', 'Note', '孤海注释'])
 const WIDGET_TYPES = new Set([
@@ -26,6 +29,7 @@ const SERIALIZED_VALUE_SOURCE_TYPES = Object.freeze({
   TextInput_: Object.freeze({ inputName: 'text', portType: 'STRING', valueType: 'string' }),
   Float: Object.freeze({ inputName: 'value', portType: 'FLOAT', valueType: 'number' }),
 } as const)
+const OBJECT_INFO_CACHE_TTL_MS = 10 * 60 * 1_000
 
 export interface ComfyWorkflowCompilerOptions {
   readonly officialApiWorkflowCompiler: {
@@ -34,6 +38,7 @@ export interface ComfyWorkflowCompilerOptions {
   readonly fetchImplementation?: typeof fetch
   readonly timeoutMs?: number
   readonly createRandomSeed?: () => number
+  readonly now?: () => number
 }
 
 type UnknownRecord = Record<string, unknown>
@@ -105,6 +110,22 @@ function serializedValueSourceValue(
 
 function array(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : []
+}
+
+function waitForPromise<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(new DOMException('The request was canceled.', 'AbortError'))
+  return new Promise<T>((resolve, reject) => {
+    const finish = (complete: () => void): void => {
+      signal.removeEventListener('abort', abort)
+      complete()
+    }
+    const abort = (): void => finish(() => reject(new DOMException('The request was canceled.', 'AbortError')))
+    signal.addEventListener('abort', abort, { once: true })
+    promise.then(
+      value => finish(() => resolve(value)),
+      error => finish(() => reject(error)),
+    )
+  })
 }
 
 function inputDefinitions(definition: UnknownRecord): { required: UnknownRecord; optional: UnknownRecord } {
@@ -526,6 +547,7 @@ interface ParameterTarget {
   readonly marker: string
   readonly loraSyntax: boolean
   readonly multilineString: boolean
+  readonly liveEnumValues: readonly string[] | null
 }
 
 interface RuntimeParameterAssignment {
@@ -556,6 +578,12 @@ function isMultilineStringWidget(definition: UnknownRecord, name: string): boole
     && (options as UnknownRecord).multiline === true
 }
 
+function liveEnumValues(definition: UnknownRecord, name: string): readonly string[] | null {
+  const values = descriptor(definition, name)?.[0]
+  if (!Array.isArray(values) || !values.every(value => typeof value === 'string')) return null
+  return values
+}
+
 function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord): readonly ParameterTarget[] {
   const targets: ParameterTarget[] = []
   for (const rawNode of workflow.nodes) {
@@ -582,22 +610,12 @@ function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord):
         marker: parameterMarker(node),
         loraSyntax: loraSyntax?.name === mapping.name,
         multilineString: isMultilineStringWidget(definition, mapping.name),
+        liveEnumValues: liveEnumValues(definition, mapping.name),
       })
     }
   }
   return targets
 }
-
-const PARAMETER_INPUT_ALIASES: Readonly<Record<string, readonly string[]>> = Object.freeze({
-  positive_prompt: Object.freeze(['text', 'wildcard_text', 'prompt', 'positive']),
-  negative_prompt: Object.freeze(['text', 'wildcard_text', 'prompt', 'negative']),
-  width: Object.freeze(['width', 'width_override']),
-  height: Object.freeze(['height', 'height_override']),
-  seed: Object.freeze(['seed', 'noise_seed']),
-  sampler_name: Object.freeze(['sampler_name', 'sampler']),
-  resolution_preset: Object.freeze(['resolution', 'resolution_preset']),
-  reference_image: Object.freeze(['image', 'reference_image']),
-})
 
 function uniqueNames(values: readonly string[]): readonly string[] {
   return [...new Set(values.filter(value => value.length > 0))]
@@ -611,7 +629,7 @@ function inputNames(assignment: RuntimeParameterAssignment): readonly string[] {
   return uniqueNames([
     assignment.parameterId,
     assignment.kind,
-    ...(PARAMETER_INPUT_ALIASES[assignment.kind] ?? []),
+    ...(RUNTIME_PARAMETER_INPUT_ALIASES[assignment.kind] ?? []),
   ])
 }
 
@@ -627,7 +645,7 @@ function markerMatchesParameter(marker: string, kind: string): boolean {
 
 function targetFeedsParameter(workflow: UiWorkflow, target: ParameterTarget, kind: string): boolean {
   const downstreamNames = downstreamInputNames(workflow, target.nodeId)
-  return uniqueNames([kind, ...(PARAMETER_INPUT_ALIASES[kind] ?? [])])
+  return uniqueNames([kind, ...(RUNTIME_PARAMETER_INPUT_ALIASES[kind] ?? [])])
     .some(name => downstreamNames.has(name.toLowerCase()))
 }
 
@@ -800,7 +818,7 @@ function resolveParameterTarget(
     const exactKindName = candidates.filter(target => target.mapping.name === assignment.kind)
     if (exactKindName.length > 0) candidates = exactKindName
     else {
-      const aliases = PARAMETER_INPUT_ALIASES[assignment.kind] ?? []
+      const aliases = RUNTIME_PARAMETER_INPUT_ALIASES[assignment.kind] ?? []
       const firstAlias = aliases.find(alias => candidates.some(target => target.mapping.name === alias))
       if (firstAlias !== undefined) candidates = candidates.filter(target => target.mapping.name === firstAlias)
     }
@@ -874,6 +892,27 @@ function setParameterWidget(target: ParameterTarget, value: JsonValue, parameter
   }
 }
 
+function liveRuntimeParameterValue(
+  target: ParameterTarget,
+  assignment: RuntimeParameterAssignment,
+): JsonValue {
+  const allowedValues = target.liveEnumValues
+  const suppliedValue = assignment.value
+  if (allowedValues === null) return suppliedValue
+  if (typeof suppliedValue === 'string' && allowedValues.includes(suppliedValue)) return suppliedValue
+  if (typeof suppliedValue === 'string') {
+    const caseInsensitiveMatches = allowedValues.filter(value => (
+      value.toLowerCase() === suppliedValue.toLowerCase()
+    ))
+    if (caseInsensitiveMatches.length === 1) return caseInsensitiveMatches[0]!
+  }
+  parameterError(
+    'GENERATION_PARAMETER_INVALID',
+    assignment.parameterId,
+    `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; allowed values ${JSON.stringify(allowedValues)}. Correct the value and call generate_with_comfyui again.`,
+  )
+}
+
 function applyRuntimeParameters(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
@@ -888,9 +927,10 @@ function applyRuntimeParameters(
   const reserved = new Set<string>()
   const claims = new Map<string, { readonly parameterId: string; readonly value: JsonValue }>()
   const assign = (target: ParameterTarget, assignment: RuntimeParameterAssignment): void => {
+    const value = liveRuntimeParameterValue(target, assignment)
     const claimed = claims.get(target.key)
     if (claimed !== undefined) {
-      if (!jsonEquals(claimed.value, assignment.value)) {
+      if (!jsonEquals(claimed.value, value)) {
         parameterError(
           'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
           assignment.parameterId,
@@ -899,8 +939,8 @@ function applyRuntimeParameters(
       }
       return
     }
-    setParameterWidget(target, assignment.value, assignment.parameterId)
-    claims.set(target.key, { parameterId: assignment.parameterId, value: assignment.value })
+    setParameterWidget(target, value, assignment.parameterId)
+    claims.set(target.key, { parameterId: assignment.parameterId, value })
     reserved.add(target.key)
   }
 
@@ -1176,35 +1216,40 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
   private readonly fetchImplementation: typeof fetch
   private readonly timeoutMs: number
   private readonly createRandomSeed: () => number
+  private readonly now: () => number
+  private readonly objectInfoCache = new Map<string, {
+    readonly definitions: UnknownRecord
+    readonly expiresAt: number
+  }>()
+  private readonly objectInfoRequests = new Map<string, Promise<UnknownRecord>>()
 
   constructor(options: ComfyWorkflowCompilerOptions) {
     this.officialApiWorkflowCompiler = options.officialApiWorkflowCompiler
     this.fetchImplementation = options.fetchImplementation ?? fetch
     this.timeoutMs = options.timeoutMs ?? 120_000
     this.createRandomSeed = options.createRandomSeed ?? defaultCreateRandomSeed
+    this.now = options.now ?? Date.now
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1) throw new TypeError('ComfyUI compiler timeout is invalid.')
   }
 
-  async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
-    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
+  private objectInfoCacheKey(instanceId: string, baseUrl: string): string {
+    return JSON.stringify([instanceId, baseUrl])
+  }
+
+  private async fetchNodeDefinitions(baseUrl: string, authorization: string | null): Promise<UnknownRecord> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
-    const signal = input.signal === undefined ? controller.signal : AbortSignal.any([controller.signal, input.signal])
-    const baseUrl = input.connection.url.replace(/\/$/u, '')
     try {
       let response: Response
       try {
         response = await this.fetchImplementation(`${baseUrl}/object_info`, {
-          signal,
+          signal: controller.signal,
           headers: {
             accept: 'application/json',
-            ...(input.connection.authorization === null ? {} : { authorization: input.connection.authorization }),
+            ...(authorization === null ? {} : { authorization }),
           },
         })
       } catch {
-        if (input.signal?.aborted === true) {
-          throw new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'ComfyUI node definitions request was canceled by the caller.')
-        }
         throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
       }
       if (!response.ok) throw new GenerationRuntimeError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`)
@@ -1214,7 +1259,60 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       } catch {
         throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
       }
-      const definitions = record(nodeDefinitions, 'ComfyUI node definitions')
+      return record(nodeDefinitions, 'ComfyUI node definitions')
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  private async nodeDefinitions(
+    instanceId: string,
+    baseUrl: string,
+    authorization: string | null,
+    signal: AbortSignal,
+  ): Promise<UnknownRecord> {
+    const key = this.objectInfoCacheKey(instanceId, baseUrl)
+    const cached = this.objectInfoCache.get(key)
+    if (cached !== undefined && this.now() < cached.expiresAt) return cached.definitions
+    if (cached !== undefined) this.objectInfoCache.delete(key)
+    let request = this.objectInfoRequests.get(key)
+    if (request === undefined) {
+      request = this.fetchNodeDefinitions(baseUrl, authorization).then(definitions => {
+        this.objectInfoCache.set(key, {
+          definitions,
+          expiresAt: this.now() + OBJECT_INFO_CACHE_TTL_MS,
+        })
+        return definitions
+      }).finally(() => {
+        this.objectInfoRequests.delete(key)
+      })
+      this.objectInfoRequests.set(key, request)
+    }
+    return waitForPromise(request, signal)
+  }
+
+  async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
+    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
+    const signal = input.signal === undefined ? controller.signal : AbortSignal.any([controller.signal, input.signal])
+    const baseUrl = input.connection.url.replace(/\/$/u, '')
+    try {
+      let definitions: UnknownRecord
+      try {
+        definitions = await this.nodeDefinitions(
+          input.instanceId,
+          baseUrl,
+          input.connection.authorization,
+          signal,
+        )
+      } catch (error) {
+        if (error instanceof GenerationRuntimeError) throw error
+        if (input.signal?.aborted === true) {
+          throw new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'ComfyUI node definitions request was canceled by the caller.')
+        }
+        throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
+      }
       const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
       const runtimeParameters = input.runtimeParameters ?? {}
       applyRuntimeParameters(actualWorkflow, definitions, runtimeParameters)

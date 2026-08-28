@@ -524,7 +524,7 @@ export class GenerationRuntime {
   async acceptGeneration(
     identity: GenerationIdentity,
     request: GenerationRequest,
-    _signal?: AbortSignal,
+    signal?: AbortSignal,
   ): Promise<{ readonly runId: string }> {
     assertPathId(identity.workspaceId, 'workspaceId')
     if (identity.sessionId.trim().length === 0) throw new TypeError('sessionId is invalid')
@@ -535,6 +535,15 @@ export class GenerationRuntime {
     if (row !== undefined) {
       if (row.request_json !== requestJson) {
         throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', 'The Tool call was already accepted with a different Generation request.')
+      }
+      if (row.status === 'failed' && row.actual_workflow_path === null) {
+        throw new GenerationRuntimeError(
+          row.error_code ?? 'GENERATION_PREPARATION_FAILED',
+          row.error_message ?? 'Generation preparation failed.',
+        )
+      }
+      if (row.status === 'created') {
+        await this.preparePersistedRequest(row.run_id, row.request_json, signal)
       }
       return Object.freeze({ runId: row.run_id })
     }
@@ -559,6 +568,7 @@ export class GenerationRuntime {
       createdAt,
       createdAt,
     )
+    await this.preparePersistedRequest(runId, requestJson, signal)
     return Object.freeze({ runId })
   }
 
@@ -966,6 +976,23 @@ export class GenerationRuntime {
     return preparation
   }
 
+  private async preparePersistedRequest(runId: string, document: string, signal?: AbortSignal): Promise<void> {
+    let request: GenerationRequest
+    try {
+      request = generationRequest(document)
+    } catch (error) {
+      const facts = errorFacts(error)
+      this.database.prepare(`
+        UPDATE generation_runs SET status = 'failed', revision = revision + 1,
+          error_code = ?, error_message = ?, updated_at = ?
+        WHERE run_id = ? AND status = 'created'
+      `).run(facts.code, facts.message, this.now(), runId)
+      if (error instanceof GenerationRuntimeError) throw error
+      throw new GenerationRuntimeError(facts.code, facts.message)
+    }
+    await this.prepare(runId, request, signal)
+  }
+
   private async prepareOnce(runId: string, request: GenerationRequest, signal?: AbortSignal): Promise<void> {
     try {
       const prepared = await this.options.preparer.prepare(request, signal)
@@ -1014,7 +1041,8 @@ export class GenerationRuntime {
           error_code = ?, error_message = ?, updated_at = ?
         WHERE run_id = ? AND status = 'created'
       `).run(facts.code, facts.message, this.now(), runId)
-      throw error
+      if (error instanceof GenerationRuntimeError) throw error
+      throw new GenerationRuntimeError(facts.code, facts.message)
     }
   }
 

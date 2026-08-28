@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url'
 import { CatalogCli } from '../../src/host/catalog/catalog-cli.ts'
 import { ChromeComfyFrontend } from '../../src/host/generation/comfy-frontend-browser.ts'
 import { OfficialApiWorkflowCompiler } from '../../src/host/generation/official-api-workflow.ts'
-import { STANDARD_RUNTIME_PARAMETER_KINDS } from '../../src/host/generation/runtime-parameters.ts'
+import {
+  RUNTIME_PARAMETER_INPUT_ALIASES,
+  STANDARD_RUNTIME_PARAMETER_KINDS,
+} from '../../src/host/generation/runtime-parameters.ts'
 import { GenerationSourceCli } from '../../src/host/generation/source-cli.ts'
 import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compiler.ts'
 import { loadSourceWorktreeContext } from '../worktree/runtime.mjs'
@@ -18,6 +21,7 @@ const PARAMETER_SUPPORT_BASELINE_PATH = resolve(
 )
 const CATALOG_PAGE_SIZE = 9
 const EXPECTED_NOT_FOUND = 'GENERATION_PARAMETER_TARGET_NOT_FOUND'
+const EXPECTED_INVALID = 'GENERATION_PARAMETER_INVALID'
 
 export const MATRIX_PARAMETER_VALUES = Object.freeze({
   positive_prompt: 'matrix positive prompt',
@@ -77,6 +81,31 @@ export function classifyParameterResult(error) {
   return details.code === EXPECTED_NOT_FOUND
     ? Object.freeze({ status: 'not_found', ...details })
     : Object.freeze({ status: 'failed', ...details })
+}
+
+export function matrixParameterCandidates(parameterId, workflow, objectInfo) {
+  const inputNames = [parameterId, ...(RUNTIME_PARAMETER_INPUT_ALIASES[parameterId] ?? [])]
+  const candidates = []
+  for (const node of Array.isArray(workflow?.nodes) ? workflow.nodes : []) {
+    if (node === null || typeof node !== 'object' || Array.isArray(node) || typeof node.type !== 'string') continue
+    const definition = objectInfo?.[node.type]
+    if (definition === null || typeof definition !== 'object' || Array.isArray(definition)) continue
+    const input = definition.input
+    if (input === null || typeof input !== 'object' || Array.isArray(input)) continue
+    for (const groupName of ['required', 'optional']) {
+      const group = input[groupName]
+      if (group === null || typeof group !== 'object' || Array.isArray(group)) continue
+      for (const inputName of inputNames) {
+        const descriptor = group[inputName]
+        const values = Array.isArray(descriptor) ? descriptor[0] : undefined
+        if (Array.isArray(values) && typeof values[0] === 'string') candidates.push(values[0])
+      }
+    }
+  }
+  candidates.push(MATRIX_PARAMETER_VALUES[parameterId])
+  return candidates.filter((value, index) => (
+    candidates.findIndex(candidate => JSON.stringify(candidate) === JSON.stringify(value)) === index
+  ))
 }
 
 export function compareParameterSupport(expectedSupportedParameters, parameters) {
@@ -207,26 +236,33 @@ function matrixCompiler(objectInfoText) {
   })
 }
 
-async function compileTemplateMatrix({ compiler, bundle, connection, instanceId }) {
+async function compileTemplateMatrix({ compiler, bundle, connection, instanceId, objectInfo }) {
   const parameters = {}
   const supported = {}
   for (const parameterId of STANDARD_RUNTIME_PARAMETER_KINDS) {
     let error
-    try {
-      await compiler.compile({
-        instanceId,
-        workflow: bundle.workflow,
-        connection,
-        expectedOutputNodeIds: bundle.expectedOutputNodeIds,
-        runtimeParameters: { [parameterId]: MATRIX_PARAMETER_VALUES[parameterId] },
-        loras: [],
-      })
-    } catch (caught) {
-      error = caught
+    let selectedValue
+    for (const value of matrixParameterCandidates(parameterId, bundle.workflow, objectInfo)) {
+      try {
+        await compiler.compile({
+          instanceId,
+          workflow: bundle.workflow,
+          connection,
+          expectedOutputNodeIds: bundle.expectedOutputNodeIds,
+          runtimeParameters: { [parameterId]: value },
+          loras: [],
+        })
+        selectedValue = value
+        error = undefined
+        break
+      } catch (caught) {
+        error = caught
+        if (caught?.code !== EXPECTED_INVALID) break
+      }
     }
     const result = classifyParameterResult(error)
     parameters[parameterId] = result
-    if (result.status === 'passed') supported[parameterId] = MATRIX_PARAMETER_VALUES[parameterId]
+    if (result.status === 'passed') supported[parameterId] = selectedValue
   }
 
   try {
@@ -319,6 +355,7 @@ export async function runMatrix(options) {
     authorization: instance.authorization,
   })
   const objectInfoText = await readObjectInfo(connection, signal)
+  const objectInfo = JSON.parse(objectInfoText)
   const compiler = matrixCompiler(objectInfoText)
   const cacheDirectory = await mkdtemp(resolve(tmpdir(), 'harness-comfyui-real-matrix-'))
   let frontendExportCount = 0
@@ -336,6 +373,7 @@ export async function runMatrix(options) {
         bundle,
         connection,
         instanceId: instance.id,
+        objectInfo,
       })
       const exportCountBefore = frontendExportCount
       const officialCompiler = new OfficialApiWorkflowCompiler({

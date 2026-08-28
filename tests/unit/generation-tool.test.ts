@@ -120,6 +120,22 @@ describe('generate_with_comfyui Tool', () => {
     expect(acceptGeneration).not.toHaveBeenCalled()
   })
 
+  it('returns a preparation error to the caller so the Agent can correct parameters and call the Tool again', async () => {
+    const error = Object.assign(new Error(
+      'Generation parameter "sampler_name" for 41:KSampler.sampler_name received "invalid"; allowed values ["euler","lcm"]. Correct the value and call generate_with_comfyui again.',
+    ), { code: 'GENERATION_PARAMETER_INVALID' })
+    const tool = createGenerationTool({
+      runtime: { acceptGeneration: vi.fn(async () => { throw error }) } as never,
+      workspaceRegistry: { resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })) } as never,
+    })
+    const events = [
+      { type: 'turn/start', seq: 0, data: { turn: 7 } },
+      { type: 'tool/call', seq: 2, data: { turn: 7, step: 0, callId: 'call_generation_1', name: 'generate_with_comfyui', arguments: '{}' } },
+    ]
+
+    await expect(tool.execute(toolArguments, execution(events) as never)).rejects.toBe(error)
+  })
+
   it('uses the template default model when the Tool call omits a selected model', async () => {
     const acceptGeneration = vi.fn(async () => ({ runId: 'run_default_model' }))
     const tool = createGenerationTool({

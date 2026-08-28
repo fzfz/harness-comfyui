@@ -20,6 +20,12 @@ export interface MatrixTemplateReport {
 
 export const MATRIX_PARAMETER_VALUES: Readonly<Record<string, string | number>>
 
+export function matrixParameterCandidates(
+  parameterId: string,
+  workflow: Readonly<Record<string, unknown>>,
+  objectInfo: Readonly<Record<string, unknown>>,
+): readonly (string | number)[]
+
 export function parseArguments(arguments_: readonly string[]): {
   readonly instanceId: string
   readonly outputPath?: string

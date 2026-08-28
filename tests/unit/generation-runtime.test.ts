@@ -42,7 +42,7 @@ function request(prompt: string): GenerationRequest {
 }
 
 describe('GenerationRuntime acceptance', () => {
-  it('persists one independent Run per Tool callId immediately and prepares it through the worker', async () => {
+  it('prepares one independent Run per Tool callId before accepting it', async () => {
     const preparedPrompts: string[] = []
     const runtime = createRuntime({
       async prepare(generationRequest) {
@@ -68,13 +68,9 @@ describe('GenerationRuntime acceptance', () => {
 
     expect(first.runId).not.toBe(second.runId)
     expect(replay).toEqual(first)
-    expect(preparedPrompts).toEqual([])
-    expect(runtime.queryRuns({ workspaceId: owner.workspaceId, sessionId: owner.sessionId, turn: 3 })
-      .map(run => run.status)).toEqual(['created', 'created'])
-
-    await runtime.advance()
-
     expect(preparedPrompts).toEqual(['first prompt', 'second prompt'])
+    expect(runtime.queryRuns({ workspaceId: owner.workspaceId, sessionId: owner.sessionId, turn: 3 })
+      .map(run => run.status)).toEqual(['prepared', 'prepared'])
 
     const runs = runtime.queryRuns({ workspaceId: owner.workspaceId, sessionId: owner.sessionId, turn: 3 })
     expect(runs.map(run => ({ runId: run.runId, callId: run.callId, status: run.status }))).toEqual([
@@ -121,8 +117,6 @@ describe('GenerationRuntime acceptance', () => {
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_lora' },
       generationRequest,
     )
-    await runtime.advance()
-
     expect(preparedLoras).toEqual([generationRequest.loras])
     runtime.close()
   })
@@ -156,8 +150,6 @@ describe('GenerationRuntime acceptance', () => {
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_model' },
       generationRequest,
     )
-    await runtime.advance()
-
     expect(preparedModels).toEqual([generationRequest.model])
     runtime.close()
   })
@@ -173,11 +165,10 @@ describe('GenerationRuntime acceptance', () => {
       model: { id: '1', fileName: 37 },
     }
 
-    await runtime.acceptGeneration(
+    await expect(runtime.acceptGeneration(
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_invalid_model' },
       invalidRequest as never,
-    )
-    await runtime.advance()
+    )).rejects.toMatchObject({ code: 'GENERATION_REQUEST_INVALID' })
 
     expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
       status: 'failed',
@@ -212,7 +203,7 @@ describe('GenerationRuntime acceptance', () => {
     runtime.close()
   })
 
-  it('persists asynchronous preparation failures and replays the accepted run id', async () => {
+  it('returns preparation failures to the Tool caller, persists them, and replays the same error', async () => {
     const runtime = createRuntime({
       async prepare() {
         throw new Error('template is invalid')
@@ -220,17 +211,20 @@ describe('GenerationRuntime acceptance', () => {
     })
     const identity = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_failed' }
 
-    const accepted = await runtime.acceptGeneration(identity, request('prompt'))
-    await runtime.advance()
+    await expect(runtime.acceptGeneration(identity, request('prompt'))).rejects.toThrow('template is invalid')
     expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
       status: 'failed',
       errorCode: 'GENERATION_PREPARATION_FAILED',
+      errorMessage: 'template is invalid',
     })
-    await expect(runtime.acceptGeneration(identity, request('prompt'))).resolves.toEqual(accepted)
+    await expect(runtime.acceptGeneration(identity, request('prompt'))).rejects.toMatchObject({
+      code: 'GENERATION_PREPARATION_FAILED',
+      message: 'template is invalid',
+    })
     runtime.close()
   })
 
-  it('preserves created when Host shutdown cancels asynchronous preparation', async () => {
+  it('preserves created when the Tool caller cancels preparation', async () => {
     const controller = new AbortController()
     const runtime = createRuntime({
       async prepare(_request, signal) {
@@ -242,13 +236,13 @@ describe('GenerationRuntime acceptance', () => {
         throw new Error('unreachable')
       },
     })
-    await runtime.acceptGeneration(
+    const accepting = runtime.acceptGeneration(
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_cancelled' },
       request('prompt'),
+      controller.signal,
     )
-    const advancing = runtime.advance(controller.signal)
     controller.abort()
-    await expect(advancing).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(accepting).rejects.toMatchObject({ name: 'AbortError' })
     expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
       status: 'created', errorCode: null,
     })
@@ -262,8 +256,10 @@ describe('GenerationRuntime acceptance', () => {
     await expect(runtime.acceptGeneration({ ...valid, sessionId: '' }, request('prompt'))).rejects.toThrow('sessionId')
     await expect(runtime.acceptGeneration({ ...valid, turn: -1 }, request('prompt'))).rejects.toThrow('turn')
     await expect(runtime.acceptGeneration({ ...valid, callId: '' }, request('prompt'))).rejects.toThrow('callId')
-    await runtime.acceptGeneration(valid, request('prompt'))
-    await runtime.advance()
+    await expect(runtime.acceptGeneration(valid, request('prompt'))).rejects.toMatchObject({
+      code: 'SOURCE_FAILED',
+      message: 'source failed',
+    })
     expect(() => runtime.actualWorkflowPath(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]!.runId))
       .toThrow('not ready')
     expect(() => runtime.getMedia('missing')).toThrow('not found')

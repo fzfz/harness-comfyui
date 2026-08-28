@@ -4,6 +4,7 @@ import {
   classifyParameterResult,
   compareParameterSupport,
   MATRIX_PARAMETER_VALUES,
+  matrixParameterCandidates,
   parseArguments,
   parseParameterSupportBaseline,
   reportHasFailures,
@@ -36,6 +37,30 @@ describe('real ComfyUI Workflow matrix verification command', () => {
     expect(classifyParameterResult(Object.assign(new Error('ambiguous'), {
       code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
     }))).toMatchObject({ status: 'failed', code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS' })
+  })
+
+  it('uses each Workflow node live enum before the fixed matrix fallback value', () => {
+    const workflow = {
+      nodes: [
+        { id: 1, type: 'ClownSampler', mode: 0 },
+        { id: 2, type: 'LoadImage', mode: 0 },
+        { id: 3, type: 'ResolutionPicker', mode: 0 },
+      ],
+    }
+    const objectInfo = {
+      ClownSampler: { input: { required: { sampler_name: [['none', 'linear/euler'], {}] } } },
+      LoadImage: { input: { required: { image: [['instance-input.png'], {}] } } },
+      ResolutionPicker: { input: { required: { resolution: [['1024x1024 (1.0)'], {}] } } },
+    }
+
+    expect(matrixParameterCandidates('sampler_name', workflow, objectInfo))
+      .toEqual(['none', MATRIX_PARAMETER_VALUES.sampler_name])
+    expect(matrixParameterCandidates('reference_image', workflow, objectInfo))
+      .toEqual(['instance-input.png', MATRIX_PARAMETER_VALUES.reference_image])
+    expect(matrixParameterCandidates('resolution_preset', workflow, objectInfo))
+      .toEqual(['1024x1024 (1.0)', MATRIX_PARAMETER_VALUES.resolution_preset])
+    expect(matrixParameterCandidates('cfg', workflow, objectInfo))
+      .toEqual([MATRIX_PARAMETER_VALUES.cfg])
   })
 
   it('fails a report for a parameter error, combined error, or official cache error', () => {

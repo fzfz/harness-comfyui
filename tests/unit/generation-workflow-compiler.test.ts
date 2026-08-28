@@ -344,6 +344,88 @@ describe('ComfyWorkflowCompiler', () => {
     )
   })
 
+  it('shares one in-flight object_info request across forty concurrent compiles', async () => {
+    let releaseRequest!: () => void
+    const requestGate = new Promise<void>(resolve => { releaseRequest = resolve })
+    const fetchImplementation = vi.fn(async () => {
+      await requestGate
+      return new Response(JSON.stringify(objectInfo), { status: 200 })
+    })
+    const compiler = createCompiler({ fetchImplementation })
+    const input = {
+      instanceId: 'test-instance',
+      workflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    } as const
+
+    const compiles = Array.from({ length: 40 }, async () => compiler.compile(input))
+    releaseRequest()
+    await Promise.all(compiles)
+
+    expect(fetchImplementation).toHaveBeenCalledOnce()
+  })
+
+  it('reuses object_info for ten minutes and refreshes it after expiration', async () => {
+    let now = 1_000
+    const fetchImplementation = vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 }))
+    const compiler = createCompiler({ fetchImplementation, now: () => now })
+    const input = {
+      instanceId: 'test-instance',
+      workflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    } as const
+
+    await compiler.compile(input)
+    now += 599_999
+    await compiler.compile(input)
+    expect(fetchImplementation).toHaveBeenCalledOnce()
+
+    now += 1
+    await compiler.compile(input)
+    expect(fetchImplementation).toHaveBeenCalledTimes(2)
+  })
+
+  it('isolates object_info cache entries by instance identity and URL', async () => {
+    const fetchImplementation = vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 }))
+    const compiler = createCompiler({ fetchImplementation })
+    const compile = async (instanceId: string, url: string) => compiler.compile({
+      instanceId,
+      workflow,
+      connection: { url, origin: new URL(url).origin, authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    })
+
+    await compile('instance-a', 'http://127.0.0.1:8188')
+    await compile('instance-b', 'http://127.0.0.1:8188')
+    await compile('instance-a', 'http://127.0.0.1:8288')
+    await compile('instance-a', 'http://127.0.0.1:8188')
+
+    expect(fetchImplementation).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not cache a failed object_info response', async () => {
+    const fetchImplementation = vi.fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(objectInfo), { status: 200 }))
+    const compiler = createCompiler({ fetchImplementation })
+    const input = {
+      instanceId: 'test-instance',
+      workflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      loras: [],
+    } as const
+
+    await expect(compiler.compile(input)).rejects.toMatchObject({ code: 'COMFYUI_HTTP_ERROR' })
+    await expect(compiler.compile(input)).resolves.toMatchObject({ activeOutputNodeIds: ['3'] })
+    expect(fetchImplementation).toHaveBeenCalledTimes(2)
+  })
+
   it('inlines serialized TextInput_ and Float value sources that are absent from the live instance', async () => {
     const actual: UiWorkflow = {
       version: 0.4,
@@ -2525,6 +2607,120 @@ describe('ComfyWorkflowCompiler', () => {
       expect(compiled.actualWorkflow.nodes.find(node => node.id === id)?.widgets_values).toEqual([
         runtimeParameters[`${kind}_${id}`],
       ])
+    })
+  })
+
+  it('canonicalizes runtime enum values through a unique case-insensitive live instance match', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 41,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [
+        { name: 'sampler_name', type: 'COMBO', link: null, widget: { name: 'sampler_name' } },
+        { name: 'scheduler', type: 'COMBO', link: null, widget: { name: 'scheduler' } },
+      ],
+      outputs: [],
+      widgets_values: ['lcm', 'normal'],
+      widgets_values_named: { sampler_name: 'lcm', scheduler: 'normal' },
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: {
+            sampler_name: [['euler', 'lcm'], {}],
+            scheduler: [['simple', 'normal'], {}],
+          } },
+          input_order: { required: ['sampler_name', 'scheduler'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { sampler_name: 'LCM', scheduler: 'NORMAL' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 41)?.widgets_values).toEqual(['lcm', 'normal'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 41)?.widgets_values_named)
+      .toEqual({ sampler_name: 'lcm', scheduler: 'normal' })
+    expect(compiled.apiWorkflow['41']).toMatchObject({ inputs: { sampler_name: 'lcm', scheduler: 'normal' } })
+  })
+
+  it('canonicalizes an exact custom runtime parameter through its live enum definition', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 42,
+      type: 'ColorMethod',
+      mode: 0,
+      inputs: [{ name: 'method', type: 'COMBO', link: null, widget: { name: 'method' } }],
+      outputs: [],
+      widgets_values: ['mkl'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        ColorMethod: {
+          input: { required: { method: [['mkl', 'hm'], {}] } },
+          input_order: { required: ['method'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { method: 'MKL' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 42)?.widgets_values).toEqual(['mkl'])
+    expect(compiled.apiWorkflow['42']).toMatchObject({ inputs: { method: 'mkl' } })
+  })
+
+  it.each([
+    ['an absent live enum value', ['euler', 'lcm'], 'not-a-sampler'],
+    ['a non-unique case-insensitive live enum value', ['lcm', 'LCM'], 'LcM'],
+  ])('rejects %s before API Workflow submission', async (_label, choices, suppliedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 41,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [{ name: 'sampler_name', type: 'COMBO', link: null, widget: { name: 'sampler_name' } }],
+      outputs: [],
+      widgets_values: ['lcm'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: { sampler_name: [choices, {}] } },
+          input_order: { required: ['sampler_name'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      expectedOutputNodeIds: ['3'],
+      runtimeParameters: { sampler_name: suppliedValue },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: `Generation parameter "sampler_name" for 41:KSampler.sampler_name received ${JSON.stringify(suppliedValue)}; allowed values ${JSON.stringify(choices)}. Correct the value and call generate_with_comfyui again.`,
     })
   })
 

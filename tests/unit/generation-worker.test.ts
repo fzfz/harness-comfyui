@@ -100,7 +100,6 @@ describe('GenerationRuntime worker lifecycle', () => {
       request,
     )
 
-    await generation.advance()
     expect(generation.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]?.status).toBe('prepared')
     await generation.advance()
     expect(generation.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]?.status).toBe('remote_pending')
@@ -163,6 +162,15 @@ describe('GenerationRuntime worker lifecycle', () => {
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
+    const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
+    database.prepare(`
+      UPDATE generation_runs SET status = 'created', revision = 0,
+        instance_id = NULL, instance_title = NULL, instance_origin = NULL, template_title = NULL,
+        source_snapshot_path = NULL, actual_workflow_path = NULL, api_workflow_path = NULL,
+        expected_output_node_ids_json = NULL
+      WHERE run_id = ?
+    `).run(accepted.runId)
+    database.close()
     expect(first.queryRunsForSession('session_1')[0]?.status).toBe('created')
     first.close()
 
@@ -190,7 +198,6 @@ describe('GenerationRuntime worker lifecycle', () => {
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
-    await first.advance()
     first.close()
     const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
     database.prepare("UPDATE generation_runs SET status = 'submitting', prompt_id = ? WHERE run_id = ?")
@@ -278,7 +285,6 @@ describe('GenerationRuntime worker lifecycle', () => {
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_artifact' },
       request,
     )
-    await artifactRuntime.advance()
     unlinkSync(join(artifactRoot, 'runs', 'workspaces', 'workspace_1', 'runs', 'run_1', 'api-workflow.json'))
     await artifactRuntime.advance()
     expect(artifactRuntime.queryRunsForSession('session_1')[0]).toMatchObject({
@@ -300,7 +306,6 @@ describe('GenerationRuntime worker lifecycle', () => {
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source' },
       request,
     )
-    await sourceRuntime.advance()
     await sourceRuntime.advance()
     expect(sourceRuntime.queryRunsForSession('session_1')[0]).toMatchObject({
       status: 'failed', errorCode: 'COMFYUI_INSTANCE_SOURCE_CHANGED',
@@ -326,7 +331,6 @@ describe('GenerationRuntime worker lifecycle', () => {
       request,
     )
     await generation.advance()
-    await generation.advance()
     await expect(generation.advance(controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
     expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
       status: 'remote_pending', errorCode: null,
@@ -349,7 +353,6 @@ describe('GenerationRuntime worker lifecycle', () => {
     await first.acceptGeneration(
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_preflight_cancel' }, request,
     )
-    await first.advance()
     await expect(first.advance(controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
     expect(first.queryRunsForSession('session_1')[0]).toMatchObject({ status: 'prepared', promptId: null })
     first.close()
@@ -380,7 +383,6 @@ describe('GenerationRuntime worker lifecycle', () => {
     await generation.acceptGeneration(
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_gap' }, request,
     )
-    await generation.advance()
     await generation.advance()
 
     await generation.advance()

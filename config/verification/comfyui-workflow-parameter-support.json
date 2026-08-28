@@ -18,9 +18,6 @@
     { "id": "16", "supportedParameters": ["positive_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
     { "id": "14", "supportedParameters": ["positive_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
     { "id": "11", "supportedParameters": ["positive_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
-    { "id": "8", "supportedParameters": ["positive_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
-    { "id": "4", "supportedParameters": ["positive_prompt", "negative_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
-    { "id": "3", "supportedParameters": ["positive_prompt", "negative_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
-    { "id": "1", "supportedParameters": ["positive_prompt", "negative_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] }
+    { "id": "8", "supportedParameters": ["positive_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] }
   ]
 }
