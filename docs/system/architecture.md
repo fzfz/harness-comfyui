@@ -116,6 +116,8 @@ Comfy transport 向 `/prompt` 发送 API Workflow，并把同一 Run 的 Actual 
 
 Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体内容与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|workflow` 提供。
 
-Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>`，缩略图仍从该媒体的 `/content` 路由读取。Host 在返回查看页前验证 HTTP 方法、Session、workspace 和媒体归属。查看页的启动数据只包含当前 Session 的媒体 ID、媒体类型、文件名、生成时间、同源内容 URL、查看页 URL 和所属 Run 保存的原始 `parameters.positive_prompt`；启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
+Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>`，缩略图仍从该媒体的 `/content` 路由读取。Host 在返回查看页前验证 HTTP 方法、Session、workspace 和媒体归属。查看页的启动数据只包含当前 Session 中每项媒体的媒体 ID、所属 Generation Run 的 `runId`、媒体类型、文件名、生成时间、同源内容 URL、查看页 URL 和所属 Run 保存的原始 `parameters.positive_prompt`；启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
 
-Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。
+Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。Host 只把每项媒体的 `runId`、媒体显示属性、同源内容 URL、同源查看 URL 和正面提示词投影到查看页；Host 不把完整 Generation Request 或 Workflow 投影到查看页。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。
+
+查看页顶部显示当前媒体所属 Generation Run 的完整 `run_id`。用户点击该值后，页面使用浏览器 Clipboard API 写入完整 `run_id`；成功时显示“已复制”。Clipboard API 缺失或拒绝写入时，按钮显示“复制失败”，`aria-live` 分别说明当前环境不支持剪贴板写入或当前页面没有剪贴板写入权限，并提供对应的用户动作。页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。图片加载后，页面读取 `naturalWidth` 和 `naturalHeight`；视频元数据加载后，页面读取 `videoWidth` 和 `videoHeight`。上述值定义为媒体文件的固有像素尺寸，不使用 Generation Request 中的 `width` 或 `height` 推测。切换媒体时尺寸先显示“读取中”，零尺寸或媒体加载失败时显示“尺寸不可用”；已经被替换的媒体产生迟到事件时不得覆盖当前媒体的尺寸。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。

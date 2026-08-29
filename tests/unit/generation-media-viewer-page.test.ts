@@ -198,7 +198,9 @@ describe('Generation media viewer page', () => {
     elements['run-id-copy'].listeners.get('click')?.({})
     await new Promise<void>(resolve => setImmediate(resolve))
     expect(elements['copy-state'].textContent).toBe('复制失败')
-    expect(elements['media-announcement'].textContent).toBe('未能复制 Run ID。请检查浏览器的剪贴板权限。')
+    expect(elements['media-announcement'].textContent).toBe(
+      '当前浏览器或页面环境不支持剪贴板写入。请在支持 Clipboard API 的浏览器中打开本页面。',
+    )
 
     const image = elements['media-content'].children[0]!
     image.listeners.get('load')?.({})
@@ -212,7 +214,9 @@ describe('Generation media viewer page', () => {
     rejectedElements['run-id-copy'].listeners.get('click')?.({})
     await new Promise<void>(resolve => setImmediate(resolve))
     expect(rejectedElements['copy-state'].textContent).toBe('复制失败')
-    expect(rejectedElements['media-announcement'].textContent).toBe('未能复制 Run ID。请检查浏览器的剪贴板权限。')
+    expect(rejectedElements['media-announcement'].textContent).toBe(
+      '当前页面没有剪贴板写入权限。请允许当前页面使用剪贴板后重试。',
+    )
   })
 
   it('keeps complete media, centered controls and a separately scrolling prompt on desktop and narrow screens', () => {

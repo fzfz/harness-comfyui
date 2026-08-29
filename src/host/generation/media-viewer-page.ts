@@ -390,16 +390,18 @@ const VIEWER_SCRIPT = `(() => {
 
   async function copyCurrentRunId() {
     const copiedRunId = data.items[currentIndex].runId
+    if (navigator.clipboard === undefined || typeof navigator.clipboard.writeText !== 'function') {
+      if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '复制失败'
+      announcement.textContent = '当前浏览器或页面环境不支持剪贴板写入。请在支持 Clipboard API 的浏览器中打开本页面。'
+      return
+    }
     try {
-      if (navigator.clipboard === undefined || typeof navigator.clipboard.writeText !== 'function') {
-        throw new Error('Clipboard API is unavailable.')
-      }
       await navigator.clipboard.writeText(copiedRunId)
       if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '已复制'
       announcement.textContent = '已复制 Run ID：' + copiedRunId
     } catch {
       if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '复制失败'
-      announcement.textContent = '未能复制 Run ID。请检查浏览器的剪贴板权限。'
+      announcement.textContent = '当前页面没有剪贴板写入权限。请允许当前页面使用剪贴板后重试。'
     }
   }
 
