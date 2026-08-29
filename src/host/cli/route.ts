@@ -22,6 +22,8 @@ import {
   type GenerationRuntime,
 } from '../generation/generation-runtime.ts'
 import type { GenerationWebServer } from '../generation/media-routes.ts'
+import { ImageReaderError } from '../image-reader/errors.ts'
+import type { ImageReaderService } from '../image-reader/image-reader-service.ts'
 import type {
   CliExecutionIdentity,
   CliShellCapabilityStore,
@@ -42,7 +44,8 @@ export interface RegisterHarnessComfyuiCliRouteOptions {
   readonly webServer: GenerationWebServer
   readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
   readonly catalog: CliCatalog
-  readonly runtime: Pick<GenerationRuntime, 'acceptGeneration' | 'readGenerationRunInputs'>
+  readonly runtime: Pick<GenerationRuntime, 'acceptGeneration' | 'readGenerationRunInputs' | 'readGenerationRunMedia'>
+  readonly imageReader: Pick<ImageReaderService, 'inspect'>
   readonly workspaceRegistry: {
     resolveByPath(path: string): Promise<{
       readonly id: string | number
@@ -180,6 +183,22 @@ async function dispatch(
         runIds: request.run_ids,
       }, signal)
     }
+    case 'image.run-media': {
+      const owner = await generationIdentity(options, identity)
+      return options.runtime.readGenerationRunMedia({
+        workspaceId: owner.workspaceId,
+        runIds: request.run_ids,
+      }, signal)
+    }
+    case 'image.inspect': {
+      const result = await options.imageReader.inspect(request.file_path, request.prompt, signal)
+      return Object.freeze({
+        provider: result.provider,
+        model: result.model,
+        file_path: result.filePath,
+        observation: result.observation,
+      })
+    }
   }
 }
 
@@ -194,6 +213,9 @@ function reportedError(error: unknown): { readonly status: number; readonly erro
     return { status: 502, error: { code: error.code, message: error.message } }
   }
   if (error instanceof GenerationRuntimeError) {
+    return { status: 409, error: { code: error.code, message: error.message } }
+  }
+  if (error instanceof ImageReaderError) {
     return { status: 409, error: { code: error.code, message: error.message } }
   }
   return {

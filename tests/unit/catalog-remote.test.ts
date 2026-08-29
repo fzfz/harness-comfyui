@@ -4,6 +4,7 @@ import {
   CATALOG_REMOTE,
   HARNESS_COMFYUI_REMOTE,
 } from '../../src/remote.ts'
+import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 
 describe('Catalog Remote contribution', () => {
   it('assembles every plugin method under one Typert package registration', () => {
@@ -12,7 +13,38 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/search',
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiGeneration/list',
+      'harness-comfyui#harnessComfyuiImageReader/models',
     ])
+  })
+
+  it('mounts the strict cancellable runtime visual-model catalog', () => {
+    const descriptor = IMAGE_READER_REMOTE.descriptors[0]!
+    expect(descriptor).toMatchObject({
+      service: 'harnessComfyuiImageReader',
+      namespace: 'harnessComfyuiImageReader',
+      method: 'models',
+      parameters: [],
+      cancellation: { parameter: 'signal' },
+      result: { mode: 'strict' },
+    })
+    const result = descriptor.result
+    if (result.mode !== 'strict') throw new Error('strict codec required')
+    expect(result.schema.parse({
+      groups: [{
+        provider: 'provider-a',
+        name: 'Provider A',
+        models: [{ id: 'vision-a', name: 'Vision A', description: null }],
+      }],
+      failures: [{ provider: 'provider-b', message: 'catalog unavailable' }],
+    })).toEqual({
+      groups: [{
+        provider: 'provider-a',
+        name: 'Provider A',
+        models: [{ id: 'vision-a', name: 'Vision A', description: null }],
+      }],
+      failures: [{ provider: 'provider-b', message: 'catalog unavailable' }],
+    })
+    expect(() => result.schema.parse({ groups: [], failures: [], provider: 'hardcoded' })).toThrow('properties')
   })
 
   it('mounts strict cancellable catalog and base-model methods', () => {

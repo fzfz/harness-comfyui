@@ -50,9 +50,25 @@ afterEach(() => {
 })
 
 function installImmediateInject(context: Record<string, any>): void {
+  context.remote.harnessComfyuiImageReader ??= {
+    models: vi.fn(async () => ({ ok: true, value: { groups: [], failures: [] } })),
+  }
+  context.settingsScope ??= {
+    bind: vi.fn(() => ({
+      getSnapshot: () => ({
+        status: 'ready',
+        value: { configuration: { provider: '', model: '', defaultPrompt: 'prompt', temperature: 0.2, maxTokens: 2048 } },
+        base: {}, user: {}, revision: 0, writable: true, mode: 'host',
+      }),
+      subscribe: () => vi.fn(),
+      set: vi.fn(async () => undefined),
+      unset: vi.fn(async () => undefined),
+    })),
+  }
   context.get = vi.fn((service: string) => {
     if (service === 'remote.harnessComfyuiCatalog') return context.remote.harnessComfyuiCatalog
     if (service === 'remote.harnessComfyuiGeneration') return context.remote.harnessComfyuiGeneration
+    if (service === 'remote.harnessComfyuiImageReader') return context.remote.harnessComfyuiImageReader
     return undefined
   })
   context.inject = vi.fn((_services: readonly string[], callback: (scope: unknown) => unknown) => {
@@ -127,12 +143,13 @@ describe('Harness Client plugin registration', () => {
     const dispose = await apply(context as never)
 
     expect(name).toBe('harness-comfyui')
-    expect(inject).toEqual(['slots', 'sessions', 'conversation', 'remote', 'layout'])
+    expect(inject).toEqual(['slots', 'sessions', 'conversation', 'remote', 'layout', 'settingsScope'])
     expect([...registrations.keys()]).toEqual([
       'sidebar.footer.action',
       'conversation.input.dock',
       'details',
       'shell.overlay',
+      'settings.section',
     ])
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
@@ -147,11 +164,17 @@ describe('Harness Client plugin registration', () => {
       id: WORKBENCH_RESULTS_OVERLAY_ID,
       order: 20,
     })
+    expect(registrations.get('settings.section')).toMatchObject({
+      id: 'harness-comfyui-image-reader',
+      order: 40,
+      label: '图片读取',
+    })
 
     const entryFace = registrations.get('sidebar.footer.action')!.inject()
     const dockFace = registrations.get('conversation.input.dock')!.inject('session-1' as never)
     const detailsFace = registrations.get('details')!.inject('session-1' as never)
     const overlayFace = registrations.get('shell.overlay')!.inject()
+    const imageReaderSettingsFace = registrations.get('settings.section')!.inject()
     expect(entryFace).toMatchObject({ workbench: expect.any(Object) })
     expect(dockFace).toMatchObject({
       catalog: expect.objectContaining({ search: expect.any(Function), baseModels: expect.any(Function) }),
@@ -166,6 +189,13 @@ describe('Harness Client plugin registration', () => {
     })
     expect(detailsFace).toMatchObject({ workbench: expect.any(Object), generationStore: expect.any(Object) })
     expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
+    expect(imageReaderSettingsFace).toMatchObject({
+      scope: expect.objectContaining({ getSnapshot: expect.any(Function), set: expect.any(Function) }),
+      catalog: expect.objectContaining({ models: expect.any(Function) }),
+    })
+    await expect((imageReaderSettingsFace as {
+      catalog: { models(signal: AbortSignal): Promise<unknown> }
+    }).catalog.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)
     const sessionTwoDock = registrations.get('conversation.input.dock')!.inject('session-2' as never) as {
@@ -197,10 +227,12 @@ describe('Harness Client plugin registration', () => {
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('details')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
+    expect(injectionDisposers.get('settings.section')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('details')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('settings.section')).toHaveBeenCalledOnce()
     expect(remoteDispose).toHaveBeenCalledOnce()
   })
 

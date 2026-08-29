@@ -32,6 +32,9 @@ import {
 } from './generation/generation-runtime.ts'
 import { generationRunInputToolForContext } from './generation/generation-run-input-tool.ts'
 import { generationToolForContext } from './generation/generation-tool.ts'
+import { ImageReaderService } from './image-reader/image-reader-service.ts'
+import { ImageReaderRemoteService, registerImageReaderSettings } from './image-reader/image-reader-host.ts'
+import { createGenerationRunMediaTool, createInspectImageTool } from './image-reader/image-reader-tool.ts'
 import { registerGenerationMediaRoutes, type GenerationWebServer } from './generation/media-routes.ts'
 import { OfficialApiWorkflowCompiler } from './generation/official-api-workflow.ts'
 import { GenerationSourceCli } from './generation/source-cli.ts'
@@ -55,7 +58,7 @@ export const Config = Schema.object({
 })
 
 export const name = 'harness-comfyui'
-export const inject = ['tools', 'webServer', 'workspaceRegistry', 'shellEnv'] as const
+export const inject = ['tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings'] as const
 
 export function reportGenerationRunInputLookupError(
   logger: Pick<Logger, 'error'>,
@@ -127,6 +130,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
     apiUrl: `http://${profile.server.host}:${profile.server.port}${CLI_ROUTE_PATH}`,
   })
+  const imageReaderScope = registerImageReaderSettings(ctx)
+  const imageReader = new ImageReaderService({
+    scope: imageReaderScope,
+    attachments: ctx.attachments,
+    llm: ctx.llm,
+  })
+  new ImageReaderRemoteService(ctx, ctx.llm)
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)
   const coordinator = new GenerationCoordinator({
     runtime,
@@ -140,6 +150,8 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     createComfyuiInstanceQueryTool(catalog),
     generationToolForContext(ctx, runtime),
     generationRunInputToolForContext(ctx, runtime),
+    createGenerationRunMediaTool({ runtime, workspaceRegistry: ctx.workspaceRegistry }),
+    createInspectImageTool(imageReader),
   ]), 'project Tool registry')
   ctx.effect(() => registerGenerationMediaRoutes({
     webServer: (ctx as unknown as { webServer: GenerationWebServer }).webServer,
@@ -151,6 +163,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     capabilities,
     catalog,
     runtime,
+    imageReader,
     workspaceRegistry: ctx.workspaceRegistry,
   }), 'Managed Harness ComfyUI CLI route')
   ctx.effect(() => {

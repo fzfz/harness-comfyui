@@ -44,6 +44,31 @@ function provideHostServices(ctx: Context) {
   ctx.provide('tools', { register: registerTool })
   ctx.provide('webServer', { register: registerRoute })
   ctx.provide('shellEnv' as never, { register: registerShellEnvironment } as never)
+  ctx.provide('attachments' as never, {
+    imageLimits: {
+      maxImageBytes: 8 * 1024 * 1024,
+      maxImagesPerMessage: 1,
+      maxMessageImageBytes: 8 * 1024 * 1024,
+      maxImagePixels: 16_000_000,
+      maxImageDimension: 8192,
+      mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+    },
+    saveImage: vi.fn(),
+  } as never)
+  ctx.provide('llm' as never, {
+    listProviders: vi.fn(() => []),
+    listModels: vi.fn(async () => []),
+    prepareCall: vi.fn(),
+  } as never)
+  ctx.provide('settings' as never, {
+    register: vi.fn(() => ({
+      get: vi.fn(() => ({
+        configuration: {
+          provider: '', model: '', defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+        },
+      })),
+    })),
+  } as never)
   ctx.provide('workspaceRegistry', {
     create: createWorkspace,
     resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
@@ -73,7 +98,9 @@ describe('Harness ComfyUI Host plugin', () => {
 
   it('exports the Loader plugin shape and Standard Schema configuration', () => {
     expect(harnessComfyui.name).toBe('harness-comfyui')
-    expect(harnessComfyui.inject).toEqual(['tools', 'webServer', 'workspaceRegistry', 'shellEnv'])
+    expect(harnessComfyui.inject).toEqual([
+      'tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings',
+    ])
     expect(typeof harnessComfyui.apply).toBe('function')
     expect(typeof harnessComfyui.Config?.['~standard'].validate).toBe('function')
   })
@@ -98,6 +125,8 @@ describe('Harness ComfyUI Host plugin', () => {
       'query_semantic_comfyui_instances',
       'generate_with_comfyui',
       'read_comfyui_run_inputs',
+      'get_generation_run_media',
+      'inspect_image',
     ])
     expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'prefix',

@@ -1,6 +1,7 @@
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 
 import GENERATION_REMOTE from './generation/remote.ts'
+import IMAGE_READER_REMOTE from './image-reader/remote.ts'
 import {
   CATALOG_REMOTE_NAMESPACE,
   parseBaseModelResult,
@@ -71,6 +72,7 @@ export const HARNESS_COMFYUI_REMOTE: TypertRemoteContribution = Object.freeze({
   descriptors: Object.freeze([
     ...CATALOG_REMOTE.descriptors,
     ...GENERATION_REMOTE.descriptors,
+    ...IMAGE_READER_REMOTE.descriptors,
   ]),
 })
 

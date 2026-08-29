@@ -17,6 +17,7 @@ export const CLIENT_MODULE_POLICY = Object.freeze({
     '@deepseek-ai/dsh-client-ui-attachment',
     '@deepseek-ai/dsh-client-schema-form',
     '@deepseek-ai/dsh-client-runtime/client',
+    '@deepseek-ai/dsh-client-ui-settings/client',
   ]),
   inlineRules: Object.freeze([
     /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand)(\/|$)/,

@@ -18,6 +18,11 @@ import {
   TEMPLATE_RESOLVER_TOOL_NAME,
 } from '../../src/host/catalog/catalog-tool.ts'
 import { GENERATION_TOOL_NAME } from '../../src/host/generation/generation-tool.ts'
+import { GENERATION_RUN_INPUT_TOOL_NAME } from '../../src/host/generation/generation-run-input-tool.ts'
+import {
+  GENERATION_RUN_MEDIA_TOOL_NAME,
+  INSPECT_IMAGE_TOOL_NAME,
+} from '../../src/host/image-reader/image-reader-tool.ts'
 
 const temporaryPaths = []
 const CONTROL_PRESET_ID = 'harness-comfyui-schema-control'
@@ -93,6 +98,9 @@ describe('A/B project Tool visibility', () => {
       { name: LORA_RESOLVER_TOOL_NAME },
       { name: COMFYUI_INSTANCE_QUERY_TOOL_NAME },
       { name: GENERATION_TOOL_NAME },
+      { name: GENERATION_RUN_INPUT_TOOL_NAME },
+      { name: GENERATION_RUN_MEDIA_TOOL_NAME },
+      { name: INSPECT_IMAGE_TOOL_NAME },
     ]
     const restrict = vi.fn(() => vi.fn())
     const ctx = {

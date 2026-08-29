@@ -14,6 +14,7 @@ import {
   type GenerationRunInputResult,
   type JsonValue,
 } from '../../generation/run-input-contract.ts'
+import type { GenerationRunMediaResult } from '../../image-reader/run-media-contract.ts'
 
 export type { JsonPrimitive, JsonValue } from '../../generation/run-input-contract.ts'
 
@@ -417,6 +418,18 @@ function runInputError(code: string, message: string): GenerationRunInputError {
   return Object.freeze({ code, message })
 }
 
+function assertRunLookupInput(input: { readonly workspaceId: string; readonly runIds: readonly string[] }): void {
+  assertPathId(input.workspaceId, 'workspaceId')
+  if (
+    !Array.isArray(input.runIds)
+    || input.runIds.length === 0
+    || input.runIds.length > MAX_RUN_INPUT_QUERY_IDS
+    || input.runIds.some(runId => typeof runId !== 'string')
+  ) {
+    throw new TypeError(`runIds must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
+  }
+}
+
 function mediaSnapshot(row: MediaRow): GenerationMediaSnapshot {
   return Object.freeze({
     mediaId: row.media_id,
@@ -719,15 +732,7 @@ export class GenerationRuntime {
     input: { readonly workspaceId: string; readonly runIds: readonly string[] },
     signal?: AbortSignal,
   ): Promise<GenerationRunInputResult> {
-    assertPathId(input.workspaceId, 'workspaceId')
-    if (
-      !Array.isArray(input.runIds)
-      || input.runIds.length === 0
-      || input.runIds.length > MAX_RUN_INPUT_QUERY_IDS
-      || input.runIds.some(runId => typeof runId !== 'string')
-    ) {
-      throw new TypeError(`runIds must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
-    }
+    assertRunLookupInput(input)
     const runs = []
     for (const runId of input.runIds) {
       signal?.throwIfAborted()
@@ -759,6 +764,67 @@ export class GenerationRuntime {
       }
     }
     return Object.freeze({ runs: Object.freeze(runs) })
+  }
+
+  async readGenerationRunMedia(
+    input: { readonly workspaceId: string; readonly runIds: readonly string[] },
+    signal?: AbortSignal,
+  ): Promise<GenerationRunMediaResult> {
+    assertRunLookupInput(input)
+    const runs = []
+    for (const requestedRunId of input.runIds) {
+      signal?.throwIfAborted()
+      try {
+        const row = this.resolveGenerationRunRow(input.workspaceId, requestedRunId)
+        const request = historicalGenerationRequest(row.request_json)
+        const argumentsValue = runInputArguments(request)
+        const mediaRows = this.database.prepare(`
+          SELECT * FROM generation_media
+          WHERE run_id = ? AND media_kind = 'image'
+          ORDER BY node_id ASC, output_index ASC, media_id ASC
+        `).all(row.run_id) as unknown as MediaRow[]
+        runs.push(Object.freeze({
+          run_id: row.run_id,
+          lookup_status: 'available' as const,
+          title: argumentsValue.title,
+          parameters: argumentsValue.parameters,
+          images: Object.freeze(mediaRows.map(media => Object.freeze({
+            media_id: media.media_id,
+            node_id: media.node_id,
+            output_index: media.output_index,
+            filename: media.filename,
+            media_type: media.media_type,
+            file_path: join(this.options.savedMediaDirectory, media.relative_path),
+          }))),
+        }))
+      } catch (error) {
+        if (signal?.aborted === true || (error instanceof DOMException && error.name === 'AbortError')) throw error
+        if (error instanceof GenerationRuntimeError) {
+          runs.push(Object.freeze({
+            run_id: requestedRunId,
+            lookup_status: 'error' as const,
+            error: runInputError(error.code, error.message),
+          }))
+        } else {
+          this.reportRunInputLookupError?.({
+            workspaceId: input.workspaceId,
+            runId: requestedRunId,
+            error,
+          })
+          runs.push(Object.freeze({
+            run_id: requestedRunId,
+            lookup_status: 'error' as const,
+            error: runInputError(
+              'GENERATION_RUN_LOOKUP_FAILED',
+              'Generation Run lookup failed. Check the Harness ComfyUI Host logs and retry this run_id.',
+            ),
+          }))
+        }
+      }
+    }
+    return Object.freeze({
+      runs: Object.freeze(runs),
+    })
   }
 
   async advance(signal?: AbortSignal): Promise<void> {
@@ -807,50 +873,7 @@ export class GenerationRuntime {
     requestedRunId: string,
     signal?: AbortSignal,
   ): Promise<AvailableGenerationRunInput> {
-    if (!SAFE_PATH_ID.test(requestedRunId)) {
-      throw new GenerationRuntimeError(
-        'GENERATION_RUN_ID_INVALID',
-        RUN_ID_INVALID_MESSAGE,
-      )
-    }
-    const exactRow = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?')
-      .get(requestedRunId) as unknown as RunRow | undefined
-    let row = exactRow?.workspace_id === workspaceId ? exactRow : undefined
-    if (row === undefined && isCanonicalRunIdPrefix(requestedRunId)) {
-      const prefixRows = this.database.prepare(`
-        SELECT * FROM generation_runs
-        WHERE workspace_id = ?
-          AND substr(run_id, 1, length(?)) = ?
-          AND length(run_id) = ?
-          AND run_id GLOB ?
-        ORDER BY run_id
-        LIMIT 2
-      `).all(
-        workspaceId,
-        requestedRunId,
-        requestedRunId,
-        CANONICAL_RUN_ID_LENGTH,
-        CANONICAL_RUN_ID_GLOB,
-      ) as unknown as RunRow[]
-      if (prefixRows.length > 1) {
-        throw new GenerationRuntimeError(
-          'GENERATION_RUN_ID_AMBIGUOUS',
-          'Generation Run ID prefix matches multiple Runs in the current Workspace. Add more characters and retry it.',
-        )
-      }
-      row = prefixRows[0]
-    } else if (row === undefined && RUN_ID_PREFIX_CHARACTERS.test(requestedRunId)) {
-      throw new GenerationRuntimeError(
-        'GENERATION_RUN_ID_INVALID',
-        RUN_ID_INVALID_MESSAGE,
-      )
-    }
-    if (row === undefined) {
-      throw new GenerationRuntimeError(
-        'GENERATION_RUN_NOT_FOUND',
-        'Generation Run was not found in the current Workspace.',
-      )
-    }
+    const row = this.resolveGenerationRunRow(workspaceId, requestedRunId)
     const request = historicalGenerationRequest(row.request_json)
     const argumentsValue = runInputArguments(request)
     if (row.actual_workflow_path === null) {
@@ -888,6 +911,60 @@ export class GenerationRuntime {
         workflow_error: runInputError(error.code, error.message),
       })
     }
+  }
+
+  private resolveGenerationRunRow(workspaceId: string, requestedRunId: string): RunRow {
+    if (!SAFE_PATH_ID.test(requestedRunId)) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_ID_INVALID',
+        RUN_ID_INVALID_MESSAGE,
+      )
+    }
+    const exactRow = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?')
+      .get(requestedRunId) as unknown as RunRow | undefined
+    if (exactRow !== undefined && exactRow.workspace_id !== workspaceId) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_NOT_FOUND',
+        'Generation Run was not found in the current Workspace.',
+      )
+    }
+    let row = exactRow?.workspace_id === workspaceId ? exactRow : undefined
+    if (row === undefined && isCanonicalRunIdPrefix(requestedRunId)) {
+      const prefixRows = this.database.prepare(`
+        SELECT * FROM generation_runs
+        WHERE workspace_id = ?
+          AND substr(run_id, 1, length(?)) = ?
+          AND length(run_id) = ?
+          AND run_id GLOB ?
+        ORDER BY run_id
+        LIMIT 2
+      `).all(
+        workspaceId,
+        requestedRunId,
+        requestedRunId,
+        CANONICAL_RUN_ID_LENGTH,
+        CANONICAL_RUN_ID_GLOB,
+      ) as unknown as RunRow[]
+      if (prefixRows.length > 1) {
+        throw new GenerationRuntimeError(
+          'GENERATION_RUN_ID_AMBIGUOUS',
+          'Generation Run ID prefix matches multiple Runs in the current Workspace. Add more characters and retry it.',
+        )
+      }
+      row = prefixRows[0]
+    } else if (row === undefined && RUN_ID_PREFIX_CHARACTERS.test(requestedRunId)) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_ID_INVALID',
+        RUN_ID_INVALID_MESSAGE,
+      )
+    }
+    if (row === undefined) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_NOT_FOUND',
+        'Generation Run was not found in the current Workspace.',
+      )
+    }
+    return row
   }
 
   private getRow(runId: string): RunRow {

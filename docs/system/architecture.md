@@ -45,10 +45,12 @@ pnpm worktree:start|restart
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
+| `src/host/image-reader/` | 图片读取设置注册、运行时视觉模型目录和单图视觉模型调用 Tool |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
-| `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器与 Generation Run/Media 投影 |
-| `.agents/skills/` | 四个项目 Skill 的 canonical source；每个 Skill 都包含独立的历史 Generation Run 查询入口和 CLI 参考文档 |
+| `src/image-reader/` | Host 与 Client 共用的图片读取设置和视觉模型目录合同 |
+| `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器、Generation Run/Media 投影与图片读取设置页 |
+| `.agents/skills/` | 五个项目 Skill 的 canonical source；每个 Skill 都包含自身执行所需的 CLI 参考文档 |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
@@ -66,7 +68,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## Generation 生命周期
 
-四个项目 Skill 以主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 为 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>` 使用绝对符号链接指向主开发 checkout 中相同名称的目录，不得指向独立 linked worktree。`ComfyUI工作台预设` 使用全局 `comfyui-generate` Skill；四个 Skill 均可通过受管项目 CLI 独立查询历史 Generation Run。CLI 身份链路如下：
+五个项目 Skill 以主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 为 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>` 使用绝对符号链接指向主开发 checkout 中相同名称的目录，不得指向独立 linked worktree。`ComfyUI工作台预设` 使用全局 `comfyui-generate` Skill；五个 Skill 均可通过各自文档定义的受管项目 CLI 入口读取所需的历史 Generation Run 数据。CLI 身份链路如下：
 
 ```text
 前台 bash/pwsh ToolExecution
@@ -76,6 +78,8 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
   → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
   → generation submit：GenerationRuntime.acceptGeneration(identity, request)
   → generation run-inputs：GenerationRuntime.readGenerationRunInputs({ workspaceId, runIds })
+  → image run-media：GenerationRuntime.readGenerationRunMedia({ workspaceId, runIds })
+  → image inspect：ImageReaderService.inspect(filePath, prompt)
 ```
 
 `read_comfyui_run_inputs` Tool 从 Tool Call、Session cwd 和 workspace registry 派生当前 Workspace；CLI 查询从短期 shell capability 派生当前 Workspace。两条入口都只把 `workspaceId` 和用户提供的 `run_id` 交给 `GenerationRuntime.readGenerationRunInputs()`，不接受调用者提供的 Workspace ID、Session ID、Turn 或 Tool Call ID。
@@ -128,3 +132,11 @@ Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media
 Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。Host 只把每项媒体的 `runId`、媒体显示属性、同源内容 URL、同源查看 URL 和正面提示词投影到查看页；Host 不把完整 Generation Request 或 Workflow 投影到查看页。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。
 
 查看页顶部显示当前媒体所属 Generation Run 的完整 `run_id`。用户点击该值后，页面使用浏览器 Clipboard API 写入完整 `run_id`；成功时显示“已复制”。Clipboard API 缺失或拒绝写入时，按钮显示“复制失败”，`aria-live` 分别说明当前环境不支持剪贴板写入或当前页面没有剪贴板写入权限，并提供对应的用户动作。页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。图片加载后，页面读取 `naturalWidth` 和 `naturalHeight`；视频元数据加载后，页面读取 `videoWidth` 和 `videoHeight`。上述值定义为媒体文件的固有像素尺寸，不使用 Generation Request 中的 `width` 或 `height` 推测。切换媒体时尺寸先显示“读取中”，零尺寸或媒体加载失败时显示“尺寸不可用”；已经被替换的媒体产生迟到事件时不得覆盖当前媒体的尺寸。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。
+
+## 图片读取与 Prompt 对比
+
+`GenerationRuntime.readGenerationRunMedia()` 接受一至二十个完整 `run_id` 或唯一规范前缀，按输入顺序查询当前 Workspace，并为每个输入返回独立的成功元素或错误元素。成功元素包含原始 Generation Request 参数和 Saved Media 的本地图片路径。DSH Tool `get_generation_run_media` 与受管 CLI 命令 `image run-media --stdin` 复用该运行时方法，且两种入口都不调用视觉模型。
+
+`ImageReaderService.inspect()` 一次接受一个本地图片路径。Host 把图片保存为 Harness Attachment，使用“图片读取”设置中的 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用，并返回视觉模型的图片观察文本。DSH Tool `inspect_image` 与受管 CLI 命令 `image inspect --stdin` 复用该服务。该服务与两种入口都不读取 Generation Request 参数，也不比较或改写 Prompt。
+
+`comfyui-image-review` Skill 按自己的 `references/cli.md` 先批量调用 `image run-media --stdin`，再为每张图片分别调用 `image inspect --stdin`。执行该 Skill 的 Agent 使用原始参数与图片观察结果完成比较和 Prompt 改进，因此 Run 解析、图片读取和 Prompt 对比保持三个独立职责。

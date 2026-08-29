@@ -112,3 +112,17 @@
 ## 配置变更
 
 配置不热更新。修改 JSON 或允许的环境变量后执行 `pnpm prod:restart`，再执行 `pnpm prod:status` 与 `pnpm prod:health`。`.local/source-production-managed.json` 保存运行中的版本、运行根目录、监听地址与端口、数据路径、Official API Workflow Cache 路径、官方前端编译器配置、Source CLI 路径、业务覆盖值、停止超时和日志读取参数，因此 stop、status、health 和 logs 仍能使用启动时配置定位并管理进程。
+
+## 图片读取设置
+
+Host 使用 `harness-comfyui-image-reader` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页通过 Harness Settings 服务把 `configuration` 作为一个结构化值原子写入。`configuration` 包含以下属性：
+
+| 字段 | 规则与用途 |
+| --- | --- |
+| `configuration.provider` | Harness 当前 LLM 运行时注册的精确 Provider route；空字符串表示尚未配置 |
+| `configuration.model` | 所选 Provider 下明确声明 `image` 输入能力的精确模型 ID；空字符串表示尚未配置 |
+| `configuration.defaultPrompt` | `inspect_image` 的调用参数中未包含非空 `prompt` 时使用的图片观察提示词 |
+| `configuration.temperature` | 独立视觉模型调用使用的数值，范围为 `0` 至 `2` |
+| `configuration.maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
+
+Provider 与模型候选来自 Harness 当前 LLM 运行时。设置页不从 Configuration Profile、环境变量或生图模型推导视觉模型。一次保存要么提交完整 `configuration`，要么保持此前配置，不会持久化混合 Provider/模型。上述设置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。

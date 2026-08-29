@@ -46,7 +46,9 @@ async function stdinText(required) {
   for await (const chunk of stdin) {
     const bytes = Buffer.from(chunk)
     byteLength += bytes.length
-    if (byteLength > CLI_MAX_BODY_BYTES) throw new TypeError('Generation stdin exceeds the maximum size')
+    if (byteLength > CLI_MAX_BODY_BYTES) {
+      throw Object.assign(new TypeError('stdin exceeds the maximum request size'), { code: 'CLI_REQUEST_TOO_LARGE' })
+    }
     chunks.push(bytes)
   }
   return Buffer.concat(chunks).toString('utf8')
@@ -73,13 +75,19 @@ async function main() {
   const needsStdin = argv.length === 3 && (
     command === 'generation submit --stdin'
     || command === 'generation run-inputs --stdin'
+    || command === 'image run-media --stdin'
+    || command === 'image inspect --stdin'
   )
   let request
   try {
     request = parseCliArguments(argv, await stdinText(needsStdin))
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
-    const code = command === 'generation run-inputs --stdin'
+    const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'
+      ? error.code
+      : command === 'generation run-inputs --stdin'
+      || command === 'image run-media --stdin'
+      || command === 'image inspect --stdin'
       ? 'CLI_REQUEST_INVALID'
       : 'CLI_ARGUMENT_INVALID'
     stderr.write(`${code}: ${message}\n`)

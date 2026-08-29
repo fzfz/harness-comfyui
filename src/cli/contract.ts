@@ -66,6 +66,8 @@ export type CliRequest =
   | { readonly command: 'catalog.instance.list' }
   | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
   | { readonly command: 'generation.run-inputs'; readonly run_ids: readonly string[] }
+  | { readonly command: 'image.run-media'; readonly run_ids: readonly string[] }
+  | { readonly command: 'image.inspect'; readonly file_path: string; readonly prompt?: string }
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -87,6 +89,25 @@ function text(value: unknown, label: string, maxLength = 500): string {
     throw new TypeError(`${label} is invalid`)
   }
   return value
+}
+
+function promptText(value: unknown): string {
+  if (typeof value !== 'string' || value.trim().length === 0 || value.length > 50_000 || value.includes('\u0000')) {
+    throw new TypeError('CLI request prompt is invalid')
+  }
+  return value
+}
+
+function runIds(value: unknown): readonly string[] {
+  if (
+    !Array.isArray(value)
+    || value.length === 0
+    || value.length > MAX_RUN_INPUT_QUERY_IDS
+    || value.some(runId => typeof runId !== 'string')
+  ) {
+    throw new TypeError(`CLI request run_ids must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
+  }
+  return Object.freeze([...value])
 }
 
 function jsonValue(value: unknown, label: string, depth = 0): JsonValue {
@@ -196,17 +217,18 @@ export function parseCliRequest(value: unknown): CliRequest {
     exactKeys(source, ['command', 'request'], 'CLI request')
     return Object.freeze({ command: source.command, request: parseCliGenerationRequest(source.request) })
   }
-  if (source.command === 'generation.run-inputs') {
+  if (source.command === 'generation.run-inputs' || source.command === 'image.run-media') {
     exactKeys(source, ['command', 'run_ids'], 'CLI request')
-    if (
-      !Array.isArray(source.run_ids)
-      || source.run_ids.length === 0
-      || source.run_ids.length > MAX_RUN_INPUT_QUERY_IDS
-      || source.run_ids.some(runId => typeof runId !== 'string')
-    ) {
-      throw new TypeError(`CLI request run_ids must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
-    }
-    return Object.freeze({ command: source.command, run_ids: Object.freeze([...source.run_ids]) })
+    return Object.freeze({ command: source.command, run_ids: runIds(source.run_ids) })
+  }
+  if (source.command === 'image.inspect') {
+    const hasPrompt = Object.hasOwn(source, 'prompt')
+    exactKeys(source, hasPrompt ? ['command', 'file_path', 'prompt'] : ['command', 'file_path'], 'CLI request')
+    return Object.freeze({
+      command: source.command,
+      file_path: text(source.file_path, 'CLI request file_path', 10_000),
+      ...(hasPrompt ? { prompt: promptText(source.prompt) } : {}),
+    })
   }
   throw new TypeError('CLI request command is invalid')
 }
@@ -276,6 +298,34 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
     const source = record(request, 'Generation Run stdin')
     exactKeys(source, ['run_ids'], 'Generation Run stdin')
     return parseCliRequest({ command: 'generation.run-inputs', run_ids: source.run_ids })
+  }
+  if (argv.length === 3 && prefix === 'image run-media --stdin') {
+    let request: unknown
+    try {
+      request = JSON.parse(stdin) as unknown
+    } catch {
+      throw new TypeError('Image Run media stdin must contain one JSON object')
+    }
+    const source = record(request, 'Image Run media stdin')
+    exactKeys(source, ['run_ids'], 'Image Run media stdin')
+    return parseCliRequest({ command: 'image.run-media', run_ids: source.run_ids })
+  }
+  if (argv.length === 3 && prefix === 'image inspect --stdin') {
+    let request: unknown
+    try {
+      request = JSON.parse(stdin) as unknown
+    } catch {
+      throw new TypeError('Image inspection stdin must contain one JSON object')
+    }
+    const source = record(request, 'Image inspection stdin')
+    if (!Object.hasOwn(source, 'file_path')) throw new TypeError('Image inspection stdin requires file_path')
+    const hasPrompt = Object.hasOwn(source, 'prompt')
+    exactKeys(source, hasPrompt ? ['file_path', 'prompt'] : ['file_path'], 'Image inspection stdin')
+    return parseCliRequest({
+      command: 'image.inspect',
+      file_path: source.file_path,
+      ...(hasPrompt ? { prompt: source.prompt } : {}),
+    })
   }
   throw new TypeError('CLI command is invalid')
 }

@@ -3,10 +3,18 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 
 import HARNESS_COMFYUI_REMOTE from '../remote.ts'
 import { CATALOG_REMOTE_SERVICE } from '../catalog/contract.ts'
 import { GENERATION_REMOTE_SERVICE } from '../generation/contract.ts'
+import { IMAGE_READER_REMOTE_SERVICE } from '../image-reader/contract.ts'
+import {
+  IMAGE_READER_SETTINGS_NAMESPACE,
+  IMAGE_READER_SETTINGS_SECTION_ID,
+  decodeImageReaderSettingsSection,
+} from '../image-reader/settings.ts'
+import { ImageReaderSettingsPage } from './image-reader/image-reader-settings.tsx'
 
 import {
   WORKBENCH_DETAILS_PRIORITY,
@@ -21,7 +29,7 @@ import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-drawer.tsx'
 
 export const name = 'harness-comfyui'
-export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout'] as const
+export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout', 'settingsScope'] as const
 
 class CatalogRequestError extends Error {
   readonly code: string
@@ -40,9 +48,14 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const disposers: Array<() => void | Promise<void>> = [() => contextDialogNavigationStore.dispose()]
   try {
     disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
-    const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE, GENERATION_REMOTE_SERVICE], (remoteContext) => {
+    const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE, GENERATION_REMOTE_SERVICE, IMAGE_READER_REMOTE_SERVICE], (remoteContext) => {
       const remoteCatalog = remoteContext.get(CATALOG_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiCatalog
       const remoteGeneration = remoteContext.get(GENERATION_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiGeneration
+      const remoteImageReader = remoteContext.get(IMAGE_READER_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiImageReader
+      const imageReaderSettingsScope = ctx.settingsScope.bind({
+        namespace: IMAGE_READER_SETTINGS_NAMESPACE,
+        decode: decodeImageReaderSettingsSection,
+      })
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
       }
@@ -73,6 +86,15 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           return result.value
         },
       }, 1000)
+      const imageReaderCatalog = {
+        models: async (signal: AbortSignal) => {
+          ensureActive(signal)
+          const result = await remoteImageReader.models()
+          ensureActive(signal)
+          if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+          return result.value
+        },
+      }
       return [
         () => generationStore.dispose(),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
@@ -110,6 +132,13 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           order: 20,
           inject: () => ({ workbench }),
         }, WorkbenchResultsOverlay)),
+        ctx.slots.inject('settings.section', () => ctx.slots.register({
+          name: 'settings.section',
+          id: IMAGE_READER_SETTINGS_SECTION_ID,
+          order: 40,
+          label: '图片读取',
+          inject: () => ({ scope: imageReaderSettingsScope, catalog: imageReaderCatalog }),
+        }, ImageReaderSettingsPage)),
       ]
     })
     await remoteFiber

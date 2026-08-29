@@ -855,3 +855,95 @@
   font: var(--dsw-font-xs-13);
   text-align: center;
 }
+
+.harness-comfyui-image-reader-settings {
+  display: grid;
+  gap: 20px;
+  max-width: 760px;
+  padding: 8px 0 32px;
+}
+
+.harness-comfyui-image-reader-header {
+  align-items: start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.harness-comfyui-image-reader-header h2,
+.harness-comfyui-image-reader-header p {
+  margin: 0;
+}
+
+.harness-comfyui-image-reader-header p {
+  color: var(--ds-text-2, #626262);
+  margin-top: 6px;
+}
+
+.harness-comfyui-image-reader-form {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.harness-comfyui-image-reader-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.harness-comfyui-image-reader-form label > span {
+  font-weight: 600;
+}
+
+.harness-comfyui-image-reader-form select,
+.harness-comfyui-image-reader-form input,
+.harness-comfyui-image-reader-form textarea {
+  background: var(--ds-background-2, #fff);
+  border: 1px solid var(--ds-border-2, #d7d7d7);
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  padding: 9px 11px;
+}
+
+.harness-comfyui-image-reader-form textarea {
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.harness-comfyui-image-reader-form small {
+  color: var(--ds-text-2, #626262);
+}
+
+.harness-comfyui-image-reader-wide-field {
+  grid-column: 1 / -1;
+}
+
+.harness-comfyui-image-reader-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.harness-comfyui-image-reader-settings button {
+  border: 1px solid var(--ds-border-2, #d7d7d7);
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  padding: 8px 14px;
+}
+
+.harness-comfyui-image-reader-settings button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 680px) {
+  .harness-comfyui-image-reader-form {
+    grid-template-columns: 1fr;
+  }
+
+  .harness-comfyui-image-reader-wide-field {
+    grid-column: auto;
+  }
+}

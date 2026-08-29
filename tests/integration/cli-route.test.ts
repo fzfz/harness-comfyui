@@ -14,6 +14,7 @@ import {
   GenerationRuntimeError,
   type GenerationPreparationAdapter,
 } from '../../src/host/generation/generation-runtime.ts'
+import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -71,6 +72,10 @@ function post(origin: string, capability: string, body: unknown): Promise<Respon
   })
 }
 
+function unusedImageReader() {
+  return { inspect: vi.fn() }
+}
+
 describe('Harness ComfyUI managed CLI route', () => {
   it('derives all durable Run ownership columns from the shell capability', async () => {
     const runtime = createRuntime({
@@ -104,6 +109,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       },
       catalog,
       runtime,
+      imageReader: unusedImageReader(),
       workspaceRegistry: {
         resolveByPath: vi.fn(async path => path === '/workspace/current'
           ? { id: 'workspace_1', sessionIds: ['session_7'] }
@@ -224,6 +230,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         search: vi.fn(),
       },
       runtime,
+      imageReader: unusedImageReader(),
       workspaceRegistry: {
         resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_7'] })),
       },
@@ -298,7 +305,8 @@ describe('Harness ComfyUI managed CLI route', () => {
           : undefined,
       },
       catalog,
-      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn() },
+      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() },
+      imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
 
@@ -343,7 +351,8 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: { authorize: () => identity },
       catalog: catalog as never,
-      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn() },
+      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() },
+      imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
 
@@ -385,6 +394,89 @@ describe('Harness ComfyUI managed CLI route', () => {
     await server.close()
   })
 
+  it('dispatches Run media under the current Workspace and inspects exactly one image', async () => {
+    const readGenerationRunMedia = vi.fn(async () => ({
+      runs: [{ run_id: 'run_1', lookup_status: 'available', title: 'portrait', parameters: {}, images: [] }],
+    }))
+    const inspect = vi.fn(async () => ({
+      provider: 'provider-a', model: 'vision-a', filePath: '/media/result.png', observation: '可见一名人物。',
+    }))
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia } as never,
+      imageReader: { inspect } as never,
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+      },
+    }))
+
+    const mediaResponse = await post(server.origin, 'trusted', {
+      command: 'image.run-media', run_ids: ['run_1'],
+    })
+    const inspectionResponse = await post(server.origin, 'trusted', {
+      command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述人物',
+    })
+
+    expect(mediaResponse.status).toBe(200)
+    expect(await mediaResponse.json()).toEqual({
+      ok: true,
+      data: { runs: [{ run_id: 'run_1', lookup_status: 'available', title: 'portrait', parameters: {}, images: [] }] },
+    })
+    expect(readGenerationRunMedia).toHaveBeenCalledWith(
+      { workspaceId: 'workspace_1', runIds: ['run_1'] },
+      expect.any(AbortSignal),
+    )
+    expect(inspectionResponse.status).toBe(200)
+    expect(await inspectionResponse.json()).toEqual({
+      ok: true,
+      data: {
+        provider: 'provider-a', model: 'vision-a', file_path: '/media/result.png', observation: '可见一名人物。',
+      },
+    })
+    expect(inspect).toHaveBeenCalledWith('/media/result.png', '只描述人物', expect.any(AbortSignal))
+    await server.close()
+  })
+
+  it('reports image reader failures with their stable code and message', async () => {
+    const inspect = vi.fn(async () => {
+      throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
+    })
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() },
+      imageReader: { inspect } as never,
+      workspaceRegistry: { resolveByPath: vi.fn() },
+    }))
+
+    const response = await post(server.origin, 'trusted', {
+      command: 'image.inspect', file_path: '/media/result.png',
+    })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: {
+        code: 'IMAGE_READER_MODEL_NOT_CONFIGURED',
+        message: 'Image reading requires a configured provider and visual model.',
+      },
+    })
+    await server.close()
+  })
+
   it('reports route, media type, Catalog, Generation, workspace, and internal failures', async () => {
     const catalog = {
       resolveTemplate: vi.fn(async id => {
@@ -409,7 +501,8 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/missing' }),
       },
       catalog: catalog as never,
-      runtime,
+      runtime: { ...runtime, readGenerationRunMedia: vi.fn() },
+      imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: vi.fn(async () => undefined) },
     }))
     const generationBody = {
@@ -463,7 +556,8 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
       },
       catalog: catalog as never,
-      runtime,
+      runtime: { ...runtime, readGenerationRunMedia: vi.fn() },
+      imageReader: unusedImageReader(),
       workspaceRegistry: {
         resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
       },

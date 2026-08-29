@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
+import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
+
 const CLI_PATH = fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url))
 
 async function runCli(input: {
@@ -115,6 +117,55 @@ describe('managed Harness ComfyUI CLI executable', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
+  it('posts the documented Run media and single-image inspection requests', async () => {
+    const posted: unknown[] = []
+    const media = {
+      runs: [{
+        run_id: 'run_1', lookup_status: 'available', title: 'portrait', parameters: { positive_prompt: '1girl' },
+        images: [{
+          media_id: 'media_1', node_id: '10', output_index: 0, filename: 'result.png',
+          media_type: 'image/png', file_path: '/media/result.png',
+        }],
+      }],
+    }
+    const inspection = {
+      provider: 'provider-a', model: 'vision-a', file_path: '/media/result.png', observation: '可见一名人物。',
+    }
+    const server = createServer(async (request, response) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      const requestBody = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { readonly command: string }
+      posted.push(requestBody)
+      const data = requestBody.command === 'image.run-media' ? media : inspection
+      const body = JSON.stringify({ ok: true, data })
+      response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) })
+      response.end(body)
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+    const apiUrl = `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`
+
+    const mediaResult = await runCli({
+      args: ['image', 'run-media', '--stdin'],
+      stdin: JSON.stringify({ run_ids: ['run_1'] }),
+      apiUrl,
+    })
+    const inspectionResult = await runCli({
+      args: ['image', 'inspect', '--stdin'],
+      stdin: JSON.stringify({ file_path: '/media/result.png', prompt: '只描述人物' }),
+      apiUrl,
+    })
+
+    expect(mediaResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(media)}\n`, stderr: '' })
+    expect(inspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
+    expect(posted).toEqual([
+      { command: 'image.run-media', run_ids: ['run_1'] },
+      { command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述人物' },
+    ])
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
   it('reports an invalid historical Run stdin contract without making an HTTP request', async () => {
     let requests = 0
     const server = createServer((_request, response) => {
@@ -136,6 +187,23 @@ describe('managed Harness ComfyUI CLI executable', () => {
     expect(result.stderr).toBe('CLI_REQUEST_INVALID: CLI request run_ids must contain between 1 and 20 strings\n')
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it.each([
+    ['run media', ['image', 'run-media', '--stdin']],
+    ['image inspection', ['image', 'inspect', '--stdin']],
+  ])('rejects oversized %s stdin with the documented command-level error', async (_label, args) => {
+    const result = await runCli({
+      args,
+      stdin: 'x'.repeat(CLI_MAX_BODY_BYTES + 1),
+      apiUrl: 'http://127.0.0.1:1/api/harness-comfyui/cli/v1',
+    })
+
+    expect(result).toEqual({
+      exitCode: 2,
+      stdout: '',
+      stderr: 'CLI_REQUEST_TOO_LARGE: stdin exceeds the maximum request size\n',
+    })
   })
 
   it('rejects undocumented identity options before making an HTTP request', async () => {

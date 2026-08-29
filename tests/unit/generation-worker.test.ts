@@ -11,6 +11,7 @@ import {
   GenerationSubmissionNotSentError,
   type GenerationPreparationAdapter,
   type GenerationRequest,
+  type GenerationRuntimeOptions,
   type GenerationTransport,
 } from '../../src/host/generation/generation-runtime.ts'
 
@@ -50,7 +51,11 @@ const preparer: GenerationPreparationAdapter = {
 function runtime(
   root: string,
   transport: GenerationTransport,
-  timing: { readonly now?: () => number; readonly missingObservationMs?: number } = {},
+  timing: {
+    readonly now?: () => number
+    readonly missingObservationMs?: number
+    readonly readJsonArtifact?: GenerationRuntimeOptions['readJsonArtifact']
+  } = {},
 ): GenerationRuntime {
   let runSequence = 0
   let mediaSequence = 0
@@ -65,6 +70,7 @@ function runtime(
     createMediaId: () => `media_aa_bb_${++mediaSequence}`,
     now: timing.now,
     missingObservationMs: timing.missingObservationMs,
+    readJsonArtifact: timing.readJsonArtifact,
   })
 }
 
@@ -108,6 +114,86 @@ describe('GenerationRuntime worker lifecycle', () => {
       'media_id_low', 'media_id_high', 'media_output_low', 'media_earlier',
     ])
     reopened.close()
+  })
+
+  it('resolves one owned Run into its original parameters and stable local image paths', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-review-media-'))
+    temporaryDirectories.push(root)
+    const transport: GenerationTransport = {
+      submit: vi.fn(async input => acceptSubmission(input)),
+      observe: vi.fn<GenerationTransport['observe']>(async () => ({
+        status: 'success',
+        outputs: [
+          { nodeId: '10', outputIndex: 1, mediaKind: 'image', filename: 'second.png', subfolder: '', type: 'output' },
+          { nodeId: '10', outputIndex: 0, mediaKind: 'image', filename: 'first-of-ten.webp', subfolder: '', type: 'output' },
+          { nodeId: '2', outputIndex: 0, mediaKind: 'image', filename: 'first.webp', subfolder: '', type: 'output' },
+        ],
+      })),
+      download: vi.fn(async input => ({
+        bytes: input.output.outputIndex === 0 ? webpBytes : pngBytes,
+        mediaType: input.output.outputIndex === 0 ? 'image/webp' : 'image/png',
+      })),
+    }
+    const generation = runtime(root, transport)
+    const accepted = await generation.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
+      request,
+    )
+    for (let step = 0; step < 4; step += 1) await generation.advance()
+    generation.close()
+
+    const readJsonArtifact = vi.fn(async () => { throw new Error('Run media must not read Workflow artifacts') })
+    const reopened = runtime(root, transport, { readJsonArtifact })
+    const result = await reopened.readGenerationRunMedia({ workspaceId: 'workspace_1', runIds: [accepted.runId] })
+    expect(result).toEqual({ runs: [{
+      run_id: accepted.runId,
+      lookup_status: 'available',
+      title: '两个结果',
+      parameters: { positive_prompt: 'first prompt' },
+      images: [
+        expect.objectContaining({ node_id: '10', output_index: 0, filename: 'first-of-ten.webp', media_type: 'image/webp' }),
+        expect.objectContaining({ node_id: '10', output_index: 1, filename: 'second.png', media_type: 'image/png' }),
+        expect.objectContaining({ node_id: '2', output_index: 0, filename: 'first.webp', media_type: 'image/webp' }),
+      ],
+    }] })
+    const available = result.runs[0]
+    expect(available?.lookup_status === 'available' && available.images.every(image => image.file_path.startsWith(join(root, 'media')))).toBe(true)
+    expect(readJsonArtifact).not.toHaveBeenCalled()
+    reopened.close()
+  })
+
+  it('returns ordered per-Run errors and an empty image list during review media resolution', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-review-errors-'))
+    temporaryDirectories.push(root)
+    const generation = runtime(root, {
+      submit: vi.fn(),
+      observe: vi.fn(),
+      download: vi.fn(),
+    })
+    const accepted = await generation.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
+      request,
+    )
+
+    await expect(generation.readGenerationRunMedia({
+      workspaceId: 'workspace_1', runIds: ['run_missing', accepted.runId],
+    })).resolves.toEqual({ runs: [
+      {
+        run_id: 'run_missing', lookup_status: 'error',
+        error: expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
+      },
+      {
+        run_id: accepted.runId, lookup_status: 'available', title: '两个结果',
+        parameters: { positive_prompt: 'first prompt' }, images: [],
+      },
+    ] })
+    await expect(generation.readGenerationRunMedia({
+      workspaceId: 'workspace_other', runIds: [accepted.runId],
+    })).resolves.toEqual({ runs: [{
+      run_id: accepted.runId, lookup_status: 'error',
+      error: expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
+    }] })
+    generation.close()
   })
 
   it('submits, observes, downloads multiple outputs, and stores media in two-level shards', async () => {
