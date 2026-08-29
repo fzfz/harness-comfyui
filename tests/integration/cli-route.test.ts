@@ -153,7 +153,7 @@ describe('Harness ComfyUI managed CLI route', () => {
             lookup_status: 'error',
             error: {
               code: 'GENERATION_RUN_ID_INVALID',
-              message: 'Generation Run ID is invalid. Check the complete run_id and retry it.',
+              message: 'Generation Run ID is invalid. Use a safe complete Run ID or a canonical prefix containing at least 8 UUID characters.',
             },
           },
           {

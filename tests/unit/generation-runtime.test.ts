@@ -6,6 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { MIN_RUN_INPUT_ID_PREFIX_LENGTH } from '../../src/generation/run-input-contract.ts'
 import {
   GenerationRuntime,
   GenerationRuntimeError,
@@ -346,6 +347,93 @@ describe('GenerationRuntime acceptance', () => {
 })
 
 describe('GenerationRuntime historical Run input lookup', () => {
+  it('resolves unique Run ID prefixes and isolates ambiguous or missing prefixes', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-run-prefix-'))
+    temporaryDirectories.push(root)
+    const runIds = [
+      'run_3c0ad3ed-1111-4111-8111-111111111111',
+      'run_d26923be-2222-4222-8222-222222222222',
+      'run_deadbeef-3333-4333-8333-333333333333',
+      'run_deadbeef-4444-4444-8444-444444444444',
+      'run_3c0ad3ed-5555-4555-8555-555555555555',
+      'run_3c0ad3ed-legacy',
+      'legacy_other_run',
+    ] as const
+    let runIdIndex = 0
+    const runtime = new GenerationRuntime({
+      runRepositoryFile: join(root, 'data', 'runs.sqlite'),
+      runDirectory: join(root, 'runs'),
+      savedMediaDirectory: join(root, 'media'),
+      createRunId: () => runIds[runIdIndex++]!,
+      preparer: {
+        async prepare(generationRequest) {
+          return {
+            instanceId: '2',
+            instanceTitle: 'ComfyUI',
+            templateTitle: 'Template',
+            sourceSnapshot: {},
+            actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+            apiWorkflow: {},
+            expectedOutputNodeIds: ['10'],
+            connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+          }
+        },
+      },
+    })
+
+    for (const [index, runId] of runIds.entries()) {
+      const accepted = await runtime.acceptGeneration(
+        {
+          workspaceId: index === 4 || index === 6 ? 'workspace_2' : 'workspace_1',
+          sessionId: `session_${index}`,
+          turn: 1,
+          callId: `call_prefix_${index}`,
+        },
+        request(`prompt ${index}`),
+      )
+      expect(accepted.runId).toBe(runId)
+    }
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [
+        'run_3c0ad3ed',
+        'run_3c0ad3ed-1111',
+        'run_deadbeef',
+        'run_ffffffff',
+        'run_1234567',
+        'run_1234567g',
+        'run_3C0AD3ED',
+        'run_3c0ad3e-d',
+        'foo',
+        'not a valid run id',
+        runIds[1],
+        runIds[5],
+        runIds[6],
+      ],
+    })
+
+    expect(result.runs.map(item => item.lookup_status === 'available'
+      ? { run_id: item.run_id, lookup_status: item.lookup_status }
+      : { run_id: item.run_id, lookup_status: item.lookup_status, code: item.error.code }))
+      .toEqual([
+        { run_id: runIds[0], lookup_status: 'available' },
+        { run_id: runIds[0], lookup_status: 'available' },
+        { run_id: 'run_deadbeef', lookup_status: 'error', code: 'GENERATION_RUN_ID_AMBIGUOUS' },
+        { run_id: 'run_ffffffff', lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
+        { run_id: 'run_1234567', lookup_status: 'error', code: 'GENERATION_RUN_ID_INVALID' },
+        { run_id: 'run_1234567g', lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
+        { run_id: 'run_3C0AD3ED', lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
+        { run_id: 'run_3c0ad3e-d', lookup_status: 'error', code: 'GENERATION_RUN_ID_INVALID' },
+        { run_id: 'foo', lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
+        { run_id: 'not a valid run id', lookup_status: 'error', code: 'GENERATION_RUN_ID_INVALID' },
+        { run_id: runIds[1], lookup_status: 'available' },
+        { run_id: runIds[5], lookup_status: 'available' },
+        { run_id: runIds[6], lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
+      ])
+    runtime.close()
+  })
+
   it('returns ordered success and error items without stopping after one missing Run', async () => {
     const runtime = createRuntime({
       async prepare(generationRequest) {
@@ -755,17 +843,21 @@ describe('GenerationRuntime historical Run input lookup', () => {
 
   it('accepts twenty IDs and rejects twenty-one before querying any Run', async () => {
     const runtime = createRuntime({ async prepare() { throw new Error('unreachable') } })
+    const missingRunIds = Array.from(
+      { length: 21 },
+      (_value, index) => `run_${index.toString(16).padStart(MIN_RUN_INPUT_ID_PREFIX_LENGTH, '0')}`,
+    )
 
     const accepted = await runtime.readGenerationRunInputs({
       workspaceId: 'workspace_1',
-      runIds: Array.from({ length: 20 }, (_value, index) => `run_missing_${index}`),
+      runIds: missingRunIds.slice(0, 20),
     })
 
     expect(accepted.runs).toHaveLength(20)
     expect(accepted.runs.every(item => item.lookup_status === 'error' && item.error.code === 'GENERATION_RUN_NOT_FOUND')).toBe(true)
     await expect(runtime.readGenerationRunInputs({
       workspaceId: 'workspace_1',
-      runIds: Array.from({ length: 21 }, (_value, index) => `run_missing_${index}`),
+      runIds: missingRunIds,
     })).rejects.toThrow('between 1 and 20')
     runtime.close()
   })
