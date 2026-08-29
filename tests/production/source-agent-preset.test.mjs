@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  materializeSourceAgentExperiment,
+  materializeSourceProductAgentPreset,
   replaceOwnedAgentPresetDirectory,
   validateAgentPresetComposition,
 } from '../../scripts/profile/agent-preset.mjs'
@@ -20,10 +20,9 @@ import {
 import { GENERATION_TOOL_NAME } from '../../src/host/generation/generation-tool.ts'
 
 const temporaryPaths = []
-const PRESET_IDS = [
-  'harness-comfyui-schema-control',
-  'harness-comfyui-cli-candidate',
-]
+const CONTROL_PRESET_ID = 'harness-comfyui-schema-control'
+const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
+const PRESET_IDS = [CONTROL_PRESET_ID, PRODUCT_PRESET_ID]
 
 async function temporaryDirectory(prefix) {
   const path = await mkdtemp(join(tmpdir(), prefix))
@@ -41,43 +40,39 @@ async function pathExists(path) {
   }
 }
 
-function experimentConfig(change = value => value) {
+function productConfig(change = value => value) {
   return change({
     schemaVersion: 1,
-    experiment: {
-      presets: {
-        schemaControl: PRESET_IDS[0],
-        cliCandidate: PRESET_IDS[1],
-      },
+    preset: {
+      id: PRODUCT_PRESET_ID,
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
+      retiredManagedPresetIds: [CONTROL_PRESET_ID],
       sharedFiles: ['project-tool-visibility.mjs'],
     },
   })
 }
 
 async function createRepositoryFixture() {
-  const repositoryRoot = await temporaryDirectory('harness-agent-experiment-source-')
+  const repositoryRoot = await temporaryDirectory('harness-product-agent-source-')
   const sourceRoot = resolve(repositoryRoot, 'agent-presets')
   await mkdir(resolve(repositoryRoot, 'config'), { recursive: true })
   await mkdir(sourceRoot, { recursive: true })
   const configPath = resolve(repositoryRoot, 'config/product-agent.json')
-  await writeFile(configPath, `${JSON.stringify(experimentConfig(), null, 2)}\n`, 'utf8')
+  await writeFile(configPath, `${JSON.stringify(productConfig(), null, 2)}\n`, 'utf8')
   await writeFile(
     resolve(sourceRoot, 'project-tool-visibility.mjs'),
     'export function apply() {}\n',
     'utf8',
   )
-  for (const [index, presetId] of PRESET_IDS.entries()) {
-    const presetSource = resolve(sourceRoot, presetId)
-    await mkdir(presetSource, { recursive: true })
-    await writeFile(
-      resolve(presetSource, 'agent.cordis.yml'),
-      `- id: visibility\n  name: ../project-tool-visibility.mjs\n  config:\n    mode: ${index === 0 ? 'inherit-host-global' : 'local-only'}\n`,
-      'utf8',
-    )
-    await writeFile(resolve(presetSource, 'preset.yml'), `name: Test ${index === 0 ? 'A' : 'B'}\n`, 'utf8')
-  }
+  const presetSource = resolve(sourceRoot, PRODUCT_PRESET_ID)
+  await mkdir(presetSource, { recursive: true })
+  await writeFile(
+    resolve(presetSource, 'agent.cordis.yml'),
+    '- id: visibility\n  name: ../project-tool-visibility.mjs\n  config:\n    mode: local-only\n',
+    'utf8',
+  )
+  await writeFile(resolve(presetSource, 'preset.yml'), 'name: ComfyUI工作台预设\n', 'utf8')
   return { repositoryRoot, sourceRoot, configPath }
 }
 
@@ -115,7 +110,10 @@ describe('A/B project Tool visibility', () => {
 
   it('uses identical A/B composition except the visibility mode', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
-    const paths = PRESET_IDS.map(id => resolve(repositoryRoot, 'agent-presets', id, 'agent.cordis.yml'))
+    const paths = [
+      resolve(repositoryRoot, 'tests/fixtures/agent-presets', CONTROL_PRESET_ID, 'agent.cordis.yml'),
+      resolve(repositoryRoot, 'agent-presets', PRODUCT_PRESET_ID, 'agent.cordis.yml'),
+    ]
     const [control, candidate] = await Promise.all(paths.map(validateAgentPresetComposition))
     const normalizedCandidate = structuredClone(candidate)
     normalizedCandidate[0].config.mode = 'inherit-host-global'
@@ -143,16 +141,21 @@ describe('A/B project Tool visibility', () => {
   })
 })
 
-describe('source Agent A/B materialization', () => {
-  it('materializes one shared visibility plugin and both controlled Presets', async () => {
+describe('source product Agent Preset materialization', () => {
+  it('materializes only the ComfyUI workbench Preset with its product display name', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
-    const dshHome = await temporaryDirectory('harness-agent-ab-canonical-')
+    const dshHome = await temporaryDirectory('harness-product-agent-canonical-')
 
-    const result = await materializeSourceAgentExperiment(repositoryRoot, dshHome)
+    const result = await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
 
-    expect(result.presets.map(preset => preset.presetId)).toEqual(PRESET_IDS)
+    expect(result.presets.map(preset => preset.presetId)).toEqual([PRODUCT_PRESET_ID])
     expect(await readFile(resolve(result.installRoot, 'project-tool-visibility.mjs'), 'utf8'))
       .toBe(await readFile(resolve(repositoryRoot, 'agent-presets/project-tool-visibility.mjs'), 'utf8'))
+    expect(await readFile(resolve(
+      result.installRoot,
+      PRODUCT_PRESET_ID,
+      'preset.yml',
+    ), 'utf8')).toContain('name: ComfyUI工作台预设\n')
     for (const preset of result.presets) {
       for (const filename of ['agent.cordis.yml', 'preset.yml']) {
         expect(await readFile(resolve(preset.targetDirectory, filename), 'utf8'))
@@ -161,22 +164,57 @@ describe('source Agent A/B materialization', () => {
     }
   })
 
-  it('replaces only experiment-owned paths on repeated materialization', async () => {
+  it('removes the retired schema-control Preset and preserves user-owned Presets', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const dshHome = await temporaryDirectory('harness-product-agent-retired-')
+    const installRoot = resolve(dshHome, '.agent-presets')
+    const retiredDirectory = resolve(installRoot, PRESET_IDS[0])
+    const userDirectory = resolve(installRoot, 'user-owned')
+    await mkdir(retiredDirectory, { recursive: true })
+    await mkdir(userDirectory, { recursive: true })
+    await writeFile(resolve(retiredDirectory, 'preset.yml'), 'name: retired A\n', 'utf8')
+    await writeFile(resolve(userDirectory, 'keep.txt'), 'keep\n', 'utf8')
+
+    await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
+
+    expect(await pathExists(retiredDirectory)).toBe(false)
+    expect(await readFile(resolve(userDirectory, 'keep.txt'), 'utf8')).toBe('keep\n')
+    expect(await pathExists(resolve(installRoot, PRODUCT_PRESET_ID))).toBe(true)
+  })
+
+  it('removes a retired Preset symbolic link without changing its external target', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const dshHome = await temporaryDirectory('harness-product-agent-retired-link-')
+    const installRoot = resolve(dshHome, '.agent-presets')
+    const externalDirectory = await temporaryDirectory('harness-product-agent-retired-target-')
+    const sentinel = resolve(externalDirectory, 'sentinel.txt')
+    await mkdir(installRoot, { recursive: true })
+    await writeFile(sentinel, 'external target remains unchanged\n', 'utf8')
+    await symlink(externalDirectory, resolve(installRoot, CONTROL_PRESET_ID), 'dir')
+
+    await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
+
+    expect(await pathExists(resolve(installRoot, CONTROL_PRESET_ID))).toBe(false)
+    expect(await readFile(sentinel, 'utf8')).toBe('external target remains unchanged\n')
+    expect(await pathExists(resolve(installRoot, PRODUCT_PRESET_ID))).toBe(true)
+  })
+
+  it('replaces only product-owned paths on repeated materialization', async () => {
     const fixture = await createRepositoryFixture()
-    const dshHome = await temporaryDirectory('harness-agent-ab-replace-')
+    const dshHome = await temporaryDirectory('harness-product-agent-replace-')
     const siblingDirectory = resolve(dshHome, '.agent-presets', 'user-owned')
     await mkdir(siblingDirectory, { recursive: true })
     await writeFile(resolve(siblingDirectory, 'keep.txt'), 'keep\n', 'utf8')
-    await materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome)
-    const targetA = resolve(dshHome, '.agent-presets', PRESET_IDS[0])
-    await writeFile(resolve(targetA, 'stale.txt'), 'stale\n', 'utf8')
-    await writeFile(resolve(fixture.sourceRoot, PRESET_IDS[0], 'preset.yml'), 'name: Updated A\n', 'utf8')
+    await materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)
+    const productTarget = resolve(dshHome, '.agent-presets', PRODUCT_PRESET_ID)
+    await writeFile(resolve(productTarget, 'stale.txt'), 'stale\n', 'utf8')
+    await writeFile(resolve(fixture.sourceRoot, PRODUCT_PRESET_ID, 'preset.yml'), 'name: Updated product Preset\n', 'utf8')
     await writeFile(resolve(fixture.sourceRoot, 'project-tool-visibility.mjs'), 'export function apply() { return 1 }\n', 'utf8')
 
-    await materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome)
+    await materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)
 
-    expect(await pathExists(resolve(targetA, 'stale.txt'))).toBe(false)
-    expect(await readFile(resolve(targetA, 'preset.yml'), 'utf8')).toBe('name: Updated A\n')
+    expect(await pathExists(resolve(productTarget, 'stale.txt'))).toBe(false)
+    expect(await readFile(resolve(productTarget, 'preset.yml'), 'utf8')).toBe('name: Updated product Preset\n')
     expect(await readFile(resolve(dshHome, '.agent-presets/project-tool-visibility.mjs'), 'utf8'))
       .toBe('export function apply() { return 1 }\n')
     expect(await readFile(resolve(siblingDirectory, 'keep.txt'), 'utf8')).toBe('keep\n')
@@ -184,10 +222,10 @@ describe('source Agent A/B materialization', () => {
 
   it('validates all canonical sources before creating the install root', async () => {
     const fixture = await createRepositoryFixture()
-    const dshHome = await temporaryDirectory('harness-agent-ab-invalid-')
-    await rm(resolve(fixture.sourceRoot, PRESET_IDS[1], 'agent.cordis.yml'))
+    const dshHome = await temporaryDirectory('harness-product-agent-invalid-')
+    await rm(resolve(fixture.sourceRoot, PRODUCT_PRESET_ID, 'agent.cordis.yml'))
 
-    await expect(materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome))
+    await expect(materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome))
       .rejects.toThrow('canonical Agent Preset directory')
     expect(await pathExists(resolve(dshHome, '.agent-presets'))).toBe(false)
   })
@@ -197,37 +235,37 @@ describe('source Agent A/B materialization', () => {
     ['a missing apply export', 'export const name = "missing-apply"\n', 'must export apply'],
   ])('preserves the installed shared component when the source has %s', async (_name, source, message) => {
     const fixture = await createRepositoryFixture()
-    const dshHome = await temporaryDirectory('harness-agent-ab-invalid-component-')
-    await materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome)
+    const dshHome = await temporaryDirectory('harness-product-agent-invalid-component-')
+    await materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)
     const installedPath = resolve(dshHome, '.agent-presets/project-tool-visibility.mjs')
     const installedBeforeFailure = await readFile(installedPath, 'utf8')
     await writeFile(resolve(fixture.sourceRoot, 'project-tool-visibility.mjs'), source, 'utf8')
 
-    await expect(materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome)).rejects.toThrow(message)
+    await expect(materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)).rejects.toThrow(message)
 
     expect(await readFile(installedPath, 'utf8')).toBe(installedBeforeFailure)
   })
 
   it('rejects a symbolic-link install root without changing its external target', async () => {
     const fixture = await createRepositoryFixture()
-    const dshHome = await temporaryDirectory('harness-agent-ab-linked-home-')
-    const externalRoot = await temporaryDirectory('harness-agent-ab-external-')
+    const dshHome = await temporaryDirectory('harness-product-agent-linked-home-')
+    const externalRoot = await temporaryDirectory('harness-product-agent-external-')
     const sentinel = resolve(externalRoot, 'sentinel.txt')
     await writeFile(sentinel, 'outside remains unchanged\n', 'utf8')
     await symlink(externalRoot, resolve(dshHome, '.agent-presets'), 'dir')
 
-    await expect(materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome))
+    await expect(materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome))
       .rejects.toThrow('install root must not be a symbolic link')
 
     expect(await readFile(sentinel, 'utf8')).toBe('outside remains unchanged\n')
-    expect(await pathExists(resolve(externalRoot, PRESET_IDS[0]))).toBe(false)
+    expect(await pathExists(resolve(externalRoot, PRODUCT_PRESET_ID))).toBe(false)
   })
 
   it('restores an installed path when the staged rename fails', async () => {
-    const root = await temporaryDirectory('harness-agent-ab-rollback-')
-    const targetDirectory = resolve(root, PRESET_IDS[0])
+    const root = await temporaryDirectory('harness-product-agent-rollback-')
+    const targetDirectory = resolve(root, PRODUCT_PRESET_ID)
     const missingStagingDirectory = resolve(root, '.missing.next')
-    const backupDirectory = resolve(root, '.experiment.previous')
+    const backupDirectory = resolve(root, '.product-preset.previous')
     await mkdir(targetDirectory)
     await writeFile(resolve(targetDirectory, 'sentinel.txt'), 'installed preset\n', 'utf8')
 
@@ -245,7 +283,7 @@ describe('source Agent A/B materialization', () => {
     {
       name: 'an unknown root field',
       change: value => ({ ...value, unknown: true }),
-      message: 'must contain exactly experiment, schemaVersion',
+      message: 'must contain exactly preset, schemaVersion',
     },
     {
       name: 'a different schema version',
@@ -253,57 +291,68 @@ describe('source Agent A/B materialization', () => {
       message: 'schemaVersion must be 1',
     },
     {
-      name: 'a missing B preset role',
+      name: 'a missing product Preset id',
       change: value => ({
         ...value,
-        experiment: { ...value.experiment, presets: { schemaControl: PRESET_IDS[0] } },
+        preset: Object.fromEntries(Object.entries(value.preset).filter(([key]) => key !== 'id')),
       }),
-      message: 'presets must contain exactly cliCandidate, schemaControl',
+      message: 'preset must contain exactly id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
     },
     {
-      name: 'a duplicated preset id',
+      name: 'a retired product Preset id',
       change: value => ({
         ...value,
-        experiment: {
-          ...value.experiment,
-          presets: { schemaControl: PRESET_IDS[0], cliCandidate: PRESET_IDS[0] },
+        preset: {
+          ...value.preset,
+          retiredManagedPresetIds: [PRODUCT_PRESET_ID],
         },
       }),
-      message: 'presets values must be unique',
+      message: 'preset.id must not be retired',
+    },
+    {
+      name: 'duplicated retired Preset ids',
+      change: value => ({
+        ...value,
+        preset: {
+          ...value.preset,
+          retiredManagedPresetIds: [CONTROL_PRESET_ID, CONTROL_PRESET_ID],
+        },
+      }),
+      message: 'retiredManagedPresetIds must be unique',
     },
     {
       name: 'an escaping source root',
-      change: value => ({ ...value, experiment: { ...value.experiment, sourceRootRelativePath: '../escape' } }),
+      change: value => ({ ...value, preset: { ...value.preset, sourceRootRelativePath: '../escape' } }),
       message: 'sourceRootRelativePath must identify a path inside its root',
     },
     {
       name: 'an escaping install root',
-      change: value => ({ ...value, experiment: { ...value.experiment, installRootRelativePath: '../escape' } }),
+      change: value => ({ ...value, preset: { ...value.preset, installRootRelativePath: '../escape' } }),
       message: 'installRootRelativePath must identify a path inside its root',
     },
     {
       name: 'an invalid shared filename',
-      change: value => ({ ...value, experiment: { ...value.experiment, sharedFiles: ['../escape.mjs'] } }),
+      change: value => ({ ...value, preset: { ...value.preset, sharedFiles: ['../escape.mjs'] } }),
       message: 'sharedFiles must contain .mjs basenames',
     },
   ])('rejects $name before creating the installation root', async ({ change, message }) => {
     const fixture = await createRepositoryFixture()
-    const dshHome = await temporaryDirectory('harness-agent-ab-config-')
-    await writeFile(fixture.configPath, `${JSON.stringify(experimentConfig(change), null, 2)}\n`, 'utf8')
+    const dshHome = await temporaryDirectory('harness-product-agent-config-')
+    await writeFile(fixture.configPath, `${JSON.stringify(productConfig(change), null, 2)}\n`, 'utf8')
 
-    await expect(materializeSourceAgentExperiment(fixture.repositoryRoot, dshHome)).rejects.toThrow(message)
+    await expect(materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)).rejects.toThrow(message)
     expect(await pathExists(resolve(dshHome, '.agent-presets'))).toBe(false)
   })
 })
 
-describe('shared production and worktree Agent A/B preparation', () => {
-  it('preserves the Agent experiment prepared by the shared source runtime', async () => {
-    const dshHome = await temporaryDirectory('harness-agent-ab-worktree-')
+describe('shared production and worktree product Agent preparation', () => {
+  it('preserves the product Agent Preset prepared by the shared source runtime', async () => {
+    const dshHome = await temporaryDirectory('harness-product-agent-worktree-')
     const context = { repositoryRoot: '/repository', dshHome }
     const prepared = {
-      activeVersion: '0.33.0',
+      activeVersion: '0.33.2',
       dshHome,
-      agentExperiment: { presets: PRESET_IDS.map(presetId => ({ presetId })) },
+      productAgentPreset: { presets: [{ presetId: PRODUCT_PRESET_ID }] },
     }
     const prepareRuntime = vi.fn(async () => prepared)
 
@@ -311,12 +360,12 @@ describe('shared production and worktree Agent A/B preparation', () => {
 
     expect(prepareRuntime).toHaveBeenCalledOnce()
     expect(result).toBe(prepared)
-    expect(result.agentExperiment.presets.map(preset => preset.presetId)).toEqual(PRESET_IDS)
+    expect(result.productAgentPreset.presets.map(preset => preset.presetId)).toEqual([PRODUCT_PRESET_ID])
   })
 
-  it('does not materialize either Preset when shared source runtime preparation fails', async () => {
+  it('does not materialize the product Preset when shared source runtime preparation fails', async () => {
     const fixture = await createRepositoryFixture()
-    const dshHome = await temporaryDirectory('harness-agent-ab-worktree-failure-')
+    const dshHome = await temporaryDirectory('harness-product-agent-worktree-failure-')
     const prepareRuntime = vi.fn(async () => { throw new Error('shared preparation failed') })
 
     await expect(prepareSourceWorktreeRuntime(

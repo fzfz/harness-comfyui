@@ -1,4 +1,4 @@
-# Controlled A composition: inherit Host-global project Tool schemas.
+# Test-only A composition: inherit Host-global project Tool schemas.
 - id: project-tool-visibility
   name: ../project-tool-visibility.mjs
   config:

@@ -7,7 +7,7 @@ import { validateSourceRuntime } from './contract.mjs'
 import { materializeSourceClientModule } from './client-module.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
 import { loadProfile } from '../../src/config/load-profile.ts'
-import { materializeSourceAgentExperiment } from '../profile/agent-preset.mjs'
+import { materializeSourceProductAgentPreset } from '../profile/agent-preset.mjs'
 import { materializeSourceProfile } from '../profile/source.mjs'
 
 export const SOURCE_RUNTIME_STATE_SCHEMA_VERSION = 1
@@ -432,8 +432,8 @@ export async function prepareSourceRuntime(context, options = {}) {
       ? {}
       : { userEnvironmentFilePath: context.userEnvironmentFilePath }),
   })
-  const agentExperiment = await (
-    options.materializeAgentExperiment ?? materializeSourceAgentExperiment
+  const productAgentPreset = await (
+    options.materializeProductAgentPreset ?? materializeSourceProductAgentPreset
   )(context.repositoryRoot, context.dshHome)
   await writeAtomicJson(context.sourceRuntimeStatePath, {
     schemaVersion: SOURCE_RUNTIME_STATE_SCHEMA_VERSION,
@@ -449,7 +449,7 @@ export async function prepareSourceRuntime(context, options = {}) {
     dshExecutable: context.dshExecutable,
     dshHome: context.dshHome,
     dshProfile: context.dshProfile,
-    agentExperiment,
+    productAgentPreset,
     ...(context.startupWorkspacePath === undefined
       ? {}
       : { startupWorkspacePath: context.startupWorkspacePath }),

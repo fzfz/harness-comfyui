@@ -68,7 +68,7 @@ function requireContainedRelativePath(value, name, root) {
 
 function requireSharedFilename(value) {
   if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]*\.mjs$/u.test(value)) {
-    throw new TypeError('product Agent experiment.sharedFiles must contain .mjs basenames')
+    throw new TypeError('product Agent configuration.preset.sharedFiles must contain .mjs basenames')
   }
   return value
 }
@@ -143,42 +143,44 @@ export async function validateAgentPresetComposition(path) {
 async function loadProductAgentConfig(repositoryRoot) {
   const path = resolve(repositoryRoot, PRODUCT_AGENT_CONFIG_RELATIVE_PATH)
   const config = requireRecord(await readJson(path, 'product Agent configuration'), 'product Agent configuration')
-  assertExactKeys(config, ['schemaVersion', 'experiment'], 'product Agent configuration')
+  assertExactKeys(config, ['schemaVersion', 'preset'], 'product Agent configuration')
   if (config.schemaVersion !== 1) throw new TypeError('product Agent configuration.schemaVersion must be 1')
-  const experiment = requireRecord(config.experiment, 'product Agent configuration.experiment')
+  const preset = requireRecord(config.preset, 'product Agent configuration.preset')
   assertExactKeys(
-    experiment,
-    ['presets', 'sourceRootRelativePath', 'installRootRelativePath', 'sharedFiles'],
-    'product Agent configuration.experiment',
+    preset,
+    ['id', 'sourceRootRelativePath', 'installRootRelativePath', 'retiredManagedPresetIds', 'sharedFiles'],
+    'product Agent configuration.preset',
   )
-  const presets = requireRecord(experiment.presets, 'product Agent configuration.experiment.presets')
-  assertExactKeys(
-    presets,
-    ['schemaControl', 'cliCandidate'],
-    'product Agent configuration.experiment.presets',
-  )
-  const presetIds = [
-    requirePresetId(presets.schemaControl, 'product Agent configuration.experiment.presets.schemaControl'),
-    requirePresetId(presets.cliCandidate, 'product Agent configuration.experiment.presets.cliCandidate'),
-  ]
-  if (new Set(presetIds).size !== presetIds.length) {
-    throw new TypeError('product Agent configuration.experiment.presets values must be unique')
+  const presetId = requirePresetId(preset.id, 'product Agent configuration.preset.id')
+  if (!Array.isArray(preset.retiredManagedPresetIds)) {
+    throw new TypeError('product Agent configuration.preset.retiredManagedPresetIds must be an array')
   }
-  if (!Array.isArray(experiment.sharedFiles) || experiment.sharedFiles.length === 0) {
-    throw new TypeError('product Agent configuration.experiment.sharedFiles must be a non-empty array')
+  const retiredPresetIds = preset.retiredManagedPresetIds.map((value, index) => requirePresetId(
+    value,
+    `product Agent configuration.preset.retiredManagedPresetIds[${index}]`,
+  ))
+  if (new Set(retiredPresetIds).size !== retiredPresetIds.length) {
+    throw new TypeError('product Agent configuration.preset.retiredManagedPresetIds must be unique')
   }
-  const sharedFiles = experiment.sharedFiles.map(requireSharedFilename)
+  if (retiredPresetIds.includes(presetId)) {
+    throw new TypeError('product Agent configuration.preset.id must not be retired')
+  }
+  if (!Array.isArray(preset.sharedFiles) || preset.sharedFiles.length === 0) {
+    throw new TypeError('product Agent configuration.preset.sharedFiles must be a non-empty array')
+  }
+  const sharedFiles = preset.sharedFiles.map(requireSharedFilename)
   if (new Set(sharedFiles).size !== sharedFiles.length) {
-    throw new TypeError('product Agent configuration.experiment.sharedFiles must be unique')
+    throw new TypeError('product Agent configuration.preset.sharedFiles must be unique')
   }
   return {
-    presetIds,
+    presetId,
+    retiredPresetIds,
     sourceRoot: requireContainedRelativePath(
-      experiment.sourceRootRelativePath,
-      'product Agent configuration.experiment.sourceRootRelativePath',
+      preset.sourceRootRelativePath,
+      'product Agent configuration.preset.sourceRootRelativePath',
       repositoryRoot,
     ),
-    installRootRelativePath: experiment.installRootRelativePath,
+    installRootRelativePath: preset.installRootRelativePath,
     sharedFiles,
   }
 }
@@ -307,29 +309,27 @@ async function materializePreset(sourceRoot, installRoot, presetId) {
   return { presetId, sourceDirectory, targetDirectory }
 }
 
-export async function materializeSourceAgentExperiment(repositoryRoot, dshHome) {
+export async function materializeSourceProductAgentPreset(repositoryRoot, dshHome) {
   const sourceRoot = resolve(repositoryRoot)
   const home = resolve(dshHome)
   const config = await loadProductAgentConfig(sourceRoot)
   const installRoot = requireContainedRelativePath(
     config.installRootRelativePath,
-    'product Agent configuration.experiment.installRootRelativePath',
+    'product Agent configuration.preset.installRootRelativePath',
     home,
   )
   for (const filename of config.sharedFiles) {
     await validateSharedAgentPresetComponent(resolve(config.sourceRoot, filename))
   }
-  for (const presetId of config.presetIds) {
-    await assertCanonicalPresetDirectory(resolve(config.sourceRoot, presetId))
-  }
+  await assertCanonicalPresetDirectory(resolve(config.sourceRoot, config.presetId))
   await createContainedDirectory(home, installRoot, 'install root')
   const sharedFiles = []
   for (const filename of config.sharedFiles) {
     sharedFiles.push(await materializeSharedFile(config.sourceRoot, installRoot, filename))
   }
-  const presets = []
-  for (const presetId of config.presetIds) {
-    presets.push(await materializePreset(config.sourceRoot, installRoot, presetId))
+  const presets = [await materializePreset(config.sourceRoot, installRoot, config.presetId)]
+  for (const presetId of config.retiredPresetIds) {
+    await rm(resolve(installRoot, presetId), { recursive: true, force: true })
   }
-  return { installRoot, sharedFiles, presets }
+  return { installRoot, sharedFiles, presets, retiredPresetIds: config.retiredPresetIds }
 }

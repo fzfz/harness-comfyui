@@ -313,20 +313,19 @@ describe('source production commands', () => {
     expect(profileManifest.dependencies).toEqual({ 'harness-comfyui': `file:${repositoryRoot}` })
     expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
     expect(await pathExists(resolve(fixture.runtimeRoot, 'dsh-home/.env'))).toBe(false)
-    expect(await readFile(resolve(
+    expect(await pathExists(resolve(
       fixture.runtimeRoot,
-      'dsh-home/.agent-presets/harness-comfyui-schema-control/preset.yml',
-    ), 'utf8')).toBe(await readFile(resolve(
-      repositoryRoot,
-      'agent-presets/harness-comfyui-schema-control/preset.yml',
-    ), 'utf8'))
-    expect(await readFile(resolve(
+      'dsh-home/.agent-presets/harness-comfyui-schema-control',
+    ))).toBe(false)
+    const productPresetMetadata = await readFile(resolve(
       fixture.runtimeRoot,
       'dsh-home/.agent-presets/harness-comfyui-cli-candidate/preset.yml',
-    ), 'utf8')).toBe(await readFile(resolve(
+    ), 'utf8')
+    expect(productPresetMetadata).toBe(await readFile(resolve(
       repositoryRoot,
       'agent-presets/harness-comfyui-cli-candidate/preset.yml',
     ), 'utf8'))
+    expect(productPresetMetadata).toContain('name: ComfyUI工作台预设\n')
     expect(await pathExists(resolve(
       fixture.runtimeRoot,
       'dsh-home/.agent-presets/project-tool-visibility.mjs',
@@ -342,7 +341,7 @@ describe('source production commands', () => {
     const fixture = await createFixture()
 
     await expect(prepareSourceRuntime(fixture.context, {
-      materializeAgentExperiment: async () => { throw new Error('Agent Preset materialization failed') },
+      materializeProductAgentPreset: async () => { throw new Error('Agent Preset materialization failed') },
     })).rejects.toThrow('Agent Preset materialization failed')
 
     expect(await pathExists(fixture.managedStatePath)).toBe(false)

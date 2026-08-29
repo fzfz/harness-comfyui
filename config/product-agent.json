@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "experiment": {
-    "presets": {
-      "schemaControl": "harness-comfyui-schema-control",
-      "cliCandidate": "harness-comfyui-cli-candidate"
-    },
+  "preset": {
+    "id": "harness-comfyui-cli-candidate",
     "sourceRootRelativePath": "agent-presets",
     "installRootRelativePath": ".agent-presets",
+    "retiredManagedPresetIds": [
+      "harness-comfyui-schema-control"
+    ],
     "sharedFiles": [
       "project-tool-visibility.mjs"
     ]
