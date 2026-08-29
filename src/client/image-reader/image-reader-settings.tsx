@@ -3,6 +3,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 
+import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
+
 import type {
   ImageReaderCredentialUpdate,
   ImageReaderModelCatalog,
@@ -21,7 +23,7 @@ import {
   type ImageReaderSettingsView,
 } from '../../image-reader/settings.ts'
 
-class ImageReaderSettingsError extends Error {
+export class ImageReaderSettingsError extends Error {
   readonly code: string
 
   constructor(code: string, message: string, options?: ErrorOptions) {
@@ -69,9 +71,31 @@ export async function saveImageReaderSettings(
   return api.saveSettings(Object.freeze({ configuration, credentialUpdates }), signal)
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.length > 0) return error.message
-  return 'Harness 无法完成图片读取设置请求。请检查每份配置后重新保存。'
+export function imageReaderSettingsErrorMessage(error: unknown): string {
+  const code = error instanceof ImageReaderSettingsError
+    ? error.code
+    : typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : 'IMAGE_READER_SETTINGS_REQUEST_FAILED'
+  const entry = errorCatalog[code as keyof typeof errorCatalog]
+    ?? errorCatalog.IMAGE_READER_SETTINGS_REQUEST_FAILED
+  return `${entry.code}：${entry.reason}${entry.next_step}`
+}
+
+export function endpointTransportMessage(endpoint: string): string | null {
+  let protocol: string
+  try {
+    protocol = new URL(endpoint).protocol
+  } catch {
+    return null
+  }
+  if (protocol === 'http:') {
+    return '当前 HTTP 地址不会加密 API Key 与图片内容；使用者必须确认目标内网链路符合部署要求。'
+  }
+  if (protocol === 'https:') {
+    return '当前 HTTPS 地址将通过 TLS 传输 API Key 与图片内容。'
+  }
+  return null
 }
 
 function profileId(): string {
@@ -124,7 +148,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return
       setModelCatalog(null)
-      setCatalogError(errorMessage(error))
+      setCatalogError(imageReaderSettingsErrorMessage(error))
       setCatalogStatus('error')
     })
     return () => controller.abort()
@@ -202,7 +226,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
       setCredentialUpdates({})
       setSaveStatus('saved')
     } catch (error) {
-      setSaveError(errorMessage(error))
+      setSaveError(imageReaderSettingsErrorMessage(error))
       setSaveStatus('error')
     }
   }
@@ -211,7 +235,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
   const credentialState = credentialDraft === null
     ? '保存后清除已保存的 API Key。'
     : typeof credentialDraft === 'string'
-      ? '保存后替换这份配置的 API Key。'
+      ? activeProfile.hasApiKey
+        ? '保存后替换这份配置的 API Key。'
+        : '保存后首次设置这份配置的 API Key。'
       : activeProfile.hasApiKey
         ? '这份配置已经保存 API Key；留空不会修改。'
         : '这份配置没有保存 API Key；本地免鉴权接口可以留空。'
@@ -230,10 +256,11 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
 
       {settings.status === 'loading' ? <p role="status">正在读取图片读取设置…</p> : null}
       {settings.status === 'unavailable' ? <p role="alert">当前 Harness 环境没有提供可写的图片读取设置。</p> : null}
+      {settings.status === 'ready' && !settings.writable ? <p role="alert">当前图片读取设置为只读；页面中的草稿不能保存。</p> : null}
       {catalogStatus === 'error' ? <p role="alert">系统模型目录读取失败：{catalogError} 请点击“刷新系统模型”重试。OpenAI 兼容配置仍可编辑。</p> : null}
       {modelCatalog?.failures.map(failure => (
         <p role="status" key={failure.provider}>
-          {failure.provider} 的模型目录读取失败：{failure.message} 请点击“刷新系统模型”重试；其他已加载 Provider 仍可选择。
+          无法读取 {failure.provider} 的系统模型目录。{imageReaderSettingsErrorMessage(undefined)} 请点击“刷新系统模型”重试；其他已加载 Provider 仍可选择。
         </p>
       ))}
 
@@ -252,6 +279,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
           <button type="button" onClick={duplicateProfile} disabled={draft.profiles.length >= IMAGE_READER_MAX_PROFILES}>复制配置</button>
           <button type="button" onClick={deleteProfile} disabled={draft.profiles.length === 1}>删除配置</button>
         </div>
+        <small>复制配置会复制连接参数、模型、提示词和采样参数，但不会复制 API Key。</small>
       </div>
 
       <div className="harness-comfyui-image-reader-form">
@@ -336,6 +364,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
                 onChange={event => updateActiveProfile(profile => ({ ...profile, endpoint: event.target.value }))}
               />
               <small>填写接受 POST 请求的完整地址；Harness 不会自动追加 /v1/chat/completions。</small>
+              {endpointTransportMessage(activeProfile.endpoint) === null ? null : (
+                <small role="status">{endpointTransportMessage(activeProfile.endpoint)}</small>
+              )}
             </label>
 
             <label>

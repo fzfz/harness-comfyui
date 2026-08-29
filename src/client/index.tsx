@@ -14,7 +14,7 @@ import {
   IMAGE_READER_SETTINGS_SECTION_ID,
   decodeImageReaderSettingsView,
 } from '../image-reader/settings.ts'
-import { ImageReaderSettingsPage } from './image-reader/image-reader-settings.tsx'
+import { ImageReaderSettingsError, ImageReaderSettingsPage } from './image-reader/image-reader-settings.tsx'
 
 import {
   WORKBENCH_DETAILS_PRIORITY,
@@ -91,14 +91,14 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           ensureActive(signal)
           const result = await remoteImageReader.models()
           ensureActive(signal)
-          if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+          if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
           return result.value
         },
         saveSettings: async (request: Parameters<typeof remoteImageReader.saveSettings>[0], signal: AbortSignal) => {
           ensureActive(signal)
           const result = await remoteImageReader.saveSettings(request)
           ensureActive(signal)
-          if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+          if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
           return result.value
         },
       }

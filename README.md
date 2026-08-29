@@ -69,9 +69,9 @@ JSON
 
 合法批量请求即使包含单项错误也返回退出码 0；调用者读取 `runs[].lookup_status` 分别处理每个结果。历史记录没有保存 `loras` 属性时，`arguments.loras: []` 只表示该次 `generate_with_comfyui` 调用没有保存显式结构化 LoRA 选择，不能据此判断 Actual Workflow 没有预置或活动 LoRA。历史记录没有保存 `model` 属性时不输出 `arguments.model`，表示该次调用没有保存显式模型覆盖，Run 使用 Actual Workflow 当时保存的模型。
 
-Harness 设置中的“图片读取”页面从当前 LLM 运行时动态列出支持图片输入的 Provider 与模型，并原子保存 Provider、模型、默认读图 Prompt、`temperature` 和最大输出 Token。图片读取模型独立于当前 Session 模型和 ComfyUI 生图模型，设置页不硬编码任何 Provider。
+Harness 设置中的“图片读取”页面可以保存、复制、删除和切换多份命名配置。每份配置可以从当前 LLM 运行时动态选择明确支持图片输入的系统 Provider 与模型，也可以填写 OpenAI 兼容 Chat Completions 完整地址、模型 ID 和可选 API Key；每份配置独立保存默认读图 Prompt、`temperature` 和最大输出 Token。API Key 作为 Harness Settings secret 保存，不进入浏览器设置快照。图片读取模型独立于当前 Session 模型和 ComfyUI 生图模型，设置页不硬编码任何 Provider。
 
-Host 注册 `get_generation_run_media` 与 `inspect_image`。前者按输入顺序查询一至二十个完整或唯一短 Run ID，并返回当前 Workspace 中每个 Run 的原始 `parameters` 与本地图片路径；后者一次只读取一个本地图片路径，并使用“图片读取”设置中的独立视觉模型返回观察文本。`comfyui-image-review` Skill 使用自己的 `references/cli.md` 调用对应 managed CLI，先取得 Run 图片，再逐图读取，最后由 Agent 对比原始 Prompt 与观察文本并编写改进 Prompt。Run 查询、视觉读取和语义对比不会耦合在同一个 Tool 中。
+Host 注册 `get_generation_run_media` 与 `inspect_image`。前者按输入顺序查询一至二十个完整或唯一短 Run ID，并返回当前 Workspace 中每个 Run 的原始 `parameters` 与本地图片路径；后者一次只读取一个本地图片路径，并使用当前命名配置中的独立视觉模型返回观察文本。系统 Provider 配置复用 Harness LLM Runtime；OpenAI 兼容配置直接调用已配置的 Chat Completions 地址。`comfyui-image-review` Skill 使用自己的 `references/cli.md` 调用对应 managed CLI，先取得 Run 图片，再逐图读取，最后由 Agent 对比原始 Prompt 与观察文本并编写改进 Prompt。Run 查询、视觉读取和语义对比不会耦合在同一个 Tool 中。
 
 Generation 请求只要求导入 UI Workflow。Host 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名称、活动状态和上下游连线定位显式运行参数，不读取 Source 模板记录中的参数定义或 binding 元数据。Host 使用 `/object_info` 的实时枚举校验运行参数，并在唯一大小写匹配时写入实例返回的精确值；无法匹配时，`generate_with_comfyui` 把具体参数目标、收到值和允许值返回给调用方。Source 读取、Workflow 编译或 Official API Workflow 准备中的其他错误也会在 Tool 返回 `run_id` 前返回调用方；只有成功返回 `run_id` 后的远端提交、观察、执行和媒体下载错误继续异步写入 Run。成功解析的 `/object_info` 在 Host 进程内缓存 10 分钟，同一实例的并发请求共享一个在途请求。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 复制本地基础对象并覆盖本次已确认的运行输入。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
 
@@ -94,6 +94,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.35.1 发布说明](docs/releasenotes.md)
+- [v0.36.0 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.35.1`。对应发布记录在最终提交、`v0.35.1` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.36.0`。对应发布记录在最终提交、`v0.36.0` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

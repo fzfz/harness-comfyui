@@ -215,6 +215,26 @@ describe('Harness Client plugin registration', () => {
       { configuration, credentialUpdates: [] },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
+    const imageReaderRemote = (context.remote as any).harnessComfyuiImageReader
+    imageReaderRemote.models.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'IMAGE_READER_SETTINGS_REQUEST_FAILED', message: 'The model catalog failed.', details: {} },
+    })
+    imageReaderRemote.saveSettings.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'IMAGE_READER_SETTINGS_SAVE_FAILED', message: 'The settings write failed.', details: {} },
+    })
+    await expect(imageReaderFace.api.models(new AbortController().signal)).rejects.toMatchObject({
+      code: 'IMAGE_READER_SETTINGS_REQUEST_FAILED',
+      message: 'IMAGE_READER_SETTINGS_REQUEST_FAILED',
+    })
+    await expect(imageReaderFace.api.saveSettings(
+      { configuration, credentialUpdates: [] },
+      new AbortController().signal,
+    )).rejects.toMatchObject({
+      code: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
+      message: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
+    })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)
     const sessionTwoDock = registrations.get('conversation.input.dock')!.inject('session-2' as never) as {

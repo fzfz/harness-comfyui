@@ -115,14 +115,26 @@
 
 ## 图片读取设置
 
-Host 使用 `harness-comfyui-image-reader` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页通过 Harness Settings 服务把 `configuration` 作为一个结构化值原子写入。`configuration` 包含以下属性：
+Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页通过一个 Host Remote 请求原子写入公开配置与凭据变更。该 namespace 包含以下属性：
 
 | 字段 | 规则与用途 |
 | --- | --- |
-| `configuration.provider` | Harness 当前 LLM 运行时注册的精确 Provider route；空字符串表示尚未配置 |
-| `configuration.model` | 所选 Provider 下明确声明 `image` 输入能力的精确模型 ID；空字符串表示尚未配置 |
-| `configuration.defaultPrompt` | `inspect_image` 的调用参数中未包含非空 `prompt` 时使用的图片观察提示词 |
-| `configuration.temperature` | 独立视觉模型调用使用的数值，范围为 `0` 至 `2` |
-| `configuration.maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
+| `configuration.activeProfileId` | 下一次 `inspect_image` 使用的配置 ID；该值必须对应 `configuration.profiles[]` 中的一份配置 |
+| `configuration.profiles[]` | 一至二十份命名图片读取配置；配置 ID 在同一列表内必须唯一 |
+| `configuration.profiles[].id` | 配置的稳定小写字母、数字、下划线或连字符 ID，最长 80 个字符 |
+| `configuration.profiles[].name` | 设置页显示的配置名称，最长 80 个字符 |
+| `configuration.profiles[].connectionType` | `runtime` 表示系统 Provider；`openai-compatible` 表示自定义 Chat Completions 接口 |
+| `configuration.profiles[].provider` | `runtime` 配置使用的精确 Harness Provider route；`openai-compatible` 配置必须保存空字符串 |
+| `configuration.profiles[].endpoint` | `openai-compatible` 配置使用的完整 HTTP 或 HTTPS Chat Completions 地址；Host 不自动追加路径；`runtime` 配置必须保存空字符串 |
+| `configuration.profiles[].model` | 系统 Provider 或 OpenAI 兼容接口接受的精确视觉模型 ID |
+| `configuration.profiles[].hasApiKey` | 只表示该配置是否已经保存 API Key；该布尔值由 Host 根据 secret 凭据重新计算 |
+| `configuration.profiles[].defaultPrompt` | `inspect_image` 没有收到非空单次 `prompt` 时使用的默认读图提示词 |
+| `configuration.profiles[].temperature` | 独立视觉模型调用使用的数值，范围为 `0` 至 `2` |
+| `configuration.profiles[].maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
+| `credentials.<profileId>` | OpenAI 兼容配置的可选 API Key；该字典的值使用 Settings `secret` role，浏览器只收到对应 `hasApiKey` 状态 |
 
-Provider 与模型候选来自 Harness 当前 LLM 运行时。设置页不从 Configuration Profile、环境变量或生图模型推导视觉模型。一次保存要么提交完整 `configuration`，要么保持此前配置，不会持久化混合 Provider/模型。上述设置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
+系统 Provider 与模型候选来自 Harness 当前 LLM 运行时，并且设置页只列出明确声明 `image` 输入能力的模型。OpenAI 兼容配置不依赖系统 Provider 目录；Host 向完整地址发送 OpenAI Chat Completions 格式的单张图片 Data URL、提示词、模型 ID、`temperature` 和 `max_tokens`。HTTP 地址不会提供传输加密；配置 API Key 时，使用者必须确认目标内网链路符合部署要求。
+
+Host 使用一次 `settings.replace()` 提交完整公开配置和 write-only 凭据变更。Client 可以首次设置、替换或清除 API Key；Client 选择保留时不会提交新的密钥值。验证失败不会写入任何值；持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`，不会误报为配置字段无效。保存成功后，新配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
+
+v0.36.0 继续注册旧 namespace `harness-comfyui-image-reader` 以读取 v0.35.x 的单配置用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，Host 不会重复迁移或覆盖。

@@ -45,10 +45,10 @@ pnpm worktree:start|restart
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
-| `src/host/image-reader/` | 图片读取设置注册、运行时视觉模型目录和单图视觉模型调用 Tool |
+| `src/host/image-reader/` | 图片读取设置迁移与保存、运行时视觉模型目录、系统 Provider/OpenAI 兼容适配和单图视觉模型调用 Tool |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
-| `src/image-reader/` | Host 与 Client 共用的图片读取设置和视觉模型目录合同 |
+| `src/image-reader/` | Host 与 Client 共用的命名图片读取配置、凭据更新、视觉模型目录和 Remote 合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器、Generation Run/Media 投影与图片读取设置页 |
 | `.agents/skills/` | 五个项目 Skill 的 canonical source；每个 Skill 都包含自身执行所需的 CLI 参考文档 |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
@@ -137,6 +137,10 @@ Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_
 
 `GenerationRuntime.readGenerationRunMedia()` 接受一至二十个完整 `run_id` 或唯一规范前缀，按输入顺序查询当前 Workspace，并为每个输入返回独立的成功元素或错误元素。成功元素包含原始 Generation Request 参数和 Saved Media 的本地图片路径。DSH Tool `get_generation_run_media` 与受管 CLI 命令 `image run-media --stdin` 复用该运行时方法，且两种入口都不调用视觉模型。
 
-`ImageReaderService.inspect()` 一次接受一个本地图片路径。Host 把图片保存为 Harness Attachment，使用“图片读取”设置中的 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用，并返回视觉模型的图片观察文本。DSH Tool `inspect_image` 与受管 CLI 命令 `image inspect --stdin` 复用该服务。该服务与两种入口都不读取 Generation Request 参数，也不比较或改写 Prompt。
+`ImageReaderService.inspect()` 一次接受一个本地图片路径，并从 `configuration.activeProfileId` 解析当前命名配置。`runtime` 配置把图片保存为 Harness Attachment，再使用配置中的系统 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用。`openai-compatible` 配置不经过 Harness LLM Runtime 或 Attachment Store；Host 把同一张图片编码为 Data URL，向配置的完整 Chat Completions 地址发送模型 ID、提示词、`temperature` 和 `max_tokens`。OpenAI 兼容响应体的声明长度与实际流式累计长度都不能超过 1 MiB，读取响应体和解析 JSON 时继续传播调用者取消。
+
+API Key 作为 `credentials.<profileId>` Settings secret 保存。Client 收到的凭据状态只包含每份配置的 `hasApiKey`，并通过 Remote 提交首次设置、替换或清除凭据的 write-only 操作；Client 选择保留时不会提交新的密钥值。Host 使用一次 `settings.replace()` 原子提交公开配置与凭据。Host 在新 namespace 尚无用户值时，把旧单配置 namespace 的用户 Provider、模型、提示词、`temperature` 和最大输出 Token 迁移为一份 `runtime` 配置。
+
+DSH Tool `inspect_image` 与受管 CLI 命令 `image inspect --stdin` 复用该服务。该服务与两种入口都不读取 Generation Request 参数，也不比较或改写 Prompt。
 
 `comfyui-image-review` Skill 按自己的 `references/cli.md` 先批量调用 `image run-media --stdin`，再为每张图片分别调用 `image inspect --stdin`。执行该 Skill 的 Agent 使用原始参数与图片观察结果完成比较和 Prompt 改进，因此 Run 解析、图片读取和 Prompt 对比保持三个独立职责。

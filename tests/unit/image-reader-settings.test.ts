@@ -14,7 +14,10 @@ import {
   type ImageReaderConfiguration,
 } from '../../src/image-reader/settings.ts'
 import {
+  ImageReaderSettingsError,
   ImageReaderSettingsPage,
+  endpointTransportMessage,
+  imageReaderSettingsErrorMessage,
   modelsForProvider,
   saveImageReaderSettings,
 } from '../../src/client/image-reader/image-reader-settings.tsx'
@@ -48,10 +51,13 @@ const modelCatalog = Object.freeze({
   failures: Object.freeze([]),
 })
 
-function settingsScope(configuration: ImageReaderConfiguration | undefined = runtimeConfiguration) {
+function settingsScope(
+  configuration: ImageReaderConfiguration | undefined = runtimeConfiguration,
+  state: { readonly status?: 'loading' | 'ready' | 'unavailable'; readonly writable?: boolean } = {},
+) {
   const snapshot = Object.freeze({
-    status: 'ready' as const,
-    writable: true,
+    status: state.status ?? 'ready',
+    writable: state.writable ?? true,
     value: configuration === undefined ? undefined : Object.freeze({ configuration }),
   })
   return {
@@ -150,6 +156,30 @@ describe('image reader settings page behavior', () => {
     expect(modelsForProvider(catalog, 'missing')).toEqual([])
   })
 
+  it('describes HTTP plaintext and HTTPS TLS transport states', () => {
+    expect(endpointTransportMessage('http://127.0.0.1:11434/v1/chat/completions'))
+      .toBe('当前 HTTP 地址不会加密 API Key 与图片内容；使用者必须确认目标内网链路符合部署要求。')
+    expect(endpointTransportMessage('HTTP://127.0.0.1:11434/v1/chat/completions'))
+      .toBe('当前 HTTP 地址不会加密 API Key 与图片内容；使用者必须确认目标内网链路符合部署要求。')
+    expect(endpointTransportMessage('https://vision.example/v1/chat/completions'))
+      .toBe('当前 HTTPS 地址将通过 TLS 传输 API Key 与图片内容。')
+    expect(endpointTransportMessage('HTTPS://vision.example/v1/chat/completions'))
+      .toBe('当前 HTTPS 地址将通过 TLS 传输 API Key 与图片内容。')
+    expect(endpointTransportMessage('not a URL')).toBeNull()
+    expect(endpointTransportMessage('')).toBeNull()
+  })
+
+  it('uses the project error catalog instead of exposing Remote error messages', () => {
+    expect(imageReaderSettingsErrorMessage(new ImageReaderSettingsError(
+      'IMAGE_READER_SETTINGS_SAVE_FAILED',
+      'The settings database rejected the write.',
+    ))).toContain('IMAGE_READER_SETTINGS_SAVE_FAILED：Harness Settings 服务未能持久化')
+    expect(imageReaderSettingsErrorMessage(new Error('The remote transport failed.')))
+      .toContain('IMAGE_READER_SETTINGS_REQUEST_FAILED：图片读取设置页无法完成')
+    expect(imageReaderSettingsErrorMessage(new Error('The remote transport failed.')))
+      .not.toContain('The remote transport failed.')
+  })
+
   it('saves all profiles and credential changes through one Host request', async () => {
     const saveSettings = vi.fn(async (request: any) => ({ configuration: request.configuration }))
     const signal = new AbortController().signal
@@ -206,6 +236,7 @@ describe('image reader settings page behavior', () => {
       ;(inputByType(renderer, 'text', 1).props.onChange as (event: unknown) => void)({ target: { value: 'qwen-vl' } })
       ;(inputByType(renderer, 'password').props.onChange as (event: unknown) => void)({ target: { value: 'write-only-key' } })
     })
+    expect(JSON.stringify(renderer.toJSON())).toContain('保存后首次设置这份配置的 API Key')
     await act(async () => {
       ;(buttonByText(renderer, '保存全部配置').props.onClick as () => void)()
       await Promise.resolve()
@@ -250,7 +281,7 @@ describe('image reader settings page behavior', () => {
       await Promise.resolve()
     })
     expect(JSON.stringify(renderer.toJSON())).toContain('provider-b')
-    expect(JSON.stringify(renderer.toJSON())).toContain('的模型目录读取失败')
+    expect(JSON.stringify(renderer.toJSON())).toContain('的系统模型目录')
 
     await act(async () => {
       ;(buttonByText(renderer, '刷新系统模型').props.onClick as () => void)()
@@ -268,6 +299,9 @@ describe('image reader settings page behavior', () => {
     expect(JSON.stringify(renderer.toJSON())).toContain('保存后清除已保存的 API Key')
     await act(async () => {
       ;(buttonByText(renderer, '保留已保存的 API Key').props.onClick as () => void)()
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('这份配置已经保存 API Key；留空不会修改')
+    await act(async () => {
       ;(inputByType(renderer, 'password').props.onChange as (event: unknown) => void)({ target: { value: 'replacement' } })
     })
     expect(JSON.stringify(renderer.toJSON())).toContain('保存后替换这份配置的 API Key')
@@ -305,11 +339,64 @@ describe('image reader settings page behavior', () => {
     renderer.unmount()
   })
 
+  it('duplicates profile parameters without duplicating the saved API Key', async () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom', '内网视觉'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'qwen-vl',
+      hasApiKey: true,
+    })
+    const api = {
+      models: vi.fn(async () => modelCatalog),
+      saveSettings: vi.fn(async (request: any) => ({ configuration: request.configuration })),
+    }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, {
+        scope: settingsScope(Object.freeze({ activeProfileId: custom.id, profiles: Object.freeze([custom]) })),
+        api,
+      } as never))
+      await Promise.resolve()
+    })
+
+    expect(JSON.stringify(renderer.toJSON())).toContain('但不会复制 API Key')
+    await act(async () => {
+      ;(buttonByText(renderer, '复制配置').props.onClick as () => void)()
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('这份配置没有保存 API Key')
+    expect(inputByType(renderer, 'password').props.placeholder).not.toContain('已保存')
+    renderer.unmount()
+  })
+
+  it('renders loading, unavailable, read-only, and writable settings states', async () => {
+    const api = { models: vi.fn(async () => modelCatalog), saveSettings: vi.fn() }
+    const cases = [
+      { scope: settingsScope(runtimeConfiguration, { status: 'loading' }), text: '正在读取图片读取设置', disabled: true },
+      { scope: settingsScope(runtimeConfiguration, { status: 'unavailable' }), text: '当前 Harness 环境没有提供可写的图片读取设置', disabled: true },
+      { scope: settingsScope(runtimeConfiguration, { writable: false }), text: '当前图片读取设置为只读；页面中的草稿不能保存', disabled: true },
+      { scope: settingsScope(runtimeConfiguration), text: '保存全部配置', disabled: false },
+    ] as const
+
+    for (const state of cases) {
+      let renderer!: ReturnType<typeof create>
+      await act(async () => {
+        renderer = create(createElement(ImageReaderSettingsPage, { scope: state.scope, api } as never))
+        await Promise.resolve()
+      })
+      expect(JSON.stringify(renderer.toJSON())).toContain(state.text)
+      expect(buttonByText(renderer, '保存全部配置').props.disabled).toBe(state.disabled)
+      renderer.unmount()
+    }
+  })
+
   it('renders model catalog and settings write failures as actionable messages', async () => {
-    const catalogFailure = new Error('目录连接失败')
+    const catalogFailure = new Error('The model directory transport failed.')
     const api = {
       models: vi.fn(async () => { throw catalogFailure }),
-      saveSettings: vi.fn(async () => { throw new Error('设置写入被拒绝') }),
+      saveSettings: vi.fn(async () => {
+        throw new ImageReaderSettingsError('IMAGE_READER_SETTINGS_SAVE_FAILED', 'The settings write was rejected.')
+      }),
     }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
@@ -317,13 +404,15 @@ describe('image reader settings page behavior', () => {
       await Promise.resolve()
     })
     expect(JSON.stringify(renderer.toJSON())).toContain('系统模型目录读取失败：')
-    expect(JSON.stringify(renderer.toJSON())).toContain('目录连接失败')
+    expect(JSON.stringify(renderer.toJSON())).toContain('IMAGE_READER_SETTINGS_REQUEST_FAILED')
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('The model directory transport failed.')
     await act(async () => {
       ;(buttonByText(renderer, '保存全部配置').props.onClick as () => void)()
       await Promise.resolve()
     })
     expect(JSON.stringify(renderer.toJSON())).toContain('保存失败：')
-    expect(JSON.stringify(renderer.toJSON())).toContain('设置写入被拒绝')
+    expect(JSON.stringify(renderer.toJSON())).toContain('IMAGE_READER_SETTINGS_SAVE_FAILED')
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('The settings write was rejected.')
     renderer.unmount()
   })
 })
