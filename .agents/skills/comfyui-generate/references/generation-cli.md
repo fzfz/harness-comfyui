@@ -8,14 +8,14 @@ Harness ComfyUI 管理的 CLI 根据当前前台 shell Tool Call 自动确定 Wo
 
 ## 查询历史 Generation Run
 
-用户要求读取、核对或复用已有 `run_id` 的 Workflow、模板 ID、生成模型、LoRA、Prompt 或其他生成参数时调用查询命令。一次请求可以包含 1 至 20 个 `run_id`。单个 `run_id`、多个 `run_id`、重复的 `run_id` 和可能无效的字符串都使用同一命令；CLI 按输入顺序独立查询每一项。
+用户要求读取、核对或复用已有 `run_id` 的 Workflow、模板 ID、生成模型、LoRA、Prompt 或其他生成参数时调用查询命令。一次请求可以包含 1 至 20 个完整 Run ID 或短 Run ID。短 Run ID 使用 `run_` 加完整 UUID 的起始片段，并至少包含前八个 UUID 字符。单个 ID、多个 ID、重复 ID 和可能无效的字符串都使用同一命令；CLI 按输入顺序独立查询每一项。
 
 把只包含 `run_ids` 的 JSON 对象传入标准输入：
 
 ```bash
 node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
 {
-  "run_ids": ["run_<first-id>", "run_<second-id>"]
+  "run_ids": ["run_3c0ad3ed", "run_d26923be"]
 }
 JSON
 ```
@@ -30,11 +30,13 @@ JSON
 
 `run_ids` 必须是包含 1 至 20 个字符串的数组。数组为空、超过 20 项、包含非字符串元素或标准输入包含其他属性时，CLI 返回非零退出码。
 
+短 Run ID 只匹配当前 Workspace 中以该值开头的完整 Run ID。唯一匹配时查询成功；没有匹配时该项返回不存在错误；匹配多个 Run 时该项返回歧义错误，调用者在短 ID 后增加更多完整 Run ID 字符后重试。
+
 合法查询请求返回一个 `runs` 数组。数组长度和顺序与输入 `run_ids` 完全一致，重复的 `run_id` 产生重复的结果项。只要顶层查询请求合法，某个 Run 的查询错误不会使整条命令失败；CLI 仍返回退出码 0，并继续返回其他 Run 的结果。
 
 可用结果项包含：
 
-- `run_id`：输入的 Run ID；
+- `run_id`：匹配到的完整 Run ID；完整 ID 输入保持原值，短 ID 输入返回 canonical 完整值；
 - `lookup_status: "available"`；
 - `arguments.title`：创建 Run 时传入的标题；
 - 可选的 `arguments.instance_id`：创建 Run 时传入的实例 ID；
@@ -60,7 +62,7 @@ JSON
 }
 ```
 
-`GENERATION_RUN_ID_INVALID` 表示该字符串不是合法 Run ID；`GENERATION_RUN_NOT_FOUND` 表示当前 Workspace 看不到该 Run；`GENERATION_REQUEST_INVALID` 表示保存的生成请求损坏；`GENERATION_RUN_LOOKUP_FAILED` 表示 Host 读取该项时发生未分类故障。Skill 执行者必须报告该项错误并继续处理 `runs[]` 中的其他项。
+`GENERATION_RUN_ID_INVALID` 表示该字符串包含不安全字符，或仅由小写十六进制字符与连字符组成的短前缀不符合 canonical UUID 前缀位置和最少八字符长度；`GENERATION_RUN_ID_AMBIGUOUS` 表示短 ID 在当前 Workspace 中匹配多个 Run，Skill 执行者必须要求用户增加前缀字符；`GENERATION_RUN_NOT_FOUND` 表示当前 Workspace 看不到完整 ID 精确匹配或合法短 ID 前缀匹配；`GENERATION_REQUEST_INVALID` 表示保存的生成请求损坏；`GENERATION_RUN_LOOKUP_FAILED` 表示 Host 读取该项时发生未分类故障。Skill 执行者报告该项错误后继续处理 `runs[]` 中的其他项。
 
 CLI 返回非零退出码时，标准错误包含 `错误码: 错误消息`。命令级错误表示标准输入、受管 CLI 环境、当前 Workspace 身份或 Host 请求失败。Skill 执行者必须报告标准错误；修正命令输入后可以重试，不能把命令级错误解释为所有 `run_id` 都不存在。
 

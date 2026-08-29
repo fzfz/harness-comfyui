@@ -80,7 +80,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 `read_comfyui_run_inputs` Tool 从 Tool Call、Session cwd 和 workspace registry 派生当前 Workspace；CLI 查询从短期 shell capability 派生当前 Workspace。两条入口都只把 `workspaceId` 和用户提供的 `run_id` 交给 `GenerationRuntime.readGenerationRunInputs()`，不接受调用者提供的 Workspace ID、Session ID、Turn 或 Tool Call ID。
 
-`GenerationRuntime.readGenerationRunInputs()` 要求一次查询包含 1 至 20 个字符串，并按照输入顺序逐项读取 Run Repository 的 `request_json` 和 Run 目录中的 Actual Workflow。当前 Workspace 之外的 Run 与不存在的 Run 都返回 `GENERATION_RUN_NOT_FOUND`。合法批量请求中的无效 ID、缺失 Run、损坏请求或未分类读取故障只产生对应结果项；后续 Run 继续查询。取消信号终止整个查询。
+`GenerationRuntime.readGenerationRunInputs()` 要求一次查询包含 1 至 20 个字符串，并按照输入顺序逐项读取 Run Repository 的 `request_json` 和 Run 目录中的 Actual Workflow。Runtime 先检查当前 Workspace 中的完整 Run ID 精确匹配；没有精确匹配且输入是最少八个 UUID 字符的 canonical 起始片段时，Runtime 只在当前 Workspace 中读取最多两个前缀匹配。零个匹配返回 `GENERATION_RUN_NOT_FOUND`，唯一匹配返回完整 canonical `run_id`，多个匹配返回 `GENERATION_RUN_ID_AMBIGUOUS` 并要求调用者增加前缀长度。当前 Workspace 之外的 Run 不参与前缀唯一性判定。合法批量请求中的无效 ID、缺失 Run、歧义前缀、损坏请求或未分类读取故障只产生对应结果项；后续 Run 继续查询。取消信号终止整个查询。
 
 可用结果项投影创建 Run 时传入 `generate_with_comfyui` 的 `title`、可选 `instance_id`、`template_id`、可选 `model`、完整 `parameters` 和 `loras`。历史请求缺少 `loras` 属性时投影空数组；该空数组只表示调用参数没有保存显式结构化 LoRA 选择，不能证明 Actual Workflow 没有预置或活动 LoRA。历史请求缺少 `model` 属性时不投影 `model`；该省略表示调用参数没有保存显式模型覆盖，Run 使用 Actual Workflow 当时保存的模型。Actual Workflow 可用时返回完整 JSON；准备失败、文件缺失或文件无效时仍返回生成参数，并通过 `workflow_status: "unavailable"` 和 `workflow_error` 说明 Workflow 错误。
 

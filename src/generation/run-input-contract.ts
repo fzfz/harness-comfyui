@@ -1,4 +1,5 @@
 export const MAX_RUN_INPUT_QUERY_IDS = 20
+export const MIN_RUN_INPUT_ID_PREFIX_LENGTH = 8
 
 export type JsonPrimitive = string | number | boolean | null
 export type JsonValue = JsonPrimitive | { readonly [key: string]: JsonValue } | readonly JsonValue[]

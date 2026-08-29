@@ -59,11 +59,11 @@ pnpm worktree:stop
 
 managed CLI 的 Generation Request 不包含 Workspace、Session、Turn 或 Tool Call ID。Host 从当前前台 shell ToolExecution 和 workspace registry 派生这些身份并写入 Run Repository。同一个 Generation Request 允许多次独立提交；每次独立提交使用不同的前台 shell Tool Call，并产生独立的 `call_id` 与 `run_id`。
 
-Host 额外注册 `read_comfyui_run_inputs`。该 Tool 接收 1 至 20 个 `run_id`，按输入顺序返回每个 Run 创建时传入 `generate_with_comfyui` 的 `title`、可选 `instance_id`、`template_id`、可选 `model`、完整 `parameters`、`loras` 和保存的 Actual Workflow。某个 `run_id` 无效、不存在或保存记录损坏时，Tool 只为该项返回错误并继续查询其他项。managed CLI 提供同一能力：
+Host 额外注册 `read_comfyui_run_inputs`。该 Tool 接收 1 至 20 个完整 Run ID 或最少包含八个 UUID 字符的短 Run ID，按输入顺序返回每个 Run 创建时传入 `generate_with_comfyui` 的 `title`、可选 `instance_id`、`template_id`、可选 `model`、完整 `parameters`、`loras` 和保存的 Actual Workflow。短 ID 只在当前 Workspace 中解析；唯一匹配时成功项返回完整 canonical Run ID，无匹配或匹配多个 Run 时只为该项返回错误并继续查询其他项。managed CLI 提供同一能力：
 
 ```sh
 node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
-{"run_ids":["run_<first-id>","run_<second-id>"]}
+{"run_ids":["run_3c0ad3ed","run_d26923be"]}
 JSON
 ```
 
@@ -90,6 +90,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.34.0 发布说明](docs/releasenotes.md)
+- [v0.34.1 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.34.0`。对应发布记录在最终提交、`v0.34.0` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.34.1`。对应发布记录在最终提交、`v0.34.1` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

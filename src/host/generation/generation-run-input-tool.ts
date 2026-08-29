@@ -4,6 +4,7 @@ import type { WorkspaceRegistry } from '@deepseek-ai/dsh-workspace'
 
 import {
   MAX_RUN_INPUT_QUERY_IDS,
+  MIN_RUN_INPUT_ID_PREFIX_LENGTH,
   type JsonValue,
 } from '../../generation/run-input-contract.ts'
 import type { GenerationRuntime } from './generation-runtime.ts'
@@ -132,12 +133,12 @@ const outputSchema = {
 export function createGenerationRunInputTool(options: CreateGenerationRunInputToolOptions): ToolDefinition {
   const definition = defineTool({
     name: GENERATION_RUN_INPUT_TOOL_NAME,
-    description: 'Read the complete persisted generate_with_comfyui arguments and saved Actual Workflow for one to twenty Run IDs in the current Workspace; return one ordered success or error item for every requested run_id.',
+    description: 'Read the complete persisted generate_with_comfyui arguments and saved Actual Workflow for one to twenty full Run IDs or unique Run ID prefixes in the current Workspace; return one ordered success or error item for every requested run_id.',
     parameters: {
       run_ids: {
         type: 'array',
         required: true,
-        description: `One to ${MAX_RUN_INPUT_QUERY_IDS} Generation Run IDs. Every ID is queried independently and results keep this order.`,
+        description: `One to ${MAX_RUN_INPUT_QUERY_IDS} full Generation Run IDs or canonical UUID prefixes containing at least ${MIN_RUN_INPUT_ID_PREFIX_LENGTH} UUID characters. Every ID is queried independently and results keep this order.`,
         items: { type: 'string' },
       },
     },

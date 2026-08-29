@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite'
 import type { GenerationMediaKind } from '../../generation/contract.ts'
 import {
   MAX_RUN_INPUT_QUERY_IDS,
+  MIN_RUN_INPUT_ID_PREFIX_LENGTH,
   type AvailableGenerationRunInput,
   type GenerationRunInputArguments,
   type GenerationRunInputError,
@@ -248,6 +249,25 @@ interface MediaStagingRow extends MediaRow {
 }
 
 const SAFE_PATH_ID = /^[A-Za-z0-9_-]{1,128}$/u
+const RUN_ID_PREFIX = 'run_'
+const UUID_LENGTH = 36
+const UUID_HYPHEN_POSITIONS = Object.freeze([8, 13, 18, 23])
+const LOWERCASE_HEX_CHARACTER = /^[0-9a-f]$/u
+const RUN_ID_PREFIX_CHARACTERS = /^run_[0-9a-f-]+$/u
+const CANONICAL_RUN_ID_LENGTH = RUN_ID_PREFIX.length + UUID_LENGTH
+const CANONICAL_RUN_ID_GLOB = `${RUN_ID_PREFIX}${Array.from({ length: UUID_LENGTH }, (_value, index) => (
+  UUID_HYPHEN_POSITIONS.includes(index) ? '-' : '[0-9a-f]'
+)).join('')}`
+const RUN_ID_INVALID_MESSAGE = `Generation Run ID is invalid. Use a safe complete Run ID or a canonical prefix containing at least ${MIN_RUN_INPUT_ID_PREFIX_LENGTH} UUID characters.`
+
+function isCanonicalRunIdPrefix(value: string): boolean {
+  if (!value.startsWith(RUN_ID_PREFIX)) return false
+  const uuidPrefix = value.slice(RUN_ID_PREFIX.length)
+  if (uuidPrefix.length < MIN_RUN_INPUT_ID_PREFIX_LENGTH || uuidPrefix.length > UUID_LENGTH) return false
+  return [...uuidPrefix].every((character, index) => UUID_HYPHEN_POSITIONS.includes(index)
+    ? character === '-'
+    : LOWERCASE_HEX_CHARACTER.test(character))
+}
 
 function assertPathId(value: string, label: string): void {
   if (!SAFE_PATH_ID.test(value)) throw new TypeError(`${label} is invalid`)
@@ -473,7 +493,7 @@ export class GenerationRuntime {
     mkdirSync(options.runDirectory, { recursive: true })
     mkdirSync(options.savedMediaDirectory, { recursive: true })
     this.database = new DatabaseSync(options.runRepositoryFile)
-    this.createRunId = options.createRunId ?? (() => `run_${randomUUID()}`)
+    this.createRunId = options.createRunId ?? (() => `${RUN_ID_PREFIX}${randomUUID()}`)
     this.createPromptId = options.createPromptId ?? randomUUID
     this.createMediaId = options.createMediaId ?? (() => `media_${randomUUID()}`)
     this.now = options.now ?? Date.now
@@ -784,18 +804,48 @@ export class GenerationRuntime {
 
   private async readGenerationRunInput(
     workspaceId: string,
-    runId: string,
+    requestedRunId: string,
     signal?: AbortSignal,
   ): Promise<AvailableGenerationRunInput> {
-    if (!SAFE_PATH_ID.test(runId)) {
+    if (!SAFE_PATH_ID.test(requestedRunId)) {
       throw new GenerationRuntimeError(
         'GENERATION_RUN_ID_INVALID',
-        'Generation Run ID is invalid. Check the complete run_id and retry it.',
+        RUN_ID_INVALID_MESSAGE,
       )
     }
-    const row = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?')
-      .get(runId) as unknown as RunRow | undefined
-    if (row === undefined || row.workspace_id !== workspaceId) {
+    const exactRow = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?')
+      .get(requestedRunId) as unknown as RunRow | undefined
+    let row = exactRow?.workspace_id === workspaceId ? exactRow : undefined
+    if (row === undefined && isCanonicalRunIdPrefix(requestedRunId)) {
+      const prefixRows = this.database.prepare(`
+        SELECT * FROM generation_runs
+        WHERE workspace_id = ?
+          AND substr(run_id, 1, length(?)) = ?
+          AND length(run_id) = ?
+          AND run_id GLOB ?
+        ORDER BY run_id
+        LIMIT 2
+      `).all(
+        workspaceId,
+        requestedRunId,
+        requestedRunId,
+        CANONICAL_RUN_ID_LENGTH,
+        CANONICAL_RUN_ID_GLOB,
+      ) as unknown as RunRow[]
+      if (prefixRows.length > 1) {
+        throw new GenerationRuntimeError(
+          'GENERATION_RUN_ID_AMBIGUOUS',
+          'Generation Run ID prefix matches multiple Runs in the current Workspace. Add more characters and retry it.',
+        )
+      }
+      row = prefixRows[0]
+    } else if (row === undefined && RUN_ID_PREFIX_CHARACTERS.test(requestedRunId)) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_ID_INVALID',
+        RUN_ID_INVALID_MESSAGE,
+      )
+    }
+    if (row === undefined) {
       throw new GenerationRuntimeError(
         'GENERATION_RUN_NOT_FOUND',
         'Generation Run was not found in the current Workspace.',
@@ -805,7 +855,7 @@ export class GenerationRuntime {
     const argumentsValue = runInputArguments(request)
     if (row.actual_workflow_path === null) {
       return Object.freeze({
-        run_id: runId,
+        run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
         workflow_status: 'unavailable',
@@ -822,7 +872,7 @@ export class GenerationRuntime {
         signal,
       )
       return Object.freeze({
-        run_id: runId,
+        run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
         workflow_status: 'available',
@@ -831,7 +881,7 @@ export class GenerationRuntime {
     } catch (error) {
       if (!(error instanceof GenerationRuntimeError)) throw error
       return Object.freeze({
-        run_id: runId,
+        run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
         workflow_status: 'unavailable',

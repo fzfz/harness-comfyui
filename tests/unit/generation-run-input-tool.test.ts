@@ -253,6 +253,7 @@ describe('read_comfyui_run_inputs Tool', () => {
   })
 
   it('declares both new lookup errors in the unique error catalog', () => {
+    expect(errorCatalog.GENERATION_RUN_ID_AMBIGUOUS.code).toBe('GENERATION_RUN_ID_AMBIGUOUS')
     expect(errorCatalog.GENERATION_RUN_ID_INVALID.code).toBe('GENERATION_RUN_ID_INVALID')
     expect(errorCatalog.GENERATION_RUN_LOOKUP_FAILED.code).toBe('GENERATION_RUN_LOOKUP_FAILED')
   })
