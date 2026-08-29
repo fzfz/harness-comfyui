@@ -6,17 +6,17 @@
 
 **Harness Core**：项目依赖的 DeepSeek Harness `0.1.1-rc.2` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
 
-**Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册 Catalog Remote、Generation Remote、Generation Tool、媒体路由和 Generation Coordinator。
+**Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册 Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
 
 **Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.1-rc.2` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
-**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances` 和 `generate_with_comfyui` 五个项目 Tool。
+**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui` 和 `read_comfyui_run_inputs` 六个项目 Tool。
 
-**Repository ComfyUI Generate Skill**：`.agents/skills/comfyui-generate/SKILL.md` 提供的仓库 Harness Skill。rc.2 文件系统 Skill provider 从当前 Workspace Git 根目录发现该 Skill，Harness 原生 `/` 菜单负责显示和调用。
+**Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/` 和 `wai-sdxl-prompt-builder/` 提供的四个仓库 Harness Skill。每个 Skill 都能独立响应历史 Generation Run 查询请求，并使用自己目录中的 `references/generation-cli.md`。
 
-**Global ComfyUI Generate Skill**：Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Harness Skill。`ComfyUI工作台预设` 使用该 Skill、该 Skill 目录中的 CLI 参考文档和项目 managed CLI；本项目不复制或发布该 Skill。
+**Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。部署前逐个比较原全局目录与主开发 checkout 目录的目录条目类型、相对路径、符号链接目标和普通文件 SHA-256。
 
-**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 5 个 Host 项目 Tool schema。启动器不把该 Preset 设为默认值。
+**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 6 个 Host 项目 Tool schema。启动器不把该 Preset 设为默认值。
 
 ## 运行
 
@@ -44,6 +44,8 @@
 
 **Generation Run**：一次 `generate_with_comfyui` Tool Call 对应的持久异步运行。不同 `callId` 创建不同 Run；每个 Run 独立保存请求、来源快照、Actual Workflow 和 API Workflow。
 
+**Generation Run Input Query**：`read_comfyui_run_inputs` Tool 和 managed CLI 的 `generation run-inputs --stdin` 命令提供的只读查询。一次查询接收 1 至 20 个 `run_id`，按输入顺序独立返回创建 Run 时保存的 Generation Tool 参数和 Actual Workflow；单项错误不终止其他 Run 的查询。
+
 **Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow，Session 和 Chat Turn 只用于筛选。
 
 **Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，顶部显示当前媒体所属 Generation Run 的完整 `run_id` 和媒体文件固有像素尺寸，底部显示该 Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。用户点击顶部 `run_id` 后，查看页把完整值写入浏览器剪贴板。
@@ -60,6 +62,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.33.2`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.34.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.33.2`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.34.0`；发布不创建或附加产品包。

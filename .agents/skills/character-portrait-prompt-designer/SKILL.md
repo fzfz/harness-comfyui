@@ -1,9 +1,15 @@
 ---
 name: character-portrait-prompt-designer
-description: 根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/。提示词会同时设计同框人物并明确画面主次。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，或要求“根据某个目录中的人物 md 和证据设计人物形象”时使用。
+description: 根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。
 ---
 
 # Character Portrait Prompt Designer
+
+## 查询历史 Generation Run
+
+用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须先完整读取 `references/generation-cli.md`，再按该文件调用历史 Generation Run 查询命令。该查询不要求用户提供 `book_dir`、`character_name` 或人物资料。
+
+Skill 执行者必须按查询结果的 `runs[]` 顺序分别报告每个 `run_id`。一个 `run_id` 返回错误项时，Skill 执行者继续处理其余结果。用户只要求查询历史 Generation Run 时，Skill 执行者返回查询结果后结束本次执行；用户还要求设计立绘提示词时，Skill 执行者完成查询后继续执行本文件的设计流程。
 
 为指定书籍/角色卡项目中的一个人物生成两套东西：
 

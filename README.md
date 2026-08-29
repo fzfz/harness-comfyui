@@ -8,7 +8,7 @@ Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 集成项目。项�
 - pnpm `11.7.0`
 - 本机 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，其他安装路径通过 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` 配置
 - 两个已发布的 Catalog/Source CLI；默认路径见 [`config/source-production.json`](config/source-production.json)
-- 使用 `ComfyUI工作台预设` 的 CLI-compatible 流程时，Harness 用户需要自行在 `$HOME/.agents/skills/comfyui-generate/` 安装对应 Skill；本项目不复制或发布该全局 Skill
+- 主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的四个 Skill 是本项目 Skill 的唯一源码；生产部署把 `$HOME/.agents/skills/` 中对应名称配置为指向主开发 checkout 对应目录的绝对符号链接，绝不指向独立 linked worktree
 
 ## 启动
 
@@ -53,9 +53,21 @@ pnpm worktree:stop
 
 ### Agent Preset 与项目 CLI
 
-`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 都会校验并把用户可见名称为 `ComfyUI工作台预设` 的一个项目 Preset 物化到当前运行 DSH home。该 Preset 保留内部 ID `harness-comfyui-cli-candidate`，因此已有对该内部 ID 的默认选择和 Session 引用不需要迁移。该 Preset 不向模型提供 5 个 Host 项目 Tool schema；Agent 按需读取 Harness 用户安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 `comfyui-generate` Skill 及其 CLI 参考文档，再通过项目 managed CLI 查询目录、获取 ID 和提交生成任务。Host 仍注册全部 5 个项目 Tool，选择其他 Preset 的 Session 继续使用原有 Tool 路径。未安装该全局 Skill 时，项目 managed CLI 仍可通过 shell 直接调用；当当前 Workspace 也不提供同名 Workspace Skill 时，Skill roster 中不会出现 `comfyui-generate`。以本仓库为 Workspace 时，仓库内 `.agents/skills/comfyui-generate/` 可以提供同名 Workspace Skill。项目启动器不会修改 Harness 默认 Preset；启动器只清理本项目已经退役的 Preset 目录，并保留同一 DSH home 中的其他 Preset。
+`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 都会校验并把用户可见名称为 `ComfyUI工作台预设` 的一个项目 Preset 物化到当前运行 DSH home。该 Preset 保留内部 ID `harness-comfyui-cli-candidate`，因此已有对该内部 ID 的默认选择和 Session 引用不需要迁移。该 Preset 不向模型提供 6 个 Host 项目 Tool schema；Agent 按需读取全局 `comfyui-generate` Skill 及其 CLI 参考文档，再通过项目 managed CLI 查询目录、获取 ID、提交生成任务或查询历史 Run。Host 仍注册全部 6 个项目 Tool，选择其他 Preset 的 Session 继续使用原有 Tool 路径。项目启动器不会修改 Harness 默认 Preset；启动器只清理本项目已经退役的 Preset 目录，并保留同一 DSH home 中的其他 Preset。
+
+主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 下的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/` 和 `wai-sdxl-prompt-builder/` 是四个 Skill 的 canonical source。生产部署逐个核对主开发 checkout 目录与 `$HOME/.agents/skills/<skill-name>/` 的目录条目类型、相对路径、符号链接目标和普通文件 SHA-256 后，把四个全局路径配置为指向主开发 checkout canonical source 的绝对符号链接；全局路径不得指向任何独立 linked worktree。不同仓库必须使用不同 Skill 名称，不能让两个仓库占用同一个全局 Skill 路径。
 
 managed CLI 的 Generation Request 不包含 Workspace、Session、Turn 或 Tool Call ID。Host 从当前前台 shell ToolExecution 和 workspace registry 派生这些身份并写入 Run Repository。同一个 Generation Request 允许多次独立提交；每次独立提交使用不同的前台 shell Tool Call，并产生独立的 `call_id` 与 `run_id`。
+
+Host 额外注册 `read_comfyui_run_inputs`。该 Tool 接收 1 至 20 个 `run_id`，按输入顺序返回每个 Run 创建时传入 `generate_with_comfyui` 的 `title`、可选 `instance_id`、`template_id`、可选 `model`、完整 `parameters`、`loras` 和保存的 Actual Workflow。某个 `run_id` 无效、不存在或保存记录损坏时，Tool 只为该项返回错误并继续查询其他项。managed CLI 提供同一能力：
+
+```sh
+node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
+{"run_ids":["run_<first-id>","run_<second-id>"]}
+JSON
+```
+
+合法批量请求即使包含单项错误也返回退出码 0；调用者读取 `runs[].lookup_status` 分别处理每个结果。历史记录没有保存 `loras` 属性时，`arguments.loras: []` 只表示该次 `generate_with_comfyui` 调用没有保存显式结构化 LoRA 选择，不能据此判断 Actual Workflow 没有预置或活动 LoRA。历史记录没有保存 `model` 属性时不输出 `arguments.model`，表示该次调用没有保存显式模型覆盖，Run 使用 Actual Workflow 当时保存的模型。
 
 Generation 请求只要求导入 UI Workflow。Host 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名称、活动状态和上下游连线定位显式运行参数，不读取 Source 模板记录中的参数定义或 binding 元数据。Host 使用 `/object_info` 的实时枚举校验运行参数，并在唯一大小写匹配时写入实例返回的精确值；无法匹配时，`generate_with_comfyui` 把具体参数目标、收到值和允许值返回给调用方。Source 读取、Workflow 编译或 Official API Workflow 准备中的其他错误也会在 Tool 返回 `run_id` 前返回调用方；只有成功返回 `run_id` 后的远端提交、观察、执行和媒体下载错误继续异步写入 Run。成功解析的 `/object_info` 在 Host 进程内缓存 10 分钟，同一实例的并发请求共享一个在途请求。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 复制本地基础对象并覆盖本次已确认的运行输入。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
 
@@ -78,6 +90,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.33.2 发布说明](docs/releasenotes.md)
+- [v0.34.0 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.33.2`。对应发布记录在最终提交、`v0.33.2` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.34.0`。对应发布记录在最终提交、`v0.34.0` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

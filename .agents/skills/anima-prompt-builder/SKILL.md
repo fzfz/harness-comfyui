@@ -1,9 +1,15 @@
 ---
 name: anima-prompt-builder
-description: 根据 noobai_user_prompt、当前目录选择和参考资料，构建并校验十二槽 ANIMA3 提示词。
+description: 根据 noobai_user_prompt、当前目录选择和参考资料，构建并校验十二槽 ANIMA3 提示词；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。
 ---
 
 # ANIMA3 提示词构建器
+
+## 查询历史 Generation Run
+
+用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须先完整读取 `references/generation-cli.md`，再按该文件调用历史 Generation Run 查询命令。该查询不要求当前消息包含 `noobai_user_prompt`、Workflow、生成模型或 LoRA 选择。
+
+Skill 执行者必须按查询结果的 `runs[]` 顺序分别报告每个 `run_id`。一个 `run_id` 返回错误项时，Skill 执行者继续处理其余结果。用户只要求查询历史 Generation Run 时，Skill 执行者返回查询结果后结束本次执行；用户还要求构建 ANIMA3 Prompt 时，Skill 执行者完成查询后继续执行本文件的提示词流程。
 
 ## 加载固定参考资料
 
@@ -79,5 +85,4 @@ Skill 执行者把明确画师选择或 `query_semantic_styles` 采用的一个�
 Skill 执行者把当前用户意图映射到其余十个内容槽位，并用已读取的详细资料决定每个槽位的词语。Skill 执行者按照 `references/semantic-query-interfaces.md` 采用 `query_semantic_prompt_terms` 候选时，只把选中候选的 `canonical_tag` 放入该标签语义对应的内容槽位；`aliases` 只用于理解和比较候选。Skill 执行者只能把英文小写、无逗号的词语放入前十一槽位；`natural_language` 只能放入英文小写自然语言句子。
 
 Skill 执行者按照 `references/03-output-protocol.md` 的“校验器调用”定义调用 校验器脚本。
-
 

@@ -1,9 +1,15 @@
 ---
 name: wai-sdxl-prompt-builder
-description: 将用户的自然语言画面要求和 UI 已选角色、画师扩展为 WAI-illustrious-SDXL 英文 Prompt。用户要求生成、改写、补全或检查 WAI Prompt 时使用。
+description: 将用户的自然语言画面要求和 UI 已选角色、画师扩展为 WAI-illustrious-SDXL 英文 Prompt；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。用户要求生成、改写、补全或检查 WAI Prompt，或要求查询历史 run_id 时使用。
 ---
 
 # WAI-illustrious-SDXL Prompt Builder
+
+## 查询历史 Generation Run
+
+用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须先完整读取 `references/generation-cli.md`，再按该文件调用历史 Generation Run 查询命令。该查询不要求当前消息包含自然语言画面要求、UI 已选角色或 UI 已选画师。
+
+Skill 执行者必须按查询结果的 `runs[]` 顺序分别报告每个 `run_id`。一个 `run_id` 返回错误项时，Skill 执行者继续处理其余结果。用户只要求查询历史 Generation Run 时，Skill 执行者返回查询结果后结束本次执行；用户还要求构建 WAI Prompt 时，Skill 执行者完成查询后继续执行本文件的 Prompt 流程。
 
 开始执行后，先完整读取 [当前轮输入合同](references/input-contract.md)。按照该合同读取当前轮输入，完成一幅画面的设计，并通过本文件规定的格式校验器提交本轮结构化结果。
 

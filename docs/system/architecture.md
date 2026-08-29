@@ -41,14 +41,14 @@ pnpm worktree:start|restart
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset 和共享 Tool visibility component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | Agent 在受管前台 shell Tool Call 中执行的项目 CLI executable |
-| `src/cli/` | 项目 CLI 的环境变量名称、argv、request 和 Generation Request 合同 |
+| `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request 和历史 Run 输入查询合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
-| `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
+| `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
-| `src/generation/` | Host 与 Client 共用的 Generation Remote 和媒体 URL 合同 |
+| `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器与 Generation Run/Media 投影 |
-| `.agents/skills/comfyui-generate/` | 当前 Workspace 是本仓库时可被 Harness 发现的 Workspace Generation Tool Skill |
+| `.agents/skills/` | 四个项目 Skill 的 canonical source；每个 Skill 都包含独立的历史 Generation Run 查询入口和 CLI 参考文档 |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
@@ -66,7 +66,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## Generation 生命周期
 
-`ComfyUI工作台预设` 使用 Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Skill，并通过受管项目 CLI 使用 Generation Runtime。本项目不复制或发布该全局 Skill；该全局 Skill 与仓库 `.agents/skills/comfyui-generate/` 中的 Workspace Skill 是两个独立的安装来源。CLI 身份链路如下：
+四个项目 Skill 以主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 为 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>` 使用绝对符号链接指向主开发 checkout 中相同名称的目录，不得指向独立 linked worktree。`ComfyUI工作台预设` 使用全局 `comfyui-generate` Skill；四个 Skill 均可通过受管项目 CLI 独立查询历史 Generation Run。CLI 身份链路如下：
 
 ```text
 前台 bash/pwsh ToolExecution
@@ -74,8 +74,15 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
   → shell environment 提供 CLI executable、loopback URL 与短期 capability
   → scripts/cli/harness-comfyui.mjs 提交业务参数
   → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
-  → GenerationRuntime.acceptGeneration(identity, request)
+  → generation submit：GenerationRuntime.acceptGeneration(identity, request)
+  → generation run-inputs：GenerationRuntime.readGenerationRunInputs({ workspaceId, runIds })
 ```
+
+`read_comfyui_run_inputs` Tool 从 Tool Call、Session cwd 和 workspace registry 派生当前 Workspace；CLI 查询从短期 shell capability 派生当前 Workspace。两条入口都只把 `workspaceId` 和用户提供的 `run_id` 交给 `GenerationRuntime.readGenerationRunInputs()`，不接受调用者提供的 Workspace ID、Session ID、Turn 或 Tool Call ID。
+
+`GenerationRuntime.readGenerationRunInputs()` 要求一次查询包含 1 至 20 个字符串，并按照输入顺序逐项读取 Run Repository 的 `request_json` 和 Run 目录中的 Actual Workflow。当前 Workspace 之外的 Run 与不存在的 Run 都返回 `GENERATION_RUN_NOT_FOUND`。合法批量请求中的无效 ID、缺失 Run、损坏请求或未分类读取故障只产生对应结果项；后续 Run 继续查询。取消信号终止整个查询。
+
+可用结果项投影创建 Run 时传入 `generate_with_comfyui` 的 `title`、可选 `instance_id`、`template_id`、可选 `model`、完整 `parameters` 和 `loras`。历史请求缺少 `loras` 属性时投影空数组；该空数组只表示调用参数没有保存显式结构化 LoRA 选择，不能证明 Actual Workflow 没有预置或活动 LoRA。历史请求缺少 `model` 属性时不投影 `model`；该省略表示调用参数没有保存显式模型覆盖，Run 使用 Actual Workflow 当时保存的模型。Actual Workflow 可用时返回完整 JSON；准备失败、文件缺失或文件无效时仍返回生成参数，并通过 `workflow_status: "unavailable"` 和 `workflow_error` 说明 Workflow 错误。
 
 同一个 shell Tool Call 的相同 Generation Request 重放同一个 Run；同一个 shell Tool Call 的不同 Generation Request 返回 `RUN_REQUEST_CONFLICT`。创建多个独立 Run 时，每次 submit 使用不同的前台 shell Tool Call，因此 Host 为每次调用保存不同的 `call_id`。
 

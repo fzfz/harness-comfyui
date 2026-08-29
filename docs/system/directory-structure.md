@@ -4,13 +4,16 @@
 | --- | --- |
 | `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
 | `src/host/cli/` | managed CLI 的 shell capability 与 loopback Host route |
-| `src/cli/` | managed project CLI 的 argv、request 和 Generation Request 结构化合同 |
-| `src/host/generation/` | Generation Runtime、Source、Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
+| `src/cli/` | managed project CLI 的 argv、request、Generation Request 和历史 Run 输入查询结构化合同 |
+| `src/host/generation/` | Generation Runtime、Source、Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 输入查询 Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
-| `src/generation/` | Generation Host/Client 共享合同 |
+| `src/generation/` | Generation Host/Client、Tool 与 CLI 共享合同 |
 | `src/client/` | Harness 原生扩展位、上下文选择器和真实 Run/Media 结果列 |
 | `src/config/` | Configuration Profile 加载器 |
-| `.agents/skills/comfyui-generate/` | 当前 Workspace 是本仓库时可被 Harness 发现的 Workspace Generation Tool Skill |
+| `.agents/skills/anima-prompt-builder/` | ANIMA3 Prompt 与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/comfyui-generate/` | ComfyUI 生成、兼容性检查与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt 与历史 Generation Run 查询 Skill canonical source |
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset canonical source；目录名是兼容性内部 ID |
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset 的 Session standing Tool visibility component |
 | `config/product-agent.json` | 产品 Preset 内部 ID、canonical source、shared file、退役项目 Preset ID 和当前运行 DSH home 安装根目录 |
