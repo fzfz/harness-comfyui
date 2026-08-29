@@ -73,6 +73,8 @@ v0.34.0 发布前完整 `pnpm quality` 结果为 470 项 unit/integration、24 �
 
 v0.34.1 发布前完整 `pnpm quality` 结果为 471 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 92.92%、branches 86.04%、functions 100%、lines 95.31%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
+v0.35.0 发布前完整 `pnpm quality` 结果为 507 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 92.9%、branches 86.08%、functions 100%、lines 95.56%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+
 ## CI
 
 `.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 都执行：

@@ -10,13 +10,13 @@
 
 **Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.1-rc.2` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
-**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui` 和 `read_comfyui_run_inputs` 六个项目 Tool。
+**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 
-**Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/` 和 `wai-sdxl-prompt-builder/` 提供的四个仓库 Harness Skill。每个 Skill 都能独立响应历史 Generation Run 查询请求，并使用自己目录中的 `references/generation-cli.md`。
+**Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/` 和 `wai-sdxl-prompt-builder/` 提供的五个仓库 Harness Skill。四个 Prompt/生成 Skill 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型。
 
 **Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。部署前逐个比较原全局目录与主开发 checkout 目录的目录条目类型、相对路径、符号链接目标和普通文件 SHA-256。
 
-**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 6 个 Host 项目 Tool schema。启动器不把该 Preset 设为默认值。
+**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema。启动器不把该 Preset 设为默认值。
 
 ## 运行
 
@@ -46,6 +46,12 @@
 
 **Generation Run Input Query**：`read_comfyui_run_inputs` Tool 和 managed CLI 的 `generation run-inputs --stdin` 命令提供的只读查询。一次查询接收 1 至 20 个完整 Run ID 或最少包含八个 UUID 字符的短 Run ID。Runtime 在当前 Workspace 中把短 ID 解析为唯一匹配的完整 Run ID，并按输入顺序独立返回创建 Run 时保存的 Generation Tool 参数和 Actual Workflow；单项无匹配或歧义不终止其他 Run 的查询。
 
+**Generation Run Media Query**：`get_generation_run_media` Tool 和 managed CLI 的 `image run-media --stdin` 命令提供的只读查询。一次查询接收一至二十个完整 Run ID 或当前 Workspace 中的唯一规范前缀，保留输入顺序和重复值，并为每个成功 Run 返回原始 `parameters` 与确定排序的本地图片路径。单个 Run 的查询错误不终止其他 Run 的查询。
+
+**Image Reader Configuration**：Harness Settings namespace `harness-comfyui-image-reader` 中原子保存的 Provider、视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Client 的“图片读取”设置页从当前 Harness LLM 运行时动态列出支持图片输入的 Provider 与模型，不从当前 Session 模型或 ComfyUI 生图模型推导视觉模型。
+
+**Image Inspection**：`inspect_image` Tool 和 managed CLI 的 `image inspect --stdin` 命令提供的单图视觉读取。Host 把一个受支持的本地图片文件保存为 Harness Attachment，并使用 Image Reader Configuration 中的视觉模型与采样参数返回观察文本。该能力不读取 Generation Request 参数，也不比较或改写 Prompt。
+
 **Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow，Session 和 Chat Turn 只用于筛选。
 
 **Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，顶部显示当前媒体所属 Generation Run 的完整 `run_id` 和媒体文件固有像素尺寸，底部显示该 Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。用户点击顶部 `run_id` 后，查看页把完整值写入浏览器剪贴板。
@@ -62,6 +68,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.34.1`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.35.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.34.1`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.35.0`；发布不创建或附加产品包。
