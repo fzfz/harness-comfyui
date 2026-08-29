@@ -10,9 +10,11 @@
 
 **Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.1-rc.2` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
-**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `generate_with_comfyui`。
+**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances` 和 `generate_with_comfyui` 五个项目 Tool。
 
-**ComfyUI Generate Skill**：`.agents/skills/comfyui-generate/SKILL.md` 提供的 Harness Skill。rc.2 文件系统 Skill provider 从当前 Workspace Git 根目录发现该 Skill，Harness 原生 `/` 菜单负责显示和调用。
+**Repository ComfyUI Generate Skill**：`.agents/skills/comfyui-generate/SKILL.md` 提供的仓库 Harness Skill。rc.2 文件系统 Skill provider 从当前 Workspace Git 根目录发现该 Skill，Harness 原生 `/` 菜单负责显示和调用。
+
+**Global ComfyUI Generate Skill**：Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Harness Skill。A/B Agent Preset 的实测使用该 Skill、该 Skill 目录中的 CLI 参考文档和项目 managed CLI；v0.33.0 不复制或发布该 Skill。
 
 ## 运行
 
@@ -44,7 +46,7 @@
 
 **Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，显示当前媒体所属 Generation Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。
 
-**运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据目标实例的 `/object_info`、模板 binding、请求参数、模型和 LoRA 选择生成的输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
+**运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据当前 UI Workflow、目标实例的 `/object_info`、请求参数、模型、LoRA、节点输入名称、节点活动状态和上下游连线生成输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
 
 **Official Base API Workflow**：目标 ComfyUI 实例的官方前端加载 Actual Workflow 后，通过 `graphToPrompt()` 返回的 API Workflow。该对象是最终节点拓扑、连接 tuple、虚拟节点和自定义 widget 序列化结构的权威来源。
 
@@ -56,6 +58,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.32.0`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.33.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.32.0`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.33.0`；发布不创建或附加产品包。

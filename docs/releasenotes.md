@@ -1,31 +1,25 @@
-# Harness ComfyUI v0.32.0
+# Harness ComfyUI v0.33.0
 
-v0.32.0 为结果列中的 Generation Media 新增方案 A 的本会话媒体查看页。用户在结果列点击图片或视频后，新标签页显示该媒体、同一个 Session 中的时间顺序导航以及该媒体生成时保存的正面提示词。
+v0.33.0 新增两个可选的 ComfyUI Agent Preset 和受管项目 CLI。A 组保留 5 个 Host 项目 Tool schema；B 组只向模型暴露 shell 与 Skill Tool，并由全局 Skill 按需读取 CLI 参考文档。版本不改变 Harness 默认 Preset，也不删除现有 Host Tool。
 
-## 本会话媒体导航
+## 可选 Agent Preset
 
-- Client 结果列把图片和视频链接到同源 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>` 查看页；缩略图继续读取原有 `/content` 路由，Actual Workflow 下载继续使用原有 `/workflow` 路由。
-- 查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的全部媒体。左侧按钮和不带修饰键的 `ArrowLeft` 切换到较新媒体，右侧按钮和不带修饰键的 `ArrowRight` 切换到较早媒体。
-- 当前媒体位于 Session 最新或最早边界时，页面禁用对应按钮并显示完整边界文案。导航不会从首项循环到末项，也不会从末项循环到首项。
-- 页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL。用户刷新当前 URL 时，Host 继续把 URL 中的媒体作为当前项。
-- 图片和视频保持原始宽高比完整显示，不裁切内容。视频使用浏览器原生播放控件，媒体文件不存在时页面说明用户需要返回会话并刷新本会话媒体列表。
+- `harness-comfyui-schema-control` 是 A 组。模型请求包含 shell、Skill 和 5 个 Host 项目 Tool schema。
+- `harness-comfyui-cli-candidate` 是 B 组。模型请求只包含 shell 与 Skill Tool；Catalog resolve 和 Generation submit 由全局 `comfyui-generate` Skill 通过 managed CLI 完成。
+- A/B 实测的 CLI-compatible 全局 `comfyui-generate` Skill 由 Harness 用户安装在 `$HOME/.agents/skills/comfyui-generate/`，并从该目录提供 CLI 用途、参数和 ID 获取方式的参考文档。v0.33.0 不复制或发布该全局 Skill。未安装该全局 Skill 时，两个 Preset 仍会物化，项目 managed CLI 仍可通过 shell 直接调用；当当前 Workspace 也不提供同名 Workspace Skill 时，Skill roster 中不会出现 `comfyui-generate`。以本仓库为 Workspace 时，仓库内 `.agents/skills/comfyui-generate/` 可能提供同名 Skill，但该仓库 Skill 不是本次 A/B 实测的全局 CLI-compatible Skill。
+- `prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 在 Host 启动前校验两个 Preset、共享 Tool visibility component 和全部 DSH composition，再原子物化受管文件。物化过程保留同一 DSH home 中的其他 Preset；失败时不写入受管运行状态，也不启动 Host。
+- 两个项目 Preset 出现在新 Session 的可选 roster 中，发布过程不把任一项目 Preset 设为默认值。已有 Session、原生 Host Tool 路径和数据库记录继续保持原行为。
 
-## 正面提示词
+## Managed CLI 与运行身份
 
-- Host 从每项媒体所属 Generation Run 的持久生成请求读取 `parameters.positive_prompt`。查看页逐字符显示该字符串，不修改、翻译、重新排序或截断内容。
-- Generation Run 没有保存非空正面提示词时，查看页显示“未保存”和“这项媒体的生成记录没有保存正面提示词。”。
-- 查看页的启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
+- Host 为前台 shell ToolExecution 签发短期 capability，并通过当前 ToolExecution 取得 Session、Turn、Tool Call ID 和工作目录。Host 使用工作目录解析 Workspace，再把完整运行归属写入 SQLite。
+- Generation Request 只包含标题、ComfyUI 实例 ID、Workflow 模板 ID、可选生成模型、运行参数和 LoRA；模型不填写 Workspace、Session、Turn 或 Tool Call ID。
+- 同一个前台 shell Tool Call 重放相同 Generation Request 时返回原 `run_id`；该 Tool Call 改交不同请求时返回 `RUN_REQUEST_CONFLICT`。同一个 Generation Request 可以通过多个独立前台 shell Tool Call 多次提交，每次提交创建不同的 `call_id` 和 `run_id`。
+- managed CLI 提供模板、生成模型、LoRA 和 ComfyUI 实例目录查询，以及异步 Generation submit。CLI 返回 `run_id` 只表示 Host 已接受异步运行；最终状态仍来自 Generation Run 状态证据。
 
-## 归属与页面安全
+## 真实模型与质量验证
 
-- Host 在返回查看页前验证 GET 方法、目标 Session、当前 workspace 和媒体归属。错误 Session、跨 workspace 媒体和缺失媒体不会返回查看页。
-- 查看页响应禁止缓存和 MIME 嗅探，使用 `Referrer-Policy: no-referrer` 以及只允许同源媒体、内联页面样式和内联页面脚本的固定 Content Security Policy。
-- 左右方向按钮的无障碍名称包含动作、时间方向、目标序号、目标文件名和完整生成时间。页面切换媒体后通过 `aria-live` 播报目标序号、文件名和生成时间。
-
-## 验证
-
-- 完整 `pnpm quality` 已通过：429 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
-- 独立 worktree Host 的 `worktree:status` 和 `worktree:health` 通过，验证结束后的 `worktree:stop` 和停止状态检查通过。
-- 1280 × 720 与 390 × 844 浏览器验收覆盖图片、原生控件视频、首项、末项、正面提示词缺失、超长正面提示词内部滚动、媒体文件不存在、点击导航、裸方向键和无水平溢出；用户按带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键时，页面不切换媒体。
-- 独立语义审核确认生产文案、边界指代、无障碍名称、缺失提示词和媒体文件不存在状态没有 blocker、medium 或 minor 级别问题。
-- 本版本没有新增 npm 依赖，也没有修改 `pnpm-lock.yaml`。本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。
+- 使用 `opencode-go/deepseek-v4-flash` 完成 3 对相同兼容性任务。A 与 B 均为 3/3 正确；B 的平均总输入 token 比 A 少 20.6%，平均耗时少 27.8%。A 的 serialized Tool JSON 为 7,458 bytes，B 为 3,401 bytes，减少 54.4%。这些小样本结果只作为当前任务集的行为与成本证据，不代表统计显著性。
+- B 的真实生成 Session 使用两个独立 Bash Tool Call 提交逐字段完全相同的 Generation Request。SQLite 保存 2 个 Run、1 个 distinct `request_json`、2 个 distinct `call_id` 和 2 个 distinct `run_id`；两个远端 ComfyUI Run 均成功并各保存一张 512×512 PNG。
+- 完整 `pnpm quality` 已通过：445 项 unit/integration、24 项 contract/security、59 项 production 和 32 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有新增 npm 依赖，没有修改 `pnpm-lock.yaml`，没有数据库迁移，也没有切换默认 Preset。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。

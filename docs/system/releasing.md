@@ -23,11 +23,11 @@ GitHub Release 只发布 Git tag 与 Release 记录，不构建或附加产品�
 本次发布命令：
 
 ```sh
-git tag --annotate v0.32.0 <最终提交完整SHA> --message "Harness ComfyUI v0.32.0"
-git push origin refs/tags/v0.32.0
-gh release create v0.32.0 \
+git tag --annotate v0.33.0 <最终提交完整SHA> --message "Harness ComfyUI v0.33.0"
+git push origin refs/tags/v0.33.0
+gh release create v0.33.0 \
   --verify-tag \
-  --title "Harness ComfyUI v0.32.0" \
+  --title "Harness ComfyUI v0.33.0" \
   --notes-file docs/releasenotes.md
 ```
 

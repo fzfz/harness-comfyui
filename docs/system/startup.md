@@ -20,7 +20,7 @@ pnpm worktree:start
 
 该命令验证当前 checkout 的 `.git` 是 linked-worktree 元数据文件，然后读取 `config/worktree-development.json`。命令使用 `.local/worktree-development/dsh-home` 与 `comfyui-workbench-development` Profile；Profile 物化器只在该 DSH home 创建 `.env` 符号链接。开发 Profile 把默认模型设为 `opencode-go/deepseek-v4-flash`，通过 `OPENCODE_GO_API_KEY` 引用解析凭据，并在 Host 暴露 Tool 和路由前注册配置的 startup workspace。
 
-`worktree:start` 和 `worktree:restart` 在共享源码运行时准备完成后读取 `config/product-agent.json`，把 `agent-presets/project-tool-visibility.mjs`、`agent-presets/harness-comfyui-schema-control/` 和 `agent-presets/harness-comfyui-cli-candidate/` 物化到开发 DSH home 的 `.agent-presets/`。物化失败会中止 Host 启动；单个受管目标替换失败时恢复该目标。生产命令不执行该步骤。
+共享源码运行时准备过程读取 `config/product-agent.json`，把 `agent-presets/project-tool-visibility.mjs`、`agent-presets/harness-comfyui-schema-control/` 和 `agent-presets/harness-comfyui-cli-candidate/` 物化到当前 DSH home 的 `.agent-presets/`。因此 production 与独立 worktree 使用相同的 Preset source 和校验规则，但写入各自隔离的 DSH home。物化失败会中止 Host 启动；单个受管目标替换失败时恢复该目标。
 
 保持启动终端运行，并在第二个终端执行：
 
@@ -43,7 +43,7 @@ pnpm prod:start
 
 `prod:*` 是生产进程入口。该入口继续使用 `.local/production/dsh-home` 与 `comfyui-workbench` Profile，不读取 `config/worktree-development.json`，不链接主开发 `.env`，也不注册开发 startup workspace。
 
-`prod:start` 先根据当前 `src/client/` 更新 `.local/source-client/client.js`，再以前台方式运行 Host。保持该终端运行，并在另一个终端执行：
+`prod:start` 先根据当前 `src/client/` 更新 `.local/source-client/client.js`，校验并物化两个可选项目 Preset，再以前台方式运行 Host。该步骤不改变默认 Preset。保持该终端运行，并在另一个终端执行：
 
 ```sh
 pnpm prod:status

@@ -14,7 +14,7 @@
 | `agent-presets/harness-comfyui-schema-control/` | 保留 5 个 Host 项目 Tool schema 的 A Preset canonical source |
 | `agent-presets/harness-comfyui-cli-candidate/` | 不暴露 Host 项目 Tool schema 的 B Preset canonical source |
 | `agent-presets/project-tool-visibility.mjs` | A/B Session standing Tool visibility component |
-| `config/product-agent.json` | 具名的 A/B Preset ID、canonical source、shared file 和开发 DSH home 安装根目录 |
+| `config/product-agent.json` | 具名的 A/B Preset ID、canonical source、shared file 和当前运行 DSH home 安装根目录 |
 | `config/` | 生产配置、开发配置、schema、质量阈值和数据源合同 |
 | `scripts/production/` | Client 模块生成和六个生产生命周期操作的实现 |
 | `scripts/worktree/` | 独立 linked worktree 开发配置与六个生命周期命令的适配入口 |
