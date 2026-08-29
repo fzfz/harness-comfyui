@@ -24,7 +24,7 @@
 | `scripts/production/` | Client 模块生成和六个生产生命周期操作的实现 |
 | `scripts/worktree/` | 独立 linked worktree 开发配置与六个生命周期命令的适配入口 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
-| `scripts/cli/` | Agent 通过 managed shell environment 调用的项目 CLI executable |
+| `scripts/cli/` | Agent 在 managed shell environment 中通过 Node 解释器调用的项目 CLI 脚本 |
 | `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |
 | `scripts/testing/` | 自动化测试使用的辅助模块 |
 | `profiles/` | DSH profile composition 模板 |

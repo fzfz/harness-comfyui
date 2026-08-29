@@ -40,7 +40,7 @@ pnpm worktree:start|restart
 | `scripts/worktree/` | linked-worktree 门禁、开发定义解析和共享生命周期命令适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset 和共享 Tool visibility component，并删除配置声明的已退役项目 Preset |
-| `scripts/cli/` | Agent 在受管前台 shell Tool Call 中执行的项目 CLI executable |
+| `scripts/cli/` | Agent 在受管前台 shell Tool Call 中通过 Node 解释器执行的项目 CLI 脚本 |
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request 和历史 Run 输入查询合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
@@ -73,7 +73,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 ```text
 前台 bash/pwsh ToolExecution
   → CliShellCapabilityStore 取得 Session、Turn、Call ID 与 cwd
-  → shell environment 提供 CLI executable、loopback URL 与短期 capability
+  → shell environment 提供 CLI 脚本路径、loopback URL 与短期 capability
   → scripts/cli/harness-comfyui.mjs 提交业务参数
   → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
   → generation submit：GenerationRuntime.acceptGeneration(identity, request)

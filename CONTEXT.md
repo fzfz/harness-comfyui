@@ -68,6 +68,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.35.0`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.35.1`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.35.0`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.35.1`；发布不创建或附加产品包。
