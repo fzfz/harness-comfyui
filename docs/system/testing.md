@@ -39,7 +39,7 @@ pnpm prod:test
 
 Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、实例 ID 安全投影、Run 幂等、状态转换、重启恢复、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。Catalog 自动化测试覆盖 Source v0.84.0 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
 
-历史 Generation Run 输入查询测试覆盖 Tool 与 CLI 的单项和批量入口、输入顺序、重复 `run_id`、单项无效 ID、当前 Workspace 之外的 Run、缺失 Run、损坏的 `request_json`、历史请求缺少 `loras` 或 `model`、准备失败、Actual Workflow 文件缺失或无效、未分类文件系统错误脱敏、1 项与 20 项边界、21 项拒绝和取消传播。CLI 集成测试必须确认合法批量请求包含单项错误时仍返回退出码 0。
+历史 Generation Run 输入查询测试覆盖 Tool 与 CLI 的单项和批量入口、输入顺序、重复 `run_id`、完整 ID、最少八个 UUID 字符的短 ID、短 ID canonical 完整值返回、当前 Workspace 唯一匹配、其他 Workspace 同前缀隔离、短 ID 无匹配与多匹配逐项错误、单项无效 ID、损坏的 `request_json`、历史请求缺少 `loras` 或 `model`、准备失败、Actual Workflow 文件缺失或无效、未分类文件系统错误脱敏、1 项与 20 项边界、21 项拒绝和取消传播。CLI 集成测试必须确认合法批量请求包含单项错误时仍返回退出码 0。
 
 Session Media Viewer 自动化测试覆盖媒体查看 URL 编码、Session 与 workspace 归属拒绝、媒体缺失、非 GET 请求、安全响应头、包含 `runId` 的最小启动数据、Run ID 点击复制、Clipboard API 成功、API 缺失、权限拒绝、图片固有尺寸、视频固有尺寸、零尺寸、媒体切换后的 Run ID 与尺寸更新、旧媒体迟到尺寸事件隔离、原始正面提示词、超长正面提示词逐字符完整投影、正面提示词缺失、图片与原生控件视频、左右按钮、裸左右方向键、带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键不切换媒体、首尾不循环、按 `created_at DESC, output_index DESC, media_id DESC` 排序媒体、同一个 Run 的正面提示词只读取一次并投影到该 Run 的每项媒体、URL 更新、刷新定位、旧媒体迟到加载错误隔离、当前媒体加载错误、`aria-live` 播报、响应式媒体查询和布局样式合同以及 Client 新标签页入口。Session Media Viewer 静态原型测试覆盖该查看器原型目录中定义的结构方案 A、结构方案 B、结构方案 C、边界文案、提示词状态和本地资源约束；这些结构方案名称不指代 Agent Preset A/B。
 
@@ -68,6 +68,8 @@ v0.33.1 最终完整 `pnpm quality` 结果为 447 项 unit/integration、24 项 
 v0.33.2 最终完整 `pnpm quality` 结果为 447 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。production 测试确认启动器只物化用户可见名称为 `ComfyUI工作台预设` 的产品 Preset，保留内部 ID `harness-comfyui-cli-candidate`，删除精确声明的已退役项目 Preset，保留其他用户 Preset，并且不会沿退役 Preset 符号链接修改外部目标。Tool visibility 回归测试使用 `tests/fixtures/agent-presets/` 中的非产品 composition 验证 5 个 Host 项目 Tool schema 的隐藏行为。
 
 v0.34.0 发布前完整 `pnpm quality` 结果为 470 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 92.87%、branches 85.93%、functions 100%、lines 95.28%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+
+v0.34.1 发布前完整 `pnpm quality` 结果为 471 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 92.92%、branches 86.04%、functions 100%、lines 95.31%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
 ## CI
 
