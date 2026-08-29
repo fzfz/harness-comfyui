@@ -63,6 +63,8 @@ v0.33.0 最终完整 `pnpm quality` 结果为 445 项 unit/integration、24 项 
 
 v0.33.1 最终完整 `pnpm quality` 结果为 447 项 unit/integration、24 项 contract/security、59 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。1280 × 720 浏览器验收覆盖完整 Run ID、Clipboard API 成功反馈、图片固有尺寸、视频固有尺寸和媒体切换后的顶部信息更新。390 × 844 浏览器验收确认完整 Run ID 在按钮内换行显示，顶部高度为 `98.5px`，页面 `scrollWidth` 等于 `clientWidth` 的 `390px`，页面 `scrollHeight` 等于 `clientHeight` 的 `844px`，浏览器错误和警告日志为 0。
 
+v0.33.2 最终完整 `pnpm quality` 结果为 447 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。production 测试确认启动器只物化用户可见名称为 `ComfyUI工作台预设` 的产品 Preset，保留内部 ID `harness-comfyui-cli-candidate`，删除精确声明的已退役项目 Preset，保留其他用户 Preset，并且不会沿退役 Preset 符号链接修改外部目标。Tool visibility 回归测试使用 `tests/fixtures/agent-presets/` 中的非产品 composition 验证 5 个 Host 项目 Tool schema 的隐藏行为。
+
 ## CI
 
 `.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 都执行：

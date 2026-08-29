@@ -8,7 +8,7 @@ Harness ComfyUI 是运行在 DeepSeek Harness 中的 ComfyUI 集成项目。项�
 - pnpm `11.7.0`
 - 本机 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，其他安装路径通过 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` 配置
 - 两个已发布的 Catalog/Source CLI；默认路径见 [`config/source-production.json`](config/source-production.json)
-- 复现 A/B 实测的 CLI-compatible 全局 `comfyui-generate` 流程时，Harness 用户需要自行在 `$HOME/.agents/skills/comfyui-generate/` 安装对应 Skill；v0.33.0 不复制或发布该全局 Skill
+- 使用 `ComfyUI工作台预设` 的 CLI-compatible 流程时，Harness 用户需要自行在 `$HOME/.agents/skills/comfyui-generate/` 安装对应 Skill；本项目不复制或发布该全局 Skill
 
 ## 启动
 
@@ -53,7 +53,7 @@ pnpm worktree:stop
 
 ### Agent Preset 与项目 CLI
 
-`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 都会校验并把两个项目 Preset 物化到当前运行 DSH home。`harness-comfyui-schema-control` 是保留 5 个 Host 项目 Tool schema 的 A 组；`harness-comfyui-cli-candidate` 是只向模型暴露 shell 与 Skill Tool 的 B 组。两个 Preset 均可调用 Harness 用户安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 `comfyui-generate` Skill、该 Skill 自己的 CLI 参考文档和项目 managed CLI。v0.33.0 只物化两个 Preset 与共享 Tool visibility component，不复制或发布该全局 Skill。未安装该全局 Skill 的 Harness 用户仍可通过 shell 直接调用项目 managed CLI；当当前 Workspace 也不提供同名 Workspace Skill 时，Skill roster 中不会出现 `comfyui-generate`。以本仓库为 Workspace 时，仓库内 `.agents/skills/comfyui-generate/` 可能提供同名 Skill，但该仓库 Skill 不是本次 A/B 实测的全局 CLI-compatible Skill。项目不会修改 Harness 的默认 Preset，也不会删除现有 Host Tool；两个项目 Preset 会出现在新 Session 的可选 roster 中。
+`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 都会校验并把用户可见名称为 `ComfyUI工作台预设` 的一个项目 Preset 物化到当前运行 DSH home。该 Preset 保留内部 ID `harness-comfyui-cli-candidate`，因此已有对该内部 ID 的默认选择和 Session 引用不需要迁移。该 Preset 不向模型提供 5 个 Host 项目 Tool schema；Agent 按需读取 Harness 用户安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 `comfyui-generate` Skill 及其 CLI 参考文档，再通过项目 managed CLI 查询目录、获取 ID 和提交生成任务。Host 仍注册全部 5 个项目 Tool，选择其他 Preset 的 Session 继续使用原有 Tool 路径。未安装该全局 Skill 时，项目 managed CLI 仍可通过 shell 直接调用；当当前 Workspace 也不提供同名 Workspace Skill 时，Skill roster 中不会出现 `comfyui-generate`。以本仓库为 Workspace 时，仓库内 `.agents/skills/comfyui-generate/` 可以提供同名 Workspace Skill。项目启动器不会修改 Harness 默认 Preset；启动器只清理本项目已经退役的 Preset 目录，并保留同一 DSH home 中的其他 Preset。
 
 managed CLI 的 Generation Request 不包含 Workspace、Session、Turn 或 Tool Call ID。Host 从当前前台 shell ToolExecution 和 workspace registry 派生这些身份并写入 Run Repository。同一个 Generation Request 允许多次独立提交；每次独立提交使用不同的前台 shell Tool Call，并产生独立的 `call_id` 与 `run_id`。
 
@@ -78,6 +78,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.33.1 发布说明](docs/releasenotes.md)
+- [v0.33.2 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.33.1`。对应发布记录在最终提交、`v0.33.1` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.33.2`。对应发布记录在最终提交、`v0.33.2` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

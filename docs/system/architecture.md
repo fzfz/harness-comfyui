@@ -8,7 +8,7 @@ pnpm prod:start|restart
   → 配置加载与运行合同校验
   → 当前 Client 源码转换为 .local/source-client/client.js
   → 源码 profile 和 DSH home 准备
-  → A/B Agent Preset 与共享 Tool visibility component 校验和物化
+  → ComfyUI 工作台 Agent Preset 与共享 Tool visibility component 校验和物化
   → DeepSeek Harness Host
       → src/host/plugin.ts
       → .local/source-client/client.js
@@ -39,7 +39,7 @@ pnpm worktree:start|restart
 | `scripts/production/` | Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志 |
 | `scripts/worktree/` | linked-worktree 门禁、开发定义解析和共享生命周期命令适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
-| `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree A/B Preset 和共享 Tool visibility component |
+| `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset 和共享 Tool visibility component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | Agent 在受管前台 shell Tool Call 中执行的项目 CLI executable |
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request 和 Generation Request 合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
@@ -48,7 +48,7 @@ pnpm worktree:start|restart
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host 与 Client 共用的 Generation Remote 和媒体 URL 合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器与 Generation Run/Media 投影 |
-| `.agents/skills/comfyui-generate/` | 仓库内原生 Generation Tool Skill；本次 A/B 实验不读取该目录 |
+| `.agents/skills/comfyui-generate/` | 当前 Workspace 是本仓库时可被 Harness 发现的 Workspace Generation Tool Skill |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
@@ -58,7 +58,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 先更新浏览器 Client 模块，再校验并物化相同的两个项目 Preset，最后以前台子进程运行 DSH。production 与 worktree 写入各自隔离的 DSH home；两个 Preset 都不会改变 Harness 默认 Preset。进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有。stop 只停止匹配该入口 runtime ID 和进程身份的进程。health 检查源码版本、Harness Web、Client ModuleLoader 注册、Run Repository、Official API Workflow Cache 和 Saved Media。
+`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 先更新浏览器 Client 模块，再校验并物化同一个 `ComfyUI工作台预设`，最后以前台子进程运行 DSH。production 与 worktree 写入各自隔离的 DSH home；启动器不会改变 Harness 默认 Preset。进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有。stop 只停止匹配该入口 runtime ID 和进程身份的进程。health 检查源码版本、Harness Web、Client ModuleLoader 注册、Run Repository、Official API Workflow Cache 和 Saved Media。
 
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 
@@ -66,7 +66,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## Generation 生命周期
 
-A/B 实验使用 Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Skill，并通过受管项目 CLI 使用同一个 Generation Runtime。v0.33.0 不复制或发布该全局 Skill；该 Skill 也不属于仓库 `.agents/skills/comfyui-generate/`。CLI 身份链路如下：
+`ComfyUI工作台预设` 使用 Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Skill，并通过受管项目 CLI 使用 Generation Runtime。本项目不复制或发布该全局 Skill；该全局 Skill 与仓库 `.agents/skills/comfyui-generate/` 中的 Workspace Skill 是两个独立的安装来源。CLI 身份链路如下：
 
 ```text
 前台 bash/pwsh ToolExecution

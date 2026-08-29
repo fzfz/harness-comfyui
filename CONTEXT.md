@@ -14,7 +14,9 @@
 
 **Repository ComfyUI Generate Skill**：`.agents/skills/comfyui-generate/SKILL.md` 提供的仓库 Harness Skill。rc.2 文件系统 Skill provider 从当前 Workspace Git 根目录发现该 Skill，Harness 原生 `/` 菜单负责显示和调用。
 
-**Global ComfyUI Generate Skill**：Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Harness Skill。A/B Agent Preset 的实测使用该 Skill、该 Skill 目录中的 CLI 参考文档和项目 managed CLI；v0.33.0 不复制或发布该 Skill。
+**Global ComfyUI Generate Skill**：Harness 用户自行安装在 `$HOME/.agents/skills/comfyui-generate/` 的全局 Harness Skill。`ComfyUI工作台预设` 使用该 Skill、该 Skill 目录中的 CLI 参考文档和项目 managed CLI；本项目不复制或发布该 Skill。
+
+**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 5 个 Host 项目 Tool schema。启动器不把该 Preset 设为默认值。
 
 ## 运行
 
@@ -58,6 +60,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.33.1`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.33.2`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.33.1`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.33.2`；发布不创建或附加产品包。
