@@ -34,20 +34,26 @@ function stubTestProfileEnvironment(): void {
 function provideHostServices(ctx: Context) {
   const registerTool = vi.fn((_definition: { readonly name: string }) => vi.fn())
   const registerRoute = vi.fn(() => vi.fn())
+  const disposeShellEnvironment = vi.fn()
+  const registerShellEnvironment = vi.fn((_contributor: {
+    readonly name: string
+    resolve(execution: never): Readonly<Record<string, string>>
+  }) => disposeShellEnvironment)
   const createWorkspace = vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] }))
   ctx.provide('tools', { register: registerTool })
   ctx.provide('webServer', { register: registerRoute })
+  ctx.provide('shellEnv' as never, { register: registerShellEnvironment } as never)
   ctx.provide('workspaceRegistry', {
     create: createWorkspace,
     resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
   })
-  return { createWorkspace, registerRoute, registerTool }
+  return { createWorkspace, disposeShellEnvironment, registerRoute, registerShellEnvironment, registerTool }
 }
 
 describe('Harness ComfyUI Host plugin', () => {
   it('exports the Loader plugin shape and Standard Schema configuration', () => {
     expect(harnessComfyui.name).toBe('harness-comfyui')
-    expect(harnessComfyui.inject).toEqual(['tools', 'webServer', 'workspaceRegistry'])
+    expect(harnessComfyui.inject).toEqual(['tools', 'webServer', 'workspaceRegistry', 'shellEnv'])
     expect(typeof harnessComfyui.apply).toBe('function')
     expect(typeof harnessComfyui.Config?.['~standard'].validate).toBe('function')
   })
@@ -55,7 +61,13 @@ describe('Harness ComfyUI Host plugin', () => {
   it('loads a valid Configuration Profile from source', async () => {
     stubTestProfileEnvironment()
     const ctx = new Context()
-    const { createWorkspace, registerRoute, registerTool } = provideHostServices(ctx)
+    const {
+      createWorkspace,
+      disposeShellEnvironment,
+      registerRoute,
+      registerShellEnvironment,
+      registerTool,
+    } = provideHostServices(ctx)
     const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'production' })
 
     expect(createWorkspace).not.toHaveBeenCalled()
@@ -70,7 +82,35 @@ describe('Harness ComfyUI Host plugin', () => {
       kind: 'prefix',
       path: '/api/harness-comfyui/media',
     }))
+    expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'prefix',
+      path: '/api/harness-comfyui/cli/v1',
+    }))
+    expect(registerShellEnvironment).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'harness-comfyui-cli',
+    }))
+    const contributor = registerShellEnvironment.mock.calls[0]![0]
+    const execution = {
+      token: Symbol('host-plugin-shell'),
+      callId: 'call_shell_1',
+      name: 'bash',
+      arguments: { command: 'node "$DSH_HARNESS_COMFYUI_CLI" catalog instance list' },
+      signal: new AbortController().signal,
+      agent: {
+        session: {
+          id: 'session_1',
+          header: { cwd: '/workspace' },
+          events: [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'bash', turn: 1 } }],
+        },
+      },
+    } as never
+    const firstCapability = contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
+    expect(firstCapability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+    ctx.emit('tools/result', execution, { status: 'success', value: null } as never)
+    const replacementCapability = contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
+    expect(replacementCapability).not.toBe(firstCapability)
     await fiber.dispose()
+    expect(disposeShellEnvironment).toHaveBeenCalledOnce()
     await ctx.fiber.dispose()
   })
 

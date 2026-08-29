@@ -40,6 +40,8 @@ description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 L
 
 用户明确要求多个独立生成结果时，按声明顺序建立多项 Generation Request；否则建立一项。每项分别保存简短标题、正向提示词候选、运行值和适用 LoRA。用户没有为不同结果分配 LoRA 时，全部已选 LoRA 适用于每项 Generation Request。无法确定多个结果的边界、运行值或 LoRA 归属时，请用户明确每项结果并结束本次执行。
 
+Generation Request 的数量与同一 Generation Request 的提交次数是两个独立概念。用户没有声明重复提交次数时，每项 Generation Request 默认提交一次；用户明确要求同一 Generation Request 生成多个 Run 时，按用户要求的次数重复提交。默认一次不是提交次数上限。
+
 按以下优先级取得每项 Generation Request 的基础 Prompt：
 
 1. 用户在当前消息中为该结果明确提供的完整 Prompt；
@@ -81,7 +83,7 @@ LoRA 文件、权重和触发词只通过 Generation Tool 的 `loras` 数组传�
 
 实例查询失败、成功响应结构无效、`results` 为空或第一个实例 ID 无效时，结束本次执行，不为当前及后续 Generation Request 调用 `generate_with_comfyui`。此前已经成功创建 Run 时，返回每个已创建的 `run_id`、当前失败的 Generation Request 和具体实例查询错误。
 
-实例查询通过后，立即为当前 Generation Request 调用一次 `generate_with_comfyui`：
+实例查询通过后，按当前 Generation Request 的提交次数调用 `generate_with_comfyui`。每次独立提交使用一个独立的 Tool Call；重复提交同一 Generation Request 时，每次 Tool Call 使用完全相同的参数：
 
 - `title` 使用该项 Generation Request 的简短标题；
 - `instance_id` 使用本次实例查询得到的十进制字符串 ID；
@@ -90,4 +92,4 @@ LoRA 文件、权重和触发词只通过 Generation Tool 的 `loras` 数组传�
 - `parameters` 只包含第 6 节建立的显式运行值；
 - `loras` 使用该项请求的 LoRA 执行对象数组。
 
-每项 Tool Call 返回 `run_id` 后记录该请求与 `run_id`。全部调用成功后，按用户声明顺序返回每项请求的 `run_id` 和异步处理状态。后续调用失败时，返回已经创建的每个 `run_id`、失败的 Generation Request 和 Tool 错误；已成功的 Tool Call 不重复提交。
+每项 Tool Call 返回 `run_id` 后，记录该请求与 `run_id`，并且只报告项目已经接受该异步 Generation Run。只有取得额外的运行状态证据时才报告最终状态。全部计划提交结束后，按用户声明顺序返回每项请求的全部 `run_id`、已接受异步处理结论和各次失败信息。某次调用失败后，用户可以再次提交同一个 Generation Request；再次提交不会改变前一次调用已经创建的 Run。用户没有明确要求额外提交时，不自动增加提交次数。

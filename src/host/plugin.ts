@@ -1,10 +1,13 @@
 import Schema from '@deepseek-ai/schemastery'
 import type { Context } from '@deepseek-ai/cordis'
+import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { fileURLToPath } from 'node:url'
 
 import {
   configurationProfileNames,
   type ConfigurationProfileName,
 } from '../../config/schema.ts'
+import { CLI_ROUTE_PATH } from '../cli/contract.ts'
 import { loadProfile } from '../config/load-profile.ts'
 import { CatalogCli } from './catalog/catalog-cli.ts'
 import { CatalogRemoteService } from './catalog/catalog-service.ts'
@@ -14,6 +17,11 @@ import {
   createLoraResolverTool,
   createTemplateResolverTool,
 } from './catalog/catalog-tool.ts'
+import { registerHarnessComfyuiCliRoute } from './cli/route.ts'
+import {
+  CLI_ENVIRONMENT_VARIABLES,
+  CliShellCapabilityStore,
+} from './cli/shell-capability.ts'
 import { ComfyHttpTransport } from './generation/comfy-http-transport.ts'
 import { ChromeComfyFrontend } from './generation/comfy-frontend-browser.ts'
 import { GenerationCoordinator } from './generation/generation-coordinator.ts'
@@ -43,7 +51,15 @@ export const Config = Schema.object({
 })
 
 export const name = 'harness-comfyui'
-export const inject = ['tools', 'webServer', 'workspaceRegistry'] as const
+export const inject = ['tools', 'webServer', 'workspaceRegistry', 'shellEnv'] as const
+
+interface ManagedShellEnvironmentRegistry {
+  register(contributor: {
+    readonly name: string
+    readonly variables: typeof CLI_ENVIRONMENT_VARIABLES
+    resolve(execution: ToolExecution): Readonly<Record<string, string>>
+  }): () => void
+}
 
 /** Validate the selected Configuration Profile before Host startup completes. */
 export async function apply(ctx: Context, config: Config): Promise<void> {
@@ -89,6 +105,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     transport: new ComfyHttpTransport({ source, maxMediaBytes: profile.media.maxFileBytes }),
     missingObservationMs: profile.jobs.missingObservationMs,
   })
+  const capabilities = new CliShellCapabilityStore({
+    cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
+    apiUrl: `http://${profile.server.host}:${profile.server.port}${CLI_ROUTE_PATH}`,
+  })
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)
   const generationLogger = ctx.logger('harness-comfyui')
   const coordinator = new GenerationCoordinator({
@@ -108,6 +128,29 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     runtime,
     workspaceRegistry: ctx.workspaceRegistry,
   }), 'Generation media routes')
+  ctx.effect(() => registerHarnessComfyuiCliRoute({
+    webServer: (ctx as unknown as { webServer: GenerationWebServer }).webServer,
+    capabilities,
+    catalog,
+    runtime,
+    workspaceRegistry: ctx.workspaceRegistry,
+  }), 'Managed Harness ComfyUI CLI route')
+  ctx.effect(() => {
+    const shellEnv = (ctx as unknown as { shellEnv: ManagedShellEnvironmentRegistry }).shellEnv
+    const disposeEnvironment = shellEnv.register({
+      name: 'harness-comfyui-cli',
+      variables: CLI_ENVIRONMENT_VARIABLES,
+      resolve: execution => capabilities.environment(execution),
+    })
+    const disposeRevocation = ctx.on('tools/result', (execution) => {
+      capabilities.revoke(execution)
+      return undefined
+    })
+    return () => {
+      disposeRevocation()
+      disposeEnvironment()
+    }
+  }, 'Managed Harness ComfyUI CLI shell capability')
   ctx.effect(() => {
     coordinator.start()
     return async () => {

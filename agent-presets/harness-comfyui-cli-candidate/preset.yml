@@ -1,0 +1,3 @@
+name: ComfyUI CLI 候选
+description: 使用全局 CLI Skill，不向模型注入 Host 项目 Tool schema 的 B 组。
+order: 91

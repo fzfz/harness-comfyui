@@ -71,7 +71,7 @@ Harness 明确说明 `ctx.tools.restrict()` 只过滤全局 Tool，allowlist 在
 
 两者由 Host 的单一注册入口注册为全局 Tool，阶段 3 解除 restriction 后会同时出现。[Host 注册](/Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/plugin.ts:74)
 
-调用顺序必须是：进入阶段 3并先解除 restriction → 用户选择模板并提出画面要求 → 当前 turn 调用 `comfyui-generate` Skill → Skill 调用一次模板查询 Tool → Skill 组装参数并在同一 turn 调用一次生成 Tool → Agent 返回 `run_id`，右侧工作台继续展示异步状态。[当前 Skill 草案](/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md:8)
+调用顺序必须是：进入阶段 3 并先解除 restriction → 用户选择模板并提出画面要求 → 当前 turn 调用 `comfyui-generate` Skill → Skill 查询目录并组装参数 → 用户没有声明重复次数时调用一次生成 Tool，用户明确要求多个 Run 时通过多个独立 Tool Call 重复提交完全相同的请求参数 → Agent 返回每次调用的 `run_id`，右侧工作台继续展示异步状态。[当前 Skill 草案](/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md:8)
 
 本项目第一版选择让 `skill` Tool 在四个阶段常驻，以避免 Agent 在阶段切换后继续沿用“Skill 不可用”的早期认知。Issue #12 的后续真实 Session 曾观察到：promotion 已恢复完整能力后，Agent 有时仍不再执行 Skill 匹配；Issue #50 采用一次性提醒处理该问题，并明确把提醒标为尚未独立 benchmark 的实验方案。因此，Issue #50 只证明阶段切换存在能力认知风险，不能证明常驻 `skill` Tool 会稳定改善本项目行为；本项目必须通过真实 Session 验证常驻方案。[Issue #50 对 #12 的汇总](https://github.com/yjh051108/dsh-routing-suite/issues/50)
 

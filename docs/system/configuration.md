@@ -42,11 +42,13 @@
 | 字段 | 规则 |
 | --- | --- |
 | `schemaVersion` | 固定为 `1` |
-| `toolCanary.presetId` | 只包含小写字母、数字和连字符的 Preset ID |
-| `toolCanary.sourceRootRelativePath` | 仓库根目录内的 canonical Agent Preset 根目录；当前为 `agent-presets` |
-| `toolCanary.installRootRelativePath` | 开发 DSH home 内的安装根目录；当前为 `.agent-presets` |
+| `experiment.presets.schemaControl` | A 组 Preset ID，只使用小写字母、数字和连字符 |
+| `experiment.presets.cliCandidate` | B 组 Preset ID，只使用小写字母、数字和连字符；不得等于 A 组 Preset ID |
+| `experiment.sourceRootRelativePath` | 仓库根目录内的 canonical Agent Preset 根目录；当前为 `agent-presets` |
+| `experiment.installRootRelativePath` | 开发 DSH home 内的安装根目录；当前为 `.agent-presets` |
+| `experiment.sharedFiles` | 非空且互不重复的 `.mjs` basename 数组；当前包含 `project-tool-visibility.mjs` |
 
-`sourceRootRelativePath/<presetId>` 必须只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。`agent.cordis.yml` 必须通过 DSH 使用的 YAML dialect 与 plugin-row 结构检查，其中声明的 package component 必须能够从当前 `@deepseek-ai/dsh` 安装解析。任一检查失败时，启动器保留开发 DSH home 中已经安装的 B Preset。`installRootRelativePath` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器以一次目录替换更新 `<developmentDshHome>/<installRootRelativePath>/<presetId>`，不会修改同一安装根目录中的其他 Preset。
+`sourceRootRelativePath/<presetId>` 必须只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。每个 shared file 和两个 Preset 在首次写入前全部完成文件类型、可读性、DSH YAML dialect、plugin-row 与 component resolution 检查。任一检查失败时，启动器不开始本轮物化。`installRootRelativePath` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器分别原子替换受管 shared file 和两个 Preset，不修改同一安装根目录中的其他 Preset。
 
 该配置只由 `worktree:start` 和 `worktree:restart` 使用。`prod:start` 与 `prod:restart` 不读取 `config/product-agent.json`，也不安装该项目 Agent Preset。
 

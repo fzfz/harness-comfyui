@@ -1,9 +1,14 @@
-# Project-owned B composition for the A/B Tool canary.
+# Controlled A composition: inherit Host-global project Tool schemas.
+- id: project-tool-visibility
+  name: ../project-tool-visibility.mjs
+  config:
+    mode: inherit-host-global
+
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
     text: >-
-      You are the Harness ComfyUI workbench Agent. Use the available global Skills and project Tools. Reply in the user's language.
+      You are the Harness ComfyUI workbench Agent. Use the available global Skills and managed project CLI. Reply in the user's language.
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'

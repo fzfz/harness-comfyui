@@ -38,12 +38,16 @@ pnpm worktree:start|restart
 | `scripts/production/` | Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志 |
 | `scripts/worktree/` | linked-worktree 门禁、开发定义解析和共享生命周期命令适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
+| `scripts/profile/agent-preset.mjs` | 校验并物化 worktree A/B Preset 和共享 Tool visibility component |
+| `scripts/cli/` | Agent 在受管前台 shell Tool Call 中执行的项目 CLI executable |
+| `src/cli/` | 项目 CLI 的环境变量名称、argv、request 和 Generation Request 合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
+| `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation Tool、Generation Remote 和媒体路由 |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host 与 Client 共用的 Generation Remote 和媒体 URL 合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器与 Generation Run/Media 投影 |
-| `.agents/skills/comfyui-generate/` | 从当前消息的模板与画面上下文调用异步 Generation Tool 的项目 Skill |
+| `.agents/skills/comfyui-generate/` | 仓库内原生 Generation Tool Skill；本次 A/B 实验不读取该目录 |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
@@ -60,6 +64,19 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 生产运行状态写入 `.local/production/`；独立 worktree 开发状态写入当前 worktree 的 `.local/worktree-development/`。源码仍保留在仓库根目录。配置变更在下一次对应入口的 start 或 restart 时生效。
 
 ## Generation 生命周期
+
+A/B 实验的全局 `/Users/fzfz/.agents/skills/comfyui-generate` 通过受管项目 CLI 使用同一个 Generation Runtime。该全局 Skill 不属于仓库 `.agents/skills/comfyui-generate/`。CLI 身份链路如下：
+
+```text
+前台 bash/pwsh ToolExecution
+  → CliShellCapabilityStore 取得 Session、Turn、Call ID 与 cwd
+  → shell environment 提供 CLI executable、loopback URL 与短期 capability
+  → scripts/cli/harness-comfyui.mjs 提交业务参数
+  → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
+  → GenerationRuntime.acceptGeneration(identity, request)
+```
+
+同一个 shell Tool Call 的相同 Generation Request 重放同一个 Run；同一个 shell Tool Call 的不同 Generation Request 返回 `RUN_REQUEST_CONFLICT`。创建多个独立 Run 时，每次 submit 使用不同的前台 shell Tool Call，因此 Host 为每次调用保存不同的 `call_id`。
 
 `query_semantic_comfyui_instances` 使用固定 search 请求读取 Catalog CLI 当前返回的 ComfyUI 实例目录，并且每个实例结果项只向 Agent 投影 `id`。`comfyui-generate` 把当前查询的首个有效 ID 传给 `generate_with_comfyui`；Host 不根据 Workflow、生成模型、LoRA、运行参数或已有 Run 记录选择实例。
 

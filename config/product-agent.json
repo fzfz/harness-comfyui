@@ -1,8 +1,14 @@
 {
   "schemaVersion": 1,
-  "toolCanary": {
-    "presetId": "harness-comfyui-tool-canary",
+  "experiment": {
+    "presets": {
+      "schemaControl": "harness-comfyui-schema-control",
+      "cliCandidate": "harness-comfyui-cli-candidate"
+    },
     "sourceRootRelativePath": "agent-presets",
-    "installRootRelativePath": ".agent-presets"
+    "installRootRelativePath": ".agent-presets",
+    "sharedFiles": [
+      "project-tool-visibility.mjs"
+    ]
   }
 }

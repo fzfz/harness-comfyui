@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { createRequire } from 'node:module'
+import { constants as fsConstants } from 'node:fs'
 import {
   access,
   chmod,
@@ -11,8 +11,8 @@ import {
   rename,
   rm,
 } from 'node:fs/promises'
-import { constants as fsConstants } from 'node:fs'
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const PRODUCT_AGENT_CONFIG_RELATIVE_PATH = 'config/product-agent.json'
@@ -47,9 +47,9 @@ function assertExactKeys(value, keys, name) {
   }
 }
 
-function requirePresetId(value) {
+function requirePresetId(value, name) {
   if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]*$/u.test(value)) {
-    throw new TypeError('product Agent toolCanary.presetId must contain only lowercase letters, numbers, and hyphens')
+    throw new TypeError(`${name} must contain only lowercase letters, numbers, and hyphens`)
   }
   return value
 }
@@ -61,9 +61,16 @@ function requireContainedRelativePath(value, name, root) {
   const path = resolve(root, value)
   const fromRoot = relative(root, path)
   if (fromRoot === '' || fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
-    throw new TypeError(`${name} must identify a directory inside its root`)
+    throw new TypeError(`${name} must identify a path inside its root`)
   }
   return path
+}
+
+function requireSharedFilename(value) {
+  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]*\.mjs$/u.test(value)) {
+    throw new TypeError('product Agent experiment.sharedFiles must contain .mjs basenames')
+  }
+  return value
 }
 
 async function readJson(path, name) {
@@ -90,6 +97,30 @@ function collectCompositionModuleNames(rows, location = 'top level') {
   return names
 }
 
+async function assertResolvableCompositionModule(name, compositionPath) {
+  if (name.startsWith('.') || isAbsolute(name)) {
+    const path = isAbsolute(name) ? name : resolve(dirname(compositionPath), name)
+    await validateSharedAgentPresetComponent(path)
+    return
+  }
+  requireFromDsh.resolve(name)
+}
+
+async function validateSharedAgentPresetComponent(path) {
+  await assertRegularReadableFile(path, 'shared Agent Preset component')
+  const url = pathToFileURL(path)
+  url.searchParams.set('agent-preset-validation', randomUUID())
+  let component
+  try {
+    component = await import(url.href)
+  } catch (error) {
+    throw new Error(`shared Agent Preset component cannot be loaded: ${path}`, { cause: error })
+  }
+  if (typeof component.apply !== 'function') {
+    throw new TypeError(`shared Agent Preset component must export apply(): ${path}`)
+  }
+}
+
 export async function validateAgentPresetComposition(path) {
   const { load, entryListSchema } = await loadDshPresetDialect()
   let rows
@@ -101,7 +132,7 @@ export async function validateAgentPresetComposition(path) {
   for (const name of collectCompositionModuleNames(rows)) {
     if (name.startsWith('cordis:')) continue
     try {
-      requireFromDsh.resolve(name)
+      await assertResolvableCompositionModule(name, path)
     } catch (error) {
       throw new Error(`Agent Preset component cannot be resolved by DSH: ${name}`, { cause: error })
     }
@@ -112,23 +143,56 @@ export async function validateAgentPresetComposition(path) {
 async function loadProductAgentConfig(repositoryRoot) {
   const path = resolve(repositoryRoot, PRODUCT_AGENT_CONFIG_RELATIVE_PATH)
   const config = requireRecord(await readJson(path, 'product Agent configuration'), 'product Agent configuration')
-  assertExactKeys(config, ['schemaVersion', 'toolCanary'], 'product Agent configuration')
+  assertExactKeys(config, ['schemaVersion', 'experiment'], 'product Agent configuration')
   if (config.schemaVersion !== 1) throw new TypeError('product Agent configuration.schemaVersion must be 1')
-  const toolCanary = requireRecord(config.toolCanary, 'product Agent configuration.toolCanary')
+  const experiment = requireRecord(config.experiment, 'product Agent configuration.experiment')
   assertExactKeys(
-    toolCanary,
-    ['presetId', 'sourceRootRelativePath', 'installRootRelativePath'],
-    'product Agent configuration.toolCanary',
+    experiment,
+    ['presets', 'sourceRootRelativePath', 'installRootRelativePath', 'sharedFiles'],
+    'product Agent configuration.experiment',
   )
+  const presets = requireRecord(experiment.presets, 'product Agent configuration.experiment.presets')
+  assertExactKeys(
+    presets,
+    ['schemaControl', 'cliCandidate'],
+    'product Agent configuration.experiment.presets',
+  )
+  const presetIds = [
+    requirePresetId(presets.schemaControl, 'product Agent configuration.experiment.presets.schemaControl'),
+    requirePresetId(presets.cliCandidate, 'product Agent configuration.experiment.presets.cliCandidate'),
+  ]
+  if (new Set(presetIds).size !== presetIds.length) {
+    throw new TypeError('product Agent configuration.experiment.presets values must be unique')
+  }
+  if (!Array.isArray(experiment.sharedFiles) || experiment.sharedFiles.length === 0) {
+    throw new TypeError('product Agent configuration.experiment.sharedFiles must be a non-empty array')
+  }
+  const sharedFiles = experiment.sharedFiles.map(requireSharedFilename)
+  if (new Set(sharedFiles).size !== sharedFiles.length) {
+    throw new TypeError('product Agent configuration.experiment.sharedFiles must be unique')
+  }
   return {
-    presetId: requirePresetId(toolCanary.presetId),
+    presetIds,
     sourceRoot: requireContainedRelativePath(
-      toolCanary.sourceRootRelativePath,
-      'product Agent configuration.toolCanary.sourceRootRelativePath',
+      experiment.sourceRootRelativePath,
+      'product Agent configuration.experiment.sourceRootRelativePath',
       repositoryRoot,
     ),
-    installRootRelativePath: toolCanary.installRootRelativePath,
+    installRootRelativePath: experiment.installRootRelativePath,
+    sharedFiles,
   }
+}
+
+async function assertRegularReadableFile(path, name) {
+  let stats
+  try {
+    stats = await lstat(path)
+    await access(path, fsConstants.R_OK)
+  } catch (error) {
+    throw new Error(`${name} is unavailable at ${path}`, { cause: error })
+  }
+  if (!stats.isFile()) throw new Error(`${name} must be a regular file: ${path}`)
+  if ((await readFile(path)).byteLength === 0) throw new Error(`${name} must not be empty: ${path}`)
 }
 
 async function assertCanonicalPresetDirectory(sourceDirectory) {
@@ -146,16 +210,7 @@ async function assertCanonicalPresetDirectory(sourceDirectory) {
     throw new Error(`canonical Agent Preset directory must contain exactly ${PRESET_FILES.join(', ')}`)
   }
   for (const filename of PRESET_FILES) {
-    const path = resolve(sourceDirectory, filename)
-    let stats
-    try {
-      stats = await lstat(path)
-      await access(path, fsConstants.R_OK)
-    } catch (error) {
-      throw new Error(`canonical Agent Preset ${filename} is unavailable at ${path}`, { cause: error })
-    }
-    if (!stats.isFile()) throw new Error(`canonical Agent Preset ${filename} must be a regular file: ${path}`)
-    if ((await readFile(path)).byteLength === 0) throw new Error(`canonical Agent Preset ${filename} must not be empty`)
+    await assertRegularReadableFile(resolve(sourceDirectory, filename), `canonical Agent Preset ${filename}`)
   }
   await validateAgentPresetComposition(resolve(sourceDirectory, 'agent.cordis.yml'))
 }
@@ -195,51 +250,86 @@ async function createContainedDirectory(root, target, name) {
   }
 }
 
-export async function replaceOwnedAgentPresetDirectory(targetDirectory, stagingDirectory, backupDirectory) {
+export async function replaceOwnedAgentPresetDirectory(targetPath, stagingPath, backupPath) {
   let previousMoved = false
   try {
     try {
-      await rename(targetDirectory, backupDirectory)
+      await rename(targetPath, backupPath)
       previousMoved = true
     } catch (error) {
       if (error?.code !== 'ENOENT') throw error
     }
-    await rename(stagingDirectory, targetDirectory)
+    await rename(stagingPath, targetPath)
   } catch (error) {
     if (previousMoved) {
       try {
-        await rename(backupDirectory, targetDirectory)
+        await rename(backupPath, targetPath)
       } catch (restoreError) {
-        throw new AggregateError([error, restoreError], `cannot replace or restore Agent Preset ${targetDirectory}`)
+        throw new AggregateError([error, restoreError], `cannot replace or restore ${targetPath}`)
       }
     }
     throw error
   }
-  if (previousMoved) await rm(backupDirectory, { recursive: true, force: true })
+  if (previousMoved) await rm(backupPath, { recursive: true, force: true })
 }
 
-export async function materializeSourceAgentToolCanary(repositoryRoot, dshHome) {
+async function materializeSharedFile(sourceRoot, installRoot, filename) {
+  const source = resolve(sourceRoot, filename)
+  await validateSharedAgentPresetComponent(source)
+  const suffix = randomUUID()
+  const target = resolve(installRoot, filename)
+  const staging = resolve(installRoot, `.${filename}.${suffix}.next`)
+  const backup = resolve(installRoot, `.${filename}.${suffix}.previous`)
+  try {
+    await copyFile(source, staging)
+    await chmod(staging, 0o600)
+    await replaceOwnedAgentPresetDirectory(target, staging, backup)
+  } finally {
+    await rm(staging, { force: true })
+  }
+  return target
+}
+
+async function materializePreset(sourceRoot, installRoot, presetId) {
+  const sourceDirectory = resolve(sourceRoot, presetId)
+  const targetDirectory = resolve(installRoot, presetId)
+  await assertCanonicalPresetDirectory(sourceDirectory)
+  const suffix = randomUUID()
+  const stagingDirectory = resolve(installRoot, `.${presetId}.${suffix}.next`)
+  const backupDirectory = resolve(installRoot, `.${presetId}.${suffix}.previous`)
+  try {
+    await stagePreset(sourceDirectory, stagingDirectory)
+    await validateAgentPresetComposition(resolve(stagingDirectory, 'agent.cordis.yml'))
+    await replaceOwnedAgentPresetDirectory(targetDirectory, stagingDirectory, backupDirectory)
+  } finally {
+    await rm(stagingDirectory, { recursive: true, force: true })
+  }
+  return { presetId, sourceDirectory, targetDirectory }
+}
+
+export async function materializeSourceAgentExperiment(repositoryRoot, dshHome) {
   const sourceRoot = resolve(repositoryRoot)
   const home = resolve(dshHome)
   const config = await loadProductAgentConfig(sourceRoot)
   const installRoot = requireContainedRelativePath(
     config.installRootRelativePath,
-    'product Agent configuration.toolCanary.installRootRelativePath',
+    'product Agent configuration.experiment.installRootRelativePath',
     home,
   )
-  const sourceDirectory = resolve(config.sourceRoot, config.presetId)
-  const targetDirectory = resolve(installRoot, config.presetId)
-  await assertCanonicalPresetDirectory(sourceDirectory)
-  await createContainedDirectory(home, installRoot, 'install root')
-  const suffix = randomUUID()
-  const stagingDirectory = resolve(installRoot, `.${config.presetId}.${suffix}.next`)
-  const backupDirectory = resolve(installRoot, `.${config.presetId}.${suffix}.previous`)
-  try {
-    await stagePreset(sourceDirectory, stagingDirectory)
-    await assertCanonicalPresetDirectory(stagingDirectory)
-    await replaceOwnedAgentPresetDirectory(targetDirectory, stagingDirectory, backupDirectory)
-  } finally {
-    await rm(stagingDirectory, { recursive: true, force: true })
+  for (const filename of config.sharedFiles) {
+    await validateSharedAgentPresetComponent(resolve(config.sourceRoot, filename))
   }
-  return { presetId: config.presetId, sourceDirectory, targetDirectory }
+  for (const presetId of config.presetIds) {
+    await assertCanonicalPresetDirectory(resolve(config.sourceRoot, presetId))
+  }
+  await createContainedDirectory(home, installRoot, 'install root')
+  const sharedFiles = []
+  for (const filename of config.sharedFiles) {
+    sharedFiles.push(await materializeSharedFile(config.sourceRoot, installRoot, filename))
+  }
+  const presets = []
+  for (const presetId of config.presetIds) {
+    presets.push(await materializePreset(config.sourceRoot, installRoot, presetId))
+  }
+  return { installRoot, sharedFiles, presets }
 }

@@ -8,7 +8,7 @@ import {
   loadSourceProductionContext,
   prepareSourceRuntime,
 } from '../production/runtime.mjs'
-import { materializeSourceAgentToolCanary } from '../profile/agent-preset.mjs'
+import { materializeSourceAgentExperiment } from '../profile/agent-preset.mjs'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const DEFINITION_KEYS = Object.freeze([
@@ -211,6 +211,6 @@ export async function loadSavedSourceWorktreeContext(options = {}) {
 
 export async function prepareSourceWorktreeRuntime(context, options = {}) {
   const runtimeTarget = await (options.prepareRuntime ?? prepareSourceRuntime)(context)
-  const agentToolCanary = await materializeSourceAgentToolCanary(context.repositoryRoot, context.dshHome)
-  return { ...runtimeTarget, agentToolCanary }
+  const agentExperiment = await materializeSourceAgentExperiment(context.repositoryRoot, context.dshHome)
+  return { ...runtimeTarget, agentExperiment }
 }

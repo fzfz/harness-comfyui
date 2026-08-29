@@ -1,3 +1,0 @@
-name: ComfyUI Tool 对照模式
-description: 使用项目自有 Agent Preset、全局 Skills 和现有项目 Tools 完成 ComfyUI 任务。
-order: 90

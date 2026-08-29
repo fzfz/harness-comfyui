@@ -1,126 +1,77 @@
-# B 实现与 A/B 真实模型调用对比报告
+# A/B 真实模型调用报告
 
 ## 对比结论
 
-B=`harness-comfyui-tool-canary` 已在当前独立 worktree 中实现并通过真实 Harness Host 装载。对于三个输入合同完整的配对运行，A 与 B 都完成任务并选择相同的必要 Tool；B 的总输入 token 从 61,012 降至 23,138，下降 62.1%，Turn 总时长从 60.576 秒降至 22.399 秒，下降 63.0%，输出 token 从 996 变为 973，下降 2.3%。实例查询的 B→A 反向重复仍得到相同方向，因此前两次 A→B 顺序不能单独解释该差异。
+B 符合本次假设：它没有向模型请求注入 5 个 Host 项目 Tool schema，但保留了完整的全局 Skill → 参考文档 → shell → 项目 CLI 路径。3 个 A Session 与 3 个 B Session 全部正确 resolve 模板 39 和生成模型 3，全部得到 `base_model_id = "1"`，全部正确判定兼容，全部未调用 Generation submit。
 
-本次结果支持结构符合性结论：B 的 Skill catalog 与 A 相同，B 实际成功读取了全局 `comfyui-generate`，并保留 5 个项目 Tool；本次 3 组输入合同完整的配对运行中，B 的请求前缀和 total input 均小于 A。该结构符合文章关于“保持必要能力、减少无关 Tool schema”的核心原则，但 A/B 同时改变了整个 Agent Preset composition，不能据此隔离 Tool schema 的独立因果贡献。结果只支持继续保留 B canary，不支持切换生产默认，也不支持实现或发布 C。
+本次样本支持继续保留 B 作为候选 Preset，不支持直接切换生产默认值。模型输出存在随机性，3 次配对结果只能证明本任务集未出现功能退化，并提供当前 Provider 下的成本信号。
 
-## 实验 Interface
+## 固定测试条件
 
-| 项目 | A | B |
-| --- | --- | --- |
-| Preset | `standard` | `harness-comfyui-tool-canary` |
-| Provider | `opencode-go` | `opencode-go` |
-| Model | `deepseek-v4-flash` | `deepseek-v4-flash` |
-| Workspace | `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness` | 同 A |
-| Skill roots | Harness 默认项目与用户全局 roots | 同 A |
-| 项目 Tool | 5 个 Host 全局项目 Tool | 同 A |
-| Tool presentation | `native` | `native` |
+- Workspace：`/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`
+- Provider/Model：`opencode-go/deepseek-v4-flash`
+- Skill 根目录：`/Users/fzfz/.agents/skills`
+- Skill：两组使用同一 `comfyui-generate`
+- Prompt：两组使用相同的兼容性核对文本、模板上下文 39 和生成模型上下文 3
+- A：`harness-comfyui-schema-control`
+- B：`harness-comfyui-cli-candidate`
 
-A 与 B 的实际 `skill-catalog` 都包含以下 7 个 Skill：
+## 兼容性任务结果
 
-1. `anima-prompt-builder`
-2. `character-portrait-prompt-designer`
-3. `comfyui-generate`
-4. `krea2-anime-prompt-skill`
-5. `skill-creator`
-6. `wai-sdxl-prompt-builder`
-7. `writing-for-agents`
+| Session | 组 | Tool schema | 总输入 token | 输出 token | 耗时 | 结果 |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| `ea93fa23-e676-4c76-9cf3-c5bd4b24a8d8` | B | 2 | 14,315 | 996 | 8.069 s | 正确；Catalog resolve CLI 2 次，Generation submit 0 次 |
+| `72685dc3-81a0-42cd-9f98-fae516d7179c` | A | 7 | 18,889 | 1,112 | 10.164 s | 正确；Catalog resolve CLI 2 次，Generation submit 0 次 |
+| `fc12efd6-42e7-4f31-aa0d-cde0648c83ea` | A | 7 | 16,976 | 852 | 10.123 s | 正确；Catalog resolve CLI 2 次，Generation submit 0 次 |
+| `b27463d3-0630-4d21-b57b-194aac3c1b9e` | B | 2 | 14,285 | 930 | 10.022 s | 正确；Catalog resolve CLI 2 次，Generation submit 0 次 |
+| `ddcdd7b5-1bcb-4800-8fc8-b41be4d10d42` | B | 2 | 14,148 | 732 | 7.004 s | 正确；Catalog resolve CLI 2 次，Generation submit 0 次 |
+| `52cf0ced-f476-4fd9-baf9-2640f3562777` | A | 7 | 18,002 | 1,009 | 14.451 s | 正确；Catalog resolve CLI 2 次，Generation submit 0 次 |
 
-## 实际请求 Tool snapshot
+`总输入 token = inputTokens + cacheReadTokens`。A 平均总输入为 17,956，B 为 14,249；B 低 20.6%。A 平均耗时为 11.579 秒，B 为 8.365 秒；B 低 27.8%。A 平均输出为 991，B 为 886。输出和耗时包含模型路径差异，不能单独归因于 schema。
 
-| 指标 | A | B | A→B |
-| --- | ---: | ---: | ---: |
-| Tool 数量 | 30 | 7 | -76.7% |
-| serialized Tool JSON 字节 | 30,022 | 7,458 | -75.2% |
-| system prompt UTF-8 字节 | 6,436 | 1,996 | -69.0% |
+A 的 serialized `tools` JSON 是 7,458 bytes；B 是 3,401 bytes，减少 4,057 bytes，即 54.4%。这是直接由 Preset visibility 产生的确定性差异。
 
-B 的 7 个 Tool 是：
+## 真实生成提交与数据库证据
 
-```text
-bash
-generate_with_comfyui
-query_semantic_comfyui_instances
-query_semantic_comfyui_templates
-query_semantic_generation_models
-query_semantic_loras
-skill
-```
+B 回归 Session `session-62ade0ce-3051-4a89-a215-1e5bda92f6ee` 的模型请求只含 `bash` 与 `skill`。模型读取两份 CLI 参考文档，resolve 模板 39，从实例目录取得 `instance_id = "2"`，建立一个 title 固定为“完全相同请求重复提交”的 Generation Request，并通过两个独立前台 Bash Tool Call 提交逐字段完全相同的 JSON。两次 CLI 调用均返回不同的 `run_id`。
 
-B 没有注入 `standard` 的 filesystem、search、jobs、goal、plan、delegation、todo、web 和 ask-user Tool。B 仍保留用户指定的 5 个项目 Tool；本次实验没有实现 C 或把项目能力替换为 CLI。
+| 提交 | `run_id` | `call_id` | `prompt_id` | 最终状态 |
+| --- | --- | --- | --- | --- |
+| 1 | `run_16cef8d9-8585-44e2-a9b9-a9dd9322b8bd` | `call_cbd223b78aa84770b6c3b0a6` | `ebdac911-dad5-48d3-b1c7-716f2b7cbe8d` | `succeeded` |
+| 2 | `run_84215fd5-d9a9-47bc-baee-1b770a7c947e` | `call_9849de4cdfd6496b9f8b5ef2` | `91bb208c-4a43-4ccc-bbfd-660c50caae92` | `succeeded` |
 
-## 真实模型运行记录
+两个 Run 的数据库记录均保存 `workspace_id = "83eeed16-43fb-4d1f-99b1-dd15bbbde4c3"`、上述 Session ID、`turn = 1`、`instance_id = "2"` 和模板 39。SQLite 聚合结果为 2 条 Run、1 个 distinct `request_json`、2 个 distinct `call_id` 和 2 个 distinct `run_id`。模型提交的 JSON 不含 Workspace、Session、Turn 或 Tool Call ID；Host capability 和 workspace registry 为每次 shell Tool Call 提供数据库身份。
 
-`total input` 定义为 Harness Session 事件中全部 `assistant/message.data.usage.inputTokens + cacheReadTokens`。`duration` 使用同一 Session 的 `turn/start.time` 到 `turn/end.time`。全部 8 个 Session 都记录 `provider=opencode-go`、`model=deepseek-v4-flash` 和 `turnEnd=completed`。
+| `run_id` | 媒体文件 | 类型 | 字节数 |
+| --- | --- | --- | ---: |
+| `run_16cef8d9-8585-44e2-a9b9-a9dd9322b8bd` | `2026-08-29-152800_anima-aesthetic-v1.1_123456.png` | `image/png` | 400,347 |
+| `run_84215fd5-d9a9-47bc-baee-1b770a7c947e` | `2026-08-29-152801_anima-aesthetic-v1.1_123456.png` | `image/png` | 400,347 |
 
-| 任务 | Arm | Session | Tool calls | Steps | uncached input | cache read | total input | output | duration |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| T1 全局 Skill 读取 | A | `session-114a557a-e67d-482d-892c-dee3feb5c966` | `skill` | 2 | 11,926 | 9,728 | 21,654 | 576 | 13.641s |
-| T1 全局 Skill 读取 | B | `session-984229e9-e1a3-4495-b6e7-f03a03f45cc9` | `skill` | 2 | 5,705 | 3,328 | 9,033 | 579 | 9.541s |
-| T2 实例查询，A→B | A | `session-3cb71cc1-50d7-492c-a7c1-21ef36b2c2cd` | `query_semantic_comfyui_instances` | 2 | 9,918 | 9,728 | 19,646 | 166 | 33.912s |
-| T2 实例查询，A→B | B | `session-6a072fbd-4e5a-4e26-a743-e93f6e405625` | `query_semantic_comfyui_instances` | 2 | 1,169 | 5,888 | 7,057 | 202 | 5.963s |
-| T3 缺少 model id 的边界输入 | A | `session-70adc1f3-8090-4738-98d4-e0a6b61753a3` | 实例 1 次、模板 2 次、模型 4 次 | 5 | 2,102 | 63,232 | 65,334 | 7,355 | 148.358s |
-| T3 缺少 model id 的边界输入 | B | `session-281b8c5d-5c99-4a2e-be4c-d28c15102ca0` | 无 | 1 | 3,430 | 0 | 3,430 | 11,095 | 153.883s |
-| T2 实例查询，B→A | B | `session-428818e0-de7c-49e9-a43a-ab62db3eeb52` | `query_semantic_comfyui_instances` | 2 | 3,464 | 3,584 | 7,048 | 192 | 6.895s |
-| T2 实例查询，B→A | A | `session-0eeeba2d-d084-42a2-962a-eda9016d7ac2` | `query_semantic_comfyui_instances` | 2 | 256 | 19,456 | 19,712 | 254 | 13.023s |
+Client 最终显示 2 个已完成 Run 和 2 个媒体；两个保存文件都能作为 512×512 PNG 打开。
 
-### T1：读取全局 `comfyui-generate`
+## 排除项
 
-A 与 B 都只调用一次 `skill`，都正确给出以下 5 个项目 Tool 的同一顺序：模板、生成模型、LoRA、实例、生成。本次运行证明 B 能发现并读取全局 `comfyui-generate`；本次运行没有逐一执行 catalog 中其他 6 个全局 Skill。
+- 选择生成模型 3 的首次生成 Session 触发了 `anima-prompt-builder`，在 submit 前累计约 192K 输入与 10.4K 输出后被终止。该 Session 改变了 Prompt Skill 变量，不进入 A/B 统计。
+- 远端实例恢复前的 B 生成 Session 曾产生 `COMFYUI_CONNECTION_FAILED`。失败提交可能已经持久化 Run，且同一个 Generation Request 可以再次独立提交；这些环境失败结果不进入兼容性 A/B 统计。
+- Session `session-7c3b2178-dc6f-4431-8ac3-8a65496a4a85` 成功生成两个 Run，但模型把两个 `title` 分别改为“提交1”和“提交2”，因此两个 `request_json` 不同；该 Session 不作为“同一个 Generation Request 重复提交”的证据。
+- 旧 `harness-comfyui-tool-canary` Session 和旧 resolver-Tool 用例的结论全部无效，不进入本报告。
 
-### T2：查询 ComfyUI 实例
+## 验收清单
 
-A 与 B 的三次运行都只调用一次 `query_semantic_comfyui_instances`，都返回实例总数 1 和 instance id `2`。首次 A→B 与反向 B→A 都显示 B 使用约 7K total input，A 使用约 19.7K total input。
-
-### T3：缺少 generation-model id 的边界输入
-
-`query_semantic_generation_models.id` 的 Tool schema 明确要求 id 来自当前消息上下文；T3 没有提供任何候选 id。因此 T3 不能与 T1/T2 一起计算任务成功率。
-
-A 先调用实例查询，又猜测模板 id 和模型 id。A 最终返回 3 个可用模型，但执行了 7 次 Tool call，其中 3 次 Catalog 查询失败，并违反“只调用必要 Tool”和“id 来自当前消息上下文”的约束。
-
-B 没有调用 Tool，并明确指出输入缺少候选 model id，拒绝编造 id。B 遵守 Tool schema 与调用约束，但没有返回用户要求的模型列表；长 reasoning 使 B 的 output token 达到 11,095，Turn 时长也没有优于 A。A/B 同时改变了通用 Tool 定义集合、system instruction 和 Agent Preset composition，因此本实验只能确认 B 的整体 composition 在本次 T1/T2 运行中记录到更少输入，不能把 token 或时延差异单独归因于 Tool schema 数量。该 composition 也不能独自解决业务输入不完整、reasoning 失控或输出 token 上升问题。
-
-## 实现与运行门禁
-
-- worktree Host 的 `pnpm worktree:status` 返回 `running`。
-- `pnpm worktree:health` 返回 `passed`，包含 process、source runtime、Harness Web、Client bundle、Run Repository、API Workflow cache 与 saved media。
-- 实际 Preset roster 显示 `ComfyUI Tool 对照模式`，且 Preset 能建立真实 Session。
-- B Session 的 durable `agent-preset/selected` 事件记录 `harness-comfyui-tool-canary`。
-- 实验结束后执行 `pnpm worktree:stop`，随后 `pnpm worktree:status` 返回 `stopped`。
-
-## 晋级判断
-
-当前判断是：**B canary 实现 GO；生产默认切换 NO-GO。**
-
-B 已证明以下能力：
-
-- 项目自有 Preset 能在 rc.2 Host 中真实装载；
-- B 与 A 的 Skill catalog 相同，B 实际成功读取了全局 `comfyui-generate`，并实际调用了项目实例查询 Tool；
-- B 的模型 Tool Interface 从 30 个缩到 7 个；
-- 输入合同完整的 3 次配对运行全部与 A 得到等价业务结果；
-- 这 3 次运行的 total input 与 Turn 时长分别下降 62.1% 和 63.0%。
-
-本次实验没有证明以下事项：
-
-- 多轮 Session、compaction 后和 Skill catalog 变化后的 Tool snapshot 稳定性；
-- 真实 `generate_with_comfyui` 提交、Run link、媒体展示和错误恢复；
-- 大样本任务成功率与统计显著性；
-- KV-cache 命中率、cache write、模型计费成本或缓存收益的独立因果变化；
-- 其他 Provider、Model、Workspace 或 Catalog 数据下的效果；
-- C=`项目 Preset + CLI + 0 个项目 Tool` 的可行性或效果；
-- B 可以替换 production default。
-
-## 已获得的授权
-
-- 用户授权在当前独立 worktree 中实现 B。
-- 用户授权使用 worktree `.env` 已配置的 `opencode-go` Provider 和 `deepseek-v4-flash` Model 发起真实模型调用。
-- 用户指定默认 Workspace 与 Harness 全局 Skill 目录作为 A/B 共同输入。
+- [x] 使用真实 `opencode-go/deepseek-v4-flash`。
+- [x] A/B 使用相同 Prompt、Workspace 和全局 Skill。
+- [x] B 的模型请求为 0 个 Host 项目 Tool schema。
+- [x] 两组实际读取 Skill 参考文档并调用项目 CLI。
+- [x] SQLite 证明身份字段来自当前 shell execution。
+- [x] 同一个 Generation Request 的两次独立提交均返回不同 `run_id`。
+- [x] 两个 Run 均由远端 ComfyUI 完成并保存媒体。
 
 ## 非本次目标
 
-- 不实现 C、项目 CLI 或零项目 Tool Interface。
-- 不删除、重命名或修改 5 个项目 Tool。
-- 不修改 `.agents/skills/` 中的现有 Skill。
-- 不修改 production default、production DSH home 或生产源码 checkout。
-- 不发布版本或部署生产环境。
+- 本报告不根据一次成功回归证明远端 ComfyUI 的长期可用性。
+- 本报告不批准生产默认切换或删除 5 个 Host Tool。
+- 本报告不把停止的 Prompt-Skill Session 当成 B 的性能结果。
+
+## 已获得的授权
+
+用户授权独立 worktree、真实 Provider 调用、默认 Workspace 和全局 Skill 路径。本报告没有执行发布、部署或推送。
