@@ -43,7 +43,11 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
 import { GENERATION_ERROR_COPY, RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
-import { generationMediaContentUrl, type GenerationProjection } from '../../src/generation/contract.ts'
+import {
+  generationMediaContentUrl,
+  generationMediaViewerUrl,
+  type GenerationProjection,
+} from '../../src/generation/contract.ts'
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
@@ -194,14 +198,16 @@ describe('native Generation result drawer', () => {
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
     expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
     expect(renderer!.root.findAllByProps({ 'data-icon': 'download' })).toHaveLength(4)
-    const originalMediaLinks = renderer!.root.findAllByProps({ className: 'harness-comfyui-media-original-link' })
-    expect(originalMediaLinks).toHaveLength(4)
-    expect(originalMediaLinks[0]!.props).toMatchObject({
-      href: generationMediaContentUrl('media_1', 'session-1'),
+    const mediaViewerLinks = renderer!.root.findAllByProps({ className: 'harness-comfyui-media-viewer-link' })
+    expect(mediaViewerLinks).toHaveLength(4)
+    expect(mediaViewerLinks[0]!.props).toMatchObject({
+      href: generationMediaViewerUrl('media_1', 'session-1'),
       target: '_blank',
       rel: 'noopener noreferrer',
-      'aria-label': `${RESULTS_COPY.openOriginalMedia}：result-1.webp`,
+      'aria-label': `${RESULTS_COPY.openMediaViewer}：result-1.webp`,
     })
+    expect(renderer!.root.findAllByType('img')[0]!.props.src)
+      .toBe(generationMediaContentUrl('media_1', 'session-1'))
     expect(renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.title)
       .toBe(RESULTS_COPY.downloadWorkflow)
     const anchor = { href: '', download: 'unset', click: vi.fn(), remove: vi.fn() }
@@ -321,7 +327,7 @@ describe('native Generation result drawer', () => {
     act(() => { (buttonByText(renderer!, RESULTS_COPY.video).props.onClick as () => void)() })
     expect(renderer!.root.findAllByType('video')).toHaveLength(1)
     expect(renderer!.root.findByProps({
-      'aria-label': `${RESULTS_COPY.openOriginalMedia}：result.mp4`,
+      'aria-label': `${RESULTS_COPY.openMediaViewer}：result.mp4`,
     }).props).toMatchObject({ target: '_blank', rel: 'noopener noreferrer' })
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_MEDIA_NOT_FOUND"}', {
       status: 404,

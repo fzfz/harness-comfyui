@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import type { GenerationMediaKind } from '../../generation/contract.ts'
+
 import {
   GenerationRuntimeError,
   GenerationSubmissionNotSentError,
@@ -42,7 +44,7 @@ function outputDescriptor(
   value: unknown,
   nodeId: string,
   outputIndex: number,
-  mediaKind: 'image' | 'video',
+  mediaKind: GenerationMediaKind,
 ): GenerationOutputDescriptor | null {
   const source = record(value, 'ComfyUI output descriptor')
   if (source.type === 'temp') return null
@@ -77,7 +79,7 @@ function normalizeOutputs(value: unknown, outputNodeIds: readonly string[]): rea
   for (const nodeId of Object.keys(source).sort()) {
     if (!allowed.has(nodeId)) continue
     const node = record(source[nodeId], `ComfyUI output node "${nodeId}"`)
-    const collections: readonly ['image' | 'video', 'images' | 'video'][] = [
+    const collections: readonly [GenerationMediaKind, 'images' | 'video'][] = [
       ['image', 'images'],
       ['video', 'video'],
     ]

@@ -4,8 +4,8 @@
 | --- | --- |
 | `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
 | `src/host/cli/` | managed CLI 的 shell capability 与 loopback Host route |
-| `src/host/generation/` | Generation Runtime、Source、Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、Tool、Remote、coordinator 和媒体路由 |
 | `src/cli/` | managed project CLI 的 argv、request 和 Generation Request 结构化合同 |
+| `src/host/generation/` | Generation Runtime、Source、Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
 | `src/generation/` | Generation Host/Client 共享合同 |
 | `src/client/` | Harness 原生扩展位、上下文选择器和真实 Run/Media 结果列 |
@@ -28,7 +28,7 @@
 | `tests/contract/` | package、Git 跟踪和 CI 合同测试 |
 | `tests/security/` | 依赖与边界安全测试 |
 | `tests/production/` | `prod:test` 执行的生产进程生命周期测试 |
-| `prototype/` | 工作台静态原型与原型测试；不是运行时数据来源 |
+| `prototype/` | 工作台和 Session Media Viewer 静态原型及原型测试；不是运行时数据来源 |
 | `docs/system/` | 当前系统规范 |
 
 运行后生成的 `.local/production/`、`.local/worktree-development/`、`.local/source-client/`、`.local/source-production-managed.json`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。生产启动和独立 worktree 开发启动都不会生成 `lib/`。

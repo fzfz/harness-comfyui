@@ -1,31 +1,31 @@
-# Harness ComfyUI v0.31.4
+# Harness ComfyUI v0.32.0
 
-v0.31.4 修复 Generation Run `run_d90e9102-cc2e-4af6-9e0f-b4c85942f2ce` 暴露的运行参数枚举校验缺失。该 Run 的 Tool Call 传入 `sampler_name: "LCM"`，模板 40 保存的值是 `lcm`，实例 122 的 `/object_info` 也只允许 `lcm`。旧 compiler 把 `LCM` 原样写入 Actual Workflow 和 API Workflow，直到 ComfyUI `/prompt` 返回 `value_not_in_list`。
+v0.32.0 为结果列中的 Generation Media 新增方案 A 的本会话媒体查看页。用户在结果列点击图片或视频后，新标签页显示该媒体、同一个 Session 中的时间顺序导航以及该媒体生成时保存的正面提示词。
 
-## 实时枚举校验
+## 本会话媒体导航
 
-- Workflow compiler 使用目标 ComfyUI 实例 `/object_info` 中的字符串枚举校验每个已解析运行参数目标。请求值与实例允许值精确相等时，compiler 保留请求值。
-- 请求值只与一个实例允许值大小写无关地相等时，compiler 写入实例返回的精确值。例如，`LCM` 写入为 `lcm`，`NORMAL` 写入为 `normal`。
-- 请求值没有匹配值或存在多个大小写无关匹配值时，compiler 返回 `GENERATION_PARAMETER_INVALID`。错误信息包含 generation parameter ID、`ComfyUI节点ID:节点类型.输入名`、收到值、实例允许值和再次调用 `generate_with_comfyui` 的修正动作。
-- 校验逻辑适用于实时 `/object_info` 声明字符串枚举的全部 ComfyUI widget，不包含 sampler、模板 ID、ComfyUI 节点 ID 或 ComfyUI 节点类型特例。compiler 不读取 Source 模板记录中的 `parameters_json` 或 `bindings_json`。
+- Client 结果列把图片和视频链接到同源 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>` 查看页；缩略图继续读取原有 `/content` 路由，Actual Workflow 下载继续使用原有 `/workflow` 路由。
+- 查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的全部媒体。左侧按钮和不带修饰键的 `ArrowLeft` 切换到较新媒体，右侧按钮和不带修饰键的 `ArrowRight` 切换到较早媒体。
+- 当前媒体位于 Session 最新或最早边界时，页面禁用对应按钮并显示完整边界文案。导航不会从首项循环到末项，也不会从末项循环到首项。
+- 页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL。用户刷新当前 URL 时，Host 继续把 URL 中的媒体作为当前项。
+- 图片和视频保持原始宽高比完整显示，不裁切内容。视频使用浏览器原生播放控件，媒体文件不存在时页面说明用户需要返回会话并刷新本会话媒体列表。
 
-## Tool 准备错误返回与异步提交
+## 正面提示词
 
-- `generate_with_comfyui` 在返回 `run_id` 前完成 Source、实例和模板读取、`/object_info` 读取、参数目标解析、枚举校验、模型和 LoRA 映射、Official 前端导出、Official cache 读取以及 Runtime Input Overlay。上述任一阶段失败时，Tool Call 直接收到原始错误码和错误信息，因此调用方可以修正请求或实例状态后再次调用 Tool。
-- Host 仍然持久化失败 Run，结果页面可以继续显示同一个错误码和错误信息。同一个失败 Tool Call 的幂等重放返回持久化错误，不会把失败 Run 误报为成功接纳。
-- Workflow 准备成功后，Tool 返回 `run_id`。此后发生的 ComfyUI `/prompt` 提交错误、Jobs API 观察错误、远端节点执行错误和媒体下载错误继续由 Generation coordinator 异步写入 Run。
+- Host 从每项媒体所属 Generation Run 的持久生成请求读取 `parameters.positive_prompt`。查看页逐字符显示该字符串，不修改、翻译、重新排序或截断内容。
+- Generation Run 没有保存非空正面提示词时，查看页显示“未保存”和“这项媒体的生成记录没有保存正面提示词。”。
+- 查看页的启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
 
-## `/object_info` 短期缓存
+## 归属与页面安全
 
-- Host 按 ComfyUI 实例 ID 和实例 URL 在进程内缓存成功解析的 `/object_info` 10 分钟。同一实例的并发 compile 共享一个在途请求，支持一批 Tool Call 复用同一份实时节点定义。
-- 不同实例 ID 或实例 URL 使用独立缓存项。HTTP 错误、协议错误和无效 JSON 不进入缓存。认证值和 `/object_info` 内容不写入磁盘。
+- Host 在返回查看页前验证 GET 方法、目标 Session、当前 workspace 和媒体归属。错误 Session、跨 workspace 媒体和缺失媒体不会返回查看页。
+- 查看页响应禁止缓存和 MIME 嗅探，使用 `Referrer-Policy: no-referrer` 以及只允许同源媒体、内联页面样式和内联页面脚本的固定 Content Security Policy。
+- 左右方向按钮的无障碍名称包含动作、时间方向、目标序号、目标文件名和完整生成时间。页面切换媒体后通过 `aria-live` 播报目标序号、文件名和生成时间。
 
 ## 验证
 
-- 原 Run 请求使用修复后的源码重放时，模板 40 节点 41 的 `sampler_name` 从 `LCM` 规范化为实例允许值 `lcm`。单变量 `scheduler: "NORMAL"` 重放结果是 `normal`；不存在的 sampler 和 scheduler 均在 compiler 阶段返回 `GENERATION_PARAMETER_INVALID`。
-- `/object_info` 自动化测试验证 40 个并发 compile 只产生一个请求、599999 毫秒内复用缓存、600000 毫秒时刷新、不同实例隔离和失败响应不缓存。
-- 实例 122 的当前 Source Catalog 包含 18 个 Workflow 模板。真实矩阵逐模板验证 15 个公开参数，共执行 270 个单参数检查；191 个基线支持参数全部通过，79 个基线不支持参数全部返回 `GENERATION_PARAMETER_TARGET_NOT_FOUND`。
-- 18 个模板的受支持参数组合编译全部通过。18 个模板还分别完成真实 ComfyUI 页面 Official API Workflow cache miss、同模板 cache hit、单次前端导出和基础对象一致性验证。
-- 独立 worktree Host 的 `worktree:status` 与 `worktree:health` 通过，验证结束后 `worktree:stop` 和停止状态检查通过。
-- 完整 `pnpm quality` 已通过：416 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 完整 `pnpm quality` 已通过：429 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试全部通过；函数覆盖率为 100%。依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 独立 worktree Host 的 `worktree:status` 和 `worktree:health` 通过，验证结束后的 `worktree:stop` 和停止状态检查通过。
+- 1280 × 720 与 390 × 844 浏览器验收覆盖图片、原生控件视频、首项、末项、正面提示词缺失、超长正面提示词内部滚动、媒体文件不存在、点击导航、裸方向键和无水平溢出；用户按带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键时，页面不切换媒体。
+- 独立语义审核确认生产文案、边界指代、无障碍名称、缺失提示词和媒体文件不存在状态没有 blocker、medium 或 minor 级别问题。
 - 本版本没有新增 npm 依赖，也没有修改 `pnpm-lock.yaml`。本版本只发布 Git tag 与 GitHub Release 记录，不附加产品包。

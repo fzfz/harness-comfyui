@@ -42,6 +42,72 @@ function request(prompt: string): GenerationRequest {
 }
 
 describe('GenerationRuntime acceptance', () => {
+  it('returns the persisted positive prompt through the Run public interface', async () => {
+    const runtime = createRuntime({
+      async prepare(generationRequest) {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: {},
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const positivePrompt = '银发少女，蓝灰色电影光线\n保持原始换行。'
+    const { runId } = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_prompt' },
+      request(positivePrompt),
+    )
+
+    expect(runtime.positivePromptForRun(runId)).toBe(positivePrompt)
+    runtime.close()
+  })
+
+  it('returns null when the persisted positive prompt is missing or unusable', async () => {
+    const runtime = createRuntime({
+      async prepare() {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: {},
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const requests = [
+      { ...request('unused'), parameters: { width: 1024 } },
+      request(''),
+      request('  \n  '),
+      { ...request('unused'), parameters: { positive_prompt: 42 } },
+    ] satisfies GenerationRequest[]
+
+    for (const [index, generationRequest] of requests.entries()) {
+      const { runId } = await runtime.acceptGeneration(
+        { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: `call_missing_prompt_${index}` },
+        generationRequest,
+      )
+      expect(runtime.positivePromptForRun(runId)).toBeNull()
+    }
+    runtime.close()
+  })
+
+  it('rejects a positive prompt lookup for a missing Run', () => {
+    const runtime = createRuntime({ async prepare() { throw new Error('unreachable') } })
+
+    expect(() => runtime.positivePromptForRun('run_missing')).toThrow(
+      expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
+    )
+    runtime.close()
+  })
+
   it('prepares one independent Run per Tool callId before accepting it', async () => {
     const preparedPrompts: string[] = []
     const runtime = createRuntime({

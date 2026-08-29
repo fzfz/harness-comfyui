@@ -74,6 +74,42 @@ function acceptSubmission(input: Parameters<GenerationTransport['submit']>[0]): 
 }
 
 describe('GenerationRuntime worker lifecycle', () => {
+  it('orders Session media by creation time, output index, and media ID', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-media-order-'))
+    temporaryDirectories.push(root)
+    const transport: GenerationTransport = {
+      submit: vi.fn(), observe: vi.fn(), download: vi.fn(),
+    }
+    const first = runtime(root, transport)
+    const accepted = await first.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_order' }, request,
+    )
+    first.close()
+    const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
+    const insert = database.prepare(`
+      INSERT INTO generation_media(
+        media_id, run_id, workspace_id, session_id, turn, node_id, output_index,
+        media_kind, filename, relative_path, media_type, byte_size, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const row = (mediaId: string, outputIndex: number, createdAt: number) => insert.run(
+      mediaId, accepted.runId, 'workspace_1', 'session_1', 4, mediaId, outputIndex,
+      'image', `${mediaId}.png`, `aa/bb/${mediaId}.png`, 'image/png', pngBytes.byteLength, createdAt,
+    )
+    row('media_earlier', 9, 99)
+    row('media_output_low', 1, 100)
+    row('media_id_low', 2, 100)
+    row('media_id_high', 2, 100)
+    database.close()
+
+    const reopened = runtime(root, transport)
+    expect(reopened.queryMedia({ workspaceId: 'workspace_1', sessionId: 'session_1' })
+      .map(item => item.mediaId)).toEqual([
+      'media_id_low', 'media_id_high', 'media_output_low', 'media_earlier',
+    ])
+    reopened.close()
+  })
+
   it('submits, observes, downloads multiple outputs, and stores media in two-level shards', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-worker-'))
     temporaryDirectories.push(root)

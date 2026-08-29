@@ -1,0 +1,113 @@
+# 工作进度
+
+## 2026-08-28
+
+- 已读取 `planning-with-files`、`prototype`、`frontend-design` 和 `stop-that-shit` 的本机 Skill 说明。
+- 已确认主工作区存在与本需求无关的用户改动，并决定不触碰这些改动。
+- 已从本地 `main` 的提交 `a96873594189aea1714cd89d1592dbc3bc804796` 创建独立 worktree `/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-session-media-viewer-navigation`。
+- 已创建分支 `codex/plan-session-media-viewer-navigation`。
+- 已初始化需求方案的持久化规划文件。
+- 已读取 UI 原型分支规范、独立 worktree 开发验证流程、系统架构和目录结构文档。
+- 已确认静态原型属于 `prototype/`，正式界面与媒体投影位于 `src/client/`。
+- 已确认现有媒体点击入口直接在新标签页打开原始媒体内容，没有独立媒体查看页面。
+- 已确认当前 Client 媒体投影没有正面提示词字段。
+- 已确认本会话媒体的现有稳定排序是 `created_at DESC, output_index DESC, media_id DESC`。
+- 已确认正面提示词已保存在媒体所属 Run 的生成请求 `parameters.positive_prompt` 中。
+- 已确认 Host 当前没有媒体查看 HTML 路由，现有媒体路由只支持原文件和 Workflow 下载。
+- 已决定在 `prototype/media-viewer-navigation/` 创建独立三方案原型，避免修改之前已经确定的生成工作台原型。
+- 已核对现有生成工作台的颜色、字体和媒体 fixture。
+- 直接读取 SVG fixture 的视觉检查失败；后续将转换为临时 PNG 后检查，不修改原 fixture。
+- 已通过临时 PNG 完成 `generated-portrait.svg` 视觉检查，确认原型需要以完整纵向媒体为布局中心。
+- 已完成三个静态原型方案的设计令牌、结构线框、识别元素和设计自检。
+- 已创建 `prototype/media-viewer-navigation/` 静态原型。原型包含三个结构方案、五项本会话媒体、左右点击导航、键盘导航、正面提示词展示、提示词缺失状态、移动端布局和原型结构检查。
+- 已把本任务规划文件迁移到 `.planning/media-viewer-navigation/`，并精确恢复仓库根目录原有的 `task_plan.md`、`findings.md` 和 `progress.md`。根目录三份文件相对当前分支 `HEAD` 没有差异。
+- 已运行新原型的 JavaScript 语法检查和四项结构检查，全部通过。
+- 已在本地浏览器打开方案 A，完成 DOM、视觉、点击导航和键盘导航检查。
+- 已在本地浏览器检查方案 B 和方案 C，并根据 720px 视口证据收紧三个方案的媒体舞台高度、修正方案 C 的箭头对齐和视频网格尺寸。
+- 已复核方案 C 修正结果：媒体完整包含在画框内，媒体不再覆盖图注和正面提示词。
+- 已保存方案 A、B、C 的最终浏览器预览图到 `.planning/media-viewer-navigation/evidence/`。
+- 已验证首项、末项、提示词缺失状态和 390 × 844 窄屏布局；浏览器控制台没有错误或警告。
+- 已完成 `.planning/media-viewer-navigation/requirement-proposal.md`，方案当前等待用户批准。
+- 独立语义审核发现执行角色与领域名词定义、必须实现要求到验收条目的映射以及边界文案存在缺口。
+- 已补充执行角色、Session、workspace、Run、Host、Client、Remote 服务、Actual Workflow 和 API Workflow 定义；已新增精确 Content Security Policy、扩展验收清单和要求追踪表。
+- 已把原型边界文案改为“当前媒体已是本会话最新媒体”或“当前媒体已是本会话最早媒体”，并把提示词状态改为“生成时保存”。
+- 已请求独立语义审核员复核修正结果。
+- 第二轮独立语义审核确认边界文案与正面提示词语义已经修正，同时指出原型启动职责、三个首次出现名词以及六项必须要求的独立追踪仍不完整。
+- 已把原型启动和结构检查职责明确分配给计划编写者，并在原型说明中定义 Harness Session 和 ComfyUI 工作流 JSON。
+- 已把 Host 定义改为直接指向 `generation_runs` 表与 `generation_media` 表，避免使用未定义的 Run Repository 名词。
+- 已为首尾不循环、视频原生控件、默认方案 A、现有内容与 Workflow URL 函数保持、不得新增 SQLite 表或列或迁移、不得新增 Remote 服务或 Client 持久化状态或依赖包增加独立验收条目和要求追踪行。
+- 已请求独立语义审核员执行第三轮语义验收。
+- 第三轮独立语义验收通过；审核员没有发现 blocker 或 medium 级别的残留语义问题，需求方案与原型说明可以提交用户审批。
+- 用户已批准方案 A，并要求计划执行者使用 `implement` Skill 实施 `proposal-1`。
+- 已读取 `implement`、`tdd`、`code-review`、`planning-with-files` 和 `frontend-design` 的本机 Skill 说明，以及 TDD 的测试与 Mock 参考文档。
+- 已确认 TDD 使用已批准方案中的五个公开接缝：URL 合同、Runtime 提示词接口、HTML 页面生成器、Host `/view` 路由和 Client 媒体卡片入口。
+- 已运行 `pnpm quality:preinstall`；清单与锁文件一致、完整与生产依赖漏洞数量均为 0、固定版本构建脚本允许清单检查通过。
+- 已使用 `pnpm install --frozen-lockfile` 准备独立 worktree 的现有固定版本依赖；pnpm 复用本机缓存，没有下载包，也没有修改依赖清单或锁文件。
+- URL 合同 TDD 已完成：失败测试先证明 `generationMediaViewerUrl()` 不存在，最小实现生成经过编码的 `/view?session_id=` URL；合同定向测试 4 项与类型检查通过。
+- Runtime 正面提示词 TDD 已完成：失败测试先证明窄接口不存在，再分别证明空字符串需要归一为缺失状态；最小实现复用持久请求校验并保留非空原始字符串。Runtime 定向测试 11 项通过，缺失 Run 复用现有 `GENERATION_RUN_NOT_FOUND` 错误。
+- 页面生成器 TDD 已完成：失败测试依次证明页面模块不存在、浏览器脚本不存在、跨 Session 当前媒体未被拒绝、方案 A 样式不存在；最小实现提供安全启动 JSON、方案 A 深色布局、图片与原生控件视频、首尾不循环导航、裸方向键、修饰键拒绝、URL 更新、刷新定位、播报、媒体错误状态、提示词状态、390px 布局和减弱动画。页面生成器定向测试 6 项与类型检查通过。
+- Host `/view` 路由 TDD 已完成：失败集成测试先取得 404；最小实现复用 Session/workspace/媒体归属校验，读取现有完整媒体顺序和每个 Run 的正面提示词，返回最小启动数据及固定安全响应头。媒体路由集成测试 2 项与类型检查通过。
+- Client 媒体卡片入口 TDD 已完成：失败组件测试先证明卡片仍打开 `/content`；最小实现把卡片链接改为 `/view`，保留缩略图 `/content`，并把唯一 Client 文案来源改为“在新窗口打开媒体查看页”。Client 定向测试 10 项与类型检查通过。
+- 已确认 Git 远端 `origin` 指向 `https://github.com/fzfz/harness-comfyui.git`；推送、CI、标签和 GitHub Release 可以按照仓库发布流程执行。
+- 首次 `pnpm quality` 的依赖安全、Harness 边界、类型检查和覆盖率阶段通过；31 个 unit/integration 文件中的 426 项测试通过，函数覆盖率为 100%。合同阶段发现产品版本测试仍固定为 `0.31.4`，完整门禁因此按预期终止。
+- 修正版本合同后，第二次 `pnpm quality` 全部通过：426 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%。
+- 独立 worktree Host 已通过 `worktree:status` 与 `worktree:health`，真实 Harness 页面已确认目标 workspace、DeepSeek V4 Flash 和零媒体结果列状态。
+- 生产查看页在 1280 × 720 浏览器视口中通过布局测量和截图检查；视觉检查发现并修正方向按钮可见时间使用完整日期造成的多行断裂。
+- 修正后已重新加载生产页面并确认方向按钮只显示 `HH:mm`；已保存最终桌面截图 `.planning/media-viewer-navigation/evidence/production-viewer-desktop.png`。
+- 生产查看页在 390 × 844 浏览器视口中通过布局、按钮边界、箭头中心、提示词首屏和无水平溢出检查；已保存最终窄屏截图 `.planning/media-viewer-navigation/evidence/production-viewer-mobile.png`。
+- 真实浏览器点击导航、裸键盘方向键、带修饰键方向键、URL 更新、边界禁用、媒体种类切换、提示词缺失状态和 `aria-live` 播报均通过。
+- 生产查看页和真实 Harness 页面没有浏览器错误或警告日志。
+- 已停止临时页面预览服务，已运行 `pnpm worktree:stop`，并确认 `pnpm worktree:status` 返回 `stopped`；独立 worktree 前台 Host 终端已正常退出。
+- 第一轮生产语义审核确认提示词状态、媒体错误文案、Client 查看页对象和 `aria-live` 播报通过，同时发现启用方向按钮缺少目标文件名、桌面禁用按钮缺少完整可见边界文案两项中等问题，以及“新窗口/新标签页”一项用语不一致。
+- 已把启用方向按钮无障碍名称改为包含切换动作、时间方向、目标序号、完整文件名和完整生成时间；已把桌面禁用按钮可见文案改为“已是本会话最新媒体”或“已是本会话最早媒体”；已把 Client 文案统一为“在新标签页打开媒体查看页”。
+- 语义修正后的页面生成器和 Client 定向测试共 16 项通过，类型检查与 `git diff --check` 通过。
+- 浏览器已复核首项、末项、文件加载失败和 390 × 844 窄屏状态；首尾边界显示完整文案，方向按钮无障碍名称包含目标序号、文件名和生成时间，缺失提示词与文件加载失败文案符合批准方案。
+- 已保存首项边界、末项边界、文件加载失败、最终桌面和最终窄屏生产页面截图；窄屏页面宽度为 390px，没有水平溢出，方向按钮保留完整无障碍名称。
+- 语义修正后的完整 `pnpm quality` 再次通过：426 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- 第二轮生产语义验收通过；独立审核员确认 blocker、medium 和 minor 均为 0，正式实现可以进入提交与发布阶段。
+- 源码、测试、静态原型和证据已提交为 `6207ba178b23667a6a740db85cd226fab05d8059`，并推送到功能分支与 `main`。
+- 源码提交的 GitHub CI `33185456038` 通过；CI 完成预安装质量门禁、冻结依赖安装和完整快速质量门禁。
+- 已把 `README.md`、`CONTEXT.md`、`docs/releasenotes.md`、`docs/system/architecture.md`、`docs/system/directory-structure.md`、`docs/system/testing.md` 和 `docs/system/releasing.md` 更新为 v0.32.0 与 Session Media Viewer 的实际合同。
+- 第一轮发布文档语义验收发现 1 项 medium 与 3 项 minor：自动测试与浏览器响应式验收范围混淆、媒体显示行为不够具体、修饰键验收缺少完整输入与结果、媒体排序执行主体不精确。
+- 已把自动化合同和浏览器布局验收分开描述，把媒体显示定义为保持原始宽高比且不裁切，把修饰键输入与页面结果写完整，并把排序主体修正为 `GenerationRuntime.queryMedia()`。
+- 第二轮发布文档语义复验通过；独立审核员确认 7 份发布文档没有 blocker、medium 或 minor 级别的残留问题。
+- 发布文档复验后的最终 `pnpm quality` 通过：426 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- 双轴代码审查的 Standards 轴发现 0 项硬性违规和 3 项 low 判断性问题；Spec 轴发现 2 项 medium 与 1 项 low，分别涉及窄屏长提示词滚动、旧媒体迟到错误和测试分支覆盖。
+- 已通过红—绿测试修复窄屏提示词独立滚动和旧媒体迟到错误；已补齐左右按钮、裸左右方向键、三键媒体排序、同 Run 提示词去重和共享媒体类型合同，并删除未使用的 CSS 令牌。
+- 390 × 844 超长提示词浏览器验证通过：提示词面板 `clientHeight` 为 227、`scrollHeight` 为 3603、`overflow-y` 为 `auto`；页面 `scrollHeight` 等于 844，页面没有水平或额外纵向扩张，左右箭头中心与媒体舞台中心均为 341.0625。
+- 审查修正后的完整 `pnpm quality` 通过：428 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- 审查修正文档的独立语义验收发现 1 项 minor：测试规范中的“三键媒体排序”和“同 Run 正面提示词去重”可能被误解为键盘输入或删除提示词内容。
+- 已把测试规范改为明确的三个降序排序字段，并明确说明同一个 Run 的正面提示词只读取一次且仍投影到该 Run 的每项媒体。
+- 双轴审查修正文档的最终语义复验通过；blocker、medium 和 minor 均为 0。
+- 最终语义复验后的完整 `pnpm quality` 通过：428 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- Standards 复审通过，硬性违规和判断性发现均为 0；Spec 复审确认两个 medium 与原 low 的导航、排序分支已关闭，同时发现超长提示词缺少逐字符自动化断言这一项 low。
+- 已新增 128 行超长正面提示词测试，逐项断言启动 JSON、页面渲染文本、总长度、首行和末尾内容完整一致。
+- 超长正面提示词定向测试 8 项通过，类型检查通过；完整 `pnpm quality` 通过：429 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过，函数覆盖率为 100%。
+- 最终 Standards 复审通过：findings 0，硬性仓库规范违规 0；完整 diff 没有新的 Fowler baseline smell。
+- 最终 Spec 复审通过：findings 0；已批准方案要求的实现与测试分支全部通过，未发现需求外行为扩张。
+
+## 验证记录
+
+- `node --check prototype/media-viewer-navigation/app.js`：通过。
+- `node --test prototype/media-viewer-navigation/tests/*.test.mjs`：5 项通过，0 项失败。
+- `node --test prototype/generation-workbench/tests/*.test.mjs`：27 项通过，0 项失败。
+- `git diff --check`：通过。
+- 本地浏览器视觉和交互验证：三个方案在 1280 × 720 默认视口通过；点击导航、键盘导航、边界布局和正面提示词更新通过。
+- 本地浏览器窄屏验证：方案 A 在 390 × 844 视口通过；没有水平溢出，左右箭头和正面提示词区域可见。
+- 浏览器控制台日志：0 条错误，0 条警告。
+
+## 文件变更
+
+- `.planning/media-viewer-navigation/task_plan.md`
+- `.planning/media-viewer-navigation/findings.md`
+- `.planning/media-viewer-navigation/progress.md`
+- `prototype/media-viewer-navigation/index.html`
+- `prototype/media-viewer-navigation/app.js`
+- `prototype/media-viewer-navigation/styles.css`
+- `prototype/media-viewer-navigation/README.md`
+- `prototype/media-viewer-navigation/tests/prototype-contract.test.mjs`
+- `.planning/media-viewer-navigation/requirement-proposal.md`
+- `.planning/media-viewer-navigation/evidence/variant-a-original-page-enhanced.jpg`
+- `.planning/media-viewer-navigation/evidence/variant-b-time-rails.jpg`
+- `.planning/media-viewer-navigation/evidence/variant-c-album-caption.jpg`
+- `.planning/media-viewer-navigation/evidence/variant-a-mobile.jpg`

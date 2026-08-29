@@ -17,6 +17,7 @@ export const GENERATION_RUN_STATUSES = [
 ] as const
 
 export type GenerationRunProjectionStatus = (typeof GENERATION_RUN_STATUSES)[number]
+export type GenerationMediaKind = 'image' | 'video'
 
 export interface GenerationProjectionRequest {
   readonly sessionId: string
@@ -41,7 +42,7 @@ export interface GenerationMediaProjection {
   readonly runId: string
   readonly turn: number
   readonly outputIndex: number
-  readonly mediaKind: 'image' | 'video'
+  readonly mediaKind: GenerationMediaKind
   readonly filename: string
   readonly mediaType: string
   readonly byteSize: number
@@ -149,6 +150,10 @@ export function parseGenerationProjection(value: unknown): GenerationProjection 
 
 export function generationMediaContentUrl(mediaId: string, sessionId: string): string {
   return `${GENERATION_MEDIA_URL_PREFIX}/${encodeURIComponent(mediaId)}/content?session_id=${encodeURIComponent(sessionId)}`
+}
+
+export function generationMediaViewerUrl(mediaId: string, sessionId: string): string {
+  return `${GENERATION_MEDIA_URL_PREFIX}/${encodeURIComponent(mediaId)}/view?session_id=${encodeURIComponent(sessionId)}`
 }
 
 export function generationMediaWorkflowUrl(mediaId: string, sessionId: string): string {

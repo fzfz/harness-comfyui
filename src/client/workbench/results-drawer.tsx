@@ -4,6 +4,7 @@ import type { SessionListState, UseConversationSession } from '@deepseek-ai/dsh-
 
 import {
   generationMediaContentUrl,
+  generationMediaViewerUrl,
   generationMediaWorkflowUrl,
   type GenerationMediaProjection,
   type GenerationRunProjection,
@@ -187,14 +188,15 @@ function MediaPreview({
   readonly onError: (source: string) => void
 }) {
   const source = generationMediaContentUrl(item.mediaId, sessionId)
+  const viewer = generationMediaViewerUrl(item.mediaId, sessionId)
   if (errorCode !== null) return <div className="harness-comfyui-media-preview-error"><code>{errorCode}</code></div>
   return (
     <a
-      className="harness-comfyui-media-original-link"
-      href={source}
+      className="harness-comfyui-media-viewer-link"
+      href={viewer}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`${RESULTS_COPY.openOriginalMedia}：${item.filename}`}
+      aria-label={`${RESULTS_COPY.openMediaViewer}：${item.filename}`}
     >
       {item.mediaKind === 'video'
         ? <video src={source} preload="metadata" aria-label={`${item.filename} 视频`} onError={() => onError(source)} />

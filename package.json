@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.31.4",
+  "version": "0.32.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
@@ -17,7 +17,7 @@
     "test:coverage": "vitest run tests/unit tests/integration --coverage --testTimeout=30000",
     "test:contract": "vitest run tests/contract tests/security",
     "test:integration": "vitest run tests/integration",
-    "test:prototype": "node --test prototype/generation-workbench/tests/*.test.mjs",
+    "test:prototype": "node --test prototype/generation-workbench/tests/*.test.mjs prototype/media-viewer-navigation/tests/*.test.mjs",
     "verify:comfyui-workflows": "node --experimental-strip-types scripts/verification/comfyui-workflow-matrix.mjs",
     "quality:preinstall": "pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts",
     "quality:fast": "pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run prod:test && pnpm run test:prototype",
