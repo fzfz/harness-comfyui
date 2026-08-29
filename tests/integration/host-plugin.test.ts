@@ -6,6 +6,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import * as harnessComfyui from '../../src/index.ts'
+import { reportGenerationRunInputLookupError } from '../../src/host/plugin.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -51,6 +52,25 @@ function provideHostServices(ctx: Context) {
 }
 
 describe('Harness ComfyUI Host plugin', () => {
+  it('writes historical Run lookup context and the original error to the Host logger', () => {
+    const logger = { error: vi.fn() }
+    const error = new Error('private failure')
+
+    reportGenerationRunInputLookupError(logger, {
+      workspaceId: 'workspace_1',
+      runId: 'run_1',
+      error,
+    })
+
+    expect(logger.error).toHaveBeenNthCalledWith(
+      1,
+      'Historical Generation Run input lookup failed for Workspace %s and Run %s.',
+      'workspace_1',
+      'run_1',
+    )
+    expect(logger.error).toHaveBeenNthCalledWith(2, error)
+  })
+
   it('exports the Loader plugin shape and Standard Schema configuration', () => {
     expect(harnessComfyui.name).toBe('harness-comfyui')
     expect(harnessComfyui.inject).toEqual(['tools', 'webServer', 'workspaceRegistry', 'shellEnv'])
@@ -77,6 +97,7 @@ describe('Harness ComfyUI Host plugin', () => {
       'query_semantic_generation_models',
       'query_semantic_comfyui_instances',
       'generate_with_comfyui',
+      'read_comfyui_run_inputs',
     ])
     expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'prefix',

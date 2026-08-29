@@ -74,6 +74,34 @@ describe('Harness ComfyUI CLI contract', () => {
     })
   })
 
+  it('parses one to twenty historical Generation Run IDs without validating each ID as a top-level failure', () => {
+    expect(parseCliArguments(
+      ['generation', 'run-inputs', '--stdin'],
+      JSON.stringify({ run_ids: ['run_1', 'not a valid run id'] }),
+    )).toEqual({
+      command: 'generation.run-inputs',
+      run_ids: ['run_1', 'not a valid run id'],
+    })
+    expect(parseCliRequest({
+      command: 'generation.run-inputs',
+      run_ids: Array.from({ length: 20 }, (_, index) => `run_${index}`),
+    })).toEqual({
+      command: 'generation.run-inputs',
+      run_ids: Array.from({ length: 20 }, (_, index) => `run_${index}`),
+    })
+  })
+
+  it('rejects malformed historical Run query envelopes and batch sizes', () => {
+    expect(() => parseCliRequest({ command: 'generation.run-inputs', run_ids: [] })).toThrow('run_ids')
+    expect(() => parseCliRequest({
+      command: 'generation.run-inputs',
+      run_ids: Array.from({ length: 21 }, (_, index) => `run_${index}`),
+    })).toThrow('run_ids')
+    expect(() => parseCliRequest({ command: 'generation.run-inputs', run_ids: ['run_1', 2] })).toThrow('run_ids')
+    expect(() => parseCliRequest({ command: 'generation.run-inputs', run_ids: ['run_1'], extra: true })).toThrow('properties')
+    expect(() => parseCliArguments(['generation', 'run-inputs', '--stdin'], '{')).toThrow('Generation Run stdin')
+  })
+
   it('rejects undocumented commands, extra properties, invalid ids, and invalid JSON values', () => {
     expect(() => parseCliArguments(['catalog', 'model', 'guess'], '')).toThrow('CLI command')
     expect(() => parseCliArguments(['catalog', 'template', 'resolve', '--id', '0'], '')).toThrow('id')

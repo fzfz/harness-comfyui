@@ -5,9 +5,16 @@ import { dirname, extname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
 import type { GenerationMediaKind } from '../../generation/contract.ts'
+import {
+  MAX_RUN_INPUT_QUERY_IDS,
+  type AvailableGenerationRunInput,
+  type GenerationRunInputArguments,
+  type GenerationRunInputError,
+  type GenerationRunInputResult,
+  type JsonValue,
+} from '../../generation/run-input-contract.ts'
 
-export type JsonPrimitive = string | number | boolean | null
-export type JsonValue = JsonPrimitive | { readonly [key: string]: JsonValue } | readonly JsonValue[]
+export type { JsonPrimitive, JsonValue } from '../../generation/run-input-contract.ts'
 
 export interface GenerationLoraSelection {
   readonly id: string
@@ -159,6 +166,12 @@ export interface GenerationMediaSnapshot {
   readonly createdAt: number
 }
 
+export interface GenerationRunInputLookupErrorReport {
+  readonly workspaceId: string
+  readonly runId: string
+  readonly error: unknown
+}
+
 export interface GenerationRuntimeOptions {
   readonly runRepositoryFile: string
   readonly runDirectory: string
@@ -170,6 +183,12 @@ export interface GenerationRuntimeOptions {
   readonly createMediaId?: () => string
   readonly now?: () => number
   readonly missingObservationMs?: number
+  readonly readJsonArtifact?: (
+    path: string,
+    label: string,
+    signal?: AbortSignal,
+  ) => Promise<Readonly<Record<string, JsonValue>>>
+  readonly reportRunInputLookupError?: (facts: GenerationRunInputLookupErrorReport) => void
 }
 
 interface RunRow {
@@ -271,11 +290,16 @@ function jsonRecord(document: string, label: string): Readonly<Record<string, Js
   return value as Readonly<Record<string, JsonValue>>
 }
 
-async function readJsonArtifact(path: string, label: string): Promise<Readonly<Record<string, JsonValue>>> {
+export async function readGenerationJsonArtifact(
+  path: string,
+  label: string,
+  signal?: AbortSignal,
+): Promise<Readonly<Record<string, JsonValue>>> {
   let document: string
   try {
-    document = await readFile(path, 'utf8')
+    document = await readFile(path, { encoding: 'utf8', signal })
   } catch (error) {
+    if (signal?.aborted === true || (error instanceof Error && error.name === 'AbortError')) throw error
     const code = error !== null && typeof error === 'object' && 'code' in error ? String(error.code) : ''
     throw new GenerationRuntimeError(
       code === 'ENOENT' ? 'GENERATION_ARTIFACT_NOT_FOUND' : 'GENERATION_ARTIFACT_INVALID',
@@ -339,6 +363,38 @@ function generationRequest(document: string): GenerationRequest {
     parameters: source.parameters as Readonly<Record<string, JsonValue>>,
     loras: Object.freeze(loras),
   })
+}
+
+function historicalGenerationRequest(document: string): GenerationRequest {
+  let source: Readonly<Record<string, JsonValue>>
+  try {
+    source = jsonRecord(document, 'Generation request')
+  } catch {
+    throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation request is invalid.')
+  }
+  return generationRequest(JSON.stringify(source.loras === undefined ? { ...source, loras: [] } : source))
+}
+
+function runInputArguments(request: GenerationRequest): GenerationRunInputArguments {
+  return Object.freeze({
+    title: request.title,
+    ...(request.instanceId === null ? {} : { instance_id: request.instanceId }),
+    template_id: request.templateId,
+    ...(request.model === null ? {} : {
+      model: Object.freeze({ id: request.model.id, file_name: request.model.fileName }),
+    }),
+    parameters: request.parameters,
+    loras: Object.freeze(request.loras.map(lora => Object.freeze({
+      id: lora.id,
+      file_name: lora.fileName,
+      weight: lora.weight,
+      trigger_words: lora.triggerWords,
+    }))),
+  })
+}
+
+function runInputError(code: string, message: string): GenerationRunInputError {
+  return Object.freeze({ code, message })
 }
 
 function mediaSnapshot(row: MediaRow): GenerationMediaSnapshot {
@@ -406,6 +462,8 @@ export class GenerationRuntime {
   private readonly createMediaId: () => string
   private readonly now: () => number
   private readonly missingObservationMs: number
+  private readonly readJsonArtifact: NonNullable<GenerationRuntimeOptions['readJsonArtifact']>
+  private readonly reportRunInputLookupError: GenerationRuntimeOptions['reportRunInputLookupError']
   private readonly preparations = new Map<string, Promise<void>>()
   private advanceInFlight: Promise<void> | undefined
 
@@ -420,6 +478,8 @@ export class GenerationRuntime {
     this.createMediaId = options.createMediaId ?? (() => `media_${randomUUID()}`)
     this.now = options.now ?? Date.now
     this.missingObservationMs = options.missingObservationMs ?? 30_000
+    this.readJsonArtifact = options.readJsonArtifact ?? readGenerationJsonArtifact
+    this.reportRunInputLookupError = options.reportRunInputLookupError
     if (!Number.isSafeInteger(this.missingObservationMs) || this.missingObservationMs < 0) {
       throw new TypeError('missingObservationMs is invalid')
     }
@@ -635,6 +695,52 @@ export class GenerationRuntime {
     return typeof value === 'string' && value.trim().length > 0 ? value : null
   }
 
+  async readGenerationRunInputs(
+    input: { readonly workspaceId: string; readonly runIds: readonly string[] },
+    signal?: AbortSignal,
+  ): Promise<GenerationRunInputResult> {
+    assertPathId(input.workspaceId, 'workspaceId')
+    if (
+      !Array.isArray(input.runIds)
+      || input.runIds.length === 0
+      || input.runIds.length > MAX_RUN_INPUT_QUERY_IDS
+      || input.runIds.some(runId => typeof runId !== 'string')
+    ) {
+      throw new TypeError(`runIds must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
+    }
+    const runs = []
+    for (const runId of input.runIds) {
+      signal?.throwIfAborted()
+      try {
+        runs.push(await this.readGenerationRunInput(input.workspaceId, runId, signal))
+      } catch (error) {
+        if (signal?.aborted === true || (error instanceof DOMException && error.name === 'AbortError')) throw error
+        if (error instanceof GenerationRuntimeError) {
+          runs.push(Object.freeze({
+            run_id: runId,
+            lookup_status: 'error' as const,
+            error: runInputError(error.code, error.message),
+          }))
+        } else {
+          this.reportRunInputLookupError?.({
+            workspaceId: input.workspaceId,
+            runId,
+            error,
+          })
+          runs.push(Object.freeze({
+            run_id: runId,
+            lookup_status: 'error' as const,
+            error: runInputError(
+              'GENERATION_RUN_LOOKUP_FAILED',
+              'Generation Run lookup failed. Check the Harness ComfyUI Host logs and retry this run_id.',
+            ),
+          }))
+        }
+      }
+    }
+    return Object.freeze({ runs: Object.freeze(runs) })
+  }
+
   async advance(signal?: AbortSignal): Promise<void> {
     if (this.advanceInFlight !== undefined) return this.advanceInFlight
     const work = this.advanceOnce(signal).finally(() => {
@@ -676,9 +782,72 @@ export class GenerationRuntime {
     `).get(identity.workspaceId, identity.sessionId, identity.callId) as unknown as RunRow | undefined
   }
 
+  private async readGenerationRunInput(
+    workspaceId: string,
+    runId: string,
+    signal?: AbortSignal,
+  ): Promise<AvailableGenerationRunInput> {
+    if (!SAFE_PATH_ID.test(runId)) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_ID_INVALID',
+        'Generation Run ID is invalid. Check the complete run_id and retry it.',
+      )
+    }
+    const row = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?')
+      .get(runId) as unknown as RunRow | undefined
+    if (row === undefined || row.workspace_id !== workspaceId) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_NOT_FOUND',
+        'Generation Run was not found in the current Workspace.',
+      )
+    }
+    const request = historicalGenerationRequest(row.request_json)
+    const argumentsValue = runInputArguments(request)
+    if (row.actual_workflow_path === null) {
+      return Object.freeze({
+        run_id: runId,
+        lookup_status: 'available',
+        arguments: argumentsValue,
+        workflow_status: 'unavailable',
+        workflow_error: runInputError(
+          row.error_code ?? 'GENERATION_ARTIFACT_NOT_READY',
+          row.error_message ?? 'The Actual Workflow is not ready.',
+        ),
+      })
+    }
+    try {
+      const workflow = await this.readJsonArtifact(
+        join(this.options.runDirectory, row.actual_workflow_path),
+        'Actual Workflow',
+        signal,
+      )
+      return Object.freeze({
+        run_id: runId,
+        lookup_status: 'available',
+        arguments: argumentsValue,
+        workflow_status: 'available',
+        workflow,
+      })
+    } catch (error) {
+      if (!(error instanceof GenerationRuntimeError)) throw error
+      return Object.freeze({
+        run_id: runId,
+        lookup_status: 'available',
+        arguments: argumentsValue,
+        workflow_status: 'unavailable',
+        workflow_error: runInputError(error.code, error.message),
+      })
+    }
+  }
+
   private getRow(runId: string): RunRow {
     const row = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?').get(runId) as unknown as RunRow | undefined
-    if (row === undefined) throw new GenerationRuntimeError('GENERATION_RUN_NOT_FOUND', 'Generation Run was not found.')
+    if (row === undefined) {
+      throw new GenerationRuntimeError(
+        'GENERATION_RUN_NOT_FOUND',
+        'Generation Run was not found.',
+      )
+    }
     return row
   }
 
@@ -758,8 +927,16 @@ export class GenerationRuntime {
     }
     const promptId = this.createPromptId()
     if (promptId.trim().length === 0) throw new TypeError('promptId is invalid')
-    const actualWorkflow = await readJsonArtifact(join(this.options.runDirectory, row.actual_workflow_path), 'Actual Workflow')
-    const apiWorkflow = await readJsonArtifact(join(this.options.runDirectory, row.api_workflow_path), 'API Workflow')
+    const actualWorkflow = await this.readJsonArtifact(
+      join(this.options.runDirectory, row.actual_workflow_path),
+      'Actual Workflow',
+      signal,
+    )
+    const apiWorkflow = await this.readJsonArtifact(
+      join(this.options.runDirectory, row.api_workflow_path),
+      'API Workflow',
+      signal,
+    )
     let requestStarted = false
     const submitted = await transport.submit({
       instanceId: row.instance_id,

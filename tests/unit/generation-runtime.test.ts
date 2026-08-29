@@ -1,12 +1,15 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, unlinkSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   GenerationRuntime,
   GenerationRuntimeError,
+  readGenerationJsonArtifact,
   type GenerationPreparationAdapter,
   type GenerationRequest,
 } from '../../src/host/generation/generation-runtime.ts'
@@ -22,6 +25,10 @@ afterEach(() => {
 function createRuntime(preparer: GenerationPreparationAdapter): GenerationRuntime {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-generation-'))
   temporaryDirectories.push(root)
+  return createRuntimeAt(root, preparer)
+}
+
+function createRuntimeAt(root: string, preparer: GenerationPreparationAdapter): GenerationRuntime {
   return new GenerationRuntime({
     runRepositoryFile: join(root, 'data', 'runs.sqlite'),
     runDirectory: join(root, 'runs'),
@@ -334,6 +341,572 @@ describe('GenerationRuntime acceptance', () => {
       status: 'failed',
       errorCode: 'SOURCE_FAILED',
     })
+    runtime.close()
+  })
+})
+
+describe('GenerationRuntime historical Run input lookup', () => {
+  it('returns ordered success and error items without stopping after one missing Run', async () => {
+    const runtime = createRuntime({
+      async prepare(generationRequest) {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const firstRequest: GenerationRequest = {
+      ...request('first prompt'),
+      instanceId: '2',
+      model: { id: '3', fileName: 'anima-aesthetic-v1.1.safetensors' },
+      loras: [{ id: '91', fileName: 'style.safetensors', weight: 0.8, triggerWords: ['style'] }],
+    }
+    const first = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_lookup_first' },
+      firstRequest,
+    )
+    const second = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_2', turn: 2, callId: 'call_lookup_second' },
+      request('second prompt'),
+    )
+
+    await expect(runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [first.runId, 'run_missing', second.runId, first.runId],
+    })).resolves.toEqual({
+      runs: [
+        {
+          run_id: first.runId,
+          lookup_status: 'available',
+          arguments: {
+            title: '角色立绘',
+            instance_id: '2',
+            template_id: '34',
+            model: { id: '3', file_name: 'anima-aesthetic-v1.1.safetensors' },
+            parameters: { positive_prompt: 'first prompt', width: 1024, height: 1024 },
+            loras: [{ id: '91', file_name: 'style.safetensors', weight: 0.8, trigger_words: ['style'] }],
+          },
+          workflow_status: 'available',
+          workflow: { version: 0.4, prompt: 'first prompt' },
+        },
+        {
+          run_id: 'run_missing',
+          lookup_status: 'error',
+          error: { code: 'GENERATION_RUN_NOT_FOUND', message: 'Generation Run was not found in the current Workspace.' },
+        },
+        {
+          run_id: second.runId,
+          lookup_status: 'available',
+          arguments: {
+            title: '角色立绘',
+            template_id: '34',
+            parameters: { positive_prompt: 'second prompt', width: 1024, height: 1024 },
+            loras: [],
+          },
+          workflow_status: 'available',
+          workflow: { version: 0.4, prompt: 'second prompt' },
+        },
+        {
+          run_id: first.runId,
+          lookup_status: 'available',
+          arguments: {
+            title: '角色立绘',
+            instance_id: '2',
+            template_id: '34',
+            model: { id: '3', file_name: 'anima-aesthetic-v1.1.safetensors' },
+            parameters: { positive_prompt: 'first prompt', width: 1024, height: 1024 },
+            loras: [{ id: '91', file_name: 'style.safetensors', weight: 0.8, trigger_words: ['style'] }],
+          },
+          workflow_status: 'available',
+          workflow: { version: 0.4, prompt: 'first prompt' },
+        },
+      ],
+    })
+    runtime.close()
+  })
+
+  it('keeps querying after an invalid ID and hides Runs owned by another Workspace', async () => {
+    const runtime = createRuntime({
+      async prepare(generationRequest) {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const otherWorkspace = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_2', sessionId: 'session_2', turn: 1, callId: 'call_other_workspace' },
+      request('hidden prompt'),
+    )
+    const visible = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_visible' },
+      request('visible prompt'),
+    )
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: ['../invalid', otherWorkspace.runId, visible.runId],
+    })
+
+    expect(result.runs.map(item => item.lookup_status === 'error' ? item.error.code : item.arguments.parameters.positive_prompt))
+      .toEqual(['GENERATION_RUN_ID_INVALID', 'GENERATION_RUN_NOT_FOUND', 'visible prompt'])
+    runtime.close()
+  })
+
+  it('normalizes missing historical fields without discarding persisted LoRAs', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-historical-run-'))
+    temporaryDirectories.push(root)
+    const preparer: GenerationPreparationAdapter = {
+      async prepare(generationRequest) {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    }
+    let runtime = createRuntimeAt(root, preparer)
+    const withoutLoras = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_pre_lora' },
+      request('pre-LoRA prompt'),
+    )
+    const withHistoricalLora = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_pre_model' },
+      {
+        ...request('historical LoRA prompt'),
+        loras: [{ id: '68', fileName: 'historical.safetensors', weight: 1, triggerWords: ['historical'] }],
+      },
+    )
+    runtime.close()
+
+    const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
+    database.prepare('UPDATE generation_runs SET request_json = ? WHERE run_id = ?').run(JSON.stringify({
+      title: '角色立绘',
+      instanceId: null,
+      templateId: '34',
+      parameters: { positive_prompt: 'pre-LoRA prompt', width: 1024, height: 1024 },
+    }), withoutLoras.runId)
+    database.prepare('UPDATE generation_runs SET request_json = ? WHERE run_id = ?').run(JSON.stringify({
+      title: '角色立绘',
+      instanceId: null,
+      templateId: '34',
+      parameters: { positive_prompt: 'historical LoRA prompt', width: 1024, height: 1024 },
+      loras: [{ id: '68', fileName: 'historical.safetensors', weight: 1, triggerWords: ['historical'] }],
+    }), withHistoricalLora.runId)
+    database.close()
+
+    runtime = createRuntimeAt(root, preparer)
+    await expect(runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [withoutLoras.runId, withHistoricalLora.runId],
+    })).resolves.toMatchObject({
+      runs: [
+        {
+          run_id: withoutLoras.runId,
+          lookup_status: 'available',
+          arguments: { loras: [] },
+          workflow_status: 'available',
+        },
+        {
+          run_id: withHistoricalLora.runId,
+          lookup_status: 'available',
+          arguments: {
+            loras: [{
+              id: '68',
+              file_name: 'historical.safetensors',
+              weight: 1,
+              trigger_words: ['historical'],
+            }],
+          },
+          workflow_status: 'available',
+        },
+      ],
+    })
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [withoutLoras.runId, withHistoricalLora.runId],
+    })
+    expect(result.runs[0]).not.toHaveProperty('arguments.model')
+    expect(result.runs[1]).not.toHaveProperty('arguments.model')
+    runtime.close()
+  })
+
+  it('returns persisted arguments and the preparation error when the Workflow is unavailable', async () => {
+    const runtime = createRuntime({
+      async prepare() {
+        throw new GenerationRuntimeError('GENERATION_PARAMETER_INVALID', 'Sampler selection is invalid.')
+      },
+    })
+    await expect(runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_failed_lookup' },
+      request('failed prompt'),
+    )).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+    const failedRun = runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]!
+
+    await expect(runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [failedRun.runId],
+    })).resolves.toEqual({
+      runs: [{
+        run_id: failedRun.runId,
+        lookup_status: 'available',
+        arguments: {
+          title: '角色立绘',
+          template_id: '34',
+          parameters: { positive_prompt: 'failed prompt', width: 1024, height: 1024 },
+          loras: [],
+        },
+        workflow_status: 'unavailable',
+        workflow_error: { code: 'GENERATION_PARAMETER_INVALID', message: 'Sampler selection is invalid.' },
+      }],
+    })
+    runtime.close()
+  })
+
+  it('keeps persisted arguments when the declared Actual Workflow file is missing', async () => {
+    const runtime = createRuntime({
+      async prepare() {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4 },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const accepted = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_missing_artifact' },
+      request('saved prompt'),
+    )
+    unlinkSync(runtime.actualWorkflowPath(accepted.runId))
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [accepted.runId],
+    })
+
+    expect(result.runs[0]).toMatchObject({
+      lookup_status: 'available',
+      arguments: { parameters: { positive_prompt: 'saved prompt' } },
+      workflow_status: 'unavailable',
+      workflow_error: { code: 'GENERATION_ARTIFACT_NOT_FOUND' },
+    })
+    expect(result.runs[0]).not.toHaveProperty('workflow')
+    runtime.close()
+  })
+
+  it('keeps persisted arguments for invalid Actual Workflow JSON and continues to a later Run', async () => {
+    const runtime = createRuntime({
+      async prepare(generationRequest) {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    })
+    const corrupted = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_invalid_workflow' },
+      request('corrupted workflow prompt'),
+    )
+    const valid = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_after_invalid_workflow' },
+      request('valid workflow prompt'),
+    )
+    await writeFile(runtime.actualWorkflowPath(corrupted.runId), '{', 'utf8')
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [corrupted.runId, valid.runId],
+    })
+
+    expect(result.runs).toEqual([
+      expect.objectContaining({
+        run_id: corrupted.runId,
+        lookup_status: 'available',
+        arguments: expect.objectContaining({ parameters: expect.objectContaining({ positive_prompt: 'corrupted workflow prompt' }) }),
+        workflow_status: 'unavailable',
+        workflow_error: { code: 'GENERATION_ARTIFACT_INVALID', message: 'Actual Workflow contains invalid JSON.' },
+      }),
+      expect.objectContaining({
+        run_id: valid.runId,
+        lookup_status: 'available',
+        workflow_status: 'available',
+      }),
+    ])
+    runtime.close()
+  })
+
+  it('returns one request error and continues to a later valid Run', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-invalid-request-'))
+    temporaryDirectories.push(root)
+    const preparer: GenerationPreparationAdapter = {
+      async prepare(generationRequest) {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    }
+    let runtime = createRuntimeAt(root, preparer)
+    const corrupted = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_corrupted_request' },
+      request('corrupted prompt'),
+    )
+    const valid = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_after_corruption' },
+      request('valid prompt'),
+    )
+    runtime.close()
+    const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
+    database.prepare('UPDATE generation_runs SET request_json = ? WHERE run_id = ?')
+      .run('{', corrupted.runId)
+    database.close()
+    runtime = createRuntimeAt(root, preparer)
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [corrupted.runId, valid.runId],
+    })
+
+    expect(result.runs.map(item => item.lookup_status === 'error' ? item.error.code : item.arguments.parameters.positive_prompt))
+      .toEqual(['GENERATION_REQUEST_INVALID', 'valid prompt'])
+    runtime.close()
+  })
+
+  it('does not treat present invalid model or LoRA fields as historical omissions', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-invalid-historical-fields-'))
+    temporaryDirectories.push(root)
+    const preparer: GenerationPreparationAdapter = {
+      async prepare() {
+        return {
+          instanceId: '2',
+          instanceTitle: 'ComfyUI',
+          templateTitle: 'Template',
+          sourceSnapshot: {},
+          actualWorkflow: { version: 0.4 },
+          apiWorkflow: {},
+          expectedOutputNodeIds: ['10'],
+          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        }
+      },
+    }
+    let runtime = createRuntimeAt(root, preparer)
+    const invalidLoras = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_invalid_historical_loras' },
+      request('invalid loras'),
+    )
+    const invalidModel = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_invalid_historical_model' },
+      request('invalid model'),
+    )
+    runtime.close()
+    const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
+    database.prepare('UPDATE generation_runs SET request_json = ? WHERE run_id = ?').run(JSON.stringify({
+      title: '角色立绘', instanceId: null, templateId: '34', parameters: {}, loras: 'invalid',
+    }), invalidLoras.runId)
+    database.prepare('UPDATE generation_runs SET request_json = ? WHERE run_id = ?').run(JSON.stringify({
+      title: '角色立绘', instanceId: null, templateId: '34', parameters: {}, loras: [], model: 'invalid',
+    }), invalidModel.runId)
+    database.close()
+    runtime = createRuntimeAt(root, preparer)
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [invalidLoras.runId, invalidModel.runId],
+    })
+
+    expect(result.runs.map(item => item.lookup_status === 'error' ? item.error.code : 'unexpected'))
+      .toEqual(['GENERATION_REQUEST_INVALID', 'GENERATION_REQUEST_INVALID'])
+    runtime.close()
+  })
+
+  it('accepts twenty IDs and rejects twenty-one before querying any Run', async () => {
+    const runtime = createRuntime({ async prepare() { throw new Error('unreachable') } })
+
+    const accepted = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: Array.from({ length: 20 }, (_value, index) => `run_missing_${index}`),
+    })
+
+    expect(accepted.runs).toHaveLength(20)
+    expect(accepted.runs.every(item => item.lookup_status === 'error' && item.error.code === 'GENERATION_RUN_NOT_FOUND')).toBe(true)
+    await expect(runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: Array.from({ length: 21 }, (_value, index) => `run_missing_${index}`),
+    })).rejects.toThrow('between 1 and 20')
+    runtime.close()
+  })
+
+  it('sanitizes an unexpected item failure and continues to the next Run', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-unexpected-lookup-'))
+    temporaryDirectories.push(root)
+    let failingRunId = ''
+    const unexpectedError = new Error('sensitive /private/run/path SELECT * FROM generation_runs')
+    const reportRunInputLookupError = vi.fn()
+    const runtime = new GenerationRuntime({
+      runRepositoryFile: join(root, 'data', 'runs.sqlite'),
+      runDirectory: join(root, 'runs'),
+      savedMediaDirectory: join(root, 'media'),
+      preparer: {
+        async prepare(generationRequest) {
+          return {
+            instanceId: '2',
+            instanceTitle: 'ComfyUI',
+            templateTitle: 'Template',
+            sourceSnapshot: {},
+            actualWorkflow: { version: 0.4, prompt: generationRequest.parameters.positive_prompt },
+            apiWorkflow: {},
+            expectedOutputNodeIds: ['10'],
+            connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+          }
+        },
+      },
+      async readJsonArtifact(path) {
+        if (path.includes(failingRunId)) {
+          throw unexpectedError
+        }
+        return JSON.parse(await readFile(path, 'utf8')) as Record<string, never>
+      },
+      reportRunInputLookupError,
+    })
+    const first = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_unexpected_first' },
+      request('first prompt'),
+    )
+    const second = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_unexpected_second' },
+      request('second prompt'),
+    )
+    failingRunId = first.runId
+
+    const result = await runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [first.runId, second.runId],
+    })
+
+    expect(result.runs).toEqual([
+      {
+        run_id: first.runId,
+        lookup_status: 'error',
+        error: {
+          code: 'GENERATION_RUN_LOOKUP_FAILED',
+          message: 'Generation Run lookup failed. Check the Harness ComfyUI Host logs and retry this run_id.',
+        },
+      },
+      expect.objectContaining({
+        run_id: second.runId,
+        lookup_status: 'available',
+        workflow_status: 'available',
+      }),
+    ])
+    expect(JSON.stringify(result)).not.toContain('sensitive')
+    expect(JSON.stringify(result)).not.toContain('/private/run/path')
+    expect(JSON.stringify(result)).not.toContain('SELECT')
+    expect(reportRunInputLookupError).toHaveBeenCalledOnce()
+    expect(reportRunInputLookupError).toHaveBeenCalledWith({
+      workspaceId: 'workspace_1',
+      runId: first.runId,
+      error: unexpectedError,
+    })
+    runtime.close()
+  })
+
+  it('propagates cancellation from the default JSON artifact reader', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-default-reader-cancel-'))
+    temporaryDirectories.push(root)
+    const artifactPath = join(root, 'actual-workflow.json')
+    await writeFile(artifactPath, '{}', 'utf8')
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(readGenerationJsonArtifact(
+      artifactPath,
+      'Actual Workflow',
+      controller.signal,
+    )).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('keeps the generic missing Run message for Runtime readers without a Workspace query', () => {
+    const runtime = createRuntime({ async prepare() { throw new Error('unreachable') } })
+
+    expect(() => runtime.actualWorkflowPath('run_missing')).toThrow('Generation Run was not found.')
+    runtime.close()
+  })
+
+  it('propagates cancellation instead of converting it into an item error', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-cancelled-lookup-'))
+    temporaryDirectories.push(root)
+    let reads = 0
+    const runtime = new GenerationRuntime({
+      runRepositoryFile: join(root, 'data', 'runs.sqlite'),
+      runDirectory: join(root, 'runs'),
+      savedMediaDirectory: join(root, 'media'),
+      preparer: {
+        async prepare() {
+          return {
+            instanceId: '2',
+            instanceTitle: 'ComfyUI',
+            templateTitle: 'Template',
+            sourceSnapshot: {},
+            actualWorkflow: { version: 0.4 },
+            apiWorkflow: {},
+            expectedOutputNodeIds: ['10'],
+            connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+          }
+        },
+      },
+      async readJsonArtifact() {
+        reads += 1
+        throw new DOMException('cancelled', 'AbortError')
+      },
+    })
+    const first = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_cancel_lookup_first' },
+      request('first prompt'),
+    )
+    const second = await runtime.acceptGeneration(
+      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_cancel_lookup_second' },
+      request('second prompt'),
+    )
+
+    await expect(runtime.readGenerationRunInputs({
+      workspaceId: 'workspace_1',
+      runIds: [first.runId, second.runId],
+    })).rejects.toMatchObject({ name: 'AbortError' })
+    expect(reads).toBe(1)
     runtime.close()
   })
 })

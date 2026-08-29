@@ -69,13 +69,20 @@ async function responseJson(response) {
 
 async function main() {
   const argv = process.argv.slice(2)
-  const needsStdin = argv.length === 3 && argv.join(' ') === 'generation submit --stdin'
+  const command = argv.join(' ')
+  const needsStdin = argv.length === 3 && (
+    command === 'generation submit --stdin'
+    || command === 'generation run-inputs --stdin'
+  )
   let request
   try {
     request = parseCliArguments(argv, await stdinText(needsStdin))
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
-    stderr.write(`CLI_ARGUMENT_INVALID: ${message}\n`)
+    const code = command === 'generation run-inputs --stdin'
+      ? 'CLI_REQUEST_INVALID'
+      : 'CLI_ARGUMENT_INVALID'
+    stderr.write(`${code}: ${message}\n`)
     process.exitCode = 2
     return
   }

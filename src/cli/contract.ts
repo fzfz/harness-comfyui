@@ -4,6 +4,7 @@ import {
   parseCatalogStableId,
   type CatalogKind,
 } from '../catalog/contract.ts'
+import { MAX_RUN_INPUT_QUERY_IDS } from '../generation/run-input-contract.ts'
 import type { GenerationRequest, JsonValue } from '../host/generation/generation-runtime.ts'
 
 export const CLI_ROUTE_PATH = '/api/harness-comfyui/cli/v1'
@@ -64,6 +65,7 @@ export type CliRequest =
   | CliCatalogSearchRequest
   | { readonly command: 'catalog.instance.list' }
   | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
+  | { readonly command: 'generation.run-inputs'; readonly run_ids: readonly string[] }
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -194,6 +196,18 @@ export function parseCliRequest(value: unknown): CliRequest {
     exactKeys(source, ['command', 'request'], 'CLI request')
     return Object.freeze({ command: source.command, request: parseCliGenerationRequest(source.request) })
   }
+  if (source.command === 'generation.run-inputs') {
+    exactKeys(source, ['command', 'run_ids'], 'CLI request')
+    if (
+      !Array.isArray(source.run_ids)
+      || source.run_ids.length === 0
+      || source.run_ids.length > MAX_RUN_INPUT_QUERY_IDS
+      || source.run_ids.some(runId => typeof runId !== 'string')
+    ) {
+      throw new TypeError(`CLI request run_ids must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
+    }
+    return Object.freeze({ command: source.command, run_ids: Object.freeze([...source.run_ids]) })
+  }
   throw new TypeError('CLI request command is invalid')
 }
 
@@ -251,6 +265,17 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
       throw new TypeError('Generation stdin must contain one JSON object')
     }
     return parseCliRequest({ command: 'generation.submit', request })
+  }
+  if (argv.length === 3 && prefix === 'generation run-inputs --stdin') {
+    let request: unknown
+    try {
+      request = JSON.parse(stdin) as unknown
+    } catch {
+      throw new TypeError('Generation Run stdin must contain one JSON object')
+    }
+    const source = record(request, 'Generation Run stdin')
+    exactKeys(source, ['run_ids'], 'Generation Run stdin')
+    return parseCliRequest({ command: 'generation.run-inputs', run_ids: source.run_ids })
   }
   throw new TypeError('CLI command is invalid')
 }

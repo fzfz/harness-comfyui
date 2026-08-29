@@ -1,15 +1,14 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { defineTool, type ToolDefinition, type ToolRunContext } from '@deepseek-ai/dsh-tools'
+import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { WorkspaceRegistry } from '@deepseek-ai/dsh-workspace'
 
 import {
-  GenerationRuntimeError,
-  type GenerationIdentity,
   type GenerationRequest,
   type GenerationRuntime,
   type JsonValue,
 } from './generation-runtime.ts'
 import { STANDARD_RUNTIME_PARAMETER_KINDS } from './runtime-parameters.ts'
+import { deriveGenerationToolExecutionIdentity } from './tool-execution-identity.ts'
 
 export const GENERATION_TOOL_NAME = 'generate_with_comfyui'
 const STANDARD_RUNTIME_PARAMETER_DESCRIPTION = STANDARD_RUNTIME_PARAMETER_KINDS.join(', ')
@@ -17,39 +16,6 @@ const STANDARD_RUNTIME_PARAMETER_DESCRIPTION = STANDARD_RUNTIME_PARAMETER_KINDS.
 export interface CreateGenerationToolOptions {
   readonly runtime: Pick<GenerationRuntime, 'acceptGeneration'>
   readonly workspaceRegistry: Pick<WorkspaceRegistry, 'resolveByPath'>
-}
-
-function toolContextInvalid(): never {
-  throw new GenerationRuntimeError(
-    'GENERATION_TOOL_CONTEXT_INVALID',
-    'The Generation Tool execution context does not contain one matching generate_with_comfyui Tool Call.',
-  )
-}
-
-async function deriveIdentity(
-  workspaceRegistry: Pick<WorkspaceRegistry, 'resolveByPath'>,
-  exec: ToolRunContext,
-): Promise<GenerationIdentity> {
-  if (exec.agent === undefined) toolContextInvalid()
-  const session = exec.agent.session
-  const calls = session.events.flatMap(event => event.type === 'tool/call' && String(event.data.callId) === String(exec.callId) ? [event] : [])
-  if (calls.length !== 1) toolContextInvalid()
-  const call = calls[0]!
-  if (call.data.name !== GENERATION_TOOL_NAME) toolContextInvalid()
-  const cwd = session.header.cwd
-  if (typeof cwd !== 'string' || cwd.length === 0) {
-    throw new GenerationRuntimeError('GENERATION_WORKSPACE_REQUIRED', 'The current Session does not declare a Workspace directory.')
-  }
-  const workspace = await workspaceRegistry.resolveByPath(cwd)
-  if (workspace === undefined || !workspace.sessionIds.some(sessionId => String(sessionId) === String(session.id))) {
-    throw new GenerationRuntimeError('GENERATION_WORKSPACE_REQUIRED', 'The current Session is not attached to a Harness Workspace.')
-  }
-  return Object.freeze({
-    workspaceId: String(workspace.id),
-    sessionId: String(session.id),
-    turn: call.data.turn,
-    callId: String(exec.callId),
-  })
 }
 
 export function createGenerationTool(options: CreateGenerationToolOptions): ToolDefinition {
@@ -104,7 +70,11 @@ export function createGenerationTool(options: CreateGenerationToolOptions): Tool
       }),
     },
     async execute(args, exec) {
-      const identity = await deriveIdentity(options.workspaceRegistry, exec)
+      const identity = await deriveGenerationToolExecutionIdentity(
+        options.workspaceRegistry,
+        exec,
+        GENERATION_TOOL_NAME,
+      )
       const request: GenerationRequest = {
         title: args.title,
         instanceId: args.instance_id ?? null,

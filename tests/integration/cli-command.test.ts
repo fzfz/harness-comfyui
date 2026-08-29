@@ -74,6 +74,70 @@ describe('managed Harness ComfyUI CLI executable', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
+  it('prints ordered per-Run lookup errors as a successful JSON result', async () => {
+    let posted: unknown
+    const data = {
+      runs: [
+        {
+          run_id: 'run_1',
+          lookup_status: 'available',
+          arguments: { title: 'portrait', template_id: '39', parameters: {}, loras: [] },
+          workflow_status: 'available',
+          workflow: { version: 0.4 },
+        },
+        {
+          run_id: 'missing',
+          lookup_status: 'error',
+          error: { code: 'GENERATION_RUN_NOT_FOUND', message: 'Generation Run was not found.' },
+        },
+      ],
+    }
+    const server = createServer(async (request, response) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      posted = JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
+      const body = JSON.stringify({ ok: true, data })
+      response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) })
+      response.end(body)
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+
+    const result = await runCli({
+      args: ['generation', 'run-inputs', '--stdin'],
+      stdin: JSON.stringify({ run_ids: ['run_1', 'missing'] }),
+      apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
+    })
+
+    expect(result).toEqual({ exitCode: 0, stdout: `${JSON.stringify(data)}\n`, stderr: '' })
+    expect(posted).toEqual({ command: 'generation.run-inputs', run_ids: ['run_1', 'missing'] })
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('reports an invalid historical Run stdin contract without making an HTTP request', async () => {
+    let requests = 0
+    const server = createServer((_request, response) => {
+      requests += 1
+      response.end()
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+
+    const result = await runCli({
+      args: ['generation', 'run-inputs', '--stdin'],
+      stdin: JSON.stringify({ run_ids: [] }),
+      apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
+    })
+
+    expect(result.exitCode).toBe(2)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toBe('CLI_REQUEST_INVALID: CLI request run_ids must contain between 1 and 20 strings\n')
+    expect(requests).toBe(0)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
   it('rejects undocumented identity options before making an HTTP request', async () => {
     let requests = 0
     const server = createServer((_request, response) => {

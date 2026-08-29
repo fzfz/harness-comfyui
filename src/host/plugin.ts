@@ -1,5 +1,5 @@
 import Schema from '@deepseek-ai/schemastery'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Logger } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { fileURLToPath } from 'node:url'
 
@@ -26,7 +26,11 @@ import { ComfyHttpTransport } from './generation/comfy-http-transport.ts'
 import { ChromeComfyFrontend } from './generation/comfy-frontend-browser.ts'
 import { GenerationCoordinator } from './generation/generation-coordinator.ts'
 import { GenerationRemoteService } from './generation/generation-service.ts'
-import { GenerationRuntime } from './generation/generation-runtime.ts'
+import {
+  GenerationRuntime,
+  type GenerationRunInputLookupErrorReport,
+} from './generation/generation-runtime.ts'
+import { generationRunInputToolForContext } from './generation/generation-run-input-tool.ts'
 import { generationToolForContext } from './generation/generation-tool.ts'
 import { registerGenerationMediaRoutes, type GenerationWebServer } from './generation/media-routes.ts'
 import { OfficialApiWorkflowCompiler } from './generation/official-api-workflow.ts'
@@ -52,6 +56,18 @@ export const Config = Schema.object({
 
 export const name = 'harness-comfyui'
 export const inject = ['tools', 'webServer', 'workspaceRegistry', 'shellEnv'] as const
+
+export function reportGenerationRunInputLookupError(
+  logger: Pick<Logger, 'error'>,
+  { workspaceId, runId, error }: GenerationRunInputLookupErrorReport,
+): void {
+  logger.error(
+    'Historical Generation Run input lookup failed for Workspace %s and Run %s.',
+    workspaceId,
+    runId,
+  )
+  logger.error(error)
+}
 
 interface ManagedShellEnvironmentRegistry {
   register(contributor: {
@@ -90,6 +106,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     instanceCacheEpoch: profile.comfyui.frontendCompiler.instanceCacheEpoch,
     frontend: frontendCompiler,
   })
+  const generationLogger = ctx.logger('harness-comfyui')
   const runtime = new GenerationRuntime({
     runRepositoryFile: profile.paths.runRepositoryFile,
     runDirectory: profile.paths.runDirectory,
@@ -104,13 +121,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     }),
     transport: new ComfyHttpTransport({ source, maxMediaBytes: profile.media.maxFileBytes }),
     missingObservationMs: profile.jobs.missingObservationMs,
+    reportRunInputLookupError: reportGenerationRunInputLookupError.bind(undefined, generationLogger),
   })
   const capabilities = new CliShellCapabilityStore({
     cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
     apiUrl: `http://${profile.server.host}:${profile.server.port}${CLI_ROUTE_PATH}`,
   })
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)
-  const generationLogger = ctx.logger('harness-comfyui')
   const coordinator = new GenerationCoordinator({
     runtime,
     pollIntervalMs: profile.jobs.pollIntervalMs,
@@ -122,6 +139,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     createGenerationModelResolverTool(catalog),
     createComfyuiInstanceQueryTool(catalog),
     generationToolForContext(ctx, runtime),
+    generationRunInputToolForContext(ctx, runtime),
   ]), 'project Tool registry')
   ctx.effect(() => registerGenerationMediaRoutes({
     webServer: (ctx as unknown as { webServer: GenerationWebServer }).webServer,

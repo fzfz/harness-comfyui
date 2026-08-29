@@ -124,7 +124,54 @@ describe('Harness ComfyUI managed CLI route', () => {
     })
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ ok: true, data: { run_id: expect.any(String) } })
+    const submitEnvelope = await response.json() as { readonly data: { readonly run_id: string } }
+    expect(submitEnvelope).toEqual({ ok: true, data: { run_id: expect.any(String) } })
+    const queryResponse = await post(server.origin, capability, {
+      command: 'generation.run-inputs',
+      run_ids: [submitEnvelope.data.run_id, 'not a valid run id', submitEnvelope.data.run_id],
+    })
+    expect(queryResponse.status).toBe(200)
+    expect(await queryResponse.json()).toEqual({
+      ok: true,
+      data: {
+        runs: [
+          {
+            run_id: submitEnvelope.data.run_id,
+            lookup_status: 'available',
+            arguments: {
+              title: 'CLI generation',
+              instance_id: '2',
+              template_id: '39',
+              parameters: { positive_prompt: '1girl' },
+              loras: [],
+            },
+            workflow_status: 'available',
+            workflow: { version: 0.4 },
+          },
+          {
+            run_id: 'not a valid run id',
+            lookup_status: 'error',
+            error: {
+              code: 'GENERATION_RUN_ID_INVALID',
+              message: 'Generation Run ID is invalid. Check the complete run_id and retry it.',
+            },
+          },
+          {
+            run_id: submitEnvelope.data.run_id,
+            lookup_status: 'available',
+            arguments: {
+              title: 'CLI generation',
+              instance_id: '2',
+              template_id: '39',
+              parameters: { positive_prompt: '1girl' },
+              loras: [],
+            },
+            workflow_status: 'available',
+            workflow: { version: 0.4 },
+          },
+        ],
+      },
+    })
     const runs = runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_7', turn: 4 })
     expect(runs).toHaveLength(1)
     expect(runs[0]).toMatchObject({
@@ -251,7 +298,7 @@ describe('Harness ComfyUI managed CLI route', () => {
           : undefined,
       },
       catalog,
-      runtime: { acceptGeneration: vi.fn() },
+      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn() },
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
 
@@ -296,7 +343,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: { authorize: () => identity },
       catalog: catalog as never,
-      runtime: { acceptGeneration: vi.fn() },
+      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn() },
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
 
@@ -354,6 +401,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       acceptGeneration: vi.fn(async () => {
         throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', 'The call already accepted another request.')
       }),
+      readGenerationRunInputs: vi.fn(),
     }
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,

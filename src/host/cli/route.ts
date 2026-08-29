@@ -42,7 +42,7 @@ export interface RegisterHarnessComfyuiCliRouteOptions {
   readonly webServer: GenerationWebServer
   readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
   readonly catalog: CliCatalog
-  readonly runtime: Pick<GenerationRuntime, 'acceptGeneration'>
+  readonly runtime: Pick<GenerationRuntime, 'acceptGeneration' | 'readGenerationRunInputs'>
   readonly workspaceRegistry: {
     resolveByPath(path: string): Promise<{
       readonly id: string | number
@@ -172,6 +172,13 @@ async function dispatch(
       const owner = await generationIdentity(options, identity)
       const accepted = await options.runtime.acceptGeneration(owner, toGenerationRequest(request.request), signal)
       return Object.freeze({ run_id: accepted.runId })
+    }
+    case 'generation.run-inputs': {
+      const owner = await generationIdentity(options, identity)
+      return options.runtime.readGenerationRunInputs({
+        workspaceId: owner.workspaceId,
+        runIds: request.run_ids,
+      }, signal)
     }
   }
 }
