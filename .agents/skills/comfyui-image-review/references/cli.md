@@ -11,7 +11,7 @@ Harness ComfyUI 图片读取 CLI 为 `comfyui-image-review` Skill 提供两个�
 
 ## 调用环境与可执行入口
 
-Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `$DSH_HARNESS_COMFYUI_CLI` 执行本文件定义的命令。Managed environment 自动提供 CLI executable、Host endpoint 和当前 shell Tool Call 的短期 capability。
+Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。Managed environment 自动提供 CLI 脚本路径、Host endpoint 和当前 shell Tool Call 的短期 capability。
 
 Skill 执行者必须从当前 Session 的 Workspace 工作目录调用 `image run-media --stdin`。Host 使用该工作目录解析当前 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得向命令提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。
 
@@ -35,7 +35,7 @@ Skill 执行者必须按以下顺序调用命令：
 命令行固定为：
 
 ```sh
-"$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin
 ```
 
 Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象：
@@ -55,7 +55,7 @@ Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象�
 命令行固定为：
 
 ```sh
-"$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 ```
 
 Skill 执行者使用设置中的默认读图 Prompt 时，必须向 stdin 写入一个只包含 `file_path` 的 JSON 对象：
@@ -161,7 +161,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `CLI_REQUEST_INVALID` | stdin JSON 不符合对应命令的输入合同。Skill 执行者必须修正 JSON 属性、类型、数量或字符限制后重试。 |
 | `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |
 | `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试，不得复用旧 capability。 |
-| `CLI_REQUEST_TOO_LARGE` | CLI executable 或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须删除多余 JSON 空白并缩短输入；`image run-media --stdin` 仍然超限时，Skill 执行者必须把 Run ID 按更小批次查询。 |
+| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须删除多余 JSON 空白并缩短输入；`image run-media --stdin` 仍然超限时，Skill 执行者必须把 Run ID 按更小批次查询。 |
 | `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须减少当前 Run 批次；单图命令出现该错误时，Skill 执行者必须报告错误并停止重试当前图片。 |
 | `CLI_PROTOCOL_ERROR` | Host 返回了无效的 JSON 或错误 envelope。Skill 执行者必须检查 Host 状态和日志后重试。 |
 | `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |
@@ -207,7 +207,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 以下 `run_123` 来自用户消息中的 Generation Run ID：
 
 ```sh
-"$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin <<'JSON'
+node "$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin <<'JSON'
 {"run_ids":["run_123"]}
 JSON
 ```
@@ -215,7 +215,7 @@ JSON
 假设前一条命令返回 `runs[0].images[0].file_path` 为 `/absolute/local/path/result.png`，Skill 执行者使用默认读图 Prompt 时调用：
 
 ```sh
-"$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png"}
 JSON
 ```
@@ -223,7 +223,7 @@ JSON
 用户要求重点检查手部与构图时，Skill 执行者对同一个 `file_path` 调用：
 
 ```sh
-"$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png","prompt":"只描述人物手部状态和镜头构图。"}
 JSON
 ```
