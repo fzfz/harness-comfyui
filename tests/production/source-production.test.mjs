@@ -14,6 +14,7 @@ import {
   SOURCE_PRODUCTION_COMMANDS,
   loadSourceProductionContext,
   parseSourceProductionDefinition,
+  prepareSourceRuntime,
 } from '../../scripts/production/runtime.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
@@ -312,11 +313,40 @@ describe('source production commands', () => {
     expect(profileManifest.dependencies).toEqual({ 'harness-comfyui': `file:${repositoryRoot}` })
     expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
     expect(await pathExists(resolve(fixture.runtimeRoot, 'dsh-home/.env'))).toBe(false)
+    expect(await readFile(resolve(
+      fixture.runtimeRoot,
+      'dsh-home/.agent-presets/harness-comfyui-schema-control/preset.yml',
+    ), 'utf8')).toBe(await readFile(resolve(
+      repositoryRoot,
+      'agent-presets/harness-comfyui-schema-control/preset.yml',
+    ), 'utf8'))
+    expect(await readFile(resolve(
+      fixture.runtimeRoot,
+      'dsh-home/.agent-presets/harness-comfyui-cli-candidate/preset.yml',
+    ), 'utf8')).toBe(await readFile(resolve(
+      repositoryRoot,
+      'agent-presets/harness-comfyui-cli-candidate/preset.yml',
+    ), 'utf8'))
+    expect(await pathExists(resolve(
+      fixture.runtimeRoot,
+      'dsh-home/.agent-presets/project-tool-visibility.mjs',
+    ))).toBe(true)
 
     const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
     expect(stop.evidence).toMatchObject({ stage: 'stop', status: 'stopped' })
     expect((await start).evidence).toMatchObject({ stage: 'start', status: 'stopped' })
     expect(await pathExists(processStatePath)).toBe(false)
+  })
+
+  it('does not publish managed runtime state when Agent Preset materialization fails', async () => {
+    const fixture = await createFixture()
+
+    await expect(prepareSourceRuntime(fixture.context, {
+      materializeAgentExperiment: async () => { throw new Error('Agent Preset materialization failed') },
+    })).rejects.toThrow('Agent Preset materialization failed')
+
+    expect(await pathExists(fixture.managedStatePath)).toBe(false)
+    expect(await pathExists(fixture.context.sourceRuntimeStatePath)).toBe(false)
   })
 
   it('serves a real Harness Client bundle that registers with ModuleLoader', async () => {

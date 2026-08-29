@@ -296,16 +296,21 @@ describe('source Agent A/B materialization', () => {
   })
 })
 
-describe('worktree-only Agent A/B preparation', () => {
-  it('materializes both Presets after the shared source runtime is prepared', async () => {
-    const fixture = await createRepositoryFixture()
+describe('shared production and worktree Agent A/B preparation', () => {
+  it('preserves the Agent experiment prepared by the shared source runtime', async () => {
     const dshHome = await temporaryDirectory('harness-agent-ab-worktree-')
-    const context = { repositoryRoot: fixture.repositoryRoot, dshHome }
-    const prepareRuntime = vi.fn(async () => ({ activeVersion: '0.31.4', dshHome }))
+    const context = { repositoryRoot: '/repository', dshHome }
+    const prepared = {
+      activeVersion: '0.33.0',
+      dshHome,
+      agentExperiment: { presets: PRESET_IDS.map(presetId => ({ presetId })) },
+    }
+    const prepareRuntime = vi.fn(async () => prepared)
 
     const result = await prepareSourceWorktreeRuntime(context, { prepareRuntime })
 
     expect(prepareRuntime).toHaveBeenCalledOnce()
+    expect(result).toBe(prepared)
     expect(result.agentExperiment.presets.map(preset => preset.presetId)).toEqual(PRESET_IDS)
   })
 
