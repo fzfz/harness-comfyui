@@ -52,12 +52,21 @@ afterEach(() => {
 function installImmediateInject(context: Record<string, any>): void {
   context.remote.harnessComfyuiImageReader ??= {
     models: vi.fn(async () => ({ ok: true, value: { groups: [], failures: [] } })),
+    saveSettings: vi.fn(async (request: any) => ({ ok: true, value: { configuration: request.configuration } })),
   }
   context.settingsScope ??= {
     bind: vi.fn(() => ({
       getSnapshot: () => ({
         status: 'ready',
-        value: { configuration: { provider: '', model: '', defaultPrompt: 'prompt', temperature: 0.2, maxTokens: 2048 } },
+        value: {
+          configuration: {
+            activeProfileId: 'default',
+            profiles: [{
+              id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
+              hasApiKey: false, defaultPrompt: 'prompt', temperature: 0.2, maxTokens: 2048,
+            }],
+          },
+        },
         base: {}, user: {}, revision: 0, writable: true, mode: 'host',
       }),
       subscribe: () => vi.fn(),
@@ -190,12 +199,22 @@ describe('Harness Client plugin registration', () => {
     expect(detailsFace).toMatchObject({ workbench: expect.any(Object), generationStore: expect.any(Object) })
     expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
     expect(imageReaderSettingsFace).toMatchObject({
-      scope: expect.objectContaining({ getSnapshot: expect.any(Function), set: expect.any(Function) }),
-      catalog: expect.objectContaining({ models: expect.any(Function) }),
+      scope: expect.objectContaining({ getSnapshot: expect.any(Function) }),
+      api: expect.objectContaining({ models: expect.any(Function), saveSettings: expect.any(Function) }),
     })
-    await expect((imageReaderSettingsFace as {
-      catalog: { models(signal: AbortSignal): Promise<unknown> }
-    }).catalog.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
+    const imageReaderFace = imageReaderSettingsFace as {
+      scope: { getSnapshot(): { value: { configuration: unknown } } }
+      api: {
+        models(signal: AbortSignal): Promise<unknown>
+        saveSettings(request: unknown, signal: AbortSignal): Promise<unknown>
+      }
+    }
+    await expect(imageReaderFace.api.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
+    const configuration = imageReaderFace.scope.getSnapshot().value.configuration
+    await expect(imageReaderFace.api.saveSettings(
+      { configuration, credentialUpdates: [] },
+      new AbortController().signal,
+    )).resolves.toEqual({ configuration })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)
     const sessionTwoDock = registrations.get('conversation.input.dock')!.inject('session-2' as never) as {

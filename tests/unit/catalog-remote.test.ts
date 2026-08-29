@@ -14,7 +14,39 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',
+      'harness-comfyui#harnessComfyuiImageReader/saveSettings',
     ])
+  })
+
+  it('mounts a strict cancellable image-reader settings write method', () => {
+    const descriptor = IMAGE_READER_REMOTE.descriptors[1]!
+    expect(descriptor).toMatchObject({
+      service: 'harnessComfyuiImageReader',
+      namespace: 'harnessComfyuiImageReader',
+      method: 'saveSettings',
+      cancellation: { parameter: 'signal' },
+      result: { mode: 'strict' },
+    })
+    const request = descriptor.parameters[0]!.codec
+    if (request.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('strict codecs required')
+    const configuration = {
+      activeProfileId: 'runtime',
+      profiles: [{
+        id: 'runtime', name: '系统视觉', connectionType: 'runtime', provider: 'provider-a', endpoint: '',
+        model: 'vision-a', hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+      }],
+    }
+    const credentialUpdates = [
+      { profileId: 'runtime', apiKey: 'replacement' },
+      { profileId: 'custom', apiKey: null },
+    ]
+    expect(request.schema.parse({ configuration, credentialUpdates })).toEqual({ configuration, credentialUpdates })
+    expect(descriptor.result.schema.parse({ configuration })).toEqual({ configuration })
+    expect(() => request.schema.parse({ configuration, credentialUpdates: [], apiKey: 'leak' })).toThrow('properties')
+    expect(() => request.schema.parse({
+      configuration,
+      credentialUpdates: [{ profileId: 'runtime', apiKey: 'first' }, { profileId: 'runtime', apiKey: 'second' }],
+    })).toThrow('duplicate profile ids')
   })
 
   it('mounts the strict cancellable runtime visual-model catalog', () => {

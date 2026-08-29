@@ -130,13 +130,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
     apiUrl: `http://${profile.server.host}:${profile.server.port}${CLI_ROUTE_PATH}`,
   })
-  const imageReaderScope = registerImageReaderSettings(ctx)
+  const imageReaderScope = await registerImageReaderSettings(ctx)
   const imageReader = new ImageReaderService({
     scope: imageReaderScope,
     attachments: ctx.attachments,
     llm: ctx.llm,
   })
-  new ImageReaderRemoteService(ctx, ctx.llm)
+  new ImageReaderRemoteService(ctx, ctx.llm, imageReaderScope)
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)
   const coordinator = new GenerationCoordinator({
     runtime,

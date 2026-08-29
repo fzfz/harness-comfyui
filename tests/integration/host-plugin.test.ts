@@ -64,10 +64,17 @@ function provideHostServices(ctx: Context) {
     register: vi.fn(() => ({
       get: vi.fn(() => ({
         configuration: {
-          provider: '', model: '', defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+          activeProfileId: 'default',
+          profiles: [{
+            id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
+            hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+          }],
         },
+        credentials: {},
       })),
+      replace: vi.fn(async () => undefined),
     })),
+    describe: vi.fn(() => []),
   } as never)
   ctx.provide('workspaceRegistry', {
     create: createWorkspace,

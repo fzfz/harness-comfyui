@@ -1,3 +1,9 @@
+import {
+  decodeImageReaderConfiguration,
+  validateImageReaderConfiguration,
+  type ImageReaderConfiguration,
+} from './settings.ts'
+
 export const IMAGE_READER_REMOTE_NAMESPACE = 'harnessComfyuiImageReader'
 export const IMAGE_READER_REMOTE_SERVICE = `remote.${IMAGE_READER_REMOTE_NAMESPACE}`
 
@@ -21,6 +27,20 @@ export interface ImageReaderModelCatalogFailure {
 export interface ImageReaderModelCatalog {
   readonly groups: readonly ImageReaderProviderGroup[]
   readonly failures: readonly ImageReaderModelCatalogFailure[]
+}
+
+export interface ImageReaderCredentialUpdate {
+  readonly profileId: string
+  readonly apiKey: string | null
+}
+
+export interface SaveImageReaderSettingsRequest {
+  readonly configuration: ImageReaderConfiguration
+  readonly credentialUpdates: readonly ImageReaderCredentialUpdate[]
+}
+
+export interface SaveImageReaderSettingsResult {
+  readonly configuration: ImageReaderConfiguration
 }
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -80,4 +100,37 @@ export function parseImageReaderModelCatalog(value: unknown): ImageReaderModelCa
     groups: Object.freeze(source.groups.map(group)),
     failures: Object.freeze(source.failures.map(failure)),
   })
+}
+
+function credentialUpdate(value: unknown): ImageReaderCredentialUpdate {
+  const source = record(value, 'Image reader credential update')
+  exactKeys(source, ['profileId', 'apiKey'], 'Image reader credential update')
+  const profileId = text(source.profileId, 'Image reader credential profile id')!
+  if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(profileId)) throw new TypeError('Image reader credential profile id is invalid')
+  if (source.apiKey !== null && (typeof source.apiKey !== 'string' || source.apiKey.length < 1 || source.apiKey.length > 8192)) {
+    throw new TypeError('Image reader credential API key is invalid')
+  }
+  return Object.freeze({ profileId, apiKey: source.apiKey })
+}
+
+export function parseSaveImageReaderSettingsRequest(value: unknown): SaveImageReaderSettingsRequest {
+  const source = record(value, 'Image reader settings request')
+  exactKeys(source, ['configuration', 'credentialUpdates'], 'Image reader settings request')
+  const configuration = decodeImageReaderConfiguration(source.configuration)
+  if (configuration === undefined) throw new TypeError('Image reader configuration is invalid')
+  validateImageReaderConfiguration(configuration)
+  if (!Array.isArray(source.credentialUpdates)) throw new TypeError('Image reader credential updates are invalid')
+  const credentialUpdates = source.credentialUpdates.map(credentialUpdate)
+  if (new Set(credentialUpdates.map(update => update.profileId)).size !== credentialUpdates.length) {
+    throw new TypeError('Image reader credential updates contain duplicate profile ids')
+  }
+  return Object.freeze({ configuration, credentialUpdates: Object.freeze(credentialUpdates) })
+}
+
+export function parseSaveImageReaderSettingsResult(value: unknown): SaveImageReaderSettingsResult {
+  const source = record(value, 'Image reader settings result')
+  exactKeys(source, ['configuration'], 'Image reader settings result')
+  const configuration = decodeImageReaderConfiguration(source.configuration)
+  if (configuration === undefined) throw new TypeError('Image reader saved configuration is invalid')
+  return Object.freeze({ configuration })
 }

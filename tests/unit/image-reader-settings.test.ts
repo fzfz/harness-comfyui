@@ -1,8 +1,18 @@
 import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
+import { redactSecrets } from '@deepseek-ai/dsh-settings'
 import { describe, expect, it, vi } from 'vitest'
 
-import { decodeImageReaderSettings, decodeImageReaderSettingsSection } from '../../src/image-reader/settings.ts'
+import {
+  IMAGE_READER_DEFAULT_CONFIGURATION,
+  IMAGE_READER_DEFAULT_PROMPT,
+  IMAGE_READER_SETTINGS_SCHEMA,
+  createImageReaderProfile,
+  decodeImageReaderConfiguration,
+  decodeImageReaderSettingsView,
+  validateImageReaderConfiguration,
+  type ImageReaderConfiguration,
+} from '../../src/image-reader/settings.ts'
 import {
   ImageReaderSettingsPage,
   modelsForProvider,
@@ -12,14 +22,22 @@ import {
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
   create: (node: ReactNode) => {
-    root: { findAllByType(type: string): Array<{ props: Record<string, unknown> }> }
+    root: { findAllByType(type: string): Array<{ props: Record<string, any> }> }
     toJSON(): unknown
     unmount(): void
   }
 }
 
-const settingsValue = Object.freeze({
-  provider: 'provider-a', model: 'vision-a', defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+const runtimeProfile = Object.freeze({
+  ...createImageReaderProfile('runtime'),
+  name: '系统视觉',
+  provider: 'provider-a',
+  model: 'vision-a',
+})
+
+const runtimeConfiguration: ImageReaderConfiguration = Object.freeze({
+  activeProfileId: runtimeProfile.id,
+  profiles: Object.freeze([runtimeProfile]),
 })
 
 const modelCatalog = Object.freeze({
@@ -30,11 +48,11 @@ const modelCatalog = Object.freeze({
   failures: Object.freeze([]),
 })
 
-function settingsScope(set = vi.fn(async () => undefined)) {
+function settingsScope(configuration: ImageReaderConfiguration | undefined = runtimeConfiguration) {
   const snapshot = Object.freeze({
     status: 'ready' as const,
     writable: true,
-    value: Object.freeze({ configuration: settingsValue }),
+    value: configuration === undefined ? undefined : Object.freeze({ configuration }),
   })
   return {
     snapshot,
@@ -46,34 +64,78 @@ function settingsScope(set = vi.fn(async () => undefined)) {
       if (this.snapshot !== snapshot) throw new Error('settings scope receiver was lost')
       return this.snapshot
     },
-    set,
   }
 }
 
-function buttonByText(renderer: ReturnType<typeof create>, text: string) {
-  return renderer.root.findAllByType('button').find(button => button.props.children === text)!
+function buttonByText(renderer: ReturnType<typeof create>, value: string) {
+  return renderer.root.findAllByType('button').find(button => button.props.children === value)!
+}
+
+function inputByType(renderer: ReturnType<typeof create>, type: string, index = 0) {
+  return renderer.root.findAllByType('input').filter(input => input.props.type === type)[index]!
 }
 
 describe('image reader settings page behavior', () => {
-  it('decodes only a complete settings section', () => {
-    expect(decodeImageReaderSettings({
-      provider: 'provider-a',
-      model: 'vision-a',
-      defaultPrompt: '描述图片',
-      temperature: 0.4,
-      maxTokens: 4096,
-    })).toEqual({
-      provider: 'provider-a', model: 'vision-a', defaultPrompt: '描述图片', temperature: 0.4, maxTokens: 4096,
+  it('decodes a complete multi-profile configuration and rejects duplicate or missing active ids', () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom'),
+      name: '本地视觉',
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'qwen-vl',
     })
-    expect(decodeImageReaderSettings({ provider: 'provider-a' })).toBeUndefined()
-    expect(decodeImageReaderSettings({
-      provider: 'provider-a', model: 'vision-a', defaultPrompt: '', temperature: 0.4, maxTokens: 4096,
-    })).toBeUndefined()
-    expect(decodeImageReaderSettingsSection({ configuration: settingsValue })).toEqual({ configuration: settingsValue })
-    expect(decodeImageReaderSettingsSection(settingsValue)).toBeUndefined()
-    expect(decodeImageReaderSettings({
-      provider: 'provider-a', model: 'vision-a', defaultPrompt: 'prompt', temperature: 3, maxTokens: 4096,
-    })).toBeUndefined()
+    const configuration = {
+      activeProfileId: custom.id,
+      profiles: [runtimeProfile, custom],
+    }
+    expect(decodeImageReaderConfiguration(configuration)).toEqual(configuration)
+    expect(decodeImageReaderSettingsView({ configuration, credentials: {} })).toEqual({ configuration })
+    expect(decodeImageReaderConfiguration({ activeProfileId: 'missing', profiles: [runtimeProfile] })).toBeUndefined()
+    expect(decodeImageReaderConfiguration({ activeProfileId: 'runtime', profiles: [runtimeProfile, runtimeProfile] })).toBeUndefined()
+  })
+
+  it('redacts every stored OpenAI-compatible API Key from the settings value sent to the browser', () => {
+    const value = {
+      configuration: runtimeConfiguration,
+      credentials: { custom: 'must-not-cross-the-wire' },
+    }
+    expect(redactSecrets(IMAGE_READER_SETTINGS_SCHEMA as never, value)).toEqual({
+      value: { configuration: runtimeConfiguration, credentials: {} },
+      secrets: [{ path: ['credentials', 'custom'], set: true }],
+    })
+  })
+
+  it('validates the two connection types without coupling custom endpoints to the runtime catalog', () => {
+    expect(() => validateImageReaderConfiguration(runtimeConfiguration)).not.toThrow()
+    const custom = {
+      ...createImageReaderProfile('custom'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'vision-model',
+    }
+    expect(() => validateImageReaderConfiguration({ activeProfileId: 'custom', profiles: [custom] })).not.toThrow()
+    expect(() => validateImageReaderConfiguration({
+      activeProfileId: 'custom', profiles: [{ ...custom, endpoint: 'ftp://127.0.0.1/model' }],
+    })).toThrow('OpenAI-compatible')
+    expect(() => validateImageReaderConfiguration({
+      activeProfileId: 'runtime', profiles: [{ ...runtimeProfile, provider: '' }],
+    })).toThrow('runtime')
+  })
+
+  it('uses the complete shared default prompt when the namespace has no saved configuration', async () => {
+    const api = {
+      models: vi.fn(async () => modelCatalog),
+      saveSettings: vi.fn(),
+    }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(undefined), api } as never))
+      await Promise.resolve()
+    })
+    expect(renderer.root.findAllByType('textarea')[0]!.props.value).toBe(IMAGE_READER_DEFAULT_PROMPT)
+    expect(renderer.root.findAllByType('textarea')[0]!.props.value)
+      .toBe(IMAGE_READER_DEFAULT_CONFIGURATION.profiles[0]!.defaultPrompt)
+    renderer.unmount()
   })
 
   it('selects models only from the active runtime provider group', () => {
@@ -88,118 +150,180 @@ describe('image reader settings page behavior', () => {
     expect(modelsForProvider(catalog, 'missing')).toEqual([])
   })
 
-  it('writes every editable field as one atomic settings value', async () => {
-    const set = vi.fn(async () => undefined)
-    await saveImageReaderSettings({ set } as never, {
-      provider: 'provider-a', model: 'vision-a', defaultPrompt: '描述构图', temperature: 0.3, maxTokens: 3072,
-    }, modelCatalog)
-    expect(set).toHaveBeenCalledOnce()
-    expect(set).toHaveBeenCalledWith('configuration', {
-      provider: 'provider-a', model: 'vision-a', defaultPrompt: '描述构图', temperature: 0.3, maxTokens: 3072,
+  it('saves all profiles and credential changes through one Host request', async () => {
+    const saveSettings = vi.fn(async (request: any) => ({ configuration: request.configuration }))
+    const signal = new AbortController().signal
+    await expect(saveImageReaderSettings(
+      { saveSettings },
+      runtimeConfiguration,
+      [{ profileId: 'custom', apiKey: 'secret' }],
+      signal,
+    )).resolves.toEqual({ configuration: runtimeConfiguration })
+    expect(saveSettings).toHaveBeenCalledWith({
+      configuration: runtimeConfiguration,
+      credentialUpdates: [{ profileId: 'custom', apiKey: 'secret' }],
+    }, signal)
+  })
+
+  it('rejects an invalid profile before sending a settings request', async () => {
+    const saveSettings = vi.fn()
+    await expect(saveImageReaderSettings(
+      { saveSettings },
+      { activeProfileId: 'runtime', profiles: [{ ...runtimeProfile, model: '' }] },
+      [],
+      new AbortController().signal,
+    )).rejects.toMatchObject({ code: 'IMAGE_READER_SETTINGS_INVALID' })
+    expect(saveSettings).not.toHaveBeenCalled()
+  })
+
+  it('creates an OpenAI-compatible profile, marks it active, and submits its API Key as write-only data', async () => {
+    const saveSettings = vi.fn(async (request: any) => ({
+      configuration: {
+        ...request.configuration,
+        profiles: request.configuration.profiles.map((profile: any) => ({
+          ...profile,
+          hasApiKey: profile.id === request.configuration.activeProfileId,
+        })),
+      },
+    }))
+    const api = { models: vi.fn(async () => modelCatalog), saveSettings }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(), api } as never))
+      await Promise.resolve()
     })
+
+    await act(async () => {
+      ;(buttonByText(renderer, '新建配置').props.onClick as () => void)()
+    })
+    expect(buttonByText(renderer, '删除配置').props.disabled).toBe(false)
+    await act(async () => {
+      ;(renderer.root.findAllByType('input').filter(input => input.props.type === 'radio')[1]!.props.onChange as () => void)()
+    })
+    await act(async () => {
+      ;(inputByType(renderer, 'text', 0).props.onChange as (event: unknown) => void)({ target: { value: '本地 Qwen' } })
+      ;(inputByType(renderer, 'url').props.onChange as (event: unknown) => void)({ target: { value: 'http://127.0.0.1:11434/v1/chat/completions' } })
+      ;(inputByType(renderer, 'text', 1).props.onChange as (event: unknown) => void)({ target: { value: 'qwen-vl' } })
+      ;(inputByType(renderer, 'password').props.onChange as (event: unknown) => void)({ target: { value: 'write-only-key' } })
+    })
+    await act(async () => {
+      ;(buttonByText(renderer, '保存全部配置').props.onClick as () => void)()
+      await Promise.resolve()
+    })
+
+    expect(saveSettings).toHaveBeenCalledOnce()
+    expect(saveSettings.mock.calls[0]![0]).toMatchObject({
+      configuration: {
+        profiles: [expect.objectContaining({ name: '系统视觉' }), expect.objectContaining({
+          name: '本地 Qwen', connectionType: 'openai-compatible', endpoint: 'http://127.0.0.1:11434/v1/chat/completions', model: 'qwen-vl',
+        })],
+      },
+      credentialUpdates: [expect.objectContaining({ apiKey: 'write-only-key' })],
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('图片读取配置已保存，当前配置已经生效。')
+    renderer.unmount()
   })
 
-  it('rejects an invalid draft before writing settings', async () => {
-    const set = vi.fn()
-    await expect(saveImageReaderSettings({ set } as never, {
-      provider: 'provider-a', model: '', defaultPrompt: 'prompt', temperature: 0.3, maxTokens: 3072,
-    }, modelCatalog)).rejects.toMatchObject({ code: 'IMAGE_READER_SETTINGS_INVALID' })
-    await expect(saveImageReaderSettings({ set } as never, {
-      provider: 'provider-a', model: 'removed-model', defaultPrompt: 'prompt', temperature: 0.3, maxTokens: 3072,
-    }, modelCatalog)).rejects.toMatchObject({ code: 'IMAGE_READER_SETTINGS_INVALID' })
-    expect(set).not.toHaveBeenCalled()
-  })
-
-  it('surfaces an atomic settings write failure without a partial route write', async () => {
-    const failure = new Error('write refused')
-    const set = vi.fn().mockRejectedValueOnce(failure)
-    await expect(saveImageReaderSettings({ set } as never, {
-      provider: 'provider-a', model: 'vision-a', defaultPrompt: 'prompt', temperature: 0.3, maxTokens: 3072,
-    }, modelCatalog)).rejects.toBe(failure)
-    expect(set).toHaveBeenCalledOnce()
-    expect(set.mock.calls[0]![0]).toBe('configuration')
-  })
-
-  it('renders runtime models and confirms a successful settings save', async () => {
-    const scope = settingsScope()
-    const catalog = {
-      models: vi.fn(async () => ({
-        groups: [{
-          provider: 'provider-a', name: 'Provider A',
-          models: [{ id: 'vision-a', name: 'Vision A', description: null }],
-        }],
-        failures: [{ provider: 'provider-b', message: '目录暂时不可用' }],
-      })),
+  it('supports profile switching, duplication, deletion, runtime fields, credentials, prompt, and sampling controls', async () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom', '内网视觉'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'qwen-vl',
+      hasApiKey: true,
+    })
+    const configuration = Object.freeze({
+      activeProfileId: runtimeProfile.id,
+      profiles: Object.freeze([runtimeProfile, custom]),
+    })
+    const catalogWithFailure = Object.freeze({
+      ...modelCatalog,
+      failures: Object.freeze([Object.freeze({ provider: 'provider-b', message: '目录暂不可用' })]),
+    })
+    const api = {
+      models: vi.fn(async () => catalogWithFailure),
+      saveSettings: vi.fn(async (request: any) => ({ configuration: request.configuration })),
     }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
-      renderer = create(createElement(ImageReaderSettingsPage, { scope, catalog } as never))
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
       await Promise.resolve()
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('provider-b')
+    expect(JSON.stringify(renderer.toJSON())).toContain('的模型目录读取失败')
+
+    await act(async () => {
+      ;(buttonByText(renderer, '刷新系统模型').props.onClick as () => void)()
+      await Promise.resolve()
+    })
+    expect(api.models).toHaveBeenCalledTimes(2)
+
+    await act(async () => {
+      ;(renderer.root.findAllByType('select')[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'custom' } })
+    })
+    expect(inputByType(renderer, 'password').props.placeholder).toContain('已保存')
+    await act(async () => {
+      ;(buttonByText(renderer, '清除已保存的 API Key').props.onClick as () => void)()
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('保存后清除已保存的 API Key')
+    await act(async () => {
+      ;(buttonByText(renderer, '保留已保存的 API Key').props.onClick as () => void)()
+      ;(inputByType(renderer, 'password').props.onChange as (event: unknown) => void)({ target: { value: 'replacement' } })
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('保存后替换这份配置的 API Key')
+    await act(async () => {
+      ;(inputByType(renderer, 'password').props.onChange as (event: unknown) => void)({ target: { value: '' } })
+      ;(renderer.root.findAllByType('input').filter(input => input.props.type === 'radio')[0]!.props.onChange as () => void)()
     })
 
-    expect(JSON.stringify(renderer.toJSON())).toContain('Provider A')
-    expect(JSON.stringify(renderer.toJSON())).toContain('Vision A')
-    expect(JSON.stringify(renderer.toJSON())).toContain('provider-b')
-    expect(JSON.stringify(renderer.toJSON())).toContain('请点击“刷新模型”重试；其他已加载 Provider 仍可选择。')
-    const selects = renderer.root.findAllByType('select')
-    const textarea = renderer.root.findAllByType('textarea')[0]!
-    const inputs = renderer.root.findAllByType('input')
+    const runtimeSelects = renderer.root.findAllByType('select')
     await act(async () => {
-      ;(selects[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'provider-a' } })
-      ;(selects[1]!.props.onChange as (event: unknown) => void)({ target: { value: 'vision-a' } })
-      ;(textarea.props.onChange as (event: unknown) => void)({ target: { value: '只描述构图' } })
-      ;(inputs[0]!.props.onChange as (event: unknown) => void)({ target: { value: '0.4' } })
-      ;(inputs[1]!.props.onChange as (event: unknown) => void)({ target: { value: '4096' } })
+      ;(runtimeSelects[1]!.props.onChange as (event: unknown) => void)({ target: { value: 'provider-a' } })
     })
     await act(async () => {
-      ;(buttonByText(renderer, '刷新模型').props.onClick as () => void)()
-      await Promise.resolve()
+      ;(renderer.root.findAllByType('select')[2]!.props.onChange as (event: unknown) => void)({ target: { value: 'vision-a' } })
+      ;(renderer.root.findAllByType('textarea')[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'updated prompt' } })
+      const numbers = renderer.root.findAllByType('input').filter(input => input.props.type === 'number')
+      ;(numbers[0]!.props.onChange as (event: unknown) => void)({ target: { value: '0.35' } })
+      ;(numbers[1]!.props.onChange as (event: unknown) => void)({ target: { value: '4096' } })
+    })
+
+    await act(async () => {
+      ;(buttonByText(renderer, '复制配置').props.onClick as () => void)()
+    })
+    expect(renderer.root.findAllByType('option').some(option => String(option.props.children).includes('副本'))).toBe(true)
+    await act(async () => {
+      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
     })
     await act(async () => {
-      ;(buttonByText(renderer, '保存图片读取设置').props.onClick as () => void)()
-      await Promise.resolve()
+      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
     })
-    expect(JSON.stringify(renderer.toJSON())).toContain('图片读取设置已保存。')
-    expect(catalog.models).toHaveBeenCalledTimes(2)
-    expect(scope.set).toHaveBeenCalledOnce()
+    expect(buttonByText(renderer, '删除配置').props.disabled).toBe(true)
     await act(async () => {
-      ;(textarea.props.onChange as (event: unknown) => void)({ target: { value: '尚未保存的新提示词' } })
+      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
     })
-    expect(JSON.stringify(renderer.toJSON())).not.toContain('图片读取设置已保存。')
     renderer.unmount()
   })
 
   it('renders model catalog and settings write failures as actionable messages', async () => {
     const catalogFailure = new Error('目录连接失败')
-    let catalogRenderer!: ReturnType<typeof create>
+    const api = {
+      models: vi.fn(async () => { throw catalogFailure }),
+      saveSettings: vi.fn(async () => { throw new Error('设置写入被拒绝') }),
+    }
+    let renderer!: ReturnType<typeof create>
     await act(async () => {
-      catalogRenderer = create(createElement(ImageReaderSettingsPage, {
-        scope: settingsScope(),
-        catalog: { models: vi.fn(async () => { throw catalogFailure }) },
-      } as never))
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(), api } as never))
       await Promise.resolve()
     })
-    expect(JSON.stringify(catalogRenderer.toJSON())).toContain('模型目录读取失败：')
-    expect(JSON.stringify(catalogRenderer.toJSON())).toContain('目录连接失败')
-    expect(JSON.stringify(catalogRenderer.toJSON())).toContain('请点击“刷新模型”重试。')
-    catalogRenderer.unmount()
-
-    const set = vi.fn(async () => { throw new Error('设置写入被拒绝') })
-    let saveRenderer!: ReturnType<typeof create>
+    expect(JSON.stringify(renderer.toJSON())).toContain('系统模型目录读取失败：')
+    expect(JSON.stringify(renderer.toJSON())).toContain('目录连接失败')
     await act(async () => {
-      saveRenderer = create(createElement(ImageReaderSettingsPage, {
-        scope: settingsScope(set),
-        catalog: { models: vi.fn(async () => modelCatalog) },
-      } as never))
+      ;(buttonByText(renderer, '保存全部配置').props.onClick as () => void)()
       await Promise.resolve()
     })
-    await act(async () => {
-      ;(buttonByText(saveRenderer, '保存图片读取设置').props.onClick as () => void)()
-      await Promise.resolve()
-    })
-    expect(JSON.stringify(saveRenderer.toJSON())).toContain('保存失败：')
-    expect(JSON.stringify(saveRenderer.toJSON())).toContain('设置写入被拒绝')
-    expect(JSON.stringify(saveRenderer.toJSON())).toContain('请检查 Provider、视觉模型、提示词、温度和最大输出 Token 数后重新保存。')
-    saveRenderer.unmount()
+    expect(JSON.stringify(renderer.toJSON())).toContain('保存失败：')
+    expect(JSON.stringify(renderer.toJSON())).toContain('设置写入被拒绝')
+    renderer.unmount()
   })
 })

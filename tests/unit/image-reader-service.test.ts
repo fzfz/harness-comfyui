@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
+import { createImageReaderProfile } from '../../src/image-reader/settings.ts'
 import { ImageReaderService } from '../../src/host/image-reader/image-reader-service.ts'
 
 const temporaryDirectories: string[] = []
@@ -21,12 +22,17 @@ function fixture() {
   const scope = {
     get: vi.fn(() => ({
       configuration: {
-        provider: 'vision-provider',
-        model: 'vision-model',
-        defaultPrompt: '默认读图提示词',
-        temperature: 0.35,
-        maxTokens: 1536,
+        activeProfileId: 'runtime',
+        profiles: [{
+          ...createImageReaderProfile('runtime'),
+          provider: 'vision-provider',
+          model: 'vision-model',
+          defaultPrompt: '默认读图提示词',
+          temperature: 0.35,
+          maxTokens: 1536,
+        }],
       },
+      credentials: {},
     })),
   }
   const imageLimits = {
@@ -50,12 +56,14 @@ function fixture() {
     inputModalities: ['text', 'image'],
     stream,
   }))
+  const fetch = vi.fn<typeof globalThis.fetch>()
   return {
     filePath,
     scope,
     saveImage,
     prepareCall,
-    service: new ImageReaderService({ scope, attachments: { imageLimits, saveImage }, llm: { prepareCall } } as never),
+    fetch,
+    service: new ImageReaderService({ scope, attachments: { imageLimits, saveImage }, llm: { prepareCall }, fetch } as never),
   }
 }
 
@@ -70,6 +78,7 @@ describe('ImageReaderService', () => {
       'IMAGE_READER_MODEL_UNAVAILABLE',
       'IMAGE_READER_PROVIDER_FAILED',
       'IMAGE_READER_SETTINGS_INVALID',
+      'IMAGE_READER_SETTINGS_SAVE_FAILED',
     ])
   })
 
@@ -110,12 +119,17 @@ describe('ImageReaderService', () => {
     const { service, filePath, scope } = fixture()
     scope.get.mockReturnValue({
       configuration: {
-        provider: patch.provider,
-        model: patch.model,
-        defaultPrompt: 'prompt',
-        temperature: 0.2,
-        maxTokens: 1000,
+        activeProfileId: 'runtime',
+        profiles: [{
+          ...createImageReaderProfile('runtime'),
+          provider: patch.provider,
+          model: patch.model,
+          defaultPrompt: 'prompt',
+          temperature: 0.2,
+          maxTokens: 1000,
+        }],
       },
+      credentials: {},
     })
     await expect(service.inspect(filePath)).rejects.toMatchObject({ code })
   })
@@ -180,6 +194,169 @@ describe('ImageReaderService', () => {
     modelFailure.prepareCall.mockRejectedValueOnce(new Error('route missing'))
     await expect(modelFailure.service.inspect(modelFailure.filePath))
       .rejects.toMatchObject({ code: 'IMAGE_READER_MODEL_UNAVAILABLE' })
+  })
+
+  it('reads one image through an OpenAI-compatible Chat Completions endpoint without attachment admission', async () => {
+    const { service, filePath, scope, fetch, saveImage, prepareCall } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+          hasApiKey: true,
+          defaultPrompt: '完整观察图片',
+          temperature: 0.15,
+          maxTokens: 3072,
+        }],
+      },
+      credentials: { custom: 'local-secret' },
+    })
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({
+      choices: [{ message: { content: '可见一名银发人物。' } }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    await expect(service.inspect(filePath)).resolves.toEqual({
+      provider: 'openai-compatible',
+      model: 'qwen-vl',
+      filePath,
+      observation: '可见一名银发人物。',
+    })
+    expect(fetch).toHaveBeenCalledOnce()
+    const [endpoint, request] = fetch.mock.calls[0]!
+    expect(endpoint).toBe('http://127.0.0.1:11434/v1/chat/completions')
+    expect(request).toMatchObject({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer local-secret' },
+    })
+    expect(JSON.parse(request!.body as string)).toEqual({
+      model: 'qwen-vl',
+      messages: [{ role: 'user', content: [
+        { type: 'text', text: '完整观察图片' },
+        { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw0KGgo=' } },
+      ] }],
+      temperature: 0.15,
+      max_tokens: 3072,
+    })
+    expect(saveImage).not.toHaveBeenCalled()
+    expect(prepareCall).not.toHaveBeenCalled()
+  })
+
+  it('omits authorization for an unkeyed endpoint and maps HTTP or response failures', async () => {
+    const { service, filePath, scope, fetch } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+        }],
+      },
+      credentials: {},
+    })
+    fetch.mockResolvedValueOnce(new Response('', { status: 401 }))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({
+      code: 'IMAGE_READER_PROVIDER_FAILED',
+      message: 'The configured OpenAI-compatible endpoint returned HTTP 401.',
+    })
+    expect(fetch.mock.calls[0]![1]!.headers).toEqual({ 'Content-Type': 'application/json' })
+
+    fetch.mockResolvedValueOnce(new Response('not json', { status: 200 }))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
+
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({ choices: [] }), { status: 200 }))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
+
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: '   ' } }] }), { status: 200 }))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_EMPTY_RESPONSE' })
+  })
+
+  it('maps OpenAI-compatible network failure and preserves cancellation', async () => {
+    const { service, filePath, scope, fetch } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+        }],
+      },
+      credentials: {},
+    })
+    fetch.mockRejectedValueOnce(new Error('connection refused'))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
+
+    const controller = new AbortController()
+    fetch.mockImplementationOnce(async (_url, init) => {
+      controller.abort(new DOMException('cancelled', 'AbortError'))
+      throw init!.signal!.reason
+    })
+    await expect(service.inspect(filePath, undefined, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('limits OpenAI-compatible response bytes and preserves response-body cancellation', async () => {
+    const { service, filePath, scope, fetch } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+        }],
+      },
+      credentials: {},
+    })
+    fetch.mockResolvedValueOnce(new Response('{}', {
+      status: 200,
+      headers: { 'Content-Length': '1048577' },
+    }))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({
+      code: 'IMAGE_READER_PROVIDER_FAILED',
+      message: 'The configured OpenAI-compatible endpoint returned a response larger than 1 MiB.',
+    })
+
+    fetch.mockResolvedValueOnce(new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(1_048_577))
+        controller.close()
+      },
+    }), { status: 200 }))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({
+      code: 'IMAGE_READER_PROVIDER_FAILED',
+      message: 'The configured OpenAI-compatible endpoint returned a response larger than 1 MiB.',
+    })
+
+    const controller = new AbortController()
+    let finishRead!: (value: { done: true; value: undefined }) => void
+    let markReadStarted!: () => void
+    const readStarted = new Promise<void>(resolve => { markReadStarted = resolve })
+    const reader = {
+      read: vi.fn(async () => {
+        markReadStarted()
+        return new Promise<{ done: true; value: undefined }>(resolve => { finishRead = resolve })
+      }),
+      cancel: vi.fn(async () => { finishRead({ done: true, value: undefined }) }),
+      releaseLock: vi.fn(),
+    }
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      body: { getReader: () => reader },
+    } as never)
+    const inspection = service.inspect(filePath, undefined, controller.signal)
+    await readStarted
+    controller.abort(new DOMException('cancelled while reading', 'AbortError'))
+    await expect(inspection).rejects.toMatchObject({ name: 'AbortError' })
+    expect(reader.cancel).toHaveBeenCalledOnce()
   })
 
   it('preserves caller cancellation as AbortError', async () => {

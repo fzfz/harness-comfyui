@@ -12,7 +12,7 @@ import { IMAGE_READER_REMOTE_SERVICE } from '../image-reader/contract.ts'
 import {
   IMAGE_READER_SETTINGS_NAMESPACE,
   IMAGE_READER_SETTINGS_SECTION_ID,
-  decodeImageReaderSettingsSection,
+  decodeImageReaderSettingsView,
 } from '../image-reader/settings.ts'
 import { ImageReaderSettingsPage } from './image-reader/image-reader-settings.tsx'
 
@@ -54,7 +54,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       const remoteImageReader = remoteContext.get(IMAGE_READER_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiImageReader
       const imageReaderSettingsScope = ctx.settingsScope.bind({
         namespace: IMAGE_READER_SETTINGS_NAMESPACE,
-        decode: decodeImageReaderSettingsSection,
+        decode: decodeImageReaderSettingsView,
       })
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
@@ -86,10 +86,17 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           return result.value
         },
       }, 1000)
-      const imageReaderCatalog = {
+      const imageReaderSettingsApi = {
         models: async (signal: AbortSignal) => {
           ensureActive(signal)
           const result = await remoteImageReader.models()
+          ensureActive(signal)
+          if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+          return result.value
+        },
+        saveSettings: async (request: Parameters<typeof remoteImageReader.saveSettings>[0], signal: AbortSignal) => {
+          ensureActive(signal)
+          const result = await remoteImageReader.saveSettings(request)
           ensureActive(signal)
           if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
           return result.value
@@ -137,7 +144,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           id: IMAGE_READER_SETTINGS_SECTION_ID,
           order: 40,
           label: '图片读取',
-          inject: () => ({ scope: imageReaderSettingsScope, catalog: imageReaderCatalog }),
+          inject: () => ({ scope: imageReaderSettingsScope, api: imageReaderSettingsApi }),
         }, ImageReaderSettingsPage)),
       ]
     })

@@ -859,7 +859,7 @@
 .harness-comfyui-image-reader-settings {
   display: grid;
   gap: 20px;
-  max-width: 760px;
+  max-width: 860px;
   padding: 8px 0 32px;
 }
 
@@ -875,8 +875,39 @@
   margin: 0;
 }
 
+.harness-comfyui-image-reader-profile-bar {
+  align-items: end;
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 12px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  padding: 14px;
+}
+
+.harness-comfyui-image-reader-profile-bar label {
+  display: grid;
+  gap: 7px;
+}
+
+.harness-comfyui-image-reader-profile-bar label > span {
+  font-weight: 600;
+}
+
+.harness-comfyui-image-reader-profile-bar small,
+.harness-comfyui-image-reader-connection small {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.harness-comfyui-image-reader-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .harness-comfyui-image-reader-header p {
-  color: var(--ds-text-2, #626262);
+  color: var(--dsw-alias-label-secondary);
   margin-top: 6px;
 }
 
@@ -891,15 +922,52 @@
   gap: 7px;
 }
 
+.harness-comfyui-image-reader-connection {
+  border: 0;
+  display: grid;
+  gap: 10px;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+}
+
+.harness-comfyui-image-reader-connection legend {
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+.harness-comfyui-image-reader-connection label {
+  align-items: start;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 10px;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto 1fr;
+  padding: 12px;
+}
+
+.harness-comfyui-image-reader-connection label:has(input:checked) {
+  border-color: var(--dsw-alias-brand-primary);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-brand-primary);
+}
+
+.harness-comfyui-image-reader-connection label > span {
+  display: grid;
+  gap: 4px;
+}
+
 .harness-comfyui-image-reader-form label > span {
   font-weight: 600;
 }
 
 .harness-comfyui-image-reader-form select,
 .harness-comfyui-image-reader-form input,
-.harness-comfyui-image-reader-form textarea {
-  background: var(--ds-background-2, #fff);
-  border: 1px solid var(--ds-border-2, #d7d7d7);
+.harness-comfyui-image-reader-form textarea,
+.harness-comfyui-image-reader-profile-bar select {
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l1);
   border-radius: 8px;
   color: inherit;
   font: inherit;
@@ -912,7 +980,7 @@
 }
 
 .harness-comfyui-image-reader-form small {
-  color: var(--ds-text-2, #626262);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .harness-comfyui-image-reader-wide-field {
@@ -926,16 +994,30 @@
 }
 
 .harness-comfyui-image-reader-settings button {
-  border: 1px solid var(--ds-border-2, #d7d7d7);
+  border: 1px solid var(--dsw-alias-border-l1);
   border-radius: 8px;
   cursor: pointer;
   font: inherit;
   padding: 8px 14px;
+  white-space: nowrap;
 }
 
 .harness-comfyui-image-reader-settings button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.harness-comfyui-image-reader-settings button:focus-visible,
+.harness-comfyui-image-reader-settings input:focus-visible,
+.harness-comfyui-image-reader-settings select:focus-visible,
+.harness-comfyui-image-reader-settings textarea:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+
+.harness-comfyui-image-reader-inline-action {
+  justify-self: start;
+  padding: 5px 9px !important;
 }
 
 @media (max-width: 680px) {
@@ -945,5 +1027,10 @@
 
   .harness-comfyui-image-reader-wide-field {
     grid-column: auto;
+  }
+
+  .harness-comfyui-image-reader-profile-bar,
+  .harness-comfyui-image-reader-connection {
+    grid-template-columns: 1fr;
   }
 }
