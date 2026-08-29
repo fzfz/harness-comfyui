@@ -1,5 +1,39 @@
 # 工作进度
 
+## 2026-08-29
+
+- 用户要求媒体查看页顶部继续显示当前媒体所属 Run 的 `run_id`，点击后复制完整值，并显示当前媒体的原始像素宽度和原始像素高度。
+- 已重新读取 `frontend-design` 与 `planning-with-files` 本机 Skill 说明，并完成规划文件会话恢复检查。
+- 已确认继续使用独立 worktree `/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-session-media-viewer-navigation`，不直接修改生产检出中的源码。
+- 已把 `v0.32.0` 发布与生产部署阶段标记为完成，并新增顶部元数据实现、测试、补丁发布和生产部署阶段。
+- 已确认媒体实际像素尺寸没有保存在 `generation_media` 表中；实现将分别读取图片 `naturalWidth`/`naturalHeight` 和视频 `videoWidth`/`videoHeight`，不把请求参数宽高误标为媒体文件尺寸。
+- 已完成顶部信息区的色彩、字体、布局和交互设计；完整 `run_id` 不截断，复制状态与只读像素尺寸使用等宽数据字体。
+- 已先补充页面生成器与 Host 路由测试；失败结果证明当前生产实现尚未投影 `runId`，也没有 Run ID 复制控件、复制反馈和媒体固有尺寸状态。
+- 已实现 Host 查看页的 `runId` 窄投影、顶部技术信息轨、Clipboard API 成功与失败反馈、图片和视频固有尺寸读取、加载失败尺寸状态以及迟到尺寸事件隔离。
+- 首次实现后，Host 路由测试已经通过；页面测试只剩异步 Clipboard Promise 的测试等待时序问题，已改为等待一次事件循环而不是猜测微任务数量。
+- 页面生成器与 Host 路由定向测试共 12 项通过，类型检查和 `git diff --check` 通过。
+- 定向测试覆盖 Clipboard API 成功、API 缺失、权限拒绝、图片尺寸、视频尺寸、零尺寸、文件加载失败、媒体切换后的元数据更新和旧媒体迟到尺寸事件隔离。
+- 已把产品目标版本更新为 `0.32.1`，并同步更新工程基线版本合同；已发布的 `v0.32.0` 保持不变。
+- 首次完整 `pnpm quality` 通过：431 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%，完整依赖与生产依赖漏洞数量均为 0。
+- 已重新读取独立 worktree 开发验证规范与本机 `browser` Skill；启动前检查确认 `.git` 是 linked-worktree 元数据文件，环境文件只检查可读性且没有读取内容，startup workspace 精确指向 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。
+- 独立 worktree Host 已在前台运行；`worktree:status` 返回版本 `0.32.1` 和 `running`，`worktree:health` 的全部检查项返回 `passed`。
+- 已使用本机浏览器在 1280 × 720 视口检查真实页面生成器；顶部显示完整 Run ID、复制状态和图片固有尺寸，页面布局没有遮挡。
+- 已实际点击 Run ID；页面显示“已复制”，`aria-live` 播报精确包含被复制的完整 Run ID。
+- 已点击较早媒体按钮切换到视频；Run ID、复制状态和媒体尺寸同步更新，视频固有尺寸显示为 `960 × 540 px`。
+- 390 × 844 窄屏首次截图确认完整 Run ID 可以换行显示且尺寸没有溢出，同时发现顶部首个 `auto` 网格轨道被剩余高度拉伸。
+- 已把窄屏顶部网格轨道改为 `max-content`，并增加样式合同测试，确保顶部信息区以后不会重新吸收媒体舞台的剩余高度。
+- 已重启本地页面预览服务并按本地 Web 开发规范重新加载页面；390 × 844 修正后顶部高度为 `98.5px`，页面宽高均没有溢出。
+- 修正后的最终窄屏视觉检查通过；浏览器错误与警告日志为 0。
+- 浏览器首次打开独立 worktree Harness 根页时仍显示 workspace 选择占位界面；`worktree:logs` 没有启动错误，下一步等待启动 workspace 注册完成后重新加载一次页面复核。
+- 等待启动注册完成并重新加载一次后，Harness 直接打开 `run-comfyui-workflows-harness`，模型选择器显示 DeepSeek V4 Flash，没有显示 API 密钥设置界面；生成结果列显示 0 个运行和 0 个媒体。
+- 已关闭浏览器验收标签页并停止临时页面预览服务。
+- 已执行 `pnpm worktree:stop`；随后 `pnpm worktree:status` 返回 `stopped`，独立 worktree 开发 Host 已正常停止。
+- 窄屏布局修正后的源码提交前完整 `pnpm quality` 再次通过：431 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%，依赖安全检查与类型检查通过。
+- 提交前获取远端后发现 `origin/main` 已发布 `v0.33.0`，新增提交集中在 CLI 与 Agent preset，不修改 Session Media Viewer 源码，但修改了产品版本、工程基线和发布文档。
+- 已把本次目标版本从尚未发布的 `0.32.1` 调整为 `0.33.1`；计划执行者不会覆盖或重写远端 `v0.33.0`。
+- 已把功能提交变基到 `v0.33.0` 的最终提交 `91d6f77`。变基仅在 `package.json.version` 和工程基线版本产生冲突；两个值均已解析为 `0.33.1`，媒体查看页源码自动无冲突合并。
+- 变基后的完整 `pnpm quality` 通过：447 项 unit/integration、24 项 contract/security、59 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%，依赖安全检查与类型检查通过。
+
 ## 2026-08-28
 
 - 已读取 `planning-with-files`、`prototype`、`frontend-design` 和 `stop-that-shit` 的本机 Skill 说明。

@@ -9,6 +9,7 @@ import {
 
 const imageItem: GenerationMediaViewerItem = {
   mediaId: 'media_image',
+  runId: 'run_image',
   mediaKind: 'image',
   filename: 'portrait.webp',
   createdAt: 1_725_000_000_000,
@@ -19,6 +20,7 @@ const imageItem: GenerationMediaViewerItem = {
 
 const videoItem: GenerationMediaViewerItem = {
   mediaId: 'media_video',
+  runId: 'run_video',
   mediaKind: 'video',
   filename: 'motion.mp4',
   createdAt: 1_724_999_000_000,
@@ -36,6 +38,10 @@ interface FakeElement {
   alt: string
   controls: boolean
   preload: string
+  naturalWidth: number
+  naturalHeight: number
+  videoWidth: number
+  videoHeight: number
   readonly dataset: Record<string, string>
   readonly attributes: Map<string, string>
   readonly children: FakeElement[]
@@ -55,6 +61,10 @@ function fakeElement(tagName = 'div'): FakeElement {
     alt: '',
     controls: false,
     preload: '',
+    naturalWidth: 0,
+    naturalHeight: 0,
+    videoWidth: 0,
+    videoHeight: 0,
     dataset: {},
     attributes: new Map(),
     children: [],
@@ -72,11 +82,15 @@ function viewerData(html: string): unknown {
   return JSON.parse(match.groups.data) as unknown
 }
 
-function runViewer(html: string) {
+function runViewer(
+  html: string,
+  clipboard: { readonly writeText: (value: string) => Promise<void> } | null = { writeText: async () => undefined },
+) {
   const data = viewerData(html)
   const ids = [
     'media-position', 'media-title', 'media-time', 'media-content', 'media-error',
     'nav-newer', 'nav-older', 'newer-label', 'older-label', 'newer-time', 'older-time',
+    'run-id-copy', 'run-id', 'copy-state', 'media-dimensions',
     'prompt-state', 'positive-prompt', 'media-announcement',
   ] as const
   const elements = Object.fromEntries(ids.map(id => [id, fakeElement()])) as Record<(typeof ids)[number], FakeElement>
@@ -103,6 +117,7 @@ function runViewer(html: string) {
     history: {
       replaceState(_state: unknown, _unused: string, url: string) { replacedUrls.push(url) },
     },
+    navigator: clipboard === null ? {} : { clipboard },
     Intl,
     Date,
     JSON,
@@ -126,8 +141,78 @@ describe('Generation media viewer page', () => {
     expect(html).not.toContain('<script data-attack>')
     expect(html).not.toContain('.innerHTML')
     expect(html).toContain('id="media-stage"')
+    expect(html).toContain('id="run-id-copy"')
+    expect(html).toContain('id="media-dimensions"')
     expect(html).toContain('id="positive-prompt"')
     expect(html).toContain('aria-live="polite"')
+  })
+
+  it('copies the current Run ID and shows intrinsic image and video dimensions', async () => {
+    const copiedRunIds: string[] = []
+    const html = renderGenerationMediaViewerPage({
+      items: [imageItem, videoItem],
+      currentMediaId: imageItem.mediaId,
+    })
+    const { elements } = runViewer(html, {
+      async writeText(value) { copiedRunIds.push(value) },
+    })
+
+    expect(elements['run-id'].textContent).toBe(imageItem.runId)
+    expect(elements['run-id-copy'].attributes.get('aria-label')).toBe(`复制 Run ID ${imageItem.runId}`)
+    expect(elements['copy-state'].textContent).toBe('点击复制')
+    expect(elements['media-dimensions'].textContent).toBe('读取中')
+
+    const image = elements['media-content'].children[0]!
+    image.naturalWidth = 832
+    image.naturalHeight = 1216
+    image.listeners.get('load')?.({})
+    expect(elements['media-dimensions'].textContent).toBe('832 × 1216 px')
+
+    elements['run-id-copy'].listeners.get('click')?.({})
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(copiedRunIds).toEqual([imageItem.runId])
+    expect(elements['copy-state'].textContent).toBe('已复制')
+    expect(elements['media-announcement'].textContent).toBe(`已复制 Run ID：${imageItem.runId}`)
+
+    elements['nav-older'].listeners.get('click')?.({})
+    expect(elements['run-id'].textContent).toBe(videoItem.runId)
+    expect(elements['copy-state'].textContent).toBe('点击复制')
+    expect(elements['media-dimensions'].textContent).toBe('读取中')
+
+    const video = elements['media-content'].children[0]!
+    video.videoWidth = 1920
+    video.videoHeight = 1080
+    video.listeners.get('loadedmetadata')?.({})
+    expect(elements['media-dimensions'].textContent).toBe('1920 × 1080 px')
+
+    image.naturalWidth = 2048
+    image.naturalHeight = 2048
+    image.listeners.get('load')?.({})
+    expect(elements['media-dimensions'].textContent).toBe('1920 × 1080 px')
+  })
+
+  it('shows explicit Run ID copy and media dimension failure states', async () => {
+    const html = renderGenerationMediaViewerPage({ items: [imageItem], currentMediaId: imageItem.mediaId })
+    const { elements } = runViewer(html, null)
+
+    elements['run-id-copy'].listeners.get('click')?.({})
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(elements['copy-state'].textContent).toBe('复制失败')
+    expect(elements['media-announcement'].textContent).toBe('未能复制 Run ID。请检查浏览器的剪贴板权限。')
+
+    const image = elements['media-content'].children[0]!
+    image.listeners.get('load')?.({})
+    expect(elements['media-dimensions'].textContent).toBe('尺寸不可用')
+    image.listeners.get('error')?.({})
+    expect(elements['media-dimensions'].textContent).toBe('尺寸不可用')
+
+    const { elements: rejectedElements } = runViewer(html, {
+      async writeText() { throw new Error('clipboard permission denied') },
+    })
+    rejectedElements['run-id-copy'].listeners.get('click')?.({})
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(rejectedElements['copy-state'].textContent).toBe('复制失败')
+    expect(rejectedElements['media-announcement'].textContent).toBe('未能复制 Run ID。请检查浏览器的剪贴板权限。')
   })
 
   it('keeps complete media, centered controls and a separately scrolling prompt on desktop and narrow screens', () => {
@@ -138,6 +223,7 @@ describe('Generation media viewer page', () => {
     expect(styles).toContain('align-self: center;')
     expect(styles).toContain('overflow-y: auto;')
     expect(styles).toContain('@media (max-width: 640px)')
+    expect(styles).toContain('grid-template-rows: max-content minmax(330px, 58dvh) auto;')
     expect(styles).not.toContain('.prompt-panel { max-height: none;')
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
     expect(styles).toContain(':focus-visible')

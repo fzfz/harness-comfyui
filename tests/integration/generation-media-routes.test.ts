@@ -81,17 +81,17 @@ describe('Generation media HTTP routes', () => {
       currentMediaId: 'media_old',
       items: [
         {
-          mediaId: 'media_new', mediaKind: 'image', filename: 'new.webp', createdAt: 1_725_000_000_000,
+          mediaId: 'media_new', runId: 'run_new', mediaKind: 'image', filename: 'new.webp', createdAt: 1_725_000_000_000,
           contentUrl: '/api/harness-comfyui/media/media_new/content?session_id=session_1',
           viewerUrl: '/api/harness-comfyui/media/media_new/view?session_id=session_1', positivePrompt: 'new prompt',
         },
         {
-          mediaId: 'media_new_second', mediaKind: 'image', filename: 'new-second.webp', createdAt: 1_725_000_000_000,
+          mediaId: 'media_new_second', runId: 'run_new', mediaKind: 'image', filename: 'new-second.webp', createdAt: 1_725_000_000_000,
           contentUrl: '/api/harness-comfyui/media/media_new_second/content?session_id=session_1',
           viewerUrl: '/api/harness-comfyui/media/media_new_second/view?session_id=session_1', positivePrompt: 'new prompt',
         },
         {
-          mediaId: 'media_old', mediaKind: 'video', filename: 'old.mp4', createdAt: 1_724_999_000_000,
+          mediaId: 'media_old', runId: 'run_old', mediaKind: 'video', filename: 'old.mp4', createdAt: 1_724_999_000_000,
           contentUrl: '/api/harness-comfyui/media/media_old/content?session_id=session_1',
           viewerUrl: '/api/harness-comfyui/media/media_old/view?session_id=session_1', positivePrompt: null,
         },
@@ -99,7 +99,8 @@ describe('Generation media HTTP routes', () => {
     })
     expect(promptLookups).toEqual(['run_new', 'run_old'])
     expect(html).not.toContain('private/old.mp4')
-    expect(html).not.toContain('run_old')
+    expect(html).not.toContain('workspace_1')
+    expect(html).not.toContain('request_json')
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 

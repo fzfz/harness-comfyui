@@ -2,6 +2,7 @@ import type { GenerationMediaKind } from '../../generation/contract.ts'
 
 export interface GenerationMediaViewerItem {
   readonly mediaId: string
+  readonly runId: string
   readonly mediaKind: GenerationMediaKind
   readonly filename: string
   readonly createdAt: number
@@ -65,10 +66,10 @@ button:focus-visible, video:focus-visible {
 }
 .viewer-header {
   min-height: 66px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  gap: 6px 24px;
   padding: 12px clamp(20px, 4vw, 56px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -93,6 +94,7 @@ button:focus-visible, video:focus-visible {
 }
 .current-media-meta {
   min-width: 0;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -104,6 +106,43 @@ button:focus-visible, video:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.technical-meta {
+  grid-column: 1 / -1;
+  min-width: 0;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  font: 10px var(--viewer-data-font);
+}
+.technical-chip {
+  min-width: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 9px;
+  color: var(--viewer-text);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+}
+.run-id-copy { cursor: copy; }
+.run-id-copy:hover { background: rgba(40, 85, 217, 0.24); }
+.meta-label { color: var(--viewer-muted); letter-spacing: 0.08em; }
+.run-id {
+  color: #dce7f7;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.copy-state {
+  min-width: 4em;
+  color: var(--viewer-focus);
+  text-align: right;
+}
+.media-dimensions { font-weight: 500; white-space: nowrap; }
 .media-stage {
   min-height: 0;
   position: relative;
@@ -199,12 +238,22 @@ button:focus-visible, video:focus-visible {
 }
 .positive-prompt[data-state="missing"] { color: var(--viewer-muted); }
 @media (max-width: 640px) {
-  .media-viewer { grid-template-rows: auto minmax(330px, 58dvh) auto; }
-  .viewer-header { align-items: flex-start; padding: 12px 16px; }
+  .media-viewer { grid-template-rows: max-content minmax(330px, 58dvh) auto; }
+  .viewer-header { align-items: flex-start; gap: 7px 12px; padding: 12px 16px; }
   .viewer-heading { display: grid; gap: 2px; }
   .viewer-heading p { display: none; }
   .current-media-meta { display: grid; justify-items: end; gap: 2px; }
   .current-media-meta span { max-width: 54vw; }
+  .technical-meta {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: space-between;
+    gap: 7px;
+    font-size: 9px;
+  }
+  .run-id-copy { flex: 1 1 auto; }
+  .media-size { flex: 0 0 auto; }
+  .technical-chip { gap: 6px; padding: 5px 7px; }
   .media-stage { padding: 12px 56px; }
   .media-frame { width: 100%; max-width: none; height: 100%; }
   .nav-button { width: 44px; min-height: 70px; border-radius: 13px; }
@@ -236,6 +285,10 @@ const VIEWER_SCRIPT = `(() => {
   const mediaPosition = element('media-position')
   const mediaTitle = element('media-title')
   const mediaTime = element('media-time')
+  const runIdCopy = element('run-id-copy')
+  const runId = element('run-id')
+  const copyState = element('copy-state')
+  const mediaDimensions = element('media-dimensions')
   const mediaContent = element('media-content')
   const mediaError = element('media-error')
   const newerButton = element('nav-newer')
@@ -275,15 +328,25 @@ const VIEWER_SCRIPT = `(() => {
   function renderMedia(item) {
     const media = document.createElement(item.mediaKind === 'video' ? 'video' : 'img')
     media.src = item.contentUrl
+    mediaDimensions.textContent = '读取中'
+    const showDimensions = (width, height) => {
+      if (mediaContent.children[0] !== media) return
+      mediaDimensions.textContent = Number.isInteger(width) && width > 0 && Number.isInteger(height) && height > 0
+        ? width + ' × ' + height + ' px'
+        : '尺寸不可用'
+    }
     if (item.mediaKind === 'video') {
       media.controls = true
       media.preload = 'metadata'
       media.setAttribute('aria-label', item.filename + ' 视频')
+      media.addEventListener('loadedmetadata', () => showDimensions(media.videoWidth, media.videoHeight))
     } else {
       media.alt = item.filename + ' 图片'
+      media.addEventListener('load', () => showDimensions(media.naturalWidth, media.naturalHeight))
     }
     media.addEventListener('error', () => {
       if (mediaContent.children[0] !== media) return
+      mediaDimensions.textContent = '尺寸不可用'
       mediaContent.hidden = true
       mediaError.hidden = false
     })
@@ -297,6 +360,9 @@ const VIEWER_SCRIPT = `(() => {
     mediaPosition.textContent = (currentIndex + 1) + ' / ' + data.items.length
     mediaTitle.textContent = item.filename
     mediaTime.textContent = formattedTime(item)
+    runId.textContent = item.runId
+    runIdCopy.setAttribute('aria-label', '复制 Run ID ' + item.runId)
+    copyState.textContent = '点击复制'
     renderMedia(item)
     if (item.positivePrompt === null) {
       promptState.textContent = '未保存'
@@ -322,6 +388,22 @@ const VIEWER_SCRIPT = `(() => {
       + ' 项媒体：' + item.filename + '，生成时间 ' + formattedTime(item)
   }
 
+  async function copyCurrentRunId() {
+    const copiedRunId = data.items[currentIndex].runId
+    try {
+      if (navigator.clipboard === undefined || typeof navigator.clipboard.writeText !== 'function') {
+        throw new Error('Clipboard API is unavailable.')
+      }
+      await navigator.clipboard.writeText(copiedRunId)
+      if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '已复制'
+      announcement.textContent = '已复制 Run ID：' + copiedRunId
+    } catch {
+      if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '复制失败'
+      announcement.textContent = '未能复制 Run ID。请检查浏览器的剪贴板权限。'
+    }
+  }
+
+  runIdCopy.addEventListener('click', () => void copyCurrentRunId())
   newerButton.addEventListener('click', () => move(-1))
   olderButton.addEventListener('click', () => move(1))
   window.addEventListener('keydown', event => {
@@ -352,6 +434,12 @@ export function renderGenerationMediaViewerPage(input: GenerationMediaViewerPage
       <div class="current-media-meta">
         <strong id="media-position"></strong>
         <span><time id="media-time"></time> · <span id="media-title"></span></span>
+      </div>
+      <div class="technical-meta" aria-label="当前媒体技术信息">
+        <button id="run-id-copy" class="technical-chip run-id-copy" type="button">
+          <span class="meta-label">RUN_ID</span><code id="run-id" class="run-id"></code><span id="copy-state" class="copy-state"></span>
+        </button>
+        <p class="technical-chip media-size"><span class="meta-label">尺寸</span><strong id="media-dimensions" class="media-dimensions"></strong></p>
       </div>
     </header>
     <section id="media-stage" class="media-stage" aria-label="当前媒体">

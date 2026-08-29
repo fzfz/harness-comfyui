@@ -127,6 +127,7 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
           )
           const items: readonly GenerationMediaViewerItem[] = sessionMedia.map(item => Object.freeze({
               mediaId: item.mediaId,
+              runId: item.runId,
               mediaKind: item.mediaKind,
               filename: item.filename,
               createdAt: item.createdAt,
