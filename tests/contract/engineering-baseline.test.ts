@@ -11,7 +11,7 @@ describe('source workspace engineering contract', () => {
     const manifest = readJson('package.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.36.2',
+      version: '0.37.0',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
@@ -114,7 +114,8 @@ describe('source workspace engineering contract', () => {
     expect(manifest.scripts.quality).toContain('pnpm run test:desktop')
     const workflow = readFileSync(resolve(root, '.github/workflows/ci.yml'), 'utf8')
     expect(workflow).toContain('desktop:\n    name: DSH Desktop acceptance\n    runs-on: macos-latest')
-    expect(workflow).toContain('repository: dataelement/dsh-desktop')
+    expect(workflow).toContain('repository: fzfz/dsh-desktop')
+    expect(workflow).toContain('ref: codex/configurable-mobile-bridge-port')
     expect(workflow).toContain('run: pnpm run desktop:dependencies:link')
     expect(workflow).toContain('run: pnpm run test:desktop')
   })
