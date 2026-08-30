@@ -111,19 +111,19 @@ describe('image reader Tools', () => {
     expect(runtime.readGenerationRunMedia).not.toHaveBeenCalled()
   })
 
-  it('inspects exactly one local image and forwards the optional prompt', async () => {
+  it('inspects exactly one local image with the saved settings prompt', async () => {
     const inspect = vi.fn(async () => ({
       provider: 'provider-a', model: 'vision-a', filePath: '/media/a.png', observation: '可见一个人物。',
     }))
     const tool = createInspectImageTool({ inspect } as never)
 
     await expect(tool.execute(
-      { file_path: '/media/a.png', prompt: '描述人物姿态' },
+      { file_path: '/media/a.png' },
       execution('inspect_image', [], 'call_inspect') as never,
     )).resolves.toEqual({
       provider: 'provider-a', model: 'vision-a', file_path: '/media/a.png', observation: '可见一个人物。',
     })
-    expect(inspect).toHaveBeenCalledWith('/media/a.png', '描述人物姿态', expect.any(AbortSignal))
+    expect(inspect).toHaveBeenCalledWith('/media/a.png', expect.any(AbortSignal))
   })
 
   it('publishes closed command schemas for the Skill CLI contract', () => {
@@ -132,6 +132,7 @@ describe('image reader Tools', () => {
     expect(media.parameters).toMatchObject({ type: 'object', additionalProperties: false })
     expect(media.output.schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['runs'] })
     expect(inspect.parameters).toMatchObject({ type: 'object', additionalProperties: false })
+    expect(inspect.parameters).not.toHaveProperty('properties.prompt')
     expect(inspect.output.schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['provider', 'model', 'file_path', 'observation'] })
     expect(media.output.render({}, { runs: [] })).toEqual([{ type: 'text', text: '{"runs":[]}' }])
     expect(inspect.output.render({}, { observation: '可见人物' })).toEqual([

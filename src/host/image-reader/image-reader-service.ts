@@ -205,7 +205,7 @@ export class ImageReaderService {
     this.fetch = options.fetch ?? globalThis.fetch
   }
 
-  async inspect(filePath: string, prompt?: string, signal?: AbortSignal): Promise<ImageInspection> {
+  async inspect(filePath: string, signal?: AbortSignal): Promise<ImageInspection> {
     const settings = this.options.scope.get()
     const profile = activeImageReaderProfile(settings.configuration)
     if (
@@ -216,11 +216,10 @@ export class ImageReaderService {
       throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
     }
     const input = await imageInput(filePath, this.options.attachments.imageLimits.maxImageBytes, signal)
-    const effectivePrompt = prompt?.trim() || profile.defaultPrompt
     if (profile.connectionType === 'openai-compatible') {
-      return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, effectivePrompt, signal)
+      return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, profile.defaultPrompt, signal)
     }
-    return this.inspectRuntime(profile, input, filePath, effectivePrompt, signal)
+    return this.inspectRuntime(profile, input, filePath, profile.defaultPrompt, signal)
   }
 
   private async inspectRuntime(

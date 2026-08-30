@@ -21,7 +21,7 @@ description: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始�
 
 当前 Agent 必须按 `runs` 顺序处理每个成功 Run，并按每个 Run 的 `images` 顺序处理每张图片。当前 Agent 必须为每张图片分别调用一次 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin`，并把该图片的 `file_path` 作为本次调用的同名字段。某个成功 Run 的 `images` 为空时，当前 Agent 必须报告该 Run 没有已保存图片。
 
-用户明确指定本次观察重点时，当前 Agent 必须把该要求写入当前图片调用的 `prompt`。用户没有指定观察重点时，当前 Agent 必须省略 `prompt`，以使用图片读取设置中的默认提示词。当前 Agent 不得把 Generation Request 的 `parameters` 拼入 `prompt`，从而使 `observation` 只基于图片输入和观察要求。
+当前 Agent 必须让每次 `image inspect --stdin` 的 stdin JSON 只包含当前图片的 `file_path`。图片读取始终使用“图片读取”设置中当前命名配置保存的读图提示词。用户明确指定本次关注点时，当前 Agent 必须在第 4 节的 Prompt 对比中使用该关注点。
 
 某张图片读取失败时，当前 Agent 必须记录该图片的 `media_id`、`file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行，不得继续调用后续图片。某个 Run 的全部图片读取失败时，当前 Agent 不得为该 Run 编写改进 Prompt。
 

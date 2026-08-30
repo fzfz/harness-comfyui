@@ -421,7 +421,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       command: 'generation.resolve-media', run_ids: ['run_1'],
     })
     const inspectionResponse = await post(server.origin, 'trusted', {
-      command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述人物',
+      command: 'image.inspect', file_path: '/media/result.png',
     })
 
     expect(mediaResponse.status).toBe(200)
@@ -440,7 +440,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         provider: 'provider-a', model: 'vision-a', file_path: '/media/result.png', observation: '可见一名人物。',
       },
     })
-    expect(inspect).toHaveBeenCalledWith('/media/result.png', '只描述人物', expect.any(AbortSignal))
+    expect(inspect).toHaveBeenCalledWith('/media/result.png', expect.any(AbortSignal))
     await server.close()
   })
 

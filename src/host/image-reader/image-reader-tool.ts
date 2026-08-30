@@ -151,7 +151,6 @@ export function createInspectImageTool(service: Pick<ImageReaderService, 'inspec
     description: 'Inspect exactly one local image with the visual provider, model, prompt, temperature, and output limit selected in Harness settings. Return only observable image content.',
     parameters: {
       file_path: { type: 'string', required: true, description: 'Absolute local path of exactly one image.' },
-      prompt: { type: 'string', description: 'Optional one-call image-reading prompt. Omission uses the saved default prompt.' },
     },
     output: {
       schema: {
@@ -167,7 +166,7 @@ export function createInspectImageTool(service: Pick<ImageReaderService, 'inspec
       render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
     },
     async execute(args, exec) {
-      const result = await service.inspect(args.file_path, args.prompt, exec.signal)
+      const result = await service.inspect(args.file_path, exec.signal)
       return Object.freeze({
         provider: result.provider,
         model: result.model,

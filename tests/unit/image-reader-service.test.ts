@@ -83,10 +83,10 @@ describe('ImageReaderService', () => {
     ])
   })
 
-  it('reads one image with the configured independent route and default prompt', async () => {
+  it('reads one image with the configured independent route and settings prompt', async () => {
     const { service, filePath, saveImage, prepareCall } = fixture()
 
-    await expect(service.inspect(filePath, undefined, new AbortController().signal)).resolves.toEqual({
+    await expect(service.inspect(filePath, new AbortController().signal)).resolves.toEqual({
       provider: 'vision-provider',
       model: 'vision-model',
       filePath,
@@ -103,13 +103,27 @@ describe('ImageReaderService', () => {
     ])
   })
 
-  it('uses a non-empty command prompt without changing stored settings', async () => {
+  it('uses the active settings prompt as the only prompt source', async () => {
     const { service, filePath, scope, prepareCall } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'runtime',
+        profiles: [{
+          ...createImageReaderProfile('runtime'),
+          provider: 'vision-provider',
+          model: 'vision-model',
+          defaultPrompt: '设置页保存的读图提示词',
+          temperature: 0.35,
+          maxTokens: 1536,
+        }],
+      },
+      credentials: {},
+    })
 
-    await service.inspect(filePath, '只描述构图', new AbortController().signal)
+    await service.inspect(filePath, new AbortController().signal)
 
     const request = (await prepareCall.mock.results[0]!.value).stream.mock.calls[0]![0]
-    expect(request.messages[0].content[0]).toEqual({ type: 'text', text: '只描述构图' })
+    expect(request.messages[0].content[0]).toEqual({ type: 'text', text: '设置页保存的读图提示词' })
     expect(scope.get).toHaveBeenCalledOnce()
   })
 
@@ -298,7 +312,7 @@ describe('ImageReaderService', () => {
       controller.abort(new DOMException('cancelled', 'AbortError'))
       throw init!.signal!.reason
     })
-    await expect(service.inspect(filePath, undefined, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(service.inspect(filePath, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
   })
 
   it('limits OpenAI-compatible response bytes and preserves response-body cancellation', async () => {
@@ -353,7 +367,7 @@ describe('ImageReaderService', () => {
       headers: new Headers(),
       body: { getReader: () => reader },
     } as never)
-    const inspection = service.inspect(filePath, undefined, controller.signal)
+    const inspection = service.inspect(filePath, controller.signal)
     await readStarted
     controller.abort(new DOMException('cancelled while reading', 'AbortError'))
     await expect(inspection).rejects.toMatchObject({ name: 'AbortError' })
@@ -364,7 +378,7 @@ describe('ImageReaderService', () => {
     const { service, filePath, saveImage } = fixture()
     const controller = new AbortController()
     controller.abort(new DOMException('cancelled', 'AbortError'))
-    await expect(service.inspect(filePath, undefined, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(service.inspect(filePath, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
     expect(saveImage).not.toHaveBeenCalled()
   })
 })

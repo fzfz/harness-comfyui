@@ -153,7 +153,7 @@ describe('managed Harness ComfyUI CLI executable', () => {
     })
     const inspectionResult = await runCli({
       args: ['image', 'inspect', '--stdin'],
-      stdin: JSON.stringify({ file_path: '/media/result.png', prompt: '只描述人物' }),
+      stdin: JSON.stringify({ file_path: '/media/result.png' }),
       apiUrl,
     })
 
@@ -161,7 +161,7 @@ describe('managed Harness ComfyUI CLI executable', () => {
     expect(inspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
     expect(posted).toEqual([
       { command: 'generation.resolve-media', run_ids: ['run_1'] },
-      { command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述人物' },
+      { command: 'image.inspect', file_path: '/media/result.png' },
     ])
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })

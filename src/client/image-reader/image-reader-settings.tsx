@@ -400,13 +400,13 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
         )}
 
         <label className="harness-comfyui-image-reader-wide-field">
-          <span>默认读图提示词</span>
+          <span>读图提示词</span>
           <textarea
             rows={18}
             value={activeProfile.defaultPrompt}
             onChange={event => updateActiveProfile(profile => ({ ...profile, defaultPrompt: event.target.value }))}
           />
-          <small>inspect_image 没有传入单次 prompt 时使用。该提示词只负责读取一张图片，不负责 Generation Prompt 对比或改写。</small>
+          <small>当前配置的每次 inspect_image 调用都使用该提示词。该提示词只负责读取一张图片，不负责 Generation Prompt 对比或改写。</small>
         </label>
 
         <label>
