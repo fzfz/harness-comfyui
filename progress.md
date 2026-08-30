@@ -29,6 +29,9 @@
 - Desktop 生命周期已改为执行 DSH Desktop 自带 pnpm 的 `dev`/`preview` package script；Web start/restart 已在动态加载依赖模块前复用 worktree 链接准备。
 - 无法传给 DSH Desktop 的 `mobileBridgePort` 配置字段已删除；启动器只按上游固定的 `preview=43127`、`dev=43128` 合同预检端口，文档不再声称该值可配置。
 - `.gitignore` 已覆盖根 `node_modules` 符号链接，Git 隔离合同已加入该路径。
+- 本地 `main` 已通过 merge commit `9560d3b` 合入功能分支并保留 `0.36.2`、`local-image-reader` 与六个项目 Skill 文档；所有测试从该提交之后开始执行。
+- 合入后的首轮类型检查发现 `ctx.webServer` 缺少显式类型收窄；Web Host 聚焦测试发现启动 CLI 导入的 worktree 准备函数名称错误。两处实现已按实际公开服务与真实导出名称修正。
+- 修正后 TypeScript 检查通过；Desktop 生产、Desktop 开发、Web worktree、Git 隔离、Host 插件和受管 shell capability 共 61 项聚焦测试通过。
 
 ## 2026-08-30 Phase 40 — 补齐 DSH Desktop 合入门禁
 

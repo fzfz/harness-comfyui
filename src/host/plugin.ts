@@ -137,9 +137,12 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     missingObservationMs: profile.jobs.missingObservationMs,
     reportRunInputLookupError: reportGenerationRunInputLookupError.bind(undefined, generationLogger),
   })
+  const webServer = (ctx as unknown as {
+    readonly webServer: { readonly host: string; readonly port: number }
+  }).webServer
   const capabilities = new CliShellCapabilityStore({
     cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
-    apiUrl: `http://${ctx.webServer.host}:${ctx.webServer.port}${CLI_ROUTE_PATH}`,
+    apiUrl: `http://${webServer.host}:${webServer.port}${CLI_ROUTE_PATH}`,
   })
   const imageReaderDefaults = config.imageReaderDefaultModel === undefined
     ? undefined

@@ -3,7 +3,7 @@
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { prepareDevelopmentCheckout } from '../desktop/development-checkout.mjs'
+import { prepareDesktopDevelopmentCheckout } from '../desktop/development-checkout.mjs'
 import { SOURCE_PRODUCTION_COMMANDS } from '../production/commands.mjs'
 
 export function helpText() {
@@ -31,7 +31,7 @@ export function parseArguments(argv) {
 
 export async function runWebHostCommand(command, options = {}) {
   if (command === 'start' || command === 'restart') {
-    await (options.prepareCheckout ?? prepareDevelopmentCheckout)(options.checkoutOptions)
+    await (options.prepareCheckout ?? prepareDesktopDevelopmentCheckout)(options.checkoutOptions)
   }
   const runSourceProductionCommand = options.runSourceProductionCommand
     ?? (await import('../production/cli.mjs')).runSourceProductionCommand
