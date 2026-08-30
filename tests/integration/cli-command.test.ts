@@ -166,6 +166,31 @@ describe('managed Harness ComfyUI CLI executable', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
+  it('rejects the old Run media command without making an HTTP request', async () => {
+    let requests = 0
+    const server = createServer((_request, response) => {
+      requests += 1
+      response.end()
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+
+    const result = await runCli({
+      args: ['image', 'run-media', '--stdin'],
+      stdin: JSON.stringify({ run_ids: ['run_1'] }),
+      apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
+    })
+
+    expect(result).toEqual({
+      exitCode: 2,
+      stdout: '',
+      stderr: 'CLI_ARGUMENT_INVALID: CLI command is invalid\n',
+    })
+    expect(requests).toBe(0)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
   it('reports an invalid historical Run stdin contract without making an HTTP request', async () => {
     let requests = 0
     const server = createServer((_request, response) => {

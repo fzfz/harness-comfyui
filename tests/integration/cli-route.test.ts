@@ -444,6 +444,43 @@ describe('Harness ComfyUI managed CLI route', () => {
     await server.close()
   })
 
+  it('rejects the old internal Run media command without calling a runtime', async () => {
+    const acceptGeneration = vi.fn()
+    const readGenerationRunInputs = vi.fn()
+    const readGenerationRunMedia = vi.fn()
+    const inspect = vi.fn()
+    const resolveByPath = vi.fn()
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: { acceptGeneration, readGenerationRunInputs, readGenerationRunMedia },
+      imageReader: { inspect } as never,
+      workspaceRegistry: { resolveByPath },
+    }))
+
+    const response = await post(server.origin, 'trusted', {
+      command: 'image.run-media', run_ids: ['run_1'],
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: { code: 'CLI_REQUEST_INVALID', message: 'CLI request command is invalid' },
+    })
+    expect(acceptGeneration).not.toHaveBeenCalled()
+    expect(readGenerationRunInputs).not.toHaveBeenCalled()
+    expect(readGenerationRunMedia).not.toHaveBeenCalled()
+    expect(inspect).not.toHaveBeenCalled()
+    expect(resolveByPath).not.toHaveBeenCalled()
+    await server.close()
+  })
+
   it('reports image reader failures with their stable code and message', async () => {
     const inspect = vi.fn(async () => {
       throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
