@@ -10,7 +10,7 @@ Agent 在从 `main` 创建的独立 linked worktree 中开发或验证完整 DSH
 2. Agent 必须确认 `config/desktop-worktree.json.mainCheckoutPath` 指向主开发 checkout。
 3. 主开发 checkout 必须已经存在 `.env`、根 `node_modules` 和 `config/desktop-production.json.desktopSourceRelativePath` 指定的 DSH Desktop 底座。
 4. Agent 不得在 worktree 执行 `pnpm install`，不得复制 `.env`，不得为 worktree clone 第二份 DSH Desktop。
-5. worktree 根 `.env` 与 `node_modules` 不存在时，`dev:start` 负责创建指向主开发 checkout 的符号链接；既有冲突路径必须由 Agent 明确处理后重新启动。
+5. worktree 根 `.env` 与 `node_modules` 不存在时，`dev:start` 或 `web:start` 负责创建指向主开发 checkout 的符号链接；既有冲突路径必须由 Agent 明确处理后重新启动。
 
 ## 启动与验收
 
@@ -49,6 +49,7 @@ pnpm web:logs
 ```
 
 `web:*` 不启动 DSH Desktop，不能替代完整 Desktop 验收。
+`web:start` 会先建立与 `dev:start` 相同的 `.env` 和 `node_modules` 链接；`web:health` 只检查已经存在的 Web Host 运行状态，不创建或修改链接。
 
 ## 结束条件
 

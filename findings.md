@@ -1014,3 +1014,6 @@
 - `docs/agents/worktree-development.md` 与根 `AGENTS.md` 仍要求旧 Web `worktree:*`；这两个规范必须改为完整 Desktop `dev:*`，并把 `web:*` 限定为按需的单独 Web Host 调试。
 - 本地 `main` 已包含 `v0.36.2` 及后续规范提交；功能分支必须先形成提交并合入本地 `main`，完整测试与真实 Desktop 启动验证才以最终集成结果为对象。
 - 功能分支 worktree 中第二次 `dev:start` 已进入 DSH generation 安装阶段，并报告 pnpm major 不一致；该错误必须在本地 `main` 合入提交完成后，从该 `main` 创建的新 worktree 重新复现，不能用未集成分支的环境状态代替最终结论。
+- Harness WebServer 公开服务提供实际监听 `host` 和 `port`；DSH Desktop 为 Harness 分配动态端口，因此 Skill CLI capability 不能使用 Configuration Profile 的固定 `server.port`。
+- DSH Desktop 的 `package.json` 是开发与预览启动 seam；当前仓库必须调用其 `pnpm dev`/`pnpm preview`，不能把当前恰好等价的 `electron-vite` 命令固化为跨仓库合同。
+- DSH Desktop 当前源码把移动桥接端口固定为 `preview=43127`、`dev=43128`，没有公开覆盖接口；插件仓库只能预检这两个端口，不能暴露一个上游不会读取的配置字段。

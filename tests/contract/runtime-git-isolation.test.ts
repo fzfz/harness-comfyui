@@ -27,6 +27,7 @@ function isTracked(relativePath: string): boolean {
 describe('source runtime git isolation', () => {
   it('ignores generated source runtime state while keeping product source files tracked', () => {
     const runtimeArtifacts = [
+      'node_modules',
       '.local/production/state/process.json',
       '.local/production/state/operations.jsonl',
       '.local/production/shared/logs/host.stdout.log',

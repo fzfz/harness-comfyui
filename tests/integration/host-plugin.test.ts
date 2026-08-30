@@ -45,7 +45,7 @@ function provideHostServices(ctx: Context) {
   }) => disposeShellEnvironment)
   const createWorkspace = vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] }))
   ctx.provide('tools', { register: registerTool })
-  ctx.provide('webServer', { register: registerRoute })
+  ctx.provide('webServer', { host: '127.0.0.1', port: 43199, register: registerRoute })
   ctx.provide('shellEnv' as never, { register: registerShellEnvironment } as never)
   ctx.provide('attachments' as never, {
     imageLimits: {
@@ -174,6 +174,8 @@ describe('Harness ComfyUI Host plugin', () => {
     } as never
     const firstCapability = contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
     expect(firstCapability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+    expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_API)
+      .toBe('http://127.0.0.1:43199/api/harness-comfyui/cli/v1')
     ctx.emit('tools/result', execution, { status: 'success', value: null } as never)
     const replacementCapability = contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
     expect(replacementCapability).not.toBe(firstCapability)

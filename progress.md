@@ -24,6 +24,11 @@
 - 第一次真实 `pnpm dev:start` 在建立根 `node_modules` 链接前静态加载 `tsdown` 并失败；实现已改为链接成功后再动态加载三个物化器。
 - 第二次真实 `pnpm dev:start` 已完成 worktree 链接、插件构建、Desktop 打包和 profile 初始化，随后在 generation 安装阶段报告 pnpm major 不一致；该运行发生在尚未合入 `main` 的功能分支上，不作为最终测试结论。
 - 用户要求先把功能分支提交并合入本地 `main`；后续完整质量门禁与真实 Desktop 启动验证必须从已提交的本地 `main` 或由该 `main` 创建的新 worktree 执行。
+- 功能分支已提交为 `91ab4bb`；合入前 Standards 与 Spec 审查共同定位到 capability 动态端口、上游 pnpm 启动 seam、Web worktree 链接准备、无效移动桥接端口配置和根 `node_modules` 链接忽略五项现有合同错误。
+- capability URL 已改为当前 `ctx.webServer.host/port`；Desktop capability 测试已改为端口 `0` 的真实 WebServer，并让真实 DSH bash 在同一 Tool Call 内执行项目 CLI 请求。
+- Desktop 生命周期已改为执行 DSH Desktop 自带 pnpm 的 `dev`/`preview` package script；Web start/restart 已在动态加载依赖模块前复用 worktree 链接准备。
+- 无法传给 DSH Desktop 的 `mobileBridgePort` 配置字段已删除；启动器只按上游固定的 `preview=43127`、`dev=43128` 合同预检端口，文档不再声称该值可配置。
+- `.gitignore` 已覆盖根 `node_modules` 符号链接，Git 隔离合同已加入该路径。
 
 ## 2026-08-30 Phase 40 — 补齐 DSH Desktop 合入门禁
 

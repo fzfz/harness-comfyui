@@ -9,8 +9,8 @@ import { beginSourceOperation, finishSourceOperation, processStatePath, readProc
 import { runSourceStart } from './start.mjs'
 import { runSourceStatus } from './status.mjs'
 import { runSourceStop } from './stop.mjs'
+import { SOURCE_PRODUCTION_COMMANDS } from './commands.mjs'
 import {
-  SOURCE_PRODUCTION_COMMANDS,
   clearSourceManagedState,
   loadSavedSourceManagedContext,
   loadSourceManagedContext,

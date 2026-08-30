@@ -3,7 +3,7 @@ import { chmod, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFil
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { materializeSourceProfile } from '../../scripts/profile/source.mjs'
 import { spawnForeground } from '../../scripts/production/spawn.mjs'
@@ -66,6 +66,42 @@ afterEach(async () => {
 })
 
 describe('source worktree development definition', () => {
+  it('prepares main checkout links before loading the Web Host start modules', async () => {
+    const mainCheckout = await temporaryDirectory('harness-web-main-')
+    const worktree = await temporaryDirectory('harness-web-worktree-')
+    await Promise.all([
+      mkdir(resolve(mainCheckout, 'node_modules')),
+      writeFile(resolve(mainCheckout, '.env'), 'TEST_ONLY_KEY=value\n'),
+      writeFile(resolve(worktree, '.git'), 'gitdir: /test-only/linked-worktree\n'),
+    ])
+    const definitionPath = resolve(worktree, 'desktop-worktree.json')
+    await writeFile(definitionPath, `${JSON.stringify({ mainCheckoutPath: mainCheckout })}\n`)
+    const runSourceProductionCommand = vi.fn(async () => ({
+      evidence: { status: 'stopped' },
+      failed: false,
+    }))
+    const runtime = {
+      loadSourceWorktreeContext: vi.fn(),
+      loadSavedSourceWorktreeContext: vi.fn(),
+      prepareSourceWorktreeRuntime: vi.fn(),
+    }
+
+    await expect(runWebHostCommand('start', {
+      checkoutOptions: { repositoryRoot: worktree, definitionPath },
+      runSourceProductionCommand,
+      runtime,
+    })).resolves.toEqual({ evidence: { status: 'stopped' }, failed: false })
+
+    expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
+    expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
+    expect(runSourceProductionCommand).toHaveBeenCalledWith('start', expect.objectContaining({
+      commandPrefix: 'web',
+      loadContext: runtime.loadSourceWorktreeContext,
+      loadSavedContext: runtime.loadSavedSourceWorktreeContext,
+      prepareRuntime: runtime.prepareSourceWorktreeRuntime,
+    }))
+  })
+
   it('accepts one exact structured definition and resolves its repository paths', async () => {
     const root = await temporaryDirectory('harness-worktree-definition-')
     const environmentFile = resolve(root, '.env')

@@ -139,7 +139,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   })
   const capabilities = new CliShellCapabilityStore({
     cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
-    apiUrl: `http://${profile.server.host}:${profile.server.port}${CLI_ROUTE_PATH}`,
+    apiUrl: `http://${ctx.webServer.host}:${ctx.webServer.port}${CLI_ROUTE_PATH}`,
   })
   const imageReaderDefaults = config.imageReaderDefaultModel === undefined
     ? undefined

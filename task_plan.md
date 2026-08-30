@@ -30,6 +30,9 @@ Phase 41 in progress
 - [ ] `dev:start` 创建并验证指向 `main` checkout 的 `.env` 与 `node_modules` 符号链接。
 - [ ] Desktop 生产运行目录、Desktop 开发运行目录与 Web 调试运行目录互相隔离。
 - [ ] Desktop 开发与生产读取同一套 Workspace、Preset、Provider 和模型配置。
+- [ ] 项目 Skill 的 CLI capability 地址必须读取当前 Harness WebServer 的实际动态端口，并由真实 DSH bash 调用当前 Host 路由。
+- [ ] Desktop 生命周期必须执行 DSH Desktop 自己声明的 `pnpm dev` 与 `pnpm preview`，不能直接调用 `electron-vite` 内部入口。
+- [ ] `web:start` 与 `web:restart` 必须在加载依赖模块前建立与 `dev:start` 相同的 `.env`、`node_modules` 链接；`web:health` 不得创建或修改链接。
 - [ ] 发布文档说明 Git tag checkout 更新后的完整生产命令序列。
 - [ ] 当前功能提交必须先合入并提交本地 `main`；完整质量门禁和真实 Desktop 启动测试只能基于该 `main` 或从该 `main` 创建的新 worktree 执行。
 - [ ] 聚焦测试、类型检查和完整质量门禁通过。
@@ -107,6 +110,11 @@ Phase 41 in progress
 | 真实 `dev:start` 在创建 worktree `node_modules` 链接前静态导入 `tsdown` | 1 | Desktop 生命周期模块把 Client、Host 和 Preset 物化器改为 `prepareDesktopWorktree()` 内动态加载；开发 CLI 先完成 worktree 链接，再加载根开发依赖。 |
 | 实际目录检查的 `rg` 参数包含不存在的 `scripts/testing` | 1 | 删除该无效搜索路径；真实 Desktop 测试路径通过 `tests/desktop` 完成核对。 |
 | 第二次真实 `dev:start` 在功能分支 worktree 中遇到 DSH Desktop generation 安装的 pnpm major 不一致错误 | 1 | 停止继续使用未合入分支作真实环境结论；按用户要求先提交功能分支、合入并提交本地 `main`，再从该 `main` 建立新 worktree 复现和处理。 |
+| 合入前 Spec 与 Standards 审查发现 capability URL 固定为 `4173` | 1 | CLI URL 改为读取公开 `ctx.webServer.host` 与 `ctx.webServer.port`；Desktop 测试改用端口 `0` 的真实 WebServer，并从真实 DSH bash 调用项目 CLI route。 |
+| 合入前审查发现 Desktop 生命周期直接执行 `electron-vite` | 1 | 生命周期改为通过 DSH Desktop 自带 Node 与 pnpm entry 执行上游 package script `dev` 或 `preview`，保留进程组管理与调试参数透传。 |
+| 合入前审查发现全新 worktree 单独执行 `web:start` 时尚未建立链接 | 1 | Web start/restart 在动态加载 Web Host 依赖模块前复用 linked-worktree 准备函数；health/status/logs/stop 不执行准备写操作。 |
+| 合入前审查发现 `mobileBridgePort` 配置只用于预检，不能控制 DSH Desktop | 1 | 删除两份 Desktop 配置中的无效字段；启动器按上游 `preview=43127`、`dev=43128` 固定合同执行预检，文档明确当前上游没有公开覆盖接口。 |
+| worktree 根 `node_modules` 符号链接未被 `.gitignore` 的目录规则匹配 | 1 | 根忽略规则改为同时匹配目录与符号链接，并把 `node_modules` 加入 Git 隔离合同。 |
 
 状态：已完成，等待用户验收后决定是否合入主线
 

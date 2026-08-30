@@ -12,6 +12,7 @@ function desktopMode(mode) {
   if (mode === 'development') {
     return {
       launchCommand: 'dev',
+      mobileBridgePort: 43128,
       userDataDirectory: 'dsh-desktop-dev',
       logDirectory: 'DSH Desktop Dev',
     }
@@ -19,6 +20,7 @@ function desktopMode(mode) {
   if (mode === 'production') {
     return {
       launchCommand: 'preview',
+      mobileBridgePort: 43127,
       userDataDirectory: 'dsh-desktop',
       logDirectory: 'DSH Desktop',
     }
@@ -43,7 +45,7 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
     harnessLog: resolve(runtimeHome, 'Library/Logs', mode.logDirectory, 'harness.log'),
     environmentFilePath: resolve(repositoryRoot, definition.environmentFileRelativePath),
     startupWorkspacePath: resolve(definition.startupWorkspacePath),
-    mobileBridgePort: definition.mobileBridgePort,
+    mobileBridgePort: mode.mobileBridgePort,
     launchCommand: mode.launchCommand,
     catalogPort: sourceDefinition.source.catalogPort,
     catalogCliPath: resolve(repositoryRoot, sourceDefinition.source.catalogCliRelativePath),
@@ -67,7 +69,6 @@ export async function loadDesktopWorktreeContext(options = {}) {
     ...productionDefinition,
     desktopMode: 'development',
     runtimeRelativeRoot: worktreeDefinition.runtimeRelativeRoot,
-    mobileBridgePort: worktreeDefinition.mobileBridgePort,
   }, sourceDefinition, {
     ...options,
     repositoryRoot,
@@ -331,13 +332,16 @@ export async function startDesktopWorktree(context, options = {}) {
   await assertMobileBridgePortAvailable(context.mobileBridgePort)
   await rm(context.pidFile, { force: true })
   const prepared = await prepareDesktopWorktree(context, options)
-  const electronArguments = [context.launchCommand]
+  const pnpmArguments = [
+    resolve(context.desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
+    context.launchCommand,
+  ]
   if (options.remoteDebuggingPort !== undefined) {
-    electronArguments.push('--remoteDebuggingPort', String(options.remoteDebuggingPort))
+    pnpmArguments.push('--', '--remoteDebuggingPort', String(options.remoteDebuggingPort))
   }
   const child = (options.spawnDesktop ?? spawn)(
-    resolve(context.desktopSource, 'node_modules/.bin/electron-vite'),
-    electronArguments,
+    resolve(context.desktopSource, 'node_modules/node/bin/node'),
+    pnpmArguments,
     {
       cwd: context.desktopSource,
       env: prepared.environment,

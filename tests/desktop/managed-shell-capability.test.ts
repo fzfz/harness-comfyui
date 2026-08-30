@@ -18,7 +18,6 @@ afterEach(() => {
 })
 
 function provideProjectHostDependencies(ctx: Context): void {
-  ctx.provide('webServer', { register: vi.fn(() => vi.fn()) })
   ctx.provide('workspaceRegistry', {
     create: vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] })),
     resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
@@ -65,7 +64,8 @@ describe('DSH Desktop managed shell capability', () => {
     const fromDesktop = async (name: string) => import(pathToFileURL(
       resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
     ).href)
-    const [systemPrompt, tools, shellEnv, subprocess, bash, toolBash] = await Promise.all([
+    const [webServer, systemPrompt, tools, shellEnv, subprocess, bash, toolBash] = await Promise.all([
+      fromDesktop('@deepseek-ai/dsh-host-webserver'),
       fromDesktop('@deepseek-ai/dsh-system-prompt'),
       fromDesktop('@deepseek-ai/dsh-tools'),
       fromDesktop('@deepseek-ai/dsh-shell-env'),
@@ -90,6 +90,7 @@ describe('DSH Desktop managed shell capability', () => {
     provideProjectHostDependencies(ctx)
     const fibers = []
     try {
+      fibers.push(await ctx.plugin(webServer.default, { host: '127.0.0.1', port: 0 }))
       fibers.push(await ctx.plugin(systemPrompt.default, {}))
       fibers.push(await ctx.plugin(tools.default, { mode: 'native' }))
       fibers.push(await ctx.plugin(shellEnv, { dshHome: resolve(root, 'dsh-home') }))
@@ -103,8 +104,8 @@ describe('DSH Desktop managed shell capability', () => {
         callId,
         name: 'bash',
         arguments: {
-          command: 'printf "%s\\n%s\\n%s" "$DSH_HARNESS_COMFYUI_CLI" "$DSH_HARNESS_COMFYUI_CLI_API" "$DSH_HARNESS_COMFYUI_CLI_CAPABILITY"',
-          description: 'Read managed project CLI environment',
+          command: `printf "%s\\n%s\\n%s\\n" "$DSH_HARNESS_COMFYUI_CLI" "$DSH_HARNESS_COMFYUI_CLI_API" "$DSH_HARNESS_COMFYUI_CLI_CAPABILITY"; printf '%s' '{"run_ids":["run_missing"]}' | node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin`,
+          description: 'Call the managed project CLI through the current Host route',
         },
         signal: new AbortController().signal,
         agent: {
@@ -117,10 +118,19 @@ describe('DSH Desktop managed shell capability', () => {
       }) as { isError: boolean; value?: { stdout?: { text?: string } } }
 
       expect(result.isError).toBe(false)
-      const [cliPath, apiUrl, capability] = result.value?.stdout?.text?.split('\n') ?? []
+      const [cliPath, apiUrl, capability, responseText] = result.value?.stdout?.text?.trim().split('\n') ?? []
       expect(cliPath).toBe(resolve(process.cwd(), 'scripts/cli/harness-comfyui.mjs'))
-      expect(apiUrl).toBe('http://127.0.0.1:4173/api/harness-comfyui/cli/v1')
+      const activeWebServer = (ctx as Context & { webServer: { host: string; port: number } }).webServer
+      expect(apiUrl).toBe(`http://${activeWebServer.host}:${activeWebServer.port}/api/harness-comfyui/cli/v1`)
+      expect(activeWebServer.port).not.toBe(4173)
       expect(capability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+      expect(JSON.parse(responseText!)).toEqual({
+        runs: [{
+          run_id: 'run_missing',
+          lookup_status: 'error',
+          error: expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
+        }],
+      })
     } finally {
       for (const fiber of fibers.reverse()) await fiber.dispose()
       await ctx.fiber.dispose()

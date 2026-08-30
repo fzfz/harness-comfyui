@@ -8,7 +8,7 @@ pnpm prod:start|restart
   → config/desktop-production.json
   → 当前插件 Client/Host/Preset 物化与 generation 打包
   → 当前 checkout 的 .local/upstreams/dsh-desktop
-  → electron-vite preview
+  → DSH Desktop pnpm preview
   → .local/desktop-production/ 中的 PID、日志、DSH home 和业务数据
 ```
 
@@ -22,7 +22,7 @@ pnpm dev:start|restart
   → config/desktop-production.json
   → main 的 .local/upstreams/dsh-desktop
   → 当前 worktree 插件 generation
-  → electron-vite dev
+  → DSH Desktop pnpm dev
   → .local/desktop-development/
 ```
 
@@ -69,7 +69,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 与 `dev:start` 都更新浏览器 Client/Host 模块、物化 `ComfyUI工作台预设`、把当前插件安装为 Desktop generation，再分别执行 Electron `preview` 与 `dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+`prod:start` 与 `dev:start` 都更新浏览器 Client/Host 模块、物化 `ComfyUI工作台预设`、把当前插件安装为 Desktop generation，再分别执行 DSH Desktop 自己声明的 `pnpm preview` 与 `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
 
 `web:start` 与 `web:restart` 更新浏览器 Client 模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 

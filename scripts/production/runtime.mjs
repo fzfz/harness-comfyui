@@ -10,12 +10,10 @@ import { loadProfile } from '../../src/config/load-profile.ts'
 import { materializeSourceProductAgentPreset } from '../profile/agent-preset.mjs'
 import { materializeSourceProfile } from '../profile/source.mjs'
 
+export { SOURCE_PRODUCTION_COMMANDS } from './commands.mjs'
+
 export const SOURCE_RUNTIME_STATE_SCHEMA_VERSION = 1
 export const SOURCE_MANAGED_STATE_SCHEMA_VERSION = 1
-export const SOURCE_PRODUCTION_COMMANDS = Object.freeze([
-  'start', 'stop', 'restart', 'status', 'health', 'logs',
-])
-
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const DEFINITION_KEYS = Object.freeze([
   'schemaVersion', 'runtimeId', 'runtimeRelativeRoot', 'configurationProfile', 'source', 'logs',

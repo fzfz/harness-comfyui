@@ -44,13 +44,10 @@ async function fixture() {
   await writeFile(resolve(root, '.git'), 'gitdir: fixture\n')
   await writeFile(resolve(desktopSource, 'package.json'), '{}\n')
   await writeFile(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '')
-  await writeFile(resolve(desktopSource, 'node_modules/.bin/electron-vite'), '')
   await writeFile(environmentFile, 'KEY=value\n')
-  const mobileBridgePort = await freePort()
   const definition = {
     mainCheckoutPath: root,
     runtimeRelativeRoot: '.local/desktop-development',
-    mobileBridgePort,
   }
   const definitionPath = resolve(root, 'config/desktop-worktree.json')
   const productionDefinitionPath = resolve(root, 'config/desktop-production.json')
@@ -59,7 +56,6 @@ async function fixture() {
     runtimeRelativeRoot: '.local/desktop-production',
     environmentFileRelativePath: 'user.env',
     startupWorkspacePath: workspace,
-    mobileBridgePort: 43127,
   }
   const sourceDefinition = {
     source: {
@@ -77,7 +73,6 @@ async function fixture() {
     definition,
     definitionPath,
     environmentFile,
-    mobileBridgePort,
     productionDefinition,
     productionDefinitionPath,
     skills,
@@ -156,8 +151,8 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
     expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
     expect(spawnDesktop).toHaveBeenCalledWith(
-      resolve(desktopSource, 'node_modules/.bin/electron-vite'),
-      ['dev'],
+      resolve(desktopSource, 'node_modules/node/bin/node'),
+      [resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'), 'dev'],
       expect.objectContaining({ cwd: desktopSource, detached: true }),
     )
 
@@ -225,7 +220,6 @@ describe('DSH Desktop worktree lifecycle', () => {
       ...value.productionDefinition,
       desktopMode: 'development',
       runtimeRelativeRoot: value.definition.runtimeRelativeRoot,
-      mobileBridgePort: value.definition.mobileBridgePort,
     }, value.sourceDefinition, {
       repositoryRoot: value.root,
       homeDirectory: resolve(value.root, 'parent-home'),
@@ -315,21 +309,23 @@ describe('DSH Desktop worktree lifecycle', () => {
       definitionPath: value.definitionPath,
       homeDirectory: resolve(value.root, 'parent-home'),
     })
+    const mobileBridgePort = await freePort()
+    const isolatedContext = { ...context, mobileBridgePort }
     const server = createServer()
     await new Promise((resolveListen, reject) => {
       server.once('error', reject)
-      server.listen(value.mobileBridgePort, '0.0.0.0', resolveListen)
+      server.listen(mobileBridgePort, '0.0.0.0', resolveListen)
     })
     const spawnDesktop = vi.fn(() => { throw new Error('Electron must not start') })
     try {
-      await expect(startDesktopWorktree(context, {
+      await expect(startDesktopWorktree(isolatedContext, {
         materializeClient: async () => undefined,
         materializeHost: async () => undefined,
         materializePreset: async () => undefined,
         packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
         installPlugin: () => undefined,
         spawnDesktop,
-      })).rejects.toThrow(`DSH Desktop mobile bridge port ${value.mobileBridgePort} is already in use`)
+      })).rejects.toThrow(`DSH Desktop mobile bridge port ${mobileBridgePort} is already in use`)
       expect(spawnDesktop).not.toHaveBeenCalled()
     } finally {
       await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))

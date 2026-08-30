@@ -95,8 +95,8 @@ describe('DSH Desktop production lifecycle', () => {
       spawnDesktop,
     })).resolves.toMatchObject({ status: 'stopped', pid: 54001 })
     expect(spawnDesktop).toHaveBeenCalledWith(
-      resolve(desktopSource, 'node_modules/.bin/electron-vite'),
-      ['preview'],
+      resolve(desktopSource, 'node_modules/node/bin/node'),
+      [resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'), 'preview'],
       expect.objectContaining({ cwd: desktopSource, detached: true }),
     )
   })

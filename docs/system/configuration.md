@@ -10,7 +10,6 @@
 | `runtimeRelativeRoot` | 生产 Desktop 运行目录；当前为 `.local/desktop-production` |
 | `environmentFileRelativePath` | 生产 checkout 内的环境文件；当前为 `.env` |
 | `startupWorkspacePath` | Desktop 启动后直接打开的绝对 Workspace 目录 |
-| `mobileBridgePort` | 生产 Desktop 移动桥接端口；当前为 `43127` |
 
 生产命令相对当前生产 checkout 解析 `desktopSourceRelativePath` 和 `environmentFileRelativePath`。开发命令从 `config/desktop-worktree.json.mainCheckoutPath` 解析 DSH Desktop 底座，并使用 worktree 根 `.env` 链接；因此开发与生产加载同一个产品配置结构，不存在第二套 Workspace、Preset、Provider 或模型配置。
 
@@ -20,15 +19,16 @@
 | --- | --- |
 | `mainCheckoutPath` | 主开发 checkout 的绝对路径 |
 | `runtimeRelativeRoot` | 当前 worktree 的 Desktop 运行目录；当前为 `.local/desktop-development` |
-| `mobileBridgePort` | 开发 Desktop 移动桥接端口；当前为 `43128` |
 
 `dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。
+
+移动桥接端口不是当前仓库的配置字段。DSH Desktop 上游把 `preview` 端口固定为 `43127`，把 `dev` 端口固定为 `43128`；当前仓库只在启动前检查相应端口，没有声明无法传递给上游的配置值。
 
 `cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用和默认 `ComfyUI工作台预设` 的共同来源。`config/product-agent.json` 是产品 Preset 物化结构的来源。Desktop 开发与生产都把当前插件包中的这两份配置安装到各自隔离的 DSH home。
 
 ## Web Host 调试配置
 
-`web:start` 和 `web:restart` 先读取 `config/web-development.json`，再依次读取：
+`web:start` 和 `web:restart` 先根据 `config/desktop-worktree.json.mainCheckoutPath` 建立 worktree 的 `.env` 与 `node_modules` 链接，再读取 `config/web-development.json`，并依次读取：
 
 1. `config/source-production.json`
 2. `config/base.json`
