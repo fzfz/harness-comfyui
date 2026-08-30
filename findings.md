@@ -1018,3 +1018,13 @@
 - DSH Desktop 的 `package.json` 是开发与预览启动 seam；当前仓库必须调用其 `pnpm dev`/`pnpm preview`，不能把当前恰好等价的 `electron-vite` 命令固化为跨仓库合同。
 - DSH Desktop 当前源码把移动桥接端口固定为 `preview=43127`、`dev=43128`，没有公开覆盖接口；插件仓库只能预检这两个端口，不能暴露一个上游不会读取的配置字段。
 - DSH generation staging 位于 worktree 内，因此 pnpm 会发现上层 `pnpm-workspace.yaml`。插件适配层必须通过 DSH Desktop installer 的 `spawnProcess` 接口执行 `pnpm --ignore-workspace --store-dir <storeDir> add ...`：`--ignore-workspace` 阻止 generation 写入根 lockfile，`--store-dir` 只复用根 `node_modules/.modules.yaml.storeDir` 指向的 package store；generation 的 virtual store 和 lockfile必须保留在 staging 内。
+# 2026-08-30 Phase 42 — 发布 Desktop 集成版本
+
+- Harness ComfyUI 本地 `main` 为 `d47c75a`，比 `origin/main` 多 13 个已提交变更；工作树干净。
+- DSH Desktop 端口配置提交为 `d629636`，直接基于当前上游 `origin/main` 的 `abf8779`；同步与 rebase 没有产生冲突。
+- Harness ComfyUI CI 当前直接 checkout `dataelement/dsh-desktop` 默认分支；如果上游默认分支不包含 `d629636`，随机移动桥接端口真实测试会失败。
+- 当前发布版本为 `0.36.2`；完整 Desktop 产品接入属于新增能力，目标版本为 `0.37.0`。
+- 用户要求不向 DSH Desktop 上游创建 PR；远端依赖来源固定为 `fzfz/dsh-desktop` 的补丁分支。
+- `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的远端提交为 `d62963667614805aac75749cc7ba3de1ffef7e27`，与本地提交一致。
+- GitHub CI Run `33319779982` 的 Ubuntu Source quality gates 与 macOS DSH Desktop acceptance 均成功。
+- 发布文档提交前的最终 `pnpm quality` 通过：529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%。

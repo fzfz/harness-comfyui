@@ -15,6 +15,9 @@
 主开发 checkout 保存唯一的根 `.env`、根 `node_modules` 和已准备的 DSH Desktop 底座。首次准备在主开发 checkout 根目录执行：
 
 ```sh
+mkdir -p .local/upstreams
+git clone --branch codex/configurable-mobile-bridge-port https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
+(cd .local/upstreams/dsh-desktop && npm ci)
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
 ```
@@ -62,13 +65,18 @@ pnpm dev:stop
 生产 checkout 更新到已经发布的 Git tag 后，执行以下命令：
 
 ```sh
+pnpm prod:stop
 git fetch --tags
 git switch --detach v<版本号>
+git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git codex/configurable-mobile-bridge-port
+git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
+(cd .local/upstreams/dsh-desktop && npm ci)
 pnpm install --frozen-lockfile
+pnpm desktop:dependencies:link
 pnpm prod:start
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.37.0` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`；该分支提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 

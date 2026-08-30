@@ -43,7 +43,11 @@ gh release create v<版本号> \
 pnpm prod:stop
 git fetch --tags
 git switch --detach v<版本号>
+git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git codex/configurable-mobile-bridge-port
+git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
+(cd .local/upstreams/dsh-desktop && npm ci)
 pnpm install --frozen-lockfile
+pnpm desktop:dependencies:link
 pnpm prod:start
 ```
 
@@ -62,6 +66,8 @@ pnpm prod:stop
 ```
 
 `prod:*` 管理完整 DSH Desktop 生产环境并调用 DSH Desktop `pnpm preview`。生产部署不得使用 `dev:*` 或 `web:*` 替代产品启动。
+
+`v0.37.0` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`。该分支提供移动桥接端口环境变量；Harness ComfyUI 仓库不包含或复制 DSH Desktop 源码。
 
 ## 开发与 Web 调试边界
 

@@ -4,11 +4,11 @@
 
 ## 平台
 
-**Harness Core**：项目依赖的 DeepSeek Harness `0.1.1-rc.2` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
+**Harness Core**：项目依赖的 DeepSeek Harness `0.1.2-alpha.1` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
 
 **Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册 Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
 
-**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.1-rc.2` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
+**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.2-alpha.1` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
 **Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 
@@ -42,9 +42,9 @@
 
 **Chat Turn**：一条用户消息及下一条用户消息出现前产生的回复与调用。
 
-**Run Repository**：默认位于 `.local/production/shared/data/runs.sqlite` 的运行记录数据库。
+**Run Repository**：Desktop 生产环境默认使用 `.local/desktop-production/data/runs.sqlite`，Desktop 开发环境默认使用 `.local/desktop-development/data/runs.sqlite`，Web Host 调试环境默认使用 `.local/web-development/shared/data/runs.sqlite`。
 
-**Saved Media**：默认位于 `.local/production/shared/saved-media/` 的已保存媒体。
+**Saved Media**：Desktop 生产环境默认使用 `.local/desktop-production/saved-media/`，Desktop 开发环境默认使用 `.local/desktop-development/saved-media/`，Web Host 调试环境默认使用 `.local/web-development/shared/saved-media/`。
 
 **Generation Run**：一次 `generate_with_comfyui` Tool Call 对应的持久异步运行。不同 `callId` 创建不同 Run；每个 Run 独立保存请求、来源快照、Actual Workflow 和 API Workflow。
 
@@ -64,7 +64,7 @@
 
 **Official Base API Workflow**：目标 ComfyUI 实例的官方前端加载 Actual Workflow 后，通过 `graphToPrompt()` 返回的 API Workflow。该对象是最终节点拓扑、连接 tuple、虚拟节点和自定义 widget 序列化结构的权威来源。
 
-**Official API Workflow Cache**：默认位于 `.local/production/shared/data/api-workflow-cache/` 的本地 JSON 缓存。每个缓存项保存实例身份、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希、执行结构哈希和 Official Base API Workflow；缓存项不保存认证信息，也不保存覆盖后的本次请求值。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。
+**Official API Workflow Cache**：Desktop 生产环境默认使用 `.local/desktop-production/data/api-workflow-cache/`，Desktop 开发环境默认使用 `.local/desktop-development/data/api-workflow-cache/`，Web Host 调试环境默认使用 `.local/web-development/shared/data/api-workflow-cache/`。每个缓存项保存实例身份、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希、执行结构哈希和 Official Base API Workflow；缓存项不保存认证信息，也不保存覆盖后的本次请求值。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。
 
 **Runtime Input Overlay**：Host 深拷贝 Official Base API Workflow，并使用运行时 API Workflow 投影覆盖已经存在的同名非连接输入。Runtime Input Overlay 保留官方连接 tuple、虚拟节点和额外输入；官方值使用 `{ "__value__": ... }` 包装时只替换 `__value__`。
 
@@ -72,6 +72,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.36.2`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.37.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。当前发布标签为 `v0.36.2`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.37.0`；发布不创建或附加产品包。

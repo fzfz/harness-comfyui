@@ -4,12 +4,52 @@
 计划执行者必须让当前插件在可复现的 DSH Desktop 依赖环境中通过必跑的真实 Desktop 测试；测试必须验证 Desktop 生命周期、Provider 保存、应用内媒体弹窗和真实 Harness shell capability 路径。
 
 ## Next Step
-实现并验证 Git tag checkout 可直接执行的 DSH Desktop 生产生命周期命令。
+推送 DSH Desktop 端口配置提交，发布 Harness ComfyUI v0.37.0。
 
 ## Current Phase
-Phase 41 in progress
+Phase 42 in progress
 
 ## Phases
+
+## Phase 42：发布 Desktop 集成版本 v0.37.0
+
+### 必须要实现的目标
+
+- 发布负责人必须把 DSH Desktop 端口配置提交 `d629636` 推送到可由 GitHub CI 和生产 checkout 获取的远端分支。
+- 发布负责人必须把 Harness ComfyUI 的 13 个本地 `main` 提交推送到 `origin/main`，将产品版本更新为 `0.37.0`，并发布 `v0.37.0` Git tag 与 GitHub Release。
+- GitHub CI 必须使用包含端口配置提交的 DSH Desktop 源码执行 Ubuntu Source quality gates 与 macOS DSH Desktop acceptance。
+- 发布说明必须准确列出 DSH Desktop 接入、三组生命周期命令、环境配置、应用内媒体弹窗、Provider 与 capability 修复以及真实 Desktop 测试结果。
+
+### 验收清单
+
+- [x] DSH Desktop 远端分支包含 `d629636`，远端提交 SHA 与本地一致。
+- [x] 根 `package.json.version`、工程合同、README 和发布说明统一为 `0.37.0`。
+- [x] 本地 `pnpm quality` 与 `git diff --check` 通过。
+- [ ] `origin/main` 包含最终发布提交，GitHub CI 的两个 job 通过。
+- [ ] 远端 `v0.37.0` annotated tag 与 GitHub Release 指向最终发布提交，Release 没有附件。
+
+### 非本次目标
+
+- 本阶段不修改 DeepSeek Harness 核心源码。
+- 本阶段不安装新依赖，不新增自动 CD workflow，不部署或修改生产 checkout。
+- 本阶段不发布 DSH Desktop 的正式版本号；DSH Desktop 正式版本由其上游仓库维护者决定。
+- 本阶段不向 `dataelement/dsh-desktop` 创建 Pull Request。
+
+### 已获得的授权
+
+- 用户已经明确授权提交、push 并发布版本。
+- 用户已经明确要求先同步 DSH Desktop 上游；同步结果确认本地端口配置提交直接基于当前 `origin/main`。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| `gh repo fork` 在显式仓库参数下不支持 `--remote=false` | 1 | 改用 `--clone=false` 创建 fork，再显式添加独立 remote；失败调用没有创建 fork。 |
+| 在用户未要求上游 PR 时创建了 `dataelement/dsh-desktop#252` | 1 | 按用户要求立即关闭 PR；只保留 `fzfz/dsh-desktop` 中的远端补丁分支。 |
+| GitHub CI 的真实 Desktop 测试读取本机 `mainCheckoutPath`，在 macOS runner 导入 DSH 包时失败 | 1 | Context loader 允许真实验收显式使用当前 checkout 作为 Desktop source root；正常 linked worktree 继续读取配置中的 main 路径，并新增路径覆盖回归测试。 |
+| macOS runner 的窄栏 Settings trigger 只显示图标，真实测试按“设置”文本查找按钮并超时 | 1 | 真实测试使用 Settings trigger 的 dialog ARIA 结构，并兼容宽栏中文、英文和窄栏纯图标；产品代码保持不变。 |
+
+状态：进行中
 
 ## Phase 41：统一 Desktop 与 Web Host 生命周期命令
 
@@ -25,24 +65,24 @@ Phase 41 in progress
 
 ### 验收清单
 
-- [ ] `package.json` 只暴露 `prod:*`、`dev:*` 和 `web:*` 三组生命周期命令。
-- [ ] `prod:*` 与 `dev:*` 的生命周期成功、拒绝、清理和错误分支测试通过。
-- [ ] `dev:start` 创建并验证指向 `main` checkout 的 `.env` 与 `node_modules` 符号链接。
-- [ ] Desktop 生产运行目录、Desktop 开发运行目录与 Web 调试运行目录互相隔离。
-- [ ] Desktop 开发与生产读取同一套 Workspace、Preset、Provider 和模型配置。
-- [ ] 项目 Skill 的 CLI capability 地址必须读取当前 Harness WebServer 的实际动态端口，并由真实 DSH bash 调用当前 Host 路由。
-- [ ] Desktop 生命周期必须执行 DSH Desktop 自己声明的 `pnpm dev` 与 `pnpm preview`，不能直接调用 `electron-vite` 内部入口。
-- [ ] `web:start` 与 `web:restart` 必须在加载依赖模块前建立与 `dev:start` 相同的 `.env`、`node_modules` 链接；`web:health` 不得创建或修改链接。
-- [ ] 发布文档说明 Git tag checkout 更新后的完整生产命令序列。
-- [ ] 当前功能提交必须先合入并提交本地 `main`；完整质量门禁和真实 Desktop 启动测试只能基于该 `main` 或从该 `main` 创建的新 worktree 执行。
-- [ ] 聚焦测试、类型检查和完整质量门禁通过。
+- [x] `package.json` 只暴露 `prod:*`、`dev:*` 和 `web:*` 三组生命周期命令。
+- [x] `prod:*` 与 `dev:*` 的生命周期成功、拒绝、清理和错误分支测试通过。
+- [x] `dev:start` 创建并验证指向 `main` checkout 的 `.env` 与 `node_modules` 符号链接。
+- [x] Desktop 生产运行目录、Desktop 开发运行目录与 Web 调试运行目录互相隔离。
+- [x] Desktop 开发与生产读取同一套 Workspace、Preset、Provider 和模型配置。
+- [x] 项目 Skill 的 CLI capability 地址读取当前 Harness WebServer 的实际动态端口，并由真实 DSH bash 调用当前 Host 路由。
+- [x] Desktop 生命周期执行 DSH Desktop 自己声明的 `pnpm dev` 与 `pnpm preview`。
+- [x] `web:start` 与 `web:restart` 在加载依赖模块前建立与 `dev:start` 相同的 `.env`、`node_modules` 链接；`web:health` 不创建或修改链接。
+- [x] 发布文档说明 Git tag checkout 更新后的完整生产命令序列。
+- [x] 当前功能提交已经合入并提交本地 `main`；完整质量门禁和真实 Desktop 启动测试基于本地 `main` 执行。
+- [x] 聚焦测试、类型检查和完整质量门禁通过。
 
 ### 非本次目标
 
 - 本阶段不规定由谁执行生产命令。
 - 本阶段不增加自动 CD workflow。
 - 本阶段不让 health 命令修改配置。
-- 本阶段不修改 DeepSeek Harness 或 DSH Desktop 核心源码。
+- 本阶段不修改 DeepSeek Harness 核心源码。DSH Desktop 的修改只包含独立 fork 中的移动桥接端口环境变量入口。
 - 本阶段不增加第四组生命周期命令或保留旧命令别名。
 
 ### 已获得的授权
@@ -52,7 +92,7 @@ Phase 41 in progress
 - 用户明确确认测试 seam 为三组公开 package scripts 及其管理的实际 Desktop/Web Host 进程。
 - 用户明确要求先把当前功能提交合入并提交本地 `main`，再执行完整测试与真实环境启动测试。
 
-状态：进行中
+状态：已完成
 
 ## Phase 40：补齐 DSH Desktop 合入门禁
 
@@ -116,7 +156,7 @@ Phase 41 in progress
 | 合入前审查发现 `mobileBridgePort` 配置只用于预检，不能控制 DSH Desktop | 1 | 删除两份 Desktop 配置中的无效字段；启动器按上游 `preview=43127`、`dev=43128` 固定合同执行预检，文档明确当前上游没有公开覆盖接口。 |
 | worktree 根 `node_modules` 符号链接未被 `.gitignore` 的目录规则匹配 | 1 | 根忽略规则改为同时匹配目录与符号链接，并把 `node_modules` 加入 Git 隔离合同。 |
 
-状态：已完成，等待用户验收后决定是否合入主线
+状态：已完成并已合入本地 `main`
 
 ## Phase 39：发布 v0.31.2 并部署生产 checkout
 

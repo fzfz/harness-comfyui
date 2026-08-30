@@ -1149,3 +1149,19 @@
 - 首次发布文档语义验收指出两处事实边界问题：普通断开Prompt候选不是无条件排除，参数目标错误文案还引用目标实例节点定义。发布说明已按实现边界修正并等待复审。
 - 独立语义Reviewer复审修正文档后返回PASS；版本、矩阵、组合编译、Official cache、真实浏览器、空LoRA、测试数量、依赖、lockfile和发布命令均与证据一致。
 - 发布文档提交前的最终`pnpm quality`通过：404项unit/integration、24项contract/security、40项production和27项prototype测试全部通过，函数覆盖率为100%。
+# 2026-08-30 Phase 42 — 发布 Desktop 集成版本
+
+- 已读取 `docs/system/releasing.md`，确认发布流程要求本地质量门禁、push、GitHub CI、annotated tag 与无附件 GitHub Release。
+- 已拉取 DSH Desktop 上游；`origin/main` 仍为 `abf8779`，本地 `d629636` rebase 结果为 up to date。
+- 已确认 Harness ComfyUI 工作树干净、本地 `main` 比 `origin/main` 多 13 个提交、GitHub CLI 已认证。
+- `gh repo fork dataelement/dsh-desktop --clone=false --remote=false` 因 CLI 参数组合不受支持而退出；该调用没有创建 fork，后续改用受支持参数并显式管理 remote。
+- DSH Desktop 提交 `d629636` 已推送到 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`。
+- 误创建的上游 PR `dataelement/dsh-desktop#252` 已按用户要求关闭；远端补丁分支继续保留。
+- 本地 `pnpm quality` 通过：529 项 unit/integration、29 项 contract/security、95 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；函数覆盖率为 100%。
+- GitHub CI Run `33319381006` 的 Ubuntu Source quality gates 通过；macOS Desktop job 因真实测试读取本机绝对 `mainCheckoutPath` 而失败。失败发生在导入 DSH Desktop 包之前，没有创建发布 tag。
+- Context loader 路径覆盖回归测试 26/26 通过，真实 Desktop 测试 2/2 通过；macOS CI 路径失败已在本地复现边界上修正。
+- 独立语义 Reviewer 指出的 DSH fetch remote、生产停机、Harness 版本、运行数据路径、Preset 物化职责、首次准备命令和发布标签措辞已经修正；README、startup 与 releasing 的完整生产准备序列都在根 install 后执行 `desktop:dependencies:link`。
+- GitHub CI Run `33319560950` 的 managed shell capability 真实测试通过；Desktop live 测试在窄栏 Settings trigger 不包含“设置”文字时超时。测试选择器已改为 DSH Settings dialog 的 ARIA 结构，并兼容宽栏中文、英文和窄栏纯图标。
+- GitHub CI Run `33319779982` 成功；Ubuntu Source quality gates 与 macOS DSH Desktop acceptance 均通过。
+- 独立语义 Reviewer 最终返回 PASS；发布文档中的版本、命令、依赖来源、运行目录、测试数量和职责边界与仓库实现一致。
+- 发布文档提交前的最终 `pnpm quality` 通过：529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%，依赖审计没有 critical、high、moderate 或 low 漏洞。
