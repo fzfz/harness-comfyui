@@ -262,7 +262,7 @@ describe('live DSH Desktop integration', () => {
     const startupWorkspacePath = resolve(runtimeRoot, 'workspace')
     await writeFile(
       environmentFilePath,
-      `OPENCODE_GO_API_KEY=desktop-live-test\nDSH_DESKTOP_MOBILE_BRIDGE_PORT=${mobileBridgePort}\n`,
+      `OPENCODE_GO_API_KEY=desktop-live-test\nHARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT=${mobileBridgePort}\n`,
       'utf8',
     )
     await mkdir(startupWorkspacePath)

@@ -127,7 +127,7 @@ describe('source workspace engineering contract', () => {
     const example = readFileSync(resolve(root, '.env.example'), 'utf8')
     for (const name of [
       'OPENCODE_GO_API_KEY',
-      'DSH_DESKTOP_MOBILE_BRIDGE_PORT',
+      'HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT',
       'HARNESS_COMFYUI_DEFAULT_INSTANCE_ID',
       'HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH',
       'HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH',

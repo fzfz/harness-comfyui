@@ -8,7 +8,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseEnv } from 'node:util'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
+const MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE = 'HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT'
+const MOBILE_BRIDGE_PORT_PROCESS_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
 
 function desktopMode(mode) {
   if (mode === 'development') {
@@ -57,14 +58,14 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
 }
 
 function resolveMobileBridgePort(environment, fallback) {
-  const configured = environment[MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE]
+  const configured = environment[MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE]
   if (configured === undefined) return fallback
   if (!/^[1-9]\d*$/u.test(configured)) {
-    throw new Error(`${MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE} must be an integer from 1 to 65535`)
+    throw new Error(`${MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE} must be an integer from 1 to 65535`)
   }
   const port = Number(configured)
   if (!Number.isSafeInteger(port) || port > 65535) {
-    throw new Error(`${MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE} must be an integer from 1 to 65535`)
+    throw new Error(`${MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE} must be an integer from 1 to 65535`)
   }
   return port
 }
@@ -156,7 +157,7 @@ async function desktopEnvironment(context, environment = process.env) {
     HARNESS_COMFYUI_CATALOG_PORT: String(context.catalogPort),
     HARNESS_COMFYUI_CATALOG_CLI_PATH: context.catalogCliPath,
     HARNESS_COMFYUI_SOURCE_CLI_PATH: context.sourceCliPath,
-    DSH_DESKTOP_MOBILE_BRIDGE_PORT: String(context.mobileBridgePort),
+    [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: String(context.mobileBridgePort),
     PATH: `${resolve(context.desktopSource, 'node_modules/.bin')}:${environment.PATH ?? ''}`,
   }
 }
