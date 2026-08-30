@@ -41,7 +41,7 @@ Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQ
 
 历史 Generation Run 输入查询测试覆盖 Tool 与 CLI 的单项和批量入口、输入顺序、重复 `run_id`、完整 ID、最少八个 UUID 字符的短 ID、短 ID canonical 完整值返回、当前 Workspace 唯一匹配、其他 Workspace 同前缀隔离、短 ID 无匹配与多匹配逐项错误、单项无效 ID、损坏的 `request_json`、历史请求缺少 `loras` 或 `model`、准备失败、Actual Workflow 文件缺失或无效、未分类文件系统错误脱敏、1 项与 20 项边界、21 项拒绝和取消传播。CLI 集成测试必须确认合法批量请求包含单项错误时仍返回退出码 0。
 
-图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖当前 Workspace 中的多 Run 查询、逐 Run 错误、图片稳定排序、单图输入、默认与单次 Prompt、系统视觉模型过滤、系统 Provider 采样参数、自定义 Chat Completions 请求、Data URL、write-only API Key、响应结构、1 MiB 响应上限、响应体取消、文件与 Provider 错误、命名配置增删复制切换、旧单配置迁移、secret redaction、原子保存和持久化错误。CLI 自动化测试覆盖 `image run-media --stdin` 与 `image inspect --stdin` 的参数解析、HTTP 请求、Host 分发、成功输出和错误输出。
+图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖当前 Workspace 中的多 Run 查询、逐 Run 错误、图片稳定排序、单图输入、默认与单次 Prompt、系统视觉模型过滤、系统 Provider 采样参数、自定义 Chat Completions 请求、Data URL、write-only API Key、响应结构、1 MiB 响应上限、响应体取消、文件与 Provider 错误、命名配置增删复制切换、旧单配置迁移、secret redaction、原子保存和持久化错误。CLI 自动化测试覆盖 `generation resolve-media --stdin` 与 `image inspect --stdin` 的参数解析、HTTP 请求、Host 分发、成功输出和错误输出。
 
 Session Media Viewer 自动化测试覆盖媒体查看 URL 编码、Session 与 workspace 归属拒绝、媒体缺失、非 GET 请求、安全响应头、包含 `runId` 的最小启动数据、Run ID 点击复制、Clipboard API 成功、API 缺失、权限拒绝、图片固有尺寸、视频固有尺寸、零尺寸、媒体切换后的 Run ID 与尺寸更新、旧媒体迟到尺寸事件隔离、原始正面提示词、超长正面提示词逐字符完整投影、正面提示词缺失、图片与原生控件视频、左右按钮、裸左右方向键、带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键不切换媒体、首尾不循环、按 `created_at DESC, output_index DESC, media_id DESC` 排序媒体、同一个 Run 的正面提示词只读取一次并投影到该 Run 的每项媒体、URL 更新、刷新定位、旧媒体迟到加载错误隔离、当前媒体加载错误、`aria-live` 播报、响应式媒体查询和布局样式合同以及 Client 新标签页入口。Session Media Viewer 静态原型测试覆盖该查看器原型目录中定义的结构方案 A、结构方案 B、结构方案 C、边界文案、提示词状态和本地资源约束；这些结构方案名称不指代 Agent Preset A/B。
 
@@ -78,6 +78,8 @@ v0.35.0 发布前完整 `pnpm quality` 结果为 507 项 unit/integration、24 �
 v0.35.1 发布前完整 `pnpm quality` 结果为 507 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 92.9%、branches 86.08%、functions 100%、lines 95.56%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
 v0.36.0 发布前完整 `pnpm quality` 结果为 523 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 93.02%、branches 86.32%、functions 100%、lines 95.64%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+
+v0.36.1 发布前完整 `pnpm quality` 结果为 525 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 93.04%、branches 86.35%、functions 100%、lines 95.66%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
 ## CI
 

@@ -46,7 +46,7 @@
 
 **Generation Run Input Query**：`read_comfyui_run_inputs` Tool 和 managed CLI 的 `generation run-inputs --stdin` 命令提供的只读查询。一次查询接收 1 至 20 个完整 Run ID 或最少包含八个 UUID 字符的短 Run ID。Runtime 在当前 Workspace 中把短 ID 解析为唯一匹配的完整 Run ID，并按输入顺序独立返回创建 Run 时保存的 Generation Tool 参数和 Actual Workflow；单项无匹配或歧义不终止其他 Run 的查询。
 
-**Generation Run Media Query**：`get_generation_run_media` Tool 和 managed CLI 的 `image run-media --stdin` 命令提供的只读查询。一次查询接收一至二十个完整 Run ID 或当前 Workspace 中的唯一规范前缀，保留输入顺序和重复值，并为每个成功 Run 返回原始 `parameters` 与确定排序的本地图片路径。单个 Run 的查询错误不终止其他 Run 的查询。
+**Generation Run Media Query**：`get_generation_run_media` Tool 和 managed CLI 的 `generation resolve-media --stdin` 命令提供的只读查询。一次查询接收一至二十个完整 Run ID 或当前 Workspace 中的唯一规范前缀，保留输入顺序和重复值，并为每个成功 Run 返回原始 `parameters` 与确定排序的本地图片路径。单个 Run 的查询错误不终止其他 Run 的查询。
 
 **Image Reader Configuration**：Harness Settings namespace `harness-comfyui-image-reader-profiles` 中原子保存的当前配置 ID、命名配置列表和每份 OpenAI 兼容配置的独立凭据。每份配置选择“系统 Provider”或“OpenAI 兼容接口”，并独立保存视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Client 不从当前 Session 模型或 ComfyUI 生图模型推导视觉模型。
 
@@ -68,6 +68,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.36.0`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.36.1`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.36.0`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.36.1`；发布不创建或附加产品包。

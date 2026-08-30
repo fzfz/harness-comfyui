@@ -78,7 +78,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
   → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
   → generation submit：GenerationRuntime.acceptGeneration(identity, request)
   → generation run-inputs：GenerationRuntime.readGenerationRunInputs({ workspaceId, runIds })
-  → image run-media：GenerationRuntime.readGenerationRunMedia({ workspaceId, runIds })
+  → generation resolve-media：GenerationRuntime.readGenerationRunMedia({ workspaceId, runIds })
   → image inspect：ImageReaderService.inspect(filePath, prompt)
 ```
 
@@ -135,7 +135,7 @@ Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_
 
 ## 图片读取与 Prompt 对比
 
-`GenerationRuntime.readGenerationRunMedia()` 接受一至二十个完整 `run_id` 或唯一规范前缀，按输入顺序查询当前 Workspace，并为每个输入返回独立的成功元素或错误元素。成功元素包含原始 Generation Request 参数和 Saved Media 的本地图片路径。DSH Tool `get_generation_run_media` 与受管 CLI 命令 `image run-media --stdin` 复用该运行时方法，且两种入口都不调用视觉模型。
+`GenerationRuntime.readGenerationRunMedia()` 接受一至二十个完整 `run_id` 或唯一规范前缀，按输入顺序查询当前 Workspace，并为每个输入返回独立的成功元素或错误元素。成功元素包含原始 Generation Request 参数和 Saved Media 的本地图片路径。DSH Tool `get_generation_run_media` 与受管 CLI 命令 `generation resolve-media --stdin` 复用该运行时方法，且两种入口都不调用视觉模型。
 
 `ImageReaderService.inspect()` 一次接受一个本地图片路径，并从 `configuration.activeProfileId` 解析当前命名配置。`runtime` 配置把图片保存为 Harness Attachment，再使用配置中的系统 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用。`openai-compatible` 配置不经过 Harness LLM Runtime 或 Attachment Store；Host 把同一张图片编码为 Data URL，向配置的完整 Chat Completions 地址发送模型 ID、提示词、`temperature` 和 `max_tokens`。OpenAI 兼容响应体的声明长度与实际流式累计长度都不能超过 1 MiB，读取响应体和解析 JSON 时继续传播调用者取消。
 
@@ -143,4 +143,4 @@ API Key 作为 `credentials.<profileId>` Settings secret 保存。Client 收到�
 
 DSH Tool `inspect_image` 与受管 CLI 命令 `image inspect --stdin` 复用该服务。该服务与两种入口都不读取 Generation Request 参数，也不比较或改写 Prompt。
 
-`comfyui-image-review` Skill 按自己的 `references/cli.md` 先批量调用 `image run-media --stdin`，再为每张图片分别调用 `image inspect --stdin`。执行该 Skill 的 Agent 使用原始参数与图片观察结果完成比较和 Prompt 改进，因此 Run 解析、图片读取和 Prompt 对比保持三个独立职责。
+`comfyui-image-review` Skill 按自己的 `references/cli.md` 先批量调用 `generation resolve-media --stdin`，再为每张图片分别调用 `image inspect --stdin`。执行该 Skill 的 Agent 使用原始参数与图片观察结果完成比较和 Prompt 改进，因此 Run 解析、图片读取和 Prompt 对比保持三个独立职责。

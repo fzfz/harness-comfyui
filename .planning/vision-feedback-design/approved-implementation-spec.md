@@ -2,13 +2,13 @@
 
 ## 必须实现的目标
 
-1. 计划执行者必须在 Harness 设置中新增“图片读取”页面。该页面必须保存精确的 Provider、视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。
-2. 图片读取设置页必须从 Harness 当前 LLM 运行时取得 Provider 与模型列表。该页面只能显示能力元数据明确包含 `image` 的模型。业务代码与界面不得硬编码 OpenCode Go、DeepSeek 或任何模型 ID。
-3. 计划执行者必须在 Harness ComfyUI Host 插件中注册 `get_generation_run_media` DSH Tool，并在受管项目 CLI 中提供 `image run-media --stdin` 命令。DSH Tool 与 CLI 命令必须复用 `GenerationRuntime.readGenerationRunMedia()`。该运行时方法必须接受一至二十个完整 Run ID 或唯一规范 Run ID 前缀，并按输入顺序为当前 Workspace 中的每个 Run 返回独立的成功元素或错误元素。成功元素必须包含原始 Generation Request 参数和按稳定顺序排列的本地图片路径。该运行时方法、DSH Tool 和 CLI 命令都不得调用视觉模型。
-4. 计划执行者必须在 Harness ComfyUI Host 插件中注册 `inspect_image` DSH Tool，并在受管项目 CLI 中提供 `image inspect --stdin` 命令。DSH Tool 与 CLI 命令必须复用 `ImageReaderService.inspect()`。该服务必须接受一个 `file_path` 和一个可选 `prompt`，并使用设置中选定的 Provider、模型、`temperature` 与最大输出 Token 调用 Harness LLM seam。该服务必须只返回图片观察结果，不得读取生图 Prompt、比较 Prompt 或生成改进 Prompt。
+1. 计划执行者必须在 Harness 设置中新增“图片读取”页面。该页面必须保存并切换命名配置。每份命名配置必须保存 `runtime` 或 `openai-compatible` 连接方式、精确视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token；`runtime` 配置必须保存精确系统 Provider，`openai-compatible` 配置必须保存完整 Chat Completions 地址和可选 API Key。
+2. 图片读取设置页必须从 Harness 当前 LLM 运行时取得 `runtime` 连接使用的 Provider 与模型列表。该页面只能显示能力元数据明确包含 `image` 的系统 Provider 模型。`openai-compatible` 连接不依赖系统 Provider 模型目录。业务代码与界面不得硬编码 OpenCode Go、DeepSeek 或任何模型 ID。
+3. 计划执行者必须在 Harness ComfyUI Host 插件中注册 `get_generation_run_media` DSH Tool，并在受管项目 CLI 中提供 `generation resolve-media --stdin` 命令。DSH Tool 与 CLI 命令必须复用 `GenerationRuntime.readGenerationRunMedia()`。该运行时方法必须接受一至二十个完整 Run ID 或唯一规范 Run ID 前缀，并按输入顺序为当前 Workspace 中的每个 Run 返回独立的成功元素或错误元素。成功元素必须包含原始 Generation Request 参数和按稳定顺序排列的本地图片路径。该运行时方法、DSH Tool 和 CLI 命令都不得调用视觉模型。
+4. 计划执行者必须在 Harness ComfyUI Host 插件中注册 `inspect_image` DSH Tool，并在受管项目 CLI 中提供 `image inspect --stdin` 命令。DSH Tool 与 CLI 命令必须复用 `ImageReaderService.inspect()`。该服务必须接受一个 `file_path` 和一个可选 `prompt`。该服务必须让 `runtime` 连接通过 Harness Attachment Store 与 Harness LLM Runtime 调用配置的系统 Provider 模型，并让 `openai-compatible` 连接把图片编码为 Data URL 后直接调用配置的完整 Chat Completions 地址。两种连接都必须使用当前命名配置中的模型、`temperature` 与最大输出 Token。该服务必须只返回图片观察结果，不得读取生图 Prompt、比较 Prompt 或生成改进 Prompt。
 5. `ImageReaderService.inspect()` 在调用参数中没有非空 `prompt` 时必须使用设置中的默认 Prompt。当前 Agent 可以按 Skill 指令为一次专项观察传入 `prompt`。
 6. 计划执行者必须在 `.agents/skills/comfyui-image-review/` 创建项目 Skill。该 Skill 必须在自己的 `references/cli.md` 中完整定义受管项目 CLI 的命令行、输入、输出、错误和调用顺序。Skill 执行者不得依赖系统注入的 Tool schema 理解 CLI 合同。
-7. `comfyui-image-review` Skill 必须定义 Prompt 对比标准和输出格式。当前 Agent 必须按 Skill 指令解析一个或多个 `run_id`，按每组一至二十个 Run 调用 `image run-media --stdin`，为每张图片分别调用一次 `image inspect --stdin`，然后按 Run 对比原始参数与图片观察并生成改进 Prompt。
+7. `comfyui-image-review` Skill 必须定义 Prompt 对比标准和输出格式。当前 Agent 必须按 Skill 指令解析一个或多个 `run_id`，按每组一至二十个 Run 调用 `generation resolve-media --stdin`，为每张图片分别调用一次 `image inspect --stdin`，然后按 Run 对比原始参数与图片观察并生成改进 Prompt。
 8. 计划执行者必须在 `.agents/skills/comfyui-image-review/` 保存新 Skill 的 canonical source。全局 Skill 链接只能在最终发布提交进入主开发 checkout 后，由发布流程创建为指向主开发 checkout 对应 Skill 目录的绝对符号链接。全局 Skill 链接不得指向独立 worktree。
 9. 业务代码不得把任何 DeepSeek Harness 版本写成运行门禁。项目包管理器必须继续按仓库依赖规则保存精确依赖版本，业务代码必须只依赖公开接口合同。
 

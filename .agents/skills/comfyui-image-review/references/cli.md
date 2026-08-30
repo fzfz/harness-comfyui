@@ -15,7 +15,7 @@ Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管�
 
 Skill 执行者必须从当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。Host 使用该工作目录解析当前 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得向命令提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。
 
-Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存 Provider、视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Skill 执行者不需要读取系统注入的 Tool schema。
+Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图 Prompt、`temperature`、最大输出 Token 和调用该模型所需的连接信息。Skill 执行者始终按本文件的固定合同调用 CLI；CLI 自行处理当前命名配置的连接方式。本文件包含全部调用合同，无需系统注入的 Tool schema。
 
 ## 命令与调用时机
 
@@ -89,7 +89,7 @@ Host 使用 managed environment 中的当前 Session 工作目录解析 Workspac
 
 Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image inspect --stdin` 的 `file_path`。Skill 执行者不得从 `filename`、`media_id` 或 `run_id` 拼接本地路径。
 
-`image inspect --stdin` 使用的 Provider、模型、默认读图 Prompt、`temperature` 和最大输出 Token 全部来自 Harness“图片读取”设置。Skill 执行者只在用户指定本次观察重点时提供一次性 `prompt`。
+`image inspect --stdin` 使用 Harness“图片读取”设置中的当前命名配置。Skill 执行者不向命令提供连接信息、模型、凭据、`temperature` 或最大输出 Token，只在用户指定本次观察重点时提供一次性 `prompt`。
 
 ## 输出与完成语义
 
@@ -149,7 +149,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 }
 ```
 
-`provider` 和 `model` 是 Host 为本次调用准备出的实际路由。`file_path` 是本次输入的本地图片路径。`observation` 只包含视觉模型返回的图片观察文本。该输出表示视觉模型调用已经完成，不表示 Prompt 对比已经完成。
+`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 只包含视觉模型返回的图片观察文本，并且是 Skill 执行者用于 Prompt 对比的图片观察。该输出表示视觉模型调用已经完成，不表示 Prompt 对比已经完成。
 
 ## 错误、修正与重试
 
@@ -186,12 +186,12 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 | 错误码 | 修正与重试 |
 | --- | --- |
-| `IMAGE_READER_MODEL_NOT_CONFIGURED` | Skill 执行者必须请用户先在“图片读取”设置中保存 Provider 与视觉模型。 |
+| `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |
 | `IMAGE_READER_FILE_INVALID` | Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的有效 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
-| `IMAGE_READER_ATTACHMENT_FAILED` | Skill 执行者必须报告当前 `file_path` 的 Attachment 错误。Harness Attachment 服务恢复后，Skill 执行者可以重试当前图片。 |
-| `IMAGE_READER_MODEL_UNAVAILABLE` | Skill 执行者必须请用户刷新模型目录或修改图片读取设置。设置变更后，Skill 执行者可以重试当前图片。 |
-| `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | Skill 执行者必须请用户在图片读取设置中改选明确支持图片输入的模型。设置变更后，Skill 执行者可以重试当前图片。 |
-| `IMAGE_READER_PROVIDER_FAILED` | Skill 执行者必须报告当前 `file_path` 的 Provider 错误，并继续处理其他图片。Provider 恢复后，Skill 执行者可以重试当前图片。 |
+| `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。Host 图片读取服务恢复后，Skill 执行者可以重试当前图片。 |
+| `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试当前图片。 |
+| `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试当前图片。 |
+| `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本，并继续处理其他图片。当前命名配置对应的模型服务恢复后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_EMPTY_RESPONSE` | Skill 执行者必须报告当前 `file_path` 没有观察文本，并继续处理其他图片。Skill 执行者只有在修改一次性 `prompt` 或图片读取设置后才可以重试当前图片。 |
 
 用户或宿主取消当前命令时，Skill 执行者必须立即结束本次 Skill 执行。调用取消不属于 `IMAGE_READER_PROVIDER_FAILED`，Skill 执行者不得继续调用后续图片。
@@ -200,7 +200,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 `generation resolve-media --stdin` 是只读命令。该命令不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt 对比结果。Skill 执行者可以为不同 Run 批次重复调用该命令；相同输入的后续调用重新读取当前 Host 存储状态。
 
-`image inspect --stdin` 不修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令会把当前本地图片提交给 Harness Attachment 服务，并向设置中的 Provider 发起一次视觉模型调用。Skill 执行者默认必须为每张图片调用一次。Skill 执行者重试同一图片时会再次产生 Attachment 接收与 Provider 调用；前一次成功观察不会被 CLI 缓存或覆盖。
+`image inspect --stdin` 不修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。Skill 执行者默认必须为每张图片调用一次；重试同一图片会再次发起请求。CLI 不缓存或覆盖前一次成功观察。
 
 ## 完整调用示例
 
