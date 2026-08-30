@@ -75,7 +75,7 @@ async function main() {
   const needsStdin = argv.length === 3 && (
     command === 'generation submit --stdin'
     || command === 'generation run-inputs --stdin'
-    || command === 'image run-media --stdin'
+    || command === 'generation resolve-media --stdin'
     || command === 'image inspect --stdin'
   )
   let request
@@ -86,7 +86,7 @@ async function main() {
     const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'
       ? error.code
       : command === 'generation run-inputs --stdin'
-      || command === 'image run-media --stdin'
+      || command === 'generation resolve-media --stdin'
       || command === 'image inspect --stdin'
       ? 'CLI_REQUEST_INVALID'
       : 'CLI_ARGUMENT_INVALID'

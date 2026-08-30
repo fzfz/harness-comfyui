@@ -418,7 +418,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     }))
 
     const mediaResponse = await post(server.origin, 'trusted', {
-      command: 'image.run-media', run_ids: ['run_1'],
+      command: 'generation.resolve-media', run_ids: ['run_1'],
     })
     const inspectionResponse = await post(server.origin, 'trusted', {
       command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述人物',

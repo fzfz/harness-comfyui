@@ -102,11 +102,11 @@ describe('Harness ComfyUI CLI contract', () => {
     expect(() => parseCliArguments(['generation', 'run-inputs', '--stdin'], '{')).toThrow('Generation Run stdin')
   })
 
-  it('parses batch Run media and single-image inspection commands', () => {
+  it('parses Generation media resolution and single-image inspection commands', () => {
     expect(parseCliArguments(
-      ['image', 'run-media', '--stdin'],
+      ['generation', 'resolve-media', '--stdin'],
       JSON.stringify({ run_ids: ['run_1', 'run_2'] }),
-    )).toEqual({ command: 'image.run-media', run_ids: ['run_1', 'run_2'] })
+    )).toEqual({ command: 'generation.resolve-media', run_ids: ['run_1', 'run_2'] })
     expect(parseCliArguments(
       ['image', 'inspect', '--stdin'],
       JSON.stringify({ file_path: '/media/result.png' }),
@@ -117,10 +117,10 @@ describe('Harness ComfyUI CLI contract', () => {
     )).toEqual({ command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述构图' })
   })
 
-  it('rejects malformed Run media and image inspection stdin', () => {
-    expect(() => parseCliArguments(['image', 'run-media', '--stdin'], JSON.stringify({ run_ids: [] }))).toThrow('run_ids')
+  it('rejects malformed Generation media resolution and image inspection stdin', () => {
+    expect(() => parseCliArguments(['generation', 'resolve-media', '--stdin'], JSON.stringify({ run_ids: [] }))).toThrow('run_ids')
     expect(() => parseCliArguments(
-      ['image', 'run-media', '--stdin'],
+      ['generation', 'resolve-media', '--stdin'],
       JSON.stringify({ run_ids: Array.from({ length: 21 }, (_, index) => `run_${index}`) }),
     )).toThrow('run_ids')
     expect(() => parseCliArguments(['image', 'inspect', '--stdin'], JSON.stringify({}))).toThrow('file_path')
@@ -139,6 +139,8 @@ describe('Harness ComfyUI CLI contract', () => {
   })
 
   it('rejects undocumented commands, extra properties, invalid ids, and invalid JSON values', () => {
+    expect(() => parseCliArguments(['image', 'run-media', '--stdin'], JSON.stringify({ run_ids: ['run_1'] })))
+      .toThrow('CLI command')
     expect(() => parseCliArguments(['catalog', 'model', 'guess'], '')).toThrow('CLI command')
     expect(() => parseCliArguments(['catalog', 'template', 'resolve', '--id', '0'], '')).toThrow('id')
     expect(() => parseCliRequest({ command: 'catalog.instance.list', extra: true })).toThrow('properties')

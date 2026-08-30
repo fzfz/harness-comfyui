@@ -13,7 +13,7 @@ description: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始�
 
 当前 Agent 必须优先从用户消息中按出现顺序收集一个或多个明确的 `run_id`。用户指代当前会话此前的 Generation 提交结果时，当前 Agent 必须从该提交结果中按返回顺序取得对应 `run_id`。当前用户消息和被指代的此前 Generation 提交结果都没有可用 `run_id` 时，当前 Agent 必须请用户提供至少一个 `run_id`，并结束本次 Skill 执行。
 
-当前 Agent 必须把全部 `run_id` 按原顺序分成每组一至二十个，并为每组调用一次 `node "$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin`。当前 Agent 必须按各组调用顺序合并返回的 `runs`，不得去重或重新排序。
+当前 Agent 必须把全部 `run_id` 按原顺序分成每组一至二十个，并为每组调用一次 `node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin`。当前 Agent 必须按各组调用顺序合并返回的 `runs`，不得去重或重新排序。
 
 某个 `runs` 元素的 `lookup_status` 为 `error` 时，当前 Agent 必须报告该元素的 `run_id`、`error.code` 和 `error.message`，并跳过该元素的图片读取。Run media 命令发生命令级失败时，当前 Agent 必须报告 stderr 中的错误码和错误消息，不得为该失败命令编造 `run_id`。
 

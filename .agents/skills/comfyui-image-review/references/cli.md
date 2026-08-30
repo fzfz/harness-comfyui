@@ -4,7 +4,7 @@
 
 Harness ComfyUI 图片读取 CLI 为 `comfyui-image-review` Skill 提供两个任务：
 
-- `image run-media --stdin` 只查询一个或多个 ComfyUI Generation Run 的原始 `parameters` 与本地图片路径；
+- `generation resolve-media --stdin` 只查询一个或多个 ComfyUI Generation Run 的原始 `parameters` 与本地图片路径；
 - `image inspect --stdin` 使用图片读取设置中的独立视觉模型观察一张本地图片。
 
 两个命令都不比较 Generation Prompt 与图片观察，不编写改进 Prompt，也不创建新的 ComfyUI Generation Run。Skill 执行者负责在取得 `parameters` 与 `observation` 后完成语义对比。
@@ -13,7 +13,7 @@ Harness ComfyUI 图片读取 CLI 为 `comfyui-image-review` Skill 提供两个�
 
 Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。Managed environment 自动提供 CLI 脚本路径、Host endpoint 和当前 shell Tool Call 的短期 capability。
 
-Skill 执行者必须从当前 Session 的 Workspace 工作目录调用 `image run-media --stdin`。Host 使用该工作目录解析当前 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得向命令提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。
+Skill 执行者必须从当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。Host 使用该工作目录解析当前 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得向命令提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。
 
 Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存 Provider、视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Skill 执行者不需要读取系统注入的 Tool schema。
 
@@ -22,7 +22,7 @@ Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harnes
 Skill 执行者必须按以下顺序调用命令：
 
 1. Skill 执行者把“ID 与运行值的来源”章节定义的来源取得的 `run_id` 按原顺序分成每组一至二十个。
-2. Skill 执行者为每组调用一次 `image run-media --stdin`。
+2. Skill 执行者为每组调用一次 `generation resolve-media --stdin`。
 3. Skill 执行者按每个成功 Run 的 `images` 顺序处理图片。
 4. Skill 执行者为每张图片分别调用一次 `image inspect --stdin`。该命令一次只接受一个 `file_path`。
 
@@ -30,12 +30,12 @@ Skill 执行者必须按以下顺序调用命令：
 
 ## 参数与标准输入
 
-### image run-media --stdin
+### generation resolve-media --stdin
 
 命令行固定为：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin
 ```
 
 Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象：
@@ -83,7 +83,7 @@ Skill 执行者为当前图片指定一次性观察要求时，必须提供非�
 
 ## ID 与运行值的来源
 
-Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果中的 `run_id`，取得 `image run-media --stdin` 的 `run_ids`。当前消息包含明确 `run_id` 时，Skill 执行者按这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按对应提交结果的返回顺序传递。Skill 执行者不得选择用户没有指代的历史 Generation Run，也不得猜测 Generation Run ID。
+Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果中的 `run_id`，取得 `generation resolve-media --stdin` 的 `run_ids`。当前消息包含明确 `run_id` 时，Skill 执行者按这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按对应提交结果的返回顺序传递。Skill 执行者不得选择用户没有指代的历史 Generation Run，也不得猜测 Generation Run ID。
 
 Host 使用 managed environment 中的当前 Session 工作目录解析 Workspace。Skill 执行者不得在 stdin 中填写 `workspace_id`、`session_id`、`turn` 或 `call_id`。
 
@@ -95,7 +95,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 每个命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON，stderr 为空。命令级失败时，CLI 不在 stdout 输出 JSON，stderr 只包含一行 `ERROR_CODE: message`。
 
-### image run-media --stdin 输出
+### generation resolve-media --stdin 输出
 
 ```json
 {
@@ -161,7 +161,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `CLI_REQUEST_INVALID` | stdin JSON 不符合对应命令的输入合同。Skill 执行者必须修正 JSON 属性、类型、数量或字符限制后重试。 |
 | `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |
 | `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试，不得复用旧 capability。 |
-| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须删除多余 JSON 空白并缩短输入；`image run-media --stdin` 仍然超限时，Skill 执行者必须把 Run ID 按更小批次查询。 |
+| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须删除多余 JSON 空白并缩短输入；`generation resolve-media --stdin` 仍然超限时，Skill 执行者必须把 Run ID 按更小批次查询。 |
 | `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须减少当前 Run 批次；单图命令出现该错误时，Skill 执行者必须报告错误并停止重试当前图片。 |
 | `CLI_PROTOCOL_ERROR` | Host 返回了无效的 JSON 或错误 envelope。Skill 执行者必须检查 Host 状态和日志后重试。 |
 | `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |
@@ -169,7 +169,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 上述命令级错误没有对应的逐 Run 结果。Skill 执行者不得为命令级错误编造 `run_id`。
 
-### image run-media --stdin 错误
+### generation resolve-media --stdin 错误
 
 `GENERATION_WORKSPACE_REQUIRED` 是命令级错误。该错误表示当前 Session 没有关联 Harness Workspace。Skill 执行者必须在关联 Workspace 的 Session 中重新执行查询。
 
@@ -198,7 +198,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 ## 副作用与重复调用
 
-`image run-media --stdin` 是只读命令。该命令不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt 对比结果。Skill 执行者可以为不同 Run 批次重复调用该命令；相同输入的后续调用重新读取当前 Host 存储状态。
+`generation resolve-media --stdin` 是只读命令。该命令不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt 对比结果。Skill 执行者可以为不同 Run 批次重复调用该命令；相同输入的后续调用重新读取当前 Host 存储状态。
 
 `image inspect --stdin` 不修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令会把当前本地图片提交给 Harness Attachment 服务，并向设置中的 Provider 发起一次视觉模型调用。Skill 执行者默认必须为每张图片调用一次。Skill 执行者重试同一图片时会再次产生 Attachment 接收与 Provider 调用；前一次成功观察不会被 CLI 缓存或覆盖。
 
@@ -207,7 +207,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 以下 `run_123` 来自用户消息中的 Generation Run ID：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image run-media --stdin <<'JSON'
+node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin <<'JSON'
 {"run_ids":["run_123"]}
 JSON
 ```

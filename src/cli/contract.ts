@@ -66,7 +66,7 @@ export type CliRequest =
   | { readonly command: 'catalog.instance.list' }
   | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
   | { readonly command: 'generation.run-inputs'; readonly run_ids: readonly string[] }
-  | { readonly command: 'image.run-media'; readonly run_ids: readonly string[] }
+  | { readonly command: 'generation.resolve-media'; readonly run_ids: readonly string[] }
   | { readonly command: 'image.inspect'; readonly file_path: string; readonly prompt?: string }
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -217,7 +217,7 @@ export function parseCliRequest(value: unknown): CliRequest {
     exactKeys(source, ['command', 'request'], 'CLI request')
     return Object.freeze({ command: source.command, request: parseCliGenerationRequest(source.request) })
   }
-  if (source.command === 'generation.run-inputs' || source.command === 'image.run-media') {
+  if (source.command === 'generation.run-inputs' || source.command === 'generation.resolve-media') {
     exactKeys(source, ['command', 'run_ids'], 'CLI request')
     return Object.freeze({ command: source.command, run_ids: runIds(source.run_ids) })
   }
@@ -299,16 +299,16 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
     exactKeys(source, ['run_ids'], 'Generation Run stdin')
     return parseCliRequest({ command: 'generation.run-inputs', run_ids: source.run_ids })
   }
-  if (argv.length === 3 && prefix === 'image run-media --stdin') {
+  if (argv.length === 3 && prefix === 'generation resolve-media --stdin') {
     let request: unknown
     try {
       request = JSON.parse(stdin) as unknown
     } catch {
-      throw new TypeError('Image Run media stdin must contain one JSON object')
+      throw new TypeError('Generation media resolution stdin must contain one JSON object')
     }
-    const source = record(request, 'Image Run media stdin')
-    exactKeys(source, ['run_ids'], 'Image Run media stdin')
-    return parseCliRequest({ command: 'image.run-media', run_ids: source.run_ids })
+    const source = record(request, 'Generation media resolution stdin')
+    exactKeys(source, ['run_ids'], 'Generation media resolution stdin')
+    return parseCliRequest({ command: 'generation.resolve-media', run_ids: source.run_ids })
   }
   if (argv.length === 3 && prefix === 'image inspect --stdin') {
     let request: unknown

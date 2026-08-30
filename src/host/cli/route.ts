@@ -183,7 +183,7 @@ async function dispatch(
         runIds: request.run_ids,
       }, signal)
     }
-    case 'image.run-media': {
+    case 'generation.resolve-media': {
       const owner = await generationIdentity(options, identity)
       return options.runtime.readGenerationRunMedia({
         workspaceId: owner.workspaceId,

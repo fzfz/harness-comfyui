@@ -136,7 +136,7 @@ describe('managed Harness ComfyUI CLI executable', () => {
       for await (const chunk of request) chunks.push(Buffer.from(chunk))
       const requestBody = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { readonly command: string }
       posted.push(requestBody)
-      const data = requestBody.command === 'image.run-media' ? media : inspection
+      const data = requestBody.command === 'generation.resolve-media' ? media : inspection
       const body = JSON.stringify({ ok: true, data })
       response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) })
       response.end(body)
@@ -147,7 +147,7 @@ describe('managed Harness ComfyUI CLI executable', () => {
     const apiUrl = `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`
 
     const mediaResult = await runCli({
-      args: ['image', 'run-media', '--stdin'],
+      args: ['generation', 'resolve-media', '--stdin'],
       stdin: JSON.stringify({ run_ids: ['run_1'] }),
       apiUrl,
     })
@@ -160,7 +160,7 @@ describe('managed Harness ComfyUI CLI executable', () => {
     expect(mediaResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(media)}\n`, stderr: '' })
     expect(inspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
     expect(posted).toEqual([
-      { command: 'image.run-media', run_ids: ['run_1'] },
+      { command: 'generation.resolve-media', run_ids: ['run_1'] },
       { command: 'image.inspect', file_path: '/media/result.png', prompt: '只描述人物' },
     ])
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
@@ -190,7 +190,7 @@ describe('managed Harness ComfyUI CLI executable', () => {
   })
 
   it.each([
-    ['run media', ['image', 'run-media', '--stdin']],
+    ['Generation media resolution', ['generation', 'resolve-media', '--stdin']],
     ['image inspection', ['image', 'inspect', '--stdin']],
   ])('rejects oversized %s stdin with the documented command-level error', async (_label, args) => {
     const result = await runCli({
