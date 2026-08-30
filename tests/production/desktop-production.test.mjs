@@ -53,7 +53,7 @@ describe('DSH Desktop production lifecycle', () => {
     const configRoot = resolve(root, 'config')
     const workspace = resolve(root, 'workspace')
     await Promise.all([mkdir(configRoot), mkdir(workspace)])
-    await writeFile(resolve(root, '.env'), 'HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT=45127\n')
+    await writeFile(resolve(root, '.env'), 'COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=45127\n')
     await writeFile(resolve(configRoot, 'desktop-production.json'), `${JSON.stringify({
       desktopSourceRelativePath: '.local/upstreams/dsh-desktop',
       runtimeRelativeRoot: '.local/desktop-production',

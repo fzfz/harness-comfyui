@@ -49,7 +49,7 @@ async function fixture() {
     storeDir: resolve(root, '.pnpm-store/v11'),
     virtualStoreDir: '.pnpm',
   }))
-  await writeFile(environmentFile, 'KEY=value\nHARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT=45128\n')
+  await writeFile(environmentFile, 'KEY=value\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=45128\n')
   const definition = {
     mainCheckoutPath: root,
     runtimeRelativeRoot: '.local/desktop-development',
@@ -292,7 +292,7 @@ describe('DSH Desktop worktree lifecycle', () => {
       HARNESS_COMFYUI_CATALOG_CLI_PATH: resolve(value.root, '../catalog/query.mjs'),
       HARNESS_COMFYUI_SOURCE_CLI_PATH: resolve(value.root, '../catalog/source.mjs'),
       DSH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
-      HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
+      COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
     })
   })
 
@@ -300,14 +300,14 @@ describe('DSH Desktop worktree lifecycle', () => {
     'rejects invalid mobile bridge port %j from the linked environment file',
     async configuredPort => {
       const value = await fixture()
-      await writeFile(value.environmentFile, `HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT=${configuredPort}\n`)
+      await writeFile(value.environmentFile, `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=${configuredPort}\n`)
 
       await expect(loadDesktopWorktreeContext({
         repositoryRoot: value.root,
         definitionPath: value.definitionPath,
         productionDefinitionPath: value.productionDefinitionPath,
         homeDirectory: resolve(value.root, 'parent-home'),
-      })).rejects.toThrow('HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT must be an integer from 1 to 65535')
+      })).rejects.toThrow('COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT must be an integer from 1 to 65535')
     },
   )
 

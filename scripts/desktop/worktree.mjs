@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseEnv } from 'node:util'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE = 'HARNESS_COMFYUI_DESKTOP_MOBILE_BRIDGE_PORT'
+const MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE = 'COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT'
 const MOBILE_BRIDGE_PORT_PROCESS_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
 
 function desktopMode(mode) {
