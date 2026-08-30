@@ -270,7 +270,7 @@ async function seedDesktopMedia(context, identity) {
 
 describe('live DSH Desktop integration', () => {
   it('loads the project environment, workspace, Preset, and selectable image-reader Provider through Desktop', async () => {
-    const base = await loadDesktopWorktreeContext()
+    const base = await loadDesktopWorktreeContext({ desktopSourceRoot: process.cwd() })
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
     let mobileBridgePort = await findFreePort()
     while (mobileBridgePort === 43128) mobileBridgePort = await findFreePort()

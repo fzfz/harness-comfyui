@@ -100,7 +100,7 @@ export async function loadDesktopWorktreeContext(options = {}) {
   }, sourceDefinition, {
     ...options,
     repositoryRoot,
-    desktopSourceRoot: worktreeDefinition.mainCheckoutPath,
+    desktopSourceRoot: options.desktopSourceRoot ?? worktreeDefinition.mainCheckoutPath,
   })
 }
 
