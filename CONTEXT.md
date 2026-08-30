@@ -12,7 +12,7 @@
 
 **Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 
-**Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/` 和 `wai-sdxl-prompt-builder/` 提供的五个仓库 Harness Skill。四个 Prompt/生成 Skill 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型。
+**Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 提供的六个仓库 Harness Skill。四个 Prompt/生成 Skill 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型；`local-image-reader` 使用自己的 CLI 参考读取用户提供的本地图片绝对路径。
 
 **Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。
 
@@ -72,6 +72,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.36.1`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.36.2`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本次目标发布标签为 `v0.36.1`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。当前发布标签为 `v0.36.2`；发布不创建或附加产品包。

@@ -1017,3 +1017,4 @@
 - Harness WebServer 公开服务提供实际监听 `host` 和 `port`；DSH Desktop 为 Harness 分配动态端口，因此 Skill CLI capability 不能使用 Configuration Profile 的固定 `server.port`。
 - DSH Desktop 的 `package.json` 是开发与预览启动 seam；当前仓库必须调用其 `pnpm dev`/`pnpm preview`，不能把当前恰好等价的 `electron-vite` 命令固化为跨仓库合同。
 - DSH Desktop 当前源码把移动桥接端口固定为 `preview=43127`、`dev=43128`，没有公开覆盖接口；插件仓库只能预检这两个端口，不能暴露一个上游不会读取的配置字段。
+- DSH generation staging 位于 worktree 内，因此 pnpm 会发现上层 workspace 与根 `node_modules`。Desktop runtime 隔离 HOME 会改变默认 store；installer 必须显式复用根 `node_modules/.modules.yaml.storeDir` 与根 `node_modules` 的真实 virtual store 路径，否则 pnpm 返回 `ERR_PNPM_UNEXPECTED_STORE` 或 `ERR_PNPM_UNEXPECTED_VIRTUAL_STORE`。

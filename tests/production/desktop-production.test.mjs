@@ -56,11 +56,16 @@ describe('DSH Desktop production lifecycle', () => {
     const environmentFilePath = resolve(root, '.env')
     const startupWorkspacePath = resolve(root, 'workspace')
     const skillSource = resolve(root, 'skills')
+    await mkdir(resolve(root, 'node_modules/.pnpm'), { recursive: true })
     await Promise.all([
       mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true }),
       mkdir(startupWorkspacePath),
       mkdir(skillSource),
       writeFile(environmentFilePath, 'KEY=value\n'),
+      writeFile(resolve(root, 'node_modules/.modules.yaml'), JSON.stringify({
+        storeDir: resolve(root, '.pnpm-store/v11'),
+        virtualStoreDir: '.pnpm',
+      })),
     ])
     const context = {
       repositoryRoot: root,

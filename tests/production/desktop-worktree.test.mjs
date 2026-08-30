@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
@@ -39,11 +39,16 @@ async function fixture() {
   const environmentFile = resolve(root, 'user.env')
   await mkdir(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib'), { recursive: true })
   await mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true })
+  await mkdir(resolve(root, 'node_modules/.pnpm'), { recursive: true })
   await mkdir(workspace)
   await mkdir(skills, { recursive: true })
   await writeFile(resolve(root, '.git'), 'gitdir: fixture\n')
   await writeFile(resolve(desktopSource, 'package.json'), '{}\n')
   await writeFile(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '')
+  await writeFile(resolve(root, 'node_modules/.modules.yaml'), JSON.stringify({
+    storeDir: resolve(root, '.pnpm-store/v11'),
+    virtualStoreDir: '.pnpm',
+  }))
   await writeFile(environmentFile, 'KEY=value\n')
   const definition = {
     mainCheckoutPath: root,
@@ -102,12 +107,16 @@ describe('DSH Desktop worktree lifecycle', () => {
     const desktopSource = resolve(mainCheckout, '.local/upstreams/dsh-desktop')
     const runtimeRoot = resolve(worktree, '.local/desktop-development')
     await Promise.all([
-      mkdir(resolve(mainCheckout, 'node_modules'), { recursive: true }),
+      mkdir(resolve(mainCheckout, 'node_modules/.pnpm'), { recursive: true }),
       mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true }),
       mkdir(worktree, { recursive: true }),
     ])
     await Promise.all([
       writeFile(resolve(mainCheckout, '.env'), 'KEY=value\n'),
+      writeFile(resolve(mainCheckout, 'node_modules/.modules.yaml'), JSON.stringify({
+        storeDir: resolve(mainCheckout, '.pnpm-store/v11'),
+        virtualStoreDir: '.pnpm',
+      })),
       writeFile(resolve(worktree, '.git'), 'gitdir: fixture\n'),
     ])
     const definitionPath = resolve(worktree, 'desktop-worktree.json')
@@ -137,6 +146,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     }
     await Promise.all([mkdir(context.startupWorkspacePath), mkdir(context.skillSource)])
 
+    const installPlugin = vi.fn()
     await expect(runDesktopDevelopmentCommand('start', {
       contextOptions: { repositoryRoot: worktree, definitionPath },
       loadContext: async () => context,
@@ -144,13 +154,18 @@ describe('DSH Desktop worktree lifecycle', () => {
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
+      installPlugin,
       remoteDebuggingPort: 43129,
       spawnDesktop,
     })).resolves.toMatchObject({ status: 'stopped', pid: 43120 })
 
     expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
     expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
+    const linkedNodeModules = await realpath(resolve(worktree, 'node_modules'))
+    expect(installPlugin.mock.calls[0][1]).toMatchObject({
+      PNPM_CONFIG_STORE_DIR: resolve(mainCheckout, '.pnpm-store/v11'),
+      PNPM_CONFIG_VIRTUAL_STORE_DIR: resolve(linkedNodeModules, '.pnpm'),
+    })
     expect(spawnDesktop).toHaveBeenCalledWith(
       resolve(desktopSource, 'node_modules/node/bin/node'),
       [
@@ -169,7 +184,7 @@ describe('DSH Desktop worktree lifecycle', () => {
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
+      installPlugin,
       remoteDebuggingPort: 43129,
       spawnDesktop,
     })).resolves.toMatchObject({ status: 'stopped', pid: 43120 })
@@ -262,6 +277,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(materializePreset).toHaveBeenCalledWith(value.root, context.dshHome)
     expect(packagePlugin).toHaveBeenCalledWith(context)
     expect(installPlugin).toHaveBeenCalledWith(context, prepared.environment, resolve(value.root, 'harness-comfyui.tgz'))
+    const nodeModules = await realpath(resolve(value.root, 'node_modules'))
     expect(prepared.environment).toMatchObject({
       HOME: context.runtimeHome,
       CFFIXED_USER_HOME: context.runtimeHome,
@@ -272,6 +288,8 @@ describe('DSH Desktop worktree lifecycle', () => {
       HARNESS_COMFYUI_CATALOG_PORT: '18093',
       HARNESS_COMFYUI_CATALOG_CLI_PATH: resolve(value.root, '../catalog/query.mjs'),
       HARNESS_COMFYUI_SOURCE_CLI_PATH: resolve(value.root, '../catalog/source.mjs'),
+      PNPM_CONFIG_STORE_DIR: resolve(value.root, '.pnpm-store/v11'),
+      PNPM_CONFIG_VIRTUAL_STORE_DIR: resolve(nodeModules, '.pnpm'),
     })
   })
 

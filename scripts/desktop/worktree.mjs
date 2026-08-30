@@ -1,9 +1,9 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { cp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -93,10 +93,29 @@ async function replaceLink(source, target, type) {
   await symlink(source, target, type)
 }
 
-function desktopEnvironment(context, environment = process.env) {
+async function pnpmDependencyEnvironment(context) {
+  const nodeModules = await realpath(resolve(context.repositoryRoot, 'node_modules'))
+  const metadataPath = resolve(nodeModules, '.modules.yaml')
+  const metadata = JSON.parse(await readFile(metadataPath, 'utf8'))
+  if (typeof metadata.storeDir !== 'string' || metadata.storeDir.length === 0) {
+    throw new Error(`root pnpm metadata does not define storeDir: ${metadataPath}`)
+  }
+  if (typeof metadata.virtualStoreDir !== 'string' || metadata.virtualStoreDir.length === 0) {
+    throw new Error(`root pnpm metadata does not define virtualStoreDir: ${metadataPath}`)
+  }
+  return {
+    PNPM_CONFIG_STORE_DIR: resolve(metadata.storeDir),
+    PNPM_CONFIG_VIRTUAL_STORE_DIR: isAbsolute(metadata.virtualStoreDir)
+      ? resolve(metadata.virtualStoreDir)
+      : resolve(nodeModules, metadata.virtualStoreDir),
+  }
+}
+
+async function desktopEnvironment(context, environment = process.env) {
   const dataDirectory = resolve(context.runtimeRoot, 'data')
   return {
     ...environment,
+    ...await pnpmDependencyEnvironment(context),
     HOME: context.runtimeHome,
     CFFIXED_USER_HOME: context.runtimeHome,
     DSH_HOME: context.dshHome,
@@ -253,7 +272,7 @@ export async function prepareDesktopWorktree(context, options = {}) {
   await materializeHost(context.repositoryRoot)
   await materializePreset(context.repositoryRoot, context.dshHome)
   const packageTarball = await (options.packagePlugin ?? buildSourcePluginPackage)(context)
-  const environment = desktopEnvironment(context, options.environment)
+  const environment = await desktopEnvironment(context, options.environment)
   await (options.installPlugin ?? installSourcePluginGeneration)(context, environment, packageTarball)
   return { environment }
 }

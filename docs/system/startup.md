@@ -42,6 +42,8 @@ pnpm dev:start
 
 正确链接重复启动时保持不变。既有普通文件、普通目录或指向其他目标的链接会中止启动。启动器不会复制 `.env`，也不会在 worktree 安装依赖。
 
+Desktop generation 安装器读取已链接根 `node_modules/.modules.yaml` 中的 pnpm store，并使用该根 `node_modules` 的真实 virtual store 路径。隔离的 Desktop HOME 不会创建第二套依赖 store，也不会让 generation staging 与主开发 checkout 的依赖使用不同 store。
+
 链接准备完成后，`dev:start` 从主开发 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm dev`，把当前 worktree 的插件源码打包为 generation，并加载与生产相同的 Workspace、Preset、Provider 和模型配置。
 
 保持启动终端运行，在第二个终端管理开发进程：
