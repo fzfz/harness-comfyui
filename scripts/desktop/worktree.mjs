@@ -337,7 +337,7 @@ export async function startDesktopWorktree(context, options = {}) {
     context.launchCommand,
   ]
   if (options.remoteDebuggingPort !== undefined) {
-    pnpmArguments.push('--', '--remoteDebuggingPort', String(options.remoteDebuggingPort))
+    pnpmArguments.push('--remoteDebuggingPort', String(options.remoteDebuggingPort))
   }
   const child = (options.spawnDesktop ?? spawn)(
     resolve(context.desktopSource, 'node_modules/node/bin/node'),

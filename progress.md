@@ -32,6 +32,9 @@
 - 本地 `main` 已通过 merge commit `9560d3b` 合入功能分支并保留 `0.36.2`、`local-image-reader` 与六个项目 Skill 文档；所有测试从该提交之后开始执行。
 - 合入后的首轮类型检查发现 `ctx.webServer` 缺少显式类型收窄；Web Host 聚焦测试发现启动 CLI 导入的 worktree 准备函数名称错误。两处实现已按实际公开服务与真实导出名称修正。
 - 修正后 TypeScript 检查通过；Desktop 生产、Desktop 开发、Web worktree、Git 隔离、Host 插件和受管 shell capability 共 61 项聚焦测试通过。
+- 第一次完整 `pnpm quality` 的依赖门禁、类型检查、529 项单元/集成、28 项合同/安全、88 项生产和 32 项原型测试通过；真实 Desktop 验收因 `pnpm dev` 透传参数多出一个 `--`，导致 Electron 未开放测试指定的调试端口而失败。
+- Desktop 启动器已把调试参数改为上游实际接受的 `pnpm dev --remoteDebuggingPort <port>` 参数形态；生产测试直接断言该 package script 参数。
+- 修正后的 Desktop 生命周期与真实 Desktop 聚焦测试共 20 项通过；真实上游日志显示 `electron-vite dev --remoteDebuggingPort <port>`，DevTools 在该动态端口监听。
 
 ## 2026-08-30 Phase 40 — 补齐 DSH Desktop 合入门禁
 

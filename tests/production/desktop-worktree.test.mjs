@@ -145,6 +145,7 @@ describe('DSH Desktop worktree lifecycle', () => {
       materializePreset: async () => undefined,
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
       installPlugin: () => undefined,
+      remoteDebuggingPort: 43129,
       spawnDesktop,
     })).resolves.toMatchObject({ status: 'stopped', pid: 43120 })
 
@@ -152,7 +153,12 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
     expect(spawnDesktop).toHaveBeenCalledWith(
       resolve(desktopSource, 'node_modules/node/bin/node'),
-      [resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'), 'dev'],
+      [
+        resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
+        'dev',
+        '--remoteDebuggingPort',
+        '43129',
+      ],
       expect.objectContaining({ cwd: desktopSource, detached: true }),
     )
 
@@ -164,6 +170,7 @@ describe('DSH Desktop worktree lifecycle', () => {
       materializePreset: async () => undefined,
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
       installPlugin: () => undefined,
+      remoteDebuggingPort: 43129,
       spawnDesktop,
     })).resolves.toMatchObject({ status: 'stopped', pid: 43120 })
     expect(spawnDesktop).toHaveBeenCalledTimes(2)
