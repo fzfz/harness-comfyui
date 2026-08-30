@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { mkdir, mkdtemp, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
@@ -161,11 +161,6 @@ describe('DSH Desktop worktree lifecycle', () => {
 
     expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
     expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
-    const linkedNodeModules = await realpath(resolve(worktree, 'node_modules'))
-    expect(installPlugin.mock.calls[0][1]).toMatchObject({
-      PNPM_CONFIG_STORE_DIR: resolve(mainCheckout, '.pnpm-store/v11'),
-      PNPM_CONFIG_VIRTUAL_STORE_DIR: resolve(linkedNodeModules, '.pnpm'),
-    })
     expect(spawnDesktop).toHaveBeenCalledWith(
       resolve(desktopSource, 'node_modules/node/bin/node'),
       [
@@ -277,7 +272,6 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(materializePreset).toHaveBeenCalledWith(value.root, context.dshHome)
     expect(packagePlugin).toHaveBeenCalledWith(context)
     expect(installPlugin).toHaveBeenCalledWith(context, prepared.environment, resolve(value.root, 'harness-comfyui.tgz'))
-    const nodeModules = await realpath(resolve(value.root, 'node_modules'))
     expect(prepared.environment).toMatchObject({
       HOME: context.runtimeHome,
       CFFIXED_USER_HOME: context.runtimeHome,
@@ -288,8 +282,6 @@ describe('DSH Desktop worktree lifecycle', () => {
       HARNESS_COMFYUI_CATALOG_PORT: '18093',
       HARNESS_COMFYUI_CATALOG_CLI_PATH: resolve(value.root, '../catalog/query.mjs'),
       HARNESS_COMFYUI_SOURCE_CLI_PATH: resolve(value.root, '../catalog/source.mjs'),
-      PNPM_CONFIG_STORE_DIR: resolve(value.root, '.pnpm-store/v11'),
-      PNPM_CONFIG_VIRTUAL_STORE_DIR: resolve(nodeModules, '.pnpm'),
     })
   })
 
@@ -524,6 +516,8 @@ describe('DSH Desktop worktree lifecycle', () => {
     }))
     const writeDesired = vi.fn(async () => undefined)
     const projectGenerations = vi.fn(async () => undefined)
+    const spawnedGeneration = { pid: 43129 }
+    const spawnGenerationProcess = vi.fn(() => spawnedGeneration)
     const loadDesktopModule = vi.fn(async specifier => {
       if (specifier.endsWith('/installer')) return { installGeneration }
       if (specifier.endsWith('/projection')) return { projectGenerations }
@@ -541,6 +535,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     await installSourcePluginGeneration(context, { PATH: '/usr/bin' }, '/runtime/harness-comfyui.tgz', {
       initializeProfile: async () => undefined,
       loadDesktopModule,
+      spawnGenerationProcess,
     })
 
     expect(installGeneration).toHaveBeenCalledWith(expect.objectContaining({
@@ -548,6 +543,22 @@ describe('DSH Desktop worktree lifecycle', () => {
       pluginSpec: '/runtime/harness-comfyui.tgz',
       expectedPluginName: 'harness-comfyui',
     }))
+    const generationSpawn = installGeneration.mock.calls[0][0].spawnProcess
+    expect(generationSpawn('/desktop/node', ['/desktop/pnpm.cjs', 'add', '/runtime/harness-comfyui.tgz'], {
+      cwd: '/runtime/staging',
+    })).toBe(spawnedGeneration)
+    expect(spawnGenerationProcess).toHaveBeenCalledWith(
+      '/desktop/node',
+      [
+        '/desktop/pnpm.cjs',
+        '--ignore-workspace',
+        '--store-dir',
+        resolve(value.root, '.pnpm-store/v11'),
+        'add',
+        '/runtime/harness-comfyui.tgz',
+      ],
+      { cwd: '/runtime/staging' },
+    )
     expect(writeDesired).toHaveBeenCalledWith(context.dshHome, [
       'other+1',
       'harness-comfyui+0.36.1+fixture',

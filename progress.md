@@ -38,8 +38,8 @@
 - 最终 `pnpm quality` 全部通过：529 项单元/集成、28 项合同/安全、88 项生产、32 项原型和 2 项真实 Desktop 测试通过；函数覆盖率为 100%。
 - 真实 Desktop 验收已从上游 `pnpm dev` 入口验证默认 Workspace、项目 Preset、Provider 选择保存与重开、应用内媒体 Modal，以及受管 DSH bash 通过当前动态 WebServer 端口调用项目 CLI route。
 - 从 `main@639186e` 创建的新 worktree 稳定复现 generation 安装失败；0.8 秒最小复现确认 DSH `installGeneration()` 返回 `ERR_PNPM_UNEXPECTED_STORE`，完整输出证明错误不是 pnpm major 本身。
-- 根因是 worktree 根 `node_modules` 链接使用主开发 checkout 的 pnpm store 与 virtual store，而隔离 Desktop HOME 改变了 installer 推导的 store；pnpm 因同一 workspace 出现两套路径而拒绝 staging。
-- 回归测试在 linked `node_modules` 结构下先因缺少 `PNPM_CONFIG_STORE_DIR` 与 `PNPM_CONFIG_VIRTUAL_STORE_DIR` 失败；实现读取根 pnpm metadata 和 `node_modules` 真实路径后，22 项 Desktop 生命周期测试与 TypeScript 检查通过。
+- 根因是 generation staging 位于 worktree 的 `.local` 下，pnpm 会向上发现当前仓库的 `pnpm-workspace.yaml`，并把独立 generation 安装并入根 workspace。共享根 virtual store 会改写主开发 checkout 的 `node_modules/.pnpm`，因此 generation 只能复用 package store，不能复用 virtual store 或根 lockfile。
+- 插件适配层通过 DSH Desktop installer 的 `spawnProcess` 接口执行 `pnpm --ignore-workspace --store-dir <storeDir> add ...`。19 项 Desktop worktree 测试验证实际命令参数；真实 Desktop 测试把 runtime 建在仓库 `.local` 下，并验证启动后根 `pnpm-lock.yaml` 保持逐字不变。
 
 ## 2026-08-30 Phase 40 — 补齐 DSH Desktop 合入门禁
 

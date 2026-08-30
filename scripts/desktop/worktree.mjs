@@ -3,7 +3,7 @@ import { cp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/p
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { dirname, isAbsolute, resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -93,29 +93,20 @@ async function replaceLink(source, target, type) {
   await symlink(source, target, type)
 }
 
-async function pnpmDependencyEnvironment(context) {
+async function rootPnpmStoreDirectory(context) {
   const nodeModules = await realpath(resolve(context.repositoryRoot, 'node_modules'))
   const metadataPath = resolve(nodeModules, '.modules.yaml')
   const metadata = JSON.parse(await readFile(metadataPath, 'utf8'))
   if (typeof metadata.storeDir !== 'string' || metadata.storeDir.length === 0) {
     throw new Error(`root pnpm metadata does not define storeDir: ${metadataPath}`)
   }
-  if (typeof metadata.virtualStoreDir !== 'string' || metadata.virtualStoreDir.length === 0) {
-    throw new Error(`root pnpm metadata does not define virtualStoreDir: ${metadataPath}`)
-  }
-  return {
-    PNPM_CONFIG_STORE_DIR: resolve(metadata.storeDir),
-    PNPM_CONFIG_VIRTUAL_STORE_DIR: isAbsolute(metadata.virtualStoreDir)
-      ? resolve(metadata.virtualStoreDir)
-      : resolve(nodeModules, metadata.virtualStoreDir),
-  }
+  return resolve(metadata.storeDir)
 }
 
 async function desktopEnvironment(context, environment = process.env) {
   const dataDirectory = resolve(context.runtimeRoot, 'data')
   return {
     ...environment,
-    ...await pnpmDependencyEnvironment(context),
     HOME: context.runtimeHome,
     CFFIXED_USER_HOME: context.runtimeHome,
     DSH_HOME: context.dshHome,
@@ -221,6 +212,8 @@ async function initializeSourceProfile(context, environment) {
 
 export async function installSourcePluginGeneration(context, environment, packageTarball, options = {}) {
   await (options.initializeProfile ?? initializeSourceProfile)(context, environment)
+  const pnpmStoreDirectory = await rootPnpmStoreDirectory(context)
+  const spawnGenerationProcess = options.spawnGenerationProcess ?? spawn
   const requireFromDesktop = createRequire(resolve(context.desktopSource, 'package.json'))
   const loadDesktopModule = options.loadDesktopModule ?? (specifier => import(
     pathToFileURL(requireFromDesktop.resolve(specifier)).href
@@ -239,6 +232,17 @@ export async function installSourcePluginGeneration(context, environment, packag
       nodeExecutablePath: resolve(context.desktopSource, 'node_modules/node/bin/node'),
       pnpmEntryPath: resolve(context.desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
       environment,
+      spawnProcess(command, args, spawnOptions) {
+        const [pnpmEntryPath, ...pnpmArguments] = args
+        if (pnpmEntryPath === undefined) throw new Error('DSH Desktop generation installer did not provide a pnpm entry path')
+        return spawnGenerationProcess(command, [
+          pnpmEntryPath,
+          '--ignore-workspace',
+          '--store-dir',
+          pnpmStoreDirectory,
+          ...pnpmArguments,
+        ], spawnOptions)
+      },
     })
     if (!result.ok || result.generation === undefined) {
       throw new Error(`DSH Desktop could not install harness-comfyui generation: ${result.detail ?? 'unknown error'}`)

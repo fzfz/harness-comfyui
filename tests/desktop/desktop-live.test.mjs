@@ -1,6 +1,5 @@
 import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
-import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -253,7 +252,10 @@ describe('live DSH Desktop integration', () => {
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
     await assertDesktopMobilePortAvailable()
 
-    const runtimeRoot = await mkdtemp(join(tmpdir(), 'harness-comfyui-desktop-live-'))
+    const repositoryLockfile = resolve(base.repositoryRoot, 'pnpm-lock.yaml')
+    const repositoryLockfileBefore = await readFile(repositoryLockfile, 'utf8')
+    await mkdir(resolve(base.repositoryRoot, '.local'), { recursive: true })
+    const runtimeRoot = await mkdtemp(resolve(base.repositoryRoot, '.local/desktop-live-'))
     const runtimeHome = resolve(runtimeRoot, 'home')
     const environmentFilePath = resolve(runtimeRoot, 'desktop.env')
     const startupWorkspacePath = resolve(runtimeRoot, 'workspace')
@@ -276,6 +278,7 @@ describe('live DSH Desktop integration', () => {
     const debuggingPort = await findFreePort()
     fixture.start = startDesktopWorktree(context, { remoteDebuggingPort: debuggingPort })
     await waitForPath(context.pidFile)
+    expect(await readFile(repositoryLockfile, 'utf8')).toBe(repositoryLockfileBefore)
 
     const page = await connectDesktopPage(debuggingPort)
     try {

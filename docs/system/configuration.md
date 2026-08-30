@@ -22,7 +22,7 @@
 
 `dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。
 
-Desktop generation 安装环境使用根 `node_modules/.modules.yaml` 的 `storeDir`，并把 `virtualStoreDir` 相对根 `node_modules` 的真实路径解析。该运行环境只让 DSH Desktop installer 复用当前 checkout 已安装依赖的 pnpm store，不改变 `.env`、Workspace、Provider、Preset 或模型配置。
+Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。
 
 移动桥接端口不是当前仓库的配置字段。DSH Desktop 上游把 `preview` 端口固定为 `43127`，把 `dev` 端口固定为 `43128`；当前仓库只在启动前检查相应端口，没有声明无法传递给上游的配置值。
 
