@@ -10,22 +10,24 @@ import { parseEnv } from 'node:util'
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE = 'COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT'
 const MOBILE_BRIDGE_PORT_PROCESS_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
+const UNPACKAGED_DESKTOP_IDENTITY = Object.freeze({
+  userDataDirectory: 'dsh-desktop-dev',
+  logDirectory: 'DSH Desktop Dev',
+})
 
 function desktopMode(mode) {
   if (mode === 'development') {
     return {
       launchCommand: 'dev',
       mobileBridgePort: 43128,
-      userDataDirectory: 'dsh-desktop-dev',
-      logDirectory: 'DSH Desktop Dev',
+      ...UNPACKAGED_DESKTOP_IDENTITY,
     }
   }
   if (mode === 'production') {
     return {
       launchCommand: 'preview',
       mobileBridgePort: 43127,
-      userDataDirectory: 'dsh-desktop',
-      logDirectory: 'DSH Desktop',
+      ...UNPACKAGED_DESKTOP_IDENTITY,
     }
   }
   throw new Error('desktopMode must be development or production')
@@ -397,7 +399,11 @@ export async function startDesktopWorktree(context, options = {}) {
     context.launchCommand,
   ]
   if (options.remoteDebuggingPort !== undefined) {
-    pnpmArguments.push('--remoteDebuggingPort', String(options.remoteDebuggingPort))
+    if (context.launchCommand === 'preview') {
+      pnpmArguments.push('--', `--remote-debugging-port=${options.remoteDebuggingPort}`)
+    } else {
+      pnpmArguments.push('--remoteDebuggingPort', String(options.remoteDebuggingPort))
+    }
   }
   const child = (options.spawnDesktop ?? spawn)(
     resolve(context.desktopSource, 'node_modules/node/bin/node'),

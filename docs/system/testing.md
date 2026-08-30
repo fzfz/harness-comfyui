@@ -85,7 +85,7 @@ v0.36.1 发布前完整 `pnpm quality` 结果为 525 项 unit/integration、24 �
 
 v0.36.2 发布前完整 `pnpm quality` 结果为 525 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试通过。覆盖率为 statements 93.03%、branches 86.28%、functions 100%、lines 95.66%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
-v0.37.0 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+v0.37.1 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
 ## CI
 

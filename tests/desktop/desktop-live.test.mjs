@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   desktopWorktreeStatus,
-  loadDesktopWorktreeContext,
+  loadDesktopProductionContext,
   startDesktopWorktree,
   stopDesktopWorktree,
 } from '../../scripts/desktop/worktree.mjs'
@@ -287,12 +287,12 @@ async function seedDesktopMedia(context, identity) {
   }
 }
 
-describe('live DSH Desktop integration', () => {
-  it('loads the project environment, workspace, Preset, and selectable image-reader Provider through Desktop', async () => {
-    const base = await loadDesktopWorktreeContext({ desktopSourceRoot: process.cwd() })
+describe('live DSH Desktop production integration', () => {
+  it('loads the project environment, workspace, Preset, and selectable image-reader Provider through preview', async () => {
+    const base = await loadDesktopProductionContext({ desktopSourceRoot: process.cwd() })
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
     let mobileBridgePort = await findFreePort()
-    while (mobileBridgePort === 43128) mobileBridgePort = await findFreePort()
+    while (mobileBridgePort === 43127) mobileBridgePort = await findFreePort()
     await assertDesktopMobilePortAvailable(mobileBridgePort)
 
     const repositoryLockfile = resolve(base.repositoryRoot, 'pnpm-lock.yaml')
@@ -327,7 +327,7 @@ describe('live DSH Desktop integration', () => {
     fixture.start = startDesktopWorktree(context, { remoteDebuggingPort: debuggingPort })
     await waitForPath(context.pidFile)
     await waitForDesktopMobilePort(mobileBridgePort)
-    await assertDesktopMobilePortAvailable(43128)
+    await assertDesktopMobilePortAvailable(43127)
     expect(await readFile(repositoryLockfile, 'utf8')).toBe(repositoryLockfileBefore)
 
     const page = await connectDesktopPage(debuggingPort)

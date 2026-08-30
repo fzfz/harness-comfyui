@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.37.1
+
+v0.37.1 修复 DSH Desktop `preview` 生产环境加载了错误 DSH home 的问题。
+
+## 生产 Desktop 修复
+
+- `prod:start` 现在把插件 generation、`ComfyUI工作台预设` 和 `.env` 链接准备到 `electron-vite preview` 实际使用的 `dsh-desktop-dev` user-data 目录；生产运行数据继续保存在 `.local/desktop-production/`。
+- 生产与开发仍分别使用 `.local/desktop-production/` 和 `.local/desktop-development/`；两种环境不会共享 DSH home、PID、日志、Run Repository 或媒体文件。
+- 真实 Desktop 验收现在执行生产 `preview`，并继续验证默认 Workspace、项目 Preset、Provider 与视觉模型保存、应用内媒体 Modal 和 managed shell capability。
+- 真实验收通过 electron-vite 支持的双横线参数把远程调试端口传给 Electron；公开 `pnpm prod:start` 命令不启用远程调试。
+
+## 测试与发布
+
+- 完整测试通过：529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。
+- 覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%。
+- 完整依赖审计结果为 critical 0、high 0、moderate 0、low 0；本版本没有增加依赖。
+- GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.37.0
 
 v0.37.0 将 Harness ComfyUI 作为 generation 接入完整 DSH Desktop，并为开发、测试和生产环境提供独立的生命周期命令与运行目录。

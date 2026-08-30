@@ -37,11 +37,11 @@ describe('DSH Desktop production lifecycle', () => {
     expect(context.startupWorkspacePath).toBe('/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness')
     expect(context.dshHome).toBe(resolve(
       repositoryRoot,
-      '.local/desktop-production/home/Library/Application Support/dsh-desktop/harness',
+      '.local/desktop-production/home/Library/Application Support/dsh-desktop-dev/harness',
     ))
     expect(context.harnessLog).toBe(resolve(
       repositoryRoot,
-      '.local/desktop-production/home/Library/Logs/DSH Desktop/harness.log',
+      '.local/desktop-production/home/Library/Logs/DSH Desktop Dev/harness.log',
     ))
     expect(context.launchCommand).toBe('preview')
     expect(context.mobileBridgePort).toBeGreaterThan(0)
@@ -125,10 +125,16 @@ describe('DSH Desktop production lifecycle', () => {
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
       installPlugin: () => undefined,
       spawnDesktop,
+      remoteDebuggingPort: 54002,
     })).resolves.toMatchObject({ status: 'stopped', pid: 54001 })
     expect(spawnDesktop).toHaveBeenCalledWith(
       resolve(desktopSource, 'node_modules/node/bin/node'),
-      [resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'), 'preview'],
+      [
+        resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
+        'preview',
+        '--',
+        '--remote-debugging-port=54002',
+      ],
       expect.objectContaining({
         cwd: desktopSource,
         detached: true,
