@@ -1,29 +1,31 @@
-# Harness ComfyUI v0.36.1
+# Harness ComfyUI v0.36.2
 
-v0.36.1 调整 Generation Run 图片解析命令的领域命名，使 Run 查询与本地文件图片识别保持独立。
+v0.36.2 新增 `local-image-reader` Skill，用于读取用户提供的一张或多张本地图片。
 
-## 命令边界
+## Skill 职责
 
-- managed CLI 使用 `generation resolve-media --stdin` 接收一至二十个 `run_id`，并返回每个 Run 的原始生成参数和本地图片路径。内部命令名为 `generation.resolve-media`。
-- managed CLI 使用 `image inspect --stdin` 接收且只接收一个本地 `file_path`。该命令不接收 `run_id` 或调用时 Prompt，也不负责查询 Generation Run。
-- `comfyui-image-review` Skill 先调用 `generation resolve-media --stdin` 解析 Run 图片路径，再为每张图片分别调用 `image inspect --stdin`。
-- `get_generation_run_media` DSH Tool 的名称和数据合同不变。
+- `local-image-reader` 从用户消息或当前消息图片附件取得本地图片绝对路径，并按输入顺序逐图调用 `image inspect --stdin`。
+- Skill 保留重复路径；每个路径对应一次独立视觉模型请求和一项观察结果或错误结果。
+- Skill 不查询 Generation Run，不接收 `run_id`，不读取 Generation Prompt，也不编写下一次生成使用的改进 Prompt。
+- Harness“图片读取”设置中的当前命名配置继续提供视觉模型、读图 Prompt、`temperature`、最大输出 Token 和模型连接信息。Skill 每次调用只提交 `file_path`。
 
-## 不兼容变更
+## CLI 参考文档
 
-- 旧命令 `image run-media --stdin` 和内部命令名 `image.run-media` 不再受支持，也没有兼容别名。调用者必须改用 `generation resolve-media --stdin`。
-- 图片读取设置中的当前命名配置是视觉模型、读图 Prompt、`temperature` 和最大输出 Token 的唯一来源。`inspect_image` Tool 与 `image inspect --stdin` CLI 不接受调用时 Prompt 覆盖值。
+- Skill 自带的 `references/image-inspection-cli.md` 完整定义 `image inspect --stdin` 的调用环境、命令、stdin、输出、错误、重试、副作用和完整示例。
+- `file_path` 必须是 Host 可读取的本地绝对路径，并指向符合 Host 图片大小上限的非空 PNG、JPEG、WebP 或 GIF 普通文件。
+- CLI 使用 managed environment 提供的 endpoint 与 capability。Skill 不依赖系统注入的 Tool schema，也不区分视觉模型的连接实现。
 
-## Skill 文档
+## 全局 Skill 部署
 
-- `comfyui-image-review` Skill 已使用新的 Generation 命令。
-- Skill 自带的 `references/cli.md` 分别定义 Generation Run 图片解析和本地文件图片识别的请求、响应与错误合同，不依赖系统注入的 Tool schema。
+- `.agents/skills/local-image-reader/` 是新 Skill 的 canonical source。
+- 生产部署把 `$HOME/.agents/skills/local-image-reader` 配置为指向主开发 checkout canonical source 的绝对符号链接，不复制 Skill 文件，也不指向独立 linked worktree。
+- 项目的全局 Skill 清单从五个增加为六个。
 
 ## 验证
 
 - 完整 `pnpm quality` 通过：525 项 unit/integration、24 项 contract/security、62 项 production 和 32 项 prototype 测试成功。
 - 覆盖率为 statements 93.03%、branches 86.28%、functions 100%、lines 95.66%。
 - 完整依赖审计结果为 critical 0、high 0、moderate 0、low 0；本版本没有增加依赖。
-- 自动化测试验证新命令的参数解析、HTTP 请求和 Host 分发。旧命令在 executable 层返回 `CLI_ARGUMENT_INVALID` 且不发起 HTTP 请求；旧内部命令在 Host route 层返回 `CLI_REQUEST_INVALID` 且不调用 Run media runtime。
-- 最新源码与回归测试提交 `fb32b4316e3682516329c10e1b8fc44f8dea95c0` 的 [GitHub CI](https://github.com/fzfz/harness-comfyui/actions/runs/33286894143) 已通过。
+- 独立语义 Reviewer 已确认 Skill 只接收本地图片路径、CLI 参考包含全部必备章节、输入和错误说明符合真实 `image inspect --stdin` 合同。
+- 功能与版本提交 `0a2d75870a40d58bf16eb89ddf813d27afce84ba` 的 [GitHub CI](https://github.com/fzfz/harness-comfyui/actions/runs/33290106335) 已通过。
 - GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。

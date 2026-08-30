@@ -16,6 +16,7 @@
 | `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill canonical source |
 | `.agents/skills/comfyui-generate/` | ComfyUI 生成、兼容性检查与历史 Generation Run 查询 Skill canonical source |
 | `.agents/skills/comfyui-image-review/` | 多 Run 图片读取与 Prompt 对比 Skill canonical source，包含独立 CLI 参考 |
+| `.agents/skills/local-image-reader/` | 用户提供本地图片路径的逐图视觉读取 Skill canonical source，包含独立 CLI 参考 |
 | `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt 与历史 Generation Run 查询 Skill canonical source |
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset canonical source；目录名是兼容性内部 ID |
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset 的 Session standing Tool visibility component |

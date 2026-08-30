@@ -17,20 +17,20 @@ GitHub Release 只发布 Git tag 与 Release 记录，不构建或附加产品�
 11. 在该完整 SHA 上创建并 push 目标 Git tag，再创建 GitHub Release。
 12. 核对远端标签指向该完整 SHA，GitHub Release 指向该标签，并确认 Release 没有附件。
 13. 生产部署负责人从该最终发布提交更新生产运行目录，保留生产专属配置和运行状态，使用 `pnpm prod:start` 或 `pnpm prod:restart` 启动该发布提交，然后执行 `pnpm prod:status`、`pnpm prod:health` 和真实实例验收。生产部署负责人不得直接编辑生产运行目录中的源码、测试、包元数据或发布文档。
-14. Skill 部署负责人从最终发布提交把五个 `.agents/skills/<skill-name>/` 目录恢复到主开发 checkout；该操作不得切换主开发 checkout 的分支或提交，也不得覆盖主开发 checkout 的其他未提交变更。
-15. Skill 部署负责人分别比较主开发 checkout 与 `$HOME/.agents/skills/<skill-name>/` 的目录条目类型、相对路径、符号链接目标和普通文件 SHA-256。比较完成后，把原全局普通目录移动到可恢复备份位置，并把五个全局路径配置为指向主开发 checkout 对应 Skill 目录的绝对符号链接。任一步失败时必须恢复全部原全局目录。
-16. Skill 部署负责人逐个核对五个全局符号链接的 `readlink`、`realpath`、目录结构和普通文件 SHA-256，并在新 Harness Session 中确认四个 Prompt/生成 Skill 都能独立查询历史 Generation Run，且 `comfyui-image-review` Skill 能独立查询 Run 图片并逐图调用视觉模型。
+14. Skill 部署负责人从最终发布提交把六个 `.agents/skills/<skill-name>/` 目录恢复到主开发 checkout；该操作不得切换主开发 checkout 的分支或提交，也不得覆盖主开发 checkout 的其他未提交变更。
+15. Skill 部署负责人分别比较主开发 checkout 与 `$HOME/.agents/skills/<skill-name>/` 的目录条目类型、相对路径、符号链接目标和普通文件 SHA-256。比较完成后，把原全局普通目录移动到可恢复备份位置，并把六个全局路径配置为指向主开发 checkout 对应 Skill 目录的绝对符号链接。任一步失败时必须恢复全部原全局目录。
+16. Skill 部署负责人逐个核对六个全局符号链接的 `readlink`、`realpath`、目录结构和普通文件 SHA-256，并在新 Harness Session 中确认四个 Prompt/生成 Skill 都能独立查询历史 Generation Run，确认 `comfyui-image-review` Skill 能独立查询 Run 图片并逐图调用视觉模型，并确认 `local-image-reader` Skill 能使用用户提供的本地图片绝对路径调用视觉模型。
 
 `package.json.version` 是产品版本的唯一结构化来源。Git tag 必须使用 `v` 加完整 `package.json.version` 的形式；因此 `0.30.1` 对应 `v0.30.1`。发布负责人不得更新或删除已经发布的标签；最终提交发生变化时，发布负责人必须使用新的产品版本和标签。
 
 本次发布命令：
 
 ```sh
-git tag --annotate v0.36.1 <最终提交完整SHA> --message "Harness ComfyUI v0.36.1"
-git push origin refs/tags/v0.36.1
-gh release create v0.36.1 \
+git tag --annotate v0.36.2 <最终提交完整SHA> --message "Harness ComfyUI v0.36.2"
+git push origin refs/tags/v0.36.2
+gh release create v0.36.2 \
   --verify-tag \
-  --title "Harness ComfyUI v0.36.1" \
+  --title "Harness ComfyUI v0.36.2" \
   --notes-file docs/releasenotes.md
 ```
 
