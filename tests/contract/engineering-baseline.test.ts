@@ -123,6 +123,24 @@ describe('source workspace engineering contract', () => {
     expect(readFileSync(resolve(root, 'pnpm-workspace.yaml'), 'utf8')).toContain('autoInstallPeers: false')
   })
 
+  it('documents every user-configurable environment variable in the example file', () => {
+    const example = readFileSync(resolve(root, '.env.example'), 'utf8')
+    for (const name of [
+      'OPENCODE_GO_API_KEY',
+      'HARNESS_COMFYUI_DEFAULT_INSTANCE_ID',
+      'HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH',
+      'HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH',
+      'HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS',
+      'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS',
+      'HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES',
+      'HARNESS_COMFYUI_SERVER_PORT',
+    ]) {
+      expect(example, `${name} must have an example assignment`).toMatch(
+        new RegExp(`^(?:#\\s*)?${name}=`, 'mu'),
+      )
+    }
+  })
+
   it('keeps the public DSH bundle and source profile composition explicit', () => {
     const manifest = readJson('package.json')
     expect(manifest.exports).not.toHaveProperty('./agent')

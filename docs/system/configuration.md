@@ -13,6 +13,8 @@
 
 生产命令相对当前生产 checkout 解析 `desktopSourceRelativePath` 和 `environmentFileRelativePath`。开发命令从 `config/desktop-worktree.json.mainCheckoutPath` 解析 DSH Desktop 底座，并使用 worktree 根 `.env` 链接；因此开发与生产加载同一个产品配置结构，不存在第二套 Workspace、Preset、Provider 或模型配置。
 
+仓库根 `.env.example` 提供 `OPENCODE_GO_API_KEY` 与七个允许调用者覆盖的 `HARNESS_COMFYUI_*` 业务变量示例。该文件同时注明 Workspace、Desktop runtime、Catalog CLI、Catalog 端口和图片读取 OpenAI 兼容接口的实际配置位置；模板不会为程序不读取的环境变量提供无效示例。
+
 `config/desktop-worktree.json` 只声明 linked worktree 与生产环境之间的运行差异：
 
 | 字段 | 规则 |

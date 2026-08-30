@@ -15,8 +15,11 @@ Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 Com
 
 ```sh
 pnpm install --frozen-lockfile
+cp .env.example .env
 pnpm prod:start
 ```
+
+`.env.example` 列出 Provider API Key、可覆盖的 Harness 业务配置，以及必须在 JSON 配置或 DSH Desktop 设置页修改的 Workspace、端口、路径和图片读取接口。
 
 `prod:start` 在前台执行 DSH Desktop `pnpm preview`，加载当前 Git tag 的插件 generation。另开一个终端检查状态：
 
