@@ -35,6 +35,8 @@
 - 第一次完整 `pnpm quality` 的依赖门禁、类型检查、529 项单元/集成、28 项合同/安全、88 项生产和 32 项原型测试通过；真实 Desktop 验收因 `pnpm dev` 透传参数多出一个 `--`，导致 Electron 未开放测试指定的调试端口而失败。
 - Desktop 启动器已把调试参数改为上游实际接受的 `pnpm dev --remoteDebuggingPort <port>` 参数形态；生产测试直接断言该 package script 参数。
 - 修正后的 Desktop 生命周期与真实 Desktop 聚焦测试共 20 项通过；真实上游日志显示 `electron-vite dev --remoteDebuggingPort <port>`，DevTools 在该动态端口监听。
+- 最终 `pnpm quality` 全部通过：529 项单元/集成、28 项合同/安全、88 项生产、32 项原型和 2 项真实 Desktop 测试通过；函数覆盖率为 100%。
+- 真实 Desktop 验收已从上游 `pnpm dev` 入口验证默认 Workspace、项目 Preset、Provider 选择保存与重开、应用内媒体 Modal，以及受管 DSH bash 通过当前动态 WebServer 端口调用项目 CLI route。
 
 ## 2026-08-30 Phase 40 — 补齐 DSH Desktop 合入门禁
 
