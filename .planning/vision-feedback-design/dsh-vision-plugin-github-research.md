@@ -55,13 +55,13 @@ ComfyUI run_id
 
 设置页不应硬编码 OpenCode Go 或 DeepSeek 模型 ID。Provider 与模型应来自 Harness 当前模型目录，并且模型列表只展示明确声明支持 `image` 输入的模型。
 
-`inspect_image` 建议只接受图片目标和可选的调用时 Prompt：
+`inspect_image` 只接受图片目标：
 
 ```ts
-inspect_image({ file_path, prompt? })
+inspect_image({ file_path })
 ```
 
-Tool 在未提供 `prompt` 时读取设置页的默认 Prompt；当前 Agent 按 Skill 指令在专项观察请求中填写调用时 Prompt。Tool 只返回图片观察结果，不读取生图 Prompt，不执行 Prompt 对比，也不生成改进 Prompt。
+Tool 每次读取设置页当前命名配置保存的读图 Prompt。Tool 只返回图片观察结果，不读取生图 Prompt，不执行 Prompt 对比，也不生成改进 Prompt。
 
 ## 建议
 
@@ -70,7 +70,7 @@ Tool 在未提供 `prompt` 时读取设置页的默认 Prompt；当前 Agent 按
 - 使用官方 `read_image` 的本地文件到 `ImageAttachmentRef` 转换路径。
 - 使用 `dsh-read-image` 的 Provider、模型、默认 Prompt 和设置页分工。
 - 使用 `dsh-vision-helper` 的 `temperature` 配置先例。
-- 使用 `dsh-multimodal` 的调用时 `prompt` 与 `temperature` 参数先例。
+- 使用 `dsh-multimodal` 的 `temperature` 参数先例。
 - 使用 Harness 当前公开 LLM seam 调用独立视觉模型，不依赖某个 Provider 的私有 HTTP 接口。
 
 实施前应针对项目届时支持的 DeepSeek Harness 版本执行接口合同测试。该测试用于验证实际兼容性，不把任何单一版本写入产品设计。

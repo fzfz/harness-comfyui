@@ -128,7 +128,7 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 | `configuration.profiles[].endpoint` | `openai-compatible` 配置使用的完整 HTTP 或 HTTPS Chat Completions 地址；Host 不自动追加路径；`runtime` 配置必须保存空字符串 |
 | `configuration.profiles[].model` | 系统 Provider 或 OpenAI 兼容接口接受的精确视觉模型 ID |
 | `configuration.profiles[].hasApiKey` | 只表示该配置是否已经保存 API Key；该布尔值由 Host 根据 secret 凭据重新计算 |
-| `configuration.profiles[].defaultPrompt` | `inspect_image` 没有收到非空单次 `prompt` 时使用的默认读图提示词 |
+| `configuration.profiles[].defaultPrompt` | 当前配置的每次 `inspect_image` 调用使用的读图提示词；Tool 和 CLI 不接受调用时覆盖值 |
 | `configuration.profiles[].temperature` | 独立视觉模型调用使用的数值，范围为 `0` 至 `2` |
 | `configuration.profiles[].maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
 | `credentials.<profileId>` | OpenAI 兼容配置的可选 API Key；该字典的值使用 Settings `secret` role，浏览器只收到对应 `hasApiKey` 状态 |
