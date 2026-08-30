@@ -37,13 +37,35 @@ async function findFreePort() {
   return address.port
 }
 
-async function assertDesktopMobilePortAvailable(port) {
+async function desktopMobilePortAvailable(port) {
   const server = createServer()
-  await new Promise((resolveListen, reject) => {
-    server.once('error', reject)
-    server.listen(port, '0.0.0.0', resolveListen)
-  })
-  await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
+  try {
+    await new Promise((resolveListen, reject) => {
+      server.once('error', reject)
+      server.listen(port, '0.0.0.0', resolveListen)
+    })
+    return true
+  } catch (error) {
+    if (error?.code === 'EADDRINUSE') return false
+    throw error
+  } finally {
+    if (server.listening) {
+      await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
+    }
+  }
+}
+
+async function assertDesktopMobilePortAvailable(port) {
+  if (!await desktopMobilePortAvailable(port)) throw new Error(`Desktop mobile bridge port ${port} is occupied`)
+}
+
+async function waitForDesktopMobilePort(port, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (!await desktopMobilePortAvailable(port)) return
+    await delay(50)
+  }
+  throw new Error(`timed out waiting for Desktop mobile bridge port ${port}`)
 }
 
 async function waitForPath(path, timeoutMs = 60_000) {
@@ -250,7 +272,8 @@ describe('live DSH Desktop integration', () => {
   it('loads the project environment, workspace, Preset, and selectable image-reader Provider through Desktop', async () => {
     const base = await loadDesktopWorktreeContext()
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
-    const mobileBridgePort = await findFreePort()
+    let mobileBridgePort = await findFreePort()
+    while (mobileBridgePort === 43128) mobileBridgePort = await findFreePort()
     await assertDesktopMobilePortAvailable(mobileBridgePort)
 
     const repositoryLockfile = resolve(base.repositoryRoot, 'pnpm-lock.yaml')
@@ -284,6 +307,8 @@ describe('live DSH Desktop integration', () => {
     const debuggingPort = await findFreePort()
     fixture.start = startDesktopWorktree(context, { remoteDebuggingPort: debuggingPort })
     await waitForPath(context.pidFile)
+    await waitForDesktopMobilePort(mobileBridgePort)
+    await assertDesktopMobilePortAvailable(43128)
     expect(await readFile(repositoryLockfile, 'utf8')).toBe(repositoryLockfileBefore)
 
     const page = await connectDesktopPage(debuggingPort)
