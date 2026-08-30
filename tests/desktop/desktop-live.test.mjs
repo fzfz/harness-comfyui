@@ -154,6 +154,25 @@ async function waitForValue(page, expression, accept, timeoutMs = 60_000) {
   throw new Error(`timed out waiting for Desktop page state; last value was ${JSON.stringify(value)}`)
 }
 
+async function openSettings(page) {
+  await waitForValue(
+    page,
+    `(() => {
+      const trigger = [...document.querySelectorAll('button[aria-haspopup="dialog"][aria-expanded]')]
+        .find(node => !node.hasAttribute('aria-label') && /^(|设置|Settings)$/.test(node.textContent?.trim() ?? ''))
+      if (!trigger) return false
+      trigger.click()
+      return true
+    })()`,
+    value => value === true,
+  )
+  await waitForValue(
+    page,
+    `document.querySelector('[role="dialog"]')?.textContent?.includes('图片读取') === true`,
+    value => value === true,
+  )
+}
+
 async function seedSavedDesktopSession(context) {
   const fromDesktop = async name => import(pathToFileURL(
     resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
@@ -331,13 +350,7 @@ describe('live DSH Desktop integration', () => {
         .toContain(resolve(context.dshHome, 'profiles/.generations/live'))
       expect(await readFile(context.harnessLog, 'utf8')).not.toContain('migration failed')
 
-      await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '设置')?.click(), true)`)
-      await waitForValue(
-        page,
-        `document.querySelector('[role="dialog"]')?.textContent?.includes('图片读取') === true`,
-        value => value === true,
-      )
+      await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
         .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
 
@@ -411,13 +424,7 @@ describe('live DSH Desktop integration', () => {
         `document.readyState === 'complete' && document.body.innerText.includes('ComfyUI工作台预设')`,
         value => value === true,
       )
-      await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '设置')?.click(), true)`)
-      await waitForValue(
-        page,
-        `document.querySelector('[role="dialog"]')?.textContent?.includes('图片读取') === true`,
-        value => value === true,
-      )
+      await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
         .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
       const persisted = await waitForValue(
@@ -436,10 +443,10 @@ describe('live DSH Desktop integration', () => {
       await page.evaluate(`(() => {
         const dialog = [...document.querySelectorAll('[role="dialog"]')].find(candidate => {
           const labelId = candidate.getAttribute('aria-labelledby')
-          return labelId && document.getElementById(labelId)?.textContent?.trim() === '设置'
+          return labelId && /^(设置|Settings)$/.test(document.getElementById(labelId)?.textContent?.trim() ?? '')
         })
         const close = [...(dialog?.querySelectorAll('button') ?? [])]
-          .find(button => button.textContent?.trim() === '关闭')
+          .find(button => /^(关闭|Close)$/.test(button.textContent?.trim() ?? ''))
         close?.click()
         return close !== undefined
       })()`)
@@ -447,7 +454,7 @@ describe('live DSH Desktop integration', () => {
         page,
         `[...document.querySelectorAll('[role="dialog"]')].every(candidate => {
           const labelId = candidate.getAttribute('aria-labelledby')
-          return !labelId || document.getElementById(labelId)?.textContent?.trim() !== '设置'
+          return !labelId || !/^(设置|Settings)$/.test(document.getElementById(labelId)?.textContent?.trim() ?? '')
         })`,
         value => value === true,
       )
