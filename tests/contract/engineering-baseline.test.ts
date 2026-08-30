@@ -30,29 +30,40 @@ describe('source workspace engineering contract', () => {
   it('exposes only source process management and automated quality commands', () => {
     const scripts = readJson('package.json').scripts as Record<string, string>
     expect(scripts).toMatchObject({
-      'prod:start': 'node scripts/production/cli.mjs start',
-      'prod:stop': 'node scripts/production/cli.mjs stop',
-      'prod:restart': 'node scripts/production/cli.mjs restart',
-      'prod:status': 'node scripts/production/cli.mjs status',
-      'prod:health': 'node scripts/production/cli.mjs health',
-      'prod:logs': 'node scripts/production/cli.mjs logs',
-      'worktree:start': 'node scripts/worktree/cli.mjs start',
-      'worktree:stop': 'node scripts/worktree/cli.mjs stop',
-      'worktree:restart': 'node scripts/worktree/cli.mjs restart',
-      'worktree:status': 'node scripts/worktree/cli.mjs status',
-      'worktree:health': 'node scripts/worktree/cli.mjs health',
-      'worktree:logs': 'node scripts/worktree/cli.mjs logs',
+      'prod:start': 'node scripts/desktop/production-cli.mjs start',
+      'prod:stop': 'node scripts/desktop/production-cli.mjs stop',
+      'prod:restart': 'node scripts/desktop/production-cli.mjs restart',
+      'prod:status': 'node scripts/desktop/production-cli.mjs status',
+      'prod:logs': 'node scripts/desktop/production-cli.mjs logs',
+      'dev:start': 'node scripts/desktop/cli.mjs start',
+      'dev:stop': 'node scripts/desktop/cli.mjs stop',
+      'dev:restart': 'node scripts/desktop/cli.mjs restart',
+      'dev:status': 'node scripts/desktop/cli.mjs status',
+      'dev:logs': 'node scripts/desktop/cli.mjs logs',
+      'web:start': 'node scripts/worktree/cli.mjs start',
+      'web:stop': 'node scripts/worktree/cli.mjs stop',
+      'web:restart': 'node scripts/worktree/cli.mjs restart',
+      'web:status': 'node scripts/worktree/cli.mjs status',
+      'web:health': 'node scripts/worktree/cli.mjs health',
+      'web:logs': 'node scripts/worktree/cli.mjs logs',
+      'desktop:dependencies:link': 'node scripts/desktop/dependencies.mjs',
       'prod:test': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
       'test:contract': 'vitest run tests/contract tests/security',
+      'test:desktop': 'vitest run tests/desktop --maxWorkers=1 --no-file-parallelism --testTimeout=120000',
       'verify:comfyui-workflows': 'node --experimental-strip-types scripts/verification/comfyui-workflow-matrix.mjs',
       'quality:preinstall': 'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
       'quality:fast': 'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run prod:test && pnpm run test:prototype',
-      quality: 'pnpm run quality:preinstall && pnpm run quality:fast',
+      quality: 'pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop',
     })
     expect(Object.keys(scripts).sort()).toEqual([
       'check:harness-boundary',
       'check:manifest-lock',
-      'prod:health',
+      'dev:logs',
+      'dev:restart',
+      'dev:start',
+      'dev:status',
+      'dev:stop',
+      'desktop:dependencies:link',
       'prod:logs',
       'prod:restart',
       'prod:start',
@@ -66,32 +77,50 @@ describe('source workspace engineering contract', () => {
       'security:build-scripts',
       'test:contract',
       'test:coverage',
+      'test:desktop',
       'test:integration',
       'test:prototype',
       'test:unit',
       'typecheck',
       'verify:comfyui-workflows',
-      'worktree:health',
-      'worktree:logs',
-      'worktree:restart',
-      'worktree:start',
-      'worktree:status',
-      'worktree:stop',
+      'web:health',
+      'web:logs',
+      'web:restart',
+      'web:start',
+      'web:status',
+      'web:stop',
     ].sort())
   })
 
-  it('pins every package dependency to one exact version', () => {
+  it('pins installed dependencies while allowing bounded Harness peer versions', () => {
     const manifest = readJson('package.json')
     const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/u
-    const observed = new Map<string, string>()
-    for (const field of ['dependencies', 'devDependencies', 'peerDependencies']) {
-      for (const [name, version] of Object.entries(manifest[field] as Record<string, string>)) {
-        expect(version, `${field}.${name}`).toMatch(exactVersion)
-        expect(observed.get(name) ?? version, name).toBe(version)
-        observed.set(name, version)
-      }
+    for (const [name, version] of Object.entries(manifest.dependencies as Record<string, string>)) {
+      expect(version, `dependencies.${name}`).toMatch(exactVersion)
+    }
+    for (const [name, version] of Object.entries(manifest.devDependencies as Record<string, string>)) {
+      expect(name === '@deepseek-ai/cordis' || name.startsWith('@deepseek-ai/dsh')).toBe(false)
+      expect(version, `devDependencies.${name}`).toMatch(exactVersion)
+    }
+    for (const [name, version] of Object.entries(manifest.peerDependencies as Record<string, string>)) {
+      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe('>=0.1.2-alpha.1 <0.2.0')
+      else expect(version, `peerDependencies.${name}`).toMatch(exactVersion)
     }
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())
+  })
+
+  it('runs the live Desktop acceptance test in the required quality gate', () => {
+    const manifest = readJson('package.json')
+    expect(manifest.scripts.quality).toContain('pnpm run test:desktop')
+    const workflow = readFileSync(resolve(root, '.github/workflows/ci.yml'), 'utf8')
+    expect(workflow).toContain('desktop:\n    name: DSH Desktop acceptance\n    runs-on: macos-latest')
+    expect(workflow).toContain('repository: dataelement/dsh-desktop')
+    expect(workflow).toContain('run: pnpm run desktop:dependencies:link')
+    expect(workflow).toContain('run: pnpm run test:desktop')
+  })
+
+  it('does not ask the registry to install unpublished optional Harness peers', () => {
+    expect(readFileSync(resolve(root, 'pnpm-workspace.yaml'), 'utf8')).toContain('autoInstallPeers: false')
   })
 
   it('keeps the public DSH bundle and source profile composition explicit', () => {

@@ -2,23 +2,24 @@
 
 ## 系统验证
 
-独立 linked worktree 中的源码运行、配置变更和界面联调使用开发进程命令：
+独立 linked worktree 中的完整 Desktop 开发、配置变更和界面联调使用：
 
 ```sh
-pnpm worktree:start
-pnpm worktree:status
-pnpm worktree:health
-pnpm worktree:logs
-pnpm worktree:stop
+pnpm dev:start
+pnpm dev:status
+pnpm dev:logs
+pnpm dev:stop
 ```
 
-生产 checkout 的进程管理继续使用 `pnpm prod:*`。Agent 不得使用生产入口验证独立 worktree 中的未发布源码。生产进程和共享生命周期自动化验证使用：
+生产 checkout 的完整 Desktop 使用 `pnpm prod:*`。Agent 不得使用生产入口验证 linked worktree 中的未发布源码。只需要 Web Host 时使用 `pnpm web:*`；Web Host 验证不能代替真实 Desktop 验收。
+
+生产、开发、Web Host 进程和配置隔离的自动化验证使用：
 
 ```sh
 pnpm prod:test
 ```
 
-`prod:test` 使用临时目录和端口调用共享进程逻辑，并启动一次真实 DSH Host，验证真实 Client 路由通过 ModuleLoader 注册。该测试还覆盖 worktree 配置、开发 Profile、`.env` 链接、Profile 传参、linked-worktree 门禁和生产隔离；真实界面验收使用 `docs/agents/worktree-development.md` 的开发命令流程。
+`prod:test` 使用临时目录和端口覆盖 Desktop `dev`/`preview` 模式、PID、端口、restart、异常退出、worktree `.env`/`node_modules` 链接、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
 
 ## 自动化测试
 
@@ -26,8 +27,9 @@ pnpm prod:test
 | --- | --- |
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
+| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、默认 Workspace、项目 Preset、图片读取 Remote、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
 | `pnpm test:contract` | package、Git 跟踪、CI 和安全合同 |
-| `pnpm prod:test` | start、stop、restart、status、health、logs、PID、端口和真实 Client ModuleLoader 分支 |
+| `pnpm prod:test` | Desktop dev/preview 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
 | `pnpm test:coverage` | unit 与 integration 覆盖率 |
 | `pnpm quality` | 依赖检查、类型检查和全部必需测试 |
@@ -43,7 +45,7 @@ Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQ
 
 图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖当前 Workspace 中的多 Run 查询、逐 Run 错误、图片稳定排序、单图输入、设置页 Prompt 唯一来源、调用时 Prompt 拒绝、系统视觉模型过滤、系统 Provider 采样参数、自定义 Chat Completions 请求、Data URL、write-only API Key、响应结构、1 MiB 响应上限、响应体取消、文件与 Provider 错误、命名配置增删复制切换、旧单配置迁移、secret redaction、原子保存和持久化错误。CLI 自动化测试覆盖 `generation resolve-media --stdin` 与 `image inspect --stdin` 的参数解析、HTTP 请求、Host 分发、成功输出和错误输出。
 
-Session Media Viewer 自动化测试覆盖媒体查看 URL 编码、Session 与 workspace 归属拒绝、媒体缺失、非 GET 请求、安全响应头、包含 `runId` 的最小启动数据、Run ID 点击复制、Clipboard API 成功、API 缺失、权限拒绝、图片固有尺寸、视频固有尺寸、零尺寸、媒体切换后的 Run ID 与尺寸更新、旧媒体迟到尺寸事件隔离、原始正面提示词、超长正面提示词逐字符完整投影、正面提示词缺失、图片与原生控件视频、左右按钮、裸左右方向键、带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键不切换媒体、首尾不循环、按 `created_at DESC, output_index DESC, media_id DESC` 排序媒体、同一个 Run 的正面提示词只读取一次并投影到该 Run 的每项媒体、URL 更新、刷新定位、旧媒体迟到加载错误隔离、当前媒体加载错误、`aria-live` 播报、响应式媒体查询和布局样式合同以及 Client 新标签页入口。Session Media Viewer 静态原型测试覆盖该查看器原型目录中定义的结构方案 A、结构方案 B、结构方案 C、边界文案、提示词状态和本地资源约束；这些结构方案名称不指代 Agent Preset A/B。
+Session Media Viewer 自动化测试覆盖媒体查看 URL 编码、Session 与 workspace 归属拒绝、媒体缺失、非 GET 请求、安全响应头、包含 `runId` 的最小启动数据、Run ID 点击复制、Clipboard API 成功、API 缺失、权限拒绝、图片固有尺寸、视频固有尺寸、零尺寸、媒体切换后的 Run ID 与尺寸更新、旧媒体迟到尺寸事件隔离、原始正面提示词、超长正面提示词逐字符完整投影、正面提示词缺失、图片与原生控件视频、左右按钮、裸左右方向键、带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键不切换媒体、首尾不循环、按 `created_at DESC, output_index DESC, media_id DESC` 排序媒体、同一个 Run 的正面提示词只读取一次并投影到该 Run 的每项媒体、URL 更新、刷新定位、旧媒体迟到加载错误隔离、当前媒体加载错误、`aria-live` 播报、响应式媒体查询和布局样式合同。真实 Desktop 测试点击媒体卡后验证 DSH 原生 Modal 与同源 iframe，且 Chromium page target 数量不增加。Session Media Viewer 静态原型测试覆盖该查看器原型目录中定义的结构方案 A、结构方案 B、结构方案 C、边界文案、提示词状态和本地资源约束；这些结构方案名称不指代 Agent Preset A/B。
 
 Workflow compiler 的回归用例覆盖正负 Prompt 极性、连接上游控件、上游 multiline `STRING` Prompt 控件、多个 multiline `STRING` 候选拒绝、精确尺寸、Seed、采样参数、重复目标、不可达候选、模型、标准 LoRA、Power LoRA、LoraManager、空 LoRA、bypass 和活动输出节点筛选。测试给运行时参数化阶段注入透传 `officialApiWorkflowCompiler.compile()` 测试替身，因此这些用例直接观察运行时 API Workflow 投影。端到端编译用例使用真实 `ComfyWorkflowCompiler` 与 `OfficialApiWorkflowCompiler`，比较空、单个和多个 LoraManager 选择的 cache hit 结果与新鲜官方导出结果，并同时核对 Prompt、尺寸、模型、bypass、活动输出与官方连接。独立 `OfficialApiWorkflowCompiler` 测试验证最终返回值来自官方基础对象，并保留官方虚拟节点、连接改写和字面量载体值。
 
@@ -85,10 +87,9 @@ v0.36.2 发布前完整 `pnpm quality` 结果为 525 项 unit/integration、24 �
 
 ## CI
 
-`.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 都执行：
+`.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 执行两个独立 job：
 
-1. `pnpm quality:preinstall`
-2. `pnpm install --frozen-lockfile`
-3. `pnpm quality:fast`
+1. Ubuntu `Source quality gates` checkout 当前仓库与 DSH Desktop，安装双方 lockfile 依赖，执行 `desktop:dependencies:link` 和 `quality:fast`。
+2. macOS `DSH Desktop acceptance` checkout 当前仓库与 DSH Desktop，安装双方 lockfile 依赖，执行 `desktop:dependencies:link` 和 `test:desktop`。
 
-CI 不生成发布包。
+CI 不生成发布包。Ubuntu job 证明源码、合同和共享生命周期；macOS job 证明真实 Electron、Provider、Workspace、Preset、媒体 Modal 和 shell capability。

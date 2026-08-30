@@ -1,15 +1,122 @@
 # Harness ComfyUI 原型方案调研计划
 
 ## Goal
-计划执行者使用 DeepSeek Harness `0.1.1-rc.2` 公开插件接口交付可运行的 Harness ComfyUI 插件；插件必须实现真实上下文选择、异步 Generation Run、分片媒体存储、逐媒体 Actual Workflow 下载和原生三列界面。
+计划执行者必须让当前插件在可复现的 DSH Desktop 依赖环境中通过必跑的真实 Desktop 测试；测试必须验证 Desktop 生命周期、Provider 保存、应用内媒体弹窗和真实 Harness shell capability 路径。
 
 ## Next Step
-Phase 39 修改结构化版本、执行源码质量门禁，并把源码版本提交 fast-forward 合入本地 main 后推送。
+实现并验证 Git tag checkout 可直接执行的 DSH Desktop 生产生命周期命令。
 
 ## Current Phase
-Phase 39 in progress
+Phase 41 in progress
 
 ## Phases
+
+## Phase 41：统一 Desktop 与 Web Host 生命周期命令
+
+### 必须要实现的目标
+
+- `pnpm prod:start|stop|restart|status|logs` 必须管理完整 DSH Desktop 生产环境，并调用 DSH Desktop 的 `pnpm preview`。
+- `pnpm dev:start|stop|restart|status|logs` 必须管理完整 DSH Desktop 开发环境，并调用 DSH Desktop 的 `pnpm dev`。
+- `pnpm web:start|stop|restart|status|health|logs` 必须保留原 Web Harness Host，且该命令组只用于独立 Web 调试。
+- `pnpm dev:start` 必须在 linked worktree 中检查并创建指向 `main` checkout 的 `.env` 与 `node_modules` 符号链接；worktree 不得复制 `.env` 或重新安装依赖。
+- Desktop 开发与生产必须复用同一套 Workspace、Preset、Provider 和模型配置；两种环境只隔离启动模式、端口、PID、日志和运行数据目录。
+- 仓库必须删除 `worktree:*`、`desktop:worktree:*` 与 `desktop:prod:*` 生命周期入口，防止多个命令名称表达同一环境。
+- 系统文档必须只使用上述三组命令说明开发、生产、Web 调试、测试和发布流程。
+
+### 验收清单
+
+- [ ] `package.json` 只暴露 `prod:*`、`dev:*` 和 `web:*` 三组生命周期命令。
+- [ ] `prod:*` 与 `dev:*` 的生命周期成功、拒绝、清理和错误分支测试通过。
+- [ ] `dev:start` 创建并验证指向 `main` checkout 的 `.env` 与 `node_modules` 符号链接。
+- [ ] Desktop 生产运行目录、Desktop 开发运行目录与 Web 调试运行目录互相隔离。
+- [ ] Desktop 开发与生产读取同一套 Workspace、Preset、Provider 和模型配置。
+- [ ] 项目 Skill 的 CLI capability 地址必须读取当前 Harness WebServer 的实际动态端口，并由真实 DSH bash 调用当前 Host 路由。
+- [ ] Desktop 生命周期必须执行 DSH Desktop 自己声明的 `pnpm dev` 与 `pnpm preview`，不能直接调用 `electron-vite` 内部入口。
+- [ ] `web:start` 与 `web:restart` 必须在加载依赖模块前建立与 `dev:start` 相同的 `.env`、`node_modules` 链接；`web:health` 不得创建或修改链接。
+- [ ] 发布文档说明 Git tag checkout 更新后的完整生产命令序列。
+- [ ] 当前功能提交必须先合入并提交本地 `main`；完整质量门禁和真实 Desktop 启动测试只能基于该 `main` 或从该 `main` 创建的新 worktree 执行。
+- [ ] 聚焦测试、类型检查和完整质量门禁通过。
+
+### 非本次目标
+
+- 本阶段不规定由谁执行生产命令。
+- 本阶段不增加自动 CD workflow。
+- 本阶段不让 health 命令修改配置。
+- 本阶段不修改 DeepSeek Harness 或 DSH Desktop 核心源码。
+- 本阶段不增加第四组生命周期命令或保留旧命令别名。
+
+### 已获得的授权
+
+- 用户明确要求仓库提供产品发布到 GitHub 后可执行的全套生产部署命令。
+- 用户明确指出执行生产命令的主体不属于仓库命令规范。
+- 用户明确确认测试 seam 为三组公开 package scripts 及其管理的实际 Desktop/Web Host 进程。
+- 用户明确要求先把当前功能提交合入并提交本地 `main`，再执行完整测试与真实环境启动测试。
+
+状态：进行中
+
+## Phase 40：补齐 DSH Desktop 合入门禁
+
+### 必须要实现的目标
+
+- 根依赖安装不得引用未受 Git 管理的 `.local/upstreams/dsh-desktop/node_modules` 路径；干净源码环境必须能够按仓库声明准备测试依赖。
+- 必跑质量门禁必须执行真实 DSH Desktop 测试，不能只依赖手动运行 `pnpm test:desktop`。
+- Desktop 生命周期测试必须覆盖第二实例端口冲突、插件准备失败、Electron 异常退出、PID 清理、restart 和重复 stop。
+- 真实 Desktop 测试必须证明图片读取 Provider 通过真实 Remote 保存，并在重新打开设置后保持所选 Provider。
+- 真实 Desktop 测试必须点击媒体卡并验证应用内 Modal 与同源 iframe；测试不得用模拟 Modal 代替 Desktop 验收。
+- 真实 Desktop 测试必须通过 Harness 实际 shell 执行路径取得项目 CLI capability；测试不得用手工构造 capability 代替 Desktop 验收。
+
+### 验收清单
+
+- [x] 根 manifest 与 lockfile 不引用 `.local/upstreams/dsh-desktop/node_modules`；显式依赖准备命令通过。
+- [x] `pnpm quality` 与 CI 的必跑任务明确执行真实 Desktop 测试。
+- [x] Desktop 生命周期新增错误分支测试先失败，再通过最小实现修正。
+- [x] Provider 保存与重新打开设置的真实 Desktop 测试通过。
+- [x] 应用内媒体 Modal 的真实 Desktop 测试通过。
+- [x] Harness shell capability 的真实 Desktop 测试通过。
+- [x] 完整质量门禁通过，正常 Desktop 实例恢复运行。
+
+### 非本次目标
+
+- 本阶段不让 health 命令修改配置。
+- 本阶段不增加身份、hash、来源快照或选择性 `.env` 投影逻辑。
+- 本阶段不修改 DeepSeek Harness 核心或 DSH Desktop 核心源码。
+- 本阶段不要求依赖使用精确版本。
+
+### 已获得的授权
+
+- 用户在确认上述五项剩余问题后明确要求执行全部修正。
+- 用户已经确认测试 seam 为根依赖安装、Desktop 生命周期、Desktop 设置 Remote、Desktop 媒体 Modal 和 Harness shell capability。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| 规划文件第一次补丁使用了模板中的标题位置，旧 `findings.md` 没有对应行 | 1 | 按三个旧规划文件的真实标题分别追加 Phase 40，失败补丁没有修改文件。 |
+| 只把 24 个直接 DSH 依赖改为 Desktop tarball 后，pnpm 尝试从 npm 获取未发布的 alpha peer package | 1 | 不在根 manifest 复制 57 个传递 peer；改为让根 manifest 只声明运行时 peer，并由 Desktop 依赖桥从已安装的 Desktop 提供测试依赖。 |
+| Desktop 初始页面测试把常驻“选择工作区”按钮误判为工作区弹窗 | 1 | 断言只识别具有 `role=dialog` 且标题为“选择工作区目录”的真实弹窗。 |
+| 媒体 Desktop 测试创建了保存会话但没有在 UI 中选择该会话 | 1 | 测试通过真实会话标题和侧栏 `treeitem` 打开保存会话，再验证该会话的 Workbench 媒体抽屉。 |
+| 根依赖桥没有创建旧 Web/Source 命令所需的 `node_modules/.bin/dsh` | 1 | 依赖配置显式声明 `dsh` 可执行文件，依赖准备命令同时链接包目录与该可执行入口。 |
+| 旧 `dsh plugin add` 流程安装插件后，Desktop generation 迁移因 peer 闭包校验失败而回滚 | 1 | worktree 启动脚本改用 DSH Desktop 公开的 generation installer、registry 与 projection 接口直接安装和投影当前插件包。 |
+| Phase 41 初始设计让开发和生产分别声明环境与 Workspace 配置 | 1 | 开发环境改为读取生产配置；worktree 配置只声明 `main` checkout、独立 runtime 和开发模式差异，并链接 `main` 的 `.env`、`node_modules` 与 Desktop 底座。 |
+| Phase 41 同时暴露 `worktree:*`、`desktop:worktree:*`、`desktop:prod:*` 和旧 `prod:*` | 1 | 生命周期命令固定为完整 Desktop `dev:*`、完整 Desktop `prod:*` 和独立 Web Host `web:*`，不保留重叠别名。 |
+| 三组公开命令合同测试首次执行时仍读到四组旧入口 | 1 | 保留失败结果作为 red 证据，并把根 package scripts 改为唯一的 `prod:*`、`dev:*` 与 `web:*`。 |
+| `dev:start` 首个测试夹具并行创建主目录和主 `.env`，产生测试自身的 ENOENT | 1 | 先完成夹具目录创建，再并行写入 `.env` 与 linked-worktree `.git`；该失败不作为产品 red 证据。 |
+| Web Host 公共 CLI 测试首次执行仍显示 `pnpm worktree:*` 且没有 `runWebHostCommand` | 1 | Web Host CLI 的帮助、错误、导出函数与共享进程错误前缀统一改为 `web`。 |
+| Desktop 生产 context 仍把源码固定解析到本机 `main` 绝对路径 | 1 | 产品配置改存 `.local/upstreams/dsh-desktop` 相对路径；生产相对当前 checkout 解析，开发相对已配置的 `mainCheckoutPath` 解析。 |
+| Desktop 开发与 Web Host 运行目录仍使用 `desktop-worktree` 和 `worktree-development` 名称 | 1 | 三个运行目录固定为 `.local/desktop-production`、`.local/desktop-development` 和 `.local/web-development`；Web 配置文件改名为 `config/web-development.json`。 |
+| 工程合同仍固定断言四组旧生命周期入口 | 1 | 合同改为精确断言 `prod:*`、`dev:*`、`web:*` 三组入口及现有自动化测试命令。 |
+| `apply_patch` 不接受同一个文档在单次补丁中同时删除和新增 | 1 | 先删除两个待完整重写的规范文件，再通过下一次补丁恢复完整新内容；其他文件未受失败补丁影响。 |
+| 文档残留搜索命令把带反引号的模式直接放入 shell 双引号 | 1 | shell 把 `prod:start` 解释为命令；后续搜索使用单引号包围整个正则，不再让反引号进入 shell 展开。 |
+| 真实 `dev:start` 在创建 worktree `node_modules` 链接前静态导入 `tsdown` | 1 | Desktop 生命周期模块把 Client、Host 和 Preset 物化器改为 `prepareDesktopWorktree()` 内动态加载；开发 CLI 先完成 worktree 链接，再加载根开发依赖。 |
+| 实际目录检查的 `rg` 参数包含不存在的 `scripts/testing` | 1 | 删除该无效搜索路径；真实 Desktop 测试路径通过 `tests/desktop` 完成核对。 |
+| 第二次真实 `dev:start` 在功能分支 worktree 中遇到 DSH Desktop generation 安装的 pnpm major 不一致错误 | 1 | 停止继续使用未合入分支作真实环境结论；按用户要求先提交功能分支、合入并提交本地 `main`，再从该 `main` 建立新 worktree 复现和处理。 |
+| 合入前 Spec 与 Standards 审查发现 capability URL 固定为 `4173` | 1 | CLI URL 改为读取公开 `ctx.webServer.host` 与 `ctx.webServer.port`；Desktop 测试改用端口 `0` 的真实 WebServer，并从真实 DSH bash 调用项目 CLI route。 |
+| 合入前审查发现 Desktop 生命周期直接执行 `electron-vite` | 1 | 生命周期改为通过 DSH Desktop 自带 Node 与 pnpm entry 执行上游 package script `dev` 或 `preview`，保留进程组管理与调试参数透传。 |
+| 合入前审查发现全新 worktree 单独执行 `web:start` 时尚未建立链接 | 1 | Web start/restart 在动态加载 Web Host 依赖模块前复用 linked-worktree 准备函数；health/status/logs/stop 不执行准备写操作。 |
+| 合入前审查发现 `mobileBridgePort` 配置只用于预检，不能控制 DSH Desktop | 1 | 删除两份 Desktop 配置中的无效字段；启动器按上游 `preview=43127`、`dev=43128` 固定合同执行预检，文档明确当前上游没有公开覆盖接口。 |
+| worktree 根 `node_modules` 符号链接未被 `.gitignore` 的目录规则匹配 | 1 | 根忽略规则改为同时匹配目录与符号链接，并把 `node_modules` 加入 Git 隔离合同。 |
+
+状态：已完成，等待用户验收后决定是否合入主线
 
 ## Phase 39：发布 v0.31.2 并部署生产 checkout
 

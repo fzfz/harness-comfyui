@@ -23,6 +23,11 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .node-version
+      - name: Checkout DSH Desktop
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: dataelement/dsh-desktop
+          path: .local/upstreams/dsh-desktop
       - name: Disable Corepack pnpm shim
         run: corepack disable pnpm
       - name: Install pnpm 11.7.0
@@ -35,7 +40,43 @@ jobs:
           test "$(cd "$verification_root/cwd" && HOME="$verification_root/home" USERPROFILE="$verification_root/home" pnpm --version)" = "11.7.0"
       - name: Run preinstall quality gates
         run: pnpm run quality:preinstall
+      - name: Install DSH Desktop development dependencies
+        run: npm ci --ignore-scripts
+        working-directory: .local/upstreams/dsh-desktop
       - name: Frozen install
         run: pnpm install --frozen-lockfile
+      - name: Link DSH Desktop Harness development dependencies
+        run: pnpm run desktop:dependencies:link
       - name: Run fast quality gates
         run: pnpm run quality:fast
+
+  desktop:
+    name: DSH Desktop acceptance
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Checkout DSH Desktop
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: dataelement/dsh-desktop
+          path: .local/upstreams/dsh-desktop
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+      - name: Disable Corepack pnpm shim
+        run: corepack disable pnpm
+      - name: Install pnpm 11.7.0
+        run: npm install --global pnpm@11.7.0
+      - name: Run preinstall quality gates
+        run: pnpm run quality:preinstall
+      - name: Install DSH Desktop
+        run: npm ci
+        working-directory: .local/upstreams/dsh-desktop
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Link DSH Desktop Harness development dependencies
+        run: pnpm run desktop:dependencies:link
+      - name: Run DSH Desktop acceptance
+        run: pnpm run test:desktop

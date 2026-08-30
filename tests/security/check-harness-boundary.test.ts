@@ -11,7 +11,6 @@ const clientInject = [
   '@deepseek-ai/dsh-client-connection',
   '@deepseek-ai/dsh-api-remotes',
   '@deepseek-ai/dsh-client-locale',
-  '@deepseek-ai/dsh-client-runtime',
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
@@ -35,7 +34,7 @@ function fixture(otherSource = ''): string {
     name: 'harness-comfyui',
     private: true,
     dependencies: { '@deepseek-ai/schemastery': '3.18.1' },
-    devDependencies: { '@deepseek-ai/dsh': '0.1.1-rc.2' },
+    devDependencies: { '@deepseek-ai/dsh': '0.1.2-alpha.1' },
     peerDependencies: {},
     exports: {},
     dsh: { bundle: { patch: './cordis.patch.yml' }, client: { platform: 'web', inject: clientInject } },
@@ -47,12 +46,10 @@ function fixture(otherSource = ''): string {
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-`)
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
-  writeFileSync(join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'), `- id: harness-comfyui
-  config:
-    configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-    startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+        startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+        imageReaderDefaultModel:
+          provider: opencode-go
+          model: qwen3.7-plus
 
 - id: agent-default-model
   config:
@@ -64,7 +61,13 @@ function fixture(otherSource = ''): string {
     providers:
       opencode-go:
         apiKeyEnv: OPENCODE_GO_API_KEY
+
+- id: agent-presets
+  config:
+    default: harness-comfyui-cli-candidate
 `)
+  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
+  writeFileSync(join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'), '[]\n')
   return root
 }
 
@@ -98,10 +101,38 @@ describe('Harness source boundary', () => {
     }
   })
 
+  it('rejects Desktop package archives as manifest development dependencies', () => {
+    const root = fixture()
+    try {
+      updateJson(root, 'package.json', value => {
+        value.devDependencies['@deepseek-ai/dsh'] = 'file:.local/upstreams/dsh-desktop/packages/harness-0.1.2-alpha.1/npm-dsh/deepseek-ai-dsh-0.1.2-alpha.1.tgz'
+      })
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('forbidden Harness source binding')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects Desktop node_modules as the development test dependency source', () => {
+    const root = fixture()
+    try {
+      updateJson(root, 'package.json', value => {
+        value.devDependencies['@deepseek-ai/dsh'] = 'link:.local/upstreams/dsh-desktop/node_modules/@deepseek-ai/dsh'
+      })
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('forbidden Harness source binding')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('rejects duplicate Tool registration and non-public Harness imports', () => {
     for (const source of [
       'ctx.tools.register(other)\n',
-      "import { hidden } from '@deepseek-ai/dsh-client-runtime/internal'\n",
+      "import { hidden } from '@deepseek-ai/dsh-typert-protocol/internal'\n",
     ]) {
       const root = fixture(source)
       try {

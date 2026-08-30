@@ -3,3 +3,22 @@
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
+        startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+        imageReaderDefaultModel:
+          provider: opencode-go
+          model: qwen3.7-plus
+
+- id: agent-default-model
+  config:
+    provider: opencode-go
+    model: deepseek-v4-flash
+
+- id: llm-pi-ai
+  config:
+    providers:
+      opencode-go:
+        apiKeyEnv: OPENCODE_GO_API_KEY
+
+- id: agent-presets
+  config:
+    default: harness-comfyui-cli-candidate

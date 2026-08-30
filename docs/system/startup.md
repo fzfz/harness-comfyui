@@ -1,100 +1,121 @@
 # 系统启动规范
 
-## 首次准备
+## 命令边界
 
-在仓库根目录执行一次依赖安装：
+| 环境 | 生命周期命令 | 实际入口 | 运行目录 |
+| --- | --- | --- | --- |
+| DSH Desktop 生产环境 | `pnpm prod:start|stop|restart|status|logs` | DSH Desktop `pnpm preview` | `.local/desktop-production/` |
+| DSH Desktop 开发环境 | `pnpm dev:start|stop|restart|status|logs` | DSH Desktop `pnpm dev` | `.local/desktop-development/` |
+| 独立 Web Host 调试环境 | `pnpm web:start|stop|restart|status|health|logs` | DeepSeek Harness Web Host | `.local/web-development/` |
+
+`prod:*` 与 `dev:*` 启动完整产品。`web:*` 只启动当前插件的 Web Host 调试环境，不代表完整 DSH Desktop 产品。
+
+## 主开发 checkout 首次准备
+
+主开发 checkout 保存唯一的根 `.env`、根 `node_modules` 和已准备的 DSH Desktop 底座。首次准备在主开发 checkout 根目录执行：
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
+pnpm desktop:dependencies:link
 ```
 
-确认 `config/source-production.json` 中的两个 Source CLI 相对路径指向可读文件，并确认 Catalog 回环服务监听 `source.catalogPort`。确认 `comfyui.frontendCompiler.browserExecutablePath` 指向本机可执行的 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`。
+执行 `desktop:dependencies:link` 前，DSH Desktop 必须已经位于 `config/desktop-production.json.desktopSourceRelativePath` 指定的 `.local/upstreams/dsh-desktop`，并且已经按照 DSH Desktop 自己的 lockfile 完成依赖安装。该命令把 `config/desktop-harness-development.json` 声明的 Harness 开发依赖链接到主开发 checkout 的根 `node_modules`。
 
-## 独立 worktree 开发启动
+主开发 checkout 的 `.env` 必须提供 `cordis.patch.yml` 引用的 Provider 凭据。`cordis.patch.yml` 同时定义默认 Agent 模型 `opencode-go/deepseek-v4-flash`、默认视觉模型 `opencode-go/qwen3.7-plus` 和默认 Preset `harness-comfyui-cli-candidate`。`config/desktop-production.json.startupWorkspacePath` 定义 Desktop 启动后直接打开的 Workspace。
 
-Agent 在独立 linked worktree 中验证未发布源码时使用：
+## 独立 worktree 开发环境
+
+从 `main` 创建 linked worktree 后，不得在 worktree 执行 `pnpm install`，也不得复制 `.env`：
 
 ```sh
-pnpm worktree:start
+git worktree add <worktree目录> -b codex/<分支名> main
+cd <worktree目录>
+pnpm dev:start
 ```
 
-该命令验证当前 checkout 的 `.git` 是 linked-worktree 元数据文件，然后读取 `config/worktree-development.json`。命令使用 `.local/worktree-development/dsh-home` 与 `comfyui-workbench-development` Profile；Profile 物化器只在该 DSH home 创建 `.env` 符号链接。开发 Profile 把默认模型设为 `opencode-go/deepseek-v4-flash`，通过 `OPENCODE_GO_API_KEY` 引用解析凭据，并在 Host 暴露 Tool 和路由前注册配置的 startup workspace。
+`dev:start` 先验证当前目录的 `.git` 是 linked-worktree 元数据文件，再根据 `config/desktop-worktree.json.mainCheckoutPath` 创建以下链接：
 
-共享源码运行时准备过程读取 `config/product-agent.json`，把 `agent-presets/project-tool-visibility.mjs` 和用户可见名称为 `ComfyUI工作台预设` 的 `agent-presets/harness-comfyui-cli-candidate/` 物化到当前 DSH home 的 `.agent-presets/`。准备过程删除配置中精确声明的已退役项目 Preset 目录，并保留其他 Preset。production 与独立 worktree 使用相同的 Preset source 和校验规则，但写入各自隔离的 DSH home。物化失败会中止 Host 启动；单个受管目标替换失败时恢复该目标。
-
-保持启动终端运行，并在第二个终端执行：
-
-```sh
-pnpm worktree:status
-pnpm worktree:health
-pnpm worktree:logs
-pnpm worktree:stop
+```text
+<worktree>/.env         -> <main>/.env
+<worktree>/node_modules -> <main>/node_modules
 ```
 
-开发验证的完整 Agent 流程和结束条件位于 `docs/agents/worktree-development.md`。`worktree:*` 与 `prod:*` 使用不同的 runtime root、DSH home、Profile 和受管状态文件。
+正确链接重复启动时保持不变。既有普通文件、普通目录或指向其他目标的链接会中止启动。启动器不会复制 `.env`，也不会在 worktree 安装依赖。
 
-## 启动与验证
+链接准备完成后，`dev:start` 从主开发 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm dev`，把当前 worktree 的插件源码打包为 generation，并加载与生产相同的 Workspace、Preset、Provider 和模型配置。
 
-在仓库根目录启动当前源码：
+保持启动终端运行，在第二个终端管理开发进程：
 
 ```sh
+pnpm dev:status
+pnpm dev:logs
+pnpm dev:restart
+pnpm dev:stop
+```
+
+开发 Desktop 使用 `.local/desktop-development/`，不会读取或修改 `.local/desktop-production/`。当前 DSH Desktop 的 `pnpm dev` 固定使用移动桥接端口 `43128`；启动器在执行上游命令前检查该端口，端口已被占用时直接报告冲突。完整人工验收流程见 `docs/agents/worktree-development.md`。
+
+## Git tag 生产环境
+
+生产 checkout 更新到已经发布的 Git tag 后，执行以下命令：
+
+```sh
+git fetch --tags
+git switch --detach v<版本号>
+pnpm install --frozen-lockfile
 pnpm prod:start
 ```
 
-`prod:*` 是生产进程入口。该入口继续使用 `.local/production/dsh-home` 与 `comfyui-workbench` Profile，不读取 `config/worktree-development.json`，不链接主开发 `.env`，也不注册开发 startup workspace。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。
 
-`prod:start` 先根据当前 `src/client/` 更新 `.local/source-client/client.js`，校验并物化 `ComfyUI工作台预设`，再以前台方式运行 Host。该步骤不改变默认 Preset。保持该终端运行，并在另一个终端执行：
+保持 `prod:start` 终端运行，在第二个终端执行：
 
 ```sh
 pnpm prod:status
-pnpm prod:health
-```
-
-默认 Web 地址是 `http://127.0.0.1:4173`。`status` 应返回 `running`，`health` 应返回 `passed`。`health` 会验证 Official API Workflow Cache 目录的读写能力。
-
-## 日常管理
-
-```sh
 pnpm prod:logs
 pnpm prod:restart
 pnpm prod:stop
 ```
 
-`restart` 先停止当前受管 PID，再使用当前源码和当前配置以前台方式启动。`stop` 成功后，原 `prod:start` 或 `prod:restart` 终端一并退出。
+`prod:start` 从当前生产 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm preview`。当前 DSH Desktop 的 `pnpm preview` 固定使用移动桥接端口 `43127`；启动器在执行上游命令前检查该端口。生产 Desktop 加载生产 checkout 的 `.env`，把当前 tag 的插件源码安装为 generation，并使用 `.local/desktop-production/` 保存 PID、日志、DSH home、Run Repository 和媒体文件。
 
-六个生命周期命令均不接受附加参数。`start` 与 `restart` 从固定配置文件读取启动目标并自动更新浏览器 Client 模块；运行中的 `stop`、`status`、`health` 和 `logs` 从受管快照读取同一目标。调用者不需要指定安装文件，也不需要执行独立构建、打包、版本安装或版本升级命令。
+## 独立 Web Host 调试环境
 
-生产进程自动化验证使用 `pnpm prod:test`。该命令使用临时目录和端口覆盖六个生命周期操作及其异常分支。
+只需要调试插件 Web Host、Client ModuleLoader 或 HTTP 路由时，在 linked worktree 执行：
 
-## 运行目录
+```sh
+pnpm web:start
+pnpm web:status
+pnpm web:health
+pnpm web:logs
+pnpm web:restart
+pnpm web:stop
+```
 
-默认运行根目录是 `.local/production/`：
+`web:start` 与 `web:restart` 先建立和 `dev:start` 相同的 `.env`、`node_modules` 链接，再读取 `config/web-development.json`，使用 `comfyui-workbench-development` Profile 和 `.local/web-development/`。`web:health` 只读取并报告 Web Host、Client ModuleLoader 和运行目录状态，不创建链接，也不修改 Desktop、Provider、Preset、Workspace 或模型配置。
 
-| 路径 | 内容 |
-| --- | --- |
-| `dsh-home/` | 当前进程的 Harness home 和 profile |
-| `state/process.json` | PID、启动时间和进程命令 |
-| `state/operations.jsonl` | 六个命令的操作记录 |
-| `state/last-health.json` | 最近一次健康检查结果 |
-| `shared/data/runs.sqlite` | Run Repository |
-| `shared/data/api-workflow-cache/` | 目标 ComfyUI 官方前端生成的基础 API Workflow 缓存 |
-| `shared/runs/` | Run 文件 |
-| `shared/saved-media/` | Saved Media |
-| `shared/logs/` | Host stdout 与 stderr |
+## 自动化测试
 
-`.local/source-production-managed.json` 保存正在运行的配置快照。以上文件都是本地运行状态，不进入 Git。
+```sh
+pnpm typecheck
+pnpm test:unit
+pnpm test:integration
+pnpm test:contract
+pnpm prod:test
+pnpm test:desktop
+pnpm quality
+```
 
-独立 worktree 的对应运行根目录是 `.local/worktree-development/`，开发受管状态位于 `.local/worktree-development/state/source-managed.json`。开发与生产运行目录不共享 settings、凭据、Workspace Registry、Session 或日志。
+`prod:test` 使用临时目录验证 Desktop 生命周期、Web Host 共享进程模块、worktree 配置和进程隔离。`test:desktop` 启动真实 DSH Desktop 验证 Provider、Workspace、Preset、媒体 Modal 和 Harness shell capability。`quality` 是提交前完整门禁。
 
-`.local/source-client/client.js` 与 source map 是当前 Client 源码的浏览器运行文件。`prod:start` 和 `prod:restart` 每次都会更新它们，Harness 不直接把 TypeScript/TSX 文件作为浏览器脚本返回。
+## 运行状态
 
-## 状态含义
+| 环境 | PID 与日志根目录 | Desktop 模式 | 默认移动桥接端口 |
+| --- | --- | --- | --- |
+| 生产 Desktop | `.local/desktop-production/` | `preview` | DSH Desktop 上游 `preview` 固定为 `43127` |
+| 开发 Desktop | `.local/desktop-development/` | `dev` | DSH Desktop 上游 `dev` 固定为 `43128` |
+| Web Host 调试 | `.local/web-development/` | 不启动 Electron | `config/source-production.json` 与 Configuration Profile 定义的 Web 端口 |
 
-| 状态 | 含义 |
-| --- | --- |
-| `stopped` | 没有受管进程，端口空闲 |
-| `starting` | PID 存在，端口尚未就绪 |
-| `running` | PID、进程身份和端口均通过检查 |
-| `unhealthy` | 端口被其他进程占用，或受管进程与端口状态不一致 |
+三个运行目录不共享 PID、日志、DSH home、Run Repository、Session 或媒体文件。`status` 返回 `running` 或 `stopped`；`logs` 读取对应环境的日志；`stop` 只停止对应运行目录登记的进程。
 
-启动失败时先执行 `pnpm prod:logs` 查看 stdout、stderr 和 operations，再修正配置或端口占用问题。Generation 请求在 Official API Workflow Cache 未命中时还会启动配置的本机浏览器；浏览器不可启动、目标前端未就绪或 `graphToPrompt()` 导出失败时，Host 日志和 Generation Run 错误码会分别说明失败阶段。
+当前 DSH Desktop 没有公开的移动桥接端口覆盖接口，因此两个同为 `dev` 模式或两个同为 `preview` 模式的 Desktop 不能并行启动。当前仓库不把未生效的端口值暴露为配置，也不修改 DSH Desktop 核心来绕过该限制。

@@ -14,19 +14,23 @@
 
 **Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/` 和 `wai-sdxl-prompt-builder/` 提供的五个仓库 Harness Skill。四个 Prompt/生成 Skill 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型。
 
-**Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。部署前逐个比较原全局目录与主开发 checkout 目录的目录条目类型、相对路径、符号链接目标和普通文件 SHA-256。
+**Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。
 
-**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema。启动器不把该 Preset 设为默认值。
+**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema。当前插件 `cordis.patch.yml` 把该 Preset 设置为 Desktop 开发与生产的默认 Preset。
 
 ## 运行
 
-**Source Process Manager**：`scripts/production/` 实现的当前源码进程管理器。它提供 start、stop、restart、status、health 和 logs 六种共享生命周期操作；`prod:*` 管理生产 checkout，`scripts/worktree/` 提供独立 linked worktree 的 `worktree:*` 适配入口。`prod:test` 自动验证这些操作及其异常分支。
+**Desktop Lifecycle Manager**：`scripts/desktop/` 实现的完整产品进程管理器。`prod:*` 在生产 checkout 执行 DSH Desktop `preview`，`dev:*` 在 linked worktree 执行 DSH Desktop `dev`。两条入口共同负责插件 generation 打包安装、PID、日志、端口和停止行为。
 
-**Source Runtime**：当前源码进程使用的本地运行状态。生产 checkout 使用 `.local/production/`；独立 linked worktree 使用 `.local/worktree-development/`。每个运行目录保存自己的 DSH home、进程状态、操作日志、Run Repository、Run 文件和 Saved Media；`.local/source-client/client.js` 是 start 或 restart 根据当前 Client 源码生成的浏览器 ModuleLoader 输入。以上目录不保存另一份产品源码。
+**Desktop Runtime**：完整 Desktop 使用的本地运行状态。生产 checkout 使用 `.local/desktop-production/`；独立 linked worktree 使用 `.local/desktop-development/`。每个运行目录保存自己的 Desktop HOME、DSH home、PID、日志、Run Repository、Run 文件和 Saved Media。
+
+**Web Host Process Manager**：`scripts/production/` 的共享 Source 进程模块与 `scripts/worktree/` 的 `web:*` 适配入口。该入口提供 start、stop、restart、status、health 和 logs，只用于 linked worktree 的 Web Host 调试。
+
+**Web Host Runtime**：独立 Web Host 调试状态，位于 `.local/web-development/`。`.local/source-client/client.js` 是 Web Host 与 Desktop generation 根据当前 Client 源码生成的浏览器 ModuleLoader 输入。
 
 **Configuration Profile**：Host 使用的一组结构化配置。当前系统只有 `production`，其结构由 `config/schema.ts` 定义，其值由 `config/base.json`、`config/profiles/production.json` 和允许的环境变量合成。
 
-**Managed Source State**：生产入口把运行中配置快照保存在 `.local/source-production-managed.json`，独立 linked worktree 入口把运行中配置快照保存在 `.local/worktree-development/state/source-managed.json`。`prod:stop`、`prod:status`、`prod:health` 和 `prod:logs` 使用生产快照；对应的 `worktree:*` 命令使用 worktree 快照。
+**Managed Web Host State**：`web:*` 把运行中配置快照保存在 `.local/web-development/state/source-managed.json`。`web:stop`、`web:status`、`web:health` 和 `web:logs` 使用该快照定位独立 Web Host。
 
 **Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.84.0`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
 

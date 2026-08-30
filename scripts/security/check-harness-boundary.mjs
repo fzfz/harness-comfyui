@@ -8,7 +8,6 @@ const registryPath = 'src/host/tools/register-project-tools.ts'
 const pluginPath = 'src/host/plugin.ts'
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
-  ['@deepseek-ai/dsh-client-runtime/client', 'value-or-type'],
   ['@deepseek-ai/dsh-api-remotes/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-input-trigger/client', 'type-only'],
@@ -29,7 +28,6 @@ const frozenClientInject = Object.freeze([
   '@deepseek-ai/dsh-client-connection',
   '@deepseek-ai/dsh-api-remotes',
   '@deepseek-ai/dsh-client-locale',
-  '@deepseek-ai/dsh-client-runtime',
   '@deepseek-ai/dsh-client-ui-conversation',
   '@deepseek-ai/dsh-client-ui-input-trigger',
   '@deepseek-ai/dsh-client-ui-layout',
@@ -50,13 +48,10 @@ const expectedLoaderPatch = `- insert:
       name: harness-comfyui
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-`
-const expectedProfilePatch = `[]
-`
-const expectedDevelopmentProfilePatch = `- id: harness-comfyui
-  config:
-    configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-    startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+        startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+        imageReaderDefaultModel:
+          provider: opencode-go
+          model: qwen3.7-plus
 
 - id: agent-default-model
   config:
@@ -68,6 +63,14 @@ const expectedDevelopmentProfilePatch = `- id: harness-comfyui
     providers:
       opencode-go:
         apiKeyEnv: OPENCODE_GO_API_KEY
+
+- id: agent-presets
+  config:
+    default: harness-comfyui-cli-candidate
+`
+const expectedProfilePatch = `[]
+`
+const expectedDevelopmentProfilePatch = `[]
 `
 
 function parseArguments(argv) {

@@ -4,40 +4,47 @@
 
 ```text
 pnpm prod:start|restart
-  → scripts/production/cli.mjs
-  → 配置加载与运行合同校验
-  → 当前 Client 源码转换为 .local/source-client/client.js
-  → 源码 profile 和 DSH home 准备
-  → ComfyUI 工作台 Agent Preset 与共享 Tool visibility component 校验和物化
-  → DeepSeek Harness Host
-      → src/host/plugin.ts
-      → .local/source-client/client.js
-  → .local/production/ 中的进程状态、日志和业务数据
+  → scripts/desktop/production-cli.mjs
+  → config/desktop-production.json
+  → 当前插件 Client/Host/Preset 物化与 generation 打包
+  → 当前 checkout 的 .local/upstreams/dsh-desktop
+  → DSH Desktop pnpm preview
+  → .local/desktop-production/ 中的 PID、日志、DSH home 和业务数据
 ```
 
-独立 worktree 开发入口复用同一生命周期深模块：
+独立 worktree 的完整 Desktop 开发入口复用同一产品配置和 Desktop 生命周期：
 
 ```text
-pnpm worktree:start|restart
-  → scripts/worktree/cli.mjs
-  → config/worktree-development.json 与 linked-worktree 门禁
-  → scripts/production/cli.mjs 的共享生命周期
-  → .local/worktree-development/dsh-home
-      → 主开发 worktree .env 的符号链接
-      → comfyui-workbench-development Profile
-  → Host 注册 startup workspace 后暴露项目能力
+pnpm dev:start|restart
+  → scripts/desktop/cli.mjs
+  → config/desktop-worktree.json 与 linked-worktree 门禁
+  → <worktree>/.env 和 <worktree>/node_modules 链接到 main
+  → config/desktop-production.json
+  → main 的 .local/upstreams/dsh-desktop
+  → 当前 worktree 插件 generation
+  → DSH Desktop pnpm dev
+  → .local/desktop-development/
 ```
 
-`prod:stop`、`prod:status`、`prod:health` 和 `prod:logs` 使用受管运行快照定位当前进程，不生成 Client 模块。
+旧 Web Host 是独立调试入口：
 
-`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口指向 `prod:start` 或 `prod:restart` 根据当前 Client 源码生成的 `.local/source-client/client.js`。启动与重启链路不读取 `lib/` 或发布产物。
+```text
+pnpm web:start|restart
+  → scripts/worktree/cli.mjs
+  → config/web-development.json
+  → scripts/production/ 中的共享 Web Host 生命周期
+  → .local/web-development/
+```
+
+`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口是根据当前 Client 源码生成的 `.local/source-client/client.js`。Desktop generation 打包和 Web Host start/restart 都更新该浏览器模块；两条链路不读取 `lib/`。
 
 ## 模块职责
 
 | 模块 | 职责 |
 | --- | --- |
-| `scripts/production/` | Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志 |
-| `scripts/worktree/` | linked-worktree 门禁、开发定义解析和共享生命周期命令适配 |
+| `scripts/desktop/` | Desktop 产品配置解析、worktree 链接准备、generation 打包安装、Electron dev/preview 启停、状态和日志 |
+| `scripts/production/` | Web Host Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
+| `scripts/worktree/` | `web:*` 的 linked-worktree 门禁、Web 调试配置和共享 Web Host 生命周期适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset 和共享 Tool visibility component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | Agent 在受管前台 shell Tool Call 中通过 Node 解释器执行的项目 CLI 脚本 |
@@ -54,17 +61,21 @@ pnpm worktree:start|restart
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
-Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示真实 Generation Run/Media 投影。Harness `0.1.1-rc.2` 不为尚未保存的空白 Session 分配 `details` 列宽；Client 仅在该状态通过公开 `shell.overlay` 扩展位显示空结果列。Session 保存后，`shell.overlay` 结果列退出，原生 `details` 结果列接管，页面只保留一个可见结果列。
+DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。当前仓库不修改前两者的核心源码；开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库，Desktop 源码也不进入当前仓库 manifest 或 lockfile。
+
+Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示真实 Generation Run/Media 投影。Harness `0.1.2-alpha.1` 不为尚未保存的空白 Session 分配 `details` 列宽；Client 仅在该状态通过公开 `shell.overlay` 扩展位显示空结果列。Session 保存后，`shell.overlay` 结果列退出，原生 `details` 结果列接管，页面只保留一个可见结果列。
 
 “插入上下文”资源卡片把封面预览按钮与记录选择按钮作为同级交互。封面预览按钮在同一个 Catalog `Modal` 中切换到图片画廊；关闭画廊后恢复 Catalog 查询、分页和待确认选择。画廊 header 不参与 flex 收缩，画廊 body 只占用 Modal 中 header 之外的剩余高度；图片按固有尺寸显示，超出查看区域时由该区域提供水平和垂直滚动条。`CatalogItem.coverUrl` 与 `CatalogItem.sampleImageUrls` 只属于 Client 展示投影，不进入 `CatalogContext` 或 composer 草稿。
 
 ## 进程与状态
 
-`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 先更新浏览器 Client 模块，再校验并物化同一个 `ComfyUI工作台预设`，最后以前台子进程运行 DSH。production 与 worktree 写入各自隔离的 DSH home；启动器不会改变 Harness 默认 Preset。进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有。stop 只停止匹配该入口 runtime ID 和进程身份的进程。health 检查源码版本、Harness Web、Client ModuleLoader 注册、Run Repository、Official API Workflow Cache 和 Saved Media。
+`prod:start` 与 `dev:start` 都更新浏览器 Client/Host 模块、物化 `ComfyUI工作台预设`、把当前插件安装为 Desktop generation，再分别执行 DSH Desktop 自己声明的 `pnpm preview` 与 `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+
+`web:start` 与 `web:restart` 更新浏览器 Client 模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 
-生产运行状态写入 `.local/production/`；独立 worktree 开发状态写入当前 worktree 的 `.local/worktree-development/`。源码仍保留在仓库根目录。配置变更在下一次对应入口的 start 或 restart 时生效。
+生产 Desktop 状态写入 `.local/desktop-production/`；开发 Desktop 状态写入当前 worktree 的 `.local/desktop-development/`；Web Host 调试状态写入 `.local/web-development/`。源码仍保留在仓库根目录。配置变更在下一次对应入口的 start 或 restart 时生效。
 
 ## Generation 生命周期
 

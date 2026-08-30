@@ -1,4 +1,4 @@
-import type { ClientContext, ISessions } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -31,6 +31,20 @@ import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-d
 export const name = 'harness-comfyui'
 export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout', 'settingsScope'] as const
 
+interface ClientSessions {
+  readonly scope: (sessionId: string) => Context | undefined
+}
+
+interface ClientSlotRegistry {
+  readonly inject: (...arguments_: any[]) => any
+  readonly register: (...arguments_: any[]) => any
+}
+
+type ClientContext = Context & {
+  readonly sessions: ClientSessions
+  readonly slots: ClientSlotRegistry
+}
+
 class CatalogRequestError extends Error {
   readonly code: string
 
@@ -44,7 +58,7 @@ class CatalogRequestError extends Error {
 export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const workbench = new WorkbenchController(ctx.layout)
   const contextDialogNavigationStore = new ContextDialogNavigationStore(() => globalThis.localStorage)
-  const clientSessions = ctx.sessions as unknown as ISessions
+  const clientSessions = ctx.sessions
   const disposers: Array<() => void | Promise<void>> = [() => contextDialogNavigationStore.dispose()]
   try {
     disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
@@ -114,7 +128,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           name: 'conversation.input.dock',
           id: WORKBENCH_DOCK_ID,
           order: 20,
-          inject: sessionId => {
+          inject: (sessionId: string) => {
             const sessionContext = clientSessions.scope(sessionId)
             if (!sessionContext) {
               throw new Error(`Harness did not provide the Session scope for ${sessionId}.`)

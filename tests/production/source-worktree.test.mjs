@@ -3,7 +3,7 @@ import { chmod, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFil
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { materializeSourceProfile } from '../../scripts/profile/source.mjs'
 import { spawnForeground } from '../../scripts/production/spawn.mjs'
@@ -11,7 +11,7 @@ import { loadSourceProductionContext } from '../../scripts/production/runtime.mj
 import {
   helpText,
   parseArguments,
-  runSourceWorktreeCommand,
+  runWebHostCommand,
 } from '../../scripts/worktree/cli.mjs'
 import {
   loadSourceWorktreeContext,
@@ -49,8 +49,8 @@ async function pathExists(path) {
 function definition(userEnvironmentFilePath, overrides = {}) {
   return {
     schemaVersion: 1,
-    runtimeId: 'harness-comfyui-worktree-development',
-    runtimeRelativeRoot: '.local/worktree-development',
+    runtimeId: 'harness-comfyui-web-development',
+    runtimeRelativeRoot: '.local/web-development',
     sourceProductionDefinitionRelativePath: 'config/source-production.json',
     dshProfile: 'comfyui-workbench-development',
     userEnvironmentFilePath,
@@ -66,6 +66,42 @@ afterEach(async () => {
 })
 
 describe('source worktree development definition', () => {
+  it('prepares main checkout links before loading the Web Host start modules', async () => {
+    const mainCheckout = await temporaryDirectory('harness-web-main-')
+    const worktree = await temporaryDirectory('harness-web-worktree-')
+    await Promise.all([
+      mkdir(resolve(mainCheckout, 'node_modules')),
+      writeFile(resolve(mainCheckout, '.env'), 'TEST_ONLY_KEY=value\n'),
+      writeFile(resolve(worktree, '.git'), 'gitdir: /test-only/linked-worktree\n'),
+    ])
+    const definitionPath = resolve(worktree, 'desktop-worktree.json')
+    await writeFile(definitionPath, `${JSON.stringify({ mainCheckoutPath: mainCheckout })}\n`)
+    const runSourceProductionCommand = vi.fn(async () => ({
+      evidence: { status: 'stopped' },
+      failed: false,
+    }))
+    const runtime = {
+      loadSourceWorktreeContext: vi.fn(),
+      loadSavedSourceWorktreeContext: vi.fn(),
+      prepareSourceWorktreeRuntime: vi.fn(),
+    }
+
+    await expect(runWebHostCommand('start', {
+      checkoutOptions: { repositoryRoot: worktree, definitionPath },
+      runSourceProductionCommand,
+      runtime,
+    })).resolves.toEqual({ evidence: { status: 'stopped' }, failed: false })
+
+    expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
+    expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
+    expect(runSourceProductionCommand).toHaveBeenCalledWith('start', expect.objectContaining({
+      commandPrefix: 'web',
+      loadContext: runtime.loadSourceWorktreeContext,
+      loadSavedContext: runtime.loadSavedSourceWorktreeContext,
+      prepareRuntime: runtime.prepareSourceWorktreeRuntime,
+    }))
+  })
+
   it('accepts one exact structured definition and resolves its repository paths', async () => {
     const root = await temporaryDirectory('harness-worktree-definition-')
     const environmentFile = resolve(root, '.env')
@@ -73,8 +109,8 @@ describe('source worktree development definition', () => {
 
     expect(parsed).toEqual({
       schemaVersion: 1,
-      runtimeId: 'harness-comfyui-worktree-development',
-      runtimeRoot: resolve(repositoryRoot, '.local/worktree-development'),
+      runtimeId: 'harness-comfyui-web-development',
+      runtimeRoot: resolve(repositoryRoot, '.local/web-development'),
       sourceProductionDefinitionPath: resolve(repositoryRoot, 'config/source-production.json'),
       dshProfile: 'comfyui-workbench-development',
       userEnvironmentFilePath: environmentFile,
@@ -125,11 +161,11 @@ describe('source worktree development definition', () => {
       environment: { HARNESS_COMFYUI_SERVER_PORT: '18173' },
     })
 
-    expect(context.definition.runtimeId).toBe('harness-comfyui-worktree-development')
-    expect(context.runtime.runtimeRoot).toBe(resolve(root, '.local/worktree-development'))
-    expect(context.dshHome).toBe(resolve(root, '.local/worktree-development/dsh-home'))
+    expect(context.definition.runtimeId).toBe('harness-comfyui-web-development')
+    expect(context.runtime.runtimeRoot).toBe(resolve(root, '.local/web-development'))
+    expect(context.dshHome).toBe(resolve(root, '.local/web-development/dsh-home'))
     expect(context.sourceManagedStatePath).toBe(
-      resolve(root, '.local/worktree-development/state/source-managed.json'),
+      resolve(root, '.local/web-development/state/source-managed.json'),
     )
     expect(context.dshProfile).toBe('comfyui-workbench-development')
     expect(context.userEnvironmentFilePath).toBe(environmentFile)
@@ -237,7 +273,8 @@ describe('source worktree development Profile materialization', () => {
     expect((await lstat(environmentLink)).isSymbolicLink()).toBe(true)
     expect(resolve(dirname(environmentLink), await readlink(environmentLink))).toBe(environmentFile)
     expect(second).toEqual(first)
-    expect(await readFile(resolve(first.profileDirectory, 'cordis.patch.yml'), 'utf8')).toContain(
+    expect(await readFile(resolve(first.profileDirectory, 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
+    expect(await readFile(resolve(repositoryRoot, 'cordis.patch.yml'), 'utf8')).toContain(
       'startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH',
     )
   })
@@ -280,15 +317,15 @@ describe('source worktree development Profile materialization', () => {
   })
 })
 
-describe('source worktree command adapter', () => {
-  it('exposes the six lifecycle commands under the worktree command prefix', () => {
-    expect(helpText()).toContain('Usage: pnpm worktree:<command>')
+describe('Web Host command adapter', () => {
+  it('exposes the six lifecycle commands under the web command prefix', () => {
+    expect(helpText()).toContain('Usage: pnpm web:<command>')
     for (const command of ['start', 'stop', 'restart', 'status', 'health', 'logs']) {
       expect(parseArguments([command])).toEqual({ command })
     }
     expect(parseArguments([])).toEqual({ command: 'help' })
     expect(() => parseArguments(['start', '--anything'])).toThrow('do not accept arguments')
-    expect(() => parseArguments(['unknown'])).toThrow('unknown source worktree command')
+    expect(() => parseArguments(['unknown'])).toThrow('unknown Web Host command')
   })
 
   it('passes the selected development Profile to the DSH executable', async () => {
@@ -347,7 +384,7 @@ describe('source worktree command adapter', () => {
     })
     let currentContextLoaded = false
 
-    const result = await runSourceWorktreeCommand('status', {
+    const result = await runWebHostCommand('status', {
       loadContext: async () => {
         currentContextLoaded = true
         throw new Error('current startup inputs must not be loaded')

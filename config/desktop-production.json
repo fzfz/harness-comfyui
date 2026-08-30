@@ -1,0 +1,6 @@
+{
+  "desktopSourceRelativePath": ".local/upstreams/dsh-desktop",
+  "runtimeRelativeRoot": ".local/desktop-production",
+  "environmentFileRelativePath": ".env",
+  "startupWorkspacePath": "/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness"
+}

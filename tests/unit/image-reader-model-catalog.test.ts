@@ -7,6 +7,7 @@ import {
   IMAGE_READER_LEGACY_SETTINGS_DEFAULTS,
   IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
   IMAGE_READER_SETTINGS_NAMESPACE,
+  createImageReaderSettingsDefaults,
   createImageReaderProfile,
 } from '../../src/image-reader/settings.ts'
 import {
@@ -15,6 +16,37 @@ import {
 } from '../../src/host/image-reader/image-reader-host.ts'
 
 describe('image reader Host settings and model catalog', () => {
+  it('uses the runtime environment visual model as the base without creating user settings', async () => {
+    const defaults = createImageReaderSettingsDefaults({
+      provider: 'opencode-go',
+      model: 'vision-model',
+    })
+    const legacy = { get: vi.fn(() => IMAGE_READER_LEGACY_SETTINGS_DEFAULTS) }
+    const current = { get: vi.fn(), replace: vi.fn(async () => undefined) }
+    const register = vi.fn((namespace: string) => namespace === IMAGE_READER_LEGACY_SETTINGS_NAMESPACE ? legacy : current)
+    const describe = vi.fn(() => [
+      { ns: IMAGE_READER_LEGACY_SETTINGS_NAMESPACE },
+      { ns: IMAGE_READER_SETTINGS_NAMESPACE },
+    ])
+
+    await registerImageReaderSettings({ settings: { register, describe } } as never, defaults)
+
+    expect(register).toHaveBeenNthCalledWith(
+      2,
+      IMAGE_READER_SETTINGS_NAMESPACE,
+      expect.anything(),
+      { base: defaults, applies: 'live', validate: expect.any(Function) },
+    )
+    expect(defaults.configuration.profiles[0]).toMatchObject({
+      connectionType: 'runtime',
+      provider: 'opencode-go',
+      endpoint: '',
+      model: 'vision-model',
+      hasApiKey: false,
+    })
+    expect(current.replace).not.toHaveBeenCalled()
+  })
+
   it('registers legacy and current namespaces without migrating an absent legacy user section', async () => {
     const legacy = { get: vi.fn(() => IMAGE_READER_LEGACY_SETTINGS_DEFAULTS) }
     const current = { get: vi.fn(), replace: vi.fn(async () => undefined) }
