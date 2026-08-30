@@ -12,6 +12,10 @@ This repo uses the default five triage labels. See `docs/agents/triage-labels.md
 
 This repo uses a single-context domain layout. See `docs/agents/domain.md`.
 
+### ComfyUI Workbench Preset and project Skills
+
+Before an Agent creates or modifies the custom `ComfyUI工作台预设`, a project Skill, a global Skill link, or a Skill-owned CLI reference, the Agent must read and follow `docs/agents/comfyui-workbench-preset-and-skill-development.md`.
+
 ### System docs
 
 - For runtime commands or process behavior, read `docs/system/startup.md`.
