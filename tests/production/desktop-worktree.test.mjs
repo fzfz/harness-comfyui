@@ -49,7 +49,7 @@ async function fixture() {
     storeDir: resolve(root, '.pnpm-store/v11'),
     virtualStoreDir: '.pnpm',
   }))
-  await writeFile(environmentFile, 'KEY=value\n')
+  await writeFile(environmentFile, 'KEY=value\nDSH_DESKTOP_MOBILE_BRIDGE_PORT=45128\n')
   const definition = {
     mainCheckoutPath: root,
     runtimeRelativeRoot: '.local/desktop-development',
@@ -169,7 +169,14 @@ describe('DSH Desktop worktree lifecycle', () => {
         '--remoteDebuggingPort',
         '43129',
       ],
-      expect.objectContaining({ cwd: desktopSource, detached: true }),
+      expect.objectContaining({
+        cwd: desktopSource,
+        detached: true,
+        env: expect.objectContaining({
+          KEY: 'value',
+          DSH_DESKTOP_MOBILE_BRIDGE_PORT: String(context.mobileBridgePort),
+        }),
+      }),
     )
 
     await expect(runDesktopDevelopmentCommand('start', {
@@ -229,6 +236,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     })
 
     expect(context.runtimeRoot).toBe(resolve(value.root, '.local/desktop-development'))
+    expect(context.mobileBridgePort).toBe(45128)
     expect(context.dshHome).toBe(resolve(
       value.root,
       '.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness',
@@ -273,6 +281,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(packagePlugin).toHaveBeenCalledWith(context)
     expect(installPlugin).toHaveBeenCalledWith(context, prepared.environment, resolve(value.root, 'harness-comfyui.tgz'))
     expect(prepared.environment).toMatchObject({
+      KEY: 'value',
       HOME: context.runtimeHome,
       CFFIXED_USER_HOME: context.runtimeHome,
       DSH_HOME: context.dshHome,
@@ -282,8 +291,24 @@ describe('DSH Desktop worktree lifecycle', () => {
       HARNESS_COMFYUI_CATALOG_PORT: '18093',
       HARNESS_COMFYUI_CATALOG_CLI_PATH: resolve(value.root, '../catalog/query.mjs'),
       HARNESS_COMFYUI_SOURCE_CLI_PATH: resolve(value.root, '../catalog/source.mjs'),
+      DSH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
     })
   })
+
+  it.each(['', '0', '-1', '1.5', '65536', 'port'])(
+    'rejects invalid mobile bridge port %j from the linked environment file',
+    async configuredPort => {
+      const value = await fixture()
+      await writeFile(value.environmentFile, `DSH_DESKTOP_MOBILE_BRIDGE_PORT=${configuredPort}\n`)
+
+      await expect(loadDesktopWorktreeContext({
+        repositoryRoot: value.root,
+        definitionPath: value.definitionPath,
+        productionDefinitionPath: value.productionDefinitionPath,
+        homeDirectory: resolve(value.root, 'parent-home'),
+      })).rejects.toThrow('DSH_DESKTOP_MOBILE_BRIDGE_PORT must be an integer from 1 to 65535')
+    },
+  )
 
   it('keeps start in the foreground and lets the stop command terminate the Desktop process group', async () => {
     const value = await fixture()

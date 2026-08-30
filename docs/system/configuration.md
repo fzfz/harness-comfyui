@@ -26,7 +26,7 @@
 
 Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。
 
-移动桥接端口不是当前仓库的配置字段。DSH Desktop 上游把 `preview` 端口固定为 `43127`，把 `dev` 端口固定为 `43128`；当前仓库只在启动前检查相应端口，没有声明无法传递给上游的配置值。
+`DSH_DESKTOP_MOBILE_BRIDGE_PORT` 定义当前 checkout 启动的 DSH Desktop 移动桥接监听端口，值必须是 1 至 65535 的整数。`prod:start` 与 `dev:start` 从各自 checkout 的 `.env` 读取该值，启动器使用同一个值完成启动前端口检查并传给 DSH Desktop。生产 checkout 与主开发 checkout 必须配置不同端口；linked worktree 继续使用主开发 checkout 的 `.env` 链接。
 
 `cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用和默认 `ComfyUI工作台预设` 的共同来源。`config/product-agent.json` 是产品 Preset 物化结构的来源。Desktop 开发与生产都把当前插件包中的这两份配置安装到各自隔离的 DSH home。
 

@@ -44,7 +44,34 @@ describe('DSH Desktop production lifecycle', () => {
       '.local/desktop-production/home/Library/Logs/DSH Desktop/harness.log',
     ))
     expect(context.launchCommand).toBe('preview')
-    expect(context.mobileBridgePort).toBe(43127)
+    expect(context.mobileBridgePort).toBeGreaterThan(0)
+  })
+
+  it('loads the production mobile bridge port from the production checkout environment file', async () => {
+    const root = await mkdtemp(resolve(tmpdir(), 'desktop-production-context-'))
+    roots.push(root)
+    const configRoot = resolve(root, 'config')
+    const workspace = resolve(root, 'workspace')
+    await Promise.all([mkdir(configRoot), mkdir(workspace)])
+    await writeFile(resolve(root, '.env'), 'DSH_DESKTOP_MOBILE_BRIDGE_PORT=45127\n')
+    await writeFile(resolve(configRoot, 'desktop-production.json'), `${JSON.stringify({
+      desktopSourceRelativePath: '.local/upstreams/dsh-desktop',
+      runtimeRelativeRoot: '.local/desktop-production',
+      environmentFileRelativePath: '.env',
+      startupWorkspacePath: workspace,
+    })}\n`)
+    await writeFile(resolve(configRoot, 'source-production.json'), `${JSON.stringify({
+      source: {
+        catalogPort: 18093,
+        catalogCliRelativePath: 'catalog.mjs',
+        sourceCliRelativePath: 'source.mjs',
+      },
+    })}\n`)
+
+    await expect(loadDesktopProductionContext({ repositoryRoot: root })).resolves.toMatchObject({
+      mobileBridgePort: 45127,
+      environmentFilePath: resolve(root, '.env'),
+    })
   })
 
   it('starts the production Desktop in preview mode', async () => {
@@ -102,7 +129,14 @@ describe('DSH Desktop production lifecycle', () => {
     expect(spawnDesktop).toHaveBeenCalledWith(
       resolve(desktopSource, 'node_modules/node/bin/node'),
       [resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'), 'preview'],
-      expect.objectContaining({ cwd: desktopSource, detached: true }),
+      expect.objectContaining({
+        cwd: desktopSource,
+        detached: true,
+        env: expect.objectContaining({
+          KEY: 'value',
+          DSH_DESKTOP_MOBILE_BRIDGE_PORT: String(context.mobileBridgePort),
+        }),
+      }),
     )
   })
 

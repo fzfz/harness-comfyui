@@ -37,11 +37,11 @@ async function findFreePort() {
   return address.port
 }
 
-async function assertDesktopMobilePortAvailable() {
+async function assertDesktopMobilePortAvailable(port) {
   const server = createServer()
   await new Promise((resolveListen, reject) => {
     server.once('error', reject)
-    server.listen(43128, '0.0.0.0', resolveListen)
+    server.listen(port, '0.0.0.0', resolveListen)
   })
   await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
 }
@@ -250,7 +250,8 @@ describe('live DSH Desktop integration', () => {
   it('loads the project environment, workspace, Preset, and selectable image-reader Provider through Desktop', async () => {
     const base = await loadDesktopWorktreeContext()
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
-    await assertDesktopMobilePortAvailable()
+    const mobileBridgePort = await findFreePort()
+    await assertDesktopMobilePortAvailable(mobileBridgePort)
 
     const repositoryLockfile = resolve(base.repositoryRoot, 'pnpm-lock.yaml')
     const repositoryLockfileBefore = await readFile(repositoryLockfile, 'utf8')
@@ -259,7 +260,11 @@ describe('live DSH Desktop integration', () => {
     const runtimeHome = resolve(runtimeRoot, 'home')
     const environmentFilePath = resolve(runtimeRoot, 'desktop.env')
     const startupWorkspacePath = resolve(runtimeRoot, 'workspace')
-    await writeFile(environmentFilePath, 'OPENCODE_GO_API_KEY=desktop-live-test\n', 'utf8')
+    await writeFile(
+      environmentFilePath,
+      `OPENCODE_GO_API_KEY=desktop-live-test\nDSH_DESKTOP_MOBILE_BRIDGE_PORT=${mobileBridgePort}\n`,
+      'utf8',
+    )
     await mkdir(startupWorkspacePath)
     const context = {
       ...base,
@@ -270,6 +275,7 @@ describe('live DSH Desktop integration', () => {
       harnessLog: resolve(runtimeHome, relative(base.runtimeHome, base.harnessLog)),
       environmentFilePath,
       startupWorkspacePath,
+      mobileBridgePort,
     }
     const identity = await seedSavedDesktopSession(context)
     await seedDesktopMedia(context, identity)

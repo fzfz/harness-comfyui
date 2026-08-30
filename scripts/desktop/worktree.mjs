@@ -5,8 +5,10 @@ import { homedir } from 'node:os'
 import { createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { parseEnv } from 'node:util'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+const MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
 
 function desktopMode(mode) {
   if (mode === 'development') {
@@ -45,12 +47,34 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
     harnessLog: resolve(runtimeHome, 'Library/Logs', mode.logDirectory, 'harness.log'),
     environmentFilePath: resolve(repositoryRoot, definition.environmentFileRelativePath),
     startupWorkspacePath: resolve(definition.startupWorkspacePath),
-    mobileBridgePort: mode.mobileBridgePort,
+    mobileBridgePort: definition.mobileBridgePort ?? mode.mobileBridgePort,
     launchCommand: mode.launchCommand,
     catalogPort: sourceDefinition.source.catalogPort,
     catalogCliPath: resolve(repositoryRoot, sourceDefinition.source.catalogCliRelativePath),
     sourceCliPath: resolve(repositoryRoot, sourceDefinition.source.sourceCliRelativePath),
     skillSource: resolve(options.homeDirectory ?? homedir(), '.agents/skills'),
+  }
+}
+
+function resolveMobileBridgePort(environment, fallback) {
+  const configured = environment[MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE]
+  if (configured === undefined) return fallback
+  if (!/^[1-9]\d*$/u.test(configured)) {
+    throw new Error(`${MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE} must be an integer from 1 to 65535`)
+  }
+  const port = Number(configured)
+  if (!Number.isSafeInteger(port) || port > 65535) {
+    throw new Error(`${MOBILE_BRIDGE_PORT_ENVIRONMENT_VARIABLE} must be an integer from 1 to 65535`)
+  }
+  return port
+}
+
+async function readDesktopEnvironment(environmentFilePath) {
+  try {
+    return parseEnv(await readFile(environmentFilePath, 'utf8'))
+  } catch (error) {
+    if (error?.code === 'ENOENT') return {}
+    throw error
   }
 }
 
@@ -65,10 +89,13 @@ export async function loadDesktopWorktreeContext(options = {}) {
     readFile(productionDefinitionPath, 'utf8').then(JSON.parse),
   ])
   const sourceDefinition = JSON.parse(await readFile(resolve(repositoryRoot, 'config/source-production.json'), 'utf8'))
+  const environmentFilePath = resolve(repositoryRoot, productionDefinition.environmentFileRelativePath)
+  const environment = await readDesktopEnvironment(environmentFilePath)
   return desktopWorktreeContext({
     ...productionDefinition,
     desktopMode: 'development',
     runtimeRelativeRoot: worktreeDefinition.runtimeRelativeRoot,
+    mobileBridgePort: resolveMobileBridgePort(environment, desktopMode('development').mobileBridgePort),
   }, sourceDefinition, {
     ...options,
     repositoryRoot,
@@ -81,7 +108,13 @@ export async function loadDesktopProductionContext(options = {}) {
   const definitionPath = resolve(options.definitionPath ?? resolve(repositoryRoot, 'config/desktop-production.json'))
   const definition = JSON.parse(await readFile(definitionPath, 'utf8'))
   const sourceDefinition = JSON.parse(await readFile(resolve(repositoryRoot, 'config/source-production.json'), 'utf8'))
-  return desktopWorktreeContext({ ...definition, desktopMode: 'production' }, sourceDefinition, {
+  const environmentFilePath = resolve(repositoryRoot, definition.environmentFileRelativePath)
+  const environment = await readDesktopEnvironment(environmentFilePath)
+  return desktopWorktreeContext({
+    ...definition,
+    desktopMode: 'production',
+    mobileBridgePort: resolveMobileBridgePort(environment, desktopMode('production').mobileBridgePort),
+  }, sourceDefinition, {
     ...options,
     repositoryRoot,
   })
@@ -105,7 +138,9 @@ async function rootPnpmStoreDirectory(context) {
 
 async function desktopEnvironment(context, environment = process.env) {
   const dataDirectory = resolve(context.runtimeRoot, 'data')
+  const fileEnvironment = await readDesktopEnvironment(context.environmentFilePath)
   return {
+    ...fileEnvironment,
     ...environment,
     HOME: context.runtimeHome,
     CFFIXED_USER_HOME: context.runtimeHome,
@@ -121,6 +156,7 @@ async function desktopEnvironment(context, environment = process.env) {
     HARNESS_COMFYUI_CATALOG_PORT: String(context.catalogPort),
     HARNESS_COMFYUI_CATALOG_CLI_PATH: context.catalogCliPath,
     HARNESS_COMFYUI_SOURCE_CLI_PATH: context.sourceCliPath,
+    DSH_DESKTOP_MOBILE_BRIDGE_PORT: String(context.mobileBridgePort),
     PATH: `${resolve(context.desktopSource, 'node_modules/.bin')}:${environment.PATH ?? ''}`,
   }
 }

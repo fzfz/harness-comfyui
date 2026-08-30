@@ -55,7 +55,7 @@ pnpm dev:restart
 pnpm dev:stop
 ```
 
-开发 Desktop 使用 `.local/desktop-development/`，不会读取或修改 `.local/desktop-production/`。当前 DSH Desktop 的 `pnpm dev` 固定使用移动桥接端口 `43128`；启动器在执行上游命令前检查该端口，端口已被占用时直接报告冲突。完整人工验收流程见 `docs/agents/worktree-development.md`。
+开发 Desktop 使用 `.local/desktop-development/`，不会读取或修改 `.local/desktop-production/`。启动器从主开发 checkout 的 `.env` 读取 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，在执行上游命令前检查该端口，并把同一个值传给 DSH Desktop；端口已被占用时直接报告冲突。完整人工验收流程见 `docs/agents/worktree-development.md`。
 
 ## Git tag 生产环境
 
@@ -79,7 +79,7 @@ pnpm prod:restart
 pnpm prod:stop
 ```
 
-`prod:start` 从当前生产 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm preview`。当前 DSH Desktop 的 `pnpm preview` 固定使用移动桥接端口 `43127`；启动器在执行上游命令前检查该端口。生产 Desktop 加载生产 checkout 的 `.env`，把当前 tag 的插件源码安装为 generation，并使用 `.local/desktop-production/` 保存 PID、日志、DSH home、Run Repository 和媒体文件。
+`prod:start` 从当前生产 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm preview`。启动器从生产 checkout 的 `.env` 读取 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，在执行上游命令前检查该端口，并把同一个值传给 DSH Desktop。生产 Desktop 把当前 tag 的插件源码安装为 generation，并使用 `.local/desktop-production/` 保存 PID、日志、DSH home、Run Repository 和媒体文件。
 
 ## 独立 Web Host 调试环境
 
@@ -112,12 +112,12 @@ pnpm quality
 
 ## 运行状态
 
-| 环境 | PID 与日志根目录 | Desktop 模式 | 默认移动桥接端口 |
+| 环境 | PID 与日志根目录 | Desktop 模式 | 移动桥接端口来源 |
 | --- | --- | --- | --- |
-| 生产 Desktop | `.local/desktop-production/` | `preview` | DSH Desktop 上游 `preview` 固定为 `43127` |
-| 开发 Desktop | `.local/desktop-development/` | `dev` | DSH Desktop 上游 `dev` 固定为 `43128` |
+| 生产 Desktop | `.local/desktop-production/` | `preview` | 生产 checkout `.env` 的 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`；示例为 `43127` |
+| 开发 Desktop | `.local/desktop-development/` | `dev` | 主开发 checkout `.env` 的 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`；示例为 `43128` |
 | Web Host 调试 | `.local/web-development/` | 不启动 Electron | `config/source-production.json` 与 Configuration Profile 定义的 Web 端口 |
 
 三个运行目录不共享 PID、日志、DSH home、Run Repository、Session 或媒体文件。`status` 返回 `running` 或 `stopped`；`logs` 读取对应环境的日志；`stop` 只停止对应运行目录登记的进程。
 
-当前 DSH Desktop 没有公开的移动桥接端口覆盖接口，因此两个同为 `dev` 模式或两个同为 `preview` 模式的 Desktop 不能并行启动。当前仓库不把未生效的端口值暴露为配置，也不修改 DSH Desktop 核心来绕过该限制。
+每个同时运行的 DSH Desktop 必须在所属 checkout 的 `.env` 中配置不同的 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`。启动器不自动选择端口；端口冲突时，启动命令报告具体冲突端口并退出。
