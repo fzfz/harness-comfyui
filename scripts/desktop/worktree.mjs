@@ -7,6 +7,8 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseEnv } from 'node:util'
 
+import { migrateLegacyProductionSessionData } from './legacy-session-migration.mjs'
+
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE = 'COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT'
 const MOBILE_BRIDGE_PORT_PROCESS_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
@@ -113,14 +115,17 @@ export async function loadDesktopProductionContext(options = {}) {
   const sourceDefinition = JSON.parse(await readFile(resolve(repositoryRoot, 'config/source-production.json'), 'utf8'))
   const environmentFilePath = resolve(repositoryRoot, definition.environmentFileRelativePath)
   const environment = await readDesktopEnvironment(environmentFilePath)
-  return desktopWorktreeContext({
-    ...definition,
-    desktopMode: 'production',
-    mobileBridgePort: resolveMobileBridgePort(environment, desktopMode('production').mobileBridgePort),
-  }, sourceDefinition, {
-    ...options,
-    repositoryRoot,
-  })
+  return {
+    ...desktopWorktreeContext({
+      ...definition,
+      desktopMode: 'production',
+      mobileBridgePort: resolveMobileBridgePort(environment, desktopMode('production').mobileBridgePort),
+    }, sourceDefinition, {
+      ...options,
+      repositoryRoot,
+    }),
+    legacyDshHome: resolve(repositoryRoot, sourceDefinition.runtimeRelativeRoot, 'dsh-home'),
+  }
 }
 
 async function replaceLink(source, target, type) {
@@ -309,6 +314,7 @@ export async function prepareDesktopWorktree(context, options = {}) {
   const materializePreset = options.materializePreset ?? (await import('../profile/agent-preset.mjs'))
     .materializeSourceProductAgentPreset
   await mkdir(context.dshHome, { recursive: true })
+  await (options.migrateLegacySessionData ?? migrateLegacyProductionSessionData)(context)
   await replaceLink(context.environmentFilePath, resolve(context.dshHome, '.env'), 'file')
   await replaceLink(context.skillSource, resolve(context.runtimeHome, '.agents/skills'), 'dir')
   await materializeClient(context.repositoryRoot)

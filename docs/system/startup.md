@@ -10,6 +10,16 @@
 
 `prod:*` 与 `dev:*` 启动完整产品。`web:*` 只启动当前插件的 Web Host 调试环境，不代表完整 DSH Desktop 产品。
 
+三个 DSH home 使用以下固定路径：
+
+| DSH home | 实际路径 |
+| --- | --- |
+| 旧 Web 生产 DSH home | `<生产 checkout>/.local/production/dsh-home` |
+| Desktop 生产 DSH home | `<生产 checkout>/.local/desktop-production/home/Library/Application Support/dsh-desktop-dev/harness` |
+| Desktop 开发 DSH home | `<worktree>/.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness` |
+
+旧 Web 生产 DSH home 只作为 `v0.37.2` 生产 Session 迁移源。Desktop 生产与 Desktop 开发分别读取表中自己的 DSH home。
+
 ## 主开发 checkout 首次准备
 
 主开发 checkout 保存唯一的根 `.env`、根 `node_modules` 和已准备的 DSH Desktop 底座。首次准备在主开发 checkout 根目录执行：
@@ -76,7 +86,7 @@ pnpm desktop:dependencies:link
 pnpm prod:start
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.37.1` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`；该分支提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.37.2` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`；该分支提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 
@@ -88,6 +98,8 @@ pnpm prod:stop
 ```
 
 `prod:start` 从当前生产 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm preview`。启动器从生产 checkout 的 `.env` 读取 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`，在执行上游命令前检查该端口，并把同一个值传给 DSH Desktop。生产 Desktop 把当前 tag 的插件源码安装为 generation，并使用 `.local/desktop-production/` 保存 PID、日志、DSH home、Run Repository 和媒体文件。
+
+`prod:start` 和 `prod:restart` 在物化当前 generation 前检查旧 Web 生产 DSH home `.local/production/dsh-home`。旧目录存在时，启动器把 Session、Session Attachment 和 version 3 聚合 Session 投影索引合并到 `.local/desktop-production/` 中的当前 DSH home，并按 Workspace 路径合并 Workspace 记录中的 Session ID。启动器保留当前 DSH home 已存在的文件和旧目录中的原始文件；重复启动不会覆盖已经迁入的 Session 或索引。
 
 ## 独立 Web Host 调试环境
 

@@ -300,6 +300,7 @@ describe('live DSH Desktop production integration', () => {
     await mkdir(resolve(base.repositoryRoot, '.local'), { recursive: true })
     const runtimeRoot = await mkdtemp(resolve(base.repositoryRoot, '.local/desktop-live-'))
     const runtimeHome = resolve(runtimeRoot, 'home')
+    const legacyDshHome = resolve(runtimeRoot, 'legacy-production-dsh-home')
     const environmentFilePath = resolve(runtimeRoot, 'desktop.env')
     const startupWorkspacePath = resolve(runtimeRoot, 'workspace')
     await writeFile(
@@ -315,11 +316,12 @@ describe('live DSH Desktop production integration', () => {
       dshHome: resolve(runtimeHome, relative(base.runtimeHome, base.dshHome)),
       pidFile: resolve(runtimeRoot, 'desktop.pid'),
       harnessLog: resolve(runtimeHome, relative(base.runtimeHome, base.harnessLog)),
+      legacyDshHome,
       environmentFilePath,
       startupWorkspacePath,
       mobileBridgePort,
     }
-    const identity = await seedSavedDesktopSession(context)
+    const identity = await seedSavedDesktopSession({ ...context, dshHome: legacyDshHome })
     await seedDesktopMedia(context, identity)
     const fixture = { context, start: undefined }
     active.push(fixture)

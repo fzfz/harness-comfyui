@@ -6,6 +6,7 @@
 pnpm prod:start|restart
   → scripts/desktop/production-cli.mjs
   → config/desktop-production.json
+  → scripts/desktop/legacy-session-migration.mjs 合并旧生产 Session 数据
   → 当前插件 Client/Host/Preset 物化与 generation 打包
   → 当前 checkout 的 .local/upstreams/dsh-desktop
   → DSH Desktop pnpm preview
@@ -43,6 +44,7 @@ pnpm web:start|restart
 | 模块 | 职责 |
 | --- | --- |
 | `scripts/desktop/` | Desktop 产品配置解析、worktree 链接准备、generation 打包安装、Electron dev/preview 启停、状态和日志 |
+| `scripts/desktop/legacy-session-migration.mjs` | 把旧 Web 生产 DSH home 的 Session、Attachment、Session 投影索引和 Workspace Session 关系合并到当前生产 DSH home |
 | `scripts/production/` | Web Host Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 门禁、Web 调试配置和共享 Web Host 生命周期适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
@@ -69,7 +71,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 与 `dev:start` 都更新浏览器 Client/Host 模块、物化 `ComfyUI工作台预设`、把当前插件安装为 Desktop generation，再分别执行 DSH Desktop 自己声明的 `pnpm preview` 与 `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client/Host 模块、物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation 并执行 DSH Desktop `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
 
 `web:start` 与 `web:restart` 更新浏览器 Client 模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 

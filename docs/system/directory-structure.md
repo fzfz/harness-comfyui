@@ -27,6 +27,7 @@
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
 | `config/desktop-harness-development.json` | 当前仓库开发与测试需要从已安装 DSH Desktop 提供的 Harness 包和可执行入口 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、插件 generation 安装和 `prod:*`/`dev:*` 生命周期 |
+| `scripts/desktop/legacy-session-migration.mjs` | 旧 Web 生产 DSH home 到当前 Desktop 生产 DSH home 的 Session 数据迁移 |
 | `scripts/production/` | Client 模块生成和 Web Host 六个生命周期操作的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |

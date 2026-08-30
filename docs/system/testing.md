@@ -87,6 +87,8 @@ v0.36.2 发布前完整 `pnpm quality` 结果为 525 项 unit/integration、24 �
 
 v0.37.1 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
+v0.37.2 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 项 contract/security、99 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试从旧生产 DSH home 读取保存 Session，并验证当前生产 DSH home 中的侧栏 Session、Session 选择和媒体结果。
+
 ## CI
 
 `.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 执行两个独立 job：
@@ -94,4 +96,4 @@ v0.37.1 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 �
 1. Ubuntu `Source quality gates` checkout 当前仓库与 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`，安装双方 lockfile 依赖，执行 `desktop:dependencies:link` 和 `quality:fast`。
 2. macOS `DSH Desktop acceptance` checkout 当前仓库与 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`，安装双方 lockfile 依赖，执行 `desktop:dependencies:link` 和 `test:desktop`。
 
-CI 不生成发布包。Ubuntu job 证明源码、合同和共享生命周期；macOS job 证明真实 Electron、Provider、Workspace、Preset、媒体 Modal 和 shell capability。
+CI 不生成发布包。Ubuntu job 证明源码、合同和共享生命周期；macOS job 证明旧生产 Session 迁移、真实 Electron、Provider、Workspace、Preset、媒体 Modal 和 shell capability。

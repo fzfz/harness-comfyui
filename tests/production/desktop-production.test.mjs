@@ -43,6 +43,7 @@ describe('DSH Desktop production lifecycle', () => {
       repositoryRoot,
       '.local/desktop-production/home/Library/Logs/DSH Desktop Dev/harness.log',
     ))
+    expect(context.legacyDshHome).toBe(resolve(repositoryRoot, '.local/production/dsh-home'))
     expect(context.launchCommand).toBe('preview')
     expect(context.mobileBridgePort).toBeGreaterThan(0)
   })
@@ -61,6 +62,7 @@ describe('DSH Desktop production lifecycle', () => {
       startupWorkspacePath: workspace,
     })}\n`)
     await writeFile(resolve(configRoot, 'source-production.json'), `${JSON.stringify({
+      runtimeRelativeRoot: '.local/production',
       source: {
         catalogPort: 18093,
         catalogCliRelativePath: 'catalog.mjs',
@@ -83,15 +85,81 @@ describe('DSH Desktop production lifecycle', () => {
     const environmentFilePath = resolve(root, '.env')
     const startupWorkspacePath = resolve(root, 'workspace')
     const skillSource = resolve(root, 'skills')
+    const legacyDshHome = resolve(root, '.local/production/dsh-home')
+    const legacySessionId = 'session-legacy-production'
+    const currentSessionId = 'session-current-production'
+    const legacyRecord = {
+      identity: { createdAt: 1, cwd: startupWorkspacePath },
+      rows: { title: { ver: 1, seq: 0, val: { title: 'Legacy production session' } } },
+    }
+    const currentRecord = {
+      identity: { createdAt: 2, cwd: startupWorkspacePath },
+      rows: { title: { ver: 1, seq: 0, val: { title: 'Current production session' } } },
+    }
+    const dshHome = resolve(runtimeHome, 'Library/Application Support/dsh-desktop-dev/harness')
     await mkdir(resolve(root, 'node_modules/.pnpm'), { recursive: true })
     await Promise.all([
       mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true }),
       mkdir(startupWorkspacePath),
       mkdir(skillSource),
+      mkdir(resolve(legacyDshHome, 'sessions/--workspace--', legacySessionId), { recursive: true }),
+      mkdir(resolve(legacyDshHome, 'attachments/v1/legacy-attachment'), { recursive: true }),
+      mkdir(resolve(legacyDshHome, 'storages'), { recursive: true }),
+      mkdir(resolve(dshHome, 'sessions/--workspace--', currentSessionId), { recursive: true }),
+      mkdir(resolve(dshHome, 'storages/session_projcache/sessions'), { recursive: true }),
       writeFile(environmentFilePath, 'KEY=value\n'),
       writeFile(resolve(root, 'node_modules/.modules.yaml'), JSON.stringify({
         storeDir: resolve(root, '.pnpm-store/v11'),
         virtualStoreDir: '.pnpm',
+      })),
+    ])
+    await Promise.all([
+      writeFile(resolve(
+        legacyDshHome,
+        'sessions/--workspace--',
+        legacySessionId,
+        'session.jsonl.zstd',
+      ), 'legacy-session-log'),
+      writeFile(resolve(legacyDshHome, 'attachments/v1/legacy-attachment/image.png'), 'legacy-attachment'),
+      writeFile(resolve(legacyDshHome, 'storages/session_projcache.json'), JSON.stringify({
+        unit: { name: 'session_projcache', version: 3 },
+        global: null,
+        tables: { sessions: { [legacySessionId]: legacyRecord } },
+      })),
+      writeFile(resolve(legacyDshHome, 'storages/workspace.json'), JSON.stringify({
+        unit: { name: 'workspace', version: 2 },
+        global: {},
+        tables: {
+          workspaces: {
+            'legacy-workspace': {
+              path: startupWorkspacePath,
+              title: 'Legacy workspace',
+              sessionIds: [legacySessionId],
+              createdAt: '2026-08-01T00:00:00.000Z',
+              updatedAt: '2026-08-01T00:00:00.000Z',
+            },
+          },
+        },
+      })),
+      writeFile(resolve(dshHome, 'sessions/--workspace--', currentSessionId, 'session.jsonl.zstd'), 'current-session-log'),
+      writeFile(resolve(dshHome, 'storages/session_projcache/sessions', `${currentSessionId}.json`), JSON.stringify({
+        version: 4,
+        record: currentRecord,
+      })),
+      writeFile(resolve(dshHome, 'storages/workspace.json'), JSON.stringify({
+        unit: { name: 'workspace', version: 2 },
+        global: {},
+        tables: {
+          workspaces: {
+            'current-workspace': {
+              path: startupWorkspacePath,
+              title: 'Current workspace',
+              sessionIds: [currentSessionId],
+              createdAt: '2026-08-02T00:00:00.000Z',
+              updatedAt: '2026-08-02T00:00:00.000Z',
+            },
+          },
+        },
       })),
     ])
     const context = {
@@ -99,9 +167,10 @@ describe('DSH Desktop production lifecycle', () => {
       desktopSource,
       runtimeRoot,
       runtimeHome,
-      dshHome: resolve(runtimeHome, 'Library/Application Support/dsh-desktop/harness'),
+      dshHome,
+      legacyDshHome,
       pidFile: resolve(runtimeRoot, 'desktop.pid'),
-      harnessLog: resolve(runtimeHome, 'Library/Logs/DSH Desktop/harness.log'),
+      harnessLog: resolve(runtimeHome, 'Library/Logs/DSH Desktop Dev/harness.log'),
       environmentFilePath,
       startupWorkspacePath,
       mobileBridgePort: await freePort(),
@@ -127,6 +196,28 @@ describe('DSH Desktop production lifecycle', () => {
       spawnDesktop,
       remoteDebuggingPort: 54002,
     })).resolves.toMatchObject({ status: 'stopped', pid: 54001 })
+    expect(await readFile(resolve(
+      dshHome,
+      'sessions/--workspace--',
+      legacySessionId,
+      'session.jsonl.zstd',
+    ), 'utf8')).toBe('legacy-session-log')
+    expect(await readFile(resolve(dshHome, 'attachments/v1/legacy-attachment/image.png'), 'utf8'))
+      .toBe('legacy-attachment')
+    expect(JSON.parse(await readFile(
+      resolve(dshHome, 'storages/session_projcache/sessions', `${legacySessionId}.json`),
+      'utf8',
+    ))).toEqual({ version: 4, record: legacyRecord })
+    const migratedWorkspace = JSON.parse(await readFile(resolve(dshHome, 'storages/workspace.json'), 'utf8'))
+    expect(Object.keys(migratedWorkspace.tables.workspaces)).toEqual(['current-workspace'])
+    expect(migratedWorkspace.tables.workspaces['current-workspace'].sessionIds)
+      .toEqual([currentSessionId, legacySessionId])
+    expect(await readFile(resolve(
+      legacyDshHome,
+      'sessions/--workspace--',
+      legacySessionId,
+      'session.jsonl.zstd',
+    ), 'utf8')).toBe('legacy-session-log')
     expect(spawnDesktop).toHaveBeenCalledWith(
       resolve(desktopSource, 'node_modules/node/bin/node'),
       [
