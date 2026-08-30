@@ -1,5 +1,50 @@
 # Harness ComfyUI 原型方案进度
 
+## 2026-08-30 Phase 41 — DSH Desktop 生产生命周期命令
+
+- 状态：进行中。
+- 用户把目标纠正为产品发布到 GitHub 后由生产 checkout 直接执行的完整命令集；仓库不规定命令执行者。
+- 测试 seam 固定为 `package.json` 的 DSH Desktop 生产命令和它们管理的隔离进程。
+- 用户纠正开发环境结构：`main` checkout 持有 `.env`、`node_modules` 和 DSH Desktop 底座；worktree 必须通过符号链接复用，不得复制或重新安装。
+- 已停止旧配置启动的开发 Desktop PID `97706`，准备按统一生产配置与 worktree 差异覆盖重写配置入口。
+- 用户固定公开 seam：`prod:*` 管理完整 Desktop 生产环境，`dev:*` 管理完整 Desktop 开发环境，`web:*` 仅管理旧 Web Host 调试环境；旧 `worktree:*` 与两组 `desktop:*` 生命周期入口必须删除。
+- `$implement` 要求本阶段按公开 package scripts 逐项执行 red-green、定期执行类型检查、最终执行完整质量门禁、代码审查并提交当前分支。
+- 三组公开命令测试首次执行产生预期失败：根 manifest 仍把 `prod:*` 指向旧 Web Host，且没有 `dev:*` 与 `web:*`。根 manifest 已按固定命令表完成最小映射修改。
+- `dev:start` 公开 seam 测试第二次执行产生预期失败：开发 CLI 尚未导出完整开发命令，且没有 worktree 链接准备步骤。最小实现现在先验证 linked worktree 与 `main` 的 `.env`、`node_modules`，创建两个符号链接，再调用共享 Desktop 生命周期。
+- Desktop 生产与开发聚焦测试 19 项通过，随后 `pnpm run typecheck` 通过。
+- Web Host 命令测试产生预期 red：公共帮助仍显示 `worktree:*`，公共函数仍使用 Source worktree 名称；实现已统一为 `web:*` 和 `runWebHostCommand`。
+- Desktop 生产路径测试产生预期 red：生产 context 仍固定使用本机 `main` 中的 Desktop。配置已改为相对路径，使生产使用当前 tag checkout 的 Desktop 底座，开发使用 `main` checkout 的同一相对路径。
+- 三类环境运行目录已固定为 `.local/desktop-production`、`.local/desktop-development` 与 `.local/web-development`；Web Host 配置入口已改为 `config/web-development.json`。
+- 工程合同按预期因旧四组入口失败，随后改为精确断言三组公开生命周期命令。
+- `docs/system/startup.md`、`docs/agents/worktree-development.md` 与根 `AGENTS.md` 已改为完整 Desktop `dev:*` 验收、Git tag Desktop `prod:*` 管理和可选 Web Host `web:*` 调试；开发规范明确禁止在 worktree 安装依赖或复制 `.env`。
+- `docs/system/configuration.md` 已定义生产 Desktop、开发 Desktop 与 Web Host 三份配置的字段职责，并明确 `cordis.patch.yml` 是生产与开发共同的 Workspace/Preset/Provider/模型接入路径。
+- `docs/system/architecture.md` 已把产品启动链路改为 Desktop generation + Electron dev/preview，并把旧 Source 进程管理器限定为 Web Host 内部实现。
+- `docs/system/directory-structure.md`、`docs/system/testing.md`、`docs/system/releasing.md`、`README.md` 与 `CONTEXT.md` 已同步三种环境的目录、CI、Git tag 部署命令和领域术语。
+- 已把当前已安装 DSH Desktop 从开发 worktree 移到主开发 checkout 的 `.local/upstreams/dsh-desktop`，并把 24 个 Harness 开发依赖与 `dsh` 可执行入口链接到主开发 checkout 的根 `node_modules`。
+- 第一次真实 `pnpm dev:start` 在建立根 `node_modules` 链接前静态加载 `tsdown` 并失败；实现已改为链接成功后再动态加载三个物化器。
+- 第二次真实 `pnpm dev:start` 已完成 worktree 链接、插件构建、Desktop 打包和 profile 初始化，随后在 generation 安装阶段报告 pnpm major 不一致；该运行发生在尚未合入 `main` 的功能分支上，不作为最终测试结论。
+- 用户要求先把功能分支提交并合入本地 `main`；后续完整质量门禁与真实 Desktop 启动验证必须从已提交的本地 `main` 或由该 `main` 创建的新 worktree 执行。
+
+## 2026-08-30 Phase 40 — 补齐 DSH Desktop 合入门禁
+
+- 状态：已完成，等待用户验收后决定是否合入主线。
+- 用户已经确认执行可复现依赖、必跑 Desktop 门禁、生命周期错误分支、Provider 保存、真实媒体 Modal 与真实 shell capability。
+- 已确认测试 seam 为根依赖安装、Desktop 生命周期、Desktop 设置 Remote、Desktop 媒体 Modal 和 Harness shell capability。
+- 已确认真实 Desktop Provider 基础成功链路通过，但尚未进入必跑门禁。
+- 第一次规划文件补丁因旧 `findings.md` 结构与技能模板不同而未应用；第二次补丁按旧文件真实标题追加，不重写历史记录。
+- 依赖与质量门禁的首个 red 测试产生 4 个预期失败：旧 `node_modules` 链接仍被接受、Desktop tarball 被拒绝、manifest 仍使用旧链接、`quality` 未调用 Desktop 测试。
+- 最小合同修改后定向测试 14/14 通过。
+- 第一次 lockfile 重建失败：`@deepseek-ai/dsh-base` 的 `@deepseek-ai/dsh-bash-sandbox@^0.1.2-alpha.1` 没有发布到 npm；直接 tarball 集的传递 peer 闭包额外包含 57 个 DSH package。
+- 根 manifest 与 lockfile 已删除所有 `.local/upstreams/dsh-desktop/node_modules` 依赖；`desktop:dependencies:link` 从已安装 Desktop 提供 24 个开发包和 `dsh` 可执行入口。
+- Desktop 生命周期测试 15 项通过，覆盖端口冲突、准备失败、Electron error、异常退出、PID 清理、重复启动、重复停止、停止超时、restart 和 generation 安装投影。
+- 真实 Desktop 测试通过 Provider 切换、Remote 保存、页面重载与重新打开设置的持久化验证。
+- 真实 Desktop 测试通过保存 Session 的媒体抽屉、媒体卡、DSH Modal、同源 iframe 和不创建新页面验证。
+- 真实 Harness shell capability 测试通过 DSH ToolRuntime、Bash Tool 与 LocalSubprocess 执行路径取得项目 CLI 环境。
+- GitHub CI 已增加 macOS Desktop 必跑任务；Source quality job 也先准备 DSH Desktop 依赖再执行门禁。
+- 旧 `dsh plugin add` 路径被真实启动日志证明会触发 generation 迁移回滚；worktree 启动已改用 DSH Desktop 公开 generation installer、registry 与 projection 接口。
+- 完整 `pnpm quality` 通过：529 项 unit/integration、28 项 contract/security、80 项 production、32 项 prototype 和 2 项 Desktop 测试通过；函数覆盖率为 100%。
+- 正常 Desktop 实例已恢复运行，PID 为 `97706`；`web` profile、generation registry 与插件符号链接均指向当前 worktree 打包的同一个 generation，本次启动没有发生迁移回滚。
+
 ## 2026-08-26 Phase 37 — 发布 v0.30.2
 
 - 已读取 `docs/system/releasing.md`，确认发布顺序为根 `package.json.version`、源码质量门禁、源码提交与 CI、发布文档及独立语义验收、最终提交与 CI、标签和 GitHub Release。

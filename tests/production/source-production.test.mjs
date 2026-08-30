@@ -8,7 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { parseArguments, runSourceProductionCommand } from '../../scripts/production/cli.mjs'
-import { inspectClientModuleRegistration } from '../../scripts/production/health.mjs'
+import { inspectClientModuleRegistration, parseHealthBootGraph } from '../../scripts/production/health.mjs'
 import { buildHostEnvironment } from '../../scripts/production/process.mjs'
 import {
   SOURCE_PRODUCTION_COMMANDS,
@@ -59,6 +59,18 @@ async function waitForPath(path, timeoutMs = 10_000) {
     await delay(20)
   }
   throw new Error(`timed out waiting for ${path}`)
+}
+
+async function waitForProcessLaunchToken(path, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (await pathExists(path)) {
+      const state = JSON.parse(await readFile(path, 'utf8'))
+      if (typeof state.launchToken === 'string' && state.launchToken.length > 0) return state.launchToken
+    }
+    await delay(20)
+  }
+  throw new Error(`timed out waiting for Harness Web launch token in ${path}`)
 }
 
 async function waitForRunning(context, timeoutMs = 10_000) {
@@ -151,13 +163,13 @@ afterEach(async () => {
   }
 })
 
-describe('source production commands', () => {
+describe('Web Host shared process commands', () => {
   it('exposes only current-source process management commands without command arguments', () => {
     expect(SOURCE_PRODUCTION_COMMANDS).toEqual(['start', 'stop', 'restart', 'status', 'health', 'logs'])
     for (const command of SOURCE_PRODUCTION_COMMANDS) expect(parseArguments([command])).toEqual({ command })
     expect(parseArguments([])).toEqual({ command: 'help' })
     expect(() => parseArguments(['start', '--anything'])).toThrow('do not accept arguments')
-    expect(() => parseArguments(['unknown'])).toThrow('unknown source production command')
+    expect(() => parseArguments(['unknown'])).toThrow('unknown Web Host command')
   })
 
   it('requires one repository-local runtime directory and resolves source paths from the repository', () => {
@@ -298,8 +310,8 @@ describe('source production commands', () => {
     expect(status.evidence.runtimeId).toBe(fixture.context.definition.runtimeId)
     await expect(runSourceProductionCommand('start', {
       loadContext: async () => fixture.context,
-      commandPrefix: 'worktree',
-    })).rejects.toThrow('run pnpm worktree:stop or pnpm worktree:restart')
+      commandPrefix: 'web',
+    })).rejects.toThrow('run pnpm web:stop or pnpm web:restart')
     const health = await runSourceProductionCommand('health', { loadContext: async () => fixture.context })
     expect(health.evidence).toHaveProperty('sourceRuntime')
     expect(health.evidence).not.toHaveProperty('agentPresetRuntime')
@@ -364,8 +376,24 @@ describe('source production commands', () => {
     await waitForPath(processStatePath)
     await waitForRunning(fixture.context)
 
-    const bundleUrl = `http://${fixture.context.runtime.host}:${fixture.context.runtime.port}/plugins/harness-comfyui/client.js`
-    const response = await fetch(bundleUrl)
+    const baseUrl = `http://${fixture.context.runtime.host}:${fixture.context.runtime.port}`
+    const launchToken = await waitForProcessLaunchToken(processStatePath)
+    const anonymousResponse = await fetch(`${baseUrl}/`)
+    expect(anonymousResponse.status).toBe(401)
+
+    const tokenUrl = new URL('/', baseUrl)
+    tokenUrl.searchParams.set('token', launchToken)
+    const exchange = await fetch(tokenUrl, { redirect: 'manual' })
+    expect(exchange.status).toBe(303)
+    const cookie = exchange.headers.getSetCookie()[0]?.split(';', 1)[0]
+    expect(cookie).toBeTypeOf('string')
+    const rootResponse = await fetch(`${baseUrl}/`, { headers: { cookie } })
+    expect(rootResponse.ok).toBe(true)
+    const graph = parseHealthBootGraph(await rootResponse.text())
+    const entry = graph.entries.find(candidate => candidate.id === 'harness-comfyui')
+    expect(entry).toBeDefined()
+    const bundleUrl = new URL(entry.url, baseUrl).href
+    const response = await fetch(bundleUrl, { headers: { cookie } })
     expect(response.ok).toBe(true)
     const source = await response.text()
     const registration = inspectClientModuleRegistration(source, 'harness-comfyui', bundleUrl)

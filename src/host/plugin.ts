@@ -33,8 +33,15 @@ import {
 import { generationRunInputToolForContext } from './generation/generation-run-input-tool.ts'
 import { generationToolForContext } from './generation/generation-tool.ts'
 import { ImageReaderService } from './image-reader/image-reader-service.ts'
-import { ImageReaderRemoteService, registerImageReaderSettings } from './image-reader/image-reader-host.ts'
+import {
+  ImageReaderRemoteService,
+  registerImageReaderSettings,
+} from './image-reader/image-reader-host.ts'
 import { createGenerationRunMediaTool, createInspectImageTool } from './image-reader/image-reader-tool.ts'
+import {
+  createImageReaderSettingsDefaults,
+  type ImageReaderDefaultModel,
+} from '../image-reader/settings.ts'
 import { registerGenerationMediaRoutes, type GenerationWebServer } from './generation/media-routes.ts'
 import { OfficialApiWorkflowCompiler } from './generation/official-api-workflow.ts'
 import { GenerationSourceCli } from './generation/source-cli.ts'
@@ -45,16 +52,20 @@ import { registerProjectTools } from './tools/register-project-tools.ts'
 export interface Config {
   readonly configurationProfile: ConfigurationProfileName
   readonly startupWorkspacePath?: string
+  readonly imageReaderDefaultModel?: ImageReaderDefaultModel
 }
 
 const configurationProfileSchema = Schema.union(
   configurationProfileNames.map(profile => Schema.const(profile)),
 ).required()
-
 /** Standard Schema validated Host plugin configuration. */
 export const Config = Schema.object({
   configurationProfile: configurationProfileSchema,
   startupWorkspacePath: Schema.string().min(1).pattern(/\S/u),
+  imageReaderDefaultModel: Schema.object({
+    provider: Schema.string().max(10_000).required(),
+    model: Schema.string().min(1).max(10_000).required(),
+  }).default(undefined as never),
 })
 
 export const name = 'harness-comfyui'
@@ -130,7 +141,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
     apiUrl: `http://${profile.server.host}:${profile.server.port}${CLI_ROUTE_PATH}`,
   })
-  const imageReaderScope = await registerImageReaderSettings(ctx)
+  const imageReaderDefaults = config.imageReaderDefaultModel === undefined
+    ? undefined
+    : createImageReaderSettingsDefaults(config.imageReaderDefaultModel)
+  const imageReaderScope = await registerImageReaderSettings(ctx, imageReaderDefaults)
   const imageReader = new ImageReaderService({
     scope: imageReaderScope,
     attachments: ctx.attachments,

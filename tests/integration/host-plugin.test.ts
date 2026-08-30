@@ -1,10 +1,13 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { Context } from '@deepseek-ai/cordis'
+import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 import * as harnessComfyui from '../../src/index.ts'
 import { reportGenerationRunInputLookupError } from '../../src/host/plugin.ts'
 
@@ -60,8 +63,7 @@ function provideHostServices(ctx: Context) {
     listModels: vi.fn(async () => []),
     prepareCall: vi.fn(),
   } as never)
-  ctx.provide('settings' as never, {
-    register: vi.fn(() => ({
+  const registerSettings = vi.fn(() => ({
       get: vi.fn(() => ({
         configuration: {
           activeProfileId: 'default',
@@ -73,14 +75,23 @@ function provideHostServices(ctx: Context) {
         credentials: {},
       })),
       replace: vi.fn(async () => undefined),
-    })),
+    }))
+  ctx.provide('settings' as never, {
+    register: registerSettings,
     describe: vi.fn(() => []),
   } as never)
   ctx.provide('workspaceRegistry', {
     create: createWorkspace,
     resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
   })
-  return { createWorkspace, disposeShellEnvironment, registerRoute, registerShellEnvironment, registerTool }
+  return {
+    createWorkspace,
+    disposeShellEnvironment,
+    registerRoute,
+    registerSettings,
+    registerShellEnvironment,
+    registerTool,
+  }
 }
 
 describe('Harness ComfyUI Host plugin', () => {
@@ -171,6 +182,24 @@ describe('Harness ComfyUI Host plugin', () => {
     await ctx.fiber.dispose()
   })
 
+  it('loads the packaged Host with Remote markers visible to the Desktop Harness protocol', async () => {
+    stubTestProfileEnvironment()
+    const output = await materializeSourceHostModule(process.cwd())
+    const packaged = await import(`${pathToFileURL(output).href}?test=${crypto.randomUUID()}`) as typeof harnessComfyui
+    const ctx = new Context()
+    provideHostServices(ctx)
+
+    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
+    const imageReader = ctx.reflect.get('harnessComfyuiImageReader')
+
+    expect(remoteMethods(imageReader)).toEqual([
+      { method: 'models', invocation: { kind: 'direct' } },
+      { method: 'saveSettings', invocation: { kind: 'direct' } },
+    ])
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
   it('registers the configured startup workspace before exposing Host capabilities', async () => {
     stubTestProfileEnvironment()
     const ctx = new Context()
@@ -187,6 +216,39 @@ describe('Harness ComfyUI Host plugin', () => {
     expect(createWorkspace).toHaveBeenCalledWith(startupWorkspacePath)
     expect(createWorkspace.mock.invocationCallOrder[0]).toBeLessThan(registerTool.mock.invocationCallOrder[0]!)
     expect(createWorkspace.mock.invocationCallOrder[0]).toBeLessThan(registerRoute.mock.invocationCallOrder[0]!)
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('registers the configured visual model as the image-reader base', async () => {
+    stubTestProfileEnvironment()
+    const ctx = new Context()
+    const { registerSettings } = provideHostServices(ctx)
+
+    const fiber = await ctx.plugin(harnessComfyui, {
+      configurationProfile: 'production',
+      imageReaderDefaultModel: {
+        provider: 'opencode-go',
+        model: 'vision-model',
+      },
+    })
+
+    expect(registerSettings).toHaveBeenNthCalledWith(
+      2,
+      'harness-comfyui-image-reader-profiles',
+      expect.anything(),
+      expect.objectContaining({
+        base: expect.objectContaining({
+          configuration: expect.objectContaining({
+            profiles: [expect.objectContaining({
+              connectionType: 'runtime',
+              provider: 'opencode-go',
+              model: 'vision-model',
+            })],
+          }),
+        }),
+      }),
+    )
     await fiber.dispose()
     await ctx.fiber.dispose()
   })

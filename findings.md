@@ -1,5 +1,32 @@
 # Harness ComfyUI 原型方案调研结果
 
+## 2026-08-30 Phase 41 — DSH Desktop 生产生命周期命令
+
+- 本阶段的公开测试 seam 是 `package.json` 暴露的 DSH Desktop 生产命令及其实际管理的隔离 Desktop 进程。
+- 本阶段只实现 Git tag checkout 更新后的 start、restart、stop、status 和 logs 命令，以及这些命令直接依赖的配置、测试和系统文档；命令执行者和自动 CD 不属于目标。
+- `main` checkout 是开发依赖与环境的唯一来源；独立 worktree 不安装依赖、不复制 `.env`，只链接 `main` checkout 的 `.env`、`node_modules` 和 DSH Desktop 底座。
+- Desktop 的 Workspace、Preset 和默认模型由生产配置及插件 composition 提供；worktree 只覆盖独立 runtime、开发启动模式和开发端口。
+
+## 2026-08-30 Phase 40 — DSH Desktop 合入门禁
+
+- `package.json` 与 `pnpm-lock.yaml` 当前把所有 DSH 开发依赖链接到未跟踪的 `.local/upstreams/dsh-desktop/node_modules`。
+- `pnpm test:desktop` 已通过真实 Electron 验证 `.env`、默认 Workspace、项目 Preset、Provider 列表和默认视觉模型，但 `quality:fast` 与 GitHub CI 没有执行该命令。
+- `tests/production/desktop-worktree.test.mjs` 当前只覆盖模拟启动成功和 stop 成功，未覆盖端口冲突、准备失败、异常退出和 PID 清理。
+- Provider 真实测试当前只断言 DOM 立即变更，没有验证 Remote 保存后的重新打开状态。
+- 媒体 Modal 当前只在模拟 Harness Modal 的 React 单元测试中验证；shell capability 当前只由构造的 `ToolExecution` 和 Host 集成替身验证。
+- 本阶段只处理根依赖安装、Desktop 生命周期、Desktop 设置 Remote、Desktop 媒体 Modal和 Harness shell capability 五个公开 seam。
+- DSH `0.1.2-alpha.1` 没有发布到 npm；24 个直接 tarball 的 peer 闭包还包含 57 个未发布 DSH package。把闭包复制进插件 manifest 会重复 DSH Desktop 的依赖所有权。
+- 根 manifest 应只保留插件运行时 peer 声明；开发和 CI 必须通过明确命令从已安装的 DSH Desktop 提供测试模块，不能把 Desktop `node_modules` 写进插件 lockfile。
+- DSH Desktop 的真实设置 Remote 可以保存 `deepseek-official` Provider 和所选视觉模型；页面重载并重新打开“图片读取”后返回相同值。
+- 保存媒体的 Desktop 验收必须先通过真实 Workspace/Session 侧栏打开目标保存会话；Workbench details 随后读取该 Session 的真实 Generation Remote 投影。
+- 媒体卡点击后由 DSH `Modal` 承载同源媒体 viewer iframe；测试确认 `aria-modal=true`、iframe 正文可读且 Chromium page target 数量不增加。
+- 项目 Host 在真实 DSH `ToolRuntime -> tool-bash -> LocalBash -> LocalSubprocess` 路径中向 shell 注入 CLI 路径、Host API 和 43 字符 capability。
+- 旧 Web/Source 命令仍依赖 `node_modules/.bin/dsh`；Desktop 依赖准备命令必须同时提供该入口，才能保留旧 Web 调试路径。
+- DSH Desktop 的 `dsh-desktop-market-installer` 公开导出 generation installer、registry 与 projection；worktree 启动脚本可以通过这些公开接口安装当前插件包，不需要修改 DSH Desktop 核心源码。
+- 旧 `dsh plugin add` 路径会触发 Desktop generation 迁移，并因插件 peer 解析到 generation 闭包外而恢复旧 profile；直接 generation 安装后，`web/package.json`、`desired.json` 与 `node_modules/harness-comfyui` 均指向同一个 `.generations/live/harness-comfyui+0.36.1+3ec673ccca2b`。
+- 完整 `pnpm quality` 通过：529 项 unit/integration、28 项 contract/security、80 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；函数覆盖率为 100%。
+- DSH Desktop 上游源码工作树保持干净；本次修改只位于当前插件仓库及其测试、脚本和系统文档中。
+
 ## Phase 37 release facts
 
 - `docs/system/releasing.md` requires `package.json.version` to be the sole structured product-version source, requires the `v`-prefixed tag to match that value, and requires a GitHub Release with no attachments.
@@ -974,3 +1001,16 @@
 - `v0.31.2`是`0.31.1`之后的SemVer补丁版本；版本更新没有新增依赖或修改lockfile。
 - 源码版本提交`c00eb672a5576534c38dff70e1f7b7cbcadbc34d`的GitHub CI Run `33143548613`成功。
 - 本地main发布前包含80项已跟踪删除和一个包含4个文件的未跟踪计划目录；命名stash完整保存84个文件状态，用户现场没有进入源码版本提交。
+# Phase 41 统一生命周期命令
+
+- 当前分支同时包含旧 Web `prod:*`、旧 Web `worktree:*`、Desktop `desktop:prod:*` 与 Desktop `desktop:worktree:*`；这些命令名称无法唯一表达完整产品环境与独立 Web 调试环境。
+- DSH Desktop 上游公开开发入口是 `pnpm dev`，对应 `electron-vite dev`；公开生产预览入口是 `pnpm preview`。
+- 根仓库最终公开 seam 固定为完整 Desktop `prod:*`、完整 Desktop `dev:*` 与独立 Web Host `web:*`。
+- `dev:start` 的 worktree 环境准备只负责 `.env` 与 `node_modules` 指向 `main` checkout 的符号链接；DSH Desktop 底座直接使用 `main` checkout 中已经准备的路径。
+- 旧 Web Host 的公共 CLI 仍输出 `pnpm worktree:*`，其命令前缀、错误文案和测试必须统一为 `pnpm web:*`；共享 Source 进程模块可以继续作为内部实现存在。
+- `config/desktop-production.json.desktopSourcePath` 当前写死本机绝对路径；要让生产 checkout 使用自身底座、开发 worktree 使用 `main` 底座，产品配置应保存 Desktop 相对路径，由生产和开发 context 分别选择解析根目录。
+- 当前规范文档仍把 `prod:*` 定义为旧 Web Source Host、把 `worktree:*` 定义为 Web 开发 Host，并把 Desktop 描述为额外的 `desktop:*` 命令；规范必须整体改成 `prod:*` Desktop、`dev:*` Desktop、`web:*` Web Host。
+- `cordis.patch.yml` 已经是 Workspace、默认 Agent 模型、视觉模型、Provider API Key 环境变量和默认 `ComfyUI工作台预设` 的共同配置入口；开发与生产 Desktop 都通过同一个插件包加载该文件，不需要增加开发专用模型配置。
+- `docs/agents/worktree-development.md` 与根 `AGENTS.md` 仍要求旧 Web `worktree:*`；这两个规范必须改为完整 Desktop `dev:*`，并把 `web:*` 限定为按需的单独 Web Host 调试。
+- 本地 `main` 已包含 `v0.36.2` 及后续规范提交；功能分支必须先形成提交并合入本地 `main`，完整测试与真实 Desktop 启动验证才以最终集成结果为对象。
+- 功能分支 worktree 中第二次 `dev:start` 已进入 DSH generation 安装阶段，并报告 pnpm major 不一致；该错误必须在本地 `main` 合入提交完成后，从该 `main` 创建的新 worktree 重新复现，不能用未集成分支的环境状态代替最终结论。

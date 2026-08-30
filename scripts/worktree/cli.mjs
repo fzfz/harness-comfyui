@@ -13,34 +13,34 @@ import {
 
 export function helpText() {
   return [
-    'Usage: pnpm worktree:<command>',
+    'Usage: pnpm web:<command>',
     '',
     'Commands:',
-    '  start    Start the current linked worktree with the development profile',
-    '  stop     Stop the managed linked-worktree process',
-    '  restart  Restart the managed linked-worktree process',
-    '  status   Show managed linked-worktree process status',
-    '  health   Check managed linked-worktree process health',
-    '  logs     Read managed linked-worktree process logs',
+    '  start    Start the Web Host in the current linked worktree',
+    '  stop     Stop the managed Web Host process',
+    '  restart  Restart the managed Web Host process',
+    '  status   Show managed Web Host process status',
+    '  health   Check managed Web Host process health',
+    '  logs     Read managed Web Host process logs',
     '',
   ].join('\n')
 }
 
 export function parseArguments(argv) {
   if (argv.length === 0 || (argv.length === 1 && argv[0] === '--help')) return { command: 'help' }
-  if (argv.length !== 1) throw new Error('source worktree commands do not accept arguments')
+  if (argv.length !== 1) throw new Error('Web Host commands do not accept arguments')
   const [command] = argv
-  if (!SOURCE_PRODUCTION_COMMANDS.includes(command)) throw new Error(`unknown source worktree command: ${command}`)
+  if (!SOURCE_PRODUCTION_COMMANDS.includes(command)) throw new Error(`unknown Web Host command: ${command}`)
   return { command }
 }
 
-export async function runSourceWorktreeCommand(command, options = {}) {
+export async function runWebHostCommand(command, options = {}) {
   return runSourceProductionCommand(command, {
     ...options,
     loadContext: options.loadContext ?? loadSourceWorktreeContext,
     loadSavedContext: options.loadSavedContext ?? loadSavedSourceWorktreeContext,
     prepareRuntime: options.prepareRuntime ?? prepareSourceWorktreeRuntime,
-    commandPrefix: 'worktree',
+    commandPrefix: 'web',
   })
 }
 
@@ -50,7 +50,7 @@ export async function main(argv = process.argv.slice(2)) {
     process.stdout.write(helpText())
     return 0
   }
-  const result = await runSourceWorktreeCommand(command)
+  const result = await runWebHostCommand(command)
   if (command !== 'logs') process.stdout.write(`${JSON.stringify(result.evidence)}\n`)
   return result.failed ? 1 : 0
 }
@@ -68,7 +68,7 @@ if (isMainModule()) {
   main().then(
     status => { process.exitCode = status },
     error => {
-      process.stderr.write(`source worktree: ${error instanceof Error ? error.message : String(error)}\n`)
+      process.stderr.write(`Web Host: ${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1
     },
   )

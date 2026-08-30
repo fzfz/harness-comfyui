@@ -21,8 +21,8 @@ Harness `standard` Preset 的 Tool 可见性不属于本规范的限制对象。
 
 - `preset.id` 使用 `harness-comfyui-cli-candidate`；
 - `preset.yml` 的 `name` 使用 `ComfyUI工作台预设`；
-- production 和独立 worktree 启动器从同一份 canonical source 物化 Preset；
-- 启动器只安装该自定义 Preset，不修改 Harness 默认 Preset，也不修改 `standard` Preset。
+- `prod:*`、`dev:*` 和 `web:*` 从同一份 canonical source 物化 Preset；
+- 当前插件 `cordis.patch.yml` 把该自定义 Preset 设置为默认 Preset；启动器不修改 Harness `standard` Preset 的源码。
 
 ### 全局 Skill 目录
 
@@ -30,7 +30,7 @@ Harness `standard` Preset 的 Tool 可见性不属于本规范的限制对象。
 
 自定义 `ComfyUI工作台预设` 的 composition 必须同时加载 `@deepseek-ai/dsh-skill-filesystem` 和 `@deepseek-ai/dsh-tool-skill`，使 Agent 能够发现并读取 `$HOME/.agents/skills/` 中的全局 Skill。Preset 目录不得复制项目 Skill 文件，也不得在 Preset 文件中写入 `/Users/<name>/` 或主开发 checkout 的机器绝对路径。
 
-Skill 部署负责人修改全局 Skill 链接时，必须按照 `docs/system/releasing.md` 核对 `readlink`、`realpath`、目录结构和普通文件内容，并确认链接目标来自最终发布提交的主开发 checkout。
+修改全局 Skill 链接时，必须确认链接目标来自最终发布提交的主开发 checkout，并在新 Desktop Session 中验证对应 Skill 可以被发现和执行。
 
 ### Tool schema 可见性
 
@@ -117,13 +117,13 @@ Skill 执行者只向 CLI 传递业务参数，不填写 Workspace ID、Session 
 - composition 同时加载 Skill filesystem、Skill Tool 和 `local-only` Tool visibility component；
 - 自定义 Preset 的模型 Tool roster 不包含 Host 项目 Tool schema；
 - `standard` Preset 的 Host 项目 Tool 可见性不受自定义 Preset 影响；
-- production 和独立 worktree 启动器物化相同的产品 Preset 文件。
+- `prod:*`、`dev:*` 和 `web:*` 物化相同的产品 Preset 文件。
 
 创建或修改使用项目 CLI 的 Skill 时，开发者必须逐项核对该 Skill 的 `SKILL.md` 读取条件和 CLI 使用参考文档必备章节。Markdown 语义验收由独立 Reviewer 完成，不使用程序根据关键词判断语义是否正确。
 
 ### 真实模型验收
 
-自定义 `ComfyUI工作台预设` 的 Tool roster、Skill 读取流程或 managed CLI 调用流程发生变化时，开发者必须在隔离的独立 worktree Harness 中使用当前开发 Profile 配置的真实 Provider 和真实模型完成验收。验收记录必须包含所选 Preset、模型、用户请求、模型实际读取的 Skill 参考文档、模型实际发起的 shell CLI 调用和 CLI 返回结果。
+自定义 `ComfyUI工作台预设` 的 Tool roster、Skill 读取流程或 managed CLI 调用流程发生变化时，开发者必须通过 `pnpm dev:start` 在隔离的完整 Desktop 开发环境中使用当前配置的真实 Provider 和真实模型完成验收。验收记录必须包含所选 Preset、模型、用户请求、模型实际读取的 Skill 参考文档、模型实际发起的 shell CLI 调用和 CLI 返回结果。
 
 真实模型验收至少确认以下行为：
 

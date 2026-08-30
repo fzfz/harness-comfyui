@@ -155,7 +155,7 @@ export function parseSourceWorktreeDefinition(value, repositoryRoot = defaultRep
 export async function loadSourceWorktreeContext(options = {}) {
   const repositoryRoot = resolve(options.repositoryRoot ?? defaultRepositoryRoot)
   const definitionPath = resolve(
-    options.definitionPath ?? resolve(repositoryRoot, 'config/worktree-development.json'),
+    options.definitionPath ?? resolve(repositoryRoot, 'config/web-development.json'),
   )
   const worktreeDefinition = parseSourceWorktreeDefinition(
     await readJson(definitionPath, 'source worktree definition'),
@@ -194,7 +194,7 @@ export async function loadSourceWorktreeContext(options = {}) {
 export async function loadSavedSourceWorktreeContext(options = {}) {
   const repositoryRoot = resolve(options.repositoryRoot ?? defaultRepositoryRoot)
   const definitionPath = resolve(
-    options.definitionPath ?? resolve(repositoryRoot, 'config/worktree-development.json'),
+    options.definitionPath ?? resolve(repositoryRoot, 'config/web-development.json'),
   )
   const worktreeDefinition = parseSourceWorktreeDefinition(
     await readJson(definitionPath, 'source worktree definition'),

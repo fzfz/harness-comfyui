@@ -76,6 +76,11 @@ export interface ImageReaderSettingsView {
   readonly configuration: ImageReaderConfiguration
 }
 
+export interface ImageReaderDefaultModel {
+  readonly provider: string
+  readonly model: string
+}
+
 export interface LegacyImageReaderSettingsSection {
   readonly configuration: {
     readonly provider: string
@@ -126,6 +131,24 @@ export const IMAGE_READER_SETTINGS_DEFAULTS: ImageReaderSettingsSection = Object
   configuration: IMAGE_READER_DEFAULT_CONFIGURATION,
   credentials: Object.freeze({}),
 })
+
+export function createImageReaderSettingsDefaults(
+  input: ImageReaderDefaultModel,
+): ImageReaderSettingsSection {
+  const profile = Object.freeze({
+    ...createImageReaderProfile(IMAGE_READER_DEFAULT_PROFILE_ID),
+    connectionType: 'runtime' as const,
+    provider: input.provider,
+    model: input.model,
+  })
+  return Object.freeze({
+    configuration: Object.freeze({
+      activeProfileId: IMAGE_READER_DEFAULT_PROFILE_ID,
+      profiles: Object.freeze([profile]),
+    }),
+    credentials: Object.freeze({}),
+  })
+}
 
 const connectionTypeSchema = Schema.union(IMAGE_READER_CONNECTION_TYPES.map(value => Schema.const(value)))
 const imageReaderProfileSchema = Schema.object({

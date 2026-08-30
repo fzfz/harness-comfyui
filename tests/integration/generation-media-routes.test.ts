@@ -75,7 +75,7 @@ describe('Generation media HTTP routes', () => {
     expect(response.headers.get('x-content-type-options')).toBe('nosniff')
     expect(response.headers.get('referrer-policy')).toBe('no-referrer')
     expect(response.headers.get('content-security-policy')).toBe(
-      "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+      "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'",
     )
     expect(viewerData(html)).toEqual({
       currentMediaId: 'media_old',

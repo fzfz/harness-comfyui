@@ -51,7 +51,7 @@ function healthBaseUrl(runtime) {
   return `http://${host}:${runtime.port}`;
 }
 
-function parseHealthBootGraph(html) {
+export function parseHealthBootGraph(html) {
   const match = html.match(/globalThis\["__DSH_BOOT__"\]\s*=\s*(\{[\s\S]*?\})\s*<\/script>/u);
   if (!match?.[1]) throw new Error('boot graph missing');
   let graph;
@@ -129,7 +129,18 @@ async function probeApiWorkflowCache(runtime) {
 
 async function inspectHarnessWeb(runtime) {
   const baseUrl = healthBaseUrl(runtime);
-  const response = await fetchHealth(`${baseUrl}/`);
+  const state = await readProcessState(resolve(runtime.runtimeRoot, 'state/process.json'));
+  if (state?.launchToken === undefined) throw new Error('Harness Web launch token unavailable');
+  const tokenUrl = new URL('/', baseUrl);
+  tokenUrl.searchParams.set('token', state.launchToken);
+  const exchange = await fetchHealth(tokenUrl, { redirect: 'manual' });
+  const cookie = exchange.headers.getSetCookie()
+    .map(header => header.split(';', 1)[0]?.trim())
+    .find(value => value?.includes('='));
+  if (exchange.status !== 303 || cookie === undefined) {
+    throw new Error('Harness Web authentication exchange failed');
+  }
+  const response = await fetchHealth(`${baseUrl}/`, { headers: { cookie } });
   if (!response.ok) throw new Error('Harness Web root unavailable');
   const graph = parseHealthBootGraph(await response.text());
   const requiredIds = [
@@ -142,7 +153,7 @@ async function inspectHarnessWeb(runtime) {
       throw new Error(`Harness Web boot graph missing required bundle "${id}"`);
     }
   }
-  return { baseUrl, graph };
+  return { baseUrl, graph, cookie };
 }
 
 export function inspectClientModuleRegistration(source, id, url) {
@@ -180,7 +191,7 @@ async function inspectClientBundle(web) {
   const url = new URL(entry.url, web.baseUrl);
   const base = new URL(web.baseUrl);
   if (url.origin !== base.origin) throw new Error('Harness Client bundle escaped Harness Web');
-  const response = await fetchHealth(url);
+  const response = await fetchHealth(url, { headers: { cookie: web.cookie } });
   const source = await response.text();
   if (!response.ok || source.trim().length === 0) {
     throw new Error('Harness Client bundle unavailable');

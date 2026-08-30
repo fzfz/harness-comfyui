@@ -129,6 +129,9 @@ async function readProcessState(path) {
   const processIdentity = requireRecord(state.processIdentity, 'state/process.json.processIdentity')
   requireNonEmptyString(processIdentity.startTime, 'state/process.json.processIdentity.startTime')
   requireNonEmptyString(processIdentity.command, 'state/process.json.processIdentity.command')
+  const launchToken = state.launchToken === undefined
+    ? undefined
+    : requireNonEmptyString(state.launchToken, 'state/process.json.launchToken')
   return {
     schemaVersion: PROCESS_STATE_SCHEMA_VERSION,
     runtimeId,
@@ -142,6 +145,7 @@ async function readProcessState(path) {
       startTime: processIdentity.startTime,
       command: processIdentity.command,
     },
+    ...(launchToken === undefined ? {} : { launchToken }),
   }
 }
 
@@ -453,12 +457,24 @@ export function redactSensitiveLine(line) {
   return redacted
 }
 
-function attachRedactedOutput(logPath, output, destination) {
+export function extractDshWebLaunchToken(line) {
+  const match = /\bdsh web:\s*(\S+)/u.exec(line)
+  if (!match?.[1]) return undefined
+  try {
+    const token = new URL(match[1]).searchParams.get('token')
+    return token === null || token === '' ? undefined : token
+  } catch {
+    return undefined
+  }
+}
+
+function attachRedactedOutput(logPath, output, destination, onLine) {
   const log = createWriteStream(logPath, { flags: 'a' })
   let pending = ''
   let closed = false
 
   const emit = line => {
+    onLine?.(line)
     const redacted = redactSensitiveLine(line)
     log.write(redacted)
     destination.write(redacted)
@@ -487,12 +503,12 @@ function attachRedactedOutput(logPath, output, destination) {
   }
 }
 
-function attachHostOutput(logPath, output) {
-  return attachRedactedOutput(logPath, output, process.stdout)
+function attachHostOutput(logPath, output, onLine) {
+  return attachRedactedOutput(logPath, output, process.stdout, onLine)
 }
 
-function attachHostErrorOutput(child, logPath) {
-  return attachRedactedOutput(logPath, child.stderr, process.stderr)
+function attachHostErrorOutput(child, logPath, onLine) {
+  return attachRedactedOutput(logPath, child.stderr, process.stderr, onLine)
 }
 
 function forwardSignal(child, signal) {

@@ -15,14 +15,14 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
     IconChevronRightOutline14: () => React.createElement('i'),
     IconCloseOutline16: () => React.createElement('i'),
     IconDownloadOutline16: () => React.createElement('i', { 'data-icon': 'download' }),
-    Modal: ({ open, onClose, title, children, footer }: Record<string, unknown>) => (
+    Modal: ({ open, onClose, title, closeLabel, children, footer }: Record<string, unknown>) => (
       open
         ? React.createElement(
           'div',
           { role: 'dialog', 'aria-label': title },
           children as ReactNode,
           React.createElement('footer', null, footer as ReactNode),
-          React.createElement('button', { 'aria-label': '关闭错误详情', onClick: onClose }),
+          React.createElement('button', { 'aria-label': closeLabel, onClick: onClose }),
         )
         : null
     ),
@@ -139,6 +139,17 @@ describe('native Generation result drawer', () => {
     expect(mediaRule?.groups?.body).not.toContain('object-fit: cover;')
   })
 
+  it('gives the application media viewer a viewport-sized modal surface', () => {
+    const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
+    const modalRule = styles.match(/\.harness-comfyui-media-viewer-modal\s*\{(?<body>[^}]*)\}/u)
+    const frameRule = styles.match(/\.harness-comfyui-media-viewer-frame\s*\{(?<body>[^}]*)\}/u)
+
+    expect(modalRule?.groups?.body).toContain('width: min(1180px, calc(100vw - 48px));')
+    expect(frameRule?.groups?.body).toContain('width: 100%;')
+    expect(frameRule?.groups?.body).toContain('height: min(72vh, 760px);')
+    expect(frameRule?.groups?.body).toContain('border: 0;')
+  })
+
   it('renders a closable fallback drawer for an open blank Session', () => {
     const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
     const workbench = new WorkbenchController(layout)
@@ -198,14 +209,30 @@ describe('native Generation result drawer', () => {
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
     expect(renderer!.root.findAllByProps({ className: 'harness-comfyui-media-card' })).toHaveLength(4)
     expect(renderer!.root.findAllByProps({ 'data-icon': 'download' })).toHaveLength(4)
-    const mediaViewerLinks = renderer!.root.findAllByProps({ className: 'harness-comfyui-media-viewer-link' })
-    expect(mediaViewerLinks).toHaveLength(4)
-    expect(mediaViewerLinks[0]!.props).toMatchObject({
-      href: generationMediaViewerUrl('media_1', 'session-1'),
-      target: '_blank',
-      rel: 'noopener noreferrer',
+    const mediaViewerButtons = renderer!.root.findAllByType('button')
+      .filter(button => button.props.className === 'harness-comfyui-media-viewer-button')
+    expect(mediaViewerButtons).toHaveLength(4)
+    expect(mediaViewerButtons[0]!.props).toMatchObject({
       'aria-label': `${RESULTS_COPY.openMediaViewer}：result-1.webp`,
     })
+    expect(mediaViewerButtons[0]!.props).not.toHaveProperty('target')
+    act(() => { (mediaViewerButtons[0]!.props.onClick as () => void)() })
+    renderer!.root.findByProps({
+      role: 'dialog',
+      'aria-label': `${RESULTS_COPY.mediaViewer}：result-1.webp`,
+    })
+    expect(renderer!.root.findAllByType('iframe')[0]!.props).toMatchObject({
+      src: generationMediaViewerUrl('media_1', 'session-1'),
+      title: `${RESULTS_COPY.mediaViewer}：result-1.webp`,
+      allow: 'clipboard-write',
+    })
+    act(() => {
+      ;(renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.closeMediaViewer }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByProps({
+      role: 'dialog',
+      'aria-label': `${RESULTS_COPY.mediaViewer}：result-1.webp`,
+    })).toHaveLength(0)
     expect(renderer!.root.findAllByType('img')[0]!.props.src)
       .toBe(generationMediaContentUrl('media_1', 'session-1'))
     expect(renderer!.root.findByProps({ 'aria-label': '下载 result-1.webp 所属 Workflow' }).props.title)
@@ -326,9 +353,17 @@ describe('native Generation result drawer', () => {
     act(() => { (anchors[1]!.props.onClick as () => void)() })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.video).props.onClick as () => void)() })
     expect(renderer!.root.findAllByType('video')).toHaveLength(1)
-    expect(renderer!.root.findByProps({
+    const videoViewerButton = renderer!.root.findByProps({
       'aria-label': `${RESULTS_COPY.openMediaViewer}：result.mp4`,
-    }).props).toMatchObject({ target: '_blank', rel: 'noopener noreferrer' })
+    })
+    expect(videoViewerButton.props).not.toHaveProperty('target')
+    act(() => { (videoViewerButton.props.onClick as () => void)() })
+    expect(renderer!.root.findAllByType('iframe')[0]!.props.src)
+      .toBe(generationMediaViewerUrl('media_6', 'session-1'))
+    act(() => {
+      ;(buttonByText(renderer!, RESULTS_COPY.closeMediaViewer).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByType('iframe')).toHaveLength(0)
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{"code":"GENERATION_MEDIA_NOT_FOUND"}', {
       status: 404,
       headers: { 'content-type': 'application/json' },

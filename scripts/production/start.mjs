@@ -10,6 +10,7 @@ import {
   attachHostErrorOutput,
   attachHostOutput,
   buildHostEnvironment,
+  extractDshWebLaunchToken,
   forwardSignal,
   processStatePath,
   probePort,
@@ -46,6 +47,31 @@ export async function runSourceStart(input, runtimeTarget, operation = {}) {
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   if (child.pid === undefined) throw new Error('Host process did not provide a PID')
+  let launchToken
+  let state
+  let stateWritten = false
+  let stateWriteQueue = Promise.resolve()
+  const captureLaunchToken = line => {
+    if (launchToken !== undefined) return
+    launchToken = extractDshWebLaunchToken(line)
+    if (launchToken === undefined || !stateWritten || state === undefined) return
+    state.launchToken = launchToken
+    stateWriteQueue = stateWriteQueue.then(() => writeAtomicJson(statePath, state))
+  }
+  const stdoutLog = attachHostOutput(
+    join(runtime.paths.logDirectory, 'host.stdout.log'),
+    child.stdout,
+    captureLaunchToken,
+  )
+  const stderrLog = attachHostErrorOutput(
+    child,
+    join(runtime.paths.logDirectory, 'host.stderr.log'),
+    captureLaunchToken,
+  )
+  const closeLogs = async () => {
+    await Promise.all([stdoutLog.close(), stderrLog.close()])
+    await stateWriteQueue
+  }
   let forwardedSignal
   const onSigInt = () => {
     if (forwardedSignal === undefined) forwardedSignal = 'SIGINT'
@@ -80,9 +106,10 @@ export async function runSourceStart(input, runtimeTarget, operation = {}) {
       forwardSignal(child, 'SIGTERM')
       await waitForChildClose(child)
     }
+    await closeLogs()
     throw error
   }
-  const state = {
+  state = {
     schemaVersion: PROCESS_STATE_SCHEMA_VERSION,
     runtimeId: runtime.runtimeId,
     activeVersion: runtimeTarget.activeVersion,
@@ -95,16 +122,15 @@ export async function runSourceStart(input, runtimeTarget, operation = {}) {
       startTime: processIdentity.startTime,
       command: processIdentity.command,
     },
-  }
-  let stateWritten = false
-  const stdoutLog = attachHostOutput(join(runtime.paths.logDirectory, 'host.stdout.log'), child.stdout)
-  const stderrLog = attachHostErrorOutput(child, join(runtime.paths.logDirectory, 'host.stderr.log'))
-  const closeLogs = async () => {
-    await Promise.all([stdoutLog.close(), stderrLog.close()])
+    ...(launchToken === undefined ? {} : { launchToken }),
   }
   try {
     await writeAtomicJson(statePath, state)
     stateWritten = true
+    if (launchToken !== undefined && state.launchToken === undefined) {
+      state.launchToken = launchToken
+      await writeAtomicJson(statePath, state)
+    }
     const exit = child.exitCode !== null || child.signalCode !== null
       ? { code: child.exitCode, signal: child.signalCode }
       : await new Promise(resolveResult => {

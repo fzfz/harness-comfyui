@@ -17,7 +17,7 @@ import { workspaceIdForSession, type WorkspaceRegistryProjection } from './works
 
 export const GENERATION_MEDIA_ROUTE_PREFIX = GENERATION_MEDIA_URL_PREFIX
 
-const MEDIA_VIEWER_CONTENT_SECURITY_POLICY = "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+const MEDIA_VIEWER_CONTENT_SECURITY_POLICY = "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'"
 
 export interface GenerationWebServer {
   register(route: {

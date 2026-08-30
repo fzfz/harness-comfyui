@@ -1,6 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 
 import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
@@ -39,6 +38,15 @@ export interface ImageReaderSettingsApi {
     request: SaveImageReaderSettingsRequest,
     signal: AbortSignal,
   ) => Promise<SaveImageReaderSettingsResult>
+}
+
+interface SettingsScope<T> {
+  readonly getSnapshot: () => {
+    readonly status: 'loading' | 'ready' | 'unavailable'
+    readonly value?: T
+    readonly writable: boolean
+  }
+  readonly subscribe: (listener: () => void) => () => void
 }
 
 export interface ImageReaderSettingsPageProps extends SettingsSectionOwnerProps {

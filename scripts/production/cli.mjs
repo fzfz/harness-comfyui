@@ -21,24 +21,24 @@ import {
 
 export function helpText() {
   return [
-    'Usage: pnpm prod:<command>',
+    'Usage: pnpm web:<command>',
     '',
     'Commands:',
-    '  start    Start the current source with the production profile',
-    '  stop     Stop the managed source process',
-    '  restart  Restart the managed source process',
-    '  status   Show managed source process status',
-    '  health   Check managed source process health',
-    '  logs     Read managed source process logs',
+    '  start    Start the independent Web Host',
+    '  stop     Stop the managed Web Host process',
+    '  restart  Restart the managed Web Host process',
+    '  status   Show managed Web Host process status',
+    '  health   Check managed Web Host process health',
+    '  logs     Read managed Web Host process logs',
     '',
   ].join('\n')
 }
 
 export function parseArguments(argv) {
   if (argv.length === 0 || (argv.length === 1 && argv[0] === '--help')) return { command: 'help' }
-  if (argv.length !== 1) throw new Error('source production commands do not accept arguments')
+  if (argv.length !== 1) throw new Error('Web Host commands do not accept arguments')
   const [command] = argv
-  if (!SOURCE_PRODUCTION_COMMANDS.includes(command)) throw new Error(`unknown source production command: ${command}`)
+  if (!SOURCE_PRODUCTION_COMMANDS.includes(command)) throw new Error(`unknown Web Host command: ${command}`)
   return { command }
 }
 
@@ -73,7 +73,7 @@ async function loadNonValidatingTarget(context) {
 }
 
 export async function runSourceProductionCommand(command, options = {}) {
-  const commandPrefix = options.commandPrefix ?? 'prod'
+  const commandPrefix = options.commandPrefix ?? 'web'
   const prepareRuntime = options.prepareRuntime ?? prepareSourceRuntime
   let currentContext
   let managedContext
@@ -191,7 +191,7 @@ if (isMainModule()) {
   main().then(
     status => { process.exitCode = status },
     error => {
-      process.stderr.write(`source production: ${error instanceof Error ? error.message : String(error)}\n`)
+      process.stderr.write(`Web Host: ${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1
     },
   )

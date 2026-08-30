@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 
-import type { SessionListState, UseConversationSession } from '@deepseek-ai/dsh-client-runtime/client'
-
 import {
   generationMediaContentUrl,
   generationMediaViewerUrl,
@@ -35,16 +33,23 @@ import {
 
 type FilterKey = 'turn' | 'kind'
 
+interface SessionListView {
+  readonly current?: string
+  readonly byId: Readonly<Record<string, { readonly blank: boolean } | undefined>>
+}
+
+type UseSessionSnapshot = <Selected>(selector: (snapshot: unknown) => Selected) => Selected
+
 export interface WorkbenchDetailsProps {
   readonly sessionId: string
-  readonly useSession: UseConversationSession
+  readonly useSession: UseSessionSnapshot
   readonly workbench: WorkbenchController
   readonly generationStore: GenerationProjectionStore
 }
 
 export interface WorkbenchResultsOverlayProps {
   readonly workbench: WorkbenchController
-  readonly useSessions: <Selected>(selector: (state: SessionListState) => Selected) => Selected
+  readonly useSessions: <Selected>(selector: (state: SessionListView) => Selected) => Selected
 }
 
 interface FilterMenuProps {
@@ -181,27 +186,27 @@ function MediaPreview({
   sessionId,
   errorCode,
   onError,
+  onOpen,
 }: {
   readonly item: GenerationMediaProjection
   readonly sessionId: string
   readonly errorCode: string | null
   readonly onError: (source: string) => void
+  readonly onOpen: () => void
 }) {
   const source = generationMediaContentUrl(item.mediaId, sessionId)
-  const viewer = generationMediaViewerUrl(item.mediaId, sessionId)
   if (errorCode !== null) return <div className="harness-comfyui-media-preview-error"><code>{errorCode}</code></div>
   return (
-    <a
-      className="harness-comfyui-media-viewer-link"
-      href={viewer}
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      type="button"
+      className="harness-comfyui-media-viewer-button"
       aria-label={`${RESULTS_COPY.openMediaViewer}：${item.filename}`}
+      onClick={onOpen}
     >
       {item.mediaKind === 'video'
         ? <video src={source} preload="metadata" aria-label={`${item.filename} 视频`} onError={() => onError(source)} />
         : <img src={source} alt={`${item.filename} 图片`} onError={() => onError(source)} />}
-    </a>
+    </button>
   )
 }
 
@@ -252,12 +257,17 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
   const [kind, setKind] = useState('all')
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null)
   const [page, setPage] = useState(1)
+  const [viewerMediaId, setViewerMediaId] = useState<string | null>(null)
   const [mediaErrors, setMediaErrors] = useState<Readonly<Record<string, string>>>({})
   const filtered = useMemo(() => media.filter(item => (turn === 'all' || String(item.turn) === turn)
     && (kind === 'all' || item.mediaKind === kind)), [kind, media, turn])
   const pageCount = Math.max(1, Math.ceil(filtered.length / MEDIA_PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
   const pageItems = filtered.slice((currentPage - 1) * MEDIA_PAGE_SIZE, currentPage * MEDIA_PAGE_SIZE)
+  const viewerMedia = media.find(item => item.mediaId === viewerMediaId) ?? null
+  const viewerTitle = viewerMedia === null
+    ? RESULTS_COPY.mediaViewer
+    : `${RESULTS_COPY.mediaViewer}：${viewerMedia.filename}`
   const turnOptions = useMemo(() => [
     { id: 'all', label: RESULTS_COPY.allTurns },
     ...[...new Set(media.map(item => item.turn))].sort((left, right) => right - left)
@@ -299,6 +309,7 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
                   item={item}
                   sessionId={sessionId}
                   errorCode={mediaErrors[item.mediaId] ?? null}
+                  onOpen={() => setViewerMediaId(item.mediaId)}
                   onError={source => {
                     void inspectMediaError(source).then(errorCode => {
                       setMediaErrors(current => ({ ...current, [item.mediaId]: errorCode }))
@@ -333,6 +344,28 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
           ))}
         </div>
       )}
+      <Modal
+        open={viewerMedia !== null}
+        onClose={() => setViewerMediaId(null)}
+        title={viewerTitle}
+        closeLabel={RESULTS_COPY.closeMediaViewer}
+        className="harness-comfyui-media-viewer-modal"
+        contentClassName="harness-comfyui-media-viewer-modal-content"
+        footer={(
+          <Button variant="primary" onClick={() => setViewerMediaId(null)}>
+            {RESULTS_COPY.closeMediaViewer}
+          </Button>
+        )}
+      >
+        {viewerMedia === null ? null : (
+          <iframe
+            className="harness-comfyui-media-viewer-frame"
+            src={generationMediaViewerUrl(viewerMedia.mediaId, sessionId)}
+            title={viewerTitle}
+            allow="clipboard-write"
+          />
+        )}
+      </Modal>
       <nav className="harness-comfyui-media-pagination" aria-label="本会话媒体分页">
         <Button
           variant="outline" size="sm" icon={<IconChevronLeftOutline14 />}
@@ -410,7 +443,7 @@ function WorkbenchResults({ sessionId, surface, workbench, snapshot }: Workbench
 }
 
 export function WorkbenchDetails({ sessionId, useSession, workbench, generationStore }: WorkbenchDetailsProps) {
-  const wakeRevision = useSession(snapshot => `${snapshot.running}:${snapshot.runningCalls.length}:${snapshot.turnEnds.size}`)
+  const wakeRevision = useSession(snapshot => snapshot)
   useEffect(() => generationStore.refreshSession(sessionId), [generationStore, sessionId, wakeRevision])
   const subscribe = useCallback((listener: () => void) => generationStore.subscribe(sessionId, listener), [generationStore, sessionId])
   const getSnapshot = useCallback(() => generationStore.getSnapshot(sessionId), [generationStore, sessionId])

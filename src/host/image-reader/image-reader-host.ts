@@ -33,16 +33,17 @@ declare module '@deepseek-ai/cordis' {
 
 export async function registerImageReaderSettings(
   ctx: Pick<Context, 'settings'>,
+  defaults: ImageReaderSettingsSection = IMAGE_READER_SETTINGS_DEFAULTS,
 ): Promise<SettingsScope<ImageReaderSettingsSection>> {
   const legacy = ctx.settings.register<LegacyImageReaderSettingsSection>(
     settingsNamespace(IMAGE_READER_LEGACY_SETTINGS_NAMESPACE),
-    IMAGE_READER_LEGACY_SETTINGS_SCHEMA,
+    IMAGE_READER_LEGACY_SETTINGS_SCHEMA as never,
     { base: IMAGE_READER_LEGACY_SETTINGS_DEFAULTS, applies: 'live' },
   )
   const current = ctx.settings.register<ImageReaderSettingsSection>(
     settingsNamespace(IMAGE_READER_SETTINGS_NAMESPACE),
     IMAGE_READER_SETTINGS_SCHEMA as never,
-    { base: IMAGE_READER_SETTINGS_DEFAULTS, applies: 'live', validate: validateImageReaderSettingsSection },
+    { base: defaults, applies: 'live', validate: validateImageReaderSettingsSection },
   )
   const descriptors = ctx.settings.describe()
   const legacyUserExists = descriptors.some(descriptor => (

@@ -30,9 +30,9 @@ describe('source runtime git isolation', () => {
       '.local/production/state/process.json',
       '.local/production/state/operations.jsonl',
       '.local/production/shared/logs/host.stdout.log',
-      '.local/worktree-development/dsh-home/.env',
-      '.local/worktree-development/state/process.json',
-      '.local/worktree-development/shared/logs/host.stdout.log',
+      '.local/web-development/dsh-home/.env',
+      '.local/web-development/state/process.json',
+      '.local/web-development/shared/logs/host.stdout.log',
       '.local/source-client/client.js',
       '.local/source-production-managed.json',
     ]

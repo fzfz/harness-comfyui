@@ -1,39 +1,55 @@
 # 配置规范
 
-## 当前配置的读取顺序
+## Desktop 产品配置
 
-`prod:start` 和 `prod:restart` 按以下顺序读取 UTF-8 JSON 对象：
+`prod:start`、`prod:restart`、`dev:start` 和 `dev:restart` 共同读取 `config/desktop-production.json`：
+
+| 字段 | 规则 |
+| --- | --- |
+| `desktopSourceRelativePath` | DSH Desktop 相对 checkout 的目录；当前为 `.local/upstreams/dsh-desktop` |
+| `runtimeRelativeRoot` | 生产 Desktop 运行目录；当前为 `.local/desktop-production` |
+| `environmentFileRelativePath` | 生产 checkout 内的环境文件；当前为 `.env` |
+| `startupWorkspacePath` | Desktop 启动后直接打开的绝对 Workspace 目录 |
+| `mobileBridgePort` | 生产 Desktop 移动桥接端口；当前为 `43127` |
+
+生产命令相对当前生产 checkout 解析 `desktopSourceRelativePath` 和 `environmentFileRelativePath`。开发命令从 `config/desktop-worktree.json.mainCheckoutPath` 解析 DSH Desktop 底座，并使用 worktree 根 `.env` 链接；因此开发与生产加载同一个产品配置结构，不存在第二套 Workspace、Preset、Provider 或模型配置。
+
+`config/desktop-worktree.json` 只声明 linked worktree 与生产环境之间的运行差异：
+
+| 字段 | 规则 |
+| --- | --- |
+| `mainCheckoutPath` | 主开发 checkout 的绝对路径 |
+| `runtimeRelativeRoot` | 当前 worktree 的 Desktop 运行目录；当前为 `.local/desktop-development` |
+| `mobileBridgePort` | 开发 Desktop 移动桥接端口；当前为 `43128` |
+
+`dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。
+
+`cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用和默认 `ComfyUI工作台预设` 的共同来源。`config/product-agent.json` 是产品 Preset 物化结构的来源。Desktop 开发与生产都把当前插件包中的这两份配置安装到各自隔离的 DSH home。
+
+## Web Host 调试配置
+
+`web:start` 和 `web:restart` 先读取 `config/web-development.json`，再依次读取：
 
 1. `config/source-production.json`
 2. `config/base.json`
 3. `config/profiles/production.json`
 4. `config/environment-overrides.json`
 
-`source-production.json` 定义进程运行位置和 Source CLI。`base.json` 提供完整 Configuration Profile，`profiles/production.json` 递归覆盖同名属性，最后应用 `environment-overrides.json` 允许的环境变量。未知属性、未知 `HARNESS_COMFYUI_*` 环境变量、类型错误和无效路径都会中止当前配置的加载。
-
-运行中存在 `.local/source-production-managed.json` 时，`prod:stop`、`prod:status`、`prod:health` 和 `prod:logs` 直接使用受管快照，不重读上述四个文件。没有受管快照时，这四个命令读取当前配置。
-
-当前系统只有 `production` Configuration Profile。
-
-独立 worktree 的 `worktree:start` 和 `worktree:restart` 先读取 `config/worktree-development.json`，再按上述顺序读取 `config/source-production.json` 与三个 Configuration Profile 文件。开发定义只替换 runtime ID、runtime root、DSH Profile、用户环境文件和 startup workspace；Source CLI、Catalog port、Configuration Profile 和日志参数继续以 `config/source-production.json` 为唯一来源。
-
-## 独立 worktree 开发配置
-
-`config/worktree-development.json` 必须包含以下字段：
+`config/web-development.json` 必须包含以下字段：
 
 | 字段 | 规则 |
 | --- | --- |
 | `schemaVersion` | 固定为 `1` |
-| `runtimeId` | 非空开发进程标识 |
-| `runtimeRelativeRoot` | 当前 worktree 内的相对运行目录；当前为 `.local/worktree-development` |
-| `sourceProductionDefinitionRelativePath` | 当前 worktree 内的生产 Source 定义路径；当前为 `config/source-production.json` |
-| `dshProfile` | 只包含小写字母、数字和连字符的开发 DSH Profile 名称 |
-| `userEnvironmentFilePath` | 主开发 worktree `.env` 的绝对路径；目标必须是可读普通文件 |
-| `startupWorkspacePath` | Host 启动时注册的绝对目录；目标必须存在、可读且可进入 |
+| `runtimeId` | 当前为 `harness-comfyui-web-development` |
+| `runtimeRelativeRoot` | 当前为 `.local/web-development` |
+| `sourceProductionDefinitionRelativePath` | 当前为 `config/source-production.json` |
+| `dshProfile` | 当前为 `comfyui-workbench-development` |
+| `userEnvironmentFilePath` | 主开发 checkout `.env` 的绝对路径 |
+| `startupWorkspacePath` | Web Host 启动时注册的绝对 Workspace 目录 |
 
-`worktree:start` 在开发 DSH home 的 `.env` 不存在时创建指向 `userEnvironmentFilePath` 的符号链接。正确链接重复启动时保持不变；既有普通文件或指向其他目标的链接会中止启动，启动器不会删除或覆盖该路径。启动器只验证文件类型和可读性，不读取、复制或记录 `.env` 内容。
+Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-development/state/source-managed.json` 中的受管快照。`web:health` 只读取并报告运行状态，不写入 Desktop 或产品配置。
 
-`comfyui-workbench-development` Profile 精确声明 `opencode-go/deepseek-v4-flash` 与 `OPENCODE_GO_API_KEY` 引用。启动器通过 `HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH` 把 `startupWorkspacePath` 传给该 Profile；该变量只属于开发启动参数，不属于可由调用者覆盖的 Configuration Profile 环境变量。
+当前系统只有 `production` Configuration Profile。
 
 ## 项目 Agent Preset 配置
 
@@ -50,7 +66,7 @@
 
 `sourceRootRelativePath/<preset.id>` 必须只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。每个 shared file 和产品 Preset 在首次写入前全部完成文件类型、可读性、DSH YAML dialect、plugin-row 与 component resolution 检查。任一检查失败时，启动器不开始本轮物化。`installRootRelativePath` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器分别原子替换受管 shared file 和产品 Preset，再删除 `retiredManagedPresetIds` 指定的精确路径。删除符号链接形式的退役路径时，启动器只删除链接，不改变链接目标。启动器保留同一安装根目录中的其他 Preset。
 
-`prod:start`、`prod:restart`、`worktree:start` 和 `worktree:restart` 都读取该配置，并把相同的受管 Preset 文件物化到各自隔离的 DSH home。该过程不修改 Harness 默认 Preset。
+`prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都读取该配置，并把相同的受管 Preset 文件物化到各自隔离的 DSH home。当前插件 `cordis.patch.yml` 把 `harness-comfyui-cli-candidate` 设置为这些环境的默认 Preset；启动器不修改 Harness `standard` Preset 的源码。
 
 ## 源码进程配置
 
@@ -107,11 +123,11 @@
 
 `HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY` 由启动器固定为运行数据目录中的 `api-workflow-cache`，不能通过调用者环境改变。`HARNESS_COMFYUI_SERVER_HOST` 只把已经验证的 `127.0.0.1` 传给 Harness 子进程，不能覆盖 `server.host`。`config/environment-overrides.json` 是环境变量名称、Configuration Profile 目标字段、值类型和 Host 子进程运行值路径的唯一结构化来源。每项声明都使用 `valueType` 指定 `string` 或 `number`。覆盖 Configuration Profile 的声明使用 `target` 指定目标字段。进入 Host 受管环境的声明使用 `hostRuntimePath` 指定运行配置中的取值路径。只进入 Host 且不覆盖 Configuration Profile 的声明使用 `passThrough: true`，并且不使用 `target`。加载当前配置时，任何未在该文件中声明的 `HARNESS_COMFYUI_*` 环境变量都会中止配置加载。
 
-运维人员在任一已登记 ComfyUI 实例升级前端、安装或升级影响 Workflow 序列化的自定义节点、或者改变前端导出行为后，必须修改 Host 级 `comfyui.frontendCompiler.instanceCacheEpoch` 并执行 `pnpm prod:restart`。此次修改会使该 Host 下全部已登记实例的旧缓存均不再命中。Host 不会把损坏缓存或 identity 不匹配当作 cache miss；运维人员应当根据 `COMFYUI_API_WORKFLOW_CACHE_INVALID` 错误定位对应缓存文件或修改 Host 级缓存代次。
+任一已登记 ComfyUI 实例升级前端、安装或升级影响 Workflow 序列化的自定义节点、或者改变前端导出行为后，必须修改 Host 级 `comfyui.frontendCompiler.instanceCacheEpoch` 并执行对应环境的 `pnpm prod:restart`、`pnpm dev:restart` 或 `pnpm web:restart`。此次修改会使该 Host 下全部已登记实例的旧缓存均不再命中。Host 不会把损坏缓存或 identity 不匹配当作 cache miss；调用者应当根据 `COMFYUI_API_WORKFLOW_CACHE_INVALID` 错误定位对应缓存文件或修改 Host 级缓存代次。
 
 ## 配置变更
 
-配置不热更新。修改 JSON 或允许的环境变量后执行 `pnpm prod:restart`，再执行 `pnpm prod:status` 与 `pnpm prod:health`。`.local/source-production-managed.json` 保存运行中的版本、运行根目录、监听地址与端口、数据路径、Official API Workflow Cache 路径、官方前端编译器配置、Source CLI 路径、业务覆盖值、停止超时和日志读取参数，因此 stop、status、health 和 logs 仍能使用启动时配置定位并管理进程。
+配置不热更新。生产 Desktop 修改后执行 `pnpm prod:restart` 与 `pnpm prod:status`；开发 Desktop 修改后执行 `pnpm dev:restart` 与 `pnpm dev:status`；Web Host 修改后执行 `pnpm web:restart`、`pnpm web:status` 与只读的 `pnpm web:health`。Web Host 的受管快照保存运行中的版本、运行根目录、监听地址与端口、数据路径、Official API Workflow Cache 路径、Source CLI 路径、停止超时和日志读取参数。
 
 ## 图片读取设置
 
