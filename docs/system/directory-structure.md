@@ -28,10 +28,10 @@
 | `config/desktop-harness-development.json` | 当前仓库开发与测试需要从已安装 DSH Desktop 提供的 Harness 包和可执行入口 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、插件 generation 安装和 `prod:*`/`dev:*` 生命周期 |
 | `scripts/desktop/legacy-session-migration.mjs` | 旧 Web 生产 DSH home 到当前 Desktop 生产 DSH home 的 Session 数据迁移 |
-| `scripts/production/` | Client 模块生成和 Web Host 六个生命周期操作的共享实现 |
+| `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 六个生命周期操作的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
-| `scripts/cli/` | Agent 在 managed shell environment 中通过 Node 解释器调用的项目 CLI 脚本 |
+| `scripts/cli/` | managed CLI 构建的源码入口；Desktop 与 Web Host 准备链把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` |
 | `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |
 | `scripts/testing/` | 自动化测试使用的辅助模块 |
 | `profiles/` | DSH profile composition 模板 |
@@ -45,6 +45,6 @@
 | `prototype/` | 工作台和 Session Media Viewer 静态原型及原型测试；不是运行时数据来源 |
 | `docs/system/` | 当前系统规范 |
 
-运行后生成的 `.local/desktop-production/`、`.local/desktop-development/`、`.local/web-development/`、`.local/source-client/`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。linked worktree 根 `.env` 与 `node_modules` 是指向主开发 checkout 的符号链接，也不进入版本控制。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
+运行后生成的 `.local/desktop-production/`、`.local/desktop-development/`、`.local/web-development/`、`.local/source-cli/`、`.local/source-client/`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。linked worktree 根 `.env` 与 `node_modules` 是指向主开发 checkout 的符号链接，也不进入版本控制。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
 
 `src/host/generation/workflow-compiler.ts` 保留运行时参数解析、Actual Workflow 改写、活动输出节点筛选和运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 负责 cache miss 的官方前端导出。`src/host/generation/official-api-workflow.ts` 负责缓存 identity、持久化、并发 miss 合并和 Runtime Input Overlay。

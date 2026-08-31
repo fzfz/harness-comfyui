@@ -2,10 +2,11 @@ import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import {
   parseArguments,
   runDesktopDevelopmentCommand,
@@ -18,6 +19,7 @@ import {
   installSourcePluginGeneration,
   packagedPluginManifest,
   prepareDesktopWorktree,
+  SOURCE_PLUGIN_PACKAGE_PATHS,
   sourceProfileInitializeArguments,
   sourcePluginRemoveArguments,
   startDesktopWorktree,
@@ -150,6 +152,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     await expect(runDesktopDevelopmentCommand('start', {
       contextOptions: { repositoryRoot: worktree, definitionPath },
       loadContext: async () => context,
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
@@ -182,6 +185,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     await expect(runDesktopDevelopmentCommand('start', {
       contextOptions: { repositoryRoot: worktree, definitionPath },
       loadContext: async () => context,
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
@@ -272,6 +276,7 @@ describe('DSH Desktop worktree lifecycle', () => {
       definitionPath: value.definitionPath,
       homeDirectory: resolve(value.root, 'parent-home'),
     })
+    const materializeCli = vi.fn(async () => undefined)
     const materializeClient = vi.fn(async () => undefined)
     const materializeHost = vi.fn(async () => undefined)
     const materializePreset = vi.fn(async () => undefined)
@@ -279,6 +284,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     const installPlugin = vi.fn()
 
     const prepared = await prepareDesktopWorktree(context, {
+      materializeCli,
       materializeClient,
       materializeHost,
       materializePreset,
@@ -289,6 +295,7 @@ describe('DSH Desktop worktree lifecycle', () => {
 
     expect(resolve(context.dshHome, await readlink(resolve(context.dshHome, '.env')))).toBe(value.environmentFile)
     expect(resolve(context.runtimeHome, '.agents', await readlink(resolve(context.runtimeHome, '.agents/skills')))).toBe(value.skills)
+    expect(materializeCli).toHaveBeenCalledWith(value.root)
     expect(materializeClient).toHaveBeenCalledWith(value.root)
     expect(materializeHost).toHaveBeenCalledWith(value.root)
     expect(materializePreset).toHaveBeenCalledWith(value.root, context.dshHome)
@@ -308,6 +315,28 @@ describe('DSH Desktop worktree lifecycle', () => {
       DSH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
       COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
     })
+  })
+
+  it('does not package or install the Desktop plugin when the CLI bundle fails', async () => {
+    const value = await fixture()
+    const context = await loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })
+    const packagePlugin = vi.fn()
+    const installPlugin = vi.fn()
+
+    await expect(prepareDesktopWorktree(context, {
+      materializeCli: async () => { throw new Error('CLI bundle failed') },
+      materializeClient: async () => undefined,
+      materializeHost: async () => undefined,
+      materializePreset: async () => undefined,
+      packagePlugin,
+      installPlugin,
+    })).rejects.toThrow('CLI bundle failed')
+    expect(packagePlugin).not.toHaveBeenCalled()
+    expect(installPlugin).not.toHaveBeenCalled()
   })
 
   it.each(['', '0', '-1', '1.5', '65536', 'port'])(
@@ -336,6 +365,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     child.pid = 43210
     const spawnDesktop = vi.fn(() => child)
     const startPromise = startDesktopWorktree(context, {
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
@@ -376,6 +406,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     const spawnDesktop = vi.fn(() => { throw new Error('Electron must not start') })
     try {
       await expect(startDesktopWorktree(isolatedContext, {
+        materializeCli: async () => undefined,
         materializeClient: async () => undefined,
         materializeHost: async () => undefined,
         materializePreset: async () => undefined,
@@ -399,6 +430,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     const spawnDesktop = vi.fn()
 
     await expect(startDesktopWorktree(context, {
+      materializeCli: async () => undefined,
       materializeClient: async () => { throw new Error('client bundle failed') },
       spawnDesktop,
     })).rejects.toThrow('client bundle failed')
@@ -416,6 +448,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     const child = new EventEmitter()
     child.pid = 43211
     const start = startDesktopWorktree(context, {
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
@@ -440,6 +473,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     const child = new EventEmitter()
     child.pid = 43212
     const start = startDesktopWorktree(context, {
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
@@ -516,6 +550,7 @@ describe('DSH Desktop worktree lifecycle', () => {
 
     await expect(runDesktopLifecycleCommand('restart', {
       loadContext: async () => context,
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
@@ -623,5 +658,11 @@ describe('DSH Desktop worktree lifecycle', () => {
       },
     })
     expect(source.exports['.'].default).toBe('./src/index.ts')
+  })
+
+  it('packages the compiled CLI without the CLI source entry', () => {
+    expect(SOURCE_PLUGIN_PACKAGE_PATHS)
+      .toContain(dirname(runtimeArtifacts.managedCli.outputEntryRelativePath))
+    expect(SOURCE_PLUGIN_PACKAGE_PATHS).not.toContain('scripts/cli')
   })
 })

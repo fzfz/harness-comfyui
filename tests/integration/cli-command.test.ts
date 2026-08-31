@@ -1,12 +1,35 @@
 import { spawn } from 'node:child_process'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { createServer } from 'node:http'
-import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
+import { materializeCliModule, sourceCliModulePath } from '../../scripts/production/cli-module.mjs'
 import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
 
-const CLI_PATH = fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url))
+const CLI_SOURCE_PATH = resolve(process.cwd(), runtimeArtifacts.managedCli.sourceEntryRelativePath)
+let cliPath = ''
+let temporaryRoot = ''
+
+beforeAll(async () => {
+  temporaryRoot = await mkdtemp(join(tmpdir(), 'harness-comfyui-installed-cli-'))
+  cliPath = resolve(
+    temporaryRoot,
+    'node_modules/harness-comfyui',
+    runtimeArtifacts.managedCli.outputEntryRelativePath,
+  )
+  await materializeCliModule({
+    entry: CLI_SOURCE_PATH,
+    output: cliPath,
+  })
+})
+
+afterAll(async () => {
+  if (temporaryRoot.length > 0) await rm(temporaryRoot, { recursive: true, force: true })
+})
 
 async function runCli(input: {
   readonly args: readonly string[]
@@ -15,7 +38,7 @@ async function runCli(input: {
   readonly capability?: string
 }): Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [CLI_PATH, ...input.args], {
+    const child = spawn(process.execPath, [cliPath, ...input.args], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
@@ -37,7 +60,12 @@ async function runCli(input: {
   })
 }
 
-describe('managed Harness ComfyUI CLI executable', () => {
+describe('installed managed Harness ComfyUI CLI executable', () => {
+  it('derives the source runtime output from the managed CLI artifact definition', () => {
+    expect(sourceCliModulePath(process.cwd()))
+      .toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
+  })
+
   it('posts only the documented business request with the Host capability', async () => {
     let posted: unknown
     let authorization: string | undefined

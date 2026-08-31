@@ -45,7 +45,7 @@ pnpm prod:logs
 | `pnpm prod:logs` | 读取生产 Desktop 日志 |
 | `pnpm prod:test` | 自动测试 Desktop、Web Host、worktree 配置和进程隔离 |
 
-`prod:start` 和 `prod:restart` 根据当前源码生成 Client/Host 模块，打包并安装当前插件 generation，再启动 Electron。完整配置和运行目录说明见[系统启动](docs/system/startup.md)与[配置规范](docs/system/configuration.md)。
+`prod:start` 和 `prod:restart` 根据当前源码生成 Client、Host 与 managed CLI 运行模块，打包并安装当前插件 generation，再启动 Electron。完整配置和运行目录说明见[系统启动](docs/system/startup.md)与[配置规范](docs/system/configuration.md)。
 
 ### 独立 worktree 开发验证
 
@@ -105,6 +105,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.37.2 发布说明](docs/releasenotes.md)
+- [v0.37.3 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.37.2`。对应发布记录在最终提交、`v0.37.2` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.37.3`。对应发布记录在最终提交、`v0.37.3` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

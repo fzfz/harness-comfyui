@@ -7,7 +7,7 @@ pnpm prod:start|restart
   → scripts/desktop/production-cli.mjs
   → config/desktop-production.json
   → scripts/desktop/legacy-session-migration.mjs 合并旧生产 Session 数据
-  → 当前插件 Client/Host/Preset 物化与 generation 打包
+  → 当前插件 Client/Host/managed CLI/Preset 物化与 generation 打包
   → 当前 checkout 的 .local/upstreams/dsh-desktop
   → DSH Desktop pnpm preview
   → .local/desktop-production/ 中的 PID、日志、DSH home 和业务数据
@@ -37,7 +37,7 @@ pnpm web:start|restart
   → .local/web-development/
 ```
 
-`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口是根据当前 Client 源码生成的 `.local/source-client/client.js`。Desktop generation 打包和 Web Host start/restart 都更新该浏览器模块；两条链路不读取 `lib/`。
+`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口是根据当前 Client 源码生成的 `.local/source-client/client.js`。managed CLI 运行入口是根据 `scripts/cli/harness-comfyui.mjs` 及其 TypeScript 依赖生成的 `.local/source-cli/harness-comfyui.mjs`。Desktop generation 打包和 Web Host start/restart 都先生成 Client 与 managed CLI 运行模块；运行中的插件不要求 Node.js 解释 `node_modules/harness-comfyui` 内的 TypeScript 文件。
 
 ## 模块职责
 
@@ -45,11 +45,11 @@ pnpm web:start|restart
 | --- | --- |
 | `scripts/desktop/` | Desktop 产品配置解析、worktree 链接准备、generation 打包安装、Electron dev/preview 启停、状态和日志 |
 | `scripts/desktop/legacy-session-migration.mjs` | 把旧 Web 生产 DSH home 的 Session、Attachment、Session 投影索引和 Workspace Session 关系合并到当前生产 DSH home |
-| `scripts/production/` | Web Host Client 模块生成、配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
+| `scripts/production/` | Client 与 managed CLI 运行模块生成、Web Host 配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 门禁、Web 调试配置和共享 Web Host 生命周期适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset 和共享 Tool visibility component，并删除配置声明的已退役项目 Preset |
-| `scripts/cli/` | Agent 在受管前台 shell Tool Call 中通过 Node 解释器执行的项目 CLI 脚本 |
+| `scripts/cli/` | managed CLI 构建的源码入口；启动器把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` 后交给受管前台 shell Tool Call |
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request 和历史 Run 输入查询合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
@@ -71,9 +71,9 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client/Host 模块、物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation 并执行 DSH Desktop `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation 并执行 DSH Desktop `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
 
-`web:start` 与 `web:restart` 更新浏览器 Client 模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
+`web:start` 与 `web:restart` 更新浏览器 Client 与 managed CLI 运行模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 
@@ -86,8 +86,8 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 ```text
 前台 bash/pwsh ToolExecution
   → CliShellCapabilityStore 取得 Session、Turn、Call ID 与 cwd
-  → shell environment 提供 CLI 脚本路径、loopback URL 与短期 capability
-  → scripts/cli/harness-comfyui.mjs 提交业务参数
+  → shell environment 提供构建后的 CLI 路径、loopback URL 与短期 capability
+  → .local/source-cli/harness-comfyui.mjs 提交业务参数
   → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
   → generation submit：GenerationRuntime.acceptGeneration(identity, request)
   → generation run-inputs：GenerationRuntime.readGenerationRunInputs({ workspaceId, runIds })

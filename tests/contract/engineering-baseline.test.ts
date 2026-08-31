@@ -9,9 +9,10 @@ const readJson = (path: string): Record<string, any> => JSON.parse(readFileSync(
 describe('source workspace engineering contract', () => {
   it('uses one private source package with source exports', () => {
     const manifest = readJson('package.json')
+    const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.37.2',
+      version: '0.37.3',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
@@ -25,6 +26,12 @@ describe('source workspace engineering contract', () => {
       './package.json': './package.json',
     })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
+    expect(runtimeArtifacts).toEqual({
+      managedCli: {
+        sourceEntryRelativePath: 'scripts/cli/harness-comfyui.mjs',
+        outputEntryRelativePath: '.local/source-cli/harness-comfyui.mjs',
+      },
+    })
   })
 
   it('exposes only source process management and automated quality commands', () => {

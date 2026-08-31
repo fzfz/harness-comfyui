@@ -3,6 +3,7 @@ import type { Context, Logger } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { fileURLToPath } from 'node:url'
 
+import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import {
   configurationProfileNames,
   type ConfigurationProfileName,
@@ -141,7 +142,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     readonly webServer: { readonly host: string; readonly port: number }
   }).webServer
   const capabilities = new CliShellCapabilityStore({
-    cliPath: fileURLToPath(new URL('../../scripts/cli/harness-comfyui.mjs', import.meta.url)),
+    cliPath: fileURLToPath(new URL(`../../${runtimeArtifacts.managedCli.outputEntryRelativePath}`, import.meta.url)),
     apiUrl: `http://${webServer.host}:${webServer.port}${CLI_ROUTE_PATH}`,
   })
   const imageReaderDefaults = config.imageReaderDefaultModel === undefined

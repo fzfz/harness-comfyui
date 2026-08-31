@@ -1,12 +1,13 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { Context } from '@deepseek-ai/cordis'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 import * as harnessComfyui from '../../src/index.ts'
 import { reportGenerationRunInputLookupError } from '../../src/host/plugin.ts'
@@ -174,6 +175,8 @@ describe('Harness ComfyUI Host plugin', () => {
     } as never
     const firstCapability = contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
     expect(firstCapability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+    expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI)
+      .toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
     expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_API)
       .toBe('http://127.0.0.1:43199/api/harness-comfyui/cli/v1')
     ctx.emit('tools/result', execution, { status: 'success', value: null } as never)

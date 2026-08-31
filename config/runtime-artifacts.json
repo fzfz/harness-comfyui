@@ -1,0 +1,6 @@
+{
+  "managedCli": {
+    "sourceEntryRelativePath": "scripts/cli/harness-comfyui.mjs",
+    "outputEntryRelativePath": ".local/source-cli/harness-comfyui.mjs"
+  }
+}

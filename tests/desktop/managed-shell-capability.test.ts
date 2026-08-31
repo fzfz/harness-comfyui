@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
+import { materializeSourceCliModule } from '../../scripts/production/cli-module.mjs'
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 // @ts-expect-error The desktop worktree launcher is implemented as a Node.js ESM script.
 import { loadDesktopWorktreeContext } from '../../scripts/desktop/worktree.mjs'
@@ -84,6 +86,7 @@ describe('DSH Desktop managed shell capability', () => {
     vi.stubEnv('HARNESS_COMFYUI_CATALOG_PORT', '18093')
     vi.stubEnv('HARNESS_COMFYUI_SOURCE_CLI_PATH', 'node')
 
+    await materializeSourceCliModule(process.cwd())
     const hostModule = await materializeSourceHostModule(process.cwd())
     const projectPlugin = await import(`${pathToFileURL(hostModule).href}?test=${crypto.randomUUID()}`)
     const ctx = new Context()
@@ -119,7 +122,7 @@ describe('DSH Desktop managed shell capability', () => {
 
       expect(result.isError).toBe(false)
       const [cliPath, apiUrl, capability, responseText] = result.value?.stdout?.text?.trim().split('\n') ?? []
-      expect(cliPath).toBe(resolve(process.cwd(), 'scripts/cli/harness-comfyui.mjs'))
+      expect(cliPath).toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
       const activeWebServer = (ctx as Context & { webServer: { host: string; port: number } }).webServer
       expect(apiUrl).toBe(`http://${activeWebServer.host}:${activeWebServer.port}/api/harness-comfyui/cli/v1`)
       expect(activeWebServer.port).not.toBe(4173)

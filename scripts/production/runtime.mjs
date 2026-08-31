@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { validateSourceRuntime } from './contract.mjs'
+import { materializeSourceCliModule } from './cli-module.mjs'
 import { materializeSourceClientModule } from './client-module.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
 import { loadProfile } from '../../src/config/load-profile.ts'
@@ -423,6 +424,7 @@ export async function prepareSourceRuntime(context, options = {}) {
   await assertReadable(context.runtime.source.catalogCliPath, 'source production Catalog CLI')
   await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
   await mkdir(context.runtime.paths.apiWorkflowCacheDirectory, { recursive: true })
+  await (options.materializeCli ?? materializeSourceCliModule)(context.repositoryRoot)
   await materializeSourceClientModule(context.repositoryRoot)
   await materializeSourceProfile(context.repositoryRoot, context.dshHome, {
     profileName: context.dshProfile,

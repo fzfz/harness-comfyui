@@ -15,7 +15,7 @@
 | 配置校验 | Schemastery | `3.18.1` |
 | Web UI | React / React DOM | `18.3.1` |
 | 自动化测试 | Vitest / V8 coverage | `4.1.8`；阈值来自 `config/quality-gates.json` |
-| Client 模块转换 | tsdown | `0.22.2`；Desktop `prod:*`/`dev:*` generation 打包与 Web Host `web:start`/`web:restart` 都生成本地浏览器模块，自动化测试验证 ModuleLoader 与 import policy |
+| Client 与 managed CLI 模块转换 | tsdown | `0.22.2`；Desktop `prod:*`/`dev:*` generation 打包与 Web Host `web:start`/`web:restart` 都生成浏览器 Client 和 Node.js managed CLI 运行模块，自动化测试验证 ModuleLoader、import policy 与 `node_modules` 安装形态 CLI 执行 |
 | CI | GitHub Actions | 对 pull request 和 `main` push 执行同一套源码质量门禁 |
 
 当前仓库拥有的直接依赖在 `package.json` 中使用精确版本，完整解析结果保存在 `pnpm-lock.yaml`。DSH Desktop 和 DeepSeek Harness 属于宿主边界；插件通过 peer 范围声明兼容接口，不把宿主的 `node_modules` 路径写入 manifest 或 lockfile。

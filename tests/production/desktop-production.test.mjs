@@ -188,6 +188,7 @@ describe('DSH Desktop production lifecycle', () => {
     })
 
     await expect(startDesktopWorktree(context, {
+      materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,

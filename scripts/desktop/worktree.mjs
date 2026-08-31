@@ -7,6 +7,8 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseEnv } from 'node:util'
 
+import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
+
 import { migrateLegacyProductionSessionData } from './legacy-session-migration.mjs'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -190,6 +192,16 @@ export function packagedPluginManifest(manifest) {
   }
 }
 
+export const SOURCE_PLUGIN_PACKAGE_PATHS = Object.freeze([
+  'package.json',
+  'cordis.patch.yml',
+  'config',
+  'src',
+  dirname(runtimeArtifacts.managedCli.outputEntryRelativePath),
+  '.local/source-client',
+  '.local/source-host',
+])
+
 async function buildSourcePluginPackage(context) {
   const packageSource = resolve(context.runtimeRoot, 'plugin-package-source')
   const packageOutput = resolve(context.runtimeRoot, 'plugin-package')
@@ -197,15 +209,7 @@ async function buildSourcePluginPackage(context) {
   await rm(packageOutput, { recursive: true, force: true })
   await mkdir(packageSource, { recursive: true })
   await mkdir(packageOutput, { recursive: true })
-  for (const path of [
-    'package.json',
-    'cordis.patch.yml',
-    'config',
-    'src',
-    'scripts/cli',
-    '.local/source-client',
-    '.local/source-host',
-  ]) {
+  for (const path of SOURCE_PLUGIN_PACKAGE_PATHS) {
     await cp(resolve(context.repositoryRoot, path), resolve(packageSource, path), { recursive: true })
   }
   const manifestPath = resolve(packageSource, 'package.json')
@@ -307,6 +311,8 @@ export async function installSourcePluginGeneration(context, environment, packag
 }
 
 export async function prepareDesktopWorktree(context, options = {}) {
+  const materializeCli = options.materializeCli ?? (await import('../production/cli-module.mjs'))
+    .materializeSourceCliModule
   const materializeClient = options.materializeClient ?? (await import('../production/client-module.mjs'))
     .materializeSourceClientModule
   const materializeHost = options.materializeHost ?? (await import('../production/host-module.mjs'))
@@ -317,6 +323,7 @@ export async function prepareDesktopWorktree(context, options = {}) {
   await (options.migrateLegacySessionData ?? migrateLegacyProductionSessionData)(context)
   await replaceLink(context.environmentFilePath, resolve(context.dshHome, '.env'), 'file')
   await replaceLink(context.skillSource, resolve(context.runtimeHome, '.agents/skills'), 'dir')
+  await materializeCli(context.repositoryRoot)
   await materializeClient(context.repositoryRoot)
   await materializeHost(context.repositoryRoot)
   await materializePreset(context.repositoryRoot, context.dshHome)

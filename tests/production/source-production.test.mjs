@@ -360,6 +360,17 @@ describe('Web Host shared process commands', () => {
     expect(await pathExists(fixture.context.sourceRuntimeStatePath)).toBe(false)
   })
 
+  it('does not publish managed runtime state when CLI materialization fails', async () => {
+    const fixture = await createFixture()
+
+    await expect(prepareSourceRuntime(fixture.context, {
+      materializeCli: async () => { throw new Error('CLI bundle failed') },
+    })).rejects.toThrow('CLI bundle failed')
+
+    expect(await pathExists(fixture.managedStatePath)).toBe(false)
+    expect(await pathExists(fixture.context.sourceRuntimeStatePath)).toBe(false)
+  })
+
   it('serves a real Harness Client bundle that registers with ModuleLoader', async () => {
     const invalidUrl = 'http://127.0.0.1:4173/plugins/harness-comfyui/client.js'
     expect(() => inspectClientModuleRegistration(
