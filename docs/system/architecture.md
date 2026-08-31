@@ -144,7 +144,11 @@ Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media
 
 Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。Host 只把每项媒体的 `runId`、媒体显示属性、同源内容 URL、同源查看 URL 和正面提示词投影到查看页；Host 不把完整 Generation Request 或 Workflow 投影到查看页。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。
 
-查看页顶部显示当前媒体所属 Generation Run 的完整 `run_id`。用户点击该值后，页面使用浏览器 Clipboard API 写入完整 `run_id`；成功时显示“已复制”。Clipboard API 缺失或拒绝写入时，按钮显示“复制失败”，`aria-live` 分别说明当前环境不支持剪贴板写入或当前页面没有剪贴板写入权限，并提供对应的用户动作。页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。图片加载后，页面读取 `naturalWidth` 和 `naturalHeight`；视频元数据加载后，页面读取 `videoWidth` 和 `videoHeight`。上述值定义为媒体文件的固有像素尺寸，不使用 Generation Request 中的 `width` 或 `height` 推测。切换媒体时尺寸先显示“读取中”，零尺寸或媒体加载失败时显示“尺寸不可用”；已经被替换的媒体产生迟到事件时不得覆盖当前媒体的尺寸。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。
+媒体查看页 iframe 在初始渲染和每次媒体切换后，向父框架发送类型为 `harness-comfyui.session-media-viewer.current.v1` 且只包含 `type`、`mediaId` 和 `runId` 的当前媒体消息。DSH Desktop 主框架 Modal 只接收来源 origin 等于当前页面 origin、来源 window 等于当前媒体查看页 iframe、消息通过 `src/generation/contract.ts` 严格解析、`mediaId` 与 `runId` 对应当前 Session 同一项 Generation Media 的消息。合法消息更新 Modal 中 iframe 上方独立显示的完整 `run_id`；其他消息不改变 Modal 状态。
+
+用户点击 Modal 主框架的独立复制按钮后，主框架使用浏览器 Clipboard API 写入当前完整 `run_id`；成功时按钮显示“已复制”，`aria-live` 播报已复制的完整值。Clipboard API 缺失或拒绝写入时，按钮显示“复制失败”，`aria-live` 分别要求用户手动选择已显示的完整值，或要求用户重试后仍可手动选择该值。复制 Promise 完成时，Modal 只有在同一个 Modal 实例仍然打开并且当前 `mediaId` 与 `runId` 都未变化时才更新状态；已经关闭的 Modal 或已经切换的媒体不会接收迟到结果。媒体查看页 iframe 不调用 Clipboard API，也不请求 `clipboard-write` 权限。
+
+页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。图片加载后，页面读取 `naturalWidth` 和 `naturalHeight`；视频元数据加载后，页面读取 `videoWidth` 和 `videoHeight`。上述值定义为媒体文件的固有像素尺寸，不使用 Generation Request 中的 `width` 或 `height` 推测。切换媒体时尺寸先显示“读取中”，零尺寸或媒体加载失败时显示“尺寸不可用”；已经被替换的媒体产生迟到事件时不得覆盖当前媒体的尺寸。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。
 
 ## 图片读取与 Prompt 对比
 

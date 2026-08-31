@@ -58,7 +58,7 @@
 
 **Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow，Session 和 Chat Turn 只用于筛选。
 
-**Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，顶部显示当前媒体所属 Generation Run 的完整 `run_id` 和媒体文件固有像素尺寸，底部显示该 Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。用户点击顶部 `run_id` 后，查看页把完整值写入浏览器剪贴板。
+**Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，顶部显示媒体文件固有像素尺寸，底部显示该 Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。查看页 iframe 把当前 `mediaId` 和 `runId` 同步给 DSH Desktop 主框架 Modal；Modal 验证消息来源和当前 Session 媒体归属，在 iframe 上方显示完整 `run_id`，并由主框架的独立按钮把该值写入浏览器剪贴板。
 
 **运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据当前 UI Workflow、目标实例的 `/object_info`、请求参数、模型、LoRA、节点输入名称、节点活动状态和上下游连线生成输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
 
@@ -74,6 +74,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.37.5`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.37.6`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.37.5`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.37.6`；发布不创建或附加产品包。

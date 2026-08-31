@@ -1,3 +1,22 @@
+# Harness ComfyUI v0.37.6
+
+v0.37.6 修复 DSH Desktop 的 Session Media Viewer 无法复制完整 Run ID 的问题。
+
+## Session Media Viewer Run ID 复制
+
+- 原实现从媒体查看页 iframe 调用 Clipboard API；DSH Desktop 的权限合同只允许可信 loopback 主框架写入剪贴板，因此 iframe 请求被拒绝并显示“复制失败”。
+- 媒体查看页 iframe 现在只发送包含 `type`、`mediaId` 和 `runId` 的当前媒体消息。Modal 主框架验证消息 origin、来源 iframe、消息结构和当前 Session 媒体映射后，在 iframe 上方显示当前完整 Run ID。
+- 用户点击独立复制按钮后，Modal 主框架执行 Clipboard API 写入。复制成功时按钮显示“已复制”；Clipboard API 不可用或写入被拒绝时，Modal 提供重试或手动选择已显示 Run ID 的明确动作。
+- 用户在复制 Promise 完成前切换媒体、关闭 Modal 或重新打开 Modal 时，旧请求不会覆盖当前媒体的复制状态。iframe 不再请求 `clipboard-write` 权限，DSH Desktop 的 iframe 权限策略保持不变。
+- 主框架 Run ID 行支持完整文本选择、长值换行、键盘焦点、桌面宽度和 680px 以下窄屏布局。
+
+## 测试与发布
+
+- 完整测试通过：539 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%。
+- 真实 Desktop 测试使用两项不同 Run 的媒体和 CDP 真实鼠标事件，分别验证媒体切换前后的完整 Run ID 复制状态与播报，并验证真实桌面宽度和 600 × 800 viewport 的主框架 Run ID 行布局。
+- 完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.37.5
 
 v0.37.5 把当前 Catalog 的全部 19 个 ComfyUI Workflow 模板纳入参数支持基线和实时编译矩阵。

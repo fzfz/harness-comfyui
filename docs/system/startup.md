@@ -86,7 +86,7 @@ pnpm desktop:dependencies:link
 pnpm prod:start
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.37.5` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`；该分支提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.37.6` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`；该分支提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 
