@@ -44,6 +44,7 @@ import { WorkbenchController } from '../../src/client/workbench/controller.ts'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
 import { GENERATION_ERROR_COPY, RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
 import {
+  GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
   generationMediaContentUrl,
   generationMediaViewerUrl,
   type GenerationProjection,
@@ -51,7 +52,7 @@ import {
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
-  create: (node: ReactNode) => {
+  create: (node: ReactNode, options?: { readonly createNodeMock?: (element: { readonly type?: unknown }) => unknown }) => {
     root: {
       findAllByType(type: string): Array<{ props: Record<string, unknown> }>
       findAllByProps(props: Record<string, unknown>): Array<{ props: Record<string, unknown> }>
@@ -60,6 +61,35 @@ const { act, create } = createRequire(import.meta.url)('react-test-renderer') as
     toJSON(): unknown
     unmount(): void
   }
+}
+
+const iframeContentWindow = Object.freeze({ frame: 'session-media-viewer' })
+let messageEnvironment: {
+  readonly dispatch: (event: Record<string, unknown>) => void
+  readonly addEventListener: ReturnType<typeof vi.fn>
+  readonly removeEventListener: ReturnType<typeof vi.fn>
+} | null = null
+
+function installMessageWindow() {
+  if (messageEnvironment !== null) return messageEnvironment
+  const listeners = new Set<(event: Record<string, unknown>) => void>()
+  const addEventListener = vi.fn((name: string, listener: (event: Record<string, unknown>) => void) => {
+    if (name === 'message') listeners.add(listener)
+  })
+  const removeEventListener = vi.fn((name: string, listener: (event: Record<string, unknown>) => void) => {
+    if (name === 'message') listeners.delete(listener)
+  })
+  vi.stubGlobal('window', {
+    location: { origin: 'http://127.0.0.1:4173' },
+    addEventListener,
+    removeEventListener,
+  })
+  messageEnvironment = {
+    addEventListener,
+    removeEventListener,
+    dispatch(event) { for (const listener of listeners) listener(event) },
+  }
+  return messageEnvironment
 }
 
 const projection: GenerationProjection = {
@@ -91,13 +121,27 @@ const generationStore = {
   refreshSession: vi.fn(),
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  messageEnvironment = null
+  vi.unstubAllGlobals()
+})
 
 function buttonByText(renderer: ReturnType<typeof create>, text: ReactNode) {
   return renderer.root.findAllByType('button').find(button => button.props.children === text)!
 }
 
+function deferredVoid() {
+  let resolve!: () => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
 function renderDetails(workbench: WorkbenchController) {
+  installMessageWindow()
   return create(createElement(WorkbenchDetails, {
     sessionId: 'session-1',
     useSession: ((selector: (snapshot: unknown) => unknown) => selector({
@@ -105,7 +149,9 @@ function renderDetails(workbench: WorkbenchController) {
     })) as never,
     workbench,
     generationStore: generationStore as never,
-  }))
+  }), {
+    createNodeMock: element => element.type === 'iframe' ? { contentWindow: iframeContentWindow } : {},
+  })
 }
 
 describe('native Generation result drawer', () => {
@@ -142,12 +188,22 @@ describe('native Generation result drawer', () => {
   it('gives the application media viewer a viewport-sized modal surface', () => {
     const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
     const modalRule = styles.match(/\.harness-comfyui-media-viewer-modal\s*\{(?<body>[^}]*)\}/u)
+    const contentRule = styles.match(/\.harness-comfyui-media-viewer-content\s*\{(?<body>[^}]*)\}/u)
+    const rowRule = styles.match(/\.harness-comfyui-media-viewer-run-id-row\s*\{(?<body>[^}]*)\}/u)
+    const valueRule = styles.match(/\.harness-comfyui-media-viewer-run-id-value\s*\{(?<body>[^}]*)\}/u)
     const frameRule = styles.match(/\.harness-comfyui-media-viewer-frame\s*\{(?<body>[^}]*)\}/u)
 
     expect(modalRule?.groups?.body).toContain('width: min(1180px, calc(100vw - 48px));')
+    expect(contentRule?.groups?.body).toContain('min-width: 0;')
+    expect(rowRule?.groups?.body).toContain('grid-template-columns: auto minmax(0, 1fr) auto;')
+    expect(valueRule?.groups?.body).toContain('overflow-wrap: anywhere;')
+    expect(valueRule?.groups?.body).toContain('user-select: text;')
     expect(frameRule?.groups?.body).toContain('width: 100%;')
-    expect(frameRule?.groups?.body).toContain('height: min(72vh, 760px);')
+    expect(frameRule?.groups?.body).toContain('height: min(68vh, 720px);')
     expect(frameRule?.groups?.body).toContain('border: 0;')
+    expect(styles).toContain('.harness-comfyui-media-viewer-copy-button:focus-visible')
+    expect(styles).toContain('@media (max-width: 680px)')
+    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto;')
   })
 
   it('renders a closable fallback drawer for an open blank Session', () => {
@@ -224,8 +280,15 @@ describe('native Generation result drawer', () => {
     expect(renderer!.root.findAllByType('iframe')[0]!.props).toMatchObject({
       src: generationMediaViewerUrl('media_1', 'session-1'),
       title: `${RESULTS_COPY.mediaViewer}：result-1.webp`,
-      allow: 'clipboard-write',
     })
+    expect(renderer!.root.findAllByType('iframe')[0]!.props).not.toHaveProperty('allow')
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-run-id-value' }).props.children)
+      .toBe('run_1')
+    expect(renderer!.root.findAllByType('code').some(node => (
+      node.props.className === 'harness-comfyui-media-viewer-run-id-value'
+    ))).toBe(true)
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.type)
+      .toBe('button')
     act(() => {
       ;(renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.closeMediaViewer }).props.onClick as () => void)()
     })
@@ -255,6 +318,216 @@ describe('native Generation result drawer', () => {
       expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:workflow')
       renderer!.unmount()
     })
+  })
+
+  it('accepts current-media messages only from the open Session Media Viewer iframe', () => {
+    const environment = installMessageWindow()
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+
+    const message = {
+      type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
+      mediaId: 'media_4',
+      runId: 'run_2',
+    }
+    act(() => environment.dispatch({ origin: 'https://example.com', source: iframeContentWindow, data: message }))
+    act(() => environment.dispatch({ origin: 'http://127.0.0.1:4173', source: {}, data: message }))
+    act(() => environment.dispatch({
+      origin: 'http://127.0.0.1:4173', source: iframeContentWindow,
+      data: { ...message, unexpected: true },
+    }))
+    act(() => environment.dispatch({
+      origin: 'http://127.0.0.1:4173', source: iframeContentWindow,
+      data: { ...message, mediaId: 'media_unknown' },
+    }))
+    act(() => environment.dispatch({
+      origin: 'http://127.0.0.1:4173', source: iframeContentWindow,
+      data: { ...message, runId: 'run_mismatch' },
+    }))
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-run-id-value' }).props.children)
+      .toBe('run_1')
+
+    act(() => environment.dispatch({ origin: 'http://127.0.0.1:4173', source: iframeContentWindow, data: message }))
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-run-id-value' }).props.children)
+      .toBe('run_2')
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.children)
+      .toBe(RESULTS_COPY.copyRunId)
+    act(() => renderer!.unmount())
+  })
+
+  it('copies the complete current Run ID from the main frame', async () => {
+    const writeText = vi.fn(async () => undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+
+    await act(async () => {
+      await (renderer!.root.findByProps({
+        className: 'harness-comfyui-media-viewer-copy-button',
+      }).props.onClick as () => Promise<void>)()
+    })
+
+    expect(writeText).toHaveBeenCalledWith('run_1')
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.children)
+      .toBe(RESULTS_COPY.runIdCopied)
+    expect(renderer!.root.findByProps({
+      className: 'harness-comfyui-media-viewer-copy-announcement',
+    }).props.children).toBe(`${RESULTS_COPY.runIdCopiedAnnouncementPrefix}run_1`)
+    act(() => renderer!.unmount())
+  })
+
+  it('asks the user to select the displayed Run ID when Clipboard API is unavailable', async () => {
+    vi.stubGlobal('navigator', {})
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+
+    await act(async () => {
+      await (renderer!.root.findByProps({
+        className: 'harness-comfyui-media-viewer-copy-button',
+      }).props.onClick as () => Promise<void>)()
+    })
+
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.children)
+      .toBe(RESULTS_COPY.runIdCopyFailed)
+    expect(renderer!.root.findByProps({
+      className: 'harness-comfyui-media-viewer-copy-announcement',
+    }).props.children).toBe(RESULTS_COPY.runIdCopyApiUnavailable)
+    act(() => renderer!.unmount())
+  })
+
+  it('asks the user to retry or select the Run ID when clipboard permission is denied', async () => {
+    vi.stubGlobal('navigator', { clipboard: { writeText: async () => { throw new Error('permission denied') } } })
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+
+    await act(async () => {
+      await (renderer!.root.findByProps({
+        className: 'harness-comfyui-media-viewer-copy-button',
+      }).props.onClick as () => Promise<void>)()
+    })
+
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.children)
+      .toBe(RESULTS_COPY.runIdCopyFailed)
+    expect(renderer!.root.findByProps({
+      className: 'harness-comfyui-media-viewer-copy-announcement',
+    }).props.children).toBe(RESULTS_COPY.runIdCopyPermissionDenied)
+    act(() => renderer!.unmount())
+  })
+
+  it('ignores a completed copy after the iframe navigates to another Run ID', async () => {
+    const write = deferredVoid()
+    vi.stubGlobal('navigator', { clipboard: { writeText: () => write.promise } })
+    const environment = installMessageWindow()
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+    let copyPromise!: Promise<void>
+    act(() => {
+      copyPromise = (renderer!.root.findByProps({
+        className: 'harness-comfyui-media-viewer-copy-button',
+      }).props.onClick as () => Promise<void>)()
+    })
+    act(() => environment.dispatch({
+      origin: 'http://127.0.0.1:4173',
+      source: iframeContentWindow,
+      data: { type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE, mediaId: 'media_4', runId: 'run_2' },
+    }))
+    await act(async () => {
+      write.resolve()
+      await copyPromise
+    })
+
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-run-id-value' }).props.children)
+      .toBe('run_2')
+    expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.children)
+      .toBe(RESULTS_COPY.copyRunId)
+    expect(renderer!.root.findByProps({
+      className: 'harness-comfyui-media-viewer-copy-announcement',
+    }).props.children).toBe('')
+    act(() => renderer!.unmount())
+  })
+
+  for (const completion of ['resolve', 'reject'] as const) {
+    it(`ignores an old ${completion} after the media Modal closes and reopens`, async () => {
+      const write = deferredVoid()
+      vi.stubGlobal('navigator', { clipboard: { writeText: () => write.promise } })
+      const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+      let renderer: ReturnType<typeof create>
+      act(() => { renderer = renderDetails(workbench) })
+      act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+      const open = renderer!.root.findAllByType('button')
+        .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+      act(() => { (open.props.onClick as () => void)() })
+      let copyPromise!: Promise<void>
+      act(() => {
+        copyPromise = (renderer!.root.findByProps({
+          className: 'harness-comfyui-media-viewer-copy-button',
+        }).props.onClick as () => Promise<void>)()
+      })
+      act(() => {
+        (renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.closeMediaViewer }).props.onClick as () => void)()
+      })
+      act(() => { (open.props.onClick as () => void)() })
+
+      await act(async () => {
+        if (completion === 'resolve') write.resolve()
+        else write.reject(new Error('old modal clipboard rejection'))
+        await copyPromise
+      })
+
+      expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-run-id-value' }).props.children)
+        .toBe('run_1')
+      expect(renderer!.root.findByProps({ className: 'harness-comfyui-media-viewer-copy-button' }).props.children)
+        .toBe(RESULTS_COPY.copyRunId)
+      expect(renderer!.root.findByProps({
+        className: 'harness-comfyui-media-viewer-copy-announcement',
+      }).props.children).toBe('')
+      act(() => renderer!.unmount())
+    })
+  }
+
+  it('removes the current-media message listener when the Modal closes and when the gallery unmounts', () => {
+    const environment = installMessageWindow()
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+    expect(environment.addEventListener).toHaveBeenCalledTimes(1)
+    act(() => {
+      (renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.closeMediaViewer }).props.onClick as () => void)()
+    })
+    expect(environment.removeEventListener).toHaveBeenCalledTimes(1)
+    act(() => { (open.props.onClick as () => void)() })
+    expect(environment.addEventListener).toHaveBeenCalledTimes(2)
+    act(() => renderer!.unmount())
+    expect(environment.removeEventListener).toHaveBeenCalledTimes(2)
   })
 
   it('opens the complete Run error in a native error-details dialog', () => {

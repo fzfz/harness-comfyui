@@ -1,6 +1,8 @@
 export const GENERATION_REMOTE_NAMESPACE = 'harnessComfyuiGeneration'
 export const GENERATION_REMOTE_SERVICE = `remote.${GENERATION_REMOTE_NAMESPACE}`
 export const GENERATION_MEDIA_URL_PREFIX = '/api/harness-comfyui/media'
+export const GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE = 'harness-comfyui.session-media-viewer.current.v1'
+export const GENERATION_IDENTIFIER_MAX_LENGTH = 10_000
 
 export const GENERATION_RUN_STATUSES = [
   'created',
@@ -57,6 +59,12 @@ export interface GenerationProjection {
   readonly refreshAfterMs: number
 }
 
+export interface GenerationMediaViewerCurrentMessage {
+  readonly type: typeof GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE
+  readonly mediaId: string
+  readonly runId: string
+}
+
 function record(value: unknown, label: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(`${label} must be an object`)
   return value as Record<string, unknown>
@@ -92,6 +100,19 @@ export function parseGenerationProjectionRequest(value: unknown): GenerationProj
   })
 }
 
+export function parseGenerationMediaViewerCurrentMessage(value: unknown): GenerationMediaViewerCurrentMessage {
+  const source = record(value, 'Session Media Viewer current-media message')
+  exactKeys(source, ['type', 'mediaId', 'runId'], 'Session Media Viewer current-media message')
+  if (source.type !== GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE) {
+    throw new TypeError('Session Media Viewer current-media message type is invalid')
+  }
+  return Object.freeze({
+    type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
+    mediaId: text(source.mediaId, 'Session Media Viewer media id', false, GENERATION_IDENTIFIER_MAX_LENGTH)!,
+    runId: text(source.runId, 'Session Media Viewer Run id', false, GENERATION_IDENTIFIER_MAX_LENGTH)!,
+  })
+}
+
 function parseRun(value: unknown): GenerationRunProjection {
   const source = record(value, 'Generation Run projection')
   exactKeys(source, [
@@ -100,7 +121,7 @@ function parseRun(value: unknown): GenerationRunProjection {
   ], 'Generation Run projection')
   if (!GENERATION_RUN_STATUSES.includes(source.status as GenerationRunProjectionStatus)) throw new TypeError('Generation Run status is invalid')
   return Object.freeze({
-    runId: text(source.runId, 'Generation Run id')!,
+    runId: text(source.runId, 'Generation Run id', false, GENERATION_IDENTIFIER_MAX_LENGTH)!,
     turn: natural(source.turn, 'Generation Run turn'),
     title: text(source.title, 'Generation Run title')!,
     instanceTitle: text(source.instanceTitle, 'Generation Run instance title', true),
@@ -121,8 +142,8 @@ function parseMedia(value: unknown): GenerationMediaProjection {
   ], 'Generation media projection')
   if (source.mediaKind !== 'image' && source.mediaKind !== 'video') throw new TypeError('Generation media kind is invalid')
   return Object.freeze({
-    mediaId: text(source.mediaId, 'Generation media id')!,
-    runId: text(source.runId, 'Generation media Run id')!,
+    mediaId: text(source.mediaId, 'Generation media id', false, GENERATION_IDENTIFIER_MAX_LENGTH)!,
+    runId: text(source.runId, 'Generation media Run id', false, GENERATION_IDENTIFIER_MAX_LENGTH)!,
     turn: natural(source.turn, 'Generation media turn'),
     outputIndex: natural(source.outputIndex, 'Generation media output index'),
     mediaKind: source.mediaKind,

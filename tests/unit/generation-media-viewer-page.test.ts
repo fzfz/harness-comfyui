@@ -2,6 +2,7 @@ import { runInNewContext } from 'node:vm'
 
 import { describe, expect, it } from 'vitest'
 
+import { GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE } from '../../src/generation/contract.ts'
 import {
   renderGenerationMediaViewerPage,
   type GenerationMediaViewerItem,
@@ -82,10 +83,7 @@ function viewerData(html: string): unknown {
   return JSON.parse(match.groups.data) as unknown
 }
 
-function runViewer(
-  html: string,
-  clipboard: { readonly writeText: (value: string) => Promise<void> } | null = { writeText: async () => undefined },
-) {
+function runViewer(html: string) {
   const data = viewerData(html)
   const ids = [
     'media-position', 'media-title', 'media-time', 'media-content', 'media-error',
@@ -98,6 +96,7 @@ function runViewer(
   startup.textContent = JSON.stringify(data)
   const windowListeners = new Map<string, (event: Record<string, unknown>) => void>()
   const replacedUrls: string[] = []
+  const postedMessages: Array<{ readonly message: unknown; readonly targetOrigin: string }> = []
   const script = html.match(/<script>(?<script>[\s\S]*?)<\/script>/u)?.groups?.script
   if (script === undefined) throw new Error('media viewer browser script is missing')
 
@@ -110,6 +109,10 @@ function runViewer(
       createElement(tagName: string) { return fakeElement(tagName) },
     },
     window: {
+      location: { origin: 'http://127.0.0.1:4173' },
+      parent: {
+        postMessage(message: unknown, targetOrigin: string) { postedMessages.push({ message, targetOrigin }) },
+      },
       addEventListener(name: string, listener: (event: Record<string, unknown>) => void) {
         windowListeners.set(name, listener)
       },
@@ -117,13 +120,13 @@ function runViewer(
     history: {
       replaceState(_state: unknown, _unused: string, url: string) { replacedUrls.push(url) },
     },
-    navigator: clipboard === null ? {} : { clipboard },
+    navigator: {},
     Intl,
     Date,
     JSON,
     Error,
   })
-  return { elements, windowListeners, replacedUrls }
+  return { elements, windowListeners, replacedUrls, postedMessages }
 }
 
 describe('Generation media viewer page', () => {
@@ -141,25 +144,28 @@ describe('Generation media viewer page', () => {
     expect(html).not.toContain('<script data-attack>')
     expect(html).not.toContain('.innerHTML')
     expect(html).toContain('id="media-stage"')
-    expect(html).toContain('id="run-id-copy"')
+    expect(html).not.toContain('id="run-id-copy"')
+    expect(html).not.toContain('navigator.clipboard')
     expect(html).toContain('id="media-dimensions"')
     expect(html).toContain('id="positive-prompt"')
     expect(html).toContain('aria-live="polite"')
   })
 
-  it('copies the current Run ID and shows intrinsic image and video dimensions', async () => {
-    const copiedRunIds: string[] = []
+  it('posts the current media identity and shows intrinsic image and video dimensions', () => {
     const html = renderGenerationMediaViewerPage({
       items: [imageItem, videoItem],
       currentMediaId: imageItem.mediaId,
     })
-    const { elements } = runViewer(html, {
-      async writeText(value) { copiedRunIds.push(value) },
-    })
+    const { elements, postedMessages } = runViewer(html)
 
-    expect(elements['run-id'].textContent).toBe(imageItem.runId)
-    expect(elements['run-id-copy'].attributes.get('aria-label')).toBe(`复制 Run ID ${imageItem.runId}`)
-    expect(elements['copy-state'].textContent).toBe('点击复制')
+    expect(postedMessages).toEqual([{
+      message: {
+        type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
+        mediaId: imageItem.mediaId,
+        runId: imageItem.runId,
+      },
+      targetOrigin: 'http://127.0.0.1:4173',
+    }])
     expect(elements['media-dimensions'].textContent).toBe('读取中')
 
     const image = elements['media-content'].children[0]!
@@ -168,15 +174,15 @@ describe('Generation media viewer page', () => {
     image.listeners.get('load')?.({})
     expect(elements['media-dimensions'].textContent).toBe('832 × 1216 px')
 
-    elements['run-id-copy'].listeners.get('click')?.({})
-    await new Promise<void>(resolve => setImmediate(resolve))
-    expect(copiedRunIds).toEqual([imageItem.runId])
-    expect(elements['copy-state'].textContent).toBe('已复制')
-    expect(elements['media-announcement'].textContent).toBe(`已复制 Run ID：${imageItem.runId}`)
-
     elements['nav-older'].listeners.get('click')?.({})
-    expect(elements['run-id'].textContent).toBe(videoItem.runId)
-    expect(elements['copy-state'].textContent).toBe('点击复制')
+    expect(postedMessages[1]).toEqual({
+      message: {
+        type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
+        mediaId: videoItem.mediaId,
+        runId: videoItem.runId,
+      },
+      targetOrigin: 'http://127.0.0.1:4173',
+    })
     expect(elements['media-dimensions'].textContent).toBe('读取中')
 
     const video = elements['media-content'].children[0]!
@@ -191,32 +197,15 @@ describe('Generation media viewer page', () => {
     expect(elements['media-dimensions'].textContent).toBe('1920 × 1080 px')
   })
 
-  it('shows explicit Run ID copy and media dimension failure states', async () => {
+  it('shows explicit media dimension failure states', () => {
     const html = renderGenerationMediaViewerPage({ items: [imageItem], currentMediaId: imageItem.mediaId })
-    const { elements } = runViewer(html, null)
-
-    elements['run-id-copy'].listeners.get('click')?.({})
-    await new Promise<void>(resolve => setImmediate(resolve))
-    expect(elements['copy-state'].textContent).toBe('复制失败')
-    expect(elements['media-announcement'].textContent).toBe(
-      '当前浏览器或页面环境不支持剪贴板写入。请在支持 Clipboard API 的浏览器中打开本页面。',
-    )
+    const { elements } = runViewer(html)
 
     const image = elements['media-content'].children[0]!
     image.listeners.get('load')?.({})
     expect(elements['media-dimensions'].textContent).toBe('尺寸不可用')
     image.listeners.get('error')?.({})
     expect(elements['media-dimensions'].textContent).toBe('尺寸不可用')
-
-    const { elements: rejectedElements } = runViewer(html, {
-      async writeText() { throw new Error('clipboard permission denied') },
-    })
-    rejectedElements['run-id-copy'].listeners.get('click')?.({})
-    await new Promise<void>(resolve => setImmediate(resolve))
-    expect(rejectedElements['copy-state'].textContent).toBe('复制失败')
-    expect(rejectedElements['media-announcement'].textContent).toBe(
-      '当前页面没有剪贴板写入权限。请允许当前页面使用剪贴板后重试。',
-    )
   })
 
   it('keeps complete media, centered controls and a separately scrolling prompt on desktop and narrow screens', () => {

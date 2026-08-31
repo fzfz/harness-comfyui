@@ -761,10 +761,68 @@
   width: min(1180px, calc(100vw - 48px));
 }
 
+.harness-comfyui-media-viewer-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.harness-comfyui-media-viewer-run-id-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.harness-comfyui-media-viewer-run-id-row > span {
+  color: var(--dsw-alias-label-secondary);
+  font: var(--dsw-font-xs-13);
+}
+
+.harness-comfyui-media-viewer-run-id-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.harness-comfyui-media-viewer-copy-button {
+  min-height: 30px;
+  padding: 4px 9px;
+  color: var(--dsw-alias-label-primary);
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1);
+  font: var(--dsw-font-xs-13);
+  cursor: pointer;
+}
+
+.harness-comfyui-media-viewer-copy-button:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+
+.harness-comfyui-media-viewer-copy-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .harness-comfyui-media-viewer-frame {
   display: block;
   width: 100%;
-  height: min(72vh, 760px);
+  height: min(68vh, 720px);
   border: 0;
   border-radius: 12px;
   background: #111821;
@@ -1038,6 +1096,24 @@
 }
 
 @media (max-width: 680px) {
+  .harness-comfyui-media-viewer-modal {
+    width: calc(100vw - 24px);
+  }
+
+  .harness-comfyui-media-viewer-run-id-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .harness-comfyui-media-viewer-run-id-value {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .harness-comfyui-media-viewer-copy-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .harness-comfyui-image-reader-form {
     grid-template-columns: 1fr;
   }

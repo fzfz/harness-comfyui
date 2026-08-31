@@ -154,6 +154,22 @@ async function waitForValue(page, expression, accept, timeoutMs = 60_000) {
   throw new Error(`timed out waiting for Desktop page state; last value was ${JSON.stringify(value)}`)
 }
 
+async function clickMainFrameElement(page, selector) {
+  const point = await page.evaluate(`(() => {
+    const element = document.querySelector(${JSON.stringify(selector)})
+    if (!(element instanceof HTMLElement)) return null
+    const bounds = element.getBoundingClientRect()
+    return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 }
+  })()`)
+  if (point === null) throw new Error(`Desktop element is unavailable: ${selector}`)
+  await page.command('Input.dispatchMouseEvent', {
+    type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1,
+  })
+  await page.command('Input.dispatchMouseEvent', {
+    type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1,
+  })
+}
+
 async function openSettings(page) {
   await waitForValue(
     page,
@@ -230,6 +246,18 @@ async function seedDesktopMedia(context, identity) {
     0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02,
     0x44, 0x01, 0x00, 0x3b,
   ])
+  const older = {
+    runId: 'run_desktop_media_older', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b041',
+    mediaId: 'media_desktop_older', filename: 'desktop-older.gif',
+  }
+  const newer = {
+    runId: 'run_desktop_media_newer', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
+    mediaId: 'media_desktop_newer', filename: 'desktop-newer.gif',
+  }
+  const runIds = [older.runId, newer.runId]
+  const promptIds = [older.promptId, newer.promptId]
+  const mediaIds = [older.mediaId, newer.mediaId]
+  let currentTime = 1_700_000_000_000
   const runtime = new GenerationRuntime({
     runRepositoryFile: resolve(context.runtimeRoot, 'data/runs.sqlite'),
     runDirectory: resolve(context.runtimeRoot, 'runs'),
@@ -253,11 +281,13 @@ async function seedDesktopMedia(context, identity) {
         if (!input.onRequestStart()) throw new Error('Desktop test Generation submission was not accepted')
         return { promptId: input.promptId }
       },
-      async observe() {
+      async observe(input) {
         return {
           status: 'success',
           outputs: [{
-            nodeId: '3', outputIndex: 0, mediaKind: 'image', filename: 'desktop-modal.gif', subfolder: '', type: 'output',
+            nodeId: '3', outputIndex: 0, mediaKind: 'image',
+            filename: input.promptId === newer.promptId ? newer.filename : older.filename,
+            subfolder: '', type: 'output',
           }],
         }
       },
@@ -265,19 +295,33 @@ async function seedDesktopMedia(context, identity) {
         return { bytes: gifBytes, mediaType: 'image/gif' }
       },
     },
-    createRunId: () => 'run_desktop_media',
-    createPromptId: () => '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
-    createMediaId: () => 'media_desktop_modal',
+    createRunId: () => runIds.shift(),
+    createPromptId: () => promptIds.shift(),
+    createMediaId: () => mediaIds.shift(),
+    now: () => currentTime,
   })
   try {
     await runtime.acceptGeneration(
-      { ...identity, turn: 1, callId: 'call_desktop_media' },
+      { ...identity, turn: 1, callId: 'call_desktop_media_older' },
       {
-        title: 'Desktop media modal',
+        title: 'Desktop older media modal',
         instanceId: 'desktop-test-instance',
         templateId: 'desktop-test-template',
         model: null,
-        parameters: { positive_prompt: 'desktop media modal' },
+        parameters: { positive_prompt: 'desktop older media modal' },
+        loras: [],
+      },
+    )
+    for (let step = 0; step < 4; step += 1) await runtime.advance()
+    currentTime += 1_000
+    await runtime.acceptGeneration(
+      { ...identity, turn: 1, callId: 'call_desktop_media_newer' },
+      {
+        title: 'Desktop newer media modal',
+        instanceId: 'desktop-test-instance',
+        templateId: 'desktop-test-template',
+        model: null,
+        parameters: { positive_prompt: 'desktop newer media modal' },
         loras: [],
       },
     )
@@ -285,12 +329,14 @@ async function seedDesktopMedia(context, identity) {
   } finally {
     runtime.close()
   }
+  return { newer, older }
 }
 
 describe('live DSH Desktop production integration', () => {
   it('loads the project environment, workspace, Preset, and selectable image-reader Provider through preview', async () => {
     const base = await loadDesktopProductionContext({ desktopSourceRoot: process.cwd() })
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
+    const defaultProductionPortWasAvailable = await desktopMobilePortAvailable(43127)
     let mobileBridgePort = await findFreePort()
     while (mobileBridgePort === 43127) mobileBridgePort = await findFreePort()
     await assertDesktopMobilePortAvailable(mobileBridgePort)
@@ -322,18 +368,20 @@ describe('live DSH Desktop production integration', () => {
       mobileBridgePort,
     }
     const identity = await seedSavedDesktopSession({ ...context, dshHome: legacyDshHome })
-    await seedDesktopMedia(context, identity)
+    const mediaFixture = await seedDesktopMedia(context, identity)
     const fixture = { context, start: undefined }
     active.push(fixture)
     const debuggingPort = await findFreePort()
     fixture.start = startDesktopWorktree(context, { remoteDebuggingPort: debuggingPort })
     await waitForPath(context.pidFile)
     await waitForDesktopMobilePort(mobileBridgePort)
-    await assertDesktopMobilePortAvailable(43127)
+    expect(await desktopMobilePortAvailable(43127)).toBe(defaultProductionPortWasAvailable)
     expect(await readFile(repositoryLockfile, 'utf8')).toBe(repositoryLockfileBefore)
 
     const page = await connectDesktopPage(debuggingPort)
+    let deviceMetricsOverridden = false
     try {
+      await waitForValue(page, 'window.innerWidth', value => value >= 680)
       const initial = await waitForValue(
         page,
         `(() => ({
@@ -483,7 +531,7 @@ describe('live DSH Desktop production integration', () => {
         page,
         `(() => {
           const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
-          return drawer === null ? null : { media: drawer.textContent?.includes('1 个媒体') === true }
+          return drawer === null ? null : { media: drawer.textContent?.includes('2 个媒体') === true }
         })()`,
         value => value?.media === true,
       )
@@ -492,7 +540,7 @@ describe('live DSH Desktop production integration', () => {
       await waitForValue(
         page,
         `document.querySelectorAll('.harness-comfyui-media-viewer-button').length`,
-        value => value === 1,
+        value => value === 2,
       )
       const pageTargetsBefore = await desktopPageTargetCount(debuggingPort)
       await page.evaluate(`(document.querySelector('.harness-comfyui-media-viewer-button')?.click(), true)`)
@@ -506,6 +554,7 @@ describe('live DSH Desktop production integration', () => {
             title: frame.title,
             url: frame.getAttribute('src'),
             loaded: frame.contentDocument?.querySelector('.media-viewer') !== null,
+            runId: dialog.querySelector('.harness-comfyui-media-viewer-run-id-value')?.textContent ?? '',
             body: frame.contentDocument?.body?.innerText ?? ''
           } : null
         })()`,
@@ -513,10 +562,93 @@ describe('live DSH Desktop production integration', () => {
       )
       expect(viewer).toMatchObject({
         modal: 'true',
-        title: '媒体查看器：desktop-modal.gif',
-        url: expect.stringContaining('/api/harness-comfyui/media/media_desktop_modal/view?session_id=session-desktop-media'),
+        title: `媒体查看器：${mediaFixture.newer.filename}`,
+        url: expect.stringContaining(`/api/harness-comfyui/media/${mediaFixture.newer.mediaId}/view?session_id=session-desktop-media`),
+        runId: mediaFixture.newer.runId,
       })
-      expect(viewer.body).toContain('desktop-modal.gif')
+      expect(viewer.body).toContain(mediaFixture.newer.filename)
+
+      await clickMainFrameElement(page, '.harness-comfyui-media-viewer-copy-button')
+      const newerCopy = await waitForValue(
+        page,
+        `(() => {
+          const dialog = document.querySelector('[role="dialog"].harness-comfyui-media-viewer-modal')
+          return dialog ? {
+            runId: dialog.querySelector('.harness-comfyui-media-viewer-run-id-value')?.textContent ?? '',
+            button: dialog.querySelector('.harness-comfyui-media-viewer-copy-button')?.textContent ?? '',
+            announcement: dialog.querySelector('.harness-comfyui-media-viewer-copy-announcement')?.textContent ?? ''
+          } : null
+        })()`,
+        value => value?.button === '已复制',
+      )
+      expect(newerCopy).toEqual({
+        runId: mediaFixture.newer.runId,
+        button: '已复制',
+        announcement: `已复制完整 Run ID：${mediaFixture.newer.runId}`,
+      })
+
+      await page.evaluate(`(() => {
+        const frame = document.querySelector('.harness-comfyui-media-viewer-frame')
+        const button = frame?.contentDocument?.querySelector('#nav-older')
+        button?.click()
+        return button !== null && button !== undefined
+      })()`)
+      await waitForValue(
+        page,
+        `document.querySelector('.harness-comfyui-media-viewer-run-id-value')?.textContent ?? ''`,
+        value => value === mediaFixture.older.runId,
+      )
+      await clickMainFrameElement(page, '.harness-comfyui-media-viewer-copy-button')
+      const olderCopy = await waitForValue(
+        page,
+        `(() => {
+          const dialog = document.querySelector('[role="dialog"].harness-comfyui-media-viewer-modal')
+          return dialog ? {
+            runId: dialog.querySelector('.harness-comfyui-media-viewer-run-id-value')?.textContent ?? '',
+            button: dialog.querySelector('.harness-comfyui-media-viewer-copy-button')?.textContent ?? '',
+            announcement: dialog.querySelector('.harness-comfyui-media-viewer-copy-announcement')?.textContent ?? ''
+          } : null
+        })()`,
+        value => value?.button === '已复制',
+      )
+      expect(olderCopy).toEqual({
+        runId: mediaFixture.older.runId,
+        button: '已复制',
+        announcement: `已复制完整 Run ID：${mediaFixture.older.runId}`,
+      })
+
+      const geometryExpression = `(() => {
+        const row = document.querySelector('.harness-comfyui-media-viewer-run-id-row')
+        const frame = document.querySelector('.harness-comfyui-media-viewer-frame')
+        if (!(row instanceof HTMLElement) || !(frame instanceof HTMLIFrameElement)) return null
+        const rowBounds = row.getBoundingClientRect()
+        const frameBounds = frame.getBoundingClientRect()
+        return {
+          viewportWidth: window.innerWidth,
+          rowScrollWidth: row.scrollWidth,
+          rowClientWidth: row.clientWidth,
+          overlapsFrame: rowBounds.bottom > frameBounds.top
+        }
+      })()`
+      const desktopGeometry = await waitForValue(
+        page,
+        geometryExpression,
+        value => value?.viewportWidth >= 680,
+      )
+      expect(desktopGeometry.rowScrollWidth).toBeLessThanOrEqual(desktopGeometry.rowClientWidth)
+      expect(desktopGeometry.overlapsFrame).toBe(false)
+
+      await page.command('Emulation.setDeviceMetricsOverride', {
+        width: 600, height: 800, deviceScaleFactor: 1, mobile: false,
+      })
+      deviceMetricsOverridden = true
+      const narrowGeometry = await waitForValue(
+        page,
+        geometryExpression,
+        value => value?.viewportWidth < 680,
+      )
+      expect(narrowGeometry.rowScrollWidth).toBeLessThanOrEqual(narrowGeometry.rowClientWidth)
+      expect(narrowGeometry.overlapsFrame).toBe(false)
       await delay(300)
       expect(await desktopPageTargetCount(debuggingPort)).toBe(pageTargetsBefore)
       await page.evaluate(`([...document.querySelectorAll('button')]
@@ -527,6 +659,7 @@ describe('live DSH Desktop production integration', () => {
         value => value === true,
       )
     } finally {
+      if (deviceMetricsOverridden) await page.command('Emulation.clearDeviceMetricsOverride').catch(() => undefined)
       page.close()
     }
   })

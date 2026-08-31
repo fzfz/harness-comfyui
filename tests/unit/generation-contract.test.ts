@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  GENERATION_IDENTIFIER_MAX_LENGTH,
+  GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
   generationMediaContentUrl,
   generationMediaViewerUrl,
   generationMediaWorkflowUrl,
   parseGenerationProjection,
   parseGenerationProjectionRequest,
+  parseGenerationMediaViewerCurrentMessage,
 } from '../../src/generation/contract.ts'
 
 const projection = {
@@ -23,6 +26,28 @@ const projection = {
 } as const
 
 describe('Generation projection contract', () => {
+  it('parses only the closed Session Media Viewer current-media message', () => {
+    const message = {
+      type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
+      mediaId: 'media_1',
+      runId: 'run_1',
+    }
+
+    expect(parseGenerationMediaViewerCurrentMessage(message)).toEqual(message)
+    for (const value of [
+      null,
+      [],
+      { ...message, extra: true },
+      { ...message, type: 'harness-comfyui.session-media-viewer.other.v1' },
+      { ...message, mediaId: '' },
+      { ...message, runId: '' },
+      { ...message, mediaId: 'm'.repeat(GENERATION_IDENTIFIER_MAX_LENGTH + 1) },
+      { ...message, runId: 'r'.repeat(GENERATION_IDENTIFIER_MAX_LENGTH + 1) },
+    ]) {
+      expect(() => parseGenerationMediaViewerCurrentMessage(value)).toThrow()
+    }
+  })
+
   it('parses closed projection requests and complete Run/Media projections', () => {
     expect(parseGenerationProjectionRequest({ sessionId: 'session_1', turn: null }))
       .toEqual({ sessionId: 'session_1', turn: null })

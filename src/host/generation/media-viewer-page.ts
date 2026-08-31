@@ -1,4 +1,7 @@
-import type { GenerationMediaKind } from '../../generation/contract.ts'
+import {
+  GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
+  type GenerationMediaKind,
+} from '../../generation/contract.ts'
 
 export interface GenerationMediaViewerItem {
   readonly mediaId: string
@@ -129,19 +132,7 @@ button:focus-visible, video:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 7px;
 }
-.run-id-copy { cursor: copy; }
-.run-id-copy:hover { background: rgba(40, 85, 217, 0.24); }
 .meta-label { color: var(--viewer-muted); letter-spacing: 0.08em; }
-.run-id {
-  color: #dce7f7;
-  font: inherit;
-  overflow-wrap: anywhere;
-}
-.copy-state {
-  min-width: 4em;
-  color: var(--viewer-focus);
-  text-align: right;
-}
 .media-dimensions { font-weight: 500; white-space: nowrap; }
 .media-stage {
   min-height: 0;
@@ -251,7 +242,6 @@ button:focus-visible, video:focus-visible {
     gap: 7px;
     font-size: 9px;
   }
-  .run-id-copy { flex: 1 1 auto; }
   .media-size { flex: 0 0 auto; }
   .technical-chip { gap: 6px; padding: 5px 7px; }
   .media-stage { padding: 12px 56px; }
@@ -274,6 +264,7 @@ const VIEWER_SCRIPT = `(() => {
   const dataElement = document.getElementById('media-viewer-data')
   if (dataElement === null || dataElement.textContent === null) throw new Error('Media viewer startup data is missing.')
   const data = JSON.parse(dataElement.textContent)
+  const currentMessageType = ${JSON.stringify(GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE)}
   let currentIndex = data.items.findIndex(item => item.mediaId === data.currentMediaId)
   if (currentIndex < 0) throw new Error('Current media is not part of this Session.')
 
@@ -285,9 +276,6 @@ const VIEWER_SCRIPT = `(() => {
   const mediaPosition = element('media-position')
   const mediaTitle = element('media-title')
   const mediaTime = element('media-time')
-  const runIdCopy = element('run-id-copy')
-  const runId = element('run-id')
-  const copyState = element('copy-state')
   const mediaDimensions = element('media-dimensions')
   const mediaContent = element('media-content')
   const mediaError = element('media-error')
@@ -360,9 +348,7 @@ const VIEWER_SCRIPT = `(() => {
     mediaPosition.textContent = (currentIndex + 1) + ' / ' + data.items.length
     mediaTitle.textContent = item.filename
     mediaTime.textContent = formattedTime(item)
-    runId.textContent = item.runId
-    runIdCopy.setAttribute('aria-label', '复制 Run ID ' + item.runId)
-    copyState.textContent = '点击复制'
+    window.parent.postMessage({ type: currentMessageType, mediaId: item.mediaId, runId: item.runId }, window.location.origin)
     renderMedia(item)
     if (item.positivePrompt === null) {
       promptState.textContent = '未保存'
@@ -388,24 +374,6 @@ const VIEWER_SCRIPT = `(() => {
       + ' 项媒体：' + item.filename + '，生成时间 ' + formattedTime(item)
   }
 
-  async function copyCurrentRunId() {
-    const copiedRunId = data.items[currentIndex].runId
-    if (navigator.clipboard === undefined || typeof navigator.clipboard.writeText !== 'function') {
-      if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '复制失败'
-      announcement.textContent = '当前浏览器或页面环境不支持剪贴板写入。请在支持 Clipboard API 的浏览器中打开本页面。'
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(copiedRunId)
-      if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '已复制'
-      announcement.textContent = '已复制 Run ID：' + copiedRunId
-    } catch {
-      if (data.items[currentIndex].runId === copiedRunId) copyState.textContent = '复制失败'
-      announcement.textContent = '当前页面没有剪贴板写入权限。请允许当前页面使用剪贴板后重试。'
-    }
-  }
-
-  runIdCopy.addEventListener('click', () => void copyCurrentRunId())
   newerButton.addEventListener('click', () => move(-1))
   olderButton.addEventListener('click', () => move(1))
   window.addEventListener('keydown', event => {
@@ -438,9 +406,6 @@ export function renderGenerationMediaViewerPage(input: GenerationMediaViewerPage
         <span><time id="media-time"></time> · <span id="media-title"></span></span>
       </div>
       <div class="technical-meta" aria-label="当前媒体技术信息">
-        <button id="run-id-copy" class="technical-chip run-id-copy" type="button">
-          <span class="meta-label">RUN_ID</span><code id="run-id" class="run-id"></code><span id="copy-state" class="copy-state"></span>
-        </button>
         <p class="technical-chip media-size"><span class="meta-label">尺寸</span><strong id="media-dimensions" class="media-dimensions"></strong></p>
       </div>
     </header>

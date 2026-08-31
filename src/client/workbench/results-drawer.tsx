@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import {
   generationMediaContentUrl,
   generationMediaViewerUrl,
   generationMediaWorkflowUrl,
+  parseGenerationMediaViewerCurrentMessage,
   type GenerationMediaProjection,
   type GenerationRunProjection,
   type GenerationRunProjectionStatus,
@@ -258,16 +259,23 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null)
   const [page, setPage] = useState(1)
   const [viewerMediaId, setViewerMediaId] = useState<string | null>(null)
+  const [viewerCurrentMediaId, setViewerCurrentMediaId] = useState<string | null>(null)
+  const [viewerCopyState, setViewerCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [viewerCopyAnnouncement, setViewerCopyAnnouncement] = useState('')
   const [mediaErrors, setMediaErrors] = useState<Readonly<Record<string, string>>>({})
+  const viewerFrameRef = useRef<HTMLIFrameElement | null>(null)
+  const viewerInstanceRef = useRef(0)
+  const viewerCurrentIdentityRef = useRef<{ readonly mediaId: string; readonly runId: string } | null>(null)
   const filtered = useMemo(() => media.filter(item => (turn === 'all' || String(item.turn) === turn)
     && (kind === 'all' || item.mediaKind === kind)), [kind, media, turn])
   const pageCount = Math.max(1, Math.ceil(filtered.length / MEDIA_PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
   const pageItems = filtered.slice((currentPage - 1) * MEDIA_PAGE_SIZE, currentPage * MEDIA_PAGE_SIZE)
-  const viewerMedia = media.find(item => item.mediaId === viewerMediaId) ?? null
-  const viewerTitle = viewerMedia === null
+  const viewerFrameMedia = media.find(item => item.mediaId === viewerMediaId) ?? null
+  const viewerCurrentMedia = media.find(item => item.mediaId === viewerCurrentMediaId) ?? null
+  const viewerTitle = viewerCurrentMedia === null
     ? RESULTS_COPY.mediaViewer
-    : `${RESULTS_COPY.mediaViewer}：${viewerMedia.filename}`
+    : `${RESULTS_COPY.mediaViewer}：${viewerCurrentMedia.filename}`
   const turnOptions = useMemo(() => [
     { id: 'all', label: RESULTS_COPY.allTurns },
     ...[...new Set(media.map(item => item.turn))].sort((left, right) => right - left)
@@ -278,6 +286,84 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
     else setKind(value)
     setPage(1)
     setOpenFilter(null)
+  }
+  const openViewer = (mediaId: string) => {
+    const item = media.find(candidate => candidate.mediaId === mediaId)
+    if (item === undefined) return
+    viewerInstanceRef.current += 1
+    setViewerMediaId(mediaId)
+    setViewerCurrentMediaId(mediaId)
+    viewerCurrentIdentityRef.current = { mediaId: item.mediaId, runId: item.runId }
+    setViewerCopyState('idle')
+    setViewerCopyAnnouncement('')
+  }
+  const closeViewer = () => {
+    viewerInstanceRef.current += 1
+    setViewerMediaId(null)
+    setViewerCurrentMediaId(null)
+    viewerCurrentIdentityRef.current = null
+    setViewerCopyState('idle')
+    setViewerCopyAnnouncement('')
+  }
+
+  useEffect(() => () => {
+    viewerInstanceRef.current += 1
+    viewerCurrentIdentityRef.current = null
+  }, [])
+
+  useEffect(() => {
+    if (viewerMediaId === null) return
+    const receiveCurrentMedia = (event: MessageEvent<unknown>) => {
+      if (event.origin !== window.location.origin || event.source !== viewerFrameRef.current?.contentWindow) return
+      let message
+      try {
+        message = parseGenerationMediaViewerCurrentMessage(event.data)
+      } catch {
+        return
+      }
+      const current = media.find(item => item.mediaId === message.mediaId)
+      if (current === undefined || current.runId !== message.runId) return
+      setViewerCurrentMediaId(current.mediaId)
+      viewerCurrentIdentityRef.current = { mediaId: current.mediaId, runId: current.runId }
+      setViewerCopyState('idle')
+      setViewerCopyAnnouncement('')
+    }
+    window.addEventListener('message', receiveCurrentMedia)
+    return () => window.removeEventListener('message', receiveCurrentMedia)
+  }, [media, viewerMediaId])
+
+  const copyCurrentRunId = async () => {
+    const identity = viewerCurrentIdentityRef.current
+    if (identity === null) return
+    const instance = viewerInstanceRef.current
+    if (navigator.clipboard === undefined || typeof navigator.clipboard.writeText !== 'function') {
+      const current = viewerCurrentIdentityRef.current
+      if (viewerInstanceRef.current === instance
+        && current?.mediaId === identity.mediaId
+        && current.runId === identity.runId) {
+        setViewerCopyState('failed')
+        setViewerCopyAnnouncement(RESULTS_COPY.runIdCopyApiUnavailable)
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(identity.runId)
+    } catch {
+      const current = viewerCurrentIdentityRef.current
+      if (viewerInstanceRef.current === instance
+        && current?.mediaId === identity.mediaId
+        && current.runId === identity.runId) {
+        setViewerCopyState('failed')
+        setViewerCopyAnnouncement(RESULTS_COPY.runIdCopyPermissionDenied)
+      }
+      return
+    }
+    const current = viewerCurrentIdentityRef.current
+    if (viewerInstanceRef.current !== instance
+      || current?.mediaId !== identity.mediaId
+      || current.runId !== identity.runId) return
+    setViewerCopyState('copied')
+    setViewerCopyAnnouncement(`${RESULTS_COPY.runIdCopiedAnnouncementPrefix}${identity.runId}`)
   }
 
   return (
@@ -309,7 +395,7 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
                   item={item}
                   sessionId={sessionId}
                   errorCode={mediaErrors[item.mediaId] ?? null}
-                  onOpen={() => setViewerMediaId(item.mediaId)}
+                  onOpen={() => openViewer(item.mediaId)}
                   onError={source => {
                     void inspectMediaError(source).then(errorCode => {
                       setMediaErrors(current => ({ ...current, [item.mediaId]: errorCode }))
@@ -345,25 +431,42 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
         </div>
       )}
       <Modal
-        open={viewerMedia !== null}
-        onClose={() => setViewerMediaId(null)}
+        open={viewerFrameMedia !== null}
+        onClose={closeViewer}
         title={viewerTitle}
         closeLabel={RESULTS_COPY.closeMediaViewer}
         className="harness-comfyui-media-viewer-modal"
         contentClassName="harness-comfyui-media-viewer-modal-content"
         footer={(
-          <Button variant="primary" onClick={() => setViewerMediaId(null)}>
+          <Button variant="primary" onClick={closeViewer}>
             {RESULTS_COPY.closeMediaViewer}
           </Button>
         )}
       >
-        {viewerMedia === null ? null : (
-          <iframe
-            className="harness-comfyui-media-viewer-frame"
-            src={generationMediaViewerUrl(viewerMedia.mediaId, sessionId)}
-            title={viewerTitle}
-            allow="clipboard-write"
-          />
+        {viewerFrameMedia === null || viewerCurrentMedia === null ? null : (
+          <div className="harness-comfyui-media-viewer-content">
+            <div className="harness-comfyui-media-viewer-run-id-row" data-media-id={viewerCurrentMedia.mediaId}>
+              <span>{RESULTS_COPY.mediaViewerRunId}</span>
+              <code className="harness-comfyui-media-viewer-run-id-value">{viewerCurrentMedia.runId}</code>
+              <button
+                type="button"
+                className="harness-comfyui-media-viewer-copy-button"
+                aria-label={RESULTS_COPY.copyRunIdButtonLabel}
+                onClick={copyCurrentRunId}
+              >
+                {viewerCopyState === 'idle'
+                  ? RESULTS_COPY.copyRunId
+                  : viewerCopyState === 'copied' ? RESULTS_COPY.runIdCopied : RESULTS_COPY.runIdCopyFailed}
+              </button>
+            </div>
+            <p className="harness-comfyui-media-viewer-copy-announcement" aria-live="polite">{viewerCopyAnnouncement}</p>
+            <iframe
+              ref={viewerFrameRef}
+              className="harness-comfyui-media-viewer-frame"
+              src={generationMediaViewerUrl(viewerFrameMedia.mediaId, sessionId)}
+              title={viewerTitle}
+            />
+          </div>
         )}
       </Modal>
       <nav className="harness-comfyui-media-pagination" aria-label="本会话媒体分页">
