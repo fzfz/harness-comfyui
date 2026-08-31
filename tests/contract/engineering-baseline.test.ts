@@ -12,7 +12,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.37.6',
+      version: '0.37.7',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
@@ -114,17 +114,6 @@ describe('source workspace engineering contract', () => {
       else expect(version, `peerDependencies.${name}`).toMatch(exactVersion)
     }
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())
-  })
-
-  it('runs the live Desktop acceptance test in the required quality gate', () => {
-    const manifest = readJson('package.json')
-    expect(manifest.scripts.quality).toContain('pnpm run test:desktop')
-    const workflow = readFileSync(resolve(root, '.github/workflows/ci.yml'), 'utf8')
-    expect(workflow).toContain('desktop:\n    name: DSH Desktop acceptance\n    runs-on: macos-latest')
-    expect(workflow).toContain('repository: fzfz/dsh-desktop')
-    expect(workflow).toContain('ref: codex/configurable-mobile-bridge-port')
-    expect(workflow).toContain('run: pnpm run desktop:dependencies:link')
-    expect(workflow).toContain('run: pnpm run test:desktop')
   })
 
   it('does not ask the registry to install unpublished optional Harness peers', () => {

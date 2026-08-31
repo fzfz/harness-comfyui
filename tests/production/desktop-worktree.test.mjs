@@ -255,18 +255,18 @@ describe('DSH Desktop worktree lifecycle', () => {
     }).desktopSource).toBe(resolve(value.root, '.local/upstreams/dsh-desktop'))
   })
 
-  it('allows CI acceptance to use the current checkout as the Desktop source root', async () => {
+  it('allows local release acceptance to use the current checkout as the Desktop source root', async () => {
     const value = await fixture()
-    const ciCheckout = resolve(value.root, 'ci-checkout')
+    const candidateCheckout = resolve(value.root, 'candidate-checkout')
     const context = await loadDesktopWorktreeContext({
       repositoryRoot: value.root,
       definitionPath: value.definitionPath,
       productionDefinitionPath: value.productionDefinitionPath,
-      desktopSourceRoot: ciCheckout,
+      desktopSourceRoot: candidateCheckout,
       homeDirectory: resolve(value.root, 'parent-home'),
     })
 
-    expect(context.desktopSource).toBe(resolve(ciCheckout, '.local/upstreams/dsh-desktop'))
+    expect(context.desktopSource).toBe(resolve(candidateCheckout, '.local/upstreams/dsh-desktop'))
   })
 
   it('links the environment and all global Skills before installing the standard Harness plugin', async () => {

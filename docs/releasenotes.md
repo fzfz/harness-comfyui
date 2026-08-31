@@ -1,3 +1,22 @@
+# Harness ComfyUI v0.37.7
+
+v0.37.7 使 ANIMA 与 WAI Prompt Builder 按当前 Desktop 实际提供的消息内容读取普通文字和 ComfyUI 上下文。
+
+## Prompt Builder 当前消息输入合同
+
+- ANIMA Prompt Builder 删除 `noobai_user_prompt`、`ui_explicit` 和 `selection_order` 的过期定义，直接读取当前消息中的普通文字和 `type=comfyui-context` JSON 行。
+- WAI Prompt Builder 删除 `noobai_user_prompt`、`selection_snapshot_version`、`selection_order` 和旧快照属性定义，Character 记录读取 `data.id`、`data.work_name`、`data.character_name` 和 `data.prompt_text`，Style 记录读取 `data.id`、`data.name` 和 `data.prompt_text`。
+- 两个 Prompt Builder 均按 Character 和 Style JSON 行在当前消息中的出现顺序处理 UI 记录；历史 Generation Run 查询继续作为独立分支运行。
+
+## 验收与发布
+
+- 独立语义 Reviewer 完成四轮 Skill 文案审查，最终审查没有阻塞性或非阻塞性问题。
+- 真实 Desktop 使用 `ComfyUI工作台预设`、`DeepSeek V4 Flash` 和 `Default` 推理等级，分别验证 ANIMA 与 WAI 的普通文字、Character/Style 上下文和纯历史 Run 查询。六项模型用例全部通过，两个 Prompt Builder 均未要求旧输入对象或旧输入属性。
+- 发布门禁改为在独立 linked worktree 对最终候选树执行完整 `pnpm quality`、`git diff --check` 和必需的独立审查；仓库不再配置 GitHub Actions workflow。
+- 完整测试通过：539 项 unit/integration、27 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%。
+- 完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.37.6
 
 v0.37.6 修复 DSH Desktop 的 Session Media Viewer 无法复制完整 Run ID 的问题。

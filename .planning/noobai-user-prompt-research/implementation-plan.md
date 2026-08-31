@@ -136,11 +136,11 @@ Git 历史显示旧定义和当前 `comfyui-context` 实现在提交 `e9f78b3` �
 
 当前版本是 `0.37.6`。本次修改属于 Skill 输入合同修复，目标补丁版本是 `0.37.7`。用户批准本方案后，计划执行者必须：
 
-1. 把根 `package.json.version` 和 `pnpm-lock.yaml` 的项目版本更新为 `0.37.7`，不修改依赖版本。
+1. 把根 `package.json.version` 更新为 `0.37.7`，不修改依赖版本或 `pnpm-lock.yaml` 中的依赖解析结果。
 2. 更新 `README.md`、`docs/releasenotes.md`、`docs/system/testing.md`、`docs/system/startup.md` 和 `docs/system/releasing.md` 中的当前版本、六项真实模型验收记录和发布说明。
-3. 完成最终发布文档的独立语义 Review，再次执行 `pnpm quality` 和 `git diff --check`。最终结果必须是 critical、high、moderate 和 low 依赖漏洞数量均为 0。
+3. 完成最终候选树的独立 Standards Review、独立 Spec Review 和独立语义 Review，再次执行 `pnpm quality` 和 `git diff --check`。最终结果必须是 critical、high、moderate 和 low 依赖漏洞数量均为 0。
 4. 在 worktree 分支提交最终发布文档，并把主 checkout 从候选提交快进到最终发布提交。主 checkout 存在未提交修改或不能快进时，计划执行者必须停止并请求用户处理具体 Git 状态。
-5. 推送最终 `main`，等待 GitHub CI 的 Ubuntu `Source quality gates` 和 macOS `DSH Desktop acceptance` 成功。
+5. 推送最终 `main`，并确认本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 6. 创建并推送 `v0.37.7` annotated tag，创建无附件的 GitHub Release。
 7. 确认主 checkout `HEAD` 与 `v0.37.7` 指向同一个最终发布提交，并确认两个全局 Skill 链接解析到该主 checkout 的 canonical Skill 目录。
 8. 按 `docs/system/releasing.md` 从 `v0.37.7` 更新生产 checkout，保留生产 `.env` 和 `.local` 运行状态，启动生产 Desktop，并确认 `pnpm prod:status` 返回 `running`。
@@ -160,7 +160,7 @@ Git 历史显示旧定义和当前 `comfyui-context` 实现在提交 `e9f78b3` �
 - [ ] 独立语义 Reviewer 已通过全部语义检查项。
 - [ ] 六项真实 Desktop 模型用例全部通过，且验收记录包含实际 Skill 路径、Git 提交、消息行顺序、采用顺序和 shell 调用证据。
 - [ ] `pnpm quality` 和 `git diff --check` 全部通过。
-- [ ] GitHub CI 两个 job 全部成功。
+- [ ] 最终候选树通过必需的独立审查、`pnpm quality` 和 `git diff --check`，且本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 - [ ] `v0.37.7` tag、GitHub Release、主 checkout 和生产 checkout 指向同一个最终提交。
 - [ ] 新生产 Desktop Session 能发现并正确执行更新后的两个全局 Skill。
 

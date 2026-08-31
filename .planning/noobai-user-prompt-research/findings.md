@@ -86,3 +86,13 @@
 | 问题 | 处理结果 |
 | --- | --- |
 | 更新计划文件时补丁上下文少了 `worktree` 后的空格，导致 `apply_patch` 没有匹配 | 重新读取三个计划文件，并使用精确上下文重新应用补丁。 |
+
+## 本地发布门禁策略调研
+
+- 仓库是 GitHub Free 账户下的 private repository。该账户不能为当前仓库配置 branch protection 或 repository ruleset；GitHub API 返回“Upgrade to GitHub Pro or make this repository public”。
+- `.github/workflows/ci.yml` 的 Ubuntu job 执行 `quality:fast`，macOS job 执行 `test:desktop`。根 `package.json` 的 `pnpm quality` 依次执行 `quality:preinstall`、`quality:fast` 和 `test:desktop`，因此本地完整门禁覆盖两个 GitHub Actions job 的测试命令，并额外执行安装前安全检查。
+- GitHub Actions attempt 1 和 attempt 2 都在执行任何 step 前被 Billing 或 Actions spending limit 拒绝。失败不包含源码、测试或 Desktop 验收结果。
+- 推荐策略删除自动 GitHub Actions workflow，避免 private repository 的每次 push 创建无法启动的付费 runner job。
+- 推荐发布门禁保留两个本地阶段：源码候选提交前在独立 worktree 执行完整 `pnpm quality`、`git diff --check` 和独立审查；最终版本与发布文档提交前在同一独立 worktree 再次执行完整 `pnpm quality`、`git diff --check` 和独立语义审查。
+- 最终 Git tag 与 GitHub Release 必须指向通过第二阶段本地门禁的精确提交。生产 checkout 仍只允许从已发布 Git tag 更新，不允许使用未发布提交或手工编辑生产源码。
+- 该策略不使用自托管 runner，不下载或运行新的外部程序，也不增加依赖。
