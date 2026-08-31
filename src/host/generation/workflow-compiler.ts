@@ -1136,7 +1136,6 @@ function hasRequiredConnectionInputs(definition: UnknownRecord, inputs: Readonly
 function compile(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
-  expectedOutputNodeIds: readonly string[] | null,
 ): Omit<WorkflowCompilerResult, 'actualWorkflow'> {
   if (workflow.version !== 0.4) fail('Workflow version is not supported.')
   const links = workflowLinks(workflow)
@@ -1189,21 +1188,14 @@ function compile(
     const definition = record(nodeDefinitions[String(node.class_type)], 'ComfyUI output node definition')
     return definition.output_node === true ? [nodeId] : []
   })
-  const activeOutputNodeIds = expectedOutputNodeIds === null
-    ? discoveredOutputIds.filter(nodeId => {
-        const node = apiWorkflow[nodeId] as Readonly<Record<string, JsonValue>>
-        const definition = record(nodeDefinitions[String(node.class_type)], 'ComfyUI output node definition')
-        return hasRequiredConnectionInputs(definition, node.inputs as Readonly<Record<string, JsonValue>>)
-      })
-    : [...expectedOutputNodeIds]
+  const activeOutputNodeIds = discoveredOutputIds.filter(nodeId => {
+    const node = apiWorkflow[nodeId] as Readonly<Record<string, JsonValue>>
+    const definition = record(nodeDefinitions[String(node.class_type)], 'ComfyUI output node definition')
+    return hasRequiredConnectionInputs(definition, node.inputs as Readonly<Record<string, JsonValue>>)
+  })
   if (activeOutputNodeIds.length === 0) fail('Workflow does not contain an active output node.')
-  for (const nodeId of activeOutputNodeIds) {
-    if (!discoveredOutputIds.includes(nodeId)) fail(`Declared output node "${nodeId}" is not an active ComfyUI output node.`)
-  }
-  if (expectedOutputNodeIds === null) {
-    for (const nodeId of discoveredOutputIds) {
-      if (!activeOutputNodeIds.includes(nodeId)) delete apiWorkflow[nodeId]
-    }
+  for (const nodeId of discoveredOutputIds) {
+    if (!activeOutputNodeIds.includes(nodeId)) delete apiWorkflow[nodeId]
   }
   return Object.freeze({
     apiWorkflow: Object.freeze(apiWorkflow),
@@ -1319,7 +1311,7 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       materializeRgthreeRandomSeeds(actualWorkflow, definitions, this.createRandomSeed)
       if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, definitions, input.model)
       applyLoras(actualWorkflow, definitions, input.loras)
-      const compiled = compile(actualWorkflow, definitions, input.expectedOutputNodeIds)
+      const compiled = compile(actualWorkflow, definitions)
       const finalized = await this.officialApiWorkflowCompiler.compile({
         instanceId: input.instanceId,
         connection: input.connection,

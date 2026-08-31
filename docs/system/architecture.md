@@ -51,7 +51,7 @@ pnpm web:start|restart
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset 和共享 Tool visibility component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | managed CLI 构建的源码入口；启动器把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` 后交给受管前台 shell Tool Call |
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request 和历史 Run 输入查询合同 |
-| `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.84.0 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
+| `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.86.1 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/image-reader/` | 图片读取设置迁移与保存、运行时视觉模型目录、系统 Provider/OpenAI 兼容适配和单图视觉模型调用 Tool |
@@ -120,7 +120,7 @@ Generation 编译链路分为参数语义和最终导出两个阶段：
   → Comfy transport 把最终 API Workflow 提交给 /prompt
 ```
 
-`ComfyWorkflowCompiler` 不读取 Source 模板参数定义或参数绑定。Generation Tool 把用户显式提供的运行参数键和值交给 compiler；compiler 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名、节点标题、活动状态和上下游连线定位可写 widget。参数键中的节点 ID 后缀可以选择同类控件；两个参数用不同值占用同一 widget 时终止编译。
+Source v0.86.1 TemplateBundle 只提供模板 ID、模板标题和 UI Workflow。`ComfyWorkflowCompiler` 不读取 Source 模板参数定义、参数绑定或输出节点过滤器。Generation Tool 把用户显式提供的运行参数键和值交给 compiler；compiler 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名、节点标题、活动状态和上下游连线定位可写 widget。参数键中的节点 ID 后缀可以选择同类控件；两个参数用不同值占用同一 widget 时终止编译。
 
 compiler 把 `/object_info` 中字符串数组形式的输入定义作为对应运行参数目标的允许值集合。精确值保持不变；唯一大小写无关匹配写入实例返回的精确值；无匹配或非唯一匹配返回 `GENERATION_PARAMETER_INVALID`。错误信息包含 generation parameter ID、目标 ComfyUI 节点输入、收到值、实例允许值和重新调用 `generate_with_comfyui` 的动作，因此 Tool 调用方可以修正参数后重试。
 
@@ -128,7 +128,7 @@ compiler 把 `/object_info` 中字符串数组形式的输入定义作为对应�
 
 正向 Prompt 与负向 Prompt 使用采样路径的 `positive`、`negative` 输入和明确节点标题区分。compiler 优先匹配公开参数键和 Prompt 输入别名；没有名称候选时，compiler 从实时 `/object_info` 中选择类型为 `STRING` 且 `multiline=true`、没有输入连线并且下游执行路径符合目标 Prompt 极性的 widget。一个 Prompt 控件同时连接正向分支和零化负向分支时只暴露为正向 Prompt；断开执行路径的 Prompt 节点不覆盖具有下游执行连线的 Prompt 节点。精确 `width`、`height` 只修改唯一的 latent 构造 widget或其唯一上游标量控件；使用 `aspect_ratio` 与 `megapixels` 生成尺寸的 selector 不会被强制断开。目标不存在或仍不唯一时，compiler 返回包含具体参数键的错误；目标不唯一时，错误还列出候选 ComfyUI 节点输入。
 
-实时输入定义为 `BOOLEAN` 且 UI Workflow 序列化值不是布尔值时，compiler 使用该输入定义中的布尔默认值；实时定义没有布尔默认值时终止编译。Seed、模型实例路径、标准 LoRA、Power LoRA、LoraManager、bypass 解析和活动输出节点筛选继续由该阶段负责。空 LoRA 选择保留 UI Workflow 保存的 LoRA 状态；非空结构化 LoRA 选择只修改活动 Loader，不激活 bypass Loader。compiler 不根据源尺寸自动改写独立下游放大尺寸。
+实时输入定义为 `BOOLEAN` 且 UI Workflow 序列化值不是布尔值时，compiler 使用该输入定义中的布尔默认值；实时定义没有布尔默认值时终止编译。Seed、模型实例路径、标准 LoRA、Power LoRA、LoraManager、bypass 解析和活动输出节点筛选继续由该阶段负责。compiler 根据实时 `/object_info` 选择 `output_node: true` 且已满足必需输入的节点，并从运行时 API Workflow 投影删除未满足必需输入的输出节点；没有活动输出节点时返回 `WORKFLOW_COMPILE_FAILED`。Generation Runtime 保存 compiler 返回的活动输出节点集合，并把该集合交给 Comfy transport 筛选 Jobs API 输出。空 LoRA 选择保留 UI Workflow 保存的 LoRA 状态；非空结构化 LoRA 选择只修改活动 Loader，不激活 bypass Loader。compiler 不根据源尺寸自动改写独立下游放大尺寸。
 
 `ComfyWorkflowCompiler` 产生的手写 API Workflow 现在只作为运行时 API Workflow 投影。Official Base API Workflow 才是最终执行节点集合、连接 tuple、虚拟节点和自定义 widget 序列化的权威来源。官方前端把某些字面量序列化为没有`class_type`、只有`inputs.UNKNOWN`和可选`_meta`的载体对象时，`OfficialApiWorkflowCompiler`只在一个合法执行节点输入以`[载体节点ID, 0]`引用该对象时，把载体值折叠进消费者输入并在严格结构校验前删除已消费载体。非零输出索引、未被合法执行节点引用的同形对象和其他无`class_type`对象均导致导出失败。Runtime Input Overlay 只替换官方对象中已经存在的同名非连接输入；当官方输入使用 `{ "__value__": ... }` 包装时只替换 `__value__`。Runtime Input Overlay 不替换官方连接，也不删除官方执行节点、额外节点或额外输入。官方前端导出、缓存读取或 Runtime Input Overlay 失败时，本次 Generation Run 明确失败，生产路径不会直接提交手写投影。
 

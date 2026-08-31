@@ -24,12 +24,7 @@ export interface ComfyInstanceSource {
 export interface ComfyTemplateBundle {
   readonly id: string
   readonly title: string
-  readonly revisionNumber: number
-  readonly workflowSha256: string
-  readonly configRevision: number
-  readonly dimensionStrategy: string
   readonly workflow: UiWorkflow
-  readonly expectedOutputNodeIds: readonly string[] | null
 }
 
 export interface GenerationSource {
@@ -41,7 +36,6 @@ export interface WorkflowCompilerInput {
   readonly instanceId: string
   readonly workflow: UiWorkflow
   readonly connection: ComfyConnection
-  readonly expectedOutputNodeIds: readonly string[] | null
   readonly runtimeParameters?: Readonly<Record<string, JsonValue>>
   readonly model?: GenerationRequest['model']
   readonly loras: GenerationRequest['loras']
@@ -84,15 +78,7 @@ function safeSourceSnapshot(
 ): Readonly<Record<string, JsonValue>> {
   return Object.freeze({
     instance: Object.freeze({ id: instance.id, title: instance.title, origin }),
-    template: Object.freeze({
-      id: bundle.id,
-      title: bundle.title,
-      revision_number: bundle.revisionNumber,
-      workflow_sha256: bundle.workflowSha256,
-      config_revision: bundle.configRevision,
-      dimension_strategy: bundle.dimensionStrategy,
-      expected_output_node_ids: bundle.expectedOutputNodeIds,
-    }),
+    template: Object.freeze({ id: bundle.id, title: bundle.title }),
   })
 }
 
@@ -117,7 +103,6 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
       instanceId: instance.id,
       workflow: bundle.workflow,
       connection,
-      expectedOutputNodeIds: bundle.expectedOutputNodeIds,
       runtimeParameters: request.parameters,
       model: request.model,
       loras: request.loras,

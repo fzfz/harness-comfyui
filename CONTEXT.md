@@ -32,7 +32,7 @@
 
 **Managed Web Host State**：`web:*` 把运行中配置快照保存在 `.local/web-development/state/source-managed.json`。`web:stop`、`web:status`、`web:health` 和 `web:logs` 使用该快照定位独立 Web Host。
 
-**Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.84.0`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
+**Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.86.1`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。Source TemplateBundle 只向 Host 提供 `id`、`title` 和 `workflow_json`。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
 
 ## 数据
 
@@ -62,6 +62,8 @@
 
 **运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据当前 UI Workflow、目标实例的 `/object_info`、请求参数、模型、LoRA、节点输入名称、节点活动状态和上下游连线生成输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
 
+**编译后活动输出节点集合**：`ComfyWorkflowCompiler` 从目标实例实时 `/object_info` 中选择 `output_node: true` 且已满足必需输入的 Workflow 节点。Generation Runtime 把该集合保存到 `generation_runs.expected_output_node_ids_json`，并把该集合传给 Comfy transport 以筛选 Jobs API 输出。该集合是 compiler 输出，不是 Source TemplateBundle 字段。
+
 **Official Base API Workflow**：目标 ComfyUI 实例的官方前端加载 Actual Workflow 后，通过 `graphToPrompt()` 返回的 API Workflow。该对象是最终节点拓扑、连接 tuple、虚拟节点和自定义 widget 序列化结构的权威来源。
 
 **Official API Workflow Cache**：Desktop 生产环境默认使用 `.local/desktop-production/data/api-workflow-cache/`，Desktop 开发环境默认使用 `.local/desktop-development/data/api-workflow-cache/`，Web Host 调试环境默认使用 `.local/web-development/shared/data/api-workflow-cache/`。每个缓存项保存实例身份、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希、执行结构哈希和 Official Base API Workflow；缓存项不保存认证信息，也不保存覆盖后的本次请求值。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。
@@ -72,6 +74,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.37.2`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.37.4`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.37.2`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.37.4`；发布不创建或附加产品包。

@@ -49,6 +49,7 @@ describe('production Configuration Profile loader', () => {
     expect(profile.server.port).toBe(4199)
     expect(profile.client.runRefreshIntervalMs).toBe(1200)
     expect(profile.source.catalogPort).toBe(18093)
+    expect(profile.source.sourceReleaseVersion).toBe('0.86.1')
     expect(profile.paths.dataDir).toBe('.local/production/data')
     expect(profile.paths.apiWorkflowCacheDirectory).toBe('.local/production/data/api-workflow-cache')
     expect(profile.comfyui.frontendCompiler).toEqual({
@@ -56,6 +57,25 @@ describe('production Configuration Profile loader', () => {
       instanceCacheEpoch: '1',
       timeoutMs: 120000,
     })
+  })
+
+  it('rejects a Configuration Profile pinned to a different Source release', () => {
+    const temporaryConfigRoot = copyConfiguration('harness-comfyui-config-source-release-')
+    try {
+      const basePath = join(temporaryConfigRoot, 'base.json')
+      const base = JSON.parse(readFileSync(basePath, 'utf8')) as {
+        source: { sourceReleaseVersion: string }
+      }
+      base.source.sourceReleaseVersion = '0.84.0'
+      writeFileSync(basePath, JSON.stringify(base), 'utf8')
+
+      expect(() => loadProfile('production', {
+        configRoot: temporaryConfigRoot,
+        environment: productionEnvironment,
+      })).toThrowError(expect.objectContaining({ property: 'source.sourceReleaseVersion' }))
+    } finally {
+      rmSync(temporaryConfigRoot, { recursive: true, force: true })
+    }
   })
 
   it('reports the production file and property when an override is invalid', () => {

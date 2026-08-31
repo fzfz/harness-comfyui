@@ -10,7 +10,7 @@ lifecycle: historical-record
 
 本文档记录 Source v0.84.0 发布前的责任边界与实施来源。对应 Source 工作已经完成并部署；当前 Harness 实施不得执行本文档中的历史 Source 修改、测试、CI、发布或部署步骤。
 
-> 本文档的源数据实施任务已经由源数据仓库 `v0.84.0` 完成。当前 Harness 消费者不得把本文早期设计中的 `items` 响应、`<manifest-path>` 参数、顶层 `contract_id`/`contract_version` wrapper 或 CLI 业务 Schema 校验当作 live contract；现行消费合同是 [`source-contract-v0.84.0.md`](source-contract-v0.84.0.md) 与 [`config/source-contract-v0.84.0.json`](../../config/source-contract-v0.84.0.json)。本文保留源仓库责任边界和实施来源记录，不授权当前仓库修改源数据仓库。
+> 本文档的源数据实施任务已经由源数据仓库 `v0.84.0` 完成。当前 Harness 消费者不得把本文早期设计中的 `items` 响应、`<manifest-path>` 参数、顶层 `contract_id`/`contract_version` wrapper 或 CLI 业务 Schema 校验当作 live contract；现行消费合同是 [`source-contract-v0.86.1.md`](source-contract-v0.86.1.md) 与 [`config/source-contract-v0.86.1.json`](../../config/source-contract-v0.86.1.json)。本文保留源仓库责任边界和实施来源记录，不授权当前仓库修改源数据仓库。
 
 本文档依据 Source 历史 revision `6bc3fc6a027eecf45ccf86dd681e30621c4bc591` 编写。Source v0.84.0 的最终发布合同与该历史基线之间的差异以当前 `source-contract-v0.84.0.md` 和 `config/source-contract-v0.84.0.json` 为准。
 

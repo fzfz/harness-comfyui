@@ -12,7 +12,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.37.3',
+      version: '0.37.4',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',

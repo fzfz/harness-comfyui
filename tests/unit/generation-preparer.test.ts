@@ -32,14 +32,10 @@ const instance: ComfyInstanceSource = {
   authorization: 'Bearer secret-token',
 }
 
-function template(expectedOutputNodeIds: readonly string[] | null = ['3']): ComfyTemplateBundle {
+function template(): ComfyTemplateBundle {
   return {
     id: '34',
     title: 'Anima Aesthetic 1.1｜文生图',
-    revisionNumber: 7,
-    workflowSha256: 'a'.repeat(64),
-    configRevision: 2,
-    dimensionStrategy: 'explicit',
     workflow: {
       version: 0.4,
       nodes: [
@@ -48,7 +44,6 @@ function template(expectedOutputNodeIds: readonly string[] | null = ['3']): Comf
       ],
       links: [],
     },
-    expectedOutputNodeIds,
   }
 }
 
@@ -93,11 +88,6 @@ describe('SourceGenerationPreparer', () => {
       template: {
         id: '34',
         title: 'Anima Aesthetic 1.1｜文生图',
-        revision_number: 7,
-        workflow_sha256: 'a'.repeat(64),
-        config_revision: 2,
-        dimension_strategy: 'explicit',
-        expected_output_node_ids: ['3'],
       },
     })
     expect(JSON.stringify(prepared.sourceSnapshot)).not.toContain('secret-token')
@@ -109,27 +99,25 @@ describe('SourceGenerationPreparer', () => {
       model: request.model,
       loras: [],
     }))
+    expect(compile.mock.calls[0]?.[0]).not.toHaveProperty('expectedOutputNodeIds')
   })
 
-  it('uses the compiler active output nodes when the source template does not declare an output-node filter', async () => {
+  it('uses the compiler active output nodes as the runtime output filter', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({
-      actualWorkflow: template(null).workflow,
+      actualWorkflow: template().workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))
     const preparer = new SourceGenerationPreparer({
       defaultInstanceId: '1',
-      source: source(template(null)),
+      source: source(template()),
       compiler: { compile },
     })
 
     const prepared = await preparer.prepare(request)
 
     expect(prepared.expectedOutputNodeIds).toEqual(['3'])
-    expect(prepared.sourceSnapshot).toMatchObject({
-      template: { expected_output_node_ids: null },
-    })
-    expect(compile).toHaveBeenCalledWith(expect.objectContaining({ expectedOutputNodeIds: null }))
+    expect(compile.mock.calls[0]?.[0]).not.toHaveProperty('expectedOutputNodeIds')
   })
 
   it('does not require request parameters to be declared by Source metadata', async () => {

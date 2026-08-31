@@ -106,13 +106,6 @@ function sourceId(value: unknown, label: string): string {
   return normalized
 }
 
-function integer(value: unknown, label: string, minimum = 0): number {
-  if (!Number.isSafeInteger(value) || (value as number) < minimum) {
-    throw sourceError('SOURCE_PROTOCOL_ERROR', `${label} is invalid.`)
-  }
-  return value as number
-}
-
 function jsonValue(value: unknown, label: string): JsonValue {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -190,21 +183,10 @@ function parseWorkflow(value: unknown): UiWorkflow {
 
 function parseTemplate(value: unknown): ComfyTemplateBundle {
   const source = record(value, 'ComfyUI template bundle')
-  const outputIds = source.expected_output_node_ids_json
-  if (outputIds !== null && (!Array.isArray(outputIds) || outputIds.length === 0)) {
-    throw sourceError('SOURCE_PROTOCOL_ERROR', 'ComfyUI template output node identities are invalid.')
-  }
   return Object.freeze({
     id: sourceId(source.id, 'ComfyUI template id'),
     title: text(source.title, 'ComfyUI template title'),
-    revisionNumber: integer(source.revision_number, 'ComfyUI template revision', 1),
-    workflowSha256: text(source.workflow_sha256, 'ComfyUI template Workflow SHA-256'),
     workflow: parseWorkflow(source.workflow_json),
-    configRevision: integer(source.config_revision, 'ComfyUI template config revision', 1),
-    dimensionStrategy: text(source.dimension_strategy, 'ComfyUI template dimension strategy'),
-    expectedOutputNodeIds: outputIds === null
-      ? null
-      : Object.freeze(outputIds.map((id, index) => sourceId(id, `ComfyUI template output node id ${index}`))),
   })
 }
 

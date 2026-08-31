@@ -108,7 +108,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `source.catalogPort` | Catalog CLI连接的本机回环服务端口 |
 | `source.sourceCliPath` | Source CLI 绝对路径，由启动器生成 |
 | `source.contractId` | 固定为 `imagegen-source-contract` |
-| `source.sourceReleaseVersion` | 固定为 `0.84.0` |
+| `source.sourceReleaseVersion` | 固定为 `0.86.1` |
 | `jobs.pollIntervalMs` | ComfyUI Job 轮询间隔，毫秒 |
 | `jobs.missingObservationMs` | 缺失 Job observation 判定时间，毫秒 |
 | `media.maxFileBytes` | 单个 ComfyUI 输出媒体允许保存的最大字节数 |

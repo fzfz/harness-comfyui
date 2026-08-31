@@ -105,20 +105,13 @@ describe('GenerationSourceCli', () => {
     )
   })
 
-  it('projects only Workflow execution data from a TemplateBundle response', async () => {
+  it('reads a Source v0.86.1 three-field TemplateBundle response', async () => {
     const process = vi.fn<SourceCliProcess>(async () => ({
       exitCode: 0,
       stdout: success({
         id: 34,
         title: 'Anima',
-        revision_number: 7,
-        workflow_sha256: 'a'.repeat(64),
         workflow_json: workflow,
-        config_revision: 2,
-        dimension_strategy: 'explicit',
-        parameters_json: { stale: true },
-        bindings_json: 'stale',
-        expected_output_node_ids_json: null,
       }),
       stderr: '',
     }))
@@ -126,64 +119,34 @@ describe('GenerationSourceCli', () => {
 
     const bundle = await source.readTemplate('34')
 
-    expect(bundle).toMatchObject({
+    expect(bundle).toEqual({
       id: '34',
       title: 'Anima',
-      revisionNumber: 7,
-      configRevision: 2,
-      expectedOutputNodeIds: null,
+      workflow,
     })
-    expect(bundle).not.toHaveProperty('parameters')
-    expect(bundle).not.toHaveProperty('bindings')
   })
 
   it.each([
-    ['missing', undefined, undefined],
-    ['malformed', { invalid: true }, [{ parameter_id: 'positive_prompt', operation: 'unknown' }]],
-    ['contradictory', [{ parameter_id: 'seed', kind: 'seed' }], [{ parameter_id: 'prompt', operation: 'unknown' }]],
-  ])('ignores %s parameter and binding response metadata', async (_label, parametersJson, bindingsJson) => {
+    ['missing Workflow', undefined, 'Template Workflow must be an object.'],
+    ['non-object Workflow', [], 'Template Workflow must be an object.'],
+    ['missing Workflow nodes', { version: 0.4 }, 'Template Workflow nodes are invalid.'],
+    ['non-object Workflow node', { version: 0.4, nodes: ['invalid'] }, 'Template Workflow node 0 must be an object.'],
+  ])('rejects a TemplateBundle with %s', async (_label, workflowJson, message) => {
     const process = vi.fn<SourceCliProcess>(async () => ({
       exitCode: 0,
       stdout: success({
         id: 34,
         title: 'Anima',
-        revision_number: 7,
-        workflow_sha256: 'a'.repeat(64),
-        workflow_json: workflow,
-        config_revision: 2,
-        dimension_strategy: 'explicit',
-        parameters_json: parametersJson,
-        bindings_json: bindingsJson,
-        expected_output_node_ids_json: null,
+        workflow_json: workflowJson,
       }),
       stderr: '',
     }))
     const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
 
-    const bundle = await source.readTemplate('34')
-    expect(bundle).not.toHaveProperty('parameters')
-    expect(bundle).not.toHaveProperty('bindings')
-  })
-
-  it('validates an explicit non-empty output-node filter', async () => {
-    const process = vi.fn<SourceCliProcess>(async () => ({
-      exitCode: 0,
-      stdout: success({
-        id: 34,
-        title: 'Anima',
-        revision_number: 7,
-        workflow_sha256: 'a'.repeat(64),
-        workflow_json: workflow,
-        config_revision: 2,
-        dimension_strategy: 'explicit',
-        parameters_json: [],
-        bindings_json: [],
-        expected_output_node_ids_json: [1],
-      }),
-      stderr: '',
-    }))
-    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
-    await expect(source.readTemplate('34')).resolves.toMatchObject({ expectedOutputNodeIds: ['1'] })
+    await expect(source.readTemplate('34')).rejects.toMatchObject({
+      code: 'SOURCE_PROTOCOL_ERROR',
+      message,
+    })
   })
 
   it('accepts a connection-only Workflow node without widgets_values', async () => {
@@ -200,14 +163,7 @@ describe('GenerationSourceCli', () => {
       stdout: success({
         id: 37,
         title: 'wai_txt2img_lora',
-        revision_number: 2,
-        workflow_sha256: 'a'.repeat(64),
         workflow_json: workflowWithConnectionOnlyNode,
-        config_revision: 2,
-        dimension_strategy: 'explicit',
-        parameters_json: [],
-        bindings_json: [],
-        expected_output_node_ids_json: null,
       }),
       stderr: '',
     }))

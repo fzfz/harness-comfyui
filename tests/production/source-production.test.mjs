@@ -221,7 +221,7 @@ describe('Web Host shared process commands', () => {
       comfyui: { defaultInstanceId: '1' },
       source: {
         contractId: 'imagegen-source-contract',
-        sourceReleaseVersion: '0.84.0',
+        sourceReleaseVersion: '0.86.1',
       },
       client: { runRefreshIntervalMs: 1000 },
       process: { shutdownTimeoutMs: 10_000 },

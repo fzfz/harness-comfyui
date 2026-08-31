@@ -39,7 +39,7 @@ pnpm prod:test
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
 
-Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、实例 ID 安全投影、Run 幂等、状态转换、重启恢复、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。Catalog 自动化测试覆盖 Source v0.84.0 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
+Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、Source v0.86.1 三字段 TemplateBundle、实例 ID 安全投影、Run 幂等、状态转换、重启恢复、活动输出节点发现、断开输出节点删除、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。Catalog 自动化测试覆盖 Source v0.86.1 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
 
 历史 Generation Run 输入查询测试覆盖 Tool 与 CLI 的单项和批量入口、输入顺序、重复 `run_id`、完整 ID、最少八个 UUID 字符的短 ID、短 ID canonical 完整值返回、当前 Workspace 唯一匹配、其他 Workspace 同前缀隔离、短 ID 无匹配与多匹配逐项错误、单项无效 ID、损坏的 `request_json`、历史请求缺少 `loras` 或 `model`、准备失败、Actual Workflow 文件缺失或无效、未分类文件系统错误脱敏、1 项与 20 项边界、21 项拒绝和取消传播。CLI 集成测试从临时 `node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs` 执行构建产物，并确认合法批量请求包含单项错误时仍返回退出码 0。
 

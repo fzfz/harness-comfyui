@@ -1,3 +1,20 @@
+# Harness ComfyUI v0.37.4
+
+v0.37.4 使 Host 按 Source v0.86.1 合同读取三字段 ComfyUI TemplateBundle，并由 Workflow compiler 根据目标实例实时节点定义发现活动输出节点。
+
+## Source v0.86.1 适配
+
+- `GenerationSourceCli` 读取 TemplateBundle 的 `id`、`title` 和 `workflow_json`，不再要求 Source 已删除的模板 revision、Workflow SHA-256、config revision、dimension strategy 和输出节点过滤器。
+- `ComfyWorkflowCompiler` 根据目标实例实时 `/object_info` 的 `output_node: true` 标记与 Workflow 必需输入连线生成活动输出节点集合，并删除未满足必需输入的输出节点。
+- Generation Runtime 继续把 compiler 返回的活动输出节点集合保存到 Run Repository，并把该集合交给 Comfy transport 筛选 Jobs API 输出。
+- Source Configuration Profile 与结构化消费合同固定为 `0.86.1`；Source v0.84.0 合同和 ADR 保留为历史记录。
+
+## 测试与发布
+
+- Source adapter 回归测试验证三字段 TemplateBundle 成功解析和无效 Workflow 分支。
+- Workflow compiler 回归测试验证活动输出节点发现、断开输出节点删除和没有活动输出节点时的明确失败。
+- 本版本没有增加依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.37.3
 
 v0.37.3 修复 DSH Desktop production generation 中的 managed CLI 在 Node.js 24 下无法启动的问题。

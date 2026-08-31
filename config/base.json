@@ -20,7 +20,7 @@
     "catalogCliPath": "",
     "sourceCliPath": "",
     "contractId": "imagegen-source-contract",
-    "sourceReleaseVersion": "0.84.0"
+    "sourceReleaseVersion": "0.86.1"
   },
   "jobs": {
     "pollIntervalMs": 500,

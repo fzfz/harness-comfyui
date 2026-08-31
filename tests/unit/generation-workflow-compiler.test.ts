@@ -75,6 +75,12 @@ const objectInfo = {
   },
 }
 
+const fixtureOutputInfo = {
+  input: { required: { filename_prefix: ['STRING', {}] } },
+  input_order: { required: ['filename_prefix'], optional: [] },
+  output_node: true,
+}
+
 function createCompiler(
   options: Omit<ComfyWorkflowCompilerOptions, 'officialApiWorkflowCompiler'> = {},
 ): ComfyWorkflowCompiler {
@@ -114,7 +120,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'win3080',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -263,7 +268,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: representative,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": prompt, "width": width, "height": height },
 
       model: { id: model, fileName: model },
@@ -315,7 +319,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188/', origin: 'http://127.0.0.1:8188', authorization: 'Bearer token' },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -356,7 +359,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     } as const
 
@@ -375,7 +377,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     } as const
 
@@ -396,7 +397,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId,
       workflow,
       connection: { url, origin: new URL(url).origin, authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -417,7 +417,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     } as const
 
@@ -478,7 +477,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['text', 'strength'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -486,7 +485,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['4'],
       loras: [],
     })
 
@@ -522,7 +520,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -547,7 +544,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: malformed,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({
       code: 'WORKFLOW_COMPILE_FAILED',
@@ -581,7 +577,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -661,7 +656,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['input', 'resize_type', 'scale_method'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -669,7 +664,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['4'],
       loras: [],
     })
 
@@ -769,7 +763,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['value'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -777,7 +771,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -847,7 +840,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -868,7 +860,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({ code: 'WORKFLOW_COMPILE_FAILED' })
   })
@@ -891,7 +882,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": '1girl, black hair' },
 
       loras: [],
@@ -963,7 +953,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['positive', 'negative'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -971,7 +961,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['4'],
       runtimeParameters: { positive_prompt: 'runtime positive', negative_prompt: 'runtime negative' },
       loras: [],
     })
@@ -1040,7 +1029,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['positive', 'negative'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1048,7 +1037,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['4'],
       runtimeParameters: { positive_prompt: 'runtime prompt' },
       loras: [],
     })
@@ -1058,7 +1046,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['4'],
       runtimeParameters: { negative_prompt: 'must not replace the shared positive Prompt' },
       loras: [],
     })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_TARGET_NOT_FOUND' })
@@ -1159,7 +1146,7 @@ describe('ComfyWorkflowCompiler', () => {
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1167,7 +1154,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'usnr, gthan, 1girl' },
 
       loras: [],
@@ -1263,7 +1249,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['positive'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1271,7 +1257,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['16'],
       runtimeParameters: { positive_prompt: 'runtime prompt' },
       loras: [],
     })
@@ -1350,7 +1335,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['positive'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1358,7 +1343,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['16'],
       runtimeParameters: { positive_prompt: 'runtime prompt' },
       loras: [],
     })).rejects.toMatchObject({
@@ -1453,7 +1437,7 @@ describe('ComfyWorkflowCompiler', () => {
         output_node: false,
       },
       CLIPTextEncode: objectInfo.CLIPTextEncode,
-      SaveImage: objectInfo.SaveImage,
+      SaveImage: fixtureOutputInfo,
     }
     const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definitions), { status: 200 })),
@@ -1463,7 +1447,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "negative_prompt": 'low quality, blurry' },
 
       loras: [],
@@ -1565,7 +1548,7 @@ describe('ComfyWorkflowCompiler', () => {
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1573,7 +1556,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'requested prompt' },
 
       loras: [],
@@ -1640,7 +1622,7 @@ describe('ComfyWorkflowCompiler', () => {
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1648,7 +1630,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'requested prompt' },
 
       loras: [],
@@ -1701,7 +1682,7 @@ describe('ComfyWorkflowCompiler', () => {
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1709,7 +1690,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'requested prompt' },
 
       loras: [],
@@ -1801,7 +1781,7 @@ describe('ComfyWorkflowCompiler', () => {
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1809,7 +1789,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'requested prompt' },
 
       loras: [],
@@ -1905,7 +1884,7 @@ describe('ComfyWorkflowCompiler', () => {
           output_node: false,
         },
         CLIPTextEncode: objectInfo.CLIPTextEncode,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -1913,7 +1892,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'requested prompt' },
 
       loras: [],
@@ -1985,7 +1963,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -2027,7 +2004,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
     const apiNode = compiled.apiWorkflow['40']
@@ -2071,7 +2047,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({
       code: 'WORKFLOW_COMPILE_FAILED',
@@ -2124,7 +2099,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['width'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -2132,7 +2107,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "width": 640 },
 
       loras: [],
@@ -2206,7 +2180,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -2214,7 +2188,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "width": 640, "height": 768 },
 
       loras: [],
@@ -2284,7 +2257,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['samples', 'upscale_method', 'width', 'height', 'crop'], optional: [] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -2292,7 +2265,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "width": 704, "height": 832 },
 
       loras: [],
@@ -2311,7 +2283,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: fixedAspectWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "width": 704, "height": 832 },
 
       loras: [],
@@ -2367,7 +2338,7 @@ describe('ComfyWorkflowCompiler', () => {
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         SeedNode: seedDefinition,
         KSampler: seedDefinition,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -2375,7 +2346,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "seed_2": 303 },
 
       loras: [],
@@ -2389,7 +2359,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "seed": 404, "seed_2": 303 },
 
       loras: [],
@@ -2452,7 +2421,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "positive_prompt": 'positive final', "negative_prompt": 'negative final', "width": 768, "height": 1024, "seed": 42 },
 
       loras: [],
@@ -2493,7 +2461,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "reference_image": 'input.png' },
 
       loras: [],
@@ -2524,7 +2491,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "seed": 11, "seed_7": 22 },
 
       loras: [],
@@ -2590,7 +2556,7 @@ describe('ComfyWorkflowCompiler', () => {
     const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
         ...definitions,
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -2598,7 +2564,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['200'],
       runtimeParameters,
       loras: [],
     })
@@ -2642,7 +2607,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { sampler_name: 'LCM', scheduler: 'NORMAL' },
       loras: [],
     })
@@ -2678,7 +2642,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { method: 'MKL' },
       loras: [],
     })
@@ -2715,7 +2678,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { sampler_name: suppliedValue },
       loras: [],
     })).rejects.toMatchObject({
@@ -2749,7 +2711,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { seed_999: 303 },
       loras: [],
     })).rejects.toMatchObject({
@@ -2783,7 +2744,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { steps: 21, steps_7: 22 },
       loras: [],
     })).rejects.toMatchObject({
@@ -2833,7 +2793,7 @@ describe('ComfyWorkflowCompiler', () => {
           input_order: { required: ['seed'], optional: ['samples'] },
           output_node: false,
         },
-        SaveImage: objectInfo.SaveImage,
+        SaveImage: fixtureOutputInfo,
       }), { status: 200 })),
     })
 
@@ -2841,7 +2801,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { seed: 303 },
       loras: [],
     })
@@ -2943,7 +2902,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { cfg: 5.5, batch_size: 2, sampler_name: 'dpmpp_2m' },
       loras: [],
     })
@@ -2993,7 +2951,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { batch_size: 2 },
       loras: [],
     })
@@ -3027,7 +2984,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "seed": 101, "seed_6": 202 },
 
       loras: [],
@@ -3047,7 +3003,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "unknown_value": 'x' },
 
       loras: [],
@@ -3070,7 +3025,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: ambiguous,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters: { "custom_value": 'changed' },
 
       loras: [],
@@ -3080,7 +3034,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
   })
 
-  it('discovers active output nodes when the template output declaration is null', async () => {
+  it('discovers active output nodes from live definitions and Workflow connections', async () => {
     const compiler = createCompiler({
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
@@ -3089,7 +3043,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: null,
       loras: [],
     })
 
@@ -3127,7 +3080,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: null,
       loras: [],
     })
 
@@ -3135,7 +3087,7 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow).not.toHaveProperty('5')
   })
 
-  it('leaves missing instance-required inputs for the ComfyUI prompt endpoint to validate', async () => {
+  it('rejects a Workflow without an active output node', async () => {
     const missingImagesWorkflow = structuredClone(workflow)
     const saveNode = missingImagesWorkflow.nodes[2] as { inputs: Array<{ link: number | null }> }
     saveNode.inputs[0]!.link = null
@@ -3143,17 +3095,14 @@ describe('ComfyWorkflowCompiler', () => {
       fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
     })
 
-    const compiled = await compiler.compile({
+    await expect(compiler.compile({
       instanceId: 'test-instance',
       workflow: missingImagesWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
-    })
-
-    expect(compiled.apiWorkflow['3']).toEqual({
-      class_type: 'SaveImage',
-      inputs: { filename_prefix: 'harness-comfyui' },
+    })).rejects.toMatchObject({
+      code: 'WORKFLOW_COMPILE_FAILED',
+      message: 'Workflow does not contain an active output node.',
     })
   })
 
@@ -3198,7 +3147,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -3237,7 +3185,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({
       code: 'WORKFLOW_COMPILE_FAILED',
@@ -3279,7 +3226,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: assetWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -3312,7 +3258,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: assetWorkflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -3352,7 +3297,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 1, triggerWords: ['usnr'] }],
     })
 
@@ -3408,7 +3352,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [
         { id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 1, triggerWords: ['usnr'] },
         { id: '69', fileName: 'GTHAN-EQ.safetensors', weight: 0.8, triggerWords: ['gthan'] },
@@ -3456,7 +3399,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -3550,7 +3492,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })
 
@@ -3586,7 +3527,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_INVALID' })
   })
@@ -3617,7 +3557,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_INVALID' })
   })
@@ -3651,7 +3590,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_INVALID' })
   })
@@ -3704,7 +3642,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [
         { id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 0.85, triggerWords: ['usnr'] },
         { id: '69', fileName: 'GTHAN-EQ.safetensors', weight: 0.65, triggerWords: ['gthan'] },
@@ -3775,7 +3712,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 0.85, triggerWords: ['usnr'] }],
     })
     const selected = { on: true, lora: instancePath, strength: 0.85 }
@@ -3817,7 +3753,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 0.9, triggerWords: ['usnr'] }],
     })
 
@@ -3861,7 +3796,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'selected.safetensors', weight: 1, triggerWords: ['selected'] }],
     })).rejects.toMatchObject({ code, message: expect.stringContaining('selected.safetensors') })
   })
@@ -3895,7 +3829,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [
         { id: '1', fileName: 'one.safetensors', weight: 1, triggerWords: [] },
         { id: '2', fileName: 'two.safetensors', weight: 0.8, triggerWords: [] },
@@ -3954,7 +3887,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'selected.safetensors', weight: 1, triggerWords: [] }],
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_AMBIGUOUS' })
   })
@@ -3992,7 +3924,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       runtimeParameters,
       loras: [],
     })).rejects.toMatchObject({
@@ -4004,7 +3935,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'selected.safetensors', weight: 1, triggerWords: ['selected'] }],
     })
     expect(structured.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([
@@ -4021,7 +3951,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       loras: [{ id: '68', fileName: 'USNR_STYLE_ILL_V1_lokr3-000024.safetensors', weight: 1, triggerWords: ['usnr'] }],
     })).rejects.toMatchObject({ code: 'COMFYUI_LORA_INPUT_UNAVAILABLE' })
   })
@@ -4065,7 +3994,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
 
       loras: [{ id: '68', fileName: 'selected-first.safetensors', weight: 0.65, triggerWords: [] }],
     })
@@ -4087,7 +4015,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
 
       loras: [
         { id: '68', fileName: 'selected-first.safetensors', weight: 0.65, triggerWords: [] },
@@ -4125,7 +4052,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       model: { id: '1', fileName: 'waiIllustriousSDXL_v170.safetensors' },
       loras: [],
     })
@@ -4166,7 +4092,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       model: { id: '1', fileName: 'selected.safetensors' },
       loras: [],
     })).rejects.toMatchObject({ code })
@@ -4181,7 +4106,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       model: { id: '1', fileName: 'selected.safetensors' },
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_MODEL_INPUT_UNAVAILABLE' })
@@ -4227,7 +4151,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       model: { id: '1', fileName: 'selected.safetensors' },
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_MODEL_INPUT_AMBIGUOUS' })
@@ -4258,26 +4181,11 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow: actual,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['3'],
       model: { id: '3', fileName: 'anima/selected.safetensors' },
       loras: [],
     })
 
     expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { unet_name: 'anima\\selected.safetensors' } })
-  })
-
-  it('rejects a declared output node that is not an active ComfyUI output node', async () => {
-    const compiler = createCompiler({
-      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(objectInfo), { status: 200 })),
-    })
-
-    await expect(compiler.compile({
-      instanceId: 'test-instance',
-      workflow,
-      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: ['2'],
-      loras: [],
-    })).rejects.toMatchObject({ code: 'WORKFLOW_COMPILE_FAILED' })
   })
 
   it('aborts a live node-definition request at the configured timeout', async () => {
@@ -4291,7 +4199,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: null,
       loras: [],
     })).rejects.toMatchObject({ code: 'COMFYUI_CONNECTION_FAILED' })
   })
@@ -4312,7 +4219,6 @@ describe('ComfyWorkflowCompiler', () => {
       instanceId: 'test-instance',
       workflow,
       connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-      expectedOutputNodeIds: null,
       loras: [],
       signal: controller.signal,
     })).rejects.toMatchObject({ code: 'COMFYUI_REQUEST_CANCELED' })
@@ -4322,11 +4228,11 @@ describe('ComfyWorkflowCompiler', () => {
     expect(() => createCompiler({ timeoutMs: 0 })).toThrow('timeout')
     await expect(createCompiler({
       fetchImplementation: vi.fn(async () => new Response('{}', { status: 503 })),
-    }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, expectedOutputNodeIds: null, loras: [] }))
+    }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, loras: [] }))
       .rejects.toMatchObject({ code: 'COMFYUI_HTTP_ERROR' })
     await expect(createCompiler({
       fetchImplementation: vi.fn(async () => new Response('{', { status: 200 })),
-    }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, expectedOutputNodeIds: null, loras: [] }))
+    }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, loras: [] }))
       .rejects.toMatchObject({ code: 'COMFYUI_PROTOCOL_ERROR' })
   })
 })
