@@ -7,6 +7,9 @@
 - `GenerationSourceCli.readTemplate("39")` 已使用当前 Source v0.86.1 返回 `PASS`、模板 ID 39 和 76 个 Workflow 节点。
 - Source adapter、Source preparer、Workflow compiler、Generation Runtime 保存与恢复链路、合同、配置和版本聚焦测试共 189 项通过；类型检查通过。
 - `pnpm verify:comfyui-workflows -- --instance-id 2` 在编译前发现实时 Catalog 新增模板 43，而结构化参数支持基线只包含模板 8 至 42；该外部目录变化不属于本修复，仓库没有写入未经批准的模板 43 参数基线。
+- 远端 `main` 在本轮实施期间发布并部署了另一项 `v0.37.3`；当前分支已经基于该发布提交，按不可移动 tag 规则把本修复版本更新为 `v0.37.4`。
+- 完整 `pnpm quality` 通过：530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；依赖审计全部为 0。
+- 质量门禁期间短暂停止的生产 v0.37.3 Desktop 已恢复为 running。
 
 ## 2026-08-31
 

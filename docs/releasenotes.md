@@ -13,6 +13,8 @@ v0.37.4 使 Host 按 Source v0.86.1 合同读取三字段 ComfyUI TemplateBundle
 
 - Source adapter 回归测试验证三字段 TemplateBundle 成功解析和无效 Workflow 分支。
 - Workflow compiler 回归测试验证活动输出节点发现、断开输出节点删除和没有活动输出节点时的明确失败。
+- 完整测试通过：530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%。
+- 完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 - 本版本没有增加依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
 
 # Harness ComfyUI v0.37.3
