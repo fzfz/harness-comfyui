@@ -1,13 +1,13 @@
 ---
 name: anima-prompt-builder
-description: 根据 noobai_user_prompt、当前目录选择和参考资料，构建并校验十二槽 ANIMA3 提示词；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。
+description: 根据用户的自然语言画面要求、当前消息中的 Character/Style 选择和参考资料，构建并校验十二槽 ANIMA3 提示词；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。
 ---
 
 # ANIMA3 提示词构建器
 
 ## 查询历史 Generation Run
 
-用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须先完整读取 `references/generation-cli.md`，再按该文件调用历史 Generation Run 查询命令。该查询不要求当前消息包含 `noobai_user_prompt`、Workflow、生成模型或 LoRA 选择。
+用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须先完整读取 `references/generation-cli.md`，再按该文件调用历史 Generation Run 查询命令。该查询不要求当前消息包含画面要求、Workflow、生成模型或 LoRA 选择。
 
 Skill 执行者必须按查询结果的 `runs[]` 顺序分别报告每个 `run_id`。一个 `run_id` 返回错误项时，Skill 执行者继续处理其余结果。用户只要求查询历史 Generation Run 时，Skill 执行者返回查询结果后结束本次执行；用户还要求构建 ANIMA3 Prompt 时，Skill 执行者完成查询后继续执行本文件的提示词流程。
 
@@ -40,30 +40,26 @@ Skill 执行者每次运行必须按以下顺序读取固定参考资料，不�
 
 ## 读取当前回合
 
-Skill 执行者从 `noobai_user_prompt.user_text` 读取当前用户的自然语言意图，从 `noobai_user_prompt.ui_explicit.selections[]` 读取用户已经确认的目录选择，并按字段处理当前回合。
+Skill 执行者把当前用户消息中除 `type=comfyui-context` JSON 行以外的普通文字作为自然语言意图。Skill 执行者按照 JSON 行在当前消息中的出现顺序读取 `type=comfyui-context` 且 `data.kind=character` 或 `data.kind=style` 的记录。
 
-| 输入路径 | 运行用途 |
+| 输入来源 | 运行用途 |
 | --- | --- |
-| `noobai_user_prompt.user_text` | Skill 执行者从该字段提取当前回合的主题、质量要求、内容要求和查询词。 |
-| `noobai_user_prompt.ui_explicit.selections[]` | Skill 执行者从该数组读取用户确认的角色和画师选择，并保留选择对象。 |
-| `noobai_user_prompt.ui_explicit.selections[].kind` | Skill 执行者根据该字段区分 `character` 和 `style`，并决定后续路由。 |
-| `noobai_user_prompt.ui_explicit.selections[].name` | Skill 执行者使用该字段识别和消歧用户选择；Skill 执行者不得用该字段代替选中对象的 `prompt_text`。 |
-| `noobai_user_prompt.ui_explicit.selections[].prompt_text` | Skill 执行者从该字段读取 `kind=character` 或 `kind=style` 对象的提示词来源。 |
-| `noobai_user_prompt.ui_explicit.selections[].work_name` | Skill 执行者使用该字段识别角色所属作品并辅助消歧；Skill 执行者不得把该字段直接写入提示词。 |
-| `noobai_user_prompt.ui_explicit.selections[].selection_order` | Skill 执行者按照该字段的数值升序排列并处理全部选择。 |
+| 当前用户消息中的普通文字 | Skill 执行者从普通文字提取当前回合的主题、质量要求、内容要求和查询词。 |
+| Character 记录 | Skill 执行者使用 `data.character_name` 和 `data.work_name` 识别并消歧角色，使用 `data.prompt_text` 作为角色提示词来源。 |
+| Style 记录 | Skill 执行者使用 `data.name` 识别并消歧画师，使用 `data.prompt_text` 作为画师提示词来源。 |
 
-Skill 执行者按 `selection_order` 升序处理选择。`kind` 为 `style` 时，Skill 执行者按逗号拆分同一对象的 `prompt_text`。Skill 执行者对每段去除首尾空白并转换为小写，然后反复移除该段开头的 `@`。Skill 执行者不得把移除后为空的分段放入 `artist_style`；Skill 执行者必须只在其余分段开头添加一个 `@`，再把规范化结果放入 `artist_style`。`kind` 为 `character` 时，Skill 执行者把同一对象的 `prompt_text` 拆分后分类到 `character_series` 和 `appearance`。
+`data.kind` 为 `style` 时，Skill 执行者按逗号拆分同一记录的 `data.prompt_text`。Skill 执行者对每段去除首尾空白并转换为小写，然后反复移除该段开头的 `@`。Skill 执行者不得把移除后为空的分段放入 `artist_style`；Skill 执行者必须只在其余分段开头添加一个 `@`，再把规范化结果放入 `artist_style`。`data.kind` 为 `character` 时，Skill 执行者把同一记录的 `data.prompt_text` 拆分后分类到 `character_series` 和 `appearance`。
 
 ## 读取语义查询说明
 
 Skill 执行者只有在下列具体情况发生时，才先完整读取 `references/semantic-query-interfaces.md`，再按该文件说明判断是否调用工具：
 
-1. `noobai_user_prompt.user_text` 中出现作品、系列或 IP，且 Skill 执行者需要确认作品身份或取得该作品的角色名称。
-2. 用户指定角色，但当前选择没有可用的角色 `prompt_text`，或者当前作品与角色名称存在歧义。
+1. 当前用户消息的普通文字中出现作品、系列或 IP，且 Skill 执行者需要确认作品身份或取得该作品的角色名称。
+2. 用户指定角色，但当前 Character 记录没有可用的 `data.prompt_text`，或者当前作品与角色名称存在歧义。
 3. `query_semantic_works` 返回的角色名称需要换取角色 `prompt_text`。
 4. 用户指定画师，且 Skill 执行者需要确认画师身份或确认该画师身份对应的提示词。
-5. 明确的画师选择没有可用的 `prompt_text`，或者明确的画师身份存在歧义。
-6. `noobai_user_prompt.user_text` 没有写出画师名称或画师别名，并且 `noobai_user_prompt.ui_explicit.selections[]` 中不存在 `kind` 为 `style` 的选择。
+5. 当前 Style 记录没有可用的 `data.prompt_text`，或者明确的画师身份存在歧义。
+6. 当前用户消息的普通文字没有写出画师名称或画师别名，并且当前消息中不存在 `data.kind=style` 的 `comfyui-context` 记录。
 7. 用户使用自然语言描述外貌、服装、动作、表情、构图、场景或氛围概念，并且已读取的详细资料不能确定与该概念精确对应的规范 Prompt 标签，或者存在两个以上语义相近但画面含义不同的候选标签。
 
 第 6 种情况表示用户没有指定画师。Skill 执行者必须按照 `references/semantic-query-interfaces.md` 中 `query_semantic_styles` 的“查询步骤”完成画师方向设计、Style 候选比较和 Style 记录采用。
@@ -78,11 +74,10 @@ Skill 执行者构建一个只包含 `slots` 和 `display_text` 的顶层对象�
 
 Skill 执行者必须把 `masterpiece`、`best quality`、`score_7`、`highres`、`safe` 依次放在 `quality` 开头。当前用户明确提出其他质量要求时，Skill 执行者只能把符合本 Skill 标签格式的额外质量标签放在 `safe` 之后，并删除重复标签；当前用户没有提出其他质量要求时，`quality` 必须是 `["masterpiece", "best quality", "score_7", "highres", "safe"]`。
 
-Skill 执行者把明确画师选择或 `query_semantic_styles` 采用的一个或多个 Style 记录的 `prompt_text` 按“读取当前回合”规定的画师前缀规范化步骤放入 `artist_style`。存在多个 Style 记录时，Skill 执行者按照 `queries[]` 的顺序处理各记录的 `prompt_text`，并删除后出现的重复词语。每个 `artist_style` 元素必须恰好以一个 `@` 开头。
+Skill 执行者把 UI Style 记录的 `data.prompt_text` 按这些 Style JSON 行在当前消息中的出现顺序放入 `artist_style`。Skill 执行者把 `query_semantic_styles` 采用结果的 `prompt_text` 按该查询合同规定的结果顺序放入 `artist_style`。两类来源都使用“读取当前回合”规定的画师前缀规范化步骤，并删除后出现的重复词语。每个 `artist_style` 元素必须恰好以一个 `@` 开头。
 
-`kind=character` 的选中对象只能使用实际 `prompt_text` 产生提示词词语。Skill 执行者按逗号拆分角色 `prompt_text`，对每段去除首尾空白并转换为小写，再把结果放入 `character_series` 或 `appearance`；名称、别名和说明只能帮助理解或消歧，不能替代角色 `prompt_text`。`kind=style` 对象的 `prompt_text` 只按照“读取当前回合”定义的画师规范化步骤处理。
+`data.kind=character` 的 UI 记录只能使用实际 `data.prompt_text` 产生提示词词语。Skill 执行者按逗号拆分角色 `data.prompt_text`，对每段去除首尾空白并转换为小写，再把结果放入 `character_series` 或 `appearance`；`data.character_name`、`data.work_name` 和其他说明只能帮助理解或消歧，不能替代角色 `data.prompt_text`。`data.kind=style` 的 UI 记录只按照“读取当前回合”定义的画师规范化步骤处理 `data.prompt_text`。
 
 Skill 执行者把当前用户意图映射到其余十个内容槽位，并用已读取的详细资料决定每个槽位的词语。Skill 执行者按照 `references/semantic-query-interfaces.md` 采用 `query_semantic_prompt_terms` 候选时，只把选中候选的 `canonical_tag` 放入该标签语义对应的内容槽位；`aliases` 只用于理解和比较候选。Skill 执行者只能把英文小写、无逗号的词语放入前十一槽位；`natural_language` 只能放入英文小写自然语言句子。
 
 Skill 执行者按照 `references/03-output-protocol.md` 的“校验器调用”定义调用 校验器脚本。
-

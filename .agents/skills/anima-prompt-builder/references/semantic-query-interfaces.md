@@ -59,7 +59,7 @@ imagegen-semantic-query --port <port> --path <operation-path>  --mode resolve --
 
 **必须查询的具体情况**
 
-- `noobai_user_prompt.user_text` 中出现作品、系列或 IP，且 需要确认用户指向的作品身份。
+- 当前用户消息的普通文字中出现作品、系列或 IP，且需要确认用户指向的作品身份。
 - 已经确认某个作品，但必须取得该作品记录的 角色名，以便继续查询 。
 
 **查询步骤**
@@ -77,7 +77,7 @@ imagegen-semantic-query --port <port> --path <operation-path>  --mode resolve --
 
 只确认角色身份并取得角色记录的 `prompt_text`。
 
-- 用户指定角色，但明确选择缺少去除空白后非空的可用 `prompt_text`。
+- 用户指定角色，但当前 Character 记录缺少去除空白后非空的可用 `data.prompt_text`。
 - 用户指定的角色名称、所属作品或角色别名存在歧义，需要确认具体角色身份。
 
 
@@ -99,6 +99,4 @@ imagegen-semantic-query --port <port> --path <operation-path>  --mode resolve --
 - 用户描述外貌、服装、动作、表情、构图、场景或氛围概念，并且 从已读取的详细资料中不能确定精确规范标签。
 - 已读取的详细资料提供两个以上语义相近但画面含义不同的候选标签，需要根据用户原文比较候选。
 - 用户明确要求查询某个通用视觉概念对应的规范 Prompt 标签。
-
-
 

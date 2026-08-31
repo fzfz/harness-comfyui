@@ -4,7 +4,7 @@
 
 本文件统一定义四个 Pi 语义查询接口的用途、公共输入、成功结果、错误结果、各接口字段用途、调用顺序、继续查询条件、停止查询条件和结果采用方式。
 
-本文件使用的 `user_text` 和 UI Character、UI Style 选择项由 [当前轮输入合同](input-contract.md)定义。
+本文件使用的当前用户消息普通文字和 UI Character、UI Style 记录由 [当前轮输入合同](input-contract.md)定义。
 
 Skill Agent 完成构图选择、画面设计和 WAI Prompt 位置映射后，如果本轮需要调用 `query_semantic_works`、`query_semantic_characters`、`query_semantic_styles` 或 `query_semantic_prompt_terms` 中的任一接口，必须在第一次调用前完整读取本文件。读取完成后，Skill Agent 按照本文件取得尚未完成的角色、画师和普通视觉概念 Prompt 内容。
 
@@ -24,7 +24,7 @@ Skill Agent 完成构图选择、画面设计和 WAI Prompt 位置映射后，�
 
 用途：确认用户提供的作品，并取得该作品下全部可用角色的规范名称。
 
-`query_semantic_works.queries[]` 的每一项只能由当前 `user_text` 中实际出现的作品名、系列名、IP 名、作品别名或类别限定组成。多个作品分别占用独立数组项。UI 已选 Character、UI 已选 Style、作品候选的 `aliases`、`category_name`、`character_names` 和 Skill Agent 自主补充的内容都不能作为 Work 查询文本来源。候选的 `name`、`aliases` 和 `category_name` 能够确认用户所指作品时，Skill Agent 采用该候选的 `name` 和 `character_names`，并结束该作品查询目标。第一次 Work 查询返回空结果或候选不合适时，第二次 Work 查询只能重新组合当前 `user_text` 中上述作品身份文本；第二次查询结束后停止该作品查询目标。`query_semantic_works` 返回结构化错误时，本次调用中 `queries[]` 包含的全部作品查询目标立即结束。
+`query_semantic_works.queries[]` 的每一项只能由当前用户消息普通文字中实际出现的作品名、系列名、IP 名、作品别名或类别限定组成。多个作品分别占用独立数组项。UI 已选 Character、UI 已选 Style、作品候选的 `aliases`、`category_name`、`character_names` 和 Skill Agent 自主补充的内容都不能作为 Work 查询文本来源。候选的 `name`、`aliases` 和 `category_name` 能够确认用户所指作品时，Skill Agent 采用该候选的 `name` 和 `character_names`，并结束该作品查询目标。第一次 Work 查询返回空结果或候选不合适时，第二次 Work 查询只能重新组合当前用户消息普通文字中的上述作品身份文本；第二次查询结束后停止该作品查询目标。`query_semantic_works` 返回结构化错误时，本次调用中 `queries[]` 包含的全部作品查询目标立即结束。
 
 | 字段 | 用途 |
 |---|---|
@@ -80,7 +80,7 @@ Skill Agent 完成构图选择、画面设计和 WAI Prompt 位置映射后，�
 
 ## 调用与采用流程
 
-1. 先按照采用优先级处理 UI 已选内容：UI 已选 Character 的 `prompt_text` 用于 `character` 位置，UI 已选 Style 的 `prompt_text` 用于 `artist` 位置。随后查询仍然缺少的作品、角色、画师或普通视觉概念。
+1. 先按照采用优先级处理 UI 已选内容：UI 已选 Character 的 `data.prompt_text` 用于 `character` 位置，UI 已选 Style 的 `data.prompt_text` 用于 `artist` 位置。随后查询仍然缺少的作品、角色、画师或普通视觉概念。
 2. 用户只提供作品时，调用 `query_semantic_works`；确定画面需要的角色后，调用 `query_semantic_characters`。
 3. 用户直接提供角色而 UI 已选内容没有提供该角色 Prompt 时，调用 `query_semantic_characters`。
 4. 用户要求一名或多名具体画师而 UI 已选内容没有提供对应画师 Prompt 时，分别调用 `query_semantic_styles`。
