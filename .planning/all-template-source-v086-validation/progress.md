@@ -13,6 +13,7 @@
 - 参数矩阵脚本单元测试与工程基线合同测试共 15 项通过。
 - 完整 `pnpm quality` 通过：530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；依赖审计为 critical 0、high 0、moderate 0、low 0。
 - 为完整 Desktop 门禁停止了 v0.37.4 生产进程；v0.37.5 发布部署完成前保持生产进程停止。
+- `$code-review` 的首轮 Standards 轴通过；Spec 轴发现 `CONTEXT.md` 仍声明 v0.37.4，已把 Product Version 与发布后 tag 更新为 v0.37.5。
 - 已创建全量模板修复的持久计划、发现记录和进度记录。
 
 ## 命令结果
