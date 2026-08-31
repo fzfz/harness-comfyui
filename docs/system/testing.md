@@ -28,7 +28,7 @@ pnpm prod:test
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
 | `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、默认 Workspace、项目 Preset、图片读取 Remote、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
-| `pnpm test:contract` | package、Git 跟踪、CI 和安全合同 |
+| `pnpm test:contract` | package、Git 跟踪、本地发布门禁和安全合同 |
 | `pnpm prod:test` | Desktop dev/preview 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
 | `pnpm test:coverage` | unit 与 integration 覆盖率 |
@@ -97,13 +97,19 @@ v0.37.5 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 �
 
 v0.37.6 发布前完整 `pnpm quality` 结果为 539 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试在媒体切换前后使用 CDP 真实鼠标事件分别复制两项媒体的完整 Run ID，并验证桌面与 600 × 800 viewport 的主框架 Run ID 行布局。
 
-v0.38.0 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试使用 Browser 级 CDP 下载事件和真实鼠标事件下载媒体切换前后的两项原文件，并验证建议文件名、完成状态、接收字节数、落盘原始字节、Modal 状态、page target 数量，以及桌面与 600 × 800 viewport 的 footer 布局。
+v0.37.7 发布前完整 `pnpm quality` 结果为 539 项 unit/integration、27 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。计划执行者在真实 Desktop 中使用 `ComfyUI工作台预设` 和 `DeepSeek V4 Flash`，分别验收 ANIMA 与 WAI Prompt Builder 的普通文字、Character/Style 上下文和纯历史 Run 查询，共六项模型用例。
 
-## CI
+v0.38.0 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试使用 Browser 级 CDP 下载事件和真实鼠标事件下载媒体切换前后的两项原文件，并验证建议文件名、完成状态、接收字节数、落盘原始字节、Modal 状态、page target 数量，以及桌面与 600 × 800 viewport 的 footer 布局。
 
-`.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 执行两个独立 job：
+## 本地发布门禁
 
-1. Ubuntu `Source quality gates` checkout 当前仓库与 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`，安装双方 lockfile 依赖，执行 `desktop:dependencies:link` 和 `quality:fast`。
-2. macOS `DSH Desktop acceptance` checkout 当前仓库与 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port`，安装双方 lockfile 依赖，执行 `desktop:dependencies:link` 和 `test:desktop`。
+仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：
 
-CI 不生成发布包。Ubuntu job 证明源码、合同和共享生命周期；macOS job 证明旧生产 Session 迁移、真实 Electron、Provider、Workspace、Preset、媒体 Modal 和 shell capability。
+```sh
+pnpm quality
+git diff --check
+```
+
+`pnpm quality` 依次执行 `quality:preinstall`、`quality:fast` 和 `test:desktop`。`quality:preinstall` 验证 manifest、lockfile、依赖漏洞和依赖构建脚本；`quality:fast` 验证 Harness 边界、TypeScript 类型、覆盖率、合同、安全、生产生命周期和原型；`test:desktop` 验证真实 DSH Desktop。
+
+计划执行者必须把最终测试数量、覆盖率和依赖审计结果写入当前版本的 `docs/releasenotes.md` 和本文件。任何审查修正或门禁修正改变候选树后，计划执行者必须重新执行受影响的独立审查和完整 `pnpm quality`。

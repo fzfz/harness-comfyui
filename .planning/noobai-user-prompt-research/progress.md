@@ -2,9 +2,27 @@
 
 ## 会话：2026-08-31
 
-### 阶段 5：实施 Skill 输入合同修复
+### 阶段 9：修改发布门禁策略与规范
 
-- **状态：** 进行中
+- **状态：** 实施中
+- **已完成动作：**
+  - 用户批准删除自动 GitHub Actions workflow，并采用独立 linked worktree 中的完整本地发布门禁。
+  - 删除 `.github/workflows/ci.yml` 和只验证该 workflow 内容的 `tests/contract/workflows.test.ts`。
+  - 删除 `tests/contract/engineering-baseline.test.ts` 中重复验证 GitHub Actions Desktop job 的断言；根 `package.json` 的工程合同继续精确验证 `quality` 包含 `test:desktop`。
+  - 修改 `AGENTS.md`、`CONTEXT.md`、`docs/system/releasing.md`、`docs/system/testing.md`、`docs/system/technology-stack.md`、`docs/system/directory-structure.md` 和 `docs/releasenotes.md`，把最终候选树的 `pnpm quality`、`git diff --check` 和必需独立审查定义为发布门禁。
+  - 把 production 测试中的 GitHub CI 命名改为本地发布验收命名，测试行为保持不变。
+  - `pnpm test:contract` 通过 27 项合同与安全测试；`pnpm prod:test` 通过 102 项生产生命周期测试。
+  - 独立 Standards Review 和独立 Spec Review 均通过，没有阻塞或非阻塞问题。
+  - 独立语义 Review 指出当前步骤状态和“唯一自动化发布门禁”定义存在两项冲突；计划执行者已修正对应文案。
+  - 独立语义复审通过，上一轮全部阻塞和非阻塞问题已经关闭。
+  - 第一轮完整 `pnpm quality` 通过：539 项 unit/integration、27 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%；依赖漏洞为 critical 0、high 0、moderate 0、low 0。
+  - 计划状态更新通过独立语义复审；第二轮完整 `pnpm quality` 和 `git diff --check` 通过，测试数量、覆盖率和依赖审计结果与第一轮一致。
+- **下一步：**
+  - 在本文件最后一次修改后执行最终 `pnpm quality` 与 `git diff --check`；通过后不再修改候选树，直接提交并推送最终发布提交。
+
+### 阶段 8：发布门禁与最终验收
+
+- **状态：** 原发布流程已由阶段 9 替代
 - **已完成动作：**
   - 用户明确批准 `implementation-plan.md` 并要求开始实施。
   - 确认独立 worktree `HEAD` 与最新 `origin/main` 均为 `5aa95e66c31db9fde1472b32250cd7fcf20711a4`。
@@ -20,9 +38,24 @@
   - `pnpm typecheck` 通过。
   - 为 worktree 的 Desktop 自动化创建 `.local/upstreams/dsh-desktop` 到主 checkout 现有 DSH Desktop 的符号链接，没有 clone 或安装第二份 DSH Desktop。
   - 第二次完整 `pnpm quality` 通过：539 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项 Desktop 测试通过；覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%；依赖漏洞为 critical 0、high 0、moderate 0、low 0。
+  - 提交候选变更，候选提交为 `dff04f2812bb93eca53946c465924d7b101f4153`。
+  - 主 checkout 安全快进到候选提交，两个全局 Skill 链接继续解析到主 checkout 的 canonical Skill 目录。
+  - 使用 `ComfyUI工作台预设`、`DeepSeek V4 Flash` 和 `Default` 推理等级完成六项真实 Desktop 模型验收。
+  - ANIMA 和 WAI 的普通文字、Character/Style 与纯历史查询用例全部通过。
+  - 保存 `.planning/noobai-user-prompt-research/model-acceptance.md`。
+  - 执行 `pnpm dev:stop`；`pnpm dev:status` 返回 `{"status":"stopped"}`。
+  - 更新 `0.37.7` 版本、发布说明和当前版本规范。
+  - 独立语义 Reviewer 发现 ANIMA Character 外观分槽证据缺口和一处发布说明归属错误。
+  - 通过 Desktop UI 选择目录 Character `Ani (Grok Companion)`；该记录的实际 `data.prompt_text` 同时包含 `Ani_(Grok)`、`blonde hair`、`twintails`、`long hair` 和 `blue eyes`，校验器返回 `result: success`。
+  - 独立语义 Reviewer 第二轮确认两项问题均已关闭，最终结论为通过。
+  - 文案修正后的最终 `pnpm quality` 通过：539 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项 Desktop 测试通过；覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%；依赖漏洞为 critical 0、high 0、moderate 0、low 0。
+  - 通过真实 Desktop UI 选择 Character `Ani (Grok Companion)`、Style `say_hana` 和 Style `ds_mile`；真实模型把 Character 身份词与四个外观词分别放入 `character_series` 和 `appearance`，校验器返回 `result: success`。
+  - 完成标准 Preset Host 项目 Tool、ComfyUI Preset Tool schema 隔离、全局 Skill 与 managed CLI 三项仓库最低真实模型行为验收。
+  - 通过真实 Desktop UI 选择 Workflow `43` 和生成模型 `3`；真实模型对同一 Generation Request 发起两次独立提交，Run Repository 持久化两个不同 Run。两个 Run 因实例 `2` 的 ComfyUI DevTools 目标不可连接而失败。
+  - 按两阶段发布流程把 source commit `dff04f2812bb93eca53946c465924d7b101f4153` 推送到 `origin/main`。
+  - GitHub Actions run `33384846762` 的两个 job 均在执行任何 step 前被账户账单或 Actions spending limit 拒绝启动。
 - **下一步：**
-  - 修改六个 Prompt Builder Skill 文件。
-  - 由独立语义 Reviewer 审查修改内容。
+  - 阶段 8 的原 GitHub Actions 发布步骤已经由阶段 9 的本地发布门禁替代。
 
 ### 阶段 1：确认仓库基线与搜索范围
 
@@ -87,13 +120,20 @@
 | 2026-08-31 | 单个补丁同时删除并新增同一路径，`apply_patch` 拒绝该补丁 | 1 | 分两次使用 `apply_patch` 删除并新增 WAI 输入合同文件。 |
 | 2026-08-31 | worktree 尚未创建 `node_modules` 链接，首次 `pnpm typecheck` 找不到 `tsc` | 1 | 使用仓库的 worktree checkout 准备函数创建到主 checkout 的依赖链接，重新执行 `pnpm typecheck` 并通过。 |
 | 2026-08-31 | 首次 `pnpm quality` 的两项 Desktop 测试找不到 worktree `.local/upstreams/dsh-desktop` 中的 DSH 模块 | 1 | 创建到主 checkout 现有 DSH Desktop 的符号链接；单独重跑 2 项 Desktop 测试并通过，随后第二次完整 `pnpm quality` 通过。 |
+| 2026-08-31 | Computer Use 服务无法启动 | 1 | 按 Browser Skill 使用应用内浏览器连接同一开发 Desktop Harness 端点，真实 Session、Preset、Provider、模型和 Skill 路径保持不变。 |
+| 2026-08-31 | 新 WAI Session 中发送按钮点击没有提交首条消息 | 2 | 使用消息编辑器的 Enter 提交；消息进入真实 Session 并完成验收。 |
+| 2026-08-31 | 首次 `0.37.7` 最终质量门禁中的工程基线仍断言 `0.37.6` | 1 | 同步 `tests/contract/engineering-baseline.test.ts` 和 `CONTEXT.md` 的当前版本，再次执行完整 `pnpm quality` 并通过。 |
+| 2026-08-31 | 独立语义 Reviewer 发现 ANIMA Character 外观分槽缺少真实模型证据，且发布说明把 WAI 的 `selection_snapshot_version` 错误归入 ANIMA | 1 | 补充真实 Desktop 模型复验，修正组件级发布说明；Reviewer 第二轮确认两项问题均已关闭。 |
+| 2026-08-31 | 两次 `generation submit --stdin` 在 60 秒内没有向模型返回 `run_id` | 2 | 只读查询 Run Repository，确认两个不同 Run 已持久化；结果抽屉随后显示两个 Run 因 ComfyUI DevTools 目标不可连接而失败。 |
+| 2026-08-31 | GitHub Actions run `33384846762` 的 job 未启动 | 1 | GitHub 注释明确要求修复账户 Billing 或提高 Actions spending limit；最终发布文档、tag、Release 和生产部署保持未执行。 |
+| 2026-08-31 | 同一个补丁同时修改多份发布规范时，`docs/system/releasing.md` 的末尾上下文不匹配，导致补丁整体未生效 | 1 | 重新读取精确上下文，并把 workflow、测试和规范修改拆成独立小补丁。 |
 
 ## 上下文恢复检查
 
 | 问题 | 回答 |
 | --- | --- |
-| 当前阶段是什么？ | 阶段 4 已完成，等待用户批准实施方案。 |
-| 后续阶段是什么？ | 用户批准后修改六个 Skill 文件、完成真实模型验收、质量门禁、发布和部署。 |
-| 本轮目标是什么？ | 确认 `noobai_user_prompt` 是否仍是实时输入，并提交等待批准的删除方案。 |
+| 当前阶段是什么？ | 阶段 9 已删除自动 GitHub Actions workflow，并通过独立审查和两轮完整本地发布门禁；最终候选树正在等待提交前最后一次门禁。 |
+| 后续阶段是什么？ | 独立审查和完整本地门禁通过后，提交并推送最终发布提交，再创建 Release 并部署生产 checkout。 |
+| 本轮目标是什么？ | 删除 Prompt Builder Skill 中过期的 `noobai_user_prompt` 输入定义，并通过本地发布门禁交付 `v0.37.7`。 |
 | 已获得哪些发现？ | 参见 `findings.md`。 |
-| 已完成哪些动作？ | 参见本文件的阶段 1 记录。 |
+| 已完成哪些动作？ | 参见本文件的阶段 1 至阶段 9 记录。 |

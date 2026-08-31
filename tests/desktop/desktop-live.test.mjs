@@ -346,12 +346,14 @@ async function seedSavedDesktopSession(context) {
 }
 
 async function seedDesktopMedia(context, identity) {
-  const gifBytes = Uint8Array.from([
+  const olderGifBytes = Uint8Array.from([
     0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00,
     0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x21, 0xf9, 0x04, 0x01, 0x00, 0x00, 0x00,
     0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02,
     0x44, 0x01, 0x00, 0x3b,
   ])
+  const newerGifBytes = Uint8Array.from(olderGifBytes)
+  newerGifBytes.set([0xff, 0x00, 0x00, 0x00, 0xff, 0x00], 13)
   const older = {
     runId: 'run_desktop_media_older', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b041',
     mediaId: 'media_desktop_older', filename: 'desktop-older.gif',
@@ -397,8 +399,11 @@ async function seedDesktopMedia(context, identity) {
           }],
         }
       },
-      async download() {
-        return { bytes: gifBytes, mediaType: 'image/gif' }
+      async download(input) {
+        return {
+          bytes: input.output.filename === newer.filename ? newerGifBytes : olderGifBytes,
+          mediaType: 'image/gif',
+        }
       },
     },
     createRunId: () => runIds.shift(),
@@ -435,7 +440,7 @@ async function seedDesktopMedia(context, identity) {
   } finally {
     runtime.close()
   }
-  return { newer, older, gifBytes }
+  return { newer, older, newerGifBytes, olderGifBytes }
 }
 
 describe('live DSH Desktop production integration', () => {
@@ -698,8 +703,8 @@ describe('live DSH Desktop production integration', () => {
           desktopOrigin,
         ).href,
         filename: mediaFixture.newer.filename,
-        bytes: mediaFixture.gifBytes,
-        byteLength: mediaFixture.gifBytes.length,
+        bytes: mediaFixture.newerGifBytes,
+        byteLength: mediaFixture.newerGifBytes.length,
         downloadPath,
       })
       expect(newerDownload.progress.state).toBe('completed')
@@ -744,8 +749,8 @@ describe('live DSH Desktop production integration', () => {
           desktopOrigin,
         ).href,
         filename: mediaFixture.older.filename,
-        bytes: mediaFixture.gifBytes,
-        byteLength: mediaFixture.gifBytes.length,
+        bytes: mediaFixture.olderGifBytes,
+        byteLength: mediaFixture.olderGifBytes.length,
         downloadPath,
       })
       expect(olderDownload.progress.state).toBe('completed')

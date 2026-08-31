@@ -4,21 +4,26 @@ GitHub Release 发布 Git tag 与 Release 记录，不附加产品安装包。`p
 
 ## 发布前门禁
 
-版本源码提交前执行：
+计划执行者必须先在独立 linked worktree 完成最终源码、测试、版本元数据、发布说明和受影响的系统规范。源码变更必须通过独立 Standards Review 和独立 Spec Review；Skill、Markdown 和用户可见文案变更必须通过独立语义 Review。
+
+计划执行者处理完全部审查问题后，必须对最终候选树执行：
 
 ```sh
 pnpm quality
 git diff --check
 ```
 
-源码提交并 push 后，GitHub CI 必须同时通过 Ubuntu `Source quality gates` 和 macOS `DSH Desktop acceptance`。发布说明和受影响的系统规范完成独立语义审查后，再次执行 `pnpm quality` 与 `git diff --check`，提交并 push 最终文档。
+`pnpm quality` 是仓库唯一的完整自动化测试命令。该命令依次执行安装前依赖检查、Harness 边界检查、类型检查、覆盖率测试、合同与安全测试、生产生命周期测试、原型测试和真实 Desktop 测试。`git diff --check` 和必需的独立审查是另外两类发布门禁。审查问题或门禁失败导致任何文件变化时，计划执行者必须重新执行受影响的独立审查、`pnpm quality` 和 `git diff --check`。
+
+本地门禁通过后，计划执行者不得再修改候选树。计划执行者必须提交该候选树、推送最终提交，并确认本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 
 最终发布提交必须同时满足：
 
 1. 根 `package.json.version` 等于目标 SemVer。
 2. `README.md`、`docs/releasenotes.md` 与 `docs/system/` 描述当前实现。
-3. GitHub CI 的两个 job 成功。
-4. 目标 Git tag 与 GitHub Release 尚不存在。
+3. 必需的独立审查、`pnpm quality` 和 `git diff --check` 全部通过。
+4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
+5. 目标 Git tag 与 GitHub Release 尚不存在。
 
 ## Git tag 与 GitHub Release
 
@@ -74,4 +79,4 @@ pnpm prod:stop
 - `dev:*` 只在从 `main` 创建的 linked worktree 管理完整 DSH Desktop 开发环境。
 - `web:*` 只在 linked worktree 管理独立 Web Host 调试环境。
 - `prod:*` 只在已发布 Git tag 的生产 checkout 管理完整 DSH Desktop 生产环境。
-- CI 验证源码门禁和真实 Desktop 验收；仓库不创建自动生产部署 workflow。
+- 独立 linked worktree 中的 `pnpm quality` 验证源码门禁和真实 Desktop 验收；仓库不配置 GitHub Actions workflow 或自动生产部署 workflow。

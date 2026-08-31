@@ -37,7 +37,7 @@
 | `profiles/` | DSH profile composition 模板 |
 | `tests/unit/` | 模块级分支测试 |
 | `tests/integration/` | Host 插件组合测试 |
-| `tests/contract/` | package、Git 跟踪和 CI 合同测试 |
+| `tests/contract/` | package、Git 跟踪、本地发布门禁和安全合同测试 |
 | `tests/security/` | 依赖与边界安全测试 |
 | `tests/production/` | `prod:test` 执行的 Desktop、Web Host、worktree 配置和进程生命周期测试 |
 | `tests/desktop/` | 真实 DSH Desktop 设置、媒体 Modal 和 Harness shell capability 验收 |

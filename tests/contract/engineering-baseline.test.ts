@@ -116,17 +116,6 @@ describe('source workspace engineering contract', () => {
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())
   })
 
-  it('runs the live Desktop acceptance test in the required quality gate', () => {
-    const manifest = readJson('package.json')
-    expect(manifest.scripts.quality).toContain('pnpm run test:desktop')
-    const workflow = readFileSync(resolve(root, '.github/workflows/ci.yml'), 'utf8')
-    expect(workflow).toContain('desktop:\n    name: DSH Desktop acceptance\n    runs-on: macos-latest')
-    expect(workflow).toContain('repository: fzfz/dsh-desktop')
-    expect(workflow).toContain('ref: codex/configurable-mobile-bridge-port')
-    expect(workflow).toContain('run: pnpm run desktop:dependencies:link')
-    expect(workflow).toContain('run: pnpm run test:desktop')
-  })
-
   it('does not ask the registry to install unpublished optional Harness peers', () => {
     expect(readFileSync(resolve(root, 'pnpm-workspace.yaml'), 'utf8')).toContain('autoInstallPeers: false')
   })

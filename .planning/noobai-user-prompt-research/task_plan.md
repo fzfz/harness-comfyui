@@ -7,13 +7,13 @@
 - 计划执行者必须列出仍引用该数据的 Prompt Builder 类 Skill、参考文档、运行时代码和测试。
 - 计划执行者必须根据实际数据合同设计删除方案，并在用户批准前停止修改 Skill、运行时代码和测试代码。
 
-## 下一步
+## 最终提交动作
 
-计划执行者提交候选变更，把主 checkout 快进到候选提交，然后启动开发 Desktop 完成六项真实模型验收。
+计划执行者必须在本文件最后一次修改后执行 `pnpm quality` 和 `git diff --check`。两条命令通过后，计划执行者不得再修改候选树；计划执行者必须直接提交并推送最终发布提交。计划执行者确认本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA 后，创建 `v0.37.7` Release 并部署生产 checkout。最终提交门禁结果记录在任务交付信息中，不再写回候选树。
 
 ## 当前阶段
 
-阶段 6：六个 Skill 文件已经通过独立语义 Review，正在执行候选质量门禁。
+阶段 9：本地发布门禁策略和独立审查已经完成，等待最终提交门禁、发布与生产部署。
 
 ## 调研阶段
 
@@ -59,8 +59,39 @@
 
 - [x] 执行 `pnpm quality`。
 - [x] 执行 `git diff --check`。
-- [ ] 提交候选变更并记录完整 SHA。
-- **状态：** 进行中
+- [x] 提交候选变更并记录完整 SHA。
+- **状态：** 完成
+
+### 阶段 7：真实 Desktop 模型验收
+
+- [x] 主 checkout 快进到候选提交 `dff04f2812bb93eca53946c465924d7b101f4153`。
+- [x] 两个全局 Skill 链接解析到主 checkout 的 canonical Skill 目录。
+- [x] ANIMA 普通文字、ANIMA Character/Style 和 ANIMA 历史查询通过。
+- [x] WAI 普通文字、WAI Character/Style 和 WAI 历史查询通过。
+- [x] 保存模型验收记录并停止开发 Desktop。
+- **状态：** 完成
+
+### 阶段 8：发布与生产部署
+
+- [x] 更新 `0.37.7` 版本和发布文件。
+- [x] 完成发布文件独立语义 Review、最终 `pnpm quality` 和 `git diff --check`。
+- [x] 推送 source commit `dff04f2812bb93eca53946c465924d7b101f4153` 到 `origin/main`。
+- [x] 确认 Actions run `33384846762` 因账户账单或 spending limit 在 job 启动前被拒绝，且没有产生源码验收结果。
+- [x] 用户授权阶段 9 使用本地发布门禁替代 GitHub Actions 门禁。
+- **状态：** 原发布流程已由阶段 9 替代
+
+### 阶段 9：修改发布门禁策略与规范
+
+- [x] 核对 GitHub Actions Billing 错误、仓库可见性、branch protection 可用性和现有 workflow 命令。
+- [x] 比较 `pnpm quality` 与两个 GitHub Actions job 的测试覆盖范围。
+- [x] 用户批准本地发布门禁方案。
+- [x] 删除自动 GitHub Actions workflow，并修改对应合同测试。
+- [x] 修改 `AGENTS.md`、发布规范、测试规范、技术栈说明和 `0.37.7` 发布说明。
+- [x] 完成独立 Standards Review 和独立 Spec Review。
+- [x] 完成语义问题修正与独立语义复审。
+- [x] 两轮完整 `pnpm quality` 和 `git diff --check` 均通过。
+- [ ] 提交并推送最终发布提交，创建 `v0.37.7` tag 与 GitHub Release，部署生产 checkout。
+- **状态：** 等待最终提交门禁
 
 ## 验收清单
 
@@ -71,6 +102,7 @@
 - [x] 实施方案覆盖所有受影响输入分支和两个历史 Generation Run 查询分支。
 - [x] 独立语义 Reviewer 已出具验收清单，且计划执行者已处理 Reviewer 指出的具体问题。
 - [x] 六个 Skill 文件已经使用当前消息普通文字和 `comfyui-context` 数据合同，并通过独立语义 Review。
+- [x] 六项真实 Desktop 模型验收全部通过。
 
 ## 非本次目标
 
@@ -85,6 +117,7 @@
 - 用户已授权计划执行者读取仓库文件、Git 历史和本机运行时配置以完成调研。
 - 用户已授权计划执行者创建设计实施方案。
 - 用户已明确批准 `implementation-plan.md`，并授权计划执行者修改六个 Skill 文件、执行真实模型验收、更新版本与发布文件、提交、推送、发布和生产部署。
+- 用户已授权计划执行者删除自动 GitHub Actions workflow，并采用独立 linked worktree 中的 `pnpm quality`、`git diff --check` 和必需独立审查作为最终发布门禁。
 
 ## 关键问题
 

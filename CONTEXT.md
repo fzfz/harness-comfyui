@@ -76,4 +76,4 @@
 
 **Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.38.0`。
 
-**GitHub Release**：指向已通过 CI 的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.38.0`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过本地发布门禁和独立审查的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.38.0`；发布不创建或附加产品包。
