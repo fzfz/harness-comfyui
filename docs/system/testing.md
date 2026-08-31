@@ -89,9 +89,9 @@ v0.37.1 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 �
 
 v0.37.2 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 项 contract/security、99 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试从旧生产 DSH home 读取保存 Session，并验证当前生产 DSH home 中的侧栏 Session、Session 选择和媒体结果。
 
-v0.37.4 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。Source adapter 测试覆盖 Source v0.86.1 三字段 TemplateBundle；Workflow compiler 测试覆盖活动输出节点发现、断开输出节点删除和没有活动输出节点时的明确失败。
-
 v0.37.3 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop generation 的 managed CLI 相关文件来自 `.local/source-cli/` 构建目录，不包含 `scripts/cli/` 源入口；真实 DSH bash capability 测试通过构建后的 CLI 取得业务响应。
+
+v0.37.4 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。Source adapter 测试覆盖 Source v0.86.1 三字段 TemplateBundle；Workflow compiler 测试覆盖活动输出节点发现、断开输出节点删除和没有活动输出节点时的明确失败。
 
 ## CI
 

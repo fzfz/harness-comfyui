@@ -260,10 +260,20 @@ describe('GenerationRuntime worker lifecycle', () => {
     await first.advance()
     first.close()
 
+    const database = new DatabaseSync(join(root, 'data', 'runs.sqlite'))
+    const stored = database.prepare(`
+      SELECT expected_output_node_ids_json FROM generation_runs WHERE run_id = ?
+    `).get(accepted.runId) as { readonly expected_output_node_ids_json: string }
+    expect(stored.expected_output_node_ids_json).toBe('["3"]')
+    database.close()
+
     const recovered = runtime(root, transport)
     await recovered.advance()
 
     expect(transport.submit).toHaveBeenCalledOnce()
+    expect(transport.observe).toHaveBeenCalledWith(expect.objectContaining({
+      outputNodeIds: ['3'],
+    }))
     expect(recovered.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
       runId: accepted.runId,
       status: 'remote_pending',

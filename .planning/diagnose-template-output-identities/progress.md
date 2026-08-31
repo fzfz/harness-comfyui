@@ -9,6 +9,9 @@
 - `pnpm verify:comfyui-workflows -- --instance-id 2` 在编译前发现实时 Catalog 新增模板 43，而结构化参数支持基线只包含模板 8 至 42；该外部目录变化不属于本修复，仓库没有写入未经批准的模板 43 参数基线。
 - 远端 `main` 在本轮实施期间发布并部署了另一项 `v0.37.3`；当前分支已经基于该发布提交，按不可移动 tag 规则把本修复版本更新为 `v0.37.4`。
 - 完整 `pnpm quality` 通过：530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；依赖审计全部为 0。
+- Generation Runtime 恢复测试直接读取 SQLite 的 `generation_runs.expected_output_node_ids_json`，并确认 Host 重启后传输层收到同一组输出节点 ID；该测试文件 15 项测试通过。
+- Standards 与 Spec 两个独立审查轴均无代码阻断项。审查者确认 Source 版本在运行配置、Schema 约束、生产合同导出和不可变合同快照中的声明符合批准方案；审查者确认 SQLite 保存与恢复链路已经具备直接证据。
+- 模板 39 的隔离真实编译验证请求访问实例 2 的 `/object_info` 时连接超时。该外部实例不可达状态阻止真实实例验收，但不影响 Source adapter 读取模板 39 的三字段 bundle，也不改变自动发现输出节点的单元测试结果。
 - 质量门禁期间短暂停止的生产 v0.37.3 Desktop 已恢复为 running。
 
 ## 2026-08-31
