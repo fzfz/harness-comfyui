@@ -761,6 +761,19 @@
   width: min(1180px, calc(100vw - 48px));
 }
 
+.harness-comfyui-media-viewer-footer-actions {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.harness-comfyui-media-viewer-footer-actions > button {
+  max-width: 100%;
+}
+
 .harness-comfyui-media-viewer-content {
   min-width: 0;
   display: flex;

@@ -64,6 +64,13 @@ function attachment(filename: string): string {
   return `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
 }
 
+function mediaDisposition(disposition: 'inline' | 'attachment', filename: string): string {
+  const encodedFilename = encodeURIComponent(filename).replace(/[!'()*]/gu, character =>
+    `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  )
+  return `${disposition}; filename*=UTF-8''${encodedFilename}`
+}
+
 async function streamFile(
   response: ServerResponse,
   path: string,
@@ -101,7 +108,7 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
       }
       const url = new URL(request.url ?? '/', 'http://127.0.0.1')
       const pathname = url.pathname
-      const match = pathname.match(new RegExp(`^${GENERATION_MEDIA_ROUTE_PREFIX}/([A-Za-z0-9_-]{1,128})/(content|workflow|view)$`, 'u'))
+      const match = pathname.match(new RegExp(`^${GENERATION_MEDIA_ROUTE_PREFIX}/([A-Za-z0-9_-]{1,128})/(content|download|workflow|view)$`, 'u'))
       if (match === null) {
         send(response, 404, 'Not Found')
         return
@@ -138,12 +145,12 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
           sendViewerPage(response, renderGenerationMediaViewerPage({ items, currentMediaId: mediaId }))
           return
         }
-        if (match[2] === 'content') {
+        if (match[2] === 'content' || match[2] === 'download') {
           await streamFile(
             response,
             options.runtime.mediaContentPath(mediaId),
             media.mediaType,
-            `inline; filename*=UTF-8''${encodeURIComponent(media.filename)}`,
+            mediaDisposition(match[2] === 'content' ? 'inline' : 'attachment', media.filename),
             'GENERATION_MEDIA_NOT_FOUND',
           )
           return

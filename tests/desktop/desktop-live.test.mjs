@@ -132,6 +132,103 @@ async function connectDesktopPage(port, timeoutMs = 60_000) {
   return { close: () => socket.close(), command, evaluate }
 }
 
+async function connectDesktopBrowser(port, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs
+  let webSocketDebuggerUrl
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/json/version`)
+      if (response.ok) {
+        const version = await response.json()
+        if (typeof version.webSocketDebuggerUrl === 'string') {
+          webSocketDebuggerUrl = version.webSocketDebuggerUrl
+          break
+        }
+      }
+    } catch {
+      // Electron has not opened its browser debugging endpoint yet.
+    }
+    await delay(100)
+  }
+  if (webSocketDebuggerUrl === undefined) throw new Error('timed out waiting for the DSH Desktop browser target')
+
+  const socket = new WebSocket(webSocketDebuggerUrl)
+  await new Promise((resolveOpen, reject) => {
+    socket.addEventListener('open', resolveOpen, { once: true })
+    socket.addEventListener('error', reject, { once: true })
+  })
+  let commandId = 0
+  const pending = new Map()
+  const events = []
+  const waiters = new Set()
+  socket.addEventListener('message', event => {
+    const message = JSON.parse(String(event.data))
+    if (message.id !== undefined) {
+      const resolveCommand = pending.get(message.id)
+      if (resolveCommand === undefined) return
+      pending.delete(message.id)
+      resolveCommand(message)
+      return
+    }
+    if (message.method !== 'Browser.downloadWillBegin' && message.method !== 'Browser.downloadProgress') return
+    events.push(message)
+    for (const waiter of [...waiters]) {
+      if (waiter.accept(message)) waiter.resolve(message.params)
+    }
+  })
+  const command = (method, params = {}) => new Promise((resolveCommand, reject) => {
+    const id = ++commandId
+    pending.set(id, message => {
+      if (message.error !== undefined) reject(new Error(message.error.message))
+      else resolveCommand(message.result)
+    })
+    socket.send(JSON.stringify({ id, method, params }))
+  })
+  const waitForEvent = (method, accept, eventTimeoutMs = 60_000) => {
+    const existing = events.find(message => message.method === method && accept(message.params))
+    if (existing !== undefined) return Promise.resolve(existing.params)
+    return new Promise((resolveEvent, reject) => {
+      const waiter = {
+        accept: message => message.method === method && accept(message.params),
+        resolve(params) {
+          clearTimeout(timer)
+          waiters.delete(waiter)
+          resolveEvent(params)
+        },
+      }
+      const timer = setTimeout(() => {
+        waiters.delete(waiter)
+        const observed = events.filter(message => message.method === method).map(message => message.params)
+        reject(new Error(`timed out waiting for ${method}; observed=${JSON.stringify(observed)}`))
+      }, eventTimeoutMs)
+      waiters.add(waiter)
+    })
+  }
+  return { close: () => socket.close(), command, waitForEvent }
+}
+
+async function expectCompletedDownload(browser, expected) {
+  const willBegin = await browser.waitForEvent(
+    'Browser.downloadWillBegin',
+    event => event.url === expected.url,
+  )
+  expect(willBegin.url).toBe(expected.url)
+  expect(willBegin.suggestedFilename).toBe(expected.filename)
+  const progress = await browser.waitForEvent(
+    'Browser.downloadProgress',
+    event => event.guid === willBegin.guid && (event.state === 'completed' || event.state === 'canceled'),
+  )
+  if (progress.state === 'canceled') {
+    throw new Error(
+      `Desktop download canceled: url=${willBegin.url} suggestedFilename=${willBegin.suggestedFilename} receivedBytes=${progress.receivedBytes}`,
+    )
+  }
+  expect(progress.receivedBytes).toBe(expected.byteLength)
+  const downloaded = await readFile(resolve(expected.downloadPath, expected.filename))
+  expect(downloaded).toEqual(Buffer.from(expected.bytes))
+  return { willBegin, progress }
+}
+
 async function desktopPageTargetCount(port) {
   const response = await fetch(`http://127.0.0.1:${port}/json/list`)
   if (!response.ok) throw new Error(`Desktop debugger target list failed with ${response.status}`)
@@ -158,10 +255,19 @@ async function clickMainFrameElement(page, selector) {
   const point = await page.evaluate(`(() => {
     const element = document.querySelector(${JSON.stringify(selector)})
     if (!(element instanceof HTMLElement)) return null
+    element.scrollIntoView({ block: 'center', inline: 'center' })
     const bounds = element.getBoundingClientRect()
-    return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 }
+    return {
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight
+    }
   })()`)
   if (point === null) throw new Error(`Desktop element is unavailable: ${selector}`)
+  if (point.x < 0 || point.x > point.viewportWidth || point.y < 0 || point.y > point.viewportHeight) {
+    throw new Error(`Desktop element is outside the viewport after scrolling: ${selector} at ${JSON.stringify(point)}`)
+  }
   await page.command('Input.dispatchMouseEvent', {
     type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1,
   })
@@ -329,7 +435,7 @@ async function seedDesktopMedia(context, identity) {
   } finally {
     runtime.close()
   }
-  return { newer, older }
+  return { newer, older, gifBytes }
 }
 
 describe('live DSH Desktop production integration', () => {
@@ -379,9 +485,21 @@ describe('live DSH Desktop production integration', () => {
     expect(await readFile(repositoryLockfile, 'utf8')).toBe(repositoryLockfileBefore)
 
     const page = await connectDesktopPage(debuggingPort)
+    const downloadPath = resolve(context.runtimeRoot, 'downloads')
+    let browser = null
+    let downloadBehaviorEnabled = false
     let deviceMetricsOverridden = false
     try {
+      await mkdir(downloadPath)
+      browser = await connectDesktopBrowser(debuggingPort)
+      await browser.command('Browser.setDownloadBehavior', {
+        behavior: 'allow',
+        downloadPath,
+        eventsEnabled: true,
+      })
+      downloadBehaviorEnabled = true
       await waitForValue(page, 'window.innerWidth', value => value >= 680)
+      const desktopOrigin = await page.evaluate('window.location.origin')
       const initial = await waitForValue(
         page,
         `(() => ({
@@ -555,6 +673,7 @@ describe('live DSH Desktop production integration', () => {
             url: frame.getAttribute('src'),
             loaded: frame.contentDocument?.querySelector('.media-viewer') !== null,
             runId: dialog.querySelector('.harness-comfyui-media-viewer-run-id-value')?.textContent ?? '',
+            downloadButton: dialog.querySelector('button[aria-label^="下载当前原文件："]')?.textContent?.trim() ?? '',
             body: frame.contentDocument?.body?.innerText ?? ''
           } : null
         })()`,
@@ -565,8 +684,25 @@ describe('live DSH Desktop production integration', () => {
         title: `媒体查看器：${mediaFixture.newer.filename}`,
         url: expect.stringContaining(`/api/harness-comfyui/media/${mediaFixture.newer.mediaId}/view?session_id=session-desktop-media`),
         runId: mediaFixture.newer.runId,
+        downloadButton: '下载原文件',
       })
       expect(viewer.body).toContain(mediaFixture.newer.filename)
+
+      await clickMainFrameElement(
+        page,
+        `button[aria-label=${JSON.stringify(`下载当前原文件：${mediaFixture.newer.filename}`)}]`,
+      )
+      const newerDownload = await expectCompletedDownload(browser, {
+        url: new URL(
+          `/api/harness-comfyui/media/${mediaFixture.newer.mediaId}/download?session_id=${identity.sessionId}`,
+          desktopOrigin,
+        ).href,
+        filename: mediaFixture.newer.filename,
+        bytes: mediaFixture.gifBytes,
+        byteLength: mediaFixture.gifBytes.length,
+        downloadPath,
+      })
+      expect(newerDownload.progress.state).toBe('completed')
 
       await clickMainFrameElement(page, '.harness-comfyui-media-viewer-copy-button')
       const newerCopy = await waitForValue(
@@ -598,6 +734,21 @@ describe('live DSH Desktop production integration', () => {
         `document.querySelector('.harness-comfyui-media-viewer-run-id-value')?.textContent ?? ''`,
         value => value === mediaFixture.older.runId,
       )
+      await clickMainFrameElement(
+        page,
+        `button[aria-label=${JSON.stringify(`下载当前原文件：${mediaFixture.older.filename}`)}]`,
+      )
+      const olderDownload = await expectCompletedDownload(browser, {
+        url: new URL(
+          `/api/harness-comfyui/media/${mediaFixture.older.mediaId}/download?session_id=${identity.sessionId}`,
+          desktopOrigin,
+        ).href,
+        filename: mediaFixture.older.filename,
+        bytes: mediaFixture.gifBytes,
+        byteLength: mediaFixture.gifBytes.length,
+        downloadPath,
+      })
+      expect(olderDownload.progress.state).toBe('completed')
       await clickMainFrameElement(page, '.harness-comfyui-media-viewer-copy-button')
       const olderCopy = await waitForValue(
         page,
@@ -620,14 +771,23 @@ describe('live DSH Desktop production integration', () => {
       const geometryExpression = `(() => {
         const row = document.querySelector('.harness-comfyui-media-viewer-run-id-row')
         const frame = document.querySelector('.harness-comfyui-media-viewer-frame')
-        if (!(row instanceof HTMLElement) || !(frame instanceof HTMLIFrameElement)) return null
+        const footer = document.querySelector('.harness-comfyui-media-viewer-footer-actions')
+        const dialog = document.querySelector('[role="dialog"].harness-comfyui-media-viewer-modal')
+        if (!(row instanceof HTMLElement) || !(frame instanceof HTMLIFrameElement)
+          || !(footer instanceof HTMLElement) || !(dialog instanceof HTMLElement)) return null
         const rowBounds = row.getBoundingClientRect()
         const frameBounds = frame.getBoundingClientRect()
+        const footerBounds = footer.getBoundingClientRect()
         return {
           viewportWidth: window.innerWidth,
           rowScrollWidth: row.scrollWidth,
           rowClientWidth: row.clientWidth,
-          overlapsFrame: rowBounds.bottom > frameBounds.top
+          footerScrollWidth: footer.scrollWidth,
+          footerClientWidth: footer.clientWidth,
+          dialogScrollWidth: dialog.scrollWidth,
+          dialogClientWidth: dialog.clientWidth,
+          rowOverlapsFrame: rowBounds.bottom > frameBounds.top,
+          footerOverlapsFrame: frameBounds.bottom > footerBounds.top
         }
       })()`
       const desktopGeometry = await waitForValue(
@@ -636,7 +796,10 @@ describe('live DSH Desktop production integration', () => {
         value => value?.viewportWidth >= 680,
       )
       expect(desktopGeometry.rowScrollWidth).toBeLessThanOrEqual(desktopGeometry.rowClientWidth)
-      expect(desktopGeometry.overlapsFrame).toBe(false)
+      expect(desktopGeometry.footerScrollWidth).toBeLessThanOrEqual(desktopGeometry.footerClientWidth)
+      expect(desktopGeometry.dialogScrollWidth).toBeLessThanOrEqual(desktopGeometry.dialogClientWidth)
+      expect(desktopGeometry.rowOverlapsFrame).toBe(false)
+      expect(desktopGeometry.footerOverlapsFrame).toBe(false)
 
       await page.command('Emulation.setDeviceMetricsOverride', {
         width: 600, height: 800, deviceScaleFactor: 1, mobile: false,
@@ -648,7 +811,10 @@ describe('live DSH Desktop production integration', () => {
         value => value?.viewportWidth < 680,
       )
       expect(narrowGeometry.rowScrollWidth).toBeLessThanOrEqual(narrowGeometry.rowClientWidth)
-      expect(narrowGeometry.overlapsFrame).toBe(false)
+      expect(narrowGeometry.footerScrollWidth).toBeLessThanOrEqual(narrowGeometry.footerClientWidth)
+      expect(narrowGeometry.dialogScrollWidth).toBeLessThanOrEqual(narrowGeometry.dialogClientWidth)
+      expect(narrowGeometry.rowOverlapsFrame).toBe(false)
+      expect(narrowGeometry.footerOverlapsFrame).toBe(false)
       await delay(300)
       expect(await desktopPageTargetCount(debuggingPort)).toBe(pageTargetsBefore)
       await page.evaluate(`([...document.querySelectorAll('button')]
@@ -660,6 +826,11 @@ describe('live DSH Desktop production integration', () => {
       )
     } finally {
       if (deviceMetricsOverridden) await page.command('Emulation.clearDeviceMetricsOverride').catch(() => undefined)
+      if (browser !== null && downloadBehaviorEnabled) {
+        await browser.command('Browser.setDownloadBehavior', { behavior: 'default' }).catch(() => undefined)
+      }
+      browser?.close()
+      await rm(downloadPath, { recursive: true, force: true })
       page.close()
     }
   })

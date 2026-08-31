@@ -6,10 +6,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
   const React = await import('react')
   return {
-    Button: ({ icon, children, ...props }: Record<string, unknown>) => React.createElement(
-      'button', props,
-      icon ? React.createElement('span', { 'data-button-icon': true }, icon as ReactNode) : children as ReactNode,
-    ),
+    Button: ({ icon, children, ...props }: Record<string, unknown>) => {
+      const content: ReactNode[] = []
+      if (icon !== undefined) content.push(React.createElement('span', { 'data-button-icon': true }, icon as ReactNode))
+      if (children !== undefined) content.push(children as ReactNode)
+      return React.createElement('button', props, ...content)
+    },
     IconChevronDownOutline14: () => React.createElement('i'),
     IconChevronLeftOutline14: () => React.createElement('i'),
     IconChevronRightOutline14: () => React.createElement('i'),
@@ -46,6 +48,7 @@ import { GENERATION_ERROR_COPY, RESULTS_COPY } from '../../src/client/workbench/
 import {
   GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
   generationMediaContentUrl,
+  generationMediaDownloadUrl,
   generationMediaViewerUrl,
   type GenerationProjection,
 } from '../../src/generation/contract.ts'
@@ -192,6 +195,7 @@ describe('native Generation result drawer', () => {
     const rowRule = styles.match(/\.harness-comfyui-media-viewer-run-id-row\s*\{(?<body>[^}]*)\}/u)
     const valueRule = styles.match(/\.harness-comfyui-media-viewer-run-id-value\s*\{(?<body>[^}]*)\}/u)
     const frameRule = styles.match(/\.harness-comfyui-media-viewer-frame\s*\{(?<body>[^}]*)\}/u)
+    const footerRule = styles.match(/\.harness-comfyui-media-viewer-footer-actions\s*\{(?<body>[^}]*)\}/u)
 
     expect(modalRule?.groups?.body).toContain('width: min(1180px, calc(100vw - 48px));')
     expect(contentRule?.groups?.body).toContain('min-width: 0;')
@@ -201,6 +205,9 @@ describe('native Generation result drawer', () => {
     expect(frameRule?.groups?.body).toContain('width: 100%;')
     expect(frameRule?.groups?.body).toContain('height: min(68vh, 720px);')
     expect(frameRule?.groups?.body).toContain('border: 0;')
+    expect(footerRule?.groups?.body).toContain('display: flex;')
+    expect(footerRule?.groups?.body).toContain('flex-wrap: wrap;')
+    expect(footerRule?.groups?.body).toContain('gap: 8px;')
     expect(styles).toContain('.harness-comfyui-media-viewer-copy-button:focus-visible')
     expect(styles).toContain('@media (max-width: 680px)')
     expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto;')
@@ -318,6 +325,86 @@ describe('native Generation result drawer', () => {
       expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:workflow')
       renderer!.unmount()
     })
+  })
+
+  it('downloads the image or video currently displayed by the Session Media Viewer', () => {
+    const environment = installMessageWindow()
+    const anchors: Array<{ href: string; download: string; click: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> }> = []
+    const append = vi.fn()
+    const fetchMock = vi.fn()
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => {
+        const anchor = { href: '', download: '', click: vi.fn(), remove: vi.fn() }
+        anchors.push(anchor)
+        return anchor
+      }),
+      body: { append },
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+
+    const initialDownload = renderer!.root.findByProps({ 'aria-label': '下载当前原文件：result-1.webp' })
+    expect(JSON.stringify(initialDownload.props.children)).toContain('下载原文件')
+    expect(initialDownload.props.variant).toBe('outline')
+    act(() => { (initialDownload.props.onClick as () => void)() })
+    act(() => { (initialDownload.props.onClick as () => void)() })
+    expect(anchors).toHaveLength(2)
+    for (const anchor of anchors) {
+      expect(anchor.href).toBe(generationMediaDownloadUrl('media_1', 'session-1'))
+      expect(anchor.download).toBe('result-1.webp')
+      expect(anchor.click).toHaveBeenCalledOnce()
+      expect(anchor.remove).toHaveBeenCalledOnce()
+      expect(append).toHaveBeenCalledWith(anchor)
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    act(() => environment.dispatch({
+      origin: 'http://127.0.0.1:4173',
+      source: iframeContentWindow,
+      data: { type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE, mediaId: 'media_6', runId: 'run_2' },
+    }))
+    const videoDownload = renderer!.root.findByProps({ 'aria-label': '下载当前原文件：result.mp4' })
+    act(() => { (videoDownload.props.onClick as () => void)() })
+    expect(anchors[2]).toMatchObject({
+      href: generationMediaDownloadUrl('media_6', 'session-1'),
+      download: 'result.mp4',
+    })
+    expect(anchors[2]!.click).toHaveBeenCalledOnce()
+    expect(anchors[2]!.remove).toHaveBeenCalledOnce()
+
+    act(() => {
+      (renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.closeMediaViewer }).props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByProps({ 'aria-label': '下载当前原文件：result.mp4' })).toHaveLength(0)
+    act(() => renderer!.unmount())
+  })
+
+  it('removes the temporary original-media download anchor when the native click throws', () => {
+    installMessageWindow()
+    const clickError = new Error('native download click failed')
+    const anchor = { href: '', download: '', click: vi.fn(() => { throw clickError }), remove: vi.fn() }
+    vi.stubGlobal('document', { createElement: vi.fn(() => anchor), body: { append: vi.fn() } })
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+    act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
+    const open = renderer!.root.findAllByType('button')
+      .find(button => button.props.className === 'harness-comfyui-media-viewer-button')!
+    act(() => { (open.props.onClick as () => void)() })
+
+    expect(() => {
+      act(() => {
+        (renderer!.root.findByProps({ 'aria-label': '下载当前原文件：result-1.webp' }).props.onClick as () => void)()
+      })
+    }).toThrow(clickError)
+    expect(anchor.remove).toHaveBeenCalledOnce()
+    act(() => renderer!.unmount())
   })
 
   it('accepts current-media messages only from the open Session Media Viewer iframe', () => {

@@ -138,15 +138,17 @@ Official API Workflow Cache 的 identity 包含目标实例 ID、实例 origin�
 
 Comfy transport 向 `/prompt` 发送 API Workflow，并把同一 Run 的 Actual Workflow 放入 `extra_data.extra_pnginfo.workflow`，供读取 `EXTRA_PNGINFO` 的节点使用。Jobs API 完成响应中的 `type=temp` 预览不进入 Saved Media；`type=output` 图片或视频继续执行 descriptor 路径、响应媒体类型、大小和文件签名校验。
 
-Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体内容与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|workflow` 提供。
+Run Repository 保存状态和索引；Run 目录保存每次运行独立的请求、来源快照、Actual Workflow 和 API Workflow；Saved Media 使用随机 `media_id` 的两级前缀分片。媒体预览内容、原文件下载与媒体所属 Actual Workflow 通过同一个 Harness HTTP 服务的 `/api/harness-comfyui/media/<media_id>/content|download|workflow` 提供。
 
-Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>`，缩略图仍从该媒体的 `/content` 路由读取。Host 在返回查看页前验证 HTTP 方法、Session、workspace 和媒体归属。查看页的启动数据只包含当前 Session 中每项媒体的媒体 ID、所属 Generation Run 的 `runId`、媒体类型、文件名、生成时间、同源内容 URL、查看页 URL 和所属 Run 保存的原始 `parameters.positive_prompt`；启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
+Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>`，缩略图仍从该媒体的 `/content` 路由读取。Host 在返回查看页、媒体内容或下载响应前验证 HTTP 方法、Session、workspace 和媒体归属。查看页的启动数据只包含当前 Session 中每项媒体的媒体 ID、所属 Generation Run 的 `runId`、媒体类型、文件名、生成时间、同源内容 URL、查看页 URL 和所属 Run 保存的原始 `parameters.positive_prompt`；启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
 
 Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。Host 只把每项媒体的 `runId`、媒体显示属性、同源内容 URL、同源查看 URL 和正面提示词投影到查看页；Host 不把完整 Generation Request 或 Workflow 投影到查看页。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。
 
 媒体查看页 iframe 在初始渲染和每次媒体切换后，向父框架发送类型为 `harness-comfyui.session-media-viewer.current.v1` 且只包含 `type`、`mediaId` 和 `runId` 的当前媒体消息。DSH Desktop 主框架 Modal 只接收来源 origin 等于当前页面 origin、来源 window 等于当前媒体查看页 iframe、消息通过 `src/generation/contract.ts` 严格解析、`mediaId` 与 `runId` 对应当前 Session 同一项 Generation Media 的消息。合法消息更新 Modal 中 iframe 上方独立显示的完整 `run_id`；其他消息不改变 Modal 状态。
 
 用户点击 Modal 主框架的独立复制按钮后，主框架使用浏览器 Clipboard API 写入当前完整 `run_id`；成功时按钮显示“已复制”，`aria-live` 播报已复制的完整值。Clipboard API 缺失或拒绝写入时，按钮显示“复制失败”，`aria-live` 分别要求用户手动选择已显示的完整值，或要求用户重试后仍可手动选择该值。复制 Promise 完成时，Modal 只有在同一个 Modal 实例仍然打开并且当前 `mediaId` 与 `runId` 都未变化时才更新状态；已经关闭的 Modal 或已经切换的媒体不会接收迟到结果。媒体查看页 iframe 不调用 Clipboard API，也不请求 `clipboard-write` 权限。
+
+用户点击 Modal footer 的“下载原文件”按钮后，主框架使用临时锚点发起当前 `mediaId` 的同源 `/download?session_id=<session_id>` GET，并在触发 Chromium 原生下载后立即删除锚点。该路由使用 `GenerationRuntime.mediaContentPath()` 流式读取 `/content` 对应的同一个 Saved Media 文件，返回媒体记录中的 MIME、文件 `stat` 长度、`nosniff` 与 `attachment; filename*=UTF-8''...`；原文件名使用 UTF-8 RFC 5987/8187 百分号编码，不进入普通 `filename` 参数。Client 不读取媒体 Blob、不创建 Object URL、不打开新窗口，也不声称已经收到原生下载完成信号。查看页切换媒体后，父框架的当前媒体映射同时更新标题、Run ID 与下载目标。
 
 页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。图片加载后，页面读取 `naturalWidth` 和 `naturalHeight`；视频元数据加载后，页面读取 `videoWidth` 和 `videoHeight`。上述值定义为媒体文件的固有像素尺寸，不使用 Generation Request 中的 `width` 或 `height` 推测。切换媒体时尺寸先显示“读取中”，零尺寸或媒体加载失败时显示“尺寸不可用”；已经被替换的媒体产生迟到事件时不得覆盖当前媒体的尺寸。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。
 

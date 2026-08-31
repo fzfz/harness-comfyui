@@ -4,6 +4,7 @@ import {
   GENERATION_IDENTIFIER_MAX_LENGTH,
   GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
   generationMediaContentUrl,
+  generationMediaDownloadUrl,
   generationMediaViewerUrl,
   generationMediaWorkflowUrl,
   parseGenerationProjection,
@@ -90,11 +91,13 @@ describe('Generation projection contract', () => {
     }).runs[0]?.errorMessage).toBe(errorMessage)
   })
 
-  it('builds same-origin viewer, content and per-media Workflow URLs', () => {
+  it('builds same-origin viewer, content, download and per-media Workflow URLs', () => {
     expect(generationMediaViewerUrl('media / 1', 'session / 1'))
       .toBe('/api/harness-comfyui/media/media%20%2F%201/view?session_id=session%20%2F%201')
     expect(generationMediaContentUrl('media / 1', 'session / 1'))
       .toBe('/api/harness-comfyui/media/media%20%2F%201/content?session_id=session%20%2F%201')
+    expect(generationMediaDownloadUrl('media / 1', 'session / 1'))
+      .toBe('/api/harness-comfyui/media/media%20%2F%201/download?session_id=session%20%2F%201')
     expect(generationMediaWorkflowUrl('media / 1', 'session / 1'))
       .toBe('/api/harness-comfyui/media/media%20%2F%201/workflow?session_id=session%20%2F%201')
   })

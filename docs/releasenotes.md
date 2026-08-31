@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.38.0
+
+v0.38.0 为 DSH Desktop 的 Session Media Viewer 增加当前图片或视频的原文件下载功能。
+
+## Session Media Viewer 原文件下载
+
+- Modal footer 新增“下载原文件”按钮。按钮始终对应 iframe 当前显示的 Generation Media；用户切换媒体后，Modal 标题、完整 Run ID 和下载目标同步更新。
+- Client 使用一次性临时锚点触发 Chromium 原生下载，不读取媒体 Blob、不创建 Object URL、不打开新窗口。保存目录和同名文件处理继续由 DSH Desktop 中 Chromium 的下载策略决定。
+- Host 新增同源 `/api/harness-comfyui/media/<media_id>/download?session_id=<session_id>` 路由。该路由执行与查看页和媒体内容相同的 Session、workspace 与媒体归属校验，并流式读取 `/content` 使用的同一个 Saved Media 文件。
+- 下载响应保留 Generation Media 记录中的 MIME 和 ComfyUI 原文件名。Host 使用 UTF-8 RFC 5987/8187 `filename*` 编码附件文件名，避免引号、控制字符或特殊字符形成额外响应头参数。
+- Saved Media 缺失时 Host 返回 `GENERATION_MEDIA_NOT_FOUND`；响应开始后文件读取失败时 Host 销毁下载连接。Client 不显示无法从原生下载接口可靠确认的成功状态。
+
+## 测试与发布
+
+- 自动化测试覆盖下载 URL、原始字节、MIME、字节长度、安全 attachment、六类 Session/workspace 拒绝、文件缺失、非 GET、500、流中断、图片、视频、媒体切换、重复点击和临时锚点清理。
+- 真实 Desktop 测试通过 Browser 级 CDP 下载事件和真实鼠标点击验证两项媒体的事件 URL、建议文件名、完成状态、接收字节数和落盘原始字节；测试同时验证 Modal 保持打开、Chromium page target 数量不增加，以及桌面宽度与 600 × 800 viewport 的 footer 布局。
+- 本版本没有增加或升级依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.37.6
 
 v0.37.6 修复 DSH Desktop 的 Session Media Viewer 无法复制完整 Run ID 的问题。

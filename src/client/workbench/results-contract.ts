@@ -10,6 +10,8 @@ export const RESULTS_COPY = Object.freeze({
   runId: '运行 ID',
   errorCode: '错误码',
   downloadWorkflow: '下载所属运行的 Workflow',
+  downloadOriginalMedia: '下载原文件',
+  downloadOriginalMediaButtonLabelPrefix: '下载当前原文件：',
   openMediaViewer: '打开媒体查看器',
   mediaViewer: '媒体查看器',
   closeMediaViewer: '关闭媒体查看器',

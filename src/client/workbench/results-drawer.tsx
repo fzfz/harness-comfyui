@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import {
   generationMediaContentUrl,
+  generationMediaDownloadUrl,
   generationMediaViewerUrl,
   generationMediaWorkflowUrl,
   parseGenerationMediaViewerCurrentMessage,
@@ -253,6 +254,18 @@ async function downloadMediaWorkflow(item: GenerationMediaProjection, sessionId:
   return null
 }
 
+function downloadOriginalMedia(item: GenerationMediaProjection, sessionId: string): void {
+  const anchor = document.createElement('a')
+  anchor.href = generationMediaDownloadUrl(item.mediaId, sessionId)
+  anchor.download = item.filename
+  document.body.append(anchor)
+  try {
+    anchor.click()
+  } finally {
+    anchor.remove()
+  }
+}
+
 function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly GenerationMediaProjection[]; readonly sessionId: string }) {
   const [turn, setTurn] = useState('all')
   const [kind, setKind] = useState('all')
@@ -438,9 +451,21 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
         className="harness-comfyui-media-viewer-modal"
         contentClassName="harness-comfyui-media-viewer-modal-content"
         footer={(
-          <Button variant="primary" onClick={closeViewer}>
-            {RESULTS_COPY.closeMediaViewer}
-          </Button>
+          <div className="harness-comfyui-media-viewer-footer-actions">
+            {viewerCurrentMedia === null ? null : (
+              <Button
+                variant="outline"
+                icon={<IconDownloadOutline16 />}
+                aria-label={`${RESULTS_COPY.downloadOriginalMediaButtonLabelPrefix}${viewerCurrentMedia.filename}`}
+                onClick={() => downloadOriginalMedia(viewerCurrentMedia, sessionId)}
+              >
+                {RESULTS_COPY.downloadOriginalMedia}
+              </Button>
+            )}
+            <Button variant="primary" onClick={closeViewer}>
+              {RESULTS_COPY.closeMediaViewer}
+            </Button>
+          </div>
         )}
       >
         {viewerFrameMedia === null || viewerCurrentMedia === null ? null : (

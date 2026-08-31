@@ -86,7 +86,7 @@ Host 注册 `get_generation_run_media` 与 `inspect_image`。前者按输入顺�
 
 Generation 请求只要求导入 UI Workflow。Host 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名称、活动状态和上下游连线定位显式运行参数，不读取 Source 模板记录中的参数定义或 binding 元数据。Host 使用 `/object_info` 的实时枚举校验运行参数，并在唯一大小写匹配时写入实例返回的精确值；无法匹配时，`generate_with_comfyui` 把具体参数目标、收到值和允许值返回给调用方。Source 读取、Workflow 编译或 Official API Workflow 准备中的其他错误也会在 Tool 返回 `run_id` 前返回调用方；只有成功返回 `run_id` 后的远端提交、观察、执行和媒体下载错误继续异步写入 Run。成功解析的 `/object_info` 在 Host 进程内缓存 10 分钟，同一实例的并发请求共享一个在途请求。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 复制本地基础对象并覆盖本次已确认的运行输入。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
 
-结果列中的图片或视频在 DSH Desktop 原生 Modal 内打开同源媒体查看页，不创建浏览器新窗口。查看页按当前 Session 的媒体生成时间顺序提供较新与较早方向按钮，也支持不带修饰键的键盘左右键；首项和末项不会循环。Modal 主框架在媒体查看页 iframe 上方显示当前媒体所属 Generation Run 的完整 `run_id`；媒体查看页切换媒体后，Modal 主框架同步更新该值。用户点击独立复制按钮后，Modal 主框架把完整 `run_id` 写入浏览器剪贴板并显示成功或失败状态；Clipboard API 不可用或写入被拒绝时，用户仍可手动选择已显示的完整值。查看页顶部显示媒体文件的固有像素尺寸，并在媒体下方显示该媒体所属 Generation Run 保存的原始正面提示词；未保存正面提示词时显示明确缺失状态。图片和视频保持原始宽高比完整显示，不裁切内容；视频使用浏览器原生播放控件。
+结果列中的图片或视频在 DSH Desktop 原生 Modal 内打开同源媒体查看页，不创建浏览器新窗口。查看页按当前 Session 的媒体生成时间顺序提供较新与较早方向按钮，也支持不带修饰键的键盘左右键；首项和末项不会循环。Modal 主框架在媒体查看页 iframe 上方显示当前媒体所属 Generation Run 的完整 `run_id`；媒体查看页切换媒体后，Modal 主框架同步更新该值。用户点击独立复制按钮后，Modal 主框架把完整 `run_id` 写入浏览器剪贴板并显示成功或失败状态；Clipboard API 不可用或写入被拒绝时，用户仍可手动选择已显示的完整值。Modal footer 的“下载原文件”按钮通过当前 Session 的同源 Host 路由流式下载当前图片或视频的 Saved Media 原始字节，并使用 Generation Media 保存的 ComfyUI 原文件名；媒体查看页切换媒体后，按钮下载切换后的当前媒体。保存目录和同名文件处理由 DSH Desktop 中 Chromium 的下载策略决定，Client 不读取完整媒体 Blob，也不显示无法可靠确认的下载成功状态。查看页顶部显示媒体文件的固有像素尺寸，并在媒体下方显示该媒体所属 Generation Run 保存的原始正面提示词；未保存正面提示词时显示明确缺失状态。图片和视频保持原始宽高比完整显示，不裁切内容；视频使用浏览器原生播放控件。
 
 ## 测试
 
@@ -105,6 +105,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.37.6 发布说明](docs/releasenotes.md)
+- [v0.38.0 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.37.6`。对应发布记录在最终提交、`v0.37.6` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.38.0`。对应发布记录在最终提交、`v0.38.0` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

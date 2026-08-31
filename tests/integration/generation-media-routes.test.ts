@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Writable } from 'node:stream'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -102,6 +103,184 @@ describe('Generation media HTTP routes', () => {
     expect(html).not.toContain('workspace_1')
     expect(html).not.toContain('request_json')
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('downloads the original media bytes with a safe UTF-8 attachment filename', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-download-route-'))
+    temporaryDirectories.push(root)
+    const mediaPath = join(root, 'saved-media.bin')
+    const mediaBytes = Buffer.from([0, 1, 2, 127, 128, 255])
+    const filename = `原 文件\"双引号'单引号!'()*\r\n.webp`
+    writeFileSync(mediaPath, mediaBytes)
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    registerGenerationMediaRoutes({
+      webServer: {
+        register(route) {
+          handler = route.handler
+          return () => undefined
+        },
+      },
+      runtime: {
+        getMedia: () => ({
+          mediaId: 'media_download', runId: 'run_1', workspaceId: 'workspace_1', sessionId: 'session_1',
+          filename, mediaType: 'image/webp',
+        }),
+        mediaContentPath: () => mediaPath,
+      } as never,
+      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
+    })
+    const server = createServer((request, response) => void handler!(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
+
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_download/download?session_id=session_1`,
+    )
+
+    expect(response.status).toBe(200)
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(mediaBytes)
+    expect(response.headers.get('content-type')).toBe('image/webp')
+    expect(response.headers.get('content-length')).toBe(String(mediaBytes.length))
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(response.headers.get('content-disposition')).toBe(
+      `attachment; filename*=UTF-8''%E5%8E%9F%20%E6%96%87%E4%BB%B6%22%E5%8F%8C%E5%BC%95%E5%8F%B7%27%E5%8D%95%E5%BC%95%E5%8F%B7%21%27%28%29%2A%0D%0A.webp`,
+    )
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('rejects invalid download access and reports download file failures', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-download-errors-'))
+    temporaryDirectories.push(root)
+    const missingMediaPath = join(root, 'missing.webp')
+    const media = {
+      mediaId: 'media_download', runId: 'run_1', workspaceId: 'workspace_1', sessionId: 'session_1',
+      filename: 'result.webp', mediaType: 'image/webp',
+    }
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    registerGenerationMediaRoutes({
+      webServer: {
+        register(route) {
+          handler = route.handler
+          return () => undefined
+        },
+      },
+      runtime: {
+        getMedia: (mediaId: string) => {
+          if (mediaId === 'boom') throw new Error('broken storage')
+          return media
+        },
+        mediaContentPath: () => missingMediaPath,
+      } as never,
+      workspaceRegistry: {
+        list: () => [
+          { id: 'workspace_1', sessionIds: ['session_1', 'session_wrong_same_workspace'] },
+          { id: 'workspace_2', sessionIds: ['session_other_workspace'] },
+        ],
+      },
+    })
+    const server = createServer((request, response) => void handler!(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
+    const route = `http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_download/download`
+
+    const [
+      wrongSession,
+      wrongWorkspace,
+      missingSession,
+      emptySession,
+      oversizedSession,
+      unregisteredSession,
+      missingMediaFile,
+      methodRejected,
+      internalFailure,
+    ] = await Promise.all([
+      fetch(`${route}?session_id=session_wrong_same_workspace`),
+      fetch(`${route}?session_id=session_other_workspace`),
+      fetch(route),
+      fetch(`${route}?session_id=`),
+      fetch(`${route}?session_id=${'s'.repeat(10_001)}`),
+      fetch(`${route}?session_id=session_unregistered`),
+      fetch(`${route}?session_id=session_1`),
+      fetch(`${route}?session_id=session_1`, { method: 'POST' }),
+      fetch(`http://127.0.0.1:${address.port}/api/harness-comfyui/media/boom/download?session_id=session_1`),
+    ])
+
+    expect(wrongSession.status).toBe(404)
+    expect(wrongWorkspace.status).toBe(404)
+    expect(missingSession.status).toBe(404)
+    expect(emptySession.status).toBe(404)
+    expect(oversizedSession.status).toBe(404)
+    expect(unregisteredSession.status).toBe(404)
+    expect(missingMediaFile.status).toBe(404)
+    expect(await missingMediaFile.json()).toEqual({ code: 'GENERATION_MEDIA_NOT_FOUND' })
+    expect(methodRejected.status).toBe(405)
+    expect(methodRejected.headers.get('allow')).toBe('GET')
+    expect(internalFailure.status).toBe(500)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('destroys a download response when the media stream fails after headers are sent', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-download-stream-'))
+    temporaryDirectories.push(root)
+    const mediaPath = join(root, 'saved-media.webp')
+    writeFileSync(mediaPath, Buffer.alloc(1024, 1))
+    const streamError = new Error('download stream interrupted')
+
+    class FailingResponse extends Writable {
+      statusCode = 0
+      readonly destroyErrors: Array<Error | undefined> = []
+      readonly headers = new Map<string, number | string | readonly string[]>()
+      private sent = false
+
+      get headersSent(): boolean {
+        return this.sent
+      }
+
+      setHeader(name: string, value: number | string | readonly string[]): this {
+        this.headers.set(name.toLowerCase(), value)
+        return this
+      }
+
+      override _write(_chunk: Buffer, _encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+        this.sent = true
+        callback(streamError)
+      }
+
+      override destroy(error?: Error): this {
+        this.destroyErrors.push(error)
+        return super.destroy(error)
+      }
+    }
+
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    registerGenerationMediaRoutes({
+      webServer: {
+        register(route) {
+          handler = route.handler
+          return () => undefined
+        },
+      },
+      runtime: {
+        getMedia: () => ({
+          mediaId: 'media_download', runId: 'run_1', workspaceId: 'workspace_1', sessionId: 'session_1',
+          filename: 'result.webp', mediaType: 'image/webp',
+        }),
+        mediaContentPath: () => mediaPath,
+      } as never,
+      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
+    })
+    const response = new FailingResponse()
+
+    await handler!(
+      { method: 'GET', url: '/api/harness-comfyui/media/media_download/download?session_id=session_1' } as IncomingMessage,
+      response as unknown as ServerResponse,
+    )
+
+    expect(response.headersSent).toBe(true)
+    expect(response.statusCode).toBe(200)
+    expect(response.destroyErrors.filter(error => error === streamError).length).toBeGreaterThanOrEqual(2)
   })
 
   it('serves each media file and the Actual Workflow of that media own Run', async () => {
