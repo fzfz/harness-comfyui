@@ -10,13 +10,13 @@
 - 用户报告模板 39 曾在 `run_bf514483` 创建时可用。
 - 用户确认 `expected_output_node_ids_json`、`revision_number`、`workflow_sha256`、`config_revision` 和 `dimension_strategy` 已经不再需要；Source 删除这些字段是目标合同变化，不是模板数据损坏。
 
-## 当前约束
+## 批准前调查约束（历史记录）
 
-- 调查者只读诊断产品代码、模板数据和运行状态。
-- 调查者只可修改 `task_plan.md`、`findings.md` 和 `progress.md` 调查文档。
-- 调查者不得运行外部下载项目、外部脚本或依赖安装命令。
+- 用户批准修复方案前，调查者只读诊断产品代码、模板数据和运行状态。
+- 用户批准修复方案前，调查者只可修改 `task_plan.md`、`findings.md` 和 `progress.md` 调查文档。
+- 调查者没有运行外部下载项目、外部脚本或依赖安装命令。
 
-## 待验证问题
+## 批准前待验证问题（已完成）
 
 1. 哪个模块产生 `SOURCE_PROTOCOL_ERROR` 和完整错误消息？
 2. “output node identities” 对应哪些结构化字段及约束？
@@ -53,7 +53,7 @@
 - 对 `http://127.0.0.1:18093/internal/comfyui-source/templates/39/bundle` 的直接只读 HTTP 查询与 Source CLI 都只返回 `id`、`title`、`workflow_json`，排除 Source CLI 丢字段。
 - Live Source discovery 发布 `getComfyuiTemplateBundleForHost` operation；直接 HTTP 响应与 Source v0.86.1 当前 `projectTemplateBundle()` 实现一致，没有发现混用旧路由实现的证据。
 
-## 当前结论边界
+## 批准前结论边界（历史记录）
 
 - 当前证据只证明 Host 拒绝模板响应中的 `expected_output_node_ids_json`。
 - 当前模板 39 的 Workflow 节点对象包含数值 `id`；当前证据否定“Save Image 节点对象缺少节点身份字段”是这条 Host 错误的直接原因。
