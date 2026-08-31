@@ -97,6 +97,8 @@ v0.37.5 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 �
 
 v0.37.6 发布前完整 `pnpm quality` 结果为 539 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.23%、branches 86.5%、functions 100%、lines 95.81%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试在媒体切换前后使用 CDP 真实鼠标事件分别复制两项媒体的完整 Run ID，并验证桌面与 600 × 800 viewport 的主框架 Run ID 行布局。
 
+v0.38.0 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试使用 Browser 级 CDP 下载事件和真实鼠标事件下载媒体切换前后的两项原文件，并验证建议文件名、完成状态、接收字节数、落盘原始字节、Modal 状态、page target 数量，以及桌面与 600 × 800 viewport 的 footer 布局。
+
 ## CI
 
 `.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 执行两个独立 job：

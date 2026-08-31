@@ -14,6 +14,7 @@ v0.38.0 为 DSH Desktop 的 Session Media Viewer 增加当前图片或视频的�
 
 - 自动化测试覆盖下载 URL、原始字节、MIME、字节长度、安全 attachment、六类 Session/workspace 拒绝、文件缺失、非 GET、500、流中断、图片、视频、媒体切换、重复点击和临时锚点清理。
 - 真实 Desktop 测试通过 Browser 级 CDP 下载事件和真实鼠标点击验证两项媒体的事件 URL、建议文件名、完成状态、接收字节数和落盘原始字节；测试同时验证 Modal 保持打开、Chromium page target 数量不增加，以及桌面宽度与 600 × 800 viewport 的 footer 布局。
+- 完整质量门禁通过：544 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%，完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 - 本版本没有增加或升级依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
 
 # Harness ComfyUI v0.37.6
