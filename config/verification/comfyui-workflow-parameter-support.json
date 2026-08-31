@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "templates": [
+    { "id": "43", "supportedParameters": ["positive_prompt", "negative_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
     { "id": "42", "supportedParameters": ["positive_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
     { "id": "41", "supportedParameters": ["positive_prompt", "negative_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },
     { "id": "40", "supportedParameters": ["positive_prompt", "negative_prompt", "width", "height", "seed", "cfg", "steps", "sampler_name", "scheduler", "denoise", "batch_size"] },

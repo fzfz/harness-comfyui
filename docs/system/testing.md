@@ -93,6 +93,8 @@ v0.37.3 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 �
 
 v0.37.4 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。Source adapter 测试覆盖 Source v0.86.1 三字段 TemplateBundle；Workflow compiler 测试覆盖活动输出节点发现、断开输出节点删除和没有活动输出节点时的明确失败。
 
+v0.37.5 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。实例 2 的实时 Workflow 矩阵验证当前 Catalog 的 19 个模板全部通过参数支持基线、组合编译和 Official API Workflow 验证。
+
 ## CI
 
 `.github/workflows/ci.yml` 是唯一 GitHub Actions workflow。pull request 和 `main` push 执行两个独立 job：

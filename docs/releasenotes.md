@@ -1,3 +1,20 @@
+# Harness ComfyUI v0.37.5
+
+v0.37.5 把当前 Catalog 的全部 19 个 ComfyUI Workflow 模板纳入参数支持基线和实时编译矩阵。
+
+## 全量 Workflow 模板验证
+
+- 参数支持基线新增模板 43 `AnimaStandardV8_完整25步吃负面词`，记录实时编译确认的 11 个标准运行参数。
+- 精确模板 ID 集合门禁继续要求 Catalog 中的每个模板都经过显式验收；矩阵不会跳过未登记的新模板。
+- 实例 2 的实时 `/object_info` 验证确认 19/19 模板的参数支持基线、组合编译和 Official API Workflow 缓存 miss/hit 路径全部通过。
+- 模板 39 与其他 18 个模板使用同一套矩阵和 compiler 行为；本版本没有增加单模板特判。
+
+## 测试与发布
+
+- 完整测试通过：530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%。
+- 完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.37.4
 
 v0.37.4 使 Host 按 Source v0.86.1 合同读取三字段 ComfyUI TemplateBundle，并由 Workflow compiler 根据目标实例实时节点定义发现活动输出节点。
