@@ -1,4 +1,5 @@
 import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -33,6 +34,20 @@ const PRODUCT_SHARED_FILES = [
   'project-tool-visibility.mjs',
   SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
 ]
+const requireFromModule = createRequire(import.meta.url)
+const requireFromDsh = createRequire(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))
+
+async function loadDshScopedCordis() {
+  const [cordis, scope] = await Promise.all([
+    import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis')).href),
+    import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/dsh-scope')).href),
+  ])
+  return {
+    Context: cordis.Context,
+    createScope: scope.createScope,
+    scopeTarget: scope.scopeTarget,
+  }
+}
 
 async function temporaryDirectory(prefix) {
   const path = await mkdtemp(join(tmpdir(), prefix))
@@ -185,15 +200,15 @@ describe('ComfyUI Workbench system prompt visibility', () => {
       'agent-presets',
       SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
     )
-    const { apply } = await import(pathToFileURL(componentPath).href)
-    let assemble
-    const ctx = {
-      on: vi.fn((event, listener) => {
-        if (event === 'system-prompt/assemble') assemble = listener
-        return vi.fn()
-      }),
-    }
-    apply(ctx, visibilityRow.config)
+    const [{ apply }, { Context, createScope, scopeTarget }] = await Promise.all([
+      import(pathToFileURL(componentPath).href),
+      loadDshScopedCordis(),
+    ])
+    const ctx = new Context()
+    const presetKey = { agentPreset: PRODUCT_PRESET_ID }
+    const otherPresetKey = { agentPreset: 'standard' }
+    const presetScope = createScope(ctx, presetKey)
+    apply(presetScope.ctx, visibilityRow.config)
 
     const contexts = [{ name: 'runtime:permissions', text: 'Current permission state.' }]
     const tools = [{ name: 'bash', description: 'Run a foreground shell command.' }]
@@ -210,18 +225,92 @@ describe('ComfyUI Workbench system prompt visibility', () => {
       tools,
       variables,
     }
-    const next = vi.fn(async () => assembled)
+    try {
+      await expect(ctx.waterfall(
+        scopeTarget(ctx, presetKey),
+        'system-prompt/assemble',
+        assembled,
+        { scope: presetKey },
+        async () => assembled,
+      )).resolves.toEqual({
+        sections: [
+          { name: 'deployment:persona', text: 'ComfyUI Workbench persona.' },
+          { name: 'tool:bash', text: 'Bash tool guidance.' },
+        ],
+        contexts,
+        tools,
+        variables,
+      })
+      await expect(ctx.waterfall(
+        scopeTarget(ctx, otherPresetKey),
+        'system-prompt/assemble',
+        assembled,
+        { scope: otherPresetKey },
+        async () => assembled,
+      )).resolves.toBe(assembled)
+    } finally {
+      await presetScope.dispose()
+      await ctx.fiber.dispose()
+    }
+  })
 
-    await expect(assemble({}, {}, next)).resolves.toEqual({
-      sections: [
-        { name: 'deployment:persona', text: 'ComfyUI Workbench persona.' },
-        { name: 'tool:bash', text: 'Bash tool guidance.' },
-      ],
-      contexts,
-      tools,
-      variables,
-    })
-    expect(next).toHaveBeenCalledOnce()
+  it('propagates a downstream system prompt assembly error unchanged', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const componentPath = resolve(repositoryRoot, 'agent-presets', SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE)
+    const [{ apply }, { Context, createScope, scopeTarget }] = await Promise.all([
+      import(pathToFileURL(componentPath).href),
+      loadDshScopedCordis(),
+    ])
+    const ctx = new Context()
+    const presetKey = { agentPreset: PRODUCT_PRESET_ID }
+    const presetScope = createScope(ctx, presetKey)
+    const error = new Error('downstream assembly failed')
+    apply(presetScope.ctx, { hiddenSectionNames: ['harness:identity'] })
+
+    try {
+      await expect(ctx.waterfall(
+        scopeTarget(ctx, presetKey),
+        'system-prompt/assemble',
+        { sections: [], contexts: [], tools: [], variables: {} },
+        { scope: presetKey },
+        async () => { throw error },
+      )).rejects.toBe(error)
+    } finally {
+      await presetScope.dispose()
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('removes the assembly listener when the product Preset scope is disposed', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const componentPath = resolve(repositoryRoot, 'agent-presets', SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE)
+    const [{ apply }, { Context, createScope, scopeTarget }] = await Promise.all([
+      import(pathToFileURL(componentPath).href),
+      loadDshScopedCordis(),
+    ])
+    const ctx = new Context()
+    const presetKey = { agentPreset: PRODUCT_PRESET_ID }
+    const presetScope = createScope(ctx, presetKey)
+    const assembled = {
+      sections: [{ name: 'harness:identity', text: 'Harness identity.' }],
+      contexts: [],
+      tools: [],
+      variables: {},
+    }
+    apply(presetScope.ctx, { hiddenSectionNames: ['harness:identity'] })
+    await presetScope.dispose()
+
+    try {
+      await expect(ctx.waterfall(
+        scopeTarget(ctx, presetKey),
+        'system-prompt/assemble',
+        assembled,
+        { scope: presetKey },
+        async () => assembled,
+      )).resolves.toBe(assembled)
+    } finally {
+      await ctx.fiber.dispose()
+    }
   })
 
   it.each([
