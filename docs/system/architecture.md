@@ -122,15 +122,23 @@ Generation 编译链路分为参数语义和最终导出两个阶段：
 
 Source v0.86.1 TemplateBundle 只提供模板 ID、模板标题和 UI Workflow。`ComfyWorkflowCompiler` 不读取 Source 模板参数定义、参数绑定或输出节点过滤器。Generation Tool 把用户显式提供的运行参数键和值交给 compiler；compiler 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名、节点标题、活动状态和上下游连线定位可写 widget。参数键中的节点 ID 后缀可以选择同类控件；两个参数用不同值占用同一 widget 时终止编译。
 
-compiler 把 `/object_info` 中字符串数组形式的输入定义作为对应运行参数目标的允许值集合。精确值保持不变；唯一大小写无关匹配写入实例返回的精确值；无匹配或非唯一匹配返回 `GENERATION_PARAMETER_INVALID`。错误信息包含 generation parameter ID、目标 ComfyUI 节点输入、收到值、实例允许值和重新调用 `generate_with_comfyui` 的动作，因此 Tool 调用方可以修正参数后重试。
+compiler 为每个已解析的运行参数目标建立明确的节点输入合同。`INT` 只接受有限整数，`FLOAT` 接受有限整数或有限小数，两个数值类型都执行 `/object_info` 明确发布的 `min` 和 `max`。`STRING` 与 `AUTOCOMPLETE_TEXT_LORAS` 只接受字符串，`BOOLEAN` 只接受布尔值。compiler 不把字符串控件或整数控件的 `options` UI 元数据解释为服务端允许值集合。运行参数违反已知合同后，compiler 返回 `GENERATION_PARAMETER_INVALID`，错误信息包含运行参数键、目标 ComfyUI 节点输入、收到值和违反的类型、范围或候选值。
 
-`ComfyWorkflowCompiler` 按实例 ID 和实例 URL 在 Host 进程内缓存成功解析的 `/object_info` 10 分钟。相同缓存键的并发 compile 共享一个在途请求；不同实例 ID 或 URL 使用独立缓存项；请求失败或响应无效时不写入缓存。该缓存不持久化认证值或节点定义。
+旧式候选数组和新式 `COMBO.options` 都使用 JSON 深比较。数组元素顺序必须相同；对象属性名称集合和每个属性值必须相同，但对象属性插入顺序不影响结果。候选值可以是字符串、数值、布尔值、`null`、数组或对象。只有候选值全部是字符串时，compiler 才允许唯一的大小写无关匹配并写入实例发布的精确字符串。多选 `COMBO` 要求运行参数是数组，并逐项验证每个成员。目标自定义控件没有发布 compiler 可以解释的合同时，compiler 只允许与 UI Workflow 当前值 JSON 深度相等的 no-op；改值返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`。
+
+本地运行参数合同只覆盖目标实例通过 `/object_info` 公开且 compiler 可以解释的机器约束。本地合同校验通过后，目标 ComfyUI 仍会在接收 Prompt 时执行节点自定义 `VALIDATE_INPUTS` 或 V3 `validate_inputs` Python 校验；该自定义校验拒绝 API Workflow 时，Generation Run 返回 `COMFYUI_PROMPT_REJECTED`，错误详情保留目标 ComfyUI 的 `node_errors`。调用方必须根据具体节点 ID、输入名称和校验消息修正运行参数或 UI Workflow。本地 compiler 不复制、不执行并且不声称等价于这些自定义 Python 校验。
+
+`COMFY_DYNAMICCOMBO_V3` 的选项必须发布唯一且非空的字符串 `key`，每个选项必须发布 `inputs.required` 和 `inputs.optional` 子输入描述。compiler 先解析同一次请求中的全部运行参数目标，再根据父控件和嵌套父控件的最终选项递归建立子输入合同。选中分支的必填未连接子输入必须存在序列化值；可选子输入可以缺省；已序列化或本次提供的可选子输入必须属于选中分支并符合该子输入合同；未选分支遗留的子输入会终止编译。compiler 在全部目标和动态分支通过校验后统一写入 Actual Workflow，因此运行参数在请求对象中的属性顺序不改变校验结果，失败请求也不会产生部分写入。
+
+`ComfyWorkflowCompiler` 使用 `Response.text()` 读取 `/object_info`，并在 `JSON.parse` 阶段保存每个数值 token 的原始十进制文本。数值合同与嵌套候选值继续使用普通 JSON 值；独立数值元数据保存原始 token。compiler 根据运行参数实际 JSON 序列化的十进制 token 比较上下限和数值候选值，因此最大值 `9223372036854775807` 不会被 JavaScript 解析后的 `9223372036854776000` 代替。十进制比较统一处理符号、系数、小数位、指数、尾随零和正负零，并且不会按照指数值构造补零字符串。
+
+`ComfyWorkflowCompiler` 按实例 ID 和实例 URL 在 Host 进程内缓存成功解析的 `/object_info` 10 分钟。节点定义对象和对应的数值 token 元数据组成同一个缓存快照；首次读取、缓存命中、并发在途请求共享和 TTL 刷新不会拆分两者。相同缓存键的并发 compile 共享一个在途请求；不同实例 ID 或 URL 使用独立缓存项；请求失败或响应无效时不写入缓存。该缓存不持久化认证值或节点定义。
 
 正向 Prompt 与负向 Prompt 使用采样路径的 `positive`、`negative` 输入和明确节点标题区分。compiler 优先匹配公开参数键和 Prompt 输入别名；没有名称候选时，compiler 从实时 `/object_info` 中选择类型为 `STRING` 且 `multiline=true`、没有输入连线并且下游执行路径符合目标 Prompt 极性的 widget。一个 Prompt 控件同时连接正向分支和零化负向分支时只暴露为正向 Prompt；断开执行路径的 Prompt 节点不覆盖具有下游执行连线的 Prompt 节点。精确 `width`、`height` 只修改唯一的 latent 构造 widget或其唯一上游标量控件；使用 `aspect_ratio` 与 `megapixels` 生成尺寸的 selector 不会被强制断开。目标不存在或仍不唯一时，compiler 返回包含具体参数键的错误；目标不唯一时，错误还列出候选 ComfyUI 节点输入。
 
 实时输入定义为 `BOOLEAN` 且 UI Workflow 序列化值不是布尔值时，compiler 使用该输入定义中的布尔默认值；实时定义没有布尔默认值时终止编译。Seed、模型实例路径、标准 LoRA、Power LoRA、LoraManager、bypass 解析和活动输出节点筛选继续由该阶段负责。compiler 根据实时 `/object_info` 选择 `output_node: true` 且已满足必需输入的节点，并从运行时 API Workflow 投影删除未满足必需输入的输出节点；没有活动输出节点时返回 `WORKFLOW_COMPILE_FAILED`。Generation Runtime 保存 compiler 返回的活动输出节点集合，并把该集合交给 Comfy transport 筛选 Jobs API 输出。空 LoRA 选择保留 UI Workflow 保存的 LoRA 状态；非空结构化 LoRA 选择只修改活动 Loader，不激活 bypass Loader。compiler 不根据源尺寸自动改写独立下游放大尺寸。
 
-`ComfyWorkflowCompiler` 产生的手写 API Workflow 现在只作为运行时 API Workflow 投影。Official Base API Workflow 才是最终执行节点集合、连接 tuple、虚拟节点和自定义 widget 序列化的权威来源。官方前端把某些字面量序列化为没有`class_type`、只有`inputs.UNKNOWN`和可选`_meta`的载体对象时，`OfficialApiWorkflowCompiler`只在一个合法执行节点输入以`[载体节点ID, 0]`引用该对象时，把载体值折叠进消费者输入并在严格结构校验前删除已消费载体。非零输出索引、未被合法执行节点引用的同形对象和其他无`class_type`对象均导致导出失败。Runtime Input Overlay 只替换官方对象中已经存在的同名非连接输入；当官方输入使用 `{ "__value__": ... }` 包装时只替换 `__value__`。Runtime Input Overlay 不替换官方连接，也不删除官方执行节点、额外节点或额外输入。官方前端导出、缓存读取或 Runtime Input Overlay 失败时，本次 Generation Run 明确失败，生产路径不会直接提交手写投影。
+`ComfyWorkflowCompiler` 产生的手写 API Workflow 现在只作为运行时 API Workflow 投影。Official Base API Workflow 才是最终执行节点集合、连接 tuple、虚拟节点和自定义 widget 序列化的权威来源。官方前端把某些字面量序列化为没有`class_type`、只有`inputs.UNKNOWN`和可选`_meta`的载体对象时，`OfficialApiWorkflowCompiler`只在一个合法执行节点输入以`[载体节点ID, 0]`引用该对象时，把载体值折叠进消费者输入并在严格结构校验前删除已消费载体。非零输出索引、未被合法执行节点引用的同形对象和其他无`class_type`对象均导致导出失败。Runtime Input Overlay 只替换官方对象中已经存在的同名非连接输入；当官方输入使用 `{ "__value__": ... }` 包装时，overlay 先确认该包装并只替换 `__value__`，不会把包装内形如 `["node-id", 0]` 的字面量数组解释为连接。Runtime Input Overlay 不替换官方连接，也不删除官方执行节点、额外节点或额外输入。官方前端导出、缓存读取或 Runtime Input Overlay 失败时，本次 Generation Run 明确失败，生产路径不会直接提交手写投影。
 
 Official API Workflow Cache 的 identity 包含目标实例 ID、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希和参数化后执行结构哈希。执行结构哈希包含节点 ID、`class_type`、输入名称、连接 tuple 和非连接值类型，因此 bypass、连接断开和 Power LoRA 动态输入数量变化会产生新的缓存项；Prompt、seed、尺寸和权重变化复用同一基础对象。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。损坏或 identity 不匹配的缓存文件返回明确错误，不触发静默重编译。同一 Host 进程中的并发 cache miss 合并为一次官方前端导出。
 

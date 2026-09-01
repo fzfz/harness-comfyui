@@ -43,6 +43,34 @@ export interface ComfyWorkflowCompilerOptions {
 
 type UnknownRecord = Record<string, unknown>
 
+type NumericSourceIndex = WeakMap<object, Map<string, string>>
+
+interface NodeDefinitionsSnapshot {
+  readonly definitions: UnknownRecord
+  readonly numericSources: NumericSourceIndex
+}
+
+interface ExactDecimal {
+  readonly sign: -1 | 0 | 1
+  readonly coefficient: string
+  readonly exponent: bigint
+  readonly source: string
+}
+
+interface ExactNumberBound {
+  readonly value: ExactDecimal
+  readonly source: string
+}
+
+interface JsonParseContext {
+  readonly source?: string
+}
+
+type JsonParseWithSource = (
+  text: string,
+  reviver: (this: unknown, key: string, value: unknown, context: JsonParseContext) => unknown,
+) => unknown
+
 function fail(message: string): never {
   throw new GenerationRuntimeError('WORKFLOW_COMPILE_FAILED', message)
 }
@@ -50,6 +78,84 @@ function fail(message: string): never {
 function record(value: unknown, label: string): UnknownRecord {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) fail(`${label} is invalid.`)
   return value as UnknownRecord
+}
+
+function parseExactDecimal(source: string): ExactDecimal | undefined {
+  const match = /^(-?)([0-9]+)(?:\.([0-9]+))?(?:[eE]([+-]?[0-9]+))?$/u.exec(source)
+  if (match === null) return undefined
+  const fraction = match[3] ?? ''
+  let coefficient = `${match[2]}${fraction}`.replace(/^0+/u, '')
+  if (coefficient.length === 0) {
+    return { sign: 0, coefficient: '0', exponent: 0n, source }
+  }
+  let exponent: bigint
+  try {
+    exponent = BigInt(match[4] ?? '0') - BigInt(fraction.length)
+  } catch {
+    return undefined
+  }
+  const trailingZeroCount = coefficient.length - coefficient.replace(/0+$/u, '').length
+  if (trailingZeroCount > 0) {
+    coefficient = coefficient.slice(0, -trailingZeroCount)
+    exponent += BigInt(trailingZeroCount)
+  }
+  return {
+    sign: match[1] === '-' ? -1 : 1,
+    coefficient,
+    exponent,
+    source,
+  }
+}
+
+function compareExactDecimal(left: ExactDecimal, right: ExactDecimal): number {
+  if (left.sign !== right.sign) return left.sign < right.sign ? -1 : 1
+  if (left.sign === 0) return 0
+  const leftMagnitude = BigInt(left.coefficient.length) + left.exponent
+  const rightMagnitude = BigInt(right.coefficient.length) + right.exponent
+  let comparison = leftMagnitude === rightMagnitude ? 0 : leftMagnitude < rightMagnitude ? -1 : 1
+  if (comparison === 0) {
+    const width = Math.max(left.coefficient.length, right.coefficient.length)
+    for (let index = 0; index < width; index += 1) {
+      const leftDigit = left.coefficient[index] ?? '0'
+      const rightDigit = right.coefficient[index] ?? '0'
+      if (leftDigit === rightDigit) continue
+      comparison = leftDigit < rightDigit ? -1 : 1
+      break
+    }
+  }
+  return left.sign === -1 ? -comparison : comparison
+}
+
+function parseNodeDefinitions(text: string): NodeDefinitionsSnapshot {
+  const numericSources: NumericSourceIndex = new WeakMap()
+  const parsed = (JSON.parse as JsonParseWithSource)(text, function (key, value, context) {
+    if (typeof value !== 'number') return value
+    if (typeof context?.source !== 'string') {
+      throw new TypeError('JSON.parse numeric source metadata is unavailable.')
+    }
+    const parent = this as object
+    const sources = numericSources.get(parent) ?? new Map<string, string>()
+    sources.set(key, context.source)
+    numericSources.set(parent, sources)
+    return value
+  })
+  return {
+    definitions: record(parsed, 'ComfyUI node definitions'),
+    numericSources,
+  }
+}
+
+function exactNumberBound(
+  options: UnknownRecord,
+  key: 'min' | 'max',
+  numericSources: NumericSourceIndex,
+): ExactNumberBound | undefined {
+  const value = options[key]
+  if (typeof value !== 'number') return undefined
+  const source = numericSources.get(options)?.get(key) ?? JSON.stringify(value)
+  const exact = parseExactDecimal(source)
+  if (exact === undefined) fail(`ComfyUI numeric input ${key} is invalid.`)
+  return { value: exact, source }
 }
 
 type SerializedValueSourceType = keyof typeof SERIALIZED_VALUE_SOURCE_TYPES
@@ -157,6 +263,13 @@ function widgetDescriptor(value: readonly unknown[] | undefined): boolean {
   return Array.isArray(value[0]) || WIDGET_TYPES.has(String(value[0]))
 }
 
+function publishedWidgetName(definition: UnknownRecord, name: string): boolean {
+  const definitions = inputDefinitions(definition)
+  if (Object.hasOwn(definitions.required, name) || Object.hasOwn(definitions.optional, name)) return true
+  const parentName = name.split('.')[0]
+  return parentName !== undefined && descriptor(definition, parentName)?.[0] === 'COMFY_DYNAMICCOMBO_V3'
+}
+
 function instanceComboValue(value: JsonValue, definition: readonly unknown[] | undefined): JsonValue {
   const choices = definition?.[0]
   if (typeof value !== 'string' || !Array.isArray(choices) || choices.includes(value)) return value
@@ -220,7 +333,7 @@ function explicitWidgetMappings(node: UnknownRecord, definition: UnknownRecord):
   const ids = (properties as UnknownRecord).__lm_widget_ids
   if (ids === undefined) return []
   if (!Array.isArray(ids)) fail('Workflow serialized widget identities are invalid.')
-  return ids.flatMap((name, index) => typeof name === 'string' && descriptor(definition, name) !== undefined
+  return ids.flatMap((name, index) => typeof name === 'string' && publishedWidgetName(definition, name)
     ? [{ name, index }]
     : [])
 }
@@ -229,7 +342,7 @@ function serializedNamedWidgetMappings(node: UnknownRecord, definition: UnknownR
   const named = node.widgets_values_named
   if (named === null || typeof named !== 'object' || Array.isArray(named)) return []
   const valueCount = array(node.widgets_values).length
-  return Object.keys(named as UnknownRecord).flatMap((name, index) => descriptor(definition, name) !== undefined && index < valueCount
+  return Object.keys(named as UnknownRecord).flatMap((name, index) => publishedWidgetName(definition, name) && index < valueCount
     ? [{ name, index }]
     : [])
 }
@@ -538,6 +651,25 @@ function applyModel(
   setWidget(slot.node, slot.mapping, path)
 }
 
+type RuntimeParameterContract =
+  | {
+    readonly kind: 'number'
+    readonly integer: boolean
+    readonly minimum?: ExactNumberBound
+    readonly maximum?: ExactNumberBound
+  }
+  | { readonly kind: 'string' }
+  | { readonly kind: 'boolean' }
+  | {
+    readonly kind: 'choices'
+    readonly values: readonly JsonValue[]
+    readonly stringCaseFold: boolean
+    readonly multiselect: boolean
+    readonly numericSources: NumericSourceIndex
+  }
+  | { readonly kind: 'unsupported'; readonly reason: string }
+  | { readonly kind: 'unknown'; readonly typeLabel: string }
+
 interface ParameterTarget {
   readonly key: string
   readonly nodeId: string
@@ -547,7 +679,7 @@ interface ParameterTarget {
   readonly marker: string
   readonly loraSyntax: boolean
   readonly multilineString: boolean
-  readonly liveEnumValues: readonly string[] | null
+  readonly contract: RuntimeParameterContract
 }
 
 interface RuntimeParameterAssignment {
@@ -578,13 +710,129 @@ function isMultilineStringWidget(definition: UnknownRecord, name: string): boole
     && (options as UnknownRecord).multiline === true
 }
 
-function liveEnumValues(definition: UnknownRecord, name: string): readonly string[] | null {
-  const values = descriptor(definition, name)?.[0]
-  if (!Array.isArray(values) || !values.every(value => typeof value === 'string')) return null
-  return values
+function runtimeParameterContractFromDescriptor(
+  inputDescriptor: readonly unknown[] | undefined,
+  numericSources: NumericSourceIndex,
+): RuntimeParameterContract {
+  const malformed = (reason: string): RuntimeParameterContract => ({
+    kind: 'unsupported',
+    reason: `publishes a malformed /object_info input contract: ${reason}`,
+  })
+  if (inputDescriptor === undefined || inputDescriptor.length === 0) {
+    return malformed('the input descriptor must be a non-empty array.')
+  }
+  const type = inputDescriptor?.[0]
+  if (typeof type !== 'string' && !Array.isArray(type)) {
+    return malformed('the input type must be a string or a legacy candidate array.')
+  }
+  if (type === 'INT' || type === 'FLOAT') {
+    const rawOptions = inputDescriptor?.[1]
+    if (rawOptions !== undefined && optionalRecord(rawOptions) === undefined) {
+      return malformed(`${type} options must be an object when present.`)
+    }
+    const options = optionalRecord(rawOptions) ?? {}
+    for (const key of ['min', 'max'] as const) {
+      if (Object.hasOwn(options, key) && typeof options[key] !== 'number') {
+        return malformed(`${type}.${key} must be a JSON number.`)
+      }
+    }
+    const minimum = exactNumberBound(options, 'min', numericSources)
+    const maximum = exactNumberBound(options, 'max', numericSources)
+    if (minimum !== undefined && maximum !== undefined && compareExactDecimal(minimum.value, maximum.value) > 0) {
+      return malformed(`${type}.min must not be greater than ${type}.max.`)
+    }
+    return {
+      kind: 'number',
+      integer: type === 'INT',
+      ...(minimum === undefined ? {} : { minimum }),
+      ...(maximum === undefined ? {} : { maximum }),
+    }
+  }
+  if (type === 'STRING' || type === 'AUTOCOMPLETE_TEXT_LORAS' || type === 'BOOLEAN') {
+    const rawOptions = inputDescriptor?.[1]
+    if (rawOptions !== undefined && optionalRecord(rawOptions) === undefined) {
+      return malformed(`${type} options must be an object when present.`)
+    }
+    return type === 'BOOLEAN' ? { kind: 'boolean' } : { kind: 'string' }
+  }
+  if (Array.isArray(type)) {
+    return {
+      kind: 'choices',
+      values: type as readonly JsonValue[],
+      stringCaseFold: type.every(value => typeof value === 'string'),
+      multiselect: false,
+      numericSources,
+    }
+  }
+  if (type === 'COMBO') {
+    const rawOptions = inputDescriptor?.[1]
+    if (rawOptions !== undefined && optionalRecord(rawOptions) === undefined) {
+      return malformed('COMBO options configuration must be an object when present.')
+    }
+    const options = optionalRecord(rawOptions) ?? {}
+    if (Object.hasOwn(options, 'options') && !Array.isArray(options.options)) {
+      return malformed('COMBO.options must be an array.')
+    }
+    if (Array.isArray(options.options)) {
+      const legacyMultiSelect = options.multi_select
+      if (Object.hasOwn(options, 'multiselect') && typeof options.multiselect !== 'boolean') {
+        return malformed('COMBO.multiselect must be a boolean when present.')
+      }
+      if (legacyMultiSelect !== undefined
+        && typeof legacyMultiSelect !== 'boolean'
+        && optionalRecord(legacyMultiSelect) === undefined) {
+        return malformed('COMBO.multi_select must be a boolean or object when present.')
+      }
+      return {
+        kind: 'choices',
+        values: options.options as readonly JsonValue[],
+        stringCaseFold: options.options.every(value => typeof value === 'string'),
+        multiselect: options.multiselect === true
+          || legacyMultiSelect === true
+          || (legacyMultiSelect !== null && typeof legacyMultiSelect === 'object' && !Array.isArray(legacyMultiSelect)),
+        numericSources,
+      }
+    }
+  }
+  if (type === 'COMFY_DYNAMICCOMBO_V3') {
+    const rawOptions = inputDescriptor?.[1]
+    if (rawOptions !== undefined && optionalRecord(rawOptions) === undefined) {
+      return malformed('COMFY_DYNAMICCOMBO_V3 options configuration must be an object when present.')
+    }
+    const options = rawOptions !== null && typeof rawOptions === 'object' && !Array.isArray(rawOptions)
+      ? (rawOptions as UnknownRecord).options
+      : undefined
+    if (Array.isArray(options) && options.every(value => (
+      value !== null
+      && typeof value === 'object'
+      && !Array.isArray(value)
+      && typeof (value as UnknownRecord).key === 'string'
+    ))) {
+      return {
+        kind: 'choices',
+        values: options.map(value => (value as UnknownRecord).key as string),
+        stringCaseFold: false,
+        multiselect: false,
+        numericSources,
+      }
+    }
+  }
+  return { kind: 'unknown', typeLabel: typeof type === 'string' ? type : JSON.stringify(type) }
 }
 
-function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord): readonly ParameterTarget[] {
+function runtimeParameterContract(
+  definition: UnknownRecord,
+  name: string,
+  numericSources: NumericSourceIndex,
+): RuntimeParameterContract {
+  return runtimeParameterContractFromDescriptor(descriptor(definition, name), numericSources)
+}
+
+function parameterTargets(
+  workflow: UiWorkflow,
+  nodeDefinitions: UnknownRecord,
+  numericSources: NumericSourceIndex,
+): readonly ParameterTarget[] {
   const targets: ParameterTarget[] = []
   for (const rawNode of workflow.nodes) {
     const node = rawNode as UnknownRecord
@@ -610,7 +858,7 @@ function parameterTargets(workflow: UiWorkflow, nodeDefinitions: UnknownRecord):
         marker: parameterMarker(node),
         loraSyntax: loraSyntax?.name === mapping.name,
         multilineString: isMultilineStringWidget(definition, mapping.name),
-        liveEnumValues: liveEnumValues(definition, mapping.name),
+        contract: runtimeParameterContract(definition, mapping.name, numericSources),
       })
     }
   }
@@ -654,7 +902,55 @@ const UPSTREAM_VALUE_PARAMETER_KINDS = new Set([
 ])
 
 function jsonEquals(left: JsonValue, right: JsonValue): boolean {
-  return JSON.stringify(left) === JSON.stringify(right)
+  return jsonContractEquals(left, right)
+}
+
+function jsonContractEquals(
+  supplied: unknown,
+  candidate: unknown,
+  numericSources?: NumericSourceIndex,
+  candidateParent?: object,
+  candidateKey?: string,
+): boolean {
+  if (typeof supplied !== typeof candidate) return false
+  if (supplied === null || candidate === null) return supplied === candidate
+  if (typeof supplied === 'number' && typeof candidate === 'number') {
+    if (!Number.isFinite(supplied) || !Number.isFinite(candidate)) return false
+    const suppliedExact = parseExactDecimal(JSON.stringify(supplied))
+    const candidateSource = candidateParent === undefined || candidateKey === undefined
+      ? JSON.stringify(candidate)
+      : numericSources?.get(candidateParent)?.get(candidateKey) ?? JSON.stringify(candidate)
+    const candidateExact = parseExactDecimal(candidateSource)
+    return suppliedExact !== undefined
+      && candidateExact !== undefined
+      && compareExactDecimal(suppliedExact, candidateExact) === 0
+  }
+  if (Array.isArray(supplied) || Array.isArray(candidate)) {
+    if (!Array.isArray(supplied) || !Array.isArray(candidate) || supplied.length !== candidate.length) return false
+    return supplied.every((value, index) => jsonContractEquals(
+      value,
+      candidate[index],
+      numericSources,
+      candidate,
+      String(index),
+    ))
+  }
+  if (typeof supplied === 'object' && typeof candidate === 'object') {
+    const suppliedRecord = supplied as UnknownRecord
+    const candidateRecord = candidate as UnknownRecord
+    const suppliedKeys = Object.keys(suppliedRecord).sort()
+    const candidateKeys = Object.keys(candidateRecord).sort()
+    if (suppliedKeys.length !== candidateKeys.length
+      || suppliedKeys.some((key, index) => key !== candidateKeys[index])) return false
+    return suppliedKeys.every(key => jsonContractEquals(
+      suppliedRecord[key],
+      candidateRecord[key],
+      numericSources,
+      candidateRecord,
+      key,
+    ))
+  }
+  return supplied === candidate
 }
 
 function nodeIdSuffix(parameterId: string): string | null {
@@ -892,19 +1188,106 @@ function setParameterWidget(target: ParameterTarget, value: JsonValue, parameter
   }
 }
 
+function canonicalChoice(
+  contract: Extract<RuntimeParameterContract, { readonly kind: 'choices' }>,
+  suppliedValue: JsonValue,
+): { readonly matched: boolean; readonly value?: JsonValue } {
+  const exactIndex = contract.values.findIndex((candidate, index) => jsonContractEquals(
+    suppliedValue,
+    candidate,
+    contract.numericSources,
+    contract.values as object,
+    String(index),
+  ))
+  if (exactIndex >= 0) return { matched: true, value: structuredClone(contract.values[exactIndex]!) }
+  if (!contract.stringCaseFold || typeof suppliedValue !== 'string') return { matched: false }
+  const matches = contract.values.flatMap((candidate, index) => (
+    typeof candidate === 'string' && candidate.toLowerCase() === suppliedValue.toLowerCase() ? [index] : []
+  ))
+  return matches.length === 1
+    ? { matched: true, value: structuredClone(contract.values[matches[0]!]!) }
+    : { matched: false }
+}
+
 function liveRuntimeParameterValue(
   target: ParameterTarget,
   assignment: RuntimeParameterAssignment,
 ): JsonValue {
-  const allowedValues = target.liveEnumValues
   const suppliedValue = assignment.value
-  if (allowedValues === null) return suppliedValue
-  if (typeof suppliedValue === 'string' && allowedValues.includes(suppliedValue)) return suppliedValue
-  if (typeof suppliedValue === 'string') {
-    const caseInsensitiveMatches = allowedValues.filter(value => (
-      value.toLowerCase() === suppliedValue.toLowerCase()
-    ))
-    if (caseInsensitiveMatches.length === 1) return caseInsensitiveMatches[0]!
+  if (target.contract.kind === 'unsupported') {
+    parameterError(
+      'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      assignment.parameterId,
+      `for ${targetLabel(target)} ${target.contract.reason}`,
+    )
+  }
+  if (target.contract.kind === 'unknown') {
+    const currentValue = array(target.node.widgets_values)[target.mapping.index] as JsonValue
+    if (jsonEquals(suppliedValue, currentValue)) return structuredClone(currentValue)
+    parameterError(
+      'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      assignment.parameterId,
+      `for ${targetLabel(target)} cannot change ${target.contract.typeLabel} because the target ComfyUI instance does not publish a supported value contract. Keep the existing value or add an explicit contract adapter.`,
+    )
+  }
+  if (target.contract.kind === 'string') {
+    if (typeof suppliedValue === 'string') return suppliedValue
+    parameterError(
+      'GENERATION_PARAMETER_INVALID',
+      assignment.parameterId,
+      `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected a string. Correct the value and call generate_with_comfyui again.`,
+    )
+  }
+  if (target.contract.kind === 'boolean') {
+    if (typeof suppliedValue === 'boolean') return suppliedValue
+    parameterError(
+      'GENERATION_PARAMETER_INVALID',
+      assignment.parameterId,
+      `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected a boolean. Correct the value and call generate_with_comfyui again.`,
+    )
+  }
+  if (target.contract.kind === 'number') {
+    if (typeof suppliedValue !== 'number' || !Number.isFinite(suppliedValue) || (target.contract.integer && !Number.isInteger(suppliedValue))) {
+      const expected = target.contract.integer ? 'a finite integer' : 'a finite number'
+      parameterError(
+        'GENERATION_PARAMETER_INVALID',
+        assignment.parameterId,
+        `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected ${expected}. Correct the value and call generate_with_comfyui again.`,
+      )
+    }
+    const source = JSON.stringify(suppliedValue)
+    const exact = parseExactDecimal(source)
+    if (exact === undefined) {
+      parameterError('GENERATION_PARAMETER_INVALID', assignment.parameterId, `for ${targetLabel(target)} received an invalid number.`)
+    }
+    if (target.contract.minimum !== undefined && compareExactDecimal(exact, target.contract.minimum.value) < 0) {
+      parameterError(
+        'GENERATION_PARAMETER_INVALID',
+        assignment.parameterId,
+        `for ${targetLabel(target)} received ${source}; minimum ${target.contract.minimum.source}. Correct the value and call generate_with_comfyui again.`,
+      )
+    }
+    if (target.contract.maximum !== undefined && compareExactDecimal(exact, target.contract.maximum.value) > 0) {
+      parameterError(
+        'GENERATION_PARAMETER_INVALID',
+        assignment.parameterId,
+        `for ${targetLabel(target)} received ${source}; maximum ${target.contract.maximum.source}. Correct the value and call generate_with_comfyui again.`,
+      )
+    }
+    return suppliedValue
+  }
+  const contract = target.contract
+  const allowedValues = contract.values
+  if (contract.multiselect) {
+    if (Array.isArray(suppliedValue)) {
+      const matched = suppliedValue.map(value => canonicalChoice(contract, value))
+      if (matched.every(result => result.matched)) {
+        return matched.map(result => result.value!)
+      }
+    }
+  } else {
+    const matched = canonicalChoice(contract, suppliedValue)
+    if (matched.matched) return matched.value!
   }
   parameterError(
     'GENERATION_PARAMETER_INVALID',
@@ -913,9 +1296,185 @@ function liveRuntimeParameterValue(
   )
 }
 
+interface PlannedRuntimeParameter {
+  readonly target: ParameterTarget
+  readonly assignment: RuntimeParameterAssignment
+}
+
+interface DynamicValidationResult {
+  readonly contracts: ReadonlyMap<string, RuntimeParameterContract>
+  readonly canonicalValues: ReadonlyMap<string, JsonValue>
+}
+
+function optionalRecord(value: unknown): UnknownRecord | undefined {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as UnknownRecord
+    : undefined
+}
+
+function validateDynamicRuntimeContracts(
+  workflow: UiWorkflow,
+  nodeDefinitions: UnknownRecord,
+  numericSources: NumericSourceIndex,
+  targets: readonly ParameterTarget[],
+  planned: readonly PlannedRuntimeParameter[],
+): DynamicValidationResult {
+  const contracts = new Map<string, RuntimeParameterContract>()
+  const canonicalValues = new Map<string, JsonValue>()
+  const proposed = new Map(planned.map(value => [value.target.key, value.assignment.value]))
+  const parameterIds = new Map(planned.map(value => [value.target.key, value.assignment.parameterId]))
+
+  for (const rawNode of workflow.nodes) {
+    const node = rawNode as UnknownRecord
+    const nodeId = String(node.id)
+    const nodeType = String(node.type)
+    if (node.mode === 2 || node.mode === 4 || EDITOR_ONLY_NODE_TYPES.has(nodeType)) continue
+    const nodePlans = planned.filter(value => value.target.nodeId === nodeId)
+    if (nodePlans.length === 0) continue
+    const definition = nodeDefinition(nodeDefinitions, nodeType)
+    const nodeTargets = targets.filter(target => target.nodeId === nodeId)
+    const targetByName = new Map(nodeTargets.map(target => [target.mapping.name, target]))
+    const inputByName = new Map(array(node.inputs).flatMap(value => {
+      const input = optionalRecord(value)
+      return typeof input?.name === 'string' ? [[input.name, input] as const] : []
+    }))
+    const serializedNames = new Set([
+      ...nodeTargets.map(target => target.mapping.name),
+      ...inputByName.keys(),
+    ])
+    const connectedNames = new Set([...inputByName].flatMap(([name, input]) => (
+      input.link === null || input.link === undefined ? [] : [name]
+    )))
+    const rootDefinitions = inputDefinitions(definition)
+    const rootDynamicEntries = [...Object.entries(rootDefinitions.required), ...Object.entries(rootDefinitions.optional)]
+      .filter((entry): entry is [string, readonly unknown[]] => Array.isArray(entry[1]) && entry[1][0] === 'COMFY_DYNAMICCOMBO_V3')
+
+    for (const [rootName, rootDescriptor] of rootDynamicEntries) {
+      const groupPlans = nodePlans.filter(value => (
+        value.target.mapping.name === rootName || value.target.mapping.name.startsWith(`${rootName}.`)
+      ))
+      if (groupPlans.length === 0) continue
+      const triggerParameterId = groupPlans[0]!.assignment.parameterId
+      const allowedNames = new Set<string>()
+
+      const unsupported = (path: string, message: string): never => parameterError(
+        'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+        triggerParameterId,
+        `for ${nodeId}:${nodeType}.${path} ${message}`,
+      )
+      const invalid = (path: string, message: string): never => parameterError(
+        'GENERATION_PARAMETER_INVALID',
+        triggerParameterId,
+        `for ${nodeId}:${nodeType}.${path} ${message}`,
+      )
+
+      const visit = (path: string, inputDescriptor: readonly unknown[]): void => {
+        allowedNames.add(path)
+        const config = optionalRecord(inputDescriptor[1])
+        const rawOptions = config?.options
+        if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
+          unsupported(path, 'does not publish a non-empty dynamic option list.')
+        }
+        const optionValues = rawOptions as readonly unknown[]
+        const options: Array<{ readonly key: string; readonly inputs: UnknownRecord }> = optionValues.map((value, index) => {
+          const option = optionalRecord(value)
+          const key = option?.key
+          const inputs = optionalRecord(option?.inputs)
+          if (typeof key !== 'string' || key.length === 0 || inputs === undefined) {
+            unsupported(path, `publishes an invalid dynamic option at index ${index}.`)
+          }
+          return { key: key as string, inputs: inputs as UnknownRecord }
+        })
+        if (new Set(options.map(option => option.key)).size !== options.length) {
+          unsupported(path, 'publishes duplicate dynamic option keys.')
+        }
+        const parentTarget = targetByName.get(path)
+        if (parentTarget === undefined) {
+          invalid(path, 'is not serialized as an unconnected widget.')
+        }
+        const resolvedParentTarget = parentTarget as ParameterTarget
+        const parentContract: RuntimeParameterContract = {
+          kind: 'choices',
+          values: options.map(option => option.key),
+          stringCaseFold: false,
+          multiselect: false,
+          numericSources,
+        }
+        contracts.set(resolvedParentTarget.key, parentContract)
+        const parentValue = proposed.get(resolvedParentTarget.key)
+          ?? array(resolvedParentTarget.node.widgets_values)[resolvedParentTarget.mapping.index] as JsonValue
+        const parentAssignment: RuntimeParameterAssignment = {
+          parameterId: parameterIds.get(resolvedParentTarget.key) ?? path,
+          kind: path,
+          value: parentValue,
+        }
+        const selectedValue = liveRuntimeParameterValue({ ...resolvedParentTarget, contract: parentContract }, parentAssignment)
+        if (proposed.has(resolvedParentTarget.key)) canonicalValues.set(resolvedParentTarget.key, selectedValue)
+        const selected = options.find(option => option.key === selectedValue)
+        if (selected === undefined) {
+          invalid(path, `received ${JSON.stringify(selectedValue)} without a matching dynamic option.`)
+        }
+        const selectedOption = selected as { readonly key: string; readonly inputs: UnknownRecord }
+        const required = optionalRecord(selectedOption.inputs.required)
+        const optional = optionalRecord(selectedOption.inputs.optional)
+        if (required === undefined || optional === undefined) {
+          unsupported(path, `dynamic option ${JSON.stringify(selectedOption.key)} must publish object-valued inputs.required and inputs.optional maps.`)
+        }
+        const entries: Array<{ readonly name: string; readonly descriptor: unknown; readonly required: boolean }> = [
+          ...Object.entries(required as UnknownRecord).map(([name, childDescriptor]) => ({ name, descriptor: childDescriptor, required: true })),
+          ...Object.entries(optional as UnknownRecord).map(([name, childDescriptor]) => ({ name, descriptor: childDescriptor, required: false })),
+        ]
+        if (entries.some(entry => entry.name.length === 0 || entry.name.includes('.'))) {
+          unsupported(path, 'publishes an invalid dynamic child name.')
+        }
+        if (new Set(entries.map(entry => entry.name)).size !== entries.length) {
+          unsupported(path, 'publishes the same dynamic child as both required and optional.')
+        }
+        for (const entry of entries) {
+          const childPath = `${path}.${entry.name}`
+          allowedNames.add(childPath)
+          if (!Array.isArray(entry.descriptor) || entry.descriptor.length === 0) {
+            unsupported(childPath, 'publishes an invalid child input descriptor.')
+          }
+          const childDescriptor = entry.descriptor as readonly unknown[]
+          const childTarget = targetByName.get(childPath)
+          const connected = connectedNames.has(childPath)
+          if (entry.required && childTarget === undefined && !connected) {
+            invalid(childPath, 'is required by the selected dynamic option but is not serialized or connected.')
+          }
+          if (childDescriptor[0] === 'COMFY_DYNAMICCOMBO_V3') {
+            if (connected) unsupported(childPath, 'is connected and its nested dynamic option cannot be resolved locally.')
+            if (childTarget !== undefined) visit(childPath, childDescriptor)
+            continue
+          }
+          if (childTarget === undefined || connected) continue
+          const childContract = runtimeParameterContractFromDescriptor(childDescriptor, numericSources)
+          contracts.set(childTarget.key, childContract)
+          const childValue = proposed.get(childTarget.key)
+            ?? array(childTarget.node.widgets_values)[childTarget.mapping.index] as JsonValue
+          const childAssignment: RuntimeParameterAssignment = {
+            parameterId: parameterIds.get(childTarget.key) ?? childPath,
+            kind: childPath,
+            value: childValue,
+          }
+          const canonical = liveRuntimeParameterValue({ ...childTarget, contract: childContract }, childAssignment)
+          if (proposed.has(childTarget.key)) canonicalValues.set(childTarget.key, canonical)
+        }
+      }
+
+      visit(rootName, rootDescriptor)
+      const staleName = [...serializedNames].find(name => name.startsWith(`${rootName}.`) && !allowedNames.has(name))
+      if (staleName !== undefined) invalid(staleName, 'is serialized but does not belong to the selected dynamic option.')
+    }
+  }
+
+  return { contracts, canonicalValues }
+}
+
 function applyRuntimeParameters(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
+  numericSources: NumericSourceIndex,
   supplied: Readonly<Record<string, JsonValue>>,
 ): void {
   const assignments: readonly RuntimeParameterAssignment[] = Object.entries(supplied).map(([parameterId, value]) => ({
@@ -923,26 +1482,9 @@ function applyRuntimeParameters(
     kind: runtimeParameterKind(parameterId),
     value,
   }))
-  const targets = parameterTargets(workflow, nodeDefinitions)
+  const targets = parameterTargets(workflow, nodeDefinitions, numericSources)
   const reserved = new Set<string>()
-  const claims = new Map<string, { readonly parameterId: string; readonly value: JsonValue }>()
-  const assign = (target: ParameterTarget, assignment: RuntimeParameterAssignment): void => {
-    const value = liveRuntimeParameterValue(target, assignment)
-    const claimed = claims.get(target.key)
-    if (claimed !== undefined) {
-      if (!jsonEquals(claimed.value, value)) {
-        parameterError(
-          'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
-          assignment.parameterId,
-          `resolves to ${targetLabel(target)}, which is already assigned by generation parameter "${claimed.parameterId}" with a different value.`,
-        )
-      }
-      return
-    }
-    setParameterWidget(target, value, assignment.parameterId)
-    claims.set(target.key, { parameterId: assignment.parameterId, value })
-    reserved.add(target.key)
-  }
+  const plannedByTarget = new Map<string, PlannedRuntimeParameter[]>()
 
   const ordered = [...assignments].sort((left, right) => {
     const leftHasSuffix = nodeIdSuffix(left.parameterId) === null ? 1 : 0
@@ -951,8 +1493,39 @@ function applyRuntimeParameters(
   })
   for (const assignment of ordered) {
     const target = resolveParameterTarget(assignment, workflow, targets, reserved)
-    assign(target, assignment)
+    const claimed = plannedByTarget.get(target.key)
+    if (claimed === undefined) plannedByTarget.set(target.key, [{ target, assignment }])
+    else claimed.push({ target, assignment })
+    reserved.add(target.key)
   }
+  const planned = [...plannedByTarget.values()].map(group => group[0]!)
+  const dynamicValidation = validateDynamicRuntimeContracts(
+    workflow,
+    nodeDefinitions,
+    numericSources,
+    targets,
+    planned,
+  )
+  const validated = [...plannedByTarget.values()].map(group => {
+    const first = group[0]!
+    const contract = dynamicValidation.contracts.get(first.target.key) ?? first.target.contract
+    const values = group.map(({ target, assignment }, index) => (
+      index === 0 && dynamicValidation.canonicalValues.has(target.key)
+        ? dynamicValidation.canonicalValues.get(target.key)!
+        : liveRuntimeParameterValue({ ...target, contract }, assignment)
+    ))
+    const conflictIndex = values.findIndex((value, index) => index > 0 && !jsonEquals(values[0]!, value))
+    if (conflictIndex >= 0) {
+      const conflicting = group[conflictIndex]!
+      parameterError(
+        'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+        conflicting.assignment.parameterId,
+        `resolves to ${targetLabel(conflicting.target)}, which is already assigned by generation parameter "${first.assignment.parameterId}" with a different normalized value.`,
+      )
+    }
+    return { target: first.target, assignment: first.assignment, value: values[0]! }
+  })
+  for (const value of validated) setParameterWidget(value.target, value.value, value.assignment.parameterId)
 }
 
 function applyLoras(
@@ -1210,10 +1783,10 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
   private readonly createRandomSeed: () => number
   private readonly now: () => number
   private readonly objectInfoCache = new Map<string, {
-    readonly definitions: UnknownRecord
+    readonly snapshot: NodeDefinitionsSnapshot
     readonly expiresAt: number
   }>()
-  private readonly objectInfoRequests = new Map<string, Promise<UnknownRecord>>()
+  private readonly objectInfoRequests = new Map<string, Promise<NodeDefinitionsSnapshot>>()
 
   constructor(options: ComfyWorkflowCompilerOptions) {
     this.officialApiWorkflowCompiler = options.officialApiWorkflowCompiler
@@ -1228,7 +1801,7 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
     return JSON.stringify([instanceId, baseUrl])
   }
 
-  private async fetchNodeDefinitions(baseUrl: string, authorization: string | null): Promise<UnknownRecord> {
+  private async fetchNodeDefinitions(baseUrl: string, authorization: string | null): Promise<NodeDefinitionsSnapshot> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
     try {
@@ -1245,13 +1818,17 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
         throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
       }
       if (!response.ok) throw new GenerationRuntimeError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`)
-      let nodeDefinitions: unknown
+      let nodeDefinitionsText: string
       try {
-        nodeDefinitions = await response.json()
+        nodeDefinitionsText = await response.text()
       } catch {
         throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
       }
-      return record(nodeDefinitions, 'ComfyUI node definitions')
+      try {
+        return parseNodeDefinitions(nodeDefinitionsText)
+      } catch {
+        throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
+      }
     } finally {
       clearTimeout(timeout)
     }
@@ -1262,19 +1839,19 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
     baseUrl: string,
     authorization: string | null,
     signal: AbortSignal,
-  ): Promise<UnknownRecord> {
+  ): Promise<NodeDefinitionsSnapshot> {
     const key = this.objectInfoCacheKey(instanceId, baseUrl)
     const cached = this.objectInfoCache.get(key)
-    if (cached !== undefined && this.now() < cached.expiresAt) return cached.definitions
+    if (cached !== undefined && this.now() < cached.expiresAt) return cached.snapshot
     if (cached !== undefined) this.objectInfoCache.delete(key)
     let request = this.objectInfoRequests.get(key)
     if (request === undefined) {
-      request = this.fetchNodeDefinitions(baseUrl, authorization).then(definitions => {
+      request = this.fetchNodeDefinitions(baseUrl, authorization).then(snapshot => {
         this.objectInfoCache.set(key, {
-          definitions,
+          snapshot,
           expiresAt: this.now() + OBJECT_INFO_CACHE_TTL_MS,
         })
-        return definitions
+        return snapshot
       }).finally(() => {
         this.objectInfoRequests.delete(key)
       })
@@ -1290,9 +1867,9 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
     const signal = input.signal === undefined ? controller.signal : AbortSignal.any([controller.signal, input.signal])
     const baseUrl = input.connection.url.replace(/\/$/u, '')
     try {
-      let definitions: UnknownRecord
+      let snapshot: NodeDefinitionsSnapshot
       try {
-        definitions = await this.nodeDefinitions(
+        snapshot = await this.nodeDefinitions(
           input.instanceId,
           baseUrl,
           input.connection.authorization,
@@ -1305,9 +1882,10 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
         }
         throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
       }
+      const { definitions, numericSources } = snapshot
       const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
       const runtimeParameters = input.runtimeParameters ?? {}
-      applyRuntimeParameters(actualWorkflow, definitions, runtimeParameters)
+      applyRuntimeParameters(actualWorkflow, definitions, numericSources, runtimeParameters)
       materializeRgthreeRandomSeeds(actualWorkflow, definitions, this.createRandomSeed)
       if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, definitions, input.model)
       applyLoras(actualWorkflow, definitions, input.loras)
