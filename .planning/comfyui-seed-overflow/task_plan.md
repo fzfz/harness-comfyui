@@ -45,32 +45,32 @@
 
 ## 验收清单
 
-- [ ] 生产失败值 `12130929238470859000` 在节点 31 的 `SeedNode.seed` 上返回 `GENERATION_PARAMETER_INVALID`，错误指出允许范围上限，并且 `OfficialApiWorkflowCompiler.compile()` 与 Comfy transport 都未收到该请求。
-- [ ] `9223372036854775807` 的原始边界令牌得到保留；会序列化为 `9223372036854776000` 的 JavaScript `number` 不得被误判为合法上限值；测试必须证明比较使用实际发送的十进制令牌而不是舍入后的普通 `number` 上限。
-- [ ] 数值候选 `9223372036854775807` 不得与实际会发送成 `9223372036854776000` 的运行参数误判为同一个成员；嵌套在数组候选和对象候选中的非安全整数执行同样的精确成员测试。
-- [ ] 辅助回归样本中成功的非安全整数 Seed 示例 `8777816296766206976` 继续通过节点 31 的当前合同，证明修复没有引入 `Number.MAX_SAFE_INTEGER` 上限。
-- [ ] `INT` 的合法普通整数、合法非安全整数、精确最小边界通过；错误 JSON 类型、非整数、非有限值、低于 `min` 和高于 `max` 的整数分别被拒绝。
-- [ ] `FLOAT` 的整数数值、普通小数、最小边界和最大边界通过；错误 JSON 类型、非有限值、低于 `min` 与高于 `max` 分别被拒绝。
-- [ ] `STRING`、`AUTOCOMPLETE_TEXT_LORAS` 与 `BOOLEAN` 对每一种其他 JSON 顶层类型执行拒绝测试；测试证明 `STRING.choices`、`STRING.options` 与 `INT.options` 不会被擅自升级成通用服务器合法性限制。
-- [ ] 旧式数组选择合同覆盖字符串、数值、布尔值、`null`、数组、对象和混合候选；测试证明对象与数组使用 JSON 深相等，不使用字符串化碰撞，不对非字符串候选执行类型转换。
-- [ ] `COMBO` 单选覆盖合法与非法成员；`COMBO` 多选覆盖空数组、多个合法成员、一个非法成员、非数组和列表值的 `__value__` overlay。
-- [ ] Official overlay 覆盖形如 `["literal", 0]` 与 `[12, 0]` 的合法列表 widget 值，证明 `__value__` 上下文优先于连接二元组形态判断；另有真正连接结构匹配与结构不匹配测试，证明连接保护没有被削弱。
-- [ ] `COMFY_DYNAMICCOMBO_V3` 覆盖合法父 key、非法/空/重复父 key、当前分支的合法与非法 `INT`/`FLOAT`/`COMBO` 子输入、嵌套动态分支和连接式子输入排除。
-- [ ] 动态父分支切换覆盖 required 子输入完整且全部候选最终值合法时通过，以及缺少新分支 required 子输入、存在不属于目标分支的旧子输入、同名子输入类型改变、当前遗留值在新分支越界时拒绝；目标分支缺省 optional 子输入必须通过，已经序列化或由调用方提供的 optional 子输入必须单独通过合同；父参数与子参数输入顺序互换必须产生相同结果。
-- [ ] 一个具有对象序列化值的未知自定义 widget 接收数组、不同对象和标量时全部在提交前被拒绝；相同对象的无变化赋值通过。一个具有数组序列化值的未知自定义 widget 接收对象时同样被拒绝。
-- [ ] 未知自定义 widget 改变返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`；已知合同违反返回 `GENERATION_PARAMETER_INVALID`；模拟目标 ComfyUI 自定义校验拒绝继续返回 `COMFYUI_PROMPT_REJECTED`。结果抽屉结构测试验证三个错误码映射到独立目录项；独立语义 Reviewer 人工确认三类错误具有不同且可执行的下一步。
-- [ ] malformed `/object_info` 合同覆盖非法描述数组、非法配置对象、非法 `min`/`max`、`min > max` 和非法 `COMBO.options`，并返回稳定、可理解的编译错误。
-- [ ] 字符串候选 `['Foo', 'foo']` 的两个精确值分别通过，非精确输入 `'FOO'` 因大小写归一化不唯一而返回 `GENERATION_PARAMETER_INVALID`；完全重复候选的精确值通过。大小写碰撞不得被误报为 malformed `/object_info`。
-- [ ] `runtimeParameters` 中两个参数指向同一个目标时，编译器先分别规范化并校验，再执行现有同值合并或异值冲突判定；非法别名值不得借助另一个合法参数绕过合同。
-- [ ] JSON 深相等测试证明数组按长度和顺序比较，对象按相同键集合与对应值递归比较且忽略属性插入顺序，数值叶子使用实际发送令牌的十进制语义。候选成员、未知 widget 无变化赋值和别名同值合并分别覆盖对象键顺序变化。
-- [ ] 十进制规范化覆盖 `1`/`1.0`/`1e0` 等值、`-0`/`0` 等值、正负数、正负指数、尾随零、跨零范围、`INT` 小数边界和嵌套候选；极大正负指数测试证明比较器通过符号、去零系数、scale 与数量级比较，不通过物化与指数等长的零字符串工作。
-- [ ] 现有 seed 控件尾值、rgthree 随机 Seed、LoRA 文本、模型路径解析、连接输入排除、节点后缀解析、枚举大小写归一化和 Official API Workflow overlay 测试继续通过。
-- [ ] `.local/diagnostics/reproduce-seed-overflow.mjs` 连续两次返回退出码 0，输出 `GENERATION_PARAMETER_INVALID`，并证明 transport 提交次数为 0。
-- [ ] `/object_info` 精确数值元数据在同一实例首次编译、缓存命中、并发请求合并和 TTL 刷新后都通过非安全整数边界及嵌套数值候选测试；测试同时核对 `/object_info` fetch 次数。
+- [x] 生产失败值 `12130929238470859000` 在节点 31 的 `SeedNode.seed` 上返回 `GENERATION_PARAMETER_INVALID`，错误指出允许范围上限，并且 `OfficialApiWorkflowCompiler.compile()` 与 Comfy transport 都未收到该请求。
+- [x] `9223372036854775807` 的原始边界令牌得到保留；会序列化为 `9223372036854776000` 的 JavaScript `number` 不得被误判为合法上限值；测试必须证明比较使用实际发送的十进制令牌而不是舍入后的普通 `number` 上限。
+- [x] 数值候选 `9223372036854775807` 不得与实际会发送成 `9223372036854776000` 的运行参数误判为同一个成员；嵌套在数组候选和对象候选中的非安全整数执行同样的精确成员测试。
+- [x] 辅助回归样本中成功的非安全整数 Seed 示例 `8777816296766206976` 继续通过节点 31 的当前合同，证明修复没有引入 `Number.MAX_SAFE_INTEGER` 上限。
+- [x] `INT` 的合法普通整数、合法非安全整数、精确最小边界通过；错误 JSON 类型、非整数、非有限值、低于 `min` 和高于 `max` 的整数分别被拒绝。
+- [x] `FLOAT` 的整数数值、普通小数、最小边界和最大边界通过；错误 JSON 类型、非有限值、低于 `min` 与高于 `max` 分别被拒绝。
+- [x] `STRING`、`AUTOCOMPLETE_TEXT_LORAS` 与 `BOOLEAN` 对每一种其他 JSON 顶层类型执行拒绝测试；测试证明 `STRING.choices`、`STRING.options` 与 `INT.options` 不会被擅自升级成通用服务器合法性限制。
+- [x] 旧式数组选择合同覆盖字符串、数值、布尔值、`null`、数组、对象和混合候选；测试证明对象与数组使用 JSON 深相等，不使用字符串化碰撞，不对非字符串候选执行类型转换。
+- [x] `COMBO` 单选覆盖合法与非法成员；`COMBO` 多选覆盖空数组、多个合法成员、一个非法成员、非数组和列表值的 `__value__` overlay。
+- [x] Official overlay 覆盖形如 `["literal", 0]` 与 `[12, 0]` 的合法列表 widget 值，证明 `__value__` 上下文优先于连接二元组形态判断；另有真正连接结构匹配与结构不匹配测试，证明连接保护没有被削弱。
+- [x] `COMFY_DYNAMICCOMBO_V3` 覆盖合法父 key、非法/空/重复父 key、当前分支的合法与非法 `INT`/`FLOAT`/`COMBO` 子输入、嵌套动态分支和连接式子输入排除。
+- [x] 动态父分支切换覆盖 required 子输入完整且全部候选最终值合法时通过，以及缺少新分支 required 子输入、存在不属于目标分支的旧子输入、同名子输入类型改变、当前遗留值在新分支越界时拒绝；目标分支缺省 optional 子输入必须通过，已经序列化或由调用方提供的 optional 子输入必须单独通过合同；父参数与子参数输入顺序互换必须产生相同结果。
+- [x] 一个具有对象序列化值的未知自定义 widget 接收数组、不同对象和标量时全部在提交前被拒绝；相同对象的无变化赋值通过。一个具有数组序列化值的未知自定义 widget 接收对象时同样被拒绝。
+- [x] 未知自定义 widget 改变返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`；已知合同违反返回 `GENERATION_PARAMETER_INVALID`；模拟目标 ComfyUI 自定义校验拒绝继续返回 `COMFYUI_PROMPT_REJECTED`。结果抽屉结构测试验证三个错误码映射到独立目录项；独立语义 Reviewer 人工确认三类错误具有不同且可执行的下一步。
+- [x] malformed `/object_info` 合同覆盖非法描述数组、非法配置对象、非法 `min`/`max`、`min > max` 和非法 `COMBO.options`，并返回稳定、可理解的编译错误。
+- [x] 字符串候选 `['Foo', 'foo']` 的两个精确值分别通过，非精确输入 `'FOO'` 因大小写归一化不唯一而返回 `GENERATION_PARAMETER_INVALID`；完全重复候选的精确值通过。大小写碰撞不得被误报为 malformed `/object_info`。
+- [x] `runtimeParameters` 中两个参数指向同一个目标时，编译器先分别规范化并校验，再执行现有同值合并或异值冲突判定；非法别名值不得借助另一个合法参数绕过合同。
+- [x] JSON 深相等测试证明数组按长度和顺序比较，对象按相同键集合与对应值递归比较且忽略属性插入顺序，数值叶子使用实际发送令牌的十进制语义。候选成员、未知 widget 无变化赋值和别名同值合并分别覆盖对象键顺序变化。
+- [x] 十进制规范化覆盖 `1`/`1.0`/`1e0` 等值、`-0`/`0` 等值、正负数、正负指数、尾随零、跨零范围、`INT` 小数边界和嵌套候选；极大正负指数测试证明比较器通过符号、去零系数、scale 与数量级比较，不通过物化与指数等长的零字符串工作。
+- [x] 现有 seed 控件尾值、rgthree 随机 Seed、LoRA 文本、模型路径解析、连接输入排除、节点后缀解析、枚举大小写归一化和 Official API Workflow overlay 测试继续通过。
+- [x] `.local/diagnostics/reproduce-seed-overflow.mjs` 连续两次返回退出码 0，输出 `GENERATION_PARAMETER_INVALID`，并证明 transport 提交次数为 0。
+- [x] `/object_info` 精确数值元数据在同一实例首次编译、缓存命中、并发请求合并和 TTL 刷新后都通过非安全整数边界及嵌套数值候选测试；测试同时核对 `/object_info` fetch 次数。
 - [ ] 一个独立运行时能力测试验证 `JSON.parse` primitive reviver 获得 `context.source`、object/array reviver 不依赖该字段、reviver 返回后普通 definitions 值未被包装。该测试必须在项目最低支持版本 Node.js `22.19.0` 的发布验证环境运行；若实施环境没有该版本，计划执行者必须把缺少的最低版本实测列为发布阻塞，不得用 Node.js `25.8.2` 结果代替。
-- [ ] `pnpm test:unit -- tests/unit/generation-workflow-compiler.test.ts tests/unit/generation-official-api-workflow.test.ts tests/unit/generation-tool.test.ts tests/unit/results-drawer.test.tsx`、`pnpm quality` 与 `git diff --check` 全部通过。
-- [ ] 独立 Reviewer 根据最终 diff、错误文案、测试矩阵和门禁输出确认修复覆盖本计划中的全部合同分支。
-- [ ] 完整 Desktop 在独立 worktree 中通过 `pnpm dev:start`、第二终端 `pnpm dev:status`、隔离测试 workspace 验收、`pnpm dev:stop` 和最终 `pnpm dev:status` 验证。该验收不得读取或打开 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。
+- [x] `pnpm test:unit -- tests/unit/generation-workflow-compiler.test.ts tests/unit/generation-official-api-workflow.test.ts tests/unit/generation-tool.test.ts tests/unit/results-drawer.test.tsx`、`pnpm quality` 与 `git diff --check` 全部通过。
+- [x] 独立 Reviewer 根据最终 diff、错误文案、测试矩阵和门禁输出确认修复覆盖本计划中的全部合同分支。
+- [x] 完整 Desktop 在独立 worktree 中通过 `pnpm dev:start`、第二终端 `pnpm dev:status`、隔离测试 workspace 验收、`pnpm dev:stop` 和最终 `pnpm dev:status` 验证。该验收不得读取或打开 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。
 
 ## 非本次目标
 

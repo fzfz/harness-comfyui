@@ -33,7 +33,7 @@
 
 - 状态：完成。
 - 已在独立 worktree 中实现结构化运行参数合同、精确数值令牌比较、JSON 深相等候选、动态合同原子校验、未知合同拒绝、别名规范化后冲突判定和 `__value__` overlay 优先级修复。
-- 已更新错误目录、架构文档和测试文档，并把单文件 Workflow compiler 测试扩展到 194 项。
+- 已更新错误目录、架构文档和测试文档，并把单文件 Workflow compiler 测试扩展到 199 项。
 - 最小反馈环连续两次在提交前返回 `GENERATION_PARAMETER_INVALID`，两次退出码均为 0。
 - 未修改、读取、启动或测试真实生产目录 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。
 
