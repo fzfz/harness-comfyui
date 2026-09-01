@@ -1,32 +1,33 @@
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 const INPUT_KEYS = Object.freeze(['positions', 'display_text']);
 const OUTPUT_KIND = 'noobai_assistant_prompt';
 const CONTRACT_VERSION = '1.0.0';
 
-export const POSITION_NAMES = Object.freeze([
-  'quality',
-  'artist',
-  'subject',
-  'character',
-  'appearance',
-  'outfit',
-  'action',
-  'expression_reaction',
-  'camera_composition',
-  'environment',
-  'detail_mood',
-  'lighting',
-  'non_artist_style',
-  'technical',
-  'relation_narrative'
-]);
+const WEIGHT_POLICY = JSON.parse(readFileSync(
+  new URL('../references/prompt-weight-policy.json', import.meta.url),
+  'utf8'
+));
+
+const TAG_POSITION_NAMES = Object.freeze([...WEIGHT_POLICY.positions.tag]);
+const RELATION_POSITION_NAMES = Object.freeze([...WEIGHT_POLICY.positions.relation_text]);
+export const POSITION_NAMES = Object.freeze([...TAG_POSITION_NAMES, ...RELATION_POSITION_NAMES]);
 
 const POSITION_NAME_SET = new Set(POSITION_NAMES);
-const TAG_POSITION_NAMES = Object.freeze(POSITION_NAMES.slice(0, -1));
+const TAG_POSITION_NAME_SET = new Set(TAG_POSITION_NAMES);
 const CONTROL_OR_LINE_SEPARATOR = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/u;
 const SENTENCE_ENDING = /[.!?]$/u;
-const CANONICAL_WEIGHT = /^(?:0|1)\.\d+$/u;
+const WEIGHT_PATTERN = new RegExp(WEIGHT_POLICY.syntax.explicit_weight.ascii_decimal_pattern, 'u');
+const ESCAPE_CHARACTER = WEIGHT_POLICY.syntax.payload.escape_character;
+const ESCAPABLE_CHARACTERS = new Set(WEIGHT_POLICY.syntax.payload.escapable_characters);
+const REJECTED_PAYLOAD_DELIMITERS = new Set(
+  WEIGHT_POLICY.syntax.payload.reject_unescaped_delimiters_inside_wrapper
+);
+const UNWEIGHTED_QUALITY_POSITION = WEIGHT_POLICY.recommendations.unweighted_quality.position;
+const UNWEIGHTED_QUALITY_CONTENT = new Set(
+  WEIGHT_POLICY.recommendations.unweighted_quality.content
+);
 
 export class PromptFinalizationError extends Error {
   constructor(message) {
@@ -55,39 +56,73 @@ function validSingleLineString(value) {
     && !CONTROL_OR_LINE_SEPARATOR.test(value);
 }
 
-function canonicalWeight(value) {
-  if (!CANONICAL_WEIGHT.test(value)) return false;
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric) || numeric < 0.25 || numeric > 1.5) return false;
-  const fraction = value.slice(value.indexOf('.') + 1);
-  return fraction.length === 1 || !fraction.endsWith('0');
-}
-
-function delimiterIsEscaped(value, index) {
-  let slashes = 0;
-  for (let cursor = index - 1; cursor >= 0 && value[cursor] === '\\'; cursor -= 1) slashes += 1;
-  return slashes % 2 === 1;
-}
-
-function lastUnescapedColon(value) {
-  for (let index = value.length - 1; index >= 0; index -= 1) {
-    if (value[index] === ':' && !delimiterIsEscaped(value, index)) return index;
+class TagSyntaxError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'TagSyntaxError';
   }
-  return -1;
 }
 
-function validArtistFragment(value) {
-  if (!value.startsWith('(') || !value.endsWith(')')) return false;
-  const inner = value.slice(1, -1);
-  const separator = lastUnescapedColon(inner);
-  if (separator <= 0 || separator === inner.length - 1) return false;
-  const payload = inner.slice(0, separator);
-  const weight = inner.slice(separator + 1);
-  if (payload.trim() !== payload || payload.length === 0 || !canonicalWeight(weight)) return false;
+function assertPayloadSyntax(payload) {
+  if (payload.length === 0 || payload.trim() !== payload) {
+    throw new TagSyntaxError('payload 必须非空且首尾无空白');
+  }
   for (let index = 0; index < payload.length; index += 1) {
-    if ('()[]'.includes(payload[index]) && !delimiterIsEscaped(payload, index)) return false;
+    const character = payload[index];
+    if (character === ESCAPE_CHARACTER) {
+      const escaped = payload[index + 1];
+      if (escaped === undefined || !ESCAPABLE_CHARACTERS.has(escaped)) {
+        throw new TagSyntaxError('payload 包含无效反斜杠转义');
+      }
+      index += 1;
+      continue;
+    }
+    if (REJECTED_PAYLOAD_DELIMITERS.has(character)) {
+      throw new TagSyntaxError('payload 包含未转义的圆括号或方括号');
+    }
   }
-  return true;
+}
+
+function isCharacterEscaped(value, targetIndex) {
+  for (let index = 0; index < targetIndex; index += 1) {
+    if (value[index] !== ESCAPE_CHARACTER) continue;
+    if (index + 1 === targetIndex) return true;
+    index += 1;
+  }
+  return false;
+}
+
+function parseTagElement(value) {
+  const startsWrapper = value.startsWith('(');
+  const closingIndex = value.length - 1;
+  const endsWrapper = value[closingIndex] === ')' && !isCharacterEscaped(value, closingIndex);
+  if (startsWrapper !== endsWrapper) {
+    throw new TagSyntaxError('必须使用完整的 payload、(payload) 或 (payload:weight) 格式');
+  }
+  if (!startsWrapper) {
+    assertPayloadSyntax(value);
+    return Object.freeze({ payload: value, weight: null });
+  }
+
+  const inner = value.slice(1, -1);
+  const separatorCount = [...inner].filter(character => character === ':').length;
+  if (separatorCount > WEIGHT_POLICY.syntax.payload.maximum_unescaped_colons_inside_wrapper) {
+    throw new TagSyntaxError('权重外层最多包含一个冒号');
+  }
+
+  const separator = inner.indexOf(':');
+  const payload = separator === -1 ? inner : inner.slice(0, separator);
+  assertPayloadSyntax(payload);
+  if (separator === -1) return Object.freeze({ payload, weight: null });
+
+  const weight = inner.slice(separator + 1);
+  const numeric = Number(weight);
+  if (!WEIGHT_PATTERN.test(weight)
+    || (WEIGHT_POLICY.syntax.explicit_weight.require_finite && !Number.isFinite(numeric))
+    || numeric <= WEIGHT_POLICY.syntax.explicit_weight.minimum_exclusive) {
+    throw new TagSyntaxError('weight 必须是大于 0 的有限 ASCII 十进制数');
+  }
+  return Object.freeze({ payload, weight });
 }
 
 function validateCommonElement(value, path, violations) {
@@ -135,8 +170,18 @@ function collectInputViolations(input) {
         values.forEach((value, index) => {
           const path = `positions.${name}[${index}]`;
           if (!validateCommonElement(value, path, violations)) return;
-          if (name === 'artist' && !validArtistFragment(value)) {
-            addViolation(violations, path, '必须是一个完整的 (payload:weight) 画师片段');
+          if (TAG_POSITION_NAME_SET.has(name)) {
+            try {
+              const parsed = parseTagElement(value);
+              if (name === UNWEIGHTED_QUALITY_POSITION
+                && UNWEIGHTED_QUALITY_CONTENT.has(parsed.payload)
+                && value !== parsed.payload) {
+                addViolation(violations, path, '默认质量内容必须保持未加权');
+              }
+            } catch (error) {
+              if (error instanceof TagSyntaxError) addViolation(violations, path, error.message);
+              else throw error;
+            }
           }
           if (name === 'relation_narrative' && !SENTENCE_ENDING.test(value)) {
             addViolation(violations, path, '必须以 .、! 或 ? 结束');

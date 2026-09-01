@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "syntax": {
+    "forms": {
+      "unweighted": true,
+      "default_weight": true,
+      "explicit_weight": true
+    },
+    "default_parenthesized_weight": 1.1,
+    "explicit_weight": {
+      "ascii_decimal_pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+      "minimum_exclusive": 0,
+      "require_finite": true,
+      "preserve_lexeme": true
+    },
+    "payload": {
+      "escape_character": "\\",
+      "escapable_characters": ["\\", "(", ")", "[", "]"],
+      "consume_escape_pairs_left_to_right": true,
+      "reject_unknown_escape": true,
+      "reject_trailing_escape": true,
+      "maximum_unescaped_colons_inside_wrapper": 1,
+      "reject_unescaped_delimiters_inside_wrapper": ["(", ")", "[", "]"]
+    },
+    "allow_nested_weight": false
+  },
+  "positions": {
+    "tag": [
+      "quality",
+      "artist_style",
+      "count_gender",
+      "character_series",
+      "appearance",
+      "clothing_state",
+      "pose_action_sex",
+      "expression_reaction",
+      "camera_shot",
+      "scene_environment",
+      "detail_mood"
+    ],
+    "relation_text": ["natural_language"]
+  },
+  "recommendations": {
+    "maximum_boosted_decisions": 3,
+    "levels": {
+      "deemphasis": 0.8,
+      "medium": 1.5,
+      "strong": 2.0
+    },
+    "unweighted_quality": {
+      "position": "quality",
+      "content": ["masterpiece", "best quality", "score_7", "highres", "safe"]
+    }
+  }
+}

@@ -1,28 +1,27 @@
+import { readFileSync } from 'node:fs';
+
 const INPUT_KEYS = Object.freeze(['slots', 'display_text']);
 
-export const SLOT_NAMES = Object.freeze([
-  'quality',
-  'artist_style',
-  'count_gender',
-  'character_series',
-  'appearance',
-  'clothing_state',
-  'pose_action_sex',
-  'expression_reaction',
-  'camera_shot',
-  'scene_environment',
-  'detail_mood',
-  'natural_language'
-]);
+const WEIGHT_POLICY = JSON.parse(readFileSync(
+  new URL('../references/prompt-weight-policy.json', import.meta.url),
+  'utf8'
+));
+
+const TAG_SLOT_NAMES = Object.freeze([...WEIGHT_POLICY.positions.tag]);
+const RELATION_SLOT_NAMES = Object.freeze([...WEIGHT_POLICY.positions.relation_text]);
+export const SLOT_NAMES = Object.freeze([...TAG_SLOT_NAMES, ...RELATION_SLOT_NAMES]);
 
 const REQUIRED_QUALITY_PREFIX = Object.freeze([
-  'masterpiece',
-  'best quality',
-  'score_7',
-  'highres',
-  'safe'
+  ...WEIGHT_POLICY.recommendations.unweighted_quality.content
 ]);
 const REQUIRED_ARTIST_PREFIX = '@';
+const RELATION_SLOT_NAME_SET = new Set(RELATION_SLOT_NAMES);
+const WEIGHT_PATTERN = new RegExp(WEIGHT_POLICY.syntax.explicit_weight.ascii_decimal_pattern, 'u');
+const ESCAPE_CHARACTER = WEIGHT_POLICY.syntax.payload.escape_character;
+const ESCAPABLE_CHARACTERS = new Set(WEIGHT_POLICY.syntax.payload.escapable_characters);
+const REJECTED_PAYLOAD_DELIMITERS = new Set(
+  WEIGHT_POLICY.syntax.payload.reject_unescaped_delimiters_inside_wrapper
+);
 
 export const OUTPUT_RULES = Object.freeze({
   keys: Object.freeze(['kind', 'result', 'contract_version', 'prompt_text', 'display_text']),
@@ -79,9 +78,66 @@ function assertDisplayText(displayText) {
   if (displayText.length === 0) fail('display_text', 'display_text must be non-empty');
 }
 
-function stripWeight(value) {
-  const match = /^\(([^:()]*):\s*[+-]?\d+(?:\.\d+)?\)$/u.exec(value);
-  return match ? match[1] : value;
+function assertPayloadSyntax(payload, label) {
+  if (payload.length === 0 || payload.trim() !== payload) {
+    fail(label, `${label} payload must be non-empty without surrounding whitespace`);
+  }
+  for (let index = 0; index < payload.length; index += 1) {
+    const character = payload[index];
+    if (character === ESCAPE_CHARACTER) {
+      const escaped = payload[index + 1];
+      if (escaped === undefined || !ESCAPABLE_CHARACTERS.has(escaped)) {
+        fail(label, `${label} payload contains an invalid escape sequence`);
+      }
+      index += 1;
+      continue;
+    }
+    if (REJECTED_PAYLOAD_DELIMITERS.has(character)) {
+      fail(label, `${label} payload contains an unescaped delimiter`);
+    }
+  }
+}
+
+function isCharacterEscaped(value, targetIndex) {
+  for (let index = 0; index < targetIndex; index += 1) {
+    if (value[index] !== ESCAPE_CHARACTER) continue;
+    if (index + 1 === targetIndex) return true;
+    index += 1;
+  }
+  return false;
+}
+
+function parseTagElement(value, label) {
+  const startsWrapper = value.startsWith('(');
+  const closingIndex = value.length - 1;
+  const endsWrapper = value[closingIndex] === ')' && !isCharacterEscaped(value, closingIndex);
+  if (startsWrapper !== endsWrapper) {
+    fail(label, `${label} must use a complete payload, (payload), or (payload:weight) form`);
+  }
+  if (!startsWrapper) {
+    assertPayloadSyntax(value, label);
+    return Object.freeze({ payload: value, weight: null });
+  }
+
+  const inner = value.slice(1, -1);
+  const separatorCount = [...inner].filter(character => character === ':').length;
+  if (separatorCount > WEIGHT_POLICY.syntax.payload.maximum_unescaped_colons_inside_wrapper) {
+    fail(label, `${label} weighted wrapper must contain at most one colon`);
+  }
+
+  const separator = inner.indexOf(':');
+  const payload = separator === -1 ? inner : inner.slice(0, separator);
+  assertPayloadSyntax(payload, label);
+  if (separator === -1) return Object.freeze({ payload, weight: null });
+
+  const weight = inner.slice(separator + 1);
+  const numeric = Number(weight);
+  if (!WEIGHT_PATTERN.test(weight)
+    || (WEIGHT_POLICY.syntax.explicit_weight.require_finite && !Number.isFinite(numeric))
+    || numeric <= WEIGHT_POLICY.syntax.explicit_weight.minimum_exclusive) {
+    fail(label, `${label} weight must be a positive finite ASCII decimal`);
+  }
+  return Object.freeze({ payload, weight });
 }
 
 function assertCommonElement(value, slotName, index) {
@@ -99,12 +155,20 @@ function assertSlotElements(slots) {
     if (!Array.isArray(values)) fail(slotName, `${slotName} must be an array`);
     values.forEach((value, index) => {
       assertCommonElement(value, slotName, index);
-      if (slotName === SLOT_NAMES.at(-1)) {
+      const label = `${slotName}[${index}]`;
+      if (RELATION_SLOT_NAME_SET.has(slotName)) {
         if (!/^[a-z0-9][a-z0-9 '\u0022'’.!?;:/()&+\-]*$/u.test(value)) {
-          fail(`${slotName}[${index}]`, `${slotName}[${index}] must use lowercase English text`);
+          fail(label, `${label} must use lowercase English text`);
         }
-      } else if (value !== value.toLowerCase()) {
-        fail(`${slotName}[${index}]`, `${slotName}[${index}] must use lowercase text`);
+        return;
+      }
+
+      const parsed = parseTagElement(value, label);
+      if (parsed.payload !== parsed.payload.toLowerCase()) {
+        fail(label, `${label} must use lowercase text`);
+      }
+      if (slotName === 'artist_style') {
+        assertArtistPayload(parsed.payload, label);
       }
     });
   }
@@ -118,15 +182,12 @@ function assertQualityPrefix(quality) {
   }
 }
 
-function assertArtistPrefixes(artistStyle) {
-  artistStyle.forEach((value, index) => {
-    const inner = stripWeight(value);
-    if (!inner.startsWith(REQUIRED_ARTIST_PREFIX)
-      || inner === REQUIRED_ARTIST_PREFIX
-      || inner.startsWith(`${REQUIRED_ARTIST_PREFIX}${REQUIRED_ARTIST_PREFIX}`)) {
-      fail(`artist_style[${index}]`, `artist_style[${index}] must begin with exactly one ${REQUIRED_ARTIST_PREFIX}`);
-    }
-  });
+function assertArtistPayload(payload, label) {
+  if (!payload.startsWith(REQUIRED_ARTIST_PREFIX)
+    || payload === REQUIRED_ARTIST_PREFIX
+    || payload.startsWith(`${REQUIRED_ARTIST_PREFIX}${REQUIRED_ARTIST_PREFIX}`)) {
+    fail(label, `${label} payload must begin with exactly one ${REQUIRED_ARTIST_PREFIX}`);
+  }
 }
 
 function assemblePromptText(slots) {
@@ -143,7 +204,6 @@ export function validateOutput(input) {
   assertDisplayText(input.display_text);
   assertSlotElements(input.slots);
   assertQualityPrefix(input.slots.quality);
-  assertArtistPrefixes(input.slots.artist_style);
 
   const promptText = assemblePromptText(input.slots);
   assertPromptLength(promptText);

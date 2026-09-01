@@ -30,7 +30,7 @@ Skill Agent 每次都调用 `run_skill_script`：
 {
   "positions": {
     "quality": ["masterpiece", "best quality"],
-    "artist": ["(fukahire:1.1)", "(alzi xiaomi:0.8)"],
+    "artist": ["fukahire", "alzi xiaomi"],
     "subject": ["2girls"],
     "character": ["frieren, sousou no frieren", "aura the guillotine, sousou no frieren"],
     "appearance": ["long white hair", "long purple hair"],
@@ -67,7 +67,23 @@ Skill Agent 必须遵守以下输入规则：
 - 数组元素按照该位置最终输出顺序排列。
 - 输入不得包含预先组合的 `prompt_text`、位置序号、来源、采用记录或 Prompt 内容副本。
 
-`artist[]` 的每个元素必须是一名画师完成 WAI 外层语法和权重后的 `(payload:weight)` 最终片段。一个元素只能包含一名画师。payload 内作为文字使用的圆括号和方括号必须转义。权重必须使用 `0.25` 至 `1.5` 范围内的规范小数格式。
+### tag 位置权重格式
+
+前十四个 tag 位置的每个数组元素使用以下一种格式：
+
+```text
+payload
+(payload)
+(payload:weight)
+```
+
+以上文本中的 `payload` 和 `weight` 是格式占位符。校验器从 `prompt-weight-policy.json` 读取 ASCII 十进制、正有限数值、转义、外层冒号和禁止嵌套规则。纯语法示例 `(blue hair:1.20)` 只演示合法字符格式，不定义 WAI 推荐档位。
+
+payload 内作为文字使用的圆括号、方括号和反斜杠必须按照 `syntax.payload` 转义。一个数组元素只能使用一层权重外层。校验器逐字符保留合法输入，不截断、不格式化 weight。
+
+`artist[]` 的每个元素由 Skill Agent 语义确认只对应一名合法 Style 来源画师。画师 payload 与普通 tag 使用同一个权重外层解析器；校验器不判断画师身份、来源或画师数量。
+
+`quality[]` 中解析后的 payload 与 `prompt-weight-policy.json` 的 `recommendations.unweighted_quality.content` 任一元素相同时，该数组元素必须使用未加权形式。用户新增的其他质量 payload 可以使用合法权重外层。
 
 `relation_narrative[]` 的每个元素必须是以 `.`、`!` 或 `?` 结束的完整英文句子。使用 `relation_narrative` 时，前十四个位置必须至少包含一项 Prompt 内容。
 
@@ -120,7 +136,7 @@ stderr 示例：
   "violations": [
     {
       "path": "positions.artist[1]",
-      "message": "必须是一个完整的 (payload:weight) 画师片段"
+      "message": "weight 必须是大于 0 的有限 ASCII 十进制数"
     },
     {
       "path": "positions.relation_narrative[0]",

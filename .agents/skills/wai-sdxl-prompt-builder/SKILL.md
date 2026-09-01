@@ -76,9 +76,13 @@ Skill Agent 根据用户本轮文字、UI 已选内容、选定构图和完整�
 
 本轮需要调用任一语义查询接口时，在第一次调用前完整读取 [语义查询接口与调用流程](references/semantic-tool-orchestration.md)。按照该文档选择接口、组织查询、读取字段、处理结果，并完成尚未完成的角色、画师和普通视觉概念 Prompt 内容。
 
-## 5. 自检、冲突处理和格式校验
+## 5. 冲突处理、权重设计、自检和格式校验
 
-Skill Agent 完成十五位置内容后，读取并执行 [Prompt 自检](references/prompt-self-check.md)，再读取并执行 [Prompt 冲突规则](references/prompt-conflict-rules.md)。两项检查发现问题时，Skill Agent 修改产生该问题的画面设计内容及其对应的 `positions` 数组元素，然后重新执行两项检查。
+Skill Agent 完成十五位置的 payload 设计时，必须同时保留用户权重、合法来源权重形式、合法 weight 原文和主要或辅助作用，但此时不生成自主权重，也不把权重外层写入最终 `positions` 数组元素。Skill Agent 先读取并执行 [Prompt 冲突规则](references/prompt-conflict-rules.md)，根据 payload 删除互斥内容、重复内容和同义内容；一个 payload 被保留时，同时保留来源优先级最高的权重记录。
+
+冲突与重复内容删除完成后，Skill Agent 完整读取 [权重结构化策略](references/prompt-weight-policy.json)和 [Prompt 权重方法](references/prompt-weighting.md)，按照来源优先级、位置规则和强调数量为前十四个 tag 位置设计权重。Skill Agent 在该步骤把每个保留 payload 一次性生成为未加权、默认权重或显式权重数组元素；最终权重外层不能在其他步骤再次生成。
+
+权重设计完成后，Skill Agent 读取并执行 [Prompt 自检](references/prompt-self-check.md)，再执行已经读取的 [Prompt 冲突规则](references/prompt-conflict-rules.md)。两项检查发现问题时，Skill Agent 修改产生该问题的画面设计内容及其对应的 `positions` 数组元素，然后从权重来源判断开始重新执行权重设计、自检和冲突检查。
 
 两项检查通过后，Skill Agent 读取 [Prompt 格式校验器接口](references/prompt-format-validator.md)，按照该接口调用 `scripts/validate-output.mjs`。校验器返回 `violations` 时，Skill Agent 根据每条 `violations[].path` 修改该路径指向的 `positions` 数组元素、`display_text` 或完整标准输入 JSON，然后重新执行自检、冲突检查和格式校验。Prompt 格式校验器最多调用三次。
 

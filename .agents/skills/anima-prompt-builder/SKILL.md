@@ -21,10 +21,12 @@ Skill 执行者每次运行必须按以下顺序读取固定参考资料，不�
 4. `references/03-output-protocol.md`
 5. `references/04-final-self-check.md`
 6. `references/05-conflict-table.md`
-7. `references/06-slot-order.md`
-8. `references/07-assembly-decision-tree.md`
+7. `references/prompt-weight-policy.json`
+8. `references/prompt-weighting.md`
+9. `references/06-slot-order.md`
+10. `references/07-assembly-decision-tree.md`
 
-读取上述八个文件后，Skill 执行者必须使用 `references/07-assembly-decision-tree.md` 第 5 章的组装决策树匹配与用户要求最接近的画面类型。本节所称“待填槽位”是以下两类槽位的并集：用户明确指定的画面内容所对应的槽位；第 5 章匹配的画面类型表要求填写、但用户没有明确指定内容的槽位。对于画面类型表要求填写但用户没有明确指定内容的槽位，Skill 执行者必须按照该画面类型表的建议确定槽位内容。Skill 执行者随后按照待填槽位逐行读取详细资料：
+读取上述十个文件后，Skill 执行者必须使用 `references/07-assembly-decision-tree.md` 第 5 章的组装决策树匹配与用户要求最接近的画面类型。本节所称“待填槽位”是以下两类槽位的并集：用户明确指定的画面内容所对应的槽位；第 5 章匹配的画面类型表要求填写、但用户没有明确指定内容的槽位。对于画面类型表要求填写但用户没有明确指定内容的槽位，Skill 执行者必须按照该画面类型表的建议确定槽位内容。Skill 执行者随后按照待填槽位逐行读取详细资料：
 
 | 文件 | 读取条件 |
 | --- | --- |
@@ -48,7 +50,7 @@ Skill 执行者把当前用户消息中除 `type=comfyui-context` JSON 行以外
 | Character 记录 | Skill 执行者使用 `data.character_name` 和 `data.work_name` 识别并消歧角色，使用 `data.prompt_text` 作为角色提示词来源。 |
 | Style 记录 | Skill 执行者使用 `data.name` 识别并消歧画师，使用 `data.prompt_text` 作为画师提示词来源。 |
 
-`data.kind` 为 `style` 时，Skill 执行者按逗号拆分同一记录的 `data.prompt_text`。Skill 执行者对每段去除首尾空白并转换为小写，然后反复移除该段开头的 `@`。Skill 执行者不得把移除后为空的分段放入 `artist_style`；Skill 执行者必须只在其余分段开头添加一个 `@`，再把规范化结果放入 `artist_style`。`data.kind` 为 `character` 时，Skill 执行者把同一记录的 `data.prompt_text` 拆分后分类到 `character_series` 和 `appearance`。
+`data.kind` 为 `style` 时，Skill 执行者按逗号拆分同一记录的 `data.prompt_text`，先删除每个逗号分段的首尾空白，再按照 `references/prompt-weight-policy.json` 解析该分段的未加权、默认权重或显式权重形式。Skill 执行者只删除逗号分段外部的空白，不能删除权重外层内部 payload 或 weight 两侧的空白来修复非法结构。Skill 执行者把合法解析后的 payload 转换为小写，再反复移除 payload 开头的 `@`。Skill 执行者不得把空分段或移除后为空的 payload 放入 `artist_style`；Skill 执行者必须只在其余 payload 开头添加一个 `@`，再按照原段的权重形式重新生成数组元素。原段是显式权重时，Skill 执行者逐字符保留合法 weight；原段是默认权重时生成 `(@payload)`；原段未加权时生成 `@payload`。该流程不能生成 `@(@payload:weight)`。`data.kind` 为 `character` 时，Skill 执行者把同一记录的 `data.prompt_text` 拆分后分类到 `character_series` 和 `appearance`。
 
 ## 读取语义查询说明
 
@@ -72,12 +74,12 @@ Skill 执行者只有在下列具体情况发生时，才先完整读取 `refere
 
 Skill 执行者构建一个只包含 `slots` 和 `display_text` 的顶层对象。`slots` 必须依次包含 `quality`、`artist_style`、`count_gender`、`character_series`、`appearance`、`clothing_state`、`pose_action_sex`、`expression_reaction`、`camera_shot`、`scene_environment`、`detail_mood` 和 `natural_language` 十二个键，不能缺少键或增加其他键。每个槽位的值必须是字符串数组；没有内容的槽位必须使用空数组 `[]`。`display_text` 必须是非空字符串。
 
-Skill 执行者必须把 `masterpiece`、`best quality`、`score_7`、`highres`、`safe` 依次放在 `quality` 开头。当前用户明确提出其他质量要求时，Skill 执行者只能把符合本 Skill 标签格式的额外质量标签放在 `safe` 之后，并删除重复标签；当前用户没有提出其他质量要求时，`quality` 必须是 `["masterpiece", "best quality", "score_7", "highres", "safe"]`。
+Skill 执行者必须把 `references/prompt-weight-policy.json` 的 `recommendations.unweighted_quality.content` 依次放在 `quality` 开头并保持未加权。当前用户明确提出其他质量要求时，Skill 执行者只能把符合本 Skill 标签格式的额外质量 payload 放在固定前缀之后，并删除重复内容；当前用户没有提出其他质量要求时，`quality` 只包含该固定前缀。
 
-Skill 执行者把 UI Style 记录的 `data.prompt_text` 按这些 Style JSON 行在当前消息中的出现顺序放入 `artist_style`。Skill 执行者把 `query_semantic_styles` 采用结果的 `prompt_text` 按该查询合同规定的结果顺序放入 `artist_style`。两类来源都使用“读取当前回合”规定的画师前缀规范化步骤，并删除后出现的重复词语。每个 `artist_style` 元素必须恰好以一个 `@` 开头。
+Skill 执行者把 UI Style 记录的 `data.prompt_text` 按这些 Style JSON 行在当前消息中的出现顺序放入 `artist_style`。Skill 执行者把 `query_semantic_styles` 采用结果的 `prompt_text` 按该查询合同规定的结果顺序放入 `artist_style`。两类来源都使用“读取当前回合”规定的画师权重外层与前缀规范化步骤，并删除后出现的重复 payload。每个 `artist_style` 元素解析后的 payload 必须恰好以一个 `@` 开头。
 
 `data.kind=character` 的 UI 记录只能使用实际 `data.prompt_text` 产生提示词词语。Skill 执行者按逗号拆分角色 `data.prompt_text`，对每段去除首尾空白并转换为小写，再把结果放入 `character_series` 或 `appearance`；`data.character_name`、`data.work_name` 和其他说明只能帮助理解或消歧，不能替代角色 `data.prompt_text`。`data.kind=style` 的 UI 记录只按照“读取当前回合”定义的画师规范化步骤处理 `data.prompt_text`。
 
-Skill 执行者把当前用户意图映射到其余十个内容槽位，并用已读取的详细资料决定每个槽位的词语。Skill 执行者按照 `references/semantic-query-interfaces.md` 采用 `query_semantic_prompt_terms` 候选时，只把选中候选的 `canonical_tag` 放入该标签语义对应的内容槽位；`aliases` 只用于理解和比较候选。Skill 执行者只能把英文小写、无逗号的词语放入前十一槽位；`natural_language` 只能放入英文小写自然语言句子。
+Skill 执行者把当前用户意图映射到其余十个内容槽位，并用已读取的详细资料决定每个槽位的词语。Skill 执行者按照 `references/semantic-query-interfaces.md` 采用 `query_semantic_prompt_terms` 候选时，只把选中候选的 `canonical_tag` 放入该标签语义对应的内容槽位；`aliases` 只用于理解和比较候选。Skill 执行者完成槽位内容并删除冲突与重复内容后，按照 `references/prompt-weighting.md` 设计权重。前十一槽位的每个数组元素必须符合 `references/prompt-weight-policy.json` 定义的形式，解析后的 payload 必须是英文小写且不含逗号；`natural_language` 只能放入英文小写自然语言句子，并且不使用 tag 权重外层。
 
 Skill 执行者按照 `references/03-output-protocol.md` 的“校验器调用”定义调用 校验器脚本。

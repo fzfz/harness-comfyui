@@ -67,6 +67,18 @@ Skill Agent 必须确认：
 - 每个被采用画师都已经按照画师采用规则和 WAI 画师语法处理；
 - 具体画师内容没有进入普通画风、画面细节或光线位置。
 
+## 权重设计
+
+Skill Agent 必须确认：
+
+- 每个显式权重来自用户、合法来源或 `prompt-weight-policy.json` 的一个策略档位；
+- 选定构图只有明确的主视觉锚点使用强调档位，大部分 tag 保持未加权；
+- 除用户明确提供权重以外，合法 UI Style、语义 Style、Character 来源权重和自主设计权重产生的高于中性强度视觉决定总数不超过 `recommendations.maximum_boosted_decisions`；
+- 每个数组元素只有一层权重外层；
+- 同一 payload 没有同时出现加权与未加权副本，也没有使用同义加权 payload 叠加强度；
+- `recommendations.unweighted_quality.content` 中的默认质量段保持未加权；
+- `relation_narrative` 没有 tag 权重外层。
+
 ## 分镜
 
 画面包含多个画格时，Skill Agent 必须确认：

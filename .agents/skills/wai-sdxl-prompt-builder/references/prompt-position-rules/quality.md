@@ -8,11 +8,7 @@
 
 ## 固定质量内容
 
-WAI Prompt 默认使用以下质量内容：
-
-`masterpiece, best quality, ultra-detailed, highres`
-
-Skill Agent 必须把该内容作为一个连续的质量段放在最终 Prompt 开头。
+Skill Agent 必须读取 `../prompt-weight-policy.json` 的 `recommendations.unweighted_quality.content`，并把该数组按原顺序作为一个连续、未加权的质量段放在最终 Prompt 开头。
 
 ## 用户明确质量要求
 

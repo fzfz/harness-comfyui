@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "syntax": {
+    "forms": {
+      "unweighted": true,
+      "default_weight": true,
+      "explicit_weight": true
+    },
+    "default_parenthesized_weight": 1.1,
+    "explicit_weight": {
+      "ascii_decimal_pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+      "minimum_exclusive": 0,
+      "require_finite": true,
+      "preserve_lexeme": true
+    },
+    "payload": {
+      "escape_character": "\\",
+      "escapable_characters": ["\\", "(", ")", "[", "]"],
+      "consume_escape_pairs_left_to_right": true,
+      "reject_unknown_escape": true,
+      "reject_trailing_escape": true,
+      "maximum_unescaped_colons_inside_wrapper": 1,
+      "reject_unescaped_delimiters_inside_wrapper": ["(", ")", "[", "]"]
+    },
+    "allow_nested_weight": false
+  },
+  "positions": {
+    "tag": [
+      "quality",
+      "artist",
+      "subject",
+      "character",
+      "appearance",
+      "outfit",
+      "action",
+      "expression_reaction",
+      "camera_composition",
+      "environment",
+      "detail_mood",
+      "lighting",
+      "non_artist_style",
+      "technical"
+    ],
+    "relation_text": ["relation_narrative"]
+  },
+  "recommendations": {
+    "maximum_boosted_decisions": 3,
+    "levels": {
+      "deemphasis": 0.8,
+      "light": 1.1,
+      "primary": 1.2,
+      "strong": 1.3
+    },
+    "unweighted_quality": {
+      "position": "quality",
+      "content": ["masterpiece", "best quality", "ultra-detailed", "highres"]
+    }
+  }
+}
