@@ -48,8 +48,8 @@
 ### 当前验证
 
 - `pnpm typecheck`：通过。
-- `tests/unit/generation-workflow-compiler.test.ts`：194 项通过。
-- 三个受影响测试文件：245 项通过。
+- `tests/unit/generation-workflow-compiler.test.ts`：199 项通过。
+- 三个受影响测试文件：250 项通过。
 - Node.js `24.14.0` 运行时能力测试：`JSON.parse` reviver 正确保留 `9223372036854775807` 和 `1.0` 原始令牌。
 - 项目最低支持版本 Node.js `22.19.0` 在当前主机不可用；发布前仍需在 Node.js `22.19.0` 环境运行同一能力测试。
 - Standards、Spec 和独立语义复核均已通过，全部审查 finding 已关闭。
