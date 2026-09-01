@@ -103,7 +103,7 @@ v0.38.0 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 �
 
 v0.38.1 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Cordis scoped waterfall 测试覆盖 `ComfyUI工作台预设` 的精确系统提示词段落过滤、非匹配 Preset scope 隔离、下游异常传播和 scope 清理。
 
-v0.38.2 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试通过会话主模型选择器验证 OpenCode Go 目录精确删除 `ox-alpha-free`、新增四个目标模型并保留 `grok-4.5`，同时验证图片读取设置拒绝纯文本 `hy4-preview` 并只投影支持图片输入的目标模型。实际安装的 pi-ai 0.84.3 公共运行接口分别使用 `glm-5.3-flash` 和 `deepseek-v4-flash` 完成 OpenCode Go 真实网络最小对话。
+v0.38.2 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试通过会话主模型选择器验证 OpenCode Go 目录删除 `ox-alpha-free`，新增 `qwen3.8-flash`、`glm-5.3-flash`、`hy4-preview` 和 `grok-4.6`，并保留 `grok-4.5`；图片读取设置列出支持图片输入的 `qwen3.8-flash`、`glm-5.3-flash`、`grok-4.5` 和 `grok-4.6`，并排除只支持文本输入的 `hy4-preview`。实际安装的 pi-ai 0.84.3 公共运行接口分别使用 `glm-5.3-flash` 和 `deepseek-v4-flash` 完成 OpenCode Go 真实网络最小对话。
 
 ## 本地发布门禁
 

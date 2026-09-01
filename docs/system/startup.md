@@ -25,6 +25,8 @@
 主开发 checkout 保存唯一的根 `.env`、根 `node_modules` 和已准备的 DSH Desktop 底座。首次准备在主开发 checkout 根目录执行：
 
 ```sh
+(
+set -e
 mkdir -p .local/upstreams
 git clone --branch codex/configurable-mobile-bridge-port https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
 git -C .local/upstreams/dsh-desktop switch --detach 9a0a39416af44af636e426f8d627cdb80d0baa77
@@ -32,6 +34,7 @@ test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "9a0a39416af44af6
 (cd .local/upstreams/dsh-desktop && npm ci)
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
+)
 ```
 
 执行 `desktop:dependencies:link` 前，DSH Desktop 必须已经位于 `config/desktop-production.json.desktopSourceRelativePath` 指定的 `.local/upstreams/dsh-desktop`，并且已经按照 DSH Desktop 自己的 lockfile 完成依赖安装。该命令把 `config/desktop-harness-development.json` 声明的 Harness 开发依赖链接到主开发 checkout 的根 `node_modules`。
@@ -77,6 +80,8 @@ pnpm dev:stop
 生产 checkout 更新到已经发布的 Git tag 后，执行以下命令：
 
 ```sh
+(
+set -e
 pnpm prod:stop
 git fetch --tags
 git switch --detach v<版本号>
@@ -87,6 +92,7 @@ test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "9a0a39416af44af6
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
 pnpm prod:start
+)
 ```
 
 生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.38.2` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。

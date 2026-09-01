@@ -16,6 +16,8 @@ Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 Com
 仅当当前 checkout 尚不存在 `.local/upstreams/dsh-desktop` 时执行以下完整首次准备：
 
 ```sh
+(
+set -e
 mkdir -p .local/upstreams
 git clone --branch codex/configurable-mobile-bridge-port https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
 git -C .local/upstreams/dsh-desktop switch --detach 9a0a39416af44af636e426f8d627cdb80d0baa77
@@ -25,6 +27,7 @@ pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
 cp .env.example .env
 pnpm prod:start
+)
 ```
 
 `.env.example` 列出 Provider API Key、可覆盖的 Harness 业务配置，以及必须在 JSON 配置或 DSH Desktop 设置页修改的 Workspace、端口、路径和图片读取接口。

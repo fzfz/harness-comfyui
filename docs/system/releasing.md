@@ -45,6 +45,8 @@ gh release create v<版本号> \
 生产 checkout 保留本地 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。从已发布 tag 更新并启动完整 Desktop：
 
 ```sh
+(
+set -e
 pnpm prod:stop
 git fetch --tags
 git switch --detach v<版本号>
@@ -55,6 +57,7 @@ test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "9a0a39416af44af6
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
 pnpm prod:start
+)
 ```
 
 保持 `prod:start` 终端运行，在第二个终端执行：
