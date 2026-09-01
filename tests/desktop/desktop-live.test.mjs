@@ -295,6 +295,61 @@ async function openSettings(page) {
   )
 }
 
+async function openComposerModelMenu(page) {
+  await waitForValue(
+    page,
+    `(() => {
+      const trigger = [...document.querySelectorAll('button[aria-haspopup="menu"]')]
+        .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))
+      if (!trigger) return false
+      trigger.click()
+      return true
+    })()`,
+    value => value === true,
+  )
+  await waitForValue(
+    page,
+    `(() => {
+      const menu = document.querySelector('[role="menu"][aria-label="模型与推理等级"]')
+      const model = [...(menu?.querySelectorAll('[role="menuitem"]') ?? [])]
+        .find(node => node.querySelector('span')?.textContent?.trim() === '模型')
+      if (!model) return false
+      model.click()
+      return true
+    })()`,
+    value => value === true,
+  )
+  await waitForValue(
+    page,
+    `document.querySelector('[role="menu"][aria-label="模型与推理等级"] [role="searchbox"]') !== null`,
+    value => value === true,
+  )
+}
+
+async function searchComposerModels(page, query) {
+  await page.evaluate(`(() => {
+    const input = document.querySelector('[role="menu"][aria-label="模型与推理等级"] [role="searchbox"]')
+    if (!(input instanceof HTMLInputElement)) return false
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    setter?.call(input, ${JSON.stringify(query)})
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  })()`)
+  return waitForValue(
+    page,
+    `(() => {
+      const menu = document.querySelector('[role="menu"][aria-label="模型与推理等级"]')
+      const input = menu?.querySelector('[role="searchbox"]')
+      if (!(input instanceof HTMLInputElement) || input.value !== ${JSON.stringify(query)}) return null
+      return [...menu.querySelectorAll('[role="menuitemradio"]')].map(option => ({
+        name: option.getAttribute('title'),
+        openCodeGo: option.closest('[role="group"]')?.querySelector('[id$="-opencode-go"]') !== null,
+      }))
+    })()`,
+    value => value !== null,
+  )
+}
+
 async function seedSavedDesktopSession(context) {
   const fromDesktop = async name => import(pathToFileURL(
     resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
@@ -444,7 +499,7 @@ async function seedDesktopMedia(context, identity) {
 }
 
 describe('live DSH Desktop production integration', () => {
-  it('loads the project environment, workspace, Preset, and selectable image-reader Provider through preview', async () => {
+  it('loads the project environment, workspace, Preset, and corrected OpenCode Go model catalog through preview', async () => {
     const base = await loadDesktopProductionContext({ desktopSourceRoot: process.cwd() })
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
     const defaultProductionPortWasAvailable = await desktopMobilePortAvailable(43127)
@@ -523,6 +578,20 @@ describe('live DSH Desktop production integration', () => {
         .toContain(resolve(context.dshHome, 'profiles/.generations/live'))
       expect(await readFile(context.harnessLog, 'utf8')).not.toContain('migration failed')
 
+      await openComposerModelMenu(page)
+      for (const model of [
+        { id: 'qwen3.8-flash', name: 'Qwen3.8 Flash' },
+        { id: 'glm-5.3-flash', name: 'GLM-5.3-Flash (2x usage)' },
+        { id: 'hy4-preview', name: 'Hy4 preview' },
+        { id: 'grok-4.5', name: 'Grok 4.5' },
+        { id: 'grok-4.6', name: 'Grok 4.6' },
+      ]) {
+        expect(await searchComposerModels(page, model.id)).toEqual([{ name: model.name, openCodeGo: true }])
+      }
+      expect(await searchComposerModels(page, 'ox-alpha-free')).toEqual([])
+      await page.evaluate(`(document.querySelector('[role="menu"][aria-label="模型与推理等级"] [role="searchbox"]')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true)`)
+
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
         .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
@@ -551,10 +620,17 @@ describe('live DSH Desktop production integration', () => {
         model: expect.objectContaining({
           value: 'qwen3.7-plus',
           disabled: false,
-          options: expect.arrayContaining(['qwen3.7-plus']),
+          options: expect.arrayContaining([
+            'qwen3.7-plus',
+            'qwen3.8-flash',
+            'glm-5.3-flash',
+            'grok-4.5',
+            'grok-4.6',
+          ]),
         }),
         alerts: 0,
       }))
+      expect(catalog.model.options).not.toContain('ox-alpha-free')
 
       await page.evaluate(`(() => {
         const label = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
