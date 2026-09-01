@@ -101,6 +101,8 @@ v0.37.7 发布前完整 `pnpm quality` 结果为 539 项 unit/integration、27 �
 
 v0.38.0 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试使用 Browser 级 CDP 下载事件和真实鼠标事件下载媒体切换前后的两项原文件，并验证建议文件名、完成状态、接收字节数、落盘原始字节、Modal 状态、page target 数量，以及桌面与 600 × 800 viewport 的 footer 布局。
 
+v0.38.1 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Cordis scoped waterfall 测试覆盖 `ComfyUI工作台预设` 的精确系统提示词段落过滤、非匹配 Preset scope 隔离、下游异常传播和 scope 清理。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：

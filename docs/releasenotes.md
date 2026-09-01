@@ -1,3 +1,20 @@
+# Harness ComfyUI v0.38.1
+
+v0.38.1 使 `ComfyUI工作台预设` 的系统提示词只保留 ComfyUI 业务任务需要的项目自定义 persona、Skill、Tool 和运行时上下文。
+
+## ComfyUI 工作台系统提示词边界
+
+- `ComfyUI工作台预设` 新增 Preset-scoped DSH/Cordis component。该 component 从 `PromptAssembly.sections` 删除 `harness:identity`、`harness:source` 和 `app:web-surface` 三个 Harness 自维护段落。
+- 该 component 保留自定义 persona、AGENTS instructions、Tool 使用说明以及 `PromptAssembly.contexts`、`PromptAssembly.tools` 和 `PromptAssembly.variables`。
+- Harness `standard`、`minimal`、`cordis` 和其他 Agent Preset 不加载该 component；这些 Preset 的系统提示词 assembly 保持原行为。
+- 生产 Desktop、开发 Desktop 和 Web Host 的启动流程继续从同一份 canonical Agent Preset source 物化该 component 与 `ComfyUI工作台预设` composition。
+
+## 测试与发布
+
+- 真实 Cordis scoped waterfall 测试覆盖精确段落过滤、非匹配 Preset scope 隔离、下游异常原样传播、Preset scope 销毁后监听器清理和十类无效配置拒绝。
+- 完整质量门禁通过：544 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%，完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.38.0
 
 v0.38.0 为 DSH Desktop 的 Session Media Viewer 增加当前图片或视频的原文件下载功能。
