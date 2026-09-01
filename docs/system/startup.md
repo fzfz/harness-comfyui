@@ -27,6 +27,8 @@
 ```sh
 mkdir -p .local/upstreams
 git clone --branch codex/configurable-mobile-bridge-port https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
+git -C .local/upstreams/dsh-desktop switch --detach 9a0a39416af44af636e426f8d627cdb80d0baa77
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "9a0a39416af44af636e426f8d627cdb80d0baa77"
 (cd .local/upstreams/dsh-desktop && npm ci)
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
@@ -78,8 +80,9 @@ pnpm dev:stop
 pnpm prod:stop
 git fetch --tags
 git switch --detach v<版本号>
-git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git codex/configurable-mobile-bridge-port
+git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 9a0a39416af44af636e426f8d627cdb80d0baa77
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "9a0a39416af44af636e426f8d627cdb80d0baa77"
 (cd .local/upstreams/dsh-desktop && npm ci)
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link

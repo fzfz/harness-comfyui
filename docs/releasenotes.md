@@ -4,21 +4,21 @@ v0.38.2 修正 DSH Desktop 提供给 DeepSeek Harness 的 OpenCode Go 静态模�
 
 ## OpenCode Go 模型目录
 
-- DSH Desktop 继续使用 `@earendil-works/pi-ai@0.84.3`，并通过可重放的 patch-package 补丁只修改该依赖的 `dist/providers/data/opencode-go.json`。
+- DSH Desktop 提交 `9a0a39416af44af636e426f8d627cdb80d0baa77` 继续使用 `@earendil-works/pi-ai@0.84.3`，并通过可重放的 patch-package 补丁只修改该依赖的 `dist/providers/data/opencode-go.json`。
 - OpenCode Go 目录删除 `ox-alpha-free`，新增 `qwen3.8-flash`、`glm-5.3-flash`、`hy4-preview` 和 `grok-4.6`。
 - OpenCode Go 当前 `/models` 仍返回的 `grok-4.5` 保持可选；`qwen3.8-max` 和其余既有模型继续使用 pi-ai 0.84.3 的原始元数据。
 - DeepSeek Harness、`dsh-llm-pi-ai`、动态模型发现和客户端错误分类均未修改。OpenCode Go 模型选择器继续读取 DSH Desktop 提供的静态目录。
 
 ## 故障原因
 
-- DSH Desktop 固定的 pi-ai 0.84.3 静态目录仍包含 OpenCode 在 2026-08-26 退役的 `ox-alpha-free`，因此模型选择器继续显示该模型。
-- OpenCode Go 对退役模型请求返回 HTTP 401 和“模型不受支持”；当前 Harness 客户端把 HTTP 401 显示为 `AUTH` 与“API 密钥无效”。本版本通过删除失效模型目录项解除该故障，不修改框架错误分类。
+- DSH Desktop 固定的 pi-ai 0.84.3 静态目录仍包含 OpenCode Go 于 2026-08-26 退役的 `ox-alpha-free`，因此模型选择器继续显示该退役模型。
+- OpenCode Go 对 `ox-alpha-free` 请求返回 HTTP 401 和“模型不受支持”；当前 Harness UI 把该 HTTP 401 显示为 `AUTH` 与“API 密钥无效”。本版本仅从 DSH Desktop 的 OpenCode Go 静态目录删除 `ox-alpha-free`，不修改 Harness 的 HTTP 401 错误分类。
 
 ## 测试与发布
 
 - DSH Desktop 的回归测试通过公共 `getBuiltinModels('opencode-go')` 入口核对完整目录、精确新增与删除集合、所有既有模型的完整元数据、pi-ai 0.84.3 版本和唯一补丁目标。fresh `npm ci` 成功重放补丁，566 项测试、类型检查和构建全部通过。
 - Harness ComfyUI 的真实 Desktop 测试通过会话主模型选择器逐项搜索四个新增模型和保留的 `grok-4.5`，并确认 `ox-alpha-free` 不再出现；图片读取设置继续只列出支持图片输入的模型。
-- 实际安装的 pi-ai 0.84.3 公共运行接口分别使用 `glm-5.3-flash` 和 `deepseek-v4-flash` 完成最小 OpenCode Go 对话。GLM 探针曾收到两次上游 HTTP 503，后续请求成功；该瞬时故障没有被当作 API 密钥错误或目录修复失败。
+- 实际安装的 pi-ai 0.84.3 公共运行接口分别使用 `glm-5.3-flash` 和 `deepseek-v4-flash` 完成 OpenCode Go 真实网络最小对话。`glm-5.3-flash` 探针曾从 OpenCode Go 上游端点收到两次瞬时 HTTP 503，后续请求成功；HTTP 503 不属于 API 密钥错误，也不构成静态目录修复失败。
 - 完整质量门禁通过：544 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%，完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 - 本版本没有增加或升级 Harness ComfyUI 依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
 

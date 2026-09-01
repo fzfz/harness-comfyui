@@ -499,7 +499,7 @@ async function seedDesktopMedia(context, identity) {
 }
 
 describe('live DSH Desktop production integration', () => {
-  it('loads the project environment, workspace, Preset, and corrected OpenCode Go model catalog through preview', async () => {
+  it('loads project state, verifies OpenCode Go adds four models, retains grok-4.5, removes ox-alpha-free, and filters image-reader models through preview', async () => {
     const base = await loadDesktopProductionContext({ desktopSourceRoot: process.cwd() })
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
     const defaultProductionPortWasAvailable = await desktopMobilePortAvailable(43127)
@@ -591,6 +591,18 @@ describe('live DSH Desktop production integration', () => {
       expect(await searchComposerModels(page, 'ox-alpha-free')).toEqual([])
       await page.evaluate(`(document.querySelector('[role="menu"][aria-label="模型与推理等级"] [role="searchbox"]')
         ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true)`)
+      await waitForValue(
+        page,
+        `document.querySelector('[role="menu"][aria-label="模型与推理等级"] [role="searchbox"]') === null`,
+        value => value === true,
+      )
+      await page.evaluate(`(document.querySelector('[role="menu"][aria-label="模型与推理等级"]')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true)`)
+      await waitForValue(
+        page,
+        `document.querySelector('[role="menu"][aria-label="模型与推理等级"]') === null`,
+        value => value === true,
+      )
 
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
@@ -631,6 +643,7 @@ describe('live DSH Desktop production integration', () => {
         alerts: 0,
       }))
       expect(catalog.model.options).not.toContain('ox-alpha-free')
+      expect(catalog.model.options).not.toContain('hy4-preview')
 
       await page.evaluate(`(() => {
         const label = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
