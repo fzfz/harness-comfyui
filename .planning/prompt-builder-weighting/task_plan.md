@@ -40,9 +40,11 @@
 | 编写两个 Skill 的权重策略与语义文档 | complete |
 | 执行目标测试和 Skill 静态校验 | complete |
 | 完成三项独立审查 | complete |
-| 完成真实 Desktop 模型验收 | pending |
-| 更新版本与发布文档 | pending |
-| 执行最终质量门禁 | pending |
+| 完成真实 Desktop 模型验收 | complete（6/6 通过，记录已成文） |
+| 更新版本与发布文档 | complete，W3 修复复验与 v0.38.3 主线整合均已记录 |
+| 执行合并候选完整质量门禁 | complete（626/27/115/32/2） |
+| 完成合并后最终三项独立审查 | complete（Standards、Spec、Semantic 均无阻断问题） |
+| 对最终候选树无修改复跑质量门禁 | complete（626/27/115/32/2，完整审计四级均为 0） |
 | 提交、推送、发布和生产部署 | pending |
 
 ## 非本次目标
@@ -71,3 +73,13 @@
 | 更新两个规划文件的补丁在文件切换前包含空 hunk 标记 | 删除空 hunk 标记后按准确上下文重新应用补丁 |
 | `computer-use` 的 Sky 服务启动请求失败 | 不重复触发失败服务；改为调查开发 Desktop 的本地 Session 接口和既有验收路径，只有实际 UI 操作不可替代时再报告环境阻塞 |
 | 开发 Desktop 的全局 Prompt Builder 链接按项目规范解析到主开发 checkout，不读取 linked worktree 候选 | 不改写全局链接；候选通过修复复核后先创建可追溯候选提交，再按项目既有 canonical Skill 验收流程把主开发 checkout 快进到该提交 |
+| 当前 `ComfyUI工作台预设` 只向模型公开 Skill 与 Bash，没有公开 `run_skill_script` Tool | 真实验收记录如实记录模型以前台 Bash 调用 Skill 自带 `scripts/validate-output.mjs` 的命令、标准输入、退出码、标准输出和标准错误；不虚构不存在的 Tool 调用 |
+| Browser 验收页面中的第二轮校验器卡片首次因工具调用列表折叠而未匹配 | 先展开该轮工具调用列表，再读取准确的校验器命令、标准输入与标准输出；该错误没有改变 Desktop 会话状态 |
+| 查询版本引用时使用了不存在的 `CHANGELOG*` 与 `RELEASE*` glob，zsh 在执行 `rg` 前报告 `no matches found` | 改为只查询仓库中实际存在的 `package.json`、`README.md`、`docs/releasenotes.md` 和 `docs/system/*.md`；没有修改任何文件 |
+| 开发 Desktop 前台进程在执行计划要求的 `pnpm dev:stop` 后以 `SIGTERM` 和生命周期退出码 1 结束 | `pnpm dev:stop` 返回受管状态 `stopped`，第二个终端的 `pnpm dev:status` 再次确认 `stopped`；该退出是受管停止产生的预期前台进程结果 |
+| 第一次完整 `pnpm quality` 的两个真实 Desktop 测试在导入阶段找不到共享 DSH `node_modules` 中的两个入口 | 其余 626 项 unit/integration、27 项 contract/security、115 项 production 和 32 项 prototype 测试已经通过；共享 DSH 依赖当时正处于另一个已批准任务的准备窗口，当前该任务已确认 fresh `npm ci` 完成、共享 checkout 稳定且不会再修改；后置语义审查通过后重新运行完整最终门禁 |
+| 后置 Semantic Reviewer 发现 W3 把合法 UI Style 来源画师权重误写为用户明确权重 | 修正 W3 的预期与结论；相同 WAI Session 已原样重新执行 W3，模型明确区分合法 UI Style 来源与用户来源，校验器再次成功；后置复核确认 W3 修复与复验字段通过 |
+| 后置 Semantic Reviewer 发现发布文档提前使用质量门禁完成式，并发现 `progress.md` 的早期调研状态没有限定时间范围 | 合并候选完整 `pnpm quality` 已单次连续通过；发布说明与测试规范据此改为完成式，`progress.md` 已把旧状态明确限定为只读调研阶段 |
+| 发布前远端核对发现并发任务已经发布 `v0.38.2` | 把权重修复提交重放到 `origin/main@8a2b829`，保留 v0.38.2 的 OpenCode Go 目录修复与 DSH Desktop 固定提交，并把本次实际版本顺延为 `v0.38.3` |
+| 合并后第一次完整 `pnpm quality` 在 engineering baseline 的版本断言处失败 | `package.json.version` 已顺延为 `0.38.3`，同步把 `tests/contract/engineering-baseline.test.ts` 的唯一版本断言更新为 `0.38.3`；失败前 626 项 unit/integration、覆盖率与完整依赖审计均已通过，修正后重新运行合同测试和完整门禁 |
+| 合并后第二次完整 `pnpm quality` 的两项 Desktop 测试把 DSH 源路径强制指向当前独立 worktree 中不存在的 `.local/upstreams/dsh-desktop` | 按 `docs/agents/worktree-development.md` 和 `config/desktop-worktree.json.mainCheckoutPath` 恢复既有 worktree 路径解析；production Desktop 测试只替换 `desktopSource`，继续保留 production 启动模式与运行目录，managed shell 测试直接使用完整 development worktree context |

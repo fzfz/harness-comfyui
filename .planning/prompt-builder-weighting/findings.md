@@ -31,6 +31,7 @@
 - 修复为每个 Skill 增加 Skill 内 JSON 策略和 Markdown 方法，校验器读取 JSON，不解析 Markdown。
 - 修复不增加依赖，不修改生成链路、Catalog、Workflow 或生产配置。
 - 实施开始时 `origin/main` 已经发布 `v0.38.1`，因此本次修复的目标版本是 `v0.38.2`。
+- 发布前远端核对发现另一个已批准任务已经发布 `v0.38.2`。本次修复重放到 `origin/main@8a2b829` 后，实际目标版本顺延为 `v0.38.3`。
 - `v0.38.1` 的五个新增提交没有修改两个 Prompt Builder Skill 或校验器；目标实现接口与调研结论保持一致。
 - ANIMA 校验器当前把固定质量前缀保存在脚本常量中，并使用 `stripWeight()` 只辅助画师前缀检查；实现时必须把固定质量前缀与统一权重语法改为读取 ANIMA Skill 自带 JSON 策略。
 - WAI 校验器当前把 `CANONICAL_WEIGHT`、`0.25` 和 `1.5` 硬编码在脚本中，并只在 `artist` 分支调用 `validArtistFragment()`；实现时必须删除这些画师专用数值限制，让十四个 tag 位置使用同一解析器。

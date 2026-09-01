@@ -62,7 +62,7 @@ describe('DSH Desktop managed shell capability', () => {
   it('passes the project CLI capability through the real DSH bash execution path', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-managed-shell-'))
     temporaryDirectories.push(root)
-    const context = await loadDesktopWorktreeContext({ desktopSourceRoot: process.cwd() })
+    const context = await loadDesktopWorktreeContext()
     const fromDesktop = async (name: string) => import(pathToFileURL(
       resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
     ).href)

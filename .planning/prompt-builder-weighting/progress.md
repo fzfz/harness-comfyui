@@ -17,6 +17,7 @@
 - 用户已通过“批准完整方案”授权实施、测试、审查、提交、发布和生产部署。
 - 已读取本轮适用的 `planning-with-files`、`skill-creator`、`writing-for-agents`、`team-mode` 和 `stop-that-shit`。
 - 已把独立分支从调研基线快进到 `origin/main@dfc480d0200b92da9a0027c6cd14f996dd7663b5`；该基线已经发布 `v0.38.1`，本次目标版本顺延为 `v0.38.2`。
+- 发布前远端核对发现另一个已批准任务已经把 `origin/main` 推进到 `8a2b829` 并发布 `v0.38.2`。当前权重修复提交已经重放到该最新主线，实际发布版本顺延为 `v0.38.3`；v0.38.2 的 OpenCode Go 目录修复、DSH Desktop 固定提交和发布记录全部保留。
 - 当前开始编写自动化测试与两个校验器。
 - 已新增两个 `prompt-weight-policy.json` 和目标单元测试。
 - 首次运行 `pnpm vitest` 因独立 worktree 尚未链接 `node_modules` 而失败；直接调用主 checkout Vitest 时，ESM 仍从 worktree 解析依赖并失败。没有安装或复制依赖，后续按照 `docs/agents/worktree-development.md` 运行 `dev:start` 建立受控链接。
@@ -41,9 +42,36 @@
 - 第二轮 Semantic 修复复核发现 ANIMA 仍存在解析后修剪 payload 的冲突指令，并发现两个方法文件的“被标记 payload”步骤和旧完成条件会覆盖来源权重或漏算来源强调。
 - 已删除 ANIMA 对权重外层内部 payload 的解析后修剪；两个方法现在遍历全部保留 payload，按照用户权重、合法来源形式、作用与主视觉锚点的顺序一次性生成最终外层，并在完成条件中使用全部非用户权重的统计口径。
 - 新的 Standards、Spec 和 Semantic 修复复核均确认没有剩余阻断问题。候选实现与语义文档审查阶段完成。
+- 已把实现与规划文件创建为候选检查点提交 `3840659`，并把主开发 checkout 快进到该提交，使项目规定的全局 Skill 链接向开发 Desktop 暴露同一候选内容；尚未推送远端。
+- 当前 `ComfyUI工作台预设` 只向模型公开 Skill 与 Bash，没有公开 `run_skill_script` Tool。真实验收使用模型以前台 Bash 调用相同的 Skill 自带校验脚本，并在验收记录中保存实际命令、标准输入、退出码、标准输出和标准错误。
+- DeepSeek V4 Flash / Default 的 ANIMA 用例 1 已通过：普通 tag `(chibi:2)`、未加权画师 `@fukahire` 和显式权重画师 `(@say_hana:2)` 进入正确槽位，其他无竞争 tag 保持未加权，校验器返回 `result: success`。
+- DeepSeek V4 Flash / Default 的 ANIMA 用例 2 已通过：Style 文本 `@fukahire, (@say_hana:2)` 按分段外部空白、外层解析、单个 `@` 规范化和来源权重恢复顺序生成两个元素，weight `2` 逐字符保留，校验器返回 `result: success`。
+- 当前开始执行 WAI 显式权重、画师作用权重与稀疏提示词用例；全部六个用例完成后统一编写可复核验收记录。
+- DeepSeek V4 Flash / Default 的 WAI 用例 3 已通过：合法 UI Style 来源画师 `(say_hana:1.1)` 与用户明确 lighting tag `(rim lighting:1.2)` 位于正确位置，两个来源的数值均逐字符保留，其他内容保持未加权，校验器返回 `result: success` 和退出码 0。
+- 当前执行 WAI 用例 4，验证中性、主要、辅助画师的三种作用形式以及重复来源在最终外层生成前完成去重。
+- DeepSeek V4 Flash / Default 的 WAI 用例 4 已通过：重复 `say_hana` 来源在生成外层前删除；最终 `artist` 为主要 `(say_hana:1.1)`、中性 `fukahire` 与辅助 `(alzi xiaomi:0.8)`，校验器返回 `result: success` 和退出码 0。
+- 当前并行执行 ANIMA 与 WAI 的稀疏未加权用例。WAI 用例明确不采用画师，ANIMA 用例按照自身无画师输入流程处理；两者都要求默认质量段和无竞争内容保持未加权。
+- DeepSeek V4 Flash / Default 的 WAI 用例 6 已通过：`artist` 留空，默认质量段和其他全部 tag 均未加权，校验器返回 `result: success` 和退出码 0。
+- DeepSeek V4 Flash / Default 的 ANIMA 用例 5 已通过：Skill 按无画师输入流程查询并采用 `@lpip`，画师和全部普通 tag 均保持未加权，校验器返回 `result: success`。
+- 六个真实模型用例全部通过。已执行 `pnpm dev:stop`，受管进程返回 `stopped`；随后执行 `pnpm dev:status` 再次确认 `stopped`。开发 Desktop 前台进程因受管 `SIGTERM` 结束，端口已经释放。
+- 当前开始把两个真实 Session 的完整用户请求、文件读取、校验器命令、标准输入、退出码、标准输出和结论写入 `model-acceptance.md`。
+- 已完成 `.planning/prompt-builder-weighting/model-acceptance.md`，六个用例逐项保存配置、完整请求、预期、实际读取、实际 Bash 校验器调用、标准输入、退出码、标准输出、标准错误、最终 Prompt 和结论；记录明确说明当前 Preset 没有 `run_skill_script` Tool。
+- 已把产品版本更新为 `0.38.3`，在 `docs/releasenotes.md` 顶部新增本次发布说明并保留 v0.38.2 发布说明，同时更新 `README.md`、`docs/system/testing.md`、`docs/system/releasing.md` 与 `docs/system/startup.md` 的当前版本信息和验收引用；没有修改 `pnpm-lock.yaml`。
+- 第一次完整 `pnpm quality` 的依赖审计、Harness 边界、类型检查、626 项 unit/integration、27 项 contract/security、115 项 production 和 32 项 prototype 测试通过；覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%，依赖审计为四个等级全部 0。
+- 第一次完整 `pnpm quality` 的两个真实 Desktop 测试在导入阶段找不到共享 DSH `node_modules` 中的 `dsh-session` 与 `dsh-system-prompt` 入口。另一个已批准任务确认该时段正在准备共享 DSH 依赖；当前 fresh `npm ci` 已完成，共享 checkout 稳定且不再修改。本次候选没有因该环境失败修改实现。
+- 两个 Skill 的 `quick_validate.py`、82 项目标单元测试、manifest-lock 一致性和 `git diff --check` 再次通过。当前由独立 Semantic Reviewer 核对真实模型验收记录、发布说明、测试规范和版本文案。
+- 后置 Semantic Reviewer 确认六个用例字段齐全、Bash 等价调用记录真实、发布文档链接和版本文案正确，但发现 W3 把 UI Style 来源的 `(say_hana:1.1)` 错写为用户明确权重。
+- 已把 W3 的来源修正为“用户明确 lighting 权重 `(rim lighting:1.2)`”与“合法 UI Style 来源画师权重 `(say_hana:1.1)`”。DeepSeek V4 Flash / Default 已在相同 WAI Session 中原样重跑 W3，重新读取两个权重规范并明确区分两个来源；校验器再次返回 `result: success` 和退出码 0。后置 Semantic Reviewer 已确认 W3 修正文案与复验记录通过。
+- W3 复验完成后已执行 `pnpm dev:stop`，受管进程返回 `stopped`；随后执行 `pnpm dev:status` 再次确认 `stopped`。开发 Desktop 前台进程因受管 `SIGTERM` 结束。
+- 合并最新主线后的第一次完整 `pnpm quality` 已再次通过依赖审计、Harness 边界、类型检查、626 项 unit/integration 与覆盖率；合同测试中的唯一失败是 engineering baseline 仍把产品版本固定为 `0.38.2`。计划执行者已把该唯一版本断言同步为 `0.38.3`，当前重新运行合同测试和完整门禁。
+- engineering baseline 的 6 项目标合同测试通过。第二次完整门禁继续通过 626 项 unit/integration、27 项 contract/security、115 项 production 和 32 项 prototype，最后两项 Desktop 测试因 v0.38.2 新增测试把 DSH 源路径强制指向独立 worktree 内不存在的 `.local/upstreams/dsh-desktop` 而失败。计划执行者已让两项测试按照 worktree 配置读取主 checkout 的 DSH 底座；production Desktop 测试仍使用 production 启动模式。
+- 两项 Desktop 目标测试在路径修正后通过，并实际使用主 checkout 中固定为 `9a0a39416af44af636e426f8d627cdb80d0baa77` 的 DSH Desktop 启动 production preview。
+- 合并候选的完整 `pnpm quality` 已单次连续通过：626 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%，完整依赖审计为 critical 0、high 0、moderate 0、low 0。当前开始合并后最终 Standards、Spec 与 Semantic 三项独立审查；三项审查通过后将对最终候选树无修改复跑完整门禁并执行 `git diff --check`。
+- 合并后最终 Standards、Spec 与 Semantic 三项独立审查全部通过，没有发现阻断问题。Standards 审查确认两项 Desktop 测试路径修正符合 `config/desktop-worktree.json.mainCheckoutPath` 与独立 worktree 隔离规范；Spec 审查确认权重合同、82 项测试、六个模型用例、W3 复验和 v0.38.3 顺延符合实施方案；Semantic 审查确认版本、链接、测试数字、主体、时序和状态一致。当前执行最终完整质量门禁。
+- 三项独立审查后的完整 `pnpm quality` 再次单次连续通过 626 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试；覆盖率与依赖审计结果保持不变。计划执行者已把该结果写入计划状态，接下来对这棵不再修改的候选树执行最后一次完整门禁与 `git diff --check`，随后直接提交。
 
 ## 验证记录
 
 - 已确认实施方案列出的现有文件全部存在。
 - 已确认 Skill Creator `quick_validate.py` 的本机路径存在。
-- 没有运行产品测试、Desktop、发布或部署命令。
+- 只读调研阶段当时没有运行产品测试、Desktop、发布或部署命令；用户批准完整方案后，实施阶段已经运行目标测试、完整质量门禁尝试和真实 Desktop 模型验收，尚未执行发布或生产部署命令。

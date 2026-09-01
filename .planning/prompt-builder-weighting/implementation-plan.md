@@ -358,10 +358,10 @@ WAI JSON 必须使用下列 Skill 专用字段和值：
 
 ### 6. 更新版本与发布文档
 
-当前实施基线版本为 `0.38.1`。计划执行者必须准备 `0.38.2`：
+实施开始时的基线版本为 `0.38.1`；发布前 `v0.38.2` 已由并发任务占用。计划执行者必须基于最新 `origin/main` 准备 `0.38.3`：
 
-- 把 `package.json.version` 更新为 `0.38.2`；
-- 在 `docs/releasenotes.md` 顶部新增 v0.38.2 权重校验、槽位权重方法、测试、真实模型验收和无依赖变更说明；
+- 把 `package.json.version` 更新为 `0.38.3`；
+- 在 `docs/releasenotes.md` 顶部新增 v0.38.3 权重校验、槽位权重方法、测试、真实模型验收和无依赖变更说明，同时保留 v0.38.2 发布说明；
 - 在 `docs/system/testing.md` 记录最终自动化测试数量、覆盖率、真实 Desktop 权重用例和依赖审计结果；
 - 只有现有 README 出现与权重合同冲突的内容时才修改 `README.md`。当前 README 没有 Prompt Builder 权重说明，因此本方案不预设 README 修改。
 
@@ -439,7 +439,7 @@ git diff --check
 1. 提交最终候选树并推送最终提交；
 2. 确认本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA；
 3. 确认目标 tag 与 GitHub Release 尚不存在；
-4. 创建并推送 `v0.38.2` annotated tag；
+4. 创建并推送 `v0.38.3` annotated tag；
 5. 使用 `docs/releasenotes.md` 创建无附件 GitHub Release；
 6. 从已发布 tag 更新生产 checkout，保留生产 `.env` 和运行数据；
 7. 按发布文档启动生产 Desktop，执行 `pnpm prod:status` 和 `pnpm prod:logs`；

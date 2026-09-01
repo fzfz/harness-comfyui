@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   desktopWorktreeStatus,
   loadDesktopProductionContext,
+  loadDesktopWorktreeContext,
   startDesktopWorktree,
   stopDesktopWorktree,
 } from '../../scripts/desktop/worktree.mjs'
@@ -500,7 +501,11 @@ async function seedDesktopMedia(context, identity) {
 
 describe('live DSH Desktop production integration', () => {
   it('loads project state, verifies OpenCode Go adds four models, retains grok-4.5, removes ox-alpha-free, and filters image-reader models through preview', async () => {
-    const base = await loadDesktopProductionContext({ desktopSourceRoot: process.cwd() })
+    const developmentContext = await loadDesktopWorktreeContext()
+    const base = {
+      ...await loadDesktopProductionContext(),
+      desktopSource: developmentContext.desktopSource,
+    }
     expect(await desktopWorktreeStatus(base)).toEqual({ status: 'stopped' })
     const defaultProductionPortWasAvailable = await desktopMobilePortAvailable(43127)
     let mobileBridgePort = await findFreePort()

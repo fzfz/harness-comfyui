@@ -1,3 +1,29 @@
+# Harness ComfyUI v0.38.3
+
+v0.38.3 修复 ANIMA 与 WAI Prompt Builder 对普通 tag 和画师 tag 权重形式的错误拒绝，并为两个 Skill 增加按槽位或位置设计权重的理论、步骤与规范。
+
+## Prompt Builder 权重合同
+
+- ANIMA 前十一个 tag 槽位与 WAI 前十四个 tag 位置现在统一接受未加权 `payload`、默认权重 `(payload)` 和显式权重 `(payload:weight)`；ANIMA `natural_language` 与 WAI `relation_narrative` 继续保存关系文本，不应用 tag 权重外层。
+- 两个校验器使用各自 Skill 内的 `prompt-weight-policy.json` 作为结构化单一来源，按同一 ASCII 十进制文法检查显式权重，要求数值有限且大于 0，并逐字符保留合法 weight 原文。
+- 两个校验器按从左到右的转义对识别 payload 内的反斜杠、圆括号和方括号，拒绝未知转义、尾随反斜杠、未闭合外层、嵌套权重和外层内未转义的定界符。
+- ANIMA `artist_style` 在解析权重外层后检查 payload 恰好以一个 `@` 开头。WAI `artist` 与普通 tag 使用同一个权重解析器；画师身份、来源、去重和一名画师对应一个数组元素继续由 Skill 执行者与语义自检负责。
+- ANIMA 固定质量前缀和 WAI 默认质量段保持未加权；用户新增的其他质量 payload 可以使用合法权重外层。
+
+## 槽位权重方法
+
+- 两个 Skill 新增 `references/prompt-weighting.md`，为 ANIMA 十二槽和 WAI 十五位置逐项定义权重适用条件、来源优先级、冲突与重复删除顺序、强调预算和最终自检。
+- Skill 执行者先确定完整 payload，再删除互斥、重复和同义视觉决定，最后按照“用户合法显式数值、合法 Character 或 Style 来源、主要或辅助作用、主视觉锚点、未加权”的顺序生成一次最终外层。
+- 除用户明确提供权重以外，合法来源与自主设计产生的高于中性强度决定共同计入每个 Prompt 的默认强调预算；无竞争内容保持未加权，Skill 不为每个槽位机械增加权重。
+- ANIMA 与 WAI 分别从各自 JSON 策略读取模型专用推荐档位。两个 Skill 不共享模型专用数值，Markdown 只引用 JSON 属性路径，不复制推荐数值。
+
+## 验收与发布
+
+- 新增 82 项 Prompt Builder 权重单元测试，覆盖两个公开校验函数与 CLI 的成功、拒绝、转义、画师、固定质量、组合顺序、退出码和错误合同。
+- `ComfyUI工作台预设` 使用 `opencode-go/deepseek-v4-flash` 与 `Default` 推理等级完成六个真实模型用例：ANIMA 普通 tag 与两种画师形式、ANIMA Style 来源权重、WAI 普通 tag 与画师显式权重、WAI 主要/中性/辅助画师与去重，以及两个 Skill 的稀疏未加权 Prompt。完整请求、实际文件读取、校验器标准输入、退出码、标准输出和停止状态记录在 [`.planning/prompt-builder-weighting/model-acceptance.md`](../.planning/prompt-builder-weighting/model-acceptance.md)。
+- 完整 `pnpm quality` 门禁通过：626 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%，完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.38.2
 
 v0.38.2 修正 DSH Desktop 提供给 DeepSeek Harness 的 OpenCode Go 静态模型目录，使模型选择器不再列出已经退役的 `ox-alpha-free`。
