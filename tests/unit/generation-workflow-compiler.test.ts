@@ -2876,6 +2876,7 @@ describe('ComfyWorkflowCompiler', () => {
     ['FLOAT accepts its exact minimum', ['FLOAT', { min: -1.25, max: 10.5 }], -1.25],
     ['FLOAT accepts its exact maximum', ['FLOAT', { min: -1.25, max: 10.5 }], 10.5],
     ['STRING accepts a string outside UI metadata options', ['STRING', { options: ['listed'] }], 'unlisted'],
+    ['STRING accepts a string outside UI metadata choices', ['STRING', { choices: ['listed'] }], 'unlisted'],
     ['INT ignores UI metadata options', ['INT', { min: 0, max: 10, options: [1, 2] }], 7],
     ['AUTOCOMPLETE_TEXT_LORAS accepts a string', ['AUTOCOMPLETE_TEXT_LORAS', {}], '<lora:model:1>'],
     ['BOOLEAN accepts a boolean', ['BOOLEAN', {}], false],
@@ -3104,6 +3105,8 @@ describe('ComfyWorkflowCompiler', () => {
     ['a mixed legacy candidate without string case folding', [['Exact', 1], {}], 'Exact', 'Exact'],
     ['a COMBO object option independent of key insertion order', ['COMBO', { options: [{ id: 1, labels: ['a'] }, 2] }], { labels: ['a'], id: 1 }, { id: 1, labels: ['a'] }],
     ['an array that is itself a single-select COMBO option', ['COMBO', { options: [['a', 'b'], 'other'] }], ['a', 'b'], ['a', 'b']],
+    ['a scalar COMBO option when non-standard multi_select is true', ['COMBO', { options: ['a', 'b'], multi_select: true }], 'a', 'a'],
+    ['a scalar COMBO option when non-standard multi_select is an object', ['COMBO', { options: ['a', 'b'], multi_select: { enabled: true } }], 'a', 'a'],
     ['an empty multiselect COMBO value', ['COMBO', { options: ['a', 'b'], multiselect: true }], [], []],
     ['every member of a multiselect COMBO', ['COMBO', { options: ['a', 'b', 'c'], multiselect: true }], ['a', 'c'], ['a', 'c']],
   ])('accepts %s through JSON-deep candidate matching', async (_label, inputDescriptor, suppliedValue, expectedValue) => {
@@ -3178,6 +3181,8 @@ describe('ComfyWorkflowCompiler', () => {
     ['a legacy candidate with a different JSON type', [[1, 2], {}], '2'],
     ['a mixed legacy string candidate that differs only by case', [['Exact', 1], {}], 'exact'],
     ['an absent COMBO object option', ['COMBO', { options: [{ id: 1 }] }], { id: 2 }],
+    ['an array supplied when non-standard multi_select is true', ['COMBO', { options: ['a', 'b'], multi_select: true }], ['a']],
+    ['an array supplied when non-standard multi_select is an object', ['COMBO', { options: ['a', 'b'], multi_select: { enabled: true } }], ['a']],
     ['a scalar supplied to a multiselect COMBO', ['COMBO', { options: ['a', 'b'], multiselect: true }], 'a'],
     ['an absent member supplied to a multiselect COMBO', ['COMBO', { options: ['a', 'b'], multiselect: true }], ['a', 'c']],
   ])('rejects %s', async (_label, inputDescriptor, suppliedValue) => {

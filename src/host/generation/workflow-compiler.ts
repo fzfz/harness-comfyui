@@ -774,22 +774,14 @@ function runtimeParameterContractFromDescriptor(
       return malformed('COMBO.options must be an array.')
     }
     if (Array.isArray(options.options)) {
-      const legacyMultiSelect = options.multi_select
       if (Object.hasOwn(options, 'multiselect') && typeof options.multiselect !== 'boolean') {
         return malformed('COMBO.multiselect must be a boolean when present.')
-      }
-      if (legacyMultiSelect !== undefined
-        && typeof legacyMultiSelect !== 'boolean'
-        && optionalRecord(legacyMultiSelect) === undefined) {
-        return malformed('COMBO.multi_select must be a boolean or object when present.')
       }
       return {
         kind: 'choices',
         values: options.options as readonly JsonValue[],
         stringCaseFold: options.options.every(value => typeof value === 'string'),
-        multiselect: options.multiselect === true
-          || legacyMultiSelect === true
-          || (legacyMultiSelect !== null && typeof legacyMultiSelect === 'object' && !Array.isArray(legacyMultiSelect)),
+        multiselect: options.multiselect === true,
         numericSources,
       }
     }

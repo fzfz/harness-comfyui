@@ -107,6 +107,8 @@ v0.38.2 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 �
 
 v0.38.3 发布前完整 `pnpm quality` 结果为 626 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。新增的 82 项单元测试覆盖 ANIMA 前十一个 tag 槽位与 WAI 前十四个 tag 位置的三种权重形式、ASCII 十进制文法、转义、画师、默认质量、组合顺序、CLI 退出码和错误合同。`ComfyUI工作台预设` 使用 `opencode-go/deepseek-v4-flash` 与 `Default` 推理等级完成六个真实 Prompt Builder 权重用例；完整证据记录在 [`.planning/prompt-builder-weighting/model-acceptance.md`](../../.planning/prompt-builder-weighting/model-acceptance.md)。
 
+2026-09-02 未发布的 ComfyUI 运行参数合同候选树完整 `pnpm quality` 结果为 742 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.39%、branches 87.2%、functions 100%、lines 95.9%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。运行参数合同测试覆盖严格 JSON 标量类型、精确整数与浮点范围、旧式候选、`COMBO.options`、仅由 `COMBO.multiselect: true` 启用的多选、动态分支子输入、未知自定义 widget 拒绝和 Actual Workflow 原子写入。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：
