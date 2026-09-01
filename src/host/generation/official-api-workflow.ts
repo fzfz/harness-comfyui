@@ -262,6 +262,10 @@ export function overlayRuntimeApiWorkflow(officialBase: JsonObject, runtimeProje
         runtimeError('COMFYUI_API_WORKFLOW_OVERLAY_FAILED', `Official API Workflow node "${nodeId}" does not contain runtime input "${inputName}".`)
       }
       const officialValue = officialInputs[inputName]
+      if (isRecord(officialValue) && Object.hasOwn(officialValue, '__value__')) {
+        ;(officialValue as MutableJsonObject).__value__ = structuredClone(runtimeValue)
+        continue
+      }
       const runtimeConnection = isConnectionTuple(runtimeValue)
       const officialConnection = isConnectionTuple(officialValue)
       if (runtimeConnection || officialConnection) {
@@ -270,11 +274,7 @@ export function overlayRuntimeApiWorkflow(officialBase: JsonObject, runtimeProje
         }
         continue
       }
-      if (isRecord(officialValue) && Object.hasOwn(officialValue, '__value__')) {
-        ;(officialValue as MutableJsonObject).__value__ = structuredClone(runtimeValue)
-      } else {
-        ;(officialInputs as MutableJsonObject)[inputName] = structuredClone(runtimeValue)
-      }
+      ;(officialInputs as MutableJsonObject)[inputName] = structuredClone(runtimeValue)
     }
   }
   return result

@@ -554,6 +554,65 @@ describe('runtime API Workflow overlay', () => {
     })
   })
 
+  it('prioritizes an official __value__ literal wrapper over a connection-shaped runtime array', () => {
+    const official = {
+      '1': {
+        class_type: 'LiteralNode',
+        inputs: { pair: { __value__: ['template-literal', 0] } },
+      },
+    } as const
+    const projection = {
+      '1': {
+        class_type: 'LiteralNode',
+        inputs: { pair: ['runtime-literal', 1] },
+      },
+    } as const
+
+    expect(overlayRuntimeApiWorkflow(official, projection)).toEqual({
+      '1': {
+        class_type: 'LiteralNode',
+        inputs: { pair: { __value__: ['runtime-literal', 1] } },
+      },
+    })
+  })
+
+  it('preserves a numeric connection-shaped array as a wrapped literal value', () => {
+    const official = {
+      '1': {
+        class_type: 'LiteralNode',
+        inputs: { pair: { __value__: [0, 0] } },
+      },
+    } as const
+    const projection = {
+      '1': {
+        class_type: 'LiteralNode',
+        inputs: { pair: [12, 0] },
+      },
+    } as const
+
+    expect(overlayRuntimeApiWorkflow(official, projection)).toEqual({
+      '1': {
+        class_type: 'LiteralNode',
+        inputs: { pair: { __value__: [12, 0] } },
+      },
+    })
+  })
+
+  it.each([
+    [
+      { '1': { class_type: 'LiteralNode', inputs: { source: ['2', 0] } } },
+      { '1': { class_type: 'LiteralNode', inputs: { source: 'literal' } } },
+    ],
+    [
+      { '1': { class_type: 'LiteralNode', inputs: { source: 'literal' } } },
+      { '1': { class_type: 'LiteralNode', inputs: { source: ['2', 0] } } },
+    ],
+  ] as const)('rejects a connection tuple present on only one side of the overlay', (official, projection) => {
+    expect(() => overlayRuntimeApiWorkflow(official, projection)).toThrowError(expect.objectContaining({
+      code: 'COMFYUI_API_WORKFLOW_OVERLAY_FAILED',
+    }))
+  })
+
   it.each([
     [{ '2': { class_type: 'PromptNode', inputs: { text: 'changed' } } }, 'missing runtime node'],
     [{ '1': { class_type: 'WrongType', inputs: { text: 'changed' } } }, 'class type mismatch'],

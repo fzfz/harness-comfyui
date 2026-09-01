@@ -173,6 +173,18 @@ describe('native Generation result drawer', () => {
     ])).not.toMatch(/binding|模板参数|参数 ID/u)
   })
 
+  it('exposes separate catalog entries for local invalid, local unsupported, and remote rejected contracts', () => {
+    expect(GENERATION_ERROR_COPY).toHaveProperty('GENERATION_PARAMETER_INVALID')
+    expect(GENERATION_ERROR_COPY).toHaveProperty('GENERATION_PARAMETER_CONTRACT_UNSUPPORTED')
+    expect(GENERATION_ERROR_COPY).toHaveProperty('COMFYUI_PROMPT_REJECTED')
+    expect(GENERATION_ERROR_COPY.GENERATION_PARAMETER_INVALID)
+      .not.toBe(GENERATION_ERROR_COPY.GENERATION_PARAMETER_CONTRACT_UNSUPPORTED)
+    expect(GENERATION_ERROR_COPY.COMFYUI_PROMPT_REJECTED)
+      .not.toBe(GENERATION_ERROR_COPY.GENERATION_PARAMETER_INVALID)
+    expect(GENERATION_ERROR_COPY.COMFYUI_PROMPT_REJECTED)
+      .not.toBe(GENERATION_ERROR_COPY.GENERATION_PARAMETER_CONTRACT_UNSUPPORTED)
+  })
+
   it('keeps the blank Session overlay narrower than the shared result drawer', () => {
     const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
     expect(styles).toContain('.harness-comfyui-results-drawer.harness-comfyui-results-overlay {')

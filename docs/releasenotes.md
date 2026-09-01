@@ -1,3 +1,13 @@
+# 未发布变更
+
+## ComfyUI 运行参数合同
+
+- Workflow compiler 在写入 Actual Workflow 和提交 Prompt 前，依据目标实例实时 `/object_info` 校验每一个运行参数的 JSON 类型、整数性、精确数值范围、候选集合、`COMBO.multiselect` 数组成员和动态分支子输入合同。
+- 数值合同保留 `/object_info` 原始 JSON 十进制令牌，因此能够在 JavaScript 非安全整数范围内拒绝超过目标 `INT.max` 的实际发送值；生产故障中的 Seed `12130929238470859000` 会在 Harness 内返回 `GENERATION_PARAMETER_INVALID`，不会提交给 ComfyUI。
+- 未公开机器可判定合同的自定义 widget 只允许保持当前值；修改该值会返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`。目标节点的自定义 Python 校验仍由 ComfyUI 执行。
+- 完整 `pnpm quality` 门禁通过：742 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.39%、branches 87.2%、functions 100%、lines 95.9%，完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。独立 Desktop 验收使用 worktree 内隔离测试 workspace，没有读取或启动真实生产目录。
+- 本变更没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。
+
 # Harness ComfyUI v0.38.3
 
 v0.38.3 修复 ANIMA 与 WAI Prompt Builder 对普通 tag 和画师 tag 权重形式的错误拒绝，并为两个 Skill 增加按槽位或位置设计权重的理论、步骤与规范。

@@ -97,6 +97,21 @@ function createCompiler(
 }
 
 describe('ComfyWorkflowCompiler', () => {
+  it('receives exact numeric source tokens from the supported JSON.parse reviver contract', () => {
+    type ParseWithSource = (
+      text: string,
+      reviver: (this: unknown, key: string, value: unknown, context?: { readonly source?: string }) => unknown,
+    ) => unknown
+    const sources: string[] = []
+    const parsed = (JSON.parse as ParseWithSource)('{"integer":9223372036854775807,"decimal":1.0}', function (_key, value, context) {
+      if (typeof value === 'number') sources.push(context?.source ?? '')
+      return value
+    })
+
+    expect(parsed).toEqual({ integer: 9223372036854776000, decimal: 1 })
+    expect(sources).toEqual(['9223372036854775807', '1.0'])
+  })
+
   it('uses the official finalizer output and preserves an official virtual connection rewrite', async () => {
     const officialApiWorkflowCompiler = {
       compile: vi.fn(async input => {
@@ -388,6 +403,94 @@ describe('ComfyWorkflowCompiler', () => {
     now += 1
     await compiler.compile(input)
     expect(fetchImplementation).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps exact numeric source metadata with first fetch, cache hit, and TTL refresh snapshots', async () => {
+    let now = 1_000
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 31,
+      type: 'SeedNode',
+      mode: 0,
+      inputs: [{ name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } }],
+      outputs: [],
+      widgets_values: [1, 'fixed'],
+    })
+    const definitionsJson = (maximum: string) => JSON.stringify({
+      ...objectInfo,
+      SeedNode: {
+        input: { required: { seed: ['INT', { min: 0, max: '__MAXIMUM__' }] } },
+        input_order: { required: ['seed'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__MAXIMUM__"', maximum)
+    const fetchImplementation = vi.fn()
+      .mockResolvedValueOnce(new Response(definitionsJson('9223372036854775807'), { status: 200 }))
+      .mockResolvedValueOnce(new Response(definitionsJson('12130929238470859000'), { status: 200 }))
+    const compiler = createCompiler({ fetchImplementation, now: () => now })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { seed: 12130929238470859000 },
+      loras: [],
+    } as const
+
+    await expect(compiler.compile(input)).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+    now += 599_999
+    await expect(compiler.compile(input)).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+    expect(fetchImplementation).toHaveBeenCalledOnce()
+
+    now += 1
+    await expect(compiler.compile(input)).resolves.toMatchObject({
+      actualWorkflow: expect.objectContaining({
+        nodes: expect.arrayContaining([expect.objectContaining({ id: 31, widgets_values: [12130929238470859000, 'fixed'] })]),
+      }),
+    })
+    expect(fetchImplementation).toHaveBeenCalledTimes(2)
+  })
+
+  it('shares one exact numeric metadata snapshot across concurrent compiles', async () => {
+    let releaseRequest!: () => void
+    const requestGate = new Promise<void>(resolve => { releaseRequest = resolve })
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 31,
+      type: 'SeedNode',
+      mode: 0,
+      inputs: [{ name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } }],
+      outputs: [],
+      widgets_values: [1, 'fixed'],
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      SeedNode: {
+        input: { required: { seed: ['INT', { min: 0, max: '__MAX_SEED__' }] } },
+        input_order: { required: ['seed'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__MAX_SEED__"', '9223372036854775807')
+    const fetchImplementation = vi.fn(async () => {
+      await requestGate
+      return new Response(nodeDefinitionsJson, { status: 200 })
+    })
+    const compiler = createCompiler({ fetchImplementation })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { seed: 12130929238470859000 },
+      loras: [],
+    } as const
+
+    const compiles = Array.from({ length: 10 }, async () => compiler.compile(input))
+    releaseRequest()
+    const results = await Promise.allSettled(compiles)
+
+    expect(results).toHaveLength(10)
+    expect(results.every(result => result.status === 'rejected'
+      && (result.reason as { code?: string }).code === 'GENERATION_PARAMETER_INVALID')).toBe(true)
+    expect(fetchImplementation).toHaveBeenCalledOnce()
   })
 
   it('isolates object_info cache entries by instance identity and URL', async () => {
@@ -2518,6 +2621,10 @@ describe('ComfyWorkflowCompiler', () => {
       ['aspect_ratio', 114, '1:1'],
       ['megapixels', 115, 1],
     ] as const
+    const controlType = (kind: string, initial: string | number): 'INT' | 'FLOAT' | 'STRING' => {
+      if (typeof initial === 'string') return 'STRING'
+      return ['cfg', 'denoise', 'megapixels'].includes(kind) ? 'FLOAT' : 'INT'
+    }
     const actual: UiWorkflow = {
       version: 0.4,
       nodes: [
@@ -2526,7 +2633,7 @@ describe('ComfyWorkflowCompiler', () => {
           type: `Control${id}`,
           title: kind,
           mode: 0,
-          inputs: [{ name: kind, type: 'ANY', link: null, widget: { name: kind } }],
+          inputs: [{ name: kind, type: controlType(kind, initial), link: null, widget: { name: kind } }],
           outputs: [],
           widgets_values: [initial],
         })),
@@ -2541,10 +2648,10 @@ describe('ComfyWorkflowCompiler', () => {
       ],
       links: [],
     }
-    const definitions = Object.fromEntries(controls.map(([kind, id]) => [
+    const definitions = Object.fromEntries(controls.map(([kind, id, initial]) => [
       `Control${id}`,
       {
-        input: { required: { [kind]: ['ANY', {}] } },
+        input: { required: { [kind]: [controlType(kind, initial), {}] } },
         input_order: { required: [kind], optional: [] },
         output_node: false,
       },
@@ -2650,6 +2757,1155 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['42']).toMatchObject({ inputs: { method: 'mkl' } })
   })
 
+  it('rejects the production SeedNode value above its exact live maximum before official compilation', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 31,
+      type: 'SeedNode',
+      mode: 0,
+      inputs: [{ name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } }],
+      outputs: [],
+      widgets_values: [1, 'fixed'],
+      widgets_values_named: { seed: 1 },
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      SeedNode: {
+        input: { required: { seed: ['INT', { min: 0, max: '__MAX_SEED__', control_after_generate: 'fixed' }] } },
+        input_order: { required: ['seed'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__MAX_SEED__"', '9223372036854775807')
+    const officialApiWorkflowCompiler = {
+      compile: vi.fn(async input => ({
+        apiWorkflow: input.runtimeProjection,
+        cacheKey: 'test-cache-key',
+        cacheStatus: 'miss' as const,
+      })),
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(nodeDefinitionsJson, { status: 200 })),
+      officialApiWorkflowCompiler,
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { seed: 12130929238470859000 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: expect.stringContaining('maximum 9223372036854775807'),
+    })
+    expect(officialApiWorkflowCompiler.compile).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['INT fractional number', ['INT', { min: 0, max: 100 }], 1.5],
+    ['INT string', ['INT', { min: 0, max: 100 }], '1'],
+    ['INT boolean', ['INT', { min: 0, max: 100 }], true],
+    ['INT null', ['INT', { min: 0, max: 100 }], null],
+    ['INT array', ['INT', { min: 0, max: 100 }], [1]],
+    ['INT object', ['INT', { min: 0, max: 100 }], { value: 1 }],
+    ['INT NaN', ['INT', { min: 0, max: 100 }], Number.NaN],
+    ['INT negative infinity', ['INT', { min: 0, max: 100 }], Number.NEGATIVE_INFINITY],
+    ['INT non-finite number', ['INT', { min: 0, max: 100 }], Number.POSITIVE_INFINITY],
+    ['INT below minimum', ['INT', { min: -2, max: 100 }], -3],
+    ['INT above maximum', ['INT', { min: 0, max: 100 }], 101],
+    ['FLOAT string', ['FLOAT', { min: 0, max: 10 }], '1.5'],
+    ['FLOAT boolean', ['FLOAT', { min: 0, max: 10 }], false],
+    ['FLOAT null', ['FLOAT', { min: 0, max: 10 }], null],
+    ['FLOAT array', ['FLOAT', { min: 0, max: 10 }], [1.5]],
+    ['FLOAT object', ['FLOAT', { min: 0, max: 10 }], { value: 1.5 }],
+    ['FLOAT non-finite number', ['FLOAT', { min: 0, max: 10 }], Number.NaN],
+    ['FLOAT positive infinity', ['FLOAT', { min: 0, max: 10 }], Number.POSITIVE_INFINITY],
+    ['FLOAT negative infinity', ['FLOAT', { min: 0, max: 10 }], Number.NEGATIVE_INFINITY],
+    ['FLOAT below minimum', ['FLOAT', { min: -1.25, max: 10 }], -1.5],
+    ['FLOAT above maximum', ['FLOAT', { min: 0, max: 1e2 }], 101],
+    ['STRING number', ['STRING', {}], 1],
+    ['STRING boolean', ['STRING', {}], true],
+    ['STRING null', ['STRING', {}], null],
+    ['STRING array', ['STRING', {}], ['text']],
+    ['STRING object', ['STRING', {}], { text: 'value' }],
+    ['AUTOCOMPLETE_TEXT_LORAS number', ['AUTOCOMPLETE_TEXT_LORAS', {}], 1],
+    ['AUTOCOMPLETE_TEXT_LORAS boolean', ['AUTOCOMPLETE_TEXT_LORAS', {}], false],
+    ['AUTOCOMPLETE_TEXT_LORAS null', ['AUTOCOMPLETE_TEXT_LORAS', {}], null],
+    ['AUTOCOMPLETE_TEXT_LORAS array', ['AUTOCOMPLETE_TEXT_LORAS', {}], ['text']],
+    ['AUTOCOMPLETE_TEXT_LORAS object', ['AUTOCOMPLETE_TEXT_LORAS', {}], { text: 'value' }],
+    ['BOOLEAN number', ['BOOLEAN', {}], 1],
+    ['BOOLEAN string', ['BOOLEAN', {}], 'true'],
+    ['BOOLEAN null', ['BOOLEAN', {}], null],
+    ['BOOLEAN array', ['BOOLEAN', {}], [true]],
+    ['BOOLEAN object', ['BOOLEAN', {}], { value: true }],
+  ])('rejects a runtime parameter that violates its %s contract', async (_label, inputDescriptor, suppliedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 43,
+      type: 'ContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: String(inputDescriptor[0]), link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [inputDescriptor[0] === 'BOOLEAN' ? false : null],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        ContractNode: {
+          input: { required: { custom: inputDescriptor } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue as JsonValue },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it.each([
+    ['INT accepts an ordinary integer', ['INT', { min: -10, max: 10 }], 7],
+    ['INT accepts its exact minimum', ['INT', { min: -10, max: 10 }], -10],
+    ['FLOAT accepts an integer', ['FLOAT', { min: 0, max: 10 }], 5],
+    ['FLOAT accepts an ordinary decimal', ['FLOAT', { min: -1.25, max: 10.5 }], 2.75],
+    ['FLOAT accepts its exact minimum', ['FLOAT', { min: -1.25, max: 10.5 }], -1.25],
+    ['FLOAT accepts its exact maximum', ['FLOAT', { min: -1.25, max: 10.5 }], 10.5],
+    ['STRING accepts a string outside UI metadata options', ['STRING', { options: ['listed'] }], 'unlisted'],
+    ['STRING accepts a string outside UI metadata choices', ['STRING', { choices: ['listed'] }], 'unlisted'],
+    ['INT ignores UI metadata options', ['INT', { min: 0, max: 10, options: [1, 2] }], 7],
+    ['AUTOCOMPLETE_TEXT_LORAS accepts a string', ['AUTOCOMPLETE_TEXT_LORAS', {}], '<lora:model:1>'],
+    ['BOOLEAN accepts a boolean', ['BOOLEAN', {}], false],
+  ])('accepts a runtime parameter when %s', async (_label, inputDescriptor, suppliedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 43,
+      type: 'ContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: String(inputDescriptor[0]), link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [null],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        ContractNode: {
+          input: { required: { custom: inputDescriptor } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue as JsonValue },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 43)?.widgets_values).toEqual([suppliedValue])
+  })
+
+  it.each([
+    ['an empty descriptor array', []],
+    ['a descriptor with a non-string type', [123, {}]],
+    ['an INT descriptor with an array configuration', ['INT', []]],
+    ['an INT descriptor with a string minimum', ['INT', { min: '0', max: 10 }]],
+    ['a FLOAT descriptor with an object maximum', ['FLOAT', { min: 0, max: { value: 10 } }]],
+    ['an INT descriptor whose minimum is greater than its maximum', ['INT', { min: 11, max: 10 }]],
+    ['a COMBO descriptor with non-array options', ['COMBO', { options: 'not-an-array' }]],
+    ['a COMBO descriptor with a non-boolean multiselect flag', ['COMBO', { options: ['a'], multiselect: 'yes' }]],
+  ])('rejects malformed /object_info contract: %s', async (_label, inputDescriptor) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 43,
+      type: 'MalformedContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: String(inputDescriptor[0]), link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [0],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        MalformedContractNode: {
+          input: { required: { custom: inputDescriptor } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: 0 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      message: expect.stringContaining('malformed'),
+    })
+  })
+
+  it('rejects a non-array published descriptor reached through explicit widget identities', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 43,
+      type: 'MalformedContractNode',
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: { __lm_widget_ids: ['custom'] },
+      widgets_values: [0],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        MalformedContractNode: {
+          input: { required: { custom: { type: 'INT' } } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: 0 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      message: expect.stringContaining('malformed'),
+    })
+  })
+
+  it('accepts the exact successful unsafe integer seed observed in the regression history', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 31,
+      type: 'SeedNode',
+      mode: 0,
+      inputs: [{ name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } }],
+      outputs: [],
+      widgets_values: [1, 'fixed'],
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      SeedNode: {
+        input: { required: { seed: ['INT', { min: 0, max: '__MAX_SEED__' }] } },
+        input_order: { required: ['seed'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__MAX_SEED__"', '9223372036854775807')
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(nodeDefinitionsJson, { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { seed: 8777816296766206976 },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 31)?.widgets_values).toEqual([8777816296766206976, 'fixed'])
+  })
+
+  it.each([
+    ['1.0 and 1e0 bounds', '1.0', '1e0', 1],
+    ['negative zero bounds', '-0', '0e1000000', -0],
+    ['negative exponent bounds', '-2.5e1', '-1.5e1', -20],
+  ])('accepts exact decimal equivalence for %s', async (_label, minimum, maximum, suppliedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 43,
+      type: 'ExactFloatNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'FLOAT', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [0],
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      ExactFloatNode: {
+        input: { required: { custom: ['FLOAT', { min: '__MINIMUM__', max: '__MAXIMUM__' }] } },
+        input_order: { required: ['custom'], optional: [] },
+        output_node: false,
+      },
+    })
+      .replace('"__MINIMUM__"', minimum)
+      .replace('"__MAXIMUM__"', maximum)
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(nodeDefinitionsJson, { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue },
+      loras: [],
+    })).resolves.toMatchObject({
+      actualWorkflow: expect.objectContaining({
+        nodes: expect.arrayContaining([expect.objectContaining({ id: 43, widgets_values: [suppliedValue] })]),
+      }),
+    })
+  })
+
+  it('compares a finite runtime number with a huge exact exponent without materializing zero strings', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 43,
+      type: 'ExactFloatNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'FLOAT', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [0],
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      ExactFloatNode: {
+        input: { required: { custom: ['FLOAT', { min: '__MINIMUM__' }] } },
+        input_order: { required: ['custom'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__MINIMUM__"', '1e1000000')
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(nodeDefinitionsJson, { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: 1e308 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: expect.stringContaining('minimum 1e1000000'),
+    })
+  })
+
+  it.each([
+    ['a numeric legacy candidate', [[1, 2, 3], {}], 2, 2],
+    ['a boolean legacy candidate', [[true, false], {}], false, false],
+    ['a null legacy candidate', [[null, 'value'], {}], null, null],
+    ['an array legacy candidate', [[['a', 'b'], 'other'], {}], ['a', 'b'], ['a', 'b']],
+    ['an object legacy candidate independent of key insertion order', [[{ a: 1, b: [2] }], {}], { b: [2], a: 1 }, { a: 1, b: [2] }],
+    ['a mixed legacy candidate without string case folding', [['Exact', 1], {}], 'Exact', 'Exact'],
+    ['a COMBO object option independent of key insertion order', ['COMBO', { options: [{ id: 1, labels: ['a'] }, 2] }], { labels: ['a'], id: 1 }, { id: 1, labels: ['a'] }],
+    ['an array that is itself a single-select COMBO option', ['COMBO', { options: [['a', 'b'], 'other'] }], ['a', 'b'], ['a', 'b']],
+    ['a scalar COMBO option when non-standard multi_select is true', ['COMBO', { options: ['a', 'b'], multi_select: true }], 'a', 'a'],
+    ['a scalar COMBO option when non-standard multi_select is an object', ['COMBO', { options: ['a', 'b'], multi_select: { enabled: true } }], 'a', 'a'],
+    ['an empty multiselect COMBO value', ['COMBO', { options: ['a', 'b'], multiselect: true }], [], []],
+    ['every member of a multiselect COMBO', ['COMBO', { options: ['a', 'b', 'c'], multiselect: true }], ['a', 'c'], ['a', 'c']],
+  ])('accepts %s through JSON-deep candidate matching', async (_label, inputDescriptor, suppliedValue, expectedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 44,
+      type: 'ChoiceContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'COMBO', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [null],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        ChoiceContractNode: {
+          input: { required: { custom: inputDescriptor } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue as JsonValue },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 44)?.widgets_values).toEqual([expectedValue])
+  })
+
+  it.each([
+    ['Foo', ['Foo', 'foo']],
+    ['foo', ['Foo', 'foo']],
+    ['same', ['same', 'same']],
+  ])('accepts the exact string candidate %s despite case-fold or duplicate collisions', async (suppliedValue, choices) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 44,
+      type: 'ChoiceContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'COMBO', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [choices[0]],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        ChoiceContractNode: {
+          input: { required: { custom: [choices, {}] } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 44)?.widgets_values).toEqual([suppliedValue])
+  })
+
+  it.each([
+    ['a legacy candidate with a different JSON type', [[1, 2], {}], '2'],
+    ['a mixed legacy string candidate that differs only by case', [['Exact', 1], {}], 'exact'],
+    ['an absent COMBO object option', ['COMBO', { options: [{ id: 1 }] }], { id: 2 }],
+    ['an array supplied when non-standard multi_select is true', ['COMBO', { options: ['a', 'b'], multi_select: true }], ['a']],
+    ['an array supplied when non-standard multi_select is an object', ['COMBO', { options: ['a', 'b'], multi_select: { enabled: true } }], ['a']],
+    ['a scalar supplied to a multiselect COMBO', ['COMBO', { options: ['a', 'b'], multiselect: true }], 'a'],
+    ['an absent member supplied to a multiselect COMBO', ['COMBO', { options: ['a', 'b'], multiselect: true }], ['a', 'c']],
+  ])('rejects %s', async (_label, inputDescriptor, suppliedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 44,
+      type: 'ChoiceContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'COMBO', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [null],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        ChoiceContractNode: {
+          input: { required: { custom: inputDescriptor } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue as JsonValue },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it('distinguishes an exact unsafe numeric candidate from the rounded JavaScript number', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 44,
+      type: 'ChoiceContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'COMBO', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [1],
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      ChoiceContractNode: {
+        input: { required: { custom: [['__EXACT_CANDIDATE__'], {}] } },
+        input_order: { required: ['custom'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__EXACT_CANDIDATE__"', '9223372036854775807')
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(nodeDefinitionsJson, { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: 9223372036854776000 },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it('distinguishes an unsafe numeric leaf nested inside an object and array candidate', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 44,
+      type: 'ChoiceContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'COMBO', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [null],
+    })
+    const nodeDefinitionsJson = JSON.stringify({
+      ...objectInfo,
+      ChoiceContractNode: {
+        input: { required: { custom: ['COMBO', { options: [{ nested: ['__EXACT_CANDIDATE__'] }] }] } },
+        input_order: { required: ['custom'], optional: [] },
+        output_node: false,
+      },
+    }).replace('"__EXACT_CANDIDATE__"', '9223372036854775807')
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(nodeDefinitionsJson, { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: { nested: [9223372036854776000] } },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it('allows a JSON-deep-equal no-op for an unpublished custom widget contract', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 45,
+      type: 'UnpublishedContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'UNPUBLISHED_VALUE', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [{ a: 1, b: [2] }],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        UnpublishedContractNode: {
+          input: { required: { custom: ['UNPUBLISHED_VALUE', {}] } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: { b: [2], a: 1 } },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 45)?.widgets_values).toEqual([{ a: 1, b: [2] }])
+  })
+
+  it.each([
+    ['a different object', { a: 2 }],
+    ['an array', ['changed']],
+    ['a scalar', 2],
+  ])('rejects %s when an object widget contract is unpublished', async (_label, suppliedValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 45,
+      type: 'UnpublishedContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'UNPUBLISHED_VALUE', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [{ a: 1 }],
+    })
+    const officialApiWorkflowCompiler = {
+      compile: vi.fn(async input => ({
+        apiWorkflow: input.runtimeProjection,
+        cacheKey: 'test-cache-key',
+        cacheStatus: 'miss' as const,
+      })),
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        UnpublishedContractNode: {
+          input: { required: { custom: ['UNPUBLISHED_VALUE', {}] } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+      officialApiWorkflowCompiler,
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: suppliedValue as JsonValue },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      message: expect.stringMatching(/45:UnpublishedContractNode\.custom.*UNPUBLISHED_VALUE/u),
+    })
+    expect(officialApiWorkflowCompiler.compile).not.toHaveBeenCalled()
+  })
+
+  it('rejects an object supplied for an unpublished array widget contract', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 45,
+      type: 'UnpublishedContractNode',
+      mode: 0,
+      inputs: [{ name: 'custom', type: 'UNPUBLISHED_VALUE', link: null, widget: { name: 'custom' } }],
+      outputs: [],
+      widgets_values: [['value']],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        UnpublishedContractNode: {
+          input: { required: { custom: ['UNPUBLISHED_VALUE', {}] } },
+          input_order: { required: ['custom'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { custom: { 0: 'value' } },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED' })
+  })
+
+  it('validates dynamic-combo assignments against the final parent selection independent of parameter order', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [
+        { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+        { name: 'dynamic.value', type: 'FLOAT', link: null, widget: { name: 'dynamic.value' } },
+        { name: 'dynamic.note', type: 'STRING', link: null, widget: { name: 'dynamic.note' } },
+        { name: 'dynamic.method', type: 'COMBO', link: null, widget: { name: 'dynamic.method' } },
+      ],
+      outputs: [],
+      widgets_values: ['integer', 5, '', 'a'],
+      widgets_values_named: { dynamic: 'integer', 'dynamic.value': 5, 'dynamic.note': '', 'dynamic.method': 'a' },
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'integer', inputs: { required: { value: ['INT', { min: 0, max: 10 }] }, optional: {} } },
+              { key: 'float', inputs: { required: {
+                value: ['FLOAT', { min: 0, max: 1 }],
+                method: ['COMBO', { options: ['a', 'b'] }],
+              }, optional: { note: ['STRING', {}] } } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { 'dynamic.value': 0.5, dynamic: 'float', 'dynamic.note': 'final', 'dynamic.method': 'b' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 46)?.widgets_values).toEqual(['float', 0.5, 'final', 'b'])
+    expect(compiled.apiWorkflow['46']).toMatchObject({ inputs: {
+      dynamic: 'float',
+      'dynamic.value': 0.5,
+      'dynamic.note': 'final',
+      'dynamic.method': 'b',
+    } })
+  })
+
+  it.each([
+    ['an absent parent key', 'missing', 1],
+    ['a child value outside the selected branch range', 'float', 2],
+  ])('rejects %s in a dynamic-combo final state', async (_label, parentValue, childValue) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [
+        { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+        { name: 'dynamic.value', type: 'FLOAT', link: null, widget: { name: 'dynamic.value' } },
+      ],
+      outputs: [],
+      widgets_values: ['float', 0.5],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'float', inputs: { required: { value: ['FLOAT', { min: 0, max: 1 }] }, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { 'dynamic.value': childValue, dynamic: parentValue },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it('rejects an absent COMBO member in the selected dynamic-combo branch', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [
+        { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+        { name: 'dynamic.method', type: 'COMBO', link: null, widget: { name: 'dynamic.method' } },
+      ],
+      outputs: [],
+      widgets_values: ['choice', 'a'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'choice', inputs: { required: { method: ['COMBO', { options: ['a', 'b'] }] }, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { 'dynamic.method': 'c' },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it('rejects a dynamic-combo branch whose required unconnected child is not serialized', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [{ name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } }],
+      outputs: [],
+      widgets_values: ['float'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'float', inputs: { required: { value: ['FLOAT', { min: 0, max: 1 }] }, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'float' },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: expect.stringContaining('dynamic.value'),
+    })
+  })
+
+  it('rejects stale serialized children from an unselected dynamic-combo branch', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [{ name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } }],
+      outputs: [],
+      widgets_values: ['old', 'stale', 0.5],
+      widgets_values_named: { dynamic: 'old', 'dynamic.old': 'stale', 'dynamic.value': 0.5 },
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'old', inputs: { required: { old: ['STRING', {}] }, optional: {} } },
+              { key: 'float', inputs: { required: { value: ['FLOAT', { min: 0, max: 1 }] }, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'float', 'dynamic.value': 0.75 },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: expect.stringContaining('dynamic.old'),
+    })
+  })
+
+  it('rejects a connected child retained from an unselected dynamic-combo branch', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 47,
+          type: 'FloatSource',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'FLOAT', type: 'FLOAT', links: [20] }],
+          widgets_values: [],
+        },
+        {
+          id: 46,
+          type: 'DynamicContractNode',
+          mode: 0,
+          inputs: [
+            { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+            { name: 'dynamic.old', type: 'FLOAT', link: 20, widget: { name: 'dynamic.old' } },
+          ],
+          outputs: [],
+          widgets_values: ['old'],
+        },
+        ...workflow.nodes,
+      ],
+      links: [[20, 47, 0, 46, 1, 'FLOAT'], ...(workflow.links as JsonValue[])],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        FloatSource: {
+          input: { required: {}, optional: {} },
+          input_order: { required: [], optional: [] },
+          output_node: false,
+        },
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'old', inputs: { required: { old: ['FLOAT', {}] }, optional: {} } },
+              { key: 'new', inputs: { required: {}, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'new' },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_INVALID',
+      message: expect.stringContaining('dynamic.old'),
+    })
+  })
+
+  it('rejects a dynamic-combo contract with duplicate or empty option keys as unsupported', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [{ name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } }],
+      outputs: [],
+      widgets_values: ['duplicate'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'duplicate', inputs: { required: {}, optional: {} } },
+              { key: 'duplicate', inputs: { required: {}, optional: {} } },
+              { key: '', inputs: { required: {}, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'duplicate' },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED' })
+  })
+
+  it('rejects duplicate non-empty dynamic-combo option keys as unsupported', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [{ name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } }],
+      outputs: [],
+      widgets_values: ['duplicate'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'duplicate', inputs: { required: {}, optional: {} } },
+              { key: 'duplicate', inputs: { required: {}, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'duplicate' },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED' })
+  })
+
+  it.each([
+    ['required', { optional: {} }],
+    ['optional', { required: {} }],
+  ])('rejects a dynamic-combo option without its %s child contract map', async (_missingMap, inputs) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [{ name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } }],
+      outputs: [],
+      widgets_values: ['choice'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [{ key: 'choice', inputs }] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'choice' },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED' })
+  })
+
+  it('recursively validates nested dynamic-combo branches against their final selections', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [
+        { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+        { name: 'dynamic.mode', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic.mode' } },
+        { name: 'dynamic.mode.value', type: 'FLOAT', link: null, widget: { name: 'dynamic.mode.value' } },
+      ],
+      outputs: [],
+      widgets_values: ['advanced', 'integer', 5],
+    })
+    const nestedDescriptor = ['COMFY_DYNAMICCOMBO_V3', { options: [
+      { key: 'integer', inputs: { required: { value: ['INT', { min: 0, max: 10 }] }, optional: {} } },
+      { key: 'float', inputs: { required: { value: ['FLOAT', { min: 0, max: 1 }] }, optional: {} } },
+    ] }]
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'advanced', inputs: { required: { mode: nestedDescriptor }, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { 'dynamic.mode.value': 0.25, 'dynamic.mode': 'float', dynamic: 'advanced' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 46)?.widgets_values).toEqual(['advanced', 'float', 0.25])
+  })
+
+  it('allows an absent optional dynamic child and a connected required dynamic child', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 47,
+          type: 'FloatSource',
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'FLOAT', type: 'FLOAT', links: [20] }],
+          widgets_values: [],
+        },
+        {
+          id: 46,
+          type: 'DynamicContractNode',
+          mode: 0,
+          inputs: [
+            { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+            { name: 'dynamic.value', type: 'FLOAT', link: 20, widget: { name: 'dynamic.value' } },
+          ],
+          outputs: [],
+          widgets_values: ['float'],
+        },
+        ...workflow.nodes,
+      ],
+      links: [[20, 47, 0, 46, 1, 'FLOAT'], ...(workflow.links as JsonValue[])],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        FloatSource: {
+          input: { required: {}, optional: {} },
+          input_order: { required: [], optional: [] },
+          output_node: false,
+        },
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'float', inputs: { required: { value: ['FLOAT', { min: 0, max: 1 }] }, optional: { note: ['STRING', {}] } } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'float' },
+      loras: [],
+    })
+
+    expect(compiled.apiWorkflow['46']).toMatchObject({ inputs: { dynamic: 'float', 'dynamic.value': ['47', 0] } })
+    expect(compiled.apiWorkflow['46']).not.toHaveProperty('inputs.dynamic.note')
+  })
+
+  it('rejects a live dynamic contract change that makes an existing child value invalid before any write', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 46,
+      type: 'DynamicContractNode',
+      mode: 0,
+      inputs: [
+        { name: 'dynamic', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'dynamic' } },
+        { name: 'dynamic.value', type: 'FLOAT', link: null, widget: { name: 'dynamic.value' } },
+      ],
+      outputs: [],
+      widgets_values: ['float', 5],
+    })
+    const officialApiWorkflowCompiler = {
+      compile: vi.fn(async input => ({
+        apiWorkflow: input.runtimeProjection,
+        cacheKey: 'test-cache-key',
+        cacheStatus: 'miss' as const,
+      })),
+    }
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        DynamicContractNode: {
+          input: { required: {
+            dynamic: ['COMFY_DYNAMICCOMBO_V3', { options: [
+              { key: 'float', inputs: { required: { value: ['FLOAT', { min: 0, max: 1 }] }, optional: {} } },
+            ] }],
+          } },
+          input_order: { required: ['dynamic'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+      officialApiWorkflowCompiler,
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { dynamic: 'float' },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+    expect(officialApiWorkflowCompiler.compile).not.toHaveBeenCalled()
+    expect(actual.nodes.find(node => node.id === 46)?.widgets_values).toEqual(['float', 5])
+  })
+
   it.each([
     ['an absent live enum value', ['euler', 'lcm'], 'not-a-sampler'],
     ['a non-unique case-insensitive live enum value', ['lcm', 'LCM'], 'LcM'],
@@ -2750,6 +4006,100 @@ describe('ComfyWorkflowCompiler', () => {
       code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
       message: expect.stringMatching(/steps.*steps_7|steps_7.*steps/u),
     })
+  })
+
+  it('normalizes and validates aliases before merging equal assignments to one target', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 41,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [{ name: 'sampler_name', type: 'COMBO', link: null, widget: { name: 'sampler_name' } }],
+      outputs: [],
+      widgets_values: ['euler'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: { sampler_name: [['euler', 'lcm'], {}] } },
+          input_order: { required: ['sampler_name'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { sampler_name: 'LCM', sampler_name_41: 'lcm' },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 41)?.widgets_values).toEqual(['lcm'])
+  })
+
+  it('rejects an invalid alias before a valid assignment can merge into the same target', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 7,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [{ name: 'steps', type: 'INT', link: null, widget: { name: 'steps' } }],
+      outputs: [],
+      widgets_values: [20],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: { steps: ['INT', { min: 1, max: 100 }] } },
+          input_order: { required: ['steps'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { steps: 21, steps_7: 1.5 },
+      loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+  })
+
+  it('merges object aliases after JSON-deep normalization ignores key insertion order', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 45,
+      type: 'KSampler',
+      mode: 0,
+      inputs: [{ name: 'sampler_name', type: 'UNPUBLISHED_VALUE', link: null, widget: { name: 'sampler_name' } }],
+      outputs: [],
+      widgets_values: [{ a: 1, b: [2] }],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        KSampler: {
+          input: { required: { sampler_name: ['UNPUBLISHED_VALUE', {}] } },
+          input_order: { required: ['sampler_name'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { sampler_name: { b: [2], a: 1 }, sampler_name_45: { a: 1, b: [2] } },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 45)?.widgets_values).toEqual([{ a: 1, b: [2] }])
   })
 
   it('uses the upstream sampling stage as the canonical unsuffixed parameter target', async () => {
