@@ -4,6 +4,14 @@
   config:
     mode: local-only
 
+- id: project-system-prompt-visibility
+  name: ../project-system-prompt-visibility.mjs
+  config:
+    hiddenSectionNames:
+      - harness:identity
+      - harness:source
+      - app:web-surface
+
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:

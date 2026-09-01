@@ -51,6 +51,16 @@ Host 增加新的项目 Tool schema 时，`ComfyUI工作台预设` 的 `local-on
 
 选择 `ComfyUI工作台预设` 的 Agent 必须按需读取全局 Skill 及其 CLI 使用参考文档，并通过前台 shell Tool Call 调用项目 managed CLI。该 Agent 不把 Host 项目 Tool schema 当作 Skill 接口。
 
+### 系统提示词段落可见性
+
+自定义 `ComfyUI工作台预设` 必须通过 DSH/Cordis plugin component 机制加载 `agent-presets/project-system-prompt-visibility.mjs`。该 component 必须在当前 Preset scope 的 `system-prompt/assemble` waterfall 完成后，从 `PromptAssembly.sections` 中删除以下三个 Harness 自维护段落：
+
+- `harness:identity`；
+- `harness:source`；
+- `app:web-surface`。
+
+该 component 只能修改 `PromptAssembly.sections`。该 component 必须保留 `deployment:persona`、Tool 使用说明以及 `PromptAssembly.contexts`、`PromptAssembly.tools` 和 `PromptAssembly.variables`。Harness `standard`、`minimal`、`cordis` 和其他 Agent Preset 的系统提示词 assembly 不加载该 component。
+
 ## 项目 Skill 的 CLI 使用参考文档
 
 ### 文件归属
@@ -115,6 +125,7 @@ Skill 执行者只向 CLI 传递业务参数，不填写 Workspace ID、Session 
 
 - 产品 Preset 的用户可见名称和兼容性内部 ID 保持各自的唯一来源；
 - composition 同时加载 Skill filesystem、Skill Tool 和 `local-only` Tool visibility component；
+- composition 加载系统提示词可见性 component，并且该 component 只删除三个已声明的 Harness 自维护段落；
 - 自定义 Preset 的模型 Tool roster 不包含 Host 项目 Tool schema；
 - `standard` Preset 的 Host 项目 Tool 可见性不受自定义 Preset 影响；
 - `prod:*`、`dev:*` 和 `web:*` 物化相同的产品 Preset 文件。

@@ -20,6 +20,7 @@
 | `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt 与历史 Generation Run 查询 Skill canonical source |
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset canonical source；目录名是兼容性内部 ID |
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset 的 Session standing Tool visibility component |
+| `agent-presets/project-system-prompt-visibility.mjs` | 产品 Preset 的 Session standing 系统提示词段落可见性 component |
 | `config/product-agent.json` | 产品 Preset 内部 ID、canonical source、shared file、退役项目 Preset ID 和当前运行 DSH home 安装根目录 |
 | `config/` | 生产配置、开发配置、schema、质量阈值和数据源合同 |
 | `config/desktop-production.json` | Desktop 相对源码目录、生产 runtime、`.env` 和默认 Workspace |
@@ -41,7 +42,7 @@
 | `tests/security/` | 依赖与边界安全测试 |
 | `tests/production/` | `prod:test` 执行的 Desktop、Web Host、worktree 配置和进程生命周期测试 |
 | `tests/desktop/` | 真实 DSH Desktop 设置、媒体 Modal 和 Harness shell capability 验收 |
-| `tests/fixtures/agent-presets/` | Tool visibility 回归测试使用的非产品 Preset composition 夹具 |
+| `tests/fixtures/agent-presets/` | Tool visibility 与系统提示词段落可见性回归测试使用的非产品 Preset composition 夹具 |
 | `prototype/` | 工作台和 Session Media Viewer 静态原型及原型测试；不是运行时数据来源 |
 | `docs/system/` | 当前系统规范 |
 

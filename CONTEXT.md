@@ -16,7 +16,7 @@
 
 **Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。
 
-**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，并通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema。当前插件 `cordis.patch.yml` 把该 Preset 设置为 Desktop 开发与生产的默认 Preset。
+**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema，并从该 Preset 的系统提示词 assembly 中删除 `harness:identity`、`harness:source` 和 `app:web-surface` 三个 Harness 自维护段落。当前插件 `cordis.patch.yml` 把该 Preset 设置为 Desktop 开发与生产的默认 Preset。
 
 ## 运行
 

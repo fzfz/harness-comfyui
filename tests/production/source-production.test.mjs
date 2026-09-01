@@ -342,6 +342,10 @@ describe('Web Host shared process commands', () => {
       fixture.runtimeRoot,
       'dsh-home/.agent-presets/project-tool-visibility.mjs',
     ))).toBe(true)
+    expect(await pathExists(resolve(
+      fixture.runtimeRoot,
+      'dsh-home/.agent-presets/project-system-prompt-visibility.mjs',
+    ))).toBe(true)
 
     const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
     expect(stop.evidence).toMatchObject({ stage: 'stop', status: 'stopped' })

@@ -28,6 +28,11 @@ const temporaryPaths = []
 const CONTROL_PRESET_ID = 'harness-comfyui-schema-control'
 const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
 const PRESET_IDS = [CONTROL_PRESET_ID, PRODUCT_PRESET_ID]
+const SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE = 'project-system-prompt-visibility.mjs'
+const PRODUCT_SHARED_FILES = [
+  'project-tool-visibility.mjs',
+  SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
+]
 
 async function temporaryDirectory(prefix) {
   const path = await mkdtemp(join(tmpdir(), prefix))
@@ -53,7 +58,7 @@ function productConfig(change = value => value) {
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
       retiredManagedPresetIds: [CONTROL_PRESET_ID],
-      sharedFiles: ['project-tool-visibility.mjs'],
+      sharedFiles: PRODUCT_SHARED_FILES,
     },
   })
 }
@@ -67,6 +72,11 @@ async function createRepositoryFixture() {
   await writeFile(configPath, `${JSON.stringify(productConfig(), null, 2)}\n`, 'utf8')
   await writeFile(
     resolve(sourceRoot, 'project-tool-visibility.mjs'),
+    'export function apply() {}\n',
+    'utf8',
+  )
+  await writeFile(
+    resolve(sourceRoot, SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE),
     'export function apply() {}\n',
     'utf8',
   )
@@ -137,6 +147,7 @@ describe('A/B project Tool visibility', () => {
     })
     expect(control.map(row => row.name)).toEqual([
       '../project-tool-visibility.mjs',
+      '../project-system-prompt-visibility.mjs',
       '@deepseek-ai/dsh-persona',
       '@deepseek-ai/dsh-agent-instructions',
       '@deepseek-ai/dsh-tool-bash',
@@ -149,6 +160,102 @@ describe('A/B project Tool visibility', () => {
   })
 })
 
+describe('ComfyUI Workbench system prompt visibility', () => {
+  it('removes only the Harness maintenance sections from the product Preset assembly', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const composition = await validateAgentPresetComposition(resolve(
+      repositoryRoot,
+      'agent-presets',
+      PRODUCT_PRESET_ID,
+      'agent.cordis.yml',
+    ))
+    const visibilityRow = composition.find(row => row.name === `../${SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE}`)
+    expect(visibilityRow).toMatchObject({
+      config: {
+        hiddenSectionNames: [
+          'harness:identity',
+          'harness:source',
+          'app:web-surface',
+        ],
+      },
+    })
+
+    const componentPath = resolve(
+      repositoryRoot,
+      'agent-presets',
+      SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
+    )
+    const { apply } = await import(pathToFileURL(componentPath).href)
+    let assemble
+    const ctx = {
+      on: vi.fn((event, listener) => {
+        if (event === 'system-prompt/assemble') assemble = listener
+        return vi.fn()
+      }),
+    }
+    apply(ctx, visibilityRow.config)
+
+    const contexts = [{ name: 'runtime:permissions', text: 'Current permission state.' }]
+    const tools = [{ name: 'bash', description: 'Run a foreground shell command.' }]
+    const variables = { cwd: '/workspace' }
+    const assembled = {
+      sections: [
+        { name: 'harness:identity', text: 'Harness identity.' },
+        { name: 'harness:source', text: 'Harness source checkout.' },
+        { name: 'app:web-surface', text: 'Harness Web development instructions.' },
+        { name: 'deployment:persona', text: 'ComfyUI Workbench persona.' },
+        { name: 'tool:bash', text: 'Bash tool guidance.' },
+      ],
+      contexts,
+      tools,
+      variables,
+    }
+    const next = vi.fn(async () => assembled)
+
+    await expect(assemble({}, {}, next)).resolves.toEqual({
+      sections: [
+        { name: 'deployment:persona', text: 'ComfyUI Workbench persona.' },
+        { name: 'tool:bash', text: 'Bash tool guidance.' },
+      ],
+      contexts,
+      tools,
+      variables,
+    })
+    expect(next).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ['a null config', null, 'must contain only hiddenSectionNames'],
+    ['an array config', [], 'must contain only hiddenSectionNames'],
+    ['a missing hiddenSectionNames property', {}, 'must contain only hiddenSectionNames'],
+    [
+      'an unknown config property',
+      { hiddenSectionNames: ['harness:identity'], unknown: true },
+      'must contain only hiddenSectionNames',
+    ],
+    ['a scalar hiddenSectionNames value', { hiddenSectionNames: 'harness:identity' }, 'must be a non-empty array'],
+    ['an empty hiddenSectionNames array', { hiddenSectionNames: [] }, 'must be a non-empty array'],
+    ['an empty section name', { hiddenSectionNames: [''] }, 'must be non-empty strings'],
+    ['a whitespace-only section name', { hiddenSectionNames: ['   '] }, 'must be non-empty strings'],
+    ['a non-string section name', { hiddenSectionNames: [1] }, 'must be non-empty strings'],
+    [
+      'a duplicated section name',
+      { hiddenSectionNames: ['harness:identity', 'harness:identity'] },
+      'section name "harness:identity" is duplicated',
+    ],
+  ])('rejects %s', async (_name, config, message) => {
+    const componentPath = resolve(
+      import.meta.dirname,
+      '../..',
+      'agent-presets',
+      SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
+    )
+    const { apply } = await import(pathToFileURL(componentPath).href)
+
+    expect(() => apply({ on: vi.fn() }, config)).toThrow(message)
+  })
+})
+
 describe('source product Agent Preset materialization', () => {
   it('materializes only the ComfyUI workbench Preset with its product display name', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
@@ -157,8 +264,10 @@ describe('source product Agent Preset materialization', () => {
     const result = await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
 
     expect(result.presets.map(preset => preset.presetId)).toEqual([PRODUCT_PRESET_ID])
-    expect(await readFile(resolve(result.installRoot, 'project-tool-visibility.mjs'), 'utf8'))
-      .toBe(await readFile(resolve(repositoryRoot, 'agent-presets/project-tool-visibility.mjs'), 'utf8'))
+    for (const filename of PRODUCT_SHARED_FILES) {
+      expect(await readFile(resolve(result.installRoot, filename), 'utf8'))
+        .toBe(await readFile(resolve(repositoryRoot, 'agent-presets', filename), 'utf8'))
+    }
     expect(await readFile(resolve(
       result.installRoot,
       PRODUCT_PRESET_ID,
