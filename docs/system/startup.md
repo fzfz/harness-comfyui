@@ -95,7 +95,7 @@ pnpm prod:start
 )
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.38.6` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.38.7` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 

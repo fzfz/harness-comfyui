@@ -1,4 +1,21 @@
-# 未发布变更
+# Harness ComfyUI v0.38.7
+
+v0.38.7 修复官方 ComfyUI 前端 Workflow 编译器在 DSH Desktop Electron Helper 中卡在 `Page.navigate` 的故障，为 Krea2 Anime Prompt Builder 增加作品、角色、Krea2 Style 与 Prompt 词条的只读语义目录查询，并使多个 linked worktree 可以同时运行隔离的 Desktop 和 Web Host。
+
+## 官方 ComfyUI 前端编译与取消清理
+
+- `OfficialApiWorkflowCompiler` 的 cache miss 路径在标准 Node.js Worker 中运行完整 `ChromeComfyFrontend`。Electron Helper 只通过版本化 stdin/stdout JSON 协议发送包含 Actual Workflow 的编译请求，并接收诊断和 Official Base API Workflow，不再在 Electron Helper 运行时中执行 CDP 编译。
+- 编译器分别记录 browser-start、devtools-port、target-create、cdp-connect、domain-enable、navigation、request-interception、readiness 和 export 阶段及具体 operation。WebSocket `close/error`、target crash、阶段 deadline 和浏览器退出都会结算 pending command 并返回可处理错误。
+- 每个 Worker 使用独立进程组拥有自己的 Chrome 后代。调用者取消时，Host 先发送 `SIGTERM` 允许 Worker 清理 Chrome 和临时 profile；宽限期后只强制终止该 Worker 进程组。Worker stdin 的异步写入失败返回结构化错误，不会成为 Host 未处理异常。
+- 编译浏览器直接启动 headless Chrome，使用独立临时 profile、`--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider`，不通过 macOS LaunchServices 打开用户 Chrome。未配置实例认证时不启用 Fetch 拦截；配置认证时只向同源请求注入 Authorization。
+- CLI 客户端在 Host 返回结果前断开时，Host route 中止当前 waiter，不继续占用前端编译资源，也不创建第二个 Run。
+- 模板 42、实例 2 的生产复现请求在真实开发 Desktop 中生成 Run `run_3a877877-d96d-4815-bbcc-299c6a569b7f`。该 Run 进入 `succeeded`，同一 Harness Session 取回一张可读的 1024×1536 PNG，文件大小为 2,758,646 字节。
+
+## Krea2 只读语义目录查询
+
+- Krea2 Anime Prompt Builder 在 Character/Style 记录已提供非空 `data.prompt_text` 时直接采用该内容。记录缺少 `data.prompt_text` 时，Builder 可以使用记录 ID、名称和所属作品查询并消歧目录候选；只有被采用候选的 `prompt_text` 才会进入最终 Prompt。
+- `references/semantic-query-cli.md` 定义 `imagegen-semantic-query` 的只读合同。Builder 通过本机回环 Catalog 服务查询 Krea2 底模、作品、角色、Krea2 Style 和 Prompt 词条；该 CLI 不创建 Generation Run、不构建最终 Prompt、不修改 Catalog 记录，也不读取本地图片。
+- Builder 在首次查询前读取 live discovery 和目标路径帮助，按作品、角色、画师方向与视觉概念分别查询。Builder 逐项比较候选，不自动采用结果数组的第一项；必需角色缺少可采用 Prompt 内容时，Builder 报告具体角色并要求用户补充或重新选择。
 
 ## Linked worktree 并行开发运行环境
 
@@ -6,7 +23,7 @@
 - `pnpm dev:start` 把 Electron Vite 输出写入当前 worktree 的 `.local/desktop-development/desktop-out/`。共享同一 DSH Desktop 源目录的多个 worktree 不再共同写入上游 `out/`。
 - `pnpm dev:status` 返回当前 Desktop PID 与移动桥接端口；Web Host 的受管进程状态继续保存实际监听端口。Desktop 在端口状态或 PID 写入失败时终止已经启动的子进程，并清理当前 worktree 的两份进程状态。
 - 生产 Desktop 继续从生产 checkout 的 `.env` 读取 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`。开发 Desktop 与独立 Web Host 忽略共享 `.env` 中的实例端口变量，并保留 Provider、Preset、Workspace 和模型配置的共享方式。
-- 完整 `pnpm quality` 通过：822 项 unit/integration、33 项 contract/security、133 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 完整 `pnpm quality` 通过：857 项 unit/integration、33 项 contract/security、134 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.37%、functions 100%、lines 95.98%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 - 本变更没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。
 
 # Harness ComfyUI v0.38.6

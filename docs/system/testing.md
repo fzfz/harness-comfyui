@@ -51,6 +51,8 @@ Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQ
 
 2026-09-02 的真实模型验收使用隔离开发 Desktop、`opencode-go/deepseek-v4-flash` Agent 模型和 `opencode-go/qwen3.7-plus` 图片读取模型。`standard` Preset 对同一图片依次省略 `prompt`、提供返回 `OVERRIDE_OK` 的 `prompt`、再次省略 `prompt`，确认本次覆盖不写入设置。`ComfyUI工作台预设` 的 Agent 实际读取 worktree 中的 `local-image-reader/SKILL.md` 与 `references/image-inspection-cli.md`，并通过前台 shell Tool Call 向 `image inspect --stdin` 传递可选 `prompt`；CLI 退出码为 0、stderr 为空、四属性 JSON stdout 的 `observation` 为 `OVERRIDE_OK`。完整请求、实际读取路径、CLI stdin 和 stdout 记录在 [`.planning/image-reader-prompt-string/model-acceptance.md`](../../.planning/image-reader-prompt-string/model-acceptance.md)。
 
+v0.38.7 发布前完整 `pnpm quality` 结果为 857 项 unit/integration、33 项 contract/security、134 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.37%、functions 100%、lines 95.98%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。测试覆盖标准 Node.js Worker 前端编译、CDP 阶段错误、Worker 进程组取消、stdin 异步失败、Host bundle 并行输出隔离以及 linked worktree 运行端口与 Desktop 输出隔离。
+
 v0.38.6 发布前完整 `pnpm quality` 结果为 822 项 unit/integration、33 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。新增合同测试验证 Krea2 Anime Prompt Builder 的 canonical 目录、frontmatter、UI 元数据、Skill 内参考路径、CLI 参考章节、v2 生成器删除和 v1 资产边界。
 
 v0.38.5 发布前完整 `pnpm quality` 结果为 822 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。图片读取测试覆盖本次提示词覆盖、默认提示词恢复、普通模型字符串包装、当前配置独立保存、配置切换与持久化回显、凭据动作和具体字段错误。
