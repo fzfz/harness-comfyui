@@ -1,6 +1,6 @@
-# Harness ComfyUI v0.38.4
+# Harness ComfyUI v0.38.5
 
-v0.38.4 在 Harness 向 ComfyUI 提交 Prompt 前验证每一个运行参数的目标输入合同，修复超出目标 `INT.max` 的 Seed 直到远端提交时才被拒绝的问题。
+v0.38.5 允许每次图片读取调用覆盖当前配置的默认提示词，明确视觉模型正文继续使用普通字符串，并修复图片读取设置页保存、切换、回显和错误提示的问题。
 
 ## 图片读取本次提示词与当前配置保存
 
@@ -12,7 +12,11 @@ v0.38.4 在 Harness 向 ComfyUI 提交 Prompt 前验证每一个运行参数的�
 - 配置名称、连接参数、模型、默认提示词、温度、最大输出 Token 数和 API Key 规则分别返回唯一错误码。设置页在具体输入项附近显示实际失败规则，并在保存按钮附近显示同一错误码的总结，不再使用 `IMAGE_READER_SETTINGS_INVALID` 枚举所有可能问题。
 - 隔离开发 Desktop 的真实模型验收使用 `opencode-go/deepseek-v4-flash` Agent 和 `opencode-go/qwen3.7-plus` 图片读取模型。`standard` Preset 的三次 Tool 调用确认默认提示词、本次覆盖和后续恢复；`ComfyUI工作台预设` 的 Agent 实际读取更新后的 `local-image-reader` 与 CLI 参考，通过 managed CLI 传递覆盖提示词并取得 `observation: OVERRIDE_OK`。完整证据位于 [`.planning/image-reader-prompt-string/model-acceptance.md`](../.planning/image-reader-prompt-string/model-acceptance.md)。
 - 完整 `pnpm quality` 通过：822 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
-- 本变更没有增加或升级依赖，`package.json` 与 `pnpm-lock.yaml` 保持不变。
+- 本版本没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。
+
+# Harness ComfyUI v0.38.4
+
+v0.38.4 在 Harness 向 ComfyUI 提交 Prompt 前验证每一个运行参数的目标输入合同，修复超出目标 `INT.max` 的 Seed 直到远端提交时才被拒绝的问题。
 
 ## ComfyUI 运行参数合同
 
