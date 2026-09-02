@@ -52,7 +52,7 @@ pnpm web:start|restart
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset、共享 Tool visibility component 和共享系统提示词可见性 component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | managed CLI 构建的源码入口；启动器把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` 后交给受管前台 shell Tool Call |
-| `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request 和历史 Run 输入查询合同 |
+| `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request、模板运行参数检查、随机 Seed 和历史 Run 输入查询合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.86.1 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、标准 Node.js 官方前端编译 Worker、API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
@@ -90,10 +90,14 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
   → CliShellCapabilityStore 取得 Session、Turn、Call ID 与 cwd
   → shell environment 提供构建后的 CLI 路径、loopback URL 与短期 capability
   → .local/source-cli/harness-comfyui.mjs 提交业务参数
-  → src/host/cli/route.ts 通过 cwd 解析 Workspace 并校验 Session 归属
-  → generation submit：GenerationRuntime.acceptGeneration(identity, request)
-  → generation run-inputs：GenerationRuntime.readGenerationRunInputs({ workspaceId, runIds })
-  → generation resolve-media：GenerationRuntime.readGenerationRunMedia({ workspaceId, runIds })
+  → src/host/cli/route.ts 验证短期 capability
+      → generation submit、run-inputs、resolve-media：通过 cwd 解析 Workspace 并校验 Session 归属
+          → generation submit：GenerationRuntime.acceptGeneration(identity, request)
+          → generation run-inputs：GenerationRuntime.readGenerationRunInputs({ workspaceId, runIds })
+          → generation resolve-media：GenerationRuntime.readGenerationRunMedia({ workspaceId, runIds })
+      → generation inspect-template-parameters、random-seeds：不解析 Workspace
+          → generation inspect-template-parameters：GenerationRuntime.inspectTemplateRuntimeParameters({ templateId, instanceId })
+          → generation random-seeds：CLI route 返回本次调用的普通随机 Seed 数组
   → image inspect：ImageReaderService.inspect(filePath, { prompt, signal })
 ```
 
@@ -130,6 +134,8 @@ Desktop Host 运行在 Electron Helper 的 Node.js 兼容运行时中。该运�
 Worker 直接执行配置中的 Chrome 或 Chromium 可执行文件，不通过 macOS LaunchServices。每次浏览器会话使用独立临时 profile，并传入 `--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider`，防止 macOS 钥匙串与网络权限对话阻塞 headless 编译。Host 把每个 Worker 启动为独立进程组；调用者取消时，Host 先向该进程组发送 `SIGTERM`，Worker 协作清理自己的 Chrome 子进程和临时 profile。宽限期内没有退出时，Host 只对该 Worker 进程组发送 `SIGKILL`，不向用户的其他 Chrome 进程发送信号。
 
 Source v0.86.1 TemplateBundle 只提供模板 ID、模板标题和 UI Workflow。`ComfyWorkflowCompiler` 不读取 Source 模板参数定义、参数绑定或输出节点过滤器。Generation Tool 把用户显式提供的运行参数键和值交给 compiler；compiler 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名、节点标题、活动状态和上下游连线定位可写 widget。参数键中的节点 ID 后缀可以选择同类控件；两个参数用不同值占用同一 widget 时终止编译。
+
+`ComfyWorkflowCompiler.inspectRuntimeParameters()` 与 `compile()` 共享同一个私有 runtime-parameter plan。检查方法把非尺寸参数及其实际合同投影到 `parameters`，把能够控制全部活动图片输出最终可见尺寸的末端精确尺寸、Selector 或可确定像素尺寸的 preset 投影到 `size_candidates`。活动图片输出必须是 `/object_info` 标记的活动 output node，并且通过已连接的 `IMAGE` 输入或 `IMAGE` 类型连线接收图片；只接收 `COMBO`、字符串或其他非图片数据的辅助 output node 不参与图片尺寸判定。输出路径中的下游独立 resize 或 upscale 尺寸会覆盖上游尺寸；检查结果删除被覆盖的上游候选，并在下游尺寸可写时返回带精确节点后缀的参数 ID。没有一组尺寸控件能够控制全部活动图片输出时，检查结果不返回尺寸候选。检查方法不修改输入 Workflow，也不调用 Official API Workflow compiler。`SourceGenerationPreparer`、`GenerationRuntime` 与 managed CLI 只转交模板、显式实例和检查结果，不复制 Workflow 参数发现与配对逻辑。新模板只要 Source 返回有效 Workflow 且目标实例能够解析该 Workflow 就可以接受检查，不依赖静态模板能力白名单。
 
 compiler 为每个已解析的运行参数目标建立明确的节点输入合同。`INT` 只接受有限整数，`FLOAT` 接受有限整数或有限小数，两个数值类型都执行 `/object_info` 明确发布的 `min` 和 `max`。`STRING` 与 `AUTOCOMPLETE_TEXT_LORAS` 只接受字符串，`BOOLEAN` 只接受布尔值。compiler 不把字符串控件或整数控件的 `options` UI 元数据解释为服务端允许值集合。运行参数违反已知合同后，compiler 返回 `GENERATION_PARAMETER_INVALID`，错误信息包含运行参数键、目标 ComfyUI 节点输入、收到值和违反的类型、范围或候选值。
 

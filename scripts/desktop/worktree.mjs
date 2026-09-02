@@ -1,9 +1,9 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { cp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseEnv } from 'node:util'
 
@@ -46,6 +46,9 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
   const runtimeHome = resolve(runtimeRoot, 'home')
   const mode = desktopMode(definition.desktopMode)
   const desktopUserData = resolve(runtimeHome, 'Library/Application Support', mode.userDataDirectory)
+  const skillSource = options.skillSource === undefined
+    ? resolve(options.homeDirectory ?? homedir(), '.agents/skills')
+    : resolve(options.skillSource)
   return {
     repositoryRoot,
     desktopSource: resolve(desktopSourceRoot, definition.desktopSourceRelativePath),
@@ -64,8 +67,36 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
     catalogPort: sourceDefinition.source.catalogPort,
     catalogCliPath: resolve(repositoryRoot, sourceDefinition.source.catalogCliRelativePath),
     sourceCliPath: resolve(repositoryRoot, sourceDefinition.source.sourceCliRelativePath),
-    skillSource: resolve(options.homeDirectory ?? homedir(), '.agents/skills'),
+    skillSource,
   }
+}
+
+async function resolveDevelopmentSkillSource(repositoryRoot, configuredPath) {
+  if (typeof configuredPath !== 'string' || configuredPath.length === 0 || isAbsolute(configuredPath)) {
+    throw new Error('config/desktop-worktree.json skillSourceRelativePath must be a non-empty relative path')
+  }
+  const skillSource = resolve(repositoryRoot, configuredPath)
+  let resolvedSkillSource
+  try {
+    resolvedSkillSource = await realpath(skillSource)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      throw new Error(`config/desktop-worktree.json skillSourceRelativePath directory does not exist: ${skillSource}`)
+    }
+    throw error
+  }
+  const resolvedRepositoryRoot = await realpath(repositoryRoot)
+  const repositoryRelativePath = relative(resolvedRepositoryRoot, resolvedSkillSource)
+  if (repositoryRelativePath === ''
+    || repositoryRelativePath === '..'
+    || repositoryRelativePath.startsWith('../')
+    || isAbsolute(repositoryRelativePath)) {
+    throw new Error('config/desktop-worktree.json skillSourceRelativePath must stay inside the current worktree')
+  }
+  if (!(await stat(resolvedSkillSource)).isDirectory()) {
+    throw new Error(`config/desktop-worktree.json skillSourceRelativePath must resolve to a directory: ${skillSource}`)
+  }
+  return skillSource
 }
 
 function resolveMobileBridgePort(environment, fallback) {
@@ -101,6 +132,10 @@ export async function loadDesktopWorktreeContext(options = {}) {
     readFile(productionDefinitionPath, 'utf8').then(JSON.parse),
   ])
   const sourceDefinition = JSON.parse(await readFile(resolve(repositoryRoot, 'config/source-production.json'), 'utf8'))
+  const skillSource = await resolveDevelopmentSkillSource(
+    repositoryRoot,
+    worktreeDefinition.skillSourceRelativePath,
+  )
   return desktopWorktreeContext({
     ...productionDefinition,
     desktopMode: 'development',
@@ -110,6 +145,7 @@ export async function loadDesktopWorktreeContext(options = {}) {
     ...options,
     repositoryRoot,
     desktopSourceRoot: options.desktopSourceRoot ?? worktreeDefinition.mainCheckoutPath,
+    skillSource,
   })
 }
 
@@ -128,6 +164,7 @@ export async function loadDesktopProductionContext(options = {}) {
     }, sourceDefinition, {
       ...options,
       repositoryRoot,
+      skillSource: resolve(options.homeDirectory ?? homedir(), '.agents/skills'),
     }),
     legacyDshHome: resolve(repositoryRoot, sourceDefinition.runtimeRelativeRoot, 'dsh-home'),
   }

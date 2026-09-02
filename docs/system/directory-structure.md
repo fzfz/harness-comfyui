@@ -4,21 +4,21 @@
 | --- | --- |
 | `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
 | `src/host/cli/` | managed CLI 的 shell capability 与 loopback Host route |
-| `src/cli/` | managed project CLI 的 argv、request、Generation Request、历史 Run 输入查询、Run 图片路径查询和单图读取结构化合同 |
-| `src/host/generation/` | Generation Runtime、Source、Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 输入查询 Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
+| `src/cli/` | managed project CLI 的 argv、request、Generation Request、模板运行参数检查、随机 Seed、历史 Run 输入查询、Run 图片路径查询和单图读取结构化合同 |
+| `src/host/generation/` | Generation Runtime、Source、共享检查与编译计划的 Workflow 参数化、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 输入查询 Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/image-reader/` | 图片读取设置迁移与保存、视觉模型目录、系统 Provider/OpenAI 兼容适配和单图读取 Tool |
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
 | `src/generation/` | Generation Host/Client、Tool 与 CLI 共享合同 |
 | `src/image-reader/` | 命名图片读取配置、凭据更新、视觉模型目录和 Remote 的 Host/Client 共享合同 |
 | `src/client/` | Harness 原生扩展位、上下文选择器、真实 Run/Media 结果列和图片读取设置页 |
 | `src/config/` | Configuration Profile 加载器 |
-| `.agents/skills/anima-prompt-builder/` | ANIMA3 Prompt 与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/anima-prompt-builder/` | ANIMA3 Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill canonical source |
 | `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill canonical source |
-| `.agents/skills/comfyui-generate/` | ComfyUI 生成、兼容性检查与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/comfyui-generate/` | Prompt Builder 结果消费、模板实际参数检查、Seed 分配、ComfyUI 生成、兼容性检查与历史 Generation Run 查询 Skill canonical source |
 | `.agents/skills/comfyui-image-review/` | 多 Run 图片读取与 Prompt 对比 Skill canonical source，包含独立 CLI 参考 |
-| `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫展示图、动作迁移源图 Prompt 与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫展示图、动作迁移源图 Prompt、正向规避和模板无关生成目标与历史 Generation Run 查询 Skill canonical source |
 | `.agents/skills/local-image-reader/` | 用户提供本地图片路径的逐图视觉读取 Skill canonical source，包含独立 CLI 参考 |
-| `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt 与历史 Generation Run 查询 Skill canonical source |
+| `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill canonical source |
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset canonical source；目录名是兼容性内部 ID |
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset 的 Session standing Tool visibility component |
 | `agent-presets/project-system-prompt-visibility.mjs` | 产品 Preset 的 Session standing 系统提示词段落可见性 component |
@@ -50,4 +50,4 @@
 
 运行后生成的 `.local/desktop-production/`、`.local/desktop-development/`、`.local/web-development/`、`.local/source-cli/`、`.local/source-client/`、`coverage/`、`lib/` 和 `node_modules/` 不进入版本控制。linked worktree 根 `.env` 与 `node_modules` 是指向主开发 checkout 的符号链接，也不进入版本控制。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
 
-`src/host/generation/workflow-compiler.ts` 保留运行时参数解析、Actual Workflow 改写、活动输出节点筛选和运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 负责 cache miss 的官方前端导出。`src/host/generation/official-api-workflow.ts` 负责缓存 identity、持久化、并发 miss 合并和 Runtime Input Overlay。
+`src/host/generation/workflow-compiler.ts` 保留共享私有计划的运行时参数检查与编译、Actual Workflow 改写、活动输出节点筛选和运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 负责 cache miss 的官方前端导出。`src/host/generation/official-api-workflow.ts` 负责缓存 identity、持久化、并发 miss 合并和 Runtime Input Overlay。

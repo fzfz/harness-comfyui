@@ -15,12 +15,12 @@ Skill Agent 每次都调用 `run_skill_script`：
 ```json
 {
   "script_path": "scripts/validate-output.mjs",
-  "args": [],
+  "args": ["--prompt-format"],
   "stdin": "{\"positions\":{\"quality\":[\"masterpiece\"]},\"display_text\":\"已生成提示词。\"}"
 }
 ```
 
-`stdin` 是下节定义的标准输入对象序列化后的完整 JSON 字符串。校验器不接受命令行参数，不保存调用次数，也不判断当前是第几次调用。
+`stdin` 是下节定义的标准输入对象序列化后的完整 JSON 字符串。Prompt 格式校验调用必须传入唯一参数 `--prompt-format`。校验器不保存调用次数，也不判断当前是第几次调用。
 
 ## 标准输入
 
@@ -119,7 +119,7 @@ payload 内作为文字使用的圆括号、方括号和反斜杠必须按照 `s
 }
 ```
 
-校验器返回 `exit_code: 0` 时，本轮任务已经完成。Skill Agent 不再调用任何工具。Skill Agent 的下一条 assistant message 只包含固定文本 `Skill 执行结束。`，然后停止。该固定文本不包含、复制、包装或改写 `stdout`；系统从当前 `run_skill_script` toolResult 采用成功 JSON。
+校验器返回 `exit_code: 0` 时，Skill Agent 从 stdout 成功 JSON 取得 `prompt_text`，并继续执行 `SKILL.md` 的“构造生成结果”。该成功 JSON 只完成 WAI 内部 Prompt 格式校验，不是最终 assistant 结果。
 
 ## 输入格式失败
 
@@ -167,6 +167,6 @@ Skill Agent 调用 `finalize_skill_error` 后立即停止，不再手写或复�
 Skill Agent 负责记录本轮校验器调用次数：
 
 1. 第一次或第二次格式失败后，读取 stderr 的全部 `violations`，只修改当前输入中对应的内容，重新执行 Prompt 自检和冲突检查，再调用同一个校验器。
-2. 任意一次返回 `exit_code: 0` 后，Skill Agent 按照“校验成功”规则输出固定结束文本并停止。
+2. 任意一次返回 `exit_code: 0` 后，Skill Agent 按照“校验成功”规则取得 `prompt_text` 并继续构造生成结果。
 3. 第三次格式失败后，不再调用校验器。Skill Agent 使用第三次 stderr 中的 `violations[].message` 生成错误原因字符串并调用 `finalize_skill_error`。
 4. 不得执行第四次格式校验。

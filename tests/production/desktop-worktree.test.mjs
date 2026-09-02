@@ -37,13 +37,17 @@ async function fixture() {
   roots.push(root)
   const desktopSource = resolve(root, '.local/upstreams/dsh-desktop')
   const workspace = resolve(root, 'workspace')
-  const skills = resolve(root, 'parent-home/.agents/skills')
+  const skills = resolve(root, '.agents/skills')
+  const globalSkills = resolve(root, 'parent-home/.agents/skills')
   const environmentFile = resolve(root, 'user.env')
   await mkdir(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib'), { recursive: true })
   await mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true })
   await mkdir(resolve(root, 'node_modules/.pnpm'), { recursive: true })
   await mkdir(workspace)
-  await mkdir(skills, { recursive: true })
+  await Promise.all([
+    mkdir(skills, { recursive: true }),
+    mkdir(globalSkills, { recursive: true }),
+  ])
   await writeFile(resolve(root, '.git'), 'gitdir: fixture\n')
   await writeFile(resolve(desktopSource, 'package.json'), '{}\n')
   await writeFile(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '')
@@ -58,6 +62,7 @@ async function fixture() {
   const definition = {
     mainCheckoutPath: root,
     runtimeRelativeRoot: '.local/desktop-development',
+    skillSourceRelativePath: '.agents/skills',
   }
   const definitionPath = resolve(root, 'config/desktop-worktree.json')
   const productionDefinitionPath = resolve(root, 'config/desktop-production.json')
@@ -83,6 +88,7 @@ async function fixture() {
     definition,
     definitionPath,
     environmentFile,
+    globalSkills,
     productionDefinition,
     productionDefinitionPath,
     skills,
@@ -272,6 +278,8 @@ describe('DSH Desktop worktree lifecycle', () => {
       value.root,
       '.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness',
     ))
+    expect(context.skillSource).toBe(value.skills)
+    expect(context.skillSource).not.toBe(value.globalSkills)
     expect(desktopWorktreeContext({
       ...value.productionDefinition,
       desktopMode: 'development',
@@ -296,8 +304,12 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(context.desktopSource).toBe(resolve(candidateCheckout, '.local/upstreams/dsh-desktop'))
   })
 
-  it('links the environment and all global Skills before installing the standard Harness plugin', async () => {
+  it('links the environment and current worktree Skills before installing the standard Harness plugin', async () => {
     const value = await fixture()
+    await Promise.all([
+      writeFile(resolve(value.skills, 'candidate-marker.txt'), 'candidate\n'),
+      writeFile(resolve(value.globalSkills, 'global-marker.txt'), 'global\n'),
+    ])
     const context = await loadDesktopWorktreeContext({
       repositoryRoot: value.root,
       definitionPath: value.definitionPath,
@@ -323,6 +335,9 @@ describe('DSH Desktop worktree lifecycle', () => {
 
     expect(resolve(activeContext.dshHome, await readlink(resolve(activeContext.dshHome, '.env')))).toBe(value.environmentFile)
     expect(resolve(activeContext.runtimeHome, '.agents', await readlink(resolve(activeContext.runtimeHome, '.agents/skills')))).toBe(value.skills)
+    await expect(readFile(resolve(activeContext.runtimeHome, '.agents/skills/candidate-marker.txt'), 'utf8'))
+      .resolves.toBe('candidate\n')
+    await expect(readFile(resolve(value.globalSkills, 'global-marker.txt'), 'utf8')).resolves.toBe('global\n')
     expect(materializeCli).toHaveBeenCalledWith(value.root)
     expect(materializeClient).toHaveBeenCalledWith(value.root)
     expect(materializeHost).toHaveBeenCalledWith(value.root)
@@ -343,6 +358,53 @@ describe('DSH Desktop worktree lifecycle', () => {
       DSH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
       COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
     })
+  })
+
+  it.each([
+    ['missing', undefined],
+    ['absolute', '/tmp/external-skills'],
+    ['outside the worktree', '../external-skills'],
+  ])('rejects a %s development Skill source path without falling back to global Skills', async (_name, path) => {
+    const value = await fixture()
+    const definition = { ...value.definition }
+    if (path === undefined) delete definition.skillSourceRelativePath
+    else definition.skillSourceRelativePath = path
+    await writeFile(value.definitionPath, `${JSON.stringify(definition)}\n`)
+
+    await expect(loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })).rejects.toThrow('skillSourceRelativePath')
+  })
+
+  it('rejects a configured development Skill source that is not a directory', async () => {
+    const value = await fixture()
+    await rm(value.skills, { recursive: true, force: true })
+    await writeFile(value.skills, 'not a directory\n')
+
+    await expect(loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })).rejects.toThrow('skillSourceRelativePath')
+  })
+
+  it('rejects a development Skill source symlink that resolves outside the current worktree', async () => {
+    const value = await fixture()
+    const externalSkills = await mkdtemp(resolve(tmpdir(), 'external-skills-'))
+    roots.push(externalSkills)
+    await rm(value.skills, { recursive: true, force: true })
+    await symlink(externalSkills, value.skills, 'dir')
+
+    await expect(loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })).rejects.toThrow('skillSourceRelativePath')
   })
 
   it('does not package or install the Desktop plugin when the CLI bundle fails', async () => {

@@ -15,6 +15,9 @@
 ### 脚本名：
 "scripts/validate-output.mjs",
 
+### 参数：
+`["--prompt-format"]`
+
 ### 作用：
 校验各槽的提示词是否符合机械规则（不负责判断语义质量）
 

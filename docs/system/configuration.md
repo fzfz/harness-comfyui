@@ -23,8 +23,9 @@
 | --- | --- |
 | `mainCheckoutPath` | 主开发 checkout 的绝对路径 |
 | `runtimeRelativeRoot` | 当前 worktree 的 Desktop 运行目录；当前为 `.local/desktop-development` |
+| `skillSourceRelativePath` | 当前 worktree 内的项目 Skill 目录；当前为 `.agents/skills`，该路径必须是存在于当前 worktree 内的相对目录 |
 
-`dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。
+`dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。开发 Desktop 准备阶段把隔离 HOME 的 `.agents/skills` 链接到 `<worktree>/<skillSourceRelativePath>`；缺少该配置、路径离开当前 worktree 或目标不是目录时，启动器返回明确错误并且不回退真实 `$HOME/.agents/skills`。生产 Desktop 继续使用真实 `$HOME/.agents/skills`。
 
 Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。开发 Desktop 的 Electron Vite 输出目录固定为当前 worktree 的 `.local/desktop-development/desktop-out/`。
 

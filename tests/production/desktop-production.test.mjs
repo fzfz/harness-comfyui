@@ -70,9 +70,11 @@ describe('DSH Desktop production lifecycle', () => {
       },
     })}\n`)
 
-    await expect(loadDesktopProductionContext({ repositoryRoot: root })).resolves.toMatchObject({
+    const homeDirectory = resolve(root, 'parent-home')
+    await expect(loadDesktopProductionContext({ repositoryRoot: root, homeDirectory })).resolves.toMatchObject({
       mobileBridgePort: 45127,
       environmentFilePath: resolve(root, '.env'),
+      skillSource: resolve(homeDirectory, '.agents/skills'),
     })
   })
 

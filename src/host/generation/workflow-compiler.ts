@@ -8,10 +8,15 @@ import type {
   WorkflowCompiler,
   WorkflowCompilerInput,
   WorkflowCompilerResult,
+  WorkflowRuntimeParameterInspection,
+  WorkflowRuntimeParameterInspectionInput,
+  WorkflowRuntimeParameterInspectionParameter,
+  WorkflowRuntimeSizeCandidate,
 } from './source-preparer.ts'
 import {
   RUNTIME_PARAMETER_INPUT_ALIASES,
   STANDARD_RUNTIME_PARAMETER_KINDS,
+  type StandardRuntimeParameterKind,
 } from './runtime-parameters.ts'
 
 const EDITOR_ONLY_NODE_TYPES = new Set(['Fast Groups Bypasser (rgthree)', 'Label (rgthree)', 'MarkdownNote', 'Note', '孤海注释'])
@@ -688,6 +693,26 @@ interface RuntimeParameterAssignment {
   readonly value: JsonValue
 }
 
+interface RuntimeParameterPlan {
+  readonly workflow: UiWorkflow
+  readonly nodeDefinitions: UnknownRecord
+  readonly numericSources: NumericSourceIndex
+  readonly targets: readonly ParameterTarget[]
+}
+
+function createRuntimeParameterPlan(
+  workflow: UiWorkflow,
+  nodeDefinitions: UnknownRecord,
+  numericSources: NumericSourceIndex,
+): RuntimeParameterPlan {
+  return {
+    workflow,
+    nodeDefinitions,
+    numericSources,
+    targets: parameterTargets(workflow, nodeDefinitions, numericSources),
+  }
+}
+
 function parameterError(code: string, parameterId: string, message: string): never {
   throw new GenerationRuntimeError(code, `Generation parameter "${parameterId}" ${message}`)
 }
@@ -1130,6 +1155,13 @@ function resolveParameterTarget(
         `does not resolve to Workflow node "${suffix}" or an explicit upstream value connected to that node.`,
       )
     }
+    if (assignment.kind === 'width'
+      || assignment.kind === 'height'
+      || assignment.kind === 'aspect_ratio'
+      || assignment.kind === 'megapixels'
+      || assignment.kind === 'resolution_preset') {
+      candidates = prefer(candidates, target => target.nodeId === suffix)
+    }
   }
   if (assignment.kind === 'seed' && suffix === null) {
     candidates = prefer(candidates, target => target.nodeType === 'SeedNode')
@@ -1464,17 +1496,15 @@ function validateDynamicRuntimeContracts(
 }
 
 function applyRuntimeParameters(
-  workflow: UiWorkflow,
-  nodeDefinitions: UnknownRecord,
-  numericSources: NumericSourceIndex,
+  plan: RuntimeParameterPlan,
   supplied: Readonly<Record<string, JsonValue>>,
 ): void {
+  const { workflow, nodeDefinitions, numericSources, targets } = plan
   const assignments: readonly RuntimeParameterAssignment[] = Object.entries(supplied).map(([parameterId, value]) => ({
     parameterId,
     kind: runtimeParameterKind(parameterId),
     value,
   }))
-  const targets = parameterTargets(workflow, nodeDefinitions, numericSources)
   const reserved = new Set<string>()
   const plannedByTarget = new Map<string, PlannedRuntimeParameter[]>()
 
@@ -1518,6 +1548,376 @@ function applyRuntimeParameters(
     return { target: first.target, assignment: first.assignment, value: values[0]! }
   })
   for (const value of validated) setParameterWidget(value.target, value.value, value.assignment.parameterId)
+}
+
+interface InspectedRuntimeParameter {
+  readonly parameter: WorkflowRuntimeParameterInspectionParameter
+  readonly target: ParameterTarget
+  readonly pairingNodeIds: readonly string[]
+}
+
+interface InspectedRuntimeSizeCandidate {
+  readonly candidate: WorkflowRuntimeSizeCandidate
+  readonly sourceNodeIds: readonly string[]
+}
+
+const SIZE_PARAMETER_KINDS = new Set<StandardRuntimeParameterKind>([
+  'width', 'height', 'resolution_preset', 'aspect_ratio', 'megapixels',
+])
+
+function inspectionParameterId(
+  kind: StandardRuntimeParameterKind,
+  target: ParameterTarget,
+  resolved: readonly ParameterTarget[],
+): string {
+  return resolved.length === 1 ? kind : `${kind}_${target.nodeId}`
+}
+
+function inspectionTargetsForKind(
+  plan: RuntimeParameterPlan,
+  kind: StandardRuntimeParameterKind,
+): readonly { readonly parameterId: string; readonly target: ParameterTarget }[] {
+  const resolvedByKey = new Map<string, ParameterTarget>()
+  const nodeIds = [...new Set(plan.targets.map(target => target.nodeId))]
+  for (const nodeId of nodeIds) {
+    const parameterId = `${kind}_${nodeId}`
+    const assignment: RuntimeParameterAssignment = { parameterId, kind, value: null }
+    try {
+      const target = resolveParameterTarget(assignment, plan.workflow, plan.targets, new Set())
+      resolvedByKey.set(target.key, target)
+    } catch (error) {
+      if (error instanceof GenerationRuntimeError && error.code === 'GENERATION_PARAMETER_TARGET_NOT_FOUND') continue
+      throw error
+    }
+  }
+  const resolved = [...resolvedByKey.values()]
+  if (resolved.length === 0) return []
+  if (resolved.length === 1) {
+    try {
+      const canonical = resolveParameterTarget(
+        { parameterId: kind, kind, value: null },
+        plan.workflow,
+        plan.targets,
+        new Set(),
+      )
+      if (canonical.key === resolved[0]!.key) return [{ parameterId: kind, target: canonical }]
+    } catch (error) {
+      if (!(error instanceof GenerationRuntimeError) || error.code !== 'GENERATION_PARAMETER_TARGET_NOT_FOUND') throw error
+    }
+  }
+  return resolved.map(target => ({
+    parameterId: inspectionParameterId(kind, target, resolved),
+    target,
+  }))
+}
+
+function contractNumber(bound: ExactNumberBound | undefined): number | undefined {
+  if (bound === undefined) return undefined
+  const value = Number(bound.source)
+  if (!Number.isFinite(value)) fail(`ComfyUI numeric input bound ${bound.source} is not representable.`)
+  return value
+}
+
+function inspectParameter(
+  kind: StandardRuntimeParameterKind,
+  parameterId: string,
+  target: ParameterTarget,
+  contract: RuntimeParameterContract = target.contract,
+  currentValue: JsonValue = array(target.node.widgets_values)[target.mapping.index] as JsonValue,
+): WorkflowRuntimeParameterInspectionParameter {
+  if (contract.kind === 'unsupported') {
+    parameterError('GENERATION_PARAMETER_CONTRACT_UNSUPPORTED', parameterId, `for ${targetLabel(target)} ${contract.reason}`)
+  }
+  if (contract.kind === 'unknown') {
+    parameterError(
+      'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      parameterId,
+      `for ${targetLabel(target)} does not publish a supported ${contract.typeLabel} value contract.`,
+    )
+  }
+  if (contract.kind === 'number') {
+    return Object.freeze({
+      parameter_id: parameterId,
+      kind,
+      value_type: contract.integer ? 'integer' : 'number',
+      current_value: structuredClone(currentValue),
+      ...(contractNumber(contract.minimum) === undefined ? {} : { minimum: contractNumber(contract.minimum)! }),
+      ...(contractNumber(contract.maximum) === undefined ? {} : { maximum: contractNumber(contract.maximum)! }),
+    })
+  }
+  if (contract.kind === 'choices') {
+    return Object.freeze({
+      parameter_id: parameterId,
+      kind,
+      value_type: 'choice',
+      current_value: structuredClone(currentValue),
+      allowed_values: Object.freeze(structuredClone(contract.values)),
+    })
+  }
+  return Object.freeze({
+    parameter_id: parameterId,
+    kind,
+    value_type: contract.kind,
+    current_value: structuredClone(currentValue),
+  })
+}
+
+function parameterPairingNodeIds(
+  workflow: UiWorkflow,
+  target: ParameterTarget,
+  kind: StandardRuntimeParameterKind,
+): readonly string[] {
+  const names = new Set(uniqueNames([kind, ...(RUNTIME_PARAMETER_INPUT_ALIASES[kind] ?? [])]).map(value => value.toLowerCase()))
+  const nodes = workflowNodes(workflow)
+  const result = new Set<string>()
+  for (const nodeId of [target.nodeId, ...downstreamNodeIds(workflow, target.nodeId)]) {
+    const node = nodes.get(nodeId)
+    if (node === undefined) continue
+    if (nodeId === target.nodeId && names.has(target.mapping.name.toLowerCase())) result.add(nodeId)
+    if (array(node.inputs).some((value) => {
+      const input = record(value, `Workflow node "${nodeId}" input`)
+      return typeof input.name === 'string' && names.has(input.name.toLowerCase())
+    })) result.add(nodeId)
+  }
+  return Object.freeze([...result])
+}
+
+function pairInspectionParameters(
+  workflow: UiWorkflow,
+  representation: 'width_height' | 'aspect_ratio_megapixels',
+  leftName: 'width' | 'aspect_ratio',
+  rightName: 'height' | 'megapixels',
+  left: readonly InspectedRuntimeParameter[],
+  right: readonly InspectedRuntimeParameter[],
+): readonly InspectedRuntimeSizeCandidate[] {
+  const candidates: InspectedRuntimeSizeCandidate[] = []
+  const claimedRight = new Set<string>()
+  for (const leftValue of left) {
+    const matchingNodes = (rightValue: InspectedRuntimeParameter): readonly string[] => {
+      const rightNodeIds = new Set(rightValue.pairingNodeIds)
+      return leftValue.pairingNodeIds.filter(nodeId => rightNodeIds.has(nodeId))
+    }
+    const allMatches = right.filter(rightValue => matchingNodes(rightValue).length > 0)
+    const sameNodeMatches = allMatches.filter(rightValue => rightValue.target.nodeId === leftValue.target.nodeId)
+    const matches = sameNodeMatches.length > 0 ? sameNodeMatches : allMatches
+    if (matches.length === 0) continue
+    if (matches.length > 1) {
+      parameterError(
+        'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+        leftValue.parameter.parameter_id,
+        `matches multiple paired ${rightName} Workflow widgets: ${matches.map(value => targetLabel(value.target)).join(', ')}.`,
+      )
+    }
+    const rightValue = matches[0]!
+    if (claimedRight.has(rightValue.target.key)) {
+      parameterError(
+        'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+        rightValue.parameter.parameter_id,
+        `matches multiple paired ${leftName} Workflow widgets.`,
+      )
+    }
+    claimedRight.add(rightValue.target.key)
+    const sharedNodes = matchingNodes(rightValue)
+    const sourceNodeIds = sharedNodes.filter(nodeId => !sharedNodes.some(otherNodeId => (
+      otherNodeId !== nodeId && downstreamNodeIds(workflow, otherNodeId).has(nodeId)
+    )))
+    if (representation === 'width_height' && leftName === 'width' && rightName === 'height') {
+      candidates.push(Object.freeze({
+        candidate: Object.freeze({
+          candidate_id: `${representation}:${leftValue.parameter.parameter_id}:${rightValue.parameter.parameter_id}`,
+          representation,
+          width: leftValue.parameter,
+          height: rightValue.parameter,
+        }),
+        sourceNodeIds: Object.freeze(sourceNodeIds),
+      }))
+    } else if (representation === 'aspect_ratio_megapixels' && leftName === 'aspect_ratio' && rightName === 'megapixels') {
+      candidates.push(Object.freeze({
+        candidate: Object.freeze({
+          candidate_id: `${representation}:${leftValue.parameter.parameter_id}:${rightValue.parameter.parameter_id}`,
+          representation,
+          aspect_ratio: leftValue.parameter,
+          megapixels: rightValue.parameter,
+        }),
+        sourceNodeIds: Object.freeze(sourceNodeIds),
+      }))
+    } else {
+      fail(`Runtime size candidate representation ${representation} is invalid.`)
+    }
+  }
+  return candidates
+}
+
+function parseResolutionPreset(value: JsonValue): { readonly width: number; readonly height: number } | undefined {
+  if (typeof value !== 'string') return undefined
+  const match = /(?:^|[^0-9])([1-9][0-9]*)\s*[x×]\s*([1-9][0-9]*)(?:[^0-9]|$)/iu.exec(value)
+  if (match === null) return undefined
+  const width = Number(match[1])
+  const height = Number(match[2])
+  return Number.isSafeInteger(width) && Number.isSafeInteger(height)
+    ? { width, height }
+    : undefined
+}
+
+function resolutionPresetCandidates(
+  values: readonly InspectedRuntimeParameter[],
+): readonly InspectedRuntimeSizeCandidate[] {
+  return values.map(({ parameter, pairingNodeIds }) => {
+    const allowedValues = parameter.allowed_values ?? [parameter.current_value]
+    const mappedOptions: Array<{ readonly value: JsonValue; readonly width: number; readonly height: number }> = []
+    const unmappedValues: JsonValue[] = []
+    for (const value of allowedValues) {
+      const mapped = parseResolutionPreset(value)
+      if (mapped === undefined) unmappedValues.push(structuredClone(value))
+      else mappedOptions.push(Object.freeze({ value: structuredClone(value), ...mapped }))
+    }
+    return Object.freeze({
+      candidate: Object.freeze({
+        candidate_id: `resolution_preset:${parameter.parameter_id}`,
+        representation: 'resolution_preset' as const,
+        parameter,
+        mapped_options: Object.freeze(mappedOptions),
+        unmapped_values: Object.freeze(unmappedValues),
+      }),
+      sourceNodeIds: Object.freeze(pairingNodeIds),
+    })
+  })
+}
+
+function imageOutputNodeIds(
+  plan: RuntimeParameterPlan,
+  activeOutputIds: readonly string[],
+): readonly string[] {
+  const imageLinkTargets = new Set(array(plan.workflow.links).flatMap(rawLink => (
+    Array.isArray(rawLink) && rawLink.length >= 6 && String(rawLink[5]).toUpperCase() === 'IMAGE'
+      ? [String(rawLink[3])]
+      : []
+  )))
+  const activeOutputs = new Set(activeOutputIds)
+  return plan.workflow.nodes.flatMap(rawNode => {
+    const node = rawNode as UnknownRecord
+    const nodeId = String(node.id)
+    if (!activeOutputs.has(nodeId)) return []
+    const hasLinkedImageInput = array(node.inputs).some(rawInput => {
+      const input = rawInput as UnknownRecord
+      return String(input.type).toUpperCase() === 'IMAGE'
+        && input.link !== null
+        && input.link !== undefined
+    })
+    return hasLinkedImageInput || imageLinkTargets.has(nodeId) ? [nodeId] : []
+  })
+}
+
+function terminalSizeCandidates(
+  plan: RuntimeParameterPlan,
+  candidates: readonly InspectedRuntimeSizeCandidate[],
+): readonly WorkflowRuntimeSizeCandidate[] {
+  const apiWorkflow = projectRuntimeApiWorkflow(plan.workflow, plan.nodeDefinitions)
+  const outputProjection = projectRuntimeOutputNodes(apiWorkflow, plan.nodeDefinitions)
+  if (outputProjection.discovered.length === 0) return candidates.map(value => value.candidate)
+  if (outputProjection.active.length === 0) return []
+  const outputIds = imageOutputNodeIds(plan, outputProjection.active)
+  if (outputIds.length === 0) return []
+  const downstreamBySource = new Map<string, ReadonlySet<string>>()
+  const downstream = (nodeId: string): ReadonlySet<string> => {
+    const cached = downstreamBySource.get(nodeId)
+    if (cached !== undefined) return cached
+    const discovered = downstreamNodeIds(plan.workflow, nodeId)
+    downstreamBySource.set(nodeId, discovered)
+    return discovered
+  }
+  const reachedOutputs = (candidate: InspectedRuntimeSizeCandidate): ReadonlySet<string> => new Set(
+    outputIds.filter(outputId => candidate.sourceNodeIds.some(sourceNodeId => (
+      sourceNodeId === outputId || downstream(sourceNodeId).has(outputId)
+    ))),
+  )
+  const outputsByCandidate = new Map(candidates.map(candidate => [candidate, reachedOutputs(candidate)]))
+  if (![...outputsByCandidate.values()].some(outputs => outputs.size > 0)) {
+    return []
+  }
+  return candidates.filter(candidate => {
+    const outputs = outputsByCandidate.get(candidate)!
+    if (outputs.size !== outputIds.length) return false
+    return !candidates.some(other => other !== candidate && candidate.sourceNodeIds.some(sourceNodeId => (
+      other.sourceNodeIds.some(otherSourceNodeId => (
+        downstream(sourceNodeId).has(otherSourceNodeId)
+        && [...(outputsByCandidate.get(other) ?? [])].some(outputId => outputs.has(outputId))
+      ))
+    )))
+  }).map(value => value.candidate)
+}
+
+function inspectRuntimeParameterPlan(plan: RuntimeParameterPlan): WorkflowRuntimeParameterInspection {
+  const discovered = new Map<StandardRuntimeParameterKind, readonly {
+    readonly parameterId: string
+    readonly target: ParameterTarget
+  }[]>()
+  for (const kind of STANDARD_RUNTIME_PARAMETER_KINDS) {
+    discovered.set(kind, inspectionTargetsForKind(plan, kind))
+  }
+  const uniquePlanned = new Map<string, PlannedRuntimeParameter>()
+  for (const kind of STANDARD_RUNTIME_PARAMETER_KINDS) {
+    for (const { parameterId, target } of discovered.get(kind) ?? []) {
+      if (uniquePlanned.has(target.key)) continue
+      uniquePlanned.set(target.key, {
+        target,
+        assignment: {
+          parameterId,
+          kind,
+          value: structuredClone(array(target.node.widgets_values)[target.mapping.index] as JsonValue),
+        },
+      })
+    }
+  }
+  const dynamicValidation = validateDynamicRuntimeContracts(
+    plan.workflow,
+    plan.nodeDefinitions,
+    plan.numericSources,
+    plan.targets,
+    [...uniquePlanned.values()],
+  )
+  const inspected = new Map<StandardRuntimeParameterKind, readonly InspectedRuntimeParameter[]>()
+  for (const kind of STANDARD_RUNTIME_PARAMETER_KINDS) {
+    inspected.set(kind, (discovered.get(kind) ?? []).map(({ parameterId, target }) => ({
+      target,
+      pairingNodeIds: parameterPairingNodeIds(plan.workflow, target, kind),
+      parameter: inspectParameter(
+        kind,
+        parameterId,
+        target,
+        dynamicValidation.contracts.get(target.key) ?? target.contract,
+        dynamicValidation.canonicalValues.get(target.key)
+          ?? array(target.node.widgets_values)[target.mapping.index] as JsonValue,
+      ),
+    })))
+  }
+  const parameters = STANDARD_RUNTIME_PARAMETER_KINDS
+    .filter(kind => !SIZE_PARAMETER_KINDS.has(kind))
+    .flatMap(kind => inspected.get(kind) ?? [])
+    .map(value => value.parameter)
+  const sizeCandidates = [
+    ...pairInspectionParameters(
+      plan.workflow,
+      'width_height',
+      'width',
+      'height',
+      inspected.get('width') ?? [],
+      inspected.get('height') ?? [],
+    ),
+    ...pairInspectionParameters(
+      plan.workflow,
+      'aspect_ratio_megapixels',
+      'aspect_ratio',
+      'megapixels',
+      inspected.get('aspect_ratio') ?? [],
+      inspected.get('megapixels') ?? [],
+    ),
+    ...resolutionPresetCandidates(inspected.get('resolution_preset') ?? []),
+  ]
+  return Object.freeze({
+    parameters: Object.freeze(parameters),
+    size_candidates: Object.freeze(terminalSizeCandidates(plan, sizeCandidates)),
+  })
 }
 
 function applyLoras(
@@ -1698,10 +2098,10 @@ function hasRequiredConnectionInputs(definition: UnknownRecord, inputs: Readonly
   ))
 }
 
-function compile(
+function projectRuntimeApiWorkflow(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
-): Omit<WorkflowCompilerResult, 'actualWorkflow'> {
+): Record<string, JsonValue> {
   if (workflow.version !== 0.4) fail('Workflow version is not supported.')
   const links = workflowLinks(workflow)
   const nodes = workflowNodes(workflow)
@@ -1748,6 +2148,16 @@ function compile(
     }
   }
 
+  return apiWorkflow
+}
+
+function projectRuntimeOutputNodes(
+  apiWorkflow: Readonly<Record<string, JsonValue>>,
+  nodeDefinitions: UnknownRecord,
+): {
+  readonly discovered: readonly string[]
+  readonly active: readonly string[]
+} {
   const discoveredOutputIds = Object.entries(apiWorkflow).flatMap(([nodeId, value]) => {
     const node = value as Readonly<Record<string, JsonValue>>
     const definition = record(nodeDefinitions[String(node.class_type)], 'ComfyUI output node definition')
@@ -1758,8 +2168,21 @@ function compile(
     const definition = record(nodeDefinitions[String(node.class_type)], 'ComfyUI output node definition')
     return hasRequiredConnectionInputs(definition, node.inputs as Readonly<Record<string, JsonValue>>)
   })
+  return Object.freeze({
+    discovered: Object.freeze(discoveredOutputIds),
+    active: Object.freeze(activeOutputNodeIds),
+  })
+}
+
+function compile(
+  workflow: UiWorkflow,
+  nodeDefinitions: UnknownRecord,
+): Omit<WorkflowCompilerResult, 'actualWorkflow'> {
+  const apiWorkflow = projectRuntimeApiWorkflow(workflow, nodeDefinitions)
+  const outputProjection = projectRuntimeOutputNodes(apiWorkflow, nodeDefinitions)
+  const activeOutputNodeIds = [...outputProjection.active]
   if (activeOutputNodeIds.length === 0) fail('Workflow does not contain an active output node.')
-  for (const nodeId of discoveredOutputIds) {
+  for (const nodeId of outputProjection.discovered) {
     if (!activeOutputNodeIds.includes(nodeId)) delete apiWorkflow[nodeId]
   }
   return Object.freeze({
@@ -1852,8 +2275,8 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
     return waitForPromise(request, signal)
   }
 
-  async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
-    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
+  private async runtimeParameterPlan(input: WorkflowRuntimeParameterInspectionInput): Promise<RuntimeParameterPlan> {
+    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow parameter inspection.')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs)
     const signal = input.signal === undefined ? controller.signal : AbortSignal.any([controller.signal, input.signal])
@@ -1874,29 +2297,45 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
         }
         throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
       }
-      const { definitions, numericSources } = snapshot
-      const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
-      const runtimeParameters = input.runtimeParameters ?? {}
-      applyRuntimeParameters(actualWorkflow, definitions, numericSources, runtimeParameters)
-      materializeRgthreeRandomSeeds(actualWorkflow, definitions, this.createRandomSeed)
-      if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, definitions, input.model)
-      applyLoras(actualWorkflow, definitions, input.loras)
-      const compiled = compile(actualWorkflow, definitions)
-      const finalized = await this.officialApiWorkflowCompiler.compile({
-        instanceId: input.instanceId,
-        connection: input.connection,
-        templateWorkflow: input.workflow,
-        actualWorkflow,
-        runtimeProjection: compiled.apiWorkflow,
-        ...(input.signal === undefined ? {} : { signal: input.signal }),
-      })
-      return Object.freeze({
-        apiWorkflow: finalized.apiWorkflow,
-        activeOutputNodeIds: compiled.activeOutputNodeIds,
-        actualWorkflow,
-      })
+      return createRuntimeParameterPlan(input.workflow, snapshot.definitions, snapshot.numericSources)
     } finally {
       clearTimeout(timeout)
     }
+  }
+
+  async inspectRuntimeParameters(
+    input: WorkflowRuntimeParameterInspectionInput,
+  ): Promise<WorkflowRuntimeParameterInspection> {
+    return inspectRuntimeParameterPlan(await this.runtimeParameterPlan(input))
+  }
+
+  async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
+    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
+    const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
+    const plan = await this.runtimeParameterPlan({
+      instanceId: input.instanceId,
+      workflow: actualWorkflow,
+      connection: input.connection,
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
+    })
+    const runtimeParameters = input.runtimeParameters ?? {}
+    applyRuntimeParameters(plan, runtimeParameters)
+    materializeRgthreeRandomSeeds(actualWorkflow, plan.nodeDefinitions, this.createRandomSeed)
+    if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, plan.nodeDefinitions, input.model)
+    applyLoras(actualWorkflow, plan.nodeDefinitions, input.loras)
+    const compiled = compile(actualWorkflow, plan.nodeDefinitions)
+    const finalized = await this.officialApiWorkflowCompiler.compile({
+      instanceId: input.instanceId,
+      connection: input.connection,
+      templateWorkflow: input.workflow,
+      actualWorkflow,
+      runtimeProjection: compiled.apiWorkflow,
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
+    })
+    return Object.freeze({
+      apiWorkflow: finalized.apiWorkflow,
+      activeOutputNodeIds: compiled.activeOutputNodeIds,
+      actualWorkflow,
+    })
   }
 }

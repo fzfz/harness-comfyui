@@ -67,14 +67,14 @@ Skill 执行者只在画面需要对应内容时读取下列资料，并且只�
 
 全部 Character 查询结束后，Skill 执行者必须检查当前请求要求出现的每名主体。某名必需主体对应的 Character 记录没有非空 `data.prompt_text`，目录查询也没有返回可采用的 `prompt_text`，并且当前普通文字、用户选定的历史正向 Prompt 或其他合法来源仍不能完整定义该主体时，Skill 执行者必须报告具体 Character 名称或 ID 没有可用 Prompt 内容，请用户补充该主体的外观与身份要求或选择包含有效 `data.prompt_text` 的 Character 记录，然后停止。其他来源只有在能够完整定义当前请求要求的全部主体时，Skill 执行者才继续构建 Prompt。
 
-Skill 执行者必须把选定内容组装成一条自然语言主体明确、关系清楚、可直接输入 Krea2 的 Prompt。成功构建 Prompt 时，最终回答必须直接以 Prompt 正文的画面质量、动漫媒介或主体描述开头，并且只包含一个 Prompt 正文段落。Prompt 正文不写“根据规则”“已读取资料”“完成自检”“以下是 Prompt”或其他引导句，也不同时提供候选 Prompt、负向 Prompt、批量编号、路线说明、参数建议、约束清单或制作备注。
+Skill 执行者必须把选定内容组装成一条自然语言主体明确、关系清楚、可直接输入 Krea2 的正向 Prompt。该 Prompt 正文直接以画面质量、动漫媒介或主体描述开头，只描述一幅画面，不写“根据规则”“已读取资料”“完成自检”“以下是 Prompt”或其他引导句，也不包含候选 Prompt、批量编号、路线说明、参数建议、约束清单或制作备注。
 
 ## 完成前自检
 
 Skill 执行者提交最终 Prompt 前必须逐项确认：
 
-- 最终输出只有一条 Prompt 正文，并且正文描述一幅画面；
-- 最终回答的第一个句子已经开始描述画面，Prompt 前后没有引导句或说明段落；
+- `positive_prompt` 只包含一条 Prompt 正文，并且正文描述一幅画面；
+- `positive_prompt` 的第一个句子已经开始描述画面，Prompt 前后没有引导句或说明段落；
 - 当前明确要求已经采用，明确排除的内容没有重新出现；
 - Character 与 Style 内容只来自对应记录的非空 `data.prompt_text` 或语义目录查询中被采用候选的对应 `prompt_text`；
 - 人物身份、外观、服装、动作、镜头、场景和光线之间不存在可见冲突；
@@ -82,4 +82,6 @@ Skill 执行者提交最终 Prompt 前必须逐项确认：
 - 动作迁移路线已经满足 `references/motion-migration-constraints.md` 的全部检查项；
 - Prompt 不包含负向提示词、内部文件说明、人类可读检查项或生成器调用说明。
 
-全部检查通过后，Skill 执行者直接返回最终 Prompt 正文，最终回答的第一字符就是 Prompt 正文的第一字符。本 Skill 不创建输出目录或编号文件。
+全部检查通过后，Skill 执行者必须在决定生成目的、正向规避策略和目标尺寸以前，完整读取 `references/generation-output-contract.md`、`references/generation-output-schema.json` 与 `references/generation-profiles.json`。Skill 执行者按这些参考构造一个结构化生成结果，再按 `references/generation-output-contract.md` 规定的校验接口校验该结果。
+
+当前上下文经过压缩而不再完整保留任一上述参考文件时，Skill 执行者必须在构造或重新校验结构化生成结果前重新完整读取缺失文件。最终回答必须是通过生成结果校验器的结构化结果。本 Skill 不创建输出目录或编号文件。

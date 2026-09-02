@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generation-output-schema.json",
+  "type": "object",
+  "required": [
+    "model_route",
+    "positive_prompt",
+    "negative_mode",
+    "negative_prompt",
+    "positive_avoidance",
+    "generation_purpose",
+    "aspect_ratio",
+    "width",
+    "height",
+    "megapixels"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "model_route": { "type": "string", "minLength": 1 },
+    "positive_prompt": { "type": "string", "minLength": 1 },
+    "negative_mode": { "enum": ["native_negative", "positive_rewrite"] },
+    "negative_prompt": { "type": ["string", "null"] },
+    "positive_avoidance": { "type": ["string", "null"] },
+    "generation_purpose": { "enum": ["test", "final"] },
+    "aspect_ratio": { "type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$" },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "megapixels": { "type": "number", "exclusiveMinimum": 0 }
+  }
+}

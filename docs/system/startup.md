@@ -60,6 +60,14 @@ pnpm dev:start
 
 正确链接重复启动时保持不变。既有普通文件、普通目录或指向其他目标的链接会中止启动。启动器不会复制 `.env`，也不会在 worktree 安装依赖。
 
+`dev:start` 还根据 `config/desktop-worktree.json.skillSourceRelativePath` 创建仅位于隔离 Desktop HOME 的候选 Skill 链接：
+
+```text
+<worktree>/.local/desktop-development/home/.agents/skills -> <worktree>/.agents/skills
+```
+
+开发 Desktop 因此读取当前 worktree 的候选项目 Skill。该链接不修改真实 `$HOME/.agents/skills`；`prod:start` 继续把生产 Desktop 的隔离 HOME 链接到真实 `$HOME/.agents/skills`。
+
 Desktop generation 安装器读取已链接根 `node_modules/.modules.yaml` 中的 pnpm package store。插件适配层通过 DSH Desktop installer 的进程接口执行 `pnpm --ignore-workspace --store-dir <storeDir> add ...`。generation staging 使用自己的 virtual store 和 lockfile，不修改主开发 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。
 
 链接准备完成后，`dev:start` 从主开发 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm dev`，把当前 worktree 的插件源码打包为 generation，并加载与生产相同的 Workspace、Preset、Provider 和模型配置。启动器在每次启动前清空当前 worktree 的 `.local/desktop-development/desktop-out/`，再把本次 Electron Vite 输出写入该目录；并行启动的 worktree 不会共同写入主开发 checkout 中的 DSH Desktop `out/`。
@@ -95,7 +103,7 @@ pnpm prod:start
 )
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.38.7` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.39.0` 使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 

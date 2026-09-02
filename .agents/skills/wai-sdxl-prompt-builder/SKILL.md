@@ -86,6 +86,12 @@ Skill Agent 完成十五位置的 payload 设计时，必须同时保留用户�
 
 两项检查通过后，Skill Agent 读取 [Prompt 格式校验器接口](references/prompt-format-validator.md)，按照该接口调用 `scripts/validate-output.mjs`。校验器返回 `violations` 时，Skill Agent 根据每条 `violations[].path` 修改该路径指向的 `positions` 数组元素、`display_text` 或完整标准输入 JSON，然后重新执行自检、冲突检查和格式校验。Prompt 格式校验器最多调用三次。
 
-校验器返回 `exit_code: 0` 时，Skill Agent 按照 [Prompt 格式校验器接口](references/prompt-format-validator.md) 的“校验成功”规则结束当前 Skill 执行。
+校验器返回 `exit_code: 0` 时，Skill Agent 按照 [Prompt 格式校验器接口](references/prompt-format-validator.md) 的“校验成功”规则取得最终 Prompt 文本，并继续构造生成结果。
 
 第三次调用仍返回 `exit_code: 2` 时，Skill Agent 按照 [Prompt 格式校验器接口](references/prompt-format-validator.md) 规定的消息顺序生成错误原因字符串，调用 `finalize_skill_error`，传入该错误原因字符串，然后立即停止。校验器返回 `exit_code: 1`、Tool error 或其他整数退出码时，Skill Agent 按照同一文件规定生成错误原因字符串，调用 `finalize_skill_error`，然后立即停止。`finalize_skill_error` 自身返回 Tool error 时，Skill Agent 不重试该工具，不手写 JSON，也不再调用其他工具。
+
+## 6. 构造生成结果
+
+WAI Prompt 通过原有格式校验以后，Skill Agent 必须在决定生成目的、负向策略和目标尺寸以前，完整读取 `references/generation-output-contract.md`、`references/generation-output-schema.json` 与 `references/generation-profiles.json`。Skill Agent 按这些参考构造一个结构化生成结果，再按 `references/generation-output-contract.md` 规定的校验接口校验该结果。
+
+当前上下文经过压缩而不再完整保留任一上述参考文件时，Skill Agent 必须在构造或重新校验结构化生成结果前重新完整读取缺失文件。最终回答必须是通过生成结果校验器的结构化结果。

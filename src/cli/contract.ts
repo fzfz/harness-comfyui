@@ -65,6 +65,12 @@ export type CliRequest =
   | CliCatalogSearchRequest
   | { readonly command: 'catalog.instance.list' }
   | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
+  | {
+    readonly command: 'generation.inspect-template-parameters'
+    readonly template_id: string
+    readonly instance_id: string
+  }
+  | { readonly command: 'generation.random-seeds'; readonly count: number }
   | { readonly command: 'generation.run-inputs'; readonly run_ids: readonly string[] }
   | { readonly command: 'generation.resolve-media'; readonly run_ids: readonly string[] }
   | { readonly command: 'image.inspect'; readonly file_path: string; readonly prompt?: string }
@@ -101,6 +107,19 @@ function runIds(value: unknown): readonly string[] {
     throw new TypeError(`CLI request run_ids must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
   }
   return Object.freeze([...value])
+}
+
+function generationInspectionId(value: unknown, name: 'template_id' | 'instance_id'): string {
+  const result = text(value, `CLI request ${name}`)
+  if (result.trim().length === 0) throw new TypeError(`CLI request ${name} is invalid`)
+  return result
+}
+
+function randomSeedCount(value: unknown): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 1 || (value as number) > 20) {
+    throw new TypeError('CLI request count must be an integer between 1 and 20')
+  }
+  return value as number
 }
 
 function jsonValue(value: unknown, label: string, depth = 0): JsonValue {
@@ -210,6 +229,18 @@ export function parseCliRequest(value: unknown): CliRequest {
     exactKeys(source, ['command', 'request'], 'CLI request')
     return Object.freeze({ command: source.command, request: parseCliGenerationRequest(source.request) })
   }
+  if (source.command === 'generation.inspect-template-parameters') {
+    exactKeys(source, ['command', 'template_id', 'instance_id'], 'CLI request')
+    return Object.freeze({
+      command: source.command,
+      template_id: generationInspectionId(source.template_id, 'template_id'),
+      instance_id: generationInspectionId(source.instance_id, 'instance_id'),
+    })
+  }
+  if (source.command === 'generation.random-seeds') {
+    exactKeys(source, ['command', 'count'], 'CLI request')
+    return Object.freeze({ command: source.command, count: randomSeedCount(source.count) })
+  }
   if (source.command === 'generation.run-inputs' || source.command === 'generation.resolve-media') {
     exactKeys(source, ['command', 'run_ids'], 'CLI request')
     return Object.freeze({ command: source.command, run_ids: runIds(source.run_ids) })
@@ -292,6 +323,32 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
     const source = record(request, 'Generation Run stdin')
     exactKeys(source, ['run_ids'], 'Generation Run stdin')
     return parseCliRequest({ command: 'generation.run-inputs', run_ids: source.run_ids })
+  }
+  if (argv.length === 3 && prefix === 'generation inspect-template-parameters --stdin') {
+    let request: unknown
+    try {
+      request = JSON.parse(stdin) as unknown
+    } catch {
+      throw new TypeError('Generation template parameter inspection stdin must contain one JSON object')
+    }
+    const source = record(request, 'Generation template parameter inspection stdin')
+    exactKeys(source, ['template_id', 'instance_id'], 'Generation template parameter inspection stdin')
+    return parseCliRequest({
+      command: 'generation.inspect-template-parameters',
+      template_id: source.template_id,
+      instance_id: source.instance_id,
+    })
+  }
+  if (argv.length === 3 && prefix === 'generation random-seeds --stdin') {
+    let request: unknown
+    try {
+      request = JSON.parse(stdin) as unknown
+    } catch {
+      throw new TypeError('Generation random Seed stdin must contain one JSON object')
+    }
+    const source = record(request, 'Generation random Seed stdin')
+    exactKeys(source, ['count'], 'Generation random Seed stdin')
+    return parseCliRequest({ command: 'generation.random-seeds', count: source.count })
   }
   if (argv.length === 3 && prefix === 'generation resolve-media --stdin') {
     let request: unknown

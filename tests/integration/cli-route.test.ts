@@ -27,14 +27,20 @@ afterEach(() => {
   }
 })
 
-function createRuntime(preparer: GenerationPreparationAdapter): GenerationRuntime {
+type TestGenerationPreparationAdapter = Pick<GenerationPreparationAdapter, 'prepare'>
+  & Partial<Pick<GenerationPreparationAdapter, 'inspectRuntimeParameters'>>
+
+function createRuntime(preparer: TestGenerationPreparationAdapter): GenerationRuntime {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-cli-route-'))
   temporaryDirectories.push(root)
   return new GenerationRuntime({
     runRepositoryFile: join(root, 'data', 'runs.sqlite'),
     runDirectory: join(root, 'runs'),
     savedMediaDirectory: join(root, 'media'),
-    preparer,
+    preparer: {
+      inspectRuntimeParameters: async () => { throw new Error('unreachable') },
+      ...preparer,
+    },
   })
 }
 
@@ -192,6 +198,101 @@ describe('Harness ComfyUI managed CLI route', () => {
     await server.close()
   })
 
+  it('dispatches read-only template inspection and returns distinct ordinary random Seeds without Workspace lookup', async () => {
+    const inspectTemplateRuntimeParameters = vi.fn(async () => ({
+      parameters: [],
+      size_candidates: [],
+    }))
+    const resolveByPath = vi.fn()
+    const random = vi.spyOn(Math, 'random')
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.9999999999999999)
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: {
+        acceptGeneration: vi.fn(),
+        readGenerationRunInputs: vi.fn(),
+        readGenerationRunMedia: vi.fn(),
+        inspectTemplateRuntimeParameters,
+      },
+      imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath },
+    }))
+    try {
+      const inspectionResponse = await post(server.origin, 'trusted', {
+        command: 'generation.inspect-template-parameters', template_id: '34', instance_id: '2',
+      })
+      const seedResponse = await post(server.origin, 'trusted', {
+        command: 'generation.random-seeds', count: 3,
+      })
+
+      expect(await inspectionResponse.json()).toEqual({
+        ok: true,
+        data: { parameters: [], size_candidates: [] },
+      })
+      expect(inspectTemplateRuntimeParameters).toHaveBeenCalledWith(
+        { templateId: '34', instanceId: '2' },
+        expect.any(AbortSignal),
+      )
+      expect(await seedResponse.json()).toEqual({
+        ok: true,
+        data: { seeds: [0, 1_073_741_824, 2_147_483_647] },
+      })
+      expect(resolveByPath).not.toHaveBeenCalled()
+    } finally {
+      random.mockRestore()
+      await server.close()
+    }
+  })
+
+  it('returns one and twenty ordinary random Seeds at the supported count boundaries', async () => {
+    let nextSeed = 0
+    const random = vi.spyOn(Math, 'random').mockImplementation(() => (nextSeed++ + 0.5) / 2_147_483_648)
+    const resolveByPath = vi.fn()
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: {
+        acceptGeneration: vi.fn(),
+        readGenerationRunInputs: vi.fn(),
+        readGenerationRunMedia: vi.fn(),
+        inspectTemplateRuntimeParameters: vi.fn(),
+      },
+      imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath },
+    }))
+    try {
+      const one = await post(server.origin, 'trusted', { command: 'generation.random-seeds', count: 1 })
+      const twenty = await post(server.origin, 'trusted', { command: 'generation.random-seeds', count: 20 })
+
+      expect(await one.json()).toEqual({ ok: true, data: { seeds: [0] } })
+      expect(await twenty.json()).toEqual({
+        ok: true,
+        data: { seeds: Array.from({ length: 20 }, (_, index) => index + 1) },
+      })
+      expect(resolveByPath).not.toHaveBeenCalled()
+    } finally {
+      random.mockRestore()
+      await server.close()
+    }
+  })
+
   it('derives all durable Run ownership columns from the shell capability', async () => {
     const runtime = createRuntime({
       async prepare(request) {
@@ -316,6 +417,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       runDirectory: join(root, 'runs'),
       savedMediaDirectory: join(root, 'media'),
       preparer: {
+        async inspectRuntimeParameters() { throw new Error('unreachable') },
         async prepare(request) {
           return {
             instanceId: request.instanceId ?? '2',
@@ -420,7 +522,10 @@ describe('Harness ComfyUI managed CLI route', () => {
           : undefined,
       },
       catalog,
-      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() },
+      runtime: {
+        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+        readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
+      },
       imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
@@ -466,7 +571,10 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: { authorize: () => identity },
       catalog: catalog as never,
-      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() },
+      runtime: {
+        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+        readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
+      },
       imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
@@ -578,6 +686,7 @@ describe('Harness ComfyUI managed CLI route', () => {
 
   it('rejects the old internal Run media command without calling a runtime', async () => {
     const acceptGeneration = vi.fn()
+    const inspectTemplateRuntimeParameters = vi.fn()
     const readGenerationRunInputs = vi.fn()
     const readGenerationRunMedia = vi.fn()
     const inspect = vi.fn()
@@ -591,7 +700,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
         queryComfyuiInstances: vi.fn(), search: vi.fn(),
       },
-      runtime: { acceptGeneration, readGenerationRunInputs, readGenerationRunMedia },
+      runtime: { acceptGeneration, inspectTemplateRuntimeParameters, readGenerationRunInputs, readGenerationRunMedia },
       imageReader: { inspect } as never,
       workspaceRegistry: { resolveByPath },
     }))
@@ -606,6 +715,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       error: { code: 'CLI_REQUEST_INVALID', message: 'CLI request command is invalid' },
     })
     expect(acceptGeneration).not.toHaveBeenCalled()
+    expect(inspectTemplateRuntimeParameters).not.toHaveBeenCalled()
     expect(readGenerationRunInputs).not.toHaveBeenCalled()
     expect(readGenerationRunMedia).not.toHaveBeenCalled()
     expect(inspect).not.toHaveBeenCalled()
@@ -626,7 +736,10 @@ describe('Harness ComfyUI managed CLI route', () => {
         resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
         queryComfyuiInstances: vi.fn(), search: vi.fn(),
       },
-      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() },
+      runtime: {
+        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+        readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
+      },
       imageReader: { inspect } as never,
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
@@ -662,6 +775,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       acceptGeneration: vi.fn(async () => {
         throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', 'The call already accepted another request.')
       }),
+      inspectTemplateRuntimeParameters: vi.fn(),
       readGenerationRunInputs: vi.fn(),
     }
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({

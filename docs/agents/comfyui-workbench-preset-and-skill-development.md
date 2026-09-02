@@ -28,6 +28,8 @@ Harness `standard` Preset 的 Tool 可见性不属于本规范的限制对象。
 
 主开发 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 的 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>` 必须是指向主开发 checkout 对应 Skill 目录的绝对符号链接。全局 Skill 链接不得指向独立 linked worktree。
 
+`pnpm dev:start` 不修改真实 `$HOME/.agents/skills`。开发启动器把隔离 Desktop HOME 的 `.agents/skills` 链接到当前 worktree 的 `config/desktop-worktree.json.skillSourceRelativePath`，使真实 Desktop 验收读取本分支候选 Skill。该隔离运行目录中的链接不是生产环境的全局 Skill 链接。
+
 自定义 `ComfyUI工作台预设` 的 composition 必须同时加载 `@deepseek-ai/dsh-skill-filesystem` 和 `@deepseek-ai/dsh-tool-skill`，使 Agent 能够发现并读取 `$HOME/.agents/skills/` 中的全局 Skill。Preset 目录不得复制项目 Skill 文件，也不得在 Preset 文件中写入 `/Users/<name>/` 或主开发 checkout 的机器绝对路径。
 
 修改全局 Skill 链接时，必须确认链接目标来自最终发布提交的主开发 checkout，并在新 Desktop Session 中验证对应 Skill 可以被发现和执行。
