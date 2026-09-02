@@ -25,9 +25,10 @@
 | `config/product-agent.json` | 产品 Preset 内部 ID、canonical source、shared file、退役项目 Preset ID 和当前运行 DSH home 安装根目录 |
 | `config/` | 生产配置、开发配置、schema、质量阈值和数据源合同 |
 | `config/desktop-production.json` | Desktop 相对源码目录、生产 runtime、`.env` 和默认 Workspace |
-| `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发移动桥接端口来自主开发 checkout 的 `.env` |
+| `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配移动桥接端口 |
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
 | `config/desktop-harness-development.json` | 当前仓库开发与测试需要从已安装 DSH Desktop 提供的 Harness 包和可执行入口 |
+| `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明模块 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、插件 generation 安装和 `prod:*`/`dev:*` 生命周期 |
 | `scripts/desktop/legacy-session-migration.mjs` | 旧 Web 生产 DSH home 到当前 Desktop 生产 DSH home 的 Session 数据迁移 |
 | `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 六个生命周期操作的共享实现 |

@@ -9,11 +9,14 @@ import { parseEnv } from 'node:util'
 
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 
+import { reserveDevelopmentPort } from '../development/port.mjs'
+import { waitForPortOwnedByProcessGroup, writeAtomicJson } from '../production/process.mjs'
 import { migrateLegacyProductionSessionData } from './legacy-session-migration.mjs'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE = 'COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT'
 const MOBILE_BRIDGE_PORT_PROCESS_VARIABLE = 'DSH_DESKTOP_MOBILE_BRIDGE_PORT'
+const MOBILE_BRIDGE_STATE_SCHEMA_VERSION = 1
 const UNPACKAGED_DESKTOP_IDENTITY = Object.freeze({
   userDataDirectory: 'dsh-desktop-dev',
   logDirectory: 'DSH Desktop Dev',
@@ -23,7 +26,6 @@ function desktopMode(mode) {
   if (mode === 'development') {
     return {
       launchCommand: 'dev',
-      mobileBridgePort: 43128,
       ...UNPACKAGED_DESKTOP_IDENTITY,
     }
   }
@@ -51,10 +53,13 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
     runtimeHome,
     dshHome: resolve(desktopUserData, 'harness'),
     pidFile: resolve(runtimeRoot, 'desktop.pid'),
+    mobileBridgeStateFile: resolve(runtimeRoot, 'state/mobile-bridge.json'),
     harnessLog: resolve(runtimeHome, 'Library/Logs', mode.logDirectory, 'harness.log'),
     environmentFilePath: resolve(repositoryRoot, definition.environmentFileRelativePath),
     startupWorkspacePath: resolve(definition.startupWorkspacePath),
-    mobileBridgePort: definition.mobileBridgePort ?? mode.mobileBridgePort,
+    mobileBridgePort: definition.mobileBridgePort,
+    developmentPortClaimRoot: definition.developmentPortClaimRoot,
+    desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
     launchCommand: mode.launchCommand,
     catalogPort: sourceDefinition.source.catalogPort,
     catalogCliPath: resolve(repositoryRoot, sourceDefinition.source.catalogCliRelativePath),
@@ -96,13 +101,11 @@ export async function loadDesktopWorktreeContext(options = {}) {
     readFile(productionDefinitionPath, 'utf8').then(JSON.parse),
   ])
   const sourceDefinition = JSON.parse(await readFile(resolve(repositoryRoot, 'config/source-production.json'), 'utf8'))
-  const environmentFilePath = resolve(repositoryRoot, productionDefinition.environmentFileRelativePath)
-  const environment = await readDesktopEnvironment(environmentFilePath)
   return desktopWorktreeContext({
     ...productionDefinition,
     desktopMode: 'development',
     runtimeRelativeRoot: worktreeDefinition.runtimeRelativeRoot,
-    mobileBridgePort: resolveMobileBridgePort(environment, desktopMode('development').mobileBridgePort),
+    developmentPortClaimRoot: resolve(worktreeDefinition.mainCheckoutPath, '.local/development-port-claims'),
   }, sourceDefinition, {
     ...options,
     repositoryRoot,
@@ -147,11 +150,21 @@ async function rootPnpmStoreDirectory(context) {
 }
 
 async function desktopEnvironment(context, environment = process.env) {
+  if (context.mobileBridgePort !== undefined
+    && (!Number.isSafeInteger(context.mobileBridgePort)
+      || context.mobileBridgePort < 1
+      || context.mobileBridgePort > 65535)) {
+    throw new Error('Desktop mobile bridge port must be an integer from 1 to 65535')
+  }
   const dataDirectory = resolve(context.runtimeRoot, 'data')
   const fileEnvironment = await readDesktopEnvironment(context.environmentFilePath)
+  const {
+    [MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE]: _configuredMobileBridgePort,
+    [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: _processMobileBridgePort,
+    ...sharedEnvironment
+  } = { ...fileEnvironment, ...environment }
   return {
-    ...fileEnvironment,
-    ...environment,
+    ...sharedEnvironment,
     HOME: context.runtimeHome,
     CFFIXED_USER_HOME: context.runtimeHome,
     DSH_HOME: context.dshHome,
@@ -166,7 +179,10 @@ async function desktopEnvironment(context, environment = process.env) {
     HARNESS_COMFYUI_CATALOG_PORT: String(context.catalogPort),
     HARNESS_COMFYUI_CATALOG_CLI_PATH: context.catalogCliPath,
     HARNESS_COMFYUI_SOURCE_CLI_PATH: context.sourceCliPath,
-    [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: String(context.mobileBridgePort),
+    ...(context.mobileBridgePort === undefined ? {} : {
+      [MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE]: String(context.mobileBridgePort),
+      [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: String(context.mobileBridgePort),
+    }),
     PATH: `${resolve(context.desktopSource, 'node_modules/.bin')}:${environment.PATH ?? ''}`,
   }
 }
@@ -343,6 +359,37 @@ async function readPid(pidFile) {
   }
 }
 
+async function readMobileBridgeState(path) {
+  let value
+  try {
+    value = JSON.parse(await readFile(path, 'utf8'))
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    throw new Error(`cannot read Desktop mobile bridge state ${path}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Desktop mobile bridge state must be an object: ${path}`)
+  }
+  const keys = Object.keys(value).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['mobileBridgePort', 'schemaVersion'])) {
+    throw new Error(`Desktop mobile bridge state must contain exactly mobileBridgePort and schemaVersion: ${path}`)
+  }
+  if (value.schemaVersion !== MOBILE_BRIDGE_STATE_SCHEMA_VERSION) {
+    throw new Error(`Desktop mobile bridge state schemaVersion must be ${MOBILE_BRIDGE_STATE_SCHEMA_VERSION}: ${path}`)
+  }
+  if (!Number.isSafeInteger(value.mobileBridgePort) || value.mobileBridgePort < 1 || value.mobileBridgePort > 65535) {
+    throw new Error(`Desktop mobile bridge state mobileBridgePort must be an integer from 1 to 65535: ${path}`)
+  }
+  return value
+}
+
+async function removeDesktopProcessState(context) {
+  await Promise.all([
+    rm(context.pidFile, { force: true }),
+    rm(context.mobileBridgeStateFile, { force: true }),
+  ])
+}
+
 function processIsRunning(pid, signalProcess = process.kill) {
   try {
     signalProcess(pid, 0)
@@ -374,17 +421,55 @@ async function assertMobileBridgePortAvailable(port) {
   }
 }
 
+async function waitForMobileBridgeTakeover(port, processGroupId, options = {}) {
+  await waitForPortOwnedByProcessGroup(
+    port,
+    processGroupId,
+    options.mobileBridgeStartupTimeoutMs ?? 30_000,
+  )
+}
+
+function watchDesktopChild(child) {
+  let closed = false
+  const close = new Promise(resolveClose => {
+    child.once('close', (code, signal) => {
+      closed = true
+      resolveClose({ type: 'close', code: code ?? 1, signal })
+    })
+  })
+  const error = new Promise(resolveError => {
+    child.once('error', error => {
+      resolveError({ type: 'error', error })
+    })
+  })
+  return { outcome: Promise.race([close, error]), close, isClosed: () => closed }
+}
+
+function desktopExitResult(pid, outcome) {
+  return {
+    status: outcome.code === 0 || outcome.signal === 'SIGTERM' ? 'stopped' : 'failed',
+    pid,
+    code: outcome.code,
+    signal: outcome.signal,
+  }
+}
+
 export async function desktopWorktreeStatus(context, options = {}) {
   const pid = await readPid(context.pidFile)
   if (pid === undefined || !processIsRunning(pid, options.signalProcess)) return { status: 'stopped' }
-  return { status: 'running', pid }
+  const state = await readMobileBridgeState(context.mobileBridgeStateFile)
+  const mobileBridgePort = state?.mobileBridgePort ?? context.mobileBridgePort
+  if (mobileBridgePort === undefined) {
+    throw new Error(`running DSH Desktop does not define its mobile bridge port: ${context.mobileBridgeStateFile}`)
+  }
+  return { status: 'running', pid, mobileBridgePort }
 }
 
 export async function stopDesktopWorktree(context, options = {}) {
   const signalProcess = options.signalProcess ?? process.kill
   const pid = await readPid(context.pidFile)
   if (pid === undefined || !processIsRunning(pid, signalProcess)) {
-    await rm(context.pidFile, { force: true })
+    await removeDesktopProcessState(context)
     return { status: 'stopped' }
   }
   try {
@@ -397,59 +482,108 @@ export async function stopDesktopWorktree(context, options = {}) {
     await new Promise(resolveWait => setTimeout(resolveWait, options.stopPollIntervalMs ?? 50))
   }
   if (processIsRunning(pid, signalProcess)) throw new Error(`DSH Desktop process ${pid} did not stop`)
-  await rm(context.pidFile, { force: true })
+  await removeDesktopProcessState(context)
   return { status: 'stopped', pid }
 }
 
 export async function startDesktopWorktree(context, options = {}) {
   const status = await desktopWorktreeStatus(context, options)
   if (status.status === 'running') throw new Error(`DSH Desktop is already running with PID ${status.pid}`)
-  await assertMobileBridgePortAvailable(context.mobileBridgePort)
-  await rm(context.pidFile, { force: true })
+  await removeDesktopProcessState(context)
+  if (context.launchCommand === 'dev') await rm(context.desktopBuildOutput, { recursive: true, force: true })
   const prepared = await prepareDesktopWorktree(context, options)
-  const pnpmArguments = [
-    resolve(context.desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
-    context.launchCommand,
-  ]
-  if (options.remoteDebuggingPort !== undefined) {
-    if (context.launchCommand === 'preview') {
-      pnpmArguments.push('--', `--remote-debugging-port=${options.remoteDebuggingPort}`)
-    } else {
-      pnpmArguments.push('--remoteDebuggingPort', String(options.remoteDebuggingPort))
-    }
-  }
-  const child = (options.spawnDesktop ?? spawn)(
-    resolve(context.desktopSource, 'node_modules/node/bin/node'),
-    pnpmArguments,
-    {
-      cwd: context.desktopSource,
-      env: prepared.environment,
-      stdio: 'inherit',
-      detached: true,
-    },
-  )
-  if (child.pid === undefined) throw new Error('DSH Desktop did not provide a process ID')
-  await mkdir(dirname(context.pidFile), { recursive: true })
-  await writeFile(context.pidFile, `${child.pid}\n`)
-  const forward = () => {
-    try {
-      process.kill(-child.pid, 'SIGTERM')
-    } catch {
-      // The Desktop process has already exited.
-    }
-  }
-  process.once('SIGINT', forward)
-  process.once('SIGTERM', forward)
+  const developmentPortReservation = context.mobileBridgePort === undefined
+    ? await (options.reservePort ?? reserveDevelopmentPort)(
+      '0.0.0.0',
+      context.developmentPortClaimRoot,
+    )
+    : undefined
+  const mobileBridgePort = context.mobileBridgePort ?? developmentPortReservation.port
+  const activeContext = { ...context, mobileBridgePort }
+  let child
+  let childWatcher
+  let forward
+  const signalProcess = options.signalProcess ?? process.kill
   try {
-    const outcome = await new Promise((resolveExit, reject) => {
-      child.once('error', reject)
-      child.once('close', (code, signal) => resolveExit({ code: code ?? 1, signal }))
+    await assertMobileBridgePortAvailable(mobileBridgePort)
+    const desktopProcessEnvironment = {
+      ...prepared.environment,
+      [MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE]: String(mobileBridgePort),
+      [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: String(mobileBridgePort),
+    }
+    const pnpmArguments = [
+      resolve(activeContext.desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
+      activeContext.launchCommand,
+    ]
+    if (activeContext.launchCommand === 'dev') pnpmArguments.push('--outDir', activeContext.desktopBuildOutput)
+    if (options.remoteDebuggingPort !== undefined) {
+      if (activeContext.launchCommand === 'preview') {
+        pnpmArguments.push('--', `--remote-debugging-port=${options.remoteDebuggingPort}`)
+      } else {
+        pnpmArguments.push('--remoteDebuggingPort', String(options.remoteDebuggingPort))
+      }
+    }
+    child = (options.spawnDesktop ?? spawn)(
+      resolve(activeContext.desktopSource, 'node_modules/node/bin/node'),
+      pnpmArguments,
+      {
+        cwd: activeContext.desktopSource,
+        env: desktopProcessEnvironment,
+        stdio: 'inherit',
+        detached: true,
+      },
+    )
+    childWatcher = watchDesktopChild(child)
+    if (child.pid === undefined) {
+      const outcome = await childWatcher.outcome
+      if (outcome.type === 'error') throw outcome.error
+      throw new Error('DSH Desktop did not provide a process ID')
+    }
+    forward = () => {
+      try {
+        signalProcess(-child.pid, 'SIGTERM')
+      } catch {
+        // The Desktop process has already exited.
+      }
+    }
+    process.once('SIGINT', forward)
+    process.once('SIGTERM', forward)
+
+    const takeover = await Promise.race([
+      (options.waitForPortTakeover ?? waitForMobileBridgeTakeover)(mobileBridgePort, child.pid, options)
+        .then(() => ({ type: 'ready' })),
+      childWatcher.outcome,
+    ])
+    if (takeover.type === 'error') throw takeover.error
+    if (takeover.type === 'close') return desktopExitResult(child.pid, takeover)
+
+    await developmentPortReservation?.release()
+    await mkdir(dirname(activeContext.pidFile), { recursive: true })
+    await (options.writeMobileBridgeState ?? writeAtomicJson)(activeContext.mobileBridgeStateFile, {
+      schemaVersion: MOBILE_BRIDGE_STATE_SCHEMA_VERSION,
+      mobileBridgePort,
     })
-    return { status: outcome.code === 0 || outcome.signal === 'SIGTERM' ? 'stopped' : 'failed', pid: child.pid, ...outcome }
+    await (options.writePid ?? writeFile)(activeContext.pidFile, `${child.pid}\n`)
+    const outcome = await childWatcher.outcome
+    if (outcome.type === 'error') throw outcome.error
+    return desktopExitResult(child.pid, outcome)
+  } catch (error) {
+    if (child?.pid !== undefined && childWatcher !== undefined && !childWatcher.isClosed()) {
+      try {
+        signalProcess(-child.pid, 'SIGTERM')
+      } catch (signalError) {
+        if (signalError?.code !== 'ESRCH') throw signalError
+      }
+      await childWatcher.close
+    }
+    throw error
   } finally {
-    process.off('SIGINT', forward)
-    process.off('SIGTERM', forward)
-    await rm(context.pidFile, { force: true })
+    if (forward !== undefined) {
+      process.off('SIGINT', forward)
+      process.off('SIGTERM', forward)
+    }
+    await developmentPortReservation?.release()
+    await removeDesktopProcessState(activeContext)
   }
 }
 

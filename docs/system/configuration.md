@@ -26,9 +26,9 @@
 
 `dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。
 
-Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。
+Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。开发 Desktop 的 Electron Vite 输出目录固定为当前 worktree 的 `.local/desktop-development/desktop-out/`。
 
-`COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT` 定义当前 checkout 启动的 DSH Desktop 移动桥接监听端口，值必须是 1 至 65535 的整数。`prod:start` 与 `dev:start` 从各自 checkout 的 `.env` 读取该值，启动器使用同一个值完成启动前端口检查，并通过 DSH Desktop 的进程变量 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 传给 Desktop 主进程。生产 checkout 与主开发 checkout 必须配置不同端口；linked worktree 继续使用主开发 checkout 的 `.env` 链接。
+`COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT` 只定义生产 checkout 启动的 DSH Desktop 移动桥接监听端口，值必须是 1 至 65535 的整数。`prod:start` 从生产 checkout 的 `.env` 读取该值，使用该值完成启动前端口检查，并通过 DSH Desktop 的进程变量 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 传给 Desktop 主进程。`dev:start` 和 `dev:restart` 通过主开发 checkout 的 `.local/development-port-claims/` 为当前 worktree 声明空闲端口，并使用运行时端口覆盖传给 Desktop 子进程的两个端口变量；开发命令不读取共享 `.env` 中的端口作为开发端口。启动器在 Desktop 子进程监听端口后释放跨进程声明。
 
 `cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用和默认 `ComfyUI工作台预设` 的共同来源。`config/product-agent.json` 是产品 Preset 物化结构的来源。Desktop 开发与生产都把当前插件包中的这两份配置安装到各自隔离的 DSH home。
 
@@ -54,6 +54,8 @@ Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir
 | `startupWorkspacePath` | Web Host 启动时注册的绝对 Workspace 目录 |
 
 Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-development/state/source-managed.json` 中的受管快照。`web:health` 只读取并报告运行状态，不写入 Desktop 或产品配置。
+
+`web:start` 和 `web:restart` 通过主开发 checkout 的 `.local/development-port-claims/` 为当前 worktree 声明空闲回环端口，并使用该端口覆盖共享环境中的 `HARNESS_COMFYUI_SERVER_PORT`。启动器在 Web Host 子进程监听端口后释放跨进程声明。受管快照保存实际端口；`web:stop`、`web:status`、`web:health` 和 `web:logs` 使用快照中的端口管理当前 worktree 的 Web Host。
 
 当前系统只有 `production` Configuration Profile。
 

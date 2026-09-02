@@ -23,7 +23,8 @@ pnpm dev:start|restart
   → config/desktop-production.json
   → main 的 .local/upstreams/dsh-desktop
   → 当前 worktree 插件 generation
-  → DSH Desktop pnpm dev
+  → 当前 worktree 的移动桥接端口与 Electron Vite 输出目录
+  → DSH Desktop pnpm dev --outDir <worktree>/.local/desktop-development/desktop-out
   → .local/desktop-development/
 ```
 
@@ -43,6 +44,7 @@ pnpm web:start|restart
 
 | 模块 | 职责 |
 | --- | --- |
+| `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明、分配和释放 |
 | `scripts/desktop/` | Desktop 产品配置解析、worktree 链接准备、generation 打包安装、Electron dev/preview 启停、状态和日志 |
 | `scripts/desktop/legacy-session-migration.mjs` | 把旧 Web 生产 DSH home 的 Session、Attachment、Session 投影索引和 Workspace Session 关系合并到当前生产 DSH home |
 | `scripts/production/` | Client 与 managed CLI 运行模块生成、Web Host 配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
@@ -71,9 +73,9 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation 并执行 DSH Desktop `pnpm dev`。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation，通过主开发 checkout 的端口声明目录取得移动桥接端口，并执行具有当前 worktree 独立输出目录的 DSH Desktop `pnpm dev`。启动器在 Desktop 确认监听后发布当前 PID 与端口状态。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
 
-`web:start` 与 `web:restart` 更新浏览器 Client 与 managed CLI 运行模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器记录 PID、进程启动时间和命令，并验证端口由该 PID 持有；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
+`web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 

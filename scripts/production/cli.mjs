@@ -81,90 +81,99 @@ export async function runSourceProductionCommand(command, options = {}) {
     currentContext ??= await (options.loadContext ?? loadSourceProductionContext)(options.contextOptions)
     return currentContext
   }
-  if (options.loadSavedContext !== undefined) {
-    managedContext = await options.loadSavedContext(options.contextOptions)
-  } else if (options.loadContext === undefined) {
-    managedContext = await loadSavedSourceManagedContext(options.contextOptions)
-  } else {
-    const loadedContext = await loadCurrentContext()
-    managedContext = await loadSourceManagedContext(loadedContext)
-    if (!managedContext.managedStatePresent) managedContext = undefined
-  }
-  if (command === 'start') {
-    if (managedContext !== undefined) {
-      throw new Error(
-        `a source production process is already registered; run pnpm ${commandPrefix}:stop or pnpm ${commandPrefix}:restart`,
-      )
+  try {
+    if (options.loadSavedContext !== undefined) {
+      managedContext = await options.loadSavedContext(options.contextOptions)
+    } else if (options.loadContext === undefined) {
+      managedContext = await loadSavedSourceManagedContext(options.contextOptions)
+    } else {
+      const loadedContext = await loadCurrentContext()
+      managedContext = await loadSourceManagedContext(loadedContext)
+      if (!managedContext.managedStatePresent) managedContext = undefined
     }
-    const context = await loadCurrentContext()
-    try {
-      const runtimeTarget = await prepareRuntime(context)
-      return await runOperation(context, command, runtimeTarget.activeVersion, operation => (
-        runSourceStart(context.runtime, runtimeTarget, operation)
+    if (command === 'start') {
+      if (managedContext !== undefined) {
+        throw new Error(
+          `a source production process is already registered; run pnpm ${commandPrefix}:stop or pnpm ${commandPrefix}:restart`,
+        )
+      }
+      const context = await loadCurrentContext()
+      try {
+        const runtimeTarget = await prepareRuntime(context)
+        return await runOperation(context, command, runtimeTarget.activeVersion, operation => (
+          runSourceStart(context.runtime, runtimeTarget, operation, options.startOptions?.(context))
+        ))
+      } finally {
+        await clearSourceManagedState(context)
+      }
+    }
+    if (command === 'stop') {
+      const context = managedContext ?? await loadCurrentContext()
+      const runtimeTarget = await loadNonValidatingTarget(context)
+      const result = await runOperation(context, command, runtimeTarget.activeVersion, () => (
+        runSourceStop(context.runtime, runtimeTarget)
       ))
-    } finally {
-      await clearSourceManagedState(context)
+      if (result.evidence.status === 'stopped') await clearSourceManagedState(context)
+      return result
     }
-  }
-  if (command === 'stop') {
+    if (command === 'restart') {
+      const context = await loadCurrentContext()
+      const previousContext = managedContext ?? context
+      const previousTarget = await loadNonValidatingTarget(previousContext)
+      let previousStopped = false
+      try {
+        return await runOperation(context, command, context.activeVersion, async operation => {
+          await runSourceStop(previousContext.runtime, previousTarget)
+          previousStopped = true
+          await clearSourceManagedState(previousContext)
+          const runtimeTarget = await prepareRuntime(context)
+          const evidence = await runSourceStart(
+            context.runtime,
+            runtimeTarget,
+            operation,
+            options.startOptions?.(context),
+          )
+          return { ...evidence, stage: 'restart' }
+        })
+      } finally {
+        if (previousStopped) await clearSourceManagedState(context)
+      }
+    }
+    if (command === 'status') {
+      const context = managedContext ?? await loadCurrentContext()
+      const runtimeTarget = await loadStatusTarget(context)
+      const result = await runOperation(context, command, runtimeTarget.activeVersion, () => (
+        runSourceStatus(context.runtime, runtimeTarget)
+      ))
+      if (result.evidence.status === 'stopped') await clearSourceManagedState(context)
+      return result
+    }
+    if (command === 'health') {
+      const context = managedContext ?? await loadCurrentContext()
+      let runtimeTarget
+      let runtimeResolutionError
+      try {
+        runtimeTarget = await loadSourceRuntimeTarget(context)
+      } catch (error) {
+        runtimeResolutionError = error
+      }
+      const activeVersion = runtimeTarget?.activeVersion ?? context.activeVersion
+      return runOperation(context, command, activeVersion, () => (
+        runSourceHealth(context.runtime, runtimeTarget, runtimeResolutionError)
+      ))
+    }
     const context = managedContext ?? await loadCurrentContext()
     const runtimeTarget = await loadNonValidatingTarget(context)
-    const result = await runOperation(context, command, runtimeTarget.activeVersion, () => (
-      runSourceStop(context.runtime, runtimeTarget)
-    ))
-    if (result.evidence.status === 'stopped') await clearSourceManagedState(context)
-    return result
-  }
-  if (command === 'restart') {
-    const context = await loadCurrentContext()
-    const previousContext = managedContext ?? context
-    const previousTarget = await loadNonValidatingTarget(previousContext)
-    let previousStopped = false
-    try {
-      return await runOperation(context, command, context.activeVersion, async operation => {
-        await runSourceStop(previousContext.runtime, previousTarget)
-        previousStopped = true
-        await clearSourceManagedState(previousContext)
-        const runtimeTarget = await prepareRuntime(context)
-        const evidence = await runSourceStart(context.runtime, runtimeTarget, operation)
-        return { ...evidence, stage: 'restart' }
+    return runOperation(context, command, runtimeTarget.activeVersion, () => (
+      runSourceLogs(context.runtime, {
+        source: context.definition.logs.source,
+        lines: context.definition.logs.lines,
+        follow: false,
       })
-    } finally {
-      if (previousStopped) await clearSourceManagedState(context)
-    }
-  }
-  if (command === 'status') {
-    const context = managedContext ?? await loadCurrentContext()
-    const runtimeTarget = await loadStatusTarget(context)
-    const result = await runOperation(context, command, runtimeTarget.activeVersion, () => (
-      runSourceStatus(context.runtime, runtimeTarget)
     ))
-    if (result.evidence.status === 'stopped') await clearSourceManagedState(context)
-    return result
+  } finally {
+    if (currentContext !== undefined) await options.releaseContext?.(currentContext)
   }
-  if (command === 'health') {
-    const context = managedContext ?? await loadCurrentContext()
-    let runtimeTarget
-    let runtimeResolutionError
-    try {
-      runtimeTarget = await loadSourceRuntimeTarget(context)
-    } catch (error) {
-      runtimeResolutionError = error
-    }
-    const activeVersion = runtimeTarget?.activeVersion ?? context.activeVersion
-    return runOperation(context, command, activeVersion, () => (
-      runSourceHealth(context.runtime, runtimeTarget, runtimeResolutionError)
-    ))
-  }
-  const context = managedContext ?? await loadCurrentContext()
-  const runtimeTarget = await loadNonValidatingTarget(context)
-  return runOperation(context, command, runtimeTarget.activeVersion, () => (
-    runSourceLogs(context.runtime, {
-      source: context.definition.logs.source,
-      lines: context.definition.logs.lines,
-      follow: false,
-    })
-  ))
 }
 
 export async function main(argv = process.argv.slice(2)) {

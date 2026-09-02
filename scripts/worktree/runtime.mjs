@@ -8,6 +8,7 @@ import {
   loadSourceProductionContext,
   prepareSourceRuntime,
 } from '../production/runtime.mjs'
+import { reserveDevelopmentPort } from '../development/port.mjs'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const DEFINITION_KEYS = Object.freeze([
@@ -170,25 +171,46 @@ export async function loadSourceWorktreeContext(options = {}) {
     worktreeDefinition.startupWorkspacePath,
     'worktree development startup workspace',
   )
-  const context = await loadSourceProductionContext({
-    repositoryRoot,
-    definitionPath: worktreeDefinition.sourceProductionDefinitionPath,
-    managedStatePath: resolve(worktreeDefinition.runtimeRoot, 'state/source-managed.json'),
-    environment: options.environment,
-    runtimeOverride: {
-      runtimeId: worktreeDefinition.runtimeId,
-      runtimeRoot: worktreeDefinition.runtimeRoot,
-    },
-    dshProfile: worktreeDefinition.dshProfile,
-    userEnvironmentFilePath: worktreeDefinition.userEnvironmentFilePath,
-    startupWorkspacePath: worktreeDefinition.startupWorkspacePath,
-  })
-  return {
-    ...context,
-    worktreeDefinitionPath: definitionPath,
-    worktreeDefinition,
-    configReadOrder: [definitionPath, ...context.configReadOrder],
+  const developmentPortReservation = await (options.reservePort ?? reserveDevelopmentPort)(
+    '127.0.0.1',
+    resolve(dirname(worktreeDefinition.userEnvironmentFilePath), '.local/development-port-claims'),
+  )
+  try {
+    const context = await loadSourceProductionContext({
+      repositoryRoot,
+      definitionPath: worktreeDefinition.sourceProductionDefinitionPath,
+      managedStatePath: resolve(worktreeDefinition.runtimeRoot, 'state/source-managed.json'),
+      environment: {
+        ...(options.environment ?? process.env),
+        HARNESS_COMFYUI_SERVER_PORT: String(developmentPortReservation.port),
+      },
+      runtimeOverride: {
+        runtimeId: worktreeDefinition.runtimeId,
+        runtimeRoot: worktreeDefinition.runtimeRoot,
+      },
+      dshProfile: worktreeDefinition.dshProfile,
+      userEnvironmentFilePath: worktreeDefinition.userEnvironmentFilePath,
+      startupWorkspacePath: worktreeDefinition.startupWorkspacePath,
+    })
+    return {
+      ...context,
+      developmentPortReservation,
+      worktreeDefinitionPath: definitionPath,
+      worktreeDefinition,
+      configReadOrder: [definitionPath, ...context.configReadOrder],
+    }
+  } catch (error) {
+    await developmentPortReservation.release()
+    throw error
   }
+}
+
+export function sourceWorktreeStartOptions(context) {
+  return { onPortOwned: () => context.developmentPortReservation.release() }
+}
+
+export async function releaseSourceWorktreeContext(context) {
+  await context.developmentPortReservation?.release()
 }
 
 export async function loadSavedSourceWorktreeContext(options = {}) {
