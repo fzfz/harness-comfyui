@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+
+# 生成器输出（运行时产物，不入库）
+scripts/output/
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+*.log
+
+# 本地环境
+.env

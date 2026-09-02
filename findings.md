@@ -1,5 +1,212 @@
 # Harness ComfyUI 原型方案调研结果
 
+## 2026-09-02 Phase 43 — `krea2-anime-prompt-builder` 方案调查
+
+### 用户需求
+
+- 用户要求计划编写者在独立 worktree 中完成方案设计，并在用户批准后才实施。
+- 用户要求实施执行者完善现有 `.agents/skills/krea2-anime-prompt-skill/` 的 `SKILL.md` 和 CLI 参考文档。
+- 用户要求实施执行者把项目 Skill 重命名为 `krea2-anime-prompt-builder`，并把重命名后的项目 Skill 软链接到全局 `skills` 目录。
+
+### 当前边界
+
+- 主工作树的 `AGENTS.md` 有用户未提交修改，`.agents/skills/krea2-anime-prompt-skill/` 是用户新增的未跟踪目录。
+- 独立 worktree 位于 `/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-krea2-anime-prompt-builder`，分支为 `codex/plan-krea2-anime-prompt-builder`。
+- 独立 worktree 已复制主工作树中的上述两项用户输入；主工作树保持不变。
+- 当前阶段只允许调查与编写方案，不允许修改目标 Skill 或全局链接。
+
+### 待调查问题
+
+- 仓库规定的项目 Skill、CLI 参考文档和全局链接目录结构是什么。
+- 现有 Prompt Builder Skill 如何读取当前消息选择、构建 Prompt、校验输入和查询历史 `run_id`。
+- 当前 Krea2 Skill 已有资源中哪些内容应保留，哪些内容应移入按条件读取的参考文档。
+- 现有测试和发布门禁如何验证 Skill 名称、目录、CLI 合同和全局链接。
+
+### 已确认的项目规范
+
+- 主开发 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 的唯一 canonical source；生产环境的 `$HOME/.agents/skills/<skill-name>` 必须是指向主开发 checkout 对应目录的绝对符号链接，链接不得指向独立 worktree。
+- 通过 shell 调用项目 CLI 的 Skill 必须把 CLI 使用参考文档保存在自身 `references/` 目录，并从 `SKILL.md` 使用 Skill 内相对路径引用。
+- CLI 使用参考文档必须定义“CLI 的用途与适用任务”“调用环境与可执行入口”“命令与调用时机”“参数与标准输入”“ID 与运行值的来源”“输出与完成语义”“错误、修正与重试”“副作用与重复调用”“完整调用示例”九个章节。
+- `SKILL.md` 必须在第一次 CLI 调用、目录或 ID 查询、请求构造、写入提交、历史 Run 查询、错误修正和上下文压缩后的下一次 CLI 调用前，说明读取相应 CLI 参考文档的时机。
+- CLI 参考文档必须描述 Skill 执行者可见的 managed environment、业务参数、输出和副作用，不复述 Host capability 的内部实现。
+- 修改 `SKILL.md` 或 CLI 参考文档后必须由独立语义 Reviewer 核对执行主体、动作、具体对象、真实 CLI 合同、读取条件和 Skill 执行环境可见性。
+- 如果本次修改改变全局 Skill 发现、参考文档读取或 managed CLI 调用流程，实施阶段必须在独立 worktree 中通过 `pnpm dev:start` 使用真实 Provider 和真实模型验收；最终全局链接只能在最终发布提交进入主开发 checkout 后创建。
+
+### 当前 Skill 的初步结构差异
+
+- `.agents/skills/krea2-anime-prompt-skill/SKILL.md` 有 834 行；`wai-sdxl-prompt-builder/SKILL.md` 有 91 行，`anima-prompt-builder/SKILL.md` 有 85 行。当前 Krea2 入口把大量词库、模型参数、示例、批量生成器说明和版本历史全部内联，超过 `skill-creator` 建议的 500 行入口上限。
+- 当前 Krea2 目录没有 `references/generation-cli.md`，因此不能按项目 Prompt Builder 规范独立查询用户提供的一个或多个历史 `run_id`。
+- 当前 Krea2 `SKILL.md` 同时声明动作迁移背景必须使用绚丽场景，并在路线对比、示例和反模式中保留 `simple_background`、渐变简单背景等相反说明；实施方案必须指定唯一的背景合同并删除冲突来源。
+- 当前 Krea2 目录包含两个批量生成脚本、一个自测脚本和多个 Python 词库。实施阶段必须先区分确定性结构处理与模型语义提示词构建，避免让程序承担语义理解。
+- `wai-sdxl-prompt-builder` 和 `anima-prompt-builder` 都把短 `SKILL.md` 作为路由入口，把 Prompt 位置规则、冲突规则、权重规则、示例和 CLI 合同拆到 `references/`，并包含 `agents/openai.yaml` 与确定性输出校验脚本。
+
+### 当前 `SKILL.md` 的具体冲突和沉积
+
+- 背景合同至少存在四处冲突：顶部要求全部交付使用绚丽场景；路线 B 对比表写简单背景；“迁移底图背景选择”把纯色、渐变和留白设为默认；路线 B 完整示例与最终反模式继续要求渐变或 `simple_background`。
+- Prompt 输出结构同时出现“中文 6 段式 + Danbooru tag”“中文 9 段式自然语言”“英文骨架 + 中文专名”和按模型切换纯英文 tag 的多套合同，入口没有给出单一可检查的 Krea2 最终输出结构。
+- Frontmatter 同时保存 `name`、`version`、四个展示或描述字段、`visibility` 和 `agent_created`；现有项目 Prompt Builder 只使用 `name` 与负责触发的 `description`，并把 UI 元数据放在 `agents/openai.yaml`。
+- 入口包含 14 个家族的批量配额、两个历史生成器版本、爬取过程、硬件配置、模型下载建议和重复版本历史。大部分内容不是每次 Prompt 构建都需要，适合按任务分支迁移到 `references/` 或从 Agent 执行入口移除。
+- `motion-migration-constraints.md` 位于 Skill 根目录，而 Prompt Builder 规范倾向让 `SKILL.md` 通过 `references/` 下的条件指针读取专项规则；实施方案需要决定是否把该文件移动到 `references/`，并同步全部相对路径。
+- 当前 Krea2 入口提到用户本机模型、GPU、工作流文件和其他技能，但项目 Skill 必须自包含；重写后不能要求 Skill 执行者读取仓库外文件、其他 Skill 或机器绝对路径。
+
+### 现有 Prompt Builder 的共同合同
+
+- `wai-sdxl-prompt-builder` 和 `anima-prompt-builder` 的 `SKILL.md` 都先定义独立的历史 Generation Run 查询分支：用户只查询 `run_id` 时不要求提供 Prompt 构建输入；查询多项时按 `runs[]` 原顺序逐项报告，单项错误不阻断其余结果。
+- 两个 Prompt Builder 使用内容完全相同的 `references/generation-cli.md`，调用 `node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin`，标准输入只允许包含 1 至 20 项的 `run_ids` 字符串数组。
+- 历史 Run 查询结果区分顶层命令错误与 `runs[]` 单项错误；短 ID 支持唯一匹配、歧义和不存在分支；可用项返回创建参数与 Actual Workflow 可用或不可用状态。
+- 两个 Prompt Builder 都使用 `agents/openai.yaml` 保存 `interface.display_name`、`interface.short_description` 和包含新 Skill 名称的 `interface.default_prompt`。
+- WAI 与 ANIMA Prompt Builder 的差异在各自 Prompt 构建流程和确定性格式校验器，不在历史 Run 查询合同。Krea2 的 Prompt 正文是自然语言与标签混合文本，用户没有要求新增槽位 JSON 合同，因此现有两个校验器不能直接复用。
+- `tests/unit/prompt-builder-weight-validation.test.mjs` 只覆盖 WAI 与 ANIMA 的权重结构化校验器；仓库没有通用脚本按关键词判断 Prompt Builder Markdown 语义。项目规范明确要求独立 Reviewer 完成 Markdown 语义验收。
+
+### 全局 Skill 链接现状
+
+- `$HOME/.agents/skills/` 已包含指向主开发 checkout 的 `wai-sdxl-prompt-builder`、`anima-prompt-builder`、`comfyui-generate` 等绝对符号链接。
+- `$HOME/.agents/skills/krea2-anime-prompt-skill`、`$HOME/.agents/skills/krea2-anime-prompt-builder`、`$HOME/.codex/skills/krea2-anime-prompt-skill` 和 `$HOME/.codex/skills/krea2-anime-prompt-builder` 当前均不存在。
+- 本项目规范明确把目标全局目录定义为 `$HOME/.agents/skills/`。实施方案不在 `$HOME/.codex/skills/` 创建第二个链接。
+- 实施阶段的最终链接应为 `$HOME/.agents/skills/krea2-anime-prompt-builder`，目标应为 `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/krea2-anime-prompt-builder`；只有目标目录已经进入主开发 checkout 的最终提交后才创建该链接。
+
+### 边界控制
+
+- `stop-that-shit` 的清单路径指向已经不存在的 0.1.0 缓存；本机存在并已读取 0.2.0 同名本机 Skill。
+- 方案只纳入用户要求和完成该要求的必要结果：目录改名、`SKILL.md` 重构、历史 Run CLI 参考、UI Skill 元数据、与实际变更对应的测试/语义验收、最终全局软链接。方案不新增依赖、不重写 Host CLI、不扩展其他 Prompt Builder。
+
+### 目录改名的必要仓库文档影响
+
+- `CONTEXT.md` 的 `Repository Skills` 当前精确列出六个项目 Skill，并声明四个 Prompt/生成 Skill 支持历史 Run 查询；新增 Krea2 Prompt Builder 后必须改为七个项目 Skill和五个 Prompt/生成 Skill。
+- `README.md` 两处精确声明六个项目 Skill 及其名称；`docs/system/architecture.md` 两处声明六个项目 Skill；`docs/system/directory-structure.md` 逐项列出六个 Skill 目录。目录改名和新增项目 Skill canonical source 后，这些文档必须同步。
+- `docs/agents/domain.md` 要求任何领域输出使用 `CONTEXT.md` 术语，并在改动与 ADR 冲突时显式报告。当前没有发现禁止新增项目 Skill 的 ADR。
+- 当前分支基于 `030543d`（v0.38.3），本地 `origin/main` 已前进到 `6d88410`（v0.38.4），两者相差六个提交。用户提供的 Krea2 目录只存在于当前未提交主工作树，因此实施前不能简单丢弃当前基线；实施完成进入主开发 checkout 前必须重新核对与最新 `main` 的差异。
+- 领域引用搜索命令包含不存在的 `.github` 路径并返回一条非致命错误；其余搜索结果完整可用，后续搜索不再包含该路径。
+
+### 现有资源的保留边界
+
+- 当前 README 是原始上游项目说明，包含外部 clone、安装、贡献和许可证说明；现有 Prompt Builder 不依赖 README。用户没有要求删除该文件，实施方案默认保留 README 和全部词库、示例、Python 脚本的文件内容。
+- 当前 `scripts/selftest.py` 与 `references/_verify_all.py` 使用 Skill 内相对路径，没有写死旧 Skill 目录名；目录重命名本身不会破坏这两个脚本的路径解析。
+- 项目规则禁止在没有用户显式允许时修改 Skill 目录内的脚本。用户当前只要求完善 `SKILL.md` 和 CLI 参考文档，因此实施方案不修改三个现有 Python 脚本或 Python 词库。
+- `motion-migration-constraints.md` 内部仍要求动漫动作迁移使用简单背景，与用户后来写入 `SKILL.md` 的绚丽背景要求冲突。由于用户没有明确授权修改该文件，实施方案应在 `SKILL.md` 中停止把该文件称为唯一权威来源，并把 Krea2 Builder 的最终背景合同写入新的或现有 Markdown 参考资料；是否移动或修改该文件必须作为用户批准方案时的明确选择。
+
+### 当前轮输入合同的可复用范围
+
+- WAI Prompt Builder 的 `references/input-contract.md` 把当前消息拆成普通文字与 `type=comfyui-context` JSON 行，只采用 `data.kind=character` 和 `data.kind=style` 两类记录。
+- Character 记录只把 `data.prompt_text` 作为 Prompt 来源；`data.character_name` 与 `data.work_name` 只用于识别和消歧。Style 记录同样只把 `data.prompt_text` 作为 Prompt 来源，`data.name` 只用于识别和消歧。
+- Krea2 Prompt Builder 可以复用该输入边界，但必须在自己的 `references/input-contract.md` 中完整定义，不能要求 Skill 执行者读取 WAI Skill 目录。
+- Krea2 Prompt Builder 不负责 ComfyUI Workflow、生成模型或 LoRA 目录解析，也不负责提交 Generation Run；这些任务继续由 `comfyui-generate` 承担。Krea2 Builder 只在用户明确要求查询或复用历史 `run_id` 时调用只读 `generation run-inputs`。
+- 当前 Krea2 单条 Prompt 没有现成的槽位 JSON 或格式校验器合同。实施方案采用明确的自然语言段落顺序和人工语义自检，不复制 WAI/ANIMA 的十五位置或十二槽位校验器。
+
+### 验证、提交与发布边界
+
+- `docs/system/testing.md` 要求新功能覆盖成功、拒绝、清理和错误分支；语义文档必须由独立 Reviewer 阅读验收，不能用脚本判断语义质量。
+- 真实 Desktop 验收必须在当前 linked worktree 以前台 `pnpm dev:start` 启动，在第二终端运行 `pnpm dev:status` 与 `pnpm dev:logs`，完成后执行 `pnpm dev:stop` 并确认状态为 `stopped`。实施执行者不得在 worktree 使用 `pnpm prod:*`。
+- 发布前必须由不同 Reviewer 完成 Standards Review、Spec Review 和 Skill/Markdown 语义 Review；全部问题修正后执行最终 `pnpm quality` 与 `git diff --check`，此后候选树不能再修改。
+- 仓库规范要求全局 Skill 链接目标来自最终发布提交的主开发 checkout。完成该门禁需要版本更新、发布文档、最终提交、推送 `origin/main`、Git tag、GitHub Release 和生产 checkout 部署；这些动作超出用户当前只授权“设计方案”的范围。
+- 最终方案必须把 worktree 候选实施与发布/主线/全局链接部署分成两个授权门禁。用户只批准候选实施时，实施执行者不能创建全局链接；用户明确批准完整发布范围时，实施执行者才执行发布规范和最终链接部署。
+
+### 首次独立方案审核结论与修正
+
+- 首次独立 Reviewer 返回 `FAIL`。Reviewer 指出初稿错误地把现有批量 Python 生成器纳入 Builder 正式接口，且没有完整分开“只查询历史 Run”与“复用历史 Prompt”两个执行分支。
+- Reviewer 要求最终方案使用可执行用例矩阵覆盖正常输入、Character/Style 输入、缺少输入、冲突输入、历史 Run 查询、历史 Prompt 复用、多个 `run_id` 混合结果、短 ID 三分支和顶层 CLI 命令错误。
+- Reviewer 要求完整发布步骤在版本与发布文档修改后重新执行 Standards Review、Spec Review 和语义 Review，并规定真实模型验收失败后返回候选实施阶段，重新完成审查、质量门禁、提交、主线快进、链接核对和验收。
+- Reviewer 要求全局旧名称路径、全局新名称路径和主工作树原始未跟踪 Skill 分别具有精确的存在、冲突、备份和恢复分支，实施执行者不得覆盖已有文件、目录、错误目标链接或断链。
+- 修订方案已经删除批量文件生成职责，保留现有 Python 脚本但不修改、不运行、不从新 `SKILL.md` 路由；新 Builder 只返回单条 Prompt，并只调用只读 `generation run-inputs --stdin` 查询历史 Run。
+- 修订方案把候选实施定义为阶段 A，把提交、主线、发布、生产部署和全局链接定义为阶段 B。用户只回复“批准”时，实施执行者只获得阶段 A 授权。
+
+### 第二次独立方案审核结论与修正
+
+- 第二次独立 Reviewer 返回 `FAIL`。Reviewer 指出初版阶段 B 在移动用户原始 Skill、更新主开发 checkout 和创建全局链接后没有完整失败回滚，因此失败候选可能继续通过全局路径暴露。
+- Reviewer 要求方案把唯一链接写成精确映射，列出绝对创建命令、`test -L`、`readlink` 预期目标和目标 `SKILL.md` 检查，不允许关键路径只保存在调查记录中。
+- Reviewer 要求阶段 A 写明结构合同与 Generation Run CLI 测试的精确命令，阶段 B 写明版本合同和发布文档的精确文件路径，避免“相关测试”“工程合同”或“受影响文档”等未定义对象。
+- Reviewer 要求新增动作迁移用例，真实模型证据必须确认 Agent 读取动作迁移参考，并核对垂直站姿、鞋履完整入镜、全身构图和绚丽静态背景。
+- 修订后的阶段 B 在任何变更前检查全部主工作树、备份和全局路径；主开发 checkout 只临时 detached 到已提交候选完成全局发现与真实模型验收。失败时仅删除本任务创建的链接、切回未移动的原 `main` 并恢复原始 Skill，候选继续隔离在独立 worktree 分支；通过后才快进本地 `main` 并推送。
+
+### 第三次独立方案审核结论与修正
+
+- 第三次独立 Reviewer 只发现一个测试路径错误：短 ID 的唯一、歧义和不存在三分支由 `tests/unit/generation-runtime.test.ts` 覆盖，不由初稿列出的三个 CLI 测试文件覆盖。
+- 修订后的阶段 A 精确测试命令已经加入 `tests/unit/generation-runtime.test.ts`，并分别写明请求解析、短 ID、CLI 调用、混合结果、逐项错误和顶层命令错误的实际测试文件。
+
+### 用户新增的 v2 删除要求
+
+- 用户明确指出 `scripts/gen_anime_v2.py` 会创建或覆盖输出文件，并对非法语言参数静默回退；用户要求候选实施删除该脚本和 Skill 文档中的调用流程。
+- 只读搜索确认 v2 调用说明集中在现有 `SKILL.md` 与 `README.md`，`scripts/selftest.py` 还会直接运行 `gen_anime_v2.py`。只删除 v2 文件会让自测入口留下失效调用，因此候选实施必须从 `scripts/selftest.py` 删除 v2 调用和“两套生成器”说明。
+- 用户没有要求删除 `scripts/gen_anime_v1.py`。候选方案保留 v1 文件但不从新 Builder 路由；实施执行者不运行 v1、v2 或 selftest。
+
+### 第四次独立方案审核结论与修正
+
+- 第四次独立 Reviewer 返回 `FAIL`，指出 Skill 读取流程或 managed CLI 调用流程变化时，真实模型验收还必须回归 `standard` Preset Host Tool、工作台 Host Tool roster 隔离和同一 Generation Request 多 Run 提交。
+- Reviewer 指出 `git diff --check` 默认忽略未跟踪的新 Skill 与合同测试；阶段 A 必须先使用 intent-to-add 把新增文件纳入 diff，阶段 B staged 候选还必须执行 `git diff --cached --check`。
+- Reviewer指出阶段 B 会按发布规范执行根 `pnpm install --frozen-lockfile` 和 DSH `npm ci`，因此方案必须提前给出依赖版本、漏洞、安装脚本和外部下载风险意见，并在生产安装前重复安全门禁。
+
+### 用户新增 v2 范围后的独立审核结论与修正
+
+- 独立 Reviewer 确认 v2 删除与调用清理、v1 保留但不路由、CLI 合同、测试矩阵、Tool roster、依赖审计、自动更新披露、全局链接和失败回滚均已覆盖。
+- Reviewer 发现 `agents/openai.yaml` 的三个用户可见属性没有进入阶段 A/B 语义 Review，且计划顶部仍把已经修正的第二次审核问题写成 Next Step。
+- 最终修订把 `agents/openai.yaml` 的名称、具体指代、触发行为和用户帮助性加入两阶段语义验收，并把 Next Step 更新为最终方案审核与等待用户批准。
+
+### 审批就绪审核结论与修正
+
+- 审批就绪 Reviewer 指出当前独立 worktree 没有 `node_modules`，而阶段 A 禁止安装依赖；直接执行 `pnpm exec vitest` 无法加载 Vitest。
+- 阶段 A 测试不需要 `.env`。修订方案只在无冲突时创建 worktree `node_modules` 到主开发 checkout `node_modules` 的绝对符号链接，不复制或安装依赖；阶段 B 的 `pnpm dev:start` 继续负责缺失的 `.env` 链接。
+- Reviewer 指出 `docs/system/releasing.md` 会把固定 DSH 提交绑定到当前产品版本。修订方案把该文件加入阶段 B 的版本更新、语义 Review 和精确暂存清单。
+
+### 最终独立审核结论
+
+- 新的独立 Reviewer 返回 `PASS`。Reviewer 确认 Phase 43 覆盖批准前只设计、阶段 A 只链接主开发 checkout 的 `node_modules` 且不安装依赖、阶段 B 由 `dev:start` 管理 `.env`、`docs/system/releasing.md` 版本同步、两阶段语义 Review、精确 staging、真实模型门禁、全局链接与失败回滚。
+- 方案当前没有未修正的审核问题。实施必须等待用户批准阶段 A 或阶段 A 和阶段 B。
+
+### 依赖链安全评估报告
+
+```text
+════════════════════════════════════
+  REPOSITORY SECURITY ASSESSMENT
+────────────────────────────────────
+  Repository:    harness-comfyui + fzfz/dsh-desktop
+  URL:           本机仓库远端记录的 GitHub origin/fork
+  Stars / Forks: 不作为本次固定提交与 lockfile 审计依据
+  Created:       不作为本次审计依据
+  Last Commit:   DSH 固定为 9a0a39416af44af636e426f8d627cdb80d0baa77
+  Contributors:  不作为本次审计依据
+  License:       Harness ComfyUI 项目合同；DSH Desktop MIT
+  Trust Tier:    4 — 本机个人 fork，使用完整提交 SHA 和 lockfile 降低来源漂移
+────────────────────────────────────
+  SCOPE
+  Language:      TypeScript / JavaScript
+  Purpose:       Harness ComfyUI 发布安装与 DSH Desktop 生产运行
+  Files Audited: 根 package.json、pnpm-lock.yaml、安全脚本输出；DSH package.json、package-lock.json、postinstall 本地脚本、Electron installer 和安装脚本清单
+────────────────────────────────────
+  SECURITY FINDINGS
+  • DEP-01 MEDIUM DSH postinstall 执行外部依赖代码
+    npm ci 会应用本地 patches、修改 DSH node_modules 品牌文件，并可能下载 Electron 43.4.0 平台归档。
+    影响：安装期能够执行第三方代码并写入 DSH 工作树的 node_modules。
+  • DEP-02 LOW DSH manifest 含 8 个 direct dependency 范围
+    package-lock.json v3 已把 1172 个安装项固定到具体版本、resolved URL 和 integrity；npm ci 不进行浮动更新。
+    影响：lockfile 或安装命令改变时必须重新审计，不能改用 npm install。
+  • DEP-03 MEDIUM DSH Desktop 包含定时更新检查
+    固定提交会在启动、每六小时和系统恢复后联网检查更新；autoDownload=false，用户点击前不会下载。
+    影响：启动外部 Desktop 会产生已披露的自动网络请求和定时器，必须由阶段 A+B 明确授权。
+────────────────────────────────────
+  ARCHITECTURE ASSESSMENT
+  Authentication:  不属于依赖安装范围
+  Authorization:   只有用户批准阶段 A 和阶段 B 才授权运行已列安装命令
+  Data flow:       Registry 下载进入 root/DSH node_modules；Electron installer 默认使用包内 checksums.json
+  Secret mgmt:     审计与安装计划不读取或传输凭据
+  Dependencies:    根 10 个 direct dependency；DSH lock 1172 项；2026-09-02 两套 audit 均为 0 个已知漏洞
+  Update mechanism: 固定 Git SHA、frozen pnpm lock 和 npm ci；Desktop 自动检查但不自动下载，任务不使用 latest、npx 或自动升级命令
+────────────────────────────────────
+  RISK:     🟡 MEDIUM
+  VERDICT:  阶段 A 无安装风险；阶段 B 仅可在用户明确批准、固定 SHA/lockfile 未变、三个安全命令再次为 0 且未出现新安装脚本时继续。
+────────────────────────────────────
+  NOTES
+  npm 默认镜像不实现 audit API；审计已改用 npm 官方 Registry 的只读 audit endpoint 并成功返回 0 个漏洞。
+════════════════════════════════════
+```
+
+### 资料路径
+
+- `docs/agents/comfyui-workbench-preset-and-skill-development.md`
+- `.agents/skills/krea2-anime-prompt-skill/`
+- `.agents/skills/wai-sdxl-prompt-builder/`
+- `.agents/skills/anima-prompt-builder/`
+- `.agents/skills/comfyui-generate/`
+
 ## 2026-08-30 Phase 41 — DSH Desktop 生产生命周期命令
 
 - 本阶段的公开测试 seam 是 `package.json` 暴露的 DSH Desktop 生产命令及其实际管理的隔离 Desktop 进程。
@@ -1028,3 +1235,15 @@
 - `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的远端提交为 `d62963667614805aac75749cc7ba3de1ffef7e27`，与本地提交一致。
 - GitHub CI Run `33319779982` 的 Ubuntu Source quality gates 与 macOS DSH Desktop acceptance 均成功。
 - 发布文档提交前的最终 `pnpm quality` 通过：529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%。
+# 2026-09-02 Phase 43 — 最新主线与实施基线
+
+- 最新 `origin/main` 为 `e559781a2271bb67455fad018a64ec8804d0b27e`，对应已发布 `v0.38.5`；阶段 B 必须在发布前重新检查远端标签和 GitHub Release，再选择未使用的下一个补丁版本。
+- `origin/main` 在原计划基线之后修改了图片读取 Skill、CLI 合同、版本文档、发布规范和 Generation Runtime 测试，但没有修改用户提供的旧 Krea2 Skill 路径。实施必须以同步后的 `v0.38.5` 文档和测试为准。
+- 当前仓库的新式 CLI 参考文档使用项目规范规定的九个章节，并明确 managed environment、stdin JSON、逐项错误、命令级错误、副作用和重复调用；Krea2 Builder 的 `generation-cli.md` 应采用该结构，不复制旧 WAI/ANIMA 的六节版本。
+- 最终 Standards Review 证明仅改写新的背景合同仍不足以消除冲突：只要 `SKILL.md` 继续把要求简单背景的旧国风、背景或联合索引列为执行资料，动作迁移路线就存在两个可达背景合同。Builder 必须只把 `references/krea2-prompt-rules.md` 与 `references/motion-migration-constraints.md` 作为背景执行来源；旧资料可以作为保留资产存在。
+- 现有 `generation run-inputs --stdin` 对每个输入 ID 返回一个 `runs[]` 结果项。可用项包含 canonical 完整 `run_id`、保存的 `arguments` 和 Workflow 状态；错误项保留请求 `run_id` 并包含 `error.code` 与 `error.message`。合法顶层查询即使包含逐项错误也使用退出码 0，逐项错误不阻断其余结果。
+- Semantic 复审证明“只把两份新合同声明为唯一背景来源”仍不足以约束混合型旧资料。`anime-style-presets.md` 的画风预设还包含动作效果、背景和鞋履，`游戏服装多样性库.md` 还包含旧 T-pose、腿部 60% 和防裁切说明。入口必须为每份条件资料定义可采用内容：前者只取渲染与配色，后者只取服装、材质、穿戴配饰与色板；背景、姿态、动作迁移、比例、构图、镜头、防裁切和鞋履继续由新 Prompt 合同与动作迁移合同唯一决定。
+- Standards 复审确认条件资料白名单规则本身成立，但指出 `anime-style-presets.md` 的和风、童话与敦煌预设包含 `barefoot`，仅用 Battle Shounen 样本不能验证鞋履字段确实被排除。人工矩阵必须保留 Battle Shounen 动作效果用例，并增加至少一个含 `barefoot` 的风格预设用例，验证动作迁移合同的四要素完整鞋履仍然生效。
+- 第一次真实 Desktop 模型验收证明“最终回答只能包含 Prompt 正文”仍可能被模型解释为允许一个说明段落加一个 Prompt 段落。`DeepSeek V4 Flash` 已正确发现全局 Skill、读取四份必要资料并生成符合画面要求的 Prompt，但在正文前输出规则、资料读取和自检说明。入口与 Prompt 合同必须把可观察输出边界写成：回答第一字符就是 Prompt 正文第一字符、整个回答只有一个正文段落，并列出真实失败中出现的引导句模式。
+- 输出格式合同只约束成功构建 Prompt 的分支。历史纯查询必须按现有 CLI 结果报告运行参数、Actual Workflow 状态和逐项错误；缺少输入和冲突停止分支继续返回对应请求。输出回归用例必须同时提供完整画面输入，并且应在不依赖用户附加格式提醒的情况下验证 Skill 自身约束。
+- 用户明确要求只改 Skill 文档，并让历史查询说明沿用现有 CLI 查询逻辑。最终文档不得增加自动拆分查询、历史 Prompt 候选选择规则或固定混合诊断输出格式；本任务不修改 CLI 源码、CLI 运行时或 CLI 测试语义。

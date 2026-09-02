@@ -1,0 +1,4 @@
+interface:
+  display_name: "Krea2 Anime Prompt Builder"
+  short_description: "构建单条 Krea2 动漫角色展示与动作迁移源图提示词"
+  default_prompt: "使用 $krea2-anime-prompt-builder 根据我的画面要求构建一条可直接输入 Krea2 的动漫提示词。"

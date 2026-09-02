@@ -1,3 +1,28 @@
+# Harness ComfyUI v0.38.6
+
+v0.38.6 把用户提供的 Krea2 动漫提示词资产整理为仓库第七个项目 Skill `krea2-anime-prompt-builder`，增加单条 Prompt、历史 Generation Run 查询与动作迁移源图合同，并删除会创建或覆盖批量文件且对非法语言参数静默回退的自然语言批量脚本。
+
+## Krea2 Anime Prompt Builder
+
+- `.agents/skills/krea2-anime-prompt-builder/` 成为新的 canonical source。`SKILL.md` frontmatter 使用同名 `name`，`agents/openai.yaml` 提供 Skill 列表显示名称、简述和精确调用 `$krea2-anime-prompt-builder` 的默认文本。
+- Builder 按当前用户文字、用户明确选定的历史正向 Prompt、Character/Style `data.prompt_text`、条件参考资料和 Krea2 默认设计的顺序构建一条 Prompt。当前明确要求发生不可消解冲突时，Builder 要求用户选择，不静默合并互斥画面。
+- 展示路线允许用户指定自由姿态和镜头。舞蹈、姿态或动作迁移源图路线要求正面垂直中立站姿、完整四肢轮廓、两只鞋履与脚下余量、明确人物比例、标准透视和绚丽静态背景；该路线通过降低人物附近的背景细节和移动线索保持主体分离，不退回纯色或简单背景。
+- Builder 成功构建 Prompt 时，最终回答直接以画面描述开头，只返回一个可直接输入 Krea2 的 Prompt 正文段落。Prompt 正文不添加“已读取资料”“完成自检”或“以下是 Prompt”等引导句，不返回独立负向 Prompt、候选版本、参数建议或制作备注，也不创建输出目录或编号文件。历史纯查询与停止分支继续返回各自合同规定的信息。
+- `references/generation-cli.md` 使用项目规范规定的九个章节，按现有 CLI 行为完整定义受管前台 shell 中的只读 `generation run-inputs --stdin`、单次一至二十个完整或唯一短 Run ID、输入顺序、可用项 canonical Run ID、错误项请求 Run ID、逐项错误、命令级错误、外部状态恢复、无持久化副作用和完整示例。CLI 源码没有修改，Builder 不增加自动拆分查询或自定义历史结果协议。
+
+## 退役的批量生成流程
+
+- `scripts/gen_anime_v2.py` 已删除。该脚本原先按编号创建或覆盖提示词文件，并把非法语言参数静默改为默认语言；新的 Builder 不保留该调用入口或回退行为。
+- `SKILL.md`、Skill README 和 `scripts/selftest.py` 已删除 v2 调用流程。`scripts/selftest.py` 只保留原有 v1 冒烟调用；`scripts/gen_anime_v1.py` 作为既有英文标签批量资产保留，但不属于 Builder 执行接口。
+- 原动作迁移文档已收敛到 `references/motion-migration-constraints.md`，删除跨 Skill 共享源和简单背景说明。Builder 从动漫风格参考只采用渲染与配色内容，从游戏服装参考只采用服装、材质、穿戴配饰与色板；条件资料中的背景、动作、比例、构图和鞋履说明不参与执行。新的 Prompt 合同和动作迁移合同成为这些画面要素的唯一执行来源，其他国风素材、背景、汉服、Danbooru 和示例数据继续作为 Skill 自有保留资产存在。
+
+## 验收与发布
+
+- 新增 6 项结构合同测试，验证 canonical 目录、frontmatter、UI 元数据、Skill 内参考路径、CLI 参考章节、v2 文件删除和 v1 边界。历史 Run CLI/Runtime 的 50 项聚焦回归继续通过。
+- 独立 Standards、Spec 和 Semantic Reviewer 已核对 Skill 执行流程、九章 CLI 合同、普通文字、Character/Style、历史查询与复用、动作迁移、冲突和错误矩阵；三类审查均返回 PASS。
+- 完整 `pnpm quality` 通过：822 项 unit/integration、33 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.38.5
 
 v0.38.5 允许每次图片读取调用覆盖当前配置的默认提示词，明确视觉模型正文继续使用普通字符串，并修复图片读取设置页保存、切换、回显和错误提示的问题。

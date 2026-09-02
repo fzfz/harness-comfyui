@@ -1,5 +1,41 @@
 # Harness ComfyUI 原型方案进度
 
+## 2026-09-02 Phase 43 — `krea2-anime-prompt-builder` 方案
+
+- 状态：进行中。
+- 计划编写者已读取 `skill-creator`、`writing-for-agents`、`planning-with-files` 和 `team-mode` 的完整入口说明及 `writing-for-agents` 的 Skill mechanics 参考。
+- 计划编写者已从当前 `main` HEAD 创建独立分支 `codex/plan-krea2-anime-prompt-builder` 和独立 worktree。
+- 计划编写者已把主工作树中未提交的 `AGENTS.md` 修改和新增 `.agents/skills/krea2-anime-prompt-skill/` 复制到独立 worktree 作为调查输入；主工作树没有被修改。
+- 计划编写者已确认当前阶段只包含调查、方案编写和独立语义审核。
+- 首次规划文件补丁因错误假定 `findings.md` 和 `progress.md` 使用技能模板标题而失败；失败补丁没有修改文件，第二次补丁按现有文件标题应用。
+- 计划编写者读取项目 Skill 与 CLI 参考文档开发规范、当前 Krea2 Skill 完整入口、WAI/ANIMA Prompt Builder 入口、两者共用的历史 Run CLI 合同、UI 元数据和相关测试入口。
+- 计划编写者确认 `$HOME/.agents/skills/` 中不存在 Krea2 旧名称或新名称链接，并确认最终链接必须指向主开发 checkout 而不是独立 worktree。
+- 可用 Skill 清单中的 `stop-that-shit` 0.1.0 路径不存在；计划编写者读取本机 0.2.0 同名缓存并据此固定本任务边界。
+- 计划编写者读取领域文档规范和 `CONTEXT.md`，定位 README、系统架构、目录结构中必须随第七个项目 Skill 同步的精确声明。
+- 计划编写者确认当前分支基于 v0.38.3，本地 `origin/main` 已包含 v0.38.4 的六个后续提交；该差异必须在实施进入主开发 checkout 前重新核对。
+- 计划编写者只读检查 Krea2 README、动作迁移约束、自测与词库校验脚本；现有 Python 脚本使用 Skill 内相对路径，目录改名不要求修改脚本内容。
+- 计划编写者读取 WAI 当前轮输入合同并核对 Catalog Context 结构，确认 Krea2 Builder 可以自包含复用 Character/Style 的 `prompt_text` 采用边界，而不接管 Workflow、模型、LoRA 解析或 Generation Run 提交。
+- 计划编写者读取测试、linked-worktree Desktop 验收和版本发布规范，确认全局 Skill 链接部署必须在最终发布提交进入主开发 checkout 后进行，因此方案需要区分候选实施授权与完整发布授权。
+- 首次独立 Reviewer 返回 `FAIL`，指出批量生成接口越界、历史查询与复用分支未分离、验收矩阵不完整、阶段 B 冻结顺序错误以及链接冲突分支不够精确。
+- 计划编写者已经修订方案：排除 Python 批量生成职责，分开历史 Run 只读查询与历史 Prompt 复用，补齐九类语义与真实模型用例，并定义主工作树备份、全局旧路径、新路径和失败回滚的精确操作。
+- 修订方案已经把授权分为阶段 A 候选实施和阶段 B 完整发布与全局链接；普通“批准”只授权阶段 A。
+- 第二次独立 Reviewer 返回 `FAIL`，指出阶段 B 缺少完整失败回滚、链接映射与验证命令不够精确、若干测试和发布对象使用宽泛名称，并且动作迁移分支没有对应验收用例。
+- 计划编写者已经把阶段 B 改为事务式流程：全部路径先只读预检，主开发 checkout 临时 detached 到候选提交完成全局发现与真实模型验收，失败时恢复原 `main`、原始 Skill 和全局路径，通过后才快进并推送。
+- 计划编写者已经补充全局链接的唯一绝对映射和验证命令、阶段 A 精确 Vitest 命令、阶段 B 精确版本文件清单，以及动作迁移的语义与真实模型用例。
+- 第三次独立 Reviewer 返回 `FAIL`，唯一问题是阶段 A 命令漏列实际覆盖短 ID 三分支的 `tests/unit/generation-runtime.test.ts`。
+- 计划编写者已经把该测试文件加入阶段 A 精确 Vitest 命令，并按现有测试文件的真实职责修正覆盖说明。
+- 用户新增要求删除会覆盖文件并静默回退非法语言参数的 `scripts/gen_anime_v2.py`，同时删除 Skill 文档中的 v2 调用流程。
+- 计划编写者只读定位到现有 `SKILL.md`、`README.md` 和 `scripts/selftest.py` 的 v2 引用；修订方案将删除 v2 文件、清理两份文档并从 selftest 删除 v2 调用，保留但不调用 v1。
+- 第四次独立 Reviewer 返回 `FAIL`，指出真实模型矩阵缺少三个 Preset/Tool 回归、未跟踪文件没有进入 diff 门禁，以及阶段 B 缺少依赖版本安全审计意见。
+- 计划编写者已补充 `standard` Host Tool、工作台八个 Host-global Tool schema 隔离、同请求多 Run 三项真实模型回归；阶段 A 使用 intent-to-add，阶段 B 增加 staged diff 门禁。
+- 计划编写者按 `slowmist-agent-security` 完成只读依赖审计：根与 DSH lockfile 当前已知漏洞均为 0；DSH postinstall 包含本地 patch、品牌文件修改和 Electron 归档下载，因此阶段 B 风险评为中等并设置重新审计门禁。
+- 用户新增 v2 删除范围后的独立 Reviewer 返回 `FAIL`，只剩 `agents/openai.yaml` 用户可见文案漏审和 Next Step 过期两个问题。
+- 计划编写者已把 `agents/openai.yaml` 三个用户可见属性加入阶段 A/B 语义 Review，并把 Next Step 更新为最终审核与等待用户批准。
+- 审批就绪 Reviewer 返回 `FAIL`，指出当前 worktree 缺少测试依赖链接，并且阶段 B 漏掉 `docs/system/releasing.md` 的产品版本绑定更新。
+- 计划编写者已加入 worktree `node_modules` 到主开发 checkout 的绝对符号链接预检与验证，并把 `docs/system/releasing.md` 加入阶段 B 的版本、语义 Review 和暂存清单。
+- 最终独立 Reviewer 返回 `PASS`，确认审批边界、v2 删除范围、worktree 依赖链接、Skill/CLI/用户文案语义验收、真实模型矩阵、依赖审计、发布、全局链接和失败回滚完整可执行。
+- 状态：方案已通过独立审核，等待用户批准阶段 A 或阶段 A 和阶段 B。
+
 ## 2026-08-30 Phase 41 — DSH Desktop 生产生命周期命令
 
 - 状态：进行中。
@@ -1165,3 +1201,36 @@
 - GitHub CI Run `33319779982` 成功；Ubuntu Source quality gates 与 macOS DSH Desktop acceptance 均通过。
 - 独立语义 Reviewer 最终返回 PASS；发布文档中的版本、命令、依赖来源、运行目录、测试数量和职责边界与仓库实现一致。
 - 发布文档提交前的最终 `pnpm quality` 通过：529 项 unit/integration、29 项 contract/security、96 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%，依赖审计没有 critical、high、moderate 或 low 漏洞。
+# 2026-09-02 Phase 43 — 实施开始
+
+- 用户明确批准阶段 A 和阶段 B；实施范围包括 Skill 重命名与文档收敛、删除 v2 生成器与调用流程、合同测试、三类独立审阅、版本发布、全局 Skill 链接和生产部署。
+- 独立 worktree 已从 `030543dc39981439bd2ff8ae53432cff207216aa` 同步到 `origin/main` 的 `e559781a2271bb67455fad018a64ec8804d0b27e`。同步使用命名 stash `krea2-builder-pre-origin-sync` 保全 `AGENTS.md`、规划文件和用户提供的未跟踪 Skill 输入；stash 已重新应用并暂时保留。
+- 已完整读取项目 Skill、CLI 参考、worktree、测试、发布、架构、目录和技术栈规范，以及 Skill Creator 的 `openai.yaml` 字段合同。
+- worktree 的 `node_modules` 已建立为指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/node_modules` 的绝对符号链接；没有在 worktree 安装依赖，也没有复制 `.env`。
+- 第一次读取 Stop That Shit Skill 时使用了旧缓存路径并失败；随后已定位并完整读取本机已安装的 `0.2.0` 版本。该失败没有修改文件或运行外部内容。
+- `git diff --check` 在首次纳入 Git 的 `references/danbooru_tag_defs.txt` 中发现一处历史行尾空格。实施执行者只删除该行尾空格以满足强制门禁；其他 15 个未授权资产与同步前 stash 逐字节一致。独立 Standards Reviewer 和 Spec Reviewer必须核对该最小偏差。
+- 阶段 A 合同测试 6/6、历史 Run CLI/Runtime 聚焦回归 50/50、Skill Creator `quick_validate.py` 和 `git diff --check` 通过；目标 Skill 的 Python 脚本均未运行。
+- 第一轮 Standards Review 与 Spec Review 返回 PASS。Semantic Review 发现 `SKILL.md` 的重试段落没有明确允许外部状态恢复后的重新调用；实施执行者已经把业务输入最多一次修正与外部状态恢复后重新调用分开定义。
+- 修正后聚焦测试 56/56 和 `git diff --check` 通过；Standards、Spec 与 Semantic Reviewer 分别完成复审并全部返回 PASS。阶段 A 已完成。
+- 远端标签和 GitHub Release 的最新版本均为 `v0.38.5`；阶段 B 目标版本确定为尚未占用的补丁版本 `0.38.6`。
+- 阶段 B 写版本元数据前的完整 `pnpm quality` 通过：822 项 unit/integration、33 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过；覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%，完整依赖审计四个严重级别均为 0。
+- `package.json`、工程版本合同、`CONTEXT.md`、根 `README.md`、`docs/releasenotes.md`、`docs/system/testing.md` 和 `docs/system/releasing.md` 已更新到 `0.38.6`；DSH Desktop 继续固定提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`，根 lockfile 未修改。
+- 一次组合版本预检命令因为嵌套 shell 引号产生 `zsh: bad pattern`，此前 manifest 合同测试、12 项聚焦测试和 `git diff --check` 已经通过；实施执行者随后使用正确引号单独重跑版本、tag 与 GitHub Release 预检，确认 `0.38.6` 一致且未占用。
+- 最终 Spec Reviewer 返回 PASS；最终 Standards Reviewer 发现三个旧背景资料仍可被 Builder 条件读取且 `docs/system/startup.md` 保留 v0.38.5。Semantic Reviewer 当时建议增加历史正向 Prompt 的额外选择规则；用户随后明确要求历史查询文档只描述现有 CLI 行为，该建议不进入最终 Skill。
+- 实施执行者已把新的 Prompt 合同与动作迁移合同设为唯一背景执行来源；旧国风、背景和联合索引继续作为保留资产存在但不参与 Builder 执行，`docs/system/startup.md` 已同步到 v0.38.6。
+- Spec 与 Standards 复审返回 PASS；Semantic 复审确认历史 Prompt 与版本修正通过，但发现仍可读取的动漫风格资料和游戏服装资料内部包含旧动作、比例、背景和鞋履规则。
+- 实施执行者已为两份条件资料增加逐文件内容白名单：动漫风格资料只提供渲染与配色，游戏服装资料只提供服装、材质、穿戴配饰与色板。两份资料中的背景、姿态、动作迁移、比例、构图、镜头、防裁切和鞋履说明不再参与 Builder 执行；矩阵已增加三项对应人工语义用例。
+- Semantic 与 Spec 再次复审返回 PASS；Standards 复审确认规则边界正确，但指出矩阵没有使用动漫风格资料中真实存在的 `barefoot` 冲突样本。
+- 人工语义矩阵已增加“动作迁移加和风预设”用例：Builder 必须忽略预设鞋履字段中的 `barefoot`，并继续输出具有颜色、材质、款型、可见细节且左右完整入镜的鞋履。
+- 最终 Semantic、Spec 与 Standards Reviewer 已对包含和风 `barefoot` 冲突样本的完整候选分别返回 PASS，三类独立审查没有剩余阻塞项。
+- Standards Reviewer 在只读复审中误触发完整质量命令后立即终止，并确认没有遗留进程或工作树变化；该次运行不作为门禁证据，最终完整质量门禁由主执行者重新独立执行。
+- 修正前候选的最终 `pnpm quality` 与 `git diff --check` 通过，候选提交为 `5142a99d1676fc01b2429391f8cae2299016fd7f`；阶段 B 预检通过后，主 checkout 临时 detached 到该提交并创建了全局 Builder 链接。
+- 第一次真实模型验收使用 `ComfyUI工作台预设` 与 `DeepSeek V4 Flash`。模型发现全局 `krea2-anime-prompt-builder`，实际读取输入合同、Prompt 合同、动漫风格和游戏服装资料，并生成内容正确的青玉龙女 Prompt；但模型在 Prompt 前增加“根据规则、已读取资料、完成自检”的说明段落，违反只返回 Prompt 正文的合同。
+- 发布负责人没有放行该结果。开发 Desktop 已停止，临时全局链接已删除，主 checkout 已回到原 `main`，原始未跟踪 Skill 已从备份恢复，用户 `AGENTS.md` 修改保持未提交；失败证据保存在 Git 忽略文件 `.local/krea2-anime-prompt-builder/model-acceptance.md`。
+- 候选 `SKILL.md`、Prompt 合同、README、发布说明和 Phase 43 矩阵已增加可直接验收的输出规则：最终回答直接以画面描述开始，只包含一个 Prompt 正文段落，不添加规则、资料读取、自检或“以下是 Prompt”引导句。
+- 输出合同复审确认核心 `SKILL.md` 与 Prompt 合同能够阻止第一次真实失败，但发现回归用例只有格式要求而没有完整画面输入，并且 README 与发布说明把成功构建 Prompt 的规则无条件扩展到了历史查询和停止分支。
+- 回归用例现使用完整青玉龙女画面请求且不依赖用户附加格式提醒；README 与发布说明现把首字符和单正文段落规则明确限定为成功构建 Prompt 的回答，历史纯查询、缺少输入和冲突停止分支保留各自输出合同。
+- 进一步复审曾把历史 Prompt 选择和逐项错误组合成新的诊断输出格式。用户指出该设计超出“改 Skill 文档并沿用现有 CLI 查询逻辑”的授权范围。
+- 实施执行者已删除自动拆分查询、历史 Prompt 候选选择规则和固定诊断输出格式。`SKILL.md` 与 `references/generation-cli.md` 现在只描述现有 CLI 的单次一至二十项请求、`runs[]` 顺序、可用项 canonical Run ID、错误项请求 Run ID、逐项错误和命令级错误；CLI 源码没有修改。
+- Spec 复核发现 `docs/system/architecture.md` 仍保留已撤销的非空历史 Prompt 筛选。实施执行者已把该段同步为现有 CLI 结果语义，并明确用户指定可用结果时只读取实际保存的 `arguments.parameters.positive_prompt`，不定义额外候选协议。
+- 同步修正后的 6 个聚焦测试文件共 62 项通过，Skill Creator `quick_validate.py` 和 `git diff --check` 通过。最终 Standards、Spec 与 Semantic Reviewer 均返回 PASS，并确认 CLI/runtime 源码与 CLI 测试语义没有修改。

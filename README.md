@@ -9,7 +9,7 @@ Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 Com
 - 首次准备写入 `.local/upstreams/dsh-desktop` 的 `fzfz/dsh-desktop@9a0a39416af44af636e426f8d627cdb80d0baa77` 底座
 - 本机 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，其他安装路径通过 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` 配置
 - 两个已发布的 Catalog/Source CLI；默认路径见 [`config/source-production.json`](config/source-production.json)
-- 主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的六个 Skill 是本项目 Skill 的唯一源码；生产部署把 `$HOME/.agents/skills/` 中对应名称配置为指向主开发 checkout 对应目录的绝对符号链接，绝不指向独立 linked worktree
+- 主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的七个 Skill 是本项目 Skill 的唯一源码；生产部署把 `$HOME/.agents/skills/` 中对应名称配置为指向主开发 checkout 对应目录的绝对符号链接，绝不指向独立 linked worktree
 
 ## 首次启动
 
@@ -71,7 +71,9 @@ pnpm dev:stop
 
 `prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都会校验并把用户可见名称为 `ComfyUI工作台预设` 的一个项目 Preset 物化到当前运行 DSH home。该 Preset 保留内部 ID `harness-comfyui-cli-candidate`，因此已有对该内部 ID 的默认选择和 Session 引用不需要迁移。该 Preset 不向模型提供 8 个 Host 项目 Tool schema；Agent 按需读取全局项目 Skill 及其 CLI 参考文档，再通过项目 managed CLI 查询目录、提交生成任务、查询历史 Run、读取 Run 图片或读取用户提供的本地图片路径。Host 仍注册全部 8 个项目 Tool，选择 Harness `standard` Preset 的 Session 继续使用 Host 项目 Tool 路径。项目启动器不会修改 Harness 默认 Preset；启动器只清理本项目已经退役的 Preset 目录，并保留同一 DSH home 中的其他 Preset。
 
-主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 下的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 是六个 Skill 的 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>/` 使用绝对符号链接指向主开发 checkout 中相同名称的目录，不得指向独立 linked worktree。
+主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 下的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`krea2-anime-prompt-builder/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 是七个 Skill 的 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>/` 使用绝对符号链接指向主开发 checkout 中相同名称的目录，不得指向独立 linked worktree。
+
+`krea2-anime-prompt-builder` 根据当前文字、Character/Style `prompt_text` 和用户明确选定的历史正向 Prompt 构建一条 Krea2 动漫 Prompt。该 Skill 分别定义展示图与舞蹈或姿态迁移源图路线，并通过自己的 `references/generation-cli.md` 只读查询历史 Generation Run；该 Skill 不调用批量生成器，也不创建或覆盖提示词文件。
 
 managed CLI 的 Generation Request 不包含 Workspace、Session、Turn 或 Tool Call ID。Host 从当前前台 shell ToolExecution 和 workspace registry 派生这些身份并写入 Run Repository。同一个 Generation Request 允许多次独立提交；每次独立提交使用不同的前台 shell Tool Call，并产生独立的 `call_id` 与 `run_id`。
 
@@ -110,6 +112,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.38.5 发布说明](docs/releasenotes.md)
+- [v0.38.6 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.38.5`。对应发布记录在最终提交、`v0.38.5` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.38.6`。对应发布记录在最终提交、`v0.38.6` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
