@@ -54,7 +54,46 @@ function source(bundle: ComfyTemplateBundle): GenerationSource {
   }
 }
 
+function workflowCompiler(compile: WorkflowCompiler['compile']): WorkflowCompiler {
+  return {
+    compile,
+    inspectRuntimeParameters: vi.fn(async () => ({ parameters: [], size_candidates: [] })),
+  }
+}
+
 describe('SourceGenerationPreparer', () => {
+  it('inspects the explicit template and instance through the Workflow compiler without using the default instance', async () => {
+    const generationSource = source(template())
+    const inspectRuntimeParameters = vi.fn<WorkflowCompiler['inspectRuntimeParameters']>(async () => ({
+      parameters: [],
+      size_candidates: [],
+    }))
+    const preparer = new SourceGenerationPreparer({
+      defaultInstanceId: 'default-instance',
+      source: generationSource,
+      compiler: {
+        inspectRuntimeParameters,
+        compile: vi.fn<WorkflowCompiler['compile']>(),
+      },
+    })
+
+    const result = await preparer.inspectRuntimeParameters({ templateId: 'brand-new-template', instanceId: '2' })
+
+    expect(result).toEqual({ parameters: [], size_candidates: [] })
+    expect(generationSource.readTemplate).toHaveBeenCalledWith('brand-new-template', undefined)
+    expect(generationSource.readInstance).toHaveBeenCalledWith('2', undefined)
+    expect(inspectRuntimeParameters).toHaveBeenCalledWith({
+      instanceId: '2',
+      workflow: template().workflow,
+      connection: {
+        url: 'http://127.0.0.1:8188',
+        origin: 'http://127.0.0.1:8188',
+        authorization: 'Bearer secret-token',
+      },
+      signal: undefined,
+    })
+  })
+
   it('passes request parameters directly to the compiler and excludes connection secrets from the source snapshot', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
       actualWorkflow: input.workflow,
@@ -69,7 +108,7 @@ describe('SourceGenerationPreparer', () => {
     const preparer = new SourceGenerationPreparer({
       defaultInstanceId: '1',
       source: source(template()),
-      compiler: { compile },
+      compiler: workflowCompiler(compile),
     })
 
     const prepared = await preparer.prepare(request)
@@ -111,7 +150,7 @@ describe('SourceGenerationPreparer', () => {
     const preparer = new SourceGenerationPreparer({
       defaultInstanceId: '1',
       source: source(template()),
-      compiler: { compile },
+      compiler: workflowCompiler(compile),
     })
 
     const prepared = await preparer.prepare(request)
@@ -129,7 +168,7 @@ describe('SourceGenerationPreparer', () => {
     const preparer = new SourceGenerationPreparer({
       defaultInstanceId: '1',
       source: source(template()),
-      compiler: { compile },
+      compiler: workflowCompiler(compile),
     })
 
     await preparer.prepare({

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "model_routes": {
+    "krea2-turbo": {
+      "negative_mode": "positive_rewrite",
+      "base_negative_items": [],
+      "positive_avoidance_examples": [
+        "two clear hands with five separated fingers each",
+        "the full figure is visible from head to shoes",
+        "each subject has a separate silhouette and natural joint connections"
+      ]
+    }
+  },
+  "size_profiles": [
+    {
+      "aspect_ratio": "1:1",
+      "composition": "中心角色、设定图",
+      "test": { "width": 1024, "height": 1024, "megapixels": 1 },
+      "final": { "width": 1440, "height": 1440, "megapixels": 2 }
+    },
+    {
+      "aspect_ratio": "1:2",
+      "composition": "舞蹈迁移源图、鞋履完整全身",
+      "test": { "width": 704, "height": 1408, "megapixels": 1 },
+      "final": { "width": 1024, "height": 2048, "megapixels": 2 }
+    },
+    {
+      "aspect_ratio": "2:3",
+      "composition": "常规全身立绘",
+      "test": { "width": 832, "height": 1248, "megapixels": 1 },
+      "final": { "width": 1152, "height": 1728, "megapixels": 2 }
+    },
+    {
+      "aspect_ratio": "3:2",
+      "composition": "横向人物与场景",
+      "test": { "width": 1248, "height": 832, "megapixels": 1 },
+      "final": { "width": 1728, "height": 1152, "megapixels": 2 }
+    },
+    {
+      "aspect_ratio": "9:16",
+      "composition": "标准竖屏角色、手机内容",
+      "test": { "width": 864, "height": 1536, "megapixels": 1.33 },
+      "final": { "width": 1152, "height": 2048, "megapixels": 2.36 }
+    },
+    {
+      "aspect_ratio": "16:9",
+      "composition": "标准横屏叙事、宽幅场景",
+      "test": { "width": 1536, "height": 864, "megapixels": 1.33 },
+      "final": { "width": 2048, "height": 1152, "megapixels": 2.36 }
+    }
+  ]
+}

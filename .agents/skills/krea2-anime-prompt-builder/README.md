@@ -7,7 +7,7 @@
 - 展示路线输出一条完整动漫画面 Prompt，允许用户指定自由姿态、镜头和构图。
 - 动作迁移路线输出一条垂直全身源图 Prompt，要求四肢轮廓、鞋履、人物比例和静态背景满足迁移约束。
 - 历史查询路线完全采用现有 `generation run-inputs --stdin` 的 `runs[]` 行为：保持输入顺序，可用项返回 canonical 完整 Run ID，错误项保留请求 Run ID，逐项错误不阻断其余结果。
-- 成功构建 Prompt 时，最终回答直接以画面描述开头，只包含一个 Prompt 正文段落。Prompt 正文不附带“已读取资料”或“完成自检”等引导句、负向 Prompt、候选方案、路线说明、参数建议或制作备注。历史纯查询、缺少输入和冲突停止分支继续返回各自合同规定的信息。
+- 成功构建 Prompt 时，Builder 返回通过本地校验器的结构化生成结果；其中 `positive_prompt` 直接以画面描述开头，只包含一个 Prompt 正文段落。历史纯查询、缺少输入和冲突停止分支继续返回各自合同规定的信息。
 
 ## 输入来源
 
@@ -33,6 +33,10 @@ Character/Style 记录已经提供非空 `data.prompt_text` 时，Builder 直接
 | `references/motion-migration-constraints.md` | 动作迁移源图的垂直构图、鞋履、比例和背景约束。 |
 | `references/semantic-query-cli.md` | 作品、角色、Krea2 底模画师风格和 Prompt 词条的只读语义目录 CLI 合同。 |
 | `references/generation-cli.md` | 历史 Generation Run 只读查询的 managed CLI 合同。 |
+| `references/generation-output-contract.md` | 测试与正式生成目的、模板无关尺寸、Krea2 正向规避策略和结果校验接口。 |
+| `references/generation-output-schema.json` | 结构化生成结果的属性、类型、枚举和额外属性合同。 |
+| `references/generation-profiles.json` | Krea2 模型路线、画幅、测试档、正式档和正向规避示例。 |
+| `scripts/validate-output.mjs` | 结构化生成结果的确定性校验器。 |
 
 Builder 只在当前画面需要对应内容时读取 `references/anime-style-presets.md` 和 `references/游戏服装多样性库.md`。动漫风格资料只提供渲染媒介、线条、上色、明暗、纹理和配色；游戏服装资料只提供服装剪裁、服装部件、材质、穿戴配饰和色板。两份条件资料中的背景、姿态、动作迁移、人物比例、构图、镜头、防裁切和鞋履说明不参与 Builder 执行。`references/krea2-prompt-rules.md` 与 `references/motion-migration-constraints.md` 定义 Builder 的背景、姿态、比例、构图和鞋履合同。`references/` 中其他国风素材、背景、服装与背景联合索引、Danbooru 标签和既有数据词库作为保留资产存在，不属于 Builder 的执行资料来源。
 

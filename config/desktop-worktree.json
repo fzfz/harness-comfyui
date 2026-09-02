@@ -1,4 +1,5 @@
 {
   "mainCheckoutPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui",
-  "runtimeRelativeRoot": ".local/desktop-development"
+  "runtimeRelativeRoot": ".local/desktop-development",
+  "skillSourceRelativePath": ".agents/skills"
 }

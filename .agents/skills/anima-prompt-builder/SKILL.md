@@ -82,4 +82,10 @@ Skill 执行者把 UI Style 记录的 `data.prompt_text` 按这些 Style JSON �
 
 Skill 执行者把当前用户意图映射到其余十个内容槽位，并用已读取的详细资料决定每个槽位的词语。Skill 执行者按照 `references/semantic-query-interfaces.md` 采用 `query_semantic_prompt_terms` 候选时，只把选中候选的 `canonical_tag` 放入该标签语义对应的内容槽位；`aliases` 只用于理解和比较候选。Skill 执行者完成槽位内容并删除冲突与重复内容后，按照 `references/prompt-weighting.md` 设计权重。前十一槽位的每个数组元素必须符合 `references/prompt-weight-policy.json` 定义的形式，解析后的 payload 必须是英文小写且不含逗号；`natural_language` 只能放入英文小写自然语言句子，并且不使用 tag 权重外层。
 
-Skill 执行者按照 `references/03-output-protocol.md` 的“校验器调用”定义调用 校验器脚本。
+Skill 执行者按照 `references/03-output-protocol.md` 的“校验器调用”定义调用校验器脚本。
+
+## 构造生成结果
+
+ANIMA 十二槽 Prompt 通过原有格式校验以后，Skill 执行者必须在决定生成目的、负向策略和目标尺寸以前，完整读取 `references/generation-output-contract.md`、`references/generation-output-schema.json` 与 `references/generation-profiles.json`。Skill 执行者按这些参考构造一个结构化生成结果，再按 `references/generation-output-contract.md` 规定的校验接口校验该结果。
+
+当前上下文经过压缩而不再完整保留任一上述参考文件时，Skill 执行者必须在构造或重新校验结构化生成结果前重新完整读取缺失文件。最终回答必须是通过生成结果校验器的结构化结果。

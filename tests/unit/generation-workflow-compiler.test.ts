@@ -81,6 +81,114 @@ const fixtureOutputInfo = {
   output_node: true,
 }
 
+function sizeOutputWorkflow(options: {
+  readonly includeValidOutput: boolean
+  readonly maskRequired: boolean
+}): UiWorkflow {
+  const nodes: Array<UiWorkflow['nodes'][number]> = [
+    {
+      id: 1,
+      type: 'EmptyLatentImage',
+      mode: 0,
+      inputs: [
+        { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+        { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+        { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+      ],
+      outputs: [{ name: 'LATENT', type: 'LATENT', links: [11] }],
+      widgets_values: [768, 1024, 1],
+    },
+    {
+      id: 2,
+      type: 'VAEDecode',
+      mode: 0,
+      inputs: [{ name: 'samples', type: 'LATENT', link: 11 }],
+      outputs: [{ name: 'IMAGE', type: 'IMAGE', links: options.includeValidOutput ? [21] : [22] }],
+      widgets_values: [],
+    },
+    {
+      id: 4,
+      type: 'SaveWithMask',
+      mode: 0,
+      inputs: [
+        { name: 'images', type: 'IMAGE', link: options.includeValidOutput ? 23 : 22 },
+        { name: 'mask', type: 'MASK', link: null },
+        { name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } },
+      ],
+      outputs: [],
+      widgets_values: ['masked-output'],
+    },
+  ]
+  if (options.includeValidOutput) {
+    nodes.splice(2, 0, {
+      id: 3,
+      type: 'SaveImage',
+      mode: 0,
+      inputs: [
+        { name: 'images', type: 'IMAGE', link: 21 },
+        { name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } },
+      ],
+      outputs: [],
+      widgets_values: ['valid-output'],
+    })
+    nodes.splice(3, 0, {
+      id: 5,
+      type: 'ImageProducer',
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [23] }],
+      widgets_values: ['independent-source'],
+    })
+  }
+  return {
+    version: 0.4,
+    nodes,
+    links: [
+      [11, 1, 0, 2, 0, 'LATENT'],
+      ...(options.includeValidOutput ? [[21, 2, 0, 3, 0, 'IMAGE'] as const] : []),
+      ...(options.includeValidOutput
+        ? [[23, 5, 0, 4, 0, 'IMAGE'] as const]
+        : [[22, 2, 0, 4, 0, 'IMAGE'] as const]),
+    ],
+  }
+}
+
+function sizeOutputObjectInfo(maskRequired: boolean) {
+  return {
+    EmptyLatentImage: {
+      input: { required: {
+        width: ['INT', { min: 256, max: 2048 }],
+        height: ['INT', { min: 256, max: 2048 }],
+        batch_size: ['INT', { min: 1, max: 8 }],
+      } },
+      input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+      output_node: false,
+    },
+    VAEDecode: {
+      input: { required: { samples: ['LATENT'] } },
+      input_order: { required: ['samples'], optional: [] },
+      output_node: false,
+    },
+    ImageProducer: objectInfo.ImageProducer,
+    SaveImage: objectInfo.SaveImage,
+    SaveWithMask: {
+      input: {
+        required: {
+          images: ['IMAGE'],
+          ...(maskRequired ? { mask: ['MASK'] } : {}),
+          filename_prefix: ['STRING', {}],
+        },
+        optional: maskRequired ? {} : { mask: ['MASK'] },
+      },
+      input_order: {
+        required: maskRequired ? ['images', 'mask', 'filename_prefix'] : ['images', 'filename_prefix'],
+        optional: maskRequired ? [] : ['mask'],
+      },
+      output_node: true,
+    },
+  }
+}
+
 function createCompiler(
   options: Omit<ComfyWorkflowCompilerOptions, 'officialApiWorkflowCompiler'> = {},
 ): ComfyWorkflowCompiler {
@@ -97,6 +205,1075 @@ function createCompiler(
 }
 
 describe('ComfyWorkflowCompiler', () => {
+  it('inspects a paired width and height contract without running the official compiler', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 4,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [],
+          widgets_values: [768, 1024, 1],
+        },
+      ],
+      links: [],
+    }
+    const officialCompile = vi.fn()
+    const compiler = new ComfyWorkflowCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        EmptyLatentImage: {
+          input: { required: {
+            width: ['INT', { min: 256, max: 2048, step: 8 }],
+            height: ['INT', { min: 256, max: 2048, step: 8 }],
+            batch_size: ['INT', { min: 1, max: 8 }],
+          } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+      officialApiWorkflowCompiler: { compile: officialCompile },
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection).toEqual({
+      parameters: [
+        {
+          parameter_id: 'batch_size',
+          kind: 'batch_size',
+          value_type: 'integer',
+          current_value: 1,
+          minimum: 1,
+          maximum: 8,
+        },
+      ],
+      size_candidates: [
+        {
+          candidate_id: 'width_height:width:height',
+          representation: 'width_height',
+          width: {
+            parameter_id: 'width',
+            kind: 'width',
+            value_type: 'integer',
+            current_value: 768,
+            minimum: 256,
+            maximum: 2048,
+          },
+          height: {
+            parameter_id: 'height',
+            kind: 'height',
+            value_type: 'integer',
+            current_value: 1024,
+            minimum: 256,
+            maximum: 2048,
+          },
+        },
+      ],
+    })
+    expect(officialCompile).not.toHaveBeenCalled()
+    expect(actual.nodes[0]?.widgets_values).toEqual([768, 1024, 1])
+  })
+
+  it('inspects the terminal adjustable size pair when a downstream latent upscale controls saved output dimensions', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 4,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [45] }],
+          widgets_values: [1024, 1024, 1],
+        },
+        {
+          id: 5,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [
+            { name: 'latent_image', type: 'LATENT', link: 45 },
+            { name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [40] }],
+          widgets_values: [101],
+        },
+        {
+          id: 6,
+          type: 'LatentUpscale',
+          mode: 0,
+          inputs: [
+            { name: 'samples', type: 'LATENT', link: 40 },
+            { name: 'upscale_method', type: 'COMBO', link: null, widget: { name: 'upscale_method' } },
+            { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+            { name: 'crop', type: 'COMBO', link: null, widget: { name: 'crop' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [67] }],
+          widgets_values: ['bicubic', 1152, 1512, 'disabled'],
+        },
+        {
+          id: 7,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [
+            { name: 'latent_image', type: 'LATENT', link: 67 },
+            { name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [78] }],
+          widgets_values: [202],
+        },
+        {
+          id: 8,
+          type: 'VAEDecode',
+          mode: 0,
+          inputs: [{ name: 'samples', type: 'LATENT', link: 78 }],
+          outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [80] }],
+          widgets_values: [],
+        },
+        {
+          id: 9,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [
+            { name: 'images', type: 'IMAGE', link: 80 },
+            { name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } },
+          ],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+        {
+          id: 10,
+          type: 'SamplerName',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'COMBO', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'COMBO', type: 'COMBO', links: [90] }],
+          widgets_values: ['euler'],
+        },
+        {
+          id: 11,
+          type: 'ShowAnything',
+          mode: 0,
+          inputs: [{ name: 'anything', type: '*', link: 90 }],
+          outputs: [],
+          widgets_values: [],
+        },
+      ],
+      links: [
+        [45, 4, 0, 5, 0, 'LATENT'],
+        [40, 5, 0, 6, 0, 'LATENT'],
+        [67, 6, 0, 7, 0, 'LATENT'],
+        [78, 7, 0, 8, 0, 'LATENT'],
+        [80, 8, 0, 9, 0, 'IMAGE'],
+        [90, 10, 0, 11, 0, 'COMBO'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        EmptyLatentImage: {
+          input: { required: {
+            width: ['INT', { min: 256, max: 2048 }],
+            height: ['INT', { min: 256, max: 2048 }],
+            batch_size: ['INT', { min: 1, max: 8 }],
+          } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+        LatentUpscale: {
+          input: { required: {
+            samples: ['LATENT'],
+            upscale_method: [['bicubic'], {}],
+            width: ['INT', { min: 256, max: 2048 }],
+            height: ['INT', { min: 256, max: 2048 }],
+            crop: [['disabled'], {}],
+          } },
+          input_order: { required: ['samples', 'upscale_method', 'width', 'height', 'crop'], optional: [] },
+          output_node: false,
+        },
+        KSampler: {
+          input: { required: {
+            latent_image: ['LATENT'],
+            seed: ['INT', { min: 0, max: 2147483647 }],
+          } },
+          input_order: { required: ['latent_image', 'seed'], optional: [] },
+          output_node: false,
+        },
+        VAEDecode: {
+          input: { required: { samples: ['LATENT'] } },
+          input_order: { required: ['samples'], optional: [] },
+          output_node: false,
+        },
+        SamplerName: {
+          input: { required: { value: [['euler'], {}] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        ShowAnything: {
+          input: { required: { anything: ['*'] } },
+          input_order: { required: ['anything'], optional: [] },
+          output_node: true,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection.size_candidates).toEqual([
+      {
+        candidate_id: 'width_height:width_6:height_6',
+        representation: 'width_height',
+        width: {
+          parameter_id: 'width_6',
+          kind: 'width',
+          value_type: 'integer',
+          current_value: 1152,
+          minimum: 256,
+          maximum: 2048,
+        },
+        height: {
+          parameter_id: 'height_6',
+          kind: 'height',
+          value_type: 'integer',
+          current_value: 1512,
+          minimum: 256,
+          maximum: 2048,
+        },
+      },
+    ])
+    expect(inspection.parameters.filter(parameter => parameter.kind === 'seed')).toEqual([
+      {
+        parameter_id: 'seed',
+        kind: 'seed',
+        value_type: 'integer',
+        current_value: 101,
+        minimum: 0,
+        maximum: 2147483647,
+      },
+    ])
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { width_6: 1024, height_6: 1024 },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 4)?.widgets_values).toEqual([1024, 1024, 1])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 6)?.widgets_values).toEqual([
+      'bicubic', 1024, 1024, 'disabled',
+    ])
+    expect(compiled.apiWorkflow['6']).toMatchObject({ inputs: { width: 1024, height: 1024 } })
+  })
+
+  it('inspects selector and mapped resolution-preset size representations without active outputs', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 10,
+          type: 'ResolutionSelector',
+          mode: 0,
+          inputs: [
+            { name: 'aspect_ratio', type: 'COMBO', link: null, widget: { name: 'aspect_ratio' } },
+            { name: 'megapixels', type: 'FLOAT', link: null, widget: { name: 'megapixels' } },
+          ],
+          outputs: [],
+          widgets_values: ['9:16', 1],
+        },
+        {
+          id: 11,
+          type: 'ResolutionPreset',
+          mode: 0,
+          inputs: [{ name: 'resolution', type: 'COMBO', link: null, widget: { name: 'resolution' } }],
+          outputs: [],
+          widgets_values: ['1024x1024'],
+        },
+      ],
+      links: [],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ResolutionSelector: {
+          input: { required: {
+            aspect_ratio: [['1:1', '9:16', '16:9'], {}],
+            megapixels: ['FLOAT', { min: 0.5, max: 2 }],
+          } },
+          input_order: { required: ['aspect_ratio', 'megapixels'], optional: [] },
+          output_node: false,
+        },
+        ResolutionPreset: {
+          input: { required: {
+            resolution: [['1024x1024', '768 × 1344', 'custom'], {}],
+          } },
+          input_order: { required: ['resolution'], optional: [] },
+          output_node: false,
+        },
+        ResultSink: fixtureOutputInfo,
+      }), { status: 200 })),
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection.size_candidates).toEqual([
+      {
+        candidate_id: 'aspect_ratio_megapixels:aspect_ratio:megapixels',
+        representation: 'aspect_ratio_megapixels',
+        aspect_ratio: {
+          parameter_id: 'aspect_ratio',
+          kind: 'aspect_ratio',
+          value_type: 'choice',
+          current_value: '9:16',
+          allowed_values: ['1:1', '9:16', '16:9'],
+        },
+        megapixels: {
+          parameter_id: 'megapixels',
+          kind: 'megapixels',
+          value_type: 'number',
+          current_value: 1,
+          minimum: 0.5,
+          maximum: 2,
+        },
+      },
+      {
+        candidate_id: 'resolution_preset:resolution_preset',
+        representation: 'resolution_preset',
+        parameter: {
+          parameter_id: 'resolution_preset',
+          kind: 'resolution_preset',
+          value_type: 'choice',
+          current_value: '1024x1024',
+          allowed_values: ['1024x1024', '768 × 1344', 'custom'],
+        },
+        mapped_options: [
+          { value: '1024x1024', width: 1024, height: 1024 },
+          { value: '768 × 1344', width: 768, height: 1344 },
+        ],
+        unmapped_values: ['custom'],
+      },
+    ])
+
+    const selectorCandidate = inspection.size_candidates[0]
+    expect(selectorCandidate?.representation).toBe('aspect_ratio_megapixels')
+    if (!selectorCandidate || selectorCandidate.representation !== 'aspect_ratio_megapixels') {
+      throw new Error('Expected an aspect-ratio and megapixels size candidate')
+    }
+    const compileWorkflow: UiWorkflow = {
+      ...actual,
+      nodes: [
+        ...actual.nodes,
+        {
+          id: 12,
+          type: 'ResultSink',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+    }
+    const selectorCompiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: compileWorkflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: {
+        [selectorCandidate.aspect_ratio.parameter_id]: '16:9',
+        [selectorCandidate.megapixels.parameter_id]: 2,
+      },
+      loras: [],
+    })
+    expect(selectorCompiled.actualWorkflow.nodes.find(node => node.id === 10)?.widgets_values).toEqual(['16:9', 2])
+    expect(selectorCompiled.apiWorkflow['10']).toMatchObject({
+      inputs: { aspect_ratio: '16:9', megapixels: 2 },
+    })
+
+    const presetCandidate = inspection.size_candidates[1]
+    expect(presetCandidate?.representation).toBe('resolution_preset')
+    if (!presetCandidate || presetCandidate.representation !== 'resolution_preset') {
+      throw new Error('Expected a resolution-preset size candidate')
+    }
+    const presetCompiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: compileWorkflow,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { [presetCandidate.parameter.parameter_id]: '768 × 1344' },
+      loras: [],
+    })
+    expect(presetCompiled.actualWorkflow.nodes.find(node => node.id === 11)?.widgets_values).toEqual(['768 × 1344'])
+    expect(presetCompiled.apiWorkflow['11']).toMatchObject({ inputs: { resolution: '768 × 1344' } })
+
+    expect(actual.nodes.find(node => node.id === 10)?.widgets_values).toEqual(['9:16', 1])
+    expect(actual.nodes.find(node => node.id === 11)?.widgets_values).toEqual(['1024x1024'])
+  })
+
+  it('omits size candidates that cannot control any active image output', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 10,
+          type: 'ResolutionSelector',
+          mode: 0,
+          inputs: [
+            { name: 'aspect_ratio', type: 'COMBO', link: null, widget: { name: 'aspect_ratio' } },
+            { name: 'megapixels', type: 'FLOAT', link: null, widget: { name: 'megapixels' } },
+          ],
+          outputs: [],
+          widgets_values: ['9:16', 1],
+        },
+        {
+          id: 12,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ResolutionSelector: {
+          input: { required: {
+            aspect_ratio: [['1:1', '9:16', '16:9'], {}],
+            megapixels: ['FLOAT', { min: 0.5, max: 2 }],
+          } },
+          input_order: { required: ['aspect_ratio', 'megapixels'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: fixtureOutputInfo,
+      }), { status: 200 })),
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection.size_candidates).toEqual([])
+  })
+
+  it('ignores an image output that is missing a required connection when retaining a valid output size candidate', async () => {
+    const actual = sizeOutputWorkflow({ includeValidOutput: true, maskRequired: true })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(sizeOutputObjectInfo(true)), { status: 200 })),
+    })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    } as const
+
+    const inspection = await compiler.inspectRuntimeParameters(input)
+    const compiled = await compiler.compile({ ...input, loras: [] })
+
+    expect(inspection.size_candidates.map(candidate => candidate.candidate_id)).toEqual([
+      'width_height:width:height',
+    ])
+    expect(compiled.activeOutputNodeIds).toEqual(['3'])
+  })
+
+  it('does not expose a size candidate when every image output is missing a required connection', async () => {
+    const actual = sizeOutputWorkflow({ includeValidOutput: false, maskRequired: true })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(sizeOutputObjectInfo(true)), { status: 200 })),
+    })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    } as const
+
+    const inspection = await compiler.inspectRuntimeParameters(input)
+
+    expect(inspection.size_candidates).toEqual([])
+    await expect(compiler.compile({ ...input, loras: [] })).rejects.toMatchObject({
+      code: 'WORKFLOW_COMPILE_FAILED',
+      message: 'Workflow does not contain an active output node.',
+    })
+  })
+
+  it('keeps an image output with a disconnected optional input active for inspection and compilation', async () => {
+    const actual = sizeOutputWorkflow({ includeValidOutput: false, maskRequired: false })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(sizeOutputObjectInfo(false)), { status: 200 })),
+    })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    } as const
+
+    const inspection = await compiler.inspectRuntimeParameters(input)
+    const compiled = await compiler.compile({ ...input, loras: [] })
+
+    expect(inspection.size_candidates.map(candidate => candidate.candidate_id)).toEqual([
+      'width_height:width:height',
+    ])
+    expect(compiled.activeOutputNodeIds).toEqual(['4'])
+  })
+
+  it('pairs upstream width and height value widgets through their shared downstream size consumer', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'PrimitiveInt',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [11] }],
+          widgets_values: [768],
+        },
+        {
+          id: 2,
+          type: 'PrimitiveInt',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [12] }],
+          widgets_values: [1024],
+        },
+        {
+          id: 3,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: 11, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: 12, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [],
+          widgets_values: [768, 1024, 1],
+        },
+      ],
+      links: [
+        [11, 1, 0, 3, 0, 'INT'],
+        [12, 2, 0, 3, 1, 'INT'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        PrimitiveInt: {
+          input: { required: { value: ['INT', { min: 256, max: 2048 }] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        EmptyLatentImage: {
+          input: { required: {
+            width: ['INT', { min: 256, max: 2048 }],
+            height: ['INT', { min: 256, max: 2048 }],
+            batch_size: ['INT', { min: 1, max: 8 }],
+          } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection.size_candidates).toEqual([
+      {
+        candidate_id: 'width_height:width:height',
+        representation: 'width_height',
+        width: {
+          parameter_id: 'width',
+          kind: 'width',
+          value_type: 'integer',
+          current_value: 768,
+          minimum: 256,
+          maximum: 2048,
+        },
+        height: {
+          parameter_id: 'height',
+          kind: 'height',
+          value_type: 'integer',
+          current_value: 1024,
+          minimum: 256,
+          maximum: 2048,
+        },
+      },
+    ])
+  })
+
+  it('returns one candidate when a unique upstream size pair feeds multiple downstream consumers', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'PrimitiveInt',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [11, 13] }],
+          widgets_values: [768],
+        },
+        {
+          id: 2,
+          type: 'PrimitiveInt',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [12, 14] }],
+          widgets_values: [1024],
+        },
+        ...[3, 4].map((id, index) => ({
+          id,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: index === 0 ? 11 : 13, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: index === 0 ? 12 : 14, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [],
+          widgets_values: [768, 1024, 1],
+        })),
+      ],
+      links: [
+        [11, 1, 0, 3, 0, 'INT'],
+        [12, 2, 0, 3, 1, 'INT'],
+        [13, 1, 0, 4, 0, 'INT'],
+        [14, 2, 0, 4, 1, 'INT'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        PrimitiveInt: {
+          input: { required: { value: ['INT', { min: 256, max: 2048 }] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        EmptyLatentImage: {
+          input: { required: {
+            width: ['INT', { min: 256, max: 2048 }],
+            height: ['INT', { min: 256, max: 2048 }],
+            batch_size: ['INT', { min: 1, max: 8 }],
+          } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection.size_candidates).toEqual([
+      {
+        candidate_id: 'width_height:width:height',
+        representation: 'width_height',
+        width: {
+          parameter_id: 'width',
+          kind: 'width',
+          value_type: 'integer',
+          current_value: 768,
+          minimum: 256,
+          maximum: 2048,
+        },
+        height: {
+          parameter_id: 'height',
+          kind: 'height',
+          value_type: 'integer',
+          current_value: 1024,
+          minimum: 256,
+          maximum: 2048,
+        },
+      },
+    ])
+  })
+
+  it('reports every competing height target when one upstream width feeds two size consumers', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'PrimitiveInt',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [11, 13] }],
+          widgets_values: [768],
+        },
+        ...[2, 3].map((id, index) => ({
+          id,
+          type: 'PrimitiveInt',
+          mode: 0,
+          inputs: [{ name: 'value', type: 'INT', link: null, widget: { name: 'value' } }],
+          outputs: [{ name: 'INT', type: 'INT', links: [index === 0 ? 12 : 14] }],
+          widgets_values: [index === 0 ? 1024 : 1152],
+        })),
+        ...[4, 5].map((id, index) => ({
+          id,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: index === 0 ? 11 : 13, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: index === 0 ? 12 : 14, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [],
+          widgets_values: [768, index === 0 ? 1024 : 1152, 1],
+        })),
+      ],
+      links: [
+        [11, 1, 0, 4, 0, 'INT'],
+        [12, 2, 0, 4, 1, 'INT'],
+        [13, 1, 0, 5, 0, 'INT'],
+        [14, 3, 0, 5, 1, 'INT'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        PrimitiveInt: {
+          input: { required: { value: ['INT', { min: 256, max: 2048 }] } },
+          input_order: { required: ['value'], optional: [] },
+          output_node: false,
+        },
+        EmptyLatentImage: {
+          input: { required: {
+            width: ['INT', { min: 256, max: 2048 }],
+            height: ['INT', { min: 256, max: 2048 }],
+            batch_size: ['INT', { min: 1, max: 8 }],
+          } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+      }), { status: 200 })),
+    })
+
+    await expect(compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_TARGET_AMBIGUOUS',
+      message: expect.stringContaining('matches multiple paired height Workflow widgets'),
+    })
+  })
+
+  it('omits separately paired dimensions when no single pair controls every active output', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        ...[1, 2].map((id): UiWorkflow['nodes'][number] => ({
+          id,
+          type: 'EmptyLatentImage',
+          mode: 0,
+          inputs: [
+            { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+            { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+            { name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } },
+          ],
+          outputs: [{ name: 'LATENT', type: 'LATENT', links: [id === 1 ? 21 : 22] }],
+          widgets_values: id === 1 ? [512, 768, 1] : [768, 1024, 1],
+        })),
+        ...[3, 4].map((id): UiWorkflow['nodes'][number] => ({
+          id,
+          type: 'VAEDecode',
+          mode: 0,
+          inputs: [{ name: 'samples', type: 'LATENT', link: id === 3 ? 21 : 22 }],
+          outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [id === 3 ? 31 : 32] }],
+          widgets_values: [],
+        })),
+        ...[5, 6].map((id): UiWorkflow['nodes'][number] => ({
+          id,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [
+            { name: 'images', type: 'IMAGE', link: id === 5 ? 31 : 32 },
+            { name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } },
+          ],
+          outputs: [],
+          widgets_values: [`output-${id}`],
+        })),
+      ],
+      links: [
+        [21, 1, 0, 3, 0, 'LATENT'],
+        [22, 2, 0, 4, 0, 'LATENT'],
+        [31, 3, 0, 5, 0, 'IMAGE'],
+        [32, 4, 0, 6, 0, 'IMAGE'],
+      ],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        EmptyLatentImage: {
+          input: { required: {
+            width: ['INT', { min: 256, max: 2048 }],
+            height: ['INT', { min: 256, max: 2048 }],
+            batch_size: ['INT', { min: 1, max: 8 }],
+          } },
+          input_order: { required: ['width', 'height', 'batch_size'], optional: [] },
+          output_node: false,
+        },
+        VAEDecode: {
+          input: { required: { samples: ['LATENT'] } },
+          input_order: { required: ['samples'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: objectInfo.SaveImage,
+      }), { status: 200 })),
+    })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    } as const
+
+    const inspection = await compiler.inspectRuntimeParameters(input)
+
+    expect(inspection.parameters).toEqual([
+      {
+        parameter_id: 'batch_size_1',
+        kind: 'batch_size',
+        value_type: 'integer',
+        current_value: 1,
+        minimum: 1,
+        maximum: 8,
+      },
+      {
+        parameter_id: 'batch_size_2',
+        kind: 'batch_size',
+        value_type: 'integer',
+        current_value: 1,
+        minimum: 1,
+        maximum: 8,
+      },
+    ])
+    expect(inspection.size_candidates).toEqual([])
+    const compiled = await compiler.compile({
+      ...input,
+      runtimeParameters: { width_2: 896, height_2: 1152 },
+      loras: [],
+    })
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual([512, 768, 1])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual([896, 1152, 1])
+  })
+
+  it('reports absent and restricted batch-size contracts without inventing support for one image', async () => {
+    const inspect = async (includeBatchSize: boolean) => {
+      const inputs = [
+        { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+        { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+        ...(includeBatchSize
+          ? [{ name: 'batch_size', type: 'INT', link: null, widget: { name: 'batch_size' } }]
+          : []),
+      ]
+      const compiler = createCompiler({
+        fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+          EmptyLatentImage: {
+            input: { required: {
+              width: ['INT', { min: 256, max: 2048 }],
+              height: ['INT', { min: 256, max: 2048 }],
+              ...(includeBatchSize ? { batch_size: ['INT', { min: 2, max: 8 }] } : {}),
+            } },
+            input_order: {
+              required: includeBatchSize ? ['width', 'height', 'batch_size'] : ['width', 'height'],
+              optional: [],
+            },
+            output_node: false,
+          },
+        }), { status: 200 })),
+      })
+
+      return compiler.inspectRuntimeParameters({
+        instanceId: 'test-instance',
+        workflow: {
+          version: 0.4,
+          nodes: [{
+            id: 1,
+            type: 'EmptyLatentImage',
+            mode: 0,
+            inputs,
+            outputs: [],
+            widgets_values: includeBatchSize ? [768, 1024, 2] : [768, 1024],
+          }],
+          links: [],
+        },
+        connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      })
+    }
+
+    await expect(inspect(false)).resolves.toMatchObject({ parameters: [] })
+    await expect(inspect(true)).resolves.toMatchObject({
+      parameters: [{
+        parameter_id: 'batch_size',
+        kind: 'batch_size',
+        value_type: 'integer',
+        current_value: 2,
+        minimum: 2,
+        maximum: 8,
+      }],
+    })
+  })
+
+  it('inspects positive Prompt, negative Prompt, and Seed contracts required before generation', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [
+        {
+          id: 1,
+          type: 'CLIPTextEncode',
+          title: 'Positive Prompt',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: ['1girl'],
+        },
+        {
+          id: 2,
+          type: 'CLIPTextEncode',
+          title: 'Negative Prompt',
+          mode: 0,
+          inputs: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+          outputs: [],
+          widgets_values: ['low quality'],
+        },
+        {
+          id: 3,
+          type: 'KSampler',
+          mode: 0,
+          inputs: [{ name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } }],
+          outputs: [],
+          widgets_values: [41, 'fixed'],
+        },
+        {
+          id: 4,
+          type: 'SaveImage',
+          mode: 0,
+          inputs: [{ name: 'filename_prefix', type: 'STRING', link: null, widget: { name: 'filename_prefix' } }],
+          outputs: [],
+          widgets_values: ['output'],
+        },
+      ],
+      links: [],
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        CLIPTextEncode: {
+          input: { required: { text: ['STRING', { multiline: true }] } },
+          input_order: { required: ['text'], optional: [] },
+          output_node: false,
+        },
+        KSampler: {
+          input: { required: { seed: ['INT', { min: 0, max: 2_147_483_647, control_after_generate: true }] } },
+          input_order: { required: ['seed'], optional: [] },
+          output_node: false,
+        },
+        SaveImage: fixtureOutputInfo,
+      }), { status: 200 })),
+    })
+
+    const inspection = await compiler.inspectRuntimeParameters({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })
+
+    expect(inspection.parameters).toEqual([
+      { parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', current_value: '1girl' },
+      { parameter_id: 'negative_prompt', kind: 'negative_prompt', value_type: 'string', current_value: 'low quality' },
+      {
+        parameter_id: 'seed', kind: 'seed', value_type: 'integer', current_value: 41,
+        minimum: 0, maximum: 2_147_483_647,
+      },
+    ])
+
+    const compiled = await compiler.compile({
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: {
+        positive_prompt: '2girls, separate silhouettes',
+        negative_prompt: 'blurry, malformed hands',
+        seed: 99,
+      },
+      loras: [],
+    })
+
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 1)?.widgets_values).toEqual(['2girls, separate silhouettes'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 2)?.widgets_values).toEqual(['blurry, malformed hands'])
+    expect(compiled.actualWorkflow.nodes.find(node => node.id === 3)?.widgets_values).toEqual([99, 'fixed'])
+    expect(actual.nodes.find(node => node.id === 3)?.widgets_values).toEqual([41, 'fixed'])
+  })
+
+  it('reports the same malformed dynamic standard-parameter contract during inspection and compilation', async () => {
+    const actual: UiWorkflow = {
+      version: 0.4,
+      nodes: [{
+        id: 1,
+        type: 'DynamicResolutionPreset',
+        mode: 0,
+        inputs: [{ name: 'resolution_preset', type: 'COMFY_DYNAMICCOMBO_V3', link: null, widget: { name: 'resolution_preset' } }],
+        outputs: [],
+        widgets_values: ['fixed'],
+      }],
+      links: [],
+    }
+    const definition = {
+      DynamicResolutionPreset: {
+        input: { required: {
+          resolution_preset: ['COMFY_DYNAMICCOMBO_V3', { options: [{
+            key: 'fixed', inputs: { required: {} },
+          }] }],
+        } },
+        input_order: { required: ['resolution_preset'], optional: [] },
+        output_node: false,
+      },
+    }
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify(definition), { status: 200 })),
+    })
+    const input = {
+      instanceId: 'test-instance',
+      workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    } as const
+
+    await expect(compiler.inspectRuntimeParameters(input)).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      message: expect.stringContaining('inputs.required and inputs.optional'),
+    })
+    await expect(compiler.compile({
+      ...input,
+      runtimeParameters: { resolution_preset: 'fixed' },
+      loras: [],
+    })).rejects.toMatchObject({
+      code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED',
+      message: expect.stringContaining('inputs.required and inputs.optional'),
+    })
+  })
+
   it('receives exact numeric source tokens from the supported JSON.parse reviver contract', () => {
     type ParseWithSource = (
       text: string,

@@ -1,3 +1,29 @@
+# Harness ComfyUI v0.39.0
+
+v0.39.0 为 ANIMA、WAI-Illustrious-SDXL 和 Krea2 Prompt Builder 增加模板无关的生成目的、画幅、清晰度和模型负向策略结果，并让 ComfyUI Generate 在提交每张图片前独立检查当前 Workflow 的实际参数能力、分配普通随机 Seed 和应用模型对应的正负 Prompt。
+
+## Prompt Builder 生成结果
+
+- 三个 Prompt Builder 现在返回同一份十属性结构化结果：模型路线、正向 Prompt、负向模式、负向 Prompt、正向规避、生成目的、画幅、宽度、高度和 megapixels。Builder 不解析、选择、校验、复用或返回 Seed 决定；历史查询仍可按原合同读取或报告包含 Seed 的 Actual Workflow。
+- 每个 Builder 的 `generation-profiles.json` 分别定义该模型的 test 与 final 档。明确测试 Prompt 方向、比较 Prompt 方案、继续迭代、快速预览和批量筛选使用 test 档；用户结束测试并要求正式成图时使用 final 档。
+- 画幅矩阵包含各模型适用的竖幅、横幅以及 `9:16`、`16:9`。Builder 根据画面构图选择目标画幅和清晰度，不依赖用户当前选择的 ComfyUI Workflow。
+- ANIMA 与 WAI 使用原生负向 Prompt；Krea2 把避免崩坏、重复人物、裁切和低质量的要求自然写入正向 Prompt。详细字段、profile 和模型规则保存在各 Skill 的 reference 文件中，`SKILL.md` 只规定相应读取时机和 validator 阶段。
+
+## ComfyUI Generate 的 Seed 与模板检查
+
+- managed CLI 新增 `generation random-seeds --stdin`。该命令使用普通伪随机数为一次请求中的每张图片返回独立整数 Seed，支持 1 至 20 张，不新增随机源抽象或依赖。
+- `comfyui-generate` 独占显式整数 Seed、历史 Run Seed、默认随机 Seed 和修正重试 Seed 的处理。默认多图请求展开为多个 `batch_size: 1` Run；同一项失败后的修正重试复用已经取得的 Seed，只有用户明确要求新随机尝试时才重新取得 Seed。
+- managed CLI 新增只读 `generation inspect-template-parameters --stdin`。生成 Skill在取得实际模板 ID 与实例 ID 后调用该命令，再把 Builder 目标尺寸映射到当前 Workflow 返回的精确 `parameter_id`；检查命令不创建 Run、不修改 Workflow，也不调用官方 API Workflow 编译器。
+- `ComfyWorkflowCompiler.inspectRuntimeParameters()` 与 `compile()` 共享同一个私有运行参数计划。该计划统一负责真实 `/object_info` 合同、连接关系、动态枚举、节点后缀、尺寸配对、末端尺寸覆盖、preset 映射和错误生成，不读取静态模板参数白名单。
+- 尺寸检查只保留能够控制活动图片输出的候选，排除断开的输出和 ShowAnything 等非图片辅助输出。检查返回的精确宽高、画幅与 megapixels 或 resolution preset 参数可以由同一 compiler 直接应用到 Actual Workflow 与 API Workflow。
+
+## 独立 worktree 的候选 Skill
+
+- `pnpm dev:start` 把隔离开发 HOME 的 `.agents/skills` 链接到当前 worktree 配置的候选 Skill 根，使真实 Desktop Agent 验收当前分支内容。启动器拒绝缺失、非目录或越出当前 worktree 的候选路径。
+- 生产 Desktop 继续读取真实 home 的全局 Skill 根，不使用开发 worktree 的候选 Skill。相关 production 与 worktree 生命周期测试固定这一边界。
+- 完整 `pnpm quality` 通过：889 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.22%、branches 86.06%、functions 100%、lines 95.96%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。
+
 # Harness ComfyUI v0.38.7
 
 v0.38.7 修复官方 ComfyUI 前端 Workflow 编译器在 DSH Desktop Electron Helper 中卡在 `Page.navigate` 的故障，为 Krea2 Anime Prompt Builder 增加作品、角色、Krea2 Style 与 Prompt 词条的只读语义目录查询，并使多个 linked worktree 可以同时运行隔离的 Desktop 和 Web Host。

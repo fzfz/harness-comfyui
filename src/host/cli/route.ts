@@ -44,7 +44,10 @@ export interface RegisterHarnessComfyuiCliRouteOptions {
   readonly webServer: GenerationWebServer
   readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
   readonly catalog: CliCatalog
-  readonly runtime: Pick<GenerationRuntime, 'acceptGeneration' | 'readGenerationRunInputs' | 'readGenerationRunMedia'>
+  readonly runtime: Pick<
+    GenerationRuntime,
+    'acceptGeneration' | 'inspectTemplateRuntimeParameters' | 'readGenerationRunInputs' | 'readGenerationRunMedia'
+  >
   readonly imageReader: Pick<ImageReaderService, 'inspect'>
   readonly workspaceRegistry: {
     resolveByPath(path: string): Promise<{
@@ -52,6 +55,14 @@ export interface RegisterHarnessComfyuiCliRouteOptions {
       readonly sessionIds: readonly (string | number)[]
     } | undefined>
   }
+}
+
+const RANDOM_SEED_MAX_EXCLUSIVE = 2_147_483_648
+
+function ordinaryRandomSeeds(count: number): readonly number[] {
+  const seeds = new Set<number>()
+  while (seeds.size < count) seeds.add(Math.floor(Math.random() * RANDOM_SEED_MAX_EXCLUSIVE))
+  return Object.freeze([...seeds])
 }
 
 interface CliErrorBody {
@@ -176,6 +187,13 @@ async function dispatch(
       const accepted = await options.runtime.acceptGeneration(owner, toGenerationRequest(request.request), signal)
       return Object.freeze({ run_id: accepted.runId })
     }
+    case 'generation.inspect-template-parameters':
+      return options.runtime.inspectTemplateRuntimeParameters({
+        templateId: request.template_id,
+        instanceId: request.instance_id,
+      }, signal)
+    case 'generation.random-seeds':
+      return Object.freeze({ seeds: ordinaryRandomSeeds(request.count) })
     case 'generation.run-inputs': {
       const owner = await generationIdentity(options, identity)
       return options.runtime.readGenerationRunInputs({

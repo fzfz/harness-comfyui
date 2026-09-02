@@ -16,6 +16,10 @@ import {
 } from '../../generation/run-input-contract.ts'
 import type { GenerationRunMediaResult } from '../../image-reader/run-media-contract.ts'
 import { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
+import type {
+  GenerationTemplateRuntimeParameterInspectionInput,
+  WorkflowRuntimeParameterInspection,
+} from './source-preparer.ts'
 
 export type { JsonPrimitive, JsonValue } from '../../generation/run-input-contract.ts'
 export { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
@@ -66,6 +70,10 @@ export interface PreparedGeneration {
 }
 
 export interface GenerationPreparationAdapter {
+  inspectRuntimeParameters(
+    input: GenerationTemplateRuntimeParameterInspectionInput,
+    signal?: AbortSignal,
+  ): Promise<WorkflowRuntimeParameterInspection>
   prepare(request: GenerationRequest, signal?: AbortSignal): Promise<PreparedGeneration>
 }
 
@@ -599,6 +607,15 @@ export class GenerationRuntime {
       WHERE status = 'submitting'
     `).run(this.now())
     this.recoverStagedMedia()
+  }
+
+  async inspectTemplateRuntimeParameters(
+    input: GenerationTemplateRuntimeParameterInspectionInput,
+    signal?: AbortSignal,
+  ): Promise<WorkflowRuntimeParameterInspection> {
+    if (input.templateId.trim().length === 0) throw new TypeError('ComfyUI template id is required for parameter inspection.')
+    if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for parameter inspection.')
+    return this.options.preparer.inspectRuntimeParameters(input, signal)
   }
 
   async acceptGeneration(

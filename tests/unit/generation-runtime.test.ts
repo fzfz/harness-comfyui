@@ -23,18 +23,24 @@ afterEach(() => {
   }
 })
 
-function createRuntime(preparer: GenerationPreparationAdapter): GenerationRuntime {
+type TestGenerationPreparationAdapter = Pick<GenerationPreparationAdapter, 'prepare'>
+  & Partial<Pick<GenerationPreparationAdapter, 'inspectRuntimeParameters'>>
+
+function createRuntime(preparer: TestGenerationPreparationAdapter): GenerationRuntime {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-generation-'))
   temporaryDirectories.push(root)
   return createRuntimeAt(root, preparer)
 }
 
-function createRuntimeAt(root: string, preparer: GenerationPreparationAdapter): GenerationRuntime {
+function createRuntimeAt(root: string, preparer: TestGenerationPreparationAdapter): GenerationRuntime {
   return new GenerationRuntime({
     runRepositoryFile: join(root, 'data', 'runs.sqlite'),
     runDirectory: join(root, 'runs'),
     savedMediaDirectory: join(root, 'media'),
-    preparer,
+    preparer: {
+      inspectRuntimeParameters: async () => { throw new Error('unreachable') },
+      ...preparer,
+    },
   })
 }
 
@@ -50,6 +56,43 @@ function request(prompt: string): GenerationRequest {
 }
 
 describe('GenerationRuntime acceptance', () => {
+  it('delegates template parameter inspection without creating a Generation Run', async () => {
+    const inspectRuntimeParameters = vi.fn(async () => ({
+      parameters: [],
+      size_candidates: [],
+    }))
+    const runtime = createRuntime({
+      inspectRuntimeParameters,
+      async prepare() { throw new Error('unreachable') },
+    })
+
+    const inspection = await runtime.inspectTemplateRuntimeParameters({
+      templateId: '34',
+      instanceId: '2',
+    })
+
+    expect(inspection).toEqual({ parameters: [], size_candidates: [] })
+    expect(inspectRuntimeParameters).toHaveBeenCalledWith({ templateId: '34', instanceId: '2' }, undefined)
+    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })).toEqual([])
+    runtime.close()
+  })
+
+  it('does not create a Generation Run when template parameter inspection fails', async () => {
+    const runtime = createRuntime({
+      inspectRuntimeParameters: async () => {
+        throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
+      },
+      async prepare() { throw new Error('unreachable') },
+    })
+
+    await expect(runtime.inspectTemplateRuntimeParameters({
+      templateId: 'new-template',
+      instanceId: '2',
+    })).rejects.toMatchObject({ code: 'COMFYUI_CONNECTION_FAILED' })
+    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })).toEqual([])
+    runtime.close()
+  })
+
   it('returns the persisted positive prompt through the Run public interface', async () => {
     const runtime = createRuntime({
       async prepare(generationRequest) {
@@ -366,6 +409,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
       savedMediaDirectory: join(root, 'media'),
       createRunId: () => runIds[runIdIndex++]!,
       preparer: {
+        async inspectRuntimeParameters() { throw new Error('unreachable') },
         async prepare(generationRequest) {
           return {
             instanceId: '2',
@@ -556,7 +600,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
   it('normalizes missing historical fields without discarding persisted LoRAs', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-historical-run-'))
     temporaryDirectories.push(root)
-    const preparer: GenerationPreparationAdapter = {
+    const preparer: TestGenerationPreparationAdapter = {
       async prepare(generationRequest) {
         return {
           instanceId: '2',
@@ -754,7 +798,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
   it('returns one request error and continues to a later valid Run', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-invalid-request-'))
     temporaryDirectories.push(root)
-    const preparer: GenerationPreparationAdapter = {
+    const preparer: TestGenerationPreparationAdapter = {
       async prepare(generationRequest) {
         return {
           instanceId: '2',
@@ -797,7 +841,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
   it('does not treat present invalid model or LoRA fields as historical omissions', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-invalid-historical-fields-'))
     temporaryDirectories.push(root)
-    const preparer: GenerationPreparationAdapter = {
+    const preparer: TestGenerationPreparationAdapter = {
       async prepare() {
         return {
           instanceId: '2',
@@ -873,6 +917,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
       runDirectory: join(root, 'runs'),
       savedMediaDirectory: join(root, 'media'),
       preparer: {
+        async inspectRuntimeParameters() { throw new Error('unreachable') },
         async prepare(generationRequest) {
           return {
             instanceId: '2',
@@ -967,6 +1012,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
       runDirectory: join(root, 'runs'),
       savedMediaDirectory: join(root, 'media'),
       preparer: {
+        async inspectRuntimeParameters() { throw new Error('unreachable') },
         async prepare() {
           return {
             instanceId: '2',

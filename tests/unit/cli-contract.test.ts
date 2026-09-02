@@ -91,6 +91,49 @@ describe('Harness ComfyUI CLI contract', () => {
     })
   })
 
+  it('parses strict template inspection and random Seed stdin contracts', () => {
+    expect(parseCliArguments(
+      ['generation', 'inspect-template-parameters', '--stdin'],
+      JSON.stringify({ template_id: 'new-template', instance_id: 'gpu-2' }),
+    )).toEqual({
+      command: 'generation.inspect-template-parameters',
+      template_id: 'new-template',
+      instance_id: 'gpu-2',
+    })
+    expect(parseCliArguments(
+      ['generation', 'random-seeds', '--stdin'],
+      JSON.stringify({ count: 20 }),
+    )).toEqual({ command: 'generation.random-seeds', count: 20 })
+  })
+
+  it('rejects invalid template inspection IDs and random Seed counts', () => {
+    expect(() => parseCliArguments(
+      ['generation', 'inspect-template-parameters', '--stdin'],
+      JSON.stringify({ template_id: '', instance_id: '2' }),
+    )).toThrow('template_id')
+    expect(() => parseCliArguments(
+      ['generation', 'inspect-template-parameters', '--stdin'],
+      JSON.stringify({ template_id: '34', instance_id: '  ' }),
+    )).toThrow('instance_id')
+    expect(() => parseCliRequest({
+      command: 'generation.inspect-template-parameters', template_id: '34', instance_id: '2', extra: true,
+    })).toThrow('properties')
+    for (const count of [0, 1.5, 21, '2']) {
+      expect(() => parseCliArguments(
+        ['generation', 'random-seeds', '--stdin'],
+        JSON.stringify({ count }),
+      )).toThrow('count')
+    }
+    expect(() => parseCliArguments(
+      ['generation', 'random-seeds', '--stdin'],
+      JSON.stringify({}),
+    )).toThrow('properties')
+    expect(() => parseCliArguments(
+      ['generation', 'random-seeds', '--stdin'],
+      JSON.stringify({ count: 1, extra: true }),
+    )).toThrow('properties')
+  })
+
   it('rejects malformed historical Run query envelopes and batch sizes', () => {
     expect(() => parseCliRequest({ command: 'generation.run-inputs', run_ids: [] })).toThrow('run_ids')
     expect(() => parseCliRequest({

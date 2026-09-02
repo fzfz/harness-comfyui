@@ -74,6 +74,8 @@ async function main() {
   const command = argv.join(' ')
   const needsStdin = argv.length === 3 && (
     command === 'generation submit --stdin'
+    || command === 'generation inspect-template-parameters --stdin'
+    || command === 'generation random-seeds --stdin'
     || command === 'generation run-inputs --stdin'
     || command === 'generation resolve-media --stdin'
     || command === 'image inspect --stdin'
@@ -85,7 +87,9 @@ async function main() {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
     const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'
       ? error.code
-      : command === 'generation run-inputs --stdin'
+      : command === 'generation inspect-template-parameters --stdin'
+      || command === 'generation random-seeds --stdin'
+      || command === 'generation run-inputs --stdin'
       || command === 'generation resolve-media --stdin'
       || command === 'image inspect --stdin'
       ? 'CLI_REQUEST_INVALID'

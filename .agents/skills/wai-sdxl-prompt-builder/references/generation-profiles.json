@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "model_routes": {
+    "wai-illustrious-sdxl": {
+      "negative_mode": "native_negative",
+      "base_negative_items": ["bad quality", "worst quality", "worst detail", "sketch", "censor"]
+    }
+  },
+  "size_profiles": [
+    {
+      "aspect_ratio": "1:1",
+      "composition": "中心角色、角色设定",
+      "test": { "width": 1024, "height": 1024, "megapixels": 1 },
+      "final": { "width": 1536, "height": 1536, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "7:9",
+      "composition": "角色立绘、常规竖图",
+      "test": { "width": 896, "height": 1152, "megapixels": 1 },
+      "final": { "width": 1344, "height": 1728, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "9:7",
+      "composition": "双人互动、常规横图",
+      "test": { "width": 1152, "height": 896, "megapixels": 1 },
+      "final": { "width": 1728, "height": 1344, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "13:19",
+      "composition": "修长全身、默认竖版",
+      "test": { "width": 832, "height": 1216, "megapixels": 1 },
+      "final": { "width": 1248, "height": 1824, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "19:13",
+      "composition": "环境叙事、宽幅人物",
+      "test": { "width": 1216, "height": 832, "megapixels": 1 },
+      "final": { "width": 1824, "height": 1248, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "4:7",
+      "composition": "长竖海报、全身角色",
+      "test": { "width": 768, "height": 1344, "megapixels": 1 },
+      "final": { "width": 1152, "height": 2016, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "7:4",
+      "composition": "横版海报、多人场景",
+      "test": { "width": 1344, "height": 768, "megapixels": 1 },
+      "final": { "width": 2016, "height": 1152, "megapixels": 2.25 }
+    },
+    {
+      "aspect_ratio": "9:16",
+      "composition": "标准竖屏海报、手机内容",
+      "test": { "width": 864, "height": 1536, "megapixels": 1.33 },
+      "final": { "width": 1152, "height": 2048, "megapixels": 2.36 }
+    },
+    {
+      "aspect_ratio": "16:9",
+      "composition": "标准横屏画面、视频封面",
+      "test": { "width": 1536, "height": 864, "megapixels": 1.33 },
+      "final": { "width": 2048, "height": 1152, "megapixels": 2.36 }
+    }
+  ]
+}

@@ -66,7 +66,7 @@ function expectBothInvalid(value) {
 }
 
 function runCli(script, input) {
-  return spawnSync(process.execPath, [script], {
+  return spawnSync(process.execPath, [script, '--prompt-format'], {
     input: JSON.stringify(input),
     encoding: 'utf8',
   })

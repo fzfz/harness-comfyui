@@ -145,6 +145,49 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
+  it('posts template parameter inspection and ordinary random Seed requests', async () => {
+    const posted: unknown[] = []
+    const server = createServer(async (request, response) => {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { readonly command: string }
+      posted.push(body)
+      const data = body.command === 'generation.inspect-template-parameters'
+        ? { parameters: [], size_candidates: [] }
+        : { seeds: [12, 34] }
+      const responseBody = JSON.stringify({ ok: true, data })
+      response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(responseBody) })
+      response.end(responseBody)
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+    const apiUrl = `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`
+
+    const inspection = await runCli({
+      args: ['generation', 'inspect-template-parameters', '--stdin'],
+      stdin: JSON.stringify({ template_id: '34', instance_id: '2' }),
+      apiUrl,
+    })
+    const seeds = await runCli({
+      args: ['generation', 'random-seeds', '--stdin'],
+      stdin: JSON.stringify({ count: 2 }),
+      apiUrl,
+    })
+
+    expect(inspection).toEqual({
+      exitCode: 0,
+      stdout: `${JSON.stringify({ parameters: [], size_candidates: [] })}\n`,
+      stderr: '',
+    })
+    expect(seeds).toEqual({ exitCode: 0, stdout: `${JSON.stringify({ seeds: [12, 34] })}\n`, stderr: '' })
+    expect(posted).toEqual([
+      { command: 'generation.inspect-template-parameters', template_id: '34', instance_id: '2' },
+      { command: 'generation.random-seeds', count: 2 },
+    ])
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
   it('posts the documented Run media and single-image inspection requests', async () => {
     const posted: unknown[] = []
     const media = {
