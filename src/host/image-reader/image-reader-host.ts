@@ -5,11 +5,18 @@ import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 
 import {
   IMAGE_READER_REMOTE_NAMESPACE,
+  type DeleteImageReaderProfileRequest,
+  type DeleteImageReaderProfileResult,
   type ImageReaderModelCatalog,
   type ImageReaderProviderGroup,
-  type SaveImageReaderSettingsRequest,
-  type SaveImageReaderSettingsResult,
+  type SaveImageReaderProfileRequest,
+  type SaveImageReaderProfileResult,
 } from '../../image-reader/contract.ts'
+import {
+  ImageReaderProfileValidationError,
+  validateImageReaderProfileId,
+  validateSaveImageReaderProfileRequest,
+} from '../../image-reader/settings-errors.ts'
 import {
   IMAGE_READER_SETTINGS_DEFAULTS,
   IMAGE_READER_LEGACY_SETTINGS_DEFAULTS,
@@ -18,8 +25,8 @@ import {
   IMAGE_READER_SETTINGS_NAMESPACE,
   IMAGE_READER_SETTINGS_SCHEMA,
   migrateLegacyImageReaderSettings,
-  validateImageReaderConfiguration,
   validateImageReaderSettingsSection,
+  type ImageReaderProfile,
   type LegacyImageReaderSettingsSection,
   type ImageReaderSettingsSection,
 } from '../../image-reader/settings.ts'
@@ -61,6 +68,7 @@ export async function registerImageReaderSettings(
 export class ImageReaderRemoteService extends TypertRemoteService {
   private readonly llm: Pick<LlmRuntime, 'listProviders' | 'listModels'>
   private readonly settings: SettingsScope<ImageReaderSettingsSection>
+  private settingsMutationTail: Promise<void> = Promise.resolve()
 
   constructor(
     ctx: Context,
@@ -106,55 +114,113 @@ export class ImageReaderRemoteService extends TypertRemoteService {
     return Object.freeze({ groups: Object.freeze(groups), failures: Object.freeze(failures) })
   }
 
-  async saveSettings(request: SaveImageReaderSettingsRequest, signal: AbortSignal): Promise<SaveImageReaderSettingsResult> {
-    signal.throwIfAborted()
-    let configuration: ImageReaderSettingsSection['configuration']
-    let section: ImageReaderSettingsSection
-    try {
-      validateImageReaderConfiguration(request.configuration)
-      const profilesById = new Map(request.configuration.profiles.map(profile => [profile.id, profile]))
-      const credentials: Record<string, string> = {}
-      for (const [profileId, apiKey] of Object.entries(this.settings.get().credentials)) {
-        const profile = profilesById.get(profileId)
-        if (profile?.connectionType === 'openai-compatible') credentials[profileId] = apiKey
-      }
-      for (const update of request.credentialUpdates) {
-        const profile = profilesById.get(update.profileId)
-        if (profile?.connectionType !== 'openai-compatible') {
-          throw new TypeError('API Key changes require an OpenAI-compatible profile.')
+  private enqueueSettingsMutation<Result>(operation: () => Promise<Result>): Promise<Result> {
+    const pending = this.settingsMutationTail.then(operation)
+    this.settingsMutationTail = pending.then(() => undefined, () => undefined)
+    return pending
+  }
+
+  async saveProfile(request: SaveImageReaderProfileRequest, signal: AbortSignal): Promise<SaveImageReaderProfileResult> {
+    return this.enqueueSettingsMutation(async () => {
+      signal.throwIfAborted()
+      let configuration: ImageReaderSettingsSection['configuration']
+      let section: ImageReaderSettingsSection
+      try {
+        const current = this.settings.get()
+        const profileIndex = current.configuration.profiles.findIndex(candidate => candidate.id === request.profile.id)
+        validateSaveImageReaderProfileRequest(request, {
+          persistedProfileCount: current.configuration.profiles.length,
+          profileExists: profileIndex !== -1,
+        })
+        const credentials: Record<string, string> = { ...current.credentials }
+        let storedProfile: ImageReaderProfile
+        if (!('credential' in request)) {
+          const profile = request.profile
+          delete credentials[profile.id]
+          storedProfile = Object.freeze({ ...profile, endpoint: '', hasApiKey: false })
+        } else {
+          const profile = request.profile
+          if (request.credential.action === 'replace') credentials[profile.id] = request.credential.apiKey
+          if (request.credential.action === 'clear') delete credentials[profile.id]
+          storedProfile = Object.freeze({
+            ...profile,
+            provider: '',
+            hasApiKey: credentials[profile.id] !== undefined,
+          })
         }
-        if (update.apiKey === null) delete credentials[update.profileId]
-        else credentials[update.profileId] = update.apiKey
+        const profiles = [...current.configuration.profiles]
+        if (profileIndex === -1) profiles.push(storedProfile)
+        else profiles[profileIndex] = storedProfile
+        configuration = Object.freeze({
+          activeProfileId: request.profile.id,
+          profiles: Object.freeze(profiles),
+        })
+        section = Object.freeze({ configuration, credentials: Object.freeze(credentials) })
+        validateImageReaderSettingsSection(section)
+      } catch (error) {
+        if (signal.aborted) throw signal.reason
+        if (error instanceof ImageReaderError) throw error
+        if (error instanceof ImageReaderProfileValidationError) {
+          throw new ImageReaderError(error.code, error.code, { cause: error })
+        }
+        throw new ImageReaderError(
+          'IMAGE_READER_SETTINGS_SAVE_FAILED',
+          'Harness could not construct a valid persisted image reader settings section.',
+          { cause: error },
+        )
       }
-      configuration = Object.freeze({
-        activeProfileId: request.configuration.activeProfileId,
-        profiles: Object.freeze(request.configuration.profiles.map(profile => Object.freeze({
-          ...profile,
-          hasApiKey: credentials[profile.id] !== undefined,
-        }))),
-      })
-      section = Object.freeze({ configuration, credentials: Object.freeze(credentials) })
-      validateImageReaderSettingsSection(section)
-    } catch (error) {
-      if (signal.aborted) throw signal.reason
-      if (error instanceof ImageReaderError) throw error
-      throw new ImageReaderError(
-        'IMAGE_READER_SETTINGS_INVALID',
-        'The image reader configurations could not be saved. Check every profile and credential change.',
-        { cause: error },
-      )
-    }
-    signal.throwIfAborted()
-    try {
-      await this.settings.replace(section)
-    } catch (error) {
-      throw new ImageReaderError(
-        'IMAGE_READER_SETTINGS_SAVE_FAILED',
-        'Harness could not persist the image reader configurations.',
-        { cause: error },
-      )
-    }
-    return Object.freeze({ configuration })
+      signal.throwIfAborted()
+      try {
+        await this.settings.replace(section)
+      } catch (error) {
+        throw new ImageReaderError(
+          'IMAGE_READER_SETTINGS_SAVE_FAILED',
+          'Harness could not persist the current image reader profile.',
+          { cause: error },
+        )
+      }
+      return Object.freeze({ configuration })
+    })
+  }
+
+  async deleteProfile(request: DeleteImageReaderProfileRequest, signal: AbortSignal): Promise<DeleteImageReaderProfileResult> {
+    return this.enqueueSettingsMutation(async () => {
+      signal.throwIfAborted()
+      try {
+        validateImageReaderProfileId(request.profileId)
+      } catch (error) {
+        if (error instanceof ImageReaderProfileValidationError) {
+          throw new ImageReaderError(error.code, error.code, { cause: error })
+        }
+        throw error
+      }
+      const current = this.settings.get()
+      const index = current.configuration.profiles.findIndex(profile => profile.id === request.profileId)
+      if (index === -1) {
+        throw new ImageReaderError('IMAGE_READER_PROFILE_NOT_FOUND', 'The requested image reader profile does not exist.')
+      }
+      if (current.configuration.profiles.length === 1) {
+        throw new ImageReaderError('IMAGE_READER_LAST_PROFILE_DELETE_FORBIDDEN', 'The only image reader profile cannot be deleted.')
+      }
+      const profiles = current.configuration.profiles.filter(profile => profile.id !== request.profileId)
+      const activeProfileId = current.configuration.activeProfileId === request.profileId
+        ? profiles[Math.min(index, profiles.length - 1)]!.id
+        : current.configuration.activeProfileId
+      const credentials = { ...current.credentials }
+      delete credentials[request.profileId]
+      const configuration = Object.freeze({ activeProfileId, profiles: Object.freeze(profiles) })
+      const section = Object.freeze({ configuration, credentials: Object.freeze(credentials) })
+      try {
+        await this.settings.replace(section)
+      } catch (error) {
+        throw new ImageReaderError(
+          'IMAGE_READER_SETTINGS_DELETE_FAILED',
+          'Harness could not delete the image reader profile.',
+          { cause: error },
+        )
+      }
+      return Object.freeze({ configuration })
+    })
   }
 }
 
@@ -169,10 +235,19 @@ Remote(ImageReaderRemoteService.prototype.models, {
   },
 } as never)
 
-Remote(ImageReaderRemoteService.prototype.saveSettings, {
+Remote(ImageReaderRemoteService.prototype.saveProfile, {
   private: false,
   static: false,
-  name: 'saveSettings',
+  name: 'saveProfile',
+  addInitializer(initialize: (this: ImageReaderRemoteService) => void) {
+    imageReaderRemoteInitializers.push(service => initialize.call(service))
+  },
+} as never)
+
+Remote(ImageReaderRemoteService.prototype.deleteProfile, {
+  private: false,
+  static: false,
+  name: 'deleteProfile',
   addInitializer(initialize: (this: ImageReaderRemoteService) => void) {
     imageReaderRemoteInitializers.push(service => initialize.call(service))
   },

@@ -994,6 +994,22 @@
   gap: 8px;
 }
 
+.harness-comfyui-image-reader-switch-gate {
+  align-items: center;
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+}
+
+.harness-comfyui-image-reader-switch-gate p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .harness-comfyui-image-reader-header p {
   color: var(--dsw-alias-label-secondary);
   margin-top: 6px;

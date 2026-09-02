@@ -184,12 +184,19 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       stdin: JSON.stringify({ file_path: '/media/result.png' }),
       apiUrl,
     })
+    const promptedInspectionResult = await runCli({
+      args: ['image', 'inspect', '--stdin'],
+      stdin: JSON.stringify({ file_path: '/media/result.png', prompt: '只识别图片中的文字。' }),
+      apiUrl,
+    })
 
     expect(mediaResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(media)}\n`, stderr: '' })
     expect(inspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
+    expect(promptedInspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
     expect(posted).toEqual([
       { command: 'generation.resolve-media', run_ids: ['run_1'] },
       { command: 'image.inspect', file_path: '/media/result.png' },
+      { command: 'image.inspect', file_path: '/media/result.png', prompt: '只识别图片中的文字。' },
     ])
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })

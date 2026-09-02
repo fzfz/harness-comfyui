@@ -191,7 +191,7 @@ async function dispatch(
       }, signal)
     }
     case 'image.inspect': {
-      const result = await options.imageReader.inspect(request.file_path, signal)
+      const result = await options.imageReader.inspect(request.file_path, { prompt: request.prompt, signal })
       return Object.freeze({
         provider: result.provider,
         model: result.model,

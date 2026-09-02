@@ -19,8 +19,9 @@ import {
   endpointTransportMessage,
   imageReaderSettingsErrorMessage,
   modelsForProvider,
-  saveImageReaderSettings,
+  saveImageReaderProfile,
 } from '../../src/client/image-reader/image-reader-settings.tsx'
+import { IMAGE_READER_SETTINGS_FIELD_BY_CODE } from '../../src/image-reader/settings-errors.ts'
 
 const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
@@ -131,7 +132,8 @@ describe('image reader settings page behavior', () => {
   it('uses the complete shared default prompt when the namespace has no saved configuration', async () => {
     const api = {
       models: vi.fn(async () => modelCatalog),
-      saveSettings: vi.fn(),
+      saveProfile: vi.fn(),
+      deleteProfile: vi.fn(),
     }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
@@ -180,43 +182,121 @@ describe('image reader settings page behavior', () => {
       .not.toContain('The remote transport failed.')
   })
 
-  it('saves all profiles and credential changes through one Host request', async () => {
-    const saveSettings = vi.fn(async (request: any) => ({ configuration: request.configuration }))
+  it('saves only the current profile through one Host request', async () => {
+    const saveProfile = vi.fn(async () => ({ configuration: runtimeConfiguration }))
     const signal = new AbortController().signal
-    await expect(saveImageReaderSettings(
-      { saveSettings },
+    await expect(saveImageReaderProfile(
+      { saveProfile },
+      runtimeProfile,
+      { action: 'clear' },
       runtimeConfiguration,
-      [{ profileId: 'custom', apiKey: 'secret' }],
       signal,
     )).resolves.toEqual({ configuration: runtimeConfiguration })
-    expect(saveSettings).toHaveBeenCalledWith({
-      configuration: runtimeConfiguration,
-      credentialUpdates: [{ profileId: 'custom', apiKey: 'secret' }],
+    expect(saveProfile).toHaveBeenCalledWith({
+      profile: {
+        id: 'runtime',
+        name: '系统视觉',
+        connectionType: 'runtime',
+        provider: 'provider-a',
+        model: 'vision-a',
+        defaultPrompt: IMAGE_READER_DEFAULT_PROMPT,
+        temperature: 0.2,
+        maxTokens: 2048,
+      },
     }, signal)
   })
 
-  it('rejects an invalid profile before sending a settings request', async () => {
-    const saveSettings = vi.fn()
-    await expect(saveImageReaderSettings(
-      { saveSettings },
-      { activeProfileId: 'runtime', profiles: [{ ...runtimeProfile, model: '' }] },
-      [],
+  it('rejects one invalid current-profile field before sending a save request', async () => {
+    const saveProfile = vi.fn()
+    await expect(saveImageReaderProfile(
+      { saveProfile },
+      { ...runtimeProfile, model: '' },
+      { action: 'clear' },
+      runtimeConfiguration,
       new AbortController().signal,
-    )).rejects.toMatchObject({ code: 'IMAGE_READER_SETTINGS_INVALID' })
-    expect(saveSettings).not.toHaveBeenCalled()
+    )).rejects.toMatchObject({ code: 'IMAGE_READER_MODEL_REQUIRED' })
+    expect(saveProfile).not.toHaveBeenCalled()
+  })
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'rejects non-finite temperature %s before Remote serialization',
+    async temperature => {
+      const saveProfile = vi.fn()
+      await expect(saveImageReaderProfile(
+        { saveProfile },
+        { ...runtimeProfile, temperature },
+        { action: 'clear' },
+        runtimeConfiguration,
+        new AbortController().signal,
+      )).rejects.toMatchObject({ code: 'IMAGE_READER_TEMPERATURE_NUMBER_INVALID' })
+      expect(saveProfile).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'rejects non-finite maximum output tokens %s before Remote serialization',
+    async maxTokens => {
+      const saveProfile = vi.fn()
+      await expect(saveImageReaderProfile(
+        { saveProfile },
+        { ...runtimeProfile, maxTokens },
+        { action: 'clear' },
+        runtimeConfiguration,
+        new AbortController().signal,
+      )).rejects.toMatchObject({ code: 'IMAGE_READER_MAX_TOKENS_INTEGER_INVALID' })
+      expect(saveProfile).not.toHaveBeenCalled()
+    },
+  )
+
+  it('keeps the validation-code-to-input mapping complete and deterministic', () => {
+    expect(IMAGE_READER_SETTINGS_FIELD_BY_CODE).toEqual({
+      IMAGE_READER_PROFILE_ID_FORMAT_INVALID: 'profile',
+      IMAGE_READER_PROFILE_NAME_REQUIRED: 'name',
+      IMAGE_READER_PROFILE_NAME_TOO_LONG: 'name',
+      IMAGE_READER_RUNTIME_PROVIDER_REQUIRED: 'provider',
+      IMAGE_READER_RUNTIME_PROVIDER_TOO_LONG: 'provider',
+      IMAGE_READER_ENDPOINT_REQUIRED: 'endpoint',
+      IMAGE_READER_ENDPOINT_TOO_LONG: 'endpoint',
+      IMAGE_READER_ENDPOINT_WHITESPACE_INVALID: 'endpoint',
+      IMAGE_READER_ENDPOINT_URL_INVALID: 'endpoint',
+      IMAGE_READER_ENDPOINT_PROTOCOL_INVALID: 'endpoint',
+      IMAGE_READER_ENDPOINT_CREDENTIALS_FORBIDDEN: 'endpoint',
+      IMAGE_READER_ENDPOINT_FRAGMENT_FORBIDDEN: 'endpoint',
+      IMAGE_READER_MODEL_REQUIRED: 'model',
+      IMAGE_READER_MODEL_TOO_LONG: 'model',
+      IMAGE_READER_DEFAULT_PROMPT_REQUIRED: 'defaultPrompt',
+      IMAGE_READER_DEFAULT_PROMPT_TOO_LONG: 'defaultPrompt',
+      IMAGE_READER_TEMPERATURE_NUMBER_INVALID: 'temperature',
+      IMAGE_READER_TEMPERATURE_RANGE_INVALID: 'temperature',
+      IMAGE_READER_MAX_TOKENS_INTEGER_INVALID: 'maxTokens',
+      IMAGE_READER_MAX_TOKENS_RANGE_INVALID: 'maxTokens',
+      IMAGE_READER_API_KEY_REQUIRED: 'credential',
+      IMAGE_READER_API_KEY_TOO_LONG: 'credential',
+      IMAGE_READER_PROFILE_LIMIT_REACHED: 'profile',
+    })
+    for (const code of [
+      ...Object.keys(IMAGE_READER_SETTINGS_FIELD_BY_CODE),
+      'IMAGE_READER_PROFILE_NOT_FOUND',
+      'IMAGE_READER_LAST_PROFILE_DELETE_FORBIDDEN',
+      'IMAGE_READER_PROMPT_REQUIRED',
+      'IMAGE_READER_PROMPT_TOO_LONG',
+    ]) {
+      expect(imageReaderSettingsErrorMessage({ code })).toContain(`${code}：`)
+    }
   })
 
   it('creates an OpenAI-compatible profile, marks it active, and submits its API Key as write-only data', async () => {
-    const saveSettings = vi.fn(async (request: any) => ({
+    const saveProfile = vi.fn(async (request: any) => ({
       configuration: {
-        ...request.configuration,
-        profiles: request.configuration.profiles.map((profile: any) => ({
-          ...profile,
-          hasApiKey: profile.id === request.configuration.activeProfileId,
-        })),
+        activeProfileId: request.profile.id,
+        profiles: [runtimeProfile, {
+          ...request.profile,
+          provider: '',
+          hasApiKey: request.credential.action === 'replace',
+        }],
       },
     }))
-    const api = { models: vi.fn(async () => modelCatalog), saveSettings }
+    const api = { models: vi.fn(async () => modelCatalog), saveProfile, deleteProfile: vi.fn() }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
       renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(), api } as never))
@@ -238,24 +318,29 @@ describe('image reader settings page behavior', () => {
     })
     expect(JSON.stringify(renderer.toJSON())).toContain('保存后首次设置这份配置的 API Key')
     await act(async () => {
-      ;(buttonByText(renderer, '保存全部配置').props.onClick as () => void)()
+      ;(buttonByText(renderer, '保存当前配置').props.onClick as () => void)()
       await Promise.resolve()
     })
 
-    expect(saveSettings).toHaveBeenCalledOnce()
-    expect(saveSettings.mock.calls[0]![0]).toMatchObject({
-      configuration: {
-        profiles: [expect.objectContaining({ name: '系统视觉' }), expect.objectContaining({
-          name: '本地 Qwen', connectionType: 'openai-compatible', endpoint: 'http://127.0.0.1:11434/v1/chat/completions', model: 'qwen-vl',
-        })],
+    expect(saveProfile).toHaveBeenCalledOnce()
+    expect(saveProfile.mock.calls[0]![0]).toEqual({
+      profile: {
+        id: expect.stringMatching(/^profile_/),
+        name: '本地 Qwen',
+        connectionType: 'openai-compatible',
+        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        model: 'qwen-vl',
+        defaultPrompt: IMAGE_READER_DEFAULT_PROMPT,
+        temperature: 0.2,
+        maxTokens: 2048,
       },
-      credentialUpdates: [expect.objectContaining({ apiKey: 'write-only-key' })],
+      credential: { action: 'replace', apiKey: 'write-only-key' },
     })
-    expect(JSON.stringify(renderer.toJSON())).toContain('图片读取配置已保存，当前配置已经生效。')
+    expect(JSON.stringify(renderer.toJSON())).toContain('当前图片读取配置已保存并生效。')
     renderer.unmount()
   })
 
-  it('supports profile switching, duplication, deletion, runtime fields, credentials, prompt, and sampling controls', async () => {
+  it('supports profile switching, runtime fields, credentials, prompt, and sampling controls', async () => {
     const custom = Object.freeze({
       ...createImageReaderProfile('custom', '内网视觉'),
       connectionType: 'openai-compatible' as const,
@@ -273,7 +358,13 @@ describe('image reader settings page behavior', () => {
     })
     const api = {
       models: vi.fn(async () => catalogWithFailure),
-      saveSettings: vi.fn(async (request: any) => ({ configuration: request.configuration })),
+      saveProfile: vi.fn(async (request: any) => ({
+        configuration: {
+          activeProfileId: request.profile.id,
+          profiles: [runtimeProfile, { ...request.profile, endpoint: '', hasApiKey: false }],
+        },
+      })),
+      deleteProfile: vi.fn(),
     }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
@@ -323,18 +414,20 @@ describe('image reader settings page behavior', () => {
     })
 
     await act(async () => {
-      ;(buttonByText(renderer, '复制配置').props.onClick as () => void)()
+      ;(buttonByText(renderer, '保存当前配置').props.onClick as () => void)()
+      await Promise.resolve()
     })
-    expect(renderer.root.findAllByType('option').some(option => String(option.props.children).includes('副本'))).toBe(true)
-    await act(async () => {
-      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
-    })
-    await act(async () => {
-      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
-    })
-    expect(buttonByText(renderer, '删除配置').props.disabled).toBe(true)
-    await act(async () => {
-      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
+    expect(api.saveProfile.mock.calls[0]![0]).toEqual({
+      profile: {
+        id: 'custom',
+        name: '内网视觉',
+        connectionType: 'runtime',
+        provider: 'provider-a',
+        model: 'vision-a',
+        defaultPrompt: 'updated prompt',
+        temperature: 0.35,
+        maxTokens: 4096,
+      },
     })
     renderer.unmount()
   })
@@ -349,7 +442,8 @@ describe('image reader settings page behavior', () => {
     })
     const api = {
       models: vi.fn(async () => modelCatalog),
-      saveSettings: vi.fn(async (request: any) => ({ configuration: request.configuration })),
+      saveProfile: vi.fn(),
+      deleteProfile: vi.fn(),
     }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
@@ -369,13 +463,290 @@ describe('image reader settings page behavior', () => {
     renderer.unmount()
   })
 
+  it('discards an unsaved new profile locally without calling the delete Remote', async () => {
+    const api = {
+      models: vi.fn(async () => modelCatalog),
+      saveProfile: vi.fn(),
+      deleteProfile: vi.fn(),
+    }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(), api } as never))
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      ;(buttonByText(renderer, '新建配置').props.onClick as () => void)()
+    })
+    expect(inputByType(renderer, 'text', 0).props.value).toContain('图片读取配置')
+    await act(async () => {
+      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
+    })
+
+    expect(api.deleteProfile).not.toHaveBeenCalled()
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('系统视觉')
+    renderer.unmount()
+  })
+
+  it('deletes a persisted profile through the dedicated Remote and loads the Host-selected active profile', async () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom', '待删除配置'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'qwen-vl',
+      hasApiKey: true,
+    })
+    const configuration = Object.freeze({
+      activeProfileId: custom.id,
+      profiles: Object.freeze([runtimeProfile, custom]),
+    })
+    const deleteProfile = vi.fn(async () => ({ configuration: runtimeConfiguration }))
+    const api = { models: vi.fn(async () => modelCatalog), saveProfile: vi.fn(), deleteProfile }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
+      await Promise.resolve()
+    })
+
+    expect(deleteProfile).toHaveBeenCalledWith(
+      { profileId: 'custom' },
+      expect.any(AbortSignal),
+    )
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('系统视觉')
+    expect(JSON.stringify(renderer.toJSON())).toContain('当前图片读取配置已删除。')
+    renderer.unmount()
+  })
+
+  it('labels a dedicated Remote deletion failure as a deletion error', async () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom', '待删除配置'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'qwen-vl',
+    })
+    const configuration = Object.freeze({
+      activeProfileId: custom.id,
+      profiles: Object.freeze([runtimeProfile, custom]),
+    })
+    const api = {
+      models: vi.fn(async () => modelCatalog),
+      saveProfile: vi.fn(),
+      deleteProfile: vi.fn(async () => {
+        throw new ImageReaderSettingsError('IMAGE_READER_SETTINGS_DELETE_FAILED', 'settings write failed')
+      }),
+    }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      ;(buttonByText(renderer, '删除配置').props.onClick as () => void)()
+      await Promise.resolve()
+    })
+
+    expect(JSON.stringify(renderer.toJSON())).toContain('删除失败：IMAGE_READER_SETTINGS_DELETE_FAILED')
+    expect(JSON.stringify(renderer.toJSON())).toContain('重新删除当前配置')
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('保存当前配置失败')
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('待删除配置')
+    renderer.unmount()
+  })
+
+  it.each(Object.entries(IMAGE_READER_SETTINGS_FIELD_BY_CODE))(
+    'shows %s only at its mapped current-profile location and repeats it beside the save action',
+    async (code, field) => {
+      const useOpenAiProfile = field === 'endpoint' || field === 'credential'
+      const profile = useOpenAiProfile
+        ? Object.freeze({
+            ...createImageReaderProfile('custom', '本地视觉'),
+            connectionType: 'openai-compatible' as const,
+            endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+            model: 'qwen-vl',
+            hasApiKey: true,
+          })
+        : runtimeProfile
+      const configuration = Object.freeze({
+        activeProfileId: profile.id,
+        profiles: Object.freeze([profile]),
+      })
+      const api = {
+        models: vi.fn(async () => modelCatalog),
+        saveProfile: vi.fn(async () => {
+          throw new ImageReaderSettingsError(code, code)
+        }),
+        deleteProfile: vi.fn(),
+      }
+      let renderer!: ReturnType<typeof create>
+      await act(async () => {
+        renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
+        await Promise.resolve()
+      })
+      await act(async () => {
+        ;(buttonByText(renderer, '保存当前配置').props.onClick as () => void)()
+        await Promise.resolve()
+      })
+
+      const fieldAlerts = renderer.root.findAllByType('small')
+        .filter(node => node.props['data-image-reader-error-field'] !== undefined)
+      expect(fieldAlerts).toHaveLength(1)
+      expect(fieldAlerts[0]!.props['data-image-reader-error-field']).toBe(field)
+      expect(String(fieldAlerts[0]!.props.children)).toContain(code)
+      const summaryAlerts = renderer.root.findAllByType('span').filter(node => node.props.role === 'alert')
+      expect(summaryAlerts).toHaveLength(1)
+      expect(String(summaryAlerts[0]!.props.children)).toContain(code)
+      const rendered = JSON.stringify(renderer.toJSON())
+      expect(rendered.match(new RegExp(code, 'gu'))).toHaveLength(2)
+      expect(rendered).not.toContain('IMAGE_READER_SETTINGS_INVALID')
+      expect(api.saveProfile).toHaveBeenCalledOnce()
+      renderer.unmount()
+    },
+  )
+
+  it('reloads a saved OpenAI-compatible profile from the persisted snapshot after discarding empty edits', async () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom', '已保存 OpenAI 视觉'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'qwen-vl',
+      hasApiKey: true,
+      defaultPrompt: '已保存的读图提示词',
+      temperature: 0.7,
+      maxTokens: 8192,
+    })
+    const configuration = Object.freeze({
+      activeProfileId: custom.id,
+      profiles: Object.freeze([runtimeProfile, custom]),
+    })
+    const api = {
+      models: vi.fn(async () => modelCatalog),
+      saveProfile: vi.fn(),
+      deleteProfile: vi.fn(),
+    }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
+      await Promise.resolve()
+    })
+
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('已保存 OpenAI 视觉')
+    expect(inputByType(renderer, 'url').props.value).toBe('http://127.0.0.1:11434/v1/chat/completions')
+    expect(inputByType(renderer, 'text', 1).props.value).toBe('qwen-vl')
+    expect(renderer.root.findAllByType('textarea')[0]!.props.value).toBe('已保存的读图提示词')
+    expect(inputByType(renderer, 'password').props.value).toBe('')
+    expect(inputByType(renderer, 'password').props.placeholder).toContain('已保存')
+
+    await act(async () => {
+      ;(inputByType(renderer, 'text', 0).props.onChange as (event: unknown) => void)({ target: { value: '' } })
+      ;(inputByType(renderer, 'url').props.onChange as (event: unknown) => void)({ target: { value: '' } })
+      ;(inputByType(renderer, 'text', 1).props.onChange as (event: unknown) => void)({ target: { value: '' } })
+      ;(renderer.root.findAllByType('textarea')[0]!.props.onChange as (event: unknown) => void)({ target: { value: '' } })
+      const numbers = renderer.root.findAllByType('input').filter(input => input.props.type === 'number')
+      ;(numbers[0]!.props.onChange as (event: unknown) => void)({ target: { value: '0' } })
+      ;(numbers[1]!.props.onChange as (event: unknown) => void)({ target: { value: '0' } })
+    })
+    await act(async () => {
+      ;(renderer.root.findAllByType('select')[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'runtime' } })
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('当前配置有未保存修改')
+
+    await act(async () => {
+      ;(buttonByText(renderer, '放弃当前修改并切换').props.onClick as () => void)()
+    })
+    await act(async () => {
+      ;(renderer.root.findAllByType('select')[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'custom' } })
+    })
+
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('已保存 OpenAI 视觉')
+    expect(inputByType(renderer, 'url').props.value).toBe('http://127.0.0.1:11434/v1/chat/completions')
+    expect(inputByType(renderer, 'text', 1).props.value).toBe('qwen-vl')
+    expect(renderer.root.findAllByType('textarea')[0]!.props.value).toBe('已保存的读图提示词')
+    const numbers = renderer.root.findAllByType('input').filter(input => input.props.type === 'number')
+    expect(numbers[0]!.props.value).toBe(0.7)
+    expect(numbers[1]!.props.value).toBe(8192)
+    renderer.unmount()
+
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
+      await Promise.resolve()
+    })
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('已保存 OpenAI 视觉')
+    expect(inputByType(renderer, 'url').props.value).toBe('http://127.0.0.1:11434/v1/chat/completions')
+    expect(inputByType(renderer, 'text', 1).props.value).toBe('qwen-vl')
+    expect(renderer.root.findAllByType('textarea')[0]!.props.value).toBe('已保存的读图提示词')
+    expect(inputByType(renderer, 'password').props.value).toBe('')
+    expect(inputByType(renderer, 'password').props.placeholder).toContain('已保存')
+    renderer.unmount()
+  })
+
+  it('lets the switch gate continue editing or save the current profile without switching to stale values', async () => {
+    const custom = Object.freeze({
+      ...createImageReaderProfile('custom', '另一份系统视觉'),
+      provider: 'provider-a',
+      model: 'vision-a',
+    })
+    const configuration = Object.freeze({
+      activeProfileId: runtimeProfile.id,
+      profiles: Object.freeze([runtimeProfile, custom]),
+    })
+    const saveProfile = vi.fn(async (request: any) => ({
+      configuration: Object.freeze({
+        activeProfileId: request.profile.id,
+        profiles: Object.freeze([Object.freeze({
+          ...request.profile,
+          endpoint: '',
+          hasApiKey: false,
+        }), custom]),
+      }),
+    }))
+    const api = { models: vi.fn(async () => modelCatalog), saveProfile, deleteProfile: vi.fn() }
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(ImageReaderSettingsPage, { scope: settingsScope(configuration), api } as never))
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      ;(inputByType(renderer, 'text', 0).props.onChange as (event: unknown) => void)({ target: { value: '已修改系统视觉' } })
+    })
+    await act(async () => {
+      ;(renderer.root.findAllByType('select')[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'custom' } })
+    })
+    expect(JSON.stringify(renderer.toJSON())).toContain('当前配置有未保存修改')
+
+    await act(async () => {
+      ;(buttonByText(renderer, '继续编辑当前配置').props.onClick as () => void)()
+    })
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('当前配置有未保存修改')
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('已修改系统视觉')
+
+    await act(async () => {
+      ;(renderer.root.findAllByType('select')[0]!.props.onChange as (event: unknown) => void)({ target: { value: 'custom' } })
+    })
+    await act(async () => {
+      ;(buttonByText(renderer, '保存当前配置').props.onClick as () => void)()
+      await Promise.resolve()
+    })
+
+    expect(saveProfile).toHaveBeenCalledOnce()
+    expect(saveProfile.mock.calls[0]![0].profile.name).toBe('已修改系统视觉')
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('当前配置有未保存修改')
+    expect(inputByType(renderer, 'text', 0).props.value).toBe('已修改系统视觉')
+    renderer.unmount()
+  })
+
   it('renders loading, unavailable, read-only, and writable settings states', async () => {
-    const api = { models: vi.fn(async () => modelCatalog), saveSettings: vi.fn() }
+    const api = { models: vi.fn(async () => modelCatalog), saveProfile: vi.fn(), deleteProfile: vi.fn() }
     const cases = [
       { scope: settingsScope(runtimeConfiguration, { status: 'loading' }), text: '正在读取图片读取设置', disabled: true },
       { scope: settingsScope(runtimeConfiguration, { status: 'unavailable' }), text: '当前 Harness 环境没有提供可写的图片读取设置', disabled: true },
-      { scope: settingsScope(runtimeConfiguration, { writable: false }), text: '当前图片读取设置为只读；页面中的草稿不能保存', disabled: true },
-      { scope: settingsScope(runtimeConfiguration), text: '保存全部配置', disabled: false },
+      { scope: settingsScope(runtimeConfiguration, { writable: false }), text: '当前图片读取设置为只读；当前配置的修改不能保存', disabled: true },
+      { scope: settingsScope(runtimeConfiguration), text: '保存当前配置', disabled: false },
     ] as const
 
     for (const state of cases) {
@@ -385,7 +756,7 @@ describe('image reader settings page behavior', () => {
         await Promise.resolve()
       })
       expect(JSON.stringify(renderer.toJSON())).toContain(state.text)
-      expect(buttonByText(renderer, '保存全部配置').props.disabled).toBe(state.disabled)
+      expect(buttonByText(renderer, '保存当前配置').props.disabled).toBe(state.disabled)
       renderer.unmount()
     }
   })
@@ -394,9 +765,10 @@ describe('image reader settings page behavior', () => {
     const catalogFailure = new Error('The model directory transport failed.')
     const api = {
       models: vi.fn(async () => { throw catalogFailure }),
-      saveSettings: vi.fn(async () => {
+      saveProfile: vi.fn(async () => {
         throw new ImageReaderSettingsError('IMAGE_READER_SETTINGS_SAVE_FAILED', 'The settings write was rejected.')
       }),
+      deleteProfile: vi.fn(),
     }
     let renderer!: ReturnType<typeof create>
     await act(async () => {
@@ -407,7 +779,7 @@ describe('image reader settings page behavior', () => {
     expect(JSON.stringify(renderer.toJSON())).toContain('IMAGE_READER_SETTINGS_REQUEST_FAILED')
     expect(JSON.stringify(renderer.toJSON())).not.toContain('The model directory transport failed.')
     await act(async () => {
-      ;(buttonByText(renderer, '保存全部配置').props.onClick as () => void)()
+      ;(buttonByText(renderer, '保存当前配置').props.onClick as () => void)()
       await Promise.resolve()
     })
     expect(JSON.stringify(renderer.toJSON())).toContain('保存失败：')

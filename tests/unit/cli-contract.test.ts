@@ -111,6 +111,14 @@ describe('Harness ComfyUI CLI contract', () => {
       ['image', 'inspect', '--stdin'],
       JSON.stringify({ file_path: '/media/result.png' }),
     )).toEqual({ command: 'image.inspect', file_path: '/media/result.png' })
+    expect(parseCliArguments(
+      ['image', 'inspect', '--stdin'],
+      JSON.stringify({ file_path: '/media/result.png', prompt: '只识别图片中的文字。\n保留原始顺序。' }),
+    )).toEqual({
+      command: 'image.inspect',
+      file_path: '/media/result.png',
+      prompt: '只识别图片中的文字。\n保留原始顺序。',
+    })
   })
 
   it('rejects malformed Generation media resolution and image inspection stdin', () => {
@@ -126,8 +134,8 @@ describe('Harness ComfyUI CLI contract', () => {
     )).toThrow('file_path')
     expect(() => parseCliArguments(
       ['image', 'inspect', '--stdin'],
-      JSON.stringify({ file_path: '/media/result.png', prompt: '只描述构图' }),
-    )).toThrow('properties')
+      JSON.stringify({ file_path: '/media/result.png', prompt: 1 }),
+    )).toThrow('prompt must be a string')
     expect(() => parseCliArguments(
       ['image', 'inspect', '--stdin'],
       JSON.stringify({ file_path: '/media/result.png', extra: true }),

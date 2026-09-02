@@ -52,7 +52,16 @@ afterEach(() => {
 function installImmediateInject(context: Record<string, any>): void {
   context.remote.harnessComfyuiImageReader ??= {
     models: vi.fn(async () => ({ ok: true, value: { groups: [], failures: [] } })),
-    saveSettings: vi.fn(async (request: any) => ({ ok: true, value: { configuration: request.configuration } })),
+    saveProfile: vi.fn(async (request: any) => ({
+      ok: true,
+      value: {
+        configuration: {
+          activeProfileId: request.profile.id,
+          profiles: [{ ...request.profile, endpoint: '', hasApiKey: false }],
+        },
+      },
+    })),
+    deleteProfile: vi.fn(async () => ({ ok: true, value: { configuration: context.settingsScope.bind().getSnapshot().value.configuration } })),
   }
   context.settingsScope ??= {
     bind: vi.fn(() => ({
@@ -200,19 +209,38 @@ describe('Harness Client plugin registration', () => {
     expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
     expect(imageReaderSettingsFace).toMatchObject({
       scope: expect.objectContaining({ getSnapshot: expect.any(Function) }),
-      api: expect.objectContaining({ models: expect.any(Function), saveSettings: expect.any(Function) }),
+      api: expect.objectContaining({
+        models: expect.any(Function),
+        saveProfile: expect.any(Function),
+        deleteProfile: expect.any(Function),
+      }),
     })
     const imageReaderFace = imageReaderSettingsFace as {
       scope: { getSnapshot(): { value: { configuration: unknown } } }
       api: {
         models(signal: AbortSignal): Promise<unknown>
-        saveSettings(request: unknown, signal: AbortSignal): Promise<unknown>
+        saveProfile(request: unknown, signal: AbortSignal): Promise<unknown>
+        deleteProfile(request: unknown, signal: AbortSignal): Promise<unknown>
       }
     }
     await expect(imageReaderFace.api.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
     const configuration = imageReaderFace.scope.getSnapshot().value.configuration
-    await expect(imageReaderFace.api.saveSettings(
-      { configuration, credentialUpdates: [] },
+    const profile = (configuration as any).profiles[0]
+    await expect(imageReaderFace.api.saveProfile(
+      { profile: {
+        id: profile.id,
+        name: profile.name,
+        connectionType: 'runtime',
+        provider: profile.provider,
+        model: profile.model,
+        defaultPrompt: profile.defaultPrompt,
+        temperature: profile.temperature,
+        maxTokens: profile.maxTokens,
+      } },
+      new AbortController().signal,
+    )).resolves.toEqual({ configuration })
+    await expect(imageReaderFace.api.deleteProfile(
+      { profileId: 'default' },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
     const imageReaderRemote = (context.remote as any).harnessComfyuiImageReader
@@ -220,20 +248,40 @@ describe('Harness Client plugin registration', () => {
       ok: false,
       error: { code: 'IMAGE_READER_SETTINGS_REQUEST_FAILED', message: 'The model catalog failed.', details: {} },
     })
-    imageReaderRemote.saveSettings.mockResolvedValueOnce({
+    imageReaderRemote.saveProfile.mockResolvedValueOnce({
       ok: false,
       error: { code: 'IMAGE_READER_SETTINGS_SAVE_FAILED', message: 'The settings write failed.', details: {} },
+    })
+    imageReaderRemote.deleteProfile.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'IMAGE_READER_PROFILE_NOT_FOUND', message: 'The profile was missing.', details: {} },
     })
     await expect(imageReaderFace.api.models(new AbortController().signal)).rejects.toMatchObject({
       code: 'IMAGE_READER_SETTINGS_REQUEST_FAILED',
       message: 'IMAGE_READER_SETTINGS_REQUEST_FAILED',
     })
-    await expect(imageReaderFace.api.saveSettings(
-      { configuration, credentialUpdates: [] },
+    await expect(imageReaderFace.api.saveProfile(
+      { profile: {
+        id: profile.id,
+        name: profile.name,
+        connectionType: 'runtime',
+        provider: profile.provider,
+        model: profile.model,
+        defaultPrompt: profile.defaultPrompt,
+        temperature: profile.temperature,
+        maxTokens: profile.maxTokens,
+      } },
       new AbortController().signal,
     )).rejects.toMatchObject({
       code: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
       message: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
+    })
+    await expect(imageReaderFace.api.deleteProfile(
+      { profileId: 'missing' },
+      new AbortController().signal,
+    )).rejects.toMatchObject({
+      code: 'IMAGE_READER_PROFILE_NOT_FOUND',
+      message: 'IMAGE_READER_PROFILE_NOT_FOUND',
     })
     expect(scope).toHaveBeenCalledWith('session-1')
     expect(inputFor).toHaveBeenCalledWith(sessionContext)

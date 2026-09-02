@@ -2,6 +2,18 @@
 
 v0.38.4 在 Harness 向 ComfyUI 提交 Prompt 前验证每一个运行参数的目标输入合同，修复超出目标 `INT.max` 的 Seed 直到远端提交时才被拒绝的问题。
 
+## 图片读取本次提示词与当前配置保存
+
+- `inspect_image` 与受管 `image inspect --stdin` CLI 新增可选 `prompt`。调用者提供该值时只覆盖本次视觉模型调用；省略时继续使用活动图片读取配置的 `defaultPrompt`。`local-image-reader` 与 `comfyui-image-review` 在用户指定本次观察要求时通过 CLI 传递完整的覆盖提示词。
+- runtime 与 OpenAI 兼容视觉模型都可以返回普通字符串。OpenAI 兼容适配器只解析 Chat Completions 的 HTTP JSON 传输外壳，不解析 `message.content` 中的 JSON；`inspect_image` 继续把模型字符串包装为 `provider`、`model`、`file_path` 和 `observation` 四属性对象，CLI stdout 继续输出该对象的 JSON。
+- 图片读取设置页只保存当前编辑配置。Host 串行执行每次保存或删除的完整 Settings 修改临界区，并在最新持久化列表中合并同 ID 配置或追加新配置；重叠请求不会根据旧快照覆盖先完成的修改，其他配置也不会因 Client 中未保存输入阻止当前配置保存。
+- 设置页分别维护 Host 返回的持久化配置快照与一份当前可编辑配置。切换时必须先保存或放弃当前修改；放弃、切换和重新打开页面都会从持久化快照恢复非敏感值，API Key 输入框保持空白并显示已保存状态。
+- OpenAI 兼容 API Key 使用 `keep`、`replace` 与 `clear` 三种明确动作。保存 runtime 配置会清除同 ID 的旧凭据；复制配置不复制 API Key。新建和复制配置在保存后追加，已保存配置通过独立 Remote 删除，未保存配置只在页面本地放弃。
+- 配置名称、连接参数、模型、默认提示词、温度、最大输出 Token 数和 API Key 规则分别返回唯一错误码。设置页在具体输入项附近显示实际失败规则，并在保存按钮附近显示同一错误码的总结，不再使用 `IMAGE_READER_SETTINGS_INVALID` 枚举所有可能问题。
+- 隔离开发 Desktop 的真实模型验收使用 `opencode-go/deepseek-v4-flash` Agent 和 `opencode-go/qwen3.7-plus` 图片读取模型。`standard` Preset 的三次 Tool 调用确认默认提示词、本次覆盖和后续恢复；`ComfyUI工作台预设` 的 Agent 实际读取更新后的 `local-image-reader` 与 CLI 参考，通过 managed CLI 传递覆盖提示词并取得 `observation: OVERRIDE_OK`。完整证据位于 [`.planning/image-reader-prompt-string/model-acceptance.md`](../.planning/image-reader-prompt-string/model-acceptance.md)。
+- 完整 `pnpm quality` 通过：822 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本变更没有增加或升级依赖，`package.json` 与 `pnpm-lock.yaml` 保持不变。
+
 ## ComfyUI 运行参数合同
 
 - Workflow compiler 在写入 Actual Workflow 和提交 Prompt 前，依据目标实例提供的 `/object_info` 结构化合同校验每一个运行参数的 JSON 类型、整数性、精确数值范围、候选集合、`COMBO.multiselect` 数组成员和动态分支子输入合同。

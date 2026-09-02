@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
+import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 import * as harnessComfyui from '../../src/index.ts'
 import { reportGenerationRunInputLookupError } from '../../src/host/plugin.ts'
 
@@ -199,8 +200,45 @@ describe('Harness ComfyUI Host plugin', () => {
 
     expect(remoteMethods(imageReader)).toEqual([
       { method: 'models', invocation: { kind: 'direct' } },
-      { method: 'saveSettings', invocation: { kind: 'direct' } },
+      { method: 'saveProfile', invocation: { kind: 'direct' } },
+      { method: 'deleteProfile', invocation: { kind: 'direct' } },
     ])
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('passes a JSON-representable invalid value through the strict Remote wire codec to the mounted Host', async () => {
+    stubTestProfileEnvironment()
+    const output = await materializeSourceHostModule(process.cwd())
+    const packaged = await import(`${pathToFileURL(output).href}?test=${crypto.randomUUID()}`) as typeof harnessComfyui
+    const ctx = new Context()
+    provideHostServices(ctx)
+    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
+    const imageReader = ctx.reflect.get('harnessComfyuiImageReader') as {
+      saveProfile(request: unknown, signal: AbortSignal): Promise<unknown>
+    }
+    const descriptor = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'saveProfile')
+    const requestCodec = descriptor?.parameters[0]?.codec
+    if (requestCodec?.mode !== 'strict') throw new Error('Image reader profile save request requires a strict Remote codec')
+    const wireValue = JSON.parse(JSON.stringify({
+      profile: {
+        id: 'custom',
+        name: '本地视觉',
+        connectionType: 'openai-compatible',
+        endpoint: 'not-a-url',
+        model: 'qwen-vl',
+        defaultPrompt: '描述图片',
+        temperature: 0.2,
+        maxTokens: 2048,
+      },
+      credential: { action: 'clear' },
+    }))
+    const parsedRequest = requestCodec.schema.parse(wireValue)
+
+    expect(parsedRequest).toEqual(wireValue)
+    await expect(imageReader.saveProfile(parsedRequest, new AbortController().signal)).rejects.toMatchObject({
+      code: 'IMAGE_READER_ENDPOINT_URL_INVALID',
+    })
     await fiber.dispose()
     await ctx.fiber.dispose()
   })

@@ -111,7 +111,7 @@ describe('image reader Tools', () => {
     expect(runtime.readGenerationRunMedia).not.toHaveBeenCalled()
   })
 
-  it('inspects exactly one local image with the saved settings prompt', async () => {
+  it('inspects exactly one local image with an optional per-call prompt', async () => {
     const inspect = vi.fn(async () => ({
       provider: 'provider-a', model: 'vision-a', filePath: '/media/a.png', observation: '可见一个人物。',
     }))
@@ -123,7 +123,19 @@ describe('image reader Tools', () => {
     )).resolves.toEqual({
       provider: 'provider-a', model: 'vision-a', file_path: '/media/a.png', observation: '可见一个人物。',
     })
-    expect(inspect).toHaveBeenCalledWith('/media/a.png', expect.any(AbortSignal))
+    expect(inspect).toHaveBeenLastCalledWith('/media/a.png', {
+      prompt: undefined,
+      signal: expect.any(AbortSignal),
+    })
+
+    await tool.execute(
+      { file_path: '/media/a.png', prompt: '只描述可见服饰。' },
+      execution('inspect_image', [], 'call_inspect_prompt') as never,
+    )
+    expect(inspect).toHaveBeenLastCalledWith('/media/a.png', {
+      prompt: '只描述可见服饰。',
+      signal: expect.any(AbortSignal),
+    })
   })
 
   it('publishes closed command schemas for the Skill CLI contract', () => {
@@ -132,7 +144,16 @@ describe('image reader Tools', () => {
     expect(media.parameters).toMatchObject({ type: 'object', additionalProperties: false })
     expect(media.output.schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['runs'] })
     expect(inspect.parameters).toMatchObject({ type: 'object', additionalProperties: false })
-    expect(inspect.parameters).not.toHaveProperty('properties.prompt')
+    expect(inspect.parameters).toMatchObject({
+      required: ['file_path'],
+      properties: {
+        prompt: {
+          type: 'string',
+          description: expect.stringMatching(/optional|omit|defaultPrompt|this inspection/i),
+        },
+      },
+    })
+    expect(inspect.description).toMatch(/optional|omit|defaultPrompt|this inspection/i)
     expect(inspect.output.schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['provider', 'model', 'file_path', 'observation'] })
     expect(media.output.render({}, { runs: [] })).toEqual([{ type: 'text', text: '{"runs":[]}' }])
     expect(inspect.output.render({}, { observation: '可见人物' })).toEqual([

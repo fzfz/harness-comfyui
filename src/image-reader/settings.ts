@@ -4,6 +4,18 @@ export const IMAGE_READER_CONNECTION_TYPES = Object.freeze(['runtime', 'openai-c
 export type ImageReaderConnectionType = typeof IMAGE_READER_CONNECTION_TYPES[number]
 
 export const IMAGE_READER_MAX_PROFILES = 20
+export const IMAGE_READER_PROMPT_MAX_LENGTH = 32_768
+export const IMAGE_READER_PROFILE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/
+export const IMAGE_READER_PROFILE_ID_MAX_LENGTH = 80
+export const IMAGE_READER_PROFILE_NAME_MAX_LENGTH = 80
+export const IMAGE_READER_PROVIDER_MAX_LENGTH = 10_000
+export const IMAGE_READER_ENDPOINT_MAX_LENGTH = 2048
+export const IMAGE_READER_MODEL_MAX_LENGTH = 10_000
+export const IMAGE_READER_API_KEY_MAX_LENGTH = 8192
+export const IMAGE_READER_TEMPERATURE_MIN = 0
+export const IMAGE_READER_TEMPERATURE_MAX = 2
+export const IMAGE_READER_MAX_TOKENS_MIN = 1
+export const IMAGE_READER_MAX_TOKENS_MAX = 32_768
 export const IMAGE_READER_DEFAULT_PROFILE_ID = 'default'
 
 export const IMAGE_READER_DEFAULT_PROMPT = `# Role
@@ -152,16 +164,16 @@ export function createImageReaderSettingsDefaults(
 
 const connectionTypeSchema = Schema.union(IMAGE_READER_CONNECTION_TYPES.map(value => Schema.const(value)))
 const imageReaderProfileSchema = Schema.object({
-  id: Schema.string().min(1).max(80).required(),
-  name: Schema.string().min(1).max(80).required(),
+  id: Schema.string().min(1).max(IMAGE_READER_PROFILE_ID_MAX_LENGTH).required(),
+  name: Schema.string().min(1).max(IMAGE_READER_PROFILE_NAME_MAX_LENGTH).required(),
   connectionType: connectionTypeSchema.required(),
-  provider: Schema.string().max(10_000).required(),
-  endpoint: Schema.string().max(2048).required(),
-  model: Schema.string().max(10_000).required(),
+  provider: Schema.string().max(IMAGE_READER_PROVIDER_MAX_LENGTH).required(),
+  endpoint: Schema.string().max(IMAGE_READER_ENDPOINT_MAX_LENGTH).required(),
+  model: Schema.string().max(IMAGE_READER_MODEL_MAX_LENGTH).required(),
   hasApiKey: Schema.boolean().required(),
-  defaultPrompt: Schema.string().min(1).max(32_768).required(),
-  temperature: Schema.number().min(0).max(2).required(),
-  maxTokens: Schema.natural().min(1).max(32_768).required(),
+  defaultPrompt: Schema.string().min(1).max(IMAGE_READER_PROMPT_MAX_LENGTH).required(),
+  temperature: Schema.number().min(IMAGE_READER_TEMPERATURE_MIN).max(IMAGE_READER_TEMPERATURE_MAX).required(),
+  maxTokens: Schema.natural().min(IMAGE_READER_MAX_TOKENS_MIN).max(IMAGE_READER_MAX_TOKENS_MAX).required(),
 })
 
 const imageReaderConfigurationSchema = Schema.object({
@@ -174,14 +186,14 @@ export const IMAGE_READER_LEGACY_SETTINGS_SCHEMA = Schema.object({
     provider: Schema.string().required(),
     model: Schema.string().required(),
     defaultPrompt: Schema.string().min(1).required(),
-    temperature: Schema.number().min(0).max(2).required(),
-    maxTokens: Schema.natural().min(1).max(32_768).required(),
+    temperature: Schema.number().min(IMAGE_READER_TEMPERATURE_MIN).max(IMAGE_READER_TEMPERATURE_MAX).required(),
+    maxTokens: Schema.natural().min(IMAGE_READER_MAX_TOKENS_MIN).max(IMAGE_READER_MAX_TOKENS_MAX).required(),
   }).required(),
 })
 
 export const IMAGE_READER_SETTINGS_SCHEMA = Schema.object({
   configuration: imageReaderConfigurationSchema.required(),
-  credentials: Schema.dict(Schema.string().max(8192).role('secret')).required(),
+  credentials: Schema.dict(Schema.string().max(IMAGE_READER_API_KEY_MAX_LENGTH).role('secret')).required(),
 })
 
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -199,29 +211,29 @@ function decodeImageReaderProfile(value: unknown): ImageReaderProfile | undefine
   if (
     source === undefined
     || typeof source.id !== 'string'
-    || !/^[a-z0-9][a-z0-9_-]{0,79}$/.test(source.id)
+    || !IMAGE_READER_PROFILE_ID_PATTERN.test(source.id)
     || typeof source.name !== 'string'
     || source.name.trim().length === 0
-    || source.name.length > 80
+    || source.name.length > IMAGE_READER_PROFILE_NAME_MAX_LENGTH
     || !connectionType(source.connectionType)
     || typeof source.provider !== 'string'
-    || source.provider.length > 10_000
+    || source.provider.length > IMAGE_READER_PROVIDER_MAX_LENGTH
     || typeof source.endpoint !== 'string'
-    || source.endpoint.length > 2048
+    || source.endpoint.length > IMAGE_READER_ENDPOINT_MAX_LENGTH
     || typeof source.model !== 'string'
-    || source.model.length > 10_000
+    || source.model.length > IMAGE_READER_MODEL_MAX_LENGTH
     || typeof source.hasApiKey !== 'boolean'
     || typeof source.defaultPrompt !== 'string'
     || source.defaultPrompt.trim().length === 0
-    || source.defaultPrompt.length > 32_768
+    || source.defaultPrompt.length > IMAGE_READER_PROMPT_MAX_LENGTH
     || typeof source.temperature !== 'number'
     || !Number.isFinite(source.temperature)
-    || source.temperature < 0
-    || source.temperature > 2
+    || source.temperature < IMAGE_READER_TEMPERATURE_MIN
+    || source.temperature > IMAGE_READER_TEMPERATURE_MAX
     || typeof source.maxTokens !== 'number'
     || !Number.isSafeInteger(source.maxTokens)
-    || source.maxTokens < 1
-    || source.maxTokens > 32_768
+    || source.maxTokens < IMAGE_READER_MAX_TOKENS_MIN
+    || source.maxTokens > IMAGE_READER_MAX_TOKENS_MAX
   ) return undefined
   return Object.freeze({
     id: source.id,
@@ -334,7 +346,7 @@ export function validateImageReaderSettingsSection(section: ImageReaderSettingsS
   const profileById = new Map(configuration.profiles.map(profile => [profile.id, profile]))
   for (const [profileId, apiKey] of Object.entries(section.credentials)) {
     const profile = profileById.get(profileId)
-    if (profile === undefined || profile.connectionType !== 'openai-compatible' || apiKey.length === 0 || apiKey.length > 8192) {
+    if (profile === undefined || profile.connectionType !== 'openai-compatible' || apiKey.length === 0 || apiKey.length > IMAGE_READER_API_KEY_MAX_LENGTH) {
       throw new TypeError('Image reader credentials are invalid.')
     }
   }

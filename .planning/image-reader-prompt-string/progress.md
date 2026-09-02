@@ -1,0 +1,57 @@
+# 图片识别 Tool 接口调整进度
+
+## 2026-09-02
+
+- 计划编写者读取 `planning-with-files`、`codebase-design`、`team-mode` 和 `find-docs` 的完整入口说明。
+- 计划编写者确认主 checkout 没有未提交文件，并确认主分支比当时的本地 `origin/main` 引用落后 5 个提交。
+- 计划编写者只执行 `git fetch origin main` 更新远端引用，没有执行外部脚本、安装命令或项目代码。
+- 计划编写者从最新 `origin/main` 的 `b2b92fe` 创建独立分支 `codex/plan-image-reader-prompt-string` 和独立 worktree。
+- 计划编写者确认仓库根部三个规划文件属于其他长期任务，因此创建本次任务专用规划目录。
+- 当前阶段：读取项目规范并定位图片识别 Tool 调用链。
+- 计划编写者读取独立 worktree、ComfyUI 工作台预设与项目 Skill、系统架构、目录结构、测试、技术栈和配置规范。
+- 计划编写者定位 `inspect_image`、默认提示词、图片读取实现模块、错误目录和直接相关测试文件。
+- 计划编写者完整读取 `createInspectImageTool()` 与 `ImageReaderService`，确认 runtime Provider 已返回纯文本，OpenAI-compatible Provider 的 JSON 只承担 Chat Completions transport envelope，当前 Tool 自身才把观察文本包装为对象并 JSON render。
+- 计划编写者读取图片读取 Tool 与 Service 单元测试，确认现有测试固定了“无 prompt 参数”和“四属性对象输出”合同。
+- 计划编写者定位 `image inspect --stdin` 受管 CLI 和 `local-image-reader`、`comfyui-image-review` 两个项目 Skill，确认 CLI 的 JSON 输入输出属于独立接口合同，不是视觉模型输出格式。
+- 计划编写者把本次推荐范围收敛为 DSH Tool `inspect_image` 与共享 Service 的最小修改；CLI 与项目 Skill 暂列为非本次目标，等待源码类型核对和独立语义审核。
+- 计划编写者核对当前已安装 `@deepseek-ai/dsh-tools@0.1.2-alpha.1` 的 README、类型声明与运行时实现，确认 Tool canonical output 原生支持字符串根类型。
+- 计划编写者确认本次不需要新增、安装或升级依赖；Context7 外部包因项目安全规则没有下载或执行。
+- 当前阶段：设计接口、错误合同、测试矩阵与实施步骤。
+- 计划编写者完成 Tool、Service、CLI、Skill、系统文档和测试影响分析，确认 Host Tool 的字符串输出不要求修改 Tool 注册模块。
+- 计划编写者确认 CLI 与两个项目 Skill 可以继续使用原有默认提示词和 JSON 元数据对象；当前推荐方案不扩大到 CLI 协议迁移。
+- 计划编写者创建第一版 `implementation-plan.md` 后，错误地把用户所说的“模型返回字符串”理解为“Tool 返回字符串”，并据此设计了不符合用户意图的 Tool 输出变更。
+- 用户指出只修改输出而不修改调用方不能实现该错误理解下的协议迁移目标，计划编写者立即中止基于该范围的独立语义审查并废弃第一版方案。
+- 用户进一步澄清：视觉模型只需要返回普通字符串，`inspect_image` Tool 可以继续把字符串包装为 JSON；CLI 与调用方不需要修改。
+- 计划编写者确认当前 runtime Provider 已直接返回字符串，OpenAI-compatible Provider 只解析 Chat Completions JSON transport envelope，并且两个模型请求都没有 `response_format` 或 JSON Schema 要求。
+- 当前阶段：只设计 `inspect_image` 可选提示词，并把现有模型纯文本与 Tool JSON 包装行为写入测试和系统合同。
+- 用户报告生产环境经常出现“返回无效 JSON”的图片读取调用错误，计划编写者转入只读诊断，没有修改生产 checkout。
+- 计划编写者一度因用户提供的路径变更停止使用 `harness-comfyui-prod-env` 证据；用户最终确认生产目录就是 `/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env`，后续生产结论只使用该目录。
+- 计划编写者确认 `limitedResponseJson()` 在 HTTP 成功响应正文无法解析为完整 JSON 文档时抛出该错误；该解析发生在读取 `choices[0].message.content` 之前。
+- 计划编写者确认 Desktop 启动日志没有保存 Tool 错误或上游响应正文，现有证据无法区分上游当时返回的具体非 JSON 格式。
+- 计划编写者在误选 checkout 执行的图片读取 Service 定向测试只能证明开发源码错误分支，不能证明用户指定生产实例的配置与响应。
+- 计划编写者把生产诊断结论和证据边界写入 `findings.md` 与 `implementation-plan.md`，并重新发起独立只读语义审核。
+- 用户报告图片读取设置页保存时返回 `IMAGE_READER_SETTINGS_INVALID`，计划编写者对生产持久化配置与保存状态机执行只读诊断。
+- 计划编写者以只读方式解析最终确认的生产 Settings，确认两份配置都已持久化，活动 OpenAI-compatible 配置的全部非敏感字段均非空，并且页面应通过 `hasApiKey` 显示已保存凭据状态。检查没有输出凭据或连接参数的具体值。
+- 计划编写者确认设置页丢弃具体校验原因，并确认“输入 OpenAI-compatible API Key 后把同一配置切换为 runtime”会遗留凭据更新并导致 Host 必然拒绝保存。
+- 本机 Computer Use 服务启动失败，计划编写者没有读取 Desktop React 内存中的未保存表单值，也没有操作设置页。
+- 用户明确要求保存动作只保存当前选中的配置，不让其他配置参与请求或阻止保存，并要求错误文案指出真正失败的输入项。
+- 计划编写者把当前配置保存请求、Host 单配置合并、结构化 API Key 动作、独立删除操作和逐项错误码纳入待批准方案。
+- 独立语义 Reviewer 经过三轮只读审核，最终确认 Prompt、模型字符串、Tool JSON、当前配置保存、删除状态转换、逐规则错误码、Remote/Client/Host 校验职责、测试范围和授权边界全部闭合，并出具 PASS。
+- 当前阶段：向用户提交最终方案并等待批准；用户批准前不修改生产源码、测试、配置、文档或运行 Desktop。
+- 用户报告加载已保存 OpenAI-compatible 配置后全部内容显示为空，计划编写者建立生产页面只读自动检查。
+- 计划编写者对最终确认的生产目录执行页面只读检查：初次加载、切换配置和多次完整重载都能显示持久化值。该检查没有在切换前改写表单，因此没有覆盖用户报告的确切路径。
+- 计划编写者在生产源码之外建立临时 Vitest 回归测试：初始加载完整已保存配置，清空 OpenAI-compatible 表单，切换到 runtime 再切回。测试稳定 RED；页面返回名称、endpoint、模型与默认提示词的空字符串，温度与最大输出 Token 数均为 `0`，而不是 Settings 中的持久化值。
+- 计划编写者定位根因：`ImageReaderSettingsPage` 用同一个 `draft` 对象保存已持久配置和未保存编辑，`selectProfile()` 只修改 `draft.activeProfileId`，没有从 `settings.value.configuration` 重新加载选中配置。
+- 计划编写者已删除临时测试文件与 Vitest 缓存目录，没有向生产目录写入文件。
+- 计划编写者把持久化快照与当前编辑值分离、精确红色回归场景和 API Key write-only 显示合同加入方案、单元测试和真实 Desktop 验收。
+- 独立语义 Reviewer 复核最终确认的生产路径、持久化数据结论、Client 状态根因、快照/编辑值拆分、红色回归场景与 API Key write-only 语义后出具 PASS，没有发现阻塞项。
+- 当前阶段：实施方案已完成，等待用户批准；用户批准前不修改生产源码、测试、配置或文档。
+- 用户调用 `$implement` 后，计划执行者开始在独立 worktree 实施批准方案，没有修改生产 checkout。
+- 用户明确要求项目 Skill 能够得知提示词覆盖合同；计划执行者把受管 CLI `image inspect --stdin` 的可选 `prompt`、`local-image-reader`、`comfyui-image-review` 及其 CLI 参考文档纳入最终授权范围。
+- 计划执行者完成 Tool、Service、Host、Remote、设置页、CLI、两个项目 Skill、系统文档与自动化测试修改；模型字符串继续由 Tool 或 CLI route 包装为四属性 JSON 对象。
+- 独立规格 Reviewer 与独立语义 Reviewer 已对最新候选树出具 PASS。代码标准 Reviewer 确认实现没有阻塞项，并要求修正本规划包旧范围记录与 CLI 错误分类；计划执行者已经完成这两项修正。
+- 计划执行者在隔离开发 Desktop 中使用 `opencode-go/deepseek-v4-flash` Agent 与 `opencode-go/qwen3.7-plus` 图片读取模型完成真实模型验收。`standard` Preset 的三次 Tool 调用确认默认提示词、本次覆盖与后续恢复；`ComfyUI工作台预设` 的 Agent 实际读取 worktree 中的 `local-image-reader` 和 CLI 参考，实际通过 managed CLI 传递 `prompt` 并取得 `observation: OVERRIDE_OK`。完整证据写入 `model-acceptance.md`。
+- 计划执行者运行 `pnpm dev:stop`，随后运行 `pnpm dev:status`；开发 Desktop 最终状态为 `stopped`。
+- 首次完整质量门禁的 821 项 unit/integration 测试全部通过，但函数覆盖率为 99.8%，低于仓库 100% 门槛。计划执行者补充实际点击切换门禁“继续编辑当前配置”与门禁内“保存当前配置”的行为测试；独立规格 Reviewer 与代码标准 Reviewer 确认该测试验证了真实状态转换。
+- 第二次完整 `pnpm quality` 通过：822 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 最终动作：计划执行者在本条记录成为候选树最后一次文件修改后重新执行完整 `pnpm quality` 与 `git diff --check b2b92fe --`；两项成功后候选树保持不变，最终执行结果由任务交付说明报告。
