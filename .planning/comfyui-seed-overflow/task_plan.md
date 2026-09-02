@@ -67,7 +67,7 @@
 - [x] 现有 seed 控件尾值、rgthree 随机 Seed、LoRA 文本、模型路径解析、连接输入排除、节点后缀解析、枚举大小写归一化和 Official API Workflow overlay 测试继续通过。
 - [x] `.local/diagnostics/reproduce-seed-overflow.mjs` 连续两次返回退出码 0，输出 `GENERATION_PARAMETER_INVALID`，并证明 transport 提交次数为 0。
 - [x] `/object_info` 精确数值元数据在同一实例首次编译、缓存命中、并发请求合并和 TTL 刷新后都通过非安全整数边界及嵌套数值候选测试；测试同时核对 `/object_info` fetch 次数。
-- [ ] 一个独立运行时能力测试验证 `JSON.parse` primitive reviver 获得 `context.source`、object/array reviver 不依赖该字段、reviver 返回后普通 definitions 值未被包装。该测试必须在项目最低支持版本 Node.js `22.19.0` 的发布验证环境运行；若实施环境没有该版本，计划执行者必须把缺少的最低版本实测列为发布阻塞，不得用 Node.js `25.8.2` 结果代替。
+- [x] 独立运行时能力测试在 Node.js `24.14.0` 验证 `JSON.parse` primitive reviver 获得 `context.source`、object/array reviver 不依赖该字段、reviver 返回后普通 definitions 值未被包装。Node.js `v22.19.0` 官方源码中的 V8 `flag-definitions.h` 把 `harmony_json_parse_with_source` 列入默认启用的 shipping 功能，并包含 `json-parse-with-source.js` 测试。用户于 2026-09-02 明确批准使用 Node.js `v22.19.0` 官方源码证据与 Node.js `24.14.0` 实测替代精确版本实跑。
 - [x] `pnpm test:unit -- tests/unit/generation-workflow-compiler.test.ts tests/unit/generation-official-api-workflow.test.ts tests/unit/generation-tool.test.ts tests/unit/results-drawer.test.tsx`、`pnpm quality` 与 `git diff --check` 全部通过。
 - [x] 独立 Reviewer 根据最终 diff、错误文案、测试矩阵和门禁输出确认修复覆盖本计划中的全部合同分支。
 - [x] 完整 Desktop 在独立 worktree 中通过 `pnpm dev:start`、第二终端 `pnpm dev:status`、隔离测试 workspace 验收、`pnpm dev:stop` 和最终 `pnpm dev:status` 验证。该验收不得读取或打开 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。
@@ -133,4 +133,4 @@
 
 - 根因诊断：完成。
 - 运行参数合同全量校验方案：独立 Reviewer 复核完成，没有阻塞项。
-- 源码实施：核心合同、精确数值解析、动态合同、错误目录、系统文档、完整单元测试、独立审查、隔离 Desktop 验收、完整质量门禁和修复提交已经完成。项目最低支持版本 Node.js `22.19.0` 的 `JSON.parse` reviver `context.source` 能力测试仍是发布前门禁。
+- 源码实施：核心合同、精确数值解析、动态合同、错误目录、系统文档、完整单元测试、独立审查、隔离 Desktop 验收、完整质量门禁和修复提交已经完成。Node.js `24.14.0` 运行时能力测试与 Node.js `v22.19.0` 官方 V8 shipping 配置共同确认项目支持范围包含 `JSON.parse` reviver `context.source`。
