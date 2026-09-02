@@ -240,7 +240,10 @@ export function registerHarnessComfyuiCliRoute(options: RegisterHarnessComfyuiCl
         return
       }
       const abortController = new AbortController()
-      request.once('aborted', abortController.abort.bind(abortController))
+      const abortRequest = abortController.abort.bind(abortController)
+      const abortClosedResponse = abortIncompleteCliResponse.bind(undefined, response, abortController)
+      request.once('aborted', abortRequest)
+      response.once('close', abortClosedResponse)
       try {
         const capability = bearerCapability(request)
         const identity = options.capabilities.authorize(capability)
@@ -255,13 +258,24 @@ export function registerHarnessComfyuiCliRoute(options: RegisterHarnessComfyuiCl
         const data = await dispatch(options, identity, cliRequest, abortController.signal)
         sendSuccess(response, data)
       } catch (error) {
+        if (response.destroyed || response.writableEnded) return
         if (response.headersSent) {
           response.destroy(error instanceof Error ? error : undefined)
           return
         }
         const report = reportedError(error)
         sendFailure(response, report.status, report.error)
+      } finally {
+        request.removeListener('aborted', abortRequest)
+        response.removeListener('close', abortClosedResponse)
       }
     },
   })
+}
+
+export function abortIncompleteCliResponse(
+  response: Pick<ServerResponse, 'writableEnded'>,
+  abortController: AbortController,
+): void {
+  if (!response.writableEnded) abortController.abort()
 }

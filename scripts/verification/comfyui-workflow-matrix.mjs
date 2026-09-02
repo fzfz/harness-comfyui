@@ -360,6 +360,7 @@ export async function runMatrix(options) {
   const frontend = new ChromeComfyFrontend({
     browserExecutablePath: context.runtime.comfyui.frontendCompiler.browserExecutablePath,
     timeoutMs: context.runtime.comfyui.frontendCompiler.timeoutMs,
+    preReadiness: context.runtime.comfyui.frontendCompiler.preReadiness,
   })
   const results = []
   try {

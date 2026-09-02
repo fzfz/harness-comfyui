@@ -1,4 +1,8 @@
 {
+  "frontendCompilerWorker": {
+    "sourceEntryRelativePath": "src/host/generation/comfy-frontend-worker.ts",
+    "outputEntryRelativePath": ".local/source-host/comfy-frontend-worker.js"
+  },
   "managedCli": {
     "sourceEntryRelativePath": "scripts/cli/harness-comfyui.mjs",
     "outputEntryRelativePath": ".local/source-cli/harness-comfyui.mjs"

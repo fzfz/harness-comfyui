@@ -55,7 +55,7 @@ pnpm web:start|restart
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request 和历史 Run 输入查询合同 |
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.86.1 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
-| `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、官方前端 API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
+| `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、标准 Node.js 官方前端编译 Worker、API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/image-reader/` | 图片读取设置迁移、单份配置保存与删除、运行时视觉模型目录、系统 Provider/OpenAI 兼容适配和单图视觉模型调用 Tool |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
@@ -118,11 +118,16 @@ Generation 编译链路分为参数语义和最终导出两个阶段：
   → ComfyWorkflowCompiler 读取或复用 10 分钟进程内 /object_info 缓存
   → 修改 Actual Workflow，并生成运行时 API Workflow 投影
   → OfficialApiWorkflowCompiler 查找本地缓存
-      → cache miss：ChromeComfyFrontend 调用目标实例官方 loadGraphData() 与 graphToPrompt()
+      → cache miss：NodeWorkerComfyFrontend 启动标准 Node.js Worker
+          → ChromeComfyFrontend 调用目标实例官方 loadGraphData() 与 graphToPrompt()
       → cache hit：直接读取 Official Base API Workflow
   → Runtime Input Overlay 把非连接请求值写入官方基础对象的深拷贝
   → Comfy transport 把最终 API Workflow 提交给 /prompt
 ```
+
+Desktop Host 运行在 Electron Helper 的 Node.js 兼容运行时中。该运行时执行完整 `ChromeComfyFrontend` 时，目标实例 2 的 `Page.navigate` 可以保持 pending；相同编译器在标准 Node.js 子进程中可以完成导航和官方 Workflow 导出。因此 cache miss 通过 `NodeWorkerComfyFrontend` 启动 `.local/source-host/comfy-frontend-worker.js`，由标准 Node.js Worker 承担浏览器启动、CDP session、前端 readiness、`loadGraphData()` 和 `graphToPrompt()`。Electron Helper 通过版本化 stdin/stdout JSON 协议发送一份编译请求并接收结构化诊断和结果；实例 authorization 不进入进程命令行。
+
+Worker 直接执行配置中的 Chrome 或 Chromium 可执行文件，不通过 macOS LaunchServices。每次浏览器会话使用独立临时 profile，并传入 `--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider`，防止 macOS 钥匙串与网络权限对话阻塞 headless 编译。Host 把每个 Worker 启动为独立进程组；调用者取消时，Host 先向该进程组发送 `SIGTERM`，Worker 协作清理自己的 Chrome 子进程和临时 profile。宽限期内没有退出时，Host 只对该 Worker 进程组发送 `SIGKILL`，不向用户的其他 Chrome 进程发送信号。
 
 Source v0.86.1 TemplateBundle 只提供模板 ID、模板标题和 UI Workflow。`ComfyWorkflowCompiler` 不读取 Source 模板参数定义、参数绑定或输出节点过滤器。Generation Tool 把用户显式提供的运行参数键和值交给 compiler；compiler 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名、节点标题、活动状态和上下游连线定位可写 widget。参数键中的节点 ID 后缀可以选择同类控件；两个参数用不同值占用同一 widget 时终止编译。
 

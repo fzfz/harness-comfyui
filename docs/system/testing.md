@@ -51,6 +51,8 @@ Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQ
 
 2026-09-02 的真实模型验收使用隔离开发 Desktop、`opencode-go/deepseek-v4-flash` Agent 模型和 `opencode-go/qwen3.7-plus` 图片读取模型。`standard` Preset 对同一图片依次省略 `prompt`、提供返回 `OVERRIDE_OK` 的 `prompt`、再次省略 `prompt`，确认本次覆盖不写入设置。`ComfyUI工作台预设` 的 Agent 实际读取 worktree 中的 `local-image-reader/SKILL.md` 与 `references/image-inspection-cli.md`，并通过前台 shell Tool Call 向 `image inspect --stdin` 传递可选 `prompt`；CLI 退出码为 0、stderr 为空、四属性 JSON stdout 的 `observation` 为 `OVERRIDE_OK`。完整请求、实际读取路径、CLI stdin 和 stdout 记录在 [`.planning/image-reader-prompt-string/model-acceptance.md`](../../.planning/image-reader-prompt-string/model-acceptance.md)。
 
+v0.38.7 发布前完整 `pnpm quality` 结果为 857 项 unit/integration、33 项 contract/security、134 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.37%、functions 100%、lines 95.98%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。测试覆盖标准 Node.js Worker 前端编译、CDP 阶段错误、Worker 进程组取消、stdin 异步失败、Host bundle 并行输出隔离以及 linked worktree 运行端口与 Desktop 输出隔离。
+
 v0.38.6 发布前完整 `pnpm quality` 结果为 822 项 unit/integration、33 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。新增合同测试验证 Krea2 Anime Prompt Builder 的 canonical 目录、frontmatter、UI 元数据、Skill 内参考路径、CLI 参考章节、v2 生成器删除和 v1 资产边界。
 
 v0.38.5 发布前完整 `pnpm quality` 结果为 822 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。图片读取测试覆盖本次提示词覆盖、默认提示词恢复、普通模型字符串包装、当前配置独立保存、配置切换与持久化回显、凭据动作和具体字段错误。
@@ -61,7 +63,7 @@ Workflow compiler 的回归用例覆盖正负 Prompt 极性、连接上游控件
 
 Official API Workflow Cache 与 Runtime Input Overlay 测试覆盖 cache miss、同一 `OfficialApiWorkflowCompiler` 对象内的 cache hit、重建该对象后对同一目标 ComfyUI 实例的持久 cache hit、不同目标实例 identity 隔离、并发 miss 合并、失败不写入、损坏缓存拒绝、identity 变化、基础对象不可变、官方连接保留、`__value__` 覆盖、`__value__` 包装优先于连接形状判断、字面量载体保留值、非零载体输出拒绝、未引用同形对象拒绝，以及 cache hit 与新鲜官方导出在 Prompt、seed、尺寸、BOOLEAN、enum、模型、标准 LoRA、Power LoRA、LoRA Text Loader 和模板 39 LoraManager 路线中的等价性。
 
-ChromeComfyFrontend 测试使用注入的子进程、文件系统、HTTP 和 CDP seam 验证认证 header 只注入同 origin 请求、跨 origin 请求删除认证 header、前端 readiness、`loadGraphData()`/`graphToPrompt()` 导出、浏览器在 readiness 或导出阶段提前退出、调用者取消、统一超时、CDP 错误、SIGTERM、精确 SIGKILL 和自有临时目录清理。生产实现使用 Node 22 原生 WebSocket，不要求测试启动真实浏览器。
+ChromeComfyFrontend 测试使用注入的子进程、文件系统、HTTP 和 CDP seam 验证认证 header 只注入同 origin 请求、跨 origin 请求删除认证 header、未认证实例不启用请求拦截、macOS mock keychain 启动参数、WebSocket close/error 后的 pending command 结算、target crash、分阶段 deadline、一次 pre-readiness 重试、前端 readiness、`loadGraphData()`/`graphToPrompt()` 导出、浏览器在 readiness 或导出阶段提前退出、调用者取消、CDP 错误、有界脱敏 stderr、SIGTERM、精确 SIGKILL 和自有临时目录清理。NodeWorkerComfyFrontend 测试验证版本化 stdin/stdout 协议、诊断消息、结构化错误保留、有界 Worker stderr、启动失败、协议失败、stdin 异步写入失败、调用者取消、启动期间取消竞争和无响应 Worker 进程组强制回收；Worker entry 测试验证严格请求结构、成功导出和失败结果。进程组测试使用本地假 Worker 和假 Chrome，不启动真实浏览器。
 
 2026-08-27 的 122 实例验收使用 ComfyUI `0.33.3`、Frontend `1.49.6` 和模板 39。第一次请求完成官方前端 cache miss，第二个不同 LoRA 权重请求从本地 cache hit 且没有再次启动浏览器。最终 transport 提交请求 `29f91894-e160-4b3f-abb6-565f8f7e9617`；服务器 history 返回 `success` 和 `completed=true`，节点 5 的 `inputs.loras.__value__` 包含请求的 LoRA 名称、`strength=3`、`clipStrength=3` 与 `active=true`，节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，请求结束后队列为 running 0、pending 0。
 
@@ -118,6 +120,8 @@ v0.38.2 发布前完整 `pnpm quality` 结果为 544 项 unit/integration、27 �
 v0.38.3 发布前完整 `pnpm quality` 结果为 626 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.32%、branches 86.63%、functions 100%、lines 95.91%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。新增的 82 项单元测试覆盖 ANIMA 前十一个 tag 槽位与 WAI 前十四个 tag 位置的三种权重形式、ASCII 十进制文法、转义、画师、默认质量、组合顺序、CLI 退出码和错误合同。`ComfyUI工作台预设` 使用 `opencode-go/deepseek-v4-flash` 与 `Default` 推理等级完成六个真实 Prompt Builder 权重用例；完整证据记录在 [`.planning/prompt-builder-weighting/model-acceptance.md`](../../.planning/prompt-builder-weighting/model-acceptance.md)。
 
 v0.38.4 发布前完整 `pnpm quality` 结果为 742 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.39%、branches 87.2%、functions 100%、lines 95.9%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。运行参数合同测试覆盖严格 JSON 标量类型、精确整数与浮点范围、旧式候选、`COMBO.options`、仅由 `COMBO.multiselect: true` 启用的多选、动态分支子输入、未知自定义 widget 拒绝和 Actual Workflow 原子写入。
+
+Host bundle 测试必须通过 `materializeSourceHostModule(repositoryRoot, { outputRoot })` 为每个并行测试创建独立输出根目录。生产构建不传入 `outputRoot`，并继续发布到仓库 `.local/source-host`。
 
 ## 本地发布门禁
 

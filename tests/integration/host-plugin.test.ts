@@ -11,7 +11,10 @@ import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 import * as harnessComfyui from '../../src/index.ts'
-import { reportGenerationRunInputLookupError } from '../../src/host/plugin.ts'
+import {
+  reportFrontendAttemptDiagnostic,
+  reportGenerationRunInputLookupError,
+} from '../../src/host/plugin.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -35,6 +38,12 @@ function stubTestProfileEnvironment(): void {
     HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
   }
   for (const [key, value] of Object.entries(values)) vi.stubEnv(key, value)
+}
+
+async function materializeTestHostModule(): Promise<string> {
+  const outputRoot = mkdtempSync(join(process.cwd(), '.host-module-test-'))
+  temporaryDirectories.push(outputRoot)
+  return materializeSourceHostModule(process.cwd(), { outputRoot })
 }
 
 function provideHostServices(ctx: Context) {
@@ -97,6 +106,32 @@ function provideHostServices(ctx: Context) {
 }
 
 describe('Harness ComfyUI Host plugin', () => {
+  it('writes failed and successful frontend attempt diagnostics to the matching Host log levels', () => {
+    const logger = { error: vi.fn(), info: vi.fn() }
+
+    reportFrontendAttemptDiagnostic(logger, {
+      attempt: 1,
+      status: 'failed',
+      stage: 'navigation',
+      code: 'COMFYUI_FRONTEND_NAVIGATION_FAILED',
+    })
+    reportFrontendAttemptDiagnostic(logger, { attempt: 2, status: 'succeeded' })
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'Official ComfyUI frontend browser attempt diagnostic: %s',
+      JSON.stringify({
+        attempt: 1,
+        status: 'failed',
+        stage: 'navigation',
+        code: 'COMFYUI_FRONTEND_NAVIGATION_FAILED',
+      }),
+    )
+    expect(logger.info).toHaveBeenCalledWith(
+      'Official ComfyUI frontend browser attempt diagnostic: %s',
+      JSON.stringify({ attempt: 2, status: 'succeeded' }),
+    )
+  })
+
   it('writes historical Run lookup context and the original error to the Host logger', () => {
     const logger = { error: vi.fn() }
     const error = new Error('private failure')
@@ -190,7 +225,7 @@ describe('Harness ComfyUI Host plugin', () => {
 
   it('loads the packaged Host with Remote markers visible to the Desktop Harness protocol', async () => {
     stubTestProfileEnvironment()
-    const output = await materializeSourceHostModule(process.cwd())
+    const output = await materializeTestHostModule()
     const packaged = await import(`${pathToFileURL(output).href}?test=${crypto.randomUUID()}`) as typeof harnessComfyui
     const ctx = new Context()
     provideHostServices(ctx)
@@ -209,7 +244,7 @@ describe('Harness ComfyUI Host plugin', () => {
 
   it('passes a JSON-representable invalid value through the strict Remote wire codec to the mounted Host', async () => {
     stubTestProfileEnvironment()
-    const output = await materializeSourceHostModule(process.cwd())
+    const output = await materializeTestHostModule()
     const packaged = await import(`${pathToFileURL(output).href}?test=${crypto.randomUUID()}`) as typeof harnessComfyui
     const ctx = new Context()
     provideHostServices(ctx)

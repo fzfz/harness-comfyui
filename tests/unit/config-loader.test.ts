@@ -21,6 +21,12 @@ const productionEnvironment = {
   HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH: '1',
   HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS: '120000',
+  HARNESS_COMFYUI_FRONTEND_DEVTOOLS_PORT_TIMEOUT_MS: '10000',
+  HARNESS_COMFYUI_FRONTEND_TARGET_CREATE_TIMEOUT_MS: '10000',
+  HARNESS_COMFYUI_FRONTEND_WEBSOCKET_CONNECT_TIMEOUT_MS: '10000',
+  HARNESS_COMFYUI_FRONTEND_DOMAIN_ENABLE_TIMEOUT_MS: '10000',
+  HARNESS_COMFYUI_FRONTEND_NAVIGATION_TIMEOUT_MS: '10000',
+  HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS: '2',
   HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
   HARNESS_COMFYUI_CATALOG_PORT: '18093',
   HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
@@ -56,7 +62,26 @@ describe('production Configuration Profile loader', () => {
       browserExecutablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
       instanceCacheEpoch: '1',
       timeoutMs: 120000,
+      preReadiness: {
+        devToolsPortMs: 10000,
+        targetCreateMs: 10000,
+        webSocketConnectMs: 10000,
+        domainEnableMs: 10000,
+        navigationMs: 10000,
+        infrastructureAttempts: 2,
+      },
     })
+  })
+
+  it.each([
+    ['HARNESS_COMFYUI_FRONTEND_DEVTOOLS_PORT_TIMEOUT_MS', '0', 'comfyui.frontendCompiler.preReadiness.devToolsPortMs'],
+    ['HARNESS_COMFYUI_FRONTEND_TARGET_CREATE_TIMEOUT_MS', '1.5', 'comfyui.frontendCompiler.preReadiness.targetCreateMs'],
+    ['HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS', '3', 'comfyui.frontendCompiler.preReadiness.infrastructureAttempts'],
+  ])('rejects invalid pre-readiness override %s=%s', (key, value, property) => {
+    expect(() => loadProfile('production', {
+      configRoot: 'config',
+      environment: { ...productionEnvironment, [key]: value },
+    })).toThrowError(expect.objectContaining({ property }))
   })
 
   it('rejects a Configuration Profile pinned to a different Source release', () => {
@@ -335,6 +360,15 @@ describe('production Configuration Profile loader', () => {
       'browserExecutablePath',
       'instanceCacheEpoch',
       'timeoutMs',
+      'preReadiness',
+    ])
+    expect(Object.keys(schemaDict.comfyui.dict!.frontendCompiler!.dict!.preReadiness!.dict!)).toEqual([
+      'devToolsPortMs',
+      'targetCreateMs',
+      'webSocketConnectMs',
+      'domainEnableMs',
+      'navigationMs',
+      'infrastructureAttempts',
     ])
     expect(Object.keys(schemaDict.source.dict!)).toEqual([
       'catalogPort',

@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer, request as createHttpRequest, type IncomingMessage, type ServerResponse } from 'node:http'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -8,7 +8,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLI_ROUTE_PATH } from '../../src/cli/contract.ts'
 import { CatalogCliError } from '../../src/host/catalog/catalog-cli.ts'
-import { registerHarnessComfyuiCliRoute } from '../../src/host/cli/route.ts'
+import {
+  abortIncompleteCliResponse,
+  registerHarnessComfyuiCliRoute,
+} from '../../src/host/cli/route.ts'
 import {
   GenerationRuntime,
   GenerationRuntimeError,
@@ -72,11 +75,123 @@ function post(origin: string, capability: string, body: unknown): Promise<Respon
   })
 }
 
+async function postThenDisconnect(origin: string, capability: string, body: unknown): Promise<void> {
+  const payload = JSON.stringify(body)
+  const url = new URL(CLI_ROUTE_PATH, origin)
+  await new Promise<void>((resolve, reject) => {
+    const request = createHttpRequest({
+      hostname: url.hostname,
+      port: url.port,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${capability}`,
+        'content-type': 'application/json',
+        'content-length': String(Buffer.byteLength(payload)),
+      },
+    })
+    request.once('error', error => {
+      if ((error as NodeJS.ErrnoException).code === 'ECONNRESET') resolve()
+      else reject(error)
+    })
+    request.once('finish', () => {
+      request.destroy()
+      resolve()
+    })
+    request.end(payload)
+  })
+}
+
 function unusedImageReader() {
   return { inspect: vi.fn() }
 }
 
 describe('Harness ComfyUI managed CLI route', () => {
+  it('aborts only a CLI response that closes before it is fully written', () => {
+    const incomplete = new AbortController()
+    abortIncompleteCliResponse({ writableEnded: false }, incomplete)
+    expect(incomplete.signal.aborted).toBe(true)
+
+    const complete = new AbortController()
+    abortIncompleteCliResponse({ writableEnded: true }, complete)
+    expect(complete.signal.aborted).toBe(false)
+  })
+
+  it('aborts generation preparation when the CLI client disconnects after sending the complete body', async () => {
+    let resolveAbort!: () => void
+    const aborted = new Promise<void>(resolve => { resolveAbort = resolve })
+    const acceptGeneration = vi.fn(async (_owner, _request, signal: AbortSignal) => {
+      await new Promise<never>((_resolve, reject) => {
+        signal.addEventListener('abort', () => {
+          resolveAbort()
+          reject(new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'Generation preparation was canceled.'))
+        }, { once: true })
+      })
+    })
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: { acceptGeneration, readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() } as never,
+      imageReader: unusedImageReader(),
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+      },
+    }))
+
+    await postThenDisconnect(server.origin, 'trusted', {
+      command: 'generation.submit',
+      request: {
+        title: 'Disconnected generation', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [],
+      },
+    })
+    await expect(aborted).resolves.toBeUndefined()
+    expect(acceptGeneration).toHaveBeenCalledOnce()
+    await server.close()
+  })
+
+  it('does not abort the route signal after a normal generation response completes', async () => {
+    let routeSignal: AbortSignal | undefined
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: {
+        acceptGeneration: vi.fn(async (_owner, _request, signal: AbortSignal) => {
+          routeSignal = signal
+          return { runId: 'run_normal' }
+        }),
+        readGenerationRunInputs: vi.fn(),
+        readGenerationRunMedia: vi.fn(),
+      } as never,
+      imageReader: unusedImageReader(),
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+      },
+    }))
+
+    const response = await post(server.origin, 'trusted', {
+      command: 'generation.submit',
+      request: {
+        title: 'Normal generation', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [],
+      },
+    })
+    expect(await response.json()).toEqual({ ok: true, data: { run_id: 'run_normal' } })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(routeSignal?.aborted).toBe(false)
+    await server.close()
+  })
+
   it('derives all durable Run ownership columns from the shell capability', async () => {
     const runtime = createRuntime({
       async prepare(request) {
