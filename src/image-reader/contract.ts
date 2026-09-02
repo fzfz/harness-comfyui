@@ -1,6 +1,5 @@
 import {
   decodeImageReaderConfiguration,
-  validateImageReaderConfiguration,
   type ImageReaderConfiguration,
 } from './settings.ts'
 
@@ -29,17 +28,46 @@ export interface ImageReaderModelCatalog {
   readonly failures: readonly ImageReaderModelCatalogFailure[]
 }
 
-export interface ImageReaderCredentialUpdate {
-  readonly profileId: string
-  readonly apiKey: string | null
+export type ImageReaderCredentialAction =
+  | { readonly action: 'keep' }
+  | { readonly action: 'replace'; readonly apiKey: string }
+  | { readonly action: 'clear' }
+
+export interface EditableImageReaderProfileBase {
+  readonly id: string
+  readonly name: string
+  readonly model: string
+  readonly defaultPrompt: string
+  readonly temperature: number
+  readonly maxTokens: number
 }
 
-export interface SaveImageReaderSettingsRequest {
+export type EditableImageReaderProfile =
+  | EditableImageReaderProfileBase & {
+      readonly connectionType: 'runtime'
+      readonly provider: string
+    }
+  | EditableImageReaderProfileBase & {
+      readonly connectionType: 'openai-compatible'
+      readonly endpoint: string
+    }
+
+export type SaveImageReaderProfileRequest =
+  | { readonly profile: Extract<EditableImageReaderProfile, { readonly connectionType: 'runtime' }> }
+  | {
+      readonly profile: Extract<EditableImageReaderProfile, { readonly connectionType: 'openai-compatible' }>
+      readonly credential: ImageReaderCredentialAction
+    }
+
+export interface SaveImageReaderProfileResult {
   readonly configuration: ImageReaderConfiguration
-  readonly credentialUpdates: readonly ImageReaderCredentialUpdate[]
 }
 
-export interface SaveImageReaderSettingsResult {
+export interface DeleteImageReaderProfileRequest {
+  readonly profileId: string
+}
+
+export interface DeleteImageReaderProfileResult {
   readonly configuration: ImageReaderConfiguration
 }
 
@@ -102,35 +130,89 @@ export function parseImageReaderModelCatalog(value: unknown): ImageReaderModelCa
   })
 }
 
-function credentialUpdate(value: unknown): ImageReaderCredentialUpdate {
-  const source = record(value, 'Image reader credential update')
-  exactKeys(source, ['profileId', 'apiKey'], 'Image reader credential update')
-  const profileId = text(source.profileId, 'Image reader credential profile id')!
-  if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(profileId)) throw new TypeError('Image reader credential profile id is invalid')
-  if (source.apiKey !== null && (typeof source.apiKey !== 'string' || source.apiKey.length < 1 || source.apiKey.length > 8192)) {
-    throw new TypeError('Image reader credential API key is invalid')
-  }
-  return Object.freeze({ profileId, apiKey: source.apiKey })
+function primitiveString(value: unknown, label: string): string {
+  if (typeof value !== 'string') throw new TypeError(`${label} must be a string`)
+  return value
 }
 
-export function parseSaveImageReaderSettingsRequest(value: unknown): SaveImageReaderSettingsRequest {
-  const source = record(value, 'Image reader settings request')
-  exactKeys(source, ['configuration', 'credentialUpdates'], 'Image reader settings request')
-  const configuration = decodeImageReaderConfiguration(source.configuration)
-  if (configuration === undefined) throw new TypeError('Image reader configuration is invalid')
-  validateImageReaderConfiguration(configuration)
-  if (!Array.isArray(source.credentialUpdates)) throw new TypeError('Image reader credential updates are invalid')
-  const credentialUpdates = source.credentialUpdates.map(credentialUpdate)
-  if (new Set(credentialUpdates.map(update => update.profileId)).size !== credentialUpdates.length) {
-    throw new TypeError('Image reader credential updates contain duplicate profile ids')
-  }
-  return Object.freeze({ configuration, credentialUpdates: Object.freeze(credentialUpdates) })
+function primitiveNumber(value: unknown, label: string): number {
+  if (typeof value !== 'number') throw new TypeError(`${label} must be a number`)
+  return value
 }
 
-export function parseSaveImageReaderSettingsResult(value: unknown): SaveImageReaderSettingsResult {
-  const source = record(value, 'Image reader settings result')
-  exactKeys(source, ['configuration'], 'Image reader settings result')
+function editableProfile(value: unknown): EditableImageReaderProfile {
+  const source = record(value, 'Editable image reader profile')
+  const connection = primitiveString(source.connectionType, 'Image reader connection type')
+  const common = {
+    id: primitiveString(source.id, 'Image reader profile id'),
+    name: primitiveString(source.name, 'Image reader profile name'),
+    model: primitiveString(source.model, 'Image reader model'),
+    defaultPrompt: primitiveString(source.defaultPrompt, 'Image reader default prompt'),
+    temperature: primitiveNumber(source.temperature, 'Image reader temperature'),
+    maxTokens: primitiveNumber(source.maxTokens, 'Image reader maximum output tokens'),
+  }
+  if (connection === 'runtime') {
+    exactKeys(source, ['id', 'name', 'connectionType', 'provider', 'model', 'defaultPrompt', 'temperature', 'maxTokens'], 'Runtime image reader profile')
+    return Object.freeze({
+      ...common,
+      connectionType: 'runtime',
+      provider: primitiveString(source.provider, 'Image reader runtime provider'),
+    })
+  }
+  if (connection === 'openai-compatible') {
+    exactKeys(source, ['id', 'name', 'connectionType', 'endpoint', 'model', 'defaultPrompt', 'temperature', 'maxTokens'], 'OpenAI-compatible image reader profile')
+    return Object.freeze({
+      ...common,
+      connectionType: 'openai-compatible',
+      endpoint: primitiveString(source.endpoint, 'Image reader endpoint'),
+    })
+  }
+  throw new TypeError('Image reader connection type is invalid')
+}
+
+function credentialAction(value: unknown): ImageReaderCredentialAction {
+  const source = record(value, 'Image reader credential action')
+  const action = primitiveString(source.action, 'Image reader credential action')
+  if (action === 'keep' || action === 'clear') {
+    exactKeys(source, ['action'], 'Image reader credential action')
+    return Object.freeze({ action })
+  }
+  if (action === 'replace') {
+    exactKeys(source, ['action', 'apiKey'], 'Image reader credential action')
+    return Object.freeze({ action, apiKey: primitiveString(source.apiKey, 'Image reader API key') })
+  }
+  throw new TypeError('Image reader credential action is invalid')
+}
+
+export function parseSaveImageReaderProfileRequest(value: unknown): SaveImageReaderProfileRequest {
+  const source = record(value, 'Image reader profile save request')
+  const profile = editableProfile(source.profile)
+  if (profile.connectionType === 'runtime') {
+    exactKeys(source, ['profile'], 'Runtime image reader profile save request')
+    return Object.freeze({ profile })
+  }
+  exactKeys(source, ['profile', 'credential'], 'OpenAI-compatible image reader profile save request')
+  return Object.freeze({ profile, credential: credentialAction(source.credential) })
+}
+
+function parseConfigurationResult(value: unknown, label: string): ImageReaderConfiguration {
+  const source = record(value, label)
+  exactKeys(source, ['configuration'], label)
   const configuration = decodeImageReaderConfiguration(source.configuration)
   if (configuration === undefined) throw new TypeError('Image reader saved configuration is invalid')
-  return Object.freeze({ configuration })
+  return configuration
+}
+
+export function parseSaveImageReaderProfileResult(value: unknown): SaveImageReaderProfileResult {
+  return Object.freeze({ configuration: parseConfigurationResult(value, 'Image reader profile save result') })
+}
+
+export function parseDeleteImageReaderProfileRequest(value: unknown): DeleteImageReaderProfileRequest {
+  const source = record(value, 'Image reader profile delete request')
+  exactKeys(source, ['profileId'], 'Image reader profile delete request')
+  return Object.freeze({ profileId: primitiveString(source.profileId, 'Image reader profile id') })
+}
+
+export function parseDeleteImageReaderProfileResult(value: unknown): DeleteImageReaderProfileResult {
+  return Object.freeze({ configuration: parseConfigurationResult(value, 'Image reader profile delete result') })
 }

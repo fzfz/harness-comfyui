@@ -15,7 +15,7 @@ Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管�
 
 Skill 执行者必须从当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。Host 使用该工作目录解析当前 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得向命令提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。
 
-Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图 Prompt、`temperature`、最大输出 Token 和调用该模型所需的连接信息。Skill 执行者始终按本文件的固定合同调用 CLI；CLI 自行处理当前命名配置的连接方式。本文件包含全部调用合同，无需系统注入的 Tool schema。
+Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图 Prompt、`temperature`、最大输出 Token 和调用该模型所需的连接信息。Skill 执行者可以提供只覆盖本次视觉模型调用的 `prompt`；CLI 自行处理当前命名配置的连接方式。本文件包含全部调用合同，无需系统注入的 Tool schema。
 
 ## 命令与调用时机
 
@@ -58,7 +58,7 @@ Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象�
 node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 ```
 
-Skill 执行者必须向 stdin 写入一个只包含 `file_path` 的 JSON 对象：
+Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 
 ```json
 {
@@ -66,9 +66,20 @@ Skill 执行者必须向 stdin 写入一个只包含 `file_path` 的 JSON 对象
 }
 ```
 
-`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 不得包含 U+0000–U+001F 或 U+007F–U+009F 控制字符，因此换行符和制表符也不合法。Host 只接受 PNG、JPEG、WebP 或 GIF 图片的本地绝对路径，并且 Host 必须能够读取该文件。
+用户为本次图片观察指定关注点、返回格式或读图提示词时，Skill 执行者必须增加可选的 `prompt`：
 
-Host 使用“图片读取”设置中当前命名配置保存的读图 Prompt。CLI 不接受调用时 Prompt。缺失 `file_path`、属性类型错误或输入 JSON 包含 `prompt` 等额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。
+```json
+{
+  "file_path": "/absolute/local/path/result.png",
+  "prompt": "逐项观察双手的手指数、遮挡关系和明显形变；只报告图片中可见的内容。"
+}
+```
+
+`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 不得包含 U+0000–U+001F 或 U+007F–U+009F 控制字符，因此换行符和制表符也不合法。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小不得超过 Host 当前图片输入上限。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。
+
+`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图 Prompt；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图 Prompt，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串，可以包含 JSON 转义后的换行符。
+
+缺失 `file_path`、`file_path` 或 `prompt` 的类型错误、路径违反字符限制或输入 JSON 包含其他属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。
 
 ## ID 与运行值的来源
 
@@ -78,7 +89,7 @@ Host 使用 managed environment 中的当前 Session 工作目录解析 Workspac
 
 Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image inspect --stdin` 的 `file_path`。Skill 执行者不得从 `filename`、`media_id` 或 `run_id` 拼接本地路径。
 
-`image inspect --stdin` 使用 Harness“图片读取”设置中的当前命名配置。Skill 执行者只向命令提供 `file_path`，不提供读图 Prompt、连接信息、模型、凭据、`temperature` 或最大输出 Token。
+`image inspect --stdin` 使用 Harness“图片读取”设置中的当前命名配置。Skill 执行者必须提供 `file_path`；用户明确指定本次图片观察要求时，Skill 执行者同时提供完整的 `prompt`。Skill 执行者不提供连接信息、模型、凭据、`temperature` 或最大输出 Token。
 
 ## 输出与完成语义
 
@@ -176,12 +187,14 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | 错误码 | 修正与重试 |
 | --- | --- |
 | `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |
-| `IMAGE_READER_FILE_INVALID` | Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的有效 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
+| `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图 Prompt。 |
+| `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |
+| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，或目标不是 Host 可读取的非空普通文件，或文件超过 Host 当前图片输入上限，或文件读取失败，或图片内容签名不是 PNG、JPEG、WebP 或 GIF。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的、满足这些输入条件的 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
 | `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。Host 图片读取服务恢复后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本，并继续处理其他图片。当前命名配置对应的模型服务恢复后，Skill 执行者可以重试当前图片。 |
-| `IMAGE_READER_EMPTY_RESPONSE` | Skill 执行者必须报告当前 `file_path` 没有观察文本，并继续处理其他图片。Skill 执行者只有在修改图片读取设置后才可以重试当前图片。 |
+| `IMAGE_READER_EMPTY_RESPONSE` | Skill 执行者必须报告当前 `file_path` 没有观察文本，并继续处理其他图片。本次调用包含 `prompt` 时，Skill 执行者检查该 `prompt` 后可以重试；省略 `prompt` 时，用户检查当前配置的默认读图 Prompt 后可以重试。 |
 
 用户或宿主取消当前命令时，Skill 执行者必须立即结束本次 Skill 执行。调用取消不属于 `IMAGE_READER_PROVIDER_FAILED`，Skill 执行者不得继续调用后续图片。
 
@@ -206,5 +219,13 @@ JSON
 ```sh
 node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png"}
+JSON
+```
+
+用户要求本次检查双手细节时，Skill 执行者调用：
+
+```sh
+node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+{"file_path":"/absolute/local/path/result.png","prompt":"逐项观察双手的手指数、遮挡关系和明显形变；只报告图片中可见的内容。"}
 JSON
 ```

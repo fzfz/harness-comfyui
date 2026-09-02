@@ -14,39 +14,62 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',
-      'harness-comfyui#harnessComfyuiImageReader/saveSettings',
+      'harness-comfyui#harnessComfyuiImageReader/saveProfile',
+      'harness-comfyui#harnessComfyuiImageReader/deleteProfile',
     ])
   })
 
-  it('mounts a strict cancellable image-reader settings write method', () => {
+  it('mounts strict cancellable current-profile save and delete methods', () => {
     const descriptor = IMAGE_READER_REMOTE.descriptors[1]!
     expect(descriptor).toMatchObject({
       service: 'harnessComfyuiImageReader',
       namespace: 'harnessComfyuiImageReader',
-      method: 'saveSettings',
+      method: 'saveProfile',
       cancellation: { parameter: 'signal' },
       result: { mode: 'strict' },
     })
     const request = descriptor.parameters[0]!.codec
     if (request.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('strict codecs required')
-    const configuration = {
+    const savedConfiguration = {
       activeProfileId: 'runtime',
       profiles: [{
         id: 'runtime', name: '系统视觉', connectionType: 'runtime', provider: 'provider-a', endpoint: '',
         model: 'vision-a', hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
       }],
     }
-    const credentialUpdates = [
-      { profileId: 'runtime', apiKey: 'replacement' },
-      { profileId: 'custom', apiKey: null },
-    ]
-    expect(request.schema.parse({ configuration, credentialUpdates })).toEqual({ configuration, credentialUpdates })
-    expect(descriptor.result.schema.parse({ configuration })).toEqual({ configuration })
-    expect(() => request.schema.parse({ configuration, credentialUpdates: [], apiKey: 'leak' })).toThrow('properties')
-    expect(() => request.schema.parse({
-      configuration,
-      credentialUpdates: [{ profileId: 'runtime', apiKey: 'first' }, { profileId: 'runtime', apiKey: 'second' }],
-    })).toThrow('duplicate profile ids')
+    const runtime = {
+      profile: {
+        id: 'runtime', name: '', connectionType: 'runtime', provider: '', model: '',
+        defaultPrompt: '', temperature: Number.NaN, maxTokens: 0,
+      },
+    }
+    const custom = {
+      profile: {
+        id: 'custom', name: '本地视觉', connectionType: 'openai-compatible', endpoint: 'not-a-url', model: 'qwen-vl',
+        defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+      },
+      credential: { action: 'replace', apiKey: '' },
+    }
+    expect(request.schema.parse(runtime)).toEqual(runtime)
+    expect(request.schema.parse(custom)).toEqual(custom)
+    expect(descriptor.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
+    expect(() => request.schema.parse({ ...runtime, credential: { action: 'keep' } })).toThrow('properties')
+    expect(() => request.schema.parse({ profile: { ...runtime.profile, endpoint: '' } })).toThrow('properties')
+    expect(() => request.schema.parse({ profile: { ...custom.profile, provider: '' }, credential: { action: 'keep' } })).toThrow('properties')
+
+    const deletion = IMAGE_READER_REMOTE.descriptors[2]!
+    expect(deletion).toMatchObject({
+      service: 'harnessComfyuiImageReader',
+      namespace: 'harnessComfyuiImageReader',
+      method: 'deleteProfile',
+      cancellation: { parameter: 'signal' },
+      result: { mode: 'strict' },
+    })
+    const deleteRequest = deletion.parameters[0]!.codec
+    if (deleteRequest.mode !== 'strict' || deletion.result.mode !== 'strict') throw new Error('strict codecs required')
+    expect(deleteRequest.schema.parse({ profileId: '' })).toEqual({ profileId: '' })
+    expect(deletion.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
+    expect(() => deleteRequest.schema.parse({ profileId: 'runtime', force: true })).toThrow('properties')
   })
 
   it('mounts the strict cancellable runtime visual-model catalog', () => {

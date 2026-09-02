@@ -8,6 +8,7 @@ import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 
 import {
   activeImageReaderProfile,
+  IMAGE_READER_PROMPT_MAX_LENGTH,
   type ImageReaderProfile,
   type ImageReaderSettingsSection,
 } from '../../image-reader/settings.ts'
@@ -20,6 +21,11 @@ export interface ImageInspection {
   readonly model: string
   readonly filePath: string
   readonly observation: string
+}
+
+export interface ImageInspectionOptions {
+  readonly prompt?: string
+  readonly signal?: AbortSignal
 }
 
 export interface ImageReaderServiceOptions {
@@ -205,7 +211,8 @@ export class ImageReaderService {
     this.fetch = options.fetch ?? globalThis.fetch
   }
 
-  async inspect(filePath: string, signal?: AbortSignal): Promise<ImageInspection> {
+  async inspect(filePath: string, options: ImageInspectionOptions = {}): Promise<ImageInspection> {
+    const { prompt, signal } = options
     const settings = this.options.scope.get()
     const profile = activeImageReaderProfile(settings.configuration)
     if (
@@ -215,11 +222,21 @@ export class ImageReaderService {
     ) {
       throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
     }
+    if (prompt !== undefined && prompt.trim().length === 0) {
+      throw new ImageReaderError('IMAGE_READER_PROMPT_REQUIRED', 'The per-call image reading prompt must contain non-whitespace text.')
+    }
+    if (prompt !== undefined && prompt.length > IMAGE_READER_PROMPT_MAX_LENGTH) {
+      throw new ImageReaderError(
+        'IMAGE_READER_PROMPT_TOO_LONG',
+        `The per-call image reading prompt must contain at most ${IMAGE_READER_PROMPT_MAX_LENGTH} characters.`,
+      )
+    }
+    const inspectionPrompt = prompt ?? profile.defaultPrompt
     const input = await imageInput(filePath, this.options.attachments.imageLimits.maxImageBytes, signal)
     if (profile.connectionType === 'openai-compatible') {
-      return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, profile.defaultPrompt, signal)
+      return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, inspectionPrompt, signal)
     }
-    return this.inspectRuntime(profile, input, filePath, profile.defaultPrompt, signal)
+    return this.inspectRuntime(profile, input, filePath, inspectionPrompt, signal)
   }
 
   private async inspectRuntime(

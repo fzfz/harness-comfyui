@@ -27,7 +27,7 @@ pnpm prod:test
 | --- | --- |
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
-| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、默认 Workspace、项目 Preset、图片读取 Remote、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
+| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、默认 Workspace、项目 Preset、图片读取当前配置保存与具体字段错误、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
 | `pnpm test:contract` | package、Git 跟踪、本地发布门禁和安全合同 |
 | `pnpm prod:test` | Desktop dev/preview 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
@@ -43,7 +43,13 @@ Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQ
 
 历史 Generation Run 输入查询测试覆盖 Tool 与 CLI 的单项和批量入口、输入顺序、重复 `run_id`、完整 ID、最少八个 UUID 字符的短 ID、短 ID canonical 完整值返回、当前 Workspace 唯一匹配、其他 Workspace 同前缀隔离、短 ID 无匹配与多匹配逐项错误、单项无效 ID、损坏的 `request_json`、历史请求缺少 `loras` 或 `model`、准备失败、Actual Workflow 文件缺失或无效、未分类文件系统错误脱敏、1 项与 20 项边界、21 项拒绝和取消传播。CLI 集成测试从临时 `node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs` 执行构建产物，并确认合法批量请求包含单项错误时仍返回退出码 0。
 
-图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖当前 Workspace 中的多 Run 查询、逐 Run 错误、图片稳定排序、单图输入、设置页 Prompt 唯一来源、调用时 Prompt 拒绝、系统视觉模型过滤、系统 Provider 采样参数、自定义 Chat Completions 请求、Data URL、write-only API Key、响应结构、1 MiB 响应上限、响应体取消、文件与 Provider 错误、命名配置增删复制切换、旧单配置迁移、secret redaction、原子保存和持久化错误。CLI 自动化测试覆盖 `generation resolve-media --stdin` 与 `image inspect --stdin` 的参数解析、HTTP 请求、Host 分发、成功输出和错误输出。
+图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖 Tool 与 CLI 可选 `prompt` 的省略、原样覆盖、非字符串拒绝、空白拒绝、32768 字符边界与超长拒绝。两种 Provider 的测试确认模型普通字符串直接成为 `observation`，OpenAI 兼容适配器只解析 Chat Completions 传输外壳，Tool 与 CLI 继续输出四属性 JSON 对象。CLI 自动化测试确认 `image inspect --stdin` 省略 `prompt` 时使用活动配置的 `defaultPrompt`，提供 `prompt` 时只覆盖本次调用。
+
+图片读取设置自动化测试覆盖保存请求只包含当前配置、Host 按原索引合并或向末尾追加、其他持久化配置不变、OpenAI 兼容 API Key 的 `keep`、`replace` 与 `clear`、runtime 保存清除旧凭据、`hasApiKey` 派生、独立删除和活动配置选择。重叠保存、删除后保存和前一次持久化失败测试验证 Host 串行执行完整 Settings 修改临界区，且失败不会阻塞后续修改。Remote parser 测试区分闭合 JSON 结构错误与领域值错误；Client 在 Remote 前拒绝 `NaN` 与正负无穷，Client 和 Host 使用同一逐规则校验顺序与输入项映射。设置页测试覆盖持久化快照回显、未保存修改切换门禁、放弃后恢复、新建与复制、复制不带 API Key、未保存配置本地删除、已保存配置 Remote 删除、每个校验错误码的唯一输入项位置和保存按钮附近的同码总结。原有图片文件、Provider、取消、1 MiB 响应上限、旧单配置迁移、secret redaction 与 Settings 持久化错误分支继续覆盖。
+
+2026-09-02 的真实模型验收使用隔离开发 Desktop、`opencode-go/deepseek-v4-flash` Agent 模型和 `opencode-go/qwen3.7-plus` 图片读取模型。`standard` Preset 对同一图片依次省略 `prompt`、提供返回 `OVERRIDE_OK` 的 `prompt`、再次省略 `prompt`，确认本次覆盖不写入设置。`ComfyUI工作台预设` 的 Agent 实际读取 worktree 中的 `local-image-reader/SKILL.md` 与 `references/image-inspection-cli.md`，并通过前台 shell Tool Call 向 `image inspect --stdin` 传递可选 `prompt`；CLI 退出码为 0、stderr 为空、四属性 JSON stdout 的 `observation` 为 `OVERRIDE_OK`。完整请求、实际读取路径、CLI stdin 和 stdout 记录在 [`.planning/image-reader-prompt-string/model-acceptance.md`](../../.planning/image-reader-prompt-string/model-acceptance.md)。
+
+本次图片读取候选树的完整 `pnpm quality` 结果为 822 项 unit/integration、27 项 contract/security、115 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
 Session Media Viewer 自动化测试覆盖媒体查看、内容、下载和 Workflow URL 编码；下载路由测试覆盖 Saved Media 原始字节、MIME、字节长度、UTF-8 RFC 5987/8187 attachment 文件名、中文、空格、单双引号、`!'()*`、回车、换行、同一 workspace 错误 Session、其他 workspace Session、缺失 Session、空 Session、超长 Session、未登记 Session、媒体文件缺失、非 GET、未分类 500，以及响应头发送后媒体流中断时销毁连接。Modal 测试覆盖初始图片、视频、iframe 导航后的当前媒体、重复下载、临时锚点成功与异常清理、关闭 Modal 后按钮清理、严格当前媒体消息解析、错误 origin、错误 source、未知属性、未知 `mediaId`、不匹配 `runId`、消息监听器清理、主框架 Clipboard API 成功、API 缺失、权限拒绝、媒体导航后迟到复制结果、Modal 关闭重开后迟到复制结果、完整可选择 Run ID 文本、独立复制按钮、图片固有尺寸、视频固有尺寸、零尺寸、旧媒体迟到尺寸事件隔离、原始正面提示词、超长正面提示词逐字符完整投影、正面提示词缺失、图片与原生控件视频、左右按钮、裸左右方向键、带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键不切换媒体、首尾不循环、按 `created_at DESC, output_index DESC, media_id DESC` 排序媒体、同一个 Run 的正面提示词只读取一次并投影到该 Run 的每项媒体、URL 更新、刷新定位、旧媒体迟到加载错误、当前媒体加载错误、`aria-live` 播报、响应式媒体查询和布局样式合同。真实 Desktop 测试在任何下载点击前连接 browser WebSocket 并启用持久 `Browser.downloadWillBegin` 与 `Browser.downloadProgress` 事件队列，再使用真实鼠标分别下载初始媒体和 iframe 导航后的媒体；测试验证事件 URL、建议文件名、完成状态、接收字节数、落盘原始字节、Modal 保持打开和 Chromium page target 数量不增加。测试在桌面宽度与 CDP 600 × 800 viewport 中验证 Run ID 行、footer 和 Modal 没有水平溢出或覆盖 iframe，并在 `finally` 中恢复 Chromium 下载策略、关闭 browser WebSocket 和删除下载目录。Session Media Viewer 静态原型测试覆盖该查看器原型目录中定义的结构方案 A、结构方案 B、结构方案 C、边界文案、提示词状态和本地资源约束；这些结构方案名称不指代 Agent Preset A/B。
 

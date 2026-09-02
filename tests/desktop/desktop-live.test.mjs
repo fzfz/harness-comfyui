@@ -351,6 +351,66 @@ async function searchComposerModels(page, query) {
   )
 }
 
+async function setImageReaderField(page, label, value) {
+  const changed = await page.evaluate(`(() => {
+    const section = document.querySelector('.harness-comfyui-image-reader-settings')
+    const field = [...(section?.querySelectorAll('label') ?? [])]
+      .find(candidate => candidate.querySelector(':scope > span')?.textContent?.trim() === ${JSON.stringify(label)})
+    const control = field?.querySelector('input:not([type="radio"]), textarea, select')
+    if (!(control instanceof HTMLInputElement)
+      && !(control instanceof HTMLTextAreaElement)
+      && !(control instanceof HTMLSelectElement)) return false
+    const prototype = control instanceof HTMLInputElement
+      ? HTMLInputElement.prototype
+      : control instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLSelectElement.prototype
+    const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+    setter?.call(control, ${JSON.stringify(value)})
+    control.dispatchEvent(new Event(control instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
+    return true
+  })()`)
+  if (!changed) throw new Error(`Image reader field is unavailable: ${label}`)
+}
+
+async function clickImageReaderButton(page, label) {
+  const clicked = await page.evaluate(`(() => {
+    const section = document.querySelector('.harness-comfyui-image-reader-settings')
+    const button = [...(section?.querySelectorAll('button') ?? [])]
+      .find(candidate => candidate.textContent?.trim() === ${JSON.stringify(label)})
+    button?.click()
+    return button !== undefined
+  })()`)
+  if (!clicked) throw new Error(`Image reader button is unavailable: ${label}`)
+}
+
+async function selectImageReaderConnection(page, label) {
+  const selected = await page.evaluate(`(() => {
+    const section = document.querySelector('.harness-comfyui-image-reader-settings')
+    const option = [...(section?.querySelectorAll('label') ?? [])]
+      .find(candidate => candidate.textContent?.includes(${JSON.stringify(label)}))
+    const input = option?.querySelector('input[type="radio"]')
+    input?.click()
+    return input !== undefined
+  })()`)
+  if (!selected) throw new Error(`Image reader connection is unavailable: ${label}`)
+}
+
+async function selectImageReaderProfile(page, profileId) {
+  const selected = await page.evaluate(`(() => {
+    const section = document.querySelector('.harness-comfyui-image-reader-settings')
+    const field = [...(section?.querySelectorAll('label') ?? [])]
+      .find(candidate => candidate.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+    const select = field?.querySelector('select')
+    if (!(select instanceof HTMLSelectElement)) return false
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+    setter?.call(select, ${JSON.stringify(profileId)})
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    return true
+  })()`)
+  if (!selected) throw new Error(`Image reader profile is unavailable: ${profileId}`)
+}
+
 async function seedSavedDesktopSession(context) {
   const fromDesktop = async name => import(pathToFileURL(
     resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
@@ -660,6 +720,17 @@ describe('live DSH Desktop production integration', () => {
         select.dispatchEvent(new Event('change', { bubbles: true }))
         return true
       })()`)
+      await page.evaluate(`([...document.querySelectorAll('button')]
+        .find(node => node.textContent?.trim() === '保存当前配置')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const text = document.body.innerText
+          return text.includes('IMAGE_READER_MODEL_REQUIRED')
+            && !text.includes('IMAGE_READER_SETTINGS_INVALID')
+        })()`,
+        value => value === true,
+      )
       const selectedModel = await waitForValue(
         page,
         `(() => {
@@ -677,10 +748,10 @@ describe('live DSH Desktop production integration', () => {
         value => typeof value === 'string' && value.length > 0,
       )
       await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '保存全部配置')?.click(), true)`)
+        .find(node => node.textContent?.trim() === '保存当前配置')?.click(), true)`)
       await waitForValue(
         page,
-        `document.body.innerText.includes('图片读取配置已保存，当前配置已经生效。')`,
+        `document.body.innerText.includes('当前图片读取配置已保存并生效。')`,
         value => value === true,
       )
 
@@ -706,6 +777,172 @@ describe('live DSH Desktop production integration', () => {
         value => value?.provider === 'deepseek-official' && value?.model === selectedModel,
       )
       expect(persisted).toEqual({ provider: 'deepseek-official', model: selectedModel })
+
+      const firstProfile = await page.evaluate(`(() => {
+        const select = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+          .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+          ?.querySelector('select')
+        return select instanceof HTMLSelectElement
+          ? { id: select.value, name: select.selectedOptions[0]?.textContent?.trim() ?? '' }
+          : null
+      })()`)
+      expect(firstProfile).toEqual(expect.objectContaining({ id: expect.any(String), name: expect.any(String) }))
+
+      await clickImageReaderButton(page, '新建配置')
+      await selectImageReaderConnection(page, 'OpenAI 兼容接口')
+      await waitForValue(
+        page,
+        `document.querySelector('.harness-comfyui-image-reader-settings input[type="url"]') !== null`,
+        value => value === true,
+      )
+      await setImageReaderField(page, '配置名称', 'Desktop OpenAI 视觉')
+      await setImageReaderField(page, 'Chat Completions 地址', 'http://127.0.0.1:11434/v1/chat/completions')
+      await setImageReaderField(page, '模型 ID', 'desktop-qwen-vl')
+      await setImageReaderField(page, 'API Key（可选）', 'desktop-write-only-key')
+      await setImageReaderField(page, '读图提示词', 'Desktop 已保存的默认读图提示词')
+      await setImageReaderField(page, '温度', '0.65')
+      await setImageReaderField(page, '最大输出 Token 数', '4096')
+      await clickImageReaderButton(page, '保存当前配置')
+      const openAiProfile = await waitForValue(
+        page,
+        `(() => {
+          const select = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+            .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+            ?.querySelector('select')
+          return select instanceof HTMLSelectElement && document.body.innerText.includes('当前图片读取配置已保存并生效。')
+            ? { id: select.value, options: [...select.options].map(option => option.value) }
+            : null
+        })()`,
+        value => value?.options.length === 2 && value.id !== firstProfile.id,
+      )
+
+      await setImageReaderField(page, '配置名称', '')
+      await setImageReaderField(page, 'Chat Completions 地址', '')
+      await setImageReaderField(page, '模型 ID', '')
+      await setImageReaderField(page, '读图提示词', '')
+      await setImageReaderField(page, '温度', '')
+      await setImageReaderField(page, '最大输出 Token 数', '')
+      await selectImageReaderProfile(page, firstProfile.id)
+      await waitForValue(
+        page,
+        `document.body.innerText.includes('当前配置有未保存修改。请保存当前配置或放弃当前修改后再切换。')`,
+        value => value === true,
+      )
+      await clickImageReaderButton(page, '放弃当前修改并切换')
+      await waitForValue(
+        page,
+        `(() => {
+          const labels = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+          const profile = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+            ?.querySelector('select')
+          const provider = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '系统 Provider')
+            ?.querySelector('select')
+          const model = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '视觉模型')
+            ?.querySelector('select')
+          return profile?.value === ${JSON.stringify(firstProfile.id)}
+            && provider?.value === 'deepseek-official'
+            && model?.value === ${JSON.stringify(selectedModel)}
+        })()`,
+        value => value === true,
+      )
+
+      await selectImageReaderProfile(page, openAiProfile.id)
+      const restoredOpenAi = await waitForValue(
+        page,
+        `(() => {
+          const labels = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+          const valueFor = text => labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === text)
+            ?.querySelector('input, textarea')?.value
+          const credential = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === 'API Key（可选）')
+          const password = credential?.querySelector('input')
+          return valueFor('配置名称') === 'Desktop OpenAI 视觉' ? {
+            endpoint: valueFor('Chat Completions 地址'),
+            model: valueFor('模型 ID'),
+            prompt: valueFor('读图提示词'),
+            temperature: valueFor('温度'),
+            maxTokens: valueFor('最大输出 Token 数'),
+            apiKey: password?.value,
+            credentialText: credential?.textContent ?? ''
+          } : null
+        })()`,
+        value => value !== null,
+      )
+      expect(restoredOpenAi).toEqual({
+        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        model: 'desktop-qwen-vl',
+        prompt: 'Desktop 已保存的默认读图提示词',
+        temperature: '0.65',
+        maxTokens: '4096',
+        apiKey: '',
+        credentialText: expect.stringContaining('这份配置已经保存 API Key；留空不会修改。'),
+      })
+
+      await clickImageReaderButton(page, '复制配置')
+      const copiedProfile = await waitForValue(
+        page,
+        `(() => {
+          const labels = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+          const profile = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+            ?.querySelector('select')
+          const credential = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === 'API Key（可选）')
+          const password = credential?.querySelector('input')
+          return profile instanceof HTMLSelectElement && profile.options.length === 3 ? {
+            id: profile.value,
+            name: profile.selectedOptions[0]?.textContent?.trim(),
+            placeholder: password?.getAttribute('placeholder') ?? ''
+          } : null
+        })()`,
+        value => value !== null,
+      )
+      expect(copiedProfile).toEqual({
+        id: expect.not.stringMatching(new RegExp(`^${openAiProfile.id}$`, 'u')),
+        name: 'Desktop OpenAI 视觉 副本',
+        placeholder: '本地免鉴权接口可以留空',
+      })
+      await clickImageReaderButton(page, '删除配置')
+      await waitForValue(
+        page,
+        `(() => {
+          const select = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+            .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+            ?.querySelector('select')
+          return select instanceof HTMLSelectElement && select.value === ${JSON.stringify(openAiProfile.id)}
+            && select.options.length === 2
+        })()`,
+        value => value === true,
+      )
+
+      await selectImageReaderConnection(page, '系统 Provider')
+      await setImageReaderField(page, '系统 Provider', 'deepseek-official')
+      await waitForValue(
+        page,
+        `(() => {
+          const select = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+            .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '视觉模型')
+            ?.querySelector('select')
+          return select instanceof HTMLSelectElement && !select.disabled
+        })()`,
+        value => value === true,
+      )
+      await setImageReaderField(page, '视觉模型', selectedModel)
+      await clickImageReaderButton(page, '保存当前配置')
+      await waitForValue(
+        page,
+        `document.body.innerText.includes('当前图片读取配置已保存并生效。')`,
+        value => value === true,
+      )
+      await clickImageReaderButton(page, '删除配置')
+      await waitForValue(
+        page,
+        `(() => {
+          const select = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
+            .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前编辑的配置')
+            ?.querySelector('select')
+          return select instanceof HTMLSelectElement && select.value === ${JSON.stringify(firstProfile.id)}
+            && select.options.length === 1
+        })()`,
+        value => value === true,
+      )
 
       await page.evaluate(`(() => {
         const dialog = [...document.querySelectorAll('[role="dialog"]')].find(candidate => {

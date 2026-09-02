@@ -148,9 +148,13 @@ export function createGenerationRunMediaTool(options: CreateGenerationRunMediaTo
 export function createInspectImageTool(service: Pick<ImageReaderService, 'inspect'>): ToolDefinition {
   return closed(defineTool({
     name: INSPECT_IMAGE_TOOL_NAME,
-    description: 'Inspect exactly one local image with the visual provider, model, prompt, temperature, and output limit selected in Harness settings. Return only observable image content.',
+    description: 'Inspect exactly one local image with the visual provider, model, temperature, and output limit selected in Harness settings. An optional prompt overrides defaultPrompt for this inspection only; omit it to use the active image-reader profile defaultPrompt. The visual model may return ordinary text; this Tool wraps that text in provider, model, file_path, and observation properties.',
     parameters: {
       file_path: { type: 'string', required: true, description: 'Absolute local path of exactly one image.' },
+      prompt: {
+        type: 'string',
+        description: 'Optional image-reading prompt for this inspection only. Omit it to use the active image-reader profile defaultPrompt.',
+      },
     },
     output: {
       schema: {
@@ -166,7 +170,7 @@ export function createInspectImageTool(service: Pick<ImageReaderService, 'inspec
       render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
     },
     async execute(args, exec) {
-      const result = await service.inspect(args.file_path, exec.signal)
+      const result = await service.inspect(args.file_path, { prompt: args.prompt, signal: exec.signal })
       return Object.freeze({
         provider: result.provider,
         model: result.model,

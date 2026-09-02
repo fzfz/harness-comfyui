@@ -67,7 +67,7 @@ export type CliRequest =
   | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
   | { readonly command: 'generation.run-inputs'; readonly run_ids: readonly string[] }
   | { readonly command: 'generation.resolve-media'; readonly run_ids: readonly string[] }
-  | { readonly command: 'image.inspect'; readonly file_path: string }
+  | { readonly command: 'image.inspect'; readonly file_path: string; readonly prompt?: string }
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -215,10 +215,13 @@ export function parseCliRequest(value: unknown): CliRequest {
     return Object.freeze({ command: source.command, run_ids: runIds(source.run_ids) })
   }
   if (source.command === 'image.inspect') {
-    exactKeys(source, ['command', 'file_path'], 'CLI request')
+    const hasPrompt = Object.hasOwn(source, 'prompt')
+    exactKeys(source, hasPrompt ? ['command', 'file_path', 'prompt'] : ['command', 'file_path'], 'CLI request')
+    if (hasPrompt && typeof source.prompt !== 'string') throw new TypeError('CLI request prompt must be a string')
     return Object.freeze({
       command: source.command,
       file_path: text(source.file_path, 'CLI request file_path', 10_000),
+      ...(hasPrompt ? { prompt: source.prompt as string } : {}),
     })
   }
   throw new TypeError('CLI request command is invalid')
@@ -310,10 +313,12 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
     }
     const source = record(request, 'Image inspection stdin')
     if (!Object.hasOwn(source, 'file_path')) throw new TypeError('Image inspection stdin requires file_path')
-    exactKeys(source, ['file_path'], 'Image inspection stdin')
+    const hasPrompt = Object.hasOwn(source, 'prompt')
+    exactKeys(source, hasPrompt ? ['file_path', 'prompt'] : ['file_path'], 'Image inspection stdin')
     return parseCliRequest({
       command: 'image.inspect',
       file_path: source.file_path,
+      ...(hasPrompt ? { prompt: source.prompt } : {}),
     })
   }
   throw new TypeError('CLI command is invalid')

@@ -137,7 +137,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 ## 图片读取设置
 
-Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页通过一个 Host Remote 请求原子写入公开配置与凭据变更。该 namespace 包含以下属性：
+Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页通过保存当前配置 Remote 或独立删除 Remote 修改该 namespace。该 namespace 包含以下属性：
 
 | 字段 | 规则与用途 |
 | --- | --- |
@@ -150,13 +150,17 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 | `configuration.profiles[].endpoint` | `openai-compatible` 配置使用的完整 HTTP 或 HTTPS Chat Completions 地址；Host 不自动追加路径；`runtime` 配置必须保存空字符串 |
 | `configuration.profiles[].model` | 系统 Provider 或 OpenAI 兼容接口接受的精确视觉模型 ID |
 | `configuration.profiles[].hasApiKey` | 只表示该配置是否已经保存 API Key；该布尔值由 Host 根据 secret 凭据重新计算 |
-| `configuration.profiles[].defaultPrompt` | 当前配置的每次 `inspect_image` 调用使用的读图提示词；Tool 和 CLI 不接受调用时覆盖值 |
+| `configuration.profiles[].defaultPrompt` | `inspect_image` 或 `image inspect --stdin` 省略本次 `prompt` 时使用的默认读图提示词 |
 | `configuration.profiles[].temperature` | 独立视觉模型调用使用的数值，范围为 `0` 至 `2` |
 | `configuration.profiles[].maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
 | `credentials.<profileId>` | OpenAI 兼容配置的可选 API Key；该字典的值使用 Settings `secret` role，浏览器只收到对应 `hasApiKey` 状态 |
 
 系统 Provider 与模型候选来自 Harness 当前 LLM 运行时，并且设置页只列出明确声明 `image` 输入能力的模型。OpenAI 兼容配置不依赖系统 Provider 目录；Host 向完整地址发送 OpenAI Chat Completions 格式的单张图片 Data URL、提示词、模型 ID、`temperature` 和 `max_tokens`。HTTP 地址不会提供传输加密；配置 API Key 时，使用者必须确认目标内网链路符合部署要求。
 
-Host 使用一次 `settings.replace()` 提交完整公开配置和 write-only 凭据变更。Client 可以首次设置、替换或清除 API Key；Client 选择保留时不会提交新的密钥值。验证失败不会写入任何值；持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`，不会误报为配置字段无效。保存成功后，新配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
+设置页只提交当前编辑配置，不提交 Client 中的配置数组或 `hasApiKey`。Host 每次保存都读取最新 Settings：同 ID 配置在原索引替换，新 ID 配置追加到列表末尾，保存目标成为 `activeProfileId`，其他已保存配置保持不变。Host 根据持久化凭据派生每份配置的 `hasApiKey`。保存 runtime 配置会删除该 ID 的旧 API Key；保存 OpenAI 兼容配置时，`keep` 保留现有值，`replace` 写入新的 write-only API Key，`clear` 删除现有值。Client 不会收到已保存的 API Key 明文。
+
+删除已保存配置使用独立 Host Remote。删除操作同时删除 `credentials.<profileId>`；删除非活动配置保持原 `activeProfileId`，删除活动配置时优先选择删除前列表中的后一项，不存在后一项时选择前一项。最后一份配置不能删除。Host 按调用顺序串行执行每次保存或删除的“读取最新 Settings、合并、`settings.replace()`”完整临界区，防止重叠请求根据旧快照覆盖先完成的修改。保存或删除成功后，Host 返回完整 `configuration`；Client 用返回值替换持久化快照并重新加载 Host 指定的活动配置。
+
+Host 与 Client 使用同一固定顺序校验当前保存请求。每条名称、连接参数、模型、默认提示词、温度、最大输出 Token 数或 API Key 规则具有独立错误码；设置页在对应输入项附近显示该规则，并在保存按钮附近显示同一错误码的总结。其他配置不参与当前保存请求，也不能用 Client 中的未保存输入阻止当前配置保存。保存持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`；删除持久化失败使用 `IMAGE_READER_SETTINGS_DELETE_FAILED`。保存成功后，活动配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
 
 v0.36.0 继续注册旧 namespace `harness-comfyui-image-reader` 以读取 v0.35.x 的单配置用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，Host 不会重复迁移或覆盖。

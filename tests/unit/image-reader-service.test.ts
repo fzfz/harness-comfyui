@@ -5,7 +5,10 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
-import { createImageReaderProfile } from '../../src/image-reader/settings.ts'
+import {
+  createImageReaderProfile,
+  IMAGE_READER_PROMPT_MAX_LENGTH,
+} from '../../src/image-reader/settings.ts'
 import { ImageReaderService } from '../../src/host/image-reader/image-reader-service.ts'
 
 const temporaryDirectories: string[] = []
@@ -70,23 +73,50 @@ function fixture() {
 describe('ImageReaderService', () => {
   it('publishes every image reading error code in the project error catalog', () => {
     expect(Object.keys(errorCatalog).filter(code => code.startsWith('IMAGE_READER_')).sort()).toEqual([
+      'IMAGE_READER_API_KEY_REQUIRED',
+      'IMAGE_READER_API_KEY_TOO_LONG',
       'IMAGE_READER_ATTACHMENT_FAILED',
+      'IMAGE_READER_DEFAULT_PROMPT_REQUIRED',
+      'IMAGE_READER_DEFAULT_PROMPT_TOO_LONG',
       'IMAGE_READER_EMPTY_RESPONSE',
+      'IMAGE_READER_ENDPOINT_CREDENTIALS_FORBIDDEN',
+      'IMAGE_READER_ENDPOINT_FRAGMENT_FORBIDDEN',
+      'IMAGE_READER_ENDPOINT_PROTOCOL_INVALID',
+      'IMAGE_READER_ENDPOINT_REQUIRED',
+      'IMAGE_READER_ENDPOINT_TOO_LONG',
+      'IMAGE_READER_ENDPOINT_URL_INVALID',
+      'IMAGE_READER_ENDPOINT_WHITESPACE_INVALID',
       'IMAGE_READER_FILE_INVALID',
+      'IMAGE_READER_LAST_PROFILE_DELETE_FORBIDDEN',
+      'IMAGE_READER_MAX_TOKENS_INTEGER_INVALID',
+      'IMAGE_READER_MAX_TOKENS_RANGE_INVALID',
       'IMAGE_READER_MODEL_IMAGE_UNSUPPORTED',
       'IMAGE_READER_MODEL_NOT_CONFIGURED',
+      'IMAGE_READER_MODEL_REQUIRED',
+      'IMAGE_READER_MODEL_TOO_LONG',
       'IMAGE_READER_MODEL_UNAVAILABLE',
+      'IMAGE_READER_PROFILE_ID_FORMAT_INVALID',
+      'IMAGE_READER_PROFILE_LIMIT_REACHED',
+      'IMAGE_READER_PROFILE_NAME_REQUIRED',
+      'IMAGE_READER_PROFILE_NAME_TOO_LONG',
+      'IMAGE_READER_PROFILE_NOT_FOUND',
+      'IMAGE_READER_PROMPT_REQUIRED',
+      'IMAGE_READER_PROMPT_TOO_LONG',
       'IMAGE_READER_PROVIDER_FAILED',
-      'IMAGE_READER_SETTINGS_INVALID',
+      'IMAGE_READER_RUNTIME_PROVIDER_REQUIRED',
+      'IMAGE_READER_RUNTIME_PROVIDER_TOO_LONG',
+      'IMAGE_READER_SETTINGS_DELETE_FAILED',
       'IMAGE_READER_SETTINGS_REQUEST_FAILED',
       'IMAGE_READER_SETTINGS_SAVE_FAILED',
+      'IMAGE_READER_TEMPERATURE_NUMBER_INVALID',
+      'IMAGE_READER_TEMPERATURE_RANGE_INVALID',
     ])
   })
 
   it('reads one image with the configured independent route and settings prompt', async () => {
     const { service, filePath, saveImage, prepareCall } = fixture()
 
-    await expect(service.inspect(filePath, new AbortController().signal)).resolves.toEqual({
+    await expect(service.inspect(filePath, { signal: new AbortController().signal })).resolves.toEqual({
       provider: 'vision-provider',
       model: 'vision-model',
       filePath,
@@ -120,11 +150,50 @@ describe('ImageReaderService', () => {
       credentials: {},
     })
 
-    await service.inspect(filePath, new AbortController().signal)
+    await service.inspect(filePath, { signal: new AbortController().signal })
 
     const request = (await prepareCall.mock.results[0]!.value).stream.mock.calls[0]![0]
     expect(request.messages[0].content[0]).toEqual({ type: 'text', text: '设置页保存的读图提示词' })
     expect(scope.get).toHaveBeenCalledOnce()
+  })
+
+  it('uses a per-call prompt verbatim without changing the saved default prompt', async () => {
+    const { service, filePath, scope, prepareCall } = fixture()
+
+    await service.inspect(filePath, {
+      prompt: '  只说明图片中可见的服饰。  ',
+      signal: new AbortController().signal,
+    } as never)
+
+    const request = (await prepareCall.mock.results[0]!.value).stream.mock.calls[0]![0]
+    expect(request.messages[0].content[0]).toEqual({
+      type: 'text',
+      text: '  只说明图片中可见的服饰。  ',
+    })
+    expect(scope.get().configuration.profiles[0]!.defaultPrompt).toBe('默认读图提示词')
+  })
+
+  it.each([
+    ['', 'IMAGE_READER_PROMPT_REQUIRED'],
+    ['   \n\t', 'IMAGE_READER_PROMPT_REQUIRED'],
+    ['x'.repeat(32_769), 'IMAGE_READER_PROMPT_TOO_LONG'],
+  ])('rejects an invalid per-call prompt before provider access %#', async (prompt, code) => {
+    const { service, filePath, saveImage, prepareCall, fetch } = fixture()
+
+    await expect(service.inspect(filePath, { prompt })).rejects.toMatchObject({ code })
+    expect(saveImage).not.toHaveBeenCalled()
+    expect(prepareCall).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('accepts a per-call prompt at the configured maximum length', async () => {
+    const { service, filePath, prepareCall } = fixture()
+    const prompt = 'x'.repeat(IMAGE_READER_PROMPT_MAX_LENGTH)
+
+    await service.inspect(filePath, { prompt })
+
+    const request = (await prepareCall.mock.results[0]!.value).stream.mock.calls[0]![0]
+    expect(request.messages[0].content[0]).toEqual({ type: 'text', text: prompt })
   })
 
   it.each([
@@ -259,6 +328,32 @@ describe('ImageReaderService', () => {
     expect(prepareCall).not.toHaveBeenCalled()
   })
 
+  it('sends a per-call prompt verbatim to an OpenAI-compatible endpoint', async () => {
+    const { service, filePath, scope, fetch } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+          defaultPrompt: '不应使用的默认提示词',
+        }],
+      },
+      credentials: {},
+    })
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({
+      choices: [{ message: { content: '普通文本观察，不是 JSON。' } }],
+    }), { status: 200 }))
+
+    await expect(service.inspect(filePath, { prompt: '  只读取可见文字。  ' })).resolves.toMatchObject({
+      observation: '普通文本观察，不是 JSON。',
+    })
+    const requestBody = JSON.parse(fetch.mock.calls[0]![1]!.body as string)
+    expect(requestBody.messages[0].content[0]).toEqual({ type: 'text', text: '  只读取可见文字。  ' })
+  })
+
   it('omits authorization for an unkeyed endpoint and maps HTTP or response failures', async () => {
     const { service, filePath, scope, fetch } = fixture()
     scope.get.mockReturnValue({
@@ -312,7 +407,7 @@ describe('ImageReaderService', () => {
       controller.abort(new DOMException('cancelled', 'AbortError'))
       throw init!.signal!.reason
     })
-    await expect(service.inspect(filePath, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(service.inspect(filePath, { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
   })
 
   it('limits OpenAI-compatible response bytes and preserves response-body cancellation', async () => {
@@ -367,7 +462,7 @@ describe('ImageReaderService', () => {
       headers: new Headers(),
       body: { getReader: () => reader },
     } as never)
-    const inspection = service.inspect(filePath, controller.signal)
+    const inspection = service.inspect(filePath, { signal: controller.signal })
     await readStarted
     controller.abort(new DOMException('cancelled while reading', 'AbortError'))
     await expect(inspection).rejects.toMatchObject({ name: 'AbortError' })
@@ -378,7 +473,7 @@ describe('ImageReaderService', () => {
     const { service, filePath, saveImage } = fixture()
     const controller = new AbortController()
     controller.abort(new DOMException('cancelled', 'AbortError'))
-    await expect(service.inspect(filePath, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(service.inspect(filePath, { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
     expect(saveImage).not.toHaveBeenCalled()
   })
 })

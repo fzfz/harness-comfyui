@@ -423,6 +423,9 @@ describe('Harness ComfyUI managed CLI route', () => {
     const inspectionResponse = await post(server.origin, 'trusted', {
       command: 'image.inspect', file_path: '/media/result.png',
     })
+    const promptedInspectionResponse = await post(server.origin, 'trusted', {
+      command: 'image.inspect', file_path: '/media/result.png', prompt: '只识别图片中的文字。',
+    })
 
     expect(mediaResponse.status).toBe(200)
     expect(await mediaResponse.json()).toEqual({
@@ -440,7 +443,21 @@ describe('Harness ComfyUI managed CLI route', () => {
         provider: 'provider-a', model: 'vision-a', file_path: '/media/result.png', observation: '可见一名人物。',
       },
     })
-    expect(inspect).toHaveBeenCalledWith('/media/result.png', expect.any(AbortSignal))
+    expect(promptedInspectionResponse.status).toBe(200)
+    expect(await promptedInspectionResponse.json()).toEqual({
+      ok: true,
+      data: {
+        provider: 'provider-a', model: 'vision-a', file_path: '/media/result.png', observation: '可见一名人物。',
+      },
+    })
+    expect(inspect).toHaveBeenNthCalledWith(1, '/media/result.png', {
+      prompt: undefined,
+      signal: expect.any(AbortSignal),
+    })
+    expect(inspect).toHaveBeenNthCalledWith(2, '/media/result.png', {
+      prompt: '只识别图片中的文字。',
+      signal: expect.any(AbortSignal),
+    })
     await server.close()
   })
 

@@ -108,9 +108,16 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
           return result.value
         },
-        saveSettings: async (request: Parameters<typeof remoteImageReader.saveSettings>[0], signal: AbortSignal) => {
+        saveProfile: async (request: Parameters<typeof remoteImageReader.saveProfile>[0], signal: AbortSignal) => {
           ensureActive(signal)
-          const result = await remoteImageReader.saveSettings(request)
+          const result = await remoteImageReader.saveProfile(request)
+          ensureActive(signal)
+          if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
+          return result.value
+        },
+        deleteProfile: async (request: Parameters<typeof remoteImageReader.deleteProfile>[0], signal: AbortSignal) => {
+          ensureActive(signal)
+          const result = await remoteImageReader.deleteProfile(request)
           ensureActive(signal)
           if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
           return result.value
