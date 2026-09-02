@@ -16,10 +16,16 @@ import {
 import {
   loadSourceWorktreeContext,
   parseSourceWorktreeDefinition,
+  releaseSourceWorktreeContext,
+  sourceWorktreeStartOptions,
 } from '../../scripts/worktree/runtime.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const temporaryPaths = []
+
+function developmentPortReservation(port) {
+  return { port, release: vi.fn(async () => undefined) }
+}
 
 async function temporaryDirectory(prefix) {
   const path = await mkdtemp(join(tmpdir(), prefix))
@@ -84,6 +90,8 @@ describe('source worktree development definition', () => {
       loadSourceWorktreeContext: vi.fn(),
       loadSavedSourceWorktreeContext: vi.fn(),
       prepareSourceWorktreeRuntime: vi.fn(),
+      releaseSourceWorktreeContext: vi.fn(),
+      sourceWorktreeStartOptions: vi.fn(),
     }
 
     await expect(runWebHostCommand('start', {
@@ -99,7 +107,28 @@ describe('source worktree development definition', () => {
       loadContext: runtime.loadSourceWorktreeContext,
       loadSavedContext: runtime.loadSavedSourceWorktreeContext,
       prepareRuntime: runtime.prepareSourceWorktreeRuntime,
+      releaseContext: runtime.releaseSourceWorktreeContext,
+      startOptions: runtime.sourceWorktreeStartOptions,
     }))
+  })
+
+  it('releases the claimed Web Host port when runtime preparation fails', async () => {
+    const root = await temporaryDirectory('harness-web-prepare-failure-')
+    const context = {
+      activeVersion: '0.38.6',
+      sourceManagedStatePath: resolve(root, 'source-managed.json'),
+    }
+    const releaseContext = vi.fn(async () => undefined)
+
+    await expect(runWebHostCommand('start', {
+      prepareCheckout: async () => undefined,
+      loadSavedContext: async () => undefined,
+      loadContext: async () => context,
+      prepareRuntime: async () => { throw new Error('Web Host runtime preparation failed') },
+      releaseContext,
+      startOptions: () => ({}),
+    })).rejects.toThrow('Web Host runtime preparation failed')
+    expect(releaseContext).toHaveBeenCalledWith(context)
   })
 
   it('accepts one exact structured definition and resolves its repository paths', async () => {
@@ -158,7 +187,8 @@ describe('source worktree development definition', () => {
     const context = await loadSourceWorktreeContext({
       repositoryRoot: root,
       definitionPath,
-      environment: { HARNESS_COMFYUI_SERVER_PORT: '18173' },
+      environment: { HARNESS_COMFYUI_SERVER_PORT: '19173' },
+      reservePort: async () => developmentPortReservation(18173),
     })
 
     expect(context.definition.runtimeId).toBe('harness-comfyui-web-development')
@@ -170,11 +200,65 @@ describe('source worktree development definition', () => {
     expect(context.dshProfile).toBe('comfyui-workbench-development')
     expect(context.userEnvironmentFilePath).toBe(environmentFile)
     expect(context.startupWorkspacePath).toBe(startupWorkspacePath)
+    expect(context.runtime.port).toBe(18173)
     expect(context.configReadOrder[0]).toBe(definitionPath)
     expect(context.configReadOrder[1]).toBe(resolve(root, 'config/source-production.json'))
     expect(context.definition.catalogCliPath).toBe(
       resolve(root, '../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs'),
     )
+    expect(sourceWorktreeStartOptions(context).onPortOwned).toBeTypeOf('function')
+    await releaseSourceWorktreeContext(context)
+  })
+
+  it('claims distinct Web Host ports for two worktrees that share the main checkout environment', async () => {
+    const mainCheckout = await temporaryDirectory('harness-shared-web-main-')
+    const environmentFile = resolve(mainCheckout, '.env')
+    const startupWorkspacePath = resolve(mainCheckout, 'startup-workspace')
+    await mkdir(startupWorkspacePath)
+    await writeFile(environmentFile, 'TEST_ONLY_KEY=value\n', 'utf8')
+    const worktrees = await Promise.all([
+      linkedWorktreeRepository('harness-shared-web-worktree-a-'),
+      linkedWorktreeRepository('harness-shared-web-worktree-b-'),
+    ])
+    const contexts = await Promise.all(worktrees.map(async (root, index) => {
+      const definitionPath = resolve(root, 'worktree-development.json')
+      await writeFile(definitionPath, `${JSON.stringify(definition(environmentFile, {
+        runtimeId: `harness-comfyui-web-development-${index}`,
+        startupWorkspacePath,
+      }), null, 2)}\n`, 'utf8')
+      return loadSourceWorktreeContext({ repositoryRoot: root, definitionPath })
+    }))
+
+    expect(contexts[0].runtime.port).not.toBe(contexts[1].runtime.port)
+    expect(dirname(contexts[0].developmentPortReservation.claimPath))
+      .toBe(dirname(contexts[1].developmentPortReservation.claimPath))
+    await expect(lstat(contexts[0].developmentPortReservation.claimPath)).resolves.toBeDefined()
+    await expect(lstat(contexts[1].developmentPortReservation.claimPath)).resolves.toBeDefined()
+
+    await Promise.all(contexts.map(releaseSourceWorktreeContext))
+    await expect(lstat(contexts[0].developmentPortReservation.claimPath)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(lstat(contexts[1].developmentPortReservation.claimPath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('releases the Web Host port claim when source configuration loading fails', async () => {
+    const root = await linkedWorktreeRepository('harness-worktree-invalid-source-config-')
+    const environmentFile = resolve(root, '.env')
+    const definitionPath = resolve(root, 'worktree-development.json')
+    const invalidSourceDefinitionPath = resolve(root, 'invalid-source-production.json')
+    const reservation = developmentPortReservation(18176)
+    await writeFile(environmentFile, 'TEST_ONLY_KEY=value\n', 'utf8')
+    await writeFile(invalidSourceDefinitionPath, '{}\n', 'utf8')
+    await writeFile(definitionPath, `${JSON.stringify(definition(environmentFile, {
+      sourceProductionDefinitionRelativePath: 'invalid-source-production.json',
+      startupWorkspacePath: resolve(root, 'startup-workspace'),
+    }), null, 2)}\n`, 'utf8')
+
+    await expect(loadSourceWorktreeContext({
+      repositoryRoot: root,
+      definitionPath,
+      reservePort: async () => reservation,
+    })).rejects.toThrow('source production definition')
+    expect(reservation.release).toHaveBeenCalledOnce()
   })
 
   it('rejects an unavailable configured user environment file without creating the DSH home', async () => {
@@ -380,7 +464,7 @@ describe('Web Host command adapter', () => {
     const savedContext = await loadSourceWorktreeContext({
       repositoryRoot: root,
       definitionPath,
-      environment: { HARNESS_COMFYUI_SERVER_PORT: '18175' },
+      reservePort: async () => developmentPortReservation(18175),
     })
     let currentContextLoaded = false
 

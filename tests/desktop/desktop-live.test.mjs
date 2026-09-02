@@ -592,11 +592,13 @@ describe('live DSH Desktop production integration', () => {
       runtimeHome,
       dshHome: resolve(runtimeHome, relative(base.runtimeHome, base.dshHome)),
       pidFile: resolve(runtimeRoot, 'desktop.pid'),
+      mobileBridgeStateFile: resolve(runtimeRoot, 'state/mobile-bridge.json'),
       harnessLog: resolve(runtimeHome, relative(base.runtimeHome, base.harnessLog)),
       legacyDshHome,
       environmentFilePath,
       startupWorkspacePath,
       mobileBridgePort,
+      desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
     }
     const identity = await seedSavedDesktopSession({ ...context, dshHome: legacyDshHome })
     const mediaFixture = await seedDesktopMedia(context, identity)

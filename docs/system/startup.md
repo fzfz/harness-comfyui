@@ -62,7 +62,7 @@ pnpm dev:start
 
 Desktop generation 安装器读取已链接根 `node_modules/.modules.yaml` 中的 pnpm package store。插件适配层通过 DSH Desktop installer 的进程接口执行 `pnpm --ignore-workspace --store-dir <storeDir> add ...`。generation staging 使用自己的 virtual store 和 lockfile，不修改主开发 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。
 
-链接准备完成后，`dev:start` 从主开发 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm dev`，把当前 worktree 的插件源码打包为 generation，并加载与生产相同的 Workspace、Preset、Provider 和模型配置。
+链接准备完成后，`dev:start` 从主开发 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm dev`，把当前 worktree 的插件源码打包为 generation，并加载与生产相同的 Workspace、Preset、Provider 和模型配置。启动器在每次启动前清空当前 worktree 的 `.local/desktop-development/desktop-out/`，再把本次 Electron Vite 输出写入该目录；并行启动的 worktree 不会共同写入主开发 checkout 中的 DSH Desktop `out/`。
 
 保持启动终端运行，在第二个终端管理开发进程：
 
@@ -73,7 +73,7 @@ pnpm dev:restart
 pnpm dev:stop
 ```
 
-开发 Desktop 使用 `.local/desktop-development/`，不会读取或修改 `.local/desktop-production/`。启动器从主开发 checkout 的 `.env` 读取 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`，在执行上游命令前检查该端口，并把同一个值传给 DSH Desktop；端口已被占用时直接报告冲突。完整人工验收流程见 `docs/agents/worktree-development.md`。
+开发 Desktop 使用 `.local/desktop-development/`，不会读取或修改 `.local/desktop-production/`。`dev:start` 和 `dev:restart` 通过主开发 checkout 的 `.local/development-port-claims/` 为本次启动声明一个空闲移动桥接端口；启动器在 Desktop 子进程监听该端口后释放声明，再把运行端口写入 `.local/desktop-development/state/mobile-bridge.json`。`dev:status` 在进程运行时报告同一个端口。开发启动器不会读取或修改共享 `.env` 中的 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`。完整人工验收流程见 `docs/agents/worktree-development.md`。
 
 ## Git tag 生产环境
 
@@ -125,7 +125,7 @@ pnpm web:restart
 pnpm web:stop
 ```
 
-`web:start` 与 `web:restart` 先建立和 `dev:start` 相同的 `.env`、`node_modules` 链接，再读取 `config/web-development.json`，使用 `comfyui-workbench-development` Profile 和 `.local/web-development/`。`web:health` 只读取并报告 Web Host、Client ModuleLoader 和运行目录状态，不创建链接，也不修改 Desktop、Provider、Preset、Workspace 或模型配置。
+`web:start` 与 `web:restart` 先建立和 `dev:start` 相同的 `.env`、`node_modules` 链接，再读取 `config/web-development.json`，通过主开发 checkout 的 `.local/development-port-claims/` 声明一个空闲回环端口，并使用 `comfyui-workbench-development` Profile 和 `.local/web-development/`。启动器在 Web Host 子进程监听该端口后释放声明。Web Host 进程状态保存实际端口，因此并行 worktree 的 `web:status`、`web:health`、`web:logs` 和 `web:stop` 只管理各自进程。`web:health` 只读取并报告 Web Host、Client ModuleLoader 和运行目录状态，不创建链接，也不修改 Desktop、Provider、Preset、Workspace 或模型配置。
 
 ## 自动化测试
 
@@ -146,9 +146,9 @@ pnpm quality
 | 环境 | PID 与日志根目录 | Desktop 模式 | 移动桥接端口来源 |
 | --- | --- | --- | --- |
 | 生产 Desktop | `.local/desktop-production/` | `preview` | 生产 checkout `.env` 的 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`；示例为 `43127` |
-| 开发 Desktop | `.local/desktop-development/` | `dev` | 主开发 checkout `.env` 的 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`；示例为 `43128` |
-| Web Host 调试 | `.local/web-development/` | 不启动 Electron | `config/source-production.json` 与 Configuration Profile 定义的 Web 端口 |
+| 开发 Desktop | `.local/desktop-development/` | `dev` | `dev:start` 或 `dev:restart` 为当前 worktree 分配的空闲端口 |
+| Web Host 调试 | `.local/web-development/` | 不启动 Electron | `web:start` 或 `web:restart` 为当前 worktree 分配的空闲回环端口 |
 
 三个运行目录不共享 PID、日志、DSH home、Run Repository、Session 或媒体文件。`status` 返回 `running` 或 `stopped`；`logs` 读取对应环境的日志；`stop` 只停止对应运行目录登记的进程。
 
-每个同时运行的 DSH Desktop 必须在所属 checkout 的 `.env` 中配置不同的 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`。启动器不自动选择端口；端口冲突时，启动命令报告具体冲突端口并退出。
+linked worktree 共享的 `.env` 可以保留 Provider 凭据、共享产品配置和既有端口变量。`dev:*` 不把共享 `.env` 中的 Desktop 移动桥接端口变量作为当前 worktree 的开发端口；`web:*` 不把共享 `.env` 中的 `HARNESS_COMFYUI_SERVER_PORT` 作为当前 worktree 的 Web Host 端口。开发 Desktop 移动桥接端口、独立 Web Host 端口、PID、日志、DSH home、业务数据和 Desktop 构建输出全部属于当前 worktree 的开发实例。

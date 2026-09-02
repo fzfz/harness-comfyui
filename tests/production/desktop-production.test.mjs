@@ -76,6 +76,34 @@ describe('DSH Desktop production lifecycle', () => {
     })
   })
 
+  it.each(['', '0', '-1', '1.5', '65536', 'port'])(
+    'rejects invalid production mobile bridge port %j',
+    async configuredPort => {
+      const root = await mkdtemp(resolve(tmpdir(), 'desktop-production-invalid-port-'))
+      roots.push(root)
+      const configRoot = resolve(root, 'config')
+      const workspace = resolve(root, 'workspace')
+      await Promise.all([mkdir(configRoot), mkdir(workspace)])
+      await writeFile(resolve(root, '.env'), `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=${configuredPort}\n`)
+      await writeFile(resolve(configRoot, 'desktop-production.json'), `${JSON.stringify({
+        desktopSourceRelativePath: '.local/upstreams/dsh-desktop',
+        runtimeRelativeRoot: '.local/desktop-production',
+        environmentFileRelativePath: '.env',
+        startupWorkspacePath: workspace,
+      })}\n`)
+      await writeFile(resolve(configRoot, 'source-production.json'), `${JSON.stringify({
+        source: {
+          catalogPort: 18093,
+          catalogCliRelativePath: 'catalog.mjs',
+          sourceCliRelativePath: 'source.mjs',
+        },
+      })}\n`)
+
+      await expect(loadDesktopProductionContext({ repositoryRoot: root }))
+        .rejects.toThrow('COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT must be an integer from 1 to 65535')
+    },
+  )
+
   it('starts the production Desktop in preview mode', async () => {
     const root = await mkdtemp(resolve(tmpdir(), 'desktop-production-'))
     roots.push(root)
@@ -170,10 +198,12 @@ describe('DSH Desktop production lifecycle', () => {
       dshHome,
       legacyDshHome,
       pidFile: resolve(runtimeRoot, 'desktop.pid'),
+      mobileBridgeStateFile: resolve(runtimeRoot, 'state/mobile-bridge.json'),
       harnessLog: resolve(runtimeHome, 'Library/Logs/DSH Desktop Dev/harness.log'),
       environmentFilePath,
       startupWorkspacePath,
       mobileBridgePort: await freePort(),
+      desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
       launchCommand: 'preview',
       catalogPort: 18093,
       catalogCliPath: resolve(root, 'catalog.mjs'),
@@ -195,6 +225,7 @@ describe('DSH Desktop production lifecycle', () => {
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
       installPlugin: () => undefined,
       spawnDesktop,
+      waitForPortTakeover: async () => undefined,
       remoteDebuggingPort: 54002,
     })).resolves.toMatchObject({ status: 'stopped', pid: 54001 })
     expect(await readFile(resolve(

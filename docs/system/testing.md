@@ -19,7 +19,7 @@ pnpm dev:stop
 pnpm prod:test
 ```
 
-`prod:test` 使用临时目录和端口覆盖 Desktop `dev`/`preview` 模式、PID、端口、restart、异常退出、worktree `.env`/`node_modules` 链接、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
+`prod:test` 使用临时目录和端口覆盖 Desktop `dev`/`preview` 模式、跨进程端口声明、双 worktree 并发、PID 与端口状态写入失败清理、restart、异常退出、worktree `.env`/`node_modules` 链接、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
 
 ## 自动化测试
 
@@ -38,6 +38,8 @@ pnpm prod:test
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
+
+linked worktree 并行运行环境的最终候选通过完整 `pnpm quality`：822 项 unit/integration、33 项 contract/security、133 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。production 测试覆盖跨进程端口声明、死亡 owner claim 回收、存活 owner claim 保留、损坏 claim 拒绝、共享上游双 Desktop、共享主 `.env` 双 Web context、Desktop 进程组与 Web Host PID 的端口所有权接管、实际端口状态、独立 Desktop 输出目录、子进程提前退出、端口状态写入失败和 PID 写入失败。
 
 Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、Source v0.86.1 三字段 TemplateBundle、实例 ID 安全投影、Run 幂等、状态转换、重启恢复、活动输出节点发现、断开输出节点删除、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。Catalog 自动化测试覆盖 Source v0.86.1 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
 

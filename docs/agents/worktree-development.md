@@ -11,6 +11,7 @@ Agent 在从 `main` 创建的独立 linked worktree 中开发或验证完整 DSH
 3. 主开发 checkout 必须已经存在 `.env`、根 `node_modules` 和 `config/desktop-production.json.desktopSourceRelativePath` 指定的 DSH Desktop 底座。
 4. Agent 不得在 worktree 执行 `pnpm install`，不得复制 `.env`，不得为 worktree clone 第二份 DSH Desktop。
 5. worktree 根 `.env` 与 `node_modules` 不存在时，`dev:start` 或 `web:start` 负责创建指向主开发 checkout 的符号链接；既有冲突路径必须由 Agent 明确处理后重新启动。
+6. Agent 不得修改主开发 checkout 的 `.env` 为当前 worktree 更换端口。开发启动器通过主开发 checkout 的 `.local/development-port-claims/` 声明当前 worktree 的 Desktop 移动桥接端口和独立 Web Host 端口，并在对应子进程监听端口后释放声明。
 
 ## 启动与验收
 
@@ -27,7 +28,7 @@ pnpm dev:status
 pnpm dev:logs
 ```
 
-`dev:status` 必须返回 `running`。Agent 随后必须在 DSH Desktop 中确认：
+`dev:status` 必须返回 `running`、当前 Desktop PID 和当前移动桥接端口。Agent 随后必须在 DSH Desktop 中确认：
 
 1. 系统直接打开 `config/desktop-production.json.startupWorkspacePath` 指定的 Workspace，不显示 Workspace 选择弹窗。
 2. 系统直接加载 `ComfyUI工作台预设`，不显示框架默认 Preset。

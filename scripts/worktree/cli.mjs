@@ -41,6 +41,8 @@ export async function runWebHostCommand(command, options = {}) {
     loadContext: options.loadContext ?? runtime.loadSourceWorktreeContext,
     loadSavedContext: options.loadSavedContext ?? runtime.loadSavedSourceWorktreeContext,
     prepareRuntime: options.prepareRuntime ?? runtime.prepareSourceWorktreeRuntime,
+    releaseContext: options.releaseContext ?? runtime.releaseSourceWorktreeContext,
+    startOptions: options.startOptions ?? runtime.sourceWorktreeStartOptions,
     commandPrefix: 'web',
   })
 }

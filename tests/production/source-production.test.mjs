@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { parseArguments, runSourceProductionCommand } from '../../scripts/production/cli.mjs'
 import { inspectClientModuleRegistration, parseHealthBootGraph } from '../../scripts/production/health.mjs'
@@ -297,8 +297,13 @@ describe('Web Host shared process commands', () => {
   it('starts and stops the current source through the shared managed-process lifecycle', async () => {
     const fixture = await createFixture()
     const processStatePath = resolve(fixture.runtimeRoot, 'state/process.json')
-    const start = runSourceProductionCommand('start', { loadContext: async () => fixture.context })
+    const onPortOwned = vi.fn(async () => undefined)
+    const start = runSourceProductionCommand('start', {
+      loadContext: async () => fixture.context,
+      startOptions: () => ({ onPortOwned }),
+    })
     await waitForPath(processStatePath)
+    expect(onPortOwned).toHaveBeenCalledOnce()
 
     const managedState = JSON.parse(await readFile(fixture.managedStatePath, 'utf8'))
     const processState = JSON.parse(await readFile(processStatePath, 'utf8'))

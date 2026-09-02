@@ -16,11 +16,12 @@ import {
   probePort,
   removeOwnedProcessState,
   waitForChildClose,
+  waitForPortOwnedByProcess,
   waitForStableProcessIdentity,
   writeAtomicJson,
 } from './process.mjs'
 
-export async function runSourceStart(input, runtimeTarget, operation = {}) {
+export async function runSourceStart(input, runtimeTarget, operation = {}, options = {}) {
   const runtime = validateSourceRuntime(input)
   const statePath = processStatePath(runtime.runtimeRoot)
   await assertNoRunningHost(statePath, runtime, runtimeTarget.activeVersion)
@@ -99,6 +100,13 @@ export async function runSourceStart(input, runtimeTarget, operation = {}) {
     }
     processIdentity = startup.identity
     if (processIdentity === null) throw new Error(`cannot determine process identity for Host PID ${child.pid}`)
+    await waitForPortOwnedByProcess(
+      runtime.host,
+      runtime.port,
+      child.pid,
+      runtime.process.shutdownTimeoutMs,
+    )
+    await options.onPortOwned?.()
   } catch (error) {
     process.removeListener('SIGINT', onSigInt)
     process.removeListener('SIGTERM', onSigTerm)

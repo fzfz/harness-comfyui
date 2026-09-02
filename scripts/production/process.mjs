@@ -278,13 +278,13 @@ async function readListeningPortProcessIds(host, port) {
   if (process.platform === 'win32') {
     throw new Error('port ownership is unsupported on Windows')
   }
-  const address = host.includes(':') ? `[${host}]` : host
+  const address = host?.includes(':') ? `[${host}]` : host
   let result
   try {
     result = await runExternal('lsof', [
       '-nP',
       '-a',
-      `-iTCP@${address}:${port}`,
+      host === undefined ? `-iTCP:${port}` : `-iTCP@${address}:${port}`,
       '-sTCP:LISTEN',
       '-Fp',
     ])
@@ -304,6 +304,32 @@ async function readListeningPortProcessIds(host, port) {
 async function probePortOwnedByProcess(host, port, pid) {
   const processIds = await readListeningPortProcessIds(host, port)
   return processIds.includes(pid)
+}
+
+async function probePortOwnedByProcessGroup(port, processGroupId) {
+  const processIds = await readListeningPortProcessIds(undefined, port)
+  const processGroups = await Promise.all(processIds.map(pid => readPsField(pid, 'pgid')))
+  return processGroups.some(processGroup => Number(processGroup) === processGroupId)
+}
+
+async function waitForPortOwnedByProcess(host, port, pid, timeoutMs) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (await probePortOwnedByProcess(host, port, pid)) return
+    await waitForDelay(25)
+  }
+  throw new Error(`Host PID ${pid} did not take ownership of ${host}:${port} before startup timeout`)
+}
+
+async function waitForPortOwnedByProcessGroup(port, processGroupId, timeoutMs) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (await probePortOwnedByProcessGroup(port, processGroupId)) return
+    await waitForDelay(25)
+  }
+  throw new Error(
+    `Desktop process group ${processGroupId} did not take ownership of mobile bridge port ${port} before startup timeout`,
+  )
 }
 
 function waitForDelay(milliseconds) {
@@ -538,6 +564,7 @@ export {
   processIdentityMismatch,
   probePort,
   probePortOwnedByProcess,
+  probePortOwnedByProcessGroup,
   operationsPath,
   readProcessState,
   removeOwnedProcessState,
@@ -545,6 +572,8 @@ export {
   statusView,
   waitForChildClose,
   waitForPortClosed,
+  waitForPortOwnedByProcess,
+  waitForPortOwnedByProcessGroup,
   waitForProcessExit,
   waitForStopIdentityResolution,
   waitForStableProcessIdentity,

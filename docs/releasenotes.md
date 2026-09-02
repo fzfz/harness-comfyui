@@ -1,3 +1,14 @@
+# 未发布变更
+
+## Linked worktree 并行开发运行环境
+
+- `pnpm dev:start` 与 `pnpm web:start` 通过主开发 checkout 的 `.local/development-port-claims/` 声明当前 worktree 的运行端口。启动器在对应子进程监听声明端口后释放声明；并行 worktree 不再通过修改共享 `.env` 选择端口。
+- `pnpm dev:start` 把 Electron Vite 输出写入当前 worktree 的 `.local/desktop-development/desktop-out/`。共享同一 DSH Desktop 源目录的多个 worktree 不再共同写入上游 `out/`。
+- `pnpm dev:status` 返回当前 Desktop PID 与移动桥接端口；Web Host 的受管进程状态继续保存实际监听端口。Desktop 在端口状态或 PID 写入失败时终止已经启动的子进程，并清理当前 worktree 的两份进程状态。
+- 生产 Desktop 继续从生产 checkout 的 `.env` 读取 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`。开发 Desktop 与独立 Web Host 忽略共享 `.env` 中的实例端口变量，并保留 Provider、Preset、Workspace 和模型配置的共享方式。
+- 完整 `pnpm quality` 通过：822 项 unit/integration、33 项 contract/security、133 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.57%、branches 87.26%、functions 100%、lines 96.03%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本变更没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。
+
 # Harness ComfyUI v0.38.6
 
 v0.38.6 把用户提供的 Krea2 动漫提示词资产整理为仓库第七个项目 Skill `krea2-anime-prompt-builder`，增加单条 Prompt、历史 Generation Run 查询与动作迁移源图合同，并删除会创建或覆盖批量文件且对非法语言参数静默回退的自然语言批量脚本。
