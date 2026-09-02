@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { parseArguments, runSourceProductionCommand } from '../../scripts/production/cli.mjs'
+import { validateSourceRuntime } from '../../scripts/production/contract.mjs'
 import { inspectClientModuleRegistration, parseHealthBootGraph } from '../../scripts/production/health.mjs'
 import { buildHostEnvironment } from '../../scripts/production/process.mjs'
 import {
@@ -284,6 +285,24 @@ describe('Web Host shared process commands', () => {
     expect(Object.keys(environment).filter(key => key.startsWith('HARNESS_COMFYUI_')).sort()).toEqual(expectedKeys)
     expect(environment.HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS).toBe(
       String(fixture.context.runtime.comfyui.frontendCompiler.timeoutMs),
+    )
+    expect(environment.HARNESS_COMFYUI_FRONTEND_NAVIGATION_TIMEOUT_MS).toBe(
+      String(fixture.context.runtime.comfyui.frontendCompiler.preReadiness.navigationMs),
+    )
+    expect(environment.HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS).toBe('2')
+  })
+
+  it('rejects invalid production frontend pre-readiness contracts', async () => {
+    const fixture = await createFixture()
+    const invalidTimeout = structuredClone(fixture.context.runtime)
+    invalidTimeout.comfyui.frontendCompiler.preReadiness.navigationMs = 0
+    expect(() => validateSourceRuntime(invalidTimeout)).toThrow(
+      'runtime.comfyui.frontendCompiler.preReadiness.navigationMs must be a positive integer',
+    )
+    const invalidAttempts = structuredClone(fixture.context.runtime)
+    invalidAttempts.comfyui.frontendCompiler.preReadiness.infrastructureAttempts = 3
+    expect(() => validateSourceRuntime(invalidAttempts)).toThrow(
+      'runtime.comfyui.frontendCompiler.preReadiness.infrastructureAttempts must be 1 or 2',
     )
   })
 

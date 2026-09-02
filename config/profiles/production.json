@@ -12,7 +12,15 @@
     "frontendCompiler": {
       "browserExecutablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       "instanceCacheEpoch": "1",
-      "timeoutMs": 120000
+      "timeoutMs": 120000,
+      "preReadiness": {
+        "devToolsPortMs": 10000,
+        "targetCreateMs": 10000,
+        "webSocketConnectMs": 10000,
+        "domainEnableMs": 10000,
+        "navigationMs": 10000,
+        "infrastructureAttempts": 2
+      }
     }
   },
   "source": {

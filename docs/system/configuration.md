@@ -15,7 +15,7 @@
 
 生产 context 使用 `config/source-production.json.runtimeRelativeRoot` 定位旧 Web 生产 DSH home `<runtimeRelativeRoot>/dsh-home`。该路径只用于把旧 Session、Session Attachment、Session 投影索引和 Workspace Session 关系迁入当前生产 DSH home；开发 Desktop 不读取该旧生产目录。
 
-仓库根 `.env.example` 提供 `OPENCODE_GO_API_KEY` 与七个允许调用者覆盖的 `HARNESS_COMFYUI_*` 业务变量示例。该文件同时注明 Workspace、Desktop runtime、Catalog CLI、Catalog 端口和图片读取 OpenAI 兼容接口的实际配置位置；模板不会为程序不读取的环境变量提供无效示例。
+仓库根 `.env.example` 提供 `OPENCODE_GO_API_KEY` 与十三个允许调用者覆盖的 `HARNESS_COMFYUI_*` 业务变量示例。该文件同时注明 Workspace、Desktop runtime、Catalog CLI、Catalog 端口和图片读取 OpenAI 兼容接口的实际配置位置；模板不会为程序不读取的环境变量提供无效示例。
 
 `config/desktop-worktree.json` 只声明 linked worktree 与生产环境之间的运行差异：
 
@@ -103,9 +103,15 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `paths.savedMediaDirectory` | Saved Media 目录 |
 | `paths.logDirectory` | Host 日志目录 |
 | `comfyui.defaultInstanceId` | 默认 ComfyUI 实例 ID |
-| `comfyui.frontendCompiler.browserExecutablePath` | Harness Host 在 cache miss 时启动的本机 Chrome 或 Chromium 绝对路径；production 默认值为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` |
+| `comfyui.frontendCompiler.browserExecutablePath` | 标准 Node.js 官方前端编译 Worker 在 cache miss 时直接启动的本机 Chrome 或 Chromium 绝对路径；production 默认值为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` |
 | `comfyui.frontendCompiler.instanceCacheEpoch` | Host 级非空缓存代次；值变化会使该 Host 下全部已登记 ComfyUI 实例的旧缓存均不再命中 |
-| `comfyui.frontendCompiler.timeoutMs` | Chrome DevTools 连接、目标页面初始化和 `graphToPrompt()` 导出的统一正整数超时，毫秒；production 默认值为 `120000` |
+| `comfyui.frontendCompiler.timeoutMs` | 单次浏览器会话从启动到前端初始化及 `graphToPrompt()` 导出的正整数总时限，毫秒；production 默认值为 `120000` |
+| `comfyui.frontendCompiler.preReadiness.devToolsPortMs` | 本机浏览器发布 `DevToolsActivePort` 的正整数阶段时限，毫秒；production 默认值为 `10000` |
+| `comfyui.frontendCompiler.preReadiness.targetCreateMs` | 本机 Chrome DevTools HTTP 接口创建页面目标的正整数阶段时限，毫秒；production 默认值为 `10000` |
+| `comfyui.frontendCompiler.preReadiness.webSocketConnectMs` | Harness Host 连接本机浏览器目标 WebSocket 的正整数阶段时限，毫秒；production 默认值为 `10000` |
+| `comfyui.frontendCompiler.preReadiness.domainEnableMs` | 本机浏览器目标完成全部 Chrome DevTools domain enable 命令的共同正整数阶段时限，毫秒；production 默认值为 `10000` |
+| `comfyui.frontendCompiler.preReadiness.navigationMs` | 本机浏览器目标完成 `Page.navigate` 的正整数阶段时限，毫秒；production 默认值为 `10000` |
+| `comfyui.frontendCompiler.preReadiness.infrastructureAttempts` | 同一个 cache miss 在前端 readiness 之前发生基础设施故障时使用的浏览器会话尝试次数，只允许 `1` 或 `2`；production 默认值为 `2` |
 | `source.catalogCliPath` | Catalog CLI 绝对路径，由启动器生成 |
 | `source.catalogPort` | Catalog CLI连接的本机回环服务端口 |
 | `source.sourceCliPath` | Source CLI 绝对路径，由启动器生成 |
@@ -119,12 +125,20 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `client.runRefreshIntervalMs` | Client 查询刷新间隔，毫秒 |
 | `process.shutdownTimeoutMs` | 停止进程与释放端口的超时，毫秒 |
 
-启动器通过环境映射写入全部运行值。运行目录、Official API Workflow Cache 目录、Catalog 端口和两个 Source CLI 路径始终由 `source-production.json` 生成，调用者设置的同名环境变量不会改变它们。调用者可以覆盖以下七个业务值：
+官方前端编译 Worker 不通过 macOS LaunchServices 启动浏览器。Worker 使用独立临时 profile、`--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider` 运行 headless Chrome；这些固定运行参数不接受环境变量覆盖。
+
+启动器通过环境映射写入全部运行值。运行目录、Official API Workflow Cache 目录、Catalog 端口和两个 Source CLI 路径始终由 `source-production.json` 生成，调用者设置的同名环境变量不会改变它们。调用者可以覆盖以下十三个业务值：
 
 - `HARNESS_COMFYUI_DEFAULT_INSTANCE_ID`
 - `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH`
 - `HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH`
 - `HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS`
+- `HARNESS_COMFYUI_FRONTEND_DEVTOOLS_PORT_TIMEOUT_MS`
+- `HARNESS_COMFYUI_FRONTEND_TARGET_CREATE_TIMEOUT_MS`
+- `HARNESS_COMFYUI_FRONTEND_WEBSOCKET_CONNECT_TIMEOUT_MS`
+- `HARNESS_COMFYUI_FRONTEND_DOMAIN_ENABLE_TIMEOUT_MS`
+- `HARNESS_COMFYUI_FRONTEND_NAVIGATION_TIMEOUT_MS`
+- `HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS`
 - `HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS`
 - `HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES`
 - `HARNESS_COMFYUI_SERVER_PORT`

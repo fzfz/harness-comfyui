@@ -27,6 +27,10 @@ describe('source workspace engineering contract', () => {
     })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
     expect(runtimeArtifacts).toEqual({
+      frontendCompilerWorker: {
+        sourceEntryRelativePath: 'src/host/generation/comfy-frontend-worker.ts',
+        outputEntryRelativePath: '.local/source-host/comfy-frontend-worker.js',
+      },
       managedCli: {
         sourceEntryRelativePath: 'scripts/cli/harness-comfyui.mjs',
         outputEntryRelativePath: '.local/source-cli/harness-comfyui.mjs',
@@ -129,6 +133,12 @@ describe('source workspace engineering contract', () => {
       'HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH',
       'HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH',
       'HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS',
+      'HARNESS_COMFYUI_FRONTEND_DEVTOOLS_PORT_TIMEOUT_MS',
+      'HARNESS_COMFYUI_FRONTEND_TARGET_CREATE_TIMEOUT_MS',
+      'HARNESS_COMFYUI_FRONTEND_WEBSOCKET_CONNECT_TIMEOUT_MS',
+      'HARNESS_COMFYUI_FRONTEND_DOMAIN_ENABLE_TIMEOUT_MS',
+      'HARNESS_COMFYUI_FRONTEND_NAVIGATION_TIMEOUT_MS',
+      'HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS',
       'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS',
       'HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES',
       'HARNESS_COMFYUI_SERVER_PORT',

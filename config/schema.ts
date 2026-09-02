@@ -25,6 +25,14 @@ export interface ConfigurationProfileValues {
       browserExecutablePath: string
       instanceCacheEpoch: string
       timeoutMs: number
+      preReadiness: {
+        devToolsPortMs: number
+        targetCreateMs: number
+        webSocketConnectMs: number
+        domainEnableMs: number
+        navigationMs: number
+        infrastructureAttempts: 1 | 2
+      }
     }
   }
   source: {
@@ -72,6 +80,14 @@ const ConfigurationProfileSchema = Schema.object({
       browserExecutablePath: nonEmptyString,
       instanceCacheEpoch: nonEmptyString,
       timeoutMs: positiveInteger,
+      preReadiness: Schema.object({
+        devToolsPortMs: positiveInteger,
+        targetCreateMs: positiveInteger,
+        webSocketConnectMs: positiveInteger,
+        domainEnableMs: positiveInteger,
+        navigationMs: positiveInteger,
+        infrastructureAttempts: Schema.union([Schema.const(1), Schema.const(2)]).required(),
+      }).required(),
     }).required(),
   }).required(),
   source: Schema.object({

@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { performance } from 'node:perf_hooks'
 
-import { GenerationRuntimeError, type JsonValue } from './generation-runtime.ts'
+import type { JsonValue } from '../../generation/run-input-contract.ts'
+import { GenerationRuntimeError } from './generation-error.ts'
 import type { ComfyFrontendExporter, ComfyFrontendExporterInput } from './official-api-workflow.ts'
 import type { UiWorkflow } from './source-preparer.ts'
 
@@ -13,6 +14,9 @@ type UnknownRecord = Record<string, unknown>
 
 export interface BrowserChildProcess {
   readonly exitCode: number | null
+  readonly stderr?: {
+    on(event: 'data', listener: (chunk: string | Uint8Array) => void): unknown
+  } | null
   once(event: 'exit', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this
   once(event: 'close', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this
   once(event: 'error', listener: (error: Error) => void): this
@@ -38,6 +42,7 @@ export interface CdpSession {
 }
 
 interface PendingCdpCommand {
+  readonly method: string
   readonly resolve: (value: unknown) => void
   readonly reject: (error: Error) => void
 }
@@ -46,6 +51,9 @@ export class WebSocketCdpSession implements CdpSession {
   private readonly socket: WebSocketLike
   private readonly pending = new Map<number, PendingCdpCommand>()
   private readonly eventListeners = new Map<string, Set<(params: Readonly<Record<string, unknown>>) => void>>()
+  private state: 'connecting' | 'open' | 'closed' = 'connecting'
+  private rejectConnection: ((error: Error) => void) | undefined
+  private socketClosed = false
   private nextId = 1
 
   constructor(webSocketUrl: string, socketFactory: (url: string) => WebSocketLike = defaultSocketFactory) {
@@ -53,31 +61,50 @@ export class WebSocketCdpSession implements CdpSession {
   }
 
   async connect(signal?: AbortSignal): Promise<void> {
-    let rejectConnection!: (error: Error) => void
+    if (this.state === 'open') return
+    if (this.state === 'closed') throw new Error('Chrome DevTools WebSocket connection is closed.')
     const handleAbort = () => {
-      this.socket.close()
-      rejectConnection(new Error('Chrome DevTools WebSocket connection was canceled.'))
+      this.terminate(new Error('Chrome DevTools WebSocket connection was canceled.'))
+      this.closeSocket()
     }
     try {
       await new Promise<void>((resolve, reject) => {
-        rejectConnection = reject
-        this.socket.addEventListener('open', () => resolve(), { once: true })
-        this.socket.addEventListener('error', () => reject(new Error('Chrome DevTools WebSocket connection failed.')), { once: true })
+        this.rejectConnection = reject
+        this.socket.addEventListener('open', () => {
+          if (this.state === 'closed') return
+          this.state = 'open'
+          this.rejectConnection = undefined
+          resolve()
+        }, { once: true })
+        this.socket.addEventListener('message', event => this.receive(event.data))
+        this.socket.addEventListener('error', () => {
+          this.terminate(new Error('Chrome DevTools WebSocket connection failed.'))
+        })
+        this.socket.addEventListener('close', () => {
+          this.terminate(new Error('Chrome DevTools WebSocket connection closed.'))
+        })
         signal?.addEventListener('abort', handleAbort, { once: true })
         if (signal?.aborted === true) handleAbort()
       })
     } finally {
       signal?.removeEventListener('abort', handleAbort)
     }
-    this.socket.addEventListener('message', event => this.receive(event.data))
   }
 
   send(method: string, params: Readonly<Record<string, unknown>> = {}): Promise<unknown> {
+    if (this.state !== 'open') {
+      return Promise.reject(new Error(`Chrome DevTools command "${method}" cannot be sent because the WebSocket is ${this.state}.`))
+    }
     const id = this.nextId
     this.nextId += 1
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject })
-      this.socket.send(JSON.stringify({ id, method, params }))
+      this.pending.set(id, { method, resolve, reject })
+      try {
+        this.socket.send(JSON.stringify({ id, method, params }))
+      } catch (error) {
+        this.pending.delete(id)
+        reject(this.commandError(method, 'could not be sent', error))
+      }
     })
   }
 
@@ -108,7 +135,30 @@ export class WebSocketCdpSession implements CdpSession {
   }
 
   close(): void {
+    this.terminate(new Error('Chrome DevTools WebSocket connection was closed by the Harness Host.'))
+    this.closeSocket()
+  }
+
+  private closeSocket(): void {
+    if (this.socketClosed) return
+    this.socketClosed = true
     this.socket.close()
+  }
+
+  private terminate(error: Error): void {
+    if (this.state === 'closed') return
+    this.state = 'closed'
+    this.rejectConnection?.(error)
+    this.rejectConnection = undefined
+    for (const pending of this.pending.values()) {
+      pending.reject(this.commandError(pending.method, 'was interrupted', error))
+    }
+    this.pending.clear()
+  }
+
+  private commandError(method: string, action: string, cause: unknown): Error {
+    const details = cause instanceof Error ? cause.message : String(cause)
+    return new Error(`Chrome DevTools command "${method}" ${action}: ${details}`)
   }
 
   private receive(rawMessage: unknown): void {
@@ -128,7 +178,11 @@ export class WebSocketCdpSession implements CdpSession {
     this.pending.delete(message.id)
     if (message.error !== undefined) {
       const error = record(message.error, 'Chrome DevTools command error')
-      pending.reject(new Error(typeof error.message === 'string' ? error.message : 'Chrome DevTools command failed.'))
+      pending.reject(this.commandError(
+        pending.method,
+        'failed',
+        typeof error.message === 'string' ? error.message : 'Chrome DevTools command failed.',
+      ))
       return
     }
     pending.resolve(message.result)
@@ -145,18 +199,37 @@ interface BrowserLifecycle {
 export interface ChromeComfyFrontendOptions {
   readonly browserExecutablePath: string
   readonly timeoutMs: number
+  readonly preReadiness: {
+    readonly devToolsPortMs: number
+    readonly targetCreateMs: number
+    readonly webSocketConnectMs: number
+    readonly domainEnableMs: number
+    readonly navigationMs: number
+    readonly infrastructureAttempts: 1 | 2
+  }
   readonly spawnImplementation?: (
     executable: string,
     arguments_: readonly string[],
-    options: { readonly stdio: 'ignore' },
+    options: { readonly stdio: ['ignore', 'ignore', 'pipe'] },
   ) => BrowserChildProcess
   readonly makeTemporaryDirectory?: () => Promise<string>
   readonly readTextFile?: (path: string) => Promise<string>
   readonly removeDirectory?: (path: string) => Promise<void>
   readonly fetchImplementation?: typeof fetch
   readonly createCdpSession?: (webSocketUrl: string) => CdpSession
-  readonly delay?: (milliseconds: number) => Promise<void>
+  readonly delay?: (milliseconds: number, signal?: AbortSignal) => Promise<void>
   readonly now?: () => number
+  readonly reportDiagnostic?: (diagnostic: FrontendAttemptDiagnostic) => void
+}
+
+export interface FrontendAttemptDiagnostic {
+  readonly attempt: number
+  readonly status: 'failed' | 'succeeded'
+  readonly stage?: string
+  readonly operation?: string
+  readonly code?: string
+  readonly message?: string
+  readonly browserStderr?: string
 }
 
 function record(value: unknown, label: string): UnknownRecord {
@@ -175,7 +248,7 @@ function defaultSocketFactory(url: string): WebSocketLike {
 function defaultSpawn(
   executable: string,
   arguments_: readonly string[],
-  options: { readonly stdio: 'ignore' },
+  options: { readonly stdio: ['ignore', 'ignore', 'pipe'] },
 ): BrowserChildProcess {
   return spawn(executable, arguments_, options) as BrowserChildProcess
 }
@@ -192,8 +265,17 @@ async function defaultRemoveDirectory(path: string): Promise<void> {
   await rm(path, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
 }
 
-function defaultDelay(milliseconds: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, milliseconds))
+function defaultDelay(milliseconds: number, signal?: AbortSignal): Promise<void> {
+  return new Promise(resolve => {
+    const finish = () => {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', finish)
+      resolve()
+    }
+    const timer = setTimeout(finish, milliseconds)
+    signal?.addEventListener('abort', finish, { once: true })
+    if (signal?.aborted === true) finish()
+  })
 }
 
 async function resolveBeforeAbort<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
@@ -201,7 +283,9 @@ async function resolveBeforeAbort<T>(operation: Promise<T>, signal: AbortSignal)
   const aborted = new Promise<never>((_resolve, reject) => {
     rejectAbort = reject
   })
-  const handleAbort = () => rejectAbort(new Error('Chrome DevTools operation timed out or was canceled.'))
+  const handleAbort = () => rejectAbort(signal.reason instanceof Error
+    ? signal.reason
+    : new Error('Chrome DevTools operation timed out or was canceled.'))
   signal.addEventListener('abort', handleAbort, { once: true })
   if (signal.aborted) handleAbort()
   try {
@@ -217,10 +301,78 @@ function errorCode(error: unknown): string | undefined {
     : undefined
 }
 
-function runtimeError(code: string, message: string, cause?: unknown): GenerationRuntimeError {
-  const error = new GenerationRuntimeError(code, message)
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function runtimeError(
+  code: string,
+  message: string,
+  cause?: unknown,
+  details?: { readonly stage?: string; readonly operation?: string },
+): GenerationRuntimeError {
+  const error = new GenerationRuntimeError(code, message, details)
   if (cause !== undefined) error.cause = cause
   return error
+}
+
+class FrontendStageError extends GenerationRuntimeError {
+  readonly stage: string
+  readonly operation: string | undefined
+  readonly retryableInfrastructure: boolean
+  browserStderr: string | undefined
+
+  constructor(
+    code: string,
+    stage: string,
+    message: string,
+    retryableInfrastructure: boolean,
+    cause?: unknown,
+    operation?: string,
+  ) {
+    super(code, message, { stage, ...(operation === undefined ? {} : { operation }) })
+    this.stage = stage
+    this.operation = operation
+    this.retryableInfrastructure = retryableInfrastructure
+    if (cause !== undefined) this.cause = cause
+  }
+}
+
+const BROWSER_STDERR_LIMIT_BYTES = 65_536
+
+class BoundedBrowserStderr {
+  private buffer = Buffer.alloc(0)
+
+  append(chunk: string | Uint8Array): void {
+    if (this.buffer.length >= BROWSER_STDERR_LIMIT_BYTES) return
+    const incoming = Buffer.from(chunk)
+    const combined = Buffer.concat([this.buffer, incoming])
+    this.buffer = combined.length <= BROWSER_STDERR_LIMIT_BYTES
+      ? combined
+      : combined.subarray(0, BROWSER_STDERR_LIMIT_BYTES)
+  }
+
+  text(userDataDirectory: string): string | undefined {
+    if (this.buffer.length === 0) return undefined
+    const sanitized = this.buffer.toString('utf8')
+      .replaceAll(userDataDirectory, '<browser-profile>')
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/gu, '')
+    const bounded = Buffer.from(sanitized, 'utf8')
+    return (bounded.length <= BROWSER_STDERR_LIMIT_BYTES
+      ? bounded
+      : bounded.subarray(0, BROWSER_STDERR_LIMIT_BYTES)).toString('utf8')
+  }
+}
+
+function stageError(
+  code: string,
+  stage: string,
+  message: string,
+  retryableInfrastructure: boolean,
+  cause?: unknown,
+  operation?: string,
+): FrontendStageError {
+  return new FrontendStageError(code, stage, message, retryableInfrastructure, cause, operation)
 }
 
 function callerCanceled(signal: AbortSignal | undefined): GenerationRuntimeError {
@@ -255,12 +407,32 @@ function observeBrowser(browser: BrowserChildProcess): BrowserLifecycle {
   return lifecycle
 }
 
-function throwIfBrowserStopped(browser: BrowserChildProcess, lifecycle: BrowserLifecycle, origin: string): void {
+function throwIfBrowserStopped(
+  browser: BrowserChildProcess,
+  lifecycle: BrowserLifecycle,
+  origin: string,
+  stage: 'readiness' | 'export',
+  operation: 'Runtime.evaluate',
+): void {
   if (lifecycle.failure !== undefined) {
-    throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser process for "${origin}" failed.`, lifecycle.failure)
+    throw stageError(
+      'COMFYUI_FRONTEND_BROWSER_FAILED',
+      stage,
+      `Browser process for "${origin}" failed during Chrome DevTools stage "${stage}" operation "${operation}".`,
+      false,
+      lifecycle.failure,
+      operation,
+    )
   }
   if (lifecycle.closed || browser.exitCode !== null) {
-    throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser process for "${origin}" exited before official frontend compilation completed.`)
+    throw stageError(
+      'COMFYUI_FRONTEND_BROWSER_FAILED',
+      stage,
+      `Browser process for "${origin}" exited during Chrome DevTools stage "${stage}" operation "${operation}".`,
+      false,
+      undefined,
+      operation,
+    )
   }
 }
 
@@ -283,6 +455,15 @@ function requestHeaders(
   return { requestId, headers }
 }
 
+async function continuePausedRequest(
+  cdp: CdpSession,
+  params: Readonly<Record<string, unknown>>,
+  instanceOrigin: string,
+  authorization: string,
+): Promise<void> {
+  await cdp.send('Fetch.continueRequest', requestHeaders(params, instanceOrigin, authorization))
+}
+
 function throwIfCallerCanceled(signal: AbortSignal | undefined): void {
   if (signal?.aborted === true) throw callerCanceled(signal)
 }
@@ -295,11 +476,21 @@ function isReady(value: unknown): boolean {
 
 function exportedApiWorkflow(value: unknown, origin: string): JsonObject {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw runtimeError('COMFYUI_FRONTEND_EXPORT_FAILED', `ComfyUI frontend "${origin}" returned an invalid graphToPrompt result.`)
+    throw runtimeError(
+      'COMFYUI_FRONTEND_EXPORT_FAILED',
+      `ComfyUI frontend "${origin}" returned an invalid graphToPrompt result.`,
+      undefined,
+      { stage: 'export', operation: 'Runtime.evaluate' },
+    )
   }
   const output = (value as UnknownRecord).output
   if (output === null || typeof output !== 'object' || Array.isArray(output) || Object.keys(output).length === 0) {
-    throw runtimeError('COMFYUI_FRONTEND_EXPORT_FAILED', `ComfyUI frontend "${origin}" did not return a valid graphToPrompt output.`)
+    throw runtimeError(
+      'COMFYUI_FRONTEND_EXPORT_FAILED',
+      `ComfyUI frontend "${origin}" did not return a valid graphToPrompt output.`,
+      undefined,
+      { stage: 'export', operation: 'Runtime.evaluate' },
+    )
   }
   return output as JsonObject
 }
@@ -328,6 +519,7 @@ function exportExpression(workflow: UiWorkflow): string {
 export class ChromeComfyFrontend implements ComfyFrontendExporter {
   private readonly browserExecutablePath: string
   private readonly timeoutMs: number
+  private readonly preReadiness: ChromeComfyFrontendOptions['preReadiness']
   private readonly spawnImplementation: NonNullable<ChromeComfyFrontendOptions['spawnImplementation']>
   private readonly makeTemporaryDirectory: NonNullable<ChromeComfyFrontendOptions['makeTemporaryDirectory']>
   private readonly readTextFile: NonNullable<ChromeComfyFrontendOptions['readTextFile']>
@@ -336,12 +528,20 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
   private readonly createCdpSession: NonNullable<ChromeComfyFrontendOptions['createCdpSession']>
   private readonly delay: NonNullable<ChromeComfyFrontendOptions['delay']>
   private readonly now: NonNullable<ChromeComfyFrontendOptions['now']>
+  private readonly reportDiagnostic: ChromeComfyFrontendOptions['reportDiagnostic']
 
   constructor(options: ChromeComfyFrontendOptions) {
     if (!isAbsolute(options.browserExecutablePath)) throw new TypeError('ComfyUI frontend browser executable path must be absolute.')
     if (!Number.isSafeInteger(options.timeoutMs) || options.timeoutMs < 1) throw new TypeError('ComfyUI frontend compiler timeout is invalid.')
+    for (const [name, value] of Object.entries(options.preReadiness)) {
+      if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`ComfyUI frontend pre-readiness ${name} is invalid.`)
+    }
+    if (options.preReadiness.infrastructureAttempts !== 1 && options.preReadiness.infrastructureAttempts !== 2) {
+      throw new TypeError('ComfyUI frontend infrastructure attempt count is invalid.')
+    }
     this.browserExecutablePath = options.browserExecutablePath
     this.timeoutMs = options.timeoutMs
+    this.preReadiness = Object.freeze({ ...options.preReadiness })
     this.spawnImplementation = options.spawnImplementation ?? defaultSpawn
     this.makeTemporaryDirectory = options.makeTemporaryDirectory ?? defaultTemporaryDirectory
     this.readTextFile = options.readTextFile ?? defaultReadTextFile
@@ -350,14 +550,57 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
     this.createCdpSession = options.createCdpSession ?? (url => new WebSocketCdpSession(url))
     this.delay = options.delay ?? defaultDelay
     this.now = options.now ?? (() => performance.now())
+    this.reportDiagnostic = options.reportDiagnostic
   }
 
   async exportWorkflow(input: ComfyFrontendExporterInput): Promise<JsonObject> {
+    let firstFailure: FrontendStageError | undefined
+    for (let attempt = 1; attempt <= this.preReadiness.infrastructureAttempts; attempt += 1) {
+      try {
+        const result = await this.exportAttempt(input)
+        this.reportDiagnostic?.({ attempt, status: 'succeeded' })
+        return result
+      } catch (error) {
+        throwIfCallerCanceled(input.signal)
+        this.reportDiagnostic?.({
+          attempt,
+          status: 'failed',
+          ...(error instanceof FrontendStageError ? { stage: error.stage } : {}),
+          ...(error instanceof FrontendStageError && error.operation !== undefined
+            ? { operation: error.operation }
+            : {}),
+          ...(errorCode(error) === undefined ? {} : { code: errorCode(error) }),
+          ...(error instanceof Error ? { message: error.message } : {}),
+          ...(error instanceof FrontendStageError && error.browserStderr !== undefined
+            ? { browserStderr: error.browserStderr }
+            : {}),
+        })
+        if (!(error instanceof FrontendStageError)
+          || !error.retryableInfrastructure
+          || attempt === this.preReadiness.infrastructureAttempts) {
+          if (firstFailure !== undefined && error instanceof GenerationRuntimeError) {
+            throw runtimeError(
+              error.code,
+              `${error.message} The first browser attempt failed during stage "${firstFailure.stage}" with code "${firstFailure.code}".`,
+              new AggregateError([firstFailure, error], 'Official frontend browser attempts failed.'),
+              { stage: error.stage, ...(error.operation === undefined ? {} : { operation: error.operation }) },
+            )
+          }
+          throw error
+        }
+        firstFailure = error
+      }
+    }
+    throw new Error('Official frontend browser attempt loop ended without a result.')
+  }
+
+  private async exportAttempt(input: ComfyFrontendExporterInput): Promise<JsonObject> {
     throwIfCallerCanceled(input.signal)
     let userDataDirectory: string | undefined
     let browser: BrowserChildProcess | undefined
     let browserLifecycle: BrowserLifecycle | undefined
     let cdp: CdpSession | undefined
+    const browserStderr = new BoundedBrowserStderr()
     try {
       try {
         userDataDirectory = await this.makeTemporaryDirectory()
@@ -365,75 +608,218 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
           '--headless=new',
           '--no-first-run',
           '--no-default-browser-check',
+          '--use-mock-keychain',
+          '--disable-features=DialMediaRouteProvider',
           '--remote-debugging-port=0',
           `--user-data-dir=${userDataDirectory}`,
           'about:blank',
-        ], { stdio: 'ignore' })
+        ], { stdio: ['ignore', 'ignore', 'pipe'] })
+        browser.stderr?.on('data', chunk => browserStderr.append(chunk))
         browserLifecycle = observeBrowser(browser)
       } catch (error) {
-        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not start browser "${this.browserExecutablePath}".`, error)
+        throw stageError(
+          'COMFYUI_FRONTEND_BROWSER_FAILED',
+          'browser-start',
+          `Harness Host could not start browser "${this.browserExecutablePath}".`,
+          true,
+          error,
+          'process.spawn',
+        )
       }
 
-      const deadline = this.now() + this.timeoutMs
+      const attemptStartedAt = this.now()
+      const deadline = attemptStartedAt + this.timeoutMs
       const timeoutSignal = AbortSignal.timeout(this.timeoutMs)
-      const authorizationFailure = new AbortController()
-      let authorizationError: unknown
+      const requestInterceptionFailure = new AbortController()
+      const targetFailure = new AbortController()
+      let requestInterceptionError: unknown
+      let preReadinessComplete = false
       const operationSignal = AbortSignal.any([
         timeoutSignal,
-        authorizationFailure.signal,
+        requestInterceptionFailure.signal,
+        targetFailure.signal,
         browserLifecycle.signal,
         ...(input.signal === undefined ? [] : [input.signal]),
       ])
       try {
-        const port = await this.waitForDevToolsPort(userDataDirectory, browser, browserLifecycle, deadline, input.signal)
-        const response = await this.fetchImplementation(
-          `http://127.0.0.1:${port}/json/new?${encodeURIComponent('about:blank')}`,
-          { method: 'PUT', signal: operationSignal },
+        const port = await this.waitForDevToolsPort(
+          userDataDirectory,
+          browser,
+          browserLifecycle,
+          Math.min(deadline, attemptStartedAt + this.preReadiness.devToolsPortMs),
+          input.signal,
         )
-        if (!response.ok) throw new Error(`Chrome target creation returned HTTP ${response.status}.`)
-        const target = record(await resolveBeforeAbort(response.json(), operationSignal), 'Chrome DevTools target')
-        if (typeof target.webSocketDebuggerUrl !== 'string' || target.webSocketDebuggerUrl.length === 0) {
-          throw new Error('Chrome DevTools target WebSocket URL is invalid.')
+        let webSocketDebuggerUrl: string
+        const targetTimeout = AbortSignal.timeout(this.preReadiness.targetCreateMs)
+        try {
+          const targetSignal = AbortSignal.any([
+            operationSignal,
+            targetTimeout,
+          ])
+          const response = await this.fetchImplementation(
+            `http://127.0.0.1:${port}/json/new?${encodeURIComponent('about:blank')}`,
+            { method: 'PUT', signal: targetSignal },
+          )
+          if (!response.ok) throw new Error(`Chrome target creation returned HTTP ${response.status}.`)
+          const target = record(await resolveBeforeAbort(response.json(), targetSignal), 'Chrome DevTools target')
+          if (typeof target.webSocketDebuggerUrl !== 'string' || target.webSocketDebuggerUrl.length === 0) {
+            throw new Error('Chrome DevTools target WebSocket URL is invalid.')
+          }
+          webSocketDebuggerUrl = target.webSocketDebuggerUrl
+        } catch (error) {
+          throwIfCallerCanceled(input.signal)
+          if (errorCode(error) === 'COMFYUI_FRONTEND_TARGET_CRASHED') throw error
+          throw stageError(
+            'COMFYUI_FRONTEND_TARGET_CREATE_FAILED',
+            'target-create',
+            targetTimeout.aborted
+              ? `Chrome DevTools stage "target-create" exceeded ${this.preReadiness.targetCreateMs}ms for "${input.connection.origin}".`
+              : `Chrome DevTools stage "target-create" failed for "${input.connection.origin}": ${errorMessage(error)}`,
+            true,
+            error,
+            'HTTP PUT /json/new',
+          )
         }
-        cdp = this.createCdpSession(target.webSocketDebuggerUrl)
-        await resolveBeforeAbort(cdp.connect(operationSignal), operationSignal)
-        await resolveBeforeAbort(cdp.send('Page.enable'), operationSignal)
-        await resolveBeforeAbort(cdp.send('Runtime.enable'), operationSignal)
-        await resolveBeforeAbort(cdp.send('Network.enable'), operationSignal)
+        cdp = this.createCdpSession(webSocketDebuggerUrl)
+        const connectionTimeout = AbortSignal.timeout(this.preReadiness.webSocketConnectMs)
+        try {
+          const connectionSignal = AbortSignal.any([
+            operationSignal,
+            connectionTimeout,
+          ])
+          await resolveBeforeAbort(cdp.connect(connectionSignal), connectionSignal)
+        } catch (error) {
+          throwIfCallerCanceled(input.signal)
+          throw stageError(
+            'COMFYUI_FRONTEND_CDP_CONNECT_FAILED',
+            'cdp-connect',
+            connectionTimeout.aborted
+              ? `Chrome DevTools stage "cdp-connect" operation "WebSocket.connect" exceeded ${this.preReadiness.webSocketConnectMs}ms for "${input.connection.origin}".`
+              : `Chrome DevTools stage "cdp-connect" operation "WebSocket.connect" failed for "${input.connection.origin}": ${errorMessage(error)}`,
+            true,
+            error,
+            'WebSocket.connect',
+          )
+        }
+        cdp.onEvent('Inspector.targetCrashed', params => {
+          if (targetFailure.signal.aborted) return
+          const status = typeof params.status === 'string' ? params.status : 'unknown'
+          const targetErrorCode = typeof params.errorCode === 'number' ? params.errorCode : 'unknown'
+          targetFailure.abort(stageError(
+            'COMFYUI_FRONTEND_TARGET_CRASHED',
+            'target-crash',
+            `Chrome DevTools target for "${input.connection.origin}" crashed with status "${status}" and error code "${targetErrorCode}".`,
+            !preReadinessComplete,
+            undefined,
+            'Inspector.targetCrashed',
+          ))
+        })
         if (input.connection.authorization !== null) {
           cdp.onEvent('Fetch.requestPaused', params => {
-            let continued: Promise<unknown>
-            try {
-              continued = cdp!.send('Fetch.continueRequest', requestHeaders(
-                params,
-                input.connection.origin,
-                input.connection.authorization!,
-              ))
-            } catch (error) {
-              authorizationError = error
-              authorizationFailure.abort()
-              return
-            }
-            void continued.catch(error => {
-              authorizationError = error
-              authorizationFailure.abort()
+            void continuePausedRequest(
+              cdp!,
+              params,
+              input.connection.origin,
+              input.connection.authorization!,
+            ).catch(error => {
+              requestInterceptionError = error
+              requestInterceptionFailure.abort(error)
             })
           })
-          await resolveBeforeAbort(cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*' }] }), operationSignal)
         }
-        await resolveBeforeAbort(cdp.send('Page.navigate', { url: `${input.connection.origin}/` }), operationSignal)
+        const domainTimeout = AbortSignal.timeout(this.preReadiness.domainEnableMs)
+        const domainSignal = AbortSignal.any([
+          operationSignal,
+          domainTimeout,
+        ])
+        const domainCommands: readonly (readonly [string, Readonly<Record<string, unknown>>?])[] = [
+          ['Page.enable'],
+          ['Runtime.enable'],
+          ['Network.enable'],
+          ['Inspector.enable'],
+          ...(input.connection.authorization === null
+            ? [] as const
+            : [['Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] }]] as const),
+        ]
+        for (const [method, params] of domainCommands) {
+          try {
+            await resolveBeforeAbort(cdp.send(method, params), domainSignal)
+          } catch (error) {
+            throwIfCallerCanceled(input.signal)
+            if (errorCode(error) === 'COMFYUI_FRONTEND_TARGET_CRASHED') throw error
+            throw stageError(
+              'COMFYUI_FRONTEND_CDP_CONNECT_FAILED',
+              'domain-enable',
+              domainTimeout.aborted
+                ? `Chrome DevTools stage "domain-enable" command "${method}" exceeded ${this.preReadiness.domainEnableMs}ms for "${input.connection.origin}".`
+                : `Chrome DevTools stage "domain-enable" command "${method}" failed for "${input.connection.origin}": ${errorMessage(error)}`,
+              true,
+              error,
+              method,
+            )
+          }
+        }
+        const navigationTimeout = AbortSignal.timeout(this.preReadiness.navigationMs)
+        try {
+          const navigationSignal = AbortSignal.any([
+            operationSignal,
+            navigationTimeout,
+          ])
+          await resolveBeforeAbort(
+            cdp.send('Page.navigate', { url: `${input.connection.origin}/` }),
+            navigationSignal,
+          )
+        } catch (error) {
+          throwIfCallerCanceled(input.signal)
+          if (errorCode(error) === 'COMFYUI_FRONTEND_TARGET_CRASHED') throw error
+          if (requestInterceptionError !== undefined) {
+            throw stageError(
+              'COMFYUI_FRONTEND_NAVIGATION_FAILED',
+              'request-interception',
+              `Chrome DevTools stage "request-interception" operation "Fetch.continueRequest" failed for "${input.connection.origin}".`,
+              false,
+              requestInterceptionError,
+              'Fetch.continueRequest',
+            )
+          }
+          throw stageError(
+            'COMFYUI_FRONTEND_NAVIGATION_FAILED',
+            'navigation',
+            navigationTimeout.aborted
+              ? `Chrome DevTools stage "navigation" command "Page.navigate" exceeded ${this.preReadiness.navigationMs}ms for "${input.connection.origin}".`
+              : `Chrome DevTools stage "navigation" command "Page.navigate" failed for "${input.connection.origin}": ${errorMessage(error)}`,
+            true,
+            error,
+            'Page.navigate',
+          )
+        }
+        preReadinessComplete = true
       } catch (error) {
         throwIfCallerCanceled(input.signal)
         if (error instanceof GenerationRuntimeError) throw error
-        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not connect to the Chrome DevTools target for "${input.connection.origin}".`, error)
+        throw stageError(
+          'COMFYUI_FRONTEND_BROWSER_FAILED',
+          'pre-readiness',
+          `Official frontend pre-readiness operation failed for "${input.connection.origin}".`,
+          true,
+          error,
+          'pre-readiness',
+        )
       }
 
       try {
         await this.waitForFrontend(cdp, browser, browserLifecycle, deadline, input.connection.origin, input.signal, operationSignal)
       } catch (error) {
-        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin)
-        if (authorizationError !== undefined) {
-          throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Harness Host could not authorize browser requests for "${input.connection.origin}".`, authorizationError)
+        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin, 'readiness', 'Runtime.evaluate')
+        if (requestInterceptionError !== undefined) {
+          throw stageError(
+            'COMFYUI_FRONTEND_NAVIGATION_FAILED',
+            'request-interception',
+            `Chrome DevTools stage "request-interception" operation "Fetch.continueRequest" failed for "${input.connection.origin}".`,
+            false,
+            requestInterceptionError,
+            'Fetch.continueRequest',
+          )
         }
         throw error
       }
@@ -443,14 +829,27 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
           await resolveBeforeAbort(cdp.evaluate(exportExpression(input.workflow)), operationSignal),
           input.connection.origin,
         )
-        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin)
+        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin, 'export', 'Runtime.evaluate')
         return exported
       } catch (error) {
         throwIfCallerCanceled(input.signal)
-        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin)
+        throwIfBrowserStopped(browser, browserLifecycle, input.connection.origin, 'export', 'Runtime.evaluate')
+        if (errorCode(error) === 'COMFYUI_FRONTEND_TARGET_CRASHED') throw error
         if (errorCode(error) === 'COMFYUI_FRONTEND_EXPORT_FAILED') throw error
-        throw runtimeError('COMFYUI_FRONTEND_EXPORT_FAILED', `ComfyUI frontend "${input.connection.origin}" could not export the Actual Workflow.`, error)
+        throw stageError(
+          'COMFYUI_FRONTEND_EXPORT_FAILED',
+          'export',
+          `ComfyUI frontend "${input.connection.origin}" could not export the Actual Workflow.`,
+          false,
+          error,
+          'Runtime.evaluate',
+        )
       }
+    } catch (error) {
+      if (error instanceof FrontendStageError && userDataDirectory !== undefined) {
+        error.browserStderr = browserStderr.text(userDataDirectory)
+      }
+      throw error
     } finally {
       try {
         cdp?.close()
@@ -472,22 +871,57 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
     while (this.now() <= deadline) {
       throwIfCallerCanceled(callerSignal)
       if (lifecycle.failure !== undefined) {
-        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', 'Browser process failed before Chrome DevTools became ready.', lifecycle.failure)
+        throw stageError(
+          'COMFYUI_FRONTEND_BROWSER_FAILED',
+          'devtools-port',
+          'Browser process failed before Chrome DevTools became ready.',
+          true,
+          lifecycle.failure,
+          'read DevToolsActivePort',
+        )
       }
       if (lifecycle.closed) {
-        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser closed before Chrome DevTools became ready.`)
+        throw stageError(
+          'COMFYUI_FRONTEND_BROWSER_FAILED',
+          'devtools-port',
+          'Browser closed before Chrome DevTools became ready.',
+          true,
+          undefined,
+          'read DevToolsActivePort',
+        )
       }
       if (browser.exitCode !== null) {
-        throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Browser exited with code ${browser.exitCode} before Chrome DevTools became ready.`)
+        throw stageError(
+          'COMFYUI_FRONTEND_BROWSER_FAILED',
+          'devtools-port',
+          `Browser exited with code ${browser.exitCode} before Chrome DevTools became ready.`,
+          true,
+          undefined,
+          'read DevToolsActivePort',
+        )
       }
       try {
         const [portText] = (await this.readTextFile(portFile)).trim().split(/\r?\n/u)
         const port = Number(portText)
         if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
-          throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Chrome DevTools port file "${portFile}" is invalid.`)
+          throw stageError(
+            'COMFYUI_FRONTEND_BROWSER_FAILED',
+            'devtools-port',
+            `Chrome DevTools port file "${portFile}" is invalid.`,
+            true,
+            undefined,
+            'read DevToolsActivePort',
+          )
         }
         if (lifecycle.failure !== undefined) {
-          throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', 'Browser process failed before Chrome DevTools became ready.', lifecycle.failure)
+          throw stageError(
+            'COMFYUI_FRONTEND_BROWSER_FAILED',
+            'devtools-port',
+            'Browser process failed before Chrome DevTools became ready.',
+            true,
+            lifecycle.failure,
+            'read DevToolsActivePort',
+          )
         }
         return port
       } catch (error) {
@@ -495,7 +929,14 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
       }
       await this.delay(100)
     }
-    throw runtimeError('COMFYUI_FRONTEND_BROWSER_FAILED', `Chrome DevTools port did not become ready within ${this.timeoutMs}ms.`)
+    throw stageError(
+      'COMFYUI_FRONTEND_BROWSER_FAILED',
+      'devtools-port',
+      `Chrome DevTools stage "devtools-port" did not become ready within ${this.preReadiness.devToolsPortMs}ms.`,
+      true,
+      undefined,
+      'read DevToolsActivePort',
+    )
   }
 
   private async waitForFrontend(
@@ -510,26 +951,51 @@ export class ChromeComfyFrontend implements ComfyFrontendExporter {
     try {
       while (this.now() <= deadline) {
         throwIfCallerCanceled(callerSignal)
-        throwIfBrowserStopped(browser, lifecycle, origin)
+        throwIfBrowserStopped(browser, lifecycle, origin, 'readiness', 'Runtime.evaluate')
         if (isReady(await resolveBeforeAbort(cdp.evaluate(READINESS_EXPRESSION), operationSignal))) return
         await this.delay(100)
       }
     } catch (error) {
       throwIfCallerCanceled(callerSignal)
-      throwIfBrowserStopped(browser, lifecycle, origin)
-      if (errorCode(error) === 'COMFYUI_FRONTEND_NOT_READY') throw error
-      throw runtimeError('COMFYUI_FRONTEND_NOT_READY', `ComfyUI frontend "${origin}" did not finish initializing.`, error)
+      throwIfBrowserStopped(browser, lifecycle, origin, 'readiness', 'Runtime.evaluate')
+      if (errorCode(error) === 'COMFYUI_FRONTEND_NOT_READY'
+        || errorCode(error) === 'COMFYUI_FRONTEND_TARGET_CRASHED') throw error
+      throw stageError(
+        'COMFYUI_FRONTEND_NOT_READY',
+        'readiness',
+        `ComfyUI frontend "${origin}" did not finish initializing.`,
+        false,
+        error,
+        'Runtime.evaluate',
+      )
     }
-    throw runtimeError('COMFYUI_FRONTEND_NOT_READY', `ComfyUI frontend "${origin}" did not become ready within ${this.timeoutMs}ms.`)
+    throw stageError(
+      'COMFYUI_FRONTEND_NOT_READY',
+      'readiness',
+      `ComfyUI frontend "${origin}" did not become ready within ${this.timeoutMs}ms.`,
+      false,
+      undefined,
+      'Runtime.evaluate',
+    )
   }
 
   private async stopBrowser(browser: BrowserChildProcess, lifecycle: BrowserLifecycle): Promise<void> {
     if (browser.exitCode !== null || lifecycle.closed) return
     browser.kill('SIGTERM')
-    await Promise.race([lifecycle.closedPromise, this.delay(5_000)])
+    const terminationWait = new AbortController()
+    try {
+      await Promise.race([lifecycle.closedPromise, this.delay(5_000, terminationWait.signal)])
+    } finally {
+      terminationWait.abort()
+    }
     if (browser.exitCode === null && !lifecycle.closed) {
       browser.kill('SIGKILL')
-      await Promise.race([lifecycle.closedPromise, this.delay(5_000)])
+      const forcedTerminationWait = new AbortController()
+      try {
+        await Promise.race([lifecycle.closedPromise, this.delay(5_000, forcedTerminationWait.signal)])
+      } finally {
+        forcedTerminationWait.abort()
+      }
     }
   }
 }

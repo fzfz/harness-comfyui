@@ -45,6 +45,11 @@ function requirePositiveInteger(value, name) {
   return value
 }
 
+function requireInfrastructureAttempts(value, name) {
+  if (value !== 1 && value !== 2) throw new TypeError(`${name} must be 1 or 2`)
+  return value
+}
+
 function requirePathInside(path, root, name) {
   const pathFromRoot = relative(root, path)
   if (pathFromRoot === '' || pathFromRoot === '..' || pathFromRoot.startsWith(`..${sep}`) || isAbsolute(pathFromRoot)) {
@@ -100,8 +105,24 @@ export function validateSourceRuntime(input) {
   const frontendCompiler = requireRecord(comfyui.frontendCompiler, 'runtime.comfyui.frontendCompiler')
   assertExactKeys(
     frontendCompiler,
-    ['browserExecutablePath', 'instanceCacheEpoch', 'timeoutMs'],
+    ['browserExecutablePath', 'instanceCacheEpoch', 'timeoutMs', 'preReadiness'],
     'runtime.comfyui.frontendCompiler',
+  )
+  const preReadiness = requireRecord(
+    frontendCompiler.preReadiness,
+    'runtime.comfyui.frontendCompiler.preReadiness',
+  )
+  assertExactKeys(
+    preReadiness,
+    [
+      'devToolsPortMs',
+      'targetCreateMs',
+      'webSocketConnectMs',
+      'domainEnableMs',
+      'navigationMs',
+      'infrastructureAttempts',
+    ],
+    'runtime.comfyui.frontendCompiler.preReadiness',
   )
   const source = requireRecord(runtime.source, 'runtime.source')
   assertExactKeys(source, ['catalogPort', 'catalogCliPath', 'sourceCliPath', 'contractId', 'sourceReleaseVersion'], 'runtime.source')
@@ -139,6 +160,32 @@ export function validateSourceRuntime(input) {
           frontendCompiler.timeoutMs,
           'runtime.comfyui.frontendCompiler.timeoutMs',
         ),
+        preReadiness: {
+          devToolsPortMs: requirePositiveInteger(
+            preReadiness.devToolsPortMs,
+            'runtime.comfyui.frontendCompiler.preReadiness.devToolsPortMs',
+          ),
+          targetCreateMs: requirePositiveInteger(
+            preReadiness.targetCreateMs,
+            'runtime.comfyui.frontendCompiler.preReadiness.targetCreateMs',
+          ),
+          webSocketConnectMs: requirePositiveInteger(
+            preReadiness.webSocketConnectMs,
+            'runtime.comfyui.frontendCompiler.preReadiness.webSocketConnectMs',
+          ),
+          domainEnableMs: requirePositiveInteger(
+            preReadiness.domainEnableMs,
+            'runtime.comfyui.frontendCompiler.preReadiness.domainEnableMs',
+          ),
+          navigationMs: requirePositiveInteger(
+            preReadiness.navigationMs,
+            'runtime.comfyui.frontendCompiler.preReadiness.navigationMs',
+          ),
+          infrastructureAttempts: requireInfrastructureAttempts(
+            preReadiness.infrastructureAttempts,
+            'runtime.comfyui.frontendCompiler.preReadiness.infrastructureAttempts',
+          ),
+        },
       },
     },
     source: {

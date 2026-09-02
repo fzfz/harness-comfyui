@@ -24,7 +24,8 @@ import {
   CliShellCapabilityStore,
 } from './cli/shell-capability.ts'
 import { ComfyHttpTransport } from './generation/comfy-http-transport.ts'
-import { ChromeComfyFrontend } from './generation/comfy-frontend-browser.ts'
+import { NodeWorkerComfyFrontend } from './generation/comfy-frontend-worker-client.ts'
+import type { FrontendAttemptDiagnostic } from './generation/comfy-frontend-browser.ts'
 import { GenerationCoordinator } from './generation/generation-coordinator.ts'
 import { GenerationRemoteService } from './generation/generation-service.ts'
 import {
@@ -84,6 +85,18 @@ export function reportGenerationRunInputLookupError(
   logger.error(error)
 }
 
+export function reportFrontendAttemptDiagnostic(
+  logger: Pick<Logger, 'error' | 'info'>,
+  diagnostic: FrontendAttemptDiagnostic,
+): void {
+  const serialized = JSON.stringify(diagnostic)
+  if (diagnostic.status === 'failed') {
+    logger.error('Official ComfyUI frontend browser attempt diagnostic: %s', serialized)
+  } else {
+    logger.info('Official ComfyUI frontend browser attempt diagnostic: %s', serialized)
+  }
+}
+
 interface ManagedShellEnvironmentRegistry {
   register(contributor: {
     readonly name: string
@@ -112,16 +125,23 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     executable: profile.source.sourceCliPath,
     port: profile.source.catalogPort,
   })
-  const frontendCompiler = new ChromeComfyFrontend({
+  const generationLogger = ctx.logger('harness-comfyui')
+  const frontendCompiler = new NodeWorkerComfyFrontend({
+    nodeExecutable: 'node',
+    workerModulePath: fileURLToPath(new URL(
+      `../../${runtimeArtifacts.frontendCompilerWorker.outputEntryRelativePath}`,
+      import.meta.url,
+    )),
     browserExecutablePath: profile.comfyui.frontendCompiler.browserExecutablePath,
     timeoutMs: profile.comfyui.frontendCompiler.timeoutMs,
+    preReadiness: profile.comfyui.frontendCompiler.preReadiness,
+    reportDiagnostic: reportFrontendAttemptDiagnostic.bind(undefined, generationLogger),
   })
   const officialApiWorkflowCompiler = new OfficialApiWorkflowCompiler({
     cacheDirectory: profile.paths.apiWorkflowCacheDirectory,
     instanceCacheEpoch: profile.comfyui.frontendCompiler.instanceCacheEpoch,
     frontend: frontendCompiler,
   })
-  const generationLogger = ctx.logger('harness-comfyui')
   const runtime = new GenerationRuntime({
     runRepositoryFile: profile.paths.runRepositoryFile,
     runDirectory: profile.paths.runDirectory,

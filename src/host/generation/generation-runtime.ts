@@ -15,8 +15,10 @@ import {
   type JsonValue,
 } from '../../generation/run-input-contract.ts'
 import type { GenerationRunMediaResult } from '../../image-reader/run-media-contract.ts'
+import { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
 
 export type { JsonPrimitive, JsonValue } from '../../generation/run-input-contract.ts'
+export { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
 
 export interface GenerationLoraSelection {
   readonly id: string
@@ -468,23 +470,6 @@ function snapshot(row: RunRow): GenerationRunSnapshot {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   })
-}
-
-export class GenerationRuntimeError extends Error {
-  readonly code: string
-
-  constructor(code: string, message: string) {
-    super(message)
-    this.code = code
-    this.name = 'GenerationRuntimeError'
-  }
-}
-
-export class GenerationSubmissionNotSentError extends GenerationRuntimeError {
-  constructor(code: string, message: string) {
-    super(code, message)
-    this.name = 'GenerationSubmissionNotSentError'
-  }
 }
 
 export class GenerationRuntime {
