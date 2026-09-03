@@ -115,7 +115,7 @@ describe('source worktree development definition', () => {
   it('releases the claimed Web Host port when runtime preparation fails', async () => {
     const root = await temporaryDirectory('harness-web-prepare-failure-')
     const context = {
-      activeVersion: '0.38.7',
+      activeVersion: '0.39.1',
       sourceManagedStatePath: resolve(root, 'source-managed.json'),
     }
     const releaseContext = vi.fn(async () => undefined)
