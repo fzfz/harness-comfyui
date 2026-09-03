@@ -1,3 +1,14 @@
+# 未发布候选：图片读取失败诊断与配置生效状态
+
+- Runtime 视觉模型以 error 或非调用者 aborted finish 结束时，`IMAGE_READER_PROVIDER_FAILED` 不再丢弃 Provider 已经返回的失败原因。Tool 与 managed CLI 的错误文案现在包含本次调用使用的配置名称、配置 ID、Provider、模型、温度、最大输出 Token 数、finish kind、failure code，以及 Provider 返回的可用 HTTP status、retry-after 和 request ID。
+- Runtime 失败信息只保留明确的字段白名单。错误属性和输出不复制 Provider failure message、Settings credentials、自定义 endpoint、本次 prompt、图片输入或 AttachmentRef；允许输出的字符串会替换非法 UTF-16 与换行控制字符，并使用固定字段和总字符上限。
+- 图片读取设置页把 Host 实际生效配置与当前编辑草稿分开显示。使用者选择已经保存的配置后，该配置立即通过专用激活请求生效，不需要再次点击保存；新建或复制但没有保存的配置只存在于当前页面，离开页面后丢弃，且不会参与图片读取。
+- 已保存配置存在修改时，设置页提供保存并切换、放弃并切换和继续编辑三个明确动作。保存当前草稿并切换另一份已保存配置由 Host 在一次 Settings 提交中完成；外部 Settings 写操作已经切换活动配置时，普通保存不会隐式切回草稿来源配置。删除存在未保存修改的配置前也要求使用者明确放弃修改。保存、激活或删除成功或失败时，页面文案会分别说明被操作的配置和实际生效配置。
+- Host 串行处理保存、激活和删除。新建请求不会覆盖同 ID 的已保存配置，更新请求不会重新创建已经被其他设置操作删除的配置，激活请求只修改 `activeProfileId`。保存、激活和删除的具体业务错误码会经过 Remote 边界到达设置页；Client 在写请求发出后采用 Host 返回的成功配置，避免本地取消把已经提交的状态误报为未生效。
+- Desktop 前台 Bash 的默认超时从 60 秒提高到 180 秒。没有显式设置 `timeoutMs` 的 `comfyui-image-review` 图片读取 CLI 调用会使用该默认值，降低视觉模型冷启动或长输出在第一次调用时被 shell 提前终止的概率。
+- 完整 `pnpm quality` 通过：924 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+- 本变更没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。
+
 # Harness ComfyUI v0.39.0
 
 v0.39.0 为 ANIMA、WAI-Illustrious-SDXL 和 Krea2 Prompt Builder 增加模板无关的生成目的、画幅、清晰度和模型负向策略结果，并让 ComfyUI Generate 在提交每张图片前独立检查当前 Workflow 的实际参数能力、分配普通随机 Seed 和应用模型对应的正负 Prompt。

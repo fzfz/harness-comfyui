@@ -12,7 +12,12 @@ import {
   type ImageReaderProfile,
   type ImageReaderSettingsSection,
 } from '../../image-reader/settings.ts'
-import { ImageReaderError, isAbortError } from './errors.ts'
+import {
+  ImageReaderError,
+  createRuntimeImageReaderFailureContext,
+  isAbortError,
+  runtimeImageReaderFailureMessage,
+} from './errors.ts'
 
 const IMAGE_READER_MAX_RESPONSE_BYTES = 1_048_576
 
@@ -99,7 +104,12 @@ function preparedOptions(prepared: PreparedLlmCall, messages: ReturnType<typeof 
   }
 }
 
-async function observation(prepared: PreparedLlmCall, messages: ReturnType<typeof createUserMessage>[], signal?: AbortSignal): Promise<string> {
+async function observation(
+  prepared: PreparedLlmCall,
+  messages: ReturnType<typeof createUserMessage>[],
+  profile: ImageReaderProfile,
+  signal?: AbortSignal,
+): Promise<string> {
   const deltas: string[] = []
   const completed: string[] = []
   try {
@@ -109,7 +119,26 @@ async function observation(prepared: PreparedLlmCall, messages: ReturnType<typeo
       if (value.type === 'block-end' && value.block.type === 'text') completed.push(value.block.text)
       if (value.type === 'finish' && (value.reason.kind === 'error' || value.reason.kind === 'aborted')) {
         if (value.reason.kind === 'aborted' && signal?.aborted === true) abort(signal)
-        throw new ImageReaderError('IMAGE_READER_PROVIDER_FAILED', 'The configured visual model did not complete the image inspection.')
+        const failure = value.reason.failure
+        const runtimeFailure = createRuntimeImageReaderFailureContext({
+          finishKind: value.reason.kind,
+          profileId: profile.id,
+          profileName: profile.name,
+          connectionType: 'runtime',
+          provider: profile.provider,
+          model: profile.model,
+          temperature: profile.temperature,
+          maxTokens: profile.maxTokens,
+          failureCode: failure.code,
+          failureStatus: failure.status,
+          providerRetryAfterMs: failure.providerRetryAfterMs,
+          requestId: failure.requestId,
+        })
+        throw new ImageReaderError(
+          'IMAGE_READER_PROVIDER_FAILED',
+          runtimeImageReaderFailureMessage(runtimeFailure),
+          { runtimeFailure },
+        )
       }
     }
   } catch (error) {
@@ -280,7 +309,7 @@ export class ImageReaderService {
       provider: prepared.config.provider,
       model: prepared.config.model,
       filePath,
-      observation: await observation(prepared, messages, signal),
+      observation: await observation(prepared, messages, profile, signal),
     })
   }
 

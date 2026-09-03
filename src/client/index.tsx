@@ -73,6 +73,21 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
       }
+      const completeImageReaderSettingsWrite = async <T,>(
+        signal: AbortSignal,
+        send: () => Promise<{ readonly ok: true; readonly value: T } | {
+          readonly ok: false
+          readonly error: { readonly code: string }
+        }>,
+      ): Promise<T> => {
+        ensureActive(signal)
+        const result = await send()
+        if (!result.ok) {
+          ensureActive(signal)
+          throw new ImageReaderSettingsError(result.error.code, result.error.code)
+        }
+        return result.value
+      }
       const catalog = {
         search: async (request: Parameters<typeof remoteCatalog.search>[0], signal: AbortSignal) => {
           ensureActive(signal)
@@ -109,18 +124,13 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           return result.value
         },
         saveProfile: async (request: Parameters<typeof remoteImageReader.saveProfile>[0], signal: AbortSignal) => {
-          ensureActive(signal)
-          const result = await remoteImageReader.saveProfile(request)
-          ensureActive(signal)
-          if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
-          return result.value
+          return completeImageReaderSettingsWrite(signal, () => remoteImageReader.saveProfile(request))
+        },
+        activateProfile: async (request: Parameters<typeof remoteImageReader.activateProfile>[0], signal: AbortSignal) => {
+          return completeImageReaderSettingsWrite(signal, () => remoteImageReader.activateProfile(request))
         },
         deleteProfile: async (request: Parameters<typeof remoteImageReader.deleteProfile>[0], signal: AbortSignal) => {
-          ensureActive(signal)
-          const result = await remoteImageReader.deleteProfile(request)
-          ensureActive(signal)
-          if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
-          return result.value
+          return completeImageReaderSettingsWrite(signal, () => remoteImageReader.deleteProfile(request))
         },
       }
       return [

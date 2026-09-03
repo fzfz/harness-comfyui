@@ -22,5 +22,8 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
     expect(developmentProfilePatch).not.toMatch(/skill-filesystem|tool-skill/u)
     expect(developmentProfilePatch).toBe('[]\n')
     expect(bundlePatch).toContain('apiKeyEnv: OPENCODE_GO_API_KEY')
+    expect(bundlePatch).toContain(`- id: bash-sandbox
+  config:
+    timeoutMs: 180000`)
   })
 })

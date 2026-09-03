@@ -64,6 +64,10 @@ const expectedLoaderPatch = `- insert:
       opencode-go:
         apiKeyEnv: OPENCODE_GO_API_KEY
 
+- id: bash-sandbox
+  config:
+    timeoutMs: 180000
+
 - id: agent-presets
   config:
     default: harness-comfyui-cli-candidate

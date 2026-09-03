@@ -1,10 +1,12 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 
 import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
 
 import type {
+  ActivateImageReaderProfileRequest,
+  ActivateImageReaderProfileResult,
   DeleteImageReaderProfileRequest,
   DeleteImageReaderProfileResult,
   ImageReaderCredentialAction,
@@ -12,6 +14,7 @@ import type {
   ImageReaderModelOption,
   SaveImageReaderProfileRequest,
   SaveImageReaderProfileResult,
+  SaveImageReaderProfileOperation,
 } from '../../image-reader/contract.ts'
 import {
   IMAGE_READER_SETTINGS_FIELD_BY_CODE,
@@ -54,11 +57,51 @@ export interface ImageReaderSettingsApi {
     request: SaveImageReaderProfileRequest,
     signal: AbortSignal,
   ) => Promise<SaveImageReaderProfileResult>
+  readonly activateProfile: (
+    request: ActivateImageReaderProfileRequest,
+    signal: AbortSignal,
+  ) => Promise<ActivateImageReaderProfileResult>
   readonly deleteProfile: (
     request: DeleteImageReaderProfileRequest,
     signal: AbortSignal,
   ) => Promise<DeleteImageReaderProfileResult>
 }
+
+export const IMAGE_READER_SETTINGS_COPY = Object.freeze({
+  activeSelectorLabel: '当前生效配置',
+  activeSelectorHelp: '选择已保存配置后，该配置立即用于下一次图片读取。',
+  editingPersisted: (name: string) => `正在编辑配置“${name}”。该配置是当前生效配置。`,
+  editingDirtyPersisted: (name: string) => `配置“${name}”有未保存修改。图片读取继续使用该配置上一次保存的内容。`,
+  editingDirtyWhileAnotherActive: (draftName: string, activeName: string) => `配置“${draftName}”有未保存修改。图片读取当前使用配置“${activeName}”。`,
+  editingUnsaved: (draftName: string, activeName: string) => `配置“${draftName}”尚未保存。图片读取继续使用配置“${activeName}”。`,
+  savePersisted: (name: string) => `保存配置“${name}”`,
+  savePersistedWhileAnotherActive: (draftName: string, activeName: string) => `保存配置“${draftName}”并继续使用当前生效配置“${activeName}”`,
+  saveUnsaved: (name: string) => `保存配置“${name}”并使该配置生效`,
+  discardUnsaved: (name: string) => `放弃未保存配置“${name}”`,
+  discardPersisted: (name: string) => `放弃配置“${name}”的未保存修改`,
+  savedAndActive: (name: string) => `配置“${name}”已保存并生效。`,
+  savedWhileAnotherActive: (draftName: string, activeName: string) => `配置“${draftName}”已保存。图片读取继续使用当前生效配置“${activeName}”。`,
+  savedAndSwitched: (draftName: string, activeName: string) => `配置“${draftName}”已保存，配置“${activeName}”已生效。下一次图片读取将使用配置“${activeName}”。`,
+  deletedAndActivated: (deletedName: string, activeName: string) => `配置“${deletedName}”已删除，配置“${activeName}”现在生效。下一次图片读取将使用配置“${activeName}”。`,
+  deletedWhileAnotherActive: (deletedName: string, activeName: string) => `配置“${deletedName}”已删除。图片读取继续使用当前生效配置“${activeName}”。`,
+  activating: (targetName: string, activeName: string) => `正在切换到配置“${targetName}”。切换完成前，图片读取继续使用配置“${activeName}”。`,
+  activated: (name: string) => `配置“${name}”已生效。下一次图片读取将使用该配置。`,
+  saveAndSwitch: (draftName: string, targetName: string) => `保存配置“${draftName}”并切换到配置“${targetName}”`,
+  discardAndSwitch: (draftName: string, targetName: string) => `放弃配置“${draftName}”的未保存修改并切换到配置“${targetName}”`,
+  continueEditing: (name: string) => `继续编辑配置“${name}”`,
+  switchGate: (name: string) => `配置“${name}”有未保存修改。请选择保存修改、放弃修改或继续编辑。`,
+  discardAndDelete: (name: string) => `放弃配置“${name}”的未保存修改并删除配置“${name}”`,
+  deleteGate: (name: string) => `配置“${name}”有未保存修改。删除该配置前必须明确放弃修改。`,
+  activationCancelled: (targetName: string, activeName: string, discardedDraftName?: string) => discardedDraftName === undefined
+    ? `配置“${targetName}”的切换请求已取消。图片读取继续使用当前生效配置“${activeName}”。请重新选择配置“${targetName}”。`
+    : `配置“${targetName}”的切换请求已取消。配置“${discardedDraftName}”的未保存修改已按使用者选择放弃，图片读取继续使用当前生效配置“${activeName}”。请重新选择配置“${targetName}”。`,
+  saveCancelled: (name: string) => `配置“${name}”的保存请求已取消。未保存修改仍然保留，图片读取继续使用提交前的配置。请重新保存配置“${name}”。`,
+  deleteCancelled: (name: string, discardedDraft: boolean) => discardedDraft
+    ? `配置“${name}”的删除请求已取消。配置“${name}”的未保存修改已按使用者选择放弃，该配置没有被删除。请重新删除配置“${name}”或继续使用。`
+    : `配置“${name}”的删除请求已取消。该配置没有被删除。请重新删除配置“${name}”或继续使用。`,
+  updateTargetDeleted: (draftName: string, activeName: string) => `配置“${draftName}”已被其他设置操作删除。当前草稿不能保存；请放弃该草稿以加载当前生效配置“${activeName}”。`,
+  activationTargetDeleted: (targetName: string, draftName: string) => `目标配置“${targetName}”已被其他设置操作删除，无法完成切换。配置“${draftName}”的未保存修改仍然保留。`,
+})
 
 interface SettingsScope<T> {
   readonly getSnapshot: () => {
@@ -84,6 +127,8 @@ export function modelsForProvider(
 function saveRequest(
   profile: ImageReaderProfile,
   credential: ImageReaderCredentialAction,
+  operation: SaveImageReaderProfileOperation,
+  activateProfileId: string,
 ): SaveImageReaderProfileRequest {
   const common = {
     id: profile.id,
@@ -95,10 +140,14 @@ function saveRequest(
   }
   if (profile.connectionType === 'runtime') {
     return Object.freeze({
+      operation,
+      activateProfileId,
       profile: Object.freeze({ ...common, connectionType: 'runtime', provider: profile.provider }),
     })
   }
   return Object.freeze({
+    operation,
+    activateProfileId,
     profile: Object.freeze({ ...common, connectionType: 'openai-compatible', endpoint: profile.endpoint }),
     credential,
   })
@@ -109,9 +158,11 @@ export async function saveImageReaderProfile(
   profile: ImageReaderProfile,
   credential: ImageReaderCredentialAction,
   persistedConfiguration: ImageReaderConfiguration,
+  operation: SaveImageReaderProfileOperation,
+  activateProfileId: string,
   signal: AbortSignal,
 ): Promise<SaveImageReaderProfileResult> {
-  const request = saveRequest(profile, credential)
+  const request = saveRequest(profile, credential, operation, activateProfileId)
   try {
     validateSaveImageReaderProfileRequest(request, {
       persistedProfileCount: persistedConfiguration.profiles.length,
@@ -181,6 +232,16 @@ function settingsErrorCode(error: unknown): string {
       : 'IMAGE_READER_SETTINGS_REQUEST_FAILED'
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+type ImageReaderDraftOrigin = 'persisted' | 'new' | 'duplicate'
+
+type ImageReaderPendingIntent =
+  | { readonly kind: 'switch'; readonly targetProfileId: string }
+  | { readonly kind: 'delete'; readonly profileId: string }
+
 export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageProps) {
   const settings = useSyncExternalStore(
     listener => scope.subscribe(listener),
@@ -188,36 +249,80 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
   )
   const initialConfiguration = settings.value?.configuration ?? IMAGE_READER_DEFAULT_CONFIGURATION
   const [persistedConfiguration, setPersistedConfiguration] = useState<ImageReaderConfiguration>(initialConfiguration)
-  const [activeProfile, setActiveProfile] = useState<ImageReaderProfile>(activeImageReaderProfile(initialConfiguration))
+  const [editorDraft, setEditorDraft] = useState<ImageReaderProfile>(activeImageReaderProfile(initialConfiguration))
+  const [draftOrigin, setDraftOrigin] = useState<ImageReaderDraftOrigin>('persisted')
   const [credentialAction, setCredentialAction] = useState<ImageReaderCredentialAction>(
     initialCredentialAction(activeImageReaderProfile(initialConfiguration)),
   )
   const [dirty, setDirty] = useState(false)
-  const [pendingProfileId, setPendingProfileId] = useState<string | null>(null)
-  const [newProfileReturnId, setNewProfileReturnId] = useState(initialConfiguration.activeProfileId)
+  const dirtyRef = useRef(false)
+  dirtyRef.current = dirty
+  const [pendingIntent, setPendingIntent] = useState<ImageReaderPendingIntent | null>(null)
   const [modelCatalog, setModelCatalog] = useState<ImageReaderModelCatalog | null>(null)
   const [catalogStatus, setCatalogStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [catalogVersion, setCatalogVersion] = useState(0)
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')
-  const [pendingOperation, setPendingOperation] = useState<'save' | 'delete' | null>(null)
-  const [failedOperation, setFailedOperation] = useState<'save' | 'delete' | null>(null)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveErrorCode, setSaveErrorCode] = useState<string | null>(null)
+  const [operationStatus, setOperationStatus] = useState<'idle' | 'saved' | 'error'>('idle')
+  const [pendingOperation, setPendingOperation] = useState<'activate' | 'save' | 'delete' | null>(null)
+  const [failedOperation, setFailedOperation] = useState<'activate' | 'save' | 'delete' | null>(null)
+  const [operationError, setOperationError] = useState<string | null>(null)
+  const [operationErrorCode, setOperationErrorCode] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const operationController = useRef<AbortController | null>(null)
+  const persistedConfigurationRef = useRef(persistedConfiguration)
+  persistedConfigurationRef.current = persistedConfiguration
+  const editorDraftRef = useRef(editorDraft)
+  editorDraftRef.current = editorDraft
+  const draftOriginRef = useRef(draftOrigin)
+  draftOriginRef.current = draftOrigin
+  const pendingIntentRef = useRef(pendingIntent)
+  pendingIntentRef.current = pendingIntent
 
   useEffect(() => {
     if (settings.status === 'ready') {
       const configuration = settings.value?.configuration ?? IMAGE_READER_DEFAULT_CONFIGURATION
-      const profile = activeImageReaderProfile(configuration)
+      const previousConfiguration = persistedConfigurationRef.current
+      const currentDraft = editorDraftRef.current
+      const currentDraftOrigin = draftOriginRef.current
+      const currentIntent = pendingIntentRef.current
       setPersistedConfiguration(configuration)
-      setActiveProfile(savedProfile(configuration, profile.id))
-      setCredentialAction(initialCredentialAction(profile))
-      setDirty(false)
-      setPendingProfileId(null)
-      setNewProfileReturnId(configuration.activeProfileId)
+      if (!dirtyRef.current) {
+        const profile = activeImageReaderProfile(configuration)
+        setEditorDraft(savedProfile(configuration, profile.id))
+        setDraftOrigin('persisted')
+        setCredentialAction(initialCredentialAction(profile))
+        setPendingIntent(null)
+      } else if (
+        currentDraftOrigin === 'persisted'
+        && !configuration.profiles.some(profile => profile.id === currentDraft.id)
+      ) {
+        setPendingIntent(null)
+        setOperationStatus('error')
+        setFailedOperation('save')
+        setOperationErrorCode('IMAGE_READER_PROFILE_UPDATE_TARGET_NOT_FOUND')
+        setOperationError(IMAGE_READER_SETTINGS_COPY.updateTargetDeleted(
+          currentDraft.name,
+          activeImageReaderProfile(configuration).name,
+        ))
+      } else if (
+        currentIntent?.kind === 'switch'
+        && !configuration.profiles.some(profile => profile.id === currentIntent.targetProfileId)
+      ) {
+        const removedTargetName = previousConfiguration.profiles.find(
+          profile => profile.id === currentIntent.targetProfileId,
+        )?.name ?? currentIntent.targetProfileId
+        setPendingIntent(null)
+        setOperationStatus('error')
+        setFailedOperation('activate')
+        setOperationErrorCode('IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND')
+        setOperationError(IMAGE_READER_SETTINGS_COPY.activationTargetDeleted(removedTargetName, currentDraft.name))
+      }
     }
   }, [settings])
+
+  useEffect(() => () => {
+    operationController.current?.abort()
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -236,164 +341,274 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
     return () => controller.abort()
   }, [api, catalogVersion])
 
-  const availableModels = modelsForProvider(modelCatalog, activeProfile.provider)
-  const currentModelIsMissing = activeProfile.connectionType === 'runtime'
-    && activeProfile.model.length > 0
-    && !availableModels.some(model => model.id === activeProfile.model)
+  const availableModels = modelsForProvider(modelCatalog, editorDraft.provider)
+  const currentModelIsMissing = editorDraft.connectionType === 'runtime'
+    && editorDraft.model.length > 0
+    && !availableModels.some(model => model.id === editorDraft.model)
   const writable = settings.status === 'ready' && settings.writable
-  const currentProfileIsPersisted = persistedConfiguration.profiles.some(profile => profile.id === activeProfile.id)
-  const profileOptions = currentProfileIsPersisted
-    ? persistedConfiguration.profiles
-    : Object.freeze([...persistedConfiguration.profiles, activeProfile])
+  const controlsDisabled = !writable || pendingOperation !== null
+  const actualProfile = activeImageReaderProfile(persistedConfiguration)
+  const draftSourceMissing = dirty
+    && draftOrigin === 'persisted'
+    && !persistedConfiguration.profiles.some(profile => profile.id === editorDraft.id)
+  const mutationControlsDisabled = controlsDisabled || draftSourceMissing
   const resetMessages = () => {
-    setSaveStatus('idle')
-    setSaveError(null)
-    setSaveErrorCode(null)
+    setOperationStatus('idle')
+    setOperationError(null)
+    setOperationErrorCode(null)
     setSuccessMessage(null)
     setFailedOperation(null)
   }
-  const updateActiveProfile = (update: (profile: ImageReaderProfile) => ImageReaderProfile) => {
-    setActiveProfile(current => Object.freeze(update(current)))
-    setDirty(true)
-    resetMessages()
-  }
-  const loadPersistedProfile = (configuration: ImageReaderConfiguration, id: string) => {
-    const profile = savedProfile(configuration, id)
-    setActiveProfile(profile)
+  const loadActualProfile = (configuration: ImageReaderConfiguration) => {
+    const profile = activeImageReaderProfile(configuration)
+    setEditorDraft(savedProfile(configuration, profile.id))
+    setDraftOrigin('persisted')
     setCredentialAction(initialCredentialAction(profile))
     setDirty(false)
-    setPendingProfileId(null)
+    setPendingIntent(null)
+  }
+  const adoptConfiguration = (configuration: ImageReaderConfiguration) => {
+    setPersistedConfiguration(configuration)
+    loadActualProfile(configuration)
+  }
+  const updateEditorDraft = (update: (profile: ImageReaderProfile) => ImageReaderProfile) => {
+    if (mutationControlsDisabled) return
+    setEditorDraft(current => Object.freeze(update(current)))
+    setDirty(true)
     resetMessages()
   }
-  const selectProfile = (id: string) => {
-    if (id === activeProfile.id) return
-    if (dirty) {
-      setPendingProfileId(id)
-      resetMessages()
-      return
-    }
-    loadPersistedProfile(persistedConfiguration, id)
-  }
   const addProfile = () => {
-    if (persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES) return
+    if (mutationControlsDisabled || dirty || persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES) return
     const id = profileId()
     const next = createImageReaderProfile(id, `图片读取配置 ${persistedConfiguration.profiles.length + 1}`)
-    setNewProfileReturnId(persistedConfiguration.activeProfileId)
-    setActiveProfile(next)
+    setEditorDraft(next)
+    setDraftOrigin('new')
     setCredentialAction(Object.freeze({ action: 'clear' }))
     setDirty(true)
-    setPendingProfileId(null)
+    setPendingIntent(null)
     resetMessages()
   }
   const duplicateProfile = () => {
-    if (persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES) return
+    if (mutationControlsDisabled || dirty || persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES) return
     const id = profileId()
-    const next = Object.freeze({ ...activeProfile, id, name: `${activeProfile.name} 副本`, hasApiKey: false })
-    setNewProfileReturnId(persistedConfiguration.activeProfileId)
-    setActiveProfile(next)
+    const next = Object.freeze({ ...editorDraft, id, name: `${editorDraft.name} 副本`, hasApiKey: false })
+    setEditorDraft(next)
+    setDraftOrigin('duplicate')
     setCredentialAction(Object.freeze({ action: 'clear' }))
     setDirty(true)
-    setPendingProfileId(null)
+    setPendingIntent(null)
     resetMessages()
   }
-  const discardAndSwitch = () => {
-    const id = pendingProfileId ?? (currentProfileIsPersisted ? activeProfile.id : newProfileReturnId)
-    loadPersistedProfile(persistedConfiguration, id)
-  }
   const updateCredential = (action: ImageReaderCredentialAction) => {
+    if (mutationControlsDisabled) return
     setCredentialAction(Object.freeze(action))
     setDirty(true)
     resetMessages()
   }
-  const save = async () => {
+
+  const activatePersistedProfile = async (targetProfileId: string, discardedDraftName?: string) => {
+    if (controlsDisabled || targetProfileId === persistedConfiguration.activeProfileId) return
+    const targetName = savedProfile(persistedConfiguration, targetProfileId).name
+    const activeName = actualProfile.name
     const controller = new AbortController()
+    operationController.current = controller
+    setPendingIntent(Object.freeze({ kind: 'switch', targetProfileId }))
+    setPendingOperation('activate')
+    resetMessages()
+    try {
+      const result = await api.activateProfile({ profileId: targetProfileId }, controller.signal)
+      adoptConfiguration(result.configuration)
+      const activatedName = activeImageReaderProfile(result.configuration).name
+      setOperationStatus('saved')
+      setSuccessMessage(IMAGE_READER_SETTINGS_COPY.activated(activatedName))
+    } catch (error) {
+      if (discardedDraftName !== undefined) loadActualProfile(persistedConfiguration)
+      const message = isAbortError(error)
+        ? IMAGE_READER_SETTINGS_COPY.activationCancelled(targetName, activeName, discardedDraftName)
+        : imageReaderSettingsErrorMessage(error)
+      setOperationErrorCode(settingsErrorCode(error))
+      setOperationError(message)
+      setOperationStatus('error')
+      setFailedOperation('activate')
+      setPendingIntent(null)
+    } finally {
+      if (operationController.current === controller) operationController.current = null
+      setPendingOperation(null)
+    }
+  }
+
+  const selectProfile = (id: string) => {
+    if (mutationControlsDisabled || id === persistedConfiguration.activeProfileId) return
+    if (dirty) {
+      setPendingIntent(Object.freeze({ kind: 'switch', targetProfileId: id }))
+      resetMessages()
+      return
+    }
+    void activatePersistedProfile(id)
+  }
+
+  const save = async () => {
+    if (mutationControlsDisabled) return
+    const switchIntent = pendingIntent?.kind === 'switch' ? pendingIntent : null
+    const activateProfileId = switchIntent?.targetProfileId
+      ?? (draftOrigin === 'persisted' ? persistedConfiguration.activeProfileId : editorDraft.id)
+    const targetName = activateProfileId === editorDraft.id
+      ? editorDraft.name
+      : savedProfile(persistedConfiguration, activateProfileId).name
+    const controller = new AbortController()
+    operationController.current = controller
     setPendingOperation('save')
-    setSaveStatus('idle')
-    setSaveError(null)
-    setSaveErrorCode(null)
+    setOperationStatus('idle')
+    setOperationError(null)
+    setOperationErrorCode(null)
     setSuccessMessage(null)
     try {
       const result = await saveImageReaderProfile(
         api,
-        activeProfile,
+        editorDraft,
         credentialAction,
         persistedConfiguration,
+        draftOrigin === 'persisted' ? 'update' : 'create',
+        activateProfileId,
         controller.signal,
       )
-      setPersistedConfiguration(result.configuration)
-      const nextProfile = savedProfile(result.configuration, result.configuration.activeProfileId)
-      setActiveProfile(nextProfile)
-      setCredentialAction(initialCredentialAction(nextProfile))
-      setDirty(false)
-      setPendingProfileId(null)
-      setSaveStatus('saved')
-      setSuccessMessage('当前图片读取配置已保存并生效。')
-      setPendingOperation(null)
+      adoptConfiguration(result.configuration)
+      const activeResult = activeImageReaderProfile(result.configuration)
+      setOperationStatus('saved')
+      setSuccessMessage(switchIntent !== null
+        ? IMAGE_READER_SETTINGS_COPY.savedAndSwitched(editorDraft.name, activeResult.name)
+        : activeResult.id === editorDraft.id
+          ? IMAGE_READER_SETTINGS_COPY.savedAndActive(editorDraft.name)
+          : IMAGE_READER_SETTINGS_COPY.savedWhileAnotherActive(editorDraft.name, activeResult.name))
     } catch (error) {
       const code = settingsErrorCode(error)
-      setSaveErrorCode(code)
-      setSaveError(imageReaderSettingsErrorMessage(error))
-      setSaveStatus('error')
+      setOperationErrorCode(code)
+      setOperationError(isAbortError(error)
+        ? IMAGE_READER_SETTINGS_COPY.saveCancelled(editorDraft.name)
+        : code === 'IMAGE_READER_PROFILE_UPDATE_TARGET_NOT_FOUND'
+          ? IMAGE_READER_SETTINGS_COPY.updateTargetDeleted(editorDraft.name, actualProfile.name)
+          : code === 'IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND' && switchIntent !== null
+            ? IMAGE_READER_SETTINGS_COPY.activationTargetDeleted(targetName, editorDraft.name)
+            : imageReaderSettingsErrorMessage(error))
+      setOperationStatus('error')
       setFailedOperation('save')
+    } finally {
+      if (operationController.current === controller) operationController.current = null
       setPendingOperation(null)
     }
   }
 
-  const deleteProfile = async () => {
-    if (!currentProfileIsPersisted) {
-      loadPersistedProfile(persistedConfiguration, newProfileReturnId)
-      return
-    }
+  const performDelete = async (profileIdToDelete: string, discardedDraft: boolean) => {
+    if (controlsDisabled) return
     if (persistedConfiguration.profiles.length === 1) return
     const controller = new AbortController()
+    operationController.current = controller
+    setPendingIntent(Object.freeze({ kind: 'delete', profileId: profileIdToDelete }))
     setPendingOperation('delete')
-    setSaveStatus('idle')
-    setSaveError(null)
-    setSaveErrorCode(null)
+    setOperationStatus('idle')
+    setOperationError(null)
+    setOperationErrorCode(null)
     setSuccessMessage(null)
+    const deletedProfileName = persistedConfiguration.profiles.find(profile => profile.id === profileIdToDelete)?.name
+      ?? editorDraft.name
+    const deletedWasActive = persistedConfiguration.activeProfileId === profileIdToDelete
     try {
-      const result = await api.deleteProfile({ profileId: activeProfile.id }, controller.signal)
-      setPersistedConfiguration(result.configuration)
-      const nextProfile = activeImageReaderProfile(result.configuration)
-      setActiveProfile(savedProfile(result.configuration, nextProfile.id))
-      setCredentialAction(initialCredentialAction(nextProfile))
-      setDirty(false)
-      setPendingProfileId(null)
-      setSaveStatus('saved')
-      setSuccessMessage('当前图片读取配置已删除。')
-      setPendingOperation(null)
+      const result = await api.deleteProfile({ profileId: profileIdToDelete }, controller.signal)
+      adoptConfiguration(result.configuration)
+      const activeResult = activeImageReaderProfile(result.configuration)
+      setOperationStatus('saved')
+      setSuccessMessage(deletedWasActive
+        ? IMAGE_READER_SETTINGS_COPY.deletedAndActivated(deletedProfileName, activeResult.name)
+        : IMAGE_READER_SETTINGS_COPY.deletedWhileAnotherActive(deletedProfileName, activeResult.name))
     } catch (error) {
+      if (discardedDraft) loadActualProfile(persistedConfiguration)
       const code = settingsErrorCode(error)
-      setSaveErrorCode(code)
-      setSaveError(imageReaderSettingsErrorMessage(error))
-      setSaveStatus('error')
+      setOperationErrorCode(code)
+      setOperationError(isAbortError(error)
+        ? IMAGE_READER_SETTINGS_COPY.deleteCancelled(deletedProfileName, discardedDraft)
+        : imageReaderSettingsErrorMessage(error))
+      setOperationStatus('error')
       setFailedOperation('delete')
+      setPendingIntent(null)
+    } finally {
+      if (operationController.current === controller) operationController.current = null
       setPendingOperation(null)
     }
+  }
+
+  const requestDelete = () => {
+    if (mutationControlsDisabled) return
+    if (draftOrigin !== 'persisted') {
+      loadActualProfile(persistedConfiguration)
+      resetMessages()
+      return
+    }
+    if (dirty) {
+      setPendingIntent(Object.freeze({ kind: 'delete', profileId: editorDraft.id }))
+      resetMessages()
+      return
+    }
+    void performDelete(editorDraft.id, false)
+  }
+
+  const discardDraft = () => {
+    loadActualProfile(persistedConfiguration)
+    resetMessages()
+  }
+
+  const discardAndSwitch = () => {
+    if (pendingIntent?.kind !== 'switch') return
+    const targetProfileId = pendingIntent.targetProfileId
+    const discardedDraftName = editorDraft.name
+    loadActualProfile(persistedConfiguration)
+    void activatePersistedProfile(targetProfileId, discardedDraftName)
+  }
+
+  const discardAndDelete = () => {
+    if (pendingIntent?.kind !== 'delete') return
+    const profileIdToDelete = pendingIntent.profileId
+    loadActualProfile(persistedConfiguration)
+    void performDelete(profileIdToDelete, true)
   }
 
   const credentialDraft = credentialAction.action === 'replace' ? credentialAction.apiKey : ''
   const credentialState = credentialAction.action === 'clear'
-    ? activeProfile.hasApiKey
+    ? editorDraft.hasApiKey
       ? '保存后清除已保存的 API Key。'
       : '这份配置没有保存 API Key；本地免鉴权接口可以留空。'
     : credentialAction.action === 'replace'
-      ? activeProfile.hasApiKey
+      ? editorDraft.hasApiKey
         ? '保存后替换这份配置的 API Key。'
         : '保存后首次设置这份配置的 API Key。'
-      : activeProfile.hasApiKey
+      : editorDraft.hasApiKey
         ? '这份配置已经保存 API Key；留空不会修改。'
         : '这份配置没有保存 API Key；本地免鉴权接口可以留空。'
-  const errorField = saveErrorCode === null
+  const errorField = operationErrorCode === null
     ? null
-    : IMAGE_READER_SETTINGS_FIELD_BY_CODE[saveErrorCode as keyof typeof IMAGE_READER_SETTINGS_FIELD_BY_CODE] ?? null
-  const fieldError = (field: ImageReaderSettingsField) => errorField === field ? saveError : null
+    : IMAGE_READER_SETTINGS_FIELD_BY_CODE[operationErrorCode as keyof typeof IMAGE_READER_SETTINGS_FIELD_BY_CODE] ?? null
+  const fieldError = (field: ImageReaderSettingsField) => errorField === field ? operationError : null
   const renderFieldError = (field: ImageReaderSettingsField) => {
     const message = fieldError(field)
     return message === null ? null : (
       <small role="alert" data-image-reader-error-field={field}>{message}</small>
     )
   }
+  const switchIntent = pendingIntent?.kind === 'switch' ? pendingIntent : null
+  const switchTarget = switchIntent === null
+    ? null
+    : persistedConfiguration.profiles.find(profile => profile.id === switchIntent.targetProfileId) ?? null
+  const editorStateMessage = draftOrigin === 'persisted'
+    ? dirty
+      ? editorDraft.id === actualProfile.id
+        ? IMAGE_READER_SETTINGS_COPY.editingDirtyPersisted(editorDraft.name)
+        : IMAGE_READER_SETTINGS_COPY.editingDirtyWhileAnotherActive(editorDraft.name, actualProfile.name)
+      : IMAGE_READER_SETTINGS_COPY.editingPersisted(editorDraft.name)
+    : IMAGE_READER_SETTINGS_COPY.editingUnsaved(editorDraft.name, actualProfile.name)
+  const saveButtonLabel = draftOrigin === 'persisted'
+    ? editorDraft.id === actualProfile.id
+      ? IMAGE_READER_SETTINGS_COPY.savePersisted(editorDraft.name)
+      : IMAGE_READER_SETTINGS_COPY.savePersistedWhileAnotherActive(editorDraft.name, actualProfile.name)
+    : IMAGE_READER_SETTINGS_COPY.saveUnsaved(editorDraft.name)
 
   return (
     <section className="harness-comfyui-image-reader-settings" aria-labelledby="harness-comfyui-image-reader-title">
@@ -419,33 +634,59 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
 
       <div className="harness-comfyui-image-reader-profile-bar">
         <label>
-          <span>当前编辑的配置</span>
-          <select value={activeProfile.id} onChange={event => selectProfile(event.target.value)}>
-            {profileOptions.map(profile => (
+          <span>{IMAGE_READER_SETTINGS_COPY.activeSelectorLabel}</span>
+          <select
+            value={persistedConfiguration.activeProfileId}
+            onChange={event => selectProfile(event.target.value)}
+            disabled={mutationControlsDisabled}
+          >
+            {persistedConfiguration.profiles.map(profile => (
               <option key={profile.id} value={profile.id}>{profile.name}</option>
             ))}
           </select>
-          <small>选择已保存配置时，页面从 Harness Settings 的持久化快照加载该配置。保存当前配置后，下一次 inspect_image 调用使用该配置。</small>
+          <small>{IMAGE_READER_SETTINGS_COPY.activeSelectorHelp}</small>
         </label>
+        <p role="status">{editorStateMessage}</p>
+        {pendingOperation === 'activate' && switchTarget !== null ? (
+          <p role="status">{IMAGE_READER_SETTINGS_COPY.activating(switchTarget.name, actualProfile.name)}</p>
+        ) : null}
         <div className="harness-comfyui-image-reader-profile-actions">
-          <button type="button" onClick={addProfile} disabled={dirty || persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES}>新建配置</button>
-          <button type="button" onClick={duplicateProfile} disabled={dirty || persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES}>复制配置</button>
+          <button type="button" onClick={addProfile} disabled={mutationControlsDisabled || dirty || persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES}>新建配置</button>
+          <button type="button" onClick={duplicateProfile} disabled={mutationControlsDisabled || dirty || persistedConfiguration.profiles.length >= IMAGE_READER_MAX_PROFILES}>复制配置</button>
           <button
             type="button"
-            onClick={() => void deleteProfile()}
-            disabled={pendingOperation !== null || (currentProfileIsPersisted && persistedConfiguration.profiles.length === 1)}
+            onClick={requestDelete}
+            disabled={mutationControlsDisabled || (draftOrigin === 'persisted' && persistedConfiguration.profiles.length === 1)}
           >删除配置</button>
         </div>
         <small>复制配置会复制连接参数、模型、提示词和采样参数，但不会复制 API Key。</small>
         {renderFieldError('profile')}
       </div>
 
-      {pendingProfileId === null ? null : (
+      {switchIntent === null || switchTarget === null || !dirty ? null : (
         <div role="alert" className="harness-comfyui-image-reader-switch-gate">
-          <p>当前配置有未保存修改。请保存当前配置或放弃当前修改后再切换。</p>
-          <button type="button" onClick={() => void save()} disabled={!writable || pendingOperation !== null}>保存当前配置</button>
-          <button type="button" onClick={discardAndSwitch}>放弃当前修改并切换</button>
-          <button type="button" onClick={() => setPendingProfileId(null)}>继续编辑当前配置</button>
+          <p>{IMAGE_READER_SETTINGS_COPY.switchGate(editorDraft.name)}</p>
+          <button type="button" onClick={() => void save()} disabled={mutationControlsDisabled}>
+            {IMAGE_READER_SETTINGS_COPY.saveAndSwitch(editorDraft.name, switchTarget.name)}
+          </button>
+          <button type="button" onClick={discardAndSwitch} disabled={mutationControlsDisabled}>
+            {IMAGE_READER_SETTINGS_COPY.discardAndSwitch(editorDraft.name, switchTarget.name)}
+          </button>
+          <button type="button" onClick={() => setPendingIntent(null)} disabled={mutationControlsDisabled}>
+            {IMAGE_READER_SETTINGS_COPY.continueEditing(editorDraft.name)}
+          </button>
+        </div>
+      )}
+
+      {pendingIntent?.kind !== 'delete' || !dirty ? null : (
+        <div role="alert" className="harness-comfyui-image-reader-switch-gate">
+          <p>{IMAGE_READER_SETTINGS_COPY.deleteGate(editorDraft.name)}</p>
+          <button type="button" onClick={discardAndDelete} disabled={mutationControlsDisabled}>
+            {IMAGE_READER_SETTINGS_COPY.discardAndDelete(editorDraft.name)}
+          </button>
+          <button type="button" onClick={() => setPendingIntent(null)} disabled={mutationControlsDisabled}>
+            {IMAGE_READER_SETTINGS_COPY.continueEditing(editorDraft.name)}
+          </button>
         </div>
       )}
 
@@ -455,8 +696,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
           <input
             type="text"
             maxLength={IMAGE_READER_PROFILE_NAME_MAX_LENGTH}
-            value={activeProfile.name}
-            onChange={event => updateActiveProfile(profile => ({ ...profile, name: event.target.value }))}
+            value={editorDraft.name}
+            onChange={event => updateEditorDraft(profile => ({ ...profile, name: event.target.value }))}
+            disabled={mutationControlsDisabled}
           />
           {renderFieldError('name')}
         </label>
@@ -467,9 +709,10 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             <input
               type="radio"
               name="image-reader-connection"
-              checked={activeProfile.connectionType === 'runtime'}
+              checked={editorDraft.connectionType === 'runtime'}
+              disabled={mutationControlsDisabled}
               onChange={() => {
-                updateActiveProfile(profile => ({
+                updateEditorDraft(profile => ({
                   ...profile,
                   connectionType: 'runtime',
                   endpoint: '',
@@ -485,9 +728,10 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             <input
               type="radio"
               name="image-reader-connection"
-              checked={activeProfile.connectionType === 'openai-compatible'}
+              checked={editorDraft.connectionType === 'openai-compatible'}
+              disabled={mutationControlsDisabled}
               onChange={() => {
-                updateActiveProfile(profile => ({
+                updateEditorDraft(profile => ({
                   ...profile,
                   connectionType: 'openai-compatible',
                   provider: '',
@@ -500,14 +744,14 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
           </label>
         </fieldset>
 
-        {activeProfile.connectionType === 'runtime' ? (
+        {editorDraft.connectionType === 'runtime' ? (
           <>
             <label>
               <span>系统 Provider</span>
               <select
-                value={activeProfile.provider}
-                onChange={event => updateActiveProfile(profile => ({ ...profile, provider: event.target.value, model: '' }))}
-                disabled={catalogStatus !== 'ready'}
+                value={editorDraft.provider}
+                onChange={event => updateEditorDraft(profile => ({ ...profile, provider: event.target.value, model: '' }))}
+                disabled={mutationControlsDisabled || catalogStatus !== 'ready'}
               >
                 <option value="">请选择系统 Provider</option>
                 {modelCatalog?.groups.map(group => <option key={group.provider} value={group.provider}>{group.name}</option>)}
@@ -518,12 +762,12 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             <label>
               <span>视觉模型</span>
               <select
-                value={activeProfile.model}
-                onChange={event => updateActiveProfile(profile => ({ ...profile, model: event.target.value }))}
-                disabled={activeProfile.provider.length === 0 || (availableModels.length === 0 && !currentModelIsMissing)}
+                value={editorDraft.model}
+                onChange={event => updateEditorDraft(profile => ({ ...profile, model: event.target.value }))}
+                disabled={mutationControlsDisabled || editorDraft.provider.length === 0 || (availableModels.length === 0 && !currentModelIsMissing)}
               >
                 <option value="">请选择明确支持图片输入的模型</option>
-                {currentModelIsMissing ? <option value={activeProfile.model}>{activeProfile.model}（当前目录中不可用）</option> : null}
+                {currentModelIsMissing ? <option value={editorDraft.model}>{editorDraft.model}（当前目录中不可用）</option> : null}
                 {availableModels.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}
               </select>
               {renderFieldError('model')}
@@ -537,12 +781,13 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
                 type="url"
                 maxLength={IMAGE_READER_ENDPOINT_MAX_LENGTH}
                 placeholder="http://127.0.0.1:11434/v1/chat/completions"
-                value={activeProfile.endpoint}
-                onChange={event => updateActiveProfile(profile => ({ ...profile, endpoint: event.target.value }))}
+                value={editorDraft.endpoint}
+                onChange={event => updateEditorDraft(profile => ({ ...profile, endpoint: event.target.value }))}
+                disabled={mutationControlsDisabled}
               />
               <small>填写接受 POST 请求的完整地址；Harness 不会自动追加 /v1/chat/completions。</small>
-              {endpointTransportMessage(activeProfile.endpoint) === null ? null : (
-                <small role="status">{endpointTransportMessage(activeProfile.endpoint)}</small>
+              {endpointTransportMessage(editorDraft.endpoint) === null ? null : (
+                <small role="status">{endpointTransportMessage(editorDraft.endpoint)}</small>
               )}
               {renderFieldError('endpoint')}
             </label>
@@ -553,8 +798,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
                 type="text"
                 maxLength={IMAGE_READER_MODEL_MAX_LENGTH}
                 placeholder="请输入接口接受的精确模型 ID"
-                value={activeProfile.model}
-                onChange={event => updateActiveProfile(profile => ({ ...profile, model: event.target.value }))}
+                value={editorDraft.model}
+                onChange={event => updateEditorDraft(profile => ({ ...profile, model: event.target.value }))}
+                disabled={mutationControlsDisabled}
               />
               {renderFieldError('model')}
             </label>
@@ -564,21 +810,22 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
               <input
                 type="password"
                 autoComplete="new-password"
-                placeholder={activeProfile.hasApiKey ? '已保存；输入新值可以替换' : '本地免鉴权接口可以留空'}
+                placeholder={editorDraft.hasApiKey ? '已保存；输入新值可以替换' : '本地免鉴权接口可以留空'}
                 value={credentialDraft}
+                disabled={mutationControlsDisabled}
                 onChange={event => updateCredential(event.target.value.length > 0
                   ? { action: 'replace', apiKey: event.target.value }
-                  : activeProfile.hasApiKey
+                  : editorDraft.hasApiKey
                     ? { action: 'keep' }
                     : { action: 'clear' })}
               />
               <small>{credentialState}</small>
               {renderFieldError('credential')}
-              {activeProfile.hasApiKey && credentialAction.action !== 'clear' ? (
-                <button type="button" className="harness-comfyui-image-reader-inline-action" onClick={() => updateCredential({ action: 'clear' })}>清除已保存的 API Key</button>
+              {editorDraft.hasApiKey && credentialAction.action !== 'clear' ? (
+                <button type="button" className="harness-comfyui-image-reader-inline-action" disabled={mutationControlsDisabled} onClick={() => updateCredential({ action: 'clear' })}>清除已保存的 API Key</button>
               ) : null}
-              {activeProfile.hasApiKey && credentialAction.action === 'clear' ? (
-                <button type="button" className="harness-comfyui-image-reader-inline-action" onClick={() => updateCredential({ action: 'keep' })}>保留已保存的 API Key</button>
+              {editorDraft.hasApiKey && credentialAction.action === 'clear' ? (
+                <button type="button" className="harness-comfyui-image-reader-inline-action" disabled={mutationControlsDisabled} onClick={() => updateCredential({ action: 'keep' })}>保留已保存的 API Key</button>
               ) : null}
             </label>
           </>
@@ -589,8 +836,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
           <textarea
             rows={18}
             maxLength={IMAGE_READER_PROMPT_MAX_LENGTH}
-            value={activeProfile.defaultPrompt}
-            onChange={event => updateActiveProfile(profile => ({ ...profile, defaultPrompt: event.target.value }))}
+            value={editorDraft.defaultPrompt}
+            onChange={event => updateEditorDraft(profile => ({ ...profile, defaultPrompt: event.target.value }))}
+            disabled={mutationControlsDisabled}
           />
           <small>inspect_image 或受管 CLI 省略 prompt 时使用该默认提示词；任一调用提供 prompt 时只覆盖本次调用。</small>
           {renderFieldError('defaultPrompt')}
@@ -603,8 +851,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             min={IMAGE_READER_TEMPERATURE_MIN}
             max={IMAGE_READER_TEMPERATURE_MAX}
             step={0.05}
-            value={activeProfile.temperature}
-            onChange={event => updateActiveProfile(profile => ({
+            value={editorDraft.temperature}
+            disabled={mutationControlsDisabled}
+            onChange={event => updateEditorDraft(profile => ({
               ...profile,
               temperature: event.target.value === '' ? Number.NaN : Number(event.target.value),
             }))}
@@ -619,8 +868,9 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             min={IMAGE_READER_MAX_TOKENS_MIN}
             max={IMAGE_READER_MAX_TOKENS_MAX}
             step={1}
-            value={activeProfile.maxTokens}
-            onChange={event => updateActiveProfile(profile => ({
+            value={editorDraft.maxTokens}
+            disabled={mutationControlsDisabled}
+            onChange={event => updateEditorDraft(profile => ({
               ...profile,
               maxTokens: event.target.value === '' ? Number.NaN : Number(event.target.value),
             }))}
@@ -630,13 +880,19 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
       </div>
 
       <footer className="harness-comfyui-image-reader-actions">
-        <button type="button" onClick={() => void save()} disabled={!writable || pendingOperation !== null}>
-          {pendingOperation === 'save' ? '正在保存…' : '保存当前配置'}
+        <button type="button" onClick={() => void save()} disabled={mutationControlsDisabled}>
+          {pendingOperation === 'save' ? '正在保存…' : saveButtonLabel}
         </button>
-        {dirty ? <button type="button" onClick={discardAndSwitch}>放弃当前修改</button> : null}
-        {saveStatus === 'saved' && successMessage !== null ? <span role="status">{successMessage}</span> : null}
-        {saveStatus === 'error' ? (
-          <span role="alert">{`${failedOperation === 'delete' ? '删除失败' : '保存失败'}：${saveError}`}</span>
+        {dirty && switchIntent === null && pendingIntent?.kind !== 'delete' ? (
+          <button type="button" onClick={discardDraft} disabled={controlsDisabled}>
+            {draftOrigin === 'persisted'
+              ? IMAGE_READER_SETTINGS_COPY.discardPersisted(editorDraft.name)
+              : IMAGE_READER_SETTINGS_COPY.discardUnsaved(editorDraft.name)}
+          </button>
+        ) : null}
+        {operationStatus === 'saved' && successMessage !== null ? <span role="status">{successMessage}</span> : null}
+        {operationStatus === 'error' ? (
+          <span role="alert">{`${failedOperation === 'delete' ? '删除失败' : failedOperation === 'activate' ? '切换失败' : '保存失败'}：${operationError}`}</span>
         ) : null}
       </footer>
     </section>

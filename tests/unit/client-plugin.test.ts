@@ -56,8 +56,17 @@ function installImmediateInject(context: Record<string, any>): void {
       ok: true,
       value: {
         configuration: {
-          activeProfileId: request.profile.id,
+          activeProfileId: request.activateProfileId,
           profiles: [{ ...request.profile, endpoint: '', hasApiKey: false }],
+        },
+      },
+    })),
+    activateProfile: vi.fn(async (request: any) => ({
+      ok: true,
+      value: {
+        configuration: {
+          ...context.settingsScope.bind().getSnapshot().value.configuration,
+          activeProfileId: request.profileId,
         },
       },
     })),
@@ -212,6 +221,7 @@ describe('Harness Client plugin registration', () => {
       api: expect.objectContaining({
         models: expect.any(Function),
         saveProfile: expect.any(Function),
+        activateProfile: expect.any(Function),
         deleteProfile: expect.any(Function),
       }),
     })
@@ -220,6 +230,7 @@ describe('Harness Client plugin registration', () => {
       api: {
         models(signal: AbortSignal): Promise<unknown>
         saveProfile(request: unknown, signal: AbortSignal): Promise<unknown>
+        activateProfile(request: unknown, signal: AbortSignal): Promise<unknown>
         deleteProfile(request: unknown, signal: AbortSignal): Promise<unknown>
       }
     }
@@ -236,7 +247,11 @@ describe('Harness Client plugin registration', () => {
         defaultPrompt: profile.defaultPrompt,
         temperature: profile.temperature,
         maxTokens: profile.maxTokens,
-      } },
+      }, operation: 'update', activateProfileId: profile.id },
+      new AbortController().signal,
+    )).resolves.toEqual({ configuration })
+    await expect(imageReaderFace.api.activateProfile(
+      { profileId: profile.id },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
     await expect(imageReaderFace.api.deleteProfile(
@@ -244,6 +259,85 @@ describe('Harness Client plugin registration', () => {
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
     const imageReaderRemote = (context.remote as any).harnessComfyuiImageReader
+
+    for (const write of [
+      {
+        remote: imageReaderRemote.saveProfile,
+        call: (signal: AbortSignal) => imageReaderFace.api.saveProfile({
+          profile: {
+            id: profile.id,
+            name: profile.name,
+            connectionType: 'runtime',
+            provider: profile.provider,
+            model: profile.model,
+            defaultPrompt: profile.defaultPrompt,
+            temperature: profile.temperature,
+            maxTokens: profile.maxTokens,
+          },
+          operation: 'update',
+          activateProfileId: profile.id,
+        }, signal),
+      },
+      {
+        remote: imageReaderRemote.activateProfile,
+        call: (signal: AbortSignal) => imageReaderFace.api.activateProfile({ profileId: profile.id }, signal),
+      },
+      {
+        remote: imageReaderRemote.deleteProfile,
+        call: (signal: AbortSignal) => imageReaderFace.api.deleteProfile({ profileId: profile.id }, signal),
+      },
+    ]) {
+      let resolveWrite!: (result: unknown) => void
+      write.remote.mockImplementationOnce(() => new Promise(resolve => { resolveWrite = resolve }))
+      const controller = new AbortController()
+      const writePromise = write.call(controller.signal)
+      controller.abort()
+      resolveWrite({ ok: true, value: { configuration } })
+      await expect(writePromise).resolves.toEqual({ configuration })
+    }
+
+    for (const write of [
+      {
+        remote: imageReaderRemote.saveProfile,
+        errorCode: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
+        call: (signal: AbortSignal) => imageReaderFace.api.saveProfile({
+          profile: {
+            id: profile.id,
+            name: profile.name,
+            connectionType: 'runtime',
+            provider: profile.provider,
+            model: profile.model,
+            defaultPrompt: profile.defaultPrompt,
+            temperature: profile.temperature,
+            maxTokens: profile.maxTokens,
+          },
+          operation: 'update',
+          activateProfileId: profile.id,
+        }, signal),
+      },
+      {
+        remote: imageReaderRemote.activateProfile,
+        errorCode: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
+        call: (signal: AbortSignal) => imageReaderFace.api.activateProfile({ profileId: profile.id }, signal),
+      },
+      {
+        remote: imageReaderRemote.deleteProfile,
+        errorCode: 'IMAGE_READER_PROFILE_NOT_FOUND',
+        call: (signal: AbortSignal) => imageReaderFace.api.deleteProfile({ profileId: profile.id }, signal),
+      },
+    ]) {
+      let resolveWrite!: (result: unknown) => void
+      write.remote.mockImplementationOnce(() => new Promise(resolve => { resolveWrite = resolve }))
+      const controller = new AbortController()
+      const writePromise = write.call(controller.signal)
+      controller.abort(new DOMException('cancelled while waiting for Host failure', 'AbortError'))
+      resolveWrite({
+        ok: false,
+        error: { code: write.errorCode, message: 'The Host rejected the write.', details: {} },
+      })
+      await expect(writePromise).rejects.toMatchObject({ name: 'AbortError' })
+    }
+
     imageReaderRemote.models.mockResolvedValueOnce({
       ok: false,
       error: { code: 'IMAGE_READER_SETTINGS_REQUEST_FAILED', message: 'The model catalog failed.', details: {} },
@@ -251,6 +345,10 @@ describe('Harness Client plugin registration', () => {
     imageReaderRemote.saveProfile.mockResolvedValueOnce({
       ok: false,
       error: { code: 'IMAGE_READER_SETTINGS_SAVE_FAILED', message: 'The settings write failed.', details: {} },
+    })
+    imageReaderRemote.activateProfile.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED', message: 'The settings write failed.', details: {} },
     })
     imageReaderRemote.deleteProfile.mockResolvedValueOnce({
       ok: false,
@@ -270,11 +368,18 @@ describe('Harness Client plugin registration', () => {
         defaultPrompt: profile.defaultPrompt,
         temperature: profile.temperature,
         maxTokens: profile.maxTokens,
-      } },
+      }, operation: 'update', activateProfileId: profile.id },
       new AbortController().signal,
     )).rejects.toMatchObject({
       code: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
       message: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
+    })
+    await expect(imageReaderFace.api.activateProfile(
+      { profileId: profile.id },
+      new AbortController().signal,
+    )).rejects.toMatchObject({
+      code: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
+      message: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
     })
     await expect(imageReaderFace.api.deleteProfile(
       { profileId: 'missing' },
