@@ -1,4 +1,8 @@
-# 未发布候选：图片读取失败诊断与配置生效状态
+# Harness ComfyUI v0.39.1
+
+v0.39.1 修复图片读取设置页选择已保存配置后没有同步切换 Host 生效配置的问题，保留 Runtime 视觉模型返回的安全诊断字段，并把前台 Bash Tool 的默认超时从 60 秒提高到 180 秒。
+
+## 图片读取失败诊断与配置生效状态
 
 - Runtime 视觉模型以 error 或非调用者 aborted finish 结束时，`IMAGE_READER_PROVIDER_FAILED` 不再丢弃 Provider 已经返回的失败原因。Tool 与 managed CLI 的错误文案现在包含本次调用使用的配置名称、配置 ID、Provider、模型、温度、最大输出 Token 数、finish kind、failure code，以及 Provider 返回的可用 HTTP status、retry-after 和 request ID。
 - Runtime 失败信息只保留明确的字段白名单。错误属性和输出不复制 Provider failure message、Settings credentials、自定义 endpoint、本次 prompt、图片输入或 AttachmentRef；允许输出的字符串会替换非法 UTF-16 与换行控制字符，并使用固定字段和总字符上限。
