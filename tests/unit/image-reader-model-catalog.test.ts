@@ -16,6 +16,10 @@ import {
   registerImageReaderSettings,
 } from '../../src/host/image-reader/image-reader-host.ts'
 
+function remoteFailure(code: string): object {
+  return { name: 'TypertRemoteFailure', failure: { code } }
+}
+
 describe('image reader Host settings and model catalog', () => {
   it('uses the runtime environment visual model as the base without creating user settings', async () => {
     const defaults = createImageReaderSettingsDefaults({
@@ -158,6 +162,7 @@ describe('image reader Host settings and model catalog', () => {
     expect(remoteMethods(service)).toEqual([
       { method: 'models', invocation: { kind: 'direct' } },
       { method: 'saveProfile', invocation: { kind: 'direct' } },
+      { method: 'activateProfile', invocation: { kind: 'direct' } },
       { method: 'deleteProfile', invocation: { kind: 'direct' } },
     ])
     await expect(service.models(new AbortController().signal)).resolves.toEqual({
@@ -187,6 +192,108 @@ describe('image reader Host settings and model catalog', () => {
     await expect(service.models(new AbortController().signal)).resolves.toEqual({
       groups: [{ provider: 'provider-a', name: 'Provider A', models: [{ id: 'vision-a', name: 'Vision A', description: null }] }],
       failures: [{ provider: 'provider-b', message: 'The provider model catalog could not be loaded.' }],
+    })
+    await context.fiber.dispose()
+  })
+
+  it('activates an existing profile without rewriting persisted profiles or credentials', async () => {
+    const context = new Context()
+    const first = { ...createImageReaderProfile('first', '配置 A'), provider: 'provider-a', model: 'vision-a' }
+    const second = {
+      ...createImageReaderProfile('second', '配置 B'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'vision-b',
+      hasApiKey: true,
+    }
+    const current = {
+      configuration: { activeProfileId: 'first', profiles: [first, second] },
+      credentials: { second: 'saved-key' },
+    }
+    const scope = {
+      get: vi.fn(() => current),
+      replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
+    }
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+
+    await expect(service.activateProfile(
+      { profileId: 'second' },
+      new AbortController().signal,
+    )).resolves.toEqual({
+      configuration: { activeProfileId: 'second', profiles: [first, second] },
+    })
+    expect(scope.replace).toHaveBeenCalledWith({
+      configuration: { activeProfileId: 'second', profiles: [first, second] },
+      credentials: { second: 'saved-key' },
+    })
+    await context.fiber.dispose()
+  })
+
+  it('keeps profile activation idempotent and reports activation validation or persistence failures', async () => {
+    const context = new Context()
+    const first = { ...createImageReaderProfile('first', '配置 A'), provider: 'provider-a', model: 'vision-a' }
+    const second = { ...createImageReaderProfile('second', '配置 B'), provider: 'provider-a', model: 'vision-b' }
+    const current = {
+      configuration: { activeProfileId: 'first', profiles: [first, second] },
+      credentials: {},
+    }
+    const scope = {
+      get: vi.fn(() => current),
+      replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
+    }
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+
+    await expect(service.activateProfile({ profileId: 'first' }, new AbortController().signal))
+      .resolves.toEqual({ configuration: current.configuration })
+    expect(scope.replace).not.toHaveBeenCalled()
+
+    await expect(service.activateProfile({ profileId: 'missing' }, new AbortController().signal))
+      .rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND'))
+    await expect(service.activateProfile({ profileId: 'Bad ID' }, new AbortController().signal))
+      .rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_ID_FORMAT_INVALID'))
+    expect(scope.replace).not.toHaveBeenCalled()
+
+    scope.replace.mockRejectedValueOnce(new Error('disk full'))
+    await expect(service.activateProfile({ profileId: 'second' }, new AbortController().signal))
+      .rejects.toMatchObject({
+        name: 'TypertRemoteFailure',
+        failure: {
+          code: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
+          message: 'Harness could not persist the active image reader profile.',
+          details: {},
+        },
+      })
+    await context.fiber.dispose()
+  })
+
+  it('returns committed activation data when cancellation happens during the Settings write', async () => {
+    const context = new Context()
+    const first = { ...createImageReaderProfile('first', '配置 A'), provider: 'provider-a', model: 'vision-a' }
+    const second = { ...createImageReaderProfile('second', '配置 B'), provider: 'provider-a', model: 'vision-b' }
+    const current = {
+      configuration: { activeProfileId: 'first', profiles: [first, second] },
+      credentials: {},
+    }
+    const controller = new AbortController()
+    const scope = {
+      get: vi.fn(() => current),
+      replace: vi.fn(async (_section: ImageReaderSettingsSection) => {
+        controller.abort(new DOMException('cancelled after commit', 'AbortError'))
+      }),
+    }
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+
+    await expect(service.activateProfile({ profileId: 'second' }, controller.signal)).resolves.toEqual({
+      configuration: { activeProfileId: 'second', profiles: [first, second] },
     })
     await context.fiber.dispose()
   })
@@ -228,6 +335,8 @@ describe('image reader Host settings and model catalog', () => {
     }
 
     await expect(service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'runtime',
       profile: runtime,
     }, new AbortController().signal)).resolves.toEqual({
       configuration: {
@@ -242,6 +351,46 @@ describe('image reader Host settings and model catalog', () => {
       },
       credentials: { custom: 'old-key' },
     })
+    await context.fiber.dispose()
+  })
+
+  it('saves one profile and activates another profile in one Settings replacement', async () => {
+    const context = new Context()
+    const first = { ...createImageReaderProfile('first', '配置 A'), provider: 'provider-a', model: 'vision-a' }
+    const second = { ...createImageReaderProfile('second', '配置 B'), provider: 'provider-b', model: 'vision-b' }
+    const scope = {
+      get: vi.fn(() => ({
+        configuration: { activeProfileId: 'first', profiles: [first, second] },
+        credentials: {},
+      })),
+      replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
+    }
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+    const editedFirst = {
+      id: 'first',
+      name: '配置 A 已修改',
+      connectionType: 'runtime' as const,
+      provider: 'provider-a',
+      model: 'vision-a-new',
+      defaultPrompt: '描述图片',
+      temperature: 0.3,
+      maxTokens: 4096,
+    }
+
+    await expect(service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'second',
+      profile: editedFirst,
+    } as never, new AbortController().signal)).resolves.toEqual({
+      configuration: {
+        activeProfileId: 'second',
+        profiles: [{ ...editedFirst, endpoint: '', hasApiKey: false }, second],
+      },
+    })
+    expect(scope.replace).toHaveBeenCalledTimes(1)
     await context.fiber.dispose()
   })
 
@@ -271,6 +420,8 @@ describe('image reader Host settings and model catalog', () => {
     }
 
     await expect(service.saveProfile({
+      operation: 'create',
+      activateProfileId: 'appended',
       profile: appended,
       credential: { action: 'clear' },
     }, new AbortController().signal)).resolves.toEqual({
@@ -292,6 +443,8 @@ describe('image reader Host settings and model catalog', () => {
     } as never, scope as never)
 
     await expect(service.saveProfile({
+      operation: 'create',
+      activateProfileId: 'runtime',
       profile: {
         id: 'runtime',
         name: '   ',
@@ -302,12 +455,14 @@ describe('image reader Host settings and model catalog', () => {
         temperature: 0.2,
         maxTokens: 2048,
       },
-    }, new AbortController().signal)).rejects.toMatchObject({ code: 'IMAGE_READER_PROFILE_NAME_REQUIRED' })
+    }, new AbortController().signal)).rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_NAME_REQUIRED'))
     expect(scope.replace).not.toHaveBeenCalled()
     await context.fiber.dispose()
   })
 
   const validRuntimeRequest = {
+    operation: 'create' as const,
+    activateProfileId: 'runtime',
     profile: {
       id: 'runtime',
       name: '系统视觉',
@@ -320,6 +475,8 @@ describe('image reader Host settings and model catalog', () => {
     },
   }
   const validOpenAiRequest = {
+    operation: 'update' as const,
+    activateProfileId: 'custom',
     profile: {
       id: 'custom',
       name: '本地视觉',
@@ -333,12 +490,36 @@ describe('image reader Host settings and model catalog', () => {
     credential: { action: 'keep' as const },
   }
 
+  it('does not recreate deleted updates, overwrite colliding creates, or save with a missing activation target', async () => {
+    const context = new Context()
+    const scope = settings()
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+
+    await expect(service.saveProfile({
+      ...validRuntimeRequest,
+      operation: 'update',
+    }, new AbortController().signal)).rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_UPDATE_TARGET_NOT_FOUND'))
+    await expect(service.saveProfile({
+      ...validOpenAiRequest,
+      operation: 'create',
+    }, new AbortController().signal)).rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_ALREADY_EXISTS'))
+    await expect(service.saveProfile({
+      ...validOpenAiRequest,
+      activateProfileId: 'missing',
+    }, new AbortController().signal)).rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND'))
+    expect(scope.replace).not.toHaveBeenCalled()
+    await context.fiber.dispose()
+  })
+
   it.each([
-    [{ profile: { ...validRuntimeRequest.profile, id: 'Bad ID' } }, 'IMAGE_READER_PROFILE_ID_FORMAT_INVALID'],
-    [{ profile: { ...validRuntimeRequest.profile, name: '  ' } }, 'IMAGE_READER_PROFILE_NAME_REQUIRED'],
-    [{ profile: { ...validRuntimeRequest.profile, name: 'n'.repeat(81) } }, 'IMAGE_READER_PROFILE_NAME_TOO_LONG'],
-    [{ profile: { ...validRuntimeRequest.profile, provider: '  ' } }, 'IMAGE_READER_RUNTIME_PROVIDER_REQUIRED'],
-    [{ profile: { ...validRuntimeRequest.profile, provider: 'p'.repeat(10_001) } }, 'IMAGE_READER_RUNTIME_PROVIDER_TOO_LONG'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, id: 'Bad ID' } }, 'IMAGE_READER_PROFILE_ID_FORMAT_INVALID'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, name: '  ' } }, 'IMAGE_READER_PROFILE_NAME_REQUIRED'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, name: 'n'.repeat(81) } }, 'IMAGE_READER_PROFILE_NAME_TOO_LONG'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, provider: '  ' } }, 'IMAGE_READER_RUNTIME_PROVIDER_REQUIRED'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, provider: 'p'.repeat(10_001) } }, 'IMAGE_READER_RUNTIME_PROVIDER_TOO_LONG'],
     [{ ...validOpenAiRequest, profile: { ...validOpenAiRequest.profile, endpoint: '  ' } }, 'IMAGE_READER_ENDPOINT_REQUIRED'],
     [{ ...validOpenAiRequest, profile: { ...validOpenAiRequest.profile, endpoint: `http://${'a'.repeat(2042)}` } }, 'IMAGE_READER_ENDPOINT_TOO_LONG'],
     [{ ...validOpenAiRequest, profile: { ...validOpenAiRequest.profile, endpoint: ' http://127.0.0.1/v1/chat/completions' } }, 'IMAGE_READER_ENDPOINT_WHITESPACE_INVALID'],
@@ -346,14 +527,14 @@ describe('image reader Host settings and model catalog', () => {
     [{ ...validOpenAiRequest, profile: { ...validOpenAiRequest.profile, endpoint: 'ftp://127.0.0.1/model' } }, 'IMAGE_READER_ENDPOINT_PROTOCOL_INVALID'],
     [{ ...validOpenAiRequest, profile: { ...validOpenAiRequest.profile, endpoint: 'http://user:password@127.0.0.1/model' } }, 'IMAGE_READER_ENDPOINT_CREDENTIALS_FORBIDDEN'],
     [{ ...validOpenAiRequest, profile: { ...validOpenAiRequest.profile, endpoint: 'http://127.0.0.1/model#fragment' } }, 'IMAGE_READER_ENDPOINT_FRAGMENT_FORBIDDEN'],
-    [{ profile: { ...validRuntimeRequest.profile, model: '  ' } }, 'IMAGE_READER_MODEL_REQUIRED'],
-    [{ profile: { ...validRuntimeRequest.profile, model: 'm'.repeat(10_001) } }, 'IMAGE_READER_MODEL_TOO_LONG'],
-    [{ profile: { ...validRuntimeRequest.profile, defaultPrompt: '\n\t' } }, 'IMAGE_READER_DEFAULT_PROMPT_REQUIRED'],
-    [{ profile: { ...validRuntimeRequest.profile, defaultPrompt: 'x'.repeat(32_769) } }, 'IMAGE_READER_DEFAULT_PROMPT_TOO_LONG'],
-    [{ profile: { ...validRuntimeRequest.profile, temperature: Number.NaN } }, 'IMAGE_READER_TEMPERATURE_NUMBER_INVALID'],
-    [{ profile: { ...validRuntimeRequest.profile, temperature: 2.1 } }, 'IMAGE_READER_TEMPERATURE_RANGE_INVALID'],
-    [{ profile: { ...validRuntimeRequest.profile, maxTokens: 1.5 } }, 'IMAGE_READER_MAX_TOKENS_INTEGER_INVALID'],
-    [{ profile: { ...validRuntimeRequest.profile, maxTokens: 32_769 } }, 'IMAGE_READER_MAX_TOKENS_RANGE_INVALID'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, model: '  ' } }, 'IMAGE_READER_MODEL_REQUIRED'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, model: 'm'.repeat(10_001) } }, 'IMAGE_READER_MODEL_TOO_LONG'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, defaultPrompt: '\n\t' } }, 'IMAGE_READER_DEFAULT_PROMPT_REQUIRED'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, defaultPrompt: 'x'.repeat(32_769) } }, 'IMAGE_READER_DEFAULT_PROMPT_TOO_LONG'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, temperature: Number.NaN } }, 'IMAGE_READER_TEMPERATURE_NUMBER_INVALID'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, temperature: 2.1 } }, 'IMAGE_READER_TEMPERATURE_RANGE_INVALID'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, maxTokens: 1.5 } }, 'IMAGE_READER_MAX_TOKENS_INTEGER_INVALID'],
+    [{ ...validRuntimeRequest, profile: { ...validRuntimeRequest.profile, maxTokens: 32_769 } }, 'IMAGE_READER_MAX_TOKENS_RANGE_INVALID'],
     [{ ...validOpenAiRequest, credential: { action: 'replace' as const, apiKey: '' } }, 'IMAGE_READER_API_KEY_REQUIRED'],
     [{ ...validOpenAiRequest, credential: { action: 'replace' as const, apiKey: 'k'.repeat(8193) } }, 'IMAGE_READER_API_KEY_TOO_LONG'],
   ])('rejects one current-profile rule with its unique code %#', async (request, code) => {
@@ -364,7 +545,7 @@ describe('image reader Host settings and model catalog', () => {
       listModels: vi.fn(async () => []),
     } as never, scope as never)
 
-    await expect(service.saveProfile(request, new AbortController().signal)).rejects.toMatchObject({ code })
+    await expect(service.saveProfile(request, new AbortController().signal)).rejects.toMatchObject(remoteFailure(code))
     expect(scope.replace).not.toHaveBeenCalled()
     await context.fiber.dispose()
   })
@@ -429,7 +610,11 @@ describe('image reader Host settings and model catalog', () => {
       listModels: vi.fn(async () => []),
     } as never, scope as never)
 
-    await service.saveProfile({ profile: { ...validRuntimeRequest.profile, id: 'custom' } }, new AbortController().signal)
+    await service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'custom',
+      profile: { ...validRuntimeRequest.profile, id: 'custom' },
+    }, new AbortController().signal)
 
     expect(scope.replace).toHaveBeenCalledWith({
       configuration: {
@@ -461,8 +646,10 @@ describe('image reader Host settings and model catalog', () => {
     } as never, scope as never)
 
     await expect(service.saveProfile({
+      operation: 'create',
+      activateProfileId: 'profile_new',
       profile: { ...validRuntimeRequest.profile, id: 'profile_new' },
-    }, new AbortController().signal)).rejects.toMatchObject({ code: 'IMAGE_READER_PROFILE_LIMIT_REACHED' })
+    }, new AbortController().signal)).rejects.toMatchObject(remoteFailure('IMAGE_READER_PROFILE_LIMIT_REACHED'))
     expect(scope.replace).not.toHaveBeenCalled()
     await context.fiber.dispose()
   })
@@ -496,6 +683,32 @@ describe('image reader Host settings and model catalog', () => {
     expect(scope.replace).toHaveBeenCalledWith({
       configuration: { activeProfileId: 'next', profiles: [first, next] },
       credentials: {},
+    })
+    await context.fiber.dispose()
+  })
+
+  it('returns committed deletion data when cancellation happens during the Settings write', async () => {
+    const context = new Context()
+    const first = { ...createImageReaderProfile('first'), provider: 'provider-a', model: 'vision-a' }
+    const second = { ...createImageReaderProfile('second'), provider: 'provider-a', model: 'vision-a' }
+    const current = {
+      configuration: { activeProfileId: 'first', profiles: [first, second] },
+      credentials: {},
+    }
+    const controller = new AbortController()
+    const scope = {
+      get: vi.fn(() => current),
+      replace: vi.fn(async (_section: ImageReaderSettingsSection) => {
+        controller.abort(new DOMException('cancelled after commit', 'AbortError'))
+      }),
+    }
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+
+    await expect(service.deleteProfile({ profileId: 'second' }, controller.signal)).resolves.toEqual({
+      configuration: { activeProfileId: 'first', profiles: [first] },
     })
     await context.fiber.dispose()
   })
@@ -538,7 +751,7 @@ describe('image reader Host settings and model catalog', () => {
       listModels: vi.fn(async () => []),
     } as never, scope as never)
 
-    await expect(service.deleteProfile({ profileId }, new AbortController().signal)).rejects.toMatchObject({ code })
+    await expect(service.deleteProfile({ profileId }, new AbortController().signal)).rejects.toMatchObject(remoteFailure(code))
     expect(scope.replace).not.toHaveBeenCalled()
     await context.fiber.dispose()
   })
@@ -551,9 +764,8 @@ describe('image reader Host settings and model catalog', () => {
       listModels: vi.fn(async () => []),
     } as never, scope as never)
 
-    await expect(service.deleteProfile({ profileId: 'custom' }, new AbortController().signal)).rejects.toMatchObject({
-      code: 'IMAGE_READER_LAST_PROFILE_DELETE_FORBIDDEN',
-    })
+    await expect(service.deleteProfile({ profileId: 'custom' }, new AbortController().signal))
+      .rejects.toMatchObject(remoteFailure('IMAGE_READER_LAST_PROFILE_DELETE_FORBIDDEN'))
     expect(scope.replace).not.toHaveBeenCalled()
     await context.fiber.dispose()
   })
@@ -585,10 +797,14 @@ describe('image reader Host settings and model catalog', () => {
     } as never, scope as never)
 
     const firstSave = service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'first',
       profile: { ...validRuntimeRequest.profile, id: 'first', name: '第一份已更新' },
     }, new AbortController().signal)
     await vi.waitFor(() => expect(scope.replace).toHaveBeenCalledTimes(1))
     const secondSave = service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'second',
       profile: { ...validRuntimeRequest.profile, id: 'second', name: '第二份已更新' },
     }, new AbortController().signal)
     await Promise.resolve()
@@ -650,6 +866,8 @@ describe('image reader Host settings and model catalog', () => {
     const deletion = service.deleteProfile({ profileId: 'second' }, new AbortController().signal)
     await vi.waitFor(() => expect(scope.replace).toHaveBeenCalledTimes(1))
     const save = service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'first',
       profile: { ...validRuntimeRequest.profile, id: 'first', name: '保留并更新' },
     }, new AbortController().signal)
     releaseDelete()
@@ -666,6 +884,59 @@ describe('image reader Host settings and model catalog', () => {
     expect(current.configuration.profiles.map(profile => profile.id)).toEqual(['first'])
     expect(current.credentials).toEqual({})
     expect(scope.get).toHaveBeenCalledTimes(2)
+    await context.fiber.dispose()
+  })
+
+  it('serializes activation, deletion, and saving through one Settings mutation queue', async () => {
+    const context = new Context()
+    const first = { ...createImageReaderProfile('first', '第一份'), provider: 'provider-a', model: 'vision-a' }
+    const second = { ...createImageReaderProfile('second', '第二份'), provider: 'provider-a', model: 'vision-a' }
+    let current: ImageReaderSettingsSection = {
+      configuration: { activeProfileId: 'first', profiles: [first, second] },
+      credentials: {},
+    }
+    let releaseActivation!: () => void
+    const activationGate = new Promise<void>(resolve => {
+      releaseActivation = resolve
+    })
+    let writeCount = 0
+    const scope = {
+      get: vi.fn(() => current),
+      replace: vi.fn(async (section: ImageReaderSettingsSection) => {
+        writeCount += 1
+        if (writeCount === 1) await activationGate
+        current = section
+      }),
+    }
+    const service = new ImageReaderRemoteService(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+
+    const activation = service.activateProfile({ profileId: 'second' }, new AbortController().signal)
+    await vi.waitFor(() => expect(scope.replace).toHaveBeenCalledTimes(1))
+    const deletion = service.deleteProfile({ profileId: 'second' }, new AbortController().signal)
+    const save = service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'first',
+      profile: { ...validRuntimeRequest.profile, id: 'first', name: '第一份已更新' },
+    }, new AbortController().signal)
+    await Promise.resolve()
+    expect(scope.get).toHaveBeenCalledTimes(1)
+
+    releaseActivation()
+    await expect(activation).resolves.toMatchObject({ configuration: { activeProfileId: 'second' } })
+    await expect(deletion).resolves.toEqual({ configuration: { activeProfileId: 'first', profiles: [first] } })
+    await expect(save).resolves.toMatchObject({
+      configuration: {
+        activeProfileId: 'first',
+        profiles: [expect.objectContaining({ id: 'first', name: '第一份已更新' })],
+      },
+    })
+    expect(scope.get).toHaveBeenCalledTimes(3)
+    expect(current.configuration.profiles).toEqual([
+      expect.objectContaining({ id: 'first', name: '第一份已更新' }),
+    ])
     await context.fiber.dispose()
   })
 
@@ -691,13 +962,17 @@ describe('image reader Host settings and model catalog', () => {
     } as never, scope as never)
 
     const failed = service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'first',
       profile: { ...validRuntimeRequest.profile, id: 'first', name: '不应提交' },
     }, new AbortController().signal)
     const succeeded = service.saveProfile({
+      operation: 'update',
+      activateProfileId: 'second',
       profile: { ...validRuntimeRequest.profile, id: 'second', name: '第二份已更新' },
     }, new AbortController().signal)
 
-    await expect(failed).rejects.toMatchObject({ code: 'IMAGE_READER_SETTINGS_SAVE_FAILED' })
+    await expect(failed).rejects.toMatchObject(remoteFailure('IMAGE_READER_SETTINGS_SAVE_FAILED'))
     await expect(succeeded).resolves.toMatchObject({
       configuration: {
         activeProfileId: 'second',
@@ -721,7 +996,7 @@ describe('image reader Host settings and model catalog', () => {
     } as never, scope as never)
     scope.replace.mockRejectedValueOnce(new Error('disk full'))
     await expect(service.saveProfile(validOpenAiRequest, new AbortController().signal))
-      .rejects.toMatchObject({ code: 'IMAGE_READER_SETTINGS_SAVE_FAILED' })
+      .rejects.toMatchObject(remoteFailure('IMAGE_READER_SETTINGS_SAVE_FAILED'))
 
     const controller = new AbortController()
     scope.replace.mockImplementationOnce(async () => {
@@ -749,9 +1024,8 @@ describe('image reader Host settings and model catalog', () => {
       listModels: vi.fn(async () => []),
     } as never, scope as never)
 
-    await expect(service.deleteProfile({ profileId: 'second' }, new AbortController().signal)).rejects.toMatchObject({
-      code: 'IMAGE_READER_SETTINGS_DELETE_FAILED',
-    })
+    await expect(service.deleteProfile({ profileId: 'second' }, new AbortController().signal))
+      .rejects.toMatchObject(remoteFailure('IMAGE_READER_SETTINGS_DELETE_FAILED'))
     await context.fiber.dispose()
   })
 })

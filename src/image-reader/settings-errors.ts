@@ -38,6 +38,8 @@ export const IMAGE_READER_SETTINGS_FIELD_BY_CODE = Object.freeze({
   IMAGE_READER_API_KEY_REQUIRED: 'credential',
   IMAGE_READER_API_KEY_TOO_LONG: 'credential',
   IMAGE_READER_PROFILE_LIMIT_REACHED: 'profile',
+  IMAGE_READER_PROFILE_ALREADY_EXISTS: 'profile',
+  IMAGE_READER_PROFILE_UPDATE_TARGET_NOT_FOUND: 'profile',
 } as const)
 
 export type ImageReaderProfileValidationCode = keyof typeof IMAGE_READER_SETTINGS_FIELD_BY_CODE
@@ -70,6 +72,7 @@ export function validateSaveImageReaderProfileRequest(
 ): void {
   const profile = request.profile
   if (!IMAGE_READER_PROFILE_ID_PATTERN.test(profile.id)) invalid('IMAGE_READER_PROFILE_ID_FORMAT_INVALID')
+  if (!IMAGE_READER_PROFILE_ID_PATTERN.test(request.activateProfileId)) invalid('IMAGE_READER_PROFILE_ID_FORMAT_INVALID')
   if (profile.name.trim().length === 0) invalid('IMAGE_READER_PROFILE_NAME_REQUIRED')
   if (profile.name.length > IMAGE_READER_PROFILE_NAME_MAX_LENGTH) invalid('IMAGE_READER_PROFILE_NAME_TOO_LONG')
 
@@ -107,7 +110,9 @@ export function validateSaveImageReaderProfileRequest(
     if (request.credential.apiKey.length === 0) invalid('IMAGE_READER_API_KEY_REQUIRED')
     if (request.credential.apiKey.length > IMAGE_READER_API_KEY_MAX_LENGTH) invalid('IMAGE_READER_API_KEY_TOO_LONG')
   }
-  if (!context.profileExists && context.persistedProfileCount >= IMAGE_READER_MAX_PROFILES) {
+  if (request.operation === 'update' && !context.profileExists) invalid('IMAGE_READER_PROFILE_UPDATE_TARGET_NOT_FOUND')
+  if (request.operation === 'create' && context.profileExists) invalid('IMAGE_READER_PROFILE_ALREADY_EXISTS')
+  if (request.operation === 'create' && context.persistedProfileCount >= IMAGE_READER_MAX_PROFILES) {
     invalid('IMAGE_READER_PROFILE_LIMIT_REACHED')
   }
 }

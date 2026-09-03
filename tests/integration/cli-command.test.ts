@@ -9,6 +9,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeCliModule, sourceCliModulePath } from '../../scripts/production/cli-module.mjs'
 import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
+import { registerHarnessComfyuiCliRoute } from '../../src/host/cli/route.ts'
+import {
+  IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS,
+  IMAGE_READER_SENTINEL_PROMPT,
+  createImageReaderProviderFailureFixture,
+} from '../support/image-reader-provider-failure.ts'
 
 const CLI_SOURCE_PATH = resolve(process.cwd(), runtimeArtifacts.managedCli.sourceEntryRelativePath)
 let cliPath = ''
@@ -58,6 +64,33 @@ async function runCli(input: {
     }))
     child.stdin.end(input.stdin ?? '')
   })
+}
+
+async function serveImageReader(imageReader: unknown) {
+  let handler: ((request: unknown, response: unknown) => void | Promise<void>) | undefined
+  registerHarnessComfyuiCliRoute({
+    webServer: {
+      register(route: { readonly handler: typeof handler }) {
+        handler = route.handler
+        return () => undefined
+      },
+    },
+    capabilities: {
+      authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+    },
+    catalog: {},
+    runtime: {},
+    imageReader,
+    workspaceRegistry: {},
+  } as never)
+  const server = createServer((request, response) => void handler!(request, response))
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+  return {
+    apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
+    close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())),
+  }
 }
 
 describe('installed managed Harness ComfyUI CLI executable', () => {
@@ -267,6 +300,60 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
     })
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('prints the complete Host image provider diagnostic as one stderr line', async () => {
+    const diagnostic = 'The runtime visual model did not complete the image inspection. profile_name="配置 B"; profile_id="profile-b"; connection_type="runtime"; provider="opencode-go"; model="qwen3.8-flash"; temperature=0.1; max_tokens=8192; finish_kind="error"; failure_code="UPSTREAM_IMAGE_ERROR"; failure_status=422; provider_retry_after_ms=1250; request_id="request-123".'
+    const server = createServer(async (_request, response) => {
+      const body = JSON.stringify({
+        ok: false,
+        error: { code: 'IMAGE_READER_PROVIDER_FAILED', message: diagnostic },
+      })
+      response.writeHead(409, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) })
+      response.end(body)
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+
+    const result = await runCli({
+      args: ['image', 'inspect', '--stdin'],
+      stdin: JSON.stringify({ file_path: '/media/result.png' }),
+      apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
+    })
+
+    expect(result).toEqual({
+      exitCode: 1,
+      stdout: '',
+      stderr: `IMAGE_READER_PROVIDER_FAILED: ${diagnostic}\n`,
+    })
+    expect(result.stderr.trimEnd().split('\n')).toHaveLength(1)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('prints an actual sentinel-bearing service failure without copying forbidden sources to CLI stderr', async () => {
+    const failureFixture = createImageReaderProviderFailureFixture()
+    const server = await serveImageReader(failureFixture.service)
+    try {
+      const result = await runCli({
+        args: ['image', 'inspect', '--stdin'],
+        stdin: JSON.stringify({
+          file_path: failureFixture.filePath,
+          prompt: IMAGE_READER_SENTINEL_PROMPT,
+        }),
+        apiUrl: server.apiUrl,
+      })
+
+      expect(result.exitCode).toBe(1)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toContain('IMAGE_READER_PROVIDER_FAILED: ')
+      for (const source of IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS) {
+        expect(result.stderr).not.toContain(source)
+      }
+    } finally {
+      await server.close()
+      failureFixture.dispose()
+    }
   })
 
   it('reports an invalid historical Run stdin contract without making an HTTP request', async () => {

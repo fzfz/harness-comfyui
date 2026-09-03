@@ -18,6 +18,11 @@ import {
   type GenerationPreparationAdapter,
 } from '../../src/host/generation/generation-runtime.ts'
 import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
+import {
+  IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS,
+  IMAGE_READER_SENTINEL_PROMPT,
+  createImageReaderProviderFailureFixture,
+} from '../support/image-reader-provider-failure.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -724,8 +729,9 @@ describe('Harness ComfyUI managed CLI route', () => {
   })
 
   it('reports image reader failures with their stable code and message', async () => {
+    const diagnostic = 'The runtime visual model did not complete the image inspection. profile_name="配置 B"; profile_id="profile-b"; connection_type="runtime"; provider="opencode-go"; model="qwen3.8-flash"; temperature=0.1; max_tokens=8192; finish_kind="error"; failure_code="UPSTREAM_IMAGE_ERROR"; failure_status=422; request_id="request-123".'
     const inspect = vi.fn(async () => {
-      throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
+      throw new ImageReaderError('IMAGE_READER_PROVIDER_FAILED', diagnostic)
     })
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
@@ -752,11 +758,49 @@ describe('Harness ComfyUI managed CLI route', () => {
     expect(await response.json()).toEqual({
       ok: false,
       error: {
-        code: 'IMAGE_READER_MODEL_NOT_CONFIGURED',
-        message: 'Image reading requires a configured provider and visual model.',
+        code: 'IMAGE_READER_PROVIDER_FAILED',
+        message: diagnostic,
       },
     })
     await server.close()
+  })
+
+  it('returns an actual sentinel-bearing Provider failure without copying forbidden sources', async () => {
+    const failureFixture = createImageReaderProviderFailureFixture()
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+      },
+      catalog: {
+        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
+        queryComfyuiInstances: vi.fn(), search: vi.fn(),
+      },
+      runtime: {
+        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+        readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
+      },
+      imageReader: failureFixture.service,
+      workspaceRegistry: { resolveByPath: vi.fn() },
+    }))
+    try {
+      const response = await post(server.origin, 'trusted', {
+        command: 'image.inspect',
+        file_path: failureFixture.filePath,
+        prompt: IMAGE_READER_SENTINEL_PROMPT,
+      })
+
+      expect(response.status).toBe(409)
+      const body = await response.json() as { readonly error: { readonly code: string; readonly message: string } }
+      expect(body.error.code).toBe('IMAGE_READER_PROVIDER_FAILED')
+      const cliRouteError = JSON.stringify(body)
+      for (const source of IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS) {
+        expect(cliRouteError).not.toContain(source)
+      }
+    } finally {
+      await server.close()
+      failureFixture.dispose()
+    }
   })
 
   it('reports route, media type, Catalog, Generation, workspace, and internal failures', async () => {

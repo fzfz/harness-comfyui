@@ -4,6 +4,12 @@ import {
   createGenerationRunMediaTool,
   createInspectImageTool,
 } from '../../src/host/image-reader/image-reader-tool.ts'
+import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
+import {
+  IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS,
+  IMAGE_READER_SENTINEL_PROMPT,
+  createImageReaderProviderFailureFixture,
+} from '../support/image-reader-provider-failure.ts'
 
 function execution(name: string, events: readonly unknown[], callId: string) {
   return {
@@ -136,6 +142,43 @@ describe('image reader Tools', () => {
       prompt: '只描述可见服饰。',
       signal: expect.any(AbortSignal),
     })
+  })
+
+  it('preserves the image reader provider diagnostic thrown by the service', async () => {
+    const message = 'The runtime visual model did not complete the image inspection. profile_name="配置 B"; profile_id="profile-b"; connection_type="runtime"; provider="opencode-go"; model="qwen3.8-flash"; temperature=0.1; max_tokens=8192; finish_kind="error"; failure_code="UPSTREAM_IMAGE_ERROR"; request_id="request-123".'
+    const failure = new ImageReaderError('IMAGE_READER_PROVIDER_FAILED', message)
+    const tool = createInspectImageTool({
+      inspect: vi.fn(async () => { throw failure }),
+    } as never)
+
+    await expect(tool.execute(
+      { file_path: '/media/a.png' },
+      execution('inspect_image', [], 'call_inspect') as never,
+    )).rejects.toBe(failure)
+    await expect(tool.execute(
+      { file_path: '/media/a.png' },
+      execution('inspect_image', [], 'call_inspect') as never,
+    )).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED', message })
+  })
+
+  it('propagates an actual service failure without copying forbidden sources into the Tool error', async () => {
+    const fixture = createImageReaderProviderFailureFixture()
+    try {
+      const tool = createInspectImageTool(fixture.service)
+      const error = await tool.execute(
+        { file_path: fixture.filePath, prompt: IMAGE_READER_SENTINEL_PROMPT },
+        execution('inspect_image', [], 'call_inspect') as never,
+      ).catch(cause => cause) as ImageReaderError
+
+      expect(error).toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
+      const toolError = JSON.stringify(error)
+      for (const source of IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS) {
+        expect(toolError).not.toContain(source)
+        expect(error.message).not.toContain(source)
+      }
+    } finally {
+      fixture.dispose()
+    }
   })
 
   it('publishes closed command schemas for the Skill CLI contract', () => {

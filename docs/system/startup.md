@@ -39,7 +39,7 @@ pnpm desktop:dependencies:link
 
 执行 `desktop:dependencies:link` 前，DSH Desktop 必须已经位于 `config/desktop-production.json.desktopSourceRelativePath` 指定的 `.local/upstreams/dsh-desktop`，并且已经按照 DSH Desktop 自己的 lockfile 完成依赖安装。该命令把 `config/desktop-harness-development.json` 声明的 Harness 开发依赖链接到主开发 checkout 的根 `node_modules`。
 
-主开发 checkout 的 `.env` 必须提供 `cordis.patch.yml` 引用的 Provider 凭据。`cordis.patch.yml` 同时定义默认 Agent 模型 `opencode-go/deepseek-v4-flash`、默认视觉模型 `opencode-go/qwen3.7-plus` 和默认 Preset `harness-comfyui-cli-candidate`。`config/desktop-production.json.startupWorkspacePath` 定义 Desktop 启动后直接打开的 Workspace。
+主开发 checkout 的 `.env` 必须提供 `cordis.patch.yml` 引用的 Provider 凭据。`cordis.patch.yml` 同时定义默认 Agent 模型 `opencode-go/deepseek-v4-flash`、默认视觉模型 `opencode-go/qwen3.7-plus`、前台 Bash 默认超时 `180000` 毫秒和默认 Preset `harness-comfyui-cli-candidate`。该 Bash 超时适用于没有显式提供 `timeoutMs` 的前台 Skill CLI 调用。`config/desktop-production.json.startupWorkspacePath` 定义 Desktop 启动后直接打开的 Workspace。
 
 ## 独立 worktree 开发环境
 

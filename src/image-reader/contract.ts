@@ -33,6 +33,8 @@ export type ImageReaderCredentialAction =
   | { readonly action: 'replace'; readonly apiKey: string }
   | { readonly action: 'clear' }
 
+export type SaveImageReaderProfileOperation = 'create' | 'update'
+
 export interface EditableImageReaderProfileBase {
   readonly id: string
   readonly name: string
@@ -53,13 +55,27 @@ export type EditableImageReaderProfile =
     }
 
 export type SaveImageReaderProfileRequest =
-  | { readonly profile: Extract<EditableImageReaderProfile, { readonly connectionType: 'runtime' }> }
   | {
+      readonly operation: SaveImageReaderProfileOperation
+      readonly activateProfileId: string
+      readonly profile: Extract<EditableImageReaderProfile, { readonly connectionType: 'runtime' }>
+    }
+  | {
+      readonly operation: SaveImageReaderProfileOperation
+      readonly activateProfileId: string
       readonly profile: Extract<EditableImageReaderProfile, { readonly connectionType: 'openai-compatible' }>
       readonly credential: ImageReaderCredentialAction
     }
 
 export interface SaveImageReaderProfileResult {
+  readonly configuration: ImageReaderConfiguration
+}
+
+export interface ActivateImageReaderProfileRequest {
+  readonly profileId: string
+}
+
+export interface ActivateImageReaderProfileResult {
   readonly configuration: ImageReaderConfiguration
 }
 
@@ -184,15 +200,22 @@ function credentialAction(value: unknown): ImageReaderCredentialAction {
   throw new TypeError('Image reader credential action is invalid')
 }
 
+function saveOperation(value: unknown): SaveImageReaderProfileOperation {
+  if (value === 'create' || value === 'update') return value
+  throw new TypeError('Image reader profile save operation is invalid')
+}
+
 export function parseSaveImageReaderProfileRequest(value: unknown): SaveImageReaderProfileRequest {
   const source = record(value, 'Image reader profile save request')
   const profile = editableProfile(source.profile)
+  const operation = saveOperation(source.operation)
+  const activateProfileId = primitiveString(source.activateProfileId, 'Image reader active profile id')
   if (profile.connectionType === 'runtime') {
-    exactKeys(source, ['profile'], 'Runtime image reader profile save request')
-    return Object.freeze({ profile })
+    exactKeys(source, ['operation', 'activateProfileId', 'profile'], 'Runtime image reader profile save request')
+    return Object.freeze({ operation, activateProfileId, profile })
   }
-  exactKeys(source, ['profile', 'credential'], 'OpenAI-compatible image reader profile save request')
-  return Object.freeze({ profile, credential: credentialAction(source.credential) })
+  exactKeys(source, ['operation', 'activateProfileId', 'profile', 'credential'], 'OpenAI-compatible image reader profile save request')
+  return Object.freeze({ operation, activateProfileId, profile, credential: credentialAction(source.credential) })
 }
 
 function parseConfigurationResult(value: unknown, label: string): ImageReaderConfiguration {
@@ -205,6 +228,16 @@ function parseConfigurationResult(value: unknown, label: string): ImageReaderCon
 
 export function parseSaveImageReaderProfileResult(value: unknown): SaveImageReaderProfileResult {
   return Object.freeze({ configuration: parseConfigurationResult(value, 'Image reader profile save result') })
+}
+
+export function parseActivateImageReaderProfileRequest(value: unknown): ActivateImageReaderProfileRequest {
+  const source = record(value, 'Image reader profile activation request')
+  exactKeys(source, ['profileId'], 'Image reader profile activation request')
+  return Object.freeze({ profileId: primitiveString(source.profileId, 'Image reader profile id') })
+}
+
+export function parseActivateImageReaderProfileResult(value: unknown): ActivateImageReaderProfileResult {
+  return Object.freeze({ configuration: parseConfigurationResult(value, 'Image reader profile activation result') })
 }
 
 export function parseDeleteImageReaderProfileRequest(value: unknown): DeleteImageReaderProfileRequest {

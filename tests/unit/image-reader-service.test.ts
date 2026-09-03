@@ -10,6 +10,13 @@ import {
   IMAGE_READER_PROMPT_MAX_LENGTH,
 } from '../../src/image-reader/settings.ts'
 import { ImageReaderService } from '../../src/host/image-reader/image-reader-service.ts'
+import {
+  IMAGE_READER_FAILURE_DIAGNOSTIC_LIMITS,
+  createRuntimeImageReaderFailureContext,
+  normalizeImageReaderFailureDiagnosticField,
+  runtimeImageReaderFailureMessage,
+  type ImageReaderError,
+} from '../../src/host/image-reader/errors.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -95,16 +102,20 @@ describe('ImageReaderService', () => {
       'IMAGE_READER_MODEL_REQUIRED',
       'IMAGE_READER_MODEL_TOO_LONG',
       'IMAGE_READER_MODEL_UNAVAILABLE',
+      'IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND',
+      'IMAGE_READER_PROFILE_ALREADY_EXISTS',
       'IMAGE_READER_PROFILE_ID_FORMAT_INVALID',
       'IMAGE_READER_PROFILE_LIMIT_REACHED',
       'IMAGE_READER_PROFILE_NAME_REQUIRED',
       'IMAGE_READER_PROFILE_NAME_TOO_LONG',
       'IMAGE_READER_PROFILE_NOT_FOUND',
+      'IMAGE_READER_PROFILE_UPDATE_TARGET_NOT_FOUND',
       'IMAGE_READER_PROMPT_REQUIRED',
       'IMAGE_READER_PROMPT_TOO_LONG',
       'IMAGE_READER_PROVIDER_FAILED',
       'IMAGE_READER_RUNTIME_PROVIDER_REQUIRED',
       'IMAGE_READER_RUNTIME_PROVIDER_TOO_LONG',
+      'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
       'IMAGE_READER_SETTINGS_DELETE_FAILED',
       'IMAGE_READER_SETTINGS_REQUEST_FAILED',
       'IMAGE_READER_SETTINGS_SAVE_FAILED',
@@ -266,6 +277,161 @@ describe('ImageReaderService', () => {
       },
     })
     await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_EMPTY_RESPONSE' })
+  })
+
+  it('preserves the runtime profile snapshot and provider failure whitelist without copying prohibited values', async () => {
+    const { service, filePath, scope, saveImage, prepareCall } = fixture()
+    writeFileSync(filePath, Uint8Array.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ...Buffer.from('IMAGE_INPUT_SENTINEL'),
+    ]))
+    saveImage.mockResolvedValueOnce({
+      attachmentId: 'ATTACHMENT_REF_SENTINEL', mediaType: 'image/png', bytes: 28, width: 1, height: 1,
+    })
+    const consoleSpies = [
+      vi.spyOn(console, 'debug').mockImplementation(() => undefined),
+      vi.spyOn(console, 'info').mockImplementation(() => undefined),
+      vi.spyOn(console, 'log').mockImplementation(() => undefined),
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined),
+      vi.spyOn(console, 'error').mockImplementation(() => undefined),
+    ]
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'runtime-profile',
+        profiles: [{
+          ...createImageReaderProfile('runtime-profile', '生产视觉配置'),
+          provider: 'opencode-go',
+          endpoint: 'ENDPOINT_SENTINEL',
+          model: 'qwen3.8-flash',
+          defaultPrompt: 'PROMPT_SENTINEL',
+          temperature: 0.1,
+          maxTokens: 8192,
+        }],
+      },
+      credentials: { 'runtime-profile': 'CREDENTIAL_SENTINEL' },
+    })
+    prepareCall.mockResolvedValueOnce({
+      config: { provider: 'opencode-go', model: 'qwen3.8-flash', temperature: 0.1, maxTokens: 8192 },
+      inputModalities: ['image'],
+      stream: async function* () {
+        yield {
+          type: 'finish',
+          reason: {
+            kind: 'error',
+            failure: {
+              code: 'UPSTREAM_IMAGE_ERROR',
+              message: 'FAILURE_MESSAGE_SENTINEL',
+              status: 422,
+              providerRetryAfterMs: 1250,
+              requestId: 'request-123',
+            },
+          },
+        }
+      },
+    })
+
+    const error = await service.inspect(filePath, { prompt: 'PROMPT_SENTINEL' })
+      .catch((cause: ImageReaderError) => cause) as ImageReaderError
+    expect(error).toMatchObject({
+      code: 'IMAGE_READER_PROVIDER_FAILED',
+      runtimeFailure: {
+        finishKind: 'error',
+        profileId: 'runtime-profile',
+        profileName: '生产视觉配置',
+        connectionType: 'runtime',
+        provider: 'opencode-go',
+        model: 'qwen3.8-flash',
+        temperature: 0.1,
+        maxTokens: 8192,
+        failureCode: 'UPSTREAM_IMAGE_ERROR',
+        failureStatus: 422,
+        providerRetryAfterMs: 1250,
+        requestId: 'request-123',
+      },
+    })
+    expect(error.message).toBe('The runtime visual model did not complete the image inspection. profile_name="生产视觉配置"; profile_id="runtime-profile"; connection_type="runtime"; provider="opencode-go"; model="qwen3.8-flash"; temperature=0.1; max_tokens=8192; finish_kind="error"; failure_code="UPSTREAM_IMAGE_ERROR"; failure_status=422; provider_retry_after_ms=1250; request_id="request-123".')
+    const forbiddenSources = [
+      'CREDENTIAL_SENTINEL',
+      'ENDPOINT_SENTINEL',
+      'PROMPT_SENTINEL',
+      'IMAGE_INPUT_SENTINEL',
+      'ATTACHMENT_REF_SENTINEL',
+      'FAILURE_MESSAGE_SENTINEL',
+    ]
+    const serializedError = JSON.stringify(error)
+    for (const source of forbiddenSources) {
+      expect(serializedError).not.toContain(source)
+      expect(error.message).not.toContain(source)
+    }
+    for (const spy of consoleSpies) {
+      expect(spy).not.toHaveBeenCalled()
+      spy.mockRestore()
+    }
+  })
+
+  it('normalizes runtime failure strings at the fixed UTF-16 boundaries and keeps the complete diagnostic on one line', () => {
+    expect(normalizeImageReaderFailureDiagnosticField(` \uD800a\uDC00\u0000\u0001b\u2028c `)).toBe('�a� b c')
+    expect(normalizeImageReaderFailureDiagnosticField('x'.repeat(95))).toBe('x'.repeat(95))
+    expect(normalizeImageReaderFailureDiagnosticField('x'.repeat(96))).toBe('x'.repeat(96))
+    expect(normalizeImageReaderFailureDiagnosticField('x'.repeat(97))).toBe(`${'x'.repeat(95)}…`)
+    expect(normalizeImageReaderFailureDiagnosticField(`${'x'.repeat(94)}😀z`)).toBe(`${'x'.repeat(94)}…`)
+
+    const worstCase = `${'"\\'.repeat(46)}😀zz`
+    expect(worstCase).toHaveLength(96)
+    const context = createRuntimeImageReaderFailureContext({
+      finishKind: 'aborted',
+      profileId: worstCase,
+      profileName: worstCase,
+      connectionType: 'runtime',
+      provider: worstCase,
+      model: worstCase,
+      temperature: 0.1,
+      maxTokens: 8192,
+      failureCode: worstCase,
+      failureStatus: 503,
+      providerRetryAfterMs: 1250.5,
+      requestId: worstCase,
+    })
+    const message = runtimeImageReaderFailureMessage(context)
+    expect(message.length).toBeLessThanOrEqual(IMAGE_READER_FAILURE_DIAGNOSTIC_LIMITS.totalChars)
+    expect(message).not.toMatch(/[\r\n\u2028\u2029]/u)
+    expect(message).toContain('finish_kind="aborted"')
+    expect(message).toContain('; failure_status=503; provider_retry_after_ms=1250.5; request_id=')
+    expect(message.endsWith('.')).toBe(true)
+  })
+
+  it('distinguishes provider abort finishes from caller cancellation', async () => {
+    const providerAbort = fixture()
+    providerAbort.prepareCall.mockResolvedValueOnce({
+      config: { provider: 'vision-provider', model: 'vision-model', temperature: 0.35, maxTokens: 1536 },
+      inputModalities: ['image'],
+      stream: async function* () {
+        yield {
+          type: 'finish',
+          reason: { kind: 'aborted', failure: { code: 'PROVIDER_ABORTED', message: 'not copied' } },
+        }
+      },
+    })
+    await expect(providerAbort.service.inspect(providerAbort.filePath)).rejects.toMatchObject({
+      code: 'IMAGE_READER_PROVIDER_FAILED',
+      runtimeFailure: { finishKind: 'aborted', failureCode: 'PROVIDER_ABORTED' },
+    })
+
+    const callerAbort = fixture()
+    const controller = new AbortController()
+    callerAbort.prepareCall.mockResolvedValueOnce({
+      config: { provider: 'vision-provider', model: 'vision-model', temperature: 0.35, maxTokens: 1536 },
+      inputModalities: ['image'],
+      stream: async function* () {
+        controller.abort(new DOMException('cancelled by caller', 'AbortError'))
+        yield {
+          type: 'finish',
+          reason: { kind: 'aborted', failure: { code: 'PROVIDER_ABORTED', message: 'not copied' } },
+        }
+      },
+    })
+    await expect(callerAbort.service.inspect(callerAbort.filePath, { signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' })
   })
 
   it('maps attachment admission and model preparation failures into stable errors', async () => {

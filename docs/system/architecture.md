@@ -56,10 +56,10 @@ pnpm web:start|restart
 | `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.86.1 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、标准 Node.js 官方前端编译 Worker、API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
-| `src/host/image-reader/` | 图片读取设置迁移、单份配置保存与删除、运行时视觉模型目录、系统 Provider/OpenAI 兼容适配和单图视觉模型调用 Tool |
+| `src/host/image-reader/` | 图片读取设置迁移、单份配置保存、激活与删除、运行时视觉模型目录、系统 Provider/OpenAI 兼容适配和单图视觉模型调用 Tool |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
-| `src/image-reader/` | Host 与 Client 共用的命名图片读取配置、逐规则校验、凭据动作、视觉模型目录和单份配置 Remote 合同 |
+| `src/image-reader/` | Host 与 Client 共用的命名图片读取配置、逐规则校验、凭据动作、视觉模型目录和单份配置保存、激活与删除 Remote 合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器、Generation Run/Media 投影与图片读取设置页 |
 | `.agents/skills/` | 七个项目 Skill 的 canonical source；每个 Skill 都包含自身执行所需的 CLI 参考文档 |
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
@@ -181,11 +181,21 @@ Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_
 
 `ImageReaderService.inspect()` 一次读取一个本地图片路径，并从 `configuration.activeProfileId` 解析当前命名配置。DSH Tool `inspect_image` 与受管 CLI `image inspect --stdin` 都可以提供本次调用专用的 `prompt`；该值通过非空与长度校验后原样覆盖本次默认提示词，不修改 Settings。Tool 或 CLI 省略 `prompt` 时，服务使用活动配置保存的 `defaultPrompt`。
 
+图片读取设置页分别维护 Host 返回的 `persistedConfiguration` 和 Client 当前表单的 `editorDraft`。已保存配置选择器只显示 `persistedConfiguration.profiles`；使用者选择已保存配置后，Client 通过 `activateProfile({ profileId })` 请求 Host 只修改 `configuration.activeProfileId`。新建或复制配置只创建 Client 草稿，保存成功前不会进入已保存配置选择器，也不会参与下一次图片读取。已保存配置或未保存配置存在修改时，保存并切换另一份已保存配置的请求通过一次 `saveProfile({ operation, activateProfileId, profile, ... })` 完成 Settings 提交。Settings scope 在草稿编辑期间报告另一份实际生效配置时，普通保存请求把该实际配置作为 `activateProfileId`，避免保存草稿时隐式撤销外部激活结果。
+
+Host 使用同一设置修改队列串行处理保存、激活和删除请求。`operation: 'create'` 只追加不存在的配置 ID，`operation: 'update'` 只更新仍然存在的配置 ID；Host 在同一次 `settings.replace()` 中保存草稿、处理该配置的凭据动作并设置最终 `activeProfileId`。写请求发出后，Client 等待 Host 的权威结果；Host 已经返回成功配置时，Client 即使同时收到本地取消信号也采用该配置。
+
+`ImageReaderRemoteService` 在 Typert Remote 边界把保存、激活和删除产生的 `ImageReaderError` 转换为 `TypertRemoteFailure`。Typert carrier 因此把具体业务错误码、错误消息和空 details 对象写入 Remote 失败结果；Client 不使用 carrier 的通用异常码替换图片读取设置业务错误码。
+
 `runtime` 配置把图片保存为 Harness Attachment，再使用配置中的系统 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用。`openai-compatible` 配置不经过 Harness LLM Runtime 或 Attachment Store；Host 把同一张图片编码为 Data URL，向配置的完整 Chat Completions 地址发送模型 ID、提示词、`temperature` 和 `max_tokens`。OpenAI 兼容适配器只解析 Chat Completions 的 HTTP JSON 传输外壳，并把 `choices[0].message.content` 当作普通字符串；runtime 适配器也直接收集普通模型文本。两种适配器都不要求或解析模型文本中的 JSON。`inspect_image` 在模型调用完成后把普通字符串包装为包含 `provider`、`model`、`file_path` 和 `observation` 的结构化 Tool 结果；CLI stdout 继续输出同一对象的 JSON。OpenAI 兼容响应体的声明长度与实际流式累计长度都不能超过 1 MiB，读取响应体和解析传输外壳时继续传播调用者取消。
 
 API Key 作为 `credentials.<profileId>` Settings secret 保存。Client 收到的凭据状态只包含每份配置的 `hasApiKey`。设置页保存时只向 Remote 提交当前编辑配置；Host 在完整设置修改临界区内读取最新持久化列表，在原索引替换同 ID 配置或把新 ID 追加到末尾，按 `keep`、`replace` 或 `clear` 处理 OpenAI 兼容凭据，再调用一次 `settings.replace()` 保存合并结果。Host 按调用顺序串行执行保存与删除临界区，重叠请求不会根据旧 Settings 快照覆盖先完成的修改。删除已保存配置使用独立 Remote；Host 同时删除对应凭据，并在删除活动配置时优先选择原列表后一项、不存在后一项时选择前一项。设置页把 Host 返回的完整配置作为新的持久化快照，并只从该快照建立一份当前可编辑配置。Host 在新 namespace 尚无用户值时，把旧单配置 namespace 的用户 Provider、模型、提示词、`temperature` 和最大输出 Token 迁移为一份 `runtime` 配置。
 
 `ImageReaderService`、Tool 和 CLI 都不读取 Generation Request 参数，也不比较或改写 Generation Prompt。
+
+Runtime LLM stream 以 `error` 或非调用者 `aborted` finish 结束时，`ImageReaderService` 返回稳定错误码 `IMAGE_READER_PROVIDER_FAILED`。错误文案按固定顺序包含本次 profile 名称、profile ID、`runtime` 连接类型、Provider、模型、温度、最大输出 Token 数、finish kind、`LlmFailure.code`，并在 Provider 提供时追加合法 HTTP status、正数 `providerRetryAfterMs` 和 request ID。profile 名称、profile ID、Provider、模型、failure code 和 request ID 先替换非法 UTF-16、控制字符与 Unicode 行分隔符，再限制为 96 个 UTF-16 code unit；完整错误文案限制为 2048 个 UTF-16 code unit且不会执行尾部截断。
+
+Runtime failure context 不读取或复制 Settings credentials、profile endpoint、本次 prompt、图片输入、AttachmentRef 或 `LlmFailure.message`。调用者 AbortSignal 已取消时，服务继续抛出 AbortError，不把调用者取消记录为 Provider failure。`inspect_image` Tool 与受管 CLI 原样传播 `ImageReaderError.message`，因此两种入口显示同一份本次调用诊断。
 
 `local-image-reader` Skill 按自己的 `references/image-inspection-cli.md` 为用户提供的每个本地图片绝对路径分别调用一次 `image inspect --stdin`。用户指定本次观察重点、返回格式或读图提示词时，该 Skill 传递完整的本次 `prompt`；一般读图请求省略该属性并使用活动配置的 `defaultPrompt`。该 Skill 只返回视觉模型观察或单图读取错误，不查询 Generation Run，也不生成改进 Prompt。
 

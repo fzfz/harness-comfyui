@@ -39,15 +39,32 @@ pnpm prod:test
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
 
-v0.39.0 的最终候选通过完整 `pnpm quality`：889 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.22%、branches 86.06%、functions 100%、lines 95.96%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。production 测试覆盖跨进程端口声明、死亡 owner claim 回收、存活 owner claim 保留、损坏 claim 拒绝、共享上游双 Desktop、共享主 `.env` 双 Web context、Desktop 进程组与 Web Host PID 的端口所有权接管、实际端口状态、独立 Desktop 输出目录、子进程提前退出、端口状态写入失败和 PID 写入失败。Desktop worktree 测试还验证开发环境把隔离 HOME 的 Skill 根链接到当前 worktree 候选目录、拒绝缺失、越界或通过符号链接解析到 worktree 外的候选目录配置、保留真实全局 Skill 目录，并且生产 context 继续使用真实 home 的全局 Skill 根。
+当前未发布候选通过完整 `pnpm quality`：924 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。production 测试覆盖跨进程端口声明、死亡 owner claim 回收、存活 owner claim 保留、损坏 claim 拒绝、共享上游双 Desktop、共享主 `.env` 双 Web context、Desktop 进程组与 Web Host PID 的端口所有权接管、实际端口状态、独立 Desktop 输出目录、子进程提前退出、端口状态写入失败和 PID 写入失败。Desktop worktree 测试还验证开发环境把隔离 HOME 的 Skill 根链接到当前 worktree 候选目录、拒绝缺失、越界或通过符号链接解析到 worktree 外的候选目录配置、保留真实全局 Skill 目录，并且生产 context 继续使用真实 home 的全局 Skill 根。
 
 Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、Source v0.86.1 三字段 TemplateBundle、实例 ID 安全投影、只读模板运行参数检查、普通随机 Seed 数量与单次去重、Run 幂等、状态转换、重启恢复、活动输出节点发现、断开输出节点删除、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。模板检查测试覆盖非尺寸参数合同、精确尺寸配对、Selector 配对、preset 映射、带节点后缀的多组候选、非图片辅助 output node 排除、下游独立 resize 或 upscale 覆盖上游尺寸、末端尺寸参数回编译、输入 Workflow 不变、Official compiler 不调用和检查与编译错误一致性。Catalog 自动化测试覆盖 Source v0.86.1 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
 
 历史 Generation Run 输入查询测试覆盖 Tool 与 CLI 的单项和批量入口、输入顺序、重复 `run_id`、完整 ID、最少八个 UUID 字符的短 ID、短 ID canonical 完整值返回、当前 Workspace 唯一匹配、其他 Workspace 同前缀隔离、短 ID 无匹配与多匹配逐项错误、单项无效 ID、损坏的 `request_json`、历史请求缺少 `loras` 或 `model`、准备失败、Actual Workflow 文件缺失或无效、未分类文件系统错误脱敏、1 项与 20 项边界、21 项拒绝和取消传播。CLI 集成测试从临时 `node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs` 执行构建产物，并确认合法批量请求包含单项错误时仍返回退出码 0。
 
-图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖 Tool 与 CLI 可选 `prompt` 的省略、原样覆盖、非字符串拒绝、空白拒绝、32768 字符边界与超长拒绝。两种 Provider 的测试确认模型普通字符串直接成为 `observation`，OpenAI 兼容适配器只解析 Chat Completions 传输外壳，Tool 与 CLI 继续输出四属性 JSON 对象。CLI 自动化测试确认 `image inspect --stdin` 省略 `prompt` 时使用活动配置的 `defaultPrompt`，提供 `prompt` 时只覆盖本次调用。
+图片读取自动化测试使用 fake Settings scope、fake Attachment Store、fake LLM Runtime 与 fake Fetch 覆盖 Tool 与 CLI 可选 `prompt` 的省略、原样覆盖、非字符串拒绝、空白拒绝、32768 字符边界与超长拒绝。两种 Provider 的测试确认模型普通字符串直接成为 `observation`，OpenAI 兼容适配器只解析 Chat Completions 传输外壳，Tool 与 CLI 继续输出四属性 JSON 对象。CLI 自动化测试确认 `image inspect --stdin` 省略 `prompt` 时使用活动配置的 `defaultPrompt`，提供 `prompt` 时只覆盖本次调用。Runtime failure 测试分别覆盖 `error` finish、非调用者 `aborted` finish 和调用者 AbortSignal，验证错误只保留 profile 快照、`LlmFailure.code`、合法 HTTP status、正数 retry-after 与 request ID。字段边界测试覆盖 95、96、97 个 UTF-16 code unit、合法代理项对、未配对代理项、引号、反斜杠、C0/C1 控制字符和 Unicode 行分隔符；Tool、CLI route 与构建后的 managed CLI 测试确认具体诊断保持单行并原样传播。
 
-图片读取设置自动化测试覆盖保存请求只包含当前配置、Host 按原索引合并或向末尾追加、其他持久化配置不变、OpenAI 兼容 API Key 的 `keep`、`replace` 与 `clear`、runtime 保存清除旧凭据、`hasApiKey` 派生、独立删除和活动配置选择。重叠保存、删除后保存和前一次持久化失败测试验证 Host 串行执行完整 Settings 修改临界区，且失败不会阻塞后续修改。Remote parser 测试区分闭合 JSON 结构错误与领域值错误；Client 在 Remote 前拒绝 `NaN` 与正负无穷，Client 和 Host 使用同一逐规则校验顺序与输入项映射。设置页测试覆盖持久化快照回显、未保存修改切换门禁、放弃后恢复、新建与复制、复制不带 API Key、未保存配置本地删除、已保存配置 Remote 删除、每个校验错误码的唯一输入项位置和保存按钮附近的同码总结。原有图片文件、Provider、取消、1 MiB 响应上限、旧单配置迁移、secret redaction 与 Settings 持久化错误分支继续覆盖。
+图片读取设置自动化测试覆盖保存请求只包含当前配置、Host 按原索引更新或向末尾追加、其他持久化配置不变、OpenAI 兼容 API Key 的 `keep`、`replace` 与 `clear`、runtime 保存清除旧凭据、`hasApiKey` 派生、独立激活和独立删除。Host 测试验证保存、激活和删除共用一个 Settings 修改队列；激活只修改 `activeProfileId`，保存可以在一次 `settings.replace()` 中更新或创建草稿并激活另一份配置。测试分别覆盖激活幂等、目标不存在、创建 ID 冲突、更新目标被删除、持久化失败、提交期间取消与提交后成功结果。Host Remote 测试确认已知图片读取设置错误使用 `TypertRemoteFailure` 保留业务错误码；Client adapter 测试确认 Remote 失败结果继续使用该错误码。Remote parser 测试区分闭合 JSON 结构错误与领域值错误；Client 在 Remote 前拒绝 `NaN` 与正负无穷，并在写请求发出后采用 Host 返回的成功配置。
+
+设置页测试覆盖 Host 实际生效配置、Client 编辑草稿、草稿来源、未保存状态、待处理意图和 Host 操作状态。已保存配置的干净选择立即调用激活 Remote；新建或复制配置不进入生效配置选择器，页面卸载时不发送 Host 写请求。已保存草稿选择另一份配置时，测试覆盖保存并切换、放弃并切换和继续编辑；已保存草稿删除时，测试覆盖明确放弃门禁。失败和取消测试确认保存路径保留草稿与待切换目标，放弃路径不会恢复被使用者丢弃的草稿，外部 Settings 更新会刷新实际生效配置但不会覆盖现有草稿。每个校验错误码的唯一输入项位置、只读状态、操作期间控件禁用、错误总结和下一步文案继续由设置页测试覆盖。
+
+Profile 合同测试固定根 `cordis.patch.yml` 中的前台 Bash 默认超时为 `180000` 毫秒。图片读取真实模型验收仍可以为故障分类显式使用更短的单次 Tool Call 超时；该验收边界不改变没有显式 `timeoutMs` 的 Skill CLI 调用所使用的产品默认值。
+
+图片读取真实模型验收为每次 Qwen、GLM 和 DeepSeek 调用显式设置 `timeoutMs: 60000`。该 60 秒参数只定义验收完成期限，不覆盖产品默认值的合同测试。自动化分类器使用以下八个互斥 fixture：
+
+| fixture 输入 | 分类结果 | 是否通过 |
+| --- | --- | --- |
+| 60 秒内退出码 0、stderr 为空、stdout 为四属性图片观察 JSON | `stop-success` | 是 |
+| 60 秒内退出码 1、stderr 为 `finish_kind="error"` 的完整 Provider failure 单行文案 | `provider-error-finish` | 是 |
+| 60 秒内退出码 1、stderr 为 `finish_kind="aborted"` 的完整 Provider failure 单行文案 | `provider-aborted-finish` | 是 |
+| 调用者收到 `AbortError`，且输出不包含 `IMAGE_READER_PROVIDER_FAILED` | `caller-cancelled` | 是 |
+| 60 秒内没有完成且没有 stdout 或 stderr | `timeout-without-output` | 否 |
+| 60 秒内没有完成且已经产生部分 stdout 或 stderr | `timeout-with-partial-output` | 否 |
+| 60 秒内返回其他 Harness 错误码 | `unexpected-error-code` | 否 |
+| 返回混合、多行、缺少属性或其他不符合 Tool/CLI 合同的输出 | `invalid-output` | 否 |
 
 2026-09-02 的真实模型验收使用隔离开发 Desktop、`opencode-go/deepseek-v4-flash` Agent 模型和 `opencode-go/qwen3.7-plus` 图片读取模型。`standard` Preset 对同一图片依次省略 `prompt`、提供返回 `OVERRIDE_OK` 的 `prompt`、再次省略 `prompt`，确认本次覆盖不写入设置。`ComfyUI工作台预设` 的 Agent 实际读取 worktree 中的 `local-image-reader/SKILL.md` 与 `references/image-inspection-cli.md`，并通过前台 shell Tool Call 向 `image inspect --stdin` 传递可选 `prompt`；CLI 退出码为 0、stderr 为空、四属性 JSON stdout 的 `observation` 为 `OVERRIDE_OK`。完整请求、实际读取路径、CLI stdin 和 stdout 记录在 [`.planning/image-reader-prompt-string/model-acceptance.md`](../../.planning/image-reader-prompt-string/model-acceptance.md)。
 

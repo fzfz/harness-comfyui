@@ -15,6 +15,11 @@ import {
   reportFrontendAttemptDiagnostic,
   reportGenerationRunInputLookupError,
 } from '../../src/host/plugin.ts'
+import {
+  IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS,
+  IMAGE_READER_SENTINEL_PROMPT,
+  createImageReaderProviderFailureFixture,
+} from '../support/image-reader-provider-failure.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -58,6 +63,7 @@ function provideHostServices(ctx: Context) {
   ctx.provide('tools', { register: registerTool })
   ctx.provide('webServer', { host: '127.0.0.1', port: 43199, register: registerRoute })
   ctx.provide('shellEnv' as never, { register: registerShellEnvironment } as never)
+  const saveImage = vi.fn()
   ctx.provide('attachments' as never, {
     imageLimits: {
       maxImageBytes: 8 * 1024 * 1024,
@@ -67,14 +73,15 @@ function provideHostServices(ctx: Context) {
       maxImageDimension: 8192,
       mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
     },
-    saveImage: vi.fn(),
+    saveImage,
   } as never)
+  const prepareCall = vi.fn()
   ctx.provide('llm' as never, {
     listProviders: vi.fn(() => []),
     listModels: vi.fn(async () => []),
-    prepareCall: vi.fn(),
+    prepareCall,
   } as never)
-  const registerSettings = vi.fn(() => ({
+  const registerSettings = vi.fn((_namespace?: string) => ({
       get: vi.fn(() => ({
         configuration: {
           activeProfileId: 'default',
@@ -102,6 +109,8 @@ function provideHostServices(ctx: Context) {
     registerSettings,
     registerShellEnvironment,
     registerTool,
+    prepareCall,
+    saveImage,
   }
 }
 
@@ -236,10 +245,58 @@ describe('Harness ComfyUI Host plugin', () => {
     expect(remoteMethods(imageReader)).toEqual([
       { method: 'models', invocation: { kind: 'direct' } },
       { method: 'saveProfile', invocation: { kind: 'direct' } },
+      { method: 'activateProfile', invocation: { kind: 'direct' } },
       { method: 'deleteProfile', invocation: { kind: 'direct' } },
     ])
     await fiber.dispose()
     await ctx.fiber.dispose()
+  })
+
+  it('keeps forbidden Provider sources out of a mounted Host Tool error and Cordis logger sink', async () => {
+    stubTestProfileEnvironment()
+    const failureFixture = createImageReaderProviderFailureFixture()
+    const ctx = new Context()
+    const logger = { error: vi.fn(), info: vi.fn() }
+    vi.spyOn(ctx, 'logger').mockReturnValue(logger as never)
+    const { prepareCall, registerSettings, registerTool, saveImage } = provideHostServices(ctx)
+    registerSettings.mockImplementation(() => failureFixture.scope)
+    saveImage.mockImplementation(failureFixture.saveImage)
+    prepareCall.mockImplementation(failureFixture.prepareCall)
+    const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'production' })
+    try {
+      const inspectImage = registerTool.mock.calls
+        .map(([definition]) => definition)
+        .find(definition => definition.name === 'inspect_image') as unknown as {
+          execute(args: unknown, execution: unknown): Promise<unknown>
+        } | undefined
+      if (inspectImage === undefined) throw new Error('Mounted Host did not register inspect_image.')
+      const error = await inspectImage.execute({
+        file_path: failureFixture.filePath,
+        prompt: IMAGE_READER_SENTINEL_PROMPT,
+      }, {
+        callId: 'call_inspect',
+        rootCallId: 'call_inspect',
+        name: 'inspect_image',
+        arguments: {},
+        signal: new AbortController().signal,
+        token: Symbol('execution'),
+        deferContext: vi.fn(),
+        concludeTurn: vi.fn(),
+        agent: { id: 'session_1', session: { id: 'session_1', header: { cwd: '/workspace' }, events: [] } },
+      }).catch(cause => cause) as Error
+
+      expect(error).toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
+      const toolError = JSON.stringify(error)
+      const hostLog = JSON.stringify([...logger.error.mock.calls, ...logger.info.mock.calls])
+      for (const source of IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS) {
+        expect(toolError).not.toContain(source)
+        expect(hostLog).not.toContain(source)
+      }
+    } finally {
+      await fiber.dispose()
+      await ctx.fiber.dispose()
+      failureFixture.dispose()
+    }
   })
 
   it('passes a JSON-representable invalid value through the strict Remote wire codec to the mounted Host', async () => {
@@ -256,6 +313,8 @@ describe('Harness ComfyUI Host plugin', () => {
     const requestCodec = descriptor?.parameters[0]?.codec
     if (requestCodec?.mode !== 'strict') throw new Error('Image reader profile save request requires a strict Remote codec')
     const wireValue = JSON.parse(JSON.stringify({
+      operation: 'create',
+      activateProfileId: 'custom',
       profile: {
         id: 'custom',
         name: '本地视觉',
@@ -272,7 +331,8 @@ describe('Harness ComfyUI Host plugin', () => {
 
     expect(parsedRequest).toEqual(wireValue)
     await expect(imageReader.saveProfile(parsedRequest, new AbortController().signal)).rejects.toMatchObject({
-      code: 'IMAGE_READER_ENDPOINT_URL_INVALID',
+      name: 'TypertRemoteFailure',
+      failure: { code: 'IMAGE_READER_ENDPOINT_URL_INVALID' },
     })
     await fiber.dispose()
     await ctx.fiber.dispose()

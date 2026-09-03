@@ -1,10 +1,12 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
 import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
-import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { Remote, TypertRemoteFailure, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 
 import {
   IMAGE_READER_REMOTE_NAMESPACE,
+  type ActivateImageReaderProfileRequest,
+  type ActivateImageReaderProfileResult,
   type DeleteImageReaderProfileRequest,
   type DeleteImageReaderProfileResult,
   type ImageReaderModelCatalog,
@@ -115,9 +117,65 @@ export class ImageReaderRemoteService extends TypertRemoteService {
   }
 
   private enqueueSettingsMutation<Result>(operation: () => Promise<Result>): Promise<Result> {
-    const pending = this.settingsMutationTail.then(operation)
+    const pending = this.settingsMutationTail.then(async () => {
+      try {
+        return await operation()
+      } catch (error) {
+        if (error instanceof ImageReaderError) {
+          throw new TypertRemoteFailure(Object.freeze({
+            code: error.code,
+            message: error.message,
+            details: Object.freeze({}),
+          }))
+        }
+        throw error
+      }
+    })
     this.settingsMutationTail = pending.then(() => undefined, () => undefined)
     return pending
+  }
+
+  async activateProfile(
+    request: ActivateImageReaderProfileRequest,
+    signal: AbortSignal,
+  ): Promise<ActivateImageReaderProfileResult> {
+    return this.enqueueSettingsMutation(async () => {
+      signal.throwIfAborted()
+      try {
+        validateImageReaderProfileId(request.profileId)
+      } catch (error) {
+        if (error instanceof ImageReaderProfileValidationError) {
+          throw new ImageReaderError(error.code, error.code, { cause: error })
+        }
+        throw error
+      }
+      const current = this.settings.get()
+      if (!current.configuration.profiles.some(profile => profile.id === request.profileId)) {
+        throw new ImageReaderError(
+          'IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND',
+          'The requested image reader activation target does not exist.',
+        )
+      }
+      if (current.configuration.activeProfileId === request.profileId) {
+        return Object.freeze({ configuration: current.configuration })
+      }
+      const configuration = Object.freeze({
+        activeProfileId: request.profileId,
+        profiles: current.configuration.profiles,
+      })
+      const section = Object.freeze({ configuration, credentials: current.credentials })
+      signal.throwIfAborted()
+      try {
+        await this.settings.replace(section)
+      } catch (error) {
+        throw new ImageReaderError(
+          'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
+          'Harness could not persist the active image reader profile.',
+          { cause: error },
+        )
+      }
+      return Object.freeze({ configuration })
+    })
   }
 
   async saveProfile(request: SaveImageReaderProfileRequest, signal: AbortSignal): Promise<SaveImageReaderProfileResult> {
@@ -149,10 +207,16 @@ export class ImageReaderRemoteService extends TypertRemoteService {
           })
         }
         const profiles = [...current.configuration.profiles]
-        if (profileIndex === -1) profiles.push(storedProfile)
+        if (request.operation === 'create') profiles.push(storedProfile)
         else profiles[profileIndex] = storedProfile
+        if (!profiles.some(profile => profile.id === request.activateProfileId)) {
+          throw new ImageReaderError(
+            'IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND',
+            'The requested image reader activation target does not exist.',
+          )
+        }
         configuration = Object.freeze({
-          activeProfileId: request.profile.id,
+          activeProfileId: request.activateProfileId,
           profiles: Object.freeze(profiles),
         })
         section = Object.freeze({ configuration, credentials: Object.freeze(credentials) })
@@ -210,6 +274,7 @@ export class ImageReaderRemoteService extends TypertRemoteService {
       delete credentials[request.profileId]
       const configuration = Object.freeze({ activeProfileId, profiles: Object.freeze(profiles) })
       const section = Object.freeze({ configuration, credentials: Object.freeze(credentials) })
+      signal.throwIfAborted()
       try {
         await this.settings.replace(section)
       } catch (error) {
@@ -239,6 +304,15 @@ Remote(ImageReaderRemoteService.prototype.saveProfile, {
   private: false,
   static: false,
   name: 'saveProfile',
+  addInitializer(initialize: (this: ImageReaderRemoteService) => void) {
+    imageReaderRemoteInitializers.push(service => initialize.call(service))
+  },
+} as never)
+
+Remote(ImageReaderRemoteService.prototype.activateProfile, {
+  private: false,
+  static: false,
+  name: 'activateProfile',
   addInitializer(initialize: (this: ImageReaderRemoteService) => void) {
     imageReaderRemoteInitializers.push(service => initialize.call(service))
   },

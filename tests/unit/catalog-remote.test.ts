@@ -14,13 +14,14 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',
+      'harness-comfyui#harnessComfyuiImageReader/activateProfile',
       'harness-comfyui#harnessComfyuiImageReader/saveProfile',
       'harness-comfyui#harnessComfyuiImageReader/deleteProfile',
     ])
   })
 
   it('mounts strict cancellable current-profile save and delete methods', () => {
-    const descriptor = IMAGE_READER_REMOTE.descriptors[1]!
+    const descriptor = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'saveProfile')!
     expect(descriptor).toMatchObject({
       service: 'harnessComfyuiImageReader',
       namespace: 'harnessComfyuiImageReader',
@@ -38,12 +39,16 @@ describe('Catalog Remote contribution', () => {
       }],
     }
     const runtime = {
+      operation: 'create',
+      activateProfileId: 'runtime',
       profile: {
         id: 'runtime', name: '', connectionType: 'runtime', provider: '', model: '',
         defaultPrompt: '', temperature: Number.NaN, maxTokens: 0,
       },
     }
     const custom = {
+      operation: 'update',
+      activateProfileId: 'custom',
       profile: {
         id: 'custom', name: '本地视觉', connectionType: 'openai-compatible', endpoint: 'not-a-url', model: 'qwen-vl',
         defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
@@ -54,10 +59,25 @@ describe('Catalog Remote contribution', () => {
     expect(request.schema.parse(custom)).toEqual(custom)
     expect(descriptor.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
     expect(() => request.schema.parse({ ...runtime, credential: { action: 'keep' } })).toThrow('properties')
-    expect(() => request.schema.parse({ profile: { ...runtime.profile, endpoint: '' } })).toThrow('properties')
-    expect(() => request.schema.parse({ profile: { ...custom.profile, provider: '' }, credential: { action: 'keep' } })).toThrow('properties')
+    expect(() => request.schema.parse({ ...runtime, profile: { ...runtime.profile, endpoint: '' } })).toThrow('properties')
+    expect(() => request.schema.parse({ ...custom, profile: { ...custom.profile, provider: '' }, credential: { action: 'keep' } })).toThrow('properties')
+    expect(() => request.schema.parse({ profile: runtime.profile })).toThrow()
 
-    const deletion = IMAGE_READER_REMOTE.descriptors[2]!
+    const activation = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'activateProfile')!
+    expect(activation).toMatchObject({
+      service: 'harnessComfyuiImageReader',
+      namespace: 'harnessComfyuiImageReader',
+      method: 'activateProfile',
+      cancellation: { parameter: 'signal' },
+      result: { mode: 'strict' },
+    })
+    const activateRequest = activation.parameters[0]!.codec
+    if (activateRequest.mode !== 'strict' || activation.result.mode !== 'strict') throw new Error('strict codecs required')
+    expect(activateRequest.schema.parse({ profileId: '' })).toEqual({ profileId: '' })
+    expect(activation.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
+    expect(() => activateRequest.schema.parse({ profileId: 'runtime', force: true })).toThrow('properties')
+
+    const deletion = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'deleteProfile')!
     expect(deletion).toMatchObject({
       service: 'harnessComfyuiImageReader',
       namespace: 'harnessComfyuiImageReader',
