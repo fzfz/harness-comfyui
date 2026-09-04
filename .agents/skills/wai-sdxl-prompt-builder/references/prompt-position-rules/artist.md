@@ -2,23 +2,23 @@
 
 ## 用途和读取时机
 
-本文件规定 Skill Agent 如何完成 `artist` 位置。UI 已选 Style、用户指定具体画师或 Skill Agent 采用 Style 查询结果时，Skill Agent 必须读取本文件。
+本文件规定 Skill Agent 如何填写 `artist` 位置。Skill Agent 采用一项或多项 Style Prompt 来源时，必须读取本文件。
 
-UI 已选 Style 的字段和处理顺序由 [当前轮输入合同](../input-contract.md)定义。
+Style 上下文记录的字段和处理顺序由 [当前轮输入合同](../input-contract.md)定义。
 
-`artist` 的唯一职责由 [WAI Prompt 位置顺序与职责](../wai-prompt-position-order.md)统一定义。
+`artist` 的内容职责由 [WAI Prompt 位置顺序与职责](../wai-prompt-position-order.md)定义。
 
 ## 可用内容
 
-Skill Agent 按照[语义查询接口与调用流程](../semantic-tool-orchestration.md)取得一个或多个被采用画师的画师提示词。只有取得合法画师提示词时才创建 `artist`。
+Skill Agent 按照[画师采用规则](../artist-adoption.md)确定一个或多个已采用的画师，并为每名画师取得一项已采用的 Style Prompt 内容。Skill Agent 仅在该画师具有非空 Style Prompt 内容时为其创建画师项。
 
-## 一个或多个画师
+## 多个画师
 
-采用一个画师时，Skill Agent 使用该画师的画师提示词完成一个画师项。
+采用多个画师时，Skill Agent 为每名画师保留独立的画师提示词，并按照已确定的画师顺序排列各画师对应的 `artist` 数组元素。
 
-采用多个画师时，Skill Agent 为每个画师分别保留独立的画师提示词，分别应用 WAI 画师语法，再按照已确定的画师顺序组合。多个画师不能合并为一个无法区分来源的画师项。
+## 画师项格式
 
-具体采用步骤由[画师采用规则](../artist-adoption.md)规定；外层格式、转义和权重由[WAI 画师语法](../wai-artist-syntax.md)规定。
+Skill Agent 按照 [WAI 画师语法](../wai-artist-syntax.md)规定的画师项格式、转义方式和权重写法，把每名画师的提示词转换为对应的 `artist` 数组元素。
 
 ## 位置边界
 
@@ -31,7 +31,4 @@ Skill Agent 按照[语义查询接口与调用流程](../semantic-tool-orchestra
 
 Skill Agent 必须确认 `artist`：
 
-- 每个画师项都来自语义查询接口文档允许采用的画师提示词；
-- 多个画师分别应用 WAI 画师语法；
-- 位于 `quality` 之后、`subject` 之前；
-- 没有混入普通画风、媒介、摄影效果或光线内容。
+- `artist` 位于 `quality` 之后、`subject` 之前。

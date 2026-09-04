@@ -1,48 +1,58 @@
 ---
 name: comfyui-generate
-description: 解析当前消息中已选的 ComfyUI Workflow、生成模型和 LoRA，重写最终 Prompt，并通过项目 CLI 创建一个或多个异步图片生成运行；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。用户要求开始生成、出图、运行已选 Workflow、核对兼容性或查询历史 run_id 时使用。
+description: 用户要求使用当前选择的 ComfyUI Workflow 创建图片、核对所选 Workflow 模板、生成模型和 LoRA 是否兼容、查询历史 Generation Run，或者在创建图片时复用历史 Seed 时使用。
 ---
 
-# ComfyUI Generate
+## 查询历史 Generation Run 与复用 Seed
 
-## 查询历史 Generation Run
+用户要求查询或核对一个或多个 `run_id` 保存的生成参数或 Actual Workflow，或者要求在创建图片时复用历史 Seed 时，本节适用。
 
-用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须先完整读取 `references/generation-cli.md`，再按该文件调用历史 Generation Run 查询命令。该查询不要求当前消息包含 `comfyui-context`、Workflow、生成模型或 LoRA 选择。
+Skill 执行者完整读取 `references/generation-cli.md`，并按照该文件取得每个 `run_id` 的查询结果。
 
-Skill 执行者必须按查询结果的 `runs[]` 顺序分别报告每个 `run_id`。一个 `run_id` 返回错误项时，Skill 执行者继续处理其余结果。用户只要求查询历史 Generation Run 时，Skill 执行者返回查询结果后结束本次执行；用户还要求创建新 Run 时，Skill 执行者完成查询后继续执行本文件的生成流程。
+用户只要求查询或核对历史 Generation Run 时，Skill 执行者返回 `runs[]` 中每一项的查询结果，然后结束本次任务。用户要求复用历史 Seed 创建图片时，Skill 执行者记录用户指定且 `lookup_status` 为 `available` 的每个 `runs[]` 项。Skill 执行者在“校验 Prompt Builder 结果并确定待创建图片”步骤确定待创建图片后，核对每张待创建图片与已记录 `runs[]` 项的对应关系；用户没有明确对应关系时，Skill 执行者列出每张待创建图片和每个已记录的 `runs[]` 项，并等待用户指定对应关系。Skill 执行者在“取得 Seed、构造 Generation Request 并提交”步骤按照 `references/generation-cli.md` 读取并检查对应 `runs[]` 项保存的 Seed。
 
-## 1. 解析 Prompt Builder 结果与当前消息
+## 核对当前选择
 
-用户要求创建新图片时，Skill 执行者必须在解析任何 Prompt Builder 结构化结果以前完整读取 `references/prompt-result-contract.md` 与 `references/prompt-result-schema.json`，再按这两个文件校验每个明确划分的 Builder 结果。多个结果的边界不明确时，请用户先划分结果并结束本次执行。
+Skill 执行者完整读取 `references/catalog-cli.md`，并按照该文件确定 `template_id`、`model_id` 和 LoRA ID 有序列表。
 
-读取当前用户消息中的 `type: "comfyui-context"` JSON。当前消息必须恰好包含一个 `data.kind: "comfyui-template"` 对象，最多包含一个 `data.kind: "model"` 对象，并按消息顺序保存全部 `data.kind: "lora"` 对象。缺少模板、存在多个模板或存在多个生成模型时，请用户完成唯一选择并结束本次执行。Skill 执行者不得根据名称、文件名、模板默认值或历史消息猜测缺少的 ID。
+创建图片或核对兼容性时，Skill 执行者必须确定一个 `template_id`，接受用户指定零个或一个 `model_id`，并可以确定零个至 100 个 LoRA ID。缺少 `template_id` 时，Skill 执行者报告当前请求缺少 Workflow 模板选择，并等待用户指定一个 `template_id`。存在多个候选 `template_id` 或多个候选 `model_id`，且用户没有指定唯一选择时，Skill 执行者列出对应的候选 ID，并等待用户指定最终选择。LoRA ID 超过 100 个时，Skill 执行者报告当前数量，并等待用户将 LoRA ID 减少到 100 个以内。
 
-## 2. Resolve 模板、生成模型、LoRA 和实例
+Skill 执行者按照 `references/catalog-cli.md` 查询 Workflow 模板、生成模型和各项 LoRA。用户指定了生成模型时，Skill 执行者采用该模型的查询结果；用户没有指定生成模型，并且 Workflow 模板查询结果的 `model_id` 非空时，Skill 执行者采用该默认生成模型的查询结果；用户没有指定生成模型，并且 Workflow 模板查询结果的 `model_id` 为 `null` 时，Skill 执行者报告当前 Workflow 模板没有默认生成模型，并等待用户指定一个 `model_id`。本节完成时必须存在一个已经采用的生成模型查询结果。
 
-Skill 执行者必须在第一次目录查询前完整读取 `references/catalog-cli.md`，并按该文件依次 resolve 当前模板、可选生成模型与全部 LoRA。每项 resolve 结果的 `id` 必须等于对应上下文 ID。
+Workflow 模板查询结果、采用的生成模型查询结果和每项 LoRA 查询结果的 `base_model_id` 必须相同。存在不同的 `base_model_id` 时，Skill 执行者分别列出 Workflow 模板、生成模型和每项 LoRA 的 `id` 与 `base_model_id`，并等待用户指定要更换的 Workflow 模板、生成模型或 LoRA。
 
-模板、所选生成模型与每项 LoRA 的 `base_model_id` 必须相同。任一结果缺失、ID 不相等或 `base_model_id` 冲突时，Skill 执行者报告具体对象与冲突值并停止。用户只要求核对兼容性时，Skill 执行者返回 resolve 结果和兼容性结论，不创建 Generation Run。
+用户只要求核对兼容性时，Skill 执行者返回 Workflow 模板、采用的生成模型和每项 LoRA 的查询结果，以及这些查询结果的 `base_model_id` 比较结论，然后结束本次任务。
 
-创建新图片时，Skill 执行者继续按 `references/catalog-cli.md` 查询当前实例目录，并取得当前可用的非空 `instance_id`。
+## 创建图片
 
-## 3. 构造最终 Prompt 与 LoRA 执行对象
+### 1. 校验 Prompt Builder 结果并确定待创建图片
 
-Skill 执行者按照 `references/prompt-result-contract.md` 消费每个 Builder 结果。生成模型和 LoRA resolve 结果可以用于重写适配当前模型的最终正向 Prompt；重写必须保留 Builder 的主体、动作、构图、场景、质量要求和正向规避内容。最终正向 Prompt 必须包含每项实际采用的 LoRA 触发词，且同一触发词只出现一次。
+Skill 执行者完整读取 `references/prompt-result-contract.md`、`references/prompt-result-schema.json` 和 `references/prompt-builder-model-routes.json`。当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。当前消息包含一个或多个用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者按照 `references/prompt-result-contract.md` 逐个校验这些结果 JSON。
 
-Skill 执行者使用各项 resolve 结果构造生成模型与 LoRA 执行对象。LoRA 文件、权重和触发词只通过 Generation Request 的 `loras` 数组传递。用户没有划分不同结果的 LoRA 归属时，全部已选 LoRA 适用于每个结果；归属不明确时，请用户确认后停止。
+当前消息包含多个结果 JSON 时，Skill 执行者分别校验每个结果 JSON。结果 JSON 之间的边界不明确时，Skill 执行者列出无法划分的内容，并等待用户明确每个结果 JSON 的边界。
 
-## 4. 检查模板实际参数并适配尺寸
+任一结果 JSON 无效时，Skill 执行者返回该结果的校验错误，并等待用户提供修正后的完整结果 JSON。
 
-模板 resolve 已取得非空 `template_id` 且实例目录已取得非空 `instance_id` 后，Skill 执行者必须在组织第一条模板检查命令或把 Builder 目标尺寸转换为实际参数以前完整读取 `references/template-parameter-inspection-cli.md`。
+每个有效结果 JSON 默认创建一张图片。用户为某个结果 JSON 指定多张图片时，Skill 执行者按照结果 JSON 在当前消息中的出现顺序，并在每个结果 JSON 内按照图片序号顺序展开待创建图片。待创建图片总数必须为 1 至 20；总数超过 20 时，Skill 执行者报告当前总数，并等待用户减少图片数量。
 
-Skill 执行者按该文件检查每组唯一模板与实例，确认当前模板实际接受正向 Prompt、当前负向模式需要的负向分支、Seed 和一种完整尺寸表示，再按该文件选择原值尺寸或允许范围内的调整尺寸。检查错误发生后，Skill 执行者必须在修正输入或重试以前重新读取该文件的“错误、修正与重试”章节。
+### 2. 构造 Prompt 并分配生成模型和 LoRA
 
-## 5. 取得 Seed、建立请求并提交
+对于每个有效结果 JSON，Skill 执行者将 `positive_prompt` 用作正向 Prompt。`negative_mode` 为 `native_negative` 时，Skill 执行者将 `negative_prompt` 用作负向 Prompt；`negative_mode` 为 `positive_rewrite` 时，Skill 执行者省略负向 Prompt。
 
-Skill 执行者必须在解析或校验任一 Seed、查询历史 Seed、取得随机 Seed、构造任一 Generation Request 或首次提交以前完整读取 `references/generation-cli.md`。
+Skill 执行者按照 LoRA ID 有序列表和各项 LoRA 查询结果中 `trigger_words` 的数组顺序，建立触发词字符串有序列表；相同字符串出现多次时，Skill 执行者只保留第一次出现的字符串。Skill 执行者依次检查触发词字符串；正向 Prompt 尚未包含当前完整字符串时，Skill 执行者在非空正向 Prompt 末尾追加英文逗号、一个空格和当前字符串，正向 Prompt 为空时直接写入当前字符串。
 
-Skill 执行者按该文件把每张图片建立为一个独立请求，使用模板检查返回的精确运行参数 ID，并在创建任何 Run 前完成全部结果解析、目录 resolve、兼容性、Prompt、LoRA、模板检查、尺寸和 Seed 检查。任一项失败时不创建 Run。
+每个结果 JSON 对应的图片都使用“核对当前选择”一节采用的生成模型查询结果和同一份 LoRA ID 有序列表。
 
-Skill 执行者按用户声明顺序为每项请求发起独立前台 shell Tool Call，并按 `references/generation-cli.md` 处理成功、失败与重试。任一历史查询、随机 Seed 或提交命令返回错误后，Skill 执行者必须在修改输入或再次调用以前重新读取该文件的“错误、修正与重试”章节。全部计划提交结束后，Skill 执行者按顺序返回各项 `run_id`、已接受异步处理结论和各次失败信息。只有取得额外运行状态证据时才报告最终状态。
+### 3. 检查 Workflow 参数
 
-当前上下文经过压缩而不再完整保留对应参考内容时，Skill 执行者必须在下一次结果解析、目录解析、模板检查、检查结果消费、尺寸适配、Seed 处理、请求构造或 CLI 调用前重新完整读取对应参考文件。
+Skill 执行者按照 `references/catalog-cli.md` 取得 `instance_id`，然后完整读取 `references/template-parameter-inspection-cli.md`。
+
+Skill 执行者按照该文件查询 Workflow 参数，并根据查询结果确定正向 Prompt 对应的 `parameter_id`、`negative_mode` 为 `native_negative` 时负向 Prompt 对应的 `parameter_id`、Seed 对应的 `parameter_id`、`batch_size` 对应的 `parameter_id` 和参数值，以及图片尺寸对应的一个或多个 `parameter_id`。Skill 执行者按照该文件确定每张图片使用的各项尺寸参数和值。
+
+### 4. 取得 Seed、构造 Generation Request 并提交
+
+本次任务尚未完整读取 `references/generation-cli.md` 时，Skill 执行者完整读取该文件。Skill 执行者按照该文件确定每张图片的 Seed，并为每张图片构造一个 Generation Request。
+
+Skill 执行者按照 `references/generation-cli.md` 检查全部 Generation Request。任一 Generation Request 未通过检查时，Skill 执行者返回该请求对应的图片序号和完整检查错误，不提交任何 Generation Request，并结束本次任务。全部 Generation Request 通过检查后，Skill 执行者按照“校验 Prompt Builder 结果并确定待创建图片”步骤确定的待创建图片顺序，逐项提交 Generation Request。
+
+Skill 执行者把每次提交结果关联到对应的图片序号，并按照 `references/generation-cli.md` 处理成功、失败、重试或跳过结果。Skill 执行者按照图片顺序返回每次成功提交得到的 `run_id`。

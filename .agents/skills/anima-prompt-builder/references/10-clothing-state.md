@@ -1,48 +1,54 @@
 ## 8. CLOTHING & STATE
 
-> 对应槽位：`[clothing/state]`
-> 核心公式：**原服装 × 改造方向 = 最终骚度**。同一件衣服，改法不同，效果天差地别。
+对应槽位：`clothing_state`。
 
-### 8.1 服装类型速查
+本槽位用于描述服装类型、材质、服装配饰、穿着状态、服装表面状态和服装改造方式。
 
-> 本节为快速索引。服装的重点不在「穿什么」，而在 §8.3-8.4「怎么穿、怎么改」。
+### 8.1 服装与配饰速查
 
-#### 内衣/泳装/睡衣
+本节提供服装与配饰索引；§8.2–§8.4 提供材质、穿着状态、服装表面状态和服装改造标签。
+
+#### 内衣、泳装、睡衣与轻便上衣
 `bra` / `lace bra` | `panties` / `thong` / `g-string` | `lingerie` / `lace lingerie` | `corset` | `garter belt` | `babydoll` / `negligee` / `chemise` | `bodystocking` / `fishnet bodystocking` | `bikini` / `micro bikini` / `slingshot swimsuit` | `one-piece swimsuit` / `school swimsuit` / `competition swimsuit` | `pajamas` / `nightgown` / `silk robe` / `satin robe` | `oversized shirt` / `boyfriend shirt` / `camisole`
 
-#### 职业制服
-`school uniform` / `sailor uniform` / `serafuku` | `office lady` / `business suit` / `white shirt` + `pencil skirt` | `nurse` / `nurse cap` / `medical gown` | `doctor` / `white coat` / `lab coat` | `police uniform` / `police hat` | `flight attendant` / `stewardess` | `maid outfit` / `french maid` / `maid headdress` | `teacher` / `glasses` | `waitress` / `apron` | `naked apron`
+#### 职业与身份服装、配饰
+`school uniform` / `sailor uniform` / `serafuku` | `business suit` / `white shirt` + `pencil skirt` | `nurse outfit` / `nurse cap` / `medical gown` | `white coat` / `lab coat` | `police uniform` / `police hat` | `flight attendant uniform` | `maid outfit` / `french maid outfit` / `maid headdress` | `glasses` | `waitress uniform` / `apron` | `naked apron`
 
-#### 特殊服装
-`bunny girl` / `playboy bunny` / `bunny ears` / `bunny tail` | `race queen` | `latex` / `rubber` / `pvc` / `leather` | `kimono` / `yukata` / `miko outfit` | `hanfu` / `cheongsam` / `china dress` / `qipao` | `armor` / `bikini armor` / `damaged armor` | `witch` / `witch hat` / `saint` / `nun` | `wedding dress` / `evening gown` | `idol costume` / `stage costume`
+#### 特殊服装与身份配饰
+`bunnysuit` / `bunny ears` / `bunny tail` | `race queen outfit` | `kimono` / `yukata` / `miko outfit` | `hanfu` / `cheongsam` / `china dress` / `qipao` | `armor` / `bikini armor` / `damaged armor` | `witch hat` / `witch robe` / `nun habit` | `wedding dress` / `evening gown` | `idol costume` / `stage costume`
 
-#### 丝袜/鞋类
-`thighhighs` / `black thighhighs` / `white thighhighs` | `pantyhose` / `black pantyhose` / `white pantyhose` | `fishnets` / `fishnet thighhighs` | `knee-high socks` / `ankle socks` / `loose socks` | `torn pantyhose` / `ripped stockings` | `high heels` / `stiletto heels` | `boots` / `thigh boots` / `ankle boots` | `mary janes` / `loafers` / `sneakers` | `barefoot`
+#### 袜类与鞋类
+`thighhighs` / `black thighhighs` / `white thighhighs` | `pantyhose` / `black pantyhose` / `white pantyhose` | `fishnets` / `fishnet thighhighs` | `knee-high socks` / `ankle socks` / `loose socks` | `torn pantyhose` / `ripped stockings` | `high heels` / `stiletto heels` | `boots` / `thigh boots` / `ankle boots` | `mary janes` / `loafers` / `sneakers`
 
-### 8.2 材质
+### 8.2 材质与表面质感
 
-`silk` / `satin`（柔滑光泽） | `lace` / `lace trim`（透视精致） | `thin` / `see-through` / `sheer`（完全透视） | `cotton`（日常清纯） | `latex` / `rubber` / `glossy` / `shiny`（紧贴光泽 fetish） | `leather`（支配感） | `fishnets` / `mesh`（若隐若现） | `pvc`（高光塑胶） | `transparent` / `translucent`（透明材质）
+`silk` / `satin`（平滑表面与柔和反光） | `lace` / `lace trim`（蕾丝纹理或饰边） | `thin`（薄面料） | `see-through` / `sheer`（可透见内层或皮肤） | `transparent`（高透明） / `translucent`（半透明） | `cotton`（哑光棉质） | `latex` / `rubber` / `pvc`（胶质或塑胶材质） | `glossy` / `shiny`（高反光表面） | `leather`（皮革纹理） | `fishnets` / `mesh`（网孔结构）
 
 ### 8.3 穿着状态
 
-**正常 → 半脱 → 全裸** 是一个递进光谱，选点代表当前暴露程度：
+穿着状态由一个或多个相互兼容的暴露状态标签，以及零个或多个附加状态标签组成：
 
-| 梯度 | 标签 |
-|---|---|
-| 正常穿着 | 具体服装标签 |
-| 滑落/露出 | `off shoulder` / `shoulder slip` / `strap slip` / `areola slip` / `panties peek` / `bra exposed` |
-| 掀起/敞开 | `shirt lift` / `skirt lift` / `clothes lift` / `open shirt` / `unbuttoned` / `unzipped` / `open front` / `open fly` |
-| 半脱 | `partially undressed` / `half-dressed` / `clothes pull` / `pants down` / `one leg out` |
-| 仅剩配饰 | `completely nude` + 保留帽子/手套/丝袜/项圈等单一配件 |
-| 破损 | `torn clothes` / `ripped clothes` / `torn pantyhose` / `damaged clothes`（自然暴露） |
-| 湿透透视 | `wet clothes` / `see-through` / `wet shirt` / `nipples visible through clothes`（意外暴露） |
+| 类型 | 状态 | 标签 |
+|---|---|---|
+| 暴露程度 | 正常穿着 | 具体服装标签 |
+| 暴露程度 | 滑落或局部露出 | `off shoulder` / `shoulder slip` / `strap slip` / `areola slip` / `panties peek` / `bra exposed` |
+| 暴露程度 | 掀起或敞开 | `shirt lift` / `skirt lift` / `clothes lift` / `open shirt` / `unbuttoned` / `unzipped` / `open front` / `open fly` |
+| 暴露程度 | 半脱 | `partially undressed` / `half-dressed` / `clothes pull` / `pants down` / `one leg out` |
+| 暴露程度 | 全裸并保留配饰 | `completely nude` 加一个或多个标志性配饰标签 |
+| 附加状态 | 服装破损 | `torn clothes` / `ripped clothes` / `torn pantyhose` / `damaged clothes` |
+| 附加状态 | 服装湿透 | `wet clothes` / `wet shirt`；湿透后可见皮肤时，再添加 `see-through` / `nipples visible through clothes` |
+| 附加状态 | 赤足 | `barefoot` |
+
+#### 8.3.1 服装表面血迹
+
+服装表面出现血迹时，使用 `bloodstain` 或 `blood on clothes`。
 
 ### 8.4 色情改造维度
 
-> **核心公式**：`原服装 → 改造方向 → 最终效果`。以下 7 个维度可叠加使用，每个维度从法典提炼了具体的高频标签组合。
+使用“原服装 → 改造方向 → 最终服装状态”的顺序构建本槽位。以下七个改造维度可以叠加。
 
 #### 8.4.1 透明化（See-through）
-把正经服装的面料替换为透明/半透明材质。法典中最高频的改造方向。
+把服装面料改为透明或半透明材质。
 - 基础：`see-through` / `transparent` / `sheer` / `translucent`
 - 上衣：`see-through shirt` / `transparent shirt` / `see-through jacket` / `transparent jacket` / `see-through blouse`
 - 下装：`see-through pants` / `transparent pants` / `see-through skirt` / `transparent shorts`
@@ -51,20 +57,21 @@
 - 外套款：`naked jacket` + `see-through jacket` → 透明夹克内全裸
 - 雨衣款：`clear transparent raincoat` / `glossy pvc material` / `wet appearance`
 - 湿透自然透明：`wet clothes` / `wet shirt` / `nipples visible through clothes` / `see-through` + `wet`
-- 经典组合：`see-through leotard, transparent, see-through sleeves, translucent bodysuit, covered nipples` | `see-through shirt, wet, no bra, nipples visible` | `clear transparent raincoat, hood up, wet body, glossy pvc`
+- 组合示例：`translucent bodysuit, see-through sleeves, covered nipples` | `see-through shirt, wet, no bra, nipples visible` | `clear transparent raincoat, hood up, glossy pvc`
 
 #### 8.4.2 裁剪/缩短化（Cropped/Micro）
-大幅缩短或裁剪，定向暴露。
+通过缩短或裁剪服装露出指定身体区域。
 - 上衣：`crop top` / `cropped jacket` / `cropped shirt` / `crop top overhang` / `crop jacket` / `cropped blouse`
-- 下装：`micro skirt` / `micro shorts` / `micro dress` / `micro panties` / `extremely short skirt` / `short shorts`
-- 高露：`highleg` / `high cut` / `highleg leotard` / `highleg panties` / `highleg swimsuit` / `high-waist skirt`
+- 下装：`micro skirt` / `micro shorts` / `micro panties` / `extremely short skirt` / `short shorts`
+- 连体：`micro dress`
+- 高露：`highleg` / `high cut` / `highleg leotard` / `highleg panties` / `highleg swimsuit`
 - 侧露：`side slit` / `hip vent` / `high slit` / `single side slit`
-- 无袖：`sleeveless` / `detached sleeves` / `bare shoulders` / `bare arms` / `sideless outfit`
+- 无袖：`sleeveless` / `detached sleeves` / `bare shoulders` / `bare arms`
 - 露背：`backless` / `bare back` / `backless outfit` / `backless dress`
-- 经典组合：`crop top, micro skirt, no panties, highleg, sleeveless` | `cropped jacket, bare shoulders, micro shorts, open fly`
+- 组合示例：`sleeveless crop top, micro skirt, no panties` | `cropped jacket, bare shoulders, micro shorts, open fly`
 
-#### 8.4.3 镂空/开口化（Cutout）
-开洞定向暴露，法典中变化最丰富的维度。
+#### 8.4.3 镂空、开口与局部裸露（Cutout/Open Exposure）
+通过开口、裁剪或局部裸露突出指定身体区域。
 - 胸：`cleavage cutout` / `chest cutout` / `deep v-neckline` / `exposed chest` / `breasts out`
 - 下乳：`underboob cutout` / `underboob` / `sideboob`
 - 腹：`navel cutout` / `stomach cutout` / `midriff cutout` / `clothing cutout`
@@ -72,143 +79,125 @@
 - 胯：`crotch cutout` / `pussy cut` / `crotch zipper` / `crotchless panties` / `crotchless`
 - 臀：`butt crack cutout` / `bare ass`
 - 全身多开口：`center opening` / `sideless outfit` / `clothing cutout` + `revealing clothes`
-- 经典组合：`cleavage cutout, underboob cutout, navel cutout, side cutout` | `crotch cutout, no panties, side slit, exposed pussy` | `sideless outfit, bare shoulders, no bra, sideboob`
+- 组合示例：`bodysuit, cleavage cutout, underboob cutout, navel cutout, side cutout` | `crotch cutout dress, no panties, side slit, exposed pussy` | `sideless outfit, bare shoulders, no bra, sideboob`
 
 #### 8.4.4 破损化（Torn/Damaged）
-撕裂/破坏，制造「暴力后/意外」的暴露感。
+通过撕裂或损坏服装产生破口和皮肤暴露区域。
 - 基础：`torn clothes` / `ripped clothes` / `damaged clothes` / `torn fabric`
-- 上装：`torn shirt` / `torn dress` / `torn blouse` / `ripped shirt` / `open shirt`
+- 上装：`torn shirt` / `torn dress` / `torn blouse` / `ripped shirt`
 - 下装：`torn pants` / `torn jeans` / `torn shorts` / `torn skirt`
 - 袜：`torn pantyhose` / `ripped stockings` / `torn stockings`
 - 制服特化：`torn school uniform` / `torn ninja outfit` / `torn prison uniform` / `torn sacrament robe`
 - 铠甲：`damaged armor` / `cracked breastplate` / `torn cape` / `battle damage`
-- 改造衍生：`revealing clothes`（被撕后暴露） / `bloodstain` / `blood on clothes`
-- 经典组合：`torn school uniform, ripped collar, torn pantyhose` | `damaged armor, cracked breastplate, torn cape, battle scars` | `torn dress, bloodstain, revealing clothes, bare shoulders`
+- 暴露结果：`revealing clothes`
+- 组合示例：`torn school uniform, ripped collar, torn pantyhose` | `damaged armor, cracked breastplate, torn cape` | `torn dress, revealing clothes, bare shoulders`
 
 #### 8.4.5 胶衣/乳胶化（Latex/PVC）
-高光紧贴材质替代原面料，强调身体曲线。
-- 材质：`latex` / `rubber` / `pvc` / `glossy` / `shiny` / `wet look`
-- 连体：`latex bodysuit` / `black bodysuit` / `latex catsuit` / `bodystocking` / `skintight` / `second skin`
+使用 `latex`、`rubber` 或 `pvc` 标签替代原服装材质；需要服装紧贴身体轮廓时，再添加 `skintight` 或 `second skin`。
+- 材质：`latex` / `rubber` / `pvc`
+- 表面质感：`glossy` / `shiny` / `wet look`
+- 连体：`latex bodysuit` / `latex catsuit` / `rubber bodysuit` / `pvc bodysuit` / `latex bodystocking`；可叠加 `skintight` / `second skin`
 - 分体：`latex dress` / `latex pants` / `latex skirt` / `latex bra` / `latex leotard` / `latex chaps`
-- 配饰：`latex gloves` / `elbow gloves` / `latex thighhighs` / `latex boots`
-- 透明胶：`transparent pvc` / `transparent vinyl clothing` / `holographic clothing`
-- 经典组合：`latex bodysuit, shiny, skintight, second skin, highleg` | `black bodysuit, latex gloves, latex thighhighs, glossy, corset` | `transparent pvc, see-through, holographic clothing, neon trim`
+- 配饰：`latex gloves` / `latex elbow gloves` / `latex thighhighs` / `latex boots`
+- 透明胶：`transparent pvc` / `transparent vinyl clothing`
+- 组合示例：`latex bodysuit, shiny, skintight, second skin, highleg` | `black latex bodysuit, latex gloves, latex thighhighs, glossy, corset` | `transparent pvc bodysuit, see-through, neon trim`
 
-#### 8.4.6 裸露简化化（Naked + Accessories）
-脱到全裸但保留标志性配饰或外套，靠配件暗示原身份。法典最经典的反差手法。
-- 裸+外套：`naked jacket` / `naked cape` / `naked cloak` / `naked coat` / `naked ribbon` / `naked tabard` / `naked poncho`
+#### 8.4.6 裸体状态与身份配饰（Naked + Accessories）
+角色不穿贴身衣物，并通过配饰或敞开的外层服装表示原身份。
+- 裸体与外层或覆盖配件：`naked jacket` / `naked cape` / `naked cloak` / `naked coat` / `naked ribbon` / `naked tabard` / `naked poncho`
 - 裸+职业配件：`completely nude` + `police hat` → 裸体警察 | `completely nude` + `maid headdress` + `frilled socks` → 裸体女仆 | `completely nude` + `nurse cap` + `white gloves` → 裸体护士 | `completely nude` + `bunny ears` + `bowtie` → 裸体兔女郎
 - 裸+围裙：`naked apron` / `naked apron, bottomless, no bra`
 - 裸+日式：`naked kimono` / `open kimono, nude, no panties` | `naked hanfu, open robe, no panties`
 - 裸+婚嫁：`naked wedding dress` / `naked ribbon, red veil, nude` / `honggaitou, naked, chinese wedding`
-- 裸+战术：`nude` + `load bearing vest` + `holding rifle` / `completely nude` + `gas mask` + `belt`
-- 经典组合：`completely nude, naked jacket, open jacket, no panties, high heels` | `naked apron, bottomless, no bra, cooking` | `naked cloak, hooded cape, hood up, see-through silhouette`
+- 裸+战术：`nude, load bearing vest` | `completely nude, gas mask, belt`
+- 组合示例：`completely nude, naked jacket, open jacket, no panties, high heels` | `naked apron, bottomless, no bra` | `naked see-through hooded cloak, hood up`
 
 #### 8.4.7 非对称化（Asymmetrical）
-单侧裸露或单侧穿着，制造「匆忙/意外」的不对称暴露。
+通过左右两侧不同的服装或裸露状态形成可见的不对称。
 - 袖：`one sleeve` / `single sleeve` / `asymmetrical sleeves` / `single glove` / `mismatched gloves`
-- 腿：`one leg out` / `one stocking rolled down` / `single thighhigh` / `single thigh boot` / `mismatched legwear` / `single bare shoulder`
+- 腿部：`one leg out` / `one stocking rolled down` / `single thighhigh` / `single thigh boot` / `mismatched legwear` / `asymmetrical legwear`
 - 鞋：`one shoe missing` / `one sneaker missing` / `single boot`
-- 衣：`off shoulder` / `one breast out` / `single side slit` / `asymmetrical docking` / `asymmetrical legwear`
-- 经典组合：`off shoulder, single bare shoulder, one stocking rolled down, one shoe missing, messy clothes`
+- 衣着与肩部：`off shoulder` / `single bare shoulder` / `one breast out` / `single side slit`
+- 组合示例：`button-up shirt, off shoulder, single bare shoulder, one stocking rolled down, one shoe missing`
 
-#### 8.4.8 职业制服改造实例（法典精华）
+### 8.5 职业与身份服装组合示例
 
-以下为法典中经过出图验证的高频职业改造组合，展示了上述 7 个维度如何叠加应用：
+本节提供职业与身份服装的完整组合。每个组合使用一件主体服装，并添加明确的材质、穿着状态或身份配饰；裸体组合使用 `nude`、`completely nude` 或 `naked apron` 等已经包含裸体状态的复合服装标签，并保留身份配饰。
 
-**警察（12种改造方向）**：
-- 超短连衣裙款：`police uniform, micro dress, white thighhighs, cleavage cutout, police hat`
-- V字泳装款：`slingshot swimsuit, police hat, jacket, o-ring, micro shorts, open fly, no panties`
-- 渔网裸身款：`crop top, police uniform, fishnet thighhighs, no panties, naked vest, clothes around waist`
-- 高腰兔女郎款：`police uniform, blue leotard, highleg, cropped jacket, thong, black thighhighs`
-- 夜店常客款：`pasties, torn jeans, open shorts, police cap, fishnet legwear, purple eyeshadow`
-- 绑带援交款：`police hat, nude, bondage outfit, o-ring harness, metal collar, nipple rings, latex gloves, used condom belt`
-- 仅乳贴网袜款：`pasties, torn jeans, shorts, unbuttoned, police cap, fishnet legwear`
-- 裸体警察款：`completely nude, police hat, whistle, holding baton, traffic officer`
+**警察**：
+- 超短连衣裙款：`micro police dress, white thighhighs, cleavage cutout, police hat`
+- V字泳装警察配饰款：`slingshot swimsuit, police hat, cropped jacket, o-ring`
+- 渔网无内裤警服款：`police uniform, fishnet thighhighs, no panties`
+- 高叉紧身衣警察配饰款：`police hat, blue leotard, highleg, cropped jacket, thong, black thighhighs`
+- 警帽破损牛仔款：`pasties, torn jeans, police cap, fishnet legwear`
+- 裸体绑带警察配饰款：`police hat, nude, o-ring harness, metal collar, nipple rings, latex gloves, used condom belt`
+- 裸体警察款：`completely nude, police hat, whistle`
 
-**护士（13种改造方向）**：
-- 胶衣透明款：`naked poncho, latex pants, reverse bunnysuit, see-through, nurse cap`
-- 弹弓泳衣款：`slingshot swimsuit, nurse cap, jacket, holding syringe`
-- 破损绷带款：`nurse, torn clothes, bandages, bandaged arm, id card`
-- 小恶魔护士款：`nurse outfit, frilled lingerie, lace thighhighs, garter belt, red bat wings, holding syringe`
-- 束带护士款：`nurse cap, harness, chest belt, o-ring, transparent, see-through`
-- 超短抹胸比基尼款：`nurse, no pants, thong panties, detached collar, detached sleeves, micro panties, strapless`
+**护士**：
+- 透明胶衣款：`transparent latex bodysuit, nurse cap`
+- 弹弓泳衣款：`slingshot swimsuit, nurse cap, cropped nurse jacket`
+- 破损绷带款：`torn nurse outfit, bandages, id card`
+- 蕾丝内衣护士配饰款：`nurse cap, frilled lingerie, lace thighhighs, garter belt`
+- 透明束带护士配饰款：`nurse cap, transparent harness, transparent chest belt, o-ring`
+- 无裤微型内裤款：`nurse cap, strapless nurse top, micro panties, detached sleeves`
 - 透明雨衣款：`clear transparent raincoat, glossy pvc material, hood up, erotic nurse uniform underneath, extremely short nurse skirt, deep v-neckline`
-- 仅乳贴微型内裤款：`nurse cap, micro panties, g-string, pasties, bare shoulders, no bra`
+- 乳贴丁字裤护士配饰款：`nurse cap, g-string, pasties, bare shoulders, no bra`
 
-**修女（8种改造方向）**：
-- 乳帘修女：`nun, breasts curtain, no panties, between breasts, cross, white pantyhose`
-- 舞娘修女：`nun, veil, bodystocking, see-through, harem outfit, breast curtains, pelvic curtain, cameltoe`
-- 胶衣修女：`nun, latex catsuit, pussy cut, crotch cut, covered navel, shiny clothes, oil body`
-- 逆兔修女：`nun, reverse bunnysuit, see-through leotard, crotchless, cross necklace`
-- 仅乳贴修女：`nun, pasties, micro panties, g-string, black thighhighs, elbow gloves, stained glass`
-- 战斗修女：`leather clothing, naked tabard, shining swimsuit, nun, holding revolver, sideboob, chains, cross`
-- 帘幕式：`nun, see-through silhouette, covered nipples, cross necklace, veil, white breast curtain, puffy sleeves`
+**修女**：
+- 乳帘修女配饰款：`nun veil, breasts curtain, no panties, cross necklace, white pantyhose`
+- 透明连体袜修女配饰款：`nun veil, see-through bodystocking, breast curtains, pelvic curtain, cameltoe, cross necklace`
+- 胶衣修女配饰款：`nun veil, latex catsuit, pussy cut, covered navel, shiny clothes, cross necklace`
+- 逆兔修女配饰款：`nun veil, reverse bunnysuit, crotchless, cross necklace`
+- 乳贴丁字裤修女配饰款：`nun veil, pasties, g-string, black thighhighs, elbow gloves, cross necklace`
+- 皮革服装修女配饰款：`leather nun habit, sideboob, chains, cross`
+- 帘幕式：`nun veil, white breast curtain, covered nipples, puffy sleeves, cross necklace`
 
-**女仆（6种改造方向）**：
+**女仆**：
 - 无袖下乳开口：`maid outfit, bare shoulders, clothing cutout, underboob, white apron, sleeveless`
 - 裸体女仆：`nude, maid headdress, bridal garter, frilled socks, mary janes`
-- 胸部托盘：`maid headdress, topless, breasts on tray, body writing, black thighhighs, groin`
+- 上身裸露款：`maid headdress, topless, black maid skirt, black thighhighs, no bra`
 - 裸体围裙：`naked apron, no panties, no bra, maid headdress`
 - 透明裁剪：`maid outfit, see-through, micro skirt, open front, crotchless panties`
 
-**兔女郎（法典最丰富的服装类型，16+常规款+8+逆兔款）**：
-- 经典款：`bunny ears, black leotard, highleg leotard, black pantyhose, white collar, bowtie, cuffs`
-- 透明款：`translucent bunnysuit, black bodystocking, see-through leotard, crotch cutout, transparent heels`
-- 双色开口款：`red bodystocking, cleavage cutout, clothing cutout, elbow gloves, two-tone leotard`
-- 西装兔女郎：`tuxedo, black leotard, black suit, fishnet pantyhose, half gloves, white waistcoat`
-- 逆兔女郎：`reverse bunnysuit, frontless outfit, shrug, heart pasties, see-through bodystocking, gloves`
-- 逆兔透明兜帽款：`reverse bunnysuit, hooded bodysuit, hood up, shiny clothes, x pasties, tape on pussy, gas mask around neck`
-- 逆兔渔网连体款：`reverse bunnysuit, shrug, heart pasties, nude, o-ring, waist chain, fishnet gloves, chain leash`
-- 赛博雨衣逆兔：`clear transparent raincoat, glossy pvc, hood up, reverse bunny suit, black mesh fabric, fluorescent pink bunny ears, black garter belt, transparent stockings, linked piercing`
+**兔女郎**：
+- 基础款：`bunny ears, black highleg leotard, black pantyhose, white collar, bowtie, cuffs`
+- 透明款：`translucent bunnysuit, crotch cutout, transparent heels`
+- 双色开口款：`two-tone leotard, cleavage cutout, side cutout, elbow gloves, bunny ears`
+- 燕尾服兔女郎：`black tuxedo leotard, bunny ears, bunny tail, bowtie, fishnet pantyhose, half gloves`
+- 逆兔女郎：`reverse bunnysuit, shrug, heart pasties, gloves`
+- 逆兔兜帽配饰款：`hooded reverse bunnysuit, hood up, shiny clothes, x pasties, tape on pussy, gas mask around neck`
+- 逆兔渔网手套配饰款：`reverse bunnysuit, shrug, heart pasties, o-ring, waist chain, fishnet gloves, chain leash`
+- 赛博雨衣逆兔：`glossy clear pvc raincoat over black mesh reverse bunnysuit, hood up, fluorescent pink bunny ears, black garter belt, transparent stockings`
 
-**巫女（8种改造方向）**：
-- 弹弓泳装巫女：`slingshot swimsuit, miko outfit, detached sleeves, white thighhighs, cameltoe, sideboob`
-- 半截裙巫女：`miko, short kimono, obi, sleeveless, sideboob, white panties, high-waist panties, groin`
-- 室内绳缚巫女：`seiza, nude, miko, white kimono, open kimono, bottomless, red rope, covered nipples, shouji`
-- 符咒遮点狐巫女：`miko, sideboob, crop top, bottomless, ofuda on pussy, no panties, fox hood`
-- 露胸巫女：`white kimono, miko, cleavage, open clothes, no bra`
+**巫女**：
+- 弹弓泳装巫女配饰款：`slingshot swimsuit, miko detached sleeves, red obi, white thighhighs, cameltoe, sideboob`
+- 短和服巫女：`short miko kimono, obi, sleeveless, sideboob, white high-waist panties`
+- 敞开和服巫女：`open white miko kimono, nude, bottomless, red obi`
+- 符咒遮裆狐巫女：`miko detached sleeves, crop top, bottomless, ofuda on pussy, fox hood`
+- 露胸巫女：`open white miko kimono, cleavage, no bra`
 
-**学生/OL 日常改造**：
-- 透明衬衫：`see-through shirt, tied shirt, no bra, nipples visible, micro shorts, denim`
-- 低腰露内裤：`crop top, lowleg pants, open fly, no panties, exposed pocket, black bra, thigh gap`
-- 裸外套：`completely nude, naked jacket, see-through jacket, open jacket, barcode tattoo`
-- 裸围裙：`naked apron, bottomless, no bra, cooking, casual`
-- 透明长裙：`see-through dress, wet dress, wet clothes, no bra, bare shoulders, sundress`
+### 8.6 衬衫与日常服装组合示例
+
+本节提供衬衫、外套、围裙与日常连衣裙的材质、裁剪和穿着状态组合。
+
+- 透明衬衫：`see-through shirt, tied shirt, no bra, nipples visible, denim micro shorts`
+- 低腰无内裤：`crop top, low-waist pants, open fly, no panties, exposed pocket, black bra`
+- 裸外套：`completely nude, naked jacket, see-through jacket, open jacket`
+- 裸围裙：`naked apron, bottomless, no bra`
+- 透明湿身裙：`wet see-through sundress, no bra, bare shoulders`
 - 透明打结衬衫+短裤：`see-through shirt, tied shirt, denim shorts, no panties`
 
-### 8.5 反差搭配公式
+### 8.7 职业、身份与礼仪服装的暴露状态组合
 
-> **最强效果 = 最高正经度的服装 × 最高暴露度的改造**
+将职业、身份或礼仪服装及其身份配饰与暴露状态标签组合，以形成可见的服装反差。
 
-| 反差类型 | 公式 | 效果 |
+| 反差类型 | 标签组合 | 可见结果 |
 |---|---|---|
-| 校服堕落 | `school uniform` + `micro skirt` + `no panties` + `open shirt` | 禁忌感 max |
-| 修女亵渎 | `nun` + `torn habit` + `see-through` + `no panties` | 亵渎感 max |
-| 婚纱悲剧 | `wedding dress` + `torn` + `ripped` + `tears` | 破灭感 max |
-| 女警堕落 | `police uniform` + `slingshot swimsuit` + `fishnet thighhighs` + `no panties` | 公权力崩塌 |
-| 女仆色情 | `maid outfit` + `micro skirt` + `crotchless panties` + `open front` | 服务变服务 |
-| 巫女破戒 | `miko outfit` + `open kimono` + `bottomless` + `no panties` | 神圣破戒 |
-| OL 反差点 | `office lady` + `pencil skirt` + `no panties` + `open shirt` + `braless` | 职场淫乱 |
-| 护士失控 | `nurse` + `micro dress` + `crotch cutout` + `latex gloves` | 医疗变猥亵 |
-
-### 8.6 涩涩道具与玩具
-
-| 类别 | 核心标签 |
-|---|---|
-| 束缚具 | `handcuffs` / `shackles` / `ropes` / `chains` / `duct tape` / `tape bondage` |
-| 口具 | `ball gag` / `bit gag` / `ring gag` / `cloth gag` / `tape over mouth` |
-| 眼罩 | `blindfold` / `eye mask` |
-| 项圈 | `collar` / `choker` / `bell collar` / `spiked collar` / `leash` / `o-ring choker` |
-| 震动棒 | `vibrator` / `egg vibrator` / `wand vibrator` / `remote control vibrator` |
-| 假阳具 | `dildo` / `double dildo` / `strap-on` / `suction cup dildo` |
-| 肛塞 | `butt plug` / `tail plug` / `anal beads` |
-| 乳夹 | `nipple clamps` / `clothespins` / `breast bondage` |
-| 飞机杯 | `artificial vagina` / `onahole` / `masturbator` |
-| 液体道具 | `lotion` / `oil` / `candle wax` / `ice` / `whipped cream` |
-| 身体标记 | `body writing` / `tally marks` / `lipstick mark` / `handprint` |
-| 贞操具 | `chastity cage` / `chastity belt` |
-| 其他 | `feather` / `whip` / `crop` / `paddle` / `spreader bar` / `condom` / `used condom` / `condom belt`
-
----
-
+| 校服反差 | `school uniform` + `micro skirt` + `no panties` + `open shirt` | 超短裙、敞开上衣与无内裤状态 |
+| 修女服反差 | `torn see-through nun habit` + `no panties` | 破损且透明的修女服与无内裤状态 |
+| 婚纱反差 | `torn wedding dress` | 具有撕裂破口的婚纱 |
+| 女警配饰反差 | `police hat` + `slingshot swimsuit` + `fishnet thighhighs` + `no panties` | 警帽、弹弓泳装、渔网长筒袜与无内裤状态 |
+| 女仆服反差 | `maid outfit` + `micro skirt` + `crotchless panties` + `open front` | 超短女仆裙、敞开前襟与开裆内裤 |
+| 巫女服反差 | `open miko kimono` + `bottomless` + `no panties` | 敞开巫女和服与下身裸露 |
+| 办公服反差 | `business suit` + `pencil skirt` + `no panties` + `open shirt` + `braless` | 办公服装、敞开上衣、无胸罩与无内裤状态 |
+| 护士服反差 | `micro nurse dress` + `crotch cutout` + `latex gloves` | 微型护士连衣裙、乳胶手套与胯部开口 |

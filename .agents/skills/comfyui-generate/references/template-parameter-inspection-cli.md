@@ -1,103 +1,104 @@
-# Template Parameter Inspection CLI
+# Workflow 参数检查 CLI
 
-## CLI 的用途与适用任务
+## CLI 用途
 
-`generation inspect-template-parameters --stdin` 读取当前 Workflow 模板和目标 ComfyUI 实例实际发布的运行参数合同。`comfyui-generate` 在提交图片生成任务前使用该命令确认正向 Prompt、负向 Prompt、Seed 和尺寸参数，并把 Prompt Builder 的模板无关目标尺寸转换为模板实际接受的一种尺寸表示。
+Skill 执行者使用 `generation inspect-template-parameters --stdin` 查询指定 Workflow 模板在指定 ComfyUI 实例上接受的生成参数。
 
-Prompt Builder 不调用本命令。Catalog resolve 不提供模板参数能力，也不能替代本命令。
+## 调用入口
 
-## 调用环境与可执行入口
-
-Skill 执行者只能在 Harness 提供的前台 shell Tool Call 中调用以下入口：
+`DSH_HARNESS_COMFYUI_CLI` 保存 Workflow 参数检查 CLI 的入口脚本路径。Skill 执行者使用以下入口调用本命令：
 
 ```sh
 node "$DSH_HARNESS_COMFYUI_CLI" generation inspect-template-parameters --stdin
 ```
 
-前台 shell 的工作目录必须是当前 Session 的 Workspace。调用前，Harness Host 必须处于运行状态，并且 managed shell environment 必须提供非空 `DSH_HARNESS_COMFYUI_CLI`、CLI endpoint 和短期 capability。CLI 从 managed environment 自动取得 endpoint、capability、Session、Turn、Tool Call 和工作目录对应的执行身份；Skill 执行者不设置这些环境值，也不传 Workspace ID、Session ID、Turn 或 Tool Call ID。本命令只使用标准输入中的模板 ID 与实例 ID。
+## 调用条件
 
-## 命令与调用时机
-
-Skill 执行者必须先完成模板 resolve 和实例目录查询，再对本次执行中每组唯一的非空 `(template_id, instance_id)` 调用一次检查命令。多项 Generation Request 使用同一组 ID 时，可以复用本次执行仍完整保留的同一检查结果；任一 ID 改变时必须重新检查。
-
-Skill 执行者必须在构造第一项 Generation Request 的实际 `parameters` 以前完成检查。检查失败时不得提交 Run。
+Skill 执行者取得 `template_id` 和 `instance_id` 后调用本命令。
 
 ## 参数与标准输入
 
-标准输入必须是只包含 `template_id` 与 `instance_id` 的 JSON 对象：
+标准输入是只包含 `template_id` 和 `instance_id` 的 JSON 对象：
 
 ```json
 {"template_id":"36","instance_id":"2"}
 ```
 
-两个属性都必须是首尾去除空白后非空的字符串。标准输入缺少属性、包含额外属性、属性类型错误或空字符串时，CLI 返回请求错误。
+`template_id` 和 `instance_id` 都是去除首尾空白后仍非空的字符串。
 
-## ID 与运行值的来源
+## 输入值的来源
 
-`template_id` 来自当前消息唯一 Workflow 上下文的 `data.id`，并且模板 resolve 结果的 `id` 必须与该值一致。`instance_id` 来自当前 `catalog instance list` 结果中首个可用实例的 `id`。Skill 执行者不得使用模板 ID、模型 ID、LoRA ID、历史实例 ID 或猜测值替代实例目录结果。
+`template_id` 使用 `catalog template resolve` 返回 JSON 中的 `id`。
 
-本命令返回的 `parameter_id`、当前值和允许值来自该模板在该实例上的实际 Workflow 参数合同。Skill 执行者必须按返回的精确 `parameter_id` 构造提交参数，不根据常见参数名、节点后缀或静态模板名单猜测参数能力。
+`instance_id` 使用 `catalog instance list` 返回 JSON 中的 `results[0].id`。
 
-## 输出与完成语义
+## 成功输出与失败输出
 
-成功输出是只包含 `parameters` 与 `size_candidates` 的 JSON 对象。
+命令成功时输出一个包含 `parameters` 和 `size_candidates` 的 JSON 对象。
 
-`parameters` 包含非尺寸运行参数。每项包含：
+### `parameters`
 
-- `parameter_id`：提交时必须使用的精确参数名；
-- `kind`：标准运行参数语义；
-- `value_type`：`integer`、`number`、`string`、`boolean` 或 `choice`；
-- `current_value`：Workflow 当前值；
-- 实际存在时返回 `minimum`、`maximum` 或 `allowed_values`。
+`parameters` 数组中的每一项描述一个生成参数：
 
-`size_candidates` 的每一项都有唯一 `candidate_id`，并且只使用以下一种结构：
+- `parameter_id`：Generation Request 的 `parameters` 对象使用的属性名。
+- `kind`：参数用途，例如 `positive_prompt`、`negative_prompt`、`seed` 或 `batch_size`。
+- `value_type`：参数值的数据类型。`integer` 表示 JSON 整数，`number` 表示 JSON 数字，`string` 表示 JSON 字符串，`boolean` 表示 JSON 布尔值，`choice` 表示参数值必须与 `allowed_values` 数组中的一个元素相等；`value_type` 为 `choice` 但参数对象未包含 `allowed_values` 时，该参数对象不接受任何值。
+- `current_value`：Workflow 模板当前保存的参数值。
+- `minimum`：参数接受的最小数值；没有数值下限时不返回该属性。
+- `maximum`：参数接受的最大数值；没有数值上限时不返回该属性。
+- `allowed_values`：由参数允许值组成的数组；参数没有固定值列表时不返回该属性。
 
-- `representation: "width_height"`：`width` 与 `height` 分别是完整参数对象。
-- `representation: "aspect_ratio_megapixels"`：`aspect_ratio` 与 `megapixels` 分别是完整参数对象。
-- `representation: "resolution_preset"`：`parameter` 是 preset 参数对象；`mapped_options` 的每项包含原始 `value`、确定的 `width` 与 `height`；`unmapped_values` 只供报告，不能自动选择。
+### `size_candidates`
 
-`size_candidates` 只返回能够控制所有活动图片输出最终可见尺寸的末端尺寸控件。活动图片输出是 `/object_info` 标记为 `output_node: true`，并且通过已连接的 `IMAGE` 输入或 `IMAGE` 类型连线接收图片的活动 ComfyUI 节点；只接收 `COMBO`、字符串或其他非图片数据的辅助输出节点不属于图片输出。一个上游 latent 尺寸在输出路径中被下游独立 resize 或 upscale 尺寸覆盖时，检查结果不把上游尺寸作为可兑现的候选；下游尺寸控件具有可写合同时，检查结果返回该控件的精确带节点后缀 `parameter_id`。没有一组尺寸控件能够控制所有活动图片输出时，`size_candidates` 为空，生成 Skill 必须报告模板不兼容并停止提交。
+`size_candidates` 数组中的每一项描述一组可供选择的图片尺寸参数。每项的 `candidate_id` 标识该尺寸候选项；每项还使用以下一种结构：
 
-生成 Skill 必须确认 `parameters` 中存在 `positive_prompt`、`seed` 和 `batch_size`。`batch_size` 必须使用 `value_type: "integer"`，并且其 `minimum`、`maximum` 或 `allowed_values` 合同必须接受整数 `1`；每项图片请求必须使用该项返回的精确 `parameter_id` 写入整数 `1`。原生负向模式还必须存在 `negative_prompt`。缺少对应参数或 `batch_size` 合同不接受 `1` 时，生成 Skill 停止提交并报告模板 ID、实例 ID 和具体参数合同。正向规避模式不得向模板提交负向参数。具体 Seed 必须按 `generation-cli.md` 对检查结果中的 Seed 参数合同进行预校验。
+- `representation: "width_height"`：`width` 和 `height` 都是与 `parameters[]` 使用相同字段结构的参数对象。
+- `representation: "aspect_ratio_megapixels"`：`aspect_ratio` 和 `megapixels` 都是与 `parameters[]` 使用相同字段结构的参数对象。
+- `representation: "resolution_preset"`：`parameter` 是与 `parameters[]` 使用相同字段结构的参数对象。`mapped_options` 是预设映射数组；每个数组元素的 `value` 是满足 `parameter` 取值限制的参数值，`width` 和 `height` 是该预设对应的、以像素为单位的正整数图片宽度和高度。`unmapped_values` 是由无法映射到 `width` 和 `height` 的预设参数值组成的数组。
 
-生成 Skill 按以下顺序选择实际尺寸：
+命令成功时退出码为 `0`，stderr 为空，stdout 包含一行完整 JSON。命令失败时退出码非零，stderr 使用 `错误码: 错误消息` 格式。
 
-1. 完全原值匹配时，优先 `width_height`，其次 `aspect_ratio_megapixels`，最后 `resolution_preset`。
-2. `width_height` 只能按同一缩放比例调整两个整数值，并同时满足各参数的最小值与最大值。
-3. `aspect_ratio_megapixels` 先选择规范化后完全相同的允许比例；没有完全匹配时，选择比例偏差最小的允许比例。百万像素值使用范围内原值，或者选择差值最小的允许值。
-4. `resolution_preset` 只能自动选择 `mapped_options`；不能从 `unmapped_values` 猜测像素尺寸。
-5. 所有自动调整都必须同时满足相对宽高比偏差不超过 `5%` 和相对像素面积偏差不超过 `10%`。阈值包含恰好 `5%` 和 `10%`。
-6. 多个调整候选都合格时，先选择比例偏差最小者，再选择面积偏差最小者。
+## Generation Request 参数检查
 
-目标比例是 Builder `width ÷ height`，目标面积是 Builder `width × height`。比例偏差为 `abs(实际比例 - 目标比例) ÷ 目标比例`；面积偏差为 `abs(实际面积 - 目标面积) ÷ 目标面积`。Selector 的实际面积使用 `megapixels × 1,000,000`。
+1. `parameters` 中 `kind` 分别为 `positive_prompt`、`seed` 和 `batch_size` 的元素必须各有且只有一个。
+2. 当 Skill 执行者准备在 Generation Request 中写入负向 Prompt 时，`parameters` 中必须存在且只存在一个 `kind` 为 `negative_prompt` 的项目。
+3. `batch_size` 项的 `value_type` 必须是 `integer`，并且该项的取值限制必须接受整数 `1`。Skill 执行者把该项的 `parameter_id` 写入 Generation Request 的 `parameters` 对象，并将值设为 `1`。
+4. 发生以下任一情况时，Skill 执行者停止构造 Generation Request：缺少第 1 项要求的任一 `kind`；第 2 项适用但缺少 `negative_prompt`；任一受唯一性约束的 `kind` 出现多项；`batch_size` 不接受整数 `1`。Skill 执行者报告 `template_id` 和 `instance_id`，并针对每个不符合要求的 `kind`，报告所有具有该 `kind` 的元素的 `parameter_id`；缺少该 `kind` 时，Skill 执行者报告空的 `parameter_id` 列表。
 
-使用调整候选前，Skill 执行者必须向用户说明 Builder 目标尺寸、实际参数、比例偏差和面积偏差。用户明确要求尺寸不得调整时，只能接受原值候选。没有合格候选时，Skill 执行者报告模板 ID、实例 ID、目标尺寸和实际允许值，并要求用户选择其他模板、接受一项明确列出的尺寸或返回 Prompt Builder 重新设计。
+## 图片尺寸选择
 
-命令成功时退出码为 `0`，stderr 为空，stdout 写入一行完整 JSON 检查结果。命令成功只表示检查完成；不表示模板已经编译，不表示 Run 已创建，也不表示图片已经生成。命令失败时退出码非零，stdout 不作为检查结果使用，stderr 使用 `错误码: 错误消息` 格式。
+`size_candidates` 为空时，Skill 执行者报告该 Workflow 模板没有返回可用的图片尺寸参数，并停止构造 Generation Request。
 
-## 错误、修正与重试
+已经通过 `prompt-result-contract.md` 检查的结果 JSON 提供 `width`、`height`、`aspect_ratio` 和 `megapixels`。`width` 和 `height` 是以像素为单位的正整数，分别表示期望图片宽度和高度；`aspect_ratio` 是由两个正整数组成的 `A:B` 字符串，并且 `A / B` 必须等于 `width / height`；`megapixels` 是表示期望图片百万像素数的正数。
 
-CLI 返回非零退出码时，标准错误包含具体错误码与消息。Skill 执行者按下列分支处理：
+参数值必须符合“`parameters`”小节对 `value_type` 的定义。参数对象包含 `minimum` 时，数值必须大于或等于 `minimum`；参数对象包含 `maximum` 时，数值必须小于或等于 `maximum`；参数对象包含 `allowed_values` 时，参数值还必须与 `allowed_values` 数组中的一个元素相等。以下规则将满足 `value_type`、`minimum`、`maximum` 和 `allowed_values` 全部适用要求的情况称为“参数对象接受该值”。
 
-- 输入请求错误：修正缺失、额外、空白或类型错误的 `template_id`、`instance_id` 后重试。
-- 模板或实例不存在：重新执行对应 Catalog 查询并取得当前 ID 后重试。
-- 实例连接错误：确认当前实例目录状态恢复后重试。
-- `GENERATION_PARAMETER_TARGET_AMBIGUOUS`：报告模板中的歧义参数目标并停止；不能选择其中一个猜测目标。
-- `GENERATION_PARAMETER_TARGET_NOT_FOUND`：报告找不到的实际参数目标并停止；不能使用静态参数名单补足。
-- `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`：报告参数 ID 与不受支持的实际合同并停止。
-- `GENERATION_PARAMETER_INVALID`：报告参数 ID 与实际合同错误；只有修正模板实际参数值或目标实例状态后才能重试。
+Skill 执行者按照以下顺序选择图片尺寸参数和值：
 
-检查错误发生后，Skill 执行者必须在修正输入或确认实例恢复后才重试。同一错误没有任何输入或外部状态变化时不能重复调用。
+1. Skill 执行者先查找直接匹配。对一个 `width_height` 项，`width` 参数对象接受结果 JSON 的 `width` 且 `height` 参数对象接受结果 JSON 的 `height` 时，该项产生一个直接匹配。对一个 `aspect_ratio_megapixels` 项，`aspect_ratio` 参数对象包含 `allowed_values` 时，Skill 执行者只检查 `allowed_values` 数组中被该参数对象接受且符合 `A:B` 格式的值；`aspect_ratio` 参数对象未包含 `allowed_values` 时，Skill 执行者只检查结果 JSON 的 `aspect_ratio`。被检查的宽高比值和结果 JSON 的 `aspect_ratio` 分别约分后相同，并且 `aspect_ratio` 参数对象接受该宽高比值、`megapixels` 参数对象接受结果 JSON 的 `megapixels` 时，该宽高比值与结果 JSON 的 `megapixels` 组成一个直接匹配。对一个 `resolution_preset` 项，`mapped_options[]` 中 `width` 和 `height` 分别等于结果 JSON `width` 和 `height` 的每个元素分别产生一个直接匹配。
+2. 多种 `representation` 都有直接匹配时，Skill 执行者按照 `width_height`、`aspect_ratio_megapixels`、`resolution_preset` 的顺序选择。最先匹配的 `representation` 中仍有多项直接匹配时，Skill 执行者列出这些匹配的 `candidate_id` 和参数值，并等待用户选择。
+3. 没有直接匹配时，Skill 执行者为每个 `width_height` 项分别确定最接近结果 JSON `width` 和 `height` 的可接受整数。参数对象包含 `allowed_values` 时，Skill 执行者在该数组中选择与目标值绝对差最小的可接受正整数。参数对象不包含 `allowed_values` 时，目标值小于 `minimum` 就选择大于或等于 `minimum` 的最小正整数，目标值大于 `maximum` 就选择小于或等于 `maximum` 的最大正整数，其他情况选择目标值；参数对象没有返回其中一项边界时，Skill 执行者只检查已经返回的边界。两个整数与目标值的绝对差相同时，Skill 执行者选择较小的整数。任一参数对象没有可接受的正整数时，该 `width_height` 项不产生候选尺寸。
+4. 没有直接匹配时，Skill 执行者为每个 `aspect_ratio_megapixels` 项确定宽高比和百万像素数。`aspect_ratio` 参数对象未包含 `allowed_values` 时，该项不产生候选尺寸；包含 `allowed_values` 时，Skill 执行者保留其中符合 `A:B` 格式、`A` 和 `B` 均为正整数且被 `aspect_ratio` 参数对象接受的值，并选择与结果 JSON 宽高比相对偏差最小的值；宽高比相对偏差为 `abs(候选 A / B - 结果 JSON width / height) / (结果 JSON width / height)`。`megapixels` 参数对象包含 `allowed_values` 时，Skill 执行者在该数组中选择与结果 JSON `megapixels` 绝对差最小的可接受正数。`megapixels` 参数对象未包含 `allowed_values` 且 `value_type` 为 `number` 时，Skill 执行者选择满足已返回数值边界且与结果 JSON `megapixels` 绝对差最小的正数；`value_type` 为 `integer` 时，Skill 执行者选择满足已返回数值边界且与结果 JSON `megapixels` 绝对差最小的正整数；其他 `value_type` 不产生百万像素候选值。`aspect_ratio` 或 `megapixels` 有多个并列最小偏差值时，Skill 执行者保留全部并列值，并将每个保留的宽高比值与每个保留的百万像素值组成一个候选尺寸。任一参数对象没有可接受的值时，该 `aspect_ratio_megapixels` 项不产生候选尺寸。
+5. 没有直接匹配时，每个 `resolution_preset` 项的 `mapped_options[]` 分别产生一个候选尺寸；`unmapped_values` 不产生候选尺寸。
+6. Skill 执行者计算第 3 至 5 项产生的每个候选尺寸相对于结果 JSON 尺寸的宽高比偏差和像素面积偏差。结果 JSON 的宽高比为 `width / height`，像素面积为 `width * height`。`width_height` 和 `resolution_preset` 候选尺寸的宽高比为候选 `width / height`，像素面积为候选 `width * height`；`aspect_ratio_megapixels` 候选尺寸的宽高比为 `A / B`，像素面积为候选 `megapixels * 1,000,000`。宽高比偏差为 `abs(候选宽高比 - 结果 JSON 宽高比) / 结果 JSON 宽高比`；像素面积偏差为 `abs(候选像素面积 - 结果 JSON 像素面积) / 结果 JSON 像素面积`。
+7. Skill 执行者排除宽高比偏差大于 `0.05` 或像素面积偏差大于 `0.10` 的候选尺寸。Skill 执行者在剩余候选尺寸中先选择宽高比偏差最小的候选尺寸，再从中选择像素面积偏差最小的候选尺寸。多个候选尺寸的两项偏差均相同时，Skill 执行者列出这些候选尺寸并等待用户选择。
+8. Skill 执行者选出直接匹配以外的候选尺寸后，向用户列出结果 JSON 的 `width`、`height`、`aspect_ratio` 和 `megapixels`、准备写入 Generation Request 的每个 `parameter_id` 及其对应值、宽高比偏差和像素面积偏差，并等待用户确认。
+9. 没有候选尺寸同时满足两项偏差限制时，Skill 执行者列出 `size_candidates` 数组中每个元素的 `candidate_id`。对于 `width_height` 和 `aspect_ratio_megapixels`，Skill 执行者同时列出各参数对象的 `value_type`、`minimum`、`maximum` 和 `allowed_values`；对于 `resolution_preset`，Skill 执行者同时列出 `mapped_options`。Skill 执行者随后等待用户选择其他 Workflow 模板，或者重新指定符合其中一个候选项取值限制的 `width`、`height`、`aspect_ratio` 和 `megapixels`。
+10. Skill 执行者把选定的尺寸值写入 Generation Request 的 `parameters` 对象。`width_height` 使用 `width.parameter_id` 和 `height.parameter_id` 作为属性名；`aspect_ratio_megapixels` 使用 `aspect_ratio.parameter_id` 和 `megapixels.parameter_id` 作为属性名；`resolution_preset` 使用 `parameter.parameter_id` 作为属性名，并写入所选 `mapped_options[]` 项的 `value`。
 
-## 副作用与重复调用
+## 错误处理与重试
 
-本命令是只读命令。本命令不创建 Generation Run，不修改 Workflow，不提交图片任务，也不触发 Official API Workflow 编译。
+- `CLI_REQUEST_INVALID`：Skill 执行者先按照“参数与标准输入”一节检查本次标准输入。Skill 执行者发现自己构造的 JSON 不符合该节要求时，修正 JSON 并重试一次；重试后仍返回 `CLI_REQUEST_INVALID`，或者本次标准输入已经符合该节要求时，Skill 执行者报告完整错误消息并停止构造 Generation Request。用户提供的 `template_id` 或 `instance_id` 不是去除首尾空白后仍非空的字符串时，Skill 执行者报告不符合要求的属性名、属性值和“必须是去除首尾空白后仍非空的字符串”这一要求，并等待用户提供新值。
+- `GENERATION_PARAMETER_TARGET_AMBIGUOUS`：Skill 执行者报告 stderr 中该错误码对应的完整错误消息，并停止构造 Generation Request。
+- `GENERATION_PARAMETER_TARGET_NOT_FOUND`：Skill 执行者报告 stderr 中该错误码对应的完整错误消息，并停止构造 Generation Request。
+- `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED` 或 `GENERATION_PARAMETER_INVALID`：Skill 执行者报告 stderr 中对应错误码的完整错误消息，并停止构造 Generation Request。
+- 其他错误码：Skill 执行者报告错误码、错误消息和本次使用的 `template_id`、`instance_id`，并停止构造 Generation Request。
 
-同一组 `(template_id, instance_id)` 在一次 Skill 执行中只需检查一次。上下文压缩后检查结果不再完整可见时，Skill 执行者必须重新读取本文件并重新调用检查命令。
+## 查询结果复用
+
+处理当前用户请求期间，Skill 执行者复用同一组 `template_id` 和 `instance_id` 对应的完整检查结果；`template_id` 或 `instance_id` 改变时，Skill 执行者重新调用本命令。
 
 ## 完整调用示例
-
-调用：
 
 ```sh
 node "$DSH_HARNESS_COMFYUI_CLI" generation inspect-template-parameters --stdin <<'JSON'
@@ -105,7 +106,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" generation inspect-template-parameters --stdin <
 JSON
 ```
 
-示例成功输出：
+成功输出内容示例（文档为便于阅读而换行展示）：
 
 ```json
 {
@@ -124,5 +125,3 @@ JSON
   ]
 }
 ```
-
-本例中的模板 ID `36` 来自当前消息的 Workflow 选择，实例 ID `2` 来自前置 `catalog instance list` 结果。生成 Skill 必须使用输出中的 `positive_prompt`、`seed`、`batch_size`、`aspect_ratio` 和 `megapixels` 这些精确 `parameter_id`，并按所选 Builder 结果与 Seed 合同填写实际值。

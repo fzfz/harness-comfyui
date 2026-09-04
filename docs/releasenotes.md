@@ -1,3 +1,33 @@
+# Harness ComfyUI v0.39.2
+
+v0.39.2 重写 ComfyUI Generate、WAI、ANIMA 和 Krea2 项目 Skill 的任务流程与 CLI 使用文档，使每条规则直接说明执行主体、操作对象、调用条件和结果，并删除 Krea2 Skill 已经不再调用的旧生成脚本与参考资产。
+
+## Skill 任务流程与 CLI 合同
+
+- 四个 Skill 的 `SKILL.md` 分别定义任务触发条件、任务分支、参考文件读取时机和最终结果；CLI 命令、JSON 输入、成功输出、错误处理、调用次数和结果复用集中在对应 CLI 参考文档中。
+- 历史 Generation Run 查询按用户给出的一个或多个 `run_id` 调用 `generation run-inputs --stdin`，并逐项返回保存的生成参数与 Actual Workflow。该查询分支不再混入新图片生成所需的 Workflow、模型或 LoRA 选择规则。
+- ComfyUI Generate 使用 `references/prompt-builder-model-routes.json` 比较 Prompt Builder 结果的 `model_route` 与生成模型的 `skill_name`；用户没有指定生成模型时，该检查使用 Workflow 模板保存的默认生成模型。当两个值不一致时，Skill 执行者报告两个值并停止提交生成任务；即使两个模型使用同一底模，该处理仍然适用。
+- WAI Prompt Builder 直接调用 `node scripts/validate-output.mjs --prompt-format` 校验最终 Prompt，删除对不存在的 `run_skill_script` 和 `finalize_skill_error` 的引用。
+- WAI、ANIMA 和 Krea2 Prompt Builder 读取当前消息中 `comfyui-context` 记录的 Character 与 Style 选择；三份 Skill 文档分别说明 Skill 执行者读取记录中的角色、作品、画师和 Prompt 内容的任务步骤与用途，并且不把 UI 操作过程写成 Skill 执行步骤。
+
+## ANIMA、WAI 与 Krea2 参考资料
+
+- ANIMA 的十二槽资料涵盖人物数量与身份、外观、服装状态、姿态与动作、表情、镜头、场景、细节和特殊主题。身体标记归入外观，情趣用品与束缚道具归入姿态与动作；`NTR`、`RBQ`、`Futa`、男娘和大车小孩等通用主题词保持可用。
+- WAI 参考资料说明输入合同、画师信息的选用方式、Prompt 内容的排列顺序、构图分支、冲突处理、权重规则、格式校验以及各步骤的输入和输出，并分别定义生成结果合同与历史查询合同。
+- Krea2 的风格预设、Prompt 规则、动作迁移约束和游戏服装资料只保留各自任务需要的画风、配色、人物、姿态和服装信息。游戏服装资料保留 50 个游戏的女性服装原型与配色。
+- Krea2 Skill 删除未被 `SKILL.md`、CLI 文档、测试或保留脚本引用的旧 README、示例、背景与国风资料、联合索引、爬取说明、Python 生成器、自检脚本和生成器数据文件。当前输出校验器 `scripts/validate-output.mjs` 继续保留并由 Skill 调用。
+
+## npm 漏洞查询诊断与测试
+
+- 新增 `scripts/security/diagnose-advisories.mjs`。该脚本运行 `pnpm audit`，让 pnpm 根据当前 lockfile 向本地临时 registry 发送 bulk 请求；随后，该脚本复用该 bulk 请求的请求体，分别通过当前网络配置和强制直连访问 npm registry。
+- 诊断矩阵检查 registry 域名的 DNS 解析、`GET /-/ping`、`POST /-/ping`、两个 security API 路径的 GET，以及 `POST /-/npm/v1/security/audits/quick` 和 `POST /-/npm/v1/security/advisories/bulk`，并记录 DNS、连接、TLS、首字节、总耗时、HTTP 状态与响应字节数。输出不包含依赖请求正文或代理地址。
+- 新增 8 项故障分类测试、7 项参数、进程、超时与清理测试、1 项完整探针编排测试、1 项命令入口与输出测试和 1 项真实 pnpm 本地请求测试。其中，真实 pnpm 本地请求测试确认 `pnpm audit` 能够根据 lockfile 向本地 registry 完成 4,071 字节的 bulk 请求。诊断脚本的远端请求结果确认：使用当前网络配置或强制直连向两个 security API 发送 POST 请求时，所有请求都在 TLS 握手完成后因等待首字节而超时。
+
+## 验收与发布
+
+- 经明确授权，本次发布临时排除无法取得远端结果的 `security:advisories`。其余门禁全部通过：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功；覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。
+- 本版本没有增加或升级依赖，`pnpm-lock.yaml` 保持不变。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+
 # Harness ComfyUI v0.39.1
 
 v0.39.1 修复图片读取设置页选择已保存配置后没有同步切换 Host 生效配置的问题，保留 Runtime 视觉模型返回的安全诊断字段，并把前台 Bash Tool 的默认超时从 60 秒提高到 180 秒。

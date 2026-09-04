@@ -1,123 +1,77 @@
-# Imagegen Semantic Query CLI 参考
+# Prompt 内容查询 CLI
 
-## CLI 的用途与适用任务
+## 用途与调用入口
 
-`imagegen-semantic-query` 只读查询本机 Catalog 服务。Krea2 Anime Prompt Builder 使用该 CLI 完成五项职责：
+Skill 执行者使用 `imagegen-semantic-query` 查询作品、角色、Krea2 画师和 Prompt 标签。本文件中的命令固定使用端口 `18093`，每次调用只查询一条路径，并通过命令行参数提供查询值。
 
-1. 查询 `krea2` 底模记录并取得用于 Style 查询的稳定 `id`；
-2. 确认作品、系列或 IP，并取得作品记录中的 `character_names`；
-3. 确认角色身份并取得角色记录中的 `prompt_text`；
-4. 查询 Krea2 底模下的画师或画风记录，并取得 `style_description` 和 `prompt_text`；
-5. 把外貌、服装、动作、表情、构图、场景、光线或氛围概念查询为规范 `canonical_tag`。
+本文件把当前消息中 `type=comfyui-context` 且 `data.kind=character` 的 JSON 行称为 Character 上下文记录，把 `type=comfyui-context` 且 `data.kind=style` 的 JSON 行称为 Style 上下文记录。
 
-该 CLI 不构建最终 Prompt，不查询 Generation Run，不创建生成任务，不修改 Catalog 记录，也不读取本地图片。
+## 查询路径与结果字段
 
-## 调用环境与可执行入口
+| 路径 | 调用条件 | Skill 执行者读取的结果字段 |
+|---|---|---|
+| `/internal/semantic/base-models` | 第一次查询 Krea2 Style 前 | `id`、`name` |
+| `/internal/semantic/works` | 需要确认角色所属作品时 | `id`、`name`、`aliases_json`、`category_name`、`character_names` |
+| `/internal/semantic/characters` | 需要确认角色或取得角色 Prompt 时 | `id`、`work_id`、`works.name`、`name`、`aliases_json`、`prompt_text` |
+| `/internal/semantic/styles` | 需要确认画师或取得 Krea2 画师 Prompt 时 | `id`、`base_model_id`、`name`、`aliases_json`、`style_description`、`prompt_text` |
+| `/internal/semantic/prompt-terms` | 需要把一个自然语言视觉概念转换为 Prompt 标签时 | `id`、`canonical_tag`、`aliases_json`、`category`、`post_count` |
 
-Skill 执行者必须在提供前台 shell Tool 的本机 Harness 环境中，通过 `PATH` 中的以下入口调用 CLI：
-
-```sh
-imagegen-semantic-query --port 18093 --help
-```
-
-`18093` 是本 Skill 使用的本机 Catalog 回环端口。CLI 只连接 `127.0.0.1`，不接收远程 URL、主机名、认证信息或代理目标。
-
-调用前，本机 Catalog 服务必须正在 `127.0.0.1:18093` 监听并能够返回 live discovery。Skill 执行者从当前 Session 的 Workspace 工作目录发起前台 shell Tool Call；CLI 不使用当前工作目录推导 Workspace、身份或查询值，也不读取 Skill 目录之外的文件。
-
-第一次语义查询前，Skill 执行者必须执行上述 live discovery，并确认结果包含本文件使用的五条路径。随后在第一次调用每条路径前执行对应的路径级帮助：
+## Search 命令
 
 ```sh
-imagegen-semantic-query --port 18093 --path '<operation-path>' --help
+imagegen-semantic-query --port 18093 --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
 ```
 
-路径级帮助是当前参数名、参数类型、默认值和约束的运行时来源。帮助与本文件冲突时，Skill 执行者停止该路径的业务查询并报告具体差异，不使用猜测参数调用。
+`<operation-path>` 必须取自“查询路径与结果字段”表。`<query>` 必须是长度不超过 200 个字符且不含控制字符的字符串。Skill 执行者使用 shell 参数引用规则把 `<query>` 作为一个参数传入命令。
 
-## 命令与调用时机
-
-本 Builder 只调用下表中的 Catalog 路径：
-
-| 路径 | 调用时机 | Builder 读取的结果 |
-| --- | --- | --- |
-| `/internal/semantic/base-models` | 第一次需要查询 Krea2 Style 前 | 名称等于 `krea2` 的候选 `id` 与 `name` |
-| `/internal/semantic/works` | 需要确认作品身份或取得该作品的角色名称时 | `id`、`name`、`aliases_json`、`category_name`、`character_names` |
-| `/internal/semantic/characters` | 需要确认角色身份或取得角色 Prompt 时 | `id`、`work_id`、`works.name`、`name`、`aliases_json`、`prompt_text` |
-| `/internal/semantic/styles` | 需要确认具体画师，或需要为未指定画师的画面选择 Krea2 Style 时 | `id`、`base_model_id`、`name`、`aliases_json`、`style_description`、`prompt_text` |
-| `/internal/semantic/prompt-terms` | 本 Skill 资料不能确定自然语言视觉概念对应的精确标签时 | `id`、`canonical_tag`、`aliases_json`、`category`、`post_count` |
-
-文本查询使用 `search`：
+查询角色时，Skill 执行者可以使用已采用 Work 结果的 `id` 限定结果：
 
 ```sh
-imagegen-semantic-query --port 18093 --path '<operation-path>' \
-  --mode search \
-  --query '<query>' \
-  --page 1 \
-  --page_size 20
+imagegen-semantic-query --port 18093 --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
 ```
 
-当前 Character 或 Style 记录缺少非空 `data.prompt_text`，但提供了符合稳定 ID 规则的 `data.id` 时，精确查询使用 `resolve`：
+查询 Style 时，Skill 执行者必须使用本轮取得的 Krea2 Base Model ID 限定结果：
 
 ```sh
-imagegen-semantic-query --port 18093 --path '<operation-path>' \
-  --mode resolve \
-  --id '<stable-id>'
+imagegen-semantic-query --port 18093 --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<krea2-base-model-id>'
 ```
 
-Skill 执行者按以下顺序调用：
+## Resolve 命令
 
-1. 先采用当前消息中非空的 Character/Style `data.prompt_text`，对应对象不再查询。
-2. Character 记录缺少 `data.prompt_text` 时，有合法稳定 `data.id` 就 resolve Character 记录；没有合法稳定 ID，但有明确角色名称时才 search Character。
-3. 用户只提供作品时，先 search Work；确认作品后，使用选中 Work 的 `id` 限定 Character search，并从 `character_names` 中选择本幅画面需要的角色名称。
-4. 任何 Style search 或 resolve 前，先 search Base Model 并确认唯一的 `krea2` 记录。Style 记录有合法稳定 `data.id` 时 resolve 该 Style，并要求结果的 `base_model_id` 等于 Krea2 Base Model ID；没有合法稳定 ID 但有明确画师名称或画师方向时才 search，且必须传入 Krea2 Base Model ID 作为 `--base_model_id`。
-5. Prompt-term search 只处理无法从已读取 Skill 资料精确确定的普通视觉概念。
+Character 上下文记录或 Style 上下文记录没有非空 `data.prompt_text`，但提供符合 `^[1-9][0-9]{0,19}$` 的 `data.id` 时，Skill 执行者使用以下命令查询该 ID：
 
-## 参数与标准输入
+```sh
+imagegen-semantic-query --port 18093 --path '<operation-path>' --mode resolve --id '<stable-id>'
+```
 
-该 CLI 不读取 stdin。每次调用通过 argv 传入参数；一个调用只查询一条 Catalog 路径。
+Character 上下文记录使用 `/internal/semantic/characters`，Style 上下文记录使用 `/internal/semantic/styles`。Skill 执行者把 `data.id` 作为 `<stable-id>`。
 
-公共参数：
+Resolve 成功结果的 `results` 必须只包含一个对象，并且该对象的 `id` 转为十进制字符串后必须等于 `<stable-id>`。结果数量不是一、结果缺少 `id` 或 ID 不相等时，Skill 执行者报告实际结果并停止当前查询目标。
 
-| 参数 | 取值 |
-| --- | --- |
-| `--port` | 固定使用 `18093` |
-| `--path` | 本文件“命令与调用时机”列出的五条路径之一 |
-| `--help` | 无值布尔标志；与 `--port 18093` 单独使用时执行 live discovery，与 `--port 18093 --path '<operation-path>'` 一起使用时输出该路径的实时帮助 |
-| `--mode` | `search` 或 `resolve` |
-| `--query` | `search` 使用的零至二百字符文本 |
-| `--page` | `search` 使用的一至十万之间整数；本 Builder 从 `1` 开始 |
-| `--page_size` | `search` 使用的一至一百之间整数；本 Builder 使用 `20` |
-| `--id` | `resolve` 使用的一至二十位正十进制稳定 ID |
+## 查询顺序与查询值
 
-`/internal/semantic/characters` 的 `search` 可以追加 `--work_id '<work-id>'`；该值必须来自本轮选中 Work 结果的 `id`。`/internal/semantic/styles` 的 `search` 必须追加 `--base_model_id '<krea2-base-model-id>'`；该值必须来自本轮确认的 `krea2` Base Model 结果。
+1. Character 上下文记录和 Style 上下文记录中的非空 `data.prompt_text` 是用户当前选择的直接 Prompt 来源。Skill 执行者先采用这些 `data.prompt_text`，再处理缺少 Prompt 的上下文记录。
+2. Character 上下文记录没有非空 `data.prompt_text` 时，Skill 执行者优先使用合法 `data.id` 执行 Character Resolve。没有合法 `data.id` 时，Skill 执行者使用非空 `data.character_name` 执行 Character Search；记录同时提供 `data.work_name` 时，先用该名称执行 Work Search，并用已采用 Work 结果的 `id` 限定 Character Search。记录也没有 `data.character_name` 时，Skill 执行者报告缺少角色名称并停止当前 Character 查询目标。
+3. 当前消息没有与用户指定角色对应的 Character 上下文记录时，Skill 执行者使用用户普通文字中的角色名称执行 Character Search；普通文字同时提供作品名称时，先执行 Work Search，再用已采用 Work 结果的 `id` 限定 Character Search。
+4. Skill 执行者第一次查询 Style 前，使用 `krea2` 作为 Base Model Search 的 `<query>`。Skill 执行者采用 `name` 精确等于 `krea2` 的唯一结果，并把该结果的 `id` 作为 Krea2 Base Model ID。
+5. Style 上下文记录没有非空 `data.prompt_text` 时，Skill 执行者优先使用合法 `data.id` 执行 Style Resolve。Resolve 结果的 `base_model_id` 等于 Krea2 Base Model ID 且 `prompt_text` 非空时，Skill 执行者采用该结果；`base_model_id` 等于 Krea2 Base Model ID 但 `prompt_text` 为空时，Skill 执行者报告该画师缺少 Krea2 Prompt，并请求用户补充；`base_model_id` 不等于 Krea2 Base Model ID 时，Skill 执行者报告结果中的 `id`、`base_model_id` 和 Krea2 Base Model ID，并停止当前 Style 查询目标。没有合法 `data.id` 时，Skill 执行者使用非空 `data.name` 执行 Style Search。记录也没有 `data.name` 时，Skill 执行者报告缺少画师名称并停止当前 Style 查询目标。
+6. 当前消息没有与用户指定画师对应的 Style 上下文记录时，Skill 执行者使用用户普通文字中的画师名称执行 Style Search。
+7. 用户没有指定画师，且当前消息没有 Style 上下文记录时，Skill 执行者根据已经确定的媒介、线条、上色、明暗、纹理和配色形成一个 Style Search 查询文本。
+8. 已取得的 Prompt 内容中没有可表达用户要求的某个外貌、服装、动作、表情、构图、场景、光线或氛围概念的标签时，Skill 执行者为该概念单独执行一次 Prompt-term Search。
 
-`--help` 不与 `--mode`、`--query`、`--page`、`--page_size`、`--id`、`--work_id` 或 `--base_model_id` 同时使用。`search` 不传 `--id`，`resolve` 不传 `--query`、`--page`、`--page_size`、`--work_id` 或 `--base_model_id`。Shell 调用必须引用包含空格、括号或其他特殊字符的值，使每个值作为一个 argv 传入。
+Work 结果中的 `character_names` 只用于核对或查询用户已经指定的角色。Skill 执行者不查询用户没有指定的角色。
 
-## ID 与运行值的来源
+Base Model Search 中没有 `name` 精确等于 `krea2` 的结果时，Skill 执行者报告未找到 Krea2 Base Model，并停止 Style 查询。存在多项 `name` 精确等于 `krea2` 的结果时，Skill 执行者报告这些结果的 `id` 和 `name`，并停止 Style 查询。
 
-Base Model 查询文本固定为 `krea2`。Skill 执行者只有在候选 `name` 等于 `krea2` 时采用其 `id`；多个候选都满足时，报告候选 ID 并停止 Style 查询。
+## 参数规则
 
-Work search 的 `--query` 只能来自当前用户普通文字中实际出现的作品名、系列名、IP 名、作品别名或类别限定。第一次没有合适候选时，第二次查询只能重新组合这些原文信息，不能加入查询结果中的 `character_names`。
+该 CLI 不读取 stdin。每次调用通过命令行参数传入查询值。Search 使用 `--mode search`、`--query`、`--page 1` 和 `--page_size 20`；Search 不使用 `--id`。Resolve 使用 `--mode resolve` 和 `--id`；Resolve 不使用 `--query`、`--page`、`--page_size`、`--work_id` 或 `--base_model_id`。
 
-Character 查询值按以下优先顺序取得：
+`--id`、`--work_id` 和 `--base_model_id` 只接受符合 `^[1-9][0-9]{0,19}$` 的十进制字符串。Skill 执行者把查询结果中的数值 `id` 转为十进制字符串后用于后续命令。
 
-1. 缺少 `data.prompt_text` 的 Character 记录提供的合法稳定 `data.id`；
-2. 当前消息中的 `data.character_name` 与 `data.work_name`；
-3. 用户普通文字中的角色名称与所属作品；
-4. 已采用 Work 结果的 `character_names` 中符合本幅画面要求的名称。
+## 成功输出
 
-Style 查询值按以下优先顺序取得：
-
-1. 缺少 `data.prompt_text` 的 Style 记录提供的合法稳定 `data.id`；
-2. 当前消息中的 `data.name`；
-3. 用户普通文字中的具体画师名称或别名；
-4. 用户没有指定画师时，根据已经确定的动漫媒介、线条、上色、明暗、纹理与配色形成的一个具体画师方向。
-
-Prompt-term 的每个 `--query` 只描述一个普通视觉概念。不同人物、作品、画师或互不相同的视觉概念分别调用，不能把它们拼成一个宽泛查询。
-
-只有符合 `^[1-9][0-9]{0,19}$` 的 ID 才能传给 `--id`、`--work_id` 或 `--base_model_id`。输出中的数值 `id` 在后续 argv 中按十进制字符串使用。
-
-## 输出与完成语义
-
-查询成功时，CLI 退出码为 `0`，stderr 为空，stdout 是 Catalog 服务返回的一个 JSON 对象：
+命令返回退出码 `0` 且 stderr 为空时，stdout 写入一个 JSON 对象：
 
 ```json
 {
@@ -130,73 +84,39 @@ Prompt-term 的每个 `--query` 只描述一个普通视觉概念。不同人物
 }
 ```
 
-`results` 为空表示本次查询成功但没有候选，不表示 CLI 失败。Skill 执行者逐项比较候选，不按照数组第一项自动采用：
+成功结果必须包含且只包含 `status`、`message`、`results`、`page`、`page_size` 和 `total_count`。`status` 必须是 `"ok"`，`message` 必须是 `null`，`results` 必须是对象数组，`total_count` 必须是非负整数。Search 结果的 `page` 和 `page_size` 必须与本次 Search 参数相同。Resolve 结果的 `page`、`page_size` 和 `total_count` 必须分别是 `1`、`1` 和 `1`。
 
-- Work：使用 `name`、`aliases_json` 和 `category_name` 确认作品；`character_names` 只用于后续 Character 查询。两个候选无法通过这些字段区分时，Skill 执行者报告候选 ID 并请用户选择，不任意采用数组第一项。
-- Character：使用 `works.name`、`name` 和 `aliases_json` 确认身份；只有被采用候选的非空 `prompt_text` 进入最终 Prompt。
-- Style：候选的 `base_model_id` 必须等于本轮 Krea2 Base Model ID；使用 `name`、`aliases_json` 和 `style_description` 比较画师方向；只有被采用候选的非空 `prompt_text` 进入最终 Prompt。
-- Prompt-term：使用 `canonical_tag` 和 `aliases_json` 核对概念；只有被采用候选的 `canonical_tag` 进入最终 Prompt，`aliases_json`、`category` 和 `post_count` 只用于比较。
+`results` 为空表示查询成功但没有候选。Skill 执行者按照以下规则选择候选：
 
-Work 目标最多执行两次 search。每个 Character 目标最多执行一次 search 或一次 resolve。每个 Style 目标最多执行三次 search，或者执行一次 resolve；后续 Style search 只能改写同一画师或同一画师方向。每个 Prompt-term 目标最多执行一次 search。达到次数上限、返回空 `results` 或没有合适候选时，该目标查询完成。
+- Work：使用 `name`、`aliases_json` 和 `category_name` 核对用户指定的作品。只有一项符合时采用该项；多项仍符合时报告各项的 `id`、`name`、`aliases_json` 和 `category_name`，并请求用户选择。
+- Character：使用 `works.name`、`name` 和 `aliases_json` 核对用户指定的角色；使用 `<work-id>` 查询时，只比较 `work_id` 等于 `<work-id>` 的结果。只有一项身份符合且 `prompt_text` 非空时采用该项；多项仍符合时报告各项的 `id`、`works.name`、`name` 和 `aliases_json`，并请求用户选择。
+- Style：只比较 `base_model_id` 等于 Krea2 Base Model ID 的结果。Style Search 由用户指定画师时，使用 `name` 和 `aliases_json` 核对身份；Style Search 没有用户指定的画师时，使用 `style_description` 比较已经确定的媒介、线条、上色、明暗、纹理和配色。只有一项符合且 `prompt_text` 非空时采用该项；多项仍符合时报告各项的 `id`、`name`、`aliases_json` 和 `style_description`，并请求用户选择。Style Resolve 结果按照“查询顺序与查询值”一节的规则处理。
+- Prompt-term：使用 `canonical_tag` 和 `aliases_json` 核对目标概念。只有一项符合时采用该项；多项表达相同含义时，按照 `post_count` 从大到小、`id` 从小到大的顺序采用第一项；多项表达不同含义且无法从用户普通文字确定唯一含义时，报告各项的 `id`、`canonical_tag` 和 `aliases_json`，并请求用户选择。
 
-Work 目标没有可采用候选时，只有当前普通文字、用户选定的历史正向 Prompt、Character `data.prompt_text` 或已采用 Character 结果已经完整定义当前请求要求的全部主体及作品相关内容，Skill 执行者才继续构建；否则必须报告没有找到可采用的 Work 候选，请用户补充作品或角色身份，然后停止。Style 与 Prompt-term 目标没有可采用候选时，可以继续使用用户明确内容、已读取 Skill 资料和默认设计。Character 目标没有可采用候选时，必须回到 `SKILL.md` 的必需主体检查，只有其他合法来源已经完整定义当前请求要求的全部主体时才能继续。
+Skill 执行者把已采用的 Character 上下文记录或 Character 查询结果的 `prompt_text`、Style 上下文记录或 Style 查询结果的 `prompt_text`，以及 Prompt-term 查询结果的 `canonical_tag` 写入最终 `positive_prompt`。Work 结果和 Base Model 结果只用于身份核对与查询限定。
 
-`resolve` 成功时，`results` 必须只包含一个 `id` 与请求 ID 相同的对象。结果数量不是一、结果 ID 不同、`status` 不是 `ok`、`message` 不是 `null` 或必要字段缺失时，Skill 执行者把该响应视为当前目标的协议错误，不采用其中内容。
+Work 或 Character 没有可采用结果时，Skill 执行者报告缺少的作品身份、角色身份或角色 Prompt，并请求用户补充。用户明确指定的 Style 没有可采用结果时，Skill 执行者报告缺少该画师的 Krea2 Prompt，并请求用户补充。自动设计的 Style 没有可采用结果时，Skill 执行者使用已经确定的媒介、线条、上色、明暗、纹理和配色继续构造 Prompt。Prompt-term 没有可采用结果时，Skill 执行者把该视觉概念的英文自然语言描述直接写入 `positive_prompt`，不把该描述当作规范标签。
 
-## 错误、修正与重试
+## 命令错误与返回协议错误
 
-| 退出码 | 含义 | Skill 执行者动作 |
-| --- | --- | --- |
-| `0` | discovery、帮助或业务查询成功 | 按命令类型读取文本或 JSON；业务查询继续执行候选比较。 |
-| `2` | 参数错误或请求 Schema 校验错误 | 根据该路径的 live help 修正参数；同一业务目标最多修正一次。 |
-| `3` | discovery HTTP 错误 | 报告 Catalog discovery 错误；服务恢复后才能重新 discovery。 |
-| `4` | discovery 或 Catalog 连接错误 | 报告本机回环服务不可连接；连接状态改变后才能重试。 |
-| `5` | discovery 与业务查询共享的总超时 | 报告超时的具体路径与查询目标；服务状态改变或用户缩小查询后重试。 |
-| `6` | discovery 或响应体不符合 CLI JSON 协议 | 报告协议错误；不采用 stdout 或 stderr 中的业务字段。 |
-| `7` | Catalog HTTP 错误 | 读取 stderr 中的原始 JSON 错误并报告；只有用户修正业务值或服务状态改变时重试。 |
-| `130`、`143` | 当前调用被取消 | 立即停止本次 Skill 执行。 |
+| 退出码 | Skill 执行者的处理动作 |
+|---:|---|
+| `2` | Skill 执行者修正自己构造的参数后重试一次；重试仍失败时报告 stderr 并停止当前查询目标。 |
+| `3` | Skill 执行者报告 CLI 无法取得查询路径，并停止本次语义查询。 |
+| `4` | Skill 执行者报告 Catalog 服务连接错误，并停止本次语义查询。 |
+| `5` | Skill 执行者报告发生超时的查询路径和查询值，并停止当前查询目标。 |
+| `6` | Skill 执行者报告返回内容不是单个有效 JSON，并停止本次语义查询。 |
+| `7` | Skill 执行者报告 stderr 中的 Catalog 错误，并停止当前查询目标。 |
+| `130` 或 `143` | Skill 执行者停止本次 Skill 执行。 |
 
-CLI 失败时 stdout 与 stderr 的职责不能互换。退出码 `0` 只从 stdout 读取结果；非零退出码只从 stderr 读取错误。Skill 执行者不得把非零退出码的响应内容作为 Prompt 来源，也不得在调用参数和外部状态都未改变时原样重试。
+命令返回非零退出码时，Skill 执行者只使用 stderr 报告错误，不采用 stdout 中的内容；退出码未列入上表时，Skill 执行者报告退出码和 stderr，并停止本次语义查询。命令返回退出码 `0` 但 stderr 非空时，Skill 执行者报告 stderr 内容并停止当前查询目标。
 
-## 副作用与重复调用
+命令返回退出码 `0`，但 stdout 不符合“成功输出”一节的结构时，Skill 执行者报告违反的结构要求和实际值，并停止当前查询目标。`results[]` 中用于筛选、核对、排序、报告或采用的每个对象缺少“查询路径与结果字段”表规定的字段时，Skill 执行者报告缺少的字段名，并停止当前查询目标。
 
-`imagegen-semantic-query`、live discovery、路径级帮助、`search` 和 `resolve` 都是只读操作。它们不创建、修改或删除 Catalog、Generation Run、Prompt、配置或本地文件。
+## 调用次数与结果复用
 
-同一查询的后续调用会重新读取当前 Catalog 服务，不复用前一次响应。Skill 执行者按照本文件规定的每目标次数完成查询；一个查询目标失败不要求重复已经完成的其他目标。
+当两次调用的查询路径、`mode` 以及实际传入的 `query`、`id`、`work_id` 和 `base_model_id` 参数完全相同时，这两次调用属于同一个查询目标。Skill 执行者按照“查询顺序与查询值”一节为每个查询目标调用一次 CLI。
 
-## 完整调用示例
+Skill 执行者采用某个成功结果后，在本次 Skill 执行的后续步骤中复用该结果，不用相同参数再次查询。
 
-查询 Krea2 Base Model，并使用返回的稳定 ID `3` 限定 Style 查询：
-
-```sh
-imagegen-semantic-query --port 18093 --path /internal/semantic/base-models \
-  --mode search --query 'krea2' --page 1 --page_size 20
-
-imagegen-semantic-query --port 18093 --path /internal/semantic/styles \
-  --mode search --query '精致赛璐璐动漫插画，干净线稿，柔和层次阴影' \
-  --page 1 --page_size 20 --base_model_id '3'
-```
-
-查询作品；用户从无法由名称、别名和分类继续区分的候选中确认稳定 ID `775` 后，使用该 ID 限定角色查询：
-
-```sh
-imagegen-semantic-query --port 18093 --path /internal/semantic/works \
-  --mode search --query '原神' --page 1 --page_size 20
-
-imagegen-semantic-query --port 18093 --path /internal/semantic/characters \
-  --mode search --query '雷电将军' --page 1 --page_size 20 --work_id '775'
-```
-
-当前 Character 记录提供稳定 ID `7738` 但缺少 `data.prompt_text` 时精确查询：
-
-```sh
-imagegen-semantic-query --port 18093 --path /internal/semantic/characters \
-  --mode resolve --id '7738'
-```
-
-查询一个普通视觉概念：
-
-```sh
-imagegen-semantic-query --port 18093 --path /internal/semantic/prompt-terms \
-  --mode search --query '完整全身' --page 1 --page_size 20
-```
+用户更改查询对象或上述查询参数时，Skill 执行者为新的查询目标调用一次 CLI。退出码 `2` 的参数修正重试按照“命令错误与返回协议错误”一节执行。

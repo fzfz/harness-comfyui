@@ -379,6 +379,32 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
+  it('reports malformed and invalid Generation submit stdin without making an HTTP request', async () => {
+    let requests = 0
+    const server = createServer((_request, response) => {
+      requests += 1
+      response.end()
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable.')
+    const apiUrl = `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`
+
+    for (const stdin of ['{', '{}']) {
+      const result = await runCli({
+        args: ['generation', 'submit', '--stdin'],
+        stdin,
+        apiUrl,
+      })
+
+      expect(result.exitCode).toBe(2)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toContain('CLI_ARGUMENT_INVALID: ')
+    }
+    expect(requests).toBe(0)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
   it.each([
     ['Generation media resolution', ['generation', 'resolve-media', '--stdin']],
     ['image inspection', ['image', 'inspect', '--stdin']],

@@ -27,6 +27,44 @@ const builderResult = ({ route, mode, profile, purpose = 'test' }) => ({
 })
 
 describe('Prompt Builder generation output references', () => {
+  it('maps each generation model route to the Prompt Builder used by that route', () => {
+    const routes = readJson(resolve(
+      root,
+      '.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json',
+    )).model_routes
+
+    expect(routes).toEqual({
+      'anima-aesthetic-v1.1': { skill_name: 'anima-prompt-builder' },
+      'wai-illustrious-sdxl': { skill_name: 'wai-sdxl-prompt-builder' },
+      'krea2-turbo': { skill_name: 'krea2-anime-prompt-builder' },
+    })
+    for (const [route, { skill_name: skillName }] of Object.entries(routes)) {
+      const profiles = readJson(resolve(skillDirectory(skillName), 'references/generation-profiles.json'))
+      expect(profiles.model_routes, `${route} must be defined by ${skillName}`).toHaveProperty(route)
+    }
+    for (const skillName of builderNames) {
+      const profiles = readJson(resolve(skillDirectory(skillName), 'references/generation-profiles.json'))
+      const mappedRoutes = Object.entries(routes)
+        .filter(([, route]) => route.skill_name === skillName)
+        .map(([route]) => route)
+        .sort()
+      expect(Object.keys(profiles.model_routes).sort()).toEqual(mappedRoutes)
+    }
+  })
+
+  it('uses the WAI validator CLI directly without removed Skill tools', () => {
+    const directory = skillDirectory('wai-sdxl-prompt-builder')
+    const skill = readFileSync(resolve(directory, 'SKILL.md'), 'utf8')
+    const validatorReference = readFileSync(
+      resolve(directory, 'references/prompt-format-validator.md'),
+      'utf8',
+    )
+    const executableDocuments = `${skill}\n${validatorReference}`
+
+    expect(executableDocuments).not.toMatch(/\brun_skill_script\b|\bfinalize_skill_error\b/u)
+    expect(validatorReference).toContain('node scripts/validate-output.mjs --prompt-format')
+  })
+
   it('keeps every Skill-owned reference linked from its SKILL.md', () => {
     const references = {
       'anima-prompt-builder': [
@@ -114,14 +152,6 @@ describe('Prompt Builder generation output references', () => {
         base_negative_items: [
           'worst quality', 'low quality', 'artist name', 'blurry', 'jpeg artifacts', 'chromatic aberration',
         ],
-      },
-      'anima-base': {
-        negative_mode: 'native_negative',
-        base_negative_items: ['score_1', 'score_2', 'score_3'],
-      },
-      'anima-turbo': {
-        negative_mode: 'native_negative',
-        base_negative_items: ['score_1', 'score_2', 'score_3'],
       },
     })
     const wai = readJson(resolve(skillDirectory('wai-sdxl-prompt-builder'), 'references/generation-profiles.json'))

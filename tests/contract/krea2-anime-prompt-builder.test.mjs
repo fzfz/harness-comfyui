@@ -10,11 +10,22 @@ const skillPath = resolve(skillDirectory, 'SKILL.md')
 const read = (path) => readFileSync(path, 'utf8')
 
 describe('krea2-anime-prompt-builder project Skill contract', () => {
-  it('uses the renamed canonical directory and removes the retired generator', () => {
+  it('uses the renamed canonical directory and removes every retired generator asset', () => {
     expect(existsSync(oldSkillDirectory)).toBe(false)
     expect(statSync(skillDirectory).isDirectory()).toBe(true)
-    expect(existsSync(resolve(skillDirectory, 'scripts/gen_anime_v2.py'))).toBe(false)
-    expect(existsSync(resolve(skillDirectory, 'scripts/gen_anime_v1.py'))).toBe(true)
+    const retiredAssets = [
+      'scripts/gen_anime_v2.py',
+      'scripts/gen_anime_v1.py',
+      'scripts/selftest.py',
+      'references/anime_big_lib.py',
+      'references/hanfu_master.py',
+      'references/_verify_all.py',
+      'references/danbooru_tag_defs.txt',
+      'references/en_anime_guides.txt',
+    ]
+    for (const relativePath of retiredAssets) {
+      expect(existsSync(resolve(skillDirectory, relativePath)), relativePath).toBe(false)
+    }
     expect(existsSync(resolve(skillDirectory, 'references/motion-migration-constraints.md'))).toBe(true)
     expect(existsSync(resolve(skillDirectory, 'motion-migration-constraints.md'))).toBe(false)
   })
@@ -49,32 +60,8 @@ describe('krea2-anime-prompt-builder project Skill contract', () => {
     }
   })
 
-  it('keeps the CLI reference section structure required for project Skills', () => {
-    const cliReference = read(resolve(skillDirectory, 'references/generation-cli.md'))
-    const requiredHeadings = [
-      '## CLI 的用途与适用任务',
-      '## 调用环境与可执行入口',
-      '## 命令与调用时机',
-      '## 参数与标准输入',
-      '## ID 与运行值的来源',
-      '## 输出与完成语义',
-      '## 错误、修正与重试',
-      '## 副作用与重复调用',
-      '## 完整调用示例',
-    ]
-
-    expect(cliReference.match(/^## .+$/gmu)).toEqual(requiredHeadings)
-  })
-
-  it('removes the retired generator flow from the Skill entry, README, and selftest', () => {
+  it('does not expose a retired Python generator from the Skill entry', () => {
     const skill = read(skillPath)
-    const readme = read(resolve(skillDirectory, 'README.md'))
-    const selftest = read(resolve(skillDirectory, 'scripts/selftest.py'))
-
-    for (const content of [skill, readme, selftest]) {
-      expect(content).not.toMatch(/gen_anime_v2\.py|生成器 v2|自然语言生成器 v2/gu)
-    }
-    expect(skill).not.toMatch(/gen_anime_v1\.py|scripts\/|\.py\b/gu)
-    expect(selftest.match(/run\("gen_anime_v1\.py", 20\)/gu)).toHaveLength(1)
+    expect(skill).not.toMatch(/gen_anime_v[12]\.py|生成器 v2|自然语言生成器 v2|\.py\b/gu)
   })
 })
