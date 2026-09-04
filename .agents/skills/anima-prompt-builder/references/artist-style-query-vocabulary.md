@@ -1,23 +1,23 @@
-# 画师画风查询预置词
+# 画师画风查询词
 
 ## 用途
 
-本文件提供目标画风查询用词。表格右列列出包含该词的现有画师记录。
+本文件提供画师画风查询词。每个表格的右列列出与该查询词匹配的画师名称。
 
-用户没有指定具体画师时，Skill Agent 先读取本文件，再结合用户要求、选定构图和词表中的现有画师画风特征设计目标画面风格。一次查询共同描述线条或渲染、色彩或光影、构图或整体观感；材质表现、人物造型和题材装饰根据目标画面加入。Skill Agent 根据目标画面风格选择相互协调的预置词并写成自然语言查询。
+用户没有指定具体画师时，Skill 执行者根据用户要求和已经确定的画面内容，从本文件选择三至六个查询词，并用中文逗号连接成一条完整画风查询。完整画风查询固定包含“线条与渲染”“色彩”和“整体观感与叙事气质”各一个词。用户明确要求光影、材质、构图、人物造型或题材装饰时，Skill 执行者再从对应的附加章节选择一个词；完整查询最多加入三个不同的附加章节，并按每个附加章节在用户消息中第一次出现的位置保留最先出现的三个附加章节。同一附加章节出现多个要求时，Skill 执行者采用用户最后指定的要求选择该章节的查询词。
 
 ## 多画师查询
 
-目标画面风格可以对应一个或多个画师方向。存在多个画师方向时，Skill Agent 为每个方向分别组织查询。每个查询描述该画师方向负责的具体画风特征。
+用户要求一个画师方向时，Skill 执行者构造一条完整画风查询。用户要求多个画师共同匹配同一画风时，Skill 执行者为每个画师方向使用同一条完整画风查询。
 
-并列画师可以共同匹配同一完整画风；主画师与辅助画师可以分别侧重人物与线条、色彩与光影、材质与装饰、构图与环境中的不同部分。例如：
+用户要求主画师与辅助画师分别承担不同画风特征时，Skill 执行者为每个画师方向构造一条包含二至四个词的分工查询。每条分工查询只写该画师负责的特征，全部分工查询合并后必须覆盖“线条与渲染”“色彩”和“整体观感与叙事气质”。例如：
 
-- 主画师查询：`商业赛璐璐，冷暖邻近色，纤细线稿，中心肖像景深，治愈清新`
-- 辅助画师查询：`玻璃金属般的透明感，丁达尔空气感，柔和光晕，几何秩序，神圣感`
+- 主画师查询：`商业赛璐璐，冷色邻近色组与暖色邻近色组对比，中心肖像浅景深，治愈清新`
+- 辅助画师查询：`玻璃透明度与金属反射光泽，丁达尔空气感，几何秩序，神圣感`
 
 ## 线条与渲染
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
 | 极简细线 | himiya jouzu |
 | 带色纤细线稿 | tiv |
@@ -25,22 +25,21 @@
 | 纤细平面化线条 | yuzuriha |
 | 利落彩色线稿 | dokimaru |
 | 深色彩线 | aoha |
-| 色偏移线稿 | chiu538 |
+| 轮廓线的色相偏移 | chiu538 |
 | 无轮廓色块 | shal.e |
 | 平滑无笔触 | tsuchikure |
 | 半厚涂水彩 | fly |
 | 厚涂写实肌理 | betanonbeet |
 | 写实油画笔触 | wlop |
-| 素描/涂鸦质感 | mashiro kta |
+| 素描与涂鸦混合质感 | mashiro kta |
 | 商业赛璐璐 | hiten |
-| 进阶赛璐璐 | aoe ui、shironekokfp |
+| 多层赛璐璐明暗 | aoe ui、shironekokfp |
 | 韩系半写实 | nixeu |
 | 概念艺术风格 | reoen |
-| 印象派光影 | roula |
 
 ## 色彩
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
 | 高明度高纯度 | torino aqua |
 | 低饱和度 | cogecha、lpip、reoen |
@@ -50,20 +49,20 @@
 | 莫兰迪色背景 | chigusa minori |
 | 冷灰蓝绿空气感 | asteroid ill |
 | 冷暖对比 | atdan、mocha、jiang ye kiri、egami |
-| 冷暖邻近色 | hiten、tsunako |
+| 冷色邻近色组与暖色邻近色组对比 | hiten、tsunako |
 | 青蓝樱粉对比 | tiv |
 | 紫黑白冷调 | swd3e2 |
 | 靛青暖金碰撞 | yuumei |
-| 粉紫白冷暖调 | akie |
-| 极光色 | fukahire、kiramarukou |
+| 粉紫冷调配暖白高光 | akie |
+| 极光式蓝绿紫渐变 | fukahire、kiramarukou |
 | 虹彩撞色 | yoneyama mai |
 | 荧光补色 | lam |
 
 ## 光影
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
-| 极致逆光 | torino aqua |
+| 接近剪影效果的高强度逆光 | torino aqua |
 | 强逆光 | atdan、rafaelaaa、ibara riato、aoe ui |
 | 柔和光晕 | fukahire |
 | 丁达尔空气感 | torino aqua |
@@ -71,67 +70,69 @@
 | 水波焦散 | scottie |
 | 窗影体积感 | mebe |
 | 百叶窗切光 | hidulume |
-| 次表面散射温暖光 | betanonbeet |
+| 温暖光下的次表面散射 | betanonbeet |
 | 黄金时刻侧光 | arsenixc |
 | 单侧强光源 | sushispin |
-| 电影氛围光 | shal.e |
-| 漫反射 | yoneyama mai、navy |
+| 具有明暗层次的电影式环境光 | shal.e |
+| 柔和漫反射与弱边缘阴影 | yoneyama mai、navy |
 | 光晕（Bloom） | miwano rag |
 | 色散边缘溢光 | roula |
+| 印象派光影 | roula |
 
 ## 材质与画面质感
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
 | 玻璃质感 | sg satoumogumogu |
 | 透明材质 | fukahire、chiu538、shironekokfp |
-| 水体丝绸金属质感 | atdan |
-| 金属晶体反光 | fuzichoco |
-| 丝绸液体质感 | weri |
+| 水体、丝绸与金属的并列材质表现 | atdan |
+| 金属与晶体表面的反光 | fuzichoco |
+| 丝绸光泽与液体流动质感 | weri |
 | 手工颗粒感 | fly |
 | 胶片质感 | miwano rag |
 | 厚涂肌理 | asteroid ill |
-| 陶瓷通透肌 | shal.e |
+| 通透陶瓷质感肌肤 | shal.e |
 | 果冻釉面质感 | kanda done |
 | 液体折射 | aoe ui |
-| 玻璃金属般的透明感 | rella |
+| 玻璃透明度与金属反射光泽 | rella |
 
 ## 镜头与构图表现
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
 | 大景深广角透视 | torino aqua |
 | 鱼眼广角 | tianliang duohe fangdongye |
-| 生活化POV | chigusa minori |
-| 极深远景纵深 | asteroid ill |
-| 高俯仰角 | asteroid ill |
+| 日常互动的第一人称视角 | chigusa minori |
+| 极远景与多层空间纵深 | asteroid ill |
+| 高位俯视 | asteroid ill |
+| 低位仰视 | asteroid ill |
 | 对角线构图 | rafaelaaa |
-| 中心肖像景深 | nixeu |
+| 中心肖像浅景深 | nixeu |
 | 大角度斜构图 | vofan |
-| 大透视动态 | roula |
+| 近大远小的动态透视 | roula |
 | 仰角广角 | mocha |
-| 电影级广角风景 | arsenixc |
+| 宽银幕广角风景构图 | arsenixc |
 | 近景俯视 | amaki daisuke |
 | 第一人称视角 | navy |
-| 强景深 | weri |
-| 大景小人 | mocha |
+| 明显的前后景深层次 | weri |
+| 大面积环境中的小人物 | mocha |
 | 大量留白 | himiya jouzu |
-| 重装饰满溢构图 | negimapurinn |
-| 互动POV | tsuchikure |
+| 装饰元素铺满画面的密集构图 | negimapurinn |
+| 人物与镜头互动的第一人称构图 | tsuchikure |
 
 ## 整体观感与叙事气质
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
 | 治愈梦幻 | torino aqua |
 | 华丽商业感 | atdan |
-| 唯美湿润梦幻 | scottie |
+| 水汽与表面湿润光泽营造的唯美梦幻氛围 | scottie |
 | 治愈清新 | himiya jouzu |
 | 清冷病娇 | mebe |
 | 私密慵懒色气 | hidulume |
 | 青春忧郁 | fly |
 | 废墟美学 | asteroid ill |
-| 静默史诗 | mocha |
+| 安静空旷的史诗氛围 | mocha |
 | 神圣感 | swd3e2、asteroid ill、betanonbeet、rella |
 | 颓废唯美 | shal.e |
 | 现代潮流商业插画感 | yoneyama mai |
@@ -141,50 +142,50 @@
 | 生活化叙事 | vofan |
 | 意识流 | miwano rag |
 | 富有诗意的氛围 | say_hana |
-| 非常舒适的氛围 | fajyobore |
+| 柔和低对比色彩营造的舒适氛围 | fajyobore |
 
 ## 人物造型表现
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
-| 极幼2-3头身 | tianliang duohe fangdongye |
+| 极幼态的二至三头身比例 | tianliang duohe fangdongye |
 | 圆脸大眼 | tianliang duohe fangdongye |
 | 九头身修长 | rhtkd |
 | 极简幼态五官 | kamu |
-| 写实骨骼肌肉 | akipeko |
+| 写实的骨骼与肌肉结构 | akipeko |
 | 巨瞳多层虹膜 | tsuchikure |
 | 宝石瞳 | misaki kurehito、tsunako、fuzichoco、nixeu |
 | 纤细少女 | torino aqua |
-| 圆润关节 | matanonki |
-| 写实渲染混幼态造型 | egami |
+| 弱化骨点并突出圆润轮廓的关节造型 | matanonki |
+| 写实渲染与幼态造型结合 | egami |
 
 ## 题材与装饰方向
 
-| 预置词 | 现有画师记录 |
+| 查询词 | 匹配画师名称 |
 |---|---|
 | 幻想哥特 | fukahire |
 | 赛博军事 | tianliang duohe fangdongye |
 | 赛博冷色调 | lirseven |
-| 医疗宗教符号 | akie |
+| 医疗符号与宗教符号并置 | akie |
 | 古典主义 | ask |
-| 波普故障 | cogecha |
-| 传统与奇幻结合 | fuzichoco |
+| 波普图形与数字故障 | cogecha |
+| 传统服饰纹样与奇幻元素结合 | fuzichoco |
 | 赛博幻想 | yuumei |
 | 现代战术与机能风 | swav |
 | 赛博霓虹 | mika pikazo |
 | 现代波普 | mika pikazo |
 | 花卉纹理 | ask |
 | 几何秩序 | rella |
-| 复杂服饰建筑纹理 | fuzichoco |
-| 时尚军事 | swav |
-| 亚文化 | shal.e |
+| 服饰与建筑的复杂纹理 | fuzichoco |
+| 时尚服饰与军事元素结合 | swav |
+| 哥特与街头亚文化装饰 | shal.e |
 | 水下梦幻感 | yuzuriha |
 
 ## 查询组合示例
 
-以下示例中的全部画风词均来自现有画师的画风描述：
+以下每条示例都遵守三至六个查询词的数量限制，并且只使用本文件表格中的查询词：
 
-- `半厚涂水彩，青蓝樱粉对比，高反差自然光，手工颗粒感，青春忧郁`
-- `厚涂肌理，冷灰蓝绿空气感，极深远景纵深，废墟美学，神圣感`
-- `虹彩撞色，霓虹光效，液态透明件，动态模糊，现代潮流商业插画感`
-- `低饱和度，柔和的光线，类似水彩的笔触，细腻的日常，非常舒适的氛围`
+- `半厚涂水彩，青蓝樱粉对比，青春忧郁，柔和光晕，手工颗粒感`
+- `概念艺术风格，冷灰蓝绿空气感，废墟美学，厚涂肌理，极远景与多层空间纵深`
+- `多层赛璐璐明暗，虹彩撞色，现代潮流商业插画感，玻璃质感，近大远小的动态透视，赛博霓虹`
+- `半厚涂水彩，低饱和度，生活化叙事`

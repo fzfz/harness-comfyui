@@ -2,9 +2,7 @@
 
 ## 结果来源
 
-Skill 执行者必须使用 `generation-output-schema.json` 取得结果属性、类型、枚举、必填性和额外属性限制，使用 `generation-profiles.json` 取得 Krea2 模型路线、正向规避示例和画幅尺寸常量。本文件只定义这些结构化数据的选择语义。
-
-Prompt Builder 只设计模板无关的画面目标。历史查询可以返回 Actual Workflow 和包含 Seed 的生成参数；Prompt Builder 可以按本 Skill 的历史查询参考读取或报告历史 Prompt 与 Actual Workflow，但不依据当前或历史 Workflow 的模板参数能力调整目标尺寸。Prompt Builder 不解析、选择、校验、复用或输出 Seed 决定，也不检查模板参数。
+Skill 执行者必须使用 `generation-output-schema.json` 取得结果属性、类型、枚举、必填性和额外属性限制，使用 `generation-profiles.json` 取得 Krea2 模型路线、正向规避示例和画幅尺寸常量。本文件定义这些结构化数据的选择、构造与校验规则。
 
 ## 生成目的
 
@@ -43,12 +41,12 @@ Krea2 使用 `positive_rewrite`。Skill 执行者必须把 `negative_prompt` 设
 
 ## 结果构造与校验
 
-Skill 执行者完成 Krea2 单条自然语言 Prompt 后，把完整 Prompt 写入 `positive_prompt`，再按照 `generation-output-schema.json` 构造一个结果对象。结果不得包含 `seed`、`seed_mode` 或任何 Seed 决定。
+Skill 执行者完成 Krea2 单条自然语言 Prompt 后，把完整 Prompt 写入 `positive_prompt`，再按照 `generation-output-schema.json` 构造一个结果对象。
 
-Skill 执行者必须把结果 JSON 通过标准输入交给本 Skill 的确定性校验器：
+`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把完整结果 JSON 写入标准输入：
 
 ```sh
 node scripts/validate-output.mjs
 ```
 
-退出码 `0` 表示 stdout 返回通过校验的同一结果对象。退出码 `2` 表示 stderr 返回 `violations` 数组；Skill 执行者必须按照每项 `path` 修正结果，并使用完整修正结果重试。退出码 `1` 表示校验器调用或运行错误；Skill 执行者必须先修正调用环境或参数，不能把该结果交给生图 Skill。
+退出码 `0` 时，stderr 必须为空，stdout 必须是一行通过校验的完整结果 JSON；Skill 执行者把 stdout 中的对象作为最终结构化结果。退出码 `2` 时，stdout 必须为空，stderr 必须是一行包含非空 `violations` 数组的 JSON；Skill 执行者按照每项 `path` 和 `message` 修正完整结果并重试一次。修正需要用户补充信息或作出选择时，Skill 执行者列出所需输入并停止当前执行；重试仍返回退出码 `2` 时，Skill 执行者报告全部 `violations` 并停止。退出码 `1` 时，Skill 执行者报告 stderr 并停止。任何非零退出码下都不采用 stdout。命令返回其他退出码，或者输出通道不符合对应规则时，Skill 执行者报告退出码和违反的输出协议并停止。

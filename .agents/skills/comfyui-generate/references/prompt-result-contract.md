@@ -1,45 +1,83 @@
-# Prompt Builder 结果消费合同
+# Prompt Builder 结果校验
 
-## 输入边界
+## 输入与结果
 
-Skill 执行者必须使用 `prompt-result-schema.json` 校验当前消息明确引用的 Prompt Builder 结果。每个逻辑结果恰好消费一个 Builder 结果对象；一次 Skill 执行可以处理多个已经明确划分的逻辑结果，并分别建立 Generation Request，不能合并多个 `positive_prompt` 或多个生成目的。
+本文件将负责构建图片生成 Prompt 结果的 Skill 称为 Prompt Builder。
 
-结果必须恰好包含 schema 定义的十个属性。结果缺少属性、包含额外属性、类型不符或枚举不符时，Skill 执行者必须报告具体属性并要求 Prompt Builder 重新给出完整结果。生成 Skill不得为缺失属性猜值，也不得从结果读取 `seed`、`seed_mode` 或其他 Seed 决定。
+本文件将 `../SKILL.md` 的“创建图片”流程交给本文件校验的单个 JSON 对象称为结果 JSON。
 
-## 模型路线与生成目的
+Skill 执行者保持结果 JSON 的属性和值不变，并按照结构校验、模型路线校验、负向模式校验和图片尺寸校验的顺序执行；当前校验未通过时，Skill 执行者停止执行后续校验。
 
-`model_route` 表示 Prompt Builder 采用的模型路线。Skill 执行者必须结合当前已选生成模型的 resolve 结果确认路线一致；明确不一致时停止提交，并要求用户选择对应模型或重新构建 Prompt。
+结果 JSON 依次通过四项校验时，Skill 执行者在结果 JSON 之外记录校验结论“有效”。
 
-`generation_purpose` 表示 Builder 已经选择测试档或正式档。生成 Skill使用结果中的完整目标尺寸，不把 `test` 自行提升为正式尺寸，也不把 `final` 自行缩小为测试尺寸。实际模板不接受原目标时，尺寸调整只按模板检查参考处理。
+结果 JSON 未通过当前校验时，Skill 执行者在结果 JSON 之外记录校验结论“无效”，停止执行后续校验，并向用户报告当前校验章节规定的错误内容。
 
-## 正向 Prompt 与负向分支
+## 结构校验
 
-Skill 执行者把非空 `positive_prompt` 作为当前 Generation Request 的基础正向 Prompt。生成 Skill为所选 LoRA 重写最终 Prompt 时，必须保留 Builder 的主体、动作、构图、场景和质量约束。
+Skill 执行者使用 `references/prompt-result-schema.json` 校验结果 JSON 的属性名称、属性类型、必填属性、枚举值和额外属性。
 
-`negative_mode` 只允许以下两条分支：
+结果 JSON 出现一项或多项结构错误时，Skill 执行者逐项报告每个错误所在的完整 JSON 路径、该路径的当前值和 JSON Schema 对该路径规定的约束。
 
-- `native_negative`：`negative_prompt` 必须是非空字符串，`positive_avoidance` 必须是 `null`。生成 Skill把最终正向 Prompt 写入实际正向参数，把 `negative_prompt` 原样写入实际负向参数。
-- `positive_rewrite`：`negative_prompt` 必须是 `null`，`positive_avoidance` 必须是非空字符串，并且该字符串表达的可见约束必须已经出现在 `positive_prompt` 中。生成 Skill重写 LoRA Prompt 时必须保留这些约束，并且不得创建任何负向 Prompt 参数。
+必填属性缺失时，Skill 执行者把该属性的当前值报告为“属性不存在”。
 
-属性组合不符合对应分支时，生成 Skill停止提交并要求 Prompt Builder 修正结果。生成 Skill不把原生负向文本改写成正向规避，也不为正向规避路线合成负向文本。
+结果 JSON 通过结构校验后，Skill 执行者继续执行模型路线校验。
 
-## 模板无关目标尺寸
+## 模型路线校验
 
-`aspect_ratio`、`width`、`height` 和 `megapixels` 同时描述一个模板无关目标。生成 Skill必须确认：
+Skill 执行者读取结果 JSON 的 `model_route`，并检查 `references/prompt-builder-model-routes.json` 的 `model_routes` 对象是否包含该 `model_route`。
 
-1. `width` 与 `height` 是正整数；`aspect_ratio` 是两者约分后的正整数比。
-2. `megapixels` 是正有限数值，并且 `abs(width × height ÷ 1,000,000 - megapixels) ÷ megapixels <= 0.05`。
+`model_routes` 不包含结果 JSON 的 `model_route` 时，结果 JSON 未通过模型路线校验。Skill 执行者报告结果 JSON 的 `model_route`，并说明该值没有对应的 Prompt Builder。
 
-生成 Skill不得因为结果包含 `width` 与 `height` 就假定模板使用精确尺寸参数，也不得因为结果包含 `aspect_ratio` 与 `megapixels` 就假定模板使用 Selector。生成 Skill必须先按模板参数检查参考取得实际候选，再选择一种实际尺寸表示。
+`model_routes` 包含结果 JSON 的 `model_route` 时，Skill 执行者从 `model_routes` 中读取该路线的 `skill_name`，并从“核对当前选择”步骤采用的生成模型查询结果中读取 `id` 和 `skill_name`。用户指定了生成模型时，该查询结果属于用户指定的生成模型；用户没有指定生成模型时，该查询结果属于 Workflow 模板保存的默认生成模型。
 
-## 拒绝与修正
+采用的生成模型查询结果中 `skill_name` 为 `null` 时，结果 JSON 未通过模型路线校验。Skill 执行者报告结果 JSON 的 `model_route`、该路线对应的 `skill_name`、生成模型查询结果的 `id` 和空 `skill_name`。
 
-以下任一情况发生时，生成 Skill不得建立或提交 Generation Request：
+路线的 `skill_name` 与生成模型查询结果的非空 `skill_name` 相同时，结果 JSON 通过模型路线校验。两个 `skill_name` 不相同时，结果 JSON 未通过模型路线校验；Skill 执行者报告结果 JSON 的 `model_route`、该路线对应的 `skill_name`、生成模型查询结果的 `id` 和生成模型查询结果的 `skill_name`。
 
-- 结果没有通过 `prompt-result-schema.json`；
-- `model_route` 与当前明确选择的模型路线冲突；
-- `negative_mode`、`negative_prompt` 与 `positive_avoidance` 的组合冲突；
-- 正向规避文本没有实际进入 `positive_prompt`；
-- 目标比例、像素尺寸和百万像素值不一致。
+结果 JSON 通过模型路线校验后，Skill 执行者继续执行负向模式校验。
 
-Skill 执行者必须报告冲突属性、当前值和预期组合。修正后的结果必须重新按本文件从头检查。
+## 负向模式校验
+
+`negative_mode` 为 `native_negative` 时，`negative_prompt` 必须是非空字符串，`positive_avoidance` 必须是 `null`。
+
+`negative_mode` 为 `positive_rewrite` 时，`negative_prompt` 必须是 `null`，`positive_avoidance` 必须是非空字符串。
+
+本文件所称可见画面状态，是指观察图片即可判断是否存在的具体人物外观、物体、动作、构图、光照或环境表现。
+
+在 `positive_rewrite` 分支中，`positive_avoidance` 的全部内容必须由一个或多个图片应当呈现的可见画面状态组成。
+
+Skill 执行者先识别 `positive_avoidance` 陈述的每一种可见画面状态，再逐项检查 `positive_prompt`；`positive_prompt` 直接陈述该状态或使用语义等价的肯定表述时，该状态通过检查。
+
+结果 JSON 未通过负向模式校验时，Skill 执行者报告 `negative_mode`、`negative_prompt`、`positive_avoidance` 和 `positive_prompt` 的当前值以及违反的具体规则。
+
+`positive_prompt` 缺少 `positive_avoidance` 陈述的可见画面状态时，Skill 执行者同时报告缺少的具体状态。
+
+结果 JSON 通过负向模式校验后，Skill 执行者继续执行图片尺寸校验。
+
+## 图片尺寸校验
+
+`width` 表示期望图片宽度，单位为像素。
+
+`height` 表示期望图片高度，单位为像素。
+
+`aspect_ratio` 表示期望图片宽度与高度的整数比，格式为 `宽度:高度`。
+
+`megapixels` 表示用百万像素计量的期望图片面积。
+
+结构校验已经确认 `width` 和 `height` 是正整数，并确认 `megapixels` 是大于 `0` 的有限数值。
+
+Skill 执行者计算 `width` 和 `height` 的最大公约数 `gcd`，并构造字符串 `(width ÷ gcd):(height ÷ gcd)`。
+
+Skill 执行者确认构造出的字符串与 `aspect_ratio` 完全一致。
+
+Skill 执行者计算 `abs(width × height ÷ 1,000,000 - megapixels) ÷ megapixels`，并确认计算结果小于或等于 `0.05`。
+
+构造出的字符串与 `aspect_ratio` 不一致时，Skill 执行者报告 `width`、`height`、`aspect_ratio` 的当前值和构造出的字符串。
+
+百万像素计算结果大于 `0.05` 时，Skill 执行者报告 `width`、`height`、`megapixels` 的当前值和计算结果。
+
+两项图片尺寸检查均通过时，结果 JSON 通过图片尺寸校验。
+
+## 返回“创建图片”流程
+
+Skill 执行者按照本文件规定的校验顺序得到结论后，把结果 JSON 的“有效”或“无效”结论以及已经发现的全部错误返回给 `../SKILL.md` 的“创建图片”流程。

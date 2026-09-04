@@ -11,14 +11,6 @@
         "jpeg artifacts",
         "chromatic aberration"
       ]
-    },
-    "anima-base": {
-      "negative_mode": "native_negative",
-      "base_negative_items": ["score_1", "score_2", "score_3"]
-    },
-    "anima-turbo": {
-      "negative_mode": "native_negative",
-      "base_negative_items": ["score_1", "score_2", "score_3"]
     }
   },
   "size_profiles": [

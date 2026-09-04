@@ -2,41 +2,44 @@
 
 ## 用途和读取时机
 
-本文件负责选择本轮唯一主场景，确定该主场景必须完成的 WAI Prompt 位置，并指定后续需要读取的结构规则和完整场景示例。
+本文件负责从冲突处理后保留的画面要求中选择本轮唯一主场景，确定该主场景必须完成的 WAI Prompt 位置和检查项，并指定必须读取的结构规则以及候选构图不完整时可以读取的场景示例。
 
-本文件使用的 UI 明确选择由 [当前轮输入合同](input-contract.md)定义。
-
-Skill Agent 完成用户要求整理后、生成三个候选构图前读取本文件。选定主场景后，把其他同时成立的画面目的登记为次要约束。
+Skill 执行者完成输入来源区分和画面要求保留后、生成候选构图前读取本文件。
 
 ## 主场景选择
 
-Skill Agent 根据画面主要展示的内容选择主场景：
+Skill 执行者使用“主场景矩阵”的“内容匹配条件”列匹配冲突处理后保留的全部画面要求。用户明确指定为次要场景的名称不进入主场景候选集合；用户改变该指定后，该名称才可以重新进入主场景候选集合。
 
-- 用户明确说明画面目的时，按照该目的选择。
-- 用户要求多个画格、前后变化、过程或状态对比时，选择“分镜与状态变化”。
-- 两名主体共同出现时，画面主要展示主体关系、交接、共同目标或共享物件，选择“双主体互动”；画面主要展示攻击、施法、奔跑、舞蹈、冲击或其他动作路径，选择“动作展示”。
-- 三名以上主体都具有需要辨认的位置、身份或动作时，选择“多主体群像”。
-- 地点、天气、建筑或空间尺度承担主要画面内容时，选择“环境叙事”。
-- 遮挡范围、裁剪边界、前中后景或可见部分承担主要画面内容时，选择“遮挡与深度”。
-- 单幅画面中的状态变化作为次要约束，主场景仍由该画面的主体关系、动作、环境或镜头目的决定。
+1. 用户把同一个场景同时指定为主要场景和次要场景时，Skill 执行者列出该场景名称，并等待用户指定该场景是主要场景还是次要场景。用户回复前，Skill 执行者停止生成候选构图。
+2. 用户明确指定多个主要场景，或者列出多个场景名称但没有区分主要场景和次要场景时，Skill 执行者列出这些场景名称并等待用户指定一个主要场景。用户回复前，Skill 执行者停止生成候选构图。
+3. 用户明确指定一个主要场景时，Skill 执行者检查已保留画面要求是否满足该场景的内容匹配条件。条件成立时，Skill 执行者选择该场景并结束主场景选择。条件因缺少画面内容而不成立时，Skill 执行者列出缺少的画面内容并等待用户补充。条件因现有画面内容违反排他要求而不成立时，Skill 执行者列出造成违反的已保留画面内容，并等待用户修改或取消这些内容，或者改选主场景。用户回复前，Skill 执行者停止生成候选构图。
+4. 用户没有明确指定主要场景时，Skill 执行者从主场景候选集合中保留内容匹配条件成立的场景。只剩一个场景时，Skill 执行者选择该场景并结束主场景选择。剩余多个场景时，Skill 执行者列出全部剩余场景并等待用户选择一个。没有剩余场景但存在因用户指定为次要场景而被排除的匹配场景时，Skill 执行者列出这些次要场景，并等待用户另选主场景或者把其中一个改为主要场景。没有任何内容匹配条件成立时，Skill 执行者列出每个场景的内容匹配条件，并等待用户补充足以匹配其中一个条件的画面内容。用户回复前，Skill 执行者停止生成候选构图。
 
-## 主场景、必须位置和后续文档
+选定唯一主场景后，Skill 执行者把主场景以外、内容匹配条件成立的场景登记为次要约束。
 
-| 主场景 | 必须完成的 WAI Prompt 位置 | 后续读取的结构规则 | 候选构图仍不完整时读取的示例 |
-|---|---|---|---|
-| 单主体肖像 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting` | [动作结构](action-structure.md) | [单主体肖像](examples/single-subject-portrait.md) |
-| 双主体互动 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting`、`relation_narrative` | [动作结构](action-structure.md)、[空间关系规则](spatial-relation-rules.md) | [双主体互动](examples/two-subject-interaction.md) |
-| 动作展示 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting` | [动作结构](action-structure.md)；动作包含明确目标、支撑或遮挡时同时读取[空间关系规则](spatial-relation-rules.md) | [动作与镜头配合](examples/camera-action-pairing.md) |
-| 多主体群像 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting`、`relation_narrative` | [动作结构](action-structure.md)、[空间关系规则](spatial-relation-rules.md) | [多主体动作归属](examples/multi-subject-attribution.md) |
-| NSFW | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting`、`relation_narrative` | [动作结构](action-structure.md)、[空间关系规则](spatial-relation-rules.md) | [NSFW 动作结构](examples/nsfw-action-structure.md) |
-| 遮挡与深度 | `subject`、`camera_composition`、`environment` | [空间关系规则](spatial-relation-rules.md) | [遮挡与深度](examples/occlusion-and-depth.md) |
-| 环境叙事 | `camera_composition`、`environment`、`detail_mood`、`lighting` | 环境包含主体相对位置、前中后景或遮挡时读取[空间关系规则](spatial-relation-rules.md) | [环境叙事](examples/environment-narrative.md) |
-| 分镜与状态变化 | `camera_composition`、`detail_mood`、`lighting`、`relation_narrative` | [分镜规则](storyboard-panel-rules.md)；画格包含动作时同时读取[动作结构](action-structure.md) | [前后状态分镜](examples/before-after-storyboard.md) |
+## 主场景矩阵
 
-## 次要约束和新增位置
+| 主场景 | 内容匹配条件 | 必须完成的 WAI Prompt 位置 | 检查项 | 必须读取的结构规则 | 候选构图不完整时的可选补充 |
+|---|---|---|---|---|---|
+| 单主体肖像 | 单幅画面只包含一名主体 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting` | 逐一检查上述 WAI Prompt 位置是否均已写入与该主场景一致的内容；检查主体身份、外貌、服装、动作、表情、景别、视角、环境、细节氛围和光线是否分别进入对应位置，并检查这些内容是否共同突出同一主体 | 已保留内容包含主体动作或姿态时，读取[动作结构](action-structure.md) | 候选构图未明确景别、主体姿态或主体在环境中的位置时，可以读取[单主体肖像](examples/single-subject-portrait.md) |
+| 双主体互动 | 画面包含两名主体，并且已保留画面要求指定二者关系、物件交接、共同目标或共享物件中的至少一项 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting`、`relation_narrative` | 逐一检查上述 WAI Prompt 位置是否均已写入与该主场景一致的内容；检查两名主体的身份、外貌、服装、动作和表情是否分别归属正确，并检查景别、环境、细节氛围和光线是否支持二者的互动；检查相对位置以及已保留互动动作的发出者、接受者和方向是否明确；已保留内容包含二者关系时，检查关系主体、关系类型以及 `relation_narrative` 中的关系描述是否明确；已保留内容包含共同目标、共享物件或物件交接时，分别检查目标、物件及其归属是否明确 | 已保留内容包含主体动作时，读取[动作结构](action-structure.md)；已保留内容包含主体相对位置、共享物件或物件交接时，读取[空间关系规则](spatial-relation-rules.md) | 候选构图缺少明确互动方向，或者已保留内容中的共享物件缺少明确归属时，可以读取[双主体互动](examples/two-subject-interaction.md) |
+| 动作展示 | 已保留画面要求包含攻击、施法、奔跑、舞蹈、冲击或其他具有可辨认运动过程、动作方向或空间位移的身体动作 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting` | 逐一检查上述 WAI Prompt 位置是否均已写入与该主场景一致的内容；检查动作主体、动作类型、动作方向和镜头方向是否明确且相互一致；检查外貌、服装、表情、环境、细节氛围和光线是否与动作内容一致；已保留内容包含动作目标或支撑物时，分别检查动作目标或支撑物及其与动作主体的关系是否明确 | [动作结构](action-structure.md)；动作包含明确目标、支撑物或遮挡关系时，同时读取[空间关系规则](spatial-relation-rules.md) | 候选构图缺少动作方向或镜头方向，或者动作方向与镜头方向相互冲突时，可以读取[动作与镜头配合](examples/camera-action-pairing.md) |
+| 多主体群像 | 三名或更多主体都具有需要辨认的位置、身份或动作 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting`、`relation_narrative` | 逐一检查上述 WAI Prompt 位置是否均已写入与该主场景一致的内容；检查主体数量，并逐一检查每名主体的身份、外貌、服装、动作、表情和空间位置是否归属明确；检查镜头构图、环境、细节氛围、光线和主体关系是否共同支持已保留的群像要求 | 已保留内容包含主体动作时，读取[动作结构](action-structure.md)；画面包含三名或更多主体时，读取[空间关系规则](spatial-relation-rules.md) | 候选构图中的身份、动作或空间位置仍无法归属到具体主体时，可以读取[多主体动作归属](examples/multi-subject-attribution.md) |
+| NSFW | 已保留画面要求包含成人性行为、裸体状态下的身体接触或性姿态 | `subject`、`appearance`、`outfit`、`action`、`expression_reaction`、`camera_composition`、`environment`、`detail_mood`、`lighting`；已保留内容包含多主体关系、身体接触关系或叙事关系时，还必须完成 `relation_narrative` | 逐一检查上述始终必须完成的位置，以及适用条件已经成立的位置，是否均已写入与该主场景一致的内容；检查每名参与主体的身份、外貌和服装状态是否明确；对已保留内容中出现的身体部位、动作、接触关系、相对位置和表情，逐项检查其是否归属于正确主体；检查镜头范围是否明确呈现用户要求的主体、身体部位和接触关系，并检查环境、细节氛围和光线是否与已保留要求一致；已保留内容包含多主体关系、身体接触关系或叙事关系时，检查 `relation_narrative` 中的对应关系是否明确 | 读取[动作结构](action-structure.md)；已保留内容包含多主体接触、主体相对位置或遮挡关系时，读取[空间关系规则](spatial-relation-rules.md) | 候选构图中的动作、身体部位或接触关系仍无法归属到具体参与主体时，可以读取[NSFW 动作结构](examples/nsfw-action-structure.md) |
+| 遮挡与深度 | 已保留画面要求包含遮挡范围、裁剪边界、前景、中景、背景或可见部分中的至少一项 | `subject`、`camera_composition`、`environment` | 逐一检查上述 WAI Prompt 位置是否均已写入与该主场景一致的内容；已保留内容包含遮挡关系时，检查哪个对象遮挡哪个对象；已保留内容包含可见部分时，检查被遮挡或被裁剪的对象仍有哪些部分可见；已保留内容包含裁剪边界时，检查裁剪边界截断哪个对象；已保留内容包含前景、中景或背景时，检查已指定的每个景深层级分别包含哪些对象 | 读取[空间关系规则](spatial-relation-rules.md) | 候选构图无法明确表达已保留的遮挡关系、裁剪边界或前景、中景、背景层级时，可以读取[遮挡与深度](examples/occlusion-and-depth.md) |
+| 环境叙事 | 已保留画面要求包含地点、天气、建筑或空间尺度中的至少一项 | `camera_composition`、`environment`、`detail_mood`、`lighting` | 逐一检查上述 WAI Prompt 位置是否均已写入与该主场景一致的内容；对已保留画面要求中出现的地点、天气、建筑和空间尺度逐项检查其是否进入对应位置，并检查细节氛围和光线是否与这些环境要求一致；画面包含主体时，检查主体位置和主体与环境的比例关系是否支持已保留的环境尺度与空间关系 | 环境包含主体相对位置、前景、中景、背景或遮挡时，读取[空间关系规则](spatial-relation-rules.md) | 候选构图无法明确表达已保留的主要地点、天气、建筑、空间尺度或主体与环境的比例关系时，可以读取[环境叙事](examples/environment-narrative.md) |
+| 分镜与状态变化 | 画面要求明确包含多个画格，或者明确要求使用前后画格呈现变化、过程或状态对比 | `camera_composition`、`detail_mood`、`lighting`、`relation_narrative`；画格包含主体时还必须完成 `subject`；画格包含动作时还必须完成 `action` 和 `expression_reaction` | 逐一检查上述始终必须完成的位置，以及适用条件已经成立的位置，是否均已写入与该主场景一致的内容；检查画格数量、阅读顺序以及每格的时间或状态是否明确；画格包含主体时，检查每格的主体身份和归属是否明确；已保留内容包含前后变化、过程或状态对比时，检查对应画格之间的变化关系；画格包含动作时，检查每格的动作主体以及主体的表情或反应；已保留内容包含动作目标时，检查每格的动作目标；已保留内容包含动作结果时，检查每格的动作结果 | [分镜规则](storyboard-panel-rules.md)；画格包含动作时同时读取[动作结构](action-structure.md) | 候选构图缺少画格顺序，或者无法表达已保留的前后状态对应关系时，可以读取[前后状态分镜](examples/before-after-storyboard.md) |
 
-主场景决定整幅画面的主要镜头方向和上表中的必须位置。次要约束保留已经选定的主场景和构图，只把次要画面目的需要表达的内容加入对应 WAI Prompt 位置。
+## 次要约束、结构规则、内容来源和 WAI Prompt 位置合并
 
-用户明确要求和已经读取的跨位置配方按照各自内容加入对应位置。`quality`、`artist`、`character`、`non_artist_style` 和 `technical` 根据用户要求、UI 已选内容和语义查询采用结果加入。
+用户指定次要场景时，Skill 执行者检查已保留画面要求是否满足该场景的内容匹配条件。条件成立时，Skill 执行者把该场景登记为次要约束。条件因缺少画面内容而不成立时，Skill 执行者列出缺少的画面内容并等待用户补充。条件因现有画面内容违反排他要求而不成立时，Skill 执行者列出造成违反的已保留画面内容，并等待用户修改或取消这些内容，或者取消该次要场景指定。用户回复前，Skill 执行者停止生成候选构图。
 
-最终使用的位置集合由 [WAI Prompt 位置顺序与职责](wai-prompt-position-order.md)统一确定。
+Skill 执行者使用已保留的画面要求和已经标明来源的 Skill 执行者补充内容构建候选构图。候选构图必须先满足选定主场景行的内容匹配条件，再加入次要约束对应的已保留内容。Skill 执行者随后完成该主场景行规定的全部“必须完成的 WAI Prompt 位置”，并使用该行“检查项”逐项检查完成结果。次要约束不得替换已经选定的主场景，也不增加该主场景必须完成的 WAI Prompt 位置。对于每个次要约束，Skill 执行者把该约束对应的已保留内容加入 [WAI Prompt 位置顺序与职责](wai-prompt-position-order.md) 规定的位置，只使用该次要约束所在矩阵行中直接检查这些内容的检查项，不使用该行检查全部“必须完成的 WAI Prompt 位置”的检查项，也不使用与这些内容无关的检查项。
+
+Skill 执行者读取选定主场景行中无条件要求读取的结构规则，以及读取条件已经成立的结构规则。对于每个次要约束，Skill 执行者读取该场景矩阵行中读取条件已经成立的结构规则。
+
+Skill 执行者必须为每项用于构建候选构图或写入 WAI Prompt 的内容标明来源，再把该内容加入对应位置。来源包括当前用户消息中除 Character 和 Style 上下文记录以外的明确要求、当前用户消息中的 Character 上下文记录、当前用户消息中的 Style 上下文记录、用户明确指定采用的历史 Generation Run 输入、Skill 执行者已经采用的查询结果和 Skill 执行者补充的内容。同一项内容具有多个来源时，Skill 执行者分别标明这些来源。Skill 执行者补充的内容只能填补其他来源均未指定的画面信息；补充内容与任何已经保留的其他来源内容冲突时，Skill 执行者删除补充内容并保留其他来源内容。
+
+同一项已保留内容需要进入多个 WAI Prompt 位置时，Skill 执行者按照 [WAI Prompt 位置顺序与职责](wai-prompt-position-order.md) 对每个位置的职责分别写入。属于 `quality`、`artist`、`character`、`non_artist_style` 或 `technical` 类别的已保留内容写入同名位置。
+
+Skill 执行者使用 [WAI Prompt 位置顺序与职责](wai-prompt-position-order.md) 确定最终位置集合和排列顺序。

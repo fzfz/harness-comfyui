@@ -1,7 +1,8 @@
 ## 7. APPEARANCE
 
-> 对应槽位：`[appearance]`
-> 内容：发色发型、瞳色瞳型、体型身材、肤色、身体部位强调、非人特征、身体标记
+对应槽位：`appearance`。
+
+内容：发色与发型、眼睛颜色与瞳孔形态、体型、人物类型、身体部位形态、肤色与皮肤质感、身体部位强调、非人特征、扶她与男娘相关外貌、身体标记、装饰与表面状态。
 
 ### 7.1 头发
 
@@ -25,18 +26,21 @@
 #### 7.2.1 颜色
 `blue eyes` | `red eyes` | `green eyes` | `golden eyes` / `amber eyes` | `grey eyes` | `pink eyes` | `purple eyes` | `aqua eyes` | `heterochromia` | `multicolored eyes` / `gradient eyes` | `black sclera` | `colored sclera`
 
-#### 7.2.2 瞳型/特效
+#### 7.2.2 瞳孔形态、眼部特征与视线状态
 `slit pupils` / `snake-like pupils` | `glowing eyes` / `piercing eyes` | `bright pupils` | `blank eyes` / `empty eyes` / `hollow glazed eyes` | `sparkling eyes` | `half-closed eyes` / `heavy-lidded eyes` | `sharp eyes` | `diamond-shaped pupils` / `symbol-shaped pupils` | `heart-shaped pupils` | `detailed eyes` / `beautiful detailed eyes` | `cross-eyed` | `rolling eyes` | `long eyelashes` / `thick eyelashes`
 
 ### 7.3 身体
 
 #### 7.3.1 体型
-`slim` / `slender` | `petite` | `curvy` | `voluptuous` / `voluptuous figure` | `plump` | `muscular` / `muscular female` | `toned` | `lean build` | `tall and slender` | `athletic` | `skinny` | `tomboy` | `mature female` | `loli` | `shota`
+`slim` / `slender` | `petite` | `curvy` | `voluptuous` / `voluptuous figure` | `plump` | `muscular` / `muscular female` | `toned` | `lean build` | `tall and slender` | `athletic` | `skinny`
 
-#### 7.3.2 身材部位
+#### 7.3.2 人物类型
+`tomboy` | `mature female` | `loli` | `shota`
+
+#### 7.3.3 身体部位形态
 `large breasts` / `huge breasts` / `gigantic breasts` | `medium breasts` | `small breasts` / `flat breasts` | `sagging breasts` | `hanging breasts` | `wide hips` | `thick thighs` / `large thighs` | `long legs` | `narrow waist` / `slender waist` | `muscular arms` | `abs`
 
-#### 7.3.3 肤色
+#### 7.3.4 肤色与皮肤质感
 `pale skin` / `fair skin` | `white skin` | `dark skin` / `dark-skinned female` | `tan` / `tan lines` | `porcelain skin` | `grey skin` | `colored skin` / `blue skin` / `red skin` | `shiny skin` / `glossy skin` | `oiled skin` | `wet skin` | `luminescent skin` | `translucent skin`
 
 ### 7.4 身体部位强调
@@ -54,7 +58,7 @@
 `barefoot` | `soles` | `toes`
 
 #### 7.4.5 腹部/腰部
-`navel` | `midriff` | `stomach` | `belly` | `navel piercing` | `collarbone`
+`navel` | `midriff` | `stomach` | `belly` | `navel piercing`
 
 #### 7.4.6 私处
 `pussy` | `puffy pussy` | `dark pussy` | `cleft of venus` | `clitoris` | `huge clitoris` | `erect clitoris` | `clitoral hood` | `pierced clitoris` / `clitoris rings` | `female pubic hair` | `stray pubic hair` | `anus` | `puffy anus` | `dark anus` | `urethra` | `groin` | `cameltoe`
@@ -71,18 +75,18 @@
 `elf` / `pointy ears` | `dark elf` / `drow` | `demon` / `demon horns` / `demon tail` | `succubus` | `angel` / `angel wings` | `fallen angel` | `halo` / `spiked halo` | `oni` / `horns` | `bat wings`
 
 #### 7.5.3 翅膀
-`wings` | `feathered wings` | `dragon wings` | `butterfly wings` | `insect wings` | `translucent wings` / `semi transparent wings` | `flaming wings` | `energy wings` | `mechanical wings` | `glowing wings` | `chained bound wings`
+`wings` | `feathered wings` | `dragon wings` | `butterfly wings` | `insect wings` | `translucent wings` / `semi transparent wings` | `flaming wings` | `energy wings` | `mechanical wings` | `glowing wings` | `chained wings` / `bound wings`
 
 #### 7.5.4 龙娘/龙族
 `dragon girl` | `dragon horns` / `eastern dragon horn` | `dragon tail` | `dragon wings` | `scales` / `scales covering skin`
 
 #### 7.5.5 机械/赛博格
-`robot` / `android` | `cyborg` | `mechanical parts` / `mechanical arms` / `mechanical legs` | `mechanical hands` | `robot joints` | `exposed mechanical components` | `cables` / `wires` / `circuits` | `barcode` / `identification markings` | `metal skin` / `metallic surface` | `prosthesis` | `single mechanical arm`
+`robot` / `android` | `cyborg` | `mechanical parts` / `mechanical arms` / `mechanical legs` | `mechanical hands` | `robot joints` | `exposed mechanical components` | `cables` / `wires` / `circuits` | `barcode` / `identification markings` | `metal skin` / `metallic surface` | `mechanical prosthesis` / `prosthetic limb` | `single mechanical arm`
 
 #### 7.5.6 其他非人
 `monster girl` / `spider girl` / `shark girl` | `mermaid` / `siren` | `fairy` / `sprite` | `vampire` / `fangs` | `werewolf` / `wolf ears` / `wolf tail` | `zombie` / `undead` / `jiangshi` | `ghost` / `ethereal` / `translucent body` | `slime` / `slime girl` / `slime body` | `doll` / `doll joints` / `living doll` | `furry` / `furry female` / `dog girl` | `anthro` | `snout` | `hairy` | `woody skin` / `covered with tree bark` | `antlers` | `long tongue`
 
-### 7.6 扶她/男娘专属外貌
+### 7.6 扶她与男娘相关外貌
 
 #### 7.6.1 扶她
 `futanari` | `penis and vagina` | `huge penis` / `gigantic penis` / `very big penis` | `small penis` | `flaccid` | `erection` | `veiny penis` | `testicles` / `huge testicles` / `long testicles` | `foreskin` / `phimosis` | `large breasts` + `penis`
@@ -90,9 +94,6 @@
 #### 7.6.2 男娘
 `otoko no ko` | `femboy` | `trap` | `crossdressing` | `tomgirl` | `sissy` | `feminization` | `small penis` / `tiny penis` / `mini penis` | `flat breasts` | `androgynous` | `shota` | `phimosis`
 
-### 7.7 身体标记/装饰
+### 7.7 身体标记、装饰与表面状态
 
-`tattoo` / `arm tattoo` / `back tattoo` / `leg tattoo` | `intricate tattoos` | `glowing tattoo` / `circuit tattoo` | `crotch tattoo` / `pubic tattoo` | `stomach tattoo` | `barcode tattoo` | `scar` / `battle scars` | `freckles` / `body freckles` | `mole` / `mole under eye` | `beauty mark` | `body writing` | `tally` / `tally marks` | `body markings` | `number tattoo` | `piercing` / `ear piercing` / `navel piercing` | `nipple piercings` / `nipple rings` | `clitoris rings` / `pierced clitoris` | `ring piercing` | `tongue piercing` | `stitches` / `stitched arm` | `patchwork skin` | `bruise` | `scratches` | `dirty body`
-
----
-
+`tattoo` / `arm tattoo` / `back tattoo` / `leg tattoo` | `intricate tattoos` | `glowing tattoo` / `circuit tattoo` | `crotch tattoo` / `pubic tattoo` | `stomach tattoo` | `barcode tattoo` | `scar` / `battle scars` | `freckles` / `body freckles` | `mole` / `mole under eye` | `beauty mark` | `body writing` | `tally` / `tally marks` | `lipstick mark` | `handprint` | `body markings` | `number tattoo` | `piercing` / `ear piercing` / `navel piercing` | `nipple piercings` / `nipple rings` | `clitoris rings` / `pierced clitoris` | `ring piercing` | `tongue piercing` | `stitches` / `stitched arm` | `patchwork skin` | `bruise` | `scratches` | `dirty body`

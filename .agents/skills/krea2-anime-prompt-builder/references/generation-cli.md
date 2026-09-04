@@ -1,32 +1,18 @@
-# Harness ComfyUI Generation Run Input CLI 参考
+# Generation Run 查询 CLI
 
-## CLI 的用途与适用任务
+## 用途与调用入口
 
-`generation run-inputs --stdin` 为 Krea2 Anime Prompt Builder 只读查询一个或多个历史 ComfyUI Generation Run。该命令返回创建 Run 时保存的 `generate_with_comfyui` 参数和该 Run 保存的 Actual Workflow。
+`generation run-inputs --stdin` 查询一个或多个 Generation Run 保存的生成参数和 Actual Workflow。
 
-用户要求读取、核对、比较或复用历史 Run 的 Workflow、模板 ID、生成模型、LoRA、正向 Prompt 或其他生成参数时，Skill 执行者调用该命令。该命令不查询异步运行状态，不生成 Prompt，不创建或修改 Generation Run，也不读取图片。
-
-## 调用环境与可执行入口
-
-Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须从当前 Session 的 Workspace 工作目录，在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。
-
-Managed environment 自动提供 CLI 脚本路径、Host endpoint 和当前 shell Tool Call 的短期 capability。Host 使用当前工作目录解析 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。本文件包含该查询的完整调用合同，不要求 Skill 执行者读取仓库源码或其他 Skill。
-
-## 命令与调用时机
-
-Skill 执行者只使用以下命令：
+`DSH_HARNESS_COMFYUI_CLI` 保存 CLI 入口脚本路径。Skill 执行者使用以下命令：
 
 ```sh
 node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin
 ```
 
-用户只要求查询历史 Run 时，Skill 执行者使用一个包含一至二十个 ID 的请求调用一次，按 `runs[]` 顺序报告结果，然后结束。用户要求复用历史正向 Prompt 时，Skill 执行者先完成查询，再从用户指定的可用结果中读取 `arguments.parameters.positive_prompt`；查询命令本身不执行 Prompt 改写。
+## 标准输入
 
-当前请求没有历史 `run_id`，或者用户没有要求读取、核对、比较或复用历史 Run 时，Skill 执行者不得调用该命令。
-
-## 参数与标准输入
-
-命令行不接受 `--stdin` 以外的选项。Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象：
+Skill 执行者把用户给出的 `run_id` 按原顺序写入只包含 `run_ids` 的 JSON 对象，并把该对象写入命令的标准输入：
 
 ```json
 {
@@ -34,93 +20,105 @@ node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin
 }
 ```
 
-`run_ids` 必须是只包含一至二十个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的规范短 ID。短 ID 使用 `run_` 加完整 UUID 的起始片段，并且至少包含八个 UUID 字符。CLI 保留输入顺序和重复值。
+`run_ids` 必须是包含 1 至 20 个字符串的数组。Skill 执行者查询单个 Generation Run 时仍使用数组。重复的 `run_id` 保留在原位置。
 
-缺失 `run_ids`、`run_ids` 不是数组、数组为空、数组超过二十项、元素不是字符串、stdin 不是一个 JSON 对象或 JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。
+每个数组元素可以使用完整 Run ID，也可以使用 `run_` 加对应 UUID 起始片段的短 Run ID。短 Run ID 必须包含 UUID 的前八个或更多字符，并保留完整 UUID 中已经出现的连字符位置，例如 `run_3c0ad3ed` 或 `run_3c0ad3ed-9f27`。
 
-## ID 与运行值的来源
+## 成功输出
 
-Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果，取得 `run_ids`。当前消息包含明确 ID 时，Skill 执行者按照这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按照对应提交结果的返回顺序传递。Skill 执行者不得猜测 ID，也不得选择用户没有指代的历史 Run。
+命令成功时返回退出码 `0`，stderr 为空，stdout 写入一行只包含 `runs` 的 JSON 对象。`runs` 是数组，其元素数量和元素顺序必须分别与输入 `run_ids` 的元素数量和元素顺序一致。
 
-短 ID 只匹配当前 Workspace 中以该值开头的完整 Run ID。唯一匹配返回完整 canonical `run_id`；没有匹配返回逐项 `GENERATION_RUN_NOT_FOUND`；多个匹配返回逐项 `GENERATION_RUN_ID_AMBIGUOUS`。
-
-Host 从 managed environment 和当前 Session 工作目录取得执行身份与 Workspace。Skill 执行者不在 stdin 中填写 `workspace_id`、`session_id`、`turn` 或 `call_id`。该只读命令不保存新的归属值。
-
-## 输出与完成语义
-
-合法查询完成时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON，stderr 为空。输出顶层对象包含 `runs` 数组；数组长度和顺序与输入 `run_ids` 一致，重复 ID 产生重复结果项。
-
-可用结果项包含：
-
-- `run_id`：完整 canonical Generation Run ID；
-- `lookup_status: "available"`；
-- `arguments.title`：创建 Run 时提交的标题；
-- 可选 `arguments.instance_id`：创建 Run 时提交的 ComfyUI 实例 ID；
-- `arguments.template_id`：创建 Run 时提交的 Workflow 模板 ID；
-- 可选 `arguments.model`：创建 Run 时提交的生成模型 `id` 与 `file_name`；
-- `arguments.parameters`：创建 Run 时提交的全部运行参数；
-- `arguments.loras`：创建 Run 时提交的结构化 LoRA 数组；
-- `workflow_status: "available"` 与 `workflow`，或者 `workflow_status: "unavailable"` 与 `workflow_error`。
-
-历史请求没有 `loras` 属性时，CLI 返回 `arguments.loras: []`；该空数组只说明保存的调用参数没有显式结构化 LoRA 选择。历史请求没有 `model` 属性时，结果省略 `arguments.model`；该省略只说明保存的调用参数没有显式模型覆盖。`workflow_status: "unavailable"` 不影响同一结果项中生成参数的可用性。
-
-逐项查询失败时，结果项结构为：
+### `runs` 数组项：生成参数和 Actual Workflow 均可用
 
 ```json
 {
-  "run_id": "<requested-run-id>",
+  "run_id": "run_3c0ad3ed-9f27-4d07-b0c3-6d9d78ec2171",
+  "lookup_status": "available",
+  "arguments": {
+    "title": "角色立绘",
+    "instance_id": "2",
+    "template_id": "39",
+    "model": {
+      "id": "3",
+      "file_name": "krea2.safetensors"
+    },
+    "parameters": {
+      "positive_prompt": "1girl, portrait",
+      "seed": 184273991
+    },
+    "loras": []
+  },
+  "workflow_status": "available",
+  "workflow": {}
+}
+```
+
+当 `lookup_status` 和 `workflow_status` 均为 `"available"` 时，Skill 执行者按照以下属性定义读取结果项：
+
+- `run_id`：匹配到的完整 Run ID。
+- `lookup_status`：固定为 `"available"`。
+- `arguments.title`：创建该 Generation Run 时提交的标题。
+- `arguments.instance_id`：创建该 Generation Run 时提交的 ComfyUI 实例 ID；原请求没有该属性时省略。
+- `arguments.template_id`：创建该 Generation Run 时提交的 Workflow 模板 ID。
+- `arguments.model`：创建该 Generation Run 时提交的生成模型 `id` 和 `file_name`；原请求没有该属性时省略。
+- `arguments.parameters`：创建该 Generation Run 时提交的全部 Workflow 参数。
+- `arguments.loras`：创建该 Generation Run 时提交的 LoRA 数组。每项包含 `id`、`file_name`、`weight` 和 `trigger_words`。原请求没有 `loras` 属性时返回空数组。
+- `workflow_status`：Actual Workflow 可用时固定为 `"available"`。
+- `workflow`：该 Generation Run 保存的 Actual Workflow JSON。
+
+### 生成参数可用但 Actual Workflow 不可用
+
+当 `lookup_status` 为 `"available"` 且 Actual Workflow 无法返回时，结果项保留 `run_id`、`lookup_status` 和 `arguments`，并使用以下两个属性说明 Actual Workflow 查询结果：
+
+- `workflow_status`：固定为 `"unavailable"`。
+- `workflow_error`：说明 Actual Workflow 无法返回的错误消息。
+
+### `runs` 数组项：Generation Run 查询失败
+
+```json
+{
+  "run_id": "run_deadbeef",
   "lookup_status": "error",
   "error": {
-    "code": "<error-code>",
-    "message": "<actionable-message>"
+    "code": "GENERATION_RUN_NOT_FOUND",
+    "message": "Generation Run was not found."
   }
 }
 ```
 
-逐项错误不改变进程退出码 `0`，也不阻止后续结果返回。命令级失败时，CLI 不在 stdout 输出结果，进程使用非零退出码，并在 stderr 输出一行 `ERROR_CODE: message`。该命令是同步只读查询；退出码 `0` 表示本次查询已经完成，不表示任何历史 Run 的生成任务当前成功或完成。
+该结果项中的 `run_id` 保留输入字符串，`lookup_status` 固定为 `"error"`。`error.code` 是错误码，`error.message` 是该项的错误消息。
 
-## 错误、修正与重试
+## 单项错误处理
 
-| 错误位置与代码 | Skill 执行者的修正动作 |
-| --- | --- |
-| 命令级 `CLI_ARGUMENT_INVALID` | 按本文件的固定命令和 `--stdin` 选项重新构造调用。 |
-| 命令级 `CLI_REQUEST_INVALID` | 修正 stdin JSON 的属性、类型或一至二十项数量限制后重试。 |
-| 命令级 `CLI_ENVIRONMENT_INVALID` | 改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |
-| 命令级 `CLI_CAPABILITY_INVALID` | 在新的受管前台 shell Tool Call 中重试，不复用旧 capability。 |
-| 命令级 `CLI_REQUEST_TOO_LARGE` | 报告请求超过 CLI 大小限制，并请用户减少本次请求中的 Run ID 或其他输入长度。 |
-| 命令级 `CLI_RESPONSE_TOO_LARGE` | 报告响应超过 CLI 大小限制，并请用户减少本次请求中的 Run ID。 |
-| 命令级 `CLI_PROTOCOL_ERROR` | 检查 Host 状态和日志；Host 恢复后再调用。 |
-| 命令级 `CLI_REQUEST_FAILED` | 确认 Host 仍在运行；连接恢复后再调用。 |
-| 命令级 `CLI_INTERNAL_ERROR` | 报告错误并检查 Host 日志，不原样重复调用。 |
-| 命令级 `GENERATION_WORKSPACE_REQUIRED` | 在关联 Harness Workspace 的 Session 中重新执行查询。 |
-| 逐项 `GENERATION_RUN_ID_INVALID` | 报告该项错误，并取得安全的完整 ID 或至少八个规范 UUID 前缀字符后只重试该项。 |
-| 逐项 `GENERATION_RUN_ID_AMBIGUOUS` | 请用户提供更多 Run ID 字符，然后只重试该项。 |
-| 逐项 `GENERATION_RUN_NOT_FOUND` | 报告当前 Workspace 中没有该 Run，并继续处理其他项。 |
-| 逐项 `GENERATION_REQUEST_INVALID` | 报告保存的 Generation Request 无法读取；不把该项作为 Prompt 基线。 |
-| 逐项 `GENERATION_RUN_LOOKUP_FAILED` | 报告 Host 存储读取错误；存储状态恢复后只重试该项。 |
+Skill 执行者按照 `runs[]` 的顺序处理每个结果项。一个结果项的 `lookup_status` 为 `"error"` 时，Skill 执行者报告该项的 `run_id`、`error.code` 和 `error.message`，并继续处理后续结果项。
 
-用户或宿主取消当前命令时，Skill 执行者必须立即停止本次 Skill 执行。业务输入可以明确修正时，Skill 执行者最多修正并重试一次。Host、Workspace 或 managed environment 状态没有变化时，Skill 执行者不得原样重复调用。
+- `GENERATION_RUN_ID_INVALID`：输入字符串不符合完整 Run ID 或短 Run ID 格式。Skill 执行者请求用户提供符合“标准输入”一节格式的 Run ID。
+- `GENERATION_RUN_ID_AMBIGUOUS`：短 Run ID 匹配多个 Generation Run。Skill 执行者请求用户提供更长的 UUID 起始片段或完整 Run ID。
+- `GENERATION_RUN_NOT_FOUND`：没有找到匹配的 Generation Run。Skill 执行者向用户说明未找到与该结果项 `run_id` 匹配的 Generation Run。
+- `GENERATION_REQUEST_INVALID`：该 Generation Run 保存的生成参数无法解析。Skill 执行者报告 `error.message`。
+- `GENERATION_RUN_LOOKUP_FAILED`：读取该 Generation Run 时发生其他错误。Skill 执行者报告 `error.message`。
 
-## 副作用与重复调用
+## 命令级错误与返回协议错误
 
-`generation run-inputs --stdin` 是只读命令。该命令不创建、修改或覆盖 Generation Run、Actual Workflow、Saved Media、Prompt、配置或本地输出文件。
+命令返回非零退出码时，Skill 执行者检查 stdout 是否为空，并检查 stderr 是否为一行 `错误码: 错误消息`。任一条件不满足时，Skill 执行者逐条报告违反的返回协议条件并停止本次历史查询。两项条件均满足时，Skill 执行者按照以下规则处理：
 
-Skill 执行者把一至二十个 ID 放在一次调用中。用户提供超过二十个 ID 时，Skill 执行者报告 CLI 的一至二十项限制，请用户把本次查询缩小到一至二十个 ID；Skill 执行者不自动拆分或合并多个查询。相同输入的后续调用会重新读取当前 Host 存储状态，不缓存或替换前一次结果。逐项错误后的定向重试只查询被修正的 ID，不重复查询已经可用的项。
+- stderr 中的错误码为 `CLI_REQUEST_INVALID` 时，Skill 执行者检查标准输入 JSON 是否只包含 `run_ids` 属性，并检查 `run_ids` 是否为包含 1 至 20 个字符串的数组。Skill 执行者发现并修正自己构造的 JSON 后自动重试一次；该次重试是本次历史查询唯一允许的自动重试。Skill 执行者没有发现可修正的输入错误时，不重试，直接报告 stderr 并停止本次历史查询。自动重试返回非零退出码时，Skill 执行者按照本节首段重新检查 stdout 和 stderr；任一返回协议条件不满足时，逐条报告违反的条件并停止本次历史查询；两项条件均满足时，报告 stderr 并停止本次历史查询。自动重试返回退出码 `0` 时，Skill 执行者按照本节最后一段检查 stderr 和 stdout。
+- stderr 中的错误码不是 `CLI_REQUEST_INVALID` 时，Skill 执行者不重试，报告 stderr 并停止本次历史查询。
 
-## 完整调用示例
+命令返回退出码 `0` 后，如果 stderr 非空，Skill 执行者报告 stderr 内容并停止本次历史查询。如果 stdout 不是单行 JSON 对象、该对象包含 `runs` 之外的属性、`runs` 不是数组、`runs` 的元素数量与输入 `run_ids` 的元素数量不同、`runs` 的元素不能按输入 `run_ids` 的顺序一一对应，或者任一结果项不符合“成功输出”一节定义的对应结构，Skill 执行者逐条报告 stdout 违反的返回协议条件，并停止本次历史查询。
 
-以下两个短 ID 来自当前用户消息，Skill 执行者按出现顺序查询：
+## 调用次数与结果复用
 
-```sh
-node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
-{"run_ids":["run_3c0ad3ed","run_d26923be"]}
-JSON
-```
+Skill 执行者把用户一次查询请求中给出的全部 `run_id` 按原顺序放入同一个 `run_ids` 数组。用户给出的 `run_id` 数量不在 1 至 20 个范围内时，Skill 执行者请求用户提供 1 至 20 个 `run_id`，并且不调用命令。
 
-查询单个完整 ID 时仍然使用数组。以下 ID 来自当前会话中被用户明确指代的此前 Generation 提交结果：
+只有同时满足退出码为 `0`、stderr 为空且 stdout 符合“成功输出”一节全部返回协议的调用，才产生可复用结果。Skill 执行者按照该次调用使用的完整 `run_ids` 数组及其元素顺序保存可复用结果。
 
-```sh
-node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
-{"run_ids":["run_3c0ad3ed-1111-2222-3333-444444444444"]}
-JSON
-```
+Skill 执行者按照以下顺序处理当前完整 `run_ids` 数组：
+
+1. 用户明确要求重新查询当前完整 `run_ids` 数组时，Skill 执行者使用该数组调用命令一次，不复用已有结果。
+2. 用户没有明确要求重新查询，并且本次 Skill 执行中已有一次成功调用使用了内容和顺序完全相同的 `run_ids` 数组时，Skill 执行者不调用命令，按照数组下标复用该次调用的 `runs[]` 结果项。重复的 `run_id` 分别复用其所在位置对应的结果项。
+3. 用户没有明确要求重新查询，并且当前完整 `run_ids` 数组没有可复用结果时，Skill 执行者使用该数组发起一次初始调用。
+
+第 1 项或第 3 项产生的调用返回后，Skill 执行者按照“命令级错误与返回协议错误”一节处理该次返回。该次调用因 `CLI_REQUEST_INVALID` 触发自动重试时，Skill 执行者只使用修正后的标准输入 JSON 中的完整 `run_ids` 数组重试一次。初始调用、用户明确要求的重新查询和该次唯一允许的自动重试之外，Skill 执行者不再调用命令。
+
+初始调用、用户明确要求的重新查询或自动重试满足成功条件时，Skill 执行者保存该次调用的可复用结果，并按照“成功输出”和“单项错误处理”两节处理 `runs[]`。调用没有满足成功条件时，Skill 执行者按照“命令级错误与返回协议错误”一节报告对应错误并停止本次历史查询。

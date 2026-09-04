@@ -1,393 +1,257 @@
-## 14. SPECIAL THEME
+## 14. SPECIAL THEME 跨槽位主题规则
 
-> 跨槽位场景配方库。以下每个主题需要协调 count/gender → clothing → pose/action → expression → scene 多个槽位，而非单槽位可选。按 §9 标准：公式 + 跨槽位标签链 + 氛围链 + 使用提示 + 法典验证场景。
+本章规定十二类特殊主题需要使用的标签、英文短句及其所属槽位。Skill 执行者只选择符合用户画面要求的行，并把每项内容写入该行指定的槽位。
+
+每个行内代码范围表示一个不可拆分的标签或英文短句。标有“同时使用”的多个项目构成固定组合，其余项目按画面独立选择。画面人数必须等于实际入镜人物数量；未入镜但影响画面关系的人物必须通过 `natural_language` 短句说明。用户指定的角色性别、关系、动作或情绪与本章示例不同时，Skill 执行者必须使用用户指定的内容。本章把可见体液及其落点写入 `expression_reaction`。
 
 ### 14.1 NTR
 
-**核心公式**：`被夺走的人 × 夺走的方式 × 见证者的痛苦`
+用户要求 NTR 时，Skill 执行者必须在 `pose_action_sex` 中加入 `netorare`，再按具体画面选择背叛行为、见证方式和人物反应。
 
-**跨槽位标签链**：
-
-| 槽位 | 核心标签 |
-|---|---|
-| count/gender | `1girl, 1boy, hetero` + 被夺方 + 夺走方 + 苦主（可选入镜或分屏） |
-| pose/action | `sex from behind, stealth sex` / `talking on phone, sex` / `watching, forced to watch` |
-| expression | 女方：`guilty pleasure, ahegao, corrupted` / 苦主：`crying, empty eyes, despair` |
-| camera/shot | `split screen` / `from outside, through window` / `pov, cuckold` |
-| scene | `love hotel` / `bedroom, another man` / `phone screen visible, text message` |
-
-**关键变体**：
-- 电话NTR：`talking on phone, sex from behind, stealth sex, hand covering own mouth` — 通话中被干
-- 窗外NTR：`from outside, through window, peeping, cuckold, forced to watch` — 亲眼看到女友被干
-- 分屏NTR：`split screen, left: chatting on phone, right: sex from behind, netorare`
-- 事后归宅：`after sex, coming home, messy hair, disheveled clothes, suspicious, husband waiting`
-- 女友堕落：`corrupted, mind break, ahegao, heart-shaped pupils, from reluctant to eager`
-
-**氛围链**：`secret → cheating → guilty pleasure → netorare → corrupted → mind break → cuckold despair`
-
-**使用提示**：NTR 的核心是「关系背叛的视觉呈现」——不在体位多刺激，而在「谁在看/谁知道」。分屏（split screen）是 NTR 最强镜头工具。电话要素（talking on phone / smartphone visible / text message）是法典最高频 NTR 符号。
-
-**法典验证场景**：
-- 电话NTR：`talking on phone, sex from behind, stealth sex, hand covering own mouth, blush, guilty pleasure, from side`
-- 窗外NTR：`from outside, through window, peeping, cuckold, netorare, couple having sex inside, forced to watch, tears`
-
----
-
-### 14.2 束缚/BDSM
-
-**核心公式**：`束缚方式 × 束缚位置 × 被缚者状态`
-
-**跨槽位标签链**：
-
-| 槽位 | 核心标签 |
-|---|---|
-| pose/action | `shibari, bound, tied up, arms behind back, hogtie, spread eagle, suspension` |
-| clothing | `ropes, hemp rope, red rope, handcuffs, ball gag, ring gag, blindfold, chains, duct tape` |
-| expression | `tears, crying, scared, struggling, empty eyes, mind break` |
-| body marks | `rope marks, red marks, skindentation, bruise, whip marks` |
-| scene | `dungeon, stone wall, prison cell, bedroom, dark room` |
-
-**关键变体**：
-- 日式绳艺：`shibari, kinbaku, hemp rope, turtle shell bondage, breast bondage, bound arms, bound torso`
-- 十字架/柱缚：`st andrews cross, tied to post, spread eagle, pillory, public display`
-- 口具拘束：`ball gag, ring gag, bit gag, drooling, saliva trail, forced open mouth`
-- 另类束缚：`duct tape, tape bondage, plastic wrap, mummified, vacuum seal`
-- 公开凌辱：`pillory, public display, humiliation, audience, body writing`
-
-**氛围链**：`bound → restrained → gagged → helpless → struggling → crying → empty eyes → mind break`
-
-**使用提示**：束缚核心在「剥夺行动自由」——tag要写清楚束缚了什么部位（arms/legs/torso/wrists/ankles）。绳痕（rope marks + skindentation）是束缚场景的关键真实感标签，没有绳痕=刚绑上去还没开始。另类束缚（duct tape/plastic wrap）适合现代/犯罪场景。
-
-**法典验证场景**：
-- 日式后手缚：`shibari, arms behind back, bound arms, bound torso, hemp rope, red rope, rope marks, kneeling, nude, crying, dungeon`
-- 口球束缚：`ball gag, drooling, saliva trail, bound wrists, arms behind back, tears, struggling, choker, leash`
-
----
-
-### 14.3 RBQ/物化
-
-**核心公式**：`物化程度 × 使用人数 × 被使用后的残骸感`
-
-**跨槽位标签链**：
-
-| 槽位 | 核心标签 |
-|---|---|
-| pose/action | `glory hole, through wall, public use, pillory, all fours, presenting, kneeling` |
-| expression | `empty eyes, mind break, expressionless, fucked silly, broken in, exhausted` |
-| body marks | `body writing, tally marks, price tag, barcode tattoo, used goods` |
-| liquid | `bukkake, cum bath, excessive cum, cum pool, cum covered, cumdump` |
-| scene | `public toilet, glory hole, dungeon, pillory, public, surrounded` |
-
-**关键变体**：
-- 标准肉便器：`human toilet, urinal, bukkake, cum on body, cum bath, cum pool`
-- 壁尻：`through wall, stationary restraints, pillory, glory hole, public use`
-- 身体写字：`body writing, tally marks, price tag, degradation, humiliation, barcode tattoo`
-- 展示台：`pillory, public display, objectification, audience, forced to watch`
-- 多人共用：`public use, gangbang, multiple boys, free use, one after another, cumdump`
-- 事后残骸：`after use, cum covered, empty eyes, exhausted, broken in, limp body`
-
-**氛围链**：`objectification → degradation → used goods → human toilet → cumdump → mind break → empty eyes → broken in`
-
-**使用提示**：RBQ核心在「人变成物」——标签应强调非人化（objectification/degradation/used goods）和过量体液（excessive cum/cum bath）。tally marks/price tag/body writing 是画龙点睛的物化标记。区别RBQ和普通群交——RBQ强调「被用完后丢弃」的残骸感，群交强调过程的刺激。
-
-**法典验证场景**：
-- 标准RBQ：`human toilet, urinal, bukkake, cum on body, cum bath, excessive cum, cum pool, public use, empty eyes, broken in`
-- 壁尻：`through wall, glory hole, stationary restraints, pillory, public use, body writing, tally marks`
-
----
-
-### 14.4 男娘/Futa
-
-**核心公式**：`生理特征 × 性行为方向 × 身份呈现`
-
-**跨槽位标签链**：
-
-| 槽位 | 男娘 | 扶她 |
+| 画面要求 | 槽位 | 候选内容 |
 |---|---|---|
-| count/gender | `otoko no ko, femboy, trap, 1boy` | `futanari, 1girl` |
-| appearance | `small penis, flat breasts, androgynous, shota, phimosis, chastity cage` | `huge penis, large breasts, penis and vagina, testicles` |
-| clothing | `crossdressing, pantyhose, china dress, maid outfit, school uniform, naked apron` | `bodystocking, latex, reverse bunnysuit, slingshot swimsuit` |
-| pose/action | `anal, pegging, sex from behind, fellatio, double dildo, yaoi` | `pegging, futa on female, futa with futa, circle formation, masturbation` |
-| expression | `blush, embarrassed, shy, ahegao` | `smug, dominant, evil smile, ahegao, lustful` |
+| 两人发生背叛行为，苦主不入镜 | `count_gender` | 按入镜两人的实际性别填写人数标签 |
+| 苦主与发生背叛行为的两人同时入镜 | `count_gender` | 按三名入镜人物的实际性别填写人数标签 |
+| 背叛行为 | `pose_action_sex` | `cheating`、`stealth sex`、`sex from behind` |
+| 与苦主通话时发生背叛行为 | `pose_action_sex` | `talking on phone`、`hand covering own mouth` |
+| 背叛方享受但仍有负罪感 | `expression_reaction` | `guilty pleasure`、`blush` |
+| 背叛方已经接受当前关系 | `expression_reaction` | `corrupted` |
+| 背叛方表现出性兴奋 | `expression_reaction` | `ahegao`、`heart-shaped pupils` |
+| 苦主看到背叛行为 | `expression_reaction` | `crying`、`empty eyes`、`despair` |
+| 同时展示通话双方或背叛前后状态 | `camera_shot` | `split screen` |
+| 苦主从窗外看到室内行为 | `camera_shot` | 同时使用 `from outside`、`through window` |
+| 手机是背叛关系的可见证据 | `scene_environment` | `smartphone`、`phone screen visible`、`text message` |
+| 画面无法仅靠标签说明三人关系 | `natural_language` | `the betrayed partner watches the other two from outside the window` |
 
-**男娘关键变体**：
-- 壮汉后入男娘：`muscular male, sex from behind, otoko no ko, yaoi, anal`
-- 带锁男娘：`chastity cage, small penis, phimosis, crotchless pantyhose, femboy`
-- 裸体围裙男娘：`naked apron, small penis visible, flat breasts, crossdressing, otoko no ko`
+变体选择：
 
-**扶她关键变体**：
-- 扶她×女：`futanari, futa on female, pegging, huge penis, girl on top`
-- 扶她×扶她：`futa with futa, circle formation, double dildo, ass-to-ass`
-- 扶她自慰：`futanari masturbation, huge penis, artificial vagina, dildo riding, cum`
+- 电话 NTR：使用 `netorare`、`talking on phone`，并按画面加入当前性行为和通话者反应。
+- 窗外 NTR：使用 `netorare`、`from outside`、`through window`，并用 `natural_language` 说明窗外人物与室内两人的关系。
+- 分屏 NTR：使用 `split screen`，并用两个 `natural_language` 短句分别说明左右画面的角色和动作。
+- 事后归宅：`pose_action_sex` 使用 `after sex`、`coming home`；`clothing_state` 使用 `disheveled clothes`；`natural_language` 说明等待者与归来者的关系。
 
-**氛围链**：
-- 男娘：`shy → blush → embarrassed → reluctant → ahegao → cum in ass`
-- 扶她：`confident → dominant → smug → aggressive → excessive cum → satisfied`
+### 14.2 束缚与 BDSM
 
-**使用提示**：男娘和扶她是两个独立体系，不能混用（otoko no ko ≠ futanari）。男娘核心在「男性身体+女性外观+被侵犯」的倒错感；扶她核心在「女性身体+男性性器+主导侵犯」的征服感。男娘配 small penis + chastity cage，扶她配 huge penis + large breasts。
+用户要求身体束缚时，Skill 执行者必须在 `pose_action_sex` 中同时选择一种束缚方法或装置和至少一个被束缚的身体部位。用户只要求蒙眼、口具或不包含身体束缚的 BDSM 行为时，Skill 执行者按画面选择对应内容。
 
-**法典验证场景**：
-- 壮汉后入男娘：`muscular male, sex from behind, otoko no ko, anal, yaoi, blushing, trembling, hands on hips`
-- 扶她爆炒小扶她：`futanari, futa on female, pegging, huge penis, anal sex, x-ray, excessive speed, ahegao`
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 绳缚方法 | `pose_action_sex` | `shibari`、`kinbaku`、`turtle shell bondage`、`breast bondage` |
+| 绳索材质或颜色 | `pose_action_sex` | `hemp rope`、`red rope`；只在画面明确包含对应绳索时选择 |
+| 手脚或身体被固定 | `pose_action_sex` | `bound wrists`、`bound ankles`、`arms behind back`、`bound torso`、`hogtie`、`spread eagle`、`suspension` |
+| 固定装置 | `pose_action_sex` | `handcuffs`、`shackles`、`chains`、`duct tape`、`spreader bar`、`st andrews cross`、`pillory` |
+| 口部或视线受限 | `pose_action_sex` | `ball gag`、`ring gag`、`bit gag`、`cloth gag`、`tape over mouth`、`blindfold` |
+| 身体受力痕迹 | `appearance` | `rope marks`、`red marks`、`skindentation`、`bruise`、`whip marks` |
+| 抗拒或恐惧 | `expression_reaction` | `struggling`、`scared`、`crying`、`tears` |
+| 失去反应 | `expression_reaction` | `empty eyes`、`mind break` |
+| 束缚场所 | `scene_environment` | `dungeon`、`stone wall`、`prison cell`、`bedroom`、`dark room` |
 
----
+当绳索已经持续压迫皮肤时，Skill 执行者加入 `rope marks` 或 `skindentation`；刚完成且尚未形成可见压痕的束缚不需要身体受力痕迹。
+
+### 14.3 RBQ 与物化
+
+用户要求 RBQ 或物化时，Skill 执行者必须用可见行为、身体标记、人物反应或场景设施表现人物被当作物品使用的状态。
+
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 固定位置供人使用 | `pose_action_sex` | `through wall`、`stationary restraints`、`pillory`、`glory hole`、`public use` |
+| 动物化或器物化姿态 | `pose_action_sex` | `human toilet`、`urinal`、`on all fours`、`presenting`、`kneeling` |
+| 三名及以上男性入镜 | `count_gender` | 填写所有入镜人物的实际性别人数标签；男性达到三名时加入 `multiple boys` |
+| 多人同时使用 | `pose_action_sex` | `gangbang`、`surrounded`、`cumdump` |
+| 多人连续使用 | `pose_action_sex` | 必须使用 `one after another`；按画面加入 `cumdump` |
+| 公开展示 | `pose_action_sex` | `public display` |
+| 可见物化标记 | `appearance` | `body writing`、`tally marks`、`barcode tattoo`、`ownership mark` |
+| 使用后的身体状态 | `expression_reaction` | `empty eyes`、`expressionless`、`fucked silly`、`exhausted`、`limp body` |
+| 使用后的体液 | `expression_reaction` | `bukkake`、`cum bath`、`excessive cum`、`cum pool`、`cum covered` |
+| 公共或固定使用场所 | `scene_environment` | `public toilet`、`dungeon`、`public` |
+| 价格牌作为物化标记 | `natural_language` | `a visible price tag hangs from the collar` |
+
+普通多人性行为只有在画面同时出现器物化姿态、固定设施、所有权标记或使用后状态时，才按本节选择物化相关标签。选择后必须至少保留一项器物化姿态、固定设施、所有权标记或使用后状态。
+
+### 14.4 男娘与 Futa
+
+男娘与 Futa 是两个独立主题。Skill 执行者必须按照画面中的实际人物分别填写人数、性别和身体特征。
+
+#### 14.4.1 男娘
+
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 单人男娘 | `count_gender` | 同时使用 `1boy`、`otoko no ko`；`femboy` 可按用户用词加入 |
+| 男娘与一名男性 | `count_gender` | 同时使用 `2boys`、`otoko no ko`、`yaoi` |
+| 男娘与一名女性 | `count_gender` | 同时使用 `1boy`、`1girl`、`otoko no ko`、`hetero` |
+| 身体和外观 | `appearance` | `androgynous`、`flat chest`、`small penis`、`phimosis` |
+| 女性化服装 | `clothing_state` | `crossdressing`、`pantyhose`、`china dress`、`maid outfit`、`school uniform`、`naked apron` |
+| 贞操装置 | `pose_action_sex` | `chastity cage` |
+| 性行为 | `pose_action_sex` | `anal`、`sex from behind`、`fellatio`、`pegging` |
+| 反应 | `expression_reaction` | `blush`、`embarrassed`、`shy`、`ahegao` |
+
+#### 14.4.2 Futa
+
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 单人 Futa | `count_gender` | 同时使用 `1girl`、`futanari` |
+| Futa 与一名女性 | `count_gender` | 同时使用 `2girls`、`futanari` |
+| 两名 Futa | `count_gender` | 同时使用 `2girls`、`futanari` |
+| 两名 Futa 的身份归属 | `natural_language` | `both characters are futanari` |
+| 身体特征 | `appearance` | `penis and vagina`、`testicles`、`huge penis`、`large breasts` |
+| 服装 | `clothing_state` | `bodystocking`、`latex`、`reverse bunnysuit`、`slingshot swimsuit` |
+| Futa 与女性 | `pose_action_sex` | `futa on female`、`pegging` |
+| 两名 Futa | `pose_action_sex` | `futa with futa`、`double dildo`、`ass-to-ass` |
+| 单人自慰 | `pose_action_sex` | `futanari masturbation`、`artificial vagina`、`dildo riding` |
+| 反应 | `expression_reaction` | `smug`、`dominant`、`evil smile`、`lustful`、`ahegao` |
 
 ### 14.5 异种
 
-**核心公式**：`异种类型 × 交互方式 × 人类方的反应`
+用户要求异种主题时，Skill 执行者必须用 `count_gender` 填写实际入镜主体数量，并从下表选择一种或多种与画面一致的异种类型。异种类型和身体结构写入 `appearance`，交互方式写入 `pose_action_sex`，可见装置或卵体写入 `scene_environment`。
 
-**跨槽位标签链**：
+| 异种类型 | `appearance` 候选内容 | `pose_action_sex` 候选内容 |
+|---|---|---|
+| 触手 | `tentacles`、`multiple tentacles` | `tentacle sex`、`bound by tentacles`、`oviposition` |
+| 动物 | 按用户指定的动物填写外观标签；按画面加入 `knot` | `bestiality`、`mounting`、`breeding` |
+| 史莱姆 | `slime`、`slime girl`、`slime body`、`translucent slime` | `tentacle slime`、`absorption`、`inside slime` |
+| 兽人 | `orc`、`goblin`、`muscular monster`、`huge penis` | `mating press`、`breeding` |
+| 虫类 | `insect`、`arachnid`、`parasite` | `oviposition`、`egg laying`、`infestation` |
+| 机械 | `machine`、`robot`、`android`、`mechanical tentacles` | `automated milking` |
+| 外星生物 | `alien`、`xenomorph` | `probing`、`abduction` |
 
-| 异种类型 | 核心标签 |
+| 可见物件 | `scene_environment` 候选内容 |
 |---|---|
-| 触手 | `tentacles, tentacle sex, multiple tentacles, tentacle pit, tentacle egg, oviposition` |
-| 兽交 | `bestiality, knot, canine penis, mounting, breeding, animal on top` |
-| 史莱姆 | `slime, slime girl, slime body, tentacle slime, absorption, corruption` |
-| 兽人 | `orc, goblin, monster, muscular monster, huge penis, breeding` |
-| 虫类 | `insect, arachnid, oviposition, egg, parasite, infestation` |
-| 机械 | `machine, robot, mechanical tentacles, milking machine, android` |
-| 外星 | `alien, xenomorph, alien egg, probing, abduction` |
+| 触手巢穴或触手卵 | `tentacle pit`、`tentacle egg` |
+| 榨乳装置 | `milking machine` |
+| 外星卵体 | `alien egg` |
 
-**关键变体**：
-- 触手拘束侵犯：`tentacles, bound by tentacles, tentacle sex, multiple tentacles, suspended, oviposition`
-- 史莱姆吞噬：`slime, absorption, slime body, tentacle slime, inside slime, translucent slime`
-- 兽人种付：`orc, huge penis, mating press, breeding, size difference, monstrous, knot`
-- 机械榨乳：`machine, milking machine, mechanical tentacles, robot, automated, lactation`
+当体型差是画面重点时，`appearance` 加入 `size difference`。当人物正在抗拒、无法承受或已经疲惫时，`expression_reaction` 分别使用 `struggling`、`overwhelmed` 或 `exhausted`。
 
-**氛围链**：`surprised → scared → struggling → overwhelmed → ahegao → egg laying / cum overflow → exhausted`
+### 14.6 调教与宠物化
 
-**使用提示**：异种场景核心在「人类vs非人」的体型/力量/数量的绝对不对等。触手适合多孔同时侵犯（tentacle pit），兽人适合体型碾压和种付，史莱姆适合溶解/吸收/体内视角。oviposition（产卵）和 egg 是异种特色结果标签。
+用户要求调教或宠物化时，Skill 执行者必须选择一种动物化行为，并用服装配饰、控制道具或场景设施表现主人与宠物的关系。
 
-**法典验证场景**：
-- 触手拘束：`tentacles, bound by tentacles, tentacle sex, multiple tentacles, suspended, oviposition, ahegao, tentacle egg`
-- 兽人种付：`orc, huge penis, mating press, breeding, size difference, monstrous, deep penetration, stomach bulge`
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 宠物配饰 | `clothing_state` | `collar`、`bell collar`、`harness`、`cat ears`、`paw gloves` |
+| 控制或训练道具 | `pose_action_sex` | `leash`、`tail plug`、`bit gag` |
+| 犬化行为 | `pose_action_sex` | `puppy play`、`on all fours`、`crawling`、`panting`、`tongue out` |
+| 猫化行为 | `pose_action_sex` | `kitten play`、`paw pose`、`tail wag` |
+| 进食训练 | `pose_action_sex` | `eating from bowl`、`on floor` |
+| 服从展示 | `pose_action_sex` | `presenting`、`kneeling`、`spread legs` |
+| 主动服从 | `expression_reaction` | `obedient`、`submissive`、`devoted`、`happy` |
+| 被迫服从 | `expression_reaction` | `empty eyes`、`expressionless` |
+| 所有权标记 | `appearance` | `body writing`、`tally marks`、`ownership mark`、`brand` |
+| 宠物生活设施 | `scene_environment` | `cage`、`kennel`、`pet bowl on floor` |
+| 户外牵引 | `scene_environment` | `outdoors`、`public`、`crowd` |
 
----
-
-### 14.6 调教/宠物
-
-**核心公式**：`驯化类型 × 服从表现 × 主人/支配者`
-
-**跨槽位标签链**：
-
-| 槽位 | 核心标签 |
-|---|---|
-| clothing | `collar, leash, bell collar, tail plug, pet bowl, harness, bit gag` |
-| pose/action | `on all fours, crawling, presenting, kneeling, eating from bowl, paw pose` |
-| expression | `obedient, submissive, devoted, empty eyes, expressionless, happy, tail wag` |
-| body marks | `body writing, tally marks, tattoo, brand, ownership mark` |
-| scene | `cage, kennel, pet bowl on floor, indoors, public (遛狗)` |
-
-**关键变体**：
-- 犬化训练：`puppy play, collar, leash, crawling, on all fours, tail plug, panting, tongue out`
-- 猫化训练：`kitten play, bell collar, cat ears, paw gloves, cat tail, paw pose, tail wag`
-- 宠物喂食：`pet bowl, on all fours, eating from bowl, on floor, collar, leash`
-- 笼中等待：`cage, locked, trapped, collar, waiting, obedient, on all fours`
-- 公共遛狗：`public, leash, crawling, outdoors, collar, tail plug, humiliation, crowd`
-- 展示服从：`presenting, spread legs, obedient, kneeling, arms up, paw pose`
-
-**氛围链**：`collar on → leash attached → on all fours → crawling → eating from bowl → obedient → tail wag → public display`
-
-**使用提示**：宠物调教核心是「人格剥夺+动物化」——tag应强调非人行为（crawling/eating from bowl）和服从道具（collar/leash/tail plug）。与RBQ的区别：宠物调教有「主人-宠物」的关系纽带，RBQ是彻底弃用的肉块。
-
-**法典验证场景**：
-- 犬化训练：`puppy play, collar, leash, crawling, on all fours, tail plug, panting, tongue out, nude, obedient`
-- 笼中宠物：`cage, locked, collar, tail plug, on all fours, waiting, obedient, empty eyes`
-
----
+当画面需要明确主人时，Skill 执行者必须把主人计入 `count_gender`，并在 `natural_language` 中说明谁牵引、命令或展示谁。
 
 ### 14.7 胁迫
 
-**核心公式**：`权力来源 × 胁迫手段 × 屈服程度`
+本节的胁迫包括职权、债务、秘密、暴力、药物和群体压力。Skill 执行者必须选择与用户情节一致的胁迫来源，并用可见证据表现该来源。
 
-**跨槽位标签链**：
+| 胁迫来源 | 槽位 | 候选内容 |
+|---|---|---|
+| 职权或经济控制 | `pose_action_sex` | `blackmail`、`power imbalance`、`economic dependence` |
+| 职权或经济控制的场所 | `scene_environment` | `office`、`desk` |
+| 职权或经济控制的可见证据 | `scene_environment` | `contract`、`debt notice` |
+| 秘密或偷拍视频 | `pose_action_sex` | `blackmail`、`being watched`、`recording` |
+| 秘密或偷拍视频的可见证据 | `scene_environment` | `hidden camera`、`phone screen visible` |
+| 暴力强制 | `pose_action_sex` | `rape`、`held down`、`restrained`、`knife`、`gun` |
+| 药物作用 | `pose_action_sex` | `drugged`、`spiked drink` |
+| 药物作用后的身体状态 | `expression_reaction` | `unconscious`、`limp body`、`expressionless` |
+| 三名及以上男性入镜 | `count_gender` | 填写所有入镜人物的实际性别人数标签；男性达到三名时加入 `multiple boys` |
+| 群体压力 | `pose_action_sex` | `gang rape`、`surrounded` |
+| 抗拒 | `expression_reaction` | `reluctant`、`scared`、`struggling`、`crying` |
+| 放弃抵抗 | `expression_reaction` | `given up`、`empty eyes`、`mind break` |
 
-| 胁迫类型 | 核心标签 |
-|---|---|
-| 职权胁迫 | `boss, office lady, blackmail, power imbalance, economic dependence` |
-| 债务胁迫 | `debt, loan shark, forced prostitution, can't pay back` |
-| 把柄威胁 | `secret, blackmail, hidden camera, being watched, recording` |
-| 暴力强制 | `rape, held down, restrained, struggling, crying, knife, gun` |
-| 药物迷奸 | `drugged, unconscious, spiked drink, limp body` |
-| 集体胁迫 | `gang rape, multiple boys, surrounded, no escape, group blackmail` |
+当标签不能说明施压者、受迫者和胁迫证据之间的关系时，Skill 执行者必须用一个 `natural_language` 短句写清谁利用什么证据迫使谁做什么。
 
-**关键变体**：
-- 职权胁迫：`boss, office lady, blackmail, promotion, economic dependence, desk, office, reluctant`
-- 把柄威胁：`hidden camera, on recording, blackmail, secret, scared, can't refuse`
-- 暴力强制：`held down, restrained, knife, gun, scared, crying, struggling, rape`
-- 药物迷奸：`drugged, unconscious, limp body, spiked drink, no resistance, expressionless`
-- 持续控制：`ongoing, always available, mind break, given up, 24/7, slave`
+### 14.8 偷窥与展示
 
-**氛围链**：`threat → scared → reluctant → forced → struggling → crying → given up → mind break → obedient`
+用户要求偷窥时，Skill 执行者必须写明观看渠道和被看者是否察觉。用户要求主动展示时，Skill 执行者必须写明展示渠道和展示动作。
 
-**使用提示**：胁迫核心是「权力的不对等」——不是单纯的暴力（那是过激），而是利用弱点/秘密/地位让对方无法拒绝。把柄威胁（hidden camera/blackmail/recording）是胁迫最独特的标签组合，过激和强奸没有这些要素。
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 从窗外偷窥 | `camera_shot` | 同时使用 `from outside`、`through window` |
+| 从门缝或锁孔偷窥 | `camera_shot` | `through door gap`、`keyhole view` |
+| 偷窥动作 | `pose_action_sex` | `peeping`、`voyeurism` |
+| 偷拍画面 | `camera_shot` | `hidden camera pov`、`fake screenshot`、`viewfinder` |
+| 被看者未察觉 | `expression_reaction` | `unaware` |
+| 被看者突然发现 | `expression_reaction` | `caught`、`surprised`、`!` |
+| 自拍展示 | `pose_action_sex` | `selfie`、`presenting` |
+| 直播展示 | `pose_action_sex` | `streaming`、`presenting` |
+| 展示者直视观众 | `expression_reaction` | `direct eye contact` |
+| 自拍或直播界面 | `scene_environment` | `mirror`、`webcam`、`computer screen`、`chat visible`、`donation alert` |
+| 被看者当时的行为 | `pose_action_sex` | `sleeping`、`showering`、`changing clothes`、`masturbating`、`having sex` |
 
-**法典验证场景**：
-- 职权胁迫：`boss, office lady, blackmail, desk, pencil skirt, reluctant, tears, scared, hand covering own mouth`
-- 把柄威胁：`hidden camera, on recording, blackmail, scared, can't refuse, school uniform, crying`
-
----
-
-### 14.8 偷窥/展示
-
-**核心公式**：`看的人 × 被看的人 × 观看渠道`
-
-**跨槽位标签链**：
-
-| 槽位 | 核心标签 |
-|---|---|
-| camera | `peeping, through window, from outside, hidden camera, fake screenshot, viewfinder` |
-| 被看方状态 | `unaware, sleeping, showering, changing clothes, masturbating, having sex` |
-| 展示方状态 | `exhibitionism, looking at viewer, presenting, selfie, webcam, streaming` |
-| scene | `window, door gap, keyhole, hidden camera pov, mirror, computer screen` |
-
-**关键变体**：
-- 窗外偷窥：`from outside, through window, peeping, voyeurism, couple inside having sex, unaware`
-- 门缝发现：`opening door, walk-in, caught, surprised, !, accidental witness`
-- 偷拍摄像头：`hidden camera, on recording, fake screenshot, pov, viewfinder, battery indicator`
-- 自拍展示：`selfie, mirror, holding phone, exhibitionism, presenting, looking at viewer`
-- 直播：`webcam, streaming, chat visible, donation alert, public, audience`
-- 暗处窥视：`peeping, hiding, from behind, shadow, silhouette, keyhole`
-
-**氛围链**：`watching → hidden → unaware → peeping → discovered → caught → ! → embarrassed`
-
-**使用提示**：偷窥和展示是同一个硬币的两面——前者是「不被发现的看」，后者是「故意给人看」。偷窥配 hidden camera/fake screenshot 制造真实感；展示配 selfie/mirror/webcam/streaming 制造自媒体感。
-
-**法典验证场景**：
-- 窗外偷窥：`from outside, through window, peeping, voyeurism, couple having sex inside, unaware, night, city lights`
-- 自拍展示：`selfie, mirror, holding phone, exhibitionism, presenting, spread legs, looking at viewer, bedroom`
-
----
+偷窥者入镜时，Skill 执行者必须把偷窥者计入 `count_gender`。偷窥者不入镜时，Skill 执行者使用相应的窥视镜头标签，不增加人物数量。
 
 ### 14.9 事后
 
-**核心公式**：`结束后的状态 × 残留痕迹 × 情感余韵`
+用户要求事后画面时，Skill 执行者必须在 `pose_action_sex` 中加入 `after sex`。结束后的姿势、情绪、体液残留、服装状态和场景痕迹只在画面实际包含对应内容时选择。当前画面没有继续发生性行为时，Skill 执行者只写残留状态，不添加新的性交动作。
 
-**跨槽位标签链**：
-
-| 槽位 | 核心标签 |
-|---|---|
-| pose/action | `after sex, lying on bed, exhausted, cuddling, spooning, heavy breathing` |
-| expression | `afterglow, satisfied, peaceful, tired, asleep, empty eyes, ashamed, regret` |
-| liquid/residue | `cum inside, cumdrip, cum on body, cum on sheets, cum pool, used condom` |
-| clothing | `disheveled clothes, messy hair, unworn clothes, partially undressed` |
-| scene | `crumpled sheets, used tissue, condom wrapper, wine glass, cigarette, morning light` |
-
-**关键变体**：
-- 床上瘫软：`after sex, lying on bed, exhausted, cum on body, heavy breathing, messy hair, afterglow`
-- 浴室清洗：`shower, after sex, washing each other, wet, steam, tender, soap`
-- 拥抱入睡：`cuddling, sleeping, spooning, holding each other, peaceful, closed eyes`
-- 穿衣离开：`getting dressed, leaving, hurry, hotel, morning, awkward, one night stand`
-- 再次插入：`another round, insertion, exhausted but willing, greedy, cum string`
-- 事后羞耻：`ashamed, covering face, regret, tissue, used condom, pregnancy test`
-- 事后检查：`checking, pregnancy test, morning after pill, anxious, used condom`
-
-**氛围链**：`heavy breathing → afterglow → exhausted → satisfied → cuddling → peaceful → asleep / regret`
-
-**使用提示**：事后核心是「过程结束后的余韵」——分两种方向：温存（cuddling/tender/afterglow）和空虚（regret/ashamed/used condom）。事后场景是少数可以合法写大量 cum 残留但不需要写性行为的场景。
-
-**法典验证场景**：
-- 床上瘫软：`after sex, lying on bed, exhausted, cum on body, cum on sheets, heavy breathing, messy hair, afterglow, crumpled sheets, used condom`
-- 事后羞耻：`ashamed, covering face, regret, sitting on bed, used condom on floor, messy hair, tissue, morning light`
-
----
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 结束后的姿势 | `pose_action_sex` | `lying on bed`、`cuddling`、`spooning`、`washing each other`、`getting dressed`、`leaving` |
+| 温存或满足 | `expression_reaction` | `afterglow`、`satisfied`、`peaceful`、`asleep` |
+| 疲惫或空虚 | `expression_reaction` | `exhausted`、`heavy breathing`、`empty eyes`、`ashamed`、`regret` |
+| 体液残留 | `expression_reaction` | `cumdrip`、`cum on body`、`cum on sheets`、`cum pool` |
+| 服装状态 | `clothing_state` | `disheveled clothes`、`unworn clothes`、`partially undressed` |
+| 床铺和消耗品 | `scene_environment` | `crumpled sheets`、`used tissue`、`used condom`、`condom wrapper` |
+| 时间和其他物件 | `scene_environment` | `morning`、`wine glass`、`cigarette`、`pregnancy test`、`morning after pill` |
 
 ### 14.10 另类日常
 
-**核心公式**：`日常场景 + 色情改造 + 自然态度 = 另类日常`
+另类日常把裸体、隐蔽玩具或性行为放入做饭、清洁、通勤、办公、休息或娱乐等日常活动。Skill 执行者必须同时选择一种日常活动和一种性相关状态；人物把该状态视为日常时，`expression_reaction` 使用 `casual`、`natural` 或 `expressionless`。
 
-**关键变体**：
-- 裸体家务：`nude, housework, cooking, cleaning, casual nudity, comfortable, natural state`
-- 隐蔽玩具外出：`egg vibrator, remote controlled, inserted, public, trying to focus, secret`
-- 肛塞日常：`butt plug, tail plug, daily routine, secret, under clothes`
-- 情趣内衣通勤：`lingerie under clothes, secret, office lady, nobody knows`
-- 裸体围裙做饭：`naked apron, bottomless, cooking, kitchen, casual, natural`
-- 假装睡着诱惑：`pretending to sleep, closed eyes, provocative pose, teasing, waiting`
-- 精液美容：`cum on face, facial mask, casual, morning routine`
-- 游戏中被骑乘：`playing games, holding controller, implied sex, girl on top, expressionless`
+| 变体 | `clothing_state` | `pose_action_sex` | `scene_environment` |
+|---|---|---|---|
+| 裸体家务 | `nude` | `housework`、`cooking`、`cleaning` | `kitchen`、`laundry room` |
+| 裸体围裙做饭 | 同时使用 `naked apron`、`bottomless` | `cooking` | `kitchen`、`cooking pot` |
+| 隐蔽玩具外出 | 按用户指定的外出服装填写 | `egg vibrator`、`remote controlled vibrator`、`inserted` | `street`、`train`、`office` |
+| 肛塞日常 | 按用户指定的日常服装填写 | `butt plug`、`tail plug` | 按用户指定的日常场所填写 |
+| 情趣内衣通勤 | `lingerie under clothes` | 按用户指定的日常动作填写 | `office`、`train` |
+| 假装睡着诱惑 | 按用户指定的睡衣或裸体状态填写 | `pretending to sleep`、`provocative pose` | `bedroom`、`bed` |
+| 游戏时发生性行为 | 按用户指定的居家服装填写 | `playing games`、`holding controller`，以及用户指定的性行为 | `living room`、`couch` |
 
-**氛围链**：`daily routine → casual → secret → normal on surface → erotic underneath → nobody knows`
-
-**使用提示**：另类日常核心是「将色情正常化」——女方表情要 natural/casual/expressionless，不要用任何兴奋/羞耻/高潮标签。日常场景道具（cooking pot/washing machine/laptop/game controller）反而是这类场景的关键锚点。与暴露露出的区别——另类日常不追求「被发现」的刺激，追求「这就是日常」的理所当然感。
-
-**法典验证场景**：
-- 裸体围裙做饭：`naked apron, bottomless, cooking, kitchen, casual, holding cooking pot, looking back, natural, morning`
-- 游戏中被骑乘：`playing games, holding controller, implied sex, girl on top, expressionless, couch, casual`
-
----
+当性相关状态需要对旁人隐藏时，Skill 执行者用 `natural_language` 说明被服装、桌面或人物姿势遮住的内容。
 
 ### 14.11 大车小孩
 
-**核心公式**：`体型反差 × 年龄差 × 主导方`
+用户要求大车小孩时，Skill 执行者必须用实际人数标签和外观标签表现双方的年龄、身高或体型反差，并写明主导方和具体动作。
 
-**跨槽位标签链**：
+| 画面要求 | 槽位 | 候选内容 |
+|---|---|---|
+| 一名女性与一名男性 | `count_gender` | 同时使用 `1girl`、`1boy`、`hetero`、`onee-shota` |
+| 女性外观 | `appearance` | `mature female`、`tall female`、`large breasts`、`curvy` |
+| 男性外观 | `appearance` | `shota`、`petite male`、`small penis` |
+| 双方反差 | `appearance` | `height difference`、`size difference`、`age difference` |
+| 女性主导 | `pose_action_sex` | `girl on top`、`cowgirl position`、`lifting`、`breastfeeding` |
+| 男性主导 | `pose_action_sex` | `boy on top`、`sex from behind`、`mating press` |
+| 女性反应 | `expression_reaction` | `motherly`、`gentle`、`confident` |
+| 男性反应 | `expression_reaction` | `blush`、`nervous` |
+| 男性第一次经历性行为 | `natural_language` | `the boy is visibly nervous during his first sexual experience` |
+| 教导关系 | `natural_language` | `the mature woman gently guides the inexperienced boy` |
 
-| 槽位 | 核心标签 |
-|---|---|
-| count/gender | `1girl, 1boy, onee-shota, shota, hetero` |
-| appearance | 女方：`mature female, large breasts, tall, curvy` / 男方：`shota, petite male, small penis` |
-| body diff | `height difference, size difference, large breasts small penis` |
-| pose/action | `girl on top, cowgirl position` / `mating press, boy on top` / `breastfeeding, lactation` |
-| expression | 女方：`motherly, gentle, teaching` / 男方：`blush, nervous, first time` |
-
-**关键变体**：
-- 正太主动后入：`shota, sex from behind, onee-shota, small penis, boy on top`
-- 大姐姐骑乘：`onee-shota, girl on top, cowgirl position, mature female, shota, teaching`
-- 母性授乳：`breastfeeding, onee-shota, lactation, large breasts, motherly figure`
-- 体格碾压：`size difference, height difference, large breasts, petite male, lifting, huge size difference`
-- 多对一服务：`multiple girls, 1boy, shota, group sex, harem, mature female`
-
-**氛围链**：`shy → nervous → first time → teaching → guided → gentle → passionate`
-
-**使用提示**：大车小孩核心是「体型×年龄的双重反差」——视觉上 maximal size difference（large breasts + small penis），心理上经验差（mature female teaching + shota first time）。与常规体型的区别——必须有 onee-shota 或明确的 age difference + size difference 标签。
-
-**法典验证场景**：
-- 大姐姐骑乘：`onee-shota, girl on top, cowgirl position, mature female, large breasts, shota, small penis, teaching, height difference`
-- 正太后入大姐姐：`shota, onee-shota, sex from behind, petite male, mature female, large breasts, size difference, age difference`
-
----
+多人变体必须按照实际入镜人数改写 `count_gender`，并用 `natural_language` 说明每名人物的动作对象。
 
 ### 14.12 隐奸
 
-**核心公式**：`可见部分 + 遮挡手法 + 暗示线索 = 观众脑补完整画面`
+隐奸画面通过裁剪、前景遮挡、介质遮挡或上下区域对比，使观众只能看到性行为的一部分或可见线索。Skill 执行者必须从下表选择一种主要遮挡方法，并用 `natural_language` 写清可见区域和被遮挡区域分别发生什么。
 
-> ⚠️ 隐奸对标签精度要求极高——构图类标签用错一个，就从「隐」变成「露」，完全垮掉。
-
-**跨槽位标签链**（按遮挡手法分5大类）：
-
-| 遮挡手法 | 核心标签 | 效果 |
+| 遮挡方法 | 槽位 | 候选内容或写法 |
 |---|---|---|
-| 画面外裁剪 | `head out of frame` / `upper body out of frame` / `lower body only` / `feet only` / `ass only` / `out-of-frame censoring` | 只展示身体的局部——腿悬空、脚趾蜷曲、体液滴落，观众看不到脸和整体 |
-| 上下分裂 | `upper body normal, lower body exposed` / `upper body normal, under desk` / `table, upper body normal` | 画面上半=正常日常（聊天/吃饭/工作），画面下半或桌下=交配中 |
-| 介质遮挡 | `against glass, frosted glass` / `under covers` / `through window, from outside` / `in locker` / `in cubicle` / `shower curtain` | 透过磨砂/被子/布帘的模糊轮廓和动作剪影 |
-| 伪媒介视角 | `fake screenshot` / `viewfinder, recording` / `cellphone photo` / `speech bubble` / `implied sex` | 伪聊天截图/偷拍画面——只显示局部+UI元素暗示这是私密记录 |
-| 暗示性构图 | `view between legs` / `through legs` / `lower body, head out of frame` / `implied fellatio` / `implied after sex` | 不画性器不画插入，靠体位角度和相邻身体部位暗示正在发生 |
+| 画面边缘裁剪 | `camera_shot` | `head out of frame`；用户要求只显示足部或臀部时，分别使用 `feet focus` 或 `ass focus` |
+| 画面边缘裁剪 | `natural_language` | 明确写出画面保留的身体范围和画面外的身体范围 |
+| 桌面或前景遮挡 | `scene_environment` | `table`、`under table` |
+| 桌面遮挡 | `natural_language` | 分别说明桌面上方的日常动作和桌面下方的性行为 |
+| 其他前景遮挡 | `natural_language` | 说明前景物体、物体后方的人物部分和被遮住的动作 |
+| 磨砂玻璃遮挡 | `scene_environment` | `frosted glass`、`condensation` |
+| 被子、浴帘或狭小隔间遮挡 | `scene_environment` | `bed`、`under covers`、`shower curtain`、`locker`、`cubicle` |
+| 伪媒介画面 | `camera_shot` | `fake screenshot`、`viewfinder`、`cellphone photo` |
+| 暗示性角度 | `camera_shot` | `view between legs`、`through legs` |
+| 未直接显示的性行为 | `pose_action_sex` | `implied sex`、`implied fellatio` |
 
-**关键变体**：
+具体规则：
 
-- 桌子上下分裂（最经典隐奸）：`upper body normal, smile, talking, restaurant / under table, no panties, sex from behind, pussy juice, legs trembling, lower body` — 上半身正常用餐社交，下半身在交配
-- 悬空腿脚特写：`head out of frame, lifting person, hanging legs, feet, toes, toe scrunch, trembling, pussy juice trail, lower body only, sex from behind` — 只展示被抱起的腿和脚，观众从蜷曲的脚趾和体液推断
-- 磨砂玻璃后：`against glass, frosted glass, standing sex, breast press, stealth sex, from outside, night, apartment, x-ray` — 透过磨砂玻璃的模糊轮廓+蒸汽+动作线
-- 被子下鼓起：`under covers, girl on top, cowgirl position, dark, at night, implied sex, nude, motion lines, steam from under covers` — 被子隆起+有节奏的动线+露出的表情
-- 伪手机截图：`fake phone screenshot, speech bubble, viewfinder, upper body, collarbone, teeth, open mouth, tongue out, implied sex, stomach bulge` — 聊天框+局部身体+暗示文字
-- 桌下足交暗示：`under table, footjob, two-footed footjob, feet, toes, soles, no shoes, erection under clothes, bulge, restaurant, pov across table, upper body normal, smile` — 上半身正常聊天，桌面视角，桌下脚在动
-- 垃圾桶下半身：`lower body only, upper body in trash can, pussy, cum in pussy, used condom on ass, sweat, in alley, darkness` — 只有下半身露在外面，上半身在垃圾桶里
-- 游戏坐位隐奸：`playing games, holding controller, sitting on lap, stealth sex, implied sex, expressionless, upper body normal, speech bubble, cum string` — 上面在打游戏，下面在做
-
-**氛围链**：`normal on surface → hidden underneath → trembling → pussy juice visible → cum drip → heavy breathing but silent → discovered? → !`
-
-**使用规则（极重要）**：
-
-1. **「隐」的关键在裁剪**：`head out of frame` 或 `lower body only` 是最强隐奸工具——不画脸就永远有「谁也不知道」的想象空间
-2. **上下分裂最忌画错**：上正常+下交配时，必须保证上半身没有任何性暗示标签（不要 blush/heavy breathing），否则「正常」崩塌
-3. **介质遮挡不能太透**：`frosted glass` 比 `glass` 更「隐」；`under covers` 必须配 `dark` 或 `at night`，否则被子下轮廓太清晰
-4. **暗示靠液体**：`pussy juice trail` / `cum drip` / `cum string` 是隐奸场景最强的「证据」标签——不画性器，体液暗示一切
-5. **隐奸不是偷窥**：偷窥是「有人藏在暗处看」，隐奸是「观众自己也看不全」。不要加 `peeping` / `voyeurism` / `hidden camera`
-
-**法典验证场景**：
-- 桌下隐奸：`upper body normal, smile, drinking, restaurant, table / under table, no panties, sex from behind, pussy juice trail, legs trembling, head out of frame, lower body`
-- 腿上游戏隐奸：`playing games, holding controller, sitting on lap, stealth sex, implied sex, expressionless, on couch, upper body normal, speech bubble, cum string, from side`
-- 磨砂玻璃隐奸：`against glass, frosted glass, standing sex, breast press, stealth sex, from outside, night, apartment window, x-ray, motion lines, steam`
-
----
-
+1. 使用桌面遮挡时，Skill 执行者必须把桌面上方的日常动作和桌面下方的性行为分别写成两个 `natural_language` 短句。使用其他前景遮挡时，两个短句分别说明前景物体和物体后方被遮住的动作。
+2. 使用磨砂玻璃、被子或浴帘遮挡时，Skill 执行者必须保持被遮挡区域不可直接看清；该变体不使用 `x-ray`。
+3. 画面出现可见体液或身体颤抖时，`expression_reaction` 使用对应标签；画面突出脚趾蜷曲时，`pose_action_sex` 使用 `toe scrunch`；画面使用动作线表现移动时，`detail_mood` 使用 `motion lines`。
+4. 用户同时要求偷窥和隐奸时，Skill 执行者可以加入 `peeping`、`voyeurism` 或 `hidden camera pov`；只要求隐奸时，使用本节的裁剪或遮挡标签。

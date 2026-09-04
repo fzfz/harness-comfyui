@@ -2,20 +2,18 @@
 
 ## 结果来源
 
-Skill 执行者必须使用 `generation-output-schema.json` 取得结果属性、类型、枚举、必填性和额外属性限制，使用 `generation-profiles.json` 取得 ANIMA 模型路线、负向模式、基础负向项和画幅尺寸常量。本文件只定义这些结构化数据的选择语义。
-
-Prompt Builder 只设计模板无关的画面目标。历史查询可以返回 Actual Workflow 和包含 Seed 的生成参数；Prompt Builder 可以按本 Skill 的历史查询参考读取或报告历史 Prompt 与 Actual Workflow，但不依据当前或历史 Workflow 的模板参数能力调整目标尺寸。Prompt Builder 不解析、选择、校验、复用或输出 Seed 决定，也不检查模板参数。
+Skill 执行者必须使用 `generation-output-schema.json` 取得结果属性、类型、枚举、必填性和额外属性限制，使用 `generation-profiles.json` 取得 ANIMA 模型路线、负向模式、基础负向项和画幅尺寸常量。本文件定义这些结构化数据的选择、构造与校验规则。
 
 ## 生成目的
 
 Skill 执行者必须按照下列规则选择一个 `generation_purpose`：
 
-1. 用户要求测试 Prompt 方向、比较 Prompt 方案、快速预览、批量筛选、根据图片或反馈修改 Prompt，或者继续迭代同一画面时，选择 `test`。
-2. 当前请求具体引用旧 Prompt、旧图片、Generation Run、用户反馈或修改版，并且继续处理同一画面与同一主体时，该请求连接原测试链并继续选择 `test`。
-3. 用户明确确认 Prompt 方案并要求正式生成、最终成图、交付图、海报或高质量结果时，选择 `final`。
-4. 没有引用旧任务的新画面不连接可见的旧测试链。新画面没有测试、比较或迭代表述时选择 `final`。
-5. 无法确定当前请求是否连接旧测试链时，Skill 执行者必须请用户确认是继续测试还是开始新的正式任务。
-6. 用户在同一请求中同时要求测试结果与正式交付时，若用户已经明确划分各结果的画面要求和生成目的，Skill 执行者必须把每个结果作为独立 Builder 执行，测试结果选择 `test`，正式结果选择 `final`；若用户没有划分各结果，Skill 执行者必须要求用户划分后停止当前执行。
+1. 用户在同一请求中同时要求测试结果与正式交付时，若用户已经明确划分各结果的画面要求和生成目的，Skill 执行者把每个结果作为独立 Builder 执行，测试结果选择 `test`，正式结果选择 `final`；若用户没有划分各结果，Skill 执行者要求用户划分后停止当前执行。
+2. 对于一个结果，用户明确确认当前 Prompt 方案并要求正式生成、最终成图、交付图、海报或高质量结果时，选择 `final`。即使当前请求引用旧 Prompt、旧图片、Generation Run、用户反馈或修改版，这条明确的正式交付要求仍然决定该结果选择 `final`。
+3. 当前结果没有明确的正式交付要求，并且用户要求测试 Prompt 方向、比较 Prompt 方案、快速预览、批量筛选、根据图片或反馈修改 Prompt，或者继续迭代同一画面时，选择 `test`。
+4. 当前结果没有明确的正式交付要求，并且请求具体引用旧 Prompt、旧图片、Generation Run、用户反馈或修改版并继续处理同一画面与同一主体时，该请求连接原测试链并选择 `test`。
+5. 没有引用旧任务的新画面不连接可见的旧测试链。新画面没有测试、比较、迭代或正式交付表述时选择 `final`。
+6. 无法确定当前请求是否连接旧测试链，或者无法确定用户是否要求正式交付时，Skill 执行者请用户确认生成目的，在收到确认前不构造结果。
 
 一次 Builder 执行只返回一个结果。用户要求比较多个 Prompt 方案时，Skill 执行者为每个已划分方案分别构造一个 `test` 结果；方案边界不明确时，Skill 执行者要求用户先划分方案。一个结果不能同时表示测试和正式生成。
 
@@ -33,21 +31,20 @@ Skill 执行者必须根据主体、动作和镜头从 `generation-profiles.json
 
 ## ANIMA 负向策略
 
-Skill 执行者必须从 `generation-profiles.json` 的 `model_routes` 选择与实际 ANIMA 模型记录一致的 `model_route`，并使用该路线的 `negative_mode` 和 `base_negative_items`。
+Skill 执行者使用 `generation-profiles.json` 中的 `anima-aesthetic-v1.1` 路线，并使用该路线的 `negative_mode` 和 `base_negative_items`。
 
 - `anima-aesthetic-v1.1` 使用自身基础负向项，不在正向与负向两侧同时加入 `score_*`。
-- `anima-base` 或 `anima-turbo` 只在实际模型记录明确指向对应路线时使用该路线的基础负向项。
 - Skill 执行者只在本轮画面确实包含对应风险时，追加少量人体、手部、足部、多人粘连或文字伪影项；不得把与画面无关的缺陷列表全部追加。
-- Skill 执行者删除重复负向项，并保持负向 Prompt 简短。原生负向模式必须设置非空 `negative_prompt`，并把 `positive_avoidance` 设置为 `null`。
+- Skill 执行者删除重复负向项。原生负向模式把基础负向项和本轮追加项写入非空 `negative_prompt`，并把 `positive_avoidance` 设置为 `null`；正向规避模式把这些项目改写为正向规避要求并写入非空 `positive_avoidance`，同时把 `negative_prompt` 设置为 `null`。
 
 ## 结果构造与校验
 
-Skill 执行者完成 ANIMA 十二槽 Prompt 的原有格式校验以后，把该校验器产生的最终 Prompt 文本写入 `positive_prompt`，再按照 `generation-output-schema.json` 构造一个结果对象。结果不得包含 `seed`、`seed_mode` 或任何 Seed 决定。
+Skill 执行者按照 `references/03-output-protocol.md` 完成 ANIMA 十二槽 Prompt 格式校验后，把校验器成功结果中的 `prompt_text` 写入 `positive_prompt`，再按照 `generation-output-schema.json` 构造一个结果对象。
 
-Skill 执行者必须把结果 JSON 通过标准输入交给本 Skill 的确定性校验器：
+`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把完整结果 JSON 写入标准输入：
 
 ```sh
 node scripts/validate-output.mjs
 ```
 
-退出码 `0` 表示 stdout 返回通过校验的同一结果对象。退出码 `2` 表示 stderr 返回 `violations` 数组；Skill 执行者必须按照每项 `path` 修正结果，并使用完整修正结果重试。退出码 `1` 表示校验器调用或运行错误；Skill 执行者必须先修正调用环境或参数，不能把该结果交给生图 Skill。
+退出码 `0` 时，stderr 必须为空，stdout 必须是一行通过校验的完整结果 JSON；Skill 执行者把 stdout 中的对象作为最终结构化结果。退出码 `2` 时，stdout 必须为空，stderr 必须是一行包含非空 `violations` 数组的 JSON；Skill 执行者按照每项 `path` 和 `message` 修正完整结果并重试一次，重试仍返回退出码 `2` 时报告全部 `violations` 并停止。退出码 `1` 时，Skill 执行者报告 stderr 并停止。任何非零退出码下都不采用 stdout。命令返回其他退出码，或者输出通道不符合对应规则时，Skill 执行者报告退出码和违反的输出协议并停止。

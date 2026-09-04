@@ -39,6 +39,10 @@ pnpm prod:test
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
 
+v0.39.2 的最终候选在明确排除 `security:advisories` 后通过其余发布门禁：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。`security:advisories` 未取得依赖漏洞结果：npm registry 的 `GET /-/ping`、`POST /-/ping` 以及两个 security API 路径的 GET 均返回响应，但 `POST /-/npm/v1/security/advisories/bulk` 与 `POST /-/npm/v1/security/audits/quick` 通过当前网络配置和强制直连都在 TLS 完成后等待首字节超时。
+
+`node scripts/security/diagnose-advisories.mjs` 先让真实 `pnpm audit` 向本地临时 registry 发送当前 lockfile 的 bulk 请求，再使用同一请求体检查 npm registry 的 DNS、配置网络路线、强制直连路线、HTTP 方法和 security API 路径。该命令只输出请求数量、请求字节数、各阶段耗时、HTTP 状态和故障分类，不输出依赖请求正文或代理地址。
+
 v0.39.1 的最终候选通过完整 `pnpm quality`：924 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。production 测试覆盖跨进程端口声明、死亡 owner claim 回收、存活 owner claim 保留、损坏 claim 拒绝、共享上游双 Desktop、共享主 `.env` 双 Web context、Desktop 进程组与 Web Host PID 的端口所有权接管、实际端口状态、独立 Desktop 输出目录、子进程提前退出、端口状态写入失败和 PID 写入失败。Desktop worktree 测试还验证开发环境把隔离 HOME 的 Skill 根链接到当前 worktree 候选目录、拒绝缺失、越界或通过符号链接解析到 worktree 外的候选目录配置、保留真实全局 Skill 目录，并且生产 context 继续使用真实 home 的全局 Skill 根。
 
 Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、Source v0.86.1 三字段 TemplateBundle、实例 ID 安全投影、只读模板运行参数检查、普通随机 Seed 数量与单次去重、Run 幂等、状态转换、重启恢复、活动输出节点发现、断开输出节点删除、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。模板检查测试覆盖非尺寸参数合同、精确尺寸配对、Selector 配对、preset 映射、带节点后缀的多组候选、非图片辅助 output node 排除、下游独立 resize 或 upscale 覆盖上游尺寸、末端尺寸参数回编译、输入 Workflow 不变、Official compiler 不调用和检查与编译错误一致性。Catalog 自动化测试覆盖 Source v0.86.1 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。

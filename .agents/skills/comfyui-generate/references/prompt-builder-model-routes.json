@@ -1,0 +1,13 @@
+{
+  "model_routes": {
+    "anima-aesthetic-v1.1": {
+      "skill_name": "anima-prompt-builder"
+    },
+    "wai-illustrious-sdxl": {
+      "skill_name": "wai-sdxl-prompt-builder"
+    },
+    "krea2-turbo": {
+      "skill_name": "krea2-anime-prompt-builder"
+    }
+  }
+}

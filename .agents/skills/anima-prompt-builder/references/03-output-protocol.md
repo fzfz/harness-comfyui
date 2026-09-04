@@ -1,27 +1,86 @@
-## 2. OUTPUT PROTOCOL
+# ANIMA Prompt 格式校验器
 
-本节只定义校验器生成的 `prompt_text`，不定义最终 assistant 输出。
+## 用途与调用入口
 
-| 规则 | 说明 |
-|---|---|
-| 行数 | 校验器生成单行 `prompt_text`，其中不含换行。 |
-| 分隔 | 校验器使用 `, ` 连接十二槽中的全部元素。 |
-| 开头 | Skill 执行者按照 `SKILL.md`“构建并校验提示词”定义的质量词和画师前缀规则填充 `quality` 与 `artist_style`。 |
-| 大小写 | Skill 执行者把前十一槽的元素写成 lowercase；`score_` 标签保留下划线。 |
-| 权重 | 前十一槽位接受 `payload`、`(payload)` 或 `(payload:weight)`；Skill 执行者按照 `prompt-weighting.md` 选择形式，校验器按照 `prompt-weight-policy.json` 检查语法。 |
-| 自然语言补充 | 标签无法准确描述多人角色归属、复杂构图、特殊姿势或分镜关系时，Skill 执行者必须把英文自然语言短句放入 `natural_language`；校验器把该槽位放在 `prompt_text` 末尾。 |
+本文件定义 ANIMA 十二槽 Prompt 的组合格式和校验器调用协议。Skill 执行者完成槽位内容、冲突处理、权重设计和自检后调用校验器。
 
-## 校验器调用
-### 脚本名：
-"scripts/validate-output.mjs",
+`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把“标准输入”一节定义的 JSON 对象写入标准输入：
 
-### 参数：
-`["--prompt-format"]`
+```sh
+node scripts/validate-output.mjs --prompt-format
+```
 
-### 作用：
-校验各槽的提示词是否符合机械规则（不负责判断语义质量）
+Prompt 格式校验只使用 `--prompt-format` 参数。
 
-### 输入：
- json : "{\"slots\":{...},\"display_text\":\"{{中文自然语言描述的整个画面的设计思路}}。\"}"
+## 标准输入
 
----
+标准输入必须是包含且只包含 `slots` 和 `display_text` 两个属性的 JSON 对象：
+
+```json
+{
+  "slots": {
+    "quality": ["masterpiece", "best quality", "score_7", "highres", "safe"],
+    "artist_style": ["@say_hana"],
+    "count_gender": ["1girl"],
+    "character_series": [],
+    "appearance": ["long hair"],
+    "clothing_state": ["white dress"],
+    "pose_action_sex": ["standing"],
+    "expression_reaction": ["smile"],
+    "camera_shot": ["full body"],
+    "scene_environment": ["flower garden"],
+    "detail_mood": ["soft lighting"],
+    "natural_language": []
+  },
+  "display_text": "已构建花园人物画面的 ANIMA 提示词。"
+}
+```
+
+`slots` 必须包含且只包含示例中的十二个属性。每个槽位必须是字符串数组，没有内容时使用空数组。Skill 执行者按照槽位在示例中的顺序组合 Prompt，并保留每个数组中的元素顺序。
+
+前十一个槽位的每个数组元素必须使用 `payload`、`(payload)` 或 `(payload:weight)` 之一，并符合 `references/prompt-weight-policy.json` 的语法。`artist_style` 元素解析后的 payload 必须恰好以一个 `@` 开头。`quality` 必须以 `references/prompt-weight-policy.json` 中 `recommendations.unweighted_quality.content` 的全部元素开头，并保持这些元素的原顺序和未加权形式。
+
+`natural_language` 的每个数组元素必须是英文小写单行句子。`display_text` 必须是面向用户的单行非空中文说明，不进入 `prompt_text`。
+
+## Prompt 组合结果
+
+校验器按照十二个槽位的顺序展开数组，并使用英文逗号和一个空格 `, ` 连接全部元素。连接后的单行非空字符串写入成功结果的 `prompt_text`。
+
+## 成功结果
+
+校验成功时，命令返回退出码 `0`，stderr 为空，stdout 写入一行包含且只包含以下五个属性的 JSON：
+
+```json
+{
+  "kind": "noobai_assistant_prompt",
+  "result": "success",
+  "contract_version": "1.0.0",
+  "prompt_text": "masterpiece, best quality, score_7, highres, safe, @say_hana, 1girl",
+  "display_text": "已构建花园人物画面的 ANIMA 提示词。"
+}
+```
+
+Skill 执行者从 stdout JSON 读取 `prompt_text` 和 `display_text`。
+
+## 输入格式失败
+
+标准输入不符合格式规则时，命令返回退出码 `2`，stdout 为空，stderr 写入一行 JSON：
+
+```json
+{
+  "violations": [
+    {
+      "path": "slots.artist_style[0]",
+      "message": "artist_style[0] payload must begin with exactly one @"
+    }
+  ]
+}
+```
+
+`violations` 必须是非空数组，每个数组元素必须包含非空字符串属性 `path` 和 `message`。第一次调用返回退出码 `2` 时，Skill 执行者使用 `path` 定位不合格输入，按照同一元素的 `message` 修正 `slots` 或 `display_text`，完成冲突处理、权重设计和自检后重试一次。重试返回退出码 `2` 时，Skill 执行者报告全部 `violations` 并停止本次执行。校验器返回退出码 `0` 以前，Skill 执行者不使用或输出该次 `prompt_text`。
+
+## 命令错误与返回协议错误
+
+命令返回退出码 `1` 时，Skill 执行者报告 stderr 并停止本次执行。命令返回 `0`、`1`、`2` 以外的整数退出码时，Skill 执行者报告退出码和 stderr 并停止本次执行。命令没有返回退出码时，Skill 执行者报告命令调用产生的错误信息并停止本次执行。
+
+退出码 `0` 对应的 stdout、stderr 或成功 JSON 不符合“成功结果”一节，或者退出码 `2` 对应的 stdout、stderr 或 `violations[]` 不符合“输入格式失败”一节时，Skill 执行者报告违反的协议条件并停止本次执行。

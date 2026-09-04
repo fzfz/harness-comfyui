@@ -1,19 +1,17 @@
 ---
 name: krea2-anime-prompt-builder
-description: 根据用户的自然语言画面要求、当前消息中的 Character/Style 选择、构建过程中采用的语义目录结果和可选历史 ComfyUI Generation Run，构建一条 Krea2 动漫角色提示词；支持展示图与舞蹈或姿态迁移源图，也可按一个或多个 run_id 独立查询历史生成参数和 Actual Workflow。用户要求生成、改写、补全或检查 Krea2 动漫 Prompt，设计动漫全身角色或动作迁移源图，或查询历史 run_id 时使用。
+description: 用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。
 ---
 
 # Krea2 Anime Prompt Builder
 
 ## 查询或复用历史 Generation Run
 
-用户要求读取、核对或复用一个或多个 `run_id` 对应的生成参数或 Actual Workflow 时，Skill 执行者必须在第一条查询命令前完整读取 `references/generation-cli.md`，再按该文件调用 `generation run-inputs --stdin`。当前上下文经过压缩而不再完整保留该文件时，Skill 执行者必须在下一条 CLI 命令前重新完整读取该文件。
+用户要求读取、核对或复用一个或多个 `run_id` 保存的生成参数或 Actual Workflow 时，Skill 执行者完整读取 `references/generation-cli.md`，并按照该文件取得每个 `run_id` 的查询结果。
 
-Skill 执行者必须按查询结果的 `runs[]` 顺序分别处理每个 `run_id`。`lookup_status: "available"` 的结果使用 CLI 返回的完整 canonical `run_id`、`arguments`、`workflow_status` 以及对应的 `workflow` 或 `workflow_error`；`lookup_status: "error"` 的结果使用 CLI 原样返回的请求 `run_id`、`error.code` 和 `error.message`。Skill 执行者不得为错误结果猜测完整 Run ID。一个 `run_id` 返回错误项时，Skill 执行者继续处理其余结果。
+Skill 执行者按照 `references/generation-cli.md` 规定的顺序和结果分支处理每个 `run_id`。
 
 用户只要求查询历史 Generation Run 时，Skill 执行者按顺序报告查询结果后结束本次执行。用户还要求构建或修改 Krea2 Prompt 时，Skill 执行者完成查询后继续执行本文件的 Prompt 流程；用户明确要求复用某个可用结果的历史正向 Prompt 时，Skill 执行者读取该结果实际保存的 `arguments.parameters.positive_prompt` 作为输入。
-
-CLI 返回命令级错误、逐项错误或可修正请求时，Skill 执行者只执行 `references/generation-cli.md` 已定义的报告、修正与重试规则。本 Skill 不增加自动分组查询、结果候选协议或额外历史查询输出格式。
 
 ## 读取当前回合输入
 
@@ -25,7 +23,7 @@ CLI 返回命令级错误、逐项错误或可修正请求时，Skill 执行者�
 2. 用户明确选定的历史正向 Prompt；
 3. 当前消息中的可识别 Character/Style 记录，包括可直接采用的 `data.prompt_text` 或可用于目录查询的 ID、名称和所属作品。
 
-三类内容全部不存在时，Skill 执行者必须请用户提供具体画面要求或有效 Character/Style 选择，然后停止。当前请求没有要求历史查询时，Skill 执行者不调用 `generation run-inputs --stdin`；Prompt 构建分支可以按后文调用语义目录 CLI。所有分支都不调用任何生成器。
+三类内容全部不存在时，Skill 执行者必须请用户提供具体画面要求或有效 Character/Style 上下文记录，然后停止。当前请求没有要求历史查询时，Skill 执行者直接进入 Prompt 构建流程，并按后文条件调用语义查询 CLI。
 
 ## 构建单条 Krea2 动漫 Prompt
 
@@ -49,7 +47,7 @@ Skill 执行者只在画面需要对应内容时读取下列资料，并且只�
 | 用户指定动漫画风，或需要补齐动漫画风方向 | `references/anime-style-presets.md` | 各预设的“画风推荐”中描述渲染媒介、线条、上色、明暗或纹理的词语，以及“配色”字段；`action lines`、`impact frames` 和其他动作、运动效果词语不属于画风内容。 |
 | 国风、仙侠、东方幻想或游戏角色的服装原型与服装家族 | `references/游戏服装多样性库.md` | “代表女角色与服装原型”中的服装剪裁、服装部件、材质和穿戴配饰，以及“常用色板”；鞋履、武器、发型、背景和旧路线说明不属于服装内容。 |
 
-条件资料中的背景、姿态、动作迁移、人物比例、构图、镜头、防裁切和鞋履说明均不参与 Builder 执行。`references/krea2-prompt-rules.md` 和动作迁移路线使用的 `references/motion-migration-constraints.md` 是 Builder 的背景设计、主体分离、姿态、比例、构图和鞋履合同。Skill 执行者不得使用条件资料或其他保留资产替换这两个文件的规则。
+`references/anime-style-presets.md` 只提供表中规定的画风和配色内容，`references/游戏服装多样性库.md` 只提供表中规定的服装内容。背景设计、主体分离、姿态、比例、构图和鞋履按照 `references/krea2-prompt-rules.md` 执行；动作迁移路线同时按照 `references/motion-migration-constraints.md` 执行。
 
 ## 查询目录中的作品、角色、画师和 Prompt 词条
 
@@ -63,9 +61,7 @@ Skill 执行者只在画面需要对应内容时读取下列资料，并且只�
 6. 用户使用自然语言描述外貌、服装、动作、表情、构图、场景、光线或氛围，但已读取的 Krea2 规则与条件资料不能确定精确 Prompt 标签，或者存在两个以上画面含义不同的相近标签；
 第 5 种情况中，Skill 执行者必须先根据已确定的画面设计形成具体画师方向，再按 `references/semantic-query-cli.md` 查询 Krea2 底模和该底模下的 Style 记录。目录没有合适 Style 结果时，Skill 执行者继续使用已经读取的动漫画风资料与 Krea2 默认设计，不把其他底模的 Style 记录作为 Krea2 结果。
 
-当前上下文经过压缩而不再完整保留 `references/semantic-query-cli.md` 时，Skill 执行者必须在下一条语义目录命令前重新完整读取该文件。以上六种情况均未发生时，Skill 执行者不读取该文件，也不调用 `imagegen-semantic-query`。
-
-全部 Character 查询结束后，Skill 执行者必须检查当前请求要求出现的每名主体。某名必需主体对应的 Character 记录没有非空 `data.prompt_text`，目录查询也没有返回可采用的 `prompt_text`，并且当前普通文字、用户选定的历史正向 Prompt 或其他合法来源仍不能完整定义该主体时，Skill 执行者必须报告具体 Character 名称或 ID 没有可用 Prompt 内容，请用户补充该主体的外观与身份要求或选择包含有效 `data.prompt_text` 的 Character 记录，然后停止。其他来源只有在能够完整定义当前请求要求的全部主体时，Skill 执行者才继续构建 Prompt。
+全部 Character 查询结束后，Skill 执行者必须检查当前请求要求出现的每名主体。某名必需主体对应的 Character 上下文记录没有非空 `data.prompt_text`，语义查询也没有返回可采用的 `prompt_text`，并且当前普通文字、用户选定的历史正向 Prompt、条件参考资料与 Krea2 默认设计仍不能完整定义该主体时，Skill 执行者必须报告具体 Character 名称或 ID 没有可用 Prompt 内容，请用户补充该主体的外观与身份要求或选择包含有效 `data.prompt_text` 的 Character 上下文记录，然后停止。上述来源能够完整定义当前请求要求的全部主体时，Skill 执行者继续构建 Prompt。
 
 Skill 执行者必须把选定内容组装成一条自然语言主体明确、关系清楚、可直接输入 Krea2 的正向 Prompt。该 Prompt 正文直接以画面质量、动漫媒介或主体描述开头，只描述一幅画面，不写“根据规则”“已读取资料”“完成自检”“以下是 Prompt”或其他引导句，也不包含候选 Prompt、批量编号、路线说明、参数建议、约束清单或制作备注。
 
@@ -76,12 +72,12 @@ Skill 执行者提交最终 Prompt 前必须逐项确认：
 - `positive_prompt` 只包含一条 Prompt 正文，并且正文描述一幅画面；
 - `positive_prompt` 的第一个句子已经开始描述画面，Prompt 前后没有引导句或说明段落；
 - 当前明确要求已经采用，明确排除的内容没有重新出现；
-- Character 与 Style 内容只来自对应记录的非空 `data.prompt_text` 或语义目录查询中被采用候选的对应 `prompt_text`；
+- `positive_prompt` 中的人物身份、外观与画风内容来自“构建单条 Krea2 动漫 Prompt”章节规定的六类来源；Character 或 Style 上下文记录只采用非空 `data.prompt_text`，语义查询结果只采用完成候选比较后选中结果的 `prompt_text`；
 - 人物身份、外观、服装、动作、镜头、场景和光线之间不存在可见冲突；
-- 背景是具体、绚丽、具有静态空间层次的场景，主体轮廓仍然清楚；
+- 背景符合当前普通文字中的明确要求；用户未指定背景时，背景具体、绚丽、具有静态空间层次，并且主体轮廓清楚；
 - 动作迁移路线已经满足 `references/motion-migration-constraints.md` 的全部检查项；
 - Prompt 不包含负向提示词、内部文件说明、人类可读检查项或生成器调用说明。
 
 全部检查通过后，Skill 执行者必须在决定生成目的、正向规避策略和目标尺寸以前，完整读取 `references/generation-output-contract.md`、`references/generation-output-schema.json` 与 `references/generation-profiles.json`。Skill 执行者按这些参考构造一个结构化生成结果，再按 `references/generation-output-contract.md` 规定的校验接口校验该结果。
 
-当前上下文经过压缩而不再完整保留任一上述参考文件时，Skill 执行者必须在构造或重新校验结构化生成结果前重新完整读取缺失文件。最终回答必须是通过生成结果校验器的结构化结果。本 Skill 不创建输出目录或编号文件。
+最终回答必须是通过生成结果校验器的结构化结果。

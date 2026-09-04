@@ -1,64 +1,56 @@
 ## 3.1 CONFLICT TABLE
 
-以下标签对**不可同时出现**，AI 必须在组装时检查冲突：
+以下表格用于检查单一连续画面。全局视角标签按同一视图判定；人物状态和服装标签只在同一参与者上判定；身体细节标签只在同一参与者的同一身体部位上判定；体位标签只在同一组参与者的同一互动中判定。分镜、拼图、镜面、屏幕或反射明确把标签分配到不同视图时，不判定为冲突。互斥标签中只有一个符合用户画面要求时，Skill 执行者必须保留该标签并删除另一个标签；用户画面要求本身同时包含互斥内容时，Skill 执行者必须说明具体冲突并请用户选择。
 
 ### 视角互斥
 
 | 标签A | 标签B | 原因 |
 |---|---|---|
-| `from front` | `from behind` | 物理矛盾 |
-| `from above` | `from below` | 物理矛盾 |
-| `looking at viewer` | `facing away` | 视线矛盾 |
-| `pov` | `full body` | POV 不可能看到自己全身 |
-| `close-up` | `full body` | 景别矛盾 |
+| `from front` | `from behind` | 同一视图的镜头不能同时位于主体正面和背面 |
+| `from above` | `from below` | 同一视图的镜头不能同时位于主体上方和下方 |
+| 同一参与者的 `looking at viewer` | 同一参与者的 `looking away` | 同一参与者不能同时看向观看者和看向别处 |
+| `pov` | 视点角色自身的 `full body` | 第一人称视点无法同时显示视点角色自身的完整身体 |
+| 同一主体的 `close-up` | 同一主体的 `full body` | 同一主体在同一视图中不能同时采用特写景别和全身景别 |
 
-### 身份互斥
+### 人物数量、状态、互动角色与可见细节互斥
 
 | 标签A | 标签B | 原因 |
 |---|---|---|
-| `solo` | `hetero` / `1boy` / `yuri` | 单人不存在互动 |
-| `femdom` | `male-on-female rape` | 逻辑矛盾（主导方冲突） |
-| `sleeping` / `unconscious` | `looking at viewer` | 无意识不可能直视 |
-| `blindfold` | `heart-shaped pupils` / `rolling eyes` | 看不到眼睛 |
+| `solo` | `hetero` / `yuri` | `hetero` 和 `yuri` 描述多人互动，与单人画面冲突 |
+| 同一组参与者同一互动中的 `femdom` | 同一组参与者同一互动中的 `male-on-female rape` | `femdom` 指女性主导男性，`male-on-female rape` 指男性强迫女性；同一组参与者在同一互动中的主导方不能同时为女性和男性 |
+| 同一参与者的 `sleeping` / `unconscious` | 该参与者的 `looking at viewer` | 睡眠或无意识状态的参与者不能主动直视观看者 |
+| 完全遮住同一参与者双眼的 `blindfold` | 该参与者可见的 `heart-shaped pupils` / `rolling eyes` | 眼罩完全遮住双眼时，画面不能同时显示瞳孔或眼球状态 |
 
 ### 服装互斥
 
 | 标签A | 标签B | 原因 |
 |---|---|---|
-| `completely nude` | 任何具体服装标签 | 全裸不穿衣 |
-| `pantyhose` | `barefoot` | 穿了丝袜不可能光脚（除非 `torn pantyhose`） |
-| `blindfold` | `glasses` | 物理冲突 |
-| 内衣套装 (`cat lingerie`, `lace lingerie`, `babydoll`, `negligee`, `chemise` 等) | `no panties` / `bottomless` | 内衣套装隐含包含内裤，模型优先解析套装忽略暴露标签；需暴露时拆为单件（`cat bra` + `no panties`） |
+| 同一参与者的 `completely nude` | 该参与者的任何具体服装标签 | `completely nude` 表示该参与者没有穿着任何服装 |
+| 覆盖双脚的 `pantyhose` | `barefoot` | 丝袜覆盖双脚时与赤脚冲突；只有提示词明确说明丝袜脚部破开并露出双脚时才兼容 |
+| 明确包含内裤的内衣套装标签 | `no panties` / `bottomless` | 套装标签已经声明角色穿着内裤；需要暴露下身时，应把套装改写为实际保留的单件上装 |
 
-> **不互斥**：外衣/制服（`maid outfit`、`school uniform`、`bunny suit`、`sailor uniform` 等）与 `no panties` / `bottomless` 完全兼容——穿制服不穿内裤 = 合理场景。
+`no panties` 可以与未明确包含内裤的外衣或制服组合。`bottomless` 可以与不遮挡臀部及生殖器的服装标签组合，例如上装、鞋袜、手套和配饰；它与实际遮挡臀部或生殖器的裤装、连体服及制服部件冲突。
+
+`partially undressed` 与仍穿在同一参与者身上的具体服装标签兼容。
 
 ### 动作互斥
 
 | 标签A | 标签B | 原因 |
 |---|---|---|
-| `standing sex` | `lying` / `on back` | 体位矛盾 |
-| `missionary` | `doggystyle` | 不可能同时两个体位 |
-| `cowgirl position` | `prone bone` | 体位矛盾 |
-| `fellatio` | `cunnilingus`（同一人执行） | 嘴只有一张 |
+| 两名参与者均站立的 `standing sex` | 其中任一参与者的 `lying` / `on back` | 两名参与者均站立的体位与任一参与者躺卧的状态冲突 |
+| `missionary` | `doggystyle` | 同一组参与者在同一互动中不能同时采用传教士体位和后入体位 |
+| `cowgirl position` | `prone bone` | `cowgirl position` 要求接受插入的参与者骑跨在另一参与者上方，`prone bone` 要求该参与者俯卧在另一参与者下方，二者不能在同一互动中同时成立 |
+| `fellatio` | `cunnilingus`（同一人执行） | 同一执行者的嘴不能在同一时刻同时接触阴茎和外阴 |
 
-### 细节标签过度
+### 身体细节标签冲突与重复
 
-同一身体部位同时堆叠多个细节标签会导致模型过度渲染，产生畸形。**每部位细节标签 ≤2 个，且不能互斥。**
+同一身体部位可以使用多个含义兼容的标签。Skill 执行者必须删除互斥标签；多个标签重复表达同一状态时，只保留最符合用户画面要求的一个标签。
 
 | 部位 | 矛盾组合 | 原因 |
 |---|---|---|
-| 脚趾 | `spread toes` + `toe scrunch` / `toes curling` | 舒展 vs 蜷缩，物理矛盾 |
-| 脚趾 | `spread toes` + `feet together` | 分趾需要空间，合拢则压缩 |
-| 手指 | `spread fingers` + `clenched fist` / `gripping` | 张开 vs 握拳 |
-| 胸部 | `bouncing breasts` + `breasts squeeze together` | 弹跳 vs 挤压，动态矛盾 |
-| 嘴巴 | `open mouth` + `clenched teeth` / `closed mouth` | 张嘴 vs 闭嘴 |
-| 眼睛 | `rolling eyes` + `looking at viewer` | 翻白眼 vs 直视 |
-| 腿部 | `spread legs` + `legs together` | 分开 vs 并拢 |
-| 足部整体 | 3 个以上足部标签（如 `foot focus` + `footjob` + `toe scrunch` + `spread toes`） | 过度细化导致脚趾/脚掌畸形 |
+| 手指 | 同一只手的 `spread fingers` + `clenched fist` | 同一只手不能同时张开手指和握紧拳头 |
+| 嘴巴 | `open mouth` + `closed mouth` | 嘴巴不能同时张开和闭合 |
+| 眼睛 | `rolling eyes` + `looking at viewer` | 同一参与者不能同时翻白眼并直视观看者 |
+| 腿部 | `spread legs` + `legs together` | 同一参与者的双腿不能同时处于分开和并拢状态 |
 
-**原则**：同一部位的状态标签可以多个，但不能互斥。`barefoot` + `feet focus` + `soles` + `toe scrunch` 四个兼容标签没问题；`spread toes` + `toe scrunch` 两个就矛盾。关键在于**状态一致性**而非数量。
-
-**例外**：`torn pantyhose` + `barefoot`（脚部撕开）、`partially undressed` + 具体服装（半脱状态）属于合理组合。
-
----
-
+兼容组合示例：`barefoot` + `feet focus` + `soles` + `toe scrunch`。
