@@ -174,6 +174,8 @@ Host bundle 测试必须通过 `materializeSourceHostModule(repositoryRoot, { ou
 
 Codex 通过 Electron Chrome DevTools Protocol 操作消息输入框和“生成结果”按钮，并记录 `harnessComfyuiGeneration.list()` 的响应、面板计数及开发 SQLite 中的记录。首个 Run 创建前，Codex 记录到 41 次空列表响应；首批完成后、第二批创建前的 50.808 秒内，Codex 记录到 50 次 `hasActiveRuns=false` 的响应。Codex 在会话运行期间采样 259 次，每次均读取到同一个 `SessionSnapshot` 对象，且其 `running=true`。Codex 在空列表、首批完成、第二批创建和两批完成四个阶段观测到面板尺寸均为 359.5×900 CSS 像素，矩形完整位于 1380×900 CSS 像素的视口内，固定测量点 `(left + width / 2, top + 80)` 均命中面板的后代元素。Codex 分别在两个 Run 创建后的 772 毫秒和 984 毫秒观测到对应卡片；同一轮回复结束前，面板显示两张 Run 卡片和 2 个媒体，与数据库记录数量一致。
 
+v0.39.5 最终候选树的完整 `pnpm quality` 通过：938 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.43%、branches 86.66%、functions 100%、lines 96.06%；Harness 锁文件的依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：
