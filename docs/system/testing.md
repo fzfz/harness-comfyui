@@ -176,6 +176,10 @@ Codex 通过 Electron Chrome DevTools Protocol 操作消息输入框和“生成
 
 v0.39.5 最终候选树的完整 `pnpm quality` 通过：938 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.43%、branches 86.66%、functions 100%、lines 96.06%；Harness 锁文件的依赖审计结果为 critical 0、high 0、moderate 0、low 0。
 
+## v0.39.6 发布候选验证
+
+v0.39.6 最终候选树的完整 `pnpm quality` 通过：943 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.46%、branches 86.72%、functions 100%、lines 96.08%。Harness 锁文件的依赖审计未返回漏洞公告。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，发布记录继续保留这两项公告，用户已明确授权执行该锁文件安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：

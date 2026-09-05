@@ -519,7 +519,7 @@ interface WorkbenchResultsProps {
 }
 
 function WorkbenchResults({ sessionId, surface, workbench, snapshot }: WorkbenchResultsProps) {
-  const [activeTab, setActiveTab] = useState<ResultTab>('current')
+  const [activeTab, setActiveTab] = useState<ResultTab>('session')
   const { runs, media } = snapshot.projection
   return (
     <aside
@@ -542,16 +542,16 @@ function WorkbenchResults({ sessionId, surface, workbench, snapshot }: Workbench
 
       <div className="harness-comfyui-results-tabs" role="tablist" aria-label={RESULTS_COPY.title}>
         <Button
-          variant="toolbar" size="sm" role="tab" aria-selected={activeTab === 'current'}
-          onClick={() => setActiveTab('current')}
-        >
-          {RESULTS_COPY.currentTab}
-        </Button>
-        <Button
           variant="toolbar" size="sm" role="tab" aria-selected={activeTab === 'session'}
           onClick={() => setActiveTab('session')}
         >
           {RESULTS_COPY.sessionTab}
+        </Button>
+        <Button
+          variant="toolbar" size="sm" role="tab" aria-selected={activeTab === 'current'}
+          onClick={() => setActiveTab('current')}
+        >
+          {RESULTS_COPY.currentTab}
         </Button>
       </div>
 

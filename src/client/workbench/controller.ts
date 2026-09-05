@@ -18,6 +18,7 @@ export type WorkbenchSessionInput = ReturnType<IConversation['input']['for']>
 
 export class WorkbenchController {
   private active = false
+  private currentSessionId: string | undefined
   private resultsOpen = false
   private readonly listeners = new Set<WorkbenchListener>()
   private readonly resultListeners = new Set<WorkbenchListener>()
@@ -42,6 +43,18 @@ export class WorkbenchController {
     }
   }
 
+  syncCurrentSession(sessionId: string): void {
+    const changed = this.currentSessionId !== undefined && this.currentSessionId !== sessionId
+    this.currentSessionId = sessionId
+    if (changed && this.resultsOpen) this.closeResults()
+  }
+
+  syncDetailsOpen(open: boolean): void {
+    if (this.resultsOpen === open) return
+    this.resultsOpen = open
+    for (const listener of this.resultListeners) listener()
+  }
+
   toggle(): void {
     this.active = !this.active
     if (this.active) this.openResults()
@@ -50,17 +63,13 @@ export class WorkbenchController {
   }
 
   openResults(): void {
-    const changed = !this.resultsOpen
-    this.resultsOpen = true
     this.layout.openDetails()
-    if (changed) for (const listener of this.resultListeners) listener()
+    this.syncDetailsOpen(true)
   }
 
   closeResults(): void {
-    const changed = this.resultsOpen
-    this.resultsOpen = false
     this.layout.closeDetails()
-    if (changed) for (const listener of this.resultListeners) listener()
+    this.syncDetailsOpen(false)
   }
 }
 
