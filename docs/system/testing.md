@@ -21,6 +21,14 @@ pnpm prod:test
 
 `prod:test` 使用临时目录和端口覆盖 Desktop `dev`/`preview` 模式、跨进程端口声明、双 worktree 并发、PID 与端口状态写入失败清理、restart、异常退出、worktree `.env`/`node_modules` 链接、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
 
+## 候选 Desktop 验证
+
+`DSH_DESKTOP_TEST_SOURCE` 为 `test:desktop` 指定候选 DSH Desktop 的绝对路径。`tests/desktop/desktop-live.test.mjs` 和 `tests/desktop/managed-shell-capability.test.ts` 通过 `tests/support/desktop-context.mjs` 读取该变量；省略该变量时，测试使用 `config/desktop-production.json` 指定的底座。该变量不修改 `dev:*` 或 `prod:*` 的启动路径。
+
+候选设置页通过重新编辑推理等级，将旧模型记录的 `reasoning.efforts` 转换为 `reasoningEfforts`。只打开设置页不会转换旧记录。设置页不再提供逐模型默认推理等级控件；用户在会话中选择推理等级。
+
+自定义 Provider 回归测试使用 `tests/fixtures/custom-provider-reasoning.json` 中的旧配置样本，通过真实设置页转换硅基流动的两个模型和 cliproxy 的四个模型。测试核对六个模型保存后的 `reasoningEfforts`，并确认其他模型属性保持原值。两个未配置推理等级的模型必须保留原记录，且不包含 `reasoningEfforts`。测试随后点击“新建会话”，在新会话菜单中为六个已配置模型逐一选择 Max。
+
 ## 自动化测试
 
 | 命令 | 范围 |

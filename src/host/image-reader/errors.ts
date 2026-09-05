@@ -1,3 +1,5 @@
+import type { ImageReaderErrorCode } from '../../image-reader/contract.ts'
+
 export const IMAGE_READER_FAILURE_DIAGNOSTIC_LIMITS = Object.freeze({
   fieldChars: 96,
   totalChars: 2048,
@@ -109,10 +111,10 @@ export function runtimeImageReaderFailureMessage(context: RuntimeImageReaderFail
 }
 
 export class ImageReaderError extends Error {
-  readonly code: string
+  readonly code: ImageReaderErrorCode
   readonly runtimeFailure?: RuntimeImageReaderFailureContext
 
-  constructor(code: string, message: string, options?: ImageReaderErrorOptions) {
+  constructor(code: ImageReaderErrorCode, message: string, options?: ImageReaderErrorOptions) {
     super(message, options?.cause === undefined ? undefined : { cause: options.cause })
     this.name = 'ImageReaderError'
     this.code = code

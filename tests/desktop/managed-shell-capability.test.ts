@@ -9,8 +9,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeSourceCliModule } from '../../scripts/production/cli-module.mjs'
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
-// @ts-expect-error The desktop worktree launcher is implemented as a Node.js ESM script.
-import { loadDesktopWorktreeContext } from '../../scripts/desktop/worktree.mjs'
+// @ts-expect-error The desktop test context is implemented as a Node.js ESM script.
+import { loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 const temporaryDirectories: string[] = []
 
@@ -62,7 +62,7 @@ describe('DSH Desktop managed shell capability', () => {
   it('passes the project CLI capability through the real DSH bash execution path', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-managed-shell-'))
     temporaryDirectories.push(root)
-    const context = await loadDesktopWorktreeContext()
+    const context = await loadTestDesktopContext()
     const fromDesktop = async (name: string) => import(pathToFileURL(
       resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
     ).href)
@@ -115,7 +115,7 @@ describe('DSH Desktop managed shell capability', () => {
           session: {
             id: 'session_1',
             header: { cwd: process.cwd() },
-            events: [{ type: 'tool/call', data: { callId, name: 'bash', turn: 1 } }],
+            snapshotEvents: () => [{ type: 'tool/call', data: { callId, name: 'bash', turn: 1 } }],
           },
         },
       }) as { isError: boolean; value?: { stdout?: { text?: string } } }

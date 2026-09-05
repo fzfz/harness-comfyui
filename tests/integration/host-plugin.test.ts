@@ -214,7 +214,7 @@ describe('Harness ComfyUI Host plugin', () => {
         session: {
           id: 'session_1',
           header: { cwd: '/workspace' },
-          events: [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'bash', turn: 1 } }],
+          snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'bash', turn: 1 } }],
         },
       },
     } as never
@@ -282,7 +282,7 @@ describe('Harness ComfyUI Host plugin', () => {
         token: Symbol('execution'),
         deferContext: vi.fn(),
         concludeTurn: vi.fn(),
-        agent: { id: 'session_1', session: { id: 'session_1', header: { cwd: '/workspace' }, events: [] } },
+        agent: { id: 'session_1', session: { id: 'session_1', header: { cwd: '/workspace' }, snapshotEvents: () => [] } },
       }).catch(cause => cause) as Error
 
       expect(error).toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
@@ -331,8 +331,8 @@ describe('Harness ComfyUI Host plugin', () => {
 
     expect(parsedRequest).toEqual(wireValue)
     await expect(imageReader.saveProfile(parsedRequest, new AbortController().signal)).rejects.toMatchObject({
-      name: 'TypertRemoteFailure',
-      failure: { code: 'IMAGE_READER_ENDPOINT_URL_INVALID' },
+      name: 'RemoteError',
+      code: 'IMAGE_READER_ENDPOINT_URL_INVALID',
     })
     await fiber.dispose()
     await ctx.fiber.dispose()

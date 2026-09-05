@@ -84,3 +84,9 @@ pnpm prod:stop
 - `web:*` 只在 linked worktree 管理独立 Web Host 调试环境。
 - `prod:*` 只在已发布 Git tag 的生产 checkout 管理完整 DSH Desktop 生产环境。
 - 独立 linked worktree 中的 `pnpm quality` 验证源码门禁和真实 Desktop 验收；仓库不配置 GitHub Actions workflow 或自动生产部署 workflow。
+
+## 上游同步候选的发布状态
+
+Desktop 候选 `cbd58460b97da989dd70b0aa6f54ab46c90fd518` 完整合并上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`。对应的 Harness ComfyUI 适配仍位于独立分支，尚未创建新版本或部署到生产。发布执行者取得发布授权后，必须按本文件的门禁完成版本发布，并将该 Desktop 提交与 Harness ComfyUI 发布提交共同部署。
+
+该候选的锁文件包含 `pptxgenjs 4.0.1 → image-size 1.2.1`。2026-09-05 的安装前检查发现 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已明确允许安装该依赖；发布记录必须保留这两项发现。

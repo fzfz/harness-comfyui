@@ -26,7 +26,7 @@ function execution(events: readonly unknown[], callId = 'call_run_input_1') {
       session: {
         id: 'session_1',
         header: { cwd: '/workspace' },
-        events,
+        snapshotEvents: () => events,
       },
     },
   }

@@ -160,3 +160,7 @@ pnpm quality
 三个运行目录不共享 PID、日志、DSH home、Run Repository、Session 或媒体文件。`status` 返回 `running` 或 `stopped`；`logs` 读取对应环境的日志；`stop` 只停止对应运行目录登记的进程。
 
 linked worktree 共享的 `.env` 可以保留 Provider 凭据、共享产品配置和既有端口变量。`dev:*` 不把共享 `.env` 中的 Desktop 移动桥接端口变量作为当前 worktree 的开发端口；`web:*` 不把共享 `.env` 中的 `HARNESS_COMFYUI_SERVER_PORT` 作为当前 worktree 的 Web Host 端口。开发 Desktop 移动桥接端口、独立 Web Host 端口、PID、日志、DSH home、业务数据和 Desktop 构建输出全部属于当前 worktree 的开发实例。
+
+## 上游同步候选的启动要求
+
+独立分支 `codex/sync-upstream-reasoning` 的 Desktop 候选提交为 `cbd58460b97da989dd70b0aa6f54ab46c90fd518`，已完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`。该候选使用 Harness `0.1.2-rc.1` 和 Cordis `4.0.2`；当前插件源码必须与该候选共同验证。

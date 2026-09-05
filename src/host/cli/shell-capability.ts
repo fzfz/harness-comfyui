@@ -39,7 +39,7 @@ function identityFor(execution: ToolExecution): CliExecutionIdentity | undefined
   if (isRecord(execution.arguments) && execution.arguments.run_in_background === true) return undefined
   const session = execution.agent?.session
   if (session === undefined || !nonEmpty(session.id) || !nonEmpty(session.header.cwd)) return undefined
-  const calls = session.events.flatMap(event => {
+  const calls = session.snapshotEvents().flatMap(event => {
     if (event.type !== 'tool/call') return []
     if (String(event.data.callId) !== String(execution.callId) || event.data.name !== execution.name) return []
     return [event]

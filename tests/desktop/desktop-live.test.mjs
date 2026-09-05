@@ -1,5 +1,6 @@
 import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
+import { createRequire } from 'node:module'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -10,11 +11,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   desktopWorktreeStatus,
   loadDesktopProductionContext,
-  loadDesktopWorktreeContext,
   startDesktopWorktree,
   stopDesktopWorktree,
 } from '../../scripts/desktop/worktree.mjs'
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
+import { loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 const active = []
 
@@ -373,6 +374,110 @@ async function searchComposerModels(page, query) {
   )
 }
 
+async function verifyCustomProviderReasoning(page, context, providers) {
+  await waitForValue(page, `(() => {
+    const session = [...document.querySelectorAll('[role="treeitem"]')]
+      .find(node => node.textContent?.includes('Desktop media session'))
+    session?.click()
+    return !!session
+  })()`, value => value === true)
+  await waitForValue(page, `[...document.querySelectorAll('[role="treeitem"]')]
+    .some(node => node.textContent?.includes('Desktop media session') && node.getAttribute('aria-selected') === 'true')`,
+  value => value === true)
+  await openSettings(page)
+  expect(await page.evaluate(`(() => {
+    const button = [...document.querySelectorAll('[role="dialog"] button')]
+      .find(node => node.textContent?.trim() === '模型')
+    button?.click()
+    return !!button
+  })()`)).toBe(true)
+  for (const provider of Object.values(providers)) {
+    await waitForValue(page, `(() => {
+      const button = [...document.querySelectorAll('button')].find(node =>
+        node.getAttribute('aria-label')?.startsWith('编辑 ')
+        && node.getAttribute('aria-label').includes(${JSON.stringify(provider.displayName)}))
+      button?.click()
+      return !!button
+    })()`, value => value === true)
+    await waitForValue(page, `(() => {
+      const summary = [...document.querySelectorAll('summary')].find(node => node.textContent?.trim() === '自定义设置')
+      if (!summary) return false
+      if (!summary.parentElement.open) summary.click()
+      return true
+    })()`, value => value === true)
+    for (const [index, model] of provider.models.entries()) {
+      if (!model.reasoning) continue
+      const label = `推理等级 ${index + 1}`
+      await page.evaluate(`(document.querySelector('button[aria-label="模型设置 ${index + 1}"]')?.click(), true)`)
+      expect(await waitForValue(page, `document.querySelector('input[aria-label=${JSON.stringify(label)}]')?.value`,
+        value => value !== undefined)).toBe('low, medium, high, max')
+      await page.evaluate(`(() => {
+        const input = document.querySelector('input[aria-label=${JSON.stringify(label)}]')
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'low,medium,high,max')
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })()`)
+    }
+    await page.evaluate(`([...document.querySelectorAll('.dshProviderEditorStickyFooter button')]
+      .find(node => node.textContent?.trim() === '保存')?.click(), true)`)
+    await waitForValue(page, `document.querySelector('.dshProviderEditorStickyFooter') === null`, value => value === true)
+  }
+  await closeSettings(page)
+  expect(await page.evaluate(`(() => {
+    const button = document.querySelector('button[aria-label="新建会话"]')
+    button?.click()
+    return !!button
+  })()`)).toBe(true)
+  await waitForValue(page, `(() => {
+    const selected = [...document.querySelectorAll('[role="treeitem"][aria-selected="true"]')]
+    return selected.some(node => node.textContent?.includes('新会话'))
+      && selected.every(node => !node.textContent?.includes('Desktop media session'))
+  })()`, value => value === true)
+  const { parse } = createRequire(resolve(context.desktopSource, 'package.json'))('yaml')
+  const persisted = parse(await readFile(resolve(context.dshHome, 'settings.yaml'), 'utf8'))['llm-pi-ai'].providers
+  for (const [route, provider] of Object.entries(providers)) {
+    for (const model of provider.models) {
+      const actual = persisted[route].models.find(candidate => candidate.id === model.id)
+      if (!model.reasoning) {
+        expect(actual).toEqual(model)
+        continue
+      }
+      const { reasoning, ...unchanged } = model
+      expect(actual).toEqual({
+        ...unchanged,
+        reasoningEfforts: Object.fromEntries(reasoning.efforts.map(level => [level.id, level.id])),
+      })
+      await openComposerModelMenu(page)
+      await searchComposerModels(page, model.name)
+      await page.evaluate(`(() => {
+        const option = [...document.querySelectorAll('[role="menuitemradio"]')].find(node =>
+          node.title === ${JSON.stringify(model.name)} && node.closest('[role="group"]')
+            ?.querySelector('[id$="-${route}"]'))
+        if (!option) throw new Error('The custom provider model is missing from the composer')
+        option.click()
+      })()`)
+      await waitForValue(page, `document.querySelector('[role="menu"][aria-label="模型与推理等级"]') === null`, value => value === true)
+      await page.evaluate(`([...document.querySelectorAll('button[aria-haspopup="menu"]')]
+        .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))?.click(), true)`)
+      await waitForValue(page, `(() => {
+        const option = [...document.querySelectorAll('[role="menuitem"]')]
+          .find(node => node.querySelector('span')?.textContent?.trim() === '推理等级')
+        option?.click()
+        return !!option
+      })()`, value => value === true)
+      const levels = await waitForValue(page, `[...document.querySelectorAll('[role="menuitemradio"]')].map(node => node.textContent.trim())`, value => value.length === 5)
+      expect(levels).toEqual(['Default', 'Low', 'Medium', 'High', 'Max'])
+      if (route === 'cliproxy' && model.id === 'gpt-5.6-luna') {
+        const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
+        await writeFile(resolve(context.repositoryRoot, '.local/custom-provider-reasoning.png'), Buffer.from(screenshot.data, 'base64'))
+      }
+      await page.evaluate(`([...document.querySelectorAll('[role="menuitemradio"]')]
+        .find(node => node.textContent?.trim() === 'Max')?.click(), true)`)
+      await waitForValue(page, `([...document.querySelectorAll('button[aria-haspopup="menu"]')]
+        .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))?.getAttribute('aria-label') ?? '').includes('推理等级 Max')`, value => value === true)
+    }
+  }
+}
+
 async function setImageReaderField(page, label, value) {
   const changed = await page.evaluate(`(() => {
     const section = document.querySelector('.harness-comfyui-image-reader-settings')
@@ -590,8 +695,8 @@ async function seedDesktopMedia(context, identity) {
 }
 
 describe('live DSH Desktop production integration', () => {
-  it('loads project state, verifies OpenCode Go adds four models, retains grok-4.5, removes ox-alpha-free, and filters image-reader models through preview', async () => {
-    const developmentContext = await loadDesktopWorktreeContext()
+  it('loads project state, verifies OpenCode Go adds four models, removes grok-4.5 and ox-alpha-free, and filters image-reader models through preview', async () => {
+    const developmentContext = await loadTestDesktopContext()
     const base = {
       ...await loadDesktopProductionContext(),
       desktopSource: developmentContext.desktopSource,
@@ -631,6 +736,9 @@ describe('live DSH Desktop production integration', () => {
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
     }
     const identity = await seedSavedDesktopSession({ ...context, dshHome: legacyDshHome })
+    const customProviders = JSON.parse(await readFile(new URL('../fixtures/custom-provider-reasoning.json', import.meta.url), 'utf8'))
+    await mkdir(context.dshHome, { recursive: true })
+    await writeFile(resolve(context.dshHome, 'settings.yaml'), JSON.stringify({ 'llm-pi-ai': { providers: customProviders } }))
     const mediaFixture = await seedDesktopMedia(context, identity)
     const fixture = { context, start: undefined }
     active.push(fixture)
@@ -668,9 +776,19 @@ describe('live DSH Desktop production integration', () => {
         value => value.ready && value.preset,
       )
       expect(initial.workspaceChooser).toBe(false)
+      await page.evaluate(`(() => {
+        const notice = [...document.querySelectorAll('[role="dialog"]')]
+          .find(dialog => dialog.textContent?.includes('内测声明'))
+        const proceed = [...(notice?.querySelectorAll('button') ?? [])]
+          .find(button => button.textContent?.trim() === '继续')
+        proceed?.click()
+      })()`)
+      await waitForValue(page, `[...document.querySelectorAll('[role="dialog"]')]
+        .every(dialog => !dialog.textContent?.includes('内测声明'))`, value => value === true)
       expect(resolve(context.dshHome, await readlink(resolve(context.dshHome, '.env')))).toBe(environmentFilePath)
       const profileManifest = JSON.parse(await readFile(resolve(context.dshHome, 'profiles/web/package.json'), 'utf8'))
-      expect(profileManifest.dependencies['harness-comfyui']).toMatch(/^link:\.\.\/.generations\/live\//u)
+      expect(profileManifest.dependencies['harness-comfyui'])
+        .toBe(JSON.parse(await readFile(resolve(base.repositoryRoot, 'package.json'), 'utf8')).version)
       expect(await readlink(resolve(context.dshHome, 'profiles/web/node_modules/harness-comfyui')))
         .toContain(resolve(context.dshHome, 'profiles/.generations/live'))
       expect(await readFile(context.harnessLog, 'utf8')).not.toContain('migration failed')
@@ -680,12 +798,12 @@ describe('live DSH Desktop production integration', () => {
         { id: 'qwen3.8-flash', name: 'Qwen3.8 Flash' },
         { id: 'glm-5.3-flash', name: 'GLM-5.3-Flash (2x usage)' },
         { id: 'hy4-preview', name: 'Hy4 preview' },
-        { id: 'grok-4.5', name: 'Grok 4.5' },
         { id: 'grok-4.6', name: 'Grok 4.6' },
       ]) {
         expect(await searchComposerModels(page, model.id)).toEqual([{ name: model.name, openCodeGo: true }])
       }
       expect(await searchComposerModels(page, 'ox-alpha-free')).toEqual([])
+      expect(await searchComposerModels(page, 'grok-4.5')).toEqual([])
       await page.evaluate(`(document.querySelector('[role="menu"][aria-label="模型与推理等级"] [role="searchbox"]')
         ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true)`)
       await waitForValue(
@@ -700,6 +818,8 @@ describe('live DSH Desktop production integration', () => {
         `document.querySelector('[role="menu"][aria-label="模型与推理等级"]') === null`,
         value => value === true,
       )
+
+      await verifyCustomProviderReasoning(page, context, customProviders)
 
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
@@ -733,7 +853,6 @@ describe('live DSH Desktop production integration', () => {
             'qwen3.7-plus',
             'qwen3.8-flash',
             'glm-5.3-flash',
-            'grok-4.5',
             'grok-4.6',
           ]),
         }),
