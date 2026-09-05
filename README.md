@@ -2,6 +2,8 @@
 
 Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 ComfyUI 集成项目。项目提供 Host 插件、使用 Harness 原生扩展位的 Client 插件、完整 Desktop 的生产与开发命令，以及独立 Web Host 调试命令。当前 Client 使用 `sidebar.footer.action`、`conversation.input.dock`、`details` 和 `shell.overlay` 提供 ComfyUI 工作台入口、上下文选择器与生成结果列，并保留 Harness 的 AppFrame、Session 列表、会话区和原生 composer。
 
+会话 Agent 运行期间，右侧“运行状态”持续查询当前会话的 Run；首批尚未创建或上一批已经完成时，面板也能自动显示随后创建的 Run。Agent 停止运行后，面板继续跟踪尚未结束的 Run，直到这些 Run 全部结束。
+
 ## 环境要求
 
 - Node.js `22.19.0` 或 `24.0.0` 以上版本
@@ -119,6 +121,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.39.4 发布说明](docs/releasenotes.md)
+- [v0.39.5 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.39.4`。对应发布记录在最终提交、`v0.39.4` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.39.5`。对应发布记录在最终提交、`v0.39.5` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

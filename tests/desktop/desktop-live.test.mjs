@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { createRequire } from 'node:module'
+import { DatabaseSync } from 'node:sqlite'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -109,8 +110,16 @@ async function connectDesktopPage(port, timeoutMs = 60_000) {
   })
   let commandId = 0
   const pending = new Map()
+  const generationResponses = new Set()
+  const completedGenerationResponses = []
   socket.addEventListener('message', event => {
     const message = JSON.parse(String(event.data))
+    if (message.method === 'Network.responseReceived' && new URL(message.params.response.url).pathname.endsWith('/harnessComfyuiGeneration/list')) {
+      generationResponses.add(message.params.requestId)
+    }
+    if (message.method === 'Network.loadingFinished' && generationResponses.delete(message.params.requestId)) {
+      completedGenerationResponses.push(message.params.requestId)
+    }
     const resolveCommand = pending.get(message.id)
     if (resolveCommand === undefined) return
     pending.delete(message.id)
@@ -131,7 +140,24 @@ async function connectDesktopPage(port, timeoutMs = 60_000) {
     }
     return result.result.value
   }
-  return { close: () => socket.close(), command, evaluate }
+  const waitForGenerationProjection = async (sessionId, runCount) => {
+    const deadline = Date.now() + 10_000
+    while (Date.now() < deadline) {
+      const requestId = completedGenerationResponses.shift()
+      if (requestId === undefined) {
+        await delay(50)
+        continue
+      }
+      const { body, base64Encoded } = await command('Network.getResponseBody', { requestId })
+      expect(base64Encoded).toBe(false)
+      const response = JSON.parse(body)
+      if (response.result.ok && response.result.value.sessionId === sessionId && response.result.value.runs.length === runCount) {
+        return response.result.value
+      }
+    }
+    throw new Error(`Desktop did not receive a Generation projection with ${runCount} Runs for ${sessionId}`)
+  }
+  return { close: () => socket.close(), command, evaluate, waitForGenerationProjection }
 }
 
 async function connectDesktopBrowser(port, timeoutMs = 60_000) {
@@ -596,7 +622,7 @@ async function seedSavedDesktopSession(context) {
   }
 }
 
-async function seedDesktopMedia(context, identity) {
+async function seedDesktopMedia(context, identity, runRepositoryFile) {
   const olderGifBytes = Uint8Array.from([
     0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00,
     0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x21, 0xf9, 0x04, 0x01, 0x00, 0x00, 0x00,
@@ -618,7 +644,7 @@ async function seedDesktopMedia(context, identity) {
   const mediaIds = [older.mediaId, newer.mediaId]
   let currentTime = 1_700_000_000_000
   const runtime = new GenerationRuntime({
-    runRepositoryFile: resolve(context.runtimeRoot, 'data/runs.sqlite'),
+    runRepositoryFile,
     runDirectory: resolve(context.runtimeRoot, 'runs'),
     savedMediaDirectory: resolve(context.runtimeRoot, 'saved-media'),
     preparer: {
@@ -694,8 +720,91 @@ async function seedDesktopMedia(context, identity) {
   return { newer, older, newerGifBytes, olderGifBytes }
 }
 
+// Capture the plugin's normal Context without replacing its components or services.
+async function captureProjectClientContext(page) {
+  await waitForValue(page,
+    'document.readyState === "complete" && document.body.innerText.includes("ComfyUI工作台预设")',
+    value => value === true)
+  await page.command('Page.enable')
+  const { identifier } = await page.command('Page.addScriptToEvaluateOnNewDocument', { source: `
+    let loader
+    Object.defineProperty(window, '__ModuleLoader__', {
+      configurable: true,
+      get: () => loader,
+      set: value => {
+        loader = value
+        const wrap = load => definition => {
+          if (definition.id !== 'harness-comfyui') return load.call(loader, definition)
+          const factory = definition.factory
+          return load.call(loader, { ...definition, factory: require => {
+            const plugin = factory(require)
+            return { ...plugin, apply: ctx => {
+              window.__runPanelTestContext = ctx
+              return plugin.apply(ctx)
+            } }
+          } })
+        }
+        let load = wrap(loader.load)
+        Object.defineProperty(loader, 'load', {
+          configurable: true,
+          get: () => load,
+          set: value => { load = wrap(value) },
+        })
+      },
+    })
+  ` })
+  await page.command('Page.reload')
+  await waitForValue(page, 'window.__runPanelTestContext !== undefined', value => value === true, 10_000)
+  return identifier
+}
+
+function publishSavedDesktopRun(context, stagedRunRepository, runId) {
+  const database = new DatabaseSync(resolve(context.runtimeRoot, 'data/runs.sqlite'))
+  try {
+    database.prepare('ATTACH DATABASE ? AS fixture').run(stagedRunRepository)
+    database.exec('BEGIN IMMEDIATE')
+    database.prepare('INSERT INTO generation_runs SELECT * FROM fixture.generation_runs WHERE run_id = ?').run(runId)
+    database.prepare('INSERT INTO generation_media SELECT * FROM fixture.generation_media WHERE run_id = ?').run(runId)
+    database.exec('COMMIT')
+  } finally {
+    database.close()
+  }
+}
+
+async function verifyRunDiscovery(page, context, identity, stagedRunRepository, mediaFixture) {
+  const sessionId = JSON.stringify(identity.sessionId)
+  await page.command('Network.enable')
+  await page.evaluate(`(() => {
+    const ctx = window.__runPanelTestContext
+    window.__runPanelSession = ctx.sessions.sessionOf(ctx.sessions.resolveAgentScope(${sessionId}))
+    ctx.sessions.handleSessionStatus(${sessionId}, true)
+  })()`)
+  try {
+    await page.waitForGenerationProjection(identity.sessionId, 0)
+    await page.evaluate('void (window.__runningSessionSnapshot = window.__runPanelSession.getSnapshot())')
+    const counts = `(() => {
+    const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+    return drawer === null ? null : {
+      runs: drawer.querySelectorAll('.harness-comfyui-run-card').length,
+      summary: drawer.querySelector('header small')?.textContent,
+    }
+  })()`
+    expect(await page.evaluate(counts)).toEqual({ runs: 0, summary: '0 个运行 · 0 个媒体' })
+    publishSavedDesktopRun(context, stagedRunRepository, mediaFixture.older.runId)
+    expect((await page.waitForGenerationProjection(identity.sessionId, 1)).hasActiveRuns).toBe(false)
+    await waitForValue(page, counts, value => value?.runs === 1 && value.summary === '1 个运行 · 1 个媒体')
+    publishSavedDesktopRun(context, stagedRunRepository, mediaFixture.newer.runId)
+    await waitForValue(page, counts, value => value?.runs === 2 && value.summary === '2 个运行 · 2 个媒体')
+    expect(await page.evaluate('window.__runningSessionSnapshot === window.__runPanelSession.getSnapshot()')).toBe(true)
+    expect(await page.evaluate('window.__runningSessionSnapshot.running')).toBe(true)
+  } finally {
+    await page.command('Network.disable')
+    await page.evaluate(`window.__runPanelTestContext.sessions.handleSessionStatus(${sessionId}, false)`)
+  }
+}
+
 describe('live DSH Desktop production integration', () => {
-  it('loads project state, verifies OpenCode Go adds four models, removes grok-4.5 and ox-alpha-free, and filters image-reader models through preview', async () => {
+  it('loads project state, discovers successive Run batches, and verifies models, Providers and media actions', async () => {
     const developmentContext = await loadTestDesktopContext()
     const base = {
       ...await loadDesktopProductionContext(),
@@ -739,7 +848,8 @@ describe('live DSH Desktop production integration', () => {
     const customProviders = JSON.parse(await readFile(new URL('../fixtures/custom-provider-reasoning.json', import.meta.url), 'utf8'))
     await mkdir(context.dshHome, { recursive: true })
     await writeFile(resolve(context.dshHome, 'settings.yaml'), JSON.stringify({ 'llm-pi-ai': { providers: customProviders } }))
-    const mediaFixture = await seedDesktopMedia(context, identity)
+    const stagedRunRepository = resolve(runtimeRoot, 'staged-runs.sqlite')
+    const mediaFixture = await seedDesktopMedia(context, identity, stagedRunRepository)
     const fixture = { context, start: undefined }
     active.push(fixture)
     const debuggingPort = await findFreePort()
@@ -754,7 +864,9 @@ describe('live DSH Desktop production integration', () => {
     let browser = null
     let downloadBehaviorEnabled = false
     let deviceMetricsOverridden = false
+    let contextCaptureScript
     try {
+      contextCaptureScript = await captureProjectClientContext(page)
       await mkdir(downloadPath)
       browser = await connectDesktopBrowser(debuggingPort)
       await browser.command('Browser.setDownloadBehavior', {
@@ -1218,14 +1330,7 @@ describe('live DSH Desktop production integration', () => {
         value => value === true,
       )
       await page.evaluate(`(document.querySelector('.harness-comfyui-sidebar-entry')?.click(), true)`)
-      await waitForValue(
-        page,
-        `(() => {
-          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
-          return drawer === null ? null : { media: drawer.textContent?.includes('2 个媒体') === true }
-        })()`,
-        value => value?.media === true,
-      )
+      await verifyRunDiscovery(page, context, identity, stagedRunRepository, mediaFixture)
       await page.evaluate(`([...document.querySelectorAll('[role="tab"]')]
         .find(node => node.textContent?.trim() === '本会话媒体')?.click(), true)`)
       await waitForValue(
@@ -1398,6 +1503,9 @@ describe('live DSH Desktop production integration', () => {
         value => value === true,
       )
     } finally {
+      if (contextCaptureScript !== undefined) {
+        await page.command('Page.removeScriptToEvaluateOnNewDocument', { identifier: contextCaptureScript })
+      }
       if (deviceMetricsOverridden) await page.command('Emulation.clearDeviceMetricsOverride').catch(() => undefined)
       if (browser !== null && downloadBehaviorEnabled) {
         await browser.command('Browser.setDownloadBehavior', { behavior: 'default' }).catch(() => undefined)

@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.39.5
+
+v0.39.5 修复会话 Agent 仍在运行时，新建 Run 偶发不出现在右侧“运行状态”的问题。此前，面板在查询结果为空或上一批 Run 全部结束后停止轮询；同一轮对话中的工具执行不会改变 `SessionSnapshot` 对象，后续创建的 Run 因此不能及时显示。
+
+## Run 面板刷新行为
+
+结果面板订阅 Generation Store 中的当前会话条目时，Generation Store 在会话 Agent 运行或查询结果包含活动 Run 的期间继续轮询。Agent 停止运行时，Store 立即查询一次，并继续跟踪尚未结束的 Run。最后一个订阅者退出或 Store 释放时，Store 清理请求和计时器；已经取消的请求即使稍后返回，也不会发布结果或恢复轮询。
+
+## 验收结果
+
+独立 worktree 中的真实 Desktop 会话通过两次独立 Bash 工具调用向 ComfyUI 提交两批生成请求。两批之间有 50.808 秒没有活动 Run；会话使用同一个 `SessionSnapshot`，且 `running` 持续为 true。面板分别在两个 Run 创建后的 772 毫秒和 984 毫秒显示对应卡片，在同一轮回复结束前显示 2 个 Run 和 2 个媒体。两项请求均成功，各保存一张 512×512 PNG；完整验收记录见[系统测试规范](system/testing.md#generation-结果刷新验证)。
+
+最终候选树的完整 `pnpm quality` 通过：938 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.43%、branches 86.66%、functions 100%、lines 96.06%。取消测试使用的假 Chrome 在注册 SIGTERM 处理器后才发布就绪文件，消除了测试夹具自身的启动竞争。
+
+## 部署版本与依赖公告
+
+本版本继续使用 Desktop `4d40a23f2ec64801ead57cad70711a3554176e91`、Harness `0.1.2-rc.1` 与 Cordis `4.0.2`，没有新增或升级依赖。Harness 锁文件的依赖审计未返回漏洞公告。Desktop 锁文件中的 `image-size 1.2.1` 仍受两项高危公告影响；用户已允许安装该依赖。这两项公告为 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq`。
+
 # Harness ComfyUI v0.39.4
 
 v0.39.4 修正 DSH Desktop 的受控依赖安装说明。部署执行者必须在 `node_modules/node` 目录运行 `installArchSpecificPackage.js`，让脚本在该 Node 包的 `bin/node` 路径创建可执行文件。安装流程在 Desktop 根目录确定 npm cache 的绝对路径，进入 Node 包目录后继续使用同一缓存。

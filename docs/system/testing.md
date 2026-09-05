@@ -156,6 +156,26 @@ v0.38.4 发布前完整 `pnpm quality` 结果为 742 项 unit/integration、27 �
 
 Host bundle 测试必须通过 `materializeSourceHostModule(repositoryRoot, { outputRoot })` 为每个并行测试创建独立输出根目录。生产构建不传入 `outputRoot`，并继续发布到仓库 `.local/source-host`。
 
+## Generation 结果刷新验证
+
+`tests/unit/generation-store.test.ts` 使用假计时器和完成时机可控的请求替身，验证以下行为：
+
+- 当前 Session 有订阅者，且 `sessionRunning` 或 `hasActiveRuns` 为 true 时，Store 继续查询；两个布尔值都为 false 时，Store 停止安排计时器。
+- `sessionRunning` 持续为 true 时，Store 在前一次查询返回空列表后仍能发现首个 Run，也能在前一批 Run 完成后发现下一批 Run。
+- `sessionRunning` 变为 false 时，Store 立即查询一次；查询结果仍有活动 Run 时继续轮询，没有活动 Run 时停止轮询。
+- 首次查询失败时，Store 保留初始空投影；后续查询失败时，Store 保留最近一次成功投影。会话 Agent 正在运行或最近一次成功投影包含活动 Run 时，Store 继续查询；成功响应清除错误。
+- 同一 Session 的多个订阅者共享查询，不同 Session 的快照互不覆盖。最后一个订阅者退出时，Store 清理该 Session 的请求、计时器、运行状态和缓存；Store 释放时清理全部 Session。已取消或被替换的请求返回迟到响应时，Store 不发布结果，也不恢复轮询。
+
+`tests/unit/results-drawer.test.tsx` 使用真实 `GenerationProjectionStore`，验证 `WorkbenchDetails` 在持有同一个 `SessionSnapshot` 对象且该对象的 `running` 为 true 时，把稍后查询到的 Run 显示到面板。组件测试还验证 `SessionSnapshot.running` 变化时会调用 Store 的 `setSessionRunning()`、以相同 `running` 值重复渲染时不增加查询次数，以及切换 Session 后面板只显示新 Session 的 Run。
+
+`tests/desktop/desktop-live.test.mjs` 在临时 HOME 中启动真实 Desktop，通过 Harness `ClientSessions.handleSessionStatus()` 模拟会话 Agent 开始和结束运行。测试保持同一个 `SessionSnapshot` 对象，且该对象的 `running` 持续为 true；测试先确认面板为空，再分两批把测试夹具生成的已完成 Run 和媒体记录写入临时 Run Repository。测试通过 `harnessComfyuiGeneration.list()` 和 `WorkbenchDetails` 确认两批 Run 都自动显示，Run 卡片数等于写入的 Run 数，媒体计数等于写入的媒体记录数，且第一批没有活动 Run 时仍能发现第二批。该测试不调用真实会话模型或 ComfyUI 服务。
+
+2026-09-05 的真实对话验收使用项目仓库提交 `02114e21ee3de2701eb399542edea812c1af867c` 作为独立 worktree 的基线，运行分支 `codex/diagnose-session-run-panel-20260905` 中尚未提交的 Run 面板修复。DSH Desktop 使用其仓库提交 `4d40a23f2ec64801ead57cad70711a3554176e91`，该底座包含 Harness `0.1.2-rc.1`。验收会话 `session-5bc5aed4-d396-4470-92d4-f840154611b7` 使用现有 cliproxy Provider 的 `gpt-5.6-sol` 模型，通过两次独立 Bash 工具调用，向 ComfyUI 实例 `2` 提交模板 `29` 的两项请求。两个 Run 的 `turn` 均为 `1`，`call_id` 不同；`run_60cd89d2-0fa0-42f6-8a36-30c651ef3707` 和 `run_783eab96-7d1b-466b-85f6-97ee122e7ed9` 均成功，并各保存一张 512×512 PNG。
+
+Codex 通过 Electron Chrome DevTools Protocol 操作消息输入框和“生成结果”按钮，并记录 `harnessComfyuiGeneration.list()` 的响应、面板计数及开发 SQLite 中的记录。首个 Run 创建前，Codex 记录到 41 次空列表响应；首批完成后、第二批创建前的 50.808 秒内，Codex 记录到 50 次 `hasActiveRuns=false` 的响应。Codex 在会话运行期间采样 259 次，每次均读取到同一个 `SessionSnapshot` 对象，且其 `running=true`。Codex 在空列表、首批完成、第二批创建和两批完成四个阶段观测到面板尺寸均为 359.5×900 CSS 像素，矩形完整位于 1380×900 CSS 像素的视口内，固定测量点 `(left + width / 2, top + 80)` 均命中面板的后代元素。Codex 分别在两个 Run 创建后的 772 毫秒和 984 毫秒观测到对应卡片；同一轮回复结束前，面板显示两张 Run 卡片和 2 个媒体，与数据库记录数量一致。
+
+v0.39.5 最终候选树的完整 `pnpm quality` 通过：938 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.43%、branches 86.66%、functions 100%、lines 96.06%；Harness 锁文件的依赖审计结果为 critical 0、high 0、moderate 0、low 0。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：

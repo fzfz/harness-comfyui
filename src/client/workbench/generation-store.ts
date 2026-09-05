@@ -11,6 +11,7 @@ export interface GenerationStoreSnapshot {
 
 interface SessionRecord {
   snapshot: GenerationStoreSnapshot
+  sessionRunning: boolean
   readonly listeners: Set<() => void>
   controller?: AbortController
   timer?: ReturnType<typeof setTimeout>
@@ -54,6 +55,13 @@ export class GenerationProjectionStore {
 
   readonly getSnapshot = (sessionId: string): GenerationStoreSnapshot => this.record(sessionId).snapshot
 
+  readonly setSessionRunning = (sessionId: string, running: boolean): void => {
+    const record = this.records.get(sessionId)
+    if (record === undefined || record.listeners.size === 0 || record.sessionRunning === running) return
+    record.sessionRunning = running
+    this.refreshSession(sessionId)
+  }
+
   readonly refreshSession = (sessionId: string): void => {
     const record = this.records.get(sessionId)
     if (record === undefined || record.listeners.size === 0) return
@@ -75,6 +83,7 @@ export class GenerationProjectionStore {
     if (current !== undefined) return current
     const created: SessionRecord = {
       snapshot: Object.freeze({ projection: emptyProjection(sessionId, this.initialRefreshAfterMs), errorCode: null }),
+      sessionRunning: false,
       listeners: new Set(),
     }
     this.records.set(sessionId, created)
@@ -87,7 +96,7 @@ export class GenerationProjectionStore {
     record.controller = controller
     void this.client.list(sessionId, controller.signal)
       .then(projection => {
-        if (record.controller !== controller) return
+        if (controller.signal.aborted || record.controller !== controller) return
         record.snapshot = Object.freeze({ projection, errorCode: null })
         for (const listener of record.listeners) listener()
       })
@@ -101,9 +110,10 @@ export class GenerationProjectionStore {
       })
       .finally(() => {
         if (
-          record.controller !== controller
+          controller.signal.aborted
+          || record.controller !== controller
           || record.listeners.size === 0
-          || !record.snapshot.projection.hasActiveRuns
+          || (!record.sessionRunning && !record.snapshot.projection.hasActiveRuns)
         ) return
         record.controller = undefined
         record.timer = setTimeout(() => {
