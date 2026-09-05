@@ -1389,6 +1389,41 @@ describe('live DSH Desktop production integration', () => {
           && value?.detailsCollapsed === true
           && value?.toggle === '打开结果列',
       )
+      await page.evaluate('window.__runPanelTestContext.layout.openDetails()')
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '关闭结果列')
+          return {
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.detailsCollapsed === false
+          && value?.toggle === '关闭结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '关闭结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '打开结果列')
+          return {
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.detailsCollapsed === true
+          && value?.toggle === '打开结果列',
+      )
       await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
         .find(node => node.textContent?.trim() === '打开结果列')?.click(), true)`)
       await waitForValue(

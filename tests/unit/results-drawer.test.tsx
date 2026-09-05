@@ -304,7 +304,7 @@ describe('native Generation result drawer', () => {
     expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto;')
   })
 
-  it('orders the tabs, defaults to Session media, and preserves the selection across result toggles', () => {
+  it('orders “本会话媒体” before “运行状态”, defaults to “本会话媒体”, switches to “运行状态” and back, and keeps the “运行状态” tab selected after closing and reopening the result column', () => {
     const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })

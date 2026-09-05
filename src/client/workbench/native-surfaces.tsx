@@ -86,8 +86,45 @@ export interface WorkbenchDockProps {
 
 type WorkbenchDockSessionProps = Omit<WorkbenchDockProps, 'sessionId'>
 
+const DETAILS_COLLAPSED_ATTRIBUTE = 'data-details-collapsed'
+const WORKBENCH_DOCK_ACTIONS_SELECTOR = '.harness-comfyui-dock-actions'
+
+interface DetailsLayoutTarget extends EventTarget {
+  hasAttribute(name: string): boolean
+  querySelector(selector: string): Element | null
+}
+
+function detailsOpenFromLayoutTarget(target: EventTarget): boolean | undefined {
+  const candidate = target as Partial<DetailsLayoutTarget>
+  if (typeof candidate.hasAttribute !== 'function' || typeof candidate.querySelector !== 'function') {
+    return undefined
+  }
+  if (candidate.querySelector(WORKBENCH_DOCK_ACTIONS_SELECTOR) === null) return undefined
+  return !candidate.hasAttribute(DETAILS_COLLAPSED_ATTRIBUTE)
+}
+
 export function WorkbenchDock({ sessionId, ...props }: WorkbenchDockProps) {
   useEffect(() => props.workbench.syncCurrentSession(sessionId), [sessionId, props.workbench])
+  useEffect(() => {
+    if (typeof MutationObserver === 'undefined' || document.body === undefined) return undefined
+    const syncTarget = (target: EventTarget) => {
+      const open = detailsOpenFromLayoutTarget(target)
+      if (open !== undefined) props.workbench.syncDetailsOpen(open)
+    }
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        if (record.attributeName === DETAILS_COLLAPSED_ATTRIBUTE) syncTarget(record.target)
+      }
+    })
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: [DETAILS_COLLAPSED_ATTRIBUTE],
+      subtree: true,
+    })
+    const collapsedFrame = document.querySelector(`[${DETAILS_COLLAPSED_ATTRIBUTE}]`)
+    if (collapsedFrame !== null) syncTarget(collapsedFrame)
+    return () => observer.disconnect()
+  }, [props.workbench])
   return <WorkbenchDockSession key={sessionId} {...props} />
 }
 

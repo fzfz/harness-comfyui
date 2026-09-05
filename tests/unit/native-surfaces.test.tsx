@@ -206,7 +206,7 @@ describe('native Harness workbench surfaces', () => {
     act(() => renderer!.unmount())
   })
 
-  it('syncs the result toggle label and dispatches the matching layout action', () => {
+  it('shows “关闭结果列” when the result column is open and “打开结果列” when it is closed; calls closeDetails() when the user clicks “关闭结果列”; and calls openDetails() when the user clicks “打开结果列”', () => {
     const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
     const controller = new WorkbenchController(layout)
     let renderer: ReturnType<typeof create>
@@ -237,6 +237,84 @@ describe('native Harness workbench surfaces', () => {
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
     expect(layout.closeDetails).toHaveBeenCalledTimes(2)
     act(() => renderer!.unmount())
+  })
+
+  it('shows “关闭结果列” after Harness opens the details column outside the workbench controller', () => {
+    let deliverMutations: MutationCallback | undefined
+    const observe = vi.fn()
+    const disconnect = vi.fn()
+    class TestMutationObserver {
+      constructor(callback: MutationCallback) {
+        deliverMutations = callback
+      }
+
+      observe = observe
+      disconnect = disconnect
+    }
+    vi.stubGlobal('MutationObserver', TestMutationObserver)
+    let collapsed = true
+    const frame = Object.assign(new EventTarget(), {
+      hasAttribute: vi.fn(() => collapsed),
+      querySelector: vi.fn(() => ({})),
+    })
+    const body = new EventTarget()
+    vi.stubGlobal('document', Object.assign(new EventTarget(), {
+      body,
+      querySelector: vi.fn(() => frame),
+    }))
+    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
+    const controller = new WorkbenchController(layout)
+    let renderer: ReturnType<typeof create>
+    act(() => {
+      renderer = create(createElement(WorkbenchDock, {
+        catalog: catalog(), dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+        sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: controller,
+      }))
+    })
+    expect(observe).toHaveBeenCalledWith(body, {
+      attributes: true,
+      attributeFilter: ['data-details-collapsed'],
+      subtree: true,
+    })
+
+    act(() => controller.toggle())
+    act(() => {
+      ;(buttonByText(renderer!, WORKBENCH_COPY.closeResults).props.onClick as () => void)()
+    })
+    expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
+
+    act(() => {
+      deliverMutations?.([
+        { attributeName: 'data-unrelated', target: frame } as unknown as MutationRecord,
+        { attributeName: 'data-details-collapsed', target: new EventTarget() } as unknown as MutationRecord,
+        {
+          attributeName: 'data-details-collapsed',
+          target: Object.assign(new EventTarget(), {
+            hasAttribute: vi.fn(() => true),
+            querySelector: vi.fn(() => null),
+          }),
+        } as unknown as MutationRecord,
+      ], {} as MutationObserver)
+    })
+    expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
+
+    collapsed = false
+    act(() => {
+      layout.openDetails()
+      deliverMutations?.([{
+        attributeName: 'data-details-collapsed',
+        target: frame,
+      } as unknown as MutationRecord], {} as MutationObserver)
+    })
+    expect(buttonByText(renderer!, WORKBENCH_COPY.closeResults)).toBeDefined()
+
+    act(() => {
+      ;(buttonByText(renderer!, WORKBENCH_COPY.closeResults).props.onClick as () => void)()
+    })
+    expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
+    expect(layout.closeDetails).toHaveBeenCalledTimes(2)
+    act(() => renderer!.unmount())
+    expect(disconnect).toHaveBeenCalledOnce()
   })
 
   it('closes an open result column when the saved Session changes and reopens it in one click', () => {

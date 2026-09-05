@@ -71,6 +71,28 @@ describe('ComfyUI workbench controller', () => {
     expect(listener).toHaveBeenCalledTimes(2)
   })
 
+  it('sets resultsOpen to true for an external open and false for an external close, notifies only when the value changes, and never calls layout actions', () => {
+    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
+    const controller = new WorkbenchController(layout)
+    const listener = vi.fn()
+    controller.subscribeResults(listener)
+
+    controller.syncDetailsOpen(true)
+    expect(controller.getResultsSnapshot()).toBe(true)
+    expect(listener).toHaveBeenCalledOnce()
+    expect(layout.openDetails).not.toHaveBeenCalled()
+    expect(layout.closeDetails).not.toHaveBeenCalled()
+
+    controller.syncDetailsOpen(true)
+    expect(listener).toHaveBeenCalledOnce()
+
+    controller.syncDetailsOpen(false)
+    expect(controller.getResultsSnapshot()).toBe(false)
+    expect(listener).toHaveBeenCalledTimes(2)
+    expect(layout.openDetails).not.toHaveBeenCalled()
+    expect(layout.closeDetails).not.toHaveBeenCalled()
+  })
+
   it('keeps the result state aligned with the workbench entry toggle', () => {
     const controller = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
 

@@ -49,6 +49,12 @@ export class WorkbenchController {
     if (changed && this.resultsOpen) this.closeResults()
   }
 
+  syncDetailsOpen(open: boolean): void {
+    if (this.resultsOpen === open) return
+    this.resultsOpen = open
+    for (const listener of this.resultListeners) listener()
+  }
+
   toggle(): void {
     this.active = !this.active
     if (this.active) this.openResults()
@@ -57,17 +63,13 @@ export class WorkbenchController {
   }
 
   openResults(): void {
-    const changed = !this.resultsOpen
-    this.resultsOpen = true
     this.layout.openDetails()
-    if (changed) for (const listener of this.resultListeners) listener()
+    this.syncDetailsOpen(true)
   }
 
   closeResults(): void {
-    const changed = this.resultsOpen
-    this.resultsOpen = false
     this.layout.closeDetails()
-    if (changed) for (const listener of this.resultListeners) listener()
+    this.syncDetailsOpen(false)
   }
 }
 
