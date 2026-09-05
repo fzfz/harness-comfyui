@@ -8,11 +8,6 @@ const fixtureDirectory = dirname(fileURLToPath(import.meta.url))
 const profileArgument = process.argv.find(argument => argument.startsWith('--user-data-dir='))
 if (profileArgument === undefined) process.exit(2)
 
-await Promise.all([
-  writeFile(join(fixtureDirectory, 'fake-chrome.pid'), String(process.pid)),
-  writeFile(join(fixtureDirectory, 'fake-chrome.profile'), profileArgument.slice('--user-data-dir='.length)),
-])
-
 let closing = false
 const close = async () => {
   if (closing) return
@@ -22,5 +17,9 @@ const close = async () => {
 }
 
 process.once('SIGTERM', () => { void close() })
+await Promise.all([
+  writeFile(join(fixtureDirectory, 'fake-chrome.pid'), String(process.pid)),
+  writeFile(join(fixtureDirectory, 'fake-chrome.profile'), profileArgument.slice('--user-data-dir='.length)),
+])
 setInterval(() => {}, 60_000)
 await new Promise(() => {})

@@ -42,6 +42,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
   }
 })
 
+import { GenerationProjectionStore } from '../../src/client/workbench/generation-store.ts'
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
 import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
 import { GENERATION_ERROR_COPY, RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
@@ -62,6 +63,7 @@ const { act, create } = createRequire(import.meta.url)('react-test-renderer') as
       findByProps(props: Record<string, unknown>): { props: Record<string, unknown> }
     }
     toJSON(): unknown
+    update(node: ReactNode): void
     unmount(): void
   }
 }
@@ -121,12 +123,13 @@ const connectedSnapshot = Object.freeze({ projection, errorCode: null })
 const generationStore = {
   subscribe: (_sessionId: string, _listener: () => void) => () => undefined,
   getSnapshot: (_sessionId: string) => connectedSnapshot,
-  refreshSession: vi.fn(),
+  setSessionRunning: vi.fn(),
 }
 
 afterEach(() => {
   messageEnvironment = null
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 function buttonByText(renderer: ReturnType<typeof create>, text: ReactNode) {
@@ -148,7 +151,7 @@ function renderDetails(workbench: WorkbenchController) {
   return create(createElement(WorkbenchDetails, {
     sessionId: 'session-1',
     useSession: ((selector: (snapshot: unknown) => unknown) => selector({
-      running: false, runningCalls: [], turnEnds: new Map(),
+      running: false,
     })) as never,
     workbench,
     generationStore: generationStore as never,
@@ -158,6 +161,82 @@ function renderDetails(workbench: WorkbenchController) {
 }
 
 describe('native Generation result drawer', () => {
+  it('shows Runs created later without a change to the running Session snapshot', async () => {
+    vi.useFakeTimers()
+    installMessageWindow()
+    const sessionSnapshot = Object.freeze({ running: true })
+    let latest: GenerationProjection = { ...projection, runs: [], media: [], hasActiveRuns: false }
+    const store = new GenerationProjectionStore({ list: async () => latest }, 1000)
+    const workbench = new WorkbenchController({ openDetails() {}, closeDetails() {} })
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(WorkbenchDetails, {
+        sessionId: 'session-1',
+        useSession: selector => selector(sessionSnapshot),
+        workbench,
+        generationStore: store,
+      }))
+    })
+    try {
+      expect(JSON.stringify(renderer.toJSON())).toContain('暂无运行')
+      latest = projection
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+      expect(JSON.stringify(renderer.toJSON())).toContain('run_1')
+      expect(JSON.stringify(renderer.toJSON())).toContain('run_2')
+    } finally {
+      await act(() => renderer.unmount())
+      store.dispose()
+    }
+  })
+
+  it('updates polling on Session running changes and isolates a replacement Session', async () => {
+    vi.useFakeTimers()
+    installMessageWindow()
+    let sessionSnapshot = { running: false }
+    const list = vi.fn(async (sessionId: string): Promise<GenerationProjection> => ({
+      ...projection,
+      sessionId,
+      runs: [{ ...projection.runs[0]!, runId: `run_${sessionId}`, status: 'succeeded' }],
+      media: [],
+      hasActiveRuns: false,
+    }))
+    const store = new GenerationProjectionStore({ list }, 1000)
+    const workbench = new WorkbenchController({ openDetails() {}, closeDetails() {} })
+    const useSession = <Selected,>(selector: (snapshot: typeof sessionSnapshot) => Selected) => selector(sessionSnapshot)
+    const details = (sessionId: string) => createElement(WorkbenchDetails, {
+      sessionId, useSession, workbench, generationStore: store,
+    })
+    let renderer!: ReturnType<typeof create>
+    await act(async () => { renderer = create(details('session-1')) })
+    try {
+      expect(list).toHaveBeenCalledTimes(1)
+      expect(vi.getTimerCount()).toBe(0)
+      sessionSnapshot = { running: true }
+      await act(async () => { renderer.update(details('session-1')) })
+      expect(list).toHaveBeenCalledTimes(2)
+      expect(vi.getTimerCount()).toBe(1)
+      sessionSnapshot = { running: true }
+      await act(async () => { renderer.update(details('session-1')) })
+      expect(list).toHaveBeenCalledTimes(2)
+
+      await act(async () => { renderer.update(details('session-2')) })
+      expect(JSON.stringify(renderer.toJSON())).toContain('run_session-2')
+      expect(JSON.stringify(renderer.toJSON())).not.toContain('run_session-1')
+      expect(vi.getTimerCount()).toBe(1)
+      list.mockClear()
+      await act(async () => { await vi.advanceTimersByTimeAsync(projection.refreshAfterMs) })
+      expect(list).toHaveBeenCalledExactlyOnceWith('session-2', expect.any(AbortSignal))
+
+      sessionSnapshot = { running: false }
+      await act(async () => { renderer.update(details('session-2')) })
+      expect(list).toHaveBeenCalledTimes(2)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      await act(() => renderer.unmount())
+      store.dispose()
+    }
+  })
+
   it('gives executable Workflow guidance for generation parameter target errors', () => {
     expect(GENERATION_ERROR_COPY.GENERATION_PARAMETER_TARGET_AMBIGUOUS).toMatchObject({
       reason: '显式运行参数键在当前 UI Workflow 中匹配到多个可执行输入。',

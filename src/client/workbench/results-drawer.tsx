@@ -40,7 +40,7 @@ interface SessionListView {
   readonly byId: Readonly<Record<string, { readonly blank: boolean } | undefined>>
 }
 
-type UseSessionSnapshot = <Selected>(selector: (snapshot: unknown) => Selected) => Selected
+type UseSessionSnapshot = <Selected>(selector: (snapshot: { readonly running: boolean }) => Selected) => Selected
 
 export interface WorkbenchDetailsProps {
   readonly sessionId: string
@@ -571,11 +571,11 @@ function WorkbenchResults({ sessionId, surface, workbench, snapshot }: Workbench
 }
 
 export function WorkbenchDetails({ sessionId, useSession, workbench, generationStore }: WorkbenchDetailsProps) {
-  const wakeRevision = useSession(snapshot => snapshot)
-  useEffect(() => generationStore.refreshSession(sessionId), [generationStore, sessionId, wakeRevision])
+  const sessionRunning = useSession(snapshot => snapshot.running)
   const subscribe = useCallback((listener: () => void) => generationStore.subscribe(sessionId, listener), [generationStore, sessionId])
   const getSnapshot = useCallback(() => generationStore.getSnapshot(sessionId), [generationStore, sessionId])
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  useEffect(() => generationStore.setSessionRunning(sessionId, sessionRunning), [generationStore, sessionId, sessionRunning])
   return <WorkbenchResults sessionId={sessionId} surface="details" workbench={workbench} snapshot={snapshot} />
 }
 
