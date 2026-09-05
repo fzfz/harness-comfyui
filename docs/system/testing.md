@@ -47,6 +47,8 @@ pnpm prod:test
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
 
+v0.39.4 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 的 `image-size 1.2.1` 保留已记录的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq`，用户已明确允许安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
+
 v0.39.3 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 锁文件中 `image-size 1.2.1` 的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 已记录，用户已明确允许安装。Desktop 的 711 项测试全部通过，类型检查与构建也通过。真实 Desktop 测试通过设置页保存六个模型的推理等级，进入新会话后核对 Low、Medium、High、Max 四档选项，并为六个模型分别选择 Max，同时确认两个未配置推理等级的模型保留原记录。
 
 v0.39.2 的最终候选在明确排除 `security:advisories` 后通过其余发布门禁：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。`security:advisories` 未取得依赖漏洞结果：npm registry 的 `GET /-/ping`、`POST /-/ping` 以及两个 security API 路径的 GET 均返回响应，但 `POST /-/npm/v1/security/advisories/bulk` 与 `POST /-/npm/v1/security/audits/quick` 通过当前网络配置和强制直连都在 TLS 完成后等待首字节超时。

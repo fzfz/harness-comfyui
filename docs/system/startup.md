@@ -117,7 +117,7 @@ pnpm prod:start
 )
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.39.3` 使用 `fzfz/dsh-desktop:main` 的提交 `4d40a23f2ec64801ead57cad70711a3554176e91`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。
+生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.39.4` 使用 `fzfz/dsh-desktop:main` 的提交 `4d40a23f2ec64801ead57cad70711a3554176e91`；该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 配置入口和已修正的 OpenCode Go 静态模型目录。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 
@@ -175,6 +175,6 @@ pnpm quality
 
 linked worktree 共享的 `.env` 可以保留 Provider 凭据、共享产品配置和既有端口变量。`dev:*` 不把共享 `.env` 中的 Desktop 移动桥接端口变量作为当前 worktree 的开发端口；`web:*` 不把共享 `.env` 中的 `HARNESS_COMFYUI_SERVER_PORT` 作为当前 worktree 的 Web Host 端口。开发 Desktop 移动桥接端口、独立 Web Host 端口、PID、日志、DSH home、业务数据和 Desktop 构建输出全部属于当前 worktree 的开发实例。
 
-## v0.39.3 的 Desktop 启动要求
+## v0.39.4 的 Desktop 启动要求
 
-`v0.39.3` 使用 `fzfz/dsh-desktop:main` 的提交 `4d40a23f2ec64801ead57cad70711a3554176e91`，该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`。该 Desktop 使用 Harness `0.1.2-rc.1` 和 Cordis `4.0.2`；插件源码必须与该版本共同验证。
+`v0.39.4` 使用 `fzfz/dsh-desktop:main` 的提交 `4d40a23f2ec64801ead57cad70711a3554176e91`，该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`。该 Desktop 使用 Harness `0.1.2-rc.1` 和 Cordis `4.0.2`；插件源码必须与该版本共同验证。

@@ -1,3 +1,13 @@
+# Harness ComfyUI v0.39.4
+
+v0.39.4 修正 DSH Desktop 的受控依赖安装说明。部署执行者必须在 `node_modules/node` 目录运行 `installArchSpecificPackage.js`，让脚本在该 Node 包的 `bin/node` 路径创建可执行文件。安装流程在 Desktop 根目录确定 npm cache 的绝对路径，进入 Node 包目录后继续使用同一缓存。
+
+## 部署版本与验证
+
+本版本继续使用 Desktop `4d40a23f2ec64801ead57cad70711a3554176e91`，其中包含官方上游 `8b018c9` 的完整合并和自定义模型推理等级修复。Node 版本仍为 `24.9.0`，其余锁定依赖没有变化。
+
+完整 `pnpm quality` 通过：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 的 `image-size 1.2.1` 继续保留已记录且用户已允许安装的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq`。
+
 # Harness ComfyUI v0.39.3
 
 v0.39.3 将 DSH Desktop 完整同步到官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`，包含 PR #291 的自定义模型推理等级保存修复，并适配 DeepSeek Harness `0.1.2-rc.1` 与 Cordis `4.0.2`。
