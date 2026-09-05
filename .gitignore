@@ -49,5 +49,6 @@ comfyui-output/
 comfyui-input/
 checkpoints/
 models/
+.planning/
 .local/
 lib/

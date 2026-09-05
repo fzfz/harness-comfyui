@@ -9,15 +9,21 @@ description: 用户要求使用当前选择的 ComfyUI Workflow 创建图片、�
 
 Skill 执行者完整读取 `references/generation-cli.md`，并按照该文件取得每个 `run_id` 的查询结果。
 
-用户只要求查询或核对历史 Generation Run 时，Skill 执行者返回 `runs[]` 中每一项的查询结果，然后结束本次任务。用户要求复用历史 Seed 创建图片时，Skill 执行者记录用户指定且 `lookup_status` 为 `available` 的每个 `runs[]` 项。Skill 执行者在“校验 Prompt Builder 结果并确定待创建图片”步骤确定待创建图片后，核对每张待创建图片与已记录 `runs[]` 项的对应关系；用户没有明确对应关系时，Skill 执行者列出每张待创建图片和每个已记录的 `runs[]` 项，并等待用户指定对应关系。Skill 执行者在“取得 Seed、构造 Generation Request 并提交”步骤按照 `references/generation-cli.md` 读取并检查对应 `runs[]` 项保存的 Seed。
+用户只要求查询或核对历史 Generation Run 时，Skill 执行者返回 `runs[]` 中每一项的查询结果，然后结束本次任务。用户要求复用历史 Seed 创建图片时，Skill 执行者检查用户指定的每个 `runs[]` 项；任一指定项的 `lookup_status` 不是 `available` 时，Skill 执行者列出该项的 `run_id` 和 `lookup_status`，并等待用户删除或更换该 `run_id`。全部指定项的 `lookup_status` 均为 `available` 后，Skill 执行者记录这些 `runs[]` 项。Skill 执行者在“校验 Prompt Builder 结果并确定待创建图片”步骤确定待创建图片后，核对每张待创建图片与已记录 `runs[]` 项的对应关系；用户没有明确对应关系时，Skill 执行者列出每张待创建图片和每个已记录的 `runs[]` 项，并等待用户指定对应关系。Skill 执行者在“取得 Seed、构造 Generation Request 并提交”步骤按照 `references/generation-cli.md` 读取并检查对应 `runs[]` 项保存的 Seed。
 
 ## 核对当前选择
 
 Skill 执行者完整读取 `references/catalog-cli.md`，并按照该文件确定 `template_id`、`model_id` 和 LoRA ID 有序列表。
 
+用户在当前消息中提供一个或多个 `type: "comfyui-context"` JSON 时，Skill 执行者读取每个 JSON 的 `data.kind` 和 `data.id`：将 `data.kind: "comfyui-template"` 的 `data.id` 作为候选 `template_id`，将 `data.kind: "model"` 的 `data.id` 作为候选 `model_id`，将 `data.kind: "lora"` 的 `data.id` 作为 LoRA ID。
+
+用户在当前消息中直接提供 `template_id`、`model_id` 或 LoRA ID 时，Skill 执行者分别将该 ID 作为候选 `template_id`、候选 `model_id` 或 LoRA ID。Skill 执行者按照各 ID 在当前消息中的首次出现顺序，合并直接输入和所有 `comfyui-context` JSON 提供的 ID。直接输入和 `comfyui-context` JSON 不具有来源优先级。同一类型的同一 ID 无论通过相同来源还是不同来源重复出现，Skill 执行者都只保留第一次出现；Skill 执行者按照去重后的 LoRA ID 首次出现顺序建立 LoRA ID 有序列表。
+
 创建图片或核对兼容性时，Skill 执行者必须确定一个 `template_id`，接受用户指定零个或一个 `model_id`，并可以确定零个至 100 个 LoRA ID。缺少 `template_id` 时，Skill 执行者报告当前请求缺少 Workflow 模板选择，并等待用户指定一个 `template_id`。存在多个候选 `template_id` 或多个候选 `model_id`，且用户没有指定唯一选择时，Skill 执行者列出对应的候选 ID，并等待用户指定最终选择。LoRA ID 超过 100 个时，Skill 执行者报告当前数量，并等待用户将 LoRA ID 减少到 100 个以内。
 
-Skill 执行者按照 `references/catalog-cli.md` 查询 Workflow 模板、生成模型和各项 LoRA。用户指定了生成模型时，Skill 执行者采用该模型的查询结果；用户没有指定生成模型，并且 Workflow 模板查询结果的 `model_id` 非空时，Skill 执行者采用该默认生成模型的查询结果；用户没有指定生成模型，并且 Workflow 模板查询结果的 `model_id` 为 `null` 时，Skill 执行者报告当前 Workflow 模板没有默认生成模型，并等待用户指定一个 `model_id`。本节完成时必须存在一个已经采用的生成模型查询结果。
+Skill 执行者先按照 `references/catalog-cli.md` 查询已确定的 Workflow 模板和各项 LoRA。用户指定了生成模型时，Skill 执行者使用该 `model_id` 查询生成模型并采用该查询结果；用户没有指定生成模型，并且 Workflow 模板查询结果的 `model_id` 非空时，Skill 执行者使用该 `model_id` 查询默认生成模型并采用该查询结果；用户没有指定生成模型，并且 Workflow 模板查询结果的 `model_id` 为 `null` 时，Skill 执行者报告当前 Workflow 模板没有默认生成模型，并等待用户指定一个 `model_id`。本节完成时必须存在一个已经采用的生成模型查询结果。
+
+每项查询结果的 `id` 必须等于用于查询该对象的 ID。存在不同的 ID 时，Skill 执行者列出请求 ID 和返回 ID，并等待用户重新指定该对象。
 
 Workflow 模板查询结果、采用的生成模型查询结果和每项 LoRA 查询结果的 `base_model_id` 必须相同。存在不同的 `base_model_id` 时，Skill 执行者分别列出 Workflow 模板、生成模型和每项 LoRA 的 `id` 与 `base_model_id`，并等待用户指定要更换的 Workflow 模板、生成模型或 LoRA。
 
@@ -29,7 +35,7 @@ Workflow 模板查询结果、采用的生成模型查询结果和每项 LoRA �
 
 Skill 执行者完整读取 `references/prompt-result-contract.md`、`references/prompt-result-schema.json` 和 `references/prompt-builder-model-routes.json`。当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。当前消息包含一个或多个用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者按照 `references/prompt-result-contract.md` 逐个校验这些结果 JSON。
 
-当前消息包含多个结果 JSON 时，Skill 执行者分别校验每个结果 JSON。结果 JSON 之间的边界不明确时，Skill 执行者列出无法划分的内容，并等待用户明确每个结果 JSON 的边界。
+多个结果 JSON 之间的边界不明确时，Skill 执行者列出无法划分的内容，并等待用户明确每个结果 JSON 的边界。
 
 任一结果 JSON 无效时，Skill 执行者返回该结果的校验错误，并等待用户提供修正后的完整结果 JSON。
 
