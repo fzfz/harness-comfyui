@@ -12,7 +12,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.39.2',
+      version: '0.39.3',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
@@ -114,7 +114,7 @@ describe('source workspace engineering contract', () => {
       expect(version, `devDependencies.${name}`).toMatch(exactVersion)
     }
     for (const [name, version] of Object.entries(manifest.peerDependencies as Record<string, string>)) {
-      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe('>=0.1.2-alpha.1 <0.2.0')
+      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe('>=0.1.2-rc.1 <0.2.0')
       else expect(version, `peerDependencies.${name}`).toMatch(exactVersion)
     }
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())

@@ -40,6 +40,23 @@ gh release create v<版本号> \
 
 发布后核对远端 tag 指向最终提交完整 SHA，GitHub Release 指向该 tag，并确认 Release 附件列表为空。已经发布的 tag 与 GitHub Release 不得移动或覆盖；最终提交发生变化时必须使用新的版本号。
 
+## DSH Desktop 的受控依赖安装
+
+部署执行者从 Harness checkout 根目录执行以下命令。`npm ci --ignore-scripts` 按 Desktop 的 `package-lock.json` 安装依赖，并跳过自动安装脚本；后续命令依次应用上游补丁、安装品牌资源与 Electron、安装 Node 架构包、检查终端原生预构建文件、设置终端辅助程序权限以及准备 esbuild。
+
+```sh
+(
+set -e
+cd .local/upstreams/dsh-desktop
+npm ci --ignore-scripts --no-audit --no-fund --cache ../.npm-cache
+npm run postinstall
+npm_config_ignore_scripts=true npm_config_cache="$PWD/../.npm-cache" node node_modules/node/installArchSpecificPackage.js
+node node_modules/node-pty/scripts/prebuild.js
+node node_modules/@deepseek-ai/dsh-subprocess-local/scripts/ensure-spawn-helper.mjs
+node node_modules/esbuild/install.js
+)
+```
+
 ## Git tag 生产部署命令
 
 生产 checkout 保留本地 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。从已发布 tag 更新并启动完整 Desktop：
@@ -50,10 +67,17 @@ set -e
 pnpm prod:stop
 git fetch --tags
 git switch --detach v<版本号>
-git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 9a0a39416af44af636e426f8d627cdb80d0baa77
+git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 4d40a23f2ec64801ead57cad70711a3554176e91
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "9a0a39416af44af636e426f8d627cdb80d0baa77"
-(cd .local/upstreams/dsh-desktop && npm ci)
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "4d40a23f2ec64801ead57cad70711a3554176e91"
+)
+```
+
+按照[releasing.md 的受控依赖安装章节](releasing.md#dsh-desktop-的受控依赖安装)安装 Desktop 依赖后，在 Harness checkout 根目录继续执行：
+
+```sh
+(
+set -e
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
 pnpm prod:start
@@ -76,7 +100,7 @@ pnpm prod:stop
 
 `prod:*` 管理完整 DSH Desktop 生产环境并调用 DSH Desktop `pnpm preview`。生产部署不得使用 `dev:*` 或 `web:*` 替代产品启动。
 
-`v0.39.2` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 的提交 `9a0a39416af44af636e426f8d627cdb80d0baa77`。该提交提供移动桥接端口环境变量和已修正的 OpenCode Go 静态模型目录；Harness ComfyUI 仓库不包含或复制 DSH Desktop 源码。
+`v0.39.3` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop:main` 的提交 `4d40a23f2ec64801ead57cad70711a3554176e91`。该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 环境变量和已修正的 OpenCode Go 静态模型目录；Harness ComfyUI 仓库不包含或复制 DSH Desktop 源码。
 
 ## 开发与 Web 调试边界
 
@@ -84,3 +108,9 @@ pnpm prod:stop
 - `web:*` 只在 linked worktree 管理独立 Web Host 调试环境。
 - `prod:*` 只在已发布 Git tag 的生产 checkout 管理完整 DSH Desktop 生产环境。
 - 独立 linked worktree 中的 `pnpm quality` 验证源码门禁和真实 Desktop 验收；仓库不配置 GitHub Actions workflow 或自动生产部署 workflow。
+
+## v0.39.3 的 Desktop 版本与依赖公告
+
+`v0.39.3` 必须与 Desktop 提交 `4d40a23f2ec64801ead57cad70711a3554176e91` 共同部署。该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`。
+
+该 Desktop 提交的锁文件包含 `pptxgenjs 4.0.1 → image-size 1.2.1`。2026-09-05 的安装前检查发现 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已明确允许安装该依赖；发布记录必须保留这两项发现。

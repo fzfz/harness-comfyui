@@ -21,6 +21,14 @@ pnpm prod:test
 
 `prod:test` 使用临时目录和端口覆盖 Desktop `dev`/`preview` 模式、跨进程端口声明、双 worktree 并发、PID 与端口状态写入失败清理、restart、异常退出、worktree `.env`/`node_modules` 链接、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
 
+## 候选 Desktop 验证
+
+`DSH_DESKTOP_TEST_SOURCE` 为 `test:desktop` 指定候选 DSH Desktop 的绝对路径。`tests/desktop/desktop-live.test.mjs` 和 `tests/desktop/managed-shell-capability.test.ts` 通过 `tests/support/desktop-context.mjs` 读取该变量；省略该变量时，测试使用 `config/desktop-production.json` 指定的底座。该变量不修改 `dev:*` 或 `prod:*` 的启动路径。
+
+候选设置页通过重新编辑推理等级，将旧模型记录的 `reasoning.efforts` 转换为 `reasoningEfforts`。只打开设置页不会转换旧记录。设置页不再提供逐模型默认推理等级控件；用户在会话中选择推理等级。
+
+自定义 Provider 回归测试使用 `tests/fixtures/custom-provider-reasoning.json` 中的旧配置样本，通过真实设置页转换硅基流动的两个模型和 cliproxy 的四个模型。测试核对六个模型保存后的 `reasoningEfforts`，并确认其他模型属性保持原值。两个未配置推理等级的模型必须保留原记录，且不包含 `reasoningEfforts`。测试随后点击“新建会话”，在新会话菜单中为六个已配置模型逐一选择 Max。
+
 ## 自动化测试
 
 | 命令 | 范围 |
@@ -38,6 +46,8 @@ pnpm prod:test
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
+
+v0.39.3 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 锁文件中 `image-size 1.2.1` 的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 已记录，用户已明确允许安装。Desktop 的 711 项测试全部通过，类型检查与构建也通过。真实 Desktop 测试通过设置页保存六个模型的推理等级，进入新会话后核对 Low、Medium、High、Max 四档选项，并为六个模型分别选择 Max，同时确认两个未配置推理等级的模型保留原记录。
 
 v0.39.2 的最终候选在明确排除 `security:advisories` 后通过其余发布门禁：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。`security:advisories` 未取得依赖漏洞结果：npm registry 的 `GET /-/ping`、`POST /-/ping` 以及两个 security API 路径的 GET 均返回响应，但 `POST /-/npm/v1/security/advisories/bulk` 与 `POST /-/npm/v1/security/audits/quick` 通过当前网络配置和强制直连都在 TLS 完成后等待首字节超时。
 

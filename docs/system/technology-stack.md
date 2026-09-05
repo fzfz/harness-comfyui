@@ -5,9 +5,9 @@
 | 运行时 | Node.js | `.node-version` 固定 `22.19.0`；`package.json` 允许 `^22.19.0` 或 `>=24.0.0` |
 | 包管理 | pnpm | `11.7.0` |
 | 语言 | TypeScript | `6.0.3`；NodeNext ESM，严格类型检查 |
-| 桌面宿主 | DSH Desktop | `fzfz/dsh-desktop@9a0a39416af44af636e426f8d627cdb80d0baa77` 提供 Electron、Harness 依赖闭包、插件 generation installer、可配置移动桥接端口和已修正的 OpenCode Go 静态模型目录 |
-| Harness 宿主 | DeepSeek Harness | 插件 peer 范围为 `>=0.1.2-alpha.1 <0.2.0`；开发和本地发布门禁从当前 DSH Desktop 安装提供实现 |
-| 插件生命周期 | Cordis | `4.0.1` |
+| 桌面宿主 | DSH Desktop | `fzfz/dsh-desktop:main` 提交 `4d40a23f2ec64801ead57cad70711a3554176e91`（合并上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`）提供 Electron、Harness 依赖闭包、插件 generation installer、可配置移动桥接端口和已修正的 OpenCode Go 静态模型目录 |
+| Harness 宿主 | DeepSeek Harness | 插件 peer 范围为 `>=0.1.2-rc.1 <0.2.0`；开发和本地发布门禁从当前 DSH Desktop 安装提供实现 |
+| 插件生命周期 | Cordis | `4.0.2` |
 | 持久运行索引 | Node SQLite | Node 内置 `node:sqlite`；SQLite 保存 Run、远端输出和 Media 索引 |
 | 官方 Workflow 导出 | 本机 Chrome 或 Chromium / Chrome DevTools Protocol | cache miss 时由 Host 启动独立临时浏览器进程，调用目标 ComfyUI 前端的 `loadGraphData()` 与 `graphToPrompt()` |
 | CDP 通信 | Node WebSocket | Node 22 内置稳定 `WebSocket`；项目使用原始 CDP 消息，不引入 Playwright、Puppeteer 或第三方 WebSocket 包 |

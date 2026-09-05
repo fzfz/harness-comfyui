@@ -1,0 +1,186 @@
+{
+  "siliconflow": {
+    "displayName": "硅基流动",
+    "api": "openai-completions",
+    "baseURL": "http://127.0.0.1:1/v1",
+    "models": [
+      {
+        "id": "deepseek-ai/DeepSeek-V4-Flash",
+        "name": "sil-DeepSeek-V4-Flash",
+        "contextWindow": 131072,
+        "maxTokens": 8192,
+        "reasoning": {
+          "defaultEffort": "max",
+          "efforts": [
+            {
+              "id": "low",
+              "name": "low"
+            },
+            {
+              "id": "medium",
+              "name": "medium"
+            },
+            {
+              "id": "high",
+              "name": "high"
+            },
+            {
+              "id": "max",
+              "name": "max"
+            }
+          ]
+        }
+      },
+      {
+        "id": "deepseek-ai/DeepSeek-V4-Pro",
+        "name": "sil-DeepSeek-V4-Pro",
+        "contextWindow": 131072,
+        "maxTokens": 8192,
+        "reasoning": {
+          "defaultEffort": "low",
+          "efforts": [
+            {
+              "id": "low",
+              "name": "low"
+            },
+            {
+              "id": "medium",
+              "name": "medium"
+            },
+            {
+              "id": "high",
+              "name": "high"
+            },
+            {
+              "id": "max",
+              "name": "max"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "cliproxy": {
+    "displayName": "内网cliproxyAPI",
+    "api": "openai-completions",
+    "baseURL": "http://127.0.0.1:1/v1",
+    "models": [
+      {
+        "id": "gpt-5.6-sol",
+        "name": "gpt-5.6-sol",
+        "contextWindow": 131072,
+        "maxTokens": 8192,
+        "reasoning": {
+          "defaultEffort": "low",
+          "efforts": [
+            {
+              "id": "low",
+              "name": "low"
+            },
+            {
+              "id": "medium",
+              "name": "medium"
+            },
+            {
+              "id": "high",
+              "name": "high"
+            },
+            {
+              "id": "max",
+              "name": "max"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gpt-5.6-terra",
+        "name": "gpt-5.6-terra",
+        "contextWindow": 131072,
+        "maxTokens": 8192,
+        "reasoning": {
+          "defaultEffort": "low",
+          "efforts": [
+            {
+              "id": "low",
+              "name": "low"
+            },
+            {
+              "id": "medium",
+              "name": "medium"
+            },
+            {
+              "id": "high",
+              "name": "high"
+            },
+            {
+              "id": "max",
+              "name": "max"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gpt-6-astra",
+        "name": "gpt-6-astra",
+        "contextWindow": 131072,
+        "maxTokens": 8192,
+        "reasoning": {
+          "defaultEffort": "low",
+          "efforts": [
+            {
+              "id": "low",
+              "name": "low"
+            },
+            {
+              "id": "medium",
+              "name": "medium"
+            },
+            {
+              "id": "high",
+              "name": "high"
+            },
+            {
+              "id": "max",
+              "name": "max"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gpt-5.6-luna",
+        "name": "gpt-5.6-luna",
+        "contextWindow": 131072,
+        "maxTokens": 8192,
+        "reasoning": {
+          "defaultEffort": "low",
+          "efforts": [
+            {
+              "id": "low",
+              "name": "low"
+            },
+            {
+              "id": "medium",
+              "name": "medium"
+            },
+            {
+              "id": "high",
+              "name": "high"
+            },
+            {
+              "id": "max",
+              "name": "max"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gpt-image-2",
+        "name": "gpt-image-2"
+      },
+      {
+        "id": "gpt-5.4-mini",
+        "name": "gpt-5.4-mini"
+      }
+    ]
+  }
+}

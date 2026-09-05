@@ -1,7 +1,20 @@
+import type {} from '@deepseek-ai/dsh-typert-protocol'
+import type errorCatalog from '../../config/error-catalog.json'
+
 import {
   decodeImageReaderConfiguration,
   type ImageReaderConfiguration,
 } from './settings.ts'
+
+export type ImageReaderErrorCode = Extract<keyof typeof errorCatalog, `IMAGE_READER_${string}`>
+
+type ImageReaderRemoteErrorDetails = {
+  readonly [Code in ImageReaderErrorCode]: Readonly<Record<string, never>>
+}
+
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap extends ImageReaderRemoteErrorDetails {}
+}
 
 export const IMAGE_READER_REMOTE_NAMESPACE = 'harnessComfyuiImageReader'
 export const IMAGE_READER_REMOTE_SERVICE = `remote.${IMAGE_READER_REMOTE_NAMESPACE}`

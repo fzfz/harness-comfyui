@@ -20,7 +20,7 @@ export async function deriveGenerationToolExecutionIdentity(
 ): Promise<GenerationIdentity> {
   if (exec.agent === undefined) toolContextInvalid(toolName)
   const session = exec.agent.session
-  const calls = session.events.flatMap(event => (
+  const calls = session.snapshotEvents().flatMap(event => (
     event.type === 'tool/call' && String(event.data.callId) === String(exec.callId) ? [event] : []
   ))
   if (calls.length !== 1) toolContextInvalid(toolName)

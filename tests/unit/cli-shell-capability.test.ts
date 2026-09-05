@@ -14,7 +14,7 @@ function execution(overrides: Record<string, unknown> = {}) {
       session: {
         id: 'session-1',
         header: { cwd: '/workspace' },
-        events: [{
+        snapshotEvents: () => [{
           type: 'tool/call',
           data: { callId: 'call_shell_1', name: 'bash', turn: 4 },
         }],
@@ -62,7 +62,7 @@ describe('CLI shell capability', () => {
     expect(store.environment(execution({ arguments: { run_in_background: true } }))).toEqual({})
     expect(store.environment(execution({ agent: undefined }))).toEqual({})
     expect(store.environment(execution({
-      agent: { session: { id: 'session-1', header: { cwd: '/workspace' }, events: [] } },
+      agent: { session: { id: 'session-1', header: { cwd: '/workspace' }, snapshotEvents: () => [] } },
     }))).toEqual({})
     expect(store.environment(execution({ name: 'skill' }))).toEqual({})
     expect(store.environment(execution({
@@ -70,7 +70,7 @@ describe('CLI shell capability', () => {
         session: {
           id: 'session-1',
           header: { cwd: '/workspace' },
-          events: [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'bash', turn: -1 } }],
+          snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'bash', turn: -1 } }],
         },
       },
     }))).toEqual({})
@@ -88,7 +88,7 @@ describe('CLI shell capability', () => {
         session: {
           id: 'session-1',
           header: { cwd: 'C:\\workspace' },
-          events: [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'pwsh', turn: 2 } }],
+          snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'call_shell_1', name: 'pwsh', turn: 2 } }],
         },
       },
     })

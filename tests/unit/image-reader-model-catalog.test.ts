@@ -17,7 +17,7 @@ import {
 } from '../../src/host/image-reader/image-reader-host.ts'
 
 function remoteFailure(code: string): object {
-  return { name: 'TypertRemoteFailure', failure: { code } }
+  return { name: 'RemoteError', code }
 }
 
 describe('image reader Host settings and model catalog', () => {
@@ -262,12 +262,10 @@ describe('image reader Host settings and model catalog', () => {
     scope.replace.mockRejectedValueOnce(new Error('disk full'))
     await expect(service.activateProfile({ profileId: 'second' }, new AbortController().signal))
       .rejects.toMatchObject({
-        name: 'TypertRemoteFailure',
-        failure: {
-          code: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
-          message: 'Harness could not persist the active image reader profile.',
-          details: {},
-        },
+        name: 'RemoteError',
+        code: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
+        message: 'Harness could not persist the active image reader profile.',
+        details: {},
       })
     await context.fiber.dispose()
   })

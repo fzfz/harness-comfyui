@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
-import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
-import { Remote, TypertRemoteFailure, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { type SettingsScope } from '@deepseek-ai/dsh-settings'
+import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 
 import {
   IMAGE_READER_REMOTE_NAMESPACE,
@@ -44,13 +44,13 @@ export async function registerImageReaderSettings(
   ctx: Pick<Context, 'settings'>,
   defaults: ImageReaderSettingsSection = IMAGE_READER_SETTINGS_DEFAULTS,
 ): Promise<SettingsScope<ImageReaderSettingsSection>> {
-  const legacy = ctx.settings.register<LegacyImageReaderSettingsSection>(
-    settingsNamespace(IMAGE_READER_LEGACY_SETTINGS_NAMESPACE),
+  const legacy = ctx.settings.register<typeof IMAGE_READER_LEGACY_SETTINGS_NAMESPACE, LegacyImageReaderSettingsSection>(
+    IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
     IMAGE_READER_LEGACY_SETTINGS_SCHEMA as never,
     { base: IMAGE_READER_LEGACY_SETTINGS_DEFAULTS, applies: 'live' },
   )
-  const current = ctx.settings.register<ImageReaderSettingsSection>(
-    settingsNamespace(IMAGE_READER_SETTINGS_NAMESPACE),
+  const current = ctx.settings.register<typeof IMAGE_READER_SETTINGS_NAMESPACE, ImageReaderSettingsSection>(
+    IMAGE_READER_SETTINGS_NAMESPACE,
     IMAGE_READER_SETTINGS_SCHEMA as never,
     { base: defaults, applies: 'live', validate: validateImageReaderSettingsSection },
   )
@@ -122,11 +122,7 @@ export class ImageReaderRemoteService extends TypertRemoteService {
         return await operation()
       } catch (error) {
         if (error instanceof ImageReaderError) {
-          throw new TypertRemoteFailure(Object.freeze({
-            code: error.code,
-            message: error.message,
-            details: Object.freeze({}),
-          }))
+          throw new RemoteError(error.code, error.message, Object.freeze({}))
         }
         throw error
       }

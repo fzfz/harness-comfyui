@@ -23,7 +23,7 @@ function execution(name: string, events: readonly unknown[], callId: string) {
     concludeTurn: vi.fn(),
     agent: {
       id: 'session_1',
-      session: { id: 'session_1', header: { cwd: '/workspace' }, events },
+      session: { id: 'session_1', header: { cwd: '/workspace' }, snapshotEvents: () => events },
     },
   }
 }
