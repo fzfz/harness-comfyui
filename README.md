@@ -8,7 +8,7 @@ Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 Com
 
 - Node.js `22.19.0` 或 `24.0.0` 以上版本
 - pnpm `11.7.0`
-- 首次准备写入 `.local/upstreams/dsh-desktop` 的 `fzfz/dsh-desktop@4d40a23f2ec64801ead57cad70711a3554176e91` 底座
+- 首次准备写入 `.local/upstreams/dsh-desktop` 的 `fzfz/dsh-desktop@5e08355a58bb727cb0f48c794550202d9d59ed9f` 底座
 - 本机 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，其他安装路径通过 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` 配置
 - 两个已发布的 Catalog/Source CLI；默认路径见 [`config/source-production.json`](config/source-production.json)
 - 主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的七个 Skill 是本项目 Skill 的唯一源码；生产部署把 `$HOME/.agents/skills/` 中对应名称配置为指向主开发 checkout 对应目录的绝对符号链接，绝不指向独立 linked worktree
@@ -22,8 +22,8 @@ Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 Com
 set -e
 mkdir -p .local/upstreams
 git clone --branch main https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
-git -C .local/upstreams/dsh-desktop switch --detach 4d40a23f2ec64801ead57cad70711a3554176e91
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "4d40a23f2ec64801ead57cad70711a3554176e91"
+git -C .local/upstreams/dsh-desktop switch --detach 5e08355a58bb727cb0f48c794550202d9d59ed9f
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
 )
 ```
 
@@ -121,6 +121,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.39.6 发布说明](docs/releasenotes.md)
+- [v0.39.7 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.39.6`。对应发布记录在最终提交、`v0.39.6` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.39.7`。对应发布记录在最终提交、`v0.39.7` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。

@@ -65,7 +65,7 @@ pnpm web:start|restart
 | `config/` | 生产配置、schema、环境变量映射和数据源合同 |
 | `profiles/` | Harness bundle composition 模板 |
 
-DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。DeepSeek Harness 核心源码保持未修改。DSH Desktop 的移动桥接端口入口由 `fzfz/dsh-desktop:codex/configurable-mobile-bridge-port` 维护；该仓库只在启动进程时传入 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，不复制 DSH Desktop 源码，也不把 Desktop 写入当前仓库 manifest 或 lockfile。开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库。
+DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。DeepSeek Harness 核心源码保持未修改。DSH Desktop 的 `main` 分支维护移动桥接端口入口、聚合 Client Remote 补丁和产品 adapter 启用状态；当前 Harness ComfyUI 仓库只在启动 DSH Desktop 时传入 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，不复制 DSH Desktop 源码，也不把 Desktop 写入当前仓库 manifest 或 lockfile。开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库。
 
 Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示真实 Generation Run/Media 投影。Harness `0.1.2-rc.1` 不为尚未保存的空白 Session 分配 `details` 列宽；Client 仅在该状态通过公开 `shell.overlay` 扩展位显示空结果列。Session 保存后，`shell.overlay` 结果列退出，原生 `details` 结果列接管，页面只保留一个可见结果列。结果列按照“本会话媒体”“运行状态”的顺序显示页签，并在每次创建结果列组件时默认选择“本会话媒体”。工作台首次启用时自动打开结果列。`WorkbenchDock` 观察包含工作台按钮的 Harness AppFrame 上的 `data-details-collapsed` 属性；详情列关闭时，controller 的结果列状态为关闭，按钮显示“打开结果列”，详情列打开时，controller 的结果列状态为打开，按钮显示“关闭结果列”。用户点击工作台按钮、用户切换已保存 Session 或 Harness 的聊天和工具详情入口打开详情列后，`WorkbenchDock` 都会读取 `data-details-collapsed` 的新值、更新 controller 的结果列状态并显示与详情列状态一致的按钮文案。
 

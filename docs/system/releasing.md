@@ -27,14 +27,19 @@ git diff --check
 
 ## Git tag 与 GitHub Release
 
-在最终发布提交执行：
+发布执行者必须从 Harness checkout 根目录执行以下命令；任一命令失败时，shell 必须立即停止：
 
 ```sh
-git tag --annotate v<版本号> <最终提交完整SHA> --message "Harness ComfyUI v<版本号>"
-git push origin refs/tags/v<版本号>
-gh release create v<版本号> \
+set -e
+release_version="$(node -p "require('./package.json').version")"
+test -n "$release_version"
+release_commit_sha="$(git rev-parse HEAD)"
+test "$release_commit_sha" = "$(git rev-parse origin/main)"
+git tag --annotate "v$release_version" "$release_commit_sha" --message "Harness ComfyUI v$release_version"
+git push origin "refs/tags/v$release_version"
+gh release create "v$release_version" \
   --verify-tag \
-  --title "Harness ComfyUI v<版本号>" \
+  --title "Harness ComfyUI v$release_version" \
   --notes-file docs/releasenotes.md
 ```
 
@@ -67,10 +72,10 @@ node node_modules/esbuild/install.js
 set -e
 pnpm prod:stop
 git fetch --tags
-git switch --detach v<版本号>
-git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 4d40a23f2ec64801ead57cad70711a3554176e91
+git switch --detach v0.39.7
+git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 5e08355a58bb727cb0f48c794550202d9d59ed9f
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "4d40a23f2ec64801ead57cad70711a3554176e91"
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
 )
 ```
 
@@ -101,7 +106,7 @@ pnpm prod:stop
 
 `prod:*` 管理完整 DSH Desktop 生产环境并调用 DSH Desktop `pnpm preview`。生产部署不得使用 `dev:*` 或 `web:*` 替代产品启动。
 
-`v0.39.6` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop:main` 的提交 `4d40a23f2ec64801ead57cad70711a3554176e91`。该提交提供 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 环境变量和已修正的 OpenCode Go 静态模型目录；Harness ComfyUI 仓库不包含或复制 DSH Desktop 源码。
+`v0.39.7` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该提交恢复聚合 Client 的 `session/delete` Remote，严格禁用 Kimi PPT adapter，并把 Windows 隐藏控制台辅助模块纳入 Desktop 打包资源；Harness ComfyUI 仓库不包含或复制 DSH Desktop 源码。
 
 ## 开发与 Web 调试边界
 
@@ -110,8 +115,8 @@ pnpm prod:stop
 - `prod:*` 只在已发布 Git tag 的生产 checkout 管理完整 DSH Desktop 生产环境。
 - 独立 linked worktree 中的 `pnpm quality` 验证源码门禁和真实 Desktop 验收；仓库不配置 GitHub Actions workflow 或自动生产部署 workflow。
 
-## v0.39.6 的 Desktop 版本与依赖公告
+## v0.39.7 的 Desktop 版本与依赖公告
 
-`v0.39.6` 必须与 Desktop 提交 `4d40a23f2ec64801ead57cad70711a3554176e91` 共同部署。该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`。
+`v0.39.7` 必须与 Desktop 提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f` 共同部署。该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3。
 
 生产部署按照该 Desktop 提交的 `package-lock.json` 安装全部锁定依赖，其中包含 `pptxgenjs 4.0.1 → image-size 1.2.1`。2026-09-05 的安装前检查发现 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已明确授权执行该锁文件安装；发布记录必须保留这两项发现。
