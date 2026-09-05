@@ -10,7 +10,8 @@ export const WORKBENCH_CONTEXT_RECORD_TYPE = 'comfyui-context'
 export const WORKBENCH_COPY = Object.freeze({
   entry: 'ComfyUI 工作台',
   insertContext: '插入上下文',
-  openResults: '生成结果',
+  openResults: '打开结果列',
+  closeResults: '关闭结果列',
   selectedContexts: '已选中上下文',
   removeContext: '移除',
   dialogTitle: '插入 ComfyUI 上下文',

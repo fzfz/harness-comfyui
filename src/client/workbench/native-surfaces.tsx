@@ -87,6 +87,7 @@ export interface WorkbenchDockProps {
 type WorkbenchDockSessionProps = Omit<WorkbenchDockProps, 'sessionId'>
 
 export function WorkbenchDock({ sessionId, ...props }: WorkbenchDockProps) {
+  useEffect(() => props.workbench.syncCurrentSession(sessionId), [sessionId, props.workbench])
   return <WorkbenchDockSession key={sessionId} {...props} />
 }
 
@@ -101,6 +102,11 @@ function WorkbenchDockSession({
     workbench.subscribe,
     workbench.getSnapshot,
     workbench.getSnapshot,
+  )
+  const resultsOpen = useSyncExternalStore(
+    workbench.subscribeResults,
+    workbench.getResultsSnapshot,
+    workbench.getResultsSnapshot,
   )
   const navigationSnapshot = useSyncExternalStore(
     dialogNavigation.subscribe,
@@ -349,8 +355,12 @@ function WorkbenchDockSession({
       <div className="harness-comfyui-dock-row">
         <strong className="harness-comfyui-dock-title">{WORKBENCH_COPY.entry}</strong>
         <div className="harness-comfyui-dock-actions">
-          <Button variant="toolbar" size="sm" onClick={() => workbench.openResults()}>
-            {WORKBENCH_COPY.openResults}
+          <Button
+            variant="toolbar"
+            size="sm"
+            onClick={() => resultsOpen ? workbench.closeResults() : workbench.openResults()}
+          >
+            {resultsOpen ? WORKBENCH_COPY.closeResults : WORKBENCH_COPY.openResults}
           </Button>
           <Button variant="outline" size="sm" onClick={openDialog}>
             {WORKBENCH_COPY.insertContext}

@@ -304,6 +304,61 @@ describe('native Generation result drawer', () => {
     expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto;')
   })
 
+  it('orders the tabs, defaults to Session media, and preserves the selection across result toggles', () => {
+    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    let renderer: ReturnType<typeof create>
+    act(() => { renderer = renderDetails(workbench) })
+
+    const tabs = renderer!.root.findAllByType('button').filter(button => button.props.role === 'tab')
+    const panels = renderer!.root.findAllByProps({ role: 'tabpanel' })
+    expect(tabs.map(tab => tab.props.children)).toEqual([
+      RESULTS_COPY.sessionTab,
+      RESULTS_COPY.currentTab,
+    ])
+    expect(tabs.map(tab => tab.props['aria-selected'])).toEqual([true, false])
+    expect(panels.map(panel => panel.props.hidden)).toEqual([true, false])
+
+    act(() => { (tabs[1]!.props.onClick as () => void)() })
+    expect(renderer!.root.findAllByType('button')
+      .filter(button => button.props.role === 'tab')
+      .map(tab => tab.props['aria-selected']))
+      .toEqual([false, true])
+    expect(renderer!.root.findAllByProps({ role: 'tabpanel' }).map(panel => panel.props.hidden))
+      .toEqual([false, true])
+
+    act(() => {
+      ;(renderer!.root.findAllByType('button')
+        .filter(button => button.props.role === 'tab')[0]!.props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByType('button')
+      .filter(button => button.props.role === 'tab')
+      .map(tab => tab.props['aria-selected']))
+      .toEqual([true, false])
+    expect(renderer!.root.findAllByProps({ role: 'tabpanel' }).map(panel => panel.props.hidden))
+      .toEqual([true, false])
+
+    act(() => {
+      ;(renderer!.root.findAllByType('button')
+        .filter(button => button.props.role === 'tab')[1]!.props.onClick as () => void)()
+    })
+    expect(renderer!.root.findAllByType('button')
+      .filter(button => button.props.role === 'tab')
+      .map(tab => tab.props['aria-selected']))
+      .toEqual([false, true])
+    expect(renderer!.root.findAllByProps({ role: 'tabpanel' }).map(panel => panel.props.hidden))
+      .toEqual([false, true])
+
+    act(() => {
+      workbench.closeResults()
+      workbench.openResults()
+    })
+    expect(renderer!.root.findAllByType('button')
+      .filter(button => button.props.role === 'tab')
+      .map(tab => tab.props['aria-selected']))
+      .toEqual([false, true])
+    act(() => renderer!.unmount())
+  })
+
   it('renders a closable fallback drawer for an open blank Session', () => {
     const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
     const workbench = new WorkbenchController(layout)

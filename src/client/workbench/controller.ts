@@ -18,6 +18,7 @@ export type WorkbenchSessionInput = ReturnType<IConversation['input']['for']>
 
 export class WorkbenchController {
   private active = false
+  private currentSessionId: string | undefined
   private resultsOpen = false
   private readonly listeners = new Set<WorkbenchListener>()
   private readonly resultListeners = new Set<WorkbenchListener>()
@@ -40,6 +41,12 @@ export class WorkbenchController {
     return () => {
       this.resultListeners.delete(listener)
     }
+  }
+
+  syncCurrentSession(sessionId: string): void {
+    const changed = this.currentSessionId !== undefined && this.currentSessionId !== sessionId
+    this.currentSessionId = sessionId
+    if (changed && this.resultsOpen) this.closeResults()
   }
 
   toggle(): void {

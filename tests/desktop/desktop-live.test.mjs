@@ -613,9 +613,25 @@ async function seedSavedDesktopSession(context) {
     session.append('turn/start', { turn: 1 })
     session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
     await ctx.sessions.flush(session)
+    const switchSessionId = 'session-desktop-switch'
+    const switchSession = ctx.sessions.create(switchSessionId, {
+      meta: {
+        cwd: context.startupWorkspacePath,
+        agentPreset: 'harness-comfyui-cli-candidate',
+      },
+    })
+    switchSession.append('session/title', {
+      title: 'Desktop session switch target',
+      messageSeqs: [],
+      source: { kind: 'user' },
+    })
+    switchSession.append('turn/start', { turn: 1 })
+    switchSession.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+    await ctx.sessions.flush(switchSession)
     const ownedWorkspace = await ctx.workspaceRegistry.create(context.startupWorkspacePath)
     await ownedWorkspace.attachSession(session.id)
-    return { sessionId, workspaceId: String(ownedWorkspace.id) }
+    await ownedWorkspace.attachSession(switchSession.id)
+    return { sessionId, switchSessionId, workspaceId: String(ownedWorkspace.id) }
   } finally {
     for (const fiber of fibers.reverse()) await fiber.dispose()
     await ctx.fiber.dispose()
@@ -1331,6 +1347,154 @@ describe('live DSH Desktop production integration', () => {
       )
       await page.evaluate(`(document.querySelector('.harness-comfyui-sidebar-entry')?.click(), true)`)
       await verifyRunDiscovery(page, context, identity, stagedRunRepository, mediaFixture)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const tabs = [...(drawer?.querySelectorAll('button[role="tab"]') ?? [])]
+          const panels = [...(drawer?.querySelectorAll('[role="tabpanel"]') ?? [])]
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '关闭结果列')
+          return drawer === null ? null : {
+            detailsCollapsed: drawer.closest('[data-details-collapsed="true"]') !== null,
+            media: drawer.textContent?.includes('2 个媒体') === true,
+            tabs: tabs.map(tab => tab.textContent?.trim()),
+            selected: tabs.map(tab => tab.getAttribute('aria-selected')),
+            hidden: panels.map(panel => panel.hidden),
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.detailsCollapsed === false
+          && value?.media === true
+          && JSON.stringify(value?.tabs) === JSON.stringify(['本会话媒体', '运行状态'])
+          && JSON.stringify(value?.selected) === JSON.stringify(['true', 'false'])
+          && JSON.stringify(value?.hidden) === JSON.stringify([true, false])
+          && value?.toggle === '关闭结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '关闭结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '打开结果列')
+          return {
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.detailsCollapsed === true
+          && value?.toggle === '打开结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '打开结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '关闭结果列')
+          return {
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.detailsCollapsed === false
+          && value?.toggle === '关闭结果列',
+      )
+      await page.evaluate(`(() => {
+        const session = [...document.querySelectorAll('[role="treeitem"]')]
+          .find(node => node.textContent?.includes('Desktop session switch target'))
+        session?.click()
+        return session !== undefined
+      })()`)
+      await waitForValue(
+        page,
+        `(() => {
+          const selected = [...document.querySelectorAll('[role="treeitem"]')]
+            .some(node => node.textContent?.includes('Desktop session switch target') && node.getAttribute('aria-selected') === 'true')
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.switchSessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '打开结果列')
+          return {
+            selected,
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.selected === true
+          && value?.drawerExists === true
+          && value?.detailsCollapsed === true
+          && value?.toggle === '打开结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '打开结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.switchSessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '关闭结果列')
+          return {
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.detailsCollapsed === false
+          && value?.toggle === '关闭结果列',
+      )
+      await page.evaluate(`(() => {
+        const session = [...document.querySelectorAll('[role="treeitem"]')]
+          .find(node => node.textContent?.includes('Desktop media session'))
+        session?.click()
+        return session !== undefined
+      })()`)
+      await waitForValue(
+        page,
+        `(() => {
+          const selected = [...document.querySelectorAll('[role="treeitem"]')]
+            .some(node => node.textContent?.includes('Desktop media session') && node.getAttribute('aria-selected') === 'true')
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '打开结果列')
+          return {
+            selected,
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.selected === true
+          && value?.drawerExists === true
+          && value?.detailsCollapsed === true
+          && value?.toggle === '打开结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '打开结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '关闭结果列')
+          return {
+            drawerExists: drawer !== null,
+            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.detailsCollapsed === false
+          && value?.toggle === '关闭结果列',
+      )
       await page.evaluate(`([...document.querySelectorAll('[role="tab"]')]
         .find(node => node.textContent?.trim() === '本会话媒体')?.click(), true)`)
       await waitForValue(
