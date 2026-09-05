@@ -5,7 +5,7 @@
 | 运行时 | Node.js | `.node-version` 固定 `22.19.0`；`package.json` 允许 `^22.19.0` 或 `>=24.0.0` |
 | 包管理 | pnpm | `11.7.0` |
 | 语言 | TypeScript | `6.0.3`；NodeNext ESM，严格类型检查 |
-| 桌面宿主 | DSH Desktop | `fzfz/dsh-desktop:main` 提交 `4d40a23f2ec64801ead57cad70711a3554176e91`（合并上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`）提供 Electron、Harness 依赖闭包、插件 generation installer、可配置移动桥接端口和已修正的 OpenCode Go 静态模型目录 |
+| 桌面宿主 | DSH Desktop | `fzfz/dsh-desktop:main` 提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`（合并上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`）提供 Electron、Harness 依赖闭包、插件 generation installer、可配置移动桥接端口、聚合 Client 的会话删除 Remote、已禁用的 Kimi PPT adapter 和完整 Windows 打包资源 |
 | Harness 宿主 | DeepSeek Harness | 插件 peer 范围为 `>=0.1.2-rc.1 <0.2.0`；开发和本地发布门禁从当前 DSH Desktop 安装提供实现 |
 | 插件生命周期 | Cordis | `4.0.2` |
 | 持久运行索引 | Node SQLite | Node 内置 `node:sqlite`；SQLite 保存 Run、远端输出和 Media 索引 |

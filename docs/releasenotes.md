@@ -1,3 +1,30 @@
+# Harness ComfyUI v0.39.7
+
+v0.39.7 修复 DSH Desktop 中“删除会话”调用不存在的问题，并在 Desktop 产品 overlay 中严格禁用 Kimi PPT adapter。用户删除会话时，聚合 Client 现在拥有与独立 Session Client 一致的 `session/delete` Remote；被禁用的 adapter 不再注册 PPT 按钮、三个会话扩展位、Kimi PPT Skill、PPT Tool 或模型系统提示词。
+
+## 会话删除
+
+- DSH Desktop 为 `@deepseek-ai/dsh-api-remotes@0.1.2-rc.1` 增加聚合 Client 的 `session/delete` schema 和 descriptor，使现有删除确认弹窗调用真实 Remote，而不是在浏览器中抛出 `this.remote.session.delete is not a function`。
+- 真实 Desktop 测试覆盖删除失败和删除成功。测试模拟 `session/delete` Remote 返回失败时，目标 Session 继续保留；真实 Host 删除成功时，目标 Session 消失，其他 Session 不受影响。
+
+## Kimi PPT 禁用
+
+- DSH Desktop 的产品 overlay 继续保留唯一的 `experimental-kimi-ppt-standard-adapter` 声明，但把该声明设置为严格 `disabled: true`。后续同步 Desktop 上游时，结构化测试继续要求该 adapter 唯一存在且保持禁用。
+- 真实 Desktop 测试确认 `conversation.hero.modeActions`、`conversation.input.accessory` 和 `conversation.composer.dock` 中都没有 `kimi-ppt` contribution，页面没有 PPT 按钮，Skill 列表没有 `kimi-ppt`，插件清单报告 adapter 已禁用，并且没有加载 `dsh-kimi-ppt` core bundle。
+- 真实模型请求捕获确认系统提示词不包含 Kimi/PPT 片段，Tool 列表不包含 `pptd_` 或 `ppt_` 前缀的 Tool。
+
+## Desktop 打包与版本识别
+
+- DSH Desktop 不再把当前 Bundled `@deepseek-ai/dsh` manifest 版本静默写成旧 `0.1.2-alpha.1`；市场兼容性检查只接受当前安装 manifest 中的有效版本。
+- Windows Desktop 打包现在把 `windows-hidden-console.mjs` 与 `harness-node-entry.mjs` 放在同一个 resources 目录。GitHub Windows 打包后冒烟测试已确认 Harness 能启动并创建 Workspace 与 Session。
+
+## 验证与发布
+
+- DSH Desktop 本地完整测试通过：86 个测试文件、717 项测试成功；typecheck、build、补丁 dry-run、独立 Standards Review、独立 Spec Review、语义 Review 和 `git diff --check` 全部通过。GitHub Windows 开发包构建和打包后 Harness 冒烟测试通过。
+- Harness ComfyUI 完整 `pnpm quality` 通过：943 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.46%、branches 86.72%、functions 100%、lines 96.08%。
+- 本版本没有增加或升级 Harness ComfyUI 依赖，也没有修改 DSH Desktop 锁文件。Harness 锁文件的依赖审计未返回漏洞公告。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+- 本版本使用 Desktop `5e08355a58bb727cb0f48c794550202d9d59ed9f`。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，发布记录继续保留这两项公告，用户已明确授权执行该锁文件安装。部署验收必须确认 `node_modules/node/bin/node` 返回 `v24.9.0`。
+
 # Harness ComfyUI v0.39.6
 
 v0.39.6 把会话结果列页签调整为“本会话媒体”“运行状态”的顺序，默认选择“本会话媒体”。输入框上方按钮在结果列关闭时显示“打开结果列”，在结果列打开时显示“关闭结果列”；用户点击该按钮会切换结果列的打开或关闭状态。
