@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
+import { createServer as createHttpServer } from 'node:http'
 import { createServer } from 'node:net'
 import { createRequire } from 'node:module'
 import { DatabaseSync } from 'node:sqlite'
@@ -24,9 +25,77 @@ afterEach(async () => {
   for (const fixture of active.splice(0).reverse()) {
     await stopDesktopWorktree(fixture.context).catch(() => undefined)
     await fixture.start?.catch(() => undefined)
+    await fixture.close?.().catch(() => undefined)
     await rm(fixture.context.runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
 })
+
+async function startModelRequestCaptureServer() {
+  let settleRequest
+  const capturedRequest = new Promise((resolveRequest, rejectRequest) => {
+    settleRequest = { resolve: resolveRequest, reject: rejectRequest }
+  })
+  const server = createHttpServer((request, response) => {
+    if (request.method !== 'POST' || !request.url?.endsWith('/chat/completions')) {
+      response.writeHead(404)
+      response.end()
+      return
+    }
+
+    const chunks = []
+    let byteLength = 0
+    request.on('data', chunk => {
+      byteLength += chunk.length
+      if (byteLength > 1024 * 1024) {
+        request.destroy(new Error('model request exceeded 1 MiB'))
+        return
+      }
+      chunks.push(chunk)
+    })
+    request.once('error', error => settleRequest.reject(error))
+    request.once('end', () => {
+      try {
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+        settleRequest.resolve({ path: request.url, body })
+        const model = typeof body.model === 'string' ? body.model : 'desktop-prompt-capture-model'
+        const responseChunks = [
+          { id: 'desktop-prompt-capture', object: 'chat.completion.chunk', created: 1, model,
+            choices: [{ index: 0, delta: { role: 'assistant', content: 'captured' }, finish_reason: null }] },
+          { id: 'desktop-prompt-capture', object: 'chat.completion.chunk', created: 1, model,
+            choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] },
+        ]
+        response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' })
+        response.end(`${responseChunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`)
+      } catch (error) {
+        settleRequest.reject(error)
+        response.writeHead(400)
+        response.end()
+      }
+    })
+  })
+  await new Promise((resolveListen, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolveListen)
+  })
+  const address = server.address()
+  if (address === null || typeof address === 'string') throw new Error('model request capture server has no TCP port')
+
+  return {
+    baseURL: `http://127.0.0.1:${address.port}/v1`,
+    async request(timeoutMs = 10_000) {
+      return Promise.race([
+        capturedRequest,
+        delay(timeoutMs).then(() => { throw new Error('timed out waiting for the model request') }),
+      ])
+    },
+    close() {
+      return new Promise((resolveClose, rejectClose) => {
+        server.close(error => error ? rejectClose(error) : resolveClose())
+        server.closeAllConnections?.()
+      })
+    },
+  }
+}
 
 async function findFreePort() {
   const server = createServer()
@@ -628,10 +697,33 @@ async function seedSavedDesktopSession(context) {
     switchSession.append('turn/start', { turn: 1 })
     switchSession.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
     await ctx.sessions.flush(switchSession)
+    const deleteSessionId = 'session-desktop-delete'
+    const deleteSessionTitle = 'Desktop deletion target'
+    const deleteSession = ctx.sessions.create(deleteSessionId, {
+      meta: {
+        cwd: context.startupWorkspacePath,
+        agentPreset: 'harness-comfyui-cli-candidate',
+      },
+    })
+    deleteSession.append('session/title', {
+      title: deleteSessionTitle,
+      messageSeqs: [],
+      source: { kind: 'user' },
+    })
+    deleteSession.append('turn/start', { turn: 1 })
+    deleteSession.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+    await ctx.sessions.flush(deleteSession)
     const ownedWorkspace = await ctx.workspaceRegistry.create(context.startupWorkspacePath)
     await ownedWorkspace.attachSession(session.id)
     await ownedWorkspace.attachSession(switchSession.id)
-    return { sessionId, switchSessionId, workspaceId: String(ownedWorkspace.id) }
+    await ownedWorkspace.attachSession(deleteSession.id)
+    return {
+      sessionId,
+      switchSessionId,
+      deleteSessionId,
+      deleteSessionTitle,
+      workspaceId: String(ownedWorkspace.id),
+    }
   } finally {
     for (const fiber of fibers.reverse()) await fiber.dispose()
     await ctx.fiber.dispose()
@@ -774,6 +866,230 @@ async function captureProjectClientContext(page) {
   return identifier
 }
 
+async function verifyKimiPptDisabled(page, sessionId) {
+  const state = await page.evaluate(`(async () => {
+    const ctx = window.__runPanelTestContext
+    const slotNames = [
+      'conversation.hero.modeActions',
+      'conversation.input.accessory',
+      'conversation.composer.dock'
+    ]
+    const hostState = await new Promise((resolve, reject) => {
+      ctx.inject(['remote.skills', 'remote.pluginInventory'], async injected => {
+        try {
+          resolve({
+            skills: await injected.remote.skills.list({ sessionId: ${JSON.stringify(sessionId)} }),
+            inventory: await injected.remote.pluginInventory.list()
+          })
+        } catch (error) {
+          reject(error)
+        }
+      })
+    })
+    return {
+      slots: Object.fromEntries(slotNames.map(name => [
+        name,
+        ctx.slots.entries(name).map(entry => entry.options.id ?? entry.options.key ?? null)
+      ])),
+      pptButtons: [...document.querySelectorAll('button')]
+        .filter(button => button.textContent?.trim() === 'PPT').length,
+      skills: hostState.skills,
+      inventory: hostState.inventory
+    }
+  })()`)
+
+  expect(Object.keys(state.slots)).toEqual([
+    'conversation.hero.modeActions',
+    'conversation.input.accessory',
+    'conversation.composer.dock',
+  ])
+  for (const contributionIds of Object.values(state.slots)) {
+    expect(contributionIds).not.toContain('kimi-ppt')
+  }
+  expect(state.pptButtons).toBe(0)
+  expect(state.skills.ok).toBe(true)
+  expect(state.skills.value.skills.map(skill => skill.name)).not.toContain('kimi-ppt')
+  expect(state.inventory.ok).toBe(true)
+  expect(state.inventory.value.entries.filter(entry =>
+    entry.entryId === 'experimental-kimi-ppt-standard-adapter'
+      || entry.moduleName === '@deepseek-ai/dsh-experimental-kimi-ppt-standard-adapter'
+  )).toEqual([
+    expect.objectContaining({
+      entryId: 'include:experimental-kimi-ppt-standard-adapter',
+      moduleName: '@deepseek-ai/dsh-experimental-kimi-ppt-standard-adapter',
+      enabled: false,
+    }),
+  ])
+  expect(state.inventory.value.entries.filter(entry => entry.moduleName === 'dsh-kimi-ppt')).toEqual([])
+}
+
+async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
+  const sessionId = 'session-desktop-prompt-capture'
+  const remoteResults = await page.evaluate(`new Promise((resolve, reject) => {
+    window.__runPanelTestContext.inject(['remote.session'], async injected => {
+      try {
+        const created = await injected.remote.session.create({
+          workspaceId: ${JSON.stringify(workspaceId)},
+          sessionId: ${JSON.stringify(sessionId)},
+          agentPreset: 'harness-comfyui-cli-candidate'
+        })
+        const selected = created.ok ? await injected.remote.session.selectModel({
+          sessionId: ${JSON.stringify(sessionId)},
+          provider: 'desktop-prompt-capture',
+          model: 'desktop-prompt-capture-model'
+        }) : null
+        const prompted = selected?.ok ? await injected.remote.session.prompt({
+          requestId: 'desktop-prompt-capture-request',
+          sessionId: ${JSON.stringify(sessionId)},
+          mode: 'queue',
+          content: [{ type: 'text', text: 'Return one word.' }],
+          clientTimeZone: 'Asia/Shanghai'
+        }) : null
+        resolve({ created, selected, prompted })
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })`)
+
+  expect(remoteResults.created).toEqual(expect.objectContaining({ ok: true }))
+  expect(remoteResults.selected).toEqual(expect.objectContaining({ ok: true }))
+  expect(remoteResults.prompted).toEqual(expect.objectContaining({ ok: true }))
+
+  const request = await capture.request()
+  expect(request.path).toBe('/v1/chat/completions')
+  expect(request.body.model).toBe('desktop-prompt-capture-model')
+  const systemPrompt = (request.body.messages ?? [])
+    .filter(message => message.role === 'system')
+    .map(message => typeof message.content === 'string' ? message.content : JSON.stringify(message.content))
+    .join('\n')
+  const toolNames = (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name ?? '')
+
+  expect(systemPrompt).not.toMatch(/kimi-ppt|Kimi-compatible PPT|PPT composer|pptd_/iu)
+  expect(toolNames.filter(name => /^ppt(?:d)?_/u.test(name))).toEqual([])
+}
+
+async function openSessionDeleteDialog(page, title) {
+  const opened = await page.evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')]
+      .find(node => node.textContent?.includes(${JSON.stringify(title)}))
+    if (!(row instanceof HTMLElement)) return false
+    const bounds = row.getBoundingClientRect()
+    row.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: bounds.left + bounds.width / 2,
+      clientY: bounds.top + bounds.height / 2
+    }))
+    return true
+  })()`)
+  if (!opened) throw new Error(`Session row is unavailable: ${title}`)
+  await waitForValue(
+    page,
+    `(() => {
+      const action = [...document.querySelectorAll('[role="menuitem"]')]
+        .find(node => node.textContent?.trim() === '删除会话')
+      action?.click()
+      return action !== undefined
+    })()`,
+    value => value === true,
+  )
+  await waitForValue(
+    page,
+    `[...document.querySelectorAll('[role="dialog"]')]
+      .some(dialog => dialog.textContent?.includes(${JSON.stringify(title)})
+        && dialog.textContent?.includes('删除会话'))`,
+    value => value === true,
+  )
+}
+
+async function confirmOpenSessionDelete(page, title) {
+  await waitForValue(
+    page,
+    `(() => {
+      const dialog = [...document.querySelectorAll('[role="dialog"]')]
+        .find(candidate => candidate.textContent?.includes(${JSON.stringify(title)})
+          && candidate.textContent?.includes('删除会话'))
+      const action = [...(dialog?.querySelectorAll('button') ?? [])]
+        .find(button => button.textContent?.trim() === '删除会话')
+      if (!action || action.disabled) return false
+      action.click()
+      return true
+    })()`,
+    value => value === true,
+  )
+}
+
+async function verifySessionDeletion(page, identity) {
+  await page.evaluate(`new Promise((resolve, reject) => {
+    window.__runPanelTestContext.inject(['connection'], injected => {
+      try {
+        const rpc = injected.connection.rpc
+        window.__sessionDeleteRpc = rpc
+        window.__sessionDeleteOriginalCall = rpc.call
+        rpc.call = async (prefix, endpoint, payload, signal) => endpoint === 'session/delete'
+          ? {
+              ok: false,
+              error: {
+                code: 'session/delete-rejected',
+                message: 'Desktop deletion rejection',
+                details: {}
+              }
+            }
+          : window.__sessionDeleteOriginalCall.call(rpc, prefix, endpoint, payload, signal)
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })`)
+  await openSessionDeleteDialog(page, identity.deleteSessionTitle)
+  await confirmOpenSessionDelete(page, identity.deleteSessionTitle)
+  const rejected = await waitForValue(
+    page,
+    `(() => {
+      const dialog = [...document.querySelectorAll('[role="dialog"]')]
+        .find(candidate => candidate.textContent?.includes(${JSON.stringify(identity.deleteSessionTitle)})
+          && candidate.textContent?.includes('删除会话'))
+      return {
+        error: dialog?.querySelector('[role="alert"]')?.textContent?.trim() ?? '',
+        targetPresent: [...document.querySelectorAll('[role="treeitem"]')]
+          .some(node => node.textContent?.includes(${JSON.stringify(identity.deleteSessionTitle)}))
+      }
+    })()`,
+    value => value.error.includes('Desktop deletion rejection') && value.targetPresent === true,
+    5_000,
+  )
+  expect(rejected).toEqual({
+    error: 'session delete failed: session/delete-rejected: Desktop deletion rejection',
+    targetPresent: true,
+  })
+
+  await page.evaluate(`(() => {
+    const rpc = window.__sessionDeleteRpc
+    rpc.call = window.__sessionDeleteOriginalCall
+    delete window.__sessionDeleteRpc
+    delete window.__sessionDeleteOriginalCall
+  })()`)
+  await confirmOpenSessionDelete(page, identity.deleteSessionTitle)
+  await waitForValue(
+    page,
+    `(() => ({
+      targetPresent: [...document.querySelectorAll('[role="treeitem"]')]
+        .some(node => node.textContent?.includes(${JSON.stringify(identity.deleteSessionTitle)})),
+      keptPresent: [...document.querySelectorAll('[role="treeitem"]')]
+        .some(node => node.textContent?.includes('Desktop media session')),
+      dialogOpen: [...document.querySelectorAll('[role="dialog"]')]
+        .some(candidate => candidate.textContent?.includes(${JSON.stringify(identity.deleteSessionTitle)})),
+      error: [...document.querySelectorAll('[role="dialog"]')]
+        .find(candidate => candidate.textContent?.includes(${JSON.stringify(identity.deleteSessionTitle)}))
+        ?.querySelector('[role="alert"]')?.textContent?.trim() ?? ''
+    }))()`,
+    value => value.targetPresent === false && value.keptPresent === true && value.dialogOpen === false,
+    10_000,
+  )
+}
+
 function publishSavedDesktopRun(context, stagedRunRepository, runId) {
   const database = new DatabaseSync(resolve(context.runtimeRoot, 'data/runs.sqlite'))
   try {
@@ -820,7 +1136,7 @@ async function verifyRunDiscovery(page, context, identity, stagedRunRepository, 
 }
 
 describe('live DSH Desktop production integration', () => {
-  it('loads project state, discovers successive Run batches, and verifies models, Providers and media actions', async () => {
+  it('verifies disabled Kimi/PPT, Session deletion, project state, models, Providers and media actions', async () => {
     const developmentContext = await loadTestDesktopContext()
     const base = {
       ...await loadDesktopProductionContext(),
@@ -840,12 +1156,6 @@ describe('live DSH Desktop production integration', () => {
     const legacyDshHome = resolve(runtimeRoot, 'legacy-production-dsh-home')
     const environmentFilePath = resolve(runtimeRoot, 'desktop.env')
     const startupWorkspacePath = resolve(runtimeRoot, 'workspace')
-    await writeFile(
-      environmentFilePath,
-      `OPENCODE_GO_API_KEY=desktop-live-test\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=${mobileBridgePort}\n`,
-      'utf8',
-    )
-    await mkdir(startupWorkspacePath)
     const context = {
       ...base,
       runtimeRoot,
@@ -860,14 +1170,35 @@ describe('live DSH Desktop production integration', () => {
       mobileBridgePort,
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
     }
+    const promptCapture = await startModelRequestCaptureServer()
+    const fixture = { context, start: undefined, close: promptCapture.close }
+    active.push(fixture)
+    await writeFile(
+      environmentFilePath,
+      `OPENCODE_GO_API_KEY=desktop-live-test\nDESKTOP_PROMPT_CAPTURE_API_KEY=desktop-capture-test\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=${mobileBridgePort}\n`,
+      'utf8',
+    )
+    await mkdir(startupWorkspacePath)
     const identity = await seedSavedDesktopSession({ ...context, dshHome: legacyDshHome })
-    const customProviders = JSON.parse(await readFile(new URL('../fixtures/custom-provider-reasoning.json', import.meta.url), 'utf8'))
+    const customProviders = {
+      ...JSON.parse(await readFile(new URL('../fixtures/custom-provider-reasoning.json', import.meta.url), 'utf8')),
+      'desktop-prompt-capture': {
+        displayName: 'Desktop Prompt Capture',
+        api: 'openai-completions',
+        apiKeyEnv: 'DESKTOP_PROMPT_CAPTURE_API_KEY',
+        baseURL: promptCapture.baseURL,
+        models: [{
+          id: 'desktop-prompt-capture-model',
+          name: 'Desktop Prompt Capture Model',
+          contextWindow: 16_384,
+          maxTokens: 1_024,
+        }],
+      },
+    }
     await mkdir(context.dshHome, { recursive: true })
     await writeFile(resolve(context.dshHome, 'settings.yaml'), JSON.stringify({ 'llm-pi-ai': { providers: customProviders } }))
     const stagedRunRepository = resolve(runtimeRoot, 'staged-runs.sqlite')
     const mediaFixture = await seedDesktopMedia(context, identity, stagedRunRepository)
-    const fixture = { context, start: undefined }
-    active.push(fixture)
     const debuggingPort = await findFreePort()
     fixture.start = startDesktopWorktree(context, { remoteDebuggingPort: debuggingPort })
     await waitForPath(context.pidFile)
@@ -883,6 +1214,9 @@ describe('live DSH Desktop production integration', () => {
     let contextCaptureScript
     try {
       contextCaptureScript = await captureProjectClientContext(page)
+      await verifyKimiPptDisabled(page, identity.sessionId)
+      await verifyKimiPptHostRequestDisabled(page, promptCapture, identity.workspaceId)
+      await verifySessionDeletion(page, identity)
       await mkdir(downloadPath)
       browser = await connectDesktopBrowser(debuggingPort)
       await browser.command('Browser.setDownloadBehavior', {
