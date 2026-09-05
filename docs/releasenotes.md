@@ -1,3 +1,25 @@
+# Harness ComfyUI v0.39.3
+
+v0.39.3 将 DSH Desktop 完整同步到官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`，包含 PR #291 的自定义模型推理等级保存修复，并适配 DeepSeek Harness `0.1.2-rc.1` 与 Cordis `4.0.2`。
+
+## 自定义模型的推理等级
+
+- 用户在设置页重新编辑并保存模型的推理等级后，设置页会将旧 `reasoning.efforts` 转换为运行时识别的 `reasoningEfforts`。只打开设置页不会转换旧记录。
+- 硅基流动与内网 cliproxyAPI 的六个已配置模型已通过真实 Desktop 验证：测试保存配置后进入新会话，确认用户可以为每个模型选择 Low、Medium、High、Max。两个未配置推理等级的模型保留原记录。
+- 上游设置页移除了逐模型默认推理等级控件；用户在会话中选择推理等级。
+
+## Desktop 与 Harness 接口适配
+
+- Desktop 使用 `4d40a23f2ec64801ead57cad70711a3554176e91`，保留 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 指定监听端口的功能。
+- OpenCode Go 模型清单使用 pi-ai `0.84.4` 原生数据，保留四个本地新增模型，移除旧 `0.84.3` 补丁，并采用上游对 Grok 4.5、Ox Alpha Free 和 Qwen3.8 Max 的清单调整。
+- 图片读取设置使用新版 `RemoteError` 和设置注册接口；Host 通过 `Session.snapshotEvents()` 读取会话事件，并从事件中取得工具执行身份。该适配解决旧插件因已删除导出而无法加载的问题。
+
+## 验证结果与依赖公告
+
+Harness 的完整 `pnpm quality` 通过：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Desktop 的 711 项测试全部通过，类型检查和构建也通过。
+
+Harness 锁文件的依赖审计未返回漏洞公告。Desktop 锁文件包含 `pptxgenjs 4.0.1 → image-size 1.2.1`；2026-09-05 的审计发现 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，涉及图片解析无限循环。用户已明确允许安装该版本。
+
 # Harness ComfyUI v0.39.2
 
 v0.39.2 重写 ComfyUI Generate、WAI、ANIMA 和 Krea2 项目 Skill 的任务流程与 CLI 使用文档，使每条规则直接说明执行主体、操作对象、调用条件和结果，并删除 Krea2 Skill 已经不再调用的旧生成脚本与参考资产。
