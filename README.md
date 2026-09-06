@@ -98,7 +98,7 @@ JSON
 
 Harness 设置中的“ComfyUI”入口包含“图片读取”和“数据源服务”两个页签。“图片读取”页签支持切换、保存、复制和删除多份图片读取配置。每份图片读取配置可以从当前 LLM 运行时动态选择明确支持图片输入的系统 Provider 与模型，也可以填写 OpenAI 兼容 Chat Completions 完整地址、模型 ID 和可选 API Key；每份配置独立保存默认读图 Prompt、`temperature` 和最大输出 Token。API Key 作为 Harness Settings secret 保存，不进入浏览器设置快照。图片读取模型独立于当前 Session 模型和 ComfyUI 生图模型，设置页不硬编码任何 Provider。
 
-“数据源服务”页签分别保存数据源服务的 HTTP 或 HTTPS URL 与端口。Host 在发送上下文插入和语义查询请求以及读取 ComfyUI 实例信息和 Workflow bundle 前读取最新的数据源服务设置。插件发行包内置语义查询客户端和数据源读取客户端；插件运行时通过 HTTP 或 HTTPS 请求已配置的数据源服务，不读取或执行数据源仓库中的文件。`ComfyUI工作台预设` 启用后，系统在数据源服务 URL 或端口尚未保存时提示使用者填写这两项设置；系统在设置已经保存但服务连接失败时提示使用者检查 URL、端口和服务状态。
+“数据源服务”页签分别保存数据源服务的 HTTP 或 HTTPS URL 与端口。Host 在发送上下文插入和语义查询请求以及读取 ComfyUI 实例信息和 Workflow bundle 前读取最新的数据源服务设置。插件发行包内置语义查询客户端和数据源读取客户端；插件运行时通过 HTTP 或 HTTPS 请求已配置的数据源服务，不读取或执行数据源仓库中的文件。`ComfyUI工作台预设` 启用后，系统在数据源服务 URL 或端口尚未保存时提示使用者填写这两项设置；系统在数据源服务检查请求失败时提示使用者检查 URL、端口和服务状态。
 
 Host 注册 `get_generation_run_media` 与 `inspect_image`。前者按输入顺序查询一至二十个完整或唯一短 Run ID，并返回当前 Workspace 中每个 Run 的原始 `parameters` 与本地图片路径；后者一次只读取一个本地图片路径，并使用当前命名配置中的独立视觉模型返回观察文本。系统 Provider 配置复用 Harness LLM Runtime；OpenAI 兼容配置直接调用已配置的 Chat Completions 地址。`local-image-reader` Skill 使用自己的 `references/image-inspection-cli.md`，按用户提供的本地绝对路径逐图调用 `image inspect --stdin` 并返回观察结果。`comfyui-image-review` Skill 使用自己的 `references/cli.md` 先取得 Run 图片，再逐图读取，最后由 Agent 对比原始 Prompt 与观察文本并编写改进 Prompt。Run 查询、本地图片读取和 Prompt 对比由不同 Skill 流程承担。
 
@@ -123,6 +123,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.39.7 发布说明](docs/releasenotes.md)
+- [v0.39.8 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.39.7`。对应发布记录在最终提交、`v0.39.7` tag 和 GitHub Release 创建后显示于 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
+当前产品版本是 `0.39.8`。GitHub Releases 页面会在仓库包含 `0.39.8` 版本代码的发布提交、`v0.39.8` tag 和 GitHub Release 全部创建后显示 `0.39.8` 的发布记录。

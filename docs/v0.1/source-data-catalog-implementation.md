@@ -12,7 +12,7 @@ lifecycle: historical-record
 
 > 本文档只记录 Source v0.84.0 发布前的历史实施。当前 Harness-ComfyUI 使用插件内置客户端请求设置页指定的数据源服务；关于 Harness-ComfyUI 通过插件内置客户端连接数据源服务的当前架构决定，见 [`ADR 0015`](../adr/0015-independent-data-source-service.md)。本文不作为当前 Configuration Profile、Host adapter、Skill 或测试的输入。
 
-本文档依据 Source 历史 revision `6bc3fc6a027eecf45ccf86dd681e30621c4bc591` 编写。Source v0.84.0 的最终发布合同与该历史基线之间的差异以当前 `source-contract-v0.84.0.md` 和 `config/source-contract-v0.84.0.json` 为准。
+本文档依据 Source 历史 revision `6bc3fc6a027eecf45ccf86dd681e30621c4bc591` 编写。Source v0.84.0 的最终发布接口记录在同目录的 `source-contract-v0.84.0.md`；`source-contract-v0.84.0.md` 和 `config/source-contract-v0.84.0.json` 均为历史产物，不是当前 Harness-ComfyUI 的实施输入。
 
 ## 1. 两个仓库的责任边界
 

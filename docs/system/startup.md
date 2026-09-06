@@ -99,7 +99,7 @@ pnpm dev:stop
 set -e
 pnpm prod:stop
 git fetch --tags
-git switch --detach v0.39.7
+git switch --detach v0.39.8
 git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 5e08355a58bb727cb0f48c794550202d9d59ed9f
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
 test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
@@ -117,7 +117,7 @@ pnpm prod:start
 )
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.39.7` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`；该提交恢复聚合 Client 的 `session/delete` Remote，严格禁用 Kimi PPT adapter，并把 Windows 隐藏控制台辅助模块纳入 Desktop 打包资源。
+生产 checkout 必须独立管理自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`，并在 Git 更新时保留这些本地文件和运行状态。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 
@@ -177,6 +177,6 @@ pnpm quality
 
 linked worktree 共享的 `.env` 可以保留 Provider 凭据、共享产品配置和既有端口变量。`dev:*` 不把共享 `.env` 中的 Desktop 移动桥接端口变量作为当前 worktree 的开发端口；`web:*` 不把共享 `.env` 中的 `HARNESS_COMFYUI_SERVER_PORT` 作为当前 worktree 的 Web Host 端口。开发 Desktop 移动桥接端口、独立 Web Host 端口、PID、日志、DSH home、业务数据和 Desktop 构建输出全部属于当前 worktree 的开发实例。
 
-## v0.39.7 的 Desktop 启动要求
+## v0.39.8 的 Desktop 来源、依赖版本与插件启动验证要求
 
-`v0.39.7` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`，该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3 的会话删除、Kimi PPT 禁用和 Windows 打包修复。该 Desktop 使用 Harness `0.1.2-rc.1` 和 Cordis `4.0.2`；插件源码必须与该版本共同验证。
+`v0.39.8` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该提交已合并官方上游提交 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3 提供的会话删除功能、Kimi PPT 禁用配置和 Windows 隐藏控制台辅助模块打包修复。该 Desktop 提交与 Harness `0.1.2-rc.1`、Cordis `4.0.2` 组成插件验证环境；该环境必须能够启动 Desktop 并成功加载插件源码。

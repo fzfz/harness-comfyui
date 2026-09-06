@@ -1,15 +1,14 @@
 ---
 doc_id: harness-source-contract-v0.84.0
-title: Harness 消费源数据仓库 v0.84.0 envelope 合同
-status: accepted
+title: Harness 消费源数据仓库 v0.84.0 envelope 合同历史记录
+status: historical
 version: v0.84.0
-lifecycle: consumer-contract
-structured_source: config/source-contract-v0.84.0.json
+lifecycle: historical-record
 ---
 
-# 合同所有权
+# 历史记录用途
 
-`config/source-contract-v0.84.0.json` 是 Harness 对源数据仓库 v0.84.0 的唯一结构化消费合同。本文解释该结构化合同的运行规则，不重复定义 operation 清单或字段映射。
+本文记录 Harness 曾经消费源数据仓库 v0.84.0 时使用的接口和执行规则。本文提到的 `config/source-contract-v0.84.0.json` 已经删除；当前 Harness-ComfyUI 的运行时代码和测试均不读取本文或该 JSON 文件。当前数据源服务访问方式由 [`ADR 0015`](../adr/0015-independent-data-source-service.md) 定义。
 
 Harness 固定消费以下已发布产物：
 
@@ -61,4 +60,4 @@ InstanceSource 与 TemplateBundle 继续使用 v0.84.0 的统一 envelope 和既
 
 # 版本关系
 
-本合同取代 v0.82.2 作为 Harness 当前 Source 消费合同。`docs/v0.1/source-contract-v0.82.2.md` 与 `config/source-contract-v0.82.2.json` 只记录历史版本，不能作为当前 Configuration Profile、Host adapter 或测试的输入。
+v0.84.0 合同发布时取代了 v0.82.2 合同。本文与 `docs/v0.1/source-contract-v0.82.2.md` 现在只用于记录历史接口和执行规则。`config/source-contract-v0.82.2.json` 与 `config/source-contract-v0.84.0.json` 已经删除；当前 Configuration Profile、Host adapter 和测试均不得读取这两个 JSON 文件。

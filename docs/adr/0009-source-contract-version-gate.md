@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Source contract version gate
+
+本 ADR 已由 [ADR 0015](0015-independent-data-source-service.md) 取代。以下内容只记录 Harness 曾经消费 Source v0.82.2 时采用的决定，不是当前运行时、Configuration Profile 或测试的输入。
 
 本仓库正式消费源数据仓库 `v0.82.2` 的 raw-passthrough envelope。唯一结构化合同是 `config/source-contract-v0.82.2.json`。
 

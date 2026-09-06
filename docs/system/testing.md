@@ -192,6 +192,16 @@ v0.39.7 最终候选树使用 DSH Desktop `5e08355a58bb727cb0f48c794550202d9d59e
 
 完整 `pnpm quality` 通过：943 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.46%、branches 86.72%、functions 100%、lines 96.08%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，用户已明确授权执行该锁文件安装。受控安装产生的 Desktop `node_modules/node/bin/node` 返回 `v24.9.0`。
 
+## v0.39.8 发布候选验证
+
+v0.39.8 的自动化测试直接启动生产语义查询客户端和生产数据源读取客户端，记录客户端发送的 HTTP 方法、请求路径、查询参数和请求体，并使用数据源接口响应验证客户端返回的生成模型、ComfyUI 实例和 Workflow bundle 对象。真实数据源服务验收确认语义查询返回生成模型 `id=1`，数据源读取返回 ComfyUI 实例 `id=2` 和 Workflow bundle `id=43`。真实数据源服务验收还从实际候选发行包中解压两个客户端并逐一调用，确认该发行包包含这两个客户端且不包含 source contract JSON。
+
+真实 Desktop 验收确认 Harness 设置中的“ComfyUI”入口包含“图片读取”和“数据源服务”两个页签；“图片读取”页签继续使用 v0.39.8 修改前负责编辑图片读取设置的同一组件，并保留切换页签前的未保存草稿；“数据源服务”页签把用户输入的 URL 和端口保存到 Harness 设置。测试还确认未配置数据源服务时，启用 `ComfyUI工作台预设` 会显示配置提示。
+
+OpenRouter 模型驱动的真实 Desktop 会话实际加载候选发行包中的 `wai-sdxl-prompt-builder` Skill。该 Skill 使用 Desktop 注入的 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`、`DSH_HARNESS_COMFYUI_SOURCE_URL` 和 `DSH_HARNESS_COMFYUI_SOURCE_PORT`，调用 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI` 指向的候选发行包语义查询客户端。Base Model Search 返回唯一的 `wai` 记录 `id=2`；Style Search 返回一条水彩画风候选记录；Style Resolve 使用 `id=12298` 发起请求，并返回 `id=12298`、`base_model_id=2` 和 `prompt_text=fly`。该 Skill 随后调用自身的 Prompt 格式校验器和最终结果校验器，两次命令均返回退出码 0。
+
+完整 `pnpm quality` 通过：1004 项 unit/integration、55 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，用户已明确授权执行该锁文件安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：
