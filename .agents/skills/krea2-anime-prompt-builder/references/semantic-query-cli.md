@@ -1,12 +1,10 @@
 # Prompt 内容查询 CLI
 
-## 用途与调用入口
-
-Skill 执行者使用 Harness-ComfyUI 提供的语义查询客户端查询作品、角色、Krea2 画师和 Prompt 标签。Harness-ComfyUI 通过 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`、`DSH_HARNESS_COMFYUI_SOURCE_URL` 和 `DSH_HARNESS_COMFYUI_SOURCE_PORT` 提供客户端文件、数据源服务 URL 和端口。每次调用只查询一条路径，并通过命令行参数提供查询值。
+## Character 与 Style 上下文记录定义
 
 本文件把当前消息中 `type=comfyui-context` 且 `data.kind=character` 的 JSON 行称为 Character 上下文记录，把 `type=comfyui-context` 且 `data.kind=style` 的 JSON 行称为 Style 上下文记录。
 
-## 查询路径与结果字段
+## 查询路径、调用条件与结果字段
 
 | 路径 | 调用条件 | Skill 执行者读取的结果字段 |
 |---|---|---|
@@ -22,7 +20,7 @@ Skill 执行者使用 Harness-ComfyUI 提供的语义查询客户端查询作品
 node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
 ```
 
-`<operation-path>` 必须取自“查询路径与结果字段”表。`<query>` 必须是长度不超过 200 个字符且不含控制字符的字符串。Skill 执行者使用 shell 参数引用规则把 `<query>` 作为一个参数传入命令。
+`<operation-path>` 必须取自“查询路径、调用条件与结果字段”表。`<query>` 必须是长度不超过 200 个字符且不含控制字符的字符串。Skill 执行者使用 shell 参数引用规则把 `<query>` 作为一个参数传入命令。
 
 查询角色时，Skill 执行者可以使用已采用 Work 结果的 `id` 限定结果：
 
@@ -30,7 +28,7 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURC
 node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
 ```
 
-查询 Style 时，Skill 执行者必须使用本轮取得的 Krea2 Base Model ID 限定结果：
+查询 Style 时，Skill 执行者必须使用本次 Skill 执行中取得的 Krea2 Base Model ID 限定结果：
 
 ```sh
 node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<krea2-base-model-id>'
@@ -46,9 +44,9 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURC
 
 Character 上下文记录使用 `/internal/semantic/characters`，Style 上下文记录使用 `/internal/semantic/styles`。Skill 执行者把 `data.id` 作为 `<stable-id>`。
 
-Resolve 成功结果的 `results` 必须只包含一个对象，并且该对象的 `id` 转为十进制字符串后必须等于 `<stable-id>`。结果数量不是一、结果缺少 `id` 或 ID 不相等时，Skill 执行者报告实际结果并停止当前查询目标。
+Resolve 成功结果的 `results` 必须只包含一个对象，且该对象的 `id` 转为十进制字符串后必须等于 `<stable-id>`。当 `results` 中的对象数量不等于 1、对象缺少 `id` 或 ID 不相等时，Skill 执行者报告实际结果并停止当前查询目标。
 
-## 查询顺序与查询值
+## Work、Character、Style、Base Model 与 Prompt-term 的查询顺序、查询值和结果处理
 
 1. Character 上下文记录和 Style 上下文记录中的非空 `data.prompt_text` 是用户当前选择的直接 Prompt 来源。Skill 执行者先采用这些 `data.prompt_text`，再处理缺少 Prompt 的上下文记录。
 2. Character 上下文记录没有非空 `data.prompt_text` 时，Skill 执行者优先使用合法 `data.id` 执行 Character Resolve。没有合法 `data.id` 时，Skill 执行者使用非空 `data.character_name` 执行 Character Search；记录同时提供 `data.work_name` 时，先用该名称执行 Work Search，并用已采用 Work 结果的 `id` 限定 Character Search。记录也没有 `data.character_name` 时，Skill 执行者报告缺少角色名称并停止当前 Character 查询目标。
@@ -69,7 +67,7 @@ Base Model Search 中没有 `name` 精确等于 `krea2` 的结果时，Skill 执
 
 `--id`、`--work_id` 和 `--base_model_id` 只接受符合 `^[1-9][0-9]{0,19}$` 的十进制字符串。Skill 执行者把查询结果中的数值 `id` 转为十进制字符串后用于后续命令。
 
-## 成功输出
+## 成功输出结构、候选选择与结果使用
 
 命令返回退出码 `0` 且 stderr 为空时，stdout 写入一个 JSON 对象：
 
@@ -90,7 +88,7 @@ Base Model Search 中没有 `name` 精确等于 `krea2` 的结果时，Skill 执
 
 - Work：使用 `name`、`aliases_json` 和 `category_name` 核对用户指定的作品。只有一项符合时采用该项；多项仍符合时报告各项的 `id`、`name`、`aliases_json` 和 `category_name`，并请求用户选择。
 - Character：使用 `works.name`、`name` 和 `aliases_json` 核对用户指定的角色；使用 `<work-id>` 查询时，只比较 `work_id` 等于 `<work-id>` 的结果。只有一项身份符合且 `prompt_text` 非空时采用该项；多项仍符合时报告各项的 `id`、`works.name`、`name` 和 `aliases_json`，并请求用户选择。
-- Style：只比较 `base_model_id` 等于 Krea2 Base Model ID 的结果。Style Search 由用户指定画师时，使用 `name` 和 `aliases_json` 核对身份；Style Search 没有用户指定的画师时，使用 `style_description` 比较已经确定的媒介、线条、上色、明暗、纹理和配色。只有一项符合且 `prompt_text` 非空时采用该项；多项仍符合时报告各项的 `id`、`name`、`aliases_json` 和 `style_description`，并请求用户选择。Style Resolve 结果按照“查询顺序与查询值”一节的规则处理。
+- Style：只比较 `base_model_id` 等于 Krea2 Base Model ID 的结果。用户指定画师时，Skill 执行者使用 `name` 和 `aliases_json` 核对画师身份；用户没有指定画师时，Skill 执行者使用 `style_description` 比较已经确定的媒介、线条、上色、明暗、纹理和配色。只有一项符合且 `prompt_text` 非空时，Skill 执行者采用该项；多项仍符合时，Skill 执行者报告各项的 `id`、`name`、`aliases_json` 和 `style_description`，并请求用户选择。Skill 执行者按照“Work、Character、Style、Base Model 与 Prompt-term 的查询顺序、查询值和结果处理”一节的规则处理 Style Resolve 结果。
 - Prompt-term：使用 `canonical_tag` 和 `aliases_json` 核对目标概念。只有一项符合时采用该项；多项表达相同含义时，按照 `post_count` 从大到小、`id` 从小到大的顺序采用第一项；多项表达不同含义且无法从用户普通文字确定唯一含义时，报告各项的 `id`、`canonical_tag` 和 `aliases_json`，并请求用户选择。
 
 Skill 执行者把已采用的 Character 上下文记录或 Character 查询结果的 `prompt_text`、Style 上下文记录或 Style 查询结果的 `prompt_text`，以及 Prompt-term 查询结果的 `canonical_tag` 写入最终 `positive_prompt`。Work 结果和 Base Model 结果只用于身份核对与查询限定。
@@ -102,20 +100,20 @@ Work 或 Character 没有可采用结果时，Skill 执行者报告缺少的作�
 | 退出码 | Skill 执行者的处理动作 |
 |---:|---|
 | `2` | Skill 执行者修正自己构造的参数后重试一次；重试仍失败时报告 stderr 并停止当前查询目标。 |
-| `3` | Skill 执行者报告 CLI 无法取得查询路径，并停止本次语义查询。 |
+| `3` | Skill 执行者报告命令中的 `--path` 查询路径不可用，并停止本次语义查询。 |
 | `4` | Skill 执行者报告 Catalog 服务连接错误，并停止本次语义查询。 |
-| `5` | Skill 执行者报告发生超时的查询路径和查询值，并停止当前查询目标。 |
-| `6` | Skill 执行者报告返回内容不是单个有效 JSON，并停止本次语义查询。 |
+| `5` | Skill 执行者报告发生超时的查询路径、`mode` 以及本次调用实际传入的 `query`、`id`、`work_id` 和 `base_model_id` 参数值，并停止当前查询目标。 |
+| `6` | Skill 执行者报告 stdout 不是单个有效 JSON 对象，并停止本次语义查询。 |
 | `7` | Skill 执行者报告 stderr 中的 Catalog 错误，并停止当前查询目标。 |
 | `130` 或 `143` | Skill 执行者停止本次 Skill 执行。 |
 
-命令返回非零退出码时，Skill 执行者只使用 stderr 报告错误，不采用 stdout 中的内容；退出码未列入上表时，Skill 执行者报告退出码和 stderr，并停止本次语义查询。命令返回退出码 `0` 但 stderr 非空时，Skill 执行者报告 stderr 内容并停止当前查询目标。
+命令返回非零退出码时，Skill 执行者不采用 stdout 中的内容，并按照上表处理；退出码未列入上表时，Skill 执行者报告退出码和 stderr 内容，并停止本次语义查询。命令返回退出码 `0` 但 stderr 非空时，Skill 执行者报告 stderr 内容并停止当前查询目标。
 
-命令返回退出码 `0`，但 stdout 不符合“成功输出”一节的结构时，Skill 执行者报告违反的结构要求和实际值，并停止当前查询目标。`results[]` 中用于筛选、核对、排序、报告或采用的每个对象缺少“查询路径与结果字段”表规定的字段时，Skill 执行者报告缺少的字段名，并停止当前查询目标。
+命令返回退出码 `0`，但 stdout 不符合“成功输出结构、候选选择与结果使用”一节规定的输出结构时，Skill 执行者报告违反的结构要求和实际值，并停止当前查询目标。`results[]` 中用于筛选、核对、排序、报告或采用的每个对象缺少“查询路径、调用条件与结果字段”表规定的字段时，Skill 执行者报告缺少的字段名，并停止当前查询目标。
 
 ## 调用次数与结果复用
 
-当两次调用的查询路径、`mode` 以及实际传入的 `query`、`id`、`work_id` 和 `base_model_id` 参数完全相同时，这两次调用属于同一个查询目标。Skill 执行者按照“查询顺序与查询值”一节为每个查询目标调用一次 CLI。
+当两次调用的查询路径、`mode` 以及实际传入的 `query`、`id`、`work_id` 和 `base_model_id` 参数完全相同时，这两次调用属于同一个查询目标。Skill 执行者按照“Work、Character、Style、Base Model 与 Prompt-term 的查询顺序、查询值和结果处理”一节为每个查询目标调用一次 CLI。
 
 Skill 执行者采用某个成功结果后，在本次 Skill 执行的后续步骤中复用该结果，不用相同参数再次查询。
 
