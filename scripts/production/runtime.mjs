@@ -97,7 +97,7 @@ export function parseSourceProductionDefinition(value, repositoryRoot = defaultR
   if (definition.schemaVersion !== 1) throw new TypeError('source production definition.schemaVersion must be 1')
 
   const source = requireRecord(definition.source, 'source production definition.source')
-  assertExactKeys(source, ['catalogPort', 'catalogCliRelativePath', 'sourceCliRelativePath'], 'source production definition.source')
+  assertExactKeys(source, ['catalogPort'], 'source production definition.source')
   const logs = parseLogOptions(definition.logs, 'source production definition.logs')
 
   const configurationProfile = requireString(
@@ -118,18 +118,6 @@ export function parseSourceProductionDefinition(value, repositoryRoot = defaultR
     ),
     configurationProfile,
     catalogPort: requirePositiveInteger(source.catalogPort, 'source production definition.source.catalogPort'),
-    catalogCliPath: requireRelativePath(
-      source.catalogCliRelativePath,
-      'source production definition.source.catalogCliRelativePath',
-      root,
-      { insideRoot: false },
-    ),
-    sourceCliPath: requireRelativePath(
-      source.sourceCliRelativePath,
-      'source production definition.source.sourceCliRelativePath',
-      root,
-      { insideRoot: false },
-    ),
     logs: {
       source: logs.source,
       lines: logs.lines,
@@ -176,9 +164,7 @@ export async function loadSourceProductionContext(options = {}) {
     HARNESS_COMFYUI_RUN_DIRECTORY: resolve(definition.runtimeRoot, 'shared/runs'),
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: resolve(definition.runtimeRoot, 'shared/saved-media'),
     HARNESS_COMFYUI_LOG_DIRECTORY: resolve(definition.runtimeRoot, 'shared/logs'),
-    HARNESS_COMFYUI_CATALOG_CLI_PATH: definition.catalogCliPath,
     HARNESS_COMFYUI_CATALOG_PORT: String(definition.catalogPort),
-    HARNESS_COMFYUI_SOURCE_CLI_PATH: definition.sourceCliPath,
   }
   const configRoot = resolve(repositoryRoot, 'config')
   const profile = loadProfile(definition.configurationProfile, {
@@ -211,10 +197,6 @@ export async function loadSourceProductionContext(options = {}) {
     },
     source: {
       catalogPort: profile.source.catalogPort,
-      catalogCliPath: profile.source.catalogCliPath,
-      sourceCliPath: profile.source.sourceCliPath,
-      contractId: profile.source.contractId,
-      sourceReleaseVersion: profile.source.sourceReleaseVersion,
     },
     client: { runRefreshIntervalMs: profile.client.runRefreshIntervalMs },
     process: { shutdownTimeoutMs: profile.process.shutdownTimeoutMs },
@@ -351,8 +333,6 @@ export async function loadSavedSourceManagedContext(options = {}) {
       runtimeRoot: state.runtime.runtimeRoot,
       configurationProfile: state.runtime.configurationProfile,
       catalogPort: state.runtime.source.catalogPort,
-      catalogCliPath: state.runtime.source.catalogCliPath,
-      sourceCliPath: state.runtime.source.sourceCliPath,
       logs: state.logs,
     },
     configReadOrder: [
@@ -376,14 +356,6 @@ export async function loadSavedSourceManagedContext(options = {}) {
 
 export async function clearSourceManagedState(context) {
   await rm(context.sourceManagedStatePath, { force: true })
-}
-
-async function assertReadable(path, name) {
-  try {
-    await access(path, fsConstants.R_OK)
-  } catch (error) {
-    throw new Error(`${name} is unavailable at ${path}: ${error instanceof Error ? error.message : String(error)}`)
-  }
 }
 
 async function assertExecutable(path, name) {
@@ -421,8 +393,6 @@ function validateSourceRuntimeState(value, context) {
 export async function prepareSourceRuntime(context, options = {}) {
   await assertNoRunningHost(processStatePath(context.runtime.runtimeRoot), context.runtime, context.activeVersion)
   await assertExecutable(context.dshExecutable, 'source production dsh executable')
-  await assertReadable(context.runtime.source.catalogCliPath, 'source production Catalog CLI')
-  await assertReadable(context.runtime.source.sourceCliPath, 'source production Source CLI')
   await mkdir(context.runtime.paths.apiWorkflowCacheDirectory, { recursive: true })
   await (options.materializeCli ?? materializeSourceCliModule)(context.repositoryRoot)
   await materializeSourceClientModule(context.repositoryRoot)

@@ -1,9 +1,6 @@
 import { isIP } from 'node:net'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 
-export const SOURCE_CONTRACT_ID = 'imagegen-source-contract'
-export const SOURCE_RELEASE_VERSION = '0.86.1'
-
 const RUNTIME_KEYS = [
   'schemaVersion', 'runtimeId', 'runtimeRoot', 'configurationProfile', 'host', 'port',
   'paths', 'comfyui', 'source', 'client', 'process',
@@ -125,13 +122,7 @@ export function validateSourceRuntime(input) {
     'runtime.comfyui.frontendCompiler.preReadiness',
   )
   const source = requireRecord(runtime.source, 'runtime.source')
-  assertExactKeys(source, ['catalogPort', 'catalogCliPath', 'sourceCliPath', 'contractId', 'sourceReleaseVersion'], 'runtime.source')
-  if (source.contractId !== SOURCE_CONTRACT_ID) {
-    throw new TypeError(`runtime.source.contractId must be ${SOURCE_CONTRACT_ID}`)
-  }
-  if (source.sourceReleaseVersion !== SOURCE_RELEASE_VERSION) {
-    throw new TypeError(`runtime.source.sourceReleaseVersion must be ${SOURCE_RELEASE_VERSION}`)
-  }
+  assertExactKeys(source, ['catalogPort'], 'runtime.source')
   const client = requireRecord(runtime.client, 'runtime.client')
   assertExactKeys(client, ['runRefreshIntervalMs'], 'runtime.client')
   const process = requireRecord(runtime.process, 'runtime.process')
@@ -190,10 +181,6 @@ export function validateSourceRuntime(input) {
     },
     source: {
       catalogPort: validatePort(source.catalogPort),
-      catalogCliPath: requireAbsolutePath(source.catalogCliPath, 'runtime.source.catalogCliPath'),
-      sourceCliPath: requireAbsolutePath(source.sourceCliPath, 'runtime.source.sourceCliPath'),
-      contractId: SOURCE_CONTRACT_ID,
-      sourceReleaseVersion: SOURCE_RELEASE_VERSION,
     },
     client: {
       runRefreshIntervalMs: requirePositiveInteger(client.runRefreshIntervalMs, 'runtime.client.runRefreshIntervalMs'),

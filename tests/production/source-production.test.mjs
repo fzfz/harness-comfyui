@@ -93,12 +93,8 @@ async function createFixture(options = {}) {
   const runtimeRoot = resolve(repositoryRoot, runtimeRelativeRoot)
   temporaryPaths.push(runtimeRoot)
   await mkdir(runtimeRoot, { recursive: true })
-  const catalogCliPath = resolve(runtimeRoot, 'catalog.mjs')
-  const sourceCliPath = resolve(runtimeRoot, 'source.mjs')
   const dshExecutable = resolve(runtimeRoot, 'node_modules/.bin/dsh')
   const dshHostPath = resolve(runtimeRoot, 'fake-dsh-host.mjs')
-  await writeFile(catalogCliPath, '#!/usr/bin/env node\n', 'utf8')
-  await writeFile(sourceCliPath, '#!/usr/bin/env node\n', 'utf8')
   await writeFile(dshHostPath, `
 import { createServer } from 'node:http'
 
@@ -131,8 +127,6 @@ exec ${JSON.stringify(process.execPath)} ${JSON.stringify(dshHostPath)} "$@"
     configurationProfile: 'production',
     source: {
       catalogPort: 18093,
-      catalogCliRelativePath: relative(repositoryRoot, catalogCliPath),
-      sourceCliRelativePath: relative(repositoryRoot, sourceCliPath),
     },
     logs: { source: 'all', lines: 50 },
   }
@@ -173,7 +167,7 @@ describe('Web Host shared process commands', () => {
     expect(() => parseArguments(['unknown'])).toThrow('unknown Web Host command')
   })
 
-  it('requires one repository-local runtime directory and resolves source paths from the repository', () => {
+  it('requires one repository-local runtime directory and one data source default port', () => {
     const definition = {
       schemaVersion: 1,
       runtimeId: 'source-production-test',
@@ -181,14 +175,11 @@ describe('Web Host shared process commands', () => {
       configurationProfile: 'production',
       source: {
         catalogPort: 18093,
-        catalogCliRelativePath: '../catalog.mjs',
-        sourceCliRelativePath: '../source.mjs',
       },
       logs: { source: 'all', lines: 50 },
     }
     const parsed = parseSourceProductionDefinition(definition, repositoryRoot)
     expect(parsed.runtimeRoot).toBe(resolve(repositoryRoot, '.local/production-test'))
-    expect(parsed.catalogCliPath).toBe(resolve(repositoryRoot, '../catalog.mjs'))
     expect(parsed.catalogPort).toBe(18093)
     expect(() => parseSourceProductionDefinition({ ...definition, runtimeRelativeRoot: '../production-test' }, repositoryRoot))
       .toThrow('must identify a directory inside the source repository')
@@ -204,8 +195,8 @@ describe('Web Host shared process commands', () => {
       .toThrow('logs.lines must be a positive integer')
     expect(() => parseSourceProductionDefinition({
       ...definition,
-      source: { ...definition.source, catalogCliRelativePath: '/absolute/catalog.mjs' },
-    }, repositoryRoot)).toThrow('must be relative to the source repository')
+      source: { ...definition.source, externalClientPath: '../catalog.mjs' },
+    }, repositoryRoot)).toThrow('must contain exactly')
   })
 
   it('loads the production configuration files in one fixed order and applies declared environment overrides last', async () => {
@@ -221,8 +212,7 @@ describe('Web Host shared process commands', () => {
       server: { host: '127.0.0.1', port: fixture.context.runtime.port },
       comfyui: { defaultInstanceId: '1' },
       source: {
-        contractId: 'imagegen-source-contract',
-        sourceReleaseVersion: '0.86.1',
+        catalogPort: 18093,
       },
       client: { runRefreshIntervalMs: 1000 },
       process: { shutdownTimeoutMs: 10_000 },
@@ -237,9 +227,7 @@ describe('Web Host shared process commands', () => {
         HARNESS_COMFYUI_RUN_DIRECTORY: '/ignored/runs',
         HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: '/ignored/saved-media',
         HARNESS_COMFYUI_LOG_DIRECTORY: '/ignored/logs',
-        HARNESS_COMFYUI_CATALOG_CLI_PATH: '/ignored/catalog.mjs',
         HARNESS_COMFYUI_CATALOG_PORT: '19093',
-        HARNESS_COMFYUI_SOURCE_CLI_PATH: '/ignored/source.mjs',
         HARNESS_COMFYUI_DEFAULT_INSTANCE_ID: 'environment-instance',
         HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '2345',
         HARNESS_COMFYUI_SERVER_HOST: '0.0.0.0',
@@ -257,8 +245,6 @@ describe('Web Host shared process commands', () => {
       comfyui: { defaultInstanceId: 'environment-instance' },
       source: {
         catalogPort: 18093,
-        catalogCliPath: resolve(fixture.runtimeRoot, 'catalog.mjs'),
-        sourceCliPath: resolve(fixture.runtimeRoot, 'source.mjs'),
       },
       client: { runRefreshIntervalMs: 2345 },
       server: { host: '127.0.0.1' },

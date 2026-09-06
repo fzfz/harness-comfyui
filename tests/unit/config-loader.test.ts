@@ -27,9 +27,7 @@ const productionEnvironment = {
   HARNESS_COMFYUI_FRONTEND_DOMAIN_ENABLE_TIMEOUT_MS: '10000',
   HARNESS_COMFYUI_FRONTEND_NAVIGATION_TIMEOUT_MS: '10000',
   HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS: '2',
-  HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
   HARNESS_COMFYUI_CATALOG_PORT: '18093',
-  HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
   HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '1100',
   HARNESS_COMFYUI_SERVER_HOST: '127.0.0.1',
   HARNESS_COMFYUI_SERVER_PORT: '4199',
@@ -55,7 +53,6 @@ describe('production Configuration Profile loader', () => {
     expect(profile.server.port).toBe(4199)
     expect(profile.client.runRefreshIntervalMs).toBe(1200)
     expect(profile.source.catalogPort).toBe(18093)
-    expect(profile.source.sourceReleaseVersion).toBe('0.86.1')
     expect(profile.paths.dataDir).toBe('.local/production/data')
     expect(profile.paths.apiWorkflowCacheDirectory).toBe('.local/production/data/api-workflow-cache')
     expect(profile.comfyui.frontendCompiler).toEqual({
@@ -82,25 +79,6 @@ describe('production Configuration Profile loader', () => {
       configRoot: 'config',
       environment: { ...productionEnvironment, [key]: value },
     })).toThrowError(expect.objectContaining({ property }))
-  })
-
-  it('rejects a Configuration Profile pinned to a different Source release', () => {
-    const temporaryConfigRoot = copyConfiguration('harness-comfyui-config-source-release-')
-    try {
-      const basePath = join(temporaryConfigRoot, 'base.json')
-      const base = JSON.parse(readFileSync(basePath, 'utf8')) as {
-        source: { sourceReleaseVersion: string }
-      }
-      base.source.sourceReleaseVersion = '0.84.0'
-      writeFileSync(basePath, JSON.stringify(base), 'utf8')
-
-      expect(() => loadProfile('production', {
-        configRoot: temporaryConfigRoot,
-        environment: productionEnvironment,
-      })).toThrowError(expect.objectContaining({ property: 'source.sourceReleaseVersion' }))
-    } finally {
-      rmSync(temporaryConfigRoot, { recursive: true, force: true })
-    }
   })
 
   it('reports the production file and property when an override is invalid', () => {
@@ -370,13 +348,7 @@ describe('production Configuration Profile loader', () => {
       'navigationMs',
       'infrastructureAttempts',
     ])
-    expect(Object.keys(schemaDict.source.dict!)).toEqual([
-      'catalogPort',
-      'catalogCliPath',
-      'sourceCliPath',
-      'contractId',
-      'sourceReleaseVersion',
-    ])
+    expect(Object.keys(schemaDict.source.dict!)).toEqual(['catalogPort'])
     expect(Object.keys(schemaDict.jobs.dict!)).toEqual(['pollIntervalMs', 'missingObservationMs'])
     expect(Object.keys(schemaDict.media.dict!)).toEqual(['maxFileBytes'])
     expect(Object.keys(schemaDict.server.dict!)).toEqual(['host', 'port'])

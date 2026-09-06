@@ -21,12 +21,17 @@ describe('real ComfyUI Workflow matrix verification command', () => {
   it('requires an explicit instance and resolves an optional report path', () => {
     expect(parseArguments(['--instance-id', '2'])).toEqual({ instanceId: '2' })
     expect(parseArguments(['--', '--instance-id', '2'])).toEqual({ instanceId: '2' })
+    expect(parseArguments([
+      '--instance-id', '2', '--source-url', 'https://catalog.example.com', '--source-port', '443',
+    ])).toEqual({ instanceId: '2', sourceUrl: 'https://catalog.example.com', sourcePort: 443 })
     expect(parseArguments(['--instance-id', '2', '--output', 'matrix.json'])).toEqual({
       instanceId: '2',
       outputPath: expect.stringMatching(/matrix\.json$/u),
     })
     expect(() => parseArguments([])).toThrow('--instance-id')
     expect(() => parseArguments(['--instance-id', '2', '--unknown'])).toThrow('Unknown argument')
+    expect(() => parseArguments(['--instance-id', '2', '--source-url', 'file:///tmp/catalog'])).toThrow('--source-url')
+    expect(() => parseArguments(['--instance-id', '2', '--source-port', '0'])).toThrow('--source-port')
   })
 
   it('accepts only target-not-found as an unsupported template parameter', () => {

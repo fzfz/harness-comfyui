@@ -24,11 +24,7 @@
     }
   },
   "source": {
-    "catalogPort": 0,
-    "catalogCliPath": "",
-    "sourceCliPath": "",
-    "contractId": "imagegen-source-contract",
-    "sourceReleaseVersion": "0.86.1"
+    "catalogPort": 18093
   },
   "jobs": {
     "pollIntervalMs": 500,

@@ -1,15 +1,14 @@
 ---
 doc_id: harness-source-contract-v0.82.2
-title: Harness 消费源数据仓库 v0.82.2 envelope 合同
-status: accepted
+title: Harness 消费源数据仓库 v0.82.2 envelope 合同历史记录
+status: historical
 version: v0.82.2
-lifecycle: consumer-contract
-structured_source: config/source-contract-v0.82.2.json
+lifecycle: historical-record
 ---
 
-# 合同所有权
+# 历史记录用途
 
-`config/source-contract-v0.82.2.json` 是 Harness 对源数据仓库 v0.82.2 的唯一结构化消费合同。本文只解释执行规则，不是字段、操作名或版本常量的第二份来源。
+本文记录 Harness 曾经消费源数据仓库 v0.82.2 时使用的接口和执行规则。本文提到的 `config/source-contract-v0.82.2.json` 已经删除；当前 Harness-ComfyUI 的运行时代码和测试均不读取本文或该 JSON 文件。当前数据源服务访问方式由 [`ADR 0015`](../adr/0015-independent-data-source-service.md) 定义。
 
 Harness 只消费以下已发布源数据版本：
 
@@ -31,7 +30,7 @@ Harness 只消费以下已发布源数据版本：
 4. 非零退出、空 stdout、多 JSON 值、非法 UTF-8、连接、超时和取消由 CLI 退出码表达；Harness adapter 把这些情况映射为 `SOURCE_PROTOCOL_ERROR`，但不得把 CLI stderr、路径、数据库位置或凭据写入 Tool Result、日志或浏览器。
 5. Harness 不直接请求 HTTP，不调用源仓库内部模块，不执行源仓库脚本，也不根据原型 fixture 补齐响应。
 
-Catalog CLI 只使用生产配置的可执行路径和当前 Source service port；调用参数由结构化 operation manifest 生成。Source CLI 只允许 `instance --id` 与 `template-bundle --id` 两种读取命令。
+v0.82.2 合同生效期间，Harness adapter 使用生产配置中的可执行文件路径启动 Catalog CLI，将 Source service 端口作为 `--port` 参数，并根据结构化 operation manifest 生成其余调用参数。Harness adapter 只使用 `instance --id` 与 `template-bundle --id` 两种命令调用 Source CLI。
 
 # Discovery 合同
 
@@ -47,7 +46,7 @@ paths
 components
 ```
 
-该对象不需要也不得包含顶层 `contract_id`、`contract_version` 或 `source_release_version`。Harness adapter 使用 `config/source-contract-v0.82.2.json` 的十项 operation manifest 核对 `x-harness-tool-name`、`operationId`、path、HTTP method、request schema 和描述；任一项缺失或漂移时返回 `SOURCE_CONTRACT_UNSUPPORTED`，不得部分注册 Catalog Tool。
+该对象不需要也不得包含顶层 `contract_id`、`contract_version` 或 `source_release_version`。当时的 Harness adapter 使用 `config/source-contract-v0.82.2.json` 的十项 operation manifest 核对 `x-harness-tool-name`、`operationId`、path、HTTP method、request schema 和描述；任一项缺失或漂移时返回 `SOURCE_CONTRACT_UNSUPPORTED`，不得部分注册 Catalog Tool。
 
 ## Host-only Source discovery
 
@@ -96,7 +95,7 @@ Catalog adapter 必须：
 5. 保留合法空集合；空集合不是错误，也不能用 prototype fixture 补齐。
 6. 不把 ComfyUI Instance 转为 `ContextRef`；Instance 只提供 Execution Route 安全投影。
 
-十个 Catalog operation、Tool 名、path、operationId 和允许筛选字段只读取 `config/source-contract-v0.82.2.json`，不从 Markdown 解析。
+当时的 Harness adapter 从 `config/source-contract-v0.82.2.json` 读取十个 Catalog operation 的 Tool 名、path、operationId 和允许筛选字段，不从 Markdown 解析。
 
 # Host-only Source adapter 规则
 

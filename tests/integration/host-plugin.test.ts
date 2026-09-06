@@ -38,9 +38,7 @@ function stubTestProfileEnvironment(): void {
     HARNESS_COMFYUI_RUN_DIRECTORY: join(root, 'runs'),
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: join(root, 'media'),
     HARNESS_COMFYUI_LOG_DIRECTORY: join(root, 'logs'),
-    HARNESS_COMFYUI_CATALOG_CLI_PATH: 'node',
     HARNESS_COMFYUI_CATALOG_PORT: '18093',
-    HARNESS_COMFYUI_SOURCE_CLI_PATH: 'node',
   }
   for (const [key, value] of Object.entries(values)) vi.stubEnv(key, value)
 }
@@ -81,7 +79,12 @@ function provideHostServices(ctx: Context) {
     listModels: vi.fn(async () => []),
     prepareCall,
   } as never)
-  const registerSettings = vi.fn((_namespace?: string) => ({
+  const registerSettings = vi.fn((namespace?: string, _schema?: unknown, options?: { base?: unknown }) => namespace === 'harness-comfyui-source'
+    ? {
+      get: vi.fn(() => options?.base),
+      replace: vi.fn(async () => undefined),
+    }
+    : ({
       get: vi.fn(() => ({
         configuration: {
           activeProfileId: 'default',
@@ -224,6 +227,10 @@ describe('Harness ComfyUI Host plugin', () => {
       .toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
     expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_API)
       .toBe('http://127.0.0.1:43199/api/harness-comfyui/cli/v1')
+    expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI)
+      .toBe(resolve(process.cwd(), 'scripts/source-client/imagegen-semantic-query.mjs'))
+    expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_SOURCE_URL).toBe('http://127.0.0.1')
+    expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_SOURCE_PORT).toBe('18093')
     ctx.emit('tools/result', execution, { status: 'success', value: null } as never)
     const replacementCapability = contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
     expect(replacementCapability).not.toBe(firstCapability)
@@ -372,7 +379,7 @@ describe('Harness ComfyUI Host plugin', () => {
     })
 
     expect(registerSettings).toHaveBeenNthCalledWith(
-      2,
+      3,
       'harness-comfyui-image-reader-profiles',
       expect.anything(),
       expect.objectContaining({

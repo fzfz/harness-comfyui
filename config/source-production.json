@@ -4,9 +4,7 @@
   "runtimeRelativeRoot": ".local/production",
   "configurationProfile": "production",
   "source": {
-    "catalogPort": 18093,
-    "catalogCliRelativePath": "../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs",
-    "sourceCliRelativePath": "../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-comfyui-source-read.mjs"
+    "catalogPort": 18093
   },
   "logs": {
     "source": "all",

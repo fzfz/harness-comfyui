@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Source contract v0.86.1 and compiler-owned output discovery
+
+本 ADR 已由 [ADR 0015](0015-independent-data-source-service.md) 取代。以下内容只记录 Harness 曾经消费 Source v0.86.1 时采用的决定，不是当前运行时、Configuration Profile 或测试的输入。
 
 ## Context
 

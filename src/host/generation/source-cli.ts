@@ -1,5 +1,8 @@
 import { spawn } from 'node:child_process'
 
+import type { SettingsScope } from '@deepseek-ai/dsh-settings'
+
+import { readSourceAddress, type SourceSettingsSection } from '../../source-settings.ts'
 import { GenerationRuntimeError, type JsonValue } from './generation-runtime.ts'
 import type {
   ComfyInstanceSource,
@@ -27,7 +30,7 @@ export type SourceCliProcess = (
 
 export interface GenerationSourceCliOptions {
   readonly executable: string
-  readonly port: number
+  readonly settings: Pick<SettingsScope<SourceSettingsSection>, 'get'>
   readonly process?: SourceCliProcess
 }
 
@@ -197,9 +200,6 @@ export class GenerationSourceCli implements GenerationSource {
   constructor(options: GenerationSourceCliOptions) {
     this.options = options
     if (options.executable.trim().length === 0) throw new TypeError('ComfyUI source CLI executable is required.')
-    if (!Number.isSafeInteger(options.port) || options.port < 1 || options.port > 65535) {
-      throw new TypeError('ComfyUI source CLI port is invalid.')
-    }
     this.execute = options.process ?? runSourceCliProcess
   }
 
@@ -214,8 +214,10 @@ export class GenerationSourceCli implements GenerationSource {
   private async run(operation: 'instance' | 'template-bundle', id: string, signal?: AbortSignal): Promise<unknown> {
     if (!SOURCE_ID.test(id)) throw new TypeError('ComfyUI source id is invalid.')
     const effectiveSignal = signal ?? new AbortController().signal
+    const address = readSourceAddress(this.options.settings)
     const output = await this.execute(this.options.executable, [
-      '--port', String(this.options.port),
+      '--url', address.url,
+      '--port', String(address.port),
       '--timeout-ms', String(SOURCE_QUERY_TIMEOUT_MS),
       operation,
       '--id', id,

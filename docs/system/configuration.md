@@ -15,7 +15,7 @@
 
 生产 context 使用 `config/source-production.json.runtimeRelativeRoot` 定位旧 Web 生产 DSH home `<runtimeRelativeRoot>/dsh-home`。该路径只用于把旧 Session、Session Attachment、Session 投影索引和 Workspace Session 关系迁入当前生产 DSH home；开发 Desktop 不读取该旧生产目录。
 
-仓库根 `.env.example` 提供 `OPENCODE_GO_API_KEY` 与十三个允许调用者覆盖的 `HARNESS_COMFYUI_*` 业务变量示例。该文件同时注明 Workspace、Desktop runtime、Catalog CLI、Catalog 端口和图片读取 OpenAI 兼容接口的实际配置位置；模板不会为程序不读取的环境变量提供无效示例。
+仓库根 `.env.example` 提供 `OPENCODE_GO_API_KEY` 与允许调用者覆盖的 `HARNESS_COMFYUI_*` 业务变量示例。该文件同时注明 Workspace、Desktop runtime、数据源服务默认端口和图片读取 OpenAI 兼容接口的实际配置位置；数据源服务 URL 和当前端口由使用者在 Harness 的“ComfyUI”设置页保存。
 
 `config/desktop-worktree.json` 只声明 linked worktree 与生产环境之间的运行差异：
 
@@ -87,9 +87,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `runtimeId` | 非空进程标识 |
 | `runtimeRelativeRoot` | 仓库内的相对运行目录；当前为 `.local/production` |
 | `configurationProfile` | 固定为 `production` |
-| `source.catalogCliRelativePath` | 相对仓库根目录的 Catalog CLI 文件 |
-| `source.catalogPort` | Catalog CLI连接的本机回环服务端口 |
-| `source.sourceCliRelativePath` | 相对仓库根目录的 Source CLI 文件 |
+| `source.catalogPort` | 数据源服务设置尚未保存时使用的默认端口 |
 | `logs.source` | `stdout`、`stderr`、`operations` 或 `all` |
 | `logs.lines` | 每个日志来源读取的末尾行数，必须为正整数 |
 
@@ -113,11 +111,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `comfyui.frontendCompiler.preReadiness.domainEnableMs` | 本机浏览器目标完成全部 Chrome DevTools domain enable 命令的共同正整数阶段时限，毫秒；production 默认值为 `10000` |
 | `comfyui.frontendCompiler.preReadiness.navigationMs` | 本机浏览器目标完成 `Page.navigate` 的正整数阶段时限，毫秒；production 默认值为 `10000` |
 | `comfyui.frontendCompiler.preReadiness.infrastructureAttempts` | 同一个 cache miss 在前端 readiness 之前发生基础设施故障时使用的浏览器会话尝试次数，只允许 `1` 或 `2`；production 默认值为 `2` |
-| `source.catalogCliPath` | Catalog CLI 绝对路径，由启动器生成 |
-| `source.catalogPort` | Catalog CLI连接的本机回环服务端口 |
-| `source.sourceCliPath` | Source CLI 绝对路径，由启动器生成 |
-| `source.contractId` | 固定为 `imagegen-source-contract` |
-| `source.sourceReleaseVersion` | 固定为 `0.86.1` |
+| `source.catalogPort` | 数据源服务 Settings 首次注册时使用的默认端口；production 默认值为 `18093` |
 | `jobs.pollIntervalMs` | ComfyUI Job 轮询间隔，毫秒 |
 | `jobs.missingObservationMs` | 缺失 Job observation 判定时间，毫秒 |
 | `media.maxFileBytes` | 单个 ComfyUI 输出媒体允许保存的最大字节数 |
@@ -128,7 +122,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 官方前端编译 Worker 不通过 macOS LaunchServices 启动浏览器。Worker 使用独立临时 profile、`--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider` 运行 headless Chrome；这些固定运行参数不接受环境变量覆盖。
 
-启动器通过环境映射写入全部运行值。运行目录、Official API Workflow Cache 目录、Catalog 端口和两个 Source CLI 路径始终由 `source-production.json` 生成，调用者设置的同名环境变量不会改变它们。调用者可以覆盖以下十三个业务值：
+启动器通过环境映射写入全部运行值。运行目录与 Official API Workflow Cache 目录始终由 `source-production.json` 生成。调用者可以覆盖以下业务值：
 
 - `HARNESS_COMFYUI_DEFAULT_INSTANCE_ID`
 - `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH`
@@ -150,7 +144,20 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 ## 配置变更
 
-配置不热更新。生产 Desktop 修改后执行 `pnpm prod:restart` 与 `pnpm prod:status`；开发 Desktop 修改后执行 `pnpm dev:restart` 与 `pnpm dev:status`；Web Host 修改后执行 `pnpm web:restart`、`pnpm web:status` 与只读的 `pnpm web:health`。Web Host 的受管快照保存运行中的版本、运行根目录、监听地址与端口、数据路径、Official API Workflow Cache 路径、Source CLI 路径、停止超时和日志读取参数。
+Configuration Profile 文件不热更新。生产 Desktop 修改后执行 `pnpm prod:restart` 与 `pnpm prod:status`；开发 Desktop 修改后执行 `pnpm dev:restart` 与 `pnpm dev:status`；Web Host 修改后执行 `pnpm web:restart`、`pnpm web:status` 与只读的 `pnpm web:health`。Web Host 的受管快照保存运行中的版本、运行根目录、监听地址与端口、数据路径、Official API Workflow Cache 路径、停止超时和日志读取参数。
+
+## Harness-ComfyUI 数据源服务设置
+
+Host 使用 `harness-comfyui-source` Settings namespace 保存数据源服务 URL 和端口。Client 在 Harness 的“ComfyUI”设置页中通过“数据源服务”页签保存以下字段：
+
+| 字段 | 规则与用途 |
+| --- | --- |
+| `configuration.url` | 数据源服务的 HTTP 或 HTTPS URL；该值包含协议和主机名，可以包含根路径 `/`，不包含用户名、密码、端口、其他路径、query 或 fragment |
+| `configuration.port` | 数据源服务端口，必须是 `1` 至 `65535` 的整数 |
+
+Host 每次执行语义查询、读取 ComfyUI 实例或读取 Workflow bundle 时，均使用该 namespace 的最新值。保存成功后，Host 的下一次请求立即使用新的 URL 和端口，无需重启 Harness。配置文件中的 `source.catalogPort` 和 `HARNESS_COMFYUI_CATALOG_PORT` 只提供该 namespace 的默认端口；已保存的 Settings 用户值覆盖默认端口。
+
+插件发行包包含 `scripts/source-client/imagegen-semantic-query.mjs` 和 `scripts/source-client/imagegen-comfyui-source-read.mjs`。Host 使用这两个内置客户端请求已配置的数据源服务，不读取或执行数据源仓库中的文件。
 
 ## 图片读取设置
 

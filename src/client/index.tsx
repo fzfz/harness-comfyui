@@ -11,10 +11,16 @@ import { GENERATION_REMOTE_SERVICE } from '../generation/contract.ts'
 import { IMAGE_READER_REMOTE_SERVICE } from '../image-reader/contract.ts'
 import {
   IMAGE_READER_SETTINGS_NAMESPACE,
-  IMAGE_READER_SETTINGS_SECTION_ID,
   decodeImageReaderSettingsView,
 } from '../image-reader/settings.ts'
-import { ImageReaderSettingsError, ImageReaderSettingsPage } from './image-reader/image-reader-settings.tsx'
+import {
+  decodeSourceSettingsView,
+  SOURCE_SETTINGS_NAMESPACE,
+  SOURCE_SETTINGS_SECTION_ID,
+} from '../source-settings.ts'
+import { ImageReaderSettingsError } from './image-reader/image-reader-settings.tsx'
+import { HarnessComfyuiSettingsPage } from './settings/harness-comfyui-settings.tsx'
+import { SourcePresetTip } from './settings/source-preset-tip.tsx'
 
 import {
   WORKBENCH_DETAILS_PRIORITY,
@@ -69,6 +75,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       const imageReaderSettingsScope = ctx.settingsScope.bind({
         namespace: IMAGE_READER_SETTINGS_NAMESPACE,
         decode: decodeImageReaderSettingsView,
+      })
+      const sourceSettingsScope = ctx.settingsScope.bind({
+        namespace: SOURCE_SETTINGS_NAMESPACE,
+        decode: decodeSourceSettingsView,
       })
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
@@ -159,6 +169,15 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
             }
           },
         }, WorkbenchDock)),
+        ctx.slots.inject('conversation.session.header.actions', () => ctx.slots.register({
+          name: 'conversation.session.header.actions',
+          id: 'harness-comfyui-source-tip',
+          order: 10,
+          inject: () => ({
+            sourceScope: sourceSettingsScope,
+            probe: catalog.baseModels,
+          }),
+        }, SourcePresetTip)),
         ctx.slots.inject('details', () => ctx.slots.register({
           name: 'details',
           priority: WORKBENCH_DETAILS_PRIORITY,
@@ -172,11 +191,15 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         }, WorkbenchResultsOverlay)),
         ctx.slots.inject('settings.section', () => ctx.slots.register({
           name: 'settings.section',
-          id: IMAGE_READER_SETTINGS_SECTION_ID,
+          id: SOURCE_SETTINGS_SECTION_ID,
           order: 40,
-          label: '图片读取',
-          inject: () => ({ scope: imageReaderSettingsScope, api: imageReaderSettingsApi }),
-        }, ImageReaderSettingsPage)),
+          label: 'ComfyUI',
+          inject: () => ({
+            imageReaderScope: imageReaderSettingsScope,
+            imageReaderApi: imageReaderSettingsApi,
+            sourceScope: sourceSettingsScope,
+          }),
+        }, HarnessComfyuiSettingsPage)),
       ]
     })
     await remoteFiber

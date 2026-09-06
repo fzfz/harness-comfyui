@@ -41,11 +41,17 @@ pnpm prod:test
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
 | `pnpm test:coverage` | unit 与 integration 覆盖率 |
 | `pnpm quality` | 依赖检查、类型检查和全部必需测试 |
-| `pnpm verify:comfyui-workflows -- --instance-id <Source实例ID> --output <结果JSON路径>` | 当前Source全部Workflow模板、`config/verification/comfyui-workflow-parameter-support.json`精确参数支持基线、目标实例实时`/object_info`、组合参数编译、官方页面导出和缓存miss→hit一致性 |
+| `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>` | 当前数据源服务全部 Workflow 模板、`config/verification/comfyui-workflow-parameter-support.json` 精确参数支持基线、目标实例实时 `/object_info`、组合参数编译、官方页面导出和缓存 miss→hit 一致性；省略 URL 或端口时使用本机默认值 |
 
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
+
+数据源服务自动化测试启动临时 HTTP 和 HTTPS 服务并执行插件发行包中的 `scripts/source-client/imagegen-semantic-query.mjs` 与 `scripts/source-client/imagegen-comfyui-source-read.mjs`。测试记录并断言 discovery 请求以及两个客户端在 discovery 之后发送的每个 HTTP 请求的 method、path 和 body。测试同时断言每个被执行客户端的 stdout、stderr 和退出码。每个连接失败测试直接执行该测试对应的生产客户端。Host adapter 测试通过注入的子进程调用函数断言 `CatalogCli` 和 `GenerationSourceCli` 在每次请求前读取 `harness-comfyui-source` Settings 中最新的数据源服务 URL 和端口；真实数据源服务验收使用两个 Host adapter 的实际子进程执行器。
+
+统一设置页测试直接渲染现有 `ImageReaderSettingsPage`，确认切换至“数据源服务”并返回后保留未保存的图片读取草稿。数据源设置测试覆盖 HTTP 与 HTTPS scheme、IPv4 地址、IPv6 地址、主机名、端口最小值、端口最大值、低于最小值的端口、高于最大值的端口，以及包含内嵌端口、用户名、密码、非根路径、query string 或 fragment 的 URL；测试还覆盖保存成功和保存失败。预设提示测试覆盖 Settings 快照仍在加载、未保存地址、连接成功、连接失败和设置变化后重新执行数据源服务连接检查五个分支，并确认不依赖数据源服务的 Preset 不执行数据源服务连接检查。
+
+真实数据源服务验收必须使用插件内置客户端和 Host 的 `CatalogCli`、`GenerationSourceCli` 连接已部署服务，完成实时 discovery、Base Model Search 与 Resolve、ComfyUI 实例 Search、实例读取和 Workflow bundle 读取。验收不得读取或执行数据源仓库中的文件，也不得使用测试自建 JSON 代替已部署服务的响应。
 
 v0.39.4 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 的 `image-size 1.2.1` 保留已记录的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq`，用户已明确允许安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
 
@@ -185,6 +191,16 @@ v0.39.6 最终候选树的完整 `pnpm quality` 通过：943 项 unit/integratio
 v0.39.7 最终候选树使用 DSH Desktop `5e08355a58bb727cb0f48c794550202d9d59ed9f`。真实 Desktop 测试确认删除失败时保留目标 Session，删除成功时只移除目标 Session；同一测试还确认 Kimi PPT adapter 保持禁用，三个会话扩展位没有 `kimi-ppt` contribution，页面没有 PPT 按钮，Skill 与插件清单没有启用 Kimi PPT core，并且真实模型请求不包含 Kimi/PPT 系统提示词或 `pptd_`、`ppt_` Tool。
 
 完整 `pnpm quality` 通过：943 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.46%、branches 86.72%、functions 100%、lines 96.08%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，用户已明确授权执行该锁文件安装。受控安装产生的 Desktop `node_modules/node/bin/node` 返回 `v24.9.0`。
+
+## v0.39.8 发布候选验证
+
+v0.39.8 的自动化测试直接启动生产语义查询客户端和生产数据源读取客户端，记录客户端发送的 HTTP 方法、请求路径、查询参数和请求体，并使用数据源接口响应验证客户端返回的生成模型、ComfyUI 实例和 Workflow bundle 对象。真实数据源服务验收确认语义查询返回生成模型 `id=1`，数据源读取返回 ComfyUI 实例 `id=2` 和 Workflow bundle `id=43`。真实数据源服务验收还从实际候选发行包中解压两个客户端并逐一调用，确认该发行包包含这两个客户端且不包含 source contract JSON。
+
+真实 Desktop 验收确认 Harness 设置中的“ComfyUI”入口包含“图片读取”和“数据源服务”两个页签；“图片读取”页签继续使用 v0.39.8 修改前负责编辑图片读取设置的同一组件，并保留切换页签前的未保存草稿；“数据源服务”页签把用户输入的 URL 和端口保存到 Harness 设置。测试还确认未配置数据源服务时，启用 `ComfyUI工作台预设` 会显示配置提示。
+
+OpenRouter 模型驱动的真实 Desktop 会话实际加载候选发行包中的 `wai-sdxl-prompt-builder` Skill。该 Skill 使用 Desktop 注入的 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`、`DSH_HARNESS_COMFYUI_SOURCE_URL` 和 `DSH_HARNESS_COMFYUI_SOURCE_PORT`，调用 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI` 指向的候选发行包语义查询客户端。Base Model Search 返回唯一的 `wai` 记录 `id=2`；Style Search 返回一条水彩画风候选记录；Style Resolve 使用 `id=12298` 发起请求，并返回 `id=12298`、`base_model_id=2` 和 `prompt_text=fly`。该 Skill 随后调用自身的 Prompt 格式校验器和最终结果校验器，两次命令均返回退出码 0。
+
+完整 `pnpm quality` 通过：1004 项 unit/integration、55 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，用户已明确授权执行该锁文件安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
 
 ## 本地发布门禁
 

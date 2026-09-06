@@ -1,3 +1,33 @@
+# Harness ComfyUI v0.39.8
+
+v0.39.8 在 Harness 设置中提供统一的“ComfyUI”入口，并让 Harness-ComfyUI 通过插件发行包内置客户端访问本机或远程部署的数据源服务。Harness-ComfyUI 运行时不再读取或执行数据源仓库中的文件。
+
+## ComfyUI 设置页
+
+- “ComfyUI”设置页包含“图片读取”和“数据源服务”两个页签。“图片读取”页签继续使用现有的图片读取设置组件。该组件提供配置选择、新建、复制、删除、连接方式、模型参数和保存功能；使用者切换页签后，组件保留尚未保存的图片读取草稿。
+- “数据源服务”页签分别保存完整的 HTTP 或 HTTPS URL 和端口。Host 的下一次数据源请求立即使用新设置，不要求重启 Harness。
+
+## 内置数据源客户端
+
+- 插件发行包包含语义查询客户端和数据源读取客户端。上下文插入、Host 语义 Tool、`anima-prompt-builder`、`krea2-anime-prompt-builder`、`wai-sdxl-prompt-builder`、ComfyUI 实例读取和 Workflow bundle 读取通过内置客户端请求已配置的数据源服务。
+- 两个内置客户端负责构造数据源服务的请求路径和请求参数、解析响应并报告错误。Host 与 Skill 只向客户端提供已保存的数据源服务 URL 和端口，不要求数据源仓库位于 Harness-ComfyUI 所在机器。
+- 仓库删除了运行时曾使用的数据源仓库客户端路径配置以及三份 source contract JSON。测试直接调用生产客户端，并核对客户端向真实数据源服务发送的请求和解析得到的业务结果。
+
+## 预设启用提示
+
+- 启用 `ComfyUI工作台预设` 时，如果使用者尚未保存数据源地址，Harness 会提示使用者打开“ComfyUI → 数据源服务”并保存 URL 和端口。
+- 数据源服务检查请求失败时，Harness 会提示使用者检查已保存的 URL、端口和数据源服务状态。
+
+## 验证与发布
+
+- 真实数据源服务验收确认语义查询返回生成模型 `id=1`，数据源读取返回 ComfyUI 实例 `id=2` 和 Workflow bundle `id=43`。从实际候选发行包解压出的两个客户端也通过相同验收，发行包包含两个客户端且不包含 source contract JSON。
+- 真实 Desktop 验收确认使用者可以打开统一设置入口、切换两个页签、使用图片读取设置组件、保存数据源设置，并在缺少数据源配置时看到 `ComfyUI工作台预设` 的配置提示。
+- OpenRouter 模型驱动的真实 Desktop 会话加载 WAI Prompt Builder Skill。该 Skill 通过候选发行包内客户端查询 WAI Base Model 和水彩风格，解析 Style `id=12298`，并返回 `id=12298`、`base_model_id=2` 和 `prompt_text=fly`。Skill 自带的 Prompt 格式校验器和最终结果校验器均返回退出码 0。
+- 自动化测试覆盖上下文插入、Host 语义 Tool、ComfyUI 实例读取和 Workflow bundle 读取的生产调用路径。
+- 完整 `pnpm quality` 通过：1004 项 unit/integration、55 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级 Harness ComfyUI 依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+- 本版本继续使用 Desktop `5e08355a58bb727cb0f48c794550202d9d59ed9f`。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，用户已明确授权执行该锁文件安装。部署验收必须确认 `node_modules/node/bin/node` 返回 `v24.9.0`。
+
 # Harness ComfyUI v0.39.7
 
 v0.39.7 修复 DSH Desktop 中“删除会话”调用不存在的问题，并在 Desktop 产品 overlay 中严格禁用 Kimi PPT adapter。用户删除会话时，聚合 Client 现在拥有与独立 Session Client 一致的 `session/delete` Remote；被禁用的 adapter 不再注册 PPT 按钮、三个会话扩展位、Kimi PPT Skill、PPT Tool 或模型系统提示词。

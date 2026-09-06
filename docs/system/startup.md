@@ -99,7 +99,7 @@ pnpm dev:stop
 set -e
 pnpm prod:stop
 git fetch --tags
-git switch --detach v0.39.7
+git switch --detach v0.39.8
 git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 5e08355a58bb727cb0f48c794550202d9d59ed9f
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
 test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
@@ -117,7 +117,7 @@ pnpm prod:start
 )
 ```
 
-生产 checkout 必须保留自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。Git 更新不会管理这些本地文件和运行状态。`v0.39.7` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`；该提交恢复聚合 Client 的 `session/delete` Remote，严格禁用 Kimi PPT adapter，并把 Windows 隐藏控制台辅助模块纳入 Desktop 打包资源。
+生产 checkout 必须独立管理自己的 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`，并在 Git 更新时保留这些本地文件和运行状态。
 
 保持 `prod:start` 终端运行，在第二个终端执行：
 
@@ -130,7 +130,9 @@ pnpm prod:stop
 
 `prod:start` 从当前生产 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm preview`。启动器从生产 checkout 的 `.env` 读取 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`，在执行上游命令前检查该端口，并把同一个值传给 DSH Desktop。生产 Desktop 把当前 tag 的插件源码安装为 generation，并使用 `.local/desktop-production/` 保存 PID、日志、DSH home、Run Repository 和媒体文件。
 
-Desktop 与 Web Host 准备链都先把 managed CLI 源入口及其 TypeScript 依赖生成到 `.local/source-cli/harness-comfyui.mjs`。在 managed CLI 相关文件中，Desktop generation 复制 `.local/source-cli/` 构建目录，不复制 `scripts/cli/` 源入口；Host 只把该目录中的 `.mjs` 路径写入前台 shell environment。CLI、Client 或 Host 模块生成失败时，启动器不会发布新的 Profile 或 runtime state。
+Desktop 与 Web Host 准备链都先把 managed CLI 源入口及其 TypeScript 依赖生成到 `.local/source-cli/harness-comfyui.mjs`。在 managed CLI 相关文件中，Desktop generation 复制 `.local/source-cli/` 构建目录，不复制 `scripts/cli/` 源入口。Desktop generation 同时复制 `scripts/source-client/` 中的语义查询客户端和数据源读取客户端；Host 使用已安装插件内的路径启动这两个客户端。CLI、Client 或 Host 模块生成失败时，启动器不会发布新的 Profile 或 runtime state。
+
+Desktop 或 Web Host 启动后，使用者在 Harness 的“ComfyUI → 数据源服务”中保存 URL 和端口。Host 每次执行语义查询、读取 ComfyUI 实例或读取 Workflow bundle 时均使用最新的 URL 和端口；保存该设置后无需重启。运行时不要求数据源仓库位于 Harness-ComfyUI checkout 旁，也不读取或执行数据源仓库中的文件。
 
 `prod:start` 和 `prod:restart` 在物化当前 generation 前检查旧 Web 生产 DSH home `.local/production/dsh-home`。旧目录存在时，启动器把 Session、Session Attachment 和 version 3 聚合 Session 投影索引合并到 `.local/desktop-production/` 中的当前 DSH home，并按 Workspace 路径合并 Workspace 记录中的 Session ID。启动器保留当前 DSH home 已存在的文件和旧目录中的原始文件；重复启动不会覆盖已经迁入的 Session 或索引。
 
@@ -175,6 +177,6 @@ pnpm quality
 
 linked worktree 共享的 `.env` 可以保留 Provider 凭据、共享产品配置和既有端口变量。`dev:*` 不把共享 `.env` 中的 Desktop 移动桥接端口变量作为当前 worktree 的开发端口；`web:*` 不把共享 `.env` 中的 `HARNESS_COMFYUI_SERVER_PORT` 作为当前 worktree 的 Web Host 端口。开发 Desktop 移动桥接端口、独立 Web Host 端口、PID、日志、DSH home、业务数据和 Desktop 构建输出全部属于当前 worktree 的开发实例。
 
-## v0.39.7 的 Desktop 启动要求
+## v0.39.8 的 Desktop 来源、依赖版本与插件启动验证要求
 
-`v0.39.7` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`，该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3 的会话删除、Kimi PPT 禁用和 Windows 打包修复。该 Desktop 使用 Harness `0.1.2-rc.1` 和 Cordis `4.0.2`；插件源码必须与该版本共同验证。
+`v0.39.8` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该提交已合并官方上游提交 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3 提供的会话删除功能、Kimi PPT 禁用配置和 Windows 隐藏控制台辅助模块打包修复。该 Desktop 提交与 Harness `0.1.2-rc.1`、Cordis `4.0.2` 组成插件验证环境；该环境必须能够启动 Desktop 并成功加载插件源码。

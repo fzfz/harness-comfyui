@@ -75,8 +75,6 @@ async function fixture() {
   const sourceDefinition = {
     source: {
       catalogPort: 18093,
-      catalogCliRelativePath: '../catalog/query.mjs',
-      sourceCliRelativePath: '../catalog/source.mjs',
     },
   }
   await mkdir(resolve(root, 'config'))
@@ -158,8 +156,6 @@ describe('DSH Desktop worktree lifecycle', () => {
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
       launchCommand: 'dev',
       catalogPort: 18093,
-      catalogCliPath: resolve(root, 'catalog.mjs'),
-      sourceCliPath: resolve(root, 'source.mjs'),
       skillSource: resolve(root, 'skills'),
     }
     await Promise.all([mkdir(context.startupWorkspacePath), mkdir(context.skillSource)])
@@ -353,8 +349,6 @@ describe('DSH Desktop worktree lifecycle', () => {
       HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: value.workspace,
       HARNESS_COMFYUI_DATA_DIR: resolve(activeContext.runtimeRoot, 'data'),
       HARNESS_COMFYUI_CATALOG_PORT: '18093',
-      HARNESS_COMFYUI_CATALOG_CLI_PATH: resolve(value.root, '../catalog/query.mjs'),
-      HARNESS_COMFYUI_SOURCE_CLI_PATH: resolve(value.root, '../catalog/source.mjs'),
       DSH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
       COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
     })
@@ -1044,5 +1038,6 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(SOURCE_PLUGIN_PACKAGE_PATHS)
       .toContain(dirname(runtimeArtifacts.managedCli.outputEntryRelativePath))
     expect(SOURCE_PLUGIN_PACKAGE_PATHS).not.toContain('scripts/cli')
+    expect(SOURCE_PLUGIN_PACKAGE_PATHS).toContain('scripts/source-client')
   })
 })
