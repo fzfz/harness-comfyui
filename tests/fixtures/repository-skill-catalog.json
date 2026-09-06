@@ -16,6 +16,10 @@
     "description": "按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。"
   },
   {
+    "name": "comfyui-iterate-generation",
+    "description": "用户要求对一个图片生成任务进行多轮小步迭代、根据失败样本持续改进、继续已有迭代目录、复验候选配方或整理迭代最终交付时使用。先理解故事与人物，推导并确认画面目标，再调度子 Agent 完成生成、观察、比较和记录。"
+  },
+  {
     "name": "krea2-anime-prompt-builder",
     "description": "用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
   },

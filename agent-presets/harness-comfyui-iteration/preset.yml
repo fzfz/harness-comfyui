@@ -1,0 +1,3 @@
+name: ComfyUI迭代预设
+description: 使用项目 Skill 和前台子 Agent 完成多轮图片迭代、恢复、复验与归档。
+order: 92

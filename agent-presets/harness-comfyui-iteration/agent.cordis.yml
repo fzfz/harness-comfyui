@@ -1,0 +1,84 @@
+# Expose only preset-local shell, Skill, presentation, and foreground subagent Tools.
+- id: project-tool-visibility
+  name: ../project-tool-visibility.mjs
+  config:
+    mode: local-only
+
+- id: project-system-prompt-visibility
+  name: ../project-system-prompt-visibility.mjs
+  config:
+    hiddenSectionNames:
+      - harness:identity
+      - harness:source
+      - app:web-surface
+
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      You are the Harness ComfyUI iteration Agent. Choose project Skills according to the current user task. Use the managed project CLI and the foreground subagent Tool when the selected Skill requires staged delegation. Reply in the user's language.
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+  config:
+    enableRunInBackground: false
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+  config:
+    enableRunInBackground: false
+
+- id: tool-presentation
+  name: '@deepseek-ai/dsh-agent-tool-presentation'
+  config:
+    mode: native
+
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    providerName: harness-comfyui
+    includeDefaultRoots: false
+    watch: false
+    customSkillDirs: [!!js process.env.HARNESS_COMFYUI_SKILL_DIR]
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+- id: project-subagent-workspace
+  name: ../project-subagent-workspace.mjs
+
+- id: tool-subagent
+  name: '@deepseek-ai/dsh-tool-subagent'
+  config:
+    provider: spawn
+    toolName: subagent
+    enableRunInBackground: false
+    maxDepth: 1
+    modelSelectionSettings: false
+
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: '@deepseek-ai/dsh-compaction-basic'
+
+    - id: command-compact
+      name: '@deepseek-ai/dsh-command-compact'
+
+    - id: tool-result-pruner
+      name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024

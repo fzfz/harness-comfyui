@@ -155,13 +155,18 @@ async function createHostPackageFixture() {
     mkdir(repositorySkillsRoot, { recursive: true }),
   ])
   await writeFile(resolve(configRoot, 'product-agent.json'), `${JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     preset: {
       id: 'harness-comfyui-cli-candidate',
+      additionalManagedPresetIds: ['harness-comfyui-iteration'],
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
       retiredManagedPresetIds: ['harness-comfyui-schema-control'],
-      sharedFiles: ['project-tool-visibility.mjs', 'project-system-prompt-visibility.mjs'],
+      sharedFiles: [
+        'project-tool-visibility.mjs',
+        'project-system-prompt-visibility.mjs',
+        'project-subagent-workspace.mjs',
+      ],
     },
     skills: {
       sourceRootRelativePath: '.agents/skills',
@@ -431,6 +436,15 @@ describe('Web Host shared process commands', () => {
       'agent-presets/harness-comfyui-cli-candidate/preset.yml',
     ), 'utf8'))
     expect(productPresetMetadata).toContain('name: ComfyUI工作台预设\n')
+    const iterationPresetMetadata = await readFile(resolve(
+      fixture.runtimeRoot,
+      'dsh-home/.agent-presets/harness-comfyui-iteration/preset.yml',
+    ), 'utf8')
+    expect(iterationPresetMetadata).toBe(await readFile(resolve(
+      repositoryRoot,
+      'agent-presets/harness-comfyui-iteration/preset.yml',
+    ), 'utf8'))
+    expect(iterationPresetMetadata).toContain('name: ComfyUI迭代预设\n')
     expect(await pathExists(resolve(
       fixture.runtimeRoot,
       'dsh-home/.agent-presets/project-tool-visibility.mjs',
@@ -438,6 +452,10 @@ describe('Web Host shared process commands', () => {
     expect(await pathExists(resolve(
       fixture.runtimeRoot,
       'dsh-home/.agent-presets/project-system-prompt-visibility.mjs',
+    ))).toBe(true)
+    expect(await pathExists(resolve(
+      fixture.runtimeRoot,
+      'dsh-home/.agent-presets/project-subagent-workspace.mjs',
     ))).toBe(true)
 
     const stop = await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })

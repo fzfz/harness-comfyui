@@ -30,13 +30,18 @@ async function freePort() {
 async function writeProductAgentFixture(root) {
   await mkdir(resolve(root, '.agents/skills'), { recursive: true })
   await writeFile(resolve(root, 'config/product-agent.json'), `${JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     preset: {
       id: 'harness-comfyui-cli-candidate',
+      additionalManagedPresetIds: ['harness-comfyui-iteration'],
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
       retiredManagedPresetIds: ['harness-comfyui-schema-control'],
-      sharedFiles: ['project-tool-visibility.mjs', 'project-system-prompt-visibility.mjs'],
+      sharedFiles: [
+        'project-tool-visibility.mjs',
+        'project-system-prompt-visibility.mjs',
+        'project-subagent-workspace.mjs',
+      ],
     },
     skills: {
       sourceRootRelativePath: '.agents/skills',

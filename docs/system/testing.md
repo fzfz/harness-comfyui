@@ -29,13 +29,15 @@ pnpm prod:test
 
 自定义 Provider 回归测试使用 `tests/fixtures/custom-provider-reasoning.json` 中的旧配置样本，通过真实设置页转换硅基流动的两个模型和 cliproxy 的四个模型。测试核对六个模型保存后的 `reasoningEfforts`，并确认其他模型属性保持原值。两个未配置推理等级的模型必须保留原记录，且不包含 `reasoningEfforts`。测试随后点击“新建会话”，在新会话菜单中为六个已配置模型逐一选择 Max。
 
-## 自动化测试
+## 测试命令、专项验收与历史记录
+
+Desktop generation 插件安装产物是 `$DSH_HOME/profiles/.generations/live/<generation-id>/` 中包含插件包及其依赖的不可变完整安装目录。`$DSH_HOME/profiles/desired.json` 选择待启用的 generation，Web profile 中的 `node_modules/harness-comfyui` 链接到该 generation 的插件目录。
 
 | 命令 | 范围 |
 | --- | --- |
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
-| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、外部 Workspace 中的 Preset-scoped Repository Skills、图片读取当前配置保存与具体字段错误、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
+| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证实际启用的 `harness-comfyui` generation 与本次测试候选一致、`.env`、两个项目 Preset 在外部 Workspace 中读取 Preset-scoped Repository Skills、图片读取当前配置保存与具体字段错误、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
 | `pnpm test:contract` | package、Git 跟踪、本地发布门禁和安全合同 |
 | `pnpm prod:test` | Desktop dev/preview 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
@@ -53,9 +55,9 @@ pnpm prod:test
 
 真实数据源服务验收必须使用插件内置客户端和 Host 的 `CatalogCli`、`GenerationSourceCli` 连接已部署服务，完成实时 discovery、Base Model Search 与 Resolve、ComfyUI 实例 Search、实例读取和 Workflow bundle 读取。验收不得读取或执行数据源仓库中的文件，也不得使用测试自建 JSON 代替已部署服务的响应。
 
-Repository Skills 可见性测试必须在当前 checkout 外创建临时 Workspace。测试在该 Workspace 中创建名称为 `comfyui-generate`、描述唯一的同名 Skill，并在受控的 `DSH_AGENTS_HOME` 中创建名称和描述均唯一的用户 Skill。未传入 `agentPreset` 且创建后 `agentPreset` 等于 `harness-comfyui-cli-candidate` 的 Session，以及显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Session，都必须通过 `remote.skills.list()` 返回七个 Repository Skills；每个返回项的名称和描述必须分别与当前 checkout 中对应 Repository Skill 的名称和描述一致，并且不得返回上述两个测试 Skill。显式设置 `agentPreset: standard` 的 Session 必须返回外部 Workspace 中的 `comfyui-generate` Skill 和受控用户 Skill，且不得返回当前 checkout 中的 `comfyui-generate` Skill。测试还必须遍历产品运行时注册的每个 Preset ID；除 `harness-comfyui-cli-candidate` 之外，每个 Preset 对应 Session 的 Skill 列表均不得包含任何名称和描述同时匹配当前 checkout Repository Skill 的返回项。
+Repository Skills 可见性测试必须在当前 checkout 外创建临时 Workspace。测试在该 Workspace 中创建名称为 `comfyui-generate`、描述唯一的同名 Skill，并在受控的 `DSH_AGENTS_HOME` 中创建名称和描述均唯一的用户 Skill。未传入 `agentPreset` 且创建后 `agentPreset` 等于 `harness-comfyui-cli-candidate` 的 Session、显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Session，以及显式设置 `agentPreset: harness-comfyui-iteration` 的 Session，都必须通过 `remote.skills.list()` 返回八个 Repository Skills；每个返回项的名称和描述必须分别与当前 checkout 中对应 Repository Skill 的名称和描述一致，并且不得返回上述两个测试 Skill。显式设置 `agentPreset: standard` 的 Session 必须返回外部 Workspace 中的 `comfyui-generate` Skill 和受控用户 Skill，且不得返回当前 checkout 中的 `comfyui-generate` Skill。测试还必须遍历产品运行时注册的每个 Preset ID；除 `harness-comfyui-cli-candidate` 和 `harness-comfyui-iteration` 之外，每个 Preset 对应 Session 的 Skill 列表均不得包含任何名称和描述同时匹配当前 checkout Repository Skill 的返回项。
 
-真实模型验收必须使用以下两种 Session 创建方式之一：不传入 `agentPreset` 并确认创建后的 `agentPreset` 等于 `harness-comfyui-cli-candidate`，或者显式设置 `agentPreset: harness-comfyui-cli-candidate`。Session 模型必须读取 `local-image-reader/SKILL.md` 和 `references/image-inspection-cli.md`，再通过前台 shell Tool Call 执行 `image inspect --stdin`。实施任务的最终回复必须记录同一 Session 的 Workspace、Preset、模型、Skill 实际路径、参考文档实际路径、CLI stdin、退出码、stdout 和 stderr。
+真实模型验收必须分别覆盖以下三种 Session 创建方式：不传入 `agentPreset` 并确认创建后的 `agentPreset` 等于 `harness-comfyui-cli-candidate`，显式设置 `agentPreset: harness-comfyui-cli-candidate`，以及显式设置 `agentPreset: harness-comfyui-iteration`。每种 Session 的模型都必须读取 `local-image-reader/SKILL.md` 和 `references/image-inspection-cli.md`，再通过前台 shell Tool Call 执行 `image inspect --stdin`。实施任务的最终回复必须记录每个 Session 的 Workspace、Preset、模型、Skill 实际路径、参考文档实际路径、CLI stdin、退出码、stdout 和 stderr。
 
 v0.39.4 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 的 `image-size 1.2.1` 保留已记录的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq`，用户已明确允许安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
 
@@ -75,7 +77,7 @@ Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQ
 
 图片读取设置自动化测试覆盖保存请求只包含当前配置、Host 按原索引更新或向末尾追加、其他持久化配置不变、OpenAI 兼容 API Key 的 `keep`、`replace` 与 `clear`、runtime 保存清除旧凭据、`hasApiKey` 派生、独立激活和独立删除。Host 测试验证保存、激活和删除共用一个 Settings 修改队列；激活只修改 `activeProfileId`，保存可以在一次 `settings.replace()` 中更新或创建草稿并激活另一份配置。测试分别覆盖激活幂等、目标不存在、创建 ID 冲突、更新目标被删除、持久化失败、提交期间取消与提交后成功结果。Host Remote 测试确认已知图片读取设置错误使用 `TypertRemoteFailure` 保留业务错误码；Client adapter 测试确认 Remote 失败结果继续使用该错误码。Remote parser 测试区分闭合 JSON 结构错误与领域值错误；Client 在 Remote 前拒绝 `NaN` 与正负无穷，并在写请求发出后采用 Host 返回的成功配置。
 
-设置页测试覆盖 Host 实际生效配置、Client 编辑草稿、草稿来源、未保存状态、待处理意图和 Host 操作状态。已保存配置的干净选择立即调用激活 Remote；新建或复制配置不进入生效配置选择器，页面卸载时不发送 Host 写请求。已保存草稿选择另一份配置时，测试覆盖保存并切换、放弃并切换和继续编辑；已保存草稿删除时，测试覆盖明确放弃门禁。失败和取消测试确认保存路径保留草稿与待切换目标，放弃路径不会恢复被使用者丢弃的草稿，外部 Settings 更新会刷新实际生效配置但不会覆盖现有草稿。每个校验错误码的唯一输入项位置、只读状态、操作期间控件禁用、错误总结和下一步文案继续由设置页测试覆盖。
+设置页测试覆盖 Host 实际生效配置、Client 编辑草稿、草稿来源、未保存状态、待处理意图和 Host 操作状态。已保存配置没有未保存编辑时，选择另一份已保存配置会立即调用激活 Remote；新建或复制配置不进入生效配置选择器，页面卸载时不发送 Host 写请求。用户有未保存编辑并选择另一份已保存配置时，测试覆盖保存当前修改并切换、放弃当前修改并切换、继续编辑当前配置三条分支；删除测试确认用户明确放弃未保存编辑后，Client 才发送删除请求。失败和取消测试确认保存路径保留草稿与待切换目标，放弃路径不会恢复被使用者丢弃的草稿，外部 Settings 更新会刷新实际生效配置但不会覆盖现有草稿。每个校验错误码的唯一输入项位置、只读状态、操作期间控件禁用、错误总结和下一步文案继续由设置页测试覆盖。
 
 Profile 合同测试固定根 `cordis.patch.yml` 中的前台 Bash 默认超时为 `180000` 毫秒。图片读取真实模型验收仍可以为故障分类显式使用更短的单次 Tool Call 超时；该验收边界不改变没有显式 `timeoutMs` 的 Skill CLI 调用所使用的产品默认值。
 
@@ -108,19 +110,19 @@ Official API Workflow Cache 与 Runtime Input Overlay 测试覆盖 cache miss、
 
 ChromeComfyFrontend 测试使用注入的子进程、文件系统、HTTP 和 CDP seam 验证认证 header 只注入同 origin 请求、跨 origin 请求删除认证 header、未认证实例不启用请求拦截、macOS mock keychain 启动参数、WebSocket close/error 后的 pending command 结算、target crash、分阶段 deadline、一次 pre-readiness 重试、前端 readiness、`loadGraphData()`/`graphToPrompt()` 导出、浏览器在 readiness 或导出阶段提前退出、调用者取消、CDP 错误、有界脱敏 stderr、SIGTERM、精确 SIGKILL 和自有临时目录清理。NodeWorkerComfyFrontend 测试验证版本化 stdin/stdout 协议、诊断消息、结构化错误保留、有界 Worker stderr、启动失败、协议失败、stdin 异步写入失败、调用者取消、启动期间取消竞争和无响应 Worker 进程组强制回收；Worker entry 测试验证严格请求结构、成功导出和失败结果。进程组测试使用本地假 Worker 和假 Chrome，不启动真实浏览器。
 
-2026-08-27 的 122 实例验收使用 ComfyUI `0.33.3`、Frontend `1.49.6` 和模板 39。第一次请求完成官方前端 cache miss，第二个不同 LoRA 权重请求从本地 cache hit 且没有再次启动浏览器。最终 transport 提交请求 `29f91894-e160-4b3f-abb6-565f8f7e9617`；服务器 history 返回 `success` 和 `completed=true`，节点 5 的 `inputs.loras.__value__` 包含请求的 LoRA 名称、`strength=3`、`clipStrength=3` 与 `active=true`，节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，请求结束后队列为 running 0、pending 0。
+2026-08-27 在 ComfyUI 地址 `http://192.168.110.122:8188` 完成的实例验收使用 ComfyUI `0.33.3`、Frontend `1.49.6` 和模板 39。第一次请求完成官方前端 cache miss，第二个不同 LoRA 权重请求从本地 cache hit 且没有再次启动浏览器。最终 transport 提交请求 `29f91894-e160-4b3f-abb6-565f8f7e9617`；服务器 history 返回 `success` 和 `completed=true`，节点 5 的 `inputs.loras.__value__` 包含请求的 LoRA 名称、`strength=3`、`clipStrength=3` 与 `active=true`，节点 13 输出 `2026-08-27-221214_anima-aesthetic-v1.1_777001.png`，请求结束后队列为 running 0、pending 0。
 
-2026-08-28 的 122 实例验证覆盖当前 Source Catalog 的 21 个 Workflow 模板。矩阵逐模板核对 15 个公开参数，共 315 项结果符合精确非空支持集合；21 个模板的组合参数编译、官方页面 cache miss、同模板 cache hit 和基础对象一致性验证全部通过。保存的失败 Run `run_8a0642e4-43c8-4c5d-a54f-988a2a61050a` 请求使用当前模板 42、实时 `/object_info`、原 Prompt、原 Seed 和两个 LoRA 重放后完成 Workflow 编译。
+2026-08-28 在 ComfyUI 地址 `http://192.168.110.122:8188` 完成的实例验证覆盖当前 Source Catalog 的 21 个 Workflow 模板。矩阵逐模板核对 15 个公开参数，共 315 项结果符合精确非空支持集合；21 个模板的组合参数编译、官方页面 cache miss、同模板 cache hit 和基础对象一致性验证全部通过。保存的失败 Run `run_8a0642e4-43c8-4c5d-a54f-988a2a61050a` 请求使用当前模板 42、实时 `/object_info`、原 Prompt、原 Seed 和两个 LoRA 重放后完成 Workflow 编译。
 
 v0.31.3 发布文档提交前的完整 `pnpm quality` 结果为 406 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。
 
-2026-08-28 的 v0.31.4 实例 122 验证覆盖当前 Source Catalog 的 18 个 Workflow 模板。矩阵对每个列表型输入从该模板使用的节点类型和实时 `/object_info` 选择合法测试值，不使用跨节点类型的固定显示值。矩阵执行 270 个单参数检查；191 个基线支持参数通过，79 个基线不支持参数返回 `GENERATION_PARAMETER_TARGET_NOT_FOUND`。18 个模板的组合参数编译、官方页面 cache miss、同模板 cache hit、单次前端导出和基础对象一致性验证全部通过。
+2026-08-28 的 v0.31.4 验证在 ComfyUI 地址 `http://192.168.110.122:8188` 覆盖当前 Source Catalog 的 18 个 Workflow 模板。矩阵对每个列表型输入从该模板使用的节点类型和实时 `/object_info` 选择合法测试值，不使用跨节点类型的固定显示值。矩阵执行 270 个单参数检查；191 个基线支持参数通过，79 个基线不支持参数返回 `GENERATION_PARAMETER_TARGET_NOT_FOUND`。18 个模板的组合参数编译、官方页面 cache miss、同模板 cache hit、单次前端导出和基础对象一致性验证全部通过。
 
 v0.31.4 发布文档提交前的完整 `pnpm quality` 结果为 416 项 unit/integration、24 项 contract/security、40 项 production 和 27 项 prototype 测试通过；函数覆盖率为 100%。`/object_info` 缓存测试验证 40 个并发 compile 合并为一个请求、10 分钟 TTL、实例隔离和失败响应不缓存。
 
 v0.32.0 最终完整 `pnpm quality` 结果为 429 项 unit/integration、24 项 contract/security、40 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。1280 × 720 与 390 × 844 的浏览器验收覆盖图片、原生控件视频、首项、末项、正面提示词缺失、媒体文件不存在、点击导航、裸方向键和无水平溢出；用户按带 `Alt`、`Control`、`Meta` 或 `Shift` 修饰键的方向键时，页面不切换媒体。390 × 844 的超长正面提示词验收确认提示词面板内部滚动，页面高度保持 844px，左右箭头继续与媒体舞台垂直居中。
 
-v0.33.0 最终完整 `pnpm quality` 结果为 445 项 unit/integration、24 项 contract/security、59 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。生产生命周期测试确认 `prod:start` 把 A/B Preset 与共享 Tool visibility component 物化到生产 DSH home，物化失败时不写入受管运行状态。真实 `opencode-go/deepseek-v4-flash` A/B 测试完成 3 对兼容性任务，并由 B 通过两个独立前台 shell Tool Call 把逐字段相同的 Generation Request 提交为两个成功 Run。
+v0.33.0 最终完整 `pnpm quality` 结果为 445 项 unit/integration、24 项 contract/security、59 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。生产生命周期测试确认 `prod:start` 把 A 组 `harness-comfyui-schema-control` 与 B 组 `harness-comfyui-cli-candidate` Preset 及共享 Tool visibility component 物化到生产 DSH home，物化失败时不写入受管运行状态。真实 `opencode-go/deepseek-v4-flash` A/B 测试完成 3 对兼容性任务，并由 B 组 `harness-comfyui-cli-candidate` 的 Session 通过两个独立前台 shell Tool Call 把逐字段相同的 Generation Request 提交为两个成功 Run。
 
 v0.33.1 最终完整 `pnpm quality` 结果为 447 项 unit/integration、24 项 contract/security、59 项 production 和 32 项 prototype 测试通过；函数覆盖率为 100%。1280 × 720 浏览器验收覆盖完整 Run ID、Clipboard API 成功反馈、图片固有尺寸、视频固有尺寸和媒体切换后的顶部信息更新。390 × 844 浏览器验收确认完整 Run ID 在按钮内换行显示，顶部高度为 `98.5px`，页面 `scrollWidth` 等于 `clientWidth` 的 `390px`，页面 `scrollHeight` 等于 `clientHeight` 的 `844px`，浏览器错误和警告日志为 0。
 
@@ -144,7 +146,7 @@ v0.37.1 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 �
 
 v0.37.2 发布前完整 `pnpm quality` 结果为 529 项 unit/integration、29 项 contract/security、99 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 测试从旧生产 DSH home 读取保存 Session，并验证当前生产 DSH home 中的侧栏 Session、Session 选择和媒体结果。
 
-v0.37.3 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop generation 的 managed CLI 相关文件来自 `.local/source-cli/` 构建目录，不包含 `scripts/cli/` 源入口；真实 DSH bash capability 测试通过构建后的 CLI 取得业务响应。
+v0.37.3 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.05%、branches 86.32%、functions 100%、lines 95.67%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。真实 Desktop 验收确认 `$DSH_HOME/profiles/.generations/live/<generation-id>/` 中包含插件包及其依赖的 `harness-comfyui` generation 安装产物与 v0.37.3 测试候选一致；该安装产物中的 managed CLI 相关文件来自 `.local/source-cli/` 构建目录，不包含 `scripts/cli/` 源入口；真实 DSH bash capability 测试通过构建后的 CLI 取得业务响应。
 
 v0.37.4 发布前完整 `pnpm quality` 结果为 530 项 unit/integration、29 项 contract/security、102 项 production、32 项 prototype 和 2 项真实 Desktop 测试通过。覆盖率为 statements 93.15%、branches 86.41%、functions 100%、lines 95.74%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。Source adapter 测试覆盖 Source v0.86.1 三字段 TemplateBundle；Workflow compiler 测试覆盖活动输出节点发现、断开输出节点删除和没有活动输出节点时的明确失败。
 
@@ -208,7 +210,7 @@ OpenRouter 模型驱动的真实 Desktop 会话实际加载候选发行包中的
 
 ## v0.39.9 发布候选验证
 
-v0.39.9 的 Repository Skills 可见性测试在当前 checkout 外创建 Workspace，分别创建省略 `agentPreset`、显式选择 `harness-comfyui-cli-candidate` 和显式选择其他运行时 Preset 的 Session。前两个 Session 的 `remote.skills.list()` 返回结果均包含当前 checkout 的七个 Repository Skills；采用 `harness-comfyui-cli-candidate` 以外的运行时 Preset 的每个 Session，其 `remote.skills.list()` 返回结果均不包含名称和描述同时匹配上述 Repository Skill 的返回项。`standard` Session 的 `remote.skills.list()` 返回结果包含外部 Workspace 中的同名 Skill 和受控 `DSH_AGENTS_HOME` 中的用户 Skill，两个产品 Preset Session 的返回结果不包含这两个测试 Skill。
+v0.39.9 的 Repository Skills 可见性测试在当前 checkout 外创建 Workspace，分别创建省略 `agentPreset`、显式选择 `harness-comfyui-cli-candidate` 和显式选择其他运行时 Preset 的 Session。前两个 Session 的 `remote.skills.list()` 返回结果均包含当前 checkout 的七个 Repository Skills；采用 `harness-comfyui-cli-candidate` 以外的运行时 Preset 的每个 Session，其 `remote.skills.list()` 返回结果均不包含名称和描述同时匹配上述 Repository Skill 的返回项。`standard` Session 的 `remote.skills.list()` 返回结果包含外部 Workspace 中的同名 Skill 和受控 `DSH_AGENTS_HOME` 中的用户 Skill，省略 `agentPreset` 的 Session 和显式选择 `harness-comfyui-cli-candidate` 的 Session 的返回结果均不包含这两个测试 Skill。
 
 真实 Desktop 在 checkout 外的 Workspace 中创建省略 `agentPreset` 的 Session，创建结果返回 `agentPreset: harness-comfyui-cli-candidate`，该 Session 的请求上下文包含当前 checkout 的七个 Repository Skills。真实 Agent 模型读取 `local-image-reader` Skill 并调用图片读取 CLI 的 Tool Call 验收未完成：OpenCode Go 路由返回每周用量限制错误，DeepSeek 路由缺少 API Key，Contributor 路由不支持当前地区。用户在收到该阻塞说明后授权继续创建 v0.39.9 PR、把该 PR 合入 `main`、发布 v0.39.9 并把 v0.39.9 部署到生产环境。
 

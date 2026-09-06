@@ -2,6 +2,8 @@
 
 ## 启动与重启链路
 
+Desktop generation 是 DSH Desktop 把当前插件发布包及其依赖安装到 `<DSH_HOME>/profiles/.generations/live/<generation-id>/` 后形成的不可变完整安装目录。`<DSH_HOME>/profiles/.generations/desired.json` 保存需要启用的 generation ID；Desktop 启动前的 generation projection 把 `<DSH_HOME>/profiles/web/node_modules/harness-comfyui` 链接到所选 generation 中的 `node_modules/harness-comfyui`，并把 `harness-comfyui` 写入 web profile 的 bundle composition。
+
 ```text
 pnpm prod:start|restart
   → scripts/desktop/production-cli.mjs
@@ -51,7 +53,7 @@ pnpm web:start|restart
 | `scripts/worktree/` | `web:*` 的 linked-worktree 门禁、Web 调试配置和共享 Web Host 生命周期适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/product-agent-config.mjs` | 解析并验证当前 checkout 的产品 Preset 配置、Repository Skills 根目录和受管环境变量名称 |
-| `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset、共享 Tool visibility component 和共享系统提示词可见性 component，并删除配置声明的已退役项目 Preset |
+| `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 `ComfyUI工作台预设`、`ComfyUI迭代预设` 及其共享 component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | managed CLI 构建的源码入口；启动器把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` 后交给受管前台 shell Tool Call |
 | `scripts/source-client/` | 插件内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务 |
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request、模板运行参数检查、随机 Seed 和历史 Run 输入查询合同 |
@@ -63,7 +65,7 @@ pnpm web:start|restart
 | `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
 | `src/image-reader/` | Host 与 Client 共用的命名图片读取配置、逐规则校验、凭据动作、视觉模型目录和单份配置保存、激活与删除 Remote 合同 |
 | `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器、Generation Run/Media 投影，以及包含图片读取与数据源服务两个页签的统一 ComfyUI 设置页 |
-| `.agents/skills/` | 七个项目 Skill 的 canonical source；每个 Skill 都包含自身执行所需的 CLI 参考文档 |
+| `.agents/skills/` | 八个项目 Skill 的 canonical source；每个 Skill 都包含自身执行所需的参考文档与运行资源 |
 | `config/` | 生产配置、schema 和环境变量映射 |
 | `profiles/` | Harness bundle composition 模板 |
 
@@ -77,17 +79,17 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation，通过主开发 checkout 的端口声明目录取得移动桥接端口，并执行具有当前 worktree 独立输出目录的 DSH Desktop `pnpm dev`。启动器在 Desktop 确认监听后发布当前 PID 与端口状态。两个环境读取同一个 `cordis.patch.yml`、`config/desktop-production.json` 和当前 checkout 的 `config/product-agent.json`，把 Repository Skills 绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`，并写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设` 和 `ComfyUI迭代预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和两个项目 Preset，安装当前 worktree generation，通过主开发 checkout 的端口声明目录取得移动桥接端口，并执行具有当前 worktree 独立输出目录的 DSH Desktop `pnpm dev`。启动器在 Desktop 确认监听后发布当前 PID 与端口状态。两个环境读取同一个 `cordis.patch.yml`、`config/desktop-production.json` 和当前 checkout 的 `config/product-agent.json`，把 Repository Skills 绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`，并写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。`cordis.patch.yml` 继续把 `harness-comfyui-cli-candidate` 设置为默认 Preset；`harness-comfyui-iteration` 只在用户显式选择时启用。
 
-`web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web Host 环境构建器从当前 checkout 的 `config/product-agent.json` 解析 Repository Skills，并在删除调用者提供的全部 `HARNESS_COMFYUI_*` 值后写入受管的 `HARNESS_COMFYUI_SKILL_DIR`。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
+`web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同的两个项目 Preset，再以前台子进程运行独立 Harness Web Host。Web Host 环境构建器从当前 checkout 的 `config/product-agent.json` 解析 Repository Skills，并在删除调用者提供的全部 `HARNESS_COMFYUI_*` 值后写入受管的 `HARNESS_COMFYUI_SKILL_DIR`。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 
-`prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
+`prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖 `start`、`stop`、`restart`、`status`、`health`、`logs`、PID 身份和端口异常分支。
 
-生产 Desktop 状态写入 `.local/desktop-production/`；开发 Desktop 状态写入当前 worktree 的 `.local/desktop-development/`；Web Host 调试状态写入 `.local/web-development/`。源码仍保留在仓库根目录。配置变更在下一次对应入口的 start 或 restart 时生效。
+生产 Desktop 状态写入 `.local/desktop-production/`；开发 Desktop 状态写入当前 worktree 的 `.local/desktop-development/`；Web Host 调试状态写入 `.local/web-development/`。配置变更在下一次对应入口的 start 或 restart 时生效。
 
 ## Generation 生命周期
 
-七个项目 Skill 以当前 checkout 的 `.agents/skills/<skill-name>` 为 canonical source。`loadProductAgentConfiguration(repositoryRoot)` 从 `config/product-agent.json.skills` 解析并验证该根目录，Desktop 与 Web Host 再把该绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`。`ComfyUI工作台预设` 的 filesystem provider 使用 `includeDefaultRoots: false` 和唯一的 `customSkillDirs` 表达式读取该目录，因此默认或显式采用产品 Preset 的 Session 能够跨 Workspace 读取 Repository Skills；采用 `ComfyUI工作台预设` 以外的 Preset 的 Session 不会继承该 provider。Desktop 同时通过 `DSH_AGENTS_HOME=<real HOME>/.agents` 保留 `standard` Preset 对其他用户 Skill 的读取。五个 Prompt 与生成 Skill 和 `comfyui-image-review` 通过各自文档定义的受管项目 CLI 查询所需的历史 Generation Run 数据，`local-image-reader` 只通过自己的 CLI 参考读取用户提供的本地图片绝对路径。CLI 身份链路如下：
+八个项目 Skill 以当前 checkout 的 `.agents/skills/<skill-name>` 为 canonical source。`loadProductAgentConfiguration(repositoryRoot)` 从 `config/product-agent.json.skills` 解析并验证该根目录，Desktop 与 Web Host 再把该绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`。`ComfyUI工作台预设` 和 `ComfyUI迭代预设` 的 filesystem provider 都使用 `includeDefaultRoots: false` 和唯一的 `customSkillDirs` 表达式读取该目录，因此默认采用 `ComfyUI工作台预设` 或显式采用任一项目 Preset 的 Session 都能够跨 Workspace 读取 Repository Skills；采用 `standard` 或其他非项目 Preset 的 Session 不会继承该 provider。Desktop 同时通过 `DSH_AGENTS_HOME=<real HOME>/.agents` 保留 `standard` Preset 对其他用户 Skill 的读取。五个 Prompt 与生成 Skill 和 `comfyui-image-review` 通过各自文档定义的受管项目 CLI 查询所需的历史 Generation Run 数据，`local-image-reader` 只通过自己的 CLI 参考读取用户提供的本地图片绝对路径，`comfyui-iterate-generation` 使用迭代预设的前台子 Agent 分阶段调度构图、Prompt、生成、查询、观察、比较和归档。CLI 身份链路如下：
 
 ```text
 前台 bash/pwsh ToolExecution
@@ -117,7 +119,7 @@ ANIMA、Krea2 和 WAI Prompt Builder 的语义查询命令使用同一个前台 
 
 同一个 shell Tool Call 的相同 Generation Request 重放同一个 Run；同一个 shell Tool Call 的不同 Generation Request 返回 `RUN_REQUEST_CONFLICT`。创建多个独立 Run 时，每次 submit 使用不同的前台 shell Tool Call，因此 Host 为每次调用保存不同的 `call_id`。
 
-`query_semantic_comfyui_instances` 使用固定 search 请求，通过内置语义查询客户端读取数据源服务当前返回的 ComfyUI 实例目录，并且每个实例结果项只向 Agent 投影 `id`。`comfyui-generate` 把当前查询的首个有效 ID 传给 `generate_with_comfyui`；Host 不根据 Workflow、生成模型、LoRA、运行参数或已有 Run 记录选择实例。
+`comfyui-generate` 按自身 CLI 参考文档规定的 Catalog 入口使用固定 search 请求，读取数据源服务当前返回的 ComfyUI 实例目录；每个实例结果项只向 Agent 投影 `id`。该 Skill 再按 CLI 参考文档规定的 `generation submit --stdin` 入口，把当前查询的首个有效 ID 写入 Generation Request 的 `instance_id`。Host 不根据 Workflow、生成模型、LoRA、运行参数或已有 Run 记录选择实例。
 
 `generate_with_comfyui` 在 Run Repository 持久化当前 Tool `callId` 后，使用插件内置数据源读取客户端从数据源服务读取实例和模板，再完成 `/object_info` 读取、运行参数解析、模型和 LoRA 映射以及 Official API Workflow 准备。上述阶段失败时，Tool Call 收到原始错误码和错误信息，失败 Run 同时保存该错误。准备成功时，Tool 返回 `run_id`；Host 内的 Generation Coordinator 继续异步执行 ComfyUI `/prompt` 提交、Jobs API 观察、远端结果处理和媒体保存。Host 停止时 coordinator 中止本地观察但不取消远端 ComfyUI 任务；Host 重启后从非终态 Run 继续观察。
 
@@ -135,7 +137,7 @@ Generation 编译链路分为参数语义和最终导出两个阶段：
   → Comfy transport 把最终 API Workflow 提交给 /prompt
 ```
 
-Desktop Host 运行在 Electron Helper 的 Node.js 兼容运行时中。该运行时执行完整 `ChromeComfyFrontend` 时，目标实例 2 的 `Page.navigate` 可以保持 pending；相同编译器在标准 Node.js 子进程中可以完成导航和官方 Workflow 导出。因此 cache miss 通过 `NodeWorkerComfyFrontend` 启动 `.local/source-host/comfy-frontend-worker.js`，由标准 Node.js Worker 承担浏览器启动、CDP session、前端 readiness、`loadGraphData()` 和 `graphToPrompt()`。Electron Helper 通过版本化 stdin/stdout JSON 协议发送一份编译请求并接收结构化诊断和结果；实例 authorization 不进入进程命令行。
+cache miss 时，Desktop Helper 通过 `NodeWorkerComfyFrontend` 启动 `.local/source-host/comfy-frontend-worker.js`。该标准 Node.js Worker 使用 `ChromeComfyFrontend` 完成浏览器启动、CDP session、前端 readiness、`loadGraphData()` 和 `graphToPrompt()`。Desktop Helper 通过版本化 stdin/stdout JSON 协议发送一份编译请求并接收结构化诊断和结果；实例 authorization 包含在标准输入的编译请求中，不进入进程命令行。
 
 Worker 直接执行配置中的 Chrome 或 Chromium 可执行文件，不通过 macOS LaunchServices。每次浏览器会话使用独立临时 profile，并传入 `--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider`，防止 macOS 钥匙串与网络权限对话阻塞 headless 编译。Host 把每个 Worker 启动为独立进程组；调用者取消时，Host 先向该进程组发送 `SIGTERM`，Worker 协作清理自己的 Chrome 子进程和临时 profile。宽限期内没有退出时，Host 只对该 Worker 进程组发送 `SIGKILL`，不向用户的其他 Chrome 进程发送信号。
 
@@ -171,7 +173,7 @@ Run Repository 保存状态和索引；Run 目录保存每次运行独立的请�
 
 Client 结果列把每项 Generation Media 链接到 `/api/harness-comfyui/media/<media_id>/view?session_id=<session_id>`，缩略图仍从该媒体的 `/content` 路由读取。Host 在返回查看页、媒体内容或下载响应前验证 HTTP 方法、Session、workspace 和媒体归属。查看页的启动数据只包含当前 Session 中每项媒体的媒体 ID、所属 Generation Run 的 `runId`、媒体类型、文件名、生成时间、同源内容 URL、查看页 URL 和所属 Run 保存的原始 `parameters.positive_prompt`；启动数据不包含完整生成请求、Actual Workflow、API Workflow 或远端实例认证信息。
 
-Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。Host 只把每项媒体的 `runId`、媒体显示属性、同源内容 URL、同源查看 URL 和正面提示词投影到查看页；Host 不把完整 Generation Request 或 Workflow 投影到查看页。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。
+Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_at DESC, output_index DESC, media_id DESC` 顺序。左侧按钮和裸 `ArrowLeft` 切换到较新媒体，右侧按钮和裸 `ArrowRight` 切换到较早媒体；首项与末项禁用对应方向并且不循环。页面切换媒体后使用 `history.replaceState()` 更新当前媒体 URL，刷新该 URL 后 Host 仍以同一媒体作为当前项。
 
 媒体查看页 iframe 在初始渲染和每次媒体切换后，向父框架发送类型为 `harness-comfyui.session-media-viewer.current.v1` 且只包含 `type`、`mediaId` 和 `runId` 的当前媒体消息。DSH Desktop 主框架 Modal 只接收来源 origin 等于当前页面 origin、来源 window 等于当前媒体查看页 iframe、消息通过 `src/generation/contract.ts` 严格解析、`mediaId` 与 `runId` 对应当前 Session 同一项 Generation Media 的消息。合法消息更新 Modal 中 iframe 上方独立显示的完整 `run_id`；其他消息不改变 Modal 状态。
 
@@ -195,7 +197,7 @@ Host 使用同一设置修改队列串行处理保存、激活和删除请求。
 
 `runtime` 配置把图片保存为 Harness Attachment，再使用配置中的系统 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用。`openai-compatible` 配置不经过 Harness LLM Runtime 或 Attachment Store；Host 把同一张图片编码为 Data URL，向配置的完整 Chat Completions 地址发送模型 ID、提示词、`temperature` 和 `max_tokens`。OpenAI 兼容适配器只解析 Chat Completions 的 HTTP JSON 传输外壳，并把 `choices[0].message.content` 当作普通字符串；runtime 适配器也直接收集普通模型文本。两种适配器都不要求或解析模型文本中的 JSON。`inspect_image` 在模型调用完成后把普通字符串包装为包含 `provider`、`model`、`file_path` 和 `observation` 的结构化 Tool 结果；CLI stdout 继续输出同一对象的 JSON。OpenAI 兼容响应体的声明长度与实际流式累计长度都不能超过 1 MiB，读取响应体和解析传输外壳时继续传播调用者取消。
 
-API Key 作为 `credentials.<profileId>` Settings secret 保存。Client 收到的凭据状态只包含每份配置的 `hasApiKey`。设置页保存时只向 Remote 提交当前编辑配置；Host 在完整设置修改临界区内读取最新持久化列表，在原索引替换同 ID 配置或把新 ID 追加到末尾，按 `keep`、`replace` 或 `clear` 处理 OpenAI 兼容凭据，再调用一次 `settings.replace()` 保存合并结果。Host 按调用顺序串行执行保存与删除临界区，重叠请求不会根据旧 Settings 快照覆盖先完成的修改。删除已保存配置使用独立 Remote；Host 同时删除对应凭据，并在删除活动配置时优先选择原列表后一项、不存在后一项时选择前一项。设置页把 Host 返回的完整配置作为新的持久化快照，并只从该快照建立一份当前可编辑配置。Host 在新 namespace 尚无用户值时，把旧单配置 namespace 的用户 Provider、模型、提示词、`temperature` 和最大输出 Token 迁移为一份 `runtime` 配置。
+API Key 作为 `credentials.<profileId>` Settings secret 保存，Client 收到的凭据状态只包含每份配置的 `hasApiKey`。OpenAI 兼容配置的 `keep` 保留已有 API Key，`replace` 写入新值，`clear` 删除已有值。删除已保存配置时，Host 同时删除对应凭据；删除活动配置时，Host 优先激活原列表中的后一项，不存在后一项时激活前一项。新 namespace 尚无用户值时，Host 把旧单配置 namespace 的用户 Provider、模型、提示词、`temperature` 和最大输出 Token 迁移为一份 `runtime` 配置。
 
 `ImageReaderService`、Tool 和 CLI 都不读取 Generation Request 参数，也不比较或改写 Generation Prompt。
 
