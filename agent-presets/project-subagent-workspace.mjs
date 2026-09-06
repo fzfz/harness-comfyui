@@ -45,7 +45,15 @@ export function apply(ctx) {
       )
     }
 
-    const workspace = await ctx.workspaceRegistry.resolveByPath(parentHeader.cwd)
+    let workspace
+    try {
+      workspace = await ctx.workspaceRegistry.resolveByPath(parentHeader.cwd)
+    } catch (error) {
+      throw new Error(
+        `cannot register subagent Session ${String(childSessionId)}: Workspace lookup failed for parent cwd ${parentHeader.cwd}`,
+        { cause: error },
+      )
+    }
     if (workspace === undefined || workspace === null) {
       throw new Error(
         `cannot register subagent Session ${String(childSessionId)}: no Workspace contains parent cwd ${parentHeader.cwd}`,

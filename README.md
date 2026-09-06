@@ -132,4 +132,4 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.39.10 发布说明](docs/releasenotes.md)
+- [v0.40.0 发布说明](docs/releasenotes.md)

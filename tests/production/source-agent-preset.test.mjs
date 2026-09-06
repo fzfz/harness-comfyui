@@ -606,6 +606,26 @@ describe('iteration Preset subagent Workspace registration', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
+  it('preserves lookup failure context and stops the child step', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-lookup-failure-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', cwd, parent.session.id)
+    const cause = new Error('Workspace storage read failed')
+    const resolveByPath = vi.fn(async () => { throw cause })
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: { resolveByPath },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next)).rejects.toMatchObject({
+      message: `cannot register subagent Session session_child: Workspace lookup failed for parent cwd ${cwd}`,
+      cause,
+    })
+    expect(resolveByPath).toHaveBeenCalledExactlyOnceWith(cwd)
+    expect(next).not.toHaveBeenCalled()
+  })
+
   it('stops when the parent cwd has no Workspace', async () => {
     const cwd = await temporaryDirectory('harness-subagent-no-workspace-')
     const parent = testAgent('session_parent', 'user', cwd)

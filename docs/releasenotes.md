@@ -1,3 +1,27 @@
+# Harness ComfyUI v0.40.0
+
+v0.40.0 新增 `comfyui-iterate-generation` Skill 和独立的 `ComfyUI迭代预设`。使用者选择该预设后，可以通过自然语言多轮迭代请求或 `/comfyui-iterate-generation` 开始任务。
+
+## 新增迭代流程与预设选择
+
+- 构图子 Agent 根据人物性格、片段经历和关系推导画面表达，再把主体、空间、焦点、逐光源照明与可见判据交给用户确认。故事中的道具、服饰和场所按表达作用选择，不自动成为成图必需项。
+- 主 Agent 派发阶段子任务、转交构图确认稿、分配生成提交额度并更新任务记录；前台子 Agent 分别完成构图、Prompt、生成、Run 查询、观察、比较和归档。子 Agent 在执行前附加到父会话的 Workspace，使用真实子会话身份调用 `DSH_HARNESS_COMFYUI_CLI` 指定的 CLI。
+- 新 Skill 按模型查询结果加载 `anima-prompt-builder`、`wai-sdxl-prompt-builder` 或 `krea2-anime-prompt-builder`，由 `comfyui-generate` 完成生成，使用 `local-image-reader` 和 `comfyui-image-review` 观察或诊断图片。阶段记录保存请求、Run、逐图观察、对照结果及最终配方，并区分同 Seed 诊断、新 Seed 复验、用户采用图片和未完成原因。
+- `ComfyUI工作台预设` 继续作为默认预设。本版本没有修改此前七个项目 Skill 的文件或默认预设内容；单次生成仍可调用 `comfyui-generate`，单次读图仍可调用 `local-image-reader`。
+
+## 实际验证与已知限制
+
+- 使用 OpenRouter `deepseek/deepseek-v4-flash-0731`、推理等级 Max，完成子 Agent 真实提交图片生成请求、跨子 Agent Run 查询、图片读取及未完成归档。上述三个 Prompt Builder 均返回通过各自生成结果校验器的 JSON。
+- 构图和合成决策测试仍出现无依据的心理或因果推断、单轮混入多个变量、预算范围混淆及观察证据补写。真实图像闭环没有完成成功复验，不能把此次接入验证理解为完整自主迭代验收通过。
+- 主 Agent 将 Prompt、Workflow、逐图观察和比较记录保存在文件中，但委派消息仍在主会话上下文中积累；本版本没有为主会话上下文长度设置硬上限。
+- 新 Skill 的 JSON 写入脚本和记录结构具有 20 项确定性测试；这些测试不代替模型输出的语义评审。
+
+## 版本与部署依赖
+
+- 本版本没有增加或升级 Harness ComfyUI 依赖，继续使用 DSH Desktop 提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。
+- Desktop 锁文件仍包含 `image-size 1.2.1`，已有检查记录其关联 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。本次部署复用生产目录中已经安装的同一 Desktop 提交及依赖，不重新安装 Desktop 依赖。
+- GitHub Release 发布 Git tag 与发布说明，不附加产品安装包。
+
 # Harness ComfyUI v0.39.10
 
 v0.39.10 删除三份 Prompt Builder 语义查询参考文档中关于 Harness 提供查询客户端、数据源 URL 和端口的文字，并修正查询条件、候选选择条件和错误处理动作中无法唯一理解的描述。
