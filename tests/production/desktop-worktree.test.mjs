@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
@@ -57,12 +57,11 @@ async function fixture() {
   }))
   await writeFile(
     environmentFile,
-    'KEY=value\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=shared-development-port-must-not-be-read\n',
+    'KEY=value\nHARNESS_COMFYUI_SKILL_DIR=/env/file/override\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=shared-development-port-must-not-be-read\n',
   )
   const definition = {
     mainCheckoutPath: root,
     runtimeRelativeRoot: '.local/desktop-development',
-    skillSourceRelativePath: '.agents/skills',
   }
   const definitionPath = resolve(root, 'config/desktop-worktree.json')
   const productionDefinitionPath = resolve(root, 'config/desktop-production.json')
@@ -81,6 +80,23 @@ async function fixture() {
   await writeFile(definitionPath, `${JSON.stringify(definition)}\n`)
   await writeFile(productionDefinitionPath, `${JSON.stringify(productionDefinition)}\n`)
   await writeFile(resolve(root, 'config/source-production.json'), `${JSON.stringify(sourceDefinition)}\n`)
+  await writeFile(resolve(root, 'config/product-agent.json'), `${JSON.stringify({
+    schemaVersion: 2,
+    preset: {
+      id: 'harness-comfyui-cli-candidate',
+      sourceRootRelativePath: 'agent-presets',
+      installRootRelativePath: '.agent-presets',
+      retiredManagedPresetIds: ['harness-comfyui-schema-control'],
+      sharedFiles: ['project-tool-visibility.mjs', 'project-system-prompt-visibility.mjs'],
+    },
+    skills: {
+      sourceRootRelativePath: '.agents/skills',
+      environmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    },
+  })}\n`)
+  await writeFile(resolve(root, 'config/environment-overrides.json'), `${JSON.stringify({
+    HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'string' },
+  })}\n`)
   return {
     root,
     definition,
@@ -156,9 +172,11 @@ describe('DSH Desktop worktree lifecycle', () => {
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
       launchCommand: 'dev',
       catalogPort: 18093,
-      skillSource: resolve(root, 'skills'),
+      agentsHome: resolve(root, 'parent-home/.agents'),
+      repositorySkillsRoot: resolve(root, '.agents/skills'),
+      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
     }
-    await Promise.all([mkdir(context.startupWorkspacePath), mkdir(context.skillSource)])
+    await Promise.all([mkdir(context.startupWorkspacePath), mkdir(context.repositorySkillsRoot, { recursive: true })])
     await mkdir(context.desktopBuildOutput, { recursive: true })
     await writeFile(resolve(context.desktopBuildOutput, 'stale.js'), 'stale output\n')
     const mobileBridgePort = await freePort()
@@ -167,6 +185,10 @@ describe('DSH Desktop worktree lifecycle', () => {
     await expect(runDesktopDevelopmentCommand('start', {
       contextOptions: { repositoryRoot: worktree, definitionPath },
       loadContext: async () => context,
+      loadProductAgentConfiguration: async () => ({
+        repositorySkillsRoot: context.repositorySkillsRoot,
+        repositorySkillsEnvironmentVariable: context.repositorySkillsEnvironmentVariable,
+      }),
       materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
@@ -207,6 +229,10 @@ describe('DSH Desktop worktree lifecycle', () => {
     await expect(runDesktopDevelopmentCommand('start', {
       contextOptions: { repositoryRoot: worktree, definitionPath },
       loadContext: async () => context,
+      loadProductAgentConfiguration: async () => ({
+        repositorySkillsRoot: context.repositorySkillsRoot,
+        repositorySkillsEnvironmentVariable: context.repositorySkillsEnvironmentVariable,
+      }),
       materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
@@ -274,8 +300,7 @@ describe('DSH Desktop worktree lifecycle', () => {
       value.root,
       '.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness',
     ))
-    expect(context.skillSource).toBe(value.skills)
-    expect(context.skillSource).not.toBe(value.globalSkills)
+    expect(context.agentsHome).toBe(resolve(value.root, 'parent-home/.agents'))
     expect(desktopWorktreeContext({
       ...value.productionDefinition,
       desktopMode: 'development',
@@ -300,7 +325,7 @@ describe('DSH Desktop worktree lifecycle', () => {
     expect(context.desktopSource).toBe(resolve(candidateCheckout, '.local/upstreams/dsh-desktop'))
   })
 
-  it('links the environment and current worktree Skills before installing the standard Harness plugin', async () => {
+  it('injects Preset-scoped Repository Skills and removes the isolated HOME legacy link', async () => {
     const value = await fixture()
     await Promise.all([
       writeFile(resolve(value.skills, 'candidate-marker.txt'), 'candidate\n'),
@@ -311,6 +336,10 @@ describe('DSH Desktop worktree lifecycle', () => {
       definitionPath: value.definitionPath,
       homeDirectory: resolve(value.root, 'parent-home'),
     })
+    const environmentFileBefore = await readFile(value.environmentFile, 'utf8')
+    const legacySkillLink = resolve(context.runtimeHome, '.agents/skills')
+    await mkdir(dirname(legacySkillLink), { recursive: true })
+    await symlink(value.skills, legacySkillLink, 'dir')
     const materializeCli = vi.fn(async () => undefined)
     const materializeClient = vi.fn(async () => undefined)
     const materializeHost = vi.fn(async () => undefined)
@@ -326,25 +355,35 @@ describe('DSH Desktop worktree lifecycle', () => {
       materializePreset,
       packagePlugin,
       installPlugin,
-      environment: { PATH: '/usr/bin' },
+      environment: { PATH: '/usr/bin', HARNESS_COMFYUI_SKILL_DIR: '/caller/override' },
     })
 
     expect(resolve(activeContext.dshHome, await readlink(resolve(activeContext.dshHome, '.env')))).toBe(value.environmentFile)
-    expect(resolve(activeContext.runtimeHome, '.agents', await readlink(resolve(activeContext.runtimeHome, '.agents/skills')))).toBe(value.skills)
-    await expect(readFile(resolve(activeContext.runtimeHome, '.agents/skills/candidate-marker.txt'), 'utf8'))
-      .resolves.toBe('candidate\n')
+    expect(await readFile(value.environmentFile, 'utf8')).toBe(environmentFileBefore)
+    await expect(lstat(legacySkillLink)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(resolve(value.skills, 'candidate-marker.txt'), 'utf8')).resolves.toBe('candidate\n')
     await expect(readFile(resolve(value.globalSkills, 'global-marker.txt'), 'utf8')).resolves.toBe('global\n')
     expect(materializeCli).toHaveBeenCalledWith(value.root)
     expect(materializeClient).toHaveBeenCalledWith(value.root)
     expect(materializeHost).toHaveBeenCalledWith(value.root)
     expect(materializePreset).toHaveBeenCalledWith(value.root, activeContext.dshHome)
-    expect(packagePlugin).toHaveBeenCalledWith(activeContext)
-    expect(installPlugin).toHaveBeenCalledWith(activeContext, prepared.environment, resolve(value.root, 'harness-comfyui.tgz'))
+    expect(packagePlugin).toHaveBeenCalledWith(expect.objectContaining({
+      ...activeContext,
+      repositorySkillsRoot: value.skills,
+      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    }))
+    expect(installPlugin).toHaveBeenCalledWith(expect.objectContaining({
+      ...activeContext,
+      repositorySkillsRoot: value.skills,
+      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    }), prepared.environment, resolve(value.root, 'harness-comfyui.tgz'))
     expect(prepared.environment).toMatchObject({
       KEY: 'value',
       HOME: activeContext.runtimeHome,
       CFFIXED_USER_HOME: activeContext.runtimeHome,
       DSH_HOME: activeContext.dshHome,
+      DSH_AGENTS_HOME: resolve(value.root, 'parent-home/.agents'),
+      HARNESS_COMFYUI_SKILL_DIR: value.skills,
       HARNESS_COMFYUI_CONFIGURATION_PROFILE: 'production',
       HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: value.workspace,
       HARNESS_COMFYUI_DATA_DIR: resolve(activeContext.runtimeRoot, 'data'),
@@ -355,50 +394,164 @@ describe('DSH Desktop worktree lifecycle', () => {
   })
 
   it.each([
-    ['missing', undefined],
-    ['absolute', '/tmp/external-skills'],
-    ['outside the worktree', '../external-skills'],
-  ])('rejects a %s development Skill source path without falling back to global Skills', async (_name, path) => {
+    ['file', async path => writeFile(path, 'keep\n')],
+    ['directory', async path => mkdir(path)],
+  ])('rejects an isolated HOME legacy Skills %s without changing it', async (pathType, createPath) => {
     const value = await fixture()
-    const definition = { ...value.definition }
-    if (path === undefined) delete definition.skillSourceRelativePath
-    else definition.skillSourceRelativePath = path
-    await writeFile(value.definitionPath, `${JSON.stringify(definition)}\n`)
-
-    await expect(loadDesktopWorktreeContext({
+    const context = await loadDesktopWorktreeContext({
       repositoryRoot: value.root,
       definitionPath: value.definitionPath,
       productionDefinitionPath: value.productionDefinitionPath,
       homeDirectory: resolve(value.root, 'parent-home'),
-    })).rejects.toThrow('skillSourceRelativePath')
+    })
+    const conflictPath = resolve(context.runtimeHome, '.agents/skills')
+    await mkdir(dirname(conflictPath), { recursive: true })
+    await createPath(conflictPath)
+    const materializeCli = vi.fn()
+
+    await expect(prepareDesktopWorktree(context, {
+      materializeCli,
+      migrateLegacySessionData: async () => undefined,
+    })).rejects.toThrow(`isolated Desktop HOME legacy Skills path conflict at ${conflictPath}: found ${pathType}`)
+
+    expect(materializeCli).not.toHaveBeenCalled()
+    expect((await lstat(conflictPath))[pathType === 'file' ? 'isFile' : 'isDirectory']()).toBe(true)
   })
 
-  it('rejects a configured development Skill source that is not a directory', async () => {
+  it('rejects a symbolic-link .agents parent without changing the external Skills link', async () => {
+    const value = await fixture()
+    const context = await loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })
+    const externalAgents = await mkdtemp(resolve(tmpdir(), 'desktop-runtime-external-agents-'))
+    roots.push(externalAgents)
+    const externalSkillsLink = resolve(externalAgents, 'skills')
+    await symlink(value.skills, externalSkillsLink, 'dir')
+    await mkdir(context.runtimeHome, { recursive: true })
+    await symlink(externalAgents, resolve(context.runtimeHome, '.agents'), 'dir')
+    const materializeCli = vi.fn()
+
+    await expect(prepareDesktopWorktree(context, {
+      materializeCli,
+      migrateLegacySessionData: async () => undefined,
+    })).rejects.toThrow(`isolated Desktop HOME legacy Skills parent conflict at ${resolve(context.runtimeHome, '.agents')}: found symbolic link`)
+
+    expect(materializeCli).not.toHaveBeenCalled()
+    expect((await lstat(externalSkillsLink)).isSymbolicLink()).toBe(true)
+    expect(await readlink(externalSkillsLink)).toBe(value.skills)
+  })
+
+  it('rejects a regular-file .agents parent without changing it', async () => {
+    const value = await fixture()
+    const context = await loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })
+    const agentsPath = resolve(context.runtimeHome, '.agents')
+    await mkdir(context.runtimeHome, { recursive: true })
+    await writeFile(agentsPath, 'keep\n')
+    const materializeCli = vi.fn()
+
+    await expect(prepareDesktopWorktree(context, {
+      materializeCli,
+      migrateLegacySessionData: async () => undefined,
+    })).rejects.toThrow(`isolated Desktop HOME legacy Skills parent conflict at ${agentsPath}: found file`)
+
+    expect(materializeCli).not.toHaveBeenCalled()
+    expect(await readFile(agentsPath, 'utf8')).toBe('keep\n')
+  })
+
+  it('rejects a missing Repository Skills root without falling back to global Skills', async () => {
+    const value = await fixture()
+    await rm(value.skills, { recursive: true, force: true })
+
+    const context = await loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })
+
+    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root does not exist: ${value.skills}`)
+  })
+
+  it('rejects a Repository Skills root that is not a directory', async () => {
     const value = await fixture()
     await rm(value.skills, { recursive: true, force: true })
     await writeFile(value.skills, 'not a directory\n')
 
-    await expect(loadDesktopWorktreeContext({
+    const context = await loadDesktopWorktreeContext({
       repositoryRoot: value.root,
       definitionPath: value.definitionPath,
       productionDefinitionPath: value.productionDefinitionPath,
       homeDirectory: resolve(value.root, 'parent-home'),
-    })).rejects.toThrow('skillSourceRelativePath')
+    })
+
+    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root must be a directory: ${value.skills}`)
   })
 
-  it('rejects a development Skill source symlink that resolves outside the current worktree', async () => {
+  it('rejects a Repository Skills root symbolic link', async () => {
     const value = await fixture()
     const externalSkills = await mkdtemp(resolve(tmpdir(), 'external-skills-'))
     roots.push(externalSkills)
     await rm(value.skills, { recursive: true, force: true })
     await symlink(externalSkills, value.skills, 'dir')
 
-    await expect(loadDesktopWorktreeContext({
+    const context = await loadDesktopWorktreeContext({
       repositoryRoot: value.root,
       definitionPath: value.definitionPath,
       productionDefinitionPath: value.productionDefinitionPath,
       homeDirectory: resolve(value.root, 'parent-home'),
-    })).rejects.toThrow('skillSourceRelativePath')
+    })
+
+    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root must not be a symbolic link: ${value.skills}`)
+  })
+
+  it('rejects a Repository Skills root whose real path leaves the current worktree', async () => {
+    const value = await fixture()
+    const externalAgents = await mkdtemp(resolve(tmpdir(), 'external-agents-'))
+    roots.push(externalAgents)
+    await mkdir(resolve(externalAgents, 'skills'))
+    await rm(resolve(value.root, '.agents'), { recursive: true, force: true })
+    await symlink(externalAgents, resolve(value.root, '.agents'), 'dir')
+
+    const context = await loadDesktopWorktreeContext({
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    })
+
+    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root must stay inside the current checkout: ${value.skills}`)
+  })
+
+  it('keeps Desktop status, stop, and logs available when Repository Skills are missing', async () => {
+    const value = await fixture()
+    await rm(value.skills, { recursive: true, force: true })
+    const contextOptions = {
+      repositoryRoot: value.root,
+      definitionPath: value.definitionPath,
+      productionDefinitionPath: value.productionDefinitionPath,
+      homeDirectory: resolve(value.root, 'parent-home'),
+    }
+
+    await expect(runDesktopLifecycleCommand('status', { contextOptions })).resolves.toEqual({ status: 'stopped' })
+    await expect(runDesktopLifecycleCommand('stop', { contextOptions })).resolves.toEqual({ status: 'stopped' })
+    await expect(runDesktopLifecycleCommand('logs', { contextOptions })).resolves.toEqual({
+      status: 'logs',
+      output: 'DSH Desktop Harness log has not been created.\n',
+    })
+    for (const command of ['start', 'restart']) {
+      await expect(runDesktopDevelopmentCommand(command, {
+        contextOptions,
+        prepareCheckout: async () => undefined,
+      })).rejects.toThrow(`Repository Skills root does not exist: ${value.skills}`)
+    }
   })
 
   it('does not package or install the Desktop plugin when the CLI bundle fails', async () => {

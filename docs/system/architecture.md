@@ -50,6 +50,7 @@ pnpm web:start|restart
 | `scripts/production/` | Client 与 managed CLI 运行模块生成、Web Host 配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 门禁、Web 调试配置和共享 Web Host 生命周期适配 |
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
+| `scripts/profile/product-agent-config.mjs` | 解析并验证当前 checkout 的产品 Preset 配置、Repository Skills 根目录和受管环境变量名称 |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset、共享 Tool visibility component 和共享系统提示词可见性 component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | managed CLI 构建的源码入口；启动器把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` 后交给受管前台 shell Tool Call |
 | `scripts/source-client/` | 插件内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务 |
@@ -76,9 +77,9 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation，通过主开发 checkout 的端口声明目录取得移动桥接端口，并执行具有当前 worktree 独立输出目录的 DSH Desktop `pnpm dev`。启动器在 Desktop 确认监听后发布当前 PID 与端口状态。两个环境读取同一个 `cordis.patch.yml` 和 `config/desktop-production.json` 产品配置，写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
+`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和 Preset，安装当前 worktree generation，通过主开发 checkout 的端口声明目录取得移动桥接端口，并执行具有当前 worktree 独立输出目录的 DSH Desktop `pnpm dev`。启动器在 Desktop 确认监听后发布当前 PID 与端口状态。两个环境读取同一个 `cordis.patch.yml`、`config/desktop-production.json` 和当前 checkout 的 `config/product-agent.json`，把 Repository Skills 绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`，并写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。
 
-`web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
+`web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同 Preset，再以前台子进程运行独立 Harness Web Host。Web Host 环境构建器从当前 checkout 的 `config/product-agent.json` 解析 Repository Skills，并在删除调用者提供的全部 `HARNESS_COMFYUI_*` 值后写入受管的 `HARNESS_COMFYUI_SKILL_DIR`。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖六个生命周期操作、PID 身份和端口异常分支。
 
@@ -86,7 +87,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## Generation 生命周期
 
-七个项目 Skill 以主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 为 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>` 使用绝对符号链接指向主开发 checkout 中相同名称的目录，不得指向独立 linked worktree。`ComfyUI工作台预设` 使用全局项目 Skill；五个 Prompt 与生成 Skill 和 `comfyui-image-review` 通过各自文档定义的受管项目 CLI 查询所需的历史 Generation Run 数据，`local-image-reader` 只通过自己的 CLI 参考读取用户提供的本地图片绝对路径。CLI 身份链路如下：
+七个项目 Skill 以当前 checkout 的 `.agents/skills/<skill-name>` 为 canonical source。`loadProductAgentConfiguration(repositoryRoot)` 从 `config/product-agent.json.skills` 解析并验证该根目录，Desktop 与 Web Host 再把该绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`。`ComfyUI工作台预设` 的 filesystem provider 使用 `includeDefaultRoots: false` 和唯一的 `customSkillDirs` 表达式读取该目录，因此默认或显式采用产品 Preset 的 Session 能够跨 Workspace 读取 Repository Skills；采用 `ComfyUI工作台预设` 以外的 Preset 的 Session 不会继承该 provider。Desktop 同时通过 `DSH_AGENTS_HOME=<real HOME>/.agents` 保留 `standard` Preset 对其他用户 Skill 的读取。五个 Prompt 与生成 Skill 和 `comfyui-image-review` 通过各自文档定义的受管项目 CLI 查询所需的历史 Generation Run 数据，`local-image-reader` 只通过自己的 CLI 参考读取用户提供的本地图片绝对路径。CLI 身份链路如下：
 
 ```text
 前台 bash/pwsh ToolExecution

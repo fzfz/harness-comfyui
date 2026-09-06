@@ -1,0 +1,30 @@
+[
+  {
+    "name": "anima-prompt-builder",
+    "description": "用户要求根据自然语言画面要求与当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录构建并校验十二槽 ANIMA3 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+  },
+  {
+    "name": "character-portrait-prompt-designer",
+    "description": "根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。"
+  },
+  {
+    "name": "comfyui-generate",
+    "description": "用户要求使用当前选择的 ComfyUI Workflow 创建图片、核对所选 Workflow 模板、生成模型和 LoRA 是否兼容、查询历史 Generation Run，或者在创建图片时复用历史 Seed 时使用。"
+  },
+  {
+    "name": "comfyui-image-review",
+    "description": "按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。"
+  },
+  {
+    "name": "krea2-anime-prompt-builder",
+    "description": "用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+  },
+  {
+    "name": "local-image-reader",
+    "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。"
+  },
+  {
+    "name": "wai-sdxl-prompt-builder",
+    "description": "用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。"
+  }
+]

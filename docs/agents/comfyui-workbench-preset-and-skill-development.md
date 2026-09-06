@@ -6,8 +6,7 @@
 
 - 创建或修改自定义 `ComfyUI工作台预设`；
 - 创建或修改本仓库 `.agents/skills/<skill-name>/` 中的项目 Skill；
-- 创建或修改项目 Skill 自带的 CLI 使用参考文档；
-- 部署或修改 `$HOME/.agents/skills/<skill-name>` 全局 Skill 链接。
+- 创建或修改项目 Skill 自带的 CLI 使用参考文档。
 
 Harness `standard` Preset 的 Tool 可见性不属于本规范的限制对象。Host 可以继续注册项目 Tool schema，`standard` Preset 可以继续向模型提供这些 Tool schema。
 
@@ -24,15 +23,15 @@ Harness `standard` Preset 的 Tool 可见性不属于本规范的限制对象。
 - `prod:*`、`dev:*` 和 `web:*` 从同一份 canonical source 物化 Preset；
 - 当前插件 `cordis.patch.yml` 把该自定义 Preset 设置为默认 Preset；启动器不修改 Harness `standard` Preset 的源码。
 
-### 全局 Skill 目录
+### 项目 Skill 来源
 
-主开发 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 的 canonical source。生产环境的 `$HOME/.agents/skills/<skill-name>` 必须是指向主开发 checkout 对应 Skill 目录的绝对符号链接。全局 Skill 链接不得指向独立 linked worktree。
+当前 checkout 的 `.agents/skills/<skill-name>/` 是该 checkout 中项目 Skill 的唯一源码目录。开发者必须直接在该目录中创建或修改项目 Skill。项目 Skill 的发布和部署使用该目录中的文件，不创建、修改或验证 `$HOME/.agents/skills/<skill-name>` 符号链接。
 
-`pnpm dev:start` 不修改真实 `$HOME/.agents/skills`。开发启动器把隔离 Desktop HOME 的 `.agents/skills` 链接到当前 worktree 的 `config/desktop-worktree.json.skillSourceRelativePath`，使真实 Desktop 验收读取本分支候选 Skill。该隔离运行目录中的链接不是生产环境的全局 Skill 链接。
+`config/product-agent.json.skills.sourceRootRelativePath` 是 Desktop 生产、Desktop 开发和 Web Host 调试三条启动链路使用的 Repository Skills 相对路径来源。启动器验证该目录位于当前 checkout 内、目录本身不是符号链接且真实路径没有离开当前 checkout，然后通过 `HARNESS_COMFYUI_SKILL_DIR` 注入绝对路径。调用者环境或 `.env` 中预设的 `HARNESS_COMFYUI_SKILL_DIR` 值不能覆盖启动器从该配置解析并注入的绝对路径。
 
-自定义 `ComfyUI工作台预设` 的 composition 必须同时加载 `@deepseek-ai/dsh-skill-filesystem` 和 `@deepseek-ai/dsh-tool-skill`，使 Agent 能够发现并读取 `$HOME/.agents/skills/` 中的全局 Skill。Preset 目录不得复制项目 Skill 文件，也不得在 Preset 文件中写入 `/Users/<name>/` 或主开发 checkout 的机器绝对路径。
+自定义 `ComfyUI工作台预设` 的 composition 必须同时加载 `@deepseek-ai/dsh-skill-filesystem` 和 `@deepseek-ai/dsh-tool-skill`。filesystem provider 必须使用 `providerName: harness-comfyui`、`includeDefaultRoots: false`、`watch: false`，并且 `customSkillDirs` 只能包含 `!!js process.env.HARNESS_COMFYUI_SKILL_DIR`。Preset 目录不得复制项目 Skill 文件，也不得写入 `/Users/<name>/` 或某个 checkout 的机器绝对路径。
 
-修改全局 Skill 链接时，必须确认链接目标来自最终发布提交的主开发 checkout，并在新 Desktop Session 中验证对应 Skill 可以被发现和执行。
+Desktop 启动器通过 `DSH_AGENTS_HOME=<调用者用户主目录>/.agents` 保留 Harness `standard` Preset 对调用者用户主目录中其他用户级 Skill 的发现能力。`ComfyUI工作台预设` 使用 `includeDefaultRoots: false`，因此不会读取当前 checkout 之外的 Workspace 或 `DSH_AGENTS_HOME` 中的同名 Skill。省略 `agentPreset` 并采用仓库根目录 `cordis.patch.yml` 中 `id: agent-presets` 条目的 `config.default` 值 `harness-comfyui-cli-candidate`，以及显式设置 `agentPreset: harness-comfyui-cli-candidate`，都使 Session 最终采用 `ComfyUI工作台预设`。
 
 ### Tool schema 可见性
 
@@ -51,7 +50,7 @@ Harness `standard` Preset 的 Tool 可见性不属于本规范的限制对象。
 
 Host 增加新的项目 Tool schema 时，`ComfyUI工作台预设` 的 `local-only` 合同必须继续隐藏新增的 Host-global Tool schema。该要求不改变 `standard` Preset 的 Tool 可见性。
 
-选择 `ComfyUI工作台预设` 的 Agent 必须按需读取全局 Skill 及其 CLI 使用参考文档，并通过前台 shell Tool Call 调用项目 managed CLI。该 Agent 不把 Host 项目 Tool schema 当作 Skill 接口。
+用户请求符合某个项目 Skill 的 `SKILL.md` frontmatter `description` 时，选择 `ComfyUI工作台预设` 的 Agent 必须完整读取该 `SKILL.md`。当 `SKILL.md` 的任务分支要求调用项目 managed CLI 时，该 Agent 必须在首次调用前完整读取该任务分支指定的 CLI 使用参考文档，并通过前台 shell Tool Call 执行该参考文档指定的命令。该 Agent 不把 Host 项目 Tool schema 当作 Skill 接口。
 
 ### 系统提示词段落可见性
 
@@ -106,6 +105,7 @@ CLI 使用参考文档只描述 Skill 执行者能够直接使用的可执行入
 
 - 产品 Preset 的用户可见名称和兼容性内部 ID 保持各自的唯一来源；
 - composition 同时加载 Skill filesystem、Skill Tool 和 `local-only` Tool visibility component；
+- `@deepseek-ai/dsh-skill-filesystem` 使用 `providerName: harness-comfyui` 和 `includeDefaultRoots: false`，且 `customSkillDirs` 只包含 `!!js process.env.HARNESS_COMFYUI_SKILL_DIR`；
 - composition 加载系统提示词可见性 component，并且该 component 只删除三个已声明的 Harness 自维护段落；
 - 自定义 Preset 的模型 Tool roster 不包含 Host 项目 Tool schema；
 - `standard` Preset 的 Host 项目 Tool 可见性不受自定义 Preset 影响；
@@ -115,13 +115,15 @@ CLI 使用参考文档只描述 Skill 执行者能够直接使用的可执行入
 
 ### 真实模型验收
 
-自定义 `ComfyUI工作台预设` 的 Tool roster、Skill 读取流程或 managed CLI 调用流程发生变化时，开发者必须通过 `pnpm dev:start` 在隔离的完整 Desktop 开发环境中使用当前配置的真实 Provider 和真实模型完成验收。验收记录必须包含所选 Preset、模型、用户请求、模型实际读取的 Skill 参考文档、模型实际发起的 shell CLI 调用和 CLI 返回结果。
+自定义 `ComfyUI工作台预设` 的 Tool roster、Skill 读取流程或 managed CLI 调用流程发生变化时，开发者必须通过 `pnpm dev:start` 在隔离的完整 Desktop 开发环境中使用当前配置中能够完成模型调用的 Harness Provider route 与模型完成验收。开发者必须在当前 checkout 外创建不含 Repository Skills 的 Workspace，并创建以下 Session：一个省略 `agentPreset` 后最终采用 `harness-comfyui-cli-candidate` 的 Session、一个显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Session，以及 `remote.agentPresets.list()` 返回的每个其他 Preset ID 各一个 Session。验收记录必须包含每个 Session 的所选 Preset、模型、用户请求、是否读取 Skill 参考文档、是否发起 shell CLI 调用和 CLI 返回结果；未发生的读取或调用必须记录为“无”。
 
 真实模型验收至少确认以下行为：
 
 - `standard` Preset 可以继续使用 Host 注册的项目 Tool；
 - `ComfyUI工作台预设` 不向模型提供 Host 项目 Tool schema；
-- `ComfyUI工作台预设` 中的 Agent 能够发现全局 Skill、按 `SKILL.md` 的读取条件读取 CLI 使用参考文档，并通过前台 shell Tool Call 调用 managed CLI；
+- 省略 `agentPreset` 后最终采用 `harness-comfyui-cli-candidate` 的 Agent，以及显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Agent，都能够发现当前 checkout 的七个 Repository Skills；
+- 最终采用 `standard` 或其他非 `ComfyUI工作台预设` 的 Session 不会发现当前 checkout 的 Repository Skills，且 `standard` Session 仍能发现当前 checkout 之外的 Workspace 中的 Skill 和调用者用户主目录中的其他用户级 Skill；
+- `ComfyUI工作台预设` 中的 Agent 能够按 `SKILL.md` 的读取条件读取 CLI 使用参考文档，并通过前台 shell Tool Call 调用该 CLI 使用参考文档指定的项目 managed CLI 命令；
 - 用户要求同一个 Generation Request 创建多个 Run 时，Agent 能够按照 CLI 使用参考文档执行多次独立提交。
 
 ### 语义 Review

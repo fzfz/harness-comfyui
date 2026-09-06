@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promi
 import { createServer as createHttpServer } from 'node:http'
 import { createServer } from 'node:net'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
 import { DatabaseSync } from 'node:sqlite'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -9,6 +10,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it } from 'vitest'
+
+import repositorySkillCatalogFixture from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 
 import {
   desktopWorktreeStatus,
@@ -20,6 +23,11 @@ import { GenerationRuntime } from '../../src/host/generation/generation-runtime.
 import { loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 const active = []
+const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
+const REPOSITORY_SKILL_CATALOG = Object.freeze(repositorySkillCatalogFixture)
+const WORKSPACE_COMFYUI_GENERATE_DESCRIPTION = 'desktop-live-workspace-comfyui-generate-description'
+const USER_SKILL_NAME = 'desktop-live-unique-user-skill'
+const USER_SKILL_DESCRIPTION = 'desktop-live-unique-user-skill-description'
 
 afterEach(async () => {
   for (const fixture of active.splice(0).reverse()) {
@@ -27,6 +35,9 @@ afterEach(async () => {
     await fixture.start?.catch(() => undefined)
     await fixture.close?.().catch(() => undefined)
     await rm(fixture.context.runtimeRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
+    for (const path of fixture.cleanupPaths ?? []) {
+      await rm(path, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
+    }
   }
 })
 
@@ -923,6 +934,99 @@ async function verifyKimiPptDisabled(page, sessionId) {
   expect(state.inventory.value.entries.filter(entry => entry.moduleName === 'dsh-kimi-ppt')).toEqual([])
 }
 
+async function verifyPresetScopedRepositorySkills(page, workspaceId) {
+  const expectedRepositorySkills = structuredClone(REPOSITORY_SKILL_CATALOG)
+  const state = await page.evaluate(`new Promise((resolve, reject) => {
+    window.__runPanelTestContext.inject(
+      ['remote.agentPresets', 'remote.session', 'remote.skills'],
+      async injected => {
+        try {
+          const roster = await injected.remote.agentPresets.list()
+          if (!roster.ok) {
+            resolve({ roster })
+            return
+          }
+          const productPresetId = ${JSON.stringify(PRODUCT_PRESET_ID)}
+          const cases = [
+            { key: 'implicit-default', sessionId: 'session-skills-implicit-default' },
+            ...roster.value.presets
+              .filter(preset => preset.id !== productPresetId)
+              .map(preset => ({
+                key: preset.id,
+                sessionId: 'session-skills-' + preset.id.replace(/[^a-z0-9-]/gu, '-'),
+                agentPreset: preset.id
+              })),
+            {
+              key: productPresetId,
+              sessionId: 'session-skills-product',
+              agentPreset: productPresetId
+            }
+          ]
+          const sessions = []
+          for (const entry of cases) {
+            const request = {
+              workspaceId: ${JSON.stringify(workspaceId)},
+              sessionId: entry.sessionId,
+              ...(entry.agentPreset === undefined ? {} : { agentPreset: entry.agentPreset })
+            }
+            const created = await injected.remote.session.create(request)
+            const skills = created.ok
+              ? await injected.remote.skills.list({ sessionId: entry.sessionId })
+              : null
+            sessions.push({ ...entry, created, skills })
+          }
+          resolve({ roster, sessions })
+        } catch (error) {
+          reject(error)
+        }
+      }
+    )
+  })`)
+
+  expect(state.roster).toEqual(expect.objectContaining({ ok: true }))
+  const presetIds = state.roster.value.presets.map(preset => preset.id)
+  expect(presetIds).toContain('standard')
+  expect(presetIds).toContain(PRODUCT_PRESET_ID)
+  expect(state.roster.value.presets.find(preset => preset.isDefault)?.id).toBe(PRODUCT_PRESET_ID)
+  const sessions = new Map(state.sessions.map(session => [session.key, session]))
+  for (const session of state.sessions) {
+    expect(session.created).toEqual(expect.objectContaining({ ok: true }))
+    expect(session.skills).toEqual(expect.objectContaining({ ok: true }))
+  }
+  expect(sessions.get('implicit-default').created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
+  expect(sessions.get(PRODUCT_PRESET_ID).created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
+
+  const expectedProductSkills = [...expectedRepositorySkills]
+    .sort((left, right) => left.name.localeCompare(right.name))
+  const productSkills = sessions.get(PRODUCT_PRESET_ID).skills.value.skills
+    .map(({ name, description }) => ({ name, description }))
+    .sort((left, right) => left.name.localeCompare(right.name))
+  expect(productSkills).toEqual(expectedProductSkills)
+  expect(productSkills).not.toContainEqual({ name: USER_SKILL_NAME, description: USER_SKILL_DESCRIPTION })
+  expect(productSkills).not.toContainEqual({
+    name: 'comfyui-generate',
+    description: WORKSPACE_COMFYUI_GENERATE_DESCRIPTION,
+  })
+
+  for (const [key, session] of sessions) {
+    if (key === PRODUCT_PRESET_ID || key === 'implicit-default') continue
+    const visible = session.skills.value.skills.map(({ name, description }) => ({ name, description }))
+    for (const repositorySkill of expectedRepositorySkills) expect(visible).not.toContainEqual(repositorySkill)
+  }
+
+  const standardSkills = sessions.get('standard').skills.value.skills
+    .map(({ name, description }) => ({ name, description }))
+  expect(standardSkills).toContainEqual({ name: USER_SKILL_NAME, description: USER_SKILL_DESCRIPTION })
+  expect(standardSkills).toContainEqual({
+    name: 'comfyui-generate',
+    description: WORKSPACE_COMFYUI_GENERATE_DESCRIPTION,
+  })
+  const implicitSkills = sessions.get('implicit-default').skills.value.skills
+    .map(({ name, description }) => ({ name, description }))
+    .sort((left, right) => left.name.localeCompare(right.name))
+  expect(implicitSkills).toEqual(expectedProductSkills)
+}
+
 async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
   const sessionId = 'session-desktop-prompt-capture'
   const remoteResults = await page.evaluate(`new Promise((resolve, reject) => {
@@ -1155,7 +1259,7 @@ describe('live DSH Desktop production integration', () => {
     const runtimeHome = resolve(runtimeRoot, 'home')
     const legacyDshHome = resolve(runtimeRoot, 'legacy-production-dsh-home')
     const environmentFilePath = resolve(runtimeRoot, 'desktop.env')
-    const startupWorkspacePath = resolve(runtimeRoot, 'workspace')
+    const startupWorkspacePath = await mkdtemp(join(tmpdir(), 'harness-desktop-skill-workspace-'))
     const context = {
       ...base,
       runtimeRoot,
@@ -1169,16 +1273,37 @@ describe('live DSH Desktop production integration', () => {
       startupWorkspacePath,
       mobileBridgePort,
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
+      agentsHome: resolve(runtimeRoot, 'controlled-user-agents'),
     }
     const promptCapture = await startModelRequestCaptureServer()
-    const fixture = { context, start: undefined, close: promptCapture.close }
+    const fixture = {
+      context,
+      start: undefined,
+      close: promptCapture.close,
+      cleanupPaths: [startupWorkspacePath],
+    }
     active.push(fixture)
     await writeFile(
       environmentFilePath,
       `OPENCODE_GO_API_KEY=desktop-live-test\nDESKTOP_PROMPT_CAPTURE_API_KEY=desktop-capture-test\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=${mobileBridgePort}\n`,
       'utf8',
     )
-    await mkdir(startupWorkspacePath)
+    await mkdir(resolve(startupWorkspacePath, '.agents/skills/comfyui-generate'), { recursive: true })
+    await writeFile(resolve(startupWorkspacePath, '.agents/skills/comfyui-generate/SKILL.md'), `---
+name: comfyui-generate
+description: ${WORKSPACE_COMFYUI_GENERATE_DESCRIPTION}
+---
+
+# Desktop live workspace fixture
+`, 'utf8')
+    await mkdir(resolve(context.agentsHome, 'skills', USER_SKILL_NAME), { recursive: true })
+    await writeFile(resolve(context.agentsHome, 'skills', USER_SKILL_NAME, 'SKILL.md'), `---
+name: ${USER_SKILL_NAME}
+description: ${USER_SKILL_DESCRIPTION}
+---
+
+# Desktop live user fixture
+`, 'utf8')
     const identity = await seedSavedDesktopSession({ ...context, dshHome: legacyDshHome })
     const customProviders = {
       ...JSON.parse(await readFile(new URL('../fixtures/custom-provider-reasoning.json', import.meta.url), 'utf8')),
@@ -1214,6 +1339,7 @@ describe('live DSH Desktop production integration', () => {
     let contextCaptureScript
     try {
       contextCaptureScript = await captureProjectClientContext(page)
+      await verifyPresetScopedRepositorySkills(page, identity.workspaceId)
       await verifyKimiPptDisabled(page, identity.sessionId)
       await verifyKimiPptHostRequestDisabled(page, promptCapture, identity.workspaceId)
       await verifySessionDeletion(page, identity)

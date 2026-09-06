@@ -15,7 +15,8 @@ import { createRequire } from 'node:module'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const PRODUCT_AGENT_CONFIG_RELATIVE_PATH = 'config/product-agent.json'
+import { loadProductAgentConfiguration } from './product-agent-config.mjs'
+
 const PRESET_FILES = Object.freeze(['agent.cordis.yml', 'preset.yml'])
 const requireFromModule = createRequire(import.meta.url)
 const requireFromDsh = createRequire(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))
@@ -34,26 +35,6 @@ function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function requireRecord(value, name) {
-  if (!isRecord(value)) throw new TypeError(`${name} must be an object`)
-  return value
-}
-
-function assertExactKeys(value, keys, name) {
-  const actual = Object.keys(value).sort()
-  const expected = [...keys].sort()
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new TypeError(`${name} must contain exactly ${expected.join(', ')}`)
-  }
-}
-
-function requirePresetId(value, name) {
-  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]*$/u.test(value)) {
-    throw new TypeError(`${name} must contain only lowercase letters, numbers, and hyphens`)
-  }
-  return value
-}
-
 function requireContainedRelativePath(value, name, root) {
   if (typeof value !== 'string' || value.trim().length === 0 || value.includes('\0') || isAbsolute(value)) {
     throw new TypeError(`${name} must be a non-empty relative path`)
@@ -64,23 +45,6 @@ function requireContainedRelativePath(value, name, root) {
     throw new TypeError(`${name} must identify a path inside its root`)
   }
   return path
-}
-
-function requireSharedFilename(value) {
-  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]*\.mjs$/u.test(value)) {
-    throw new TypeError('product Agent configuration.preset.sharedFiles must contain .mjs basenames')
-  }
-  return value
-}
-
-async function readJson(path, name) {
-  try {
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readFile(path)))
-  } catch (error) {
-    throw new Error(`cannot read ${name} ${path}: ${error instanceof Error ? error.message : String(error)}`, {
-      cause: error,
-    })
-  }
 }
 
 function collectCompositionModuleNames(rows, location = 'top level') {
@@ -138,51 +102,6 @@ export async function validateAgentPresetComposition(path) {
     }
   }
   return rows
-}
-
-async function loadProductAgentConfig(repositoryRoot) {
-  const path = resolve(repositoryRoot, PRODUCT_AGENT_CONFIG_RELATIVE_PATH)
-  const config = requireRecord(await readJson(path, 'product Agent configuration'), 'product Agent configuration')
-  assertExactKeys(config, ['schemaVersion', 'preset'], 'product Agent configuration')
-  if (config.schemaVersion !== 1) throw new TypeError('product Agent configuration.schemaVersion must be 1')
-  const preset = requireRecord(config.preset, 'product Agent configuration.preset')
-  assertExactKeys(
-    preset,
-    ['id', 'sourceRootRelativePath', 'installRootRelativePath', 'retiredManagedPresetIds', 'sharedFiles'],
-    'product Agent configuration.preset',
-  )
-  const presetId = requirePresetId(preset.id, 'product Agent configuration.preset.id')
-  if (!Array.isArray(preset.retiredManagedPresetIds)) {
-    throw new TypeError('product Agent configuration.preset.retiredManagedPresetIds must be an array')
-  }
-  const retiredPresetIds = preset.retiredManagedPresetIds.map((value, index) => requirePresetId(
-    value,
-    `product Agent configuration.preset.retiredManagedPresetIds[${index}]`,
-  ))
-  if (new Set(retiredPresetIds).size !== retiredPresetIds.length) {
-    throw new TypeError('product Agent configuration.preset.retiredManagedPresetIds must be unique')
-  }
-  if (retiredPresetIds.includes(presetId)) {
-    throw new TypeError('product Agent configuration.preset.id must not be retired')
-  }
-  if (!Array.isArray(preset.sharedFiles) || preset.sharedFiles.length === 0) {
-    throw new TypeError('product Agent configuration.preset.sharedFiles must be a non-empty array')
-  }
-  const sharedFiles = preset.sharedFiles.map(requireSharedFilename)
-  if (new Set(sharedFiles).size !== sharedFiles.length) {
-    throw new TypeError('product Agent configuration.preset.sharedFiles must be unique')
-  }
-  return {
-    presetId,
-    retiredPresetIds,
-    sourceRoot: requireContainedRelativePath(
-      preset.sourceRootRelativePath,
-      'product Agent configuration.preset.sourceRootRelativePath',
-      repositoryRoot,
-    ),
-    installRootRelativePath: preset.installRootRelativePath,
-    sharedFiles,
-  }
 }
 
 async function assertRegularReadableFile(path, name) {
@@ -312,7 +231,7 @@ async function materializePreset(sourceRoot, installRoot, presetId) {
 export async function materializeSourceProductAgentPreset(repositoryRoot, dshHome) {
   const sourceRoot = resolve(repositoryRoot)
   const home = resolve(dshHome)
-  const config = await loadProductAgentConfig(sourceRoot)
+  const { preset: config } = await loadProductAgentConfiguration(sourceRoot)
   const installRoot = requireContainedRelativePath(
     config.installRootRelativePath,
     'product Agent configuration.preset.installRootRelativePath',

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "preset": {
     "id": "harness-comfyui-cli-candidate",
     "sourceRootRelativePath": "agent-presets",
@@ -11,5 +11,9 @@
       "project-tool-visibility.mjs",
       "project-system-prompt-visibility.mjs"
     ]
+  },
+  "skills": {
+    "sourceRootRelativePath": ".agents/skills",
+    "environmentVariable": "HARNESS_COMFYUI_SKILL_DIR"
   }
 }

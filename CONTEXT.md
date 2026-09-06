@@ -12,11 +12,11 @@
 
 **Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 
-**Repository Skills**：主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`krea2-anime-prompt-builder/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 提供的七个仓库 Harness Skill。五个 Prompt/生成 Skill 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`krea2-anime-prompt-builder` 使用历史正向 Prompt、当前文字、Character/Style `prompt_text` 和构建过程中采用的作品、角色、Krea2 Style 与 Prompt 词条目录结果，构建一条 Krea2 动漫展示图或动作迁移源图 Prompt；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型；`local-image-reader` 使用自己的 CLI 参考读取用户提供的本地图片绝对路径。
+**Repository Skills**：当前 checkout `.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`krea2-anime-prompt-builder/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 提供七个仓库 Harness Skill。`anima-prompt-builder`、`character-portrait-prompt-designer`、`comfyui-generate`、`krea2-anime-prompt-builder` 和 `wai-sdxl-prompt-builder` 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`krea2-anime-prompt-builder` 使用历史正向 Prompt、当前文字、Character/Style `prompt_text` 和构建过程中采用的作品、角色、Krea2 Style 与 Prompt 词条目录结果，构建一条 Krea2 动漫展示图或动作迁移源图 Prompt；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型；`local-image-reader` 使用自己的 CLI 参考读取用户提供的本地图片绝对路径。
 
-**Global Skill Links**：`$HOME/.agents/skills/<skill-name>` 中指向主开发 checkout `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/<skill-name>` 的绝对符号链接。每个全局路径的名称与目标 Skill 的目录名相同；全局符号链接不得指向独立 linked worktree。
+**Preset-scoped Repository Skill Source**：Desktop 与 Web Host 启动器从当前 checkout 的 `config/product-agent.json.skills` 解析 Repository Skills 目录，并通过受管环境变量 `HARNESS_COMFYUI_SKILL_DIR` 交给 `ComfyUI工作台预设` 的 filesystem provider。该来源不依赖真实 `$HOME/.agents/skills/` 或隔离 Desktop HOME 中的项目链接。
 
-**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema，并从该 Preset 的系统提示词 assembly 中删除 `harness:identity`、`harness:source` 和 `app:web-surface` 三个 Harness 自维护段落。当前插件 `cordis.patch.yml` 把该 Preset 设置为 Desktop 开发与生产的默认 Preset。
+**ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema；该 Preset 的 filesystem provider 使用 `includeDefaultRoots: false`，并从只包含 `!!js process.env.HARNESS_COMFYUI_SKILL_DIR` 的 `customSkillDirs` 数组读取该环境变量所指目录中的 Preset-scoped Repository Skills；该 Preset 的系统提示词 assembly 删除 `harness:identity`、`harness:source` 和 `app:web-surface` 三个 Harness 自维护段落。仓库根目录的 `cordis.patch.yml` 配置文件把该 Preset 设置为 Desktop 开发与生产的默认 Preset；未显式指定 Preset 而采用该默认值的 Session，以及用户显式选择该 Preset 的 Session，均最终采用 `ComfyUI工作台预设`。
 
 ## 运行
 
@@ -80,6 +80,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.39.7`。
+**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.39.9`。
 
-**GitHub Release**：指向已通过本地发布门禁和独立审查的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.39.7`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过本地发布门禁和独立审查的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.39.9`；发布不创建或附加产品包。

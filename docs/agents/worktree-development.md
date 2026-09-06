@@ -9,7 +9,7 @@ Agent 在从 `main` 创建的独立 linked worktree 中开发或验证完整 DSH
 1. Agent 必须确认当前目录根 `.git` 是 linked-worktree 元数据文件。
 2. Agent 必须确认 `config/desktop-worktree.json.mainCheckoutPath` 指向主开发 checkout。
 3. 主开发 checkout 必须已经存在 `.env`、根 `node_modules` 和 `config/desktop-production.json.desktopSourceRelativePath` 指定的 DSH Desktop 底座。
-4. Agent 必须确认 `config/desktop-worktree.json.skillSourceRelativePath` 指向当前 worktree 内的项目 Skill 目录。
+4. Agent 必须确认 `config/product-agent.json.skills.sourceRootRelativePath` 指向当前 worktree 内的 Repository Skills 目录，并确认该目录不是符号链接且真实路径没有离开当前 worktree。
 5. Agent 不得在 worktree 执行 `pnpm install`，不得复制 `.env`，不得为 worktree clone 第二份 DSH Desktop。
 6. worktree 根 `.env` 与 `node_modules` 不存在时，`dev:start` 或 `web:start` 负责创建指向主开发 checkout 的符号链接；既有冲突路径必须由 Agent 明确处理后重新启动。
 7. Agent 不得修改主开发 checkout 的 `.env` 为当前 worktree 更换端口。开发启动器通过主开发 checkout 的 `.local/development-port-claims/` 声明当前 worktree 的 Desktop 移动桥接端口和独立 Web Host 端口，并在对应子进程监听端口后释放声明。
@@ -35,8 +35,9 @@ pnpm dev:logs
 2. 系统直接加载 `ComfyUI工作台预设`，不显示框架默认 Preset。
 3. 默认 Agent 模型、视觉模型和 Provider 来自当前插件 `cordis.patch.yml`。
 4. 当前 worktree 的插件 generation 已启用。
-5. 当前任务修改项目 Skill 时，Agent 实际读取的 Skill 文件来自当前 worktree 的 `config/desktop-worktree.json.skillSourceRelativePath`，不是主开发 checkout 或真实 `$HOME/.agents/skills`。
-6. 当前任务涉及的界面或运行行为通过真实 Desktop 操作验证。
+5. 当前任务修改项目 Skill 时，Agent 必须确认 Desktop 进程环境中的 `HARNESS_COMFYUI_SKILL_DIR` 等于当前 worktree 的 Repository Skills 绝对目录，并确认隔离 Desktop HOME 中不存在 `.agents/skills` 项目链接。
+6. Agent 必须在当前 worktree 外创建不含 Repository Skills 的 Workspace，并确认默认或显式采用 `ComfyUI工作台预设` 的 Session 读取当前 worktree 的七个 Repository Skills；采用 `ComfyUI工作台预设` 以外的 Preset（包括 `standard`）的 Session 不得读取这些 Repository Skills。
+7. Agent 必须在真实 Desktop 中操作本次任务修改的界面或触发本次任务修改的运行行为，并记录实际结果。
 
 启动失败时，Agent 必须执行 `pnpm dev:logs`，修正具体配置、依赖、端口或插件错误。Agent 不得改用 `pnpm prod:start` 验证未发布源码。
 

@@ -1,11 +1,12 @@
 import { EventEmitter } from 'node:events'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { runDesktopProductionCommand } from '../../scripts/desktop/production-cli.mjs'
 import { loadDesktopProductionContext, startDesktopWorktree } from '../../scripts/desktop/worktree.mjs'
 
 const roots = []
@@ -24,6 +25,50 @@ async function freePort() {
   if (address === null || typeof address === 'string') throw new Error('cannot allocate fixture port')
   await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
   return address.port
+}
+
+async function writeProductAgentFixture(root) {
+  await mkdir(resolve(root, '.agents/skills'), { recursive: true })
+  await writeFile(resolve(root, 'config/product-agent.json'), `${JSON.stringify({
+    schemaVersion: 2,
+    preset: {
+      id: 'harness-comfyui-cli-candidate',
+      sourceRootRelativePath: 'agent-presets',
+      installRootRelativePath: '.agent-presets',
+      retiredManagedPresetIds: ['harness-comfyui-schema-control'],
+      sharedFiles: ['project-tool-visibility.mjs', 'project-system-prompt-visibility.mjs'],
+    },
+    skills: {
+      sourceRootRelativePath: '.agents/skills',
+      environmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    },
+  })}\n`)
+  await writeFile(resolve(root, 'config/environment-overrides.json'), `${JSON.stringify({
+    HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'string' },
+  })}\n`)
+}
+
+async function createProductionContextFixture() {
+  const root = await mkdtemp(resolve(tmpdir(), 'desktop-production-skills-'))
+  roots.push(root)
+  const configRoot = resolve(root, 'config')
+  const workspace = resolve(root, 'workspace')
+  await Promise.all([mkdir(configRoot), mkdir(workspace)])
+  await writeFile(resolve(root, '.env'), 'KEY=value\n')
+  await writeFile(resolve(configRoot, 'desktop-production.json'), `${JSON.stringify({
+    desktopSourceRelativePath: '.local/upstreams/dsh-desktop',
+    runtimeRelativeRoot: '.local/desktop-production',
+    environmentFileRelativePath: '.env',
+    startupWorkspacePath: workspace,
+  })}\n`)
+  await writeFile(resolve(configRoot, 'source-production.json'), `${JSON.stringify({
+    runtimeRelativeRoot: '.local/production',
+    source: {
+      catalogPort: 18093,
+    },
+  })}\n`)
+  await writeProductAgentFixture(root)
+  return { root, repositorySkillsRoot: resolve(root, '.agents/skills') }
 }
 
 describe('DSH Desktop production lifecycle', () => {
@@ -67,12 +112,13 @@ describe('DSH Desktop production lifecycle', () => {
         catalogPort: 18093,
       },
     })}\n`)
+    await writeProductAgentFixture(root)
 
     const homeDirectory = resolve(root, 'parent-home')
     await expect(loadDesktopProductionContext({ repositoryRoot: root, homeDirectory })).resolves.toMatchObject({
       mobileBridgePort: 45127,
       environmentFilePath: resolve(root, '.env'),
-      skillSource: resolve(homeDirectory, '.agents/skills'),
+      agentsHome: resolve(homeDirectory, '.agents'),
     })
   })
 
@@ -96,11 +142,74 @@ describe('DSH Desktop production lifecycle', () => {
           catalogPort: 18093,
         },
       })}\n`)
+      await writeProductAgentFixture(root)
 
       await expect(loadDesktopProductionContext({ repositoryRoot: root }))
         .rejects.toThrow('COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT must be an integer from 1 to 65535')
     },
   )
+
+  it.each([
+    ['missing', async fixture => rm(fixture.repositorySkillsRoot, { recursive: true }), 'does not exist'],
+    [
+      'a regular file',
+      async fixture => {
+        await rm(fixture.repositorySkillsRoot, { recursive: true })
+        await writeFile(fixture.repositorySkillsRoot, 'not a directory\n')
+      },
+      'must be a directory',
+    ],
+    [
+      'a symbolic link',
+      async fixture => {
+        const target = await mkdtemp(resolve(tmpdir(), 'desktop-production-linked-skills-'))
+        roots.push(target)
+        await rm(fixture.repositorySkillsRoot, { recursive: true })
+        await symlink(target, fixture.repositorySkillsRoot, 'dir')
+      },
+      'must not be a symbolic link',
+    ],
+    [
+      'outside the checkout through an intermediate symbolic link',
+      async fixture => {
+        const target = await mkdtemp(resolve(tmpdir(), 'desktop-production-external-skills-'))
+        roots.push(target)
+        await rm(resolve(fixture.root, '.agents'), { recursive: true })
+        await symlink(target, resolve(fixture.root, '.agents'), 'dir')
+        await mkdir(resolve(target, 'skills'))
+      },
+      'must stay inside the current checkout',
+    ],
+  ])('rejects a Repository Skills root that is %s before Desktop production starts', async (_name, changeRoot, message) => {
+    const fixture = await createProductionContextFixture()
+    const realHome = resolve(fixture.root, 'real-home')
+    await mkdir(resolve(realHome, '.agents/skills'), { recursive: true })
+    await changeRoot(fixture)
+
+    const context = await loadDesktopProductionContext({ repositoryRoot: fixture.root, homeDirectory: realHome })
+    await expect(startDesktopWorktree(context)).rejects.toThrow(message)
+    await expect(startDesktopWorktree(context)).rejects.toThrow(fixture.repositorySkillsRoot)
+  })
+
+  it('keeps production status, stop, and logs available when Repository Skills are missing', async () => {
+    const fixture = await createProductionContextFixture()
+    await rm(fixture.repositorySkillsRoot, { recursive: true, force: true })
+    const contextOptions = {
+      repositoryRoot: fixture.root,
+      homeDirectory: resolve(fixture.root, 'real-home'),
+    }
+
+    await expect(runDesktopProductionCommand('status', { contextOptions })).resolves.toEqual({ status: 'stopped' })
+    await expect(runDesktopProductionCommand('stop', { contextOptions })).resolves.toEqual({ status: 'stopped' })
+    await expect(runDesktopProductionCommand('logs', { contextOptions })).resolves.toEqual({
+      status: 'logs',
+      output: 'DSH Desktop Harness log has not been created.\n',
+    })
+    for (const command of ['start', 'restart']) {
+      await expect(runDesktopProductionCommand(command, { contextOptions }))
+        .rejects.toThrow(`Repository Skills root does not exist: ${fixture.repositorySkillsRoot}`)
+    }
+  })
 
   it('starts the production Desktop in preview mode', async () => {
     const root = await mkdtemp(resolve(tmpdir(), 'desktop-production-'))
@@ -110,7 +219,7 @@ describe('DSH Desktop production lifecycle', () => {
     const runtimeHome = resolve(runtimeRoot, 'home')
     const environmentFilePath = resolve(root, '.env')
     const startupWorkspacePath = resolve(root, 'workspace')
-    const skillSource = resolve(root, 'skills')
+    const repositorySkillsRoot = resolve(root, '.agents/skills')
     const legacyDshHome = resolve(root, '.local/production/dsh-home')
     const legacySessionId = 'session-legacy-production'
     const currentSessionId = 'session-current-production'
@@ -127,13 +236,13 @@ describe('DSH Desktop production lifecycle', () => {
     await Promise.all([
       mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true }),
       mkdir(startupWorkspacePath),
-      mkdir(skillSource),
+      mkdir(repositorySkillsRoot, { recursive: true }),
       mkdir(resolve(legacyDshHome, 'sessions/--workspace--', legacySessionId), { recursive: true }),
       mkdir(resolve(legacyDshHome, 'attachments/v1/legacy-attachment'), { recursive: true }),
       mkdir(resolve(legacyDshHome, 'storages'), { recursive: true }),
       mkdir(resolve(dshHome, 'sessions/--workspace--', currentSessionId), { recursive: true }),
       mkdir(resolve(dshHome, 'storages/session_projcache/sessions'), { recursive: true }),
-      writeFile(environmentFilePath, 'KEY=value\n'),
+      writeFile(environmentFilePath, 'KEY=value\nHARNESS_COMFYUI_SKILL_DIR=/env/file/override\n'),
       writeFile(resolve(root, 'node_modules/.modules.yaml'), JSON.stringify({
         storeDir: resolve(root, '.pnpm-store/v11'),
         virtualStoreDir: '.pnpm',
@@ -204,26 +313,35 @@ describe('DSH Desktop production lifecycle', () => {
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
       launchCommand: 'preview',
       catalogPort: 18093,
-      skillSource,
+      agentsHome: resolve(root, 'parent-home/.agents'),
+      repositorySkillsRoot,
+      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
     }
     const child = new EventEmitter()
     child.pid = 54001
+    const environmentFileBefore = await readFile(environmentFilePath, 'utf8')
     const spawnDesktop = vi.fn(() => {
       setTimeout(() => child.emit('close', 0, null), 10)
       return child
     })
 
     await expect(startDesktopWorktree(context, {
+      loadProductAgentConfiguration: async () => ({
+        repositorySkillsRoot: context.repositorySkillsRoot,
+        repositorySkillsEnvironmentVariable: context.repositorySkillsEnvironmentVariable,
+      }),
       materializeCli: async () => undefined,
       materializeClient: async () => undefined,
       materializeHost: async () => undefined,
       materializePreset: async () => undefined,
       packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
       installPlugin: () => undefined,
+      environment: { HARNESS_COMFYUI_SKILL_DIR: '/caller/override' },
       spawnDesktop,
       waitForPortTakeover: async () => undefined,
       remoteDebuggingPort: 54002,
     })).resolves.toMatchObject({ status: 'stopped', pid: 54001 })
+    expect(await readFile(environmentFilePath, 'utf8')).toBe(environmentFileBefore)
     expect(await readFile(resolve(
       dshHome,
       'sessions/--workspace--',
@@ -259,6 +377,8 @@ describe('DSH Desktop production lifecycle', () => {
         detached: true,
         env: expect.objectContaining({
           KEY: 'value',
+          DSH_AGENTS_HOME: resolve(root, 'parent-home/.agents'),
+          HARNESS_COMFYUI_SKILL_DIR: repositorySkillsRoot,
           DSH_DESKTOP_MOBILE_BRIDGE_PORT: String(context.mobileBridgePort),
         }),
       }),

@@ -1,3 +1,27 @@
+# Harness ComfyUI v0.39.9
+
+v0.39.9 让采用 `ComfyUI工作台预设` 的 Session 直接读取当前 Harness ComfyUI checkout 中的七个 Repository Skills。Session 所属 Workspace 无须等于项目 checkout；该 Preset 也无须把七个 Repository Skills 复制或符号链接到真实 `$HOME/.agents/skills/`。
+
+## Preset 范围的 Repository Skills
+
+- `config/product-agent.json` 使用 schema version 2 保存 Repository Skills 相对路径和受管环境变量名称。Desktop 开发、Desktop 生产和 Web Host 调试启动链路都从该配置解析当前 checkout 的 `.agents/skills/`。
+- `ComfyUI工作台预设` 的 filesystem provider 使用受管 `HARNESS_COMFYUI_SKILL_DIR` 作为唯一 `customSkillDirs` 来源，并设置 `includeDefaultRoots: false`。创建 Session 时，无论调用方省略 `agentPreset` 并默认采用该 Preset，还是显式选择该 Preset，调用该 Session 的 `remote.skills.list()` 时，该方法都会返回七个 Repository Skills。
+- 显式选择 `ComfyUI工作台预设` 以外的 Preset（包括 `standard`）时，该 Session 不会从本 checkout 读取这七个 Repository Skills。`standard` Session 继续读取当前 Workspace 和用户 `DSH_AGENTS_HOME` 中的 Skills。
+
+## Desktop 启动与迁移
+
+- Desktop 启动器不再创建隔离 Desktop HOME 的 `.agents/skills` 项目链接。启动器只删除隔离 HOME 内普通 `.agents` 目录中的旧 `skills` 符号链接；`.agents` 是符号链接时，启动器保留该链接及其链接目标内容并报告冲突；`.agents` 是非目录路径时，启动器保留该路径及其内容并报告冲突。
+- 受管 Repository Skills 目录必须存在、必须是普通目录、目录本身不得是符号链接，且真实路径必须位于当前 checkout 内。当受管 Repository Skills 目录不符合上述条件时，Desktop 启动器和 Web Host 启动器必须停止各自的启动流程，并且不得创建 Session。
+- Desktop 的 `status`、`logs` 和 `stop` 命令只读取既有运行状态；Repository Skills 配置损坏时，这三个命令仍可用于诊断和停止进程。
+- 生产迁移前检查的七个真实 `$HOME/.agents/skills/<skill-name>` 路径均不存在，本次迁移没有删除用户文件或符号链接。
+
+## 验证与发布
+
+- 完整 `pnpm quality` 通过：1005 项 unit/integration、55 项 contract/security、197 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。
+- 真实 Desktop 在 checkout 外的 Workspace 中创建了省略 `agentPreset` 的 Session；Session 创建结果返回 `agentPreset: harness-comfyui-cli-candidate`，该 Session 的请求上下文包含本 checkout 的七个 Repository Skills。真实 Agent 模型读取 `local-image-reader` Skill 并调用其图片读取 CLI 的 Tool Call 验收未完成：OpenCode Go 路由返回每周用量限制错误，DeepSeek 路由缺少 API Key，Contributor 路由不支持当前地区。用户收到上述阻塞说明后，授权继续创建 v0.39.9 PR、将该 PR 合入 `main`、发布 v0.39.9 并把 v0.39.9 部署到生产环境。
+- 本版本没有增加或升级 Harness ComfyUI 依赖。本次 GitHub 发布只创建 Git tag 和 GitHub Release 记录，不上传产品包附件。
+- 本版本继续使用 Git commit `5e08355a58bb727cb0f48c794550202d9d59ed9f` 对应的 Desktop。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已授权本次生产部署；生产部署完成后，部署验收执行者必须运行 `node_modules/node/bin/node --version`，并确认命令输出为 `v24.9.0`。
+
 # Harness ComfyUI v0.39.8
 
 v0.39.8 在 Harness 设置中提供统一的“ComfyUI”入口，并让 Harness-ComfyUI 通过插件发行包内置客户端访问本机或远程部署的数据源服务。Harness-ComfyUI 运行时不再读取或执行数据源仓库中的文件。
