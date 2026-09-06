@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { chmod, lstat, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -145,7 +145,37 @@ exec ${JSON.stringify(process.execPath)} ${JSON.stringify(dshHostPath)} "$@"
   return fixture
 }
 
+async function createHostPackageFixture() {
+  const packageRoot = await mkdtemp(join(tmpdir(), 'harness-source-host-skills-'))
+  temporaryPaths.push(packageRoot)
+  const configRoot = resolve(packageRoot, 'config')
+  const repositorySkillsRoot = resolve(packageRoot, '.agents/skills')
+  await Promise.all([
+    mkdir(configRoot, { recursive: true }),
+    mkdir(repositorySkillsRoot, { recursive: true }),
+  ])
+  await writeFile(resolve(configRoot, 'product-agent.json'), `${JSON.stringify({
+    schemaVersion: 2,
+    preset: {
+      id: 'harness-comfyui-cli-candidate',
+      sourceRootRelativePath: 'agent-presets',
+      installRootRelativePath: '.agent-presets',
+      retiredManagedPresetIds: ['harness-comfyui-schema-control'],
+      sharedFiles: ['project-tool-visibility.mjs', 'project-system-prompt-visibility.mjs'],
+    },
+    skills: {
+      sourceRootRelativePath: '.agents/skills',
+      environmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    },
+  })}\n`, 'utf8')
+  await writeFile(resolve(configRoot, 'environment-overrides.json'), `${JSON.stringify({
+    HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'string' },
+  })}\n`, 'utf8')
+  return { packageRoot, repositorySkillsRoot }
+}
+
 afterEach(async () => {
+  vi.unstubAllEnvs()
   for (const fixture of activeFixtures.splice(0)) {
     try {
       await runSourceProductionCommand('stop', { loadContext: async () => fixture.context })
@@ -258,10 +288,13 @@ describe('Web Host shared process commands', () => {
 
   it('derives every managed Host environment variable from the structured override map', async () => {
     const fixture = await createFixture()
+    vi.stubEnv('HARNESS_COMFYUI_SKILL_DIR', '/caller/skills')
+    vi.stubEnv('HARNESS_COMFYUI_AMBIENT_ONLY', 'must-be-removed')
     const overrideMap = JSON.parse(await readFile(resolve(repositoryRoot, 'config/environment-overrides.json'), 'utf8'))
     const expectedKeys = Object.entries(overrideMap)
       .filter(([, value]) => typeof value?.hostRuntimePath === 'string')
       .map(([key]) => key)
+      .concat('HARNESS_COMFYUI_SKILL_DIR')
       .sort()
     const environment = await buildHostEnvironment(fixture.context.runtime, {
       packageRoot: repositoryRoot,
@@ -276,6 +309,56 @@ describe('Web Host shared process commands', () => {
       String(fixture.context.runtime.comfyui.frontendCompiler.preReadiness.navigationMs),
     )
     expect(environment.HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS).toBe('2')
+    expect(environment.HARNESS_COMFYUI_SKILL_DIR).toBe(resolve(repositoryRoot, '.agents/skills'))
+    expect(environment).not.toHaveProperty('HARNESS_COMFYUI_AMBIENT_ONLY')
+  })
+
+  it.each([
+    ['missing', async fixture => rm(fixture.repositorySkillsRoot, { recursive: true }), 'does not exist'],
+    [
+      'a regular file',
+      async fixture => {
+        await rm(fixture.repositorySkillsRoot, { recursive: true })
+        await writeFile(fixture.repositorySkillsRoot, 'not a directory\n')
+      },
+      'must be a directory',
+    ],
+    [
+      'a symbolic link',
+      async fixture => {
+        const target = await mkdtemp(join(tmpdir(), 'harness-source-host-linked-skills-'))
+        temporaryPaths.push(target)
+        await rm(fixture.repositorySkillsRoot, { recursive: true })
+        await symlink(target, fixture.repositorySkillsRoot, 'dir')
+      },
+      'must not be a symbolic link',
+    ],
+    [
+      'outside the checkout through an intermediate symbolic link',
+      async fixture => {
+        const target = await mkdtemp(join(tmpdir(), 'harness-source-host-external-skills-'))
+        temporaryPaths.push(target)
+        await rm(resolve(fixture.packageRoot, '.agents'), { recursive: true })
+        await symlink(target, resolve(fixture.packageRoot, '.agents'), 'dir')
+        await mkdir(resolve(target, 'skills'))
+      },
+      'must stay inside the current checkout',
+    ],
+  ])('rejects a Repository Skills root that is %s before building the Web Host environment', async (_name, changeRoot, message) => {
+    const fixture = await createFixture()
+    const packageFixture = await createHostPackageFixture()
+    const realGlobalSkills = resolve(packageFixture.packageRoot, 'real-home/.agents/skills')
+    await mkdir(realGlobalSkills, { recursive: true })
+    await changeRoot(packageFixture)
+
+    await expect(buildHostEnvironment(fixture.context.runtime, {
+      packageRoot: packageFixture.packageRoot,
+      dshHome: resolve(fixture.runtimeRoot, 'dsh-home'),
+    })).rejects.toThrow(message)
+    await expect(buildHostEnvironment(fixture.context.runtime, {
+      packageRoot: packageFixture.packageRoot,
+      dshHome: resolve(fixture.runtimeRoot, 'dsh-home'),
+    })).rejects.toThrow(packageFixture.repositorySkillsRoot)
   })
 
   it('rejects invalid production frontend pre-readiness contracts', async () => {

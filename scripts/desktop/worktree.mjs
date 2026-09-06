@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { cp, mkdir, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
@@ -11,6 +11,7 @@ import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 
 
 import { reserveDevelopmentPort } from '../development/port.mjs'
 import { waitForPortOwnedByProcessGroup, writeAtomicJson } from '../production/process.mjs'
+import { loadProductAgentConfiguration } from '../profile/product-agent-config.mjs'
 import { migrateLegacyProductionSessionData } from './legacy-session-migration.mjs'
 
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -46,9 +47,6 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
   const runtimeHome = resolve(runtimeRoot, 'home')
   const mode = desktopMode(definition.desktopMode)
   const desktopUserData = resolve(runtimeHome, 'Library/Application Support', mode.userDataDirectory)
-  const skillSource = options.skillSource === undefined
-    ? resolve(options.homeDirectory ?? homedir(), '.agents/skills')
-    : resolve(options.skillSource)
   return {
     repositoryRoot,
     desktopSource: resolve(desktopSourceRoot, definition.desktopSourceRelativePath),
@@ -65,36 +63,8 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
     desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
     launchCommand: mode.launchCommand,
     catalogPort: sourceDefinition.source.catalogPort,
-    skillSource,
+    agentsHome: resolve(options.homeDirectory ?? homedir(), '.agents'),
   }
-}
-
-async function resolveDevelopmentSkillSource(repositoryRoot, configuredPath) {
-  if (typeof configuredPath !== 'string' || configuredPath.length === 0 || isAbsolute(configuredPath)) {
-    throw new Error('config/desktop-worktree.json skillSourceRelativePath must be a non-empty relative path')
-  }
-  const skillSource = resolve(repositoryRoot, configuredPath)
-  let resolvedSkillSource
-  try {
-    resolvedSkillSource = await realpath(skillSource)
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      throw new Error(`config/desktop-worktree.json skillSourceRelativePath directory does not exist: ${skillSource}`)
-    }
-    throw error
-  }
-  const resolvedRepositoryRoot = await realpath(repositoryRoot)
-  const repositoryRelativePath = relative(resolvedRepositoryRoot, resolvedSkillSource)
-  if (repositoryRelativePath === ''
-    || repositoryRelativePath === '..'
-    || repositoryRelativePath.startsWith('../')
-    || isAbsolute(repositoryRelativePath)) {
-    throw new Error('config/desktop-worktree.json skillSourceRelativePath must stay inside the current worktree')
-  }
-  if (!(await stat(resolvedSkillSource)).isDirectory()) {
-    throw new Error(`config/desktop-worktree.json skillSourceRelativePath must resolve to a directory: ${skillSource}`)
-  }
-  return skillSource
 }
 
 function resolveMobileBridgePort(environment, fallback) {
@@ -130,10 +100,6 @@ export async function loadDesktopWorktreeContext(options = {}) {
     readFile(productionDefinitionPath, 'utf8').then(JSON.parse),
   ])
   const sourceDefinition = JSON.parse(await readFile(resolve(repositoryRoot, 'config/source-production.json'), 'utf8'))
-  const skillSource = await resolveDevelopmentSkillSource(
-    repositoryRoot,
-    worktreeDefinition.skillSourceRelativePath,
-  )
   return desktopWorktreeContext({
     ...productionDefinition,
     desktopMode: 'development',
@@ -143,7 +109,6 @@ export async function loadDesktopWorktreeContext(options = {}) {
     ...options,
     repositoryRoot,
     desktopSourceRoot: options.desktopSourceRoot ?? worktreeDefinition.mainCheckoutPath,
-    skillSource,
   })
 }
 
@@ -162,7 +127,6 @@ export async function loadDesktopProductionContext(options = {}) {
     }, sourceDefinition, {
       ...options,
       repositoryRoot,
-      skillSource: resolve(options.homeDirectory ?? homedir(), '.agents/skills'),
     }),
     legacyDshHome: resolve(repositoryRoot, sourceDefinition.runtimeRelativeRoot, 'dsh-home'),
   }
@@ -172,6 +136,46 @@ async function replaceLink(source, target, type) {
   await mkdir(dirname(target), { recursive: true })
   await rm(target, { force: true })
   await symlink(source, target, type)
+}
+
+async function removeLegacyIsolatedSkillsLink(runtimeHome) {
+  const agentsPath = resolve(runtimeHome, '.agents')
+  let agentsStats
+  try {
+    agentsStats = await lstat(agentsPath)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return
+    throw error
+  }
+  if (agentsStats.isSymbolicLink()) {
+    throw new Error(`isolated Desktop HOME legacy Skills parent conflict at ${agentsPath}: found symbolic link`)
+  }
+  if (!agentsStats.isDirectory()) {
+    const pathType = agentsStats.isFile() ? 'file' : 'non-regular entry'
+    throw new Error(`isolated Desktop HOME legacy Skills parent conflict at ${agentsPath}: found ${pathType}`)
+  }
+  const [resolvedRuntimeHome, resolvedAgentsPath] = await Promise.all([
+    realpath(runtimeHome),
+    realpath(agentsPath),
+  ])
+  const fromRuntimeHome = relative(resolvedRuntimeHome, resolvedAgentsPath)
+  if (fromRuntimeHome !== '.agents' || isAbsolute(fromRuntimeHome)) {
+    throw new Error(`isolated Desktop HOME legacy Skills parent must stay inside runtime HOME: ${agentsPath}`)
+  }
+  const path = resolve(agentsPath, 'skills')
+  let stats
+  try {
+    stats = await lstat(path)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return
+    throw error
+  }
+  if (stats.isSymbolicLink()) {
+    await rm(path, { force: true })
+    return
+  }
+  const pathType = stats.isDirectory() ? 'directory' : stats.isFile() ? 'file' : 'non-regular entry'
+  throw new Error(`isolated Desktop HOME legacy Skills path conflict at ${path}: found ${pathType}`)
 }
 
 async function rootPnpmStoreDirectory(context) {
@@ -191,11 +195,19 @@ async function desktopEnvironment(context, environment = process.env) {
       || context.mobileBridgePort > 65535)) {
     throw new Error('Desktop mobile bridge port must be an integer from 1 to 65535')
   }
+  if (typeof context.repositorySkillsRoot !== 'string' || context.repositorySkillsRoot.length === 0) {
+    throw new Error('Desktop context must define repositorySkillsRoot')
+  }
+  if (typeof context.repositorySkillsEnvironmentVariable !== 'string'
+    || context.repositorySkillsEnvironmentVariable.length === 0) {
+    throw new Error('Desktop context must define repositorySkillsEnvironmentVariable')
+  }
   const dataDirectory = resolve(context.runtimeRoot, 'data')
   const fileEnvironment = await readDesktopEnvironment(context.environmentFilePath)
   const {
     [MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE]: _configuredMobileBridgePort,
     [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: _processMobileBridgePort,
+    [context.repositorySkillsEnvironmentVariable]: _repositorySkillsOverride,
     ...sharedEnvironment
   } = { ...fileEnvironment, ...environment }
   return {
@@ -203,6 +215,8 @@ async function desktopEnvironment(context, environment = process.env) {
     HOME: context.runtimeHome,
     CFFIXED_USER_HOME: context.runtimeHome,
     DSH_HOME: context.dshHome,
+    DSH_AGENTS_HOME: context.agentsHome,
+    [context.repositorySkillsEnvironmentVariable]: context.repositorySkillsRoot,
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: 'production',
     HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: context.startupWorkspacePath,
     HARNESS_COMFYUI_DATA_DIR: dataDirectory,
@@ -361,6 +375,14 @@ export async function installSourcePluginGeneration(context, environment, packag
 }
 
 export async function prepareDesktopWorktree(context, options = {}) {
+  const productAgent = await (options.loadProductAgentConfiguration ?? loadProductAgentConfiguration)(
+    context.repositoryRoot,
+  )
+  const activeContext = {
+    ...context,
+    repositorySkillsRoot: productAgent.repositorySkillsRoot,
+    repositorySkillsEnvironmentVariable: productAgent.repositorySkillsEnvironmentVariable,
+  }
   const materializeCli = options.materializeCli ?? (await import('../production/cli-module.mjs'))
     .materializeSourceCliModule
   const materializeClient = options.materializeClient ?? (await import('../production/client-module.mjs'))
@@ -369,17 +391,17 @@ export async function prepareDesktopWorktree(context, options = {}) {
     .materializeSourceHostModule
   const materializePreset = options.materializePreset ?? (await import('../profile/agent-preset.mjs'))
     .materializeSourceProductAgentPreset
-  await mkdir(context.dshHome, { recursive: true })
-  await (options.migrateLegacySessionData ?? migrateLegacyProductionSessionData)(context)
-  await replaceLink(context.environmentFilePath, resolve(context.dshHome, '.env'), 'file')
-  await replaceLink(context.skillSource, resolve(context.runtimeHome, '.agents/skills'), 'dir')
-  await materializeCli(context.repositoryRoot)
-  await materializeClient(context.repositoryRoot)
-  await materializeHost(context.repositoryRoot)
-  await materializePreset(context.repositoryRoot, context.dshHome)
-  const packageTarball = await (options.packagePlugin ?? buildSourcePluginPackage)(context)
-  const environment = await desktopEnvironment(context, options.environment)
-  await (options.installPlugin ?? installSourcePluginGeneration)(context, environment, packageTarball)
+  await mkdir(activeContext.dshHome, { recursive: true })
+  await (options.migrateLegacySessionData ?? migrateLegacyProductionSessionData)(activeContext)
+  await replaceLink(activeContext.environmentFilePath, resolve(activeContext.dshHome, '.env'), 'file')
+  await removeLegacyIsolatedSkillsLink(activeContext.runtimeHome)
+  await materializeCli(activeContext.repositoryRoot)
+  await materializeClient(activeContext.repositoryRoot)
+  await materializeHost(activeContext.repositoryRoot)
+  await materializePreset(activeContext.repositoryRoot, activeContext.dshHome)
+  const packageTarball = await (options.packagePlugin ?? buildSourcePluginPackage)(activeContext)
+  const environment = await desktopEnvironment(activeContext, options.environment)
+  await (options.installPlugin ?? installSourcePluginGeneration)(activeContext, environment, packageTarball)
   return { environment }
 }
 

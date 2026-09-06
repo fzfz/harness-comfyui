@@ -1,4 +1,4 @@
-import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -11,6 +11,7 @@ import {
   replaceOwnedAgentPresetDirectory,
   validateAgentPresetComposition,
 } from '../../scripts/profile/agent-preset.mjs'
+import { loadProductAgentConfiguration } from '../../scripts/profile/product-agent-config.mjs'
 import { prepareSourceWorktreeRuntime } from '../../scripts/worktree/runtime.mjs'
 import {
   COMFYUI_INSTANCE_QUERY_TOOL_NAME,
@@ -65,15 +66,30 @@ async function pathExists(path) {
   }
 }
 
+async function relativeFiles(root, directory = root) {
+  const entries = await readdir(directory, { withFileTypes: true })
+  const files = []
+  for (const entry of entries) {
+    const path = resolve(directory, entry.name)
+    if (entry.isDirectory()) files.push(...await relativeFiles(root, path))
+    else files.push(path.slice(root.length + 1))
+  }
+  return files.sort()
+}
+
 function productConfig(change = value => value) {
   return change({
-    schemaVersion: 1,
+    schemaVersion: 2,
     preset: {
       id: PRODUCT_PRESET_ID,
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
       retiredManagedPresetIds: [CONTROL_PRESET_ID],
       sharedFiles: PRODUCT_SHARED_FILES,
+    },
+    skills: {
+      sourceRootRelativePath: '.agents/skills',
+      environmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
     },
   })
 }
@@ -83,8 +99,12 @@ async function createRepositoryFixture() {
   const sourceRoot = resolve(repositoryRoot, 'agent-presets')
   await mkdir(resolve(repositoryRoot, 'config'), { recursive: true })
   await mkdir(sourceRoot, { recursive: true })
+  await mkdir(resolve(repositoryRoot, '.agents/skills'), { recursive: true })
   const configPath = resolve(repositoryRoot, 'config/product-agent.json')
   await writeFile(configPath, `${JSON.stringify(productConfig(), null, 2)}\n`, 'utf8')
+  await writeFile(resolve(repositoryRoot, 'config/environment-overrides.json'), `${JSON.stringify({
+    HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'string' },
+  }, null, 2)}\n`, 'utf8')
   await writeFile(
     resolve(sourceRoot, 'project-tool-visibility.mjs'),
     'export function apply() {}\n',
@@ -103,7 +123,13 @@ async function createRepositoryFixture() {
     'utf8',
   )
   await writeFile(resolve(presetSource, 'preset.yml'), 'name: ComfyUI工作台预设\n', 'utf8')
-  return { repositoryRoot, sourceRoot, configPath }
+  return {
+    repositoryRoot,
+    sourceRoot,
+    configPath,
+    environmentOverridesPath: resolve(repositoryRoot, 'config/environment-overrides.json'),
+    repositorySkillsRoot: resolve(repositoryRoot, '.agents/skills'),
+  }
 }
 
 afterEach(async () => {
@@ -159,6 +185,15 @@ describe('A/B project Tool visibility', () => {
     expect(candidate[0]).toMatchObject({
       name: '../project-tool-visibility.mjs',
       config: { mode: 'local-only' },
+    })
+    expect(candidate.find(row => row.id === 'skill-filesystem')).toMatchObject({
+      name: '@deepseek-ai/dsh-skill-filesystem',
+      config: {
+        providerName: 'harness-comfyui',
+        includeDefaultRoots: false,
+        watch: false,
+        customSkillDirs: [{ __jsExpr: 'process.env.HARNESS_COMFYUI_SKILL_DIR' }],
+      },
     })
     expect(control.map(row => row.name)).toEqual([
       '../project-tool-visibility.mjs',
@@ -345,6 +380,341 @@ describe('ComfyUI Workbench system prompt visibility', () => {
   })
 })
 
+describe('product Agent configuration', () => {
+  it('returns the Preset and Repository Skills runtime contract', async () => {
+    const fixture = await createRepositoryFixture()
+
+    await expect(loadProductAgentConfiguration(fixture.repositoryRoot)).resolves.toEqual({
+      preset: {
+        presetId: PRODUCT_PRESET_ID,
+        retiredPresetIds: [CONTROL_PRESET_ID],
+        sourceRoot: resolve(fixture.repositoryRoot, 'agent-presets'),
+        installRootRelativePath: '.agent-presets',
+        sharedFiles: PRODUCT_SHARED_FILES,
+      },
+      repositorySkillsRoot: resolve(fixture.repositoryRoot, '.agents/skills'),
+      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    })
+  })
+
+  it.each([
+    {
+      name: 'a non-object root',
+      value: [],
+      message: 'product Agent configuration must be an object',
+    },
+    {
+      name: 'an unknown root property',
+      value: productConfig(value => ({ ...value, unknown: true })),
+      message: 'must contain exactly preset, schemaVersion, skills',
+    },
+    {
+      name: 'a missing schema version',
+      value: productConfig(value => Object.fromEntries(
+        Object.entries(value).filter(([key]) => key !== 'schemaVersion'),
+      )),
+      message: 'must contain exactly preset, schemaVersion, skills',
+    },
+    {
+      name: 'a non-numeric schema version',
+      value: productConfig(value => ({ ...value, schemaVersion: '2' })),
+      message: 'schemaVersion must be 2',
+    },
+    {
+      name: 'a schema version other than 2',
+      value: productConfig(value => ({ ...value, schemaVersion: 1 })),
+      message: 'schemaVersion must be 2',
+    },
+    {
+      name: 'a non-object Preset',
+      value: productConfig(value => ({ ...value, preset: [] })),
+      message: 'product Agent configuration.preset must be an object',
+    },
+    {
+      name: 'an unknown Preset property',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, unknown: true } })),
+      message: 'preset must contain exactly id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
+    },
+    {
+      name: 'a missing Preset id',
+      value: productConfig(value => ({
+        ...value,
+        preset: Object.fromEntries(Object.entries(value.preset).filter(([key]) => key !== 'id')),
+      })),
+      message: 'preset must contain exactly id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
+    },
+    {
+      name: 'an invalid Preset id',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, id: 'Invalid_id' } })),
+      message: 'preset.id must contain only lowercase letters, numbers, and hyphens',
+    },
+    {
+      name: 'a non-array retired Preset list',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, retiredManagedPresetIds: CONTROL_PRESET_ID },
+      })),
+      message: 'retiredManagedPresetIds must be an array',
+    },
+    {
+      name: 'a non-string retired Preset id',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, retiredManagedPresetIds: [1] },
+      })),
+      message: 'retiredManagedPresetIds[0] must contain only lowercase letters, numbers, and hyphens',
+    },
+    {
+      name: 'an invalid retired Preset id',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, retiredManagedPresetIds: ['Invalid_id'] },
+      })),
+      message: 'retiredManagedPresetIds[0] must contain only lowercase letters, numbers, and hyphens',
+    },
+    {
+      name: 'duplicated retired Preset ids',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, retiredManagedPresetIds: [CONTROL_PRESET_ID, CONTROL_PRESET_ID] },
+      })),
+      message: 'retiredManagedPresetIds must be unique',
+    },
+    {
+      name: 'the current Preset id in the retired list',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, retiredManagedPresetIds: [PRODUCT_PRESET_ID] },
+      })),
+      message: 'preset.id must not be retired',
+    },
+    {
+      name: 'a non-array shared file list',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, sharedFiles: 'project-tool-visibility.mjs' },
+      })),
+      message: 'sharedFiles must be a non-empty array',
+    },
+    {
+      name: 'an empty shared file list',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, sharedFiles: [] } })),
+      message: 'sharedFiles must be a non-empty array',
+    },
+    {
+      name: 'a duplicated shared filename',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, sharedFiles: [PRODUCT_SHARED_FILES[0], PRODUCT_SHARED_FILES[0]] },
+      })),
+      message: 'sharedFiles must be unique',
+    },
+    {
+      name: 'an invalid shared filename',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, sharedFiles: ['../escape.mjs'] },
+      })),
+      message: 'sharedFiles must contain .mjs basenames',
+    },
+    {
+      name: 'a non-string Preset source path',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, sourceRootRelativePath: 1 } })),
+      message: 'preset.sourceRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an empty Preset source path',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, sourceRootRelativePath: '' } })),
+      message: 'preset.sourceRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an absolute Preset source path',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, sourceRootRelativePath: '/tmp/agent-presets' },
+      })),
+      message: 'preset.sourceRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an escaping Preset source path',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, sourceRootRelativePath: '../agent-presets' },
+      })),
+      message: 'preset.sourceRootRelativePath must identify a path inside its root',
+    },
+    {
+      name: 'a non-string Preset install path',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, installRootRelativePath: 1 } })),
+      message: 'preset.installRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an empty Preset install path',
+      value: productConfig(value => ({ ...value, preset: { ...value.preset, installRootRelativePath: '' } })),
+      message: 'preset.installRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an absolute Preset install path',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, installRootRelativePath: '/tmp/agent-presets' },
+      })),
+      message: 'preset.installRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an escaping Preset install path',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, installRootRelativePath: '../agent-presets' },
+      })),
+      message: 'preset.installRootRelativePath must identify a path inside its root',
+    },
+    {
+      name: 'a missing Skills object',
+      value: productConfig(value => Object.fromEntries(
+        Object.entries(value).filter(([key]) => key !== 'skills'),
+      )),
+      message: 'must contain exactly preset, schemaVersion, skills',
+    },
+    {
+      name: 'a non-object Skills value',
+      value: productConfig(value => ({ ...value, skills: [] })),
+      message: 'product Agent configuration.skills must be an object',
+    },
+    {
+      name: 'an unknown Skills property',
+      value: productConfig(value => ({ ...value, skills: { ...value.skills, unknown: true } })),
+      message: 'skills must contain exactly environmentVariable, sourceRootRelativePath',
+    },
+    {
+      name: 'a missing Skills source path',
+      value: productConfig(value => ({
+        ...value,
+        skills: { environmentVariable: value.skills.environmentVariable },
+      })),
+      message: 'skills must contain exactly environmentVariable, sourceRootRelativePath',
+    },
+    {
+      name: 'a non-string Skills source path',
+      value: productConfig(value => ({
+        ...value,
+        skills: { ...value.skills, sourceRootRelativePath: 1 },
+      })),
+      message: 'sourceRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'a missing Skills environment variable',
+      value: productConfig(value => ({
+        ...value,
+        skills: { sourceRootRelativePath: value.skills.sourceRootRelativePath },
+      })),
+      message: 'skills must contain exactly environmentVariable, sourceRootRelativePath',
+    },
+    {
+      name: 'a non-string Skills environment variable',
+      value: productConfig(value => ({ ...value, skills: { ...value.skills, environmentVariable: 1 } })),
+      message: 'environmentVariable must be HARNESS_COMFYUI_SKILL_DIR',
+    },
+    {
+      name: 'another Skills environment variable',
+      value: productConfig(value => ({
+        ...value,
+        skills: { ...value.skills, environmentVariable: 'OTHER_SKILL_DIR' },
+      })),
+      message: 'environmentVariable must be HARNESS_COMFYUI_SKILL_DIR',
+    },
+    {
+      name: 'an absolute Skills source path',
+      value: productConfig(value => ({
+        ...value,
+        skills: { ...value.skills, sourceRootRelativePath: '/tmp/skills' },
+      })),
+      message: 'sourceRootRelativePath must be a non-empty relative path',
+    },
+    {
+      name: 'an escaping Skills source path',
+      value: productConfig(value => ({
+        ...value,
+        skills: { ...value.skills, sourceRootRelativePath: '../skills' },
+      })),
+      message: 'sourceRootRelativePath must identify a path inside its root',
+    },
+  ])('rejects $name', async ({ value, message }) => {
+    const fixture = await createRepositoryFixture()
+    await writeFile(fixture.configPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+
+    await expect(loadProductAgentConfiguration(fixture.repositoryRoot)).rejects.toThrow(message)
+  })
+
+  it.each([
+    {
+      name: 'a missing declaration',
+      declaration: {},
+      message: 'environment override map.HARNESS_COMFYUI_SKILL_DIR must be an object',
+    },
+    {
+      name: 'a declaration with target',
+      declaration: {
+        HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'string', target: 'profile' },
+      },
+      message: 'must contain exactly passThrough, valueType',
+    },
+    {
+      name: 'a non-pass-through declaration',
+      declaration: { HARNESS_COMFYUI_SKILL_DIR: { passThrough: false, valueType: 'string' } },
+      message: 'must be a string pass-through declaration',
+    },
+    {
+      name: 'a non-string declaration',
+      declaration: { HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'number' } },
+      message: 'must be a string pass-through declaration',
+    },
+  ])('rejects $name for the managed Skills environment variable', async ({ declaration, message }) => {
+    const fixture = await createRepositoryFixture()
+    await writeFile(fixture.environmentOverridesPath, `${JSON.stringify(declaration, null, 2)}\n`, 'utf8')
+
+    await expect(loadProductAgentConfiguration(fixture.repositoryRoot)).rejects.toThrow(message)
+  })
+
+  it.each([
+    ['a missing root', async fixture => rm(fixture.repositorySkillsRoot, { recursive: true }), 'does not exist'],
+    [
+      'a regular file root',
+      async fixture => {
+        await rm(fixture.repositorySkillsRoot, { recursive: true })
+        await writeFile(fixture.repositorySkillsRoot, 'not a directory\n', 'utf8')
+      },
+      'must be a directory',
+    ],
+    [
+      'a symbolic-link root',
+      async fixture => {
+        const target = await temporaryDirectory('harness-product-agent-linked-skills-')
+        await rm(fixture.repositorySkillsRoot, { recursive: true })
+        await symlink(target, fixture.repositorySkillsRoot, 'dir')
+      },
+      'must not be a symbolic link',
+    ],
+    [
+      'a root whose intermediate symbolic link leaves the checkout',
+      async fixture => {
+        const target = await temporaryDirectory('harness-product-agent-external-skills-')
+        await rm(resolve(fixture.repositoryRoot, '.agents'), { recursive: true })
+        await symlink(target, resolve(fixture.repositoryRoot, '.agents'), 'dir')
+        await mkdir(resolve(target, 'skills'))
+      },
+      'must stay inside the current checkout',
+    ],
+  ])('rejects $name with the rejected path', async (_name, changeRoot, message) => {
+    const fixture = await createRepositoryFixture()
+    await changeRoot(fixture)
+
+    await expect(loadProductAgentConfiguration(fixture.repositoryRoot)).rejects.toThrow(message)
+    await expect(loadProductAgentConfiguration(fixture.repositoryRoot))
+      .rejects.toThrow(fixture.repositorySkillsRoot)
+  })
+})
+
 describe('source product Agent Preset materialization', () => {
   it('materializes only the ComfyUI workbench Preset with its product display name', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
@@ -352,7 +722,22 @@ describe('source product Agent Preset materialization', () => {
 
     const result = await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
 
-    expect(result.presets.map(preset => preset.presetId)).toEqual([PRODUCT_PRESET_ID])
+    expect(result).toEqual({
+      installRoot: resolve(dshHome, '.agent-presets'),
+      sharedFiles: PRODUCT_SHARED_FILES.map(filename => resolve(dshHome, '.agent-presets', filename)),
+      presets: [{
+        presetId: PRODUCT_PRESET_ID,
+        sourceDirectory: resolve(repositoryRoot, 'agent-presets', PRODUCT_PRESET_ID),
+        targetDirectory: resolve(dshHome, '.agent-presets', PRODUCT_PRESET_ID),
+      }],
+      retiredPresetIds: [CONTROL_PRESET_ID],
+    })
+    expect(await relativeFiles(result.installRoot)).toEqual([
+      'harness-comfyui-cli-candidate/agent.cordis.yml',
+      'harness-comfyui-cli-candidate/preset.yml',
+      'project-system-prompt-visibility.mjs',
+      'project-tool-visibility.mjs',
+    ])
     for (const filename of PRODUCT_SHARED_FILES) {
       expect(await readFile(resolve(result.installRoot, filename), 'utf8'))
         .toBe(await readFile(resolve(repositoryRoot, 'agent-presets', filename), 'utf8'))
@@ -489,12 +874,12 @@ describe('source product Agent Preset materialization', () => {
     {
       name: 'an unknown root field',
       change: value => ({ ...value, unknown: true }),
-      message: 'must contain exactly preset, schemaVersion',
+      message: 'must contain exactly preset, schemaVersion, skills',
     },
     {
       name: 'a different schema version',
-      change: value => ({ ...value, schemaVersion: 2 }),
-      message: 'schemaVersion must be 1',
+      change: value => ({ ...value, schemaVersion: 1 }),
+      message: 'schemaVersion must be 2',
     },
     {
       name: 'a missing product Preset id',

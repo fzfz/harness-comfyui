@@ -35,7 +35,7 @@ pnpm prod:test
 | --- | --- |
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
-| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、默认 Workspace、项目 Preset、图片读取当前配置保存与具体字段错误、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
+| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证插件 generation 未回滚、`.env`、外部 Workspace 中的 Preset-scoped Repository Skills、图片读取当前配置保存与具体字段错误、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
 | `pnpm test:contract` | package、Git 跟踪、本地发布门禁和安全合同 |
 | `pnpm prod:test` | Desktop dev/preview 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
@@ -53,6 +53,10 @@ pnpm prod:test
 
 真实数据源服务验收必须使用插件内置客户端和 Host 的 `CatalogCli`、`GenerationSourceCli` 连接已部署服务，完成实时 discovery、Base Model Search 与 Resolve、ComfyUI 实例 Search、实例读取和 Workflow bundle 读取。验收不得读取或执行数据源仓库中的文件，也不得使用测试自建 JSON 代替已部署服务的响应。
 
+Repository Skills 可见性测试必须在当前 checkout 外创建临时 Workspace。测试在该 Workspace 中创建名称为 `comfyui-generate`、描述唯一的同名 Skill，并在受控的 `DSH_AGENTS_HOME` 中创建名称和描述均唯一的用户 Skill。未传入 `agentPreset` 且创建后 `agentPreset` 等于 `harness-comfyui-cli-candidate` 的 Session，以及显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Session，都必须通过 `remote.skills.list()` 返回七个 Repository Skills；每个返回项的名称和描述必须分别与当前 checkout 中对应 Repository Skill 的名称和描述一致，并且不得返回上述两个测试 Skill。显式设置 `agentPreset: standard` 的 Session 必须返回外部 Workspace 中的 `comfyui-generate` Skill 和受控用户 Skill，且不得返回当前 checkout 中的 `comfyui-generate` Skill。测试还必须遍历产品运行时注册的每个 Preset ID；除 `harness-comfyui-cli-candidate` 之外，每个 Preset 对应 Session 的 Skill 列表均不得包含任何名称和描述同时匹配当前 checkout Repository Skill 的返回项。
+
+真实模型验收必须使用以下两种 Session 创建方式之一：不传入 `agentPreset` 并确认创建后的 `agentPreset` 等于 `harness-comfyui-cli-candidate`，或者显式设置 `agentPreset: harness-comfyui-cli-candidate`。Session 模型必须读取 `local-image-reader/SKILL.md` 和 `references/image-inspection-cli.md`，再通过前台 shell Tool Call 执行 `image inspect --stdin`。实施任务的最终回复必须记录同一 Session 的 Workspace、Preset、模型、Skill 实际路径、参考文档实际路径、CLI stdin、退出码、stdout 和 stderr。
+
 v0.39.4 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 的 `image-size 1.2.1` 保留已记录的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq`，用户已明确允许安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
 
 v0.39.3 的最终候选通过完整 `pnpm quality`：925 项 unit/integration、58 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%。Harness 锁文件的依赖审计未返回漏洞公告；Desktop 锁文件中 `image-size 1.2.1` 的两项高危公告 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 已记录，用户已明确允许安装。Desktop 的 711 项测试全部通过，类型检查与构建也通过。真实 Desktop 测试通过设置页保存六个模型的推理等级，进入新会话后核对 Low、Medium、High、Max 四档选项，并为六个模型分别选择 Max，同时确认两个未配置推理等级的模型保留原记录。
@@ -61,7 +65,7 @@ v0.39.2 的最终候选在明确排除 `security:advisories` 后通过其余发�
 
 `node scripts/security/diagnose-advisories.mjs` 先让真实 `pnpm audit` 向本地临时 registry 发送当前 lockfile 的 bulk 请求，再使用同一请求体检查 npm registry 的 DNS、配置网络路线、强制直连路线、HTTP 方法和 security API 路径。该命令只输出请求数量、请求字节数、各阶段耗时、HTTP 状态和故障分类，不输出依赖请求正文或代理地址。
 
-v0.39.1 的最终候选通过完整 `pnpm quality`：924 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。production 测试覆盖跨进程端口声明、死亡 owner claim 回收、存活 owner claim 保留、损坏 claim 拒绝、共享上游双 Desktop、共享主 `.env` 双 Web context、Desktop 进程组与 Web Host PID 的端口所有权接管、实际端口状态、独立 Desktop 输出目录、子进程提前退出、端口状态写入失败和 PID 写入失败。Desktop worktree 测试还验证开发环境把隔离 HOME 的 Skill 根链接到当前 worktree 候选目录、拒绝缺失、越界或通过符号链接解析到 worktree 外的候选目录配置、保留真实全局 Skill 目录，并且生产 context 继续使用真实 home 的全局 Skill 根。
+v0.39.1 的最终候选通过完整 `pnpm quality`：924 项 unit/integration、39 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.32%、branches 86.47%、functions 100%、lines 96.06%；完整依赖审计结果为 critical 0、high 0、moderate 0、low 0。production 测试覆盖跨进程端口声明、死亡 owner claim 回收、存活 owner claim 保留、损坏 claim 拒绝、共享上游双 Desktop、共享主 `.env` 双 Web context、Desktop 进程组与 Web Host PID 的端口所有权接管、实际端口状态、独立 Desktop 输出目录、子进程提前退出、端口状态写入失败和 PID 写入失败。
 
 Generation 自动化测试使用 fake Source、fake Comfy transport 与临时 SQLite/文件目录覆盖项目 Tool 注册、Source v0.86.1 三字段 TemplateBundle、实例 ID 安全投影、只读模板运行参数检查、普通随机 Seed 数量与单次去重、Run 幂等、状态转换、重启恢复、活动输出节点发现、断开输出节点删除、连接式运行参数解析、目标冲突、不可达候选、bypass 分支、序列化值节点、精确尺寸拒绝、BOOLEAN widget、临时预览过滤、`extra_data.extra_pnginfo.workflow` 提交、媒体分片、逐媒体 Workflow 和 Client 单一投影。模板检查测试覆盖非尺寸参数合同、精确尺寸配对、Selector 配对、preset 映射、带节点后缀的多组候选、非图片辅助 output node 排除、下游独立 resize 或 upscale 覆盖上游尺寸、末端尺寸参数回编译、输入 Workflow 不变、Official compiler 不调用和检查与编译错误一致性。Catalog 自动化测试覆盖 Source v0.86.1 的 `sample_image_urls` 严格映射、非法 URL 拒绝、封面与样例去重、封面预览不改变选择集合、箭头和键盘导航、图片错误状态、焦点恢复、画廊 header/body 高度分配、箭头居中和图片双轴滚动，以及确认后只插入原 `CatalogContext`。真实实例验收使用生产 Source CLI 与 ComfyUI `/object_info`、官方页面 API Workflow 导出、`/prompt` 和 Jobs API 验证当前 Catalog 模板的显式参数编译、异步运行、媒体保存、Actual/API Workflow 参数一致性、图片内容与尺寸，以及实例错误展示。
 
@@ -201,6 +205,14 @@ v0.39.8 的自动化测试直接启动生产语义查询客户端和生产数据
 OpenRouter 模型驱动的真实 Desktop 会话实际加载候选发行包中的 `wai-sdxl-prompt-builder` Skill。该 Skill 使用 Desktop 注入的 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`、`DSH_HARNESS_COMFYUI_SOURCE_URL` 和 `DSH_HARNESS_COMFYUI_SOURCE_PORT`，调用 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI` 指向的候选发行包语义查询客户端。Base Model Search 返回唯一的 `wai` 记录 `id=2`；Style Search 返回一条水彩画风候选记录；Style Resolve 使用 `id=12298` 发起请求，并返回 `id=12298`、`base_model_id=2` 和 `prompt_text=fly`。该 Skill 随后调用自身的 Prompt 格式校验器和最终结果校验器，两次命令均返回退出码 0。
 
 完整 `pnpm quality` 通过：1004 项 unit/integration、55 项 contract/security、139 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告，用户已明确授权执行该锁文件安装。部署验收必须确认受控安装产生 Desktop 的 `node_modules/node/bin/node`，并确认该程序返回 `v24.9.0`。
+
+## v0.39.9 发布候选验证
+
+v0.39.9 的 Repository Skills 可见性测试在当前 checkout 外创建 Workspace，分别创建省略 `agentPreset`、显式选择 `harness-comfyui-cli-candidate` 和显式选择其他运行时 Preset 的 Session。前两个 Session 的 `remote.skills.list()` 返回结果均包含当前 checkout 的七个 Repository Skills；采用 `harness-comfyui-cli-candidate` 以外的运行时 Preset 的每个 Session，其 `remote.skills.list()` 返回结果均不包含名称和描述同时匹配上述 Repository Skill 的返回项。`standard` Session 的 `remote.skills.list()` 返回结果包含外部 Workspace 中的同名 Skill 和受控 `DSH_AGENTS_HOME` 中的用户 Skill，两个产品 Preset Session 的返回结果不包含这两个测试 Skill。
+
+真实 Desktop 在 checkout 外的 Workspace 中创建省略 `agentPreset` 的 Session，创建结果返回 `agentPreset: harness-comfyui-cli-candidate`，该 Session 的请求上下文包含当前 checkout 的七个 Repository Skills。真实 Agent 模型读取 `local-image-reader` Skill 并调用图片读取 CLI 的 Tool Call 验收未完成：OpenCode Go 路由返回每周用量限制错误，DeepSeek 路由缺少 API Key，Contributor 路由不支持当前地区。用户在收到该阻塞说明后授权继续创建 v0.39.9 PR、把该 PR 合入 `main`、发布 v0.39.9 并把 v0.39.9 部署到生产环境。
+
+完整 `pnpm quality` 通过：1005 项 unit/integration、55 项 contract/security、197 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已授权本次生产部署；生产部署完成后，部署验收执行者必须运行 `node_modules/node/bin/node --version`，并确认命令输出为 `v24.9.0`。
 
 ## 本地发布门禁
 

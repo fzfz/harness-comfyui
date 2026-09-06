@@ -70,6 +70,20 @@ describe('production Configuration Profile loader', () => {
     })
   })
 
+  it('accepts the Repository Skills path as pass-through without changing the Configuration Profile', () => {
+    const expected = loadProfile('production', { configRoot: 'config', environment: productionEnvironment })
+    const actual = loadProfile('production', {
+      configRoot: 'config',
+      environment: {
+        ...productionEnvironment,
+        HARNESS_COMFYUI_SKILL_DIR: '/repository/.agents/skills',
+      },
+    })
+
+    expect(actual).toEqual(expected)
+    expect(actual).not.toHaveProperty('repositorySkillsRoot')
+  })
+
   it.each([
     ['HARNESS_COMFYUI_FRONTEND_DEVTOOLS_PORT_TIMEOUT_MS', '0', 'comfyui.frontendCompiler.preReadiness.devToolsPortMs'],
     ['HARNESS_COMFYUI_FRONTEND_TARGET_CREATE_TIMEOUT_MS', '1.5', 'comfyui.frontendCompiler.preReadiness.targetCreateMs'],

@@ -23,9 +23,8 @@
 | --- | --- |
 | `mainCheckoutPath` | 主开发 checkout 的绝对路径 |
 | `runtimeRelativeRoot` | 当前 worktree 的 Desktop 运行目录；当前为 `.local/desktop-development` |
-| `skillSourceRelativePath` | 当前 worktree 内的项目 Skill 目录；当前为 `.agents/skills`，该路径必须是存在于当前 worktree 内的相对目录 |
 
-`dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。开发 Desktop 准备阶段把隔离 HOME 的 `.agents/skills` 链接到 `<worktree>/<skillSourceRelativePath>`；缺少该配置、路径离开当前 worktree 或目标不是目录时，启动器返回明确错误并且不回退真实 `$HOME/.agents/skills`。生产 Desktop 继续使用真实 `$HOME/.agents/skills`。
+`dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。Repository Skills 路径只由当前 worktree 的 `config/product-agent.json.skills` 定义。Desktop 启动器在准备阶段不在隔离 Desktop HOME 下创建 `.agents/skills` 符号链接。隔离 Desktop HOME 下的 `.agents` 是符号链接时，Desktop 启动器保留该链接及其链接目标内容并中止启动；`.agents` 是非目录路径时，Desktop 启动器保留该路径及其内容并中止启动；`.agents/skills` 是符号链接时，Desktop 启动器只删除该链接；`.agents/skills` 是普通文件或普通目录时，Desktop 启动器保留其内容并中止启动。
 
 Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。开发 Desktop 的 Electron Vite 输出目录固定为当前 worktree 的 `.local/desktop-development/desktop-out/`。
 
@@ -62,20 +61,24 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 ## 项目 Agent Preset 配置
 
-`config/product-agent.json` 是项目自有 Agent Preset 安装位置的唯一结构化来源。该文件必须只包含以下字段：
+`config/product-agent.json` 是项目自有 Agent Preset 和 Repository Skills 路径的唯一结构化来源。该文件必须只包含以下字段：
 
 | 字段 | 规则 |
 | --- | --- |
-| `schemaVersion` | 固定为 `1` |
+| `schemaVersion` | 固定为 `2` |
 | `preset.id` | 产品 Preset 的兼容性内部 ID，只使用小写字母、数字和连字符；当前为 `harness-comfyui-cli-candidate` |
 | `preset.sourceRootRelativePath` | 仓库根目录内的 canonical Agent Preset 根目录；当前为 `agent-presets` |
 | `preset.installRootRelativePath` | 当前 production 或 worktree DSH home 内的安装根目录；当前为 `.agent-presets` |
 | `preset.retiredManagedPresetIds` | 本项目需要从安装根目录删除的已退役 Preset ID 数组；每项只使用小写字母、数字和连字符，数组不得包含 `preset.id`，数组项不得重复 |
 | `preset.sharedFiles` | 非空且互不重复的 `.mjs` basename 数组；当前包含 `project-tool-visibility.mjs` 和 `project-system-prompt-visibility.mjs` |
+| `skills.sourceRootRelativePath` | 当前 checkout 内的 Repository Skills 相对目录；当前为 `.agents/skills` |
+| `skills.environmentVariable` | 产品 Preset 读取 Repository Skills 使用的受管环境变量名称；固定为 `HARNESS_COMFYUI_SKILL_DIR` |
 
 `sourceRootRelativePath/<preset.id>` 必须只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。每个 shared file 和产品 Preset 在首次写入前全部完成文件类型、可读性、DSH YAML dialect、plugin-row 与 component resolution 检查。任一检查失败时，启动器不开始本轮物化。`installRootRelativePath` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器分别原子替换受管 shared file 和产品 Preset，再删除 `retiredManagedPresetIds` 指定的精确路径。删除符号链接形式的退役路径时，启动器只删除链接，不改变链接目标。启动器保留同一安装根目录中的其他 Preset。
 
 `prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都读取该配置，并把相同的受管 Preset 文件物化到各自隔离的 DSH home。当前插件 `cordis.patch.yml` 把 `harness-comfyui-cli-candidate` 设置为这些环境的默认 Preset；启动器不修改 Harness `standard` Preset 的源码。
+
+`loadProductAgentConfiguration(repositoryRoot)` 验证 Repository Skills 目录存在、目录本身不是符号链接且真实路径位于 `repositoryRoot` 内。Desktop 启动器的 `start` 和 `restart` 命令与 Web Host 环境构建器在启动子进程前调用该函数；Desktop 启动器的 `status`、`logs` 和 `stop` 命令只读取既有运行状态，因此 Repository Skills 配置损坏时仍可用于诊断和停止进程。Desktop 启动器在合并 `.env` 与调用者环境后，把经过验证的 Repository Skills 绝对路径写入 Desktop 子进程环境的 `HARNESS_COMFYUI_SKILL_DIR`。Web Host 环境构建器先从 Web Host 子进程环境中移除调用者提供的全部 `HARNESS_COMFYUI_*` 环境变量，再把经过验证的 Repository Skills 绝对路径写入该子进程环境的 `HARNESS_COMFYUI_SKILL_DIR`。Repository Skills 目录验证失败时，Desktop 启动器和 Web Host 环境构建器都中止对应子进程的启动，并且不读取调用者用户主目录下的 `.agents/skills` 作为 Repository Skills 来源。
 
 ## 源码进程配置
 
@@ -137,6 +140,8 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 - `HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS`
 - `HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES`
 - `HARNESS_COMFYUI_SERVER_PORT`
+
+`config/environment-overrides.json` 中 `HARNESS_COMFYUI_SKILL_DIR` 的声明使用 `valueType: "string"` 和 `passThrough: true`，并且不包含 `target`。配置加载器因此接受 `HARNESS_COMFYUI_SKILL_DIR` 的字符串值，但不会把该值写入 `ConfigurationProfile` 的任何字段。
 
 `HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY` 由启动器固定为运行数据目录中的 `api-workflow-cache`，不能通过调用者环境改变。`HARNESS_COMFYUI_SERVER_HOST` 只把已经验证的 `127.0.0.1` 传给 Harness 子进程，不能覆盖 `server.host`。`config/environment-overrides.json` 是环境变量名称、Configuration Profile 目标字段、值类型和 Host 子进程运行值路径的唯一结构化来源。每项声明都使用 `valueType` 指定 `string` 或 `number`。覆盖 Configuration Profile 的声明使用 `target` 指定目标字段。进入 Host 受管环境的声明使用 `hostRuntimePath` 指定运行配置中的取值路径。只进入 Host 且不覆盖 Configuration Profile 的声明使用 `passThrough: true`，并且不使用 `target`。加载当前配置时，任何未在该文件中声明的 `HARNESS_COMFYUI_*` 环境变量都会中止配置加载。
 

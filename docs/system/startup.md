@@ -67,13 +67,16 @@ pnpm dev:start
 
 正确链接重复启动时保持不变。既有普通文件、普通目录或指向其他目标的链接会中止启动。启动器不会复制 `.env`，也不会在 worktree 安装依赖。
 
-`dev:start` 还根据 `config/desktop-worktree.json.skillSourceRelativePath` 创建仅位于隔离 Desktop HOME 的候选 Skill 链接：
+`dev:start` 从当前 worktree 的 `config/product-agent.json` 中读取 `skills` 字段并解析 Repository Skills 目录。Desktop 启动器在合并主开发 checkout 的 `.env` 和调用者环境后写入以下 Desktop 子进程环境变量；`<调用者用户主目录>` 表示调用 `dev:start` 的用户主目录，不表示隔离 Desktop HOME：
 
 ```text
-<worktree>/.local/desktop-development/home/.agents/skills -> <worktree>/.agents/skills
+HARNESS_COMFYUI_SKILL_DIR=<worktree>/.agents/skills
+DSH_AGENTS_HOME=<调用者用户主目录>/.agents
 ```
 
-开发 Desktop 因此读取当前 worktree 的候选项目 Skill。该链接不修改真实 `$HOME/.agents/skills`；`prod:start` 继续把生产 Desktop 的隔离 HOME 链接到真实 `$HOME/.agents/skills`。
+`prod:start` 从生产 checkout 的 `config/product-agent.json` 中读取 `skills` 字段，并把该 checkout 的 Repository Skills 目录写入 `HARNESS_COMFYUI_SKILL_DIR`。`dev:start` 和 `prod:start` 都不会在隔离 Desktop HOME 的 `.agents/skills` 或调用者用户主目录的 `.agents/skills` 中创建指向 Repository Skills 目录的符号链接。两个命令的 Desktop 启动器都会检查隔离 Desktop HOME 的 `.agents`：该路径是符号链接时，启动器保留该链接及其链接目标内容并中止启动；该路径是非目录路径时，启动器保留该路径及其内容并中止启动。`.agents` 是普通目录时，启动器继续检查 `.agents/skills`：该路径是符号链接时只删除该链接；该路径是普通文件或普通目录时保留其内容并中止启动。
+
+`dev:restart` 和 `prod:restart` 执行与对应 `start` 命令相同的 Repository Skills 验证。`dev:status`、`dev:logs`、`dev:stop`、`prod:status`、`prod:logs` 和 `prod:stop` 不读取 Repository Skills 配置，因此配置损坏时仍可诊断和停止既有 Desktop 进程。
 
 Desktop generation 安装器读取已链接根 `node_modules/.modules.yaml` 中的 pnpm package store。插件适配层通过 DSH Desktop installer 的进程接口执行 `pnpm --ignore-workspace --store-dir <storeDir> add ...`。generation staging 使用自己的 virtual store 和 lockfile，不修改主开发 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。
 
@@ -99,7 +102,7 @@ pnpm dev:stop
 set -e
 pnpm prod:stop
 git fetch --tags
-git switch --detach v0.39.8
+git switch --detach v0.39.9
 git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 5e08355a58bb727cb0f48c794550202d9d59ed9f
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
 test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
@@ -150,6 +153,8 @@ pnpm web:stop
 ```
 
 `web:start` 与 `web:restart` 先建立和 `dev:start` 相同的 `.env`、`node_modules` 链接，再读取 `config/web-development.json`，通过主开发 checkout 的 `.local/development-port-claims/` 声明一个空闲回环端口，并使用 `comfyui-workbench-development` Profile 和 `.local/web-development/`。启动器在 Web Host 子进程监听该端口后释放声明。Web Host 进程状态保存实际端口，因此并行 worktree 的 `web:status`、`web:health`、`web:logs` 和 `web:stop` 只管理各自进程。`web:health` 只读取并报告 Web Host、Client ModuleLoader 和运行目录状态，不创建链接，也不修改 Desktop、Provider、Preset、Workspace 或模型配置。
+
+Web Host 环境构建器从当前 worktree 的 `config/product-agent.json` 中读取 `skills` 字段，先从 Web Host 子进程环境中移除调用者传入的、变量名以 `HARNESS_COMFYUI_` 开头的所有环境变量，再把当前 worktree 的 Repository Skills 绝对目录写入 `HARNESS_COMFYUI_SKILL_DIR`。
 
 ## 自动化测试
 

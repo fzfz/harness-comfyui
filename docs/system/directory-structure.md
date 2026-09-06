@@ -23,7 +23,7 @@
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset canonical source；目录名是兼容性内部 ID |
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset 的 Session standing Tool visibility component |
 | `agent-presets/project-system-prompt-visibility.mjs` | 产品 Preset 的 Session standing 系统提示词段落可见性 component |
-| `config/product-agent.json` | 产品 Preset 内部 ID、canonical source、shared file、退役项目 Preset ID 和当前运行 DSH home 安装根目录 |
+| `config/product-agent.json` | 保存 `preset.id`、`preset.sourceRootRelativePath`、`preset.installRootRelativePath`、`preset.retiredManagedPresetIds`、`preset.sharedFiles`、`skills.sourceRootRelativePath` 和 `skills.environmentVariable` |
 | `config/` | 生产配置、开发配置、schema 和质量阈值 |
 | `config/desktop-production.json` | Desktop 相对源码目录、生产 runtime、`.env` 和默认 Workspace |
 | `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配移动桥接端口 |
@@ -35,6 +35,7 @@
 | `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 六个生命周期操作的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
+| `scripts/profile/product-agent-config.mjs` | 公开 `loadProductAgentConfiguration(repositoryRoot)`；该函数校验产品 Agent 配置结构、Repository Skills 目录类型与 checkout 边界、环境变量名称及其 pass-through 声明，并返回 `preset`、`repositorySkillsRoot` 和 `repositorySkillsEnvironmentVariable` |
 | `scripts/cli/` | managed CLI 构建的源码入口；Desktop 与 Web Host 准备链把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` |
 | `scripts/source-client/` | 该目录保存插件发行包内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务。 |
 | `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |

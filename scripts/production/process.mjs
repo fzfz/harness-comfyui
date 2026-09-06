@@ -13,6 +13,8 @@ import { spawn } from 'node:child_process'
 import { createConnection, createServer } from 'node:net'
 import { dirname, join, resolve } from 'node:path'
 
+import { loadProductAgentConfiguration } from '../profile/product-agent-config.mjs'
+
 export const PROCESS_STATE_SCHEMA_VERSION = 1
 export const OPERATION_SCHEMA_VERSION = 1
 const HARNESS_ENVIRONMENT_PREFIX = 'HARNESS_COMFYUI_'
@@ -228,6 +230,7 @@ function processIdentityMismatch(state, identity) {
 }
 
 async function buildHostEnvironment(runtime, runtimeTarget) {
+  const productAgent = await loadProductAgentConfiguration(runtimeTarget.packageRoot)
   const environment = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith(HARNESS_ENVIRONMENT_PREFIX)),
   )
@@ -252,6 +255,7 @@ async function buildHostEnvironment(runtime, runtimeTarget) {
     ...environment,
     DSH_HOME: runtimeTarget.dshHome,
     ...managedEnvironment,
+    [productAgent.repositorySkillsEnvironmentVariable]: productAgent.repositorySkillsRoot,
   }
 }
 
