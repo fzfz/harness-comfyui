@@ -41,17 +41,19 @@ function provideProjectHostDependencies(ctx: Context): void {
     prepareCall: vi.fn(),
   } as never)
   ctx.provide('settings' as never, {
-    register: vi.fn(() => ({
-      get: vi.fn(() => ({
-        configuration: {
-          activeProfileId: 'default',
-          profiles: [{
-            id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
-            hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
-          }],
-        },
-        credentials: {},
-      })),
+    register: vi.fn((namespace: string) => ({
+      get: vi.fn(() => namespace === 'harness-comfyui-source'
+        ? { configuration: { url: 'https://catalog.example.com', port: 18443 } }
+        : {
+            configuration: {
+              activeProfileId: 'default',
+              profiles: [{
+                id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
+                hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+              }],
+            },
+            credentials: {},
+          }),
       replace: vi.fn(async () => undefined),
     })),
     describe: vi.fn(() => []),
@@ -82,9 +84,7 @@ describe('DSH Desktop managed shell capability', () => {
     vi.stubEnv('HARNESS_COMFYUI_RUN_DIRECTORY', resolve(root, 'runs'))
     vi.stubEnv('HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY', resolve(root, 'media'))
     vi.stubEnv('HARNESS_COMFYUI_LOG_DIRECTORY', resolve(root, 'logs'))
-    vi.stubEnv('HARNESS_COMFYUI_CATALOG_CLI_PATH', 'node')
     vi.stubEnv('HARNESS_COMFYUI_CATALOG_PORT', '18093')
-    vi.stubEnv('HARNESS_COMFYUI_SOURCE_CLI_PATH', 'node')
 
     await materializeSourceCliModule(process.cwd())
     const hostModule = await materializeSourceHostModule(process.cwd())
@@ -107,7 +107,7 @@ describe('DSH Desktop managed shell capability', () => {
         callId,
         name: 'bash',
         arguments: {
-          command: `printf "%s\\n%s\\n%s\\n" "$DSH_HARNESS_COMFYUI_CLI" "$DSH_HARNESS_COMFYUI_CLI_API" "$DSH_HARNESS_COMFYUI_CLI_CAPABILITY"; printf '%s' '{"run_ids":["run_missing"]}' | node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin`,
+          command: `printf "%s\\n%s\\n%s\\n%s\\n%s\\n%s\\n" "$DSH_HARNESS_COMFYUI_CLI" "$DSH_HARNESS_COMFYUI_CLI_API" "$DSH_HARNESS_COMFYUI_CLI_CAPABILITY" "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" "$DSH_HARNESS_COMFYUI_SOURCE_URL" "$DSH_HARNESS_COMFYUI_SOURCE_PORT"; printf '%s' '{"run_ids":["run_missing"]}' | node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin`,
           description: 'Call the managed project CLI through the current Host route',
         },
         signal: new AbortController().signal,
@@ -121,12 +121,15 @@ describe('DSH Desktop managed shell capability', () => {
       }) as { isError: boolean; value?: { stdout?: { text?: string } } }
 
       expect(result.isError).toBe(false)
-      const [cliPath, apiUrl, capability, responseText] = result.value?.stdout?.text?.trim().split('\n') ?? []
+      const [cliPath, apiUrl, capability, semanticQueryCliPath, sourceUrl, sourcePort, responseText] = result.value?.stdout?.text?.trim().split('\n') ?? []
       expect(cliPath).toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
       const activeWebServer = (ctx as Context & { webServer: { host: string; port: number } }).webServer
       expect(apiUrl).toBe(`http://${activeWebServer.host}:${activeWebServer.port}/api/harness-comfyui/cli/v1`)
       expect(activeWebServer.port).not.toBe(4173)
       expect(capability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+      expect(semanticQueryCliPath).toBe(resolve(process.cwd(), 'scripts/source-client/imagegen-semantic-query.mjs'))
+      expect(sourceUrl).toBe('https://catalog.example.com')
+      expect(sourcePort).toBe('18443')
       expect(JSON.parse(responseText!)).toEqual({
         runs: [{
           run_id: 'run_missing',

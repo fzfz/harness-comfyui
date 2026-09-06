@@ -37,10 +37,6 @@ export interface ConfigurationProfileValues {
   }
   source: {
     catalogPort: number
-    catalogCliPath: string
-    sourceCliPath: string
-    contractId: string
-    sourceReleaseVersion: string
   }
   jobs: {
     pollIntervalMs: number
@@ -92,10 +88,6 @@ const ConfigurationProfileSchema = Schema.object({
   }).required(),
   source: Schema.object({
     catalogPort: Schema.natural().min(1).max(65535).required(),
-    catalogCliPath: nonEmptyString,
-    sourceCliPath: nonEmptyString,
-    contractId: Schema.const('imagegen-source-contract').required(),
-    sourceReleaseVersion: Schema.const('0.86.1').required(),
   }).required(),
   jobs: Schema.object({
     pollIntervalMs: nonNegativeInteger,

@@ -10,6 +10,14 @@ import {
 } from '../../config/schema.ts'
 import { CLI_ROUTE_PATH } from '../cli/contract.ts'
 import { loadProfile } from '../config/load-profile.ts'
+import {
+  createSourceSettingsDefaults,
+  readSourceAddress,
+  SOURCE_SETTINGS_NAMESPACE,
+  SOURCE_SETTINGS_SCHEMA,
+  validateSourceSettingsSection,
+  type SourceSettingsSection,
+} from '../source-settings.ts'
 import { CatalogCli } from './catalog/catalog-cli.ts'
 import { CatalogRemoteService } from './catalog/catalog-service.ts'
 import {
@@ -116,14 +124,31 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   if (config.startupWorkspacePath !== undefined) {
     await ctx.workspaceRegistry.create(config.startupWorkspacePath)
   }
+  const sourceSettingsScope = ctx.settings.register<typeof SOURCE_SETTINGS_NAMESPACE, SourceSettingsSection>(
+    SOURCE_SETTINGS_NAMESPACE,
+    SOURCE_SETTINGS_SCHEMA as never,
+    {
+      base: createSourceSettingsDefaults(profile.source.catalogPort),
+      applies: 'live',
+      validate: validateSourceSettingsSection,
+    },
+  )
+  const semanticQueryClientPath = fileURLToPath(new URL(
+    '../../scripts/source-client/imagegen-semantic-query.mjs',
+    import.meta.url,
+  ))
+  const sourceReadClientPath = fileURLToPath(new URL(
+    '../../scripts/source-client/imagegen-comfyui-source-read.mjs',
+    import.meta.url,
+  ))
   const catalog = new CatalogCli({
-    executable: profile.source.catalogCliPath,
-    port: profile.source.catalogPort,
+    executable: semanticQueryClientPath,
+    settings: sourceSettingsScope,
   })
   new CatalogRemoteService(ctx, catalog)
   const source = new GenerationSourceCli({
-    executable: profile.source.sourceCliPath,
-    port: profile.source.catalogPort,
+    executable: sourceReadClientPath,
+    settings: sourceSettingsScope,
   })
   const generationLogger = ctx.logger('harness-comfyui')
   const frontendCompiler = new NodeWorkerComfyFrontend({
@@ -164,6 +189,8 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const capabilities = new CliShellCapabilityStore({
     cliPath: fileURLToPath(new URL(`../../${runtimeArtifacts.managedCli.outputEntryRelativePath}`, import.meta.url)),
     apiUrl: `http://${webServer.host}:${webServer.port}${CLI_ROUTE_PATH}`,
+    semanticQueryCliPath: semanticQueryClientPath,
+    sourceAddress: () => readSourceAddress(sourceSettingsScope),
   })
   const imageReaderDefaults = config.imageReaderDefaultModel === undefined
     ? undefined

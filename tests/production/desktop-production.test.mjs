@@ -65,8 +65,6 @@ describe('DSH Desktop production lifecycle', () => {
       runtimeRelativeRoot: '.local/production',
       source: {
         catalogPort: 18093,
-        catalogCliRelativePath: 'catalog.mjs',
-        sourceCliRelativePath: 'source.mjs',
       },
     })}\n`)
 
@@ -96,8 +94,6 @@ describe('DSH Desktop production lifecycle', () => {
       await writeFile(resolve(configRoot, 'source-production.json'), `${JSON.stringify({
         source: {
           catalogPort: 18093,
-          catalogCliRelativePath: 'catalog.mjs',
-          sourceCliRelativePath: 'source.mjs',
         },
       })}\n`)
 
@@ -208,8 +204,6 @@ describe('DSH Desktop production lifecycle', () => {
       desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
       launchCommand: 'preview',
       catalogPort: 18093,
-      catalogCliPath: resolve(root, 'catalog.mjs'),
-      sourceCliPath: resolve(root, 'source.mjs'),
       skillSource,
     }
     const child = new EventEmitter()

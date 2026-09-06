@@ -44,6 +44,8 @@ export const MATRIX_PARAMETER_VALUES = Object.freeze({
 export function parseArguments(arguments_) {
   let instanceId
   let outputPath
+  let sourceUrl
+  let sourcePort
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]
     if (argument === '--' && index === 0) continue
@@ -57,6 +59,20 @@ export function parseArguments(arguments_) {
       index += 1
       continue
     }
+    if (argument === '--source-url') {
+      sourceUrl = arguments_[index + 1]
+      index += 1
+      continue
+    }
+    if (argument === '--source-port') {
+      const value = arguments_[index + 1]
+      if (!/^[0-9]+$/u.test(value ?? '') || Number(value) < 1 || Number(value) > 65535) {
+        throw new TypeError('--source-port must be an integer from 1 to 65535.')
+      }
+      sourcePort = Number(value)
+      index += 1
+      continue
+    }
     throw new TypeError(`Unknown argument "${argument}".`)
   }
   if (typeof instanceId !== 'string' || !/^[1-9][0-9]*$/u.test(instanceId)) {
@@ -65,7 +81,19 @@ export function parseArguments(arguments_) {
   if (outputPath !== undefined && (typeof outputPath !== 'string' || outputPath.trim().length === 0)) {
     throw new TypeError('--output must identify a result JSON file.')
   }
-  return Object.freeze({ instanceId, ...(outputPath === undefined ? {} : { outputPath: resolve(outputPath) }) })
+  if (sourceUrl !== undefined) {
+    let parsed
+    try { parsed = new URL(sourceUrl) } catch { throw new TypeError('--source-url must be an absolute HTTP or HTTPS URL.') }
+    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.hostname === '') {
+      throw new TypeError('--source-url must be an absolute HTTP or HTTPS URL.')
+    }
+  }
+  return Object.freeze({
+    instanceId,
+    ...(sourceUrl === undefined ? {} : { sourceUrl }),
+    ...(sourcePort === undefined ? {} : { sourcePort }),
+    ...(outputPath === undefined ? {} : { outputPath: resolve(outputPath) }),
+  })
 }
 
 function errorDetails(error) {
@@ -334,13 +362,21 @@ export async function runMatrix(options) {
   const context = await loadSourceWorktreeContext({ repositoryRoot: REPOSITORY_ROOT })
   process.env.DSH_HOME = context.dshHome
   const signal = new AbortController().signal
+  const settings = {
+    get: () => ({
+      configuration: {
+        url: options.sourceUrl ?? 'http://127.0.0.1',
+        port: options.sourcePort ?? context.runtime.source.catalogPort,
+      },
+    }),
+  }
   const source = new GenerationSourceCli({
-    executable: context.runtime.source.sourceCliPath,
-    port: context.runtime.source.catalogPort,
+    executable: resolve(REPOSITORY_ROOT, 'scripts/source-client/imagegen-comfyui-source-read.mjs'),
+    settings,
   })
   const catalog = new CatalogCli({
-    executable: context.runtime.source.catalogCliPath,
-    port: context.runtime.source.catalogPort,
+    executable: resolve(REPOSITORY_ROOT, 'scripts/source-client/imagegen-semantic-query.mjs'),
+    settings,
   })
   const [instance, templates] = await Promise.all([
     source.readInstance(options.instanceId, signal),

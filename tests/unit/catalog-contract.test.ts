@@ -21,8 +21,8 @@ import {
   parseCatalogStableId,
 } from '../../src/catalog/contract.ts'
 
-const COVER = 'http://127.0.0.1:18092/media/images/model.webp'
-const SAMPLE = 'http://127.0.0.1:18092/media/images/model-sample.webp'
+const COVER = 'https://catalog.example.com/media/images/model.webp'
+const SAMPLE = 'http://192.168.1.20:18092/media/images/model-sample.webp'
 
 describe('catalog Remote contract', () => {
   it('defines the eight insertable CLI catalog kinds in product order', () => {
@@ -248,11 +248,11 @@ describe('catalog Remote contract', () => {
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '0', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'id'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: '', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'label'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: '', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: 'https://example.com/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: 'file:///tmp/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 0 }, 'total count'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null }], totalCount: 1 }, 'properties'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: null }], totalCount: 1 }, 'sample image URLs'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: ['https://example.com/x.png'] }], totalCount: 1 }, 'sample image URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: ['data:image/png;base64,AAAA'] }], totalCount: 1 }, 'sample image URL'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [SAMPLE, SAMPLE] }], totalCount: 1 }, 'duplicated'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: COVER, sampleImageUrls: [COVER] }], totalCount: 1 }, 'cover URL'],
   ])('rejects invalid catalog page %j', (value, message) => {

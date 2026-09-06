@@ -130,7 +130,9 @@ pnpm prod:stop
 
 `prod:start` 从当前生产 checkout 的 `.local/upstreams/dsh-desktop` 执行 DSH Desktop 原生 `pnpm preview`。启动器从生产 checkout 的 `.env` 读取 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT`，在执行上游命令前检查该端口，并把同一个值传给 DSH Desktop。生产 Desktop 把当前 tag 的插件源码安装为 generation，并使用 `.local/desktop-production/` 保存 PID、日志、DSH home、Run Repository 和媒体文件。
 
-Desktop 与 Web Host 准备链都先把 managed CLI 源入口及其 TypeScript 依赖生成到 `.local/source-cli/harness-comfyui.mjs`。在 managed CLI 相关文件中，Desktop generation 复制 `.local/source-cli/` 构建目录，不复制 `scripts/cli/` 源入口；Host 只把该目录中的 `.mjs` 路径写入前台 shell environment。CLI、Client 或 Host 模块生成失败时，启动器不会发布新的 Profile 或 runtime state。
+Desktop 与 Web Host 准备链都先把 managed CLI 源入口及其 TypeScript 依赖生成到 `.local/source-cli/harness-comfyui.mjs`。在 managed CLI 相关文件中，Desktop generation 复制 `.local/source-cli/` 构建目录，不复制 `scripts/cli/` 源入口。Desktop generation 同时复制 `scripts/source-client/` 中的语义查询客户端和数据源读取客户端；Host 使用已安装插件内的路径启动这两个客户端。CLI、Client 或 Host 模块生成失败时，启动器不会发布新的 Profile 或 runtime state。
+
+Desktop 或 Web Host 启动后，使用者在 Harness 的“ComfyUI → 数据源服务”中保存 URL 和端口。Host 每次执行语义查询、读取 ComfyUI 实例或读取 Workflow bundle 时均使用最新的 URL 和端口；保存该设置后无需重启。运行时不要求数据源仓库位于 Harness-ComfyUI checkout 旁，也不读取或执行数据源仓库中的文件。
 
 `prod:start` 和 `prod:restart` 在物化当前 generation 前检查旧 Web 生产 DSH home `.local/production/dsh-home`。旧目录存在时，启动器把 Session、Session Attachment 和 version 3 聚合 Session 投影索引合并到 `.local/desktop-production/` 中的当前 DSH home，并按 Workspace 路径合并 Workspace 记录中的 Session ID。启动器保留当前 DSH home 已存在的文件和旧目录中的原始文件；重复启动不会覆盖已经迁入的 Session 或索引。
 

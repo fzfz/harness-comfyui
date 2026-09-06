@@ -19,7 +19,11 @@ function response(results: readonly unknown[], totalCount = results.length, page
 }
 
 function catalog(process: CatalogCliProcess): CatalogCli {
-  return new CatalogCli({ executable: '/source/imagegen-semantic-query', port: 18093, process })
+  return new CatalogCli({
+    executable: '/source/imagegen-semantic-query.mjs',
+    settings: { get: () => ({ configuration: { url: 'https://catalog.example.com', port: 18093 } }) },
+    process,
+  })
 }
 
 describe('Catalog CLI adapter', () => {
@@ -45,7 +49,8 @@ describe('Catalog CLI adapter', () => {
       page_size: 100,
       total_count: 1,
     })
-    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
       '--path', '/internal/semantic/comfyui-instances',
@@ -122,7 +127,8 @@ describe('Catalog CLI adapter', () => {
         }],
         totalCount: 35,
       })
-    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
       '--path', '/internal/semantic/comfyui-templates',
@@ -159,7 +165,8 @@ describe('Catalog CLI adapter', () => {
       base_model_id: '2',
       model_id: '1',
     })
-    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
       '--path', '/internal/semantic/comfyui-templates',
@@ -223,7 +230,8 @@ describe('Catalog CLI adapter', () => {
       trigger_words: ['usnr'],
       weight: 1,
     })
-    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
       '--path', '/internal/semantic/loras',
@@ -255,7 +263,8 @@ describe('Catalog CLI adapter', () => {
       usage: 'Use the WAI Prompt Skill.',
       skill_name: 'wai-sdxl-prompt-builder',
     })
-    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
       '--path', '/internal/semantic/generation-models',
@@ -297,7 +306,7 @@ describe('Catalog CLI adapter', () => {
   it.each([
     [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null }, 'sample image URLs'],
     [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: null }, 'sample image URLs'],
-    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['https://example.com/x.webp'] }, 'sample image URL'],
+    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['file:///tmp/x.webp'] }, 'sample image URL'],
     [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['http://127.0.0.1:18092/x.webp', 'http://127.0.0.1:18092/x.webp'] }, 'duplicated'],
     [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: 'http://127.0.0.1:18092/x.webp', sample_image_urls: ['http://127.0.0.1:18092/x.webp'] }, 'cover URL'],
   ])('rejects invalid sample image projection %#', async (source, message) => {
@@ -329,7 +338,8 @@ describe('Catalog CLI adapter', () => {
     await expect(catalog(execute).baseModels(controller.signal)).resolves.toEqual({
       items: [{ id: '3', label: 'krea2' }, { id: '2', label: 'wai' }, { id: '1', label: 'anima' }],
     })
-    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query', [
+    expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
       '--path', '/internal/semantic/base-models',
@@ -355,8 +365,27 @@ describe('Catalog CLI adapter', () => {
   })
 
   it('rejects invalid adapter configuration before a query', () => {
-    expect(() => new CatalogCli({ executable: '', port: 18093 })).toThrow('executable')
-    expect(() => new CatalogCli({ executable: '/catalog', port: 0 })).toThrow('port')
+    expect(() => new CatalogCli({
+      executable: '',
+      settings: { get: () => ({ configuration: { url: 'http://127.0.0.1', port: 18093 } }) },
+    })).toThrow('executable')
+  })
+
+  it('reads the latest Settings address before every query', async () => {
+    let address = { url: 'http://127.0.0.1', port: 18093 }
+    const execute = vi.fn<CatalogCliProcess>(async () => ({ exitCode: 0, stdout: response([]), stderr: '' }))
+    const client = new CatalogCli({
+      executable: '/source/imagegen-semantic-query.mjs',
+      settings: { get: () => ({ configuration: address }) },
+      process: execute,
+    })
+
+    await client.search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)
+    address = { url: 'https://catalog.example.com', port: 443 }
+    await client.search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)
+
+    expect(execute.mock.calls[0]?.[1].slice(0, 4)).toEqual(['--url', 'http://127.0.0.1', '--port', '18093'])
+    expect(execute.mock.calls[1]?.[1].slice(0, 4)).toEqual(['--url', 'https://catalog.example.com', '--port', '443'])
   })
 
   it('terminates a running child process when the caller aborts', async () => {

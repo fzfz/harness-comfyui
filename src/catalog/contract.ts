@@ -255,7 +255,7 @@ function catalogImageUrl(value: unknown, subject: string): string {
   } catch {
     throw new TypeError(`${subject} is invalid`)
   }
-  if (parsed.protocol !== 'http:' || parsed.hostname !== '127.0.0.1') {
+  if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.hostname.length === 0) {
     throw new TypeError(`${subject} is invalid`)
   }
   return parsed.href

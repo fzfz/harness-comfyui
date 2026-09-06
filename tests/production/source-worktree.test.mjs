@@ -203,9 +203,7 @@ describe('source worktree development definition', () => {
     expect(context.runtime.port).toBe(18173)
     expect(context.configReadOrder[0]).toBe(definitionPath)
     expect(context.configReadOrder[1]).toBe(resolve(root, 'config/source-production.json'))
-    expect(context.definition.catalogCliPath).toBe(
-      resolve(root, '../NoobAI-XL-FZ-PROD-ENV/scripts/imagegen-semantic-query.mjs'),
-    )
+    expect(context.definition.catalogPort).toBe(18093)
     expect(sourceWorktreeStartOptions(context).onPortOwned).toBeTypeOf('function')
     await releaseSourceWorktreeContext(context)
   })

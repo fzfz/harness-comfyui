@@ -25,10 +25,16 @@ function execution(overrides: Record<string, unknown> = {}) {
 }
 
 describe('CLI shell capability', () => {
+  const sourceOptions = {
+    semanticQueryCliPath: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
+    sourceAddress: () => ({ url: 'https://catalog.example.com', port: 18093 }),
+  }
+
   it('binds one opaque capability to the current foreground shell call and revokes it', () => {
     const store = new CliShellCapabilityStore({
       cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
       apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      ...sourceOptions,
       createCapability: () => 'capability-1',
     })
     const exec = execution()
@@ -39,6 +45,9 @@ describe('CLI shell capability', () => {
       DSH_HARNESS_COMFYUI_CLI: '/repo/scripts/cli/harness-comfyui.mjs',
       DSH_HARNESS_COMFYUI_CLI_API: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
       DSH_HARNESS_COMFYUI_CLI_CAPABILITY: 'capability-1',
+      DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
+      DSH_HARNESS_COMFYUI_SOURCE_URL: 'https://catalog.example.com',
+      DSH_HARNESS_COMFYUI_SOURCE_PORT: '18093',
     })
     expect(store.environment(exec)).toEqual(environment)
     expect(store.authorize('capability-1')).toEqual({
@@ -56,6 +65,7 @@ describe('CLI shell capability', () => {
     const store = new CliShellCapabilityStore({
       cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
       apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      ...sourceOptions,
       createCapability: () => 'capability-1',
     })
 
@@ -80,6 +90,7 @@ describe('CLI shell capability', () => {
     const store = new CliShellCapabilityStore({
       cliPath: 'C:\\repo\\scripts\\cli\\harness-comfyui.mjs',
       apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      ...sourceOptions,
       createCapability: () => 'same-capability',
     })
     const first = execution({
@@ -98,18 +109,47 @@ describe('CLI shell capability', () => {
   })
 
   it('rejects missing executable and endpoint configuration', () => {
-    expect(() => new CliShellCapabilityStore({ cliPath: '', apiUrl: 'http://127.0.0.1' })).toThrow('CLI path')
-    expect(() => new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: '' })).toThrow('CLI API URL')
+    expect(() => new CliShellCapabilityStore({ cliPath: '', apiUrl: 'http://127.0.0.1', ...sourceOptions })).toThrow('CLI path')
+    expect(() => new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: '', ...sourceOptions })).toThrow('CLI API URL')
+    expect(() => new CliShellCapabilityStore({
+      cliPath: '/cli.mjs',
+      apiUrl: 'http://127.0.0.1',
+      ...sourceOptions,
+      semanticQueryCliPath: '',
+    })).toThrow('Semantic query CLI path')
   })
 
   it('creates a random capability when no generator is provided', () => {
     const store = new CliShellCapabilityStore({
       cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
       apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      ...sourceOptions,
     })
     const capability = store.environment(execution()).DSH_HARNESS_COMFYUI_CLI_CAPABILITY
     expect(capability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
     expect(store.authorize(capability!)).toBeDefined()
     store.revoke({ token: Symbol('unknown') } as never)
+  })
+
+  it('reads the current Source address whenever it resolves a foreground environment', () => {
+    let address = { url: 'http://127.0.0.1', port: 18093 }
+    const store = new CliShellCapabilityStore({
+      cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
+      apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      semanticQueryCliPath: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
+      sourceAddress: () => address,
+      createCapability: () => 'capability-1',
+    })
+    const exec = execution()
+
+    expect(store.environment(exec)).toMatchObject({
+      DSH_HARNESS_COMFYUI_SOURCE_URL: 'http://127.0.0.1',
+      DSH_HARNESS_COMFYUI_SOURCE_PORT: '18093',
+    })
+    address = { url: 'https://catalog.example.com', port: 443 }
+    expect(store.environment(exec)).toMatchObject({
+      DSH_HARNESS_COMFYUI_SOURCE_URL: 'https://catalog.example.com',
+      DSH_HARNESS_COMFYUI_SOURCE_PORT: '443',
+    })
   })
 })

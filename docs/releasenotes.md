@@ -1,3 +1,11 @@
+# 下一版本
+
+Harness-ComfyUI 在 Harness 设置中使用一个“ComfyUI”入口，并在该页面提供“图片读取”和“数据源服务”两个页签。“图片读取”页签提供图片读取字段和保存功能；“数据源服务”页签保存 HTTP 或 HTTPS URL 和端口。
+
+插件发行包现在包含语义查询客户端和数据源读取客户端。上下文插入、Host 语义 Tool、Prompt Builder Skill、ComfyUI 实例读取和 Workflow bundle 读取通过内置客户端请求已配置的数据源服务。Harness-ComfyUI 运行时访问数据源所需的客户端和配置仅包括插件发行包内置客户端、已保存的数据源服务 URL 和端口。
+
+启用 `ComfyUI工作台预设` 时，如果使用者尚未保存数据源地址，Harness 会提示使用者打开“ComfyUI → 数据源服务”并保存 URL 和端口；如果已保存的数据源地址连接失败，Harness 会提示使用者检查 URL、端口和数据源服务状态。保存新地址后，下一次数据源请求立即使用新地址，不要求重启 Harness。
+
 # Harness ComfyUI v0.39.7
 
 v0.39.7 修复 DSH Desktop 中“删除会话”调用不存在的问题，并在 Desktop 产品 overlay 中严格禁用 Kimi PPT adapter。用户删除会话时，聚合 Client 现在拥有与独立 Session Client 一致的 `session/delete` Remote；被禁用的 adapter 不再注册 PPT 按钮、三个会话扩展位、Kimi PPT Skill、PPT Tool 或模型系统提示词。

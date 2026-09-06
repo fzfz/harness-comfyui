@@ -387,7 +387,7 @@ async function openSettings(page) {
   )
   await waitForValue(
     page,
-    `document.querySelector('[role="dialog"]')?.textContent?.includes('图片读取') === true`,
+    `document.querySelector('[role="dialog"]')?.textContent?.includes('ComfyUI') === true`,
     value => value === true,
   )
 }
@@ -1285,7 +1285,7 @@ describe('live DSH Desktop production integration', () => {
 
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
+        .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
 
       const catalog = await waitForValue(
         page,
@@ -1375,7 +1375,7 @@ describe('live DSH Desktop production integration', () => {
       )
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
+        .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
       const persisted = await waitForValue(
         page,
         `(() => {
@@ -1473,7 +1473,7 @@ describe('live DSH Desktop production integration', () => {
       await closeSettings(page)
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
+        .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
       const restoredOpenAi = await waitForValue(
         page,
         `(() => {
@@ -1613,7 +1613,7 @@ describe('live DSH Desktop production integration', () => {
       await closeSettings(page)
       await openSettings(page)
       await page.evaluate(`([...document.querySelectorAll('button')]
-        .find(node => node.textContent?.trim() === '图片读取')?.click(), true)`)
+        .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
       await waitForValue(
         page,
         `(() => {

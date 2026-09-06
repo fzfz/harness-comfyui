@@ -13,6 +13,9 @@ export const CLI_ENVIRONMENT_NAMES = Object.freeze({
   executable: 'DSH_HARNESS_COMFYUI_CLI',
   api: 'DSH_HARNESS_COMFYUI_CLI_API',
   capability: 'DSH_HARNESS_COMFYUI_CLI_CAPABILITY',
+  semanticQueryCli: 'DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI',
+  sourceUrl: 'DSH_HARNESS_COMFYUI_SOURCE_URL',
+  sourcePort: 'DSH_HARNESS_COMFYUI_SOURCE_PORT',
 } as const)
 
 const CATALOG_KINDS = new Set<CatalogKind>([

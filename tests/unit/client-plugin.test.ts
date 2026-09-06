@@ -13,6 +13,8 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Menu: () => null,
   Modal: () => null,
   Pill: () => null,
+  IconWarningOutline16: () => null,
+  Toast: () => null,
 }))
 
 import { apply, inject, name } from '../../src/client/index.tsx'
@@ -72,8 +74,7 @@ function installImmediateInject(context: Record<string, any>): void {
     })),
     deleteProfile: vi.fn(async () => ({ ok: true, value: { configuration: context.settingsScope.bind().getSnapshot().value.configuration } })),
   }
-  context.settingsScope ??= {
-    bind: vi.fn(() => ({
+  const imageReaderScope = {
       getSnapshot: () => ({
         status: 'ready',
         value: {
@@ -88,9 +89,27 @@ function installImmediateInject(context: Record<string, any>): void {
         base: {}, user: {}, revision: 0, writable: true, mode: 'host',
       }),
       subscribe: () => vi.fn(),
+      mutate: vi.fn(async () => undefined),
       set: vi.fn(async () => undefined),
       unset: vi.fn(async () => undefined),
-    })),
+  }
+  const sourceScope = {
+    getSnapshot: () => ({
+      status: 'ready',
+      value: { configuration: { url: 'http://127.0.0.1', port: 18093 } },
+      base: { configuration: { url: 'http://127.0.0.1', port: 18093 } },
+      user: undefined,
+      revision: 0,
+      writable: true,
+      mode: 'host',
+    }),
+    subscribe: () => vi.fn(),
+    mutate: vi.fn(async () => undefined),
+  }
+  context.settingsScope ??= {
+    bind: vi.fn((options?: { namespace?: string }) => (
+      options?.namespace === 'harness-comfyui-source' ? sourceScope : imageReaderScope
+    )),
   }
   context.get = vi.fn((service: string) => {
     if (service === 'remote.harnessComfyuiCatalog') return context.remote.harnessComfyuiCatalog
@@ -174,6 +193,7 @@ describe('Harness Client plugin registration', () => {
     expect([...registrations.keys()]).toEqual([
       'sidebar.footer.action',
       'conversation.input.dock',
+      'conversation.session.header.actions',
       'details',
       'shell.overlay',
       'settings.section',
@@ -186,19 +206,24 @@ describe('Harness Client plugin registration', () => {
       id: WORKBENCH_DOCK_ID,
       order: 20,
     })
+    expect(registrations.get('conversation.session.header.actions')).toMatchObject({
+      id: 'harness-comfyui-source-tip',
+      order: 10,
+    })
     expect(registrations.get('details')).toMatchObject({ priority: -10 })
     expect(registrations.get('shell.overlay')).toMatchObject({
       id: WORKBENCH_RESULTS_OVERLAY_ID,
       order: 20,
     })
     expect(registrations.get('settings.section')).toMatchObject({
-      id: 'harness-comfyui-image-reader',
+      id: 'harness-comfyui-settings',
       order: 40,
-      label: '图片读取',
+      label: 'ComfyUI',
     })
 
     const entryFace = registrations.get('sidebar.footer.action')!.inject()
     const dockFace = registrations.get('conversation.input.dock')!.inject('session-1' as never)
+    const sourceTipFace = registrations.get('conversation.session.header.actions')!.inject()
     const detailsFace = registrations.get('details')!.inject('session-1' as never)
     const overlayFace = registrations.get('shell.overlay')!.inject()
     const imageReaderSettingsFace = registrations.get('settings.section')!.inject()
@@ -214,30 +239,40 @@ describe('Harness Client plugin registration', () => {
       workbench: expect.any(Object),
       sessionInput,
     })
+    expect(sourceTipFace).toMatchObject({
+      sourceScope: expect.objectContaining({ getSnapshot: expect.any(Function) }),
+      probe: expect.any(Function),
+    })
+    expect((sourceTipFace as { sourceScope: { getSnapshot(): unknown } }).sourceScope.getSnapshot()).toMatchObject({
+      value: { configuration: { url: 'http://127.0.0.1', port: 18093 } },
+    })
+    await expect((sourceTipFace as { probe(signal: AbortSignal): Promise<unknown> }).probe(new AbortController().signal))
+      .resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
     expect(detailsFace).toMatchObject({ workbench: expect.any(Object), generationStore: expect.any(Object) })
     expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
     expect(imageReaderSettingsFace).toMatchObject({
-      scope: expect.objectContaining({ getSnapshot: expect.any(Function) }),
-      api: expect.objectContaining({
+      imageReaderScope: expect.objectContaining({ getSnapshot: expect.any(Function) }),
+      imageReaderApi: expect.objectContaining({
         models: expect.any(Function),
         saveProfile: expect.any(Function),
         activateProfile: expect.any(Function),
         deleteProfile: expect.any(Function),
       }),
+      sourceScope: expect.objectContaining({ getSnapshot: expect.any(Function), mutate: expect.any(Function) }),
     })
     const imageReaderFace = imageReaderSettingsFace as {
-      scope: { getSnapshot(): { value: { configuration: unknown } } }
-      api: {
+      imageReaderScope: { getSnapshot(): { value: { configuration: unknown } } }
+      imageReaderApi: {
         models(signal: AbortSignal): Promise<unknown>
         saveProfile(request: unknown, signal: AbortSignal): Promise<unknown>
         activateProfile(request: unknown, signal: AbortSignal): Promise<unknown>
         deleteProfile(request: unknown, signal: AbortSignal): Promise<unknown>
       }
     }
-    await expect(imageReaderFace.api.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
-    const configuration = imageReaderFace.scope.getSnapshot().value.configuration
+    await expect(imageReaderFace.imageReaderApi.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
+    const configuration = imageReaderFace.imageReaderScope.getSnapshot().value.configuration
     const profile = (configuration as any).profiles[0]
-    await expect(imageReaderFace.api.saveProfile(
+    await expect(imageReaderFace.imageReaderApi.saveProfile(
       { profile: {
         id: profile.id,
         name: profile.name,
@@ -250,11 +285,11 @@ describe('Harness Client plugin registration', () => {
       }, operation: 'update', activateProfileId: profile.id },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
-    await expect(imageReaderFace.api.activateProfile(
+    await expect(imageReaderFace.imageReaderApi.activateProfile(
       { profileId: profile.id },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
-    await expect(imageReaderFace.api.deleteProfile(
+    await expect(imageReaderFace.imageReaderApi.deleteProfile(
       { profileId: 'default' },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
@@ -263,7 +298,7 @@ describe('Harness Client plugin registration', () => {
     for (const write of [
       {
         remote: imageReaderRemote.saveProfile,
-        call: (signal: AbortSignal) => imageReaderFace.api.saveProfile({
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.saveProfile({
           profile: {
             id: profile.id,
             name: profile.name,
@@ -280,11 +315,11 @@ describe('Harness Client plugin registration', () => {
       },
       {
         remote: imageReaderRemote.activateProfile,
-        call: (signal: AbortSignal) => imageReaderFace.api.activateProfile({ profileId: profile.id }, signal),
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.activateProfile({ profileId: profile.id }, signal),
       },
       {
         remote: imageReaderRemote.deleteProfile,
-        call: (signal: AbortSignal) => imageReaderFace.api.deleteProfile({ profileId: profile.id }, signal),
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.deleteProfile({ profileId: profile.id }, signal),
       },
     ]) {
       let resolveWrite!: (result: unknown) => void
@@ -300,7 +335,7 @@ describe('Harness Client plugin registration', () => {
       {
         remote: imageReaderRemote.saveProfile,
         errorCode: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
-        call: (signal: AbortSignal) => imageReaderFace.api.saveProfile({
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.saveProfile({
           profile: {
             id: profile.id,
             name: profile.name,
@@ -318,12 +353,12 @@ describe('Harness Client plugin registration', () => {
       {
         remote: imageReaderRemote.activateProfile,
         errorCode: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
-        call: (signal: AbortSignal) => imageReaderFace.api.activateProfile({ profileId: profile.id }, signal),
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.activateProfile({ profileId: profile.id }, signal),
       },
       {
         remote: imageReaderRemote.deleteProfile,
         errorCode: 'IMAGE_READER_PROFILE_NOT_FOUND',
-        call: (signal: AbortSignal) => imageReaderFace.api.deleteProfile({ profileId: profile.id }, signal),
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.deleteProfile({ profileId: profile.id }, signal),
       },
     ]) {
       let resolveWrite!: (result: unknown) => void
@@ -354,11 +389,11 @@ describe('Harness Client plugin registration', () => {
       ok: false,
       error: { code: 'IMAGE_READER_PROFILE_NOT_FOUND', message: 'The profile was missing.', details: {} },
     })
-    await expect(imageReaderFace.api.models(new AbortController().signal)).rejects.toMatchObject({
+    await expect(imageReaderFace.imageReaderApi.models(new AbortController().signal)).rejects.toMatchObject({
       code: 'IMAGE_READER_SETTINGS_REQUEST_FAILED',
       message: 'IMAGE_READER_SETTINGS_REQUEST_FAILED',
     })
-    await expect(imageReaderFace.api.saveProfile(
+    await expect(imageReaderFace.imageReaderApi.saveProfile(
       { profile: {
         id: profile.id,
         name: profile.name,
@@ -374,14 +409,14 @@ describe('Harness Client plugin registration', () => {
       code: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
       message: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
     })
-    await expect(imageReaderFace.api.activateProfile(
+    await expect(imageReaderFace.imageReaderApi.activateProfile(
       { profileId: profile.id },
       new AbortController().signal,
     )).rejects.toMatchObject({
       code: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
       message: 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED',
     })
-    await expect(imageReaderFace.api.deleteProfile(
+    await expect(imageReaderFace.imageReaderApi.deleteProfile(
       { profileId: 'missing' },
       new AbortController().signal,
     )).rejects.toMatchObject({
@@ -416,11 +451,13 @@ describe('Harness Client plugin registration', () => {
     await dispose()
 
     expect(injectionDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
+    expect(injectionDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('details')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('settings.section')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('details')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('shell.overlay')).toHaveBeenCalledOnce()

@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
 
+import type { SettingsScope } from '@deepseek-ai/dsh-settings'
+
 import {
   CATALOG_BASE_MODEL_PAGE_SIZE,
   CATALOG_BASE_MODEL_PATH,
@@ -29,6 +31,10 @@ import {
   type CatalogResolvedLora,
   type CatalogResolvedTemplate,
 } from '../../catalog/contract.ts'
+import {
+  readSourceAddress,
+  type SourceSettingsSection,
+} from '../../source-settings.ts'
 
 const MAX_CLI_OUTPUT_BYTES = 32 * 1024 * 1024
 
@@ -60,7 +66,7 @@ export type CatalogCliProcess = (
 
 export interface CatalogCliOptions {
   readonly executable: string
-  readonly port: number
+  readonly settings: Pick<SettingsScope<SourceSettingsSection>, 'get'>
   readonly process?: CatalogCliProcess
 }
 
@@ -73,7 +79,9 @@ export const runCatalogCliProcess: CatalogCliProcess = (executable, args, signal
     reject(abortError())
     return
   }
-  const child = spawn(executable, args, { shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
+  const command = executable.endsWith('.mjs') ? process.execPath : executable
+  const commandArguments = executable.endsWith('.mjs') ? [executable, ...args] : args
+  const child = spawn(command, commandArguments, { shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
   const stdout: Buffer[] = []
   const stderr: Buffer[] = []
   let outputBytes = 0
@@ -415,18 +423,23 @@ export class CatalogCli {
 
   constructor(options: CatalogCliOptions) {
     if (options.executable.trim().length === 0) throw new TypeError('Catalog CLI executable is required.')
-    if (!Number.isSafeInteger(options.port) || options.port < 1 || options.port > 65535) {
-      throw new TypeError('Catalog CLI port is invalid.')
-    }
     this.options = options
     this.execute = options.process ?? runCatalogCliProcess
+  }
+
+  private run(args: readonly string[], signal: AbortSignal): Promise<CatalogCliProcessResult> {
+    const address = readSourceAddress(this.options.settings)
+    return this.execute(this.options.executable, [
+      '--url', address.url,
+      '--port', String(address.port),
+      ...args,
+    ], signal)
   }
 
   async search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {
     const request = parseCatalogQueryRequest(input)
     const definition = catalogDefinition(request.kind)
     const args = [
-      '--port', String(this.options.port),
       '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
       '--path', definition.path,
       '--mode', 'search',
@@ -435,13 +448,12 @@ export class CatalogCli {
       '--page_size', String(CATALOG_PAGE_SIZE),
       ...(request.baseModelId === null ? [] : ['--base_model_id', request.baseModelId]),
     ]
-    const result = await this.execute(this.options.executable, args, signal)
+    const result = await this.run(args, signal)
     return normalizeEnvelope(request, parseCliJson(result))
   }
 
   async baseModels(signal: AbortSignal): Promise<BaseModelList> {
     const args = [
-      '--port', String(this.options.port),
       '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
       '--path', CATALOG_BASE_MODEL_PATH,
       '--mode', 'search',
@@ -449,7 +461,7 @@ export class CatalogCli {
       '--page', '1',
       '--page_size', String(CATALOG_BASE_MODEL_PAGE_SIZE),
     ]
-    const result = await this.execute(this.options.executable, args, signal)
+    const result = await this.run(args, signal)
     return normalizeBaseModels(parseCliJson(result))
   }
 
@@ -459,7 +471,6 @@ export class CatalogCli {
   ): Promise<CatalogComfyuiInstancePage> {
     const request = parseCatalogComfyuiInstanceQueryRequest(input)
     const args = [
-      '--port', String(this.options.port),
       '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
       '--path', CATALOG_COMFYUI_INSTANCE_PATH,
       '--mode', request.mode,
@@ -467,46 +478,43 @@ export class CatalogCli {
       '--page', String(request.page),
       '--page_size', String(request.page_size),
     ]
-    const result = await this.execute(this.options.executable, args, signal)
+    const result = await this.run(args, signal)
     return normalizeComfyuiInstances(parseCliJson(result))
   }
 
   async resolveTemplate(id: string, signal: AbortSignal): Promise<CatalogResolvedTemplate> {
     const templateId = sourceId(id)
     const args = [
-      '--port', String(this.options.port),
       '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
       '--path', catalogDefinition('comfyui-template').path,
       '--mode', 'resolve',
       '--id', templateId,
     ]
-    const result = await this.execute(this.options.executable, args, signal)
+    const result = await this.run(args, signal)
     return normalizeResolvedTemplate(parseCliJson(result))
   }
 
   async resolveLora(id: string, signal: AbortSignal): Promise<CatalogResolvedLora> {
     const loraId = sourceId(id)
     const args = [
-      '--port', String(this.options.port),
       '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
       '--path', catalogDefinition('lora').path,
       '--mode', 'resolve',
       '--id', loraId,
     ]
-    const result = await this.execute(this.options.executable, args, signal)
+    const result = await this.run(args, signal)
     return normalizeResolvedLora(parseCliJson(result))
   }
 
   async resolveGenerationModel(id: string, signal: AbortSignal): Promise<CatalogResolvedGenerationModel> {
     const modelId = sourceId(id)
     const args = [
-      '--port', String(this.options.port),
       '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
       '--path', catalogDefinition('model').path,
       '--mode', 'resolve',
       '--id', modelId,
     ]
-    const result = await this.execute(this.options.executable, args, signal)
+    const result = await this.run(args, signal)
     return normalizeResolvedGenerationModel(parseCliJson(result))
   }
 }

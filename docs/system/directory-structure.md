@@ -10,7 +10,8 @@
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
 | `src/generation/` | Generation Host/Client、Tool 与 CLI 共享合同 |
 | `src/image-reader/` | 命名图片读取配置、凭据更新、视觉模型目录和 Remote 的 Host/Client 共享合同 |
-| `src/client/` | Harness 原生扩展位、上下文选择器、真实 Run/Media 结果列和图片读取设置页 |
+| `src/source-settings.ts` | 数据源服务 URL、端口、Settings schema、默认值和校验函数 |
+| `src/client/` | Harness 原生扩展位、上下文选择器、真实 Run/Media 结果列，以及包含图片读取和数据源服务页签的统一 ComfyUI 设置页 |
 | `src/config/` | Configuration Profile 加载器 |
 | `.agents/skills/anima-prompt-builder/` | ANIMA3 Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill canonical source |
 | `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill canonical source |
@@ -23,7 +24,7 @@
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset 的 Session standing Tool visibility component |
 | `agent-presets/project-system-prompt-visibility.mjs` | 产品 Preset 的 Session standing 系统提示词段落可见性 component |
 | `config/product-agent.json` | 产品 Preset 内部 ID、canonical source、shared file、退役项目 Preset ID 和当前运行 DSH home 安装根目录 |
-| `config/` | 生产配置、开发配置、schema、质量阈值和数据源合同 |
+| `config/` | 生产配置、开发配置、schema 和质量阈值 |
 | `config/desktop-production.json` | Desktop 相对源码目录、生产 runtime、`.env` 和默认 Workspace |
 | `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配移动桥接端口 |
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
@@ -35,6 +36,7 @@
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
 | `scripts/cli/` | managed CLI 构建的源码入口；Desktop 与 Web Host 准备链把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` |
+| `scripts/source-client/` | 该目录保存插件发行包内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务。 |
 | `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |
 | `scripts/testing/` | 自动化测试使用的辅助模块 |
 | `profiles/` | DSH profile composition 模板 |

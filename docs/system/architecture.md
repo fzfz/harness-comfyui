@@ -38,7 +38,7 @@ pnpm web:start|restart
   → .local/web-development/
 ```
 
-`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口是根据当前 Client 源码生成的 `.local/source-client/client.js`。managed CLI 运行入口是根据 `scripts/cli/harness-comfyui.mjs` 及其 TypeScript 依赖生成的 `.local/source-cli/harness-comfyui.mjs`。Desktop generation 打包和 Web Host start/restart 都先生成 Client 与 managed CLI 运行模块；运行中的插件不要求 Node.js 解释 `node_modules/harness-comfyui` 内的 TypeScript 文件。
+`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口是根据当前 Client 源码生成的 `.local/source-client/client.js`。managed CLI 运行入口是根据 `scripts/cli/harness-comfyui.mjs` 及其 TypeScript 依赖生成的 `.local/source-cli/harness-comfyui.mjs`。Desktop generation 打包包含 `scripts/source-client/` 中的两个数据源 HTTP 客户端。Desktop generation 打包和 Web Host start/restart 都先生成 Client 与 managed CLI 运行模块；运行中的插件不要求 Node.js 解释 `node_modules/harness-comfyui` 内的 TypeScript 文件。
 
 ## 模块职责
 
@@ -52,17 +52,18 @@ pnpm web:start|restart
 | `scripts/profile/source.mjs` | 在运行目录中创建指向当前源码的 Harness profile |
 | `scripts/profile/agent-preset.mjs` | 校验并物化 production/worktree 的 ComfyUI 工作台 Preset、共享 Tool visibility component 和共享系统提示词可见性 component，并删除配置声明的已退役项目 Preset |
 | `scripts/cli/` | managed CLI 构建的源码入口；启动器把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` 后交给受管前台 shell Tool Call |
+| `scripts/source-client/` | 插件内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务 |
 | `src/cli/` | 项目 CLI 的环境变量名称、argv、request、Generation Request、模板运行参数检查、随机 Seed 和历史 Run 输入查询合同 |
-| `src/host/catalog/` | 通过本地 Catalog CLI 查询上下文目录，严格映射 Source v0.86.1 的封面与样例图片展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Typert Remote |
+| `src/host/catalog/` | 通过插件内置语义查询客户端查询数据源服务，把数据源服务返回的封面与样例图片字段映射为 Client 使用的展示字段，提供 Agent 模板、LoRA、生成模型与 ComfyUI 实例 ID 查询 Tool，并向 Client 提供 Catalog Remote |
 | `src/host/cli/` | 从前台 shell ToolExecution 建立短期 capability，并通过 loopback route 把 CLI 请求交给 Catalog adapter 或 Generation Runtime |
 | `src/host/generation/` | Run Repository、Source adapter、运行时 Workflow 参数化、标准 Node.js 官方前端编译 Worker、API Workflow 导出与缓存、Comfy transport、coordinator、Generation 创建 Tool、历史 Run 输入查询 Tool、Generation Remote、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/image-reader/` | 图片读取设置迁移、单份配置保存、激活与删除、运行时视觉模型目录、系统 Provider/OpenAI 兼容适配和单图视觉模型调用 Tool |
 | `src/host/tools/` | 项目 Tool 唯一注册入口 |
 | `src/generation/` | Host、Tool 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 输入查询合同 |
 | `src/image-reader/` | Host 与 Client 共用的命名图片读取配置、逐规则校验、凭据动作、视觉模型目录和单份配置保存、激活与删除 Remote 合同 |
-| `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器、Generation Run/Media 投影与图片读取设置页 |
+| `src/client/` | 使用 Harness 原生扩展位的工作台、上下文选择器、Generation Run/Media 投影，以及包含图片读取与数据源服务两个页签的统一 ComfyUI 设置页 |
 | `.agents/skills/` | 七个项目 Skill 的 canonical source；每个 Skill 都包含自身执行所需的 CLI 参考文档 |
-| `config/` | 生产配置、schema、环境变量映射和数据源合同 |
+| `config/` | 生产配置、schema 和环境变量映射 |
 | `profiles/` | Harness bundle composition 模板 |
 
 DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。DeepSeek Harness 核心源码保持未修改。DSH Desktop 的 `main` 分支维护移动桥接端口入口、聚合 Client Remote 补丁和产品 adapter 启用状态；当前 Harness ComfyUI 仓库只在启动 DSH Desktop 时传入 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，不复制 DSH Desktop 源码，也不把 Desktop 写入当前仓库 manifest 或 lockfile。开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库。
@@ -103,6 +104,8 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
   → image inspect：ImageReaderService.inspect(filePath, { prompt, signal })
 ```
 
+ANIMA、Krea2 和 WAI Prompt Builder 的语义查询命令使用同一个前台 shell ToolExecution。`CliShellCapabilityStore` 向该调用提供插件内置语义查询客户端路径，以及 `harness-comfyui-source` Settings 中保存的数据源服务 URL 和端口。Skill 通过这些值直接执行内置语义查询客户端；该客户端先请求数据源服务的实时 discovery，再请求选定的语义查询路径。
+
 `read_comfyui_run_inputs` Tool 从 Tool Call、Session cwd 和 workspace registry 派生当前 Workspace；CLI 查询从短期 shell capability 派生当前 Workspace。两条入口都只把 `workspaceId` 和用户提供的 `run_id` 交给 `GenerationRuntime.readGenerationRunInputs()`，不接受调用者提供的 Workspace ID、Session ID、Turn 或 Tool Call ID。
 
 `GenerationRuntime.readGenerationRunInputs()` 要求一次查询包含 1 至 20 个字符串，并按照输入顺序逐项读取 Run Repository 的 `request_json` 和 Run 目录中的 Actual Workflow。Runtime 先检查当前 Workspace 中的完整 Run ID 精确匹配；没有精确匹配且输入是最少八个 UUID 字符的 canonical 起始片段时，Runtime 只在当前 Workspace 中读取最多两个前缀匹配。零个匹配返回 `GENERATION_RUN_NOT_FOUND`，唯一匹配返回完整 canonical `run_id`，多个匹配返回 `GENERATION_RUN_ID_AMBIGUOUS` 并要求调用者增加前缀长度。当前 Workspace 之外的 Run 不参与前缀唯一性判定。合法请求中的无效 ID、缺失 Run、歧义前缀、损坏请求或未分类读取故障只产生对应结果项；后续 Run 继续查询。取消信号终止整个查询。
@@ -113,9 +116,9 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 同一个 shell Tool Call 的相同 Generation Request 重放同一个 Run；同一个 shell Tool Call 的不同 Generation Request 返回 `RUN_REQUEST_CONFLICT`。创建多个独立 Run 时，每次 submit 使用不同的前台 shell Tool Call，因此 Host 为每次调用保存不同的 `call_id`。
 
-`query_semantic_comfyui_instances` 使用固定 search 请求读取 Catalog CLI 当前返回的 ComfyUI 实例目录，并且每个实例结果项只向 Agent 投影 `id`。`comfyui-generate` 把当前查询的首个有效 ID 传给 `generate_with_comfyui`；Host 不根据 Workflow、生成模型、LoRA、运行参数或已有 Run 记录选择实例。
+`query_semantic_comfyui_instances` 使用固定 search 请求，通过内置语义查询客户端读取数据源服务当前返回的 ComfyUI 实例目录，并且每个实例结果项只向 Agent 投影 `id`。`comfyui-generate` 把当前查询的首个有效 ID 传给 `generate_with_comfyui`；Host 不根据 Workflow、生成模型、LoRA、运行参数或已有 Run 记录选择实例。
 
-`generate_with_comfyui` 在 Run Repository 持久化当前 Tool `callId` 后完成 Source、实例和模板读取、`/object_info` 读取、运行参数解析、模型和 LoRA 映射以及 Official API Workflow 准备。上述阶段失败时，Tool Call 收到原始错误码和错误信息，失败 Run 同时保存该错误。准备成功时，Tool 返回 `run_id`；Host 内的 Generation Coordinator 继续异步执行 ComfyUI `/prompt` 提交、Jobs API 观察、远端结果处理和媒体保存。Host 停止时 coordinator 中止本地观察但不取消远端 ComfyUI 任务；Host 重启后从非终态 Run 继续观察。
+`generate_with_comfyui` 在 Run Repository 持久化当前 Tool `callId` 后，使用插件内置数据源读取客户端从数据源服务读取实例和模板，再完成 `/object_info` 读取、运行参数解析、模型和 LoRA 映射以及 Official API Workflow 准备。上述阶段失败时，Tool Call 收到原始错误码和错误信息，失败 Run 同时保存该错误。准备成功时，Tool 返回 `run_id`；Host 内的 Generation Coordinator 继续异步执行 ComfyUI `/prompt` 提交、Jobs API 观察、远端结果处理和媒体保存。Host 停止时 coordinator 中止本地观察但不取消远端 ComfyUI 任务；Host 重启后从非终态 Run 继续观察。
 
 Generation 编译链路分为参数语义和最终导出两个阶段：
 

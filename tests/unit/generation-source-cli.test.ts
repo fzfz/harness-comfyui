@@ -33,6 +33,10 @@ const workflow = {
   links: [],
 }
 
+function settings() {
+  return { get: () => ({ configuration: { url: 'https://catalog.example.com', port: 18093 } }) }
+}
+
 describe('GenerationSourceCli', () => {
   it('runs a local mjs Source CLI through Node when the script has no executable mode', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'harness-comfyui-source-cli-'))
@@ -89,7 +93,7 @@ describe('GenerationSourceCli', () => {
       }),
       stderr: '',
     }))
-    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
+    const source = new GenerationSourceCli({ executable: '/source-read.mjs', settings: settings(), process })
 
     await expect(source.readInstance('2')).resolves.toEqual({
       id: '2',
@@ -100,7 +104,7 @@ describe('GenerationSourceCli', () => {
     })
     expect(process).toHaveBeenCalledWith(
       '/source-read.mjs',
-      ['--port', '18093', '--timeout-ms', '120000', 'instance', '--id', '2'],
+      ['--url', 'https://catalog.example.com', '--port', '18093', '--timeout-ms', '120000', 'instance', '--id', '2'],
       expect.any(AbortSignal),
     )
   })
@@ -115,7 +119,7 @@ describe('GenerationSourceCli', () => {
       }),
       stderr: '',
     }))
-    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
+    const source = new GenerationSourceCli({ executable: '/source-read.mjs', settings: settings(), process })
 
     const bundle = await source.readTemplate('34')
 
@@ -141,7 +145,7 @@ describe('GenerationSourceCli', () => {
       }),
       stderr: '',
     }))
-    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
+    const source = new GenerationSourceCli({ executable: '/source-read.mjs', settings: settings(), process })
 
     await expect(source.readTemplate('34')).rejects.toMatchObject({
       code: 'SOURCE_PROTOCOL_ERROR',
@@ -167,7 +171,7 @@ describe('GenerationSourceCli', () => {
       }),
       stderr: '',
     }))
-    const source = new GenerationSourceCli({ executable: '/source-read.mjs', port: 18093, process })
+    const source = new GenerationSourceCli({ executable: '/source-read.mjs', settings: settings(), process })
 
     await expect(source.readTemplate('37')).resolves.toMatchObject({
       id: '37',
@@ -178,16 +182,37 @@ describe('GenerationSourceCli', () => {
   it('rejects an invalid success envelope and a failed CLI process with stable error codes', async () => {
     const invalid = new GenerationSourceCli({
       executable: '/source-read.mjs',
-      port: 18093,
+      settings: settings(),
       process: vi.fn(async () => ({ exitCode: 0, stdout: '{}', stderr: '' })),
     })
     await expect(invalid.readTemplate('34')).rejects.toMatchObject({ code: 'SOURCE_PROTOCOL_ERROR' })
 
     const failed = new GenerationSourceCli({
       executable: '/source-read.mjs',
-      port: 18093,
+      settings: settings(),
       process: vi.fn(async () => ({ exitCode: 1, stdout: '', stderr: '{"message":"not found"}' })),
     })
     await expect(failed.readInstance('2')).rejects.toMatchObject({ code: 'SOURCE_QUERY_FAILED' })
+  })
+
+  it('reads the latest Settings address before every Source read', async () => {
+    let address = { url: 'http://127.0.0.1', port: 18093 }
+    const process = vi.fn<SourceCliProcess>(async () => ({
+      exitCode: 0,
+      stdout: success({ id: 2, title: 'win3080', url: 'http://127.0.0.1:8188', credential_type: 'none' }),
+      stderr: '',
+    }))
+    const source = new GenerationSourceCli({
+      executable: '/source-read.mjs',
+      settings: { get: () => ({ configuration: address }) },
+      process,
+    })
+
+    await source.readInstance('2')
+    address = { url: 'https://catalog.example.com', port: 443 }
+    await source.readInstance('2')
+
+    expect(process.mock.calls[0]?.[1].slice(0, 4)).toEqual(['--url', 'http://127.0.0.1', '--port', '18093'])
+    expect(process.mock.calls[1]?.[1].slice(0, 4)).toEqual(['--url', 'https://catalog.example.com', '--port', '443'])
   })
 })

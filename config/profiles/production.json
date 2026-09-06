@@ -24,9 +24,7 @@
     }
   },
   "source": {
-    "catalogPort": 0,
-    "catalogCliPath": "",
-    "sourceCliPath": ""
+    "catalogPort": 18093
   },
   "client": {
     "runRefreshIntervalMs": 1000

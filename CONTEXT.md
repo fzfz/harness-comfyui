@@ -6,9 +6,9 @@
 
 **Harness Core**：项目依赖的 DeepSeek Harness `0.1.2-rc.1` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
 
-**Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册 Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
+**Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册数据源服务 Settings、Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
 
-**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生 `sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.2-rc.1` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
+**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生设置入口、`sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现统一 ComfyUI 设置页、项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.2-rc.1` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
 **Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 
@@ -32,7 +32,11 @@
 
 **Managed Web Host State**：`web:*` 把运行中配置快照保存在 `.local/web-development/state/source-managed.json`。`web:stop`、`web:status`、`web:health` 和 `web:logs` 使用该快照定位独立 Web Host。
 
-**Source Contract Identity**：当前数据源合同固定为 `imagegen-source-contract` 版本 `0.86.1`。Catalog CLI 与 Source CLI 的实际路径由 `config/source-production.json` 定义。Source TemplateBundle 只向 Host 提供 `id`、`title` 和 `workflow_json`。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
+**Data Source Service**：该术语指使用者独立安装并运行、通过 HTTP 或 HTTPS 接受请求的数据源服务。使用者可以连接本机运行的 Data Source Service，也可以连接部署在另一台机器上的 Data Source Service。
+
+**Built-in Source Clients**：该术语指插件发行包中的两个客户端文件：`scripts/source-client/imagegen-semantic-query.mjs` 和 `scripts/source-client/imagegen-comfyui-source-read.mjs`。Host 使用前者完成 Catalog discovery 和语义查询，使用后者完成 Source discovery、ComfyUI 实例读取和 Workflow bundle 读取。两个客户端只请求 Data Source Service，不读取或执行数据源仓库中的文件。
+
+**Source Template Bundle**：该术语指 Data Source Service 为一个 Workflow 模板返回的对象；该对象包含 `id`、`title` 和 `workflow_json` 字段。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
 
 ## 数据
 
@@ -53,6 +57,8 @@
 **Generation Run Media Query**：`get_generation_run_media` Tool 和 managed CLI 的 `generation resolve-media --stdin` 命令提供的只读查询。一次查询接收一至二十个完整 Run ID 或当前 Workspace 中的唯一规范前缀，保留输入顺序和重复值，并为每个成功 Run 返回原始 `parameters` 与确定排序的本地图片路径。单个 Run 的查询错误不终止其他 Run 的查询。
 
 **Image Reader Configuration**：Harness Settings namespace `harness-comfyui-image-reader-profiles` 中原子保存的当前配置 ID、命名配置列表和每份 OpenAI 兼容配置的独立凭据。每份配置选择“系统 Provider”或“OpenAI 兼容接口”，并独立保存视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Client 不从当前 Session 模型或 ComfyUI 生图模型推导视觉模型。
+
+**Source Service Configuration**：该术语指 Harness Settings namespace `harness-comfyui-source` 中保存的数据源服务 URL 和端口。Host 在每次 Catalog 查询、ComfyUI 实例读取和 Workflow bundle 读取前读取最新值。Client 在统一“ComfyUI”设置页的“数据源服务”页签修改该值。
 
 **Image Inspection**：`inspect_image` Tool 和 managed CLI 的 `image inspect --stdin` 命令提供的单图视觉读取。系统 Provider 配置通过 Harness Attachment 与 LLM Runtime 调用视觉模型；OpenAI 兼容配置把单张本地图片编码为 Data URL，并向配置的完整 Chat Completions 地址发送请求。该能力不读取 Generation Request 参数，也不比较或改写 Prompt。
 

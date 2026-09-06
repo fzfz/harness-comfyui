@@ -1,15 +1,14 @@
 ---
 doc_id: harness-source-contract-v0.86.1
-title: Harness 消费源数据仓库 v0.86.1 envelope 合同
-status: accepted
+title: Harness 消费源数据仓库 v0.86.1 envelope 历史合同
+status: superseded
 version: v0.86.1
-lifecycle: consumer-contract
-structured_source: config/source-contract-v0.86.1.json
+lifecycle: historical-record
 ---
 
-# 合同所有权
+# 历史合同范围
 
-`config/source-contract-v0.86.1.json` 是 Harness 对源数据仓库 v0.86.1 的唯一结构化消费合同。本文解释该结构化合同的运行规则；operation 清单和字段映射以该 JSON 文件为准。
+本文记录 Harness 过去访问源数据仓库 v0.86.1 时使用的固定接口约束。当前 Harness-ComfyUI 通过插件内置客户端访问使用者在设置页指定的数据源服务；关于该访问方式的架构决定记录在 [`ADR 0015`](../adr/0015-independent-data-source-service.md)。本文不作为当前 Configuration Profile、Host adapter、Skill 或测试的输入。
 
 Harness 固定消费以下已发布产物：
 
@@ -18,8 +17,6 @@ Harness 固定消费以下已发布产物：
 - Catalog CLI：`imagegen-semantic-query`
 - Host-only Source CLI：`imagegen-comfyui-source-read`
 - Source service：CLI `--port` 参数指定的本机回环服务
-
-`source.contractId: "imagegen-source-contract"` 与 `source.sourceReleaseVersion: "0.86.1"` 由 `production` Configuration Profile 固定。Harness 不从 live discovery 或目标响应推断这两个值。
 
 # CLI 与 envelope
 
@@ -67,4 +64,4 @@ compiler 返回的 `activeOutputNodeIds` 是编译结果。Generation Runtime �
 
 # 版本关系
 
-本合同取代 v0.84.0 作为 Harness 当前 Source 消费合同。`docs/v0.1/source-contract-v0.84.0.md` 与 `config/source-contract-v0.84.0.json` 只记录历史版本，不能作为当前 Configuration Profile、Host adapter 或测试的输入。
+`docs/v0.1/source-contract-v0.84.0.md` 和 `docs/v0.1/source-contract-v0.82.2.md` 只记录历史接口，不能作为当前 Configuration Profile、Host adapter、Skill 或测试的输入。

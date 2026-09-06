@@ -65,8 +65,6 @@ export function desktopWorktreeContext(definition, sourceDefinition, options = {
     desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
     launchCommand: mode.launchCommand,
     catalogPort: sourceDefinition.source.catalogPort,
-    catalogCliPath: resolve(repositoryRoot, sourceDefinition.source.catalogCliRelativePath),
-    sourceCliPath: resolve(repositoryRoot, sourceDefinition.source.sourceCliRelativePath),
     skillSource,
   }
 }
@@ -214,8 +212,6 @@ async function desktopEnvironment(context, environment = process.env) {
     HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY: resolve(context.runtimeRoot, 'saved-media'),
     HARNESS_COMFYUI_LOG_DIRECTORY: resolve(context.runtimeRoot, 'logs'),
     HARNESS_COMFYUI_CATALOG_PORT: String(context.catalogPort),
-    HARNESS_COMFYUI_CATALOG_CLI_PATH: context.catalogCliPath,
-    HARNESS_COMFYUI_SOURCE_CLI_PATH: context.sourceCliPath,
     ...(context.mobileBridgePort === undefined ? {} : {
       [MOBILE_BRIDGE_PORT_CONFIGURATION_VARIABLE]: String(context.mobileBridgePort),
       [MOBILE_BRIDGE_PORT_PROCESS_VARIABLE]: String(context.mobileBridgePort),
@@ -249,6 +245,7 @@ export const SOURCE_PLUGIN_PACKAGE_PATHS = Object.freeze([
   'package.json',
   'cordis.patch.yml',
   'config',
+  'scripts/source-client',
   'src',
   dirname(runtimeArtifacts.managedCli.outputEntryRelativePath),
   '.local/source-client',

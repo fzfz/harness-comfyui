@@ -2,7 +2,7 @@
 
 ## 用途与调用入口
 
-Skill 执行者使用 `imagegen-semantic-query` 查询作品、角色、ANIMA 画师和 Prompt 标签。本文件中的命令固定使用端口 `18093`，每次调用只查询一条路径，并通过命令行参数提供查询值。
+Skill 执行者使用 Harness-ComfyUI 提供的语义查询客户端查询作品、角色、ANIMA 画师和 Prompt 标签。Harness-ComfyUI 通过 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`、`DSH_HARNESS_COMFYUI_SOURCE_URL` 和 `DSH_HARNESS_COMFYUI_SOURCE_PORT` 提供客户端文件、数据源服务 URL 和端口。每次调用只查询一条路径，并通过命令行参数提供查询值。
 
 本文件把当前消息中 `type=comfyui-context` 且 `data.kind=character` 的 JSON 行称为 Character 上下文记录，把 `type=comfyui-context` 且 `data.kind=style` 的 JSON 行称为 Style 上下文记录。
 
@@ -19,7 +19,7 @@ Skill 执行者使用 `imagegen-semantic-query` 查询作品、角色、ANIMA �
 ## Search 命令
 
 ```sh
-imagegen-semantic-query --port 18093 --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
+node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
 ```
 
 `<operation-path>` 必须取自“查询路径与结果字段”表。`<query>` 必须是长度不超过 200 个字符且不含控制字符的字符串。Skill 执行者使用 shell 参数引用规则把 `<query>` 作为一个参数传入命令。
@@ -27,13 +27,13 @@ imagegen-semantic-query --port 18093 --path '<operation-path>' --mode search --q
 查询角色时，Skill 执行者可以使用已采用 Work 结果的 `id` 限定结果：
 
 ```sh
-imagegen-semantic-query --port 18093 --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
+node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
 ```
 
 查询 Style 时，Skill 执行者必须使用本轮取得的 ANIMA Base Model ID 限定结果：
 
 ```sh
-imagegen-semantic-query --port 18093 --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<anima-base-model-id>'
+node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<anima-base-model-id>'
 ```
 
 ## Resolve 命令
@@ -41,7 +41,7 @@ imagegen-semantic-query --port 18093 --path /internal/semantic/styles --mode sea
 Character 上下文记录或 Style 上下文记录没有非空 `data.prompt_text`，但提供符合 `^[1-9][0-9]{0,19}$` 的 `data.id` 时，Skill 执行者使用以下命令查询该 ID：
 
 ```sh
-imagegen-semantic-query --port 18093 --path '<operation-path>' --mode resolve --id '<stable-id>'
+node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode resolve --id '<stable-id>'
 ```
 
 Character 上下文记录使用 `/internal/semantic/characters`，Style 上下文记录使用 `/internal/semantic/styles`。Skill 执行者把 `data.id` 作为 `<stable-id>`。
