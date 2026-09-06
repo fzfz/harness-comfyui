@@ -214,6 +214,14 @@ v0.39.9 的 Repository Skills 可见性测试在当前 checkout 外创建 Worksp
 
 完整 `pnpm quality` 通过：1005 项 unit/integration、55 项 contract/security、197 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。生产部署按照 Desktop `package-lock.json` 安装全部锁定依赖，其中包含 `image-size 1.2.1`；该依赖版本关联 `GHSA-w3rx-r6r6-pgpr` 与 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已授权本次生产部署；生产部署完成后，部署验收执行者必须运行 `node_modules/node/bin/node --version`，并确认命令输出为 `v24.9.0`。
 
+## v0.39.10 发布候选验证
+
+ANIMA、Krea2 和 WAI Prompt Builder 的三份语义查询参考文档已经删除关于 Harness 提供查询客户端、数据源 URL 和端口的文字。每份文档均规定如何记录上下文、按照什么顺序执行查询、如何选择候选结果、如何处理错误以及如何复用查询结果。Search 与 Resolve 命令的名称、查询路径、命令参数和返回字段保持不变。三名独立语义 Reviewer 各自逐行审计一份文档，三份文档均通过语义审计。
+
+v0.39.10 候选中的 `scripts/source-client/imagegen-semantic-query.mjs` 和 `scripts/source-client/imagegen-comfyui-source-read.mjs` 连接 `http://127.0.0.1:18093` 的已部署数据源服务完成实时 discovery。语义查询客户端对 `/internal/semantic/base-models`、`/internal/semantic/works`、`/internal/semantic/characters`、`/internal/semantic/styles` 和 `/internal/semantic/prompt-terms` 执行 Search，并对 Character `id=39938` 和 Style `id=12344` 执行 Resolve；每次调用均返回退出码 `0`、空 stderr 和符合接口定义的 JSON。数据源读取客户端读取 ComfyUI 实例 `id=2` 和 Workflow bundle `id=43`。生产 `CatalogCli` 使用实际子进程执行器解析 Base Model `id=1`、`id=2`、`id=3`、生成模型 `id=1` 和 ComfyUI 实例 `id=2`；生产 `GenerationSourceCli` 使用实际子进程执行器解析实例 `id=2` 和包含 76 个 Workflow 节点的 bundle `id=43`。该验收没有读取数据源仓库中的文件，也没有用测试构造的 JSON 代替已部署服务响应。
+
+完整的 `pnpm quality` 检查通过：1005 项单元测试和集成测试、55 项契约测试和安全测试、197 项生产测试、32 项原型测试以及 2 项真实 Desktop 测试全部成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的全部依赖审计和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。生产部署执行者按照 Desktop 的 `package-lock.json` 安装全部锁定依赖，其中包括 `image-size 1.2.1`。`image-size 1.2.1` 关联 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告；用户已明确授权生产部署执行者按照该锁文件安装依赖。部署验收者必须确认该安装在 Desktop 目录下生成 `node_modules/node/bin/node`，运行 `node_modules/node/bin/node --version`，并确认命令输出为 `v24.9.0`。
+
 ## 本地发布门禁
 
 仓库不配置 GitHub Actions workflow。计划执行者必须在独立 linked worktree 中对最终候选树执行：

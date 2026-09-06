@@ -123,6 +123,6 @@ pnpm quality
 - [测试规范](docs/system/testing.md)
 - [版本发布](docs/system/releasing.md)
 - [系统启动](docs/system/startup.md)
-- [v0.39.9 发布说明](docs/releasenotes.md)
+- [v0.39.10 发布说明](docs/releasenotes.md)
 
-当前产品版本是 `0.39.9`。GitHub Releases 页面会在仓库包含 `0.39.9` 版本代码的发布提交、`v0.39.9` tag 和 GitHub Release 全部创建后显示 `0.39.9` 的发布记录。
+当前产品版本是 `0.39.10`。将 `0.39.10` 版本代码的发布提交和 `v0.39.10` tag 推送到 GitHub，并发布 GitHub Release 后，GitHub Releases 页面将显示 `0.39.10` 的发布记录。
