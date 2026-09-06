@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.39.10
+
+v0.39.10 删除三份 Prompt Builder 语义查询参考文档中关于 Harness 提供查询客户端、数据源 URL 和端口的文字，并修正查询条件、候选选择条件和错误处理动作中无法唯一理解的描述。
+
+## Prompt Builder 查询规则
+
+- `anima-prompt-builder`、`krea2-anime-prompt-builder` 和 `wai-sdxl-prompt-builder` 的参考文档只描述 Skill 执行者能够读取的上下文记录、查询工具、命令参数、返回字段和调用规则。
+- 三份参考文档使用的 Search 与 Resolve 命令、查询路径、命令参数和返回字段保持不变。
+- 三份参考文档明确规定上下文记录的类型、查询顺序、候选选择条件、Prompt 写入位置、查询超时后必须报告的参数、查询次数和结果复用条件。
+
+## 验证与发布
+
+- 三名独立语义 Reviewer 分别逐行审计一份 Prompt Builder 语义查询参考文档，三份文档全部通过语义审计。针对本版本全部变更的独立 Standards Review 和 Spec Review 均通过。
+- v0.39.10 候选中的两个生产客户端连接 `http://127.0.0.1:18093` 的已部署数据源服务完成实时 discovery。语义查询客户端对 Base Model、Work、Character、Style 和 Prompt-term 执行 Search，并对 Character `id=39938` 和 Style `id=12344` 执行 Resolve；数据源读取客户端读取 ComfyUI 实例 `id=2` 和 Workflow bundle `id=43`。生产 `CatalogCli` 解析 Base Model `id=1`、`id=2`、`id=3`、生成模型 `id=1` 和 ComfyUI 实例 `id=2`；生产 `GenerationSourceCli` 解析实例 `id=2` 和包含 76 个 Workflow 节点的 bundle `id=43`。
+- 完整 `pnpm quality` 通过：1005 项 unit/integration、55 项 contract/security、197 项 production、32 项 prototype 和 2 项真实 Desktop 测试成功。覆盖率为 statements 93.54%、branches 86.77%、functions 100%、lines 96.17%。Harness 锁文件的完整依赖与生产依赖审计结果均为 critical 0、high 0、moderate 0、low 0。
+- 本版本没有增加或升级 Harness ComfyUI 依赖。GitHub Release 只包含 Git tag 与 Release 记录，不附加产品包。
+- 本版本继续使用 Desktop 源码提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。生产部署按照 Desktop `package-lock.json` 安装其中锁定的全部依赖，包括 `image-size 1.2.1`。`image-size 1.2.1` 关联 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告；用户已明确授权生产部署按照该锁文件安装依赖。部署验收者必须运行 `node_modules/node/bin/node --version`，并确认命令输出为 `v24.9.0`。
+
 # Harness ComfyUI v0.39.9
 
 v0.39.9 让采用 `ComfyUI工作台预设` 的 Session 直接读取当前 Harness ComfyUI checkout 中的七个 Repository Skills。Session 所属 Workspace 无须等于项目 checkout；该 Preset 也无须把七个 Repository Skills 复制或符号链接到真实 `$HOME/.agents/skills/`。

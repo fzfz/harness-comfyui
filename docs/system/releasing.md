@@ -72,7 +72,7 @@ node node_modules/esbuild/install.js
 set -e
 pnpm prod:stop
 git fetch --tags
-git switch --detach v0.39.9
+git switch --detach v0.39.10
 git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 5e08355a58bb727cb0f48c794550202d9d59ed9f
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
 test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
@@ -106,7 +106,7 @@ pnpm prod:stop
 
 `prod:*` 管理完整 DSH Desktop 生产环境并调用 DSH Desktop `pnpm preview`。生产部署不得使用 `dev:*` 或 `web:*` 替代产品启动。
 
-`v0.39.9` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该提交恢复聚合 Client 的 `session/delete` Remote，严格禁用 Kimi PPT adapter，并把 Windows 隐藏控制台辅助模块纳入 Desktop 打包资源；Harness ComfyUI 仓库不包含或复制 DSH Desktop 源码。
+`v0.39.10` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop` 仓库 `main` 分支的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该提交恢复聚合 Client 中的 `session/delete` Remote，禁止 DSH Desktop 加载 Kimi PPT adapter，并将 Windows 隐藏控制台辅助模块加入 Desktop 打包资源。Harness ComfyUI 仓库不得包含或复制 DSH Desktop 源码。
 
 ## 开发与 Web 调试边界
 
@@ -115,8 +115,8 @@ pnpm prod:stop
 - `prod:*` 只在已发布 Git tag 的生产 checkout 管理完整 DSH Desktop 生产环境。
 - 独立 linked worktree 中的 `pnpm quality` 验证源码门禁和真实 Desktop 验收；仓库不配置 GitHub Actions workflow 或自动生产部署 workflow。
 
-## v0.39.9 的 Desktop 版本与依赖公告
+## v0.39.10 的 Desktop 版本与依赖公告
 
-`v0.39.9` 必须与 Desktop 提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f` 共同部署。该提交完整合并官方上游 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3。
+部署者部署 `v0.39.10` 时，必须同时部署 DSH Desktop 提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该 Desktop 提交包含提交 `8b018c991fe88abdb61939b280c3dbea020acfc8` 的全部变更，以及 DSH Desktop PR #3 引入的变更。
 
 生产部署按照该 Desktop 提交的 `package-lock.json` 安装全部锁定依赖，其中包含 `pptxgenjs 4.0.1 → image-size 1.2.1`。2026-09-05 的安装前检查发现 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已明确授权执行该锁文件安装；发布记录必须保留这两项发现。
