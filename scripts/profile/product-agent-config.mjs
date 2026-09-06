@@ -62,10 +62,30 @@ function parsePreset(value, repositoryRoot) {
   const preset = requireRecord(value, 'product Agent configuration.preset')
   assertExactKeys(
     preset,
-    ['id', 'sourceRootRelativePath', 'installRootRelativePath', 'retiredManagedPresetIds', 'sharedFiles'],
+    [
+      'id',
+      'additionalManagedPresetIds',
+      'sourceRootRelativePath',
+      'installRootRelativePath',
+      'retiredManagedPresetIds',
+      'sharedFiles',
+    ],
     'product Agent configuration.preset',
   )
   const presetId = requirePresetId(preset.id, 'product Agent configuration.preset.id')
+  if (!Array.isArray(preset.additionalManagedPresetIds)) {
+    throw new TypeError('product Agent configuration.preset.additionalManagedPresetIds must be an array')
+  }
+  const additionalManagedPresetIds = preset.additionalManagedPresetIds.map((entry, index) => requirePresetId(
+    entry,
+    `product Agent configuration.preset.additionalManagedPresetIds[${index}]`,
+  ))
+  if (new Set(additionalManagedPresetIds).size !== additionalManagedPresetIds.length) {
+    throw new TypeError('product Agent configuration.preset.additionalManagedPresetIds must be unique')
+  }
+  if (additionalManagedPresetIds.includes(presetId)) {
+    throw new TypeError('product Agent configuration.preset.additionalManagedPresetIds must not contain preset.id')
+  }
   if (!Array.isArray(preset.retiredManagedPresetIds)) {
     throw new TypeError('product Agent configuration.preset.retiredManagedPresetIds must be an array')
   }
@@ -78,6 +98,12 @@ function parsePreset(value, repositoryRoot) {
   }
   if (retiredPresetIds.includes(presetId)) {
     throw new TypeError('product Agent configuration.preset.id must not be retired')
+  }
+  const retiredAdditionalPresetId = additionalManagedPresetIds.find(id => retiredPresetIds.includes(id))
+  if (retiredAdditionalPresetId !== undefined) {
+    throw new TypeError(
+      `product Agent configuration.preset.additionalManagedPresetIds must not contain retired Preset ${retiredAdditionalPresetId}`,
+    )
   }
   if (!Array.isArray(preset.sharedFiles) || preset.sharedFiles.length === 0) {
     throw new TypeError('product Agent configuration.preset.sharedFiles must be a non-empty array')
@@ -93,6 +119,7 @@ function parsePreset(value, repositoryRoot) {
   )
   return {
     presetId,
+    additionalManagedPresetIds,
     retiredPresetIds,
     sourceRoot: requireContainedRelativePath(
       preset.sourceRootRelativePath,
@@ -155,7 +182,7 @@ export async function loadProductAgentConfiguration(repositoryRoot) {
     'product Agent configuration',
   )
   assertExactKeys(config, ['schemaVersion', 'preset', 'skills'], 'product Agent configuration')
-  if (config.schemaVersion !== 2) throw new TypeError('product Agent configuration.schemaVersion must be 2')
+  if (config.schemaVersion !== 3) throw new TypeError('product Agent configuration.schemaVersion must be 3')
   const skills = requireRecord(config.skills, 'product Agent configuration.skills')
   assertExactKeys(
     skills,

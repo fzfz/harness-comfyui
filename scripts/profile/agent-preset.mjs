@@ -240,13 +240,19 @@ export async function materializeSourceProductAgentPreset(repositoryRoot, dshHom
   for (const filename of config.sharedFiles) {
     await validateSharedAgentPresetComponent(resolve(config.sourceRoot, filename))
   }
-  await assertCanonicalPresetDirectory(resolve(config.sourceRoot, config.presetId))
+  const managedPresetIds = [config.presetId, ...config.additionalManagedPresetIds]
+  for (const presetId of managedPresetIds) {
+    await assertCanonicalPresetDirectory(resolve(config.sourceRoot, presetId))
+  }
   await createContainedDirectory(home, installRoot, 'install root')
   const sharedFiles = []
   for (const filename of config.sharedFiles) {
     sharedFiles.push(await materializeSharedFile(config.sourceRoot, installRoot, filename))
   }
-  const presets = [await materializePreset(config.sourceRoot, installRoot, config.presetId)]
+  const presets = []
+  for (const presetId of managedPresetIds) {
+    presets.push(await materializePreset(config.sourceRoot, installRoot, presetId))
+  }
   for (const presetId of config.retiredPresetIds) {
     await rm(resolve(installRoot, presetId), { recursive: true, force: true })
   }

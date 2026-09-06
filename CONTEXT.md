@@ -8,15 +8,17 @@
 
 **Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册数据源服务 Settings、Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
 
-**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生设置入口、`sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现统一 ComfyUI 设置页、项目入口、上下文控件和 Generation Run/Media 结果列。Harness `0.1.2-rc.1` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
+**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生设置入口、`sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现统一 ComfyUI 设置页、项目入口、上下文控件和 Generation Run/Media 结果列。`.local/source-client/client.js` 是 Web Host 与 Desktop generation 根据 Client Module 源码生成并交给 Harness ModuleLoader 的浏览器构建产物。Harness `0.1.2-rc.1` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
 
 **Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 
-**Repository Skills**：当前 checkout `.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`krea2-anime-prompt-builder/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 提供七个仓库 Harness Skill。`anima-prompt-builder`、`character-portrait-prompt-designer`、`comfyui-generate`、`krea2-anime-prompt-builder` 和 `wai-sdxl-prompt-builder` 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`krea2-anime-prompt-builder` 使用历史正向 Prompt、当前文字、Character/Style `prompt_text` 和构建过程中采用的作品、角色、Krea2 Style 与 Prompt 词条目录结果，构建一条 Krea2 动漫展示图或动作迁移源图 Prompt；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型；`local-image-reader` 使用自己的 CLI 参考读取用户提供的本地图片绝对路径。
+**Repository Skills**：当前 checkout `.agents/skills/` 中的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`comfyui-iterate-generation/`、`krea2-anime-prompt-builder/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 提供八个仓库 Harness Skill。`anima-prompt-builder`、`character-portrait-prompt-designer`、`comfyui-generate`、`krea2-anime-prompt-builder` 和 `wai-sdxl-prompt-builder` 使用各自目录中的 `references/generation-cli.md` 查询历史 Generation Run；`krea2-anime-prompt-builder` 使用历史正向 Prompt、当前文字、Character/Style `prompt_text` 和构建过程中采用的作品、角色、Krea2 Style 与 Prompt 词条目录结果，构建一条 Krea2 动漫展示图或动作迁移源图 Prompt；`comfyui-image-review` 使用自己目录中的 `references/cli.md` 查询 Run 图片并逐图调用视觉模型；`local-image-reader` 使用自己的 CLI 参考读取用户提供的本地图片绝对路径；`comfyui-iterate-generation` 取得用户对画面目标的确认后，调度子 Agent 完成多轮生成、观察、比较、复验和归档。
 
-**Preset-scoped Repository Skill Source**：Desktop 与 Web Host 启动器从当前 checkout 的 `config/product-agent.json.skills` 解析 Repository Skills 目录，并通过受管环境变量 `HARNESS_COMFYUI_SKILL_DIR` 交给 `ComfyUI工作台预设` 的 filesystem provider。该来源不依赖真实 `$HOME/.agents/skills/` 或隔离 Desktop HOME 中的项目链接。
+**Preset-scoped Repository Skill Source**：Desktop 与 Web Host 启动器从当前 checkout 的 `config/product-agent.json.skills` 解析 Repository Skills 目录，并通过受管环境变量 `HARNESS_COMFYUI_SKILL_DIR` 交给 `ComfyUI工作台预设` 与 `ComfyUI迭代预设` 的 filesystem provider。两个项目 Preset 读取该来源；`standard` 和其他非项目 Preset 不读取该来源。该来源不依赖真实 `$HOME/.agents/skills/` 或隔离 Desktop HOME 中的项目链接。
 
 **ComfyUI Workbench Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI工作台预设`。该 Preset 的兼容性内部 ID 为 `harness-comfyui-cli-candidate`，通过 `local-only` Tool visibility mode 隐藏 8 个 Host 项目 Tool schema；该 Preset 的 filesystem provider 使用 `includeDefaultRoots: false`，并从只包含 `!!js process.env.HARNESS_COMFYUI_SKILL_DIR` 的 `customSkillDirs` 数组读取该环境变量所指目录中的 Preset-scoped Repository Skills；该 Preset 的系统提示词 assembly 删除 `harness:identity`、`harness:source` 和 `app:web-surface` 三个 Harness 自维护段落。仓库根目录的 `cordis.patch.yml` 配置文件把该 Preset 设置为 Desktop 开发与生产的默认 Preset；未显式指定 Preset 而采用该默认值的 Session，以及用户显式选择该 Preset 的 Session，均最终采用 `ComfyUI工作台预设`。
+
+**ComfyUI Iteration Preset**：新 Session roster 中用户可选的项目 Agent Preset，用户可见名称为 `ComfyUI迭代预设`，内部 ID 为 `harness-comfyui-iteration`。该 Preset 读取与 `ComfyUI工作台预设` 相同的八个 Repository Skills，隐藏相同的八个 Host 项目 Tool schema，并删除相同的 `harness:identity`、`harness:source` 和 `app:web-surface` 系统提示词段落。该 Preset 还提供前台 spawn subagent Tool；该 Tool 关闭后台运行和模型选择，把子 Agent 深度限制为一层。该 Preset 加载 `project-subagent-workspace.mjs` Workspace component；该 component 在子 Agent 首个 step 执行业务调用前，把真实子 Session 登记到父 Session 所属 Workspace。用户必须显式选择该 Preset；`ComfyUI工作台预设` 继续作为默认 Preset。
 
 ## 运行
 
@@ -26,7 +28,7 @@
 
 **Web Host Process Manager**：`scripts/production/` 的共享 Source 进程模块与 `scripts/worktree/` 的 `web:*` 适配入口。该入口提供 start、stop、restart、status、health 和 logs，只用于 linked worktree 的 Web Host 调试。
 
-**Web Host Runtime**：独立 Web Host 调试状态，位于 `.local/web-development/`。`.local/source-client/client.js` 是 Web Host 与 Desktop generation 根据当前 Client 源码生成的浏览器 ModuleLoader 输入。
+**Web Host Runtime**：独立 Web Host 调试状态，位于 `.local/web-development/`。
 
 **Configuration Profile**：Host 使用的一组结构化配置。当前系统只有 `production`，其结构由 `config/schema.ts` 定义，其值由 `config/base.json`、`config/profiles/production.json` 和允许的环境变量合成。
 
@@ -36,7 +38,9 @@
 
 **Built-in Source Clients**：该术语指插件发行包中的两个客户端文件：`scripts/source-client/imagegen-semantic-query.mjs` 和 `scripts/source-client/imagegen-comfyui-source-read.mjs`。Host 使用前者完成 Catalog discovery 和语义查询，使用后者完成 Source discovery、ComfyUI 实例读取和 Workflow bundle 读取。两个客户端只请求 Data Source Service，不读取或执行数据源仓库中的文件。
 
-**Source Template Bundle**：该术语指 Data Source Service 为一个 Workflow 模板返回的对象；该对象包含 `id`、`title` 和 `workflow_json` 字段。Catalog 资源的 `sample_image_urls` 只投影为 Client Module 展示使用的 `CatalogItem.sampleImageUrls`，不进入 Message Context。
+**Source Template Bundle**：该术语指 Data Source Service 为一个 Workflow 模板返回的对象；该对象包含 `id`、`title` 和 `workflow_json` 字段。
+
+**Catalog 目录图片展示数据**：Data Source Service 的 Catalog 资源通过 `sample_image_urls` 提供目录图片 URL。Host 把这些 URL 投影为 Client Module 的 `CatalogItem.sampleImageUrls`，供 Catalog 页面展示图片；这些 URL 不进入 Message Context。
 
 ## 数据
 
@@ -46,15 +50,15 @@
 
 **Chat Turn**：一条用户消息及下一条用户消息出现前产生的回复与调用。
 
-**Run Repository**：Desktop 生产环境默认使用 `.local/desktop-production/data/runs.sqlite`，Desktop 开发环境默认使用 `.local/desktop-development/data/runs.sqlite`，Web Host 调试环境默认使用 `.local/web-development/shared/data/runs.sqlite`。
+**Run Repository**：保存 Generation Run 数据库记录的 SQLite 数据库。Desktop 生产环境默认使用 `.local/desktop-production/data/runs.sqlite`，Desktop 开发环境默认使用 `.local/desktop-development/data/runs.sqlite`，Web Host 调试环境默认使用 `.local/web-development/shared/data/runs.sqlite`。
 
-**Saved Media**：Desktop 生产环境默认使用 `.local/desktop-production/saved-media/`，Desktop 开发环境默认使用 `.local/desktop-development/saved-media/`，Web Host 调试环境默认使用 `.local/web-development/shared/saved-media/`。
+**Saved Media**：保存 Generation Run 输出图片和视频原文件的目录。Desktop 生产环境默认使用 `.local/desktop-production/saved-media/`，Desktop 开发环境默认使用 `.local/desktop-development/saved-media/`，Web Host 调试环境默认使用 `.local/web-development/shared/saved-media/`。
 
 **Generation Run**：一次 `generate_with_comfyui` Tool Call 对应的持久异步运行。不同 `callId` 创建不同 Run；每个 Run 独立保存请求、来源快照、Actual Workflow 和 API Workflow。
 
 **Generation Run Input Query**：`read_comfyui_run_inputs` Tool 和 managed CLI 的 `generation run-inputs --stdin` 命令提供的只读查询。一次查询接收 1 至 20 个完整 Run ID 或最少包含八个 UUID 字符的短 Run ID。Runtime 在当前 Workspace 中把短 ID 解析为唯一匹配的完整 Run ID，并按输入顺序独立返回创建 Run 时保存的 Generation Tool 参数和 Actual Workflow；单项无匹配或歧义不终止其他 Run 的查询。
 
-**Generation Run Media Query**：`get_generation_run_media` Tool 和 managed CLI 的 `generation resolve-media --stdin` 命令提供的只读查询。一次查询接收一至二十个完整 Run ID 或当前 Workspace 中的唯一规范前缀，保留输入顺序和重复值，并为每个成功 Run 返回原始 `parameters` 与确定排序的本地图片路径。单个 Run 的查询错误不终止其他 Run 的查询。
+**Generation Run Media Query**：`get_generation_run_media` Tool 和 managed CLI 的 `generation resolve-media --stdin` 命令提供的只读查询。一次查询接收一至二十个完整 Run ID，或以 `run_` 开头、至少包含 UUID 前八个字符并在当前 Workspace 中唯一匹配的规范前缀；查询保留输入顺序和重复值，并为每个成功 Run 返回原始 `parameters` 与本地图片路径。单个 Run 的查询错误不终止其他 Run 的查询。
 
 **Image Reader Configuration**：Harness Settings namespace `harness-comfyui-image-reader-profiles` 中原子保存的当前配置 ID、命名配置列表和每份 OpenAI 兼容配置的独立凭据。每份配置选择“系统 Provider”或“OpenAI 兼容接口”，并独立保存视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Client 不从当前 Session 模型或 ComfyUI 生图模型推导视觉模型。
 
@@ -66,7 +70,7 @@
 
 **Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 的媒体，顶部显示媒体文件固有像素尺寸，底部显示该 Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向在同一页面切换媒体。查看页 iframe 把当前 `mediaId` 和 `runId` 同步给 DSH Desktop 主框架 Modal；Modal 验证消息来源和当前 Session 媒体归属，在 iframe 上方显示完整 `run_id`，并由主框架的独立按钮把该值写入浏览器剪贴板。Modal footer 的“下载原文件”按钮通过同源 `/download` 路由流式下载当前媒体的 Saved Media 原始字节，并使用 Generation Media 记录保存的 ComfyUI 原文件名；iframe 切换媒体后，下载目标与当前 `mediaId` 同步更新。
 
-**运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据当前 UI Workflow、目标实例的 `/object_info`、请求参数、模型、LoRA、节点输入名称、节点活动状态和上下游连线生成输入值与执行结构。该投影继续承载原编译器已经通过回归测试的参数语义，但不能直接提交给 ComfyUI `/prompt`。
+**运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据当前 UI Workflow、目标实例的 `/object_info`、请求参数、模型、LoRA、节点输入名称、节点活动状态和上下游连线生成输入值与执行结构。该投影不能直接提交给 ComfyUI `/prompt`。
 
 **编译后活动输出节点集合**：`ComfyWorkflowCompiler` 从目标实例实时 `/object_info` 中选择 `output_node: true` 且已满足必需输入的 Workflow 节点。Generation Runtime 把该集合保存到 `generation_runs.expected_output_node_ids_json`，并把该集合传给 Comfy transport 以筛选 Jobs API 输出。该集合是 compiler 输出，不是 Source TemplateBundle 字段。
 

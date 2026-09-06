@@ -1,0 +1,63 @@
+# CLI 用途与入口
+
+查询子 Agent 使用以下命令读取本任务的实际请求、Actual Workflow 和已保存图片。首次调用前完整读取本文件。
+
+```sh
+node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin
+```
+
+在当前会话 Workspace 工作目录，通过前台 shell 调用。命令只读取结果，不创建 Run；本次 Tool Call 的受管环境提供 CLI 入口。不要将任务产物目录另设为 shell 工作目录，保存文件使用明确路径。
+
+# 标准输入与 ID 来源
+
+两个命令的 stdin 均为只含 `run_ids` 的 JSON 对象。`run_ids` 是一至二十个字符串，保留顺序和重复项。超过二十项按原顺序分组。
+
+ID 来自用户明确指定的历史 Run，或本任务生成子 Agent 已保存的真实提交结果。使用完整 Run ID，或 `run_` 加 UUID 至少前八个字符的规范前缀；短 ID 保留 UUID 中原有连字符位置，例如 `run_3c0ad3ed-9f27`。不从缺失回执猜测 ID，不添加 workspace_id、session_id、turn 或 call_id 参数。
+
+```sh
+node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
+{"run_ids":["run_3c0ad3ed"]}
+JSON
+```
+
+# 输出属性与完成含义
+
+退出码 0、stderr 为空时，stdout 为单行 JSON `{ "runs": [...] }`。结果数量和顺序与输入对应。逐 Run 错误不会改变整体退出码 0。
+
+| 命令与结果 | 属性及含义 |
+|---|---|
+| run-inputs 查询成功 | run_id 为完整 ID；lookup_status=available；arguments 为创建时保存的请求。arguments.title、arguments.template_id、arguments.parameters 为标题、模板 ID 和参数；arguments.instance_id、arguments.model 保留原请求具有的值。arguments.loras 为 LoRA 数组，原请求缺失时为空数组；arguments.model 可为 null 或包含 id、file_name 的对象 |
+| Actual Workflow 可用 | workflow_status=available，workflow 为完整 JSON 对象 |
+| Actual Workflow 不可用 | 保留 arguments；workflow_status=unavailable，workflow_error.code 为错误码，workflow_error.message 为原因说明 |
+| resolve-media 查询成功 | run_id 为完整 ID；lookup_status=available；title 为运行标题，parameters 为原始参数对象，images 为已保存图片数组 |
+| images 每项 | media_id 为媒体 ID，node_id 为输出节点 ID，output_index 为输出序号，filename 为原文件名，media_type 为 MIME，file_path 为可读取的本地绝对路径 |
+| 任一逐 Run 错误 | run_id 保留输入值；lookup_status=error；error.code 为错误码、error.message 为说明 |
+
+images 按 node_id 字符串、output_index 数值、media_id 字符串依次升序排列，保留返回顺序。只使用 file_path 读取或复制图片，不由 ID 和文件名拼接路径。
+
+run-inputs 和 resolve-media 不提供 Run 的完整运行状态。images=[] 只表示尚无已保存图片，不能据此断言运行中、失败或已完成；workflow_status=available 也不代表图片已经生成。保存完整原始输出，并将“未取得图片”与查询错误分开记录。
+
+# 查询顺序、复用与等待
+
+每组 Run 先调用 run-inputs，保存实际请求与 Workflow，再调用 resolve-media。已成功保存的不可变请求和 Workflow 可复用；Workflow 暂不可用或用户要求刷新时重新查询。媒体第一次为空时，根据本阶段提供的查询间隔和次数上限重复 resolve-media，不重新提交图片。
+
+达到查询次数上限仍无图片，保存每次结果并返回 partial、next_action=wait，主 Agent 暂停在等待状态，向用户说明尚未取得图片。下次继续任务时再次查询。查询失败而没有任何可用项时返回 failed；其他项成功时保留并返回 partial。
+
+取得图片后复制到指定 media 目录，同时保留原路径、副本路径与媒体对应关系。恢复 accepted 请求只查询，未知提交没有可查询 ID 时保留 unknown 并返回问题，不因为查询不到就重发。
+
+# 命令错误与修正条件
+
+非零退出码时 stdout 应为空，stderr 为单行 `ERROR_CODE: message`。保留真实退出码和 stderr；输出协议不符时报告协议问题并结束查询阶段。
+
+| 错误类别 | 处理动作 |
+|---|---|
+| CLI_ARGUMENT_INVALID、CLI_REQUEST_INVALID | 核对命令、run_ids 数量和格式；修正自己构造的输入后最多重试一次 |
+| CLI_REQUEST_TOO_LARGE、CLI_RESPONSE_TOO_LARGE | 减少同批 Run 数量；单个 Run 仍超限则报告并停止该项 |
+| CLI_ENVIRONMENT_INVALID、CLI_CAPABILITY_INVALID、GENERATION_WORKSPACE_REQUIRED | 报告当前会话无法使用受管查询，结束阶段；环境修复后由新的阶段调用，不传递或复用执行凭据 |
+| CLI_REQUEST_FAILED、CLI_PROTOCOL_ERROR、CLI_INTERNAL_ERROR 及其他命令错误 | 保存错误并结束阶段，具体原因消除后才重试 |
+| GENERATION_RUN_ID_INVALID、GENERATION_RUN_ID_AMBIGUOUS | 报告该项，需要用户提供规范或更完整的 ID；其余项继续 |
+| GENERATION_RUN_NOT_FOUND | 报告当前 Workspace 未找到该 Run，保留原请求及原提交状态，不据此重发 |
+| GENERATION_REQUEST_INVALID、GENERATION_RUN_LOOKUP_FAILED | 保存该项错误；存储或输入问题解决后只重试该项 |
+
+调用取消时结束当前阶段并保存已有结果，不继续剩余查询。任务内原始查询文件按次数追加保存。

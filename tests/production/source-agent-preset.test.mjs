@@ -29,11 +29,14 @@ import {
 const temporaryPaths = []
 const CONTROL_PRESET_ID = 'harness-comfyui-schema-control'
 const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
+const ITERATION_PRESET_ID = 'harness-comfyui-iteration'
 const PRESET_IDS = [CONTROL_PRESET_ID, PRODUCT_PRESET_ID]
 const SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE = 'project-system-prompt-visibility.mjs'
+const SUBAGENT_WORKSPACE_COMPONENT_FILE = 'project-subagent-workspace.mjs'
 const PRODUCT_SHARED_FILES = [
   'project-tool-visibility.mjs',
   SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
+  SUBAGENT_WORKSPACE_COMPONENT_FILE,
 ]
 const requireFromModule = createRequire(import.meta.url)
 const requireFromDsh = createRequire(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))
@@ -47,6 +50,37 @@ async function loadDshScopedCordis() {
     Context: cordis.Context,
     createScope: scope.createScope,
     scopeTarget: scope.scopeTarget,
+  }
+}
+
+async function loadSubagentWorkspaceListener(services) {
+  const componentPath = resolve(
+    import.meta.dirname,
+    '../..',
+    'agent-presets',
+    SUBAGENT_WORKSPACE_COMPONENT_FILE,
+  )
+  const { apply } = await import(pathToFileURL(componentPath).href)
+  let listener
+  const on = vi.fn((event, candidate) => {
+    expect(event).toBe('agent/pre-step')
+    listener = candidate
+  })
+  apply({ on, ...services })
+  expect(on).toHaveBeenCalledOnce()
+  return listener
+}
+
+function testAgent(id, origin, cwd, parentSession) {
+  return {
+    session: {
+      id,
+      header: {
+        origin,
+        ...(cwd === undefined ? {} : { cwd }),
+        ...(parentSession === undefined ? {} : { parentSession }),
+      },
+    },
   }
 }
 
@@ -79,9 +113,10 @@ async function relativeFiles(root, directory = root) {
 
 function productConfig(change = value => value) {
   return change({
-    schemaVersion: 2,
+    schemaVersion: 3,
     preset: {
       id: PRODUCT_PRESET_ID,
+      additionalManagedPresetIds: [ITERATION_PRESET_ID],
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
       retiredManagedPresetIds: [CONTROL_PRESET_ID],
@@ -115,14 +150,24 @@ async function createRepositoryFixture() {
     'export function apply() {}\n',
     'utf8',
   )
-  const presetSource = resolve(sourceRoot, PRODUCT_PRESET_ID)
-  await mkdir(presetSource, { recursive: true })
   await writeFile(
-    resolve(presetSource, 'agent.cordis.yml'),
-    '- id: visibility\n  name: ../project-tool-visibility.mjs\n  config:\n    mode: local-only\n',
+    resolve(sourceRoot, SUBAGENT_WORKSPACE_COMPONENT_FILE),
+    'export function apply() {}\n',
     'utf8',
   )
-  await writeFile(resolve(presetSource, 'preset.yml'), 'name: ComfyUI工作台预设\n', 'utf8')
+  for (const [presetId, displayName] of [
+    [PRODUCT_PRESET_ID, 'ComfyUI工作台预设'],
+    [ITERATION_PRESET_ID, 'ComfyUI迭代预设'],
+  ]) {
+    const presetSource = resolve(sourceRoot, presetId)
+    await mkdir(presetSource, { recursive: true })
+    await writeFile(
+      resolve(presetSource, 'agent.cordis.yml'),
+      '- id: visibility\n  name: ../project-tool-visibility.mjs\n  config:\n    mode: local-only\n',
+      'utf8',
+    )
+    await writeFile(resolve(presetSource, 'preset.yml'), `name: ${displayName}\n`, 'utf8')
+  }
   return {
     repositoryRoot,
     sourceRoot,
@@ -207,6 +252,64 @@ describe('A/B project Tool visibility', () => {
       '@deepseek-ai/dsh-tool-skill',
       'cordis:group',
     ])
+  })
+
+  it('adds foreground spawn delegation and Workspace registration only to the iteration Preset', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const [workbench, iteration] = await Promise.all([
+      validateAgentPresetComposition(resolve(
+        repositoryRoot,
+        'agent-presets',
+        PRODUCT_PRESET_ID,
+        'agent.cordis.yml',
+      )),
+      validateAgentPresetComposition(resolve(
+        repositoryRoot,
+        'agent-presets',
+        ITERATION_PRESET_ID,
+        'agent.cordis.yml',
+      )),
+    ])
+
+    expect(workbench.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toBeUndefined()
+    expect(workbench.find(row => row.name === '@deepseek-ai/dsh-tool-subagent')).toBeUndefined()
+    expect(iteration.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toMatchObject({
+      id: 'project-subagent-workspace',
+    })
+    expect(iteration.find(row => row.name === '@deepseek-ai/dsh-tool-subagent')).toEqual({
+      id: 'tool-subagent',
+      name: '@deepseek-ai/dsh-tool-subagent',
+      config: {
+        provider: 'spawn',
+        toolName: 'subagent',
+        enableRunInBackground: false,
+        maxDepth: 1,
+        modelSelectionSettings: false,
+      },
+    })
+    expect(iteration.map(row => row.name)).toEqual([
+      '../project-tool-visibility.mjs',
+      '../project-system-prompt-visibility.mjs',
+      '@deepseek-ai/dsh-persona',
+      '@deepseek-ai/dsh-agent-instructions',
+      '@deepseek-ai/dsh-tool-bash',
+      '@deepseek-ai/dsh-tool-pwsh',
+      '@deepseek-ai/dsh-agent-tool-presentation',
+      '@deepseek-ai/dsh-skill-filesystem',
+      '@deepseek-ai/dsh-tool-skill',
+      '../project-subagent-workspace.mjs',
+      '@deepseek-ai/dsh-tool-subagent',
+      'cordis:group',
+    ])
+    expect(iteration.find(row => row.id === 'skill-filesystem')).toMatchObject({
+      name: '@deepseek-ai/dsh-skill-filesystem',
+      config: {
+        providerName: 'harness-comfyui',
+        includeDefaultRoots: false,
+        watch: false,
+        customSkillDirs: [{ __jsExpr: 'process.env.HARNESS_COMFYUI_SKILL_DIR' }],
+      },
+    })
   })
 })
 
@@ -380,6 +483,206 @@ describe('ComfyUI Workbench system prompt visibility', () => {
   })
 })
 
+describe('iteration Preset subagent Workspace registration', () => {
+  it('passes non-subagent Sessions through without reading Workspace state', async () => {
+    const agents = { get: vi.fn() }
+    const workspaceRegistry = { resolveByPath: vi.fn() }
+    const listener = await loadSubagentWorkspaceListener({ agents, workspaceRegistry })
+    const next = vi.fn(async () => 'continued')
+
+    await expect(listener({ agent: testAgent('session_main', 'user', '/workspace') }, next))
+      .resolves.toBe('continued')
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(agents.get).not.toHaveBeenCalled()
+    expect(workspaceRegistry.resolveByPath).not.toHaveBeenCalled()
+  })
+
+  it('attaches the actual child Session once before repeated pre-steps continue', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-workspace-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', cwd, parent.session.id)
+    const sessionIds = [parent.session.id]
+    const callOrder = []
+    const attachSession = vi.fn(async sessionId => {
+      callOrder.push('attach')
+      sessionIds.push(sessionId)
+    })
+    const workspace = { id: 'workspace_1', sessionIds, attachSession }
+    const resolveByPath = vi.fn(async () => workspace)
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(id => id === parent.session.id ? parent : undefined) },
+      workspaceRegistry: { resolveByPath },
+    })
+    const next = vi.fn(async () => {
+      callOrder.push('next')
+      return 'continued'
+    })
+
+    await expect(listener({ agent: child }, next)).resolves.toBe('continued')
+    await expect(listener({ agent: child }, next)).resolves.toBe('continued')
+
+    expect(resolveByPath).toHaveBeenCalledTimes(2)
+    expect(resolveByPath).toHaveBeenNthCalledWith(1, cwd)
+    expect(attachSession).toHaveBeenCalledOnce()
+    expect(attachSession).toHaveBeenCalledWith(child.session.id)
+    expect(sessionIds).toEqual([parent.session.id, child.session.id])
+    expect(next).toHaveBeenCalledTimes(2)
+    expect(callOrder).toEqual(['attach', 'next', 'next'])
+  })
+
+  it('stops before the next handler when the parent Session is missing', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-missing-parent-')
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => undefined) },
+      workspaceRegistry: { resolveByPath: vi.fn() },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: testAgent('session_child', 'subagent', cwd, 'session_missing') }, next))
+      .rejects.toThrow('parent Session session_missing was not found')
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['child', undefined, 'same', 'child Session has no cwd'],
+    ['parent', 'same', undefined, 'parent Session has no cwd'],
+  ])('stops when the %s Session cwd is missing', async (_name, childCwdValue, parentCwdValue, message) => {
+    const cwd = await temporaryDirectory('harness-subagent-missing-cwd-')
+    const parent = testAgent(
+      'session_parent',
+      'user',
+      parentCwdValue === 'same' ? cwd : parentCwdValue,
+    )
+    const child = testAgent(
+      'session_child',
+      'subagent',
+      childCwdValue === 'same' ? cwd : childCwdValue,
+      parent.session.id,
+    )
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: { resolveByPath: vi.fn() },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next)).rejects.toThrow(message)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('reports an unavailable cwd before resolving a Workspace', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-unavailable-cwd-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', resolve(cwd, 'missing'), parent.session.id)
+    const resolveByPath = vi.fn()
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: { resolveByPath },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next))
+      .rejects.toThrow(`child Session cwd is unavailable at ${resolve(cwd, 'missing')}`)
+    expect(resolveByPath).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('stops when the child and parent resolve to different directories', async () => {
+    const [parentCwd, childCwd] = await Promise.all([
+      temporaryDirectory('harness-subagent-parent-cwd-'),
+      temporaryDirectory('harness-subagent-child-cwd-'),
+    ])
+    const parent = testAgent('session_parent', 'user', parentCwd)
+    const child = testAgent('session_child', 'subagent', childCwd, parent.session.id)
+    const resolveByPath = vi.fn()
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: { resolveByPath },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next)).rejects.toThrow('child cwd')
+    expect(resolveByPath).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('preserves lookup failure context and stops the child step', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-lookup-failure-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', cwd, parent.session.id)
+    const cause = new Error('Workspace storage read failed')
+    const resolveByPath = vi.fn(async () => { throw cause })
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: { resolveByPath },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next)).rejects.toMatchObject({
+      message: `cannot register subagent Session session_child: Workspace lookup failed for parent cwd ${cwd}`,
+      cause,
+    })
+    expect(resolveByPath).toHaveBeenCalledExactlyOnceWith(cwd)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('stops when the parent cwd has no Workspace', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-no-workspace-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', cwd, parent.session.id)
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: { resolveByPath: vi.fn(async () => undefined) },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next)).rejects.toThrow('no Workspace contains parent cwd')
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('stops when the parent Session is not attached to the resolved Workspace', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-parent-unregistered-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', cwd, parent.session.id)
+    const attachSession = vi.fn()
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: [], attachSession })),
+      },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next))
+      .rejects.toThrow('parent Session session_parent is not attached to Workspace workspace_1')
+    expect(attachSession).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('reports an attach failure and does not continue the child task', async () => {
+    const cwd = await temporaryDirectory('harness-subagent-attach-failure-')
+    const parent = testAgent('session_parent', 'user', cwd)
+    const child = testAgent('session_child', 'subagent', cwd, parent.session.id)
+    const attachSession = vi.fn(async () => { throw new Error('storage rejected attachment') })
+    const listener = await loadSubagentWorkspaceListener({
+      agents: { get: vi.fn(() => parent) },
+      workspaceRegistry: {
+        resolveByPath: vi.fn(async () => ({
+          id: 'workspace_1',
+          sessionIds: [parent.session.id],
+          attachSession,
+        })),
+      },
+    })
+    const next = vi.fn()
+
+    await expect(listener({ agent: child }, next))
+      .rejects.toThrow('cannot register subagent Session session_child with Workspace workspace_1')
+    expect(attachSession).toHaveBeenCalledWith(child.session.id)
+    expect(next).not.toHaveBeenCalled()
+  })
+})
+
 describe('product Agent configuration', () => {
   it('returns the Preset and Repository Skills runtime contract', async () => {
     const fixture = await createRepositoryFixture()
@@ -387,6 +690,7 @@ describe('product Agent configuration', () => {
     await expect(loadProductAgentConfiguration(fixture.repositoryRoot)).resolves.toEqual({
       preset: {
         presetId: PRODUCT_PRESET_ID,
+        additionalManagedPresetIds: [ITERATION_PRESET_ID],
         retiredPresetIds: [CONTROL_PRESET_ID],
         sourceRoot: resolve(fixture.repositoryRoot, 'agent-presets'),
         installRootRelativePath: '.agent-presets',
@@ -418,12 +722,12 @@ describe('product Agent configuration', () => {
     {
       name: 'a non-numeric schema version',
       value: productConfig(value => ({ ...value, schemaVersion: '2' })),
-      message: 'schemaVersion must be 2',
+      message: 'schemaVersion must be 3',
     },
     {
-      name: 'a schema version other than 2',
+      name: 'a schema version other than 3',
       value: productConfig(value => ({ ...value, schemaVersion: 1 })),
-      message: 'schemaVersion must be 2',
+      message: 'schemaVersion must be 3',
     },
     {
       name: 'a non-object Preset',
@@ -433,7 +737,7 @@ describe('product Agent configuration', () => {
     {
       name: 'an unknown Preset property',
       value: productConfig(value => ({ ...value, preset: { ...value.preset, unknown: true } })),
-      message: 'preset must contain exactly id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
+      message: 'preset must contain exactly additionalManagedPresetIds, id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
     },
     {
       name: 'a missing Preset id',
@@ -441,12 +745,62 @@ describe('product Agent configuration', () => {
         ...value,
         preset: Object.fromEntries(Object.entries(value.preset).filter(([key]) => key !== 'id')),
       })),
-      message: 'preset must contain exactly id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
+      message: 'preset must contain exactly additionalManagedPresetIds, id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
     },
     {
       name: 'an invalid Preset id',
       value: productConfig(value => ({ ...value, preset: { ...value.preset, id: 'Invalid_id' } })),
       message: 'preset.id must contain only lowercase letters, numbers, and hyphens',
+    },
+    {
+      name: 'a missing additional managed Preset list',
+      value: productConfig(value => ({
+        ...value,
+        preset: Object.fromEntries(
+          Object.entries(value.preset).filter(([key]) => key !== 'additionalManagedPresetIds'),
+        ),
+      })),
+      message: 'preset must contain exactly additionalManagedPresetIds, id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
+    },
+    {
+      name: 'a non-array additional managed Preset list',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, additionalManagedPresetIds: ITERATION_PRESET_ID },
+      })),
+      message: 'additionalManagedPresetIds must be an array',
+    },
+    {
+      name: 'a non-string additional managed Preset id',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, additionalManagedPresetIds: [1] },
+      })),
+      message: 'additionalManagedPresetIds[0] must contain only lowercase letters, numbers, and hyphens',
+    },
+    {
+      name: 'an invalid additional managed Preset id',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, additionalManagedPresetIds: ['Invalid_id'] },
+      })),
+      message: 'additionalManagedPresetIds[0] must contain only lowercase letters, numbers, and hyphens',
+    },
+    {
+      name: 'duplicated additional managed Preset ids',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, additionalManagedPresetIds: [ITERATION_PRESET_ID, ITERATION_PRESET_ID] },
+      })),
+      message: 'additionalManagedPresetIds must be unique',
+    },
+    {
+      name: 'the default Preset id in the additional managed Preset list',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, additionalManagedPresetIds: [PRODUCT_PRESET_ID] },
+      })),
+      message: 'additionalManagedPresetIds must not contain preset.id',
     },
     {
       name: 'a non-array retired Preset list',
@@ -487,6 +841,14 @@ describe('product Agent configuration', () => {
         preset: { ...value.preset, retiredManagedPresetIds: [PRODUCT_PRESET_ID] },
       })),
       message: 'preset.id must not be retired',
+    },
+    {
+      name: 'an additional managed Preset id in the retired list',
+      value: productConfig(value => ({
+        ...value,
+        preset: { ...value.preset, retiredManagedPresetIds: [ITERATION_PRESET_ID] },
+      })),
+      message: `additionalManagedPresetIds must not contain retired Preset ${ITERATION_PRESET_ID}`,
     },
     {
       name: 'a non-array shared file list',
@@ -716,7 +1078,7 @@ describe('product Agent configuration', () => {
 })
 
 describe('source product Agent Preset materialization', () => {
-  it('materializes only the ComfyUI workbench Preset with its product display name', async () => {
+  it('materializes the default workbench and additional iteration Presets with their product names', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
     const dshHome = await temporaryDirectory('harness-product-agent-canonical-')
 
@@ -725,16 +1087,26 @@ describe('source product Agent Preset materialization', () => {
     expect(result).toEqual({
       installRoot: resolve(dshHome, '.agent-presets'),
       sharedFiles: PRODUCT_SHARED_FILES.map(filename => resolve(dshHome, '.agent-presets', filename)),
-      presets: [{
-        presetId: PRODUCT_PRESET_ID,
-        sourceDirectory: resolve(repositoryRoot, 'agent-presets', PRODUCT_PRESET_ID),
-        targetDirectory: resolve(dshHome, '.agent-presets', PRODUCT_PRESET_ID),
-      }],
+      presets: [
+        {
+          presetId: PRODUCT_PRESET_ID,
+          sourceDirectory: resolve(repositoryRoot, 'agent-presets', PRODUCT_PRESET_ID),
+          targetDirectory: resolve(dshHome, '.agent-presets', PRODUCT_PRESET_ID),
+        },
+        {
+          presetId: ITERATION_PRESET_ID,
+          sourceDirectory: resolve(repositoryRoot, 'agent-presets', ITERATION_PRESET_ID),
+          targetDirectory: resolve(dshHome, '.agent-presets', ITERATION_PRESET_ID),
+        },
+      ],
       retiredPresetIds: [CONTROL_PRESET_ID],
     })
     expect(await relativeFiles(result.installRoot)).toEqual([
       'harness-comfyui-cli-candidate/agent.cordis.yml',
       'harness-comfyui-cli-candidate/preset.yml',
+      'harness-comfyui-iteration/agent.cordis.yml',
+      'harness-comfyui-iteration/preset.yml',
+      'project-subagent-workspace.mjs',
       'project-system-prompt-visibility.mjs',
       'project-tool-visibility.mjs',
     ])
@@ -747,6 +1119,11 @@ describe('source product Agent Preset materialization', () => {
       PRODUCT_PRESET_ID,
       'preset.yml',
     ), 'utf8')).toContain('name: ComfyUI工作台预设\n')
+    expect(await readFile(resolve(
+      result.installRoot,
+      ITERATION_PRESET_ID,
+      'preset.yml',
+    ), 'utf8')).toContain('name: ComfyUI迭代预设\n')
     for (const preset of result.presets) {
       for (const filename of ['agent.cordis.yml', 'preset.yml']) {
         expect(await readFile(resolve(preset.targetDirectory, filename), 'utf8'))
@@ -771,6 +1148,7 @@ describe('source product Agent Preset materialization', () => {
     expect(await pathExists(retiredDirectory)).toBe(false)
     expect(await readFile(resolve(userDirectory, 'keep.txt'), 'utf8')).toBe('keep\n')
     expect(await pathExists(resolve(installRoot, PRODUCT_PRESET_ID))).toBe(true)
+    expect(await pathExists(resolve(installRoot, ITERATION_PRESET_ID))).toBe(true)
   })
 
   it('removes a retired Preset symbolic link without changing its external target', async () => {
@@ -788,6 +1166,7 @@ describe('source product Agent Preset materialization', () => {
     expect(await pathExists(resolve(installRoot, CONTROL_PRESET_ID))).toBe(false)
     expect(await readFile(sentinel, 'utf8')).toBe('external target remains unchanged\n')
     expect(await pathExists(resolve(installRoot, PRODUCT_PRESET_ID))).toBe(true)
+    expect(await pathExists(resolve(installRoot, ITERATION_PRESET_ID))).toBe(true)
   })
 
   it('replaces only product-owned paths on repeated materialization', async () => {
@@ -798,14 +1177,19 @@ describe('source product Agent Preset materialization', () => {
     await writeFile(resolve(siblingDirectory, 'keep.txt'), 'keep\n', 'utf8')
     await materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)
     const productTarget = resolve(dshHome, '.agent-presets', PRODUCT_PRESET_ID)
+    const iterationTarget = resolve(dshHome, '.agent-presets', ITERATION_PRESET_ID)
     await writeFile(resolve(productTarget, 'stale.txt'), 'stale\n', 'utf8')
+    await writeFile(resolve(iterationTarget, 'stale.txt'), 'stale\n', 'utf8')
     await writeFile(resolve(fixture.sourceRoot, PRODUCT_PRESET_ID, 'preset.yml'), 'name: Updated product Preset\n', 'utf8')
+    await writeFile(resolve(fixture.sourceRoot, ITERATION_PRESET_ID, 'preset.yml'), 'name: Updated iteration Preset\n', 'utf8')
     await writeFile(resolve(fixture.sourceRoot, 'project-tool-visibility.mjs'), 'export function apply() { return 1 }\n', 'utf8')
 
     await materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome)
 
     expect(await pathExists(resolve(productTarget, 'stale.txt'))).toBe(false)
+    expect(await pathExists(resolve(iterationTarget, 'stale.txt'))).toBe(false)
     expect(await readFile(resolve(productTarget, 'preset.yml'), 'utf8')).toBe('name: Updated product Preset\n')
+    expect(await readFile(resolve(iterationTarget, 'preset.yml'), 'utf8')).toBe('name: Updated iteration Preset\n')
     expect(await readFile(resolve(dshHome, '.agent-presets/project-tool-visibility.mjs'), 'utf8'))
       .toBe('export function apply() { return 1 }\n')
     expect(await readFile(resolve(siblingDirectory, 'keep.txt'), 'utf8')).toBe('keep\n')
@@ -814,7 +1198,7 @@ describe('source product Agent Preset materialization', () => {
   it('validates all canonical sources before creating the install root', async () => {
     const fixture = await createRepositoryFixture()
     const dshHome = await temporaryDirectory('harness-product-agent-invalid-')
-    await rm(resolve(fixture.sourceRoot, PRODUCT_PRESET_ID, 'agent.cordis.yml'))
+    await rm(resolve(fixture.sourceRoot, ITERATION_PRESET_ID, 'agent.cordis.yml'))
 
     await expect(materializeSourceProductAgentPreset(fixture.repositoryRoot, dshHome))
       .rejects.toThrow('canonical Agent Preset directory')
@@ -879,7 +1263,7 @@ describe('source product Agent Preset materialization', () => {
     {
       name: 'a different schema version',
       change: value => ({ ...value, schemaVersion: 1 }),
-      message: 'schemaVersion must be 2',
+      message: 'schemaVersion must be 3',
     },
     {
       name: 'a missing product Preset id',
@@ -887,7 +1271,7 @@ describe('source product Agent Preset materialization', () => {
         ...value,
         preset: Object.fromEntries(Object.entries(value.preset).filter(([key]) => key !== 'id')),
       }),
-      message: 'preset must contain exactly id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
+      message: 'preset must contain exactly additionalManagedPresetIds, id, installRootRelativePath, retiredManagedPresetIds, sharedFiles, sourceRootRelativePath',
     },
     {
       name: 'a retired product Preset id',
@@ -943,7 +1327,12 @@ describe('shared production and worktree product Agent preparation', () => {
     const prepared = {
       activeVersion: '0.33.2',
       dshHome,
-      productAgentPreset: { presets: [{ presetId: PRODUCT_PRESET_ID }] },
+      productAgentPreset: {
+        presets: [
+          { presetId: PRODUCT_PRESET_ID },
+          { presetId: ITERATION_PRESET_ID },
+        ],
+      },
     }
     const prepareRuntime = vi.fn(async () => prepared)
 
@@ -951,7 +1340,10 @@ describe('shared production and worktree product Agent preparation', () => {
 
     expect(prepareRuntime).toHaveBeenCalledOnce()
     expect(result).toBe(prepared)
-    expect(result.productAgentPreset.presets.map(preset => preset.presetId)).toEqual([PRODUCT_PRESET_ID])
+    expect(result.productAgentPreset.presets.map(preset => preset.presetId)).toEqual([
+      PRODUCT_PRESET_ID,
+      ITERATION_PRESET_ID,
+    ])
   })
 
   it('does not materialize the product Preset when shared source runtime preparation fails', async () => {

@@ -12,6 +12,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import repositorySkillCatalogFixture from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
+import productAgentConfig from '../../config/product-agent.json' with { type: 'json' }
 
 import {
   desktopWorktreeStatus,
@@ -23,7 +24,8 @@ import { GenerationRuntime } from '../../src/host/generation/generation-runtime.
 import { loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 const active = []
-const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
+const PRODUCT_PRESET_ID = productAgentConfig.preset.id
+const PROJECT_PRESET_IDS = [PRODUCT_PRESET_ID, ...productAgentConfig.preset.additionalManagedPresetIds]
 const REPOSITORY_SKILL_CATALOG = Object.freeze(repositorySkillCatalogFixture)
 const WORKSPACE_COMFYUI_GENERATE_DESCRIPTION = 'desktop-live-workspace-comfyui-generate-description'
 const USER_SKILL_NAME = 'desktop-live-unique-user-skill'
@@ -986,7 +988,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId) {
   expect(state.roster).toEqual(expect.objectContaining({ ok: true }))
   const presetIds = state.roster.value.presets.map(preset => preset.id)
   expect(presetIds).toContain('standard')
-  expect(presetIds).toContain(PRODUCT_PRESET_ID)
+  for (const presetId of PROJECT_PRESET_IDS) expect(presetIds).toContain(presetId)
   expect(state.roster.value.presets.find(preset => preset.isDefault)?.id).toBe(PRODUCT_PRESET_ID)
   const sessions = new Map(state.sessions.map(session => [session.key, session]))
   for (const session of state.sessions) {
@@ -998,18 +1000,21 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId) {
 
   const expectedProductSkills = [...expectedRepositorySkills]
     .sort((left, right) => left.name.localeCompare(right.name))
-  const productSkills = sessions.get(PRODUCT_PRESET_ID).skills.value.skills
-    .map(({ name, description }) => ({ name, description }))
-    .sort((left, right) => left.name.localeCompare(right.name))
-  expect(productSkills).toEqual(expectedProductSkills)
-  expect(productSkills).not.toContainEqual({ name: USER_SKILL_NAME, description: USER_SKILL_DESCRIPTION })
-  expect(productSkills).not.toContainEqual({
-    name: 'comfyui-generate',
-    description: WORKSPACE_COMFYUI_GENERATE_DESCRIPTION,
-  })
+  for (const presetId of PROJECT_PRESET_IDS) {
+    expect(sessions.get(presetId).created.value.agentPreset).toBe(presetId)
+    const productSkills = sessions.get(presetId).skills.value.skills
+      .map(({ name, description }) => ({ name, description }))
+      .sort((left, right) => left.name.localeCompare(right.name))
+    expect(productSkills).toEqual(expectedProductSkills)
+    expect(productSkills).not.toContainEqual({ name: USER_SKILL_NAME, description: USER_SKILL_DESCRIPTION })
+    expect(productSkills).not.toContainEqual({
+      name: 'comfyui-generate',
+      description: WORKSPACE_COMFYUI_GENERATE_DESCRIPTION,
+    })
+  }
 
   for (const [key, session] of sessions) {
-    if (key === PRODUCT_PRESET_ID || key === 'implicit-default') continue
+    if (PROJECT_PRESET_IDS.includes(key) || key === 'implicit-default') continue
     const visible = session.skills.value.skills.map(({ name, description }) => ({ name, description }))
     for (const repositorySkill of expectedRepositorySkills) expect(visible).not.toContainEqual(repositorySkill)
   }

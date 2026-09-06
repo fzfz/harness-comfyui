@@ -81,13 +81,18 @@ async function fixture() {
   await writeFile(productionDefinitionPath, `${JSON.stringify(productionDefinition)}\n`)
   await writeFile(resolve(root, 'config/source-production.json'), `${JSON.stringify(sourceDefinition)}\n`)
   await writeFile(resolve(root, 'config/product-agent.json'), `${JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     preset: {
       id: 'harness-comfyui-cli-candidate',
+      additionalManagedPresetIds: ['harness-comfyui-iteration'],
       sourceRootRelativePath: 'agent-presets',
       installRootRelativePath: '.agent-presets',
       retiredManagedPresetIds: ['harness-comfyui-schema-control'],
-      sharedFiles: ['project-tool-visibility.mjs', 'project-system-prompt-visibility.mjs'],
+      sharedFiles: [
+        'project-tool-visibility.mjs',
+        'project-system-prompt-visibility.mjs',
+        'project-subagent-workspace.mjs',
+      ],
     },
     skills: {
       sourceRootRelativePath: '.agents/skills',

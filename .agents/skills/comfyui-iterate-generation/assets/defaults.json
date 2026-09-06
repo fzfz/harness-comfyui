@@ -1,0 +1,12 @@
+{
+  "batch_size": 3,
+  "max_submissions": 18,
+  "stagnation_rounds": 2,
+  "revalidation_batches": 2,
+  "revalidation_images_per_batch": 3,
+  "delivery_per_shot": 1,
+  "revalidation_min_passed": 1,
+  "required_joint_ratio": null,
+  "media_poll_interval_seconds": 10,
+  "media_max_queries_per_stage": 6
+}

@@ -26,11 +26,11 @@
 
 `dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。Repository Skills 路径只由当前 worktree 的 `config/product-agent.json.skills` 定义。Desktop 启动器在准备阶段不在隔离 Desktop HOME 下创建 `.agents/skills` 符号链接。隔离 Desktop HOME 下的 `.agents` 是符号链接时，Desktop 启动器保留该链接及其链接目标内容并中止启动；`.agents` 是非目录路径时，Desktop 启动器保留该路径及其内容并中止启动；`.agents/skills` 是符号链接时，Desktop 启动器只删除该链接；`.agents/skills` 是普通文件或普通目录时，Desktop 启动器保留其内容并中止启动。
 
-Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 generation 的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；generation staging 不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该运行环境不改变 `.env`、Workspace、Provider、Preset 或模型配置。开发 Desktop 的 Electron Vite 输出目录固定为当前 worktree 的 `.local/desktop-development/desktop-out/`。
+Desktop generation 是安装在当前 DSH home 的 `profiles/.generations/live/<generation-id>/` 中并且不再原位修改的完整插件包及依赖。generation staging 是 `profiles/.generations/staging/<uuid>/` 中的临时 pnpm 安装项目；安装成功后，DSH Desktop installer 把该目录提升为 generation。Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 staging 项目的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；staging 项目不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该安装过程不改变 `.env`、Workspace、Provider、Preset 或模型配置。开发 Desktop 的 Electron Vite 输出目录固定为当前 worktree 的 `.local/desktop-development/desktop-out/`。
 
 `COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT` 只定义生产 checkout 启动的 DSH Desktop 移动桥接监听端口，值必须是 1 至 65535 的整数。`prod:start` 从生产 checkout 的 `.env` 读取该值，使用该值完成启动前端口检查，并通过 DSH Desktop 的进程变量 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 传给 Desktop 主进程。`dev:start` 和 `dev:restart` 通过主开发 checkout 的 `.local/development-port-claims/` 为当前 worktree 声明空闲端口，并使用运行时端口覆盖传给 Desktop 子进程的两个端口变量；开发命令不读取共享 `.env` 中的端口作为开发端口。启动器在 Desktop 子进程监听端口后释放跨进程声明。
 
-`cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用、前台 Bash 默认超时和默认 `ComfyUI工作台预设` 的共同来源。当前前台 Bash 默认超时为 `180000` 毫秒；单次 Tool Call 可以在 DSH 允许的上限内显式覆盖该值。`config/product-agent.json` 是产品 Preset 物化结构的来源。Desktop 开发与生产都把当前插件包中的这两份配置安装到各自隔离的 DSH home。
+`cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用、前台 Bash 默认超时和默认 `ComfyUI工作台预设` 的共同来源。当前前台 Bash 默认超时为 `180000` 毫秒；单次 Tool Call 可以在 DSH 允许的上限内显式覆盖该值。`config/product-agent.json` 定义项目 Agent Preset 的写入结构：`repositoryRoot` 是当前插件包根目录，项目 Agent Preset 源码目录是 `<repositoryRoot>/<preset.sourceRootRelativePath>`，安装目录是 `<dshHome>/<preset.installRootRelativePath>`，受管内容包括 `preset.sharedFiles` 列出的共享 component 文件、`preset.id` 与 `preset.additionalManagedPresetIds` 对应的 Preset 目录，以及 `preset.retiredManagedPresetIds` 对应的待删除 Preset 目录。Desktop 开发与生产启动器在启动 DSH Desktop 前使用当前插件包中的 `cordis.patch.yml`，将默认及附加 Preset 配置和共享 component 文件写入各自隔离的 DSH home，并删除 `preset.retiredManagedPresetIds` 指定的目录。
 
 ## Web Host 调试配置
 
@@ -46,14 +46,14 @@ Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir
 | 字段 | 规则 |
 | --- | --- |
 | `schemaVersion` | 固定为 `1` |
-| `runtimeId` | 当前为 `harness-comfyui-web-development` |
-| `runtimeRelativeRoot` | 当前为 `.local/web-development` |
-| `sourceProductionDefinitionRelativePath` | 当前为 `config/source-production.json` |
-| `dshProfile` | 当前为 `comfyui-workbench-development` |
+| `runtimeId` | Web Host 调试进程的运行标识；当前为 `harness-comfyui-web-development` |
+| `runtimeRelativeRoot` | 以当前 worktree 根目录为基准的相对运行目录；当前为 `.local/web-development` |
+| `sourceProductionDefinitionRelativePath` | 以当前 worktree 根目录为基准的源码进程配置文件相对路径；当前为 `config/source-production.json` |
+| `dshProfile` | 写入当前 DSH home 并由 DSH `--profile` 选择的配置对象名称；当前为 `comfyui-workbench-development`。该字段不选择 Harness 的 `ConfigurationProfile`；Harness 业务配置由 `source-production.json.configurationProfile` 选择 |
 | `userEnvironmentFilePath` | 主开发 checkout `.env` 的绝对路径 |
 | `startupWorkspacePath` | Web Host 启动时注册的绝对 Workspace 目录 |
 
-Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-development/state/source-managed.json` 中的受管快照。`web:health` 只读取并报告运行状态，不写入 Desktop 或产品配置。
+Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-development/state/source-managed.json` 中的受管快照。该快照保存 `schemaVersion`、`runtimeId`、`activeVersion`、绝对路径 `runtimeRoot`、`configurationProfile`、`host`、`port`、`paths`、`comfyui`、`source`、`client`、`process` 和 `logs`。`web:health` 只读取并报告运行状态，不写入 Desktop 或产品配置。
 
 `web:start` 和 `web:restart` 通过主开发 checkout 的 `.local/development-port-claims/` 为当前 worktree 声明空闲回环端口，并使用该端口覆盖共享环境中的 `HARNESS_COMFYUI_SERVER_PORT`。启动器在 Web Host 子进程监听端口后释放跨进程声明。受管快照保存实际端口；`web:stop`、`web:status`、`web:health` 和 `web:logs` 使用快照中的端口管理当前 worktree 的 Web Host。
 
@@ -65,18 +65,19 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 | 字段 | 规则 |
 | --- | --- |
-| `schemaVersion` | 固定为 `2` |
-| `preset.id` | 产品 Preset 的兼容性内部 ID，只使用小写字母、数字和连字符；当前为 `harness-comfyui-cli-candidate` |
-| `preset.sourceRootRelativePath` | 仓库根目录内的 canonical Agent Preset 根目录；当前为 `agent-presets` |
+| `schemaVersion` | 固定为 `3` |
+| `preset.id` | 默认受管产品 Preset 的兼容性内部 ID，只使用小写字母、数字和连字符；当前为 `harness-comfyui-cli-candidate` |
+| `preset.additionalManagedPresetIds` | 附加受管产品 Preset ID 数组；每项只使用小写字母、数字和连字符，数组项互不重复，且不得包含 `preset.id` 或 `preset.retiredManagedPresetIds` 中的 ID；当前包含 `harness-comfyui-iteration` |
+| `preset.sourceRootRelativePath` | 仓库根目录内的项目 Agent Preset 源码根目录；当前为 `agent-presets` |
 | `preset.installRootRelativePath` | 当前 production 或 worktree DSH home 内的安装根目录；当前为 `.agent-presets` |
-| `preset.retiredManagedPresetIds` | 本项目需要从安装根目录删除的已退役 Preset ID 数组；每项只使用小写字母、数字和连字符，数组不得包含 `preset.id`，数组项不得重复 |
-| `preset.sharedFiles` | 非空且互不重复的 `.mjs` basename 数组；当前包含 `project-tool-visibility.mjs` 和 `project-system-prompt-visibility.mjs` |
+| `preset.retiredManagedPresetIds` | 本项目需要从安装根目录删除的已退役 Preset ID 数组；每项只使用小写字母、数字和连字符，数组不得包含默认或附加受管 Preset ID，数组项不得重复 |
+| `preset.sharedFiles` | 非空且互不重复的 `.mjs` basename 数组；每个源文件位于 `<repositoryRoot>/<preset.sourceRootRelativePath>/`，启动器把它写入 `<dshHome>/<preset.installRootRelativePath>/`，受管 Preset 的 `agent.cordis.yml` 按需通过相对路径加载这些共享 component；当前包含 `project-tool-visibility.mjs`、`project-system-prompt-visibility.mjs` 和 `project-subagent-workspace.mjs` |
 | `skills.sourceRootRelativePath` | 当前 checkout 内的 Repository Skills 相对目录；当前为 `.agents/skills` |
 | `skills.environmentVariable` | 产品 Preset 读取 Repository Skills 使用的受管环境变量名称；固定为 `HARNESS_COMFYUI_SKILL_DIR` |
 
-`sourceRootRelativePath/<preset.id>` 必须只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。每个 shared file 和产品 Preset 在首次写入前全部完成文件类型、可读性、DSH YAML dialect、plugin-row 与 component resolution 检查。任一检查失败时，启动器不开始本轮物化。`installRootRelativePath` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器分别原子替换受管 shared file 和产品 Preset，再删除 `retiredManagedPresetIds` 指定的精确路径。删除符号链接形式的退役路径时，启动器只删除链接，不改变链接目标。启动器保留同一安装根目录中的其他 Preset。
+`<repositoryRoot>/<preset.sourceRootRelativePath>/<preset-id>` 必须为 `preset.id` 和 `preset.additionalManagedPresetIds` 中的每个受管 ID 提供项目 Agent Preset 源码目录；每个目录只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。启动器在首次写入配置前检查 `preset.sharedFiles` 中的每个 `.mjs` 文件是非空、可读的普通文件，可以作为模块加载，并且导出 `apply()`。启动器还使用 DSH YAML dialect 解析每个受管 Preset 的 `agent.cordis.yml`，检查顶层及 group 配置中的每一项都是包含插件名称的 plugin row，并确认每个非 `cordis:` component 都能由 DSH 解析；相对路径 component 还必须通过前述共享 `.mjs` 文件检查。任一检查失败时，启动器不开始本轮配置写入。`<dshHome>/<preset.installRootRelativePath>` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器分别原子替换 `preset.sharedFiles` 指定的受管共享文件，以及 `preset.id` 和 `preset.additionalManagedPresetIds` 指定的每个受管产品 Preset，再删除 `preset.retiredManagedPresetIds` 指定的精确路径。删除符号链接形式的退役路径时，启动器只删除链接，不改变链接目标。启动器保留同一安装根目录中的其他 Preset。
 
-`prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都读取该配置，并把相同的受管 Preset 文件物化到各自隔离的 DSH home。当前插件 `cordis.patch.yml` 把 `harness-comfyui-cli-candidate` 设置为这些环境的默认 Preset；启动器不修改 Harness `standard` Preset 的源码。
+`prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都读取该配置，并把 `preset.id` 与 `preset.additionalManagedPresetIds` 对应的相同 Preset 配置写入各自隔离的 DSH home。当前插件 `cordis.patch.yml` 把 `harness-comfyui-cli-candidate` 设置为这些环境的默认 Preset；附加受管 Preset 不改变默认值。启动器不修改 Harness `standard` Preset 的源码。
 
 `loadProductAgentConfiguration(repositoryRoot)` 验证 Repository Skills 目录存在、目录本身不是符号链接且真实路径位于 `repositoryRoot` 内。Desktop 启动器的 `start` 和 `restart` 命令与 Web Host 环境构建器在启动子进程前调用该函数；Desktop 启动器的 `status`、`logs` 和 `stop` 命令只读取既有运行状态，因此 Repository Skills 配置损坏时仍可用于诊断和停止进程。Desktop 启动器在合并 `.env` 与调用者环境后，把经过验证的 Repository Skills 绝对路径写入 Desktop 子进程环境的 `HARNESS_COMFYUI_SKILL_DIR`。Web Host 环境构建器先从 Web Host 子进程环境中移除调用者提供的全部 `HARNESS_COMFYUI_*` 环境变量，再把经过验证的 Repository Skills 绝对路径写入该子进程环境的 `HARNESS_COMFYUI_SKILL_DIR`。Repository Skills 目录验证失败时，Desktop 启动器和 Web Host 环境构建器都中止对应子进程的启动，并且不读取调用者用户主目录下的 `.agents/skills` 作为 Repository Skills 来源。
 
@@ -113,10 +114,10 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `comfyui.frontendCompiler.preReadiness.webSocketConnectMs` | Harness Host 连接本机浏览器目标 WebSocket 的正整数阶段时限，毫秒；production 默认值为 `10000` |
 | `comfyui.frontendCompiler.preReadiness.domainEnableMs` | 本机浏览器目标完成全部 Chrome DevTools domain enable 命令的共同正整数阶段时限，毫秒；production 默认值为 `10000` |
 | `comfyui.frontendCompiler.preReadiness.navigationMs` | 本机浏览器目标完成 `Page.navigate` 的正整数阶段时限，毫秒；production 默认值为 `10000` |
-| `comfyui.frontendCompiler.preReadiness.infrastructureAttempts` | 同一个 cache miss 在前端 readiness 之前发生基础设施故障时使用的浏览器会话尝试次数，只允许 `1` 或 `2`；production 默认值为 `2` |
+| `comfyui.frontendCompiler.preReadiness.infrastructureAttempts` | 同一次缓存未命中时的浏览器会话尝试次数；缓存未命中表示目标缓存文件不存在。重试只覆盖前端就绪检查开始前的临时浏览器目录创建失败、浏览器启动失败、浏览器在发布有效 `DevToolsActivePort` 前退出、`DevToolsActivePort` 缺失或无效、创建 DevTools 页面目标失败、连接 DevTools WebSocket 失败、启用 DevTools domain 失败、页面目标崩溃，以及 `Page.navigate` 失败；对应阶段超时也属于同类故障。前端就绪检查要求页面加载完成、ComfyUI app 同时提供 graph、`loadGraphData()` 与 `graphToPrompt()`，并且 splash loader 已隐藏。请求拦截失败、前端就绪检查失败和 Workflow 导出失败不会重试。该字段只允许 `1` 或 `2`；production 默认值为 `2` |
 | `source.catalogPort` | 数据源服务 Settings 首次注册时使用的默认端口；production 默认值为 `18093` |
 | `jobs.pollIntervalMs` | ComfyUI Job 轮询间隔，毫秒 |
-| `jobs.missingObservationMs` | 缺失 Job observation 判定时间，毫秒 |
+| `jobs.missingObservationMs` | 已提交 Run 首次收到 ComfyUI Job `unknown` 结果、`COMFYUI_CONNECTION_FAILED` 或 `COMFYUI_REQUEST_TIMEOUT` 时开始计时；后续 `pending` 或 `running` 结果清除该起点，再次收到前述缺失结果且已经达到该毫秒数时把 Run 判定为失败 |
 | `media.maxFileBytes` | 单个 ComfyUI 输出媒体允许保存的最大字节数 |
 | `server.host` | Harness Web 监听地址；固定为 `127.0.0.1`，配置文件不能改为其他地址 |
 | `server.port` | Harness Web 端口；当前为 `4173` |
@@ -125,7 +126,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 官方前端编译 Worker 不通过 macOS LaunchServices 启动浏览器。Worker 使用独立临时 profile、`--use-mock-keychain` 和 `--disable-features=DialMediaRouteProvider` 运行 headless Chrome；这些固定运行参数不接受环境变量覆盖。
 
-启动器通过环境映射写入全部运行值。运行目录与 Official API Workflow Cache 目录始终由 `source-production.json` 生成。调用者可以覆盖以下业务值：
+`scripts/production/runtime.mjs` 管理的旧 Web 生产 context 和 Web Host 调试 context 通过环境映射写入全部运行值。旧 Web 生产 context 的运行目录由 `source-production.json.runtimeRelativeRoot` 定义；Web Host 调试 context 使用 `web-development.json.runtimeRelativeRoot` 覆盖该目录。两个 context 的 Official API Workflow Cache 目录都由各自生效的运行目录生成。Desktop 生产与 Desktop 开发的运行目录分别由 `desktop-production.json` 和 `desktop-worktree.json` 定义。调用者可以覆盖以下业务值：
 
 - `HARNESS_COMFYUI_DEFAULT_INSTANCE_ID`
 - `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH`
@@ -145,11 +146,11 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 `HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY` 由启动器固定为运行数据目录中的 `api-workflow-cache`，不能通过调用者环境改变。`HARNESS_COMFYUI_SERVER_HOST` 只把已经验证的 `127.0.0.1` 传给 Harness 子进程，不能覆盖 `server.host`。`config/environment-overrides.json` 是环境变量名称、Configuration Profile 目标字段、值类型和 Host 子进程运行值路径的唯一结构化来源。每项声明都使用 `valueType` 指定 `string` 或 `number`。覆盖 Configuration Profile 的声明使用 `target` 指定目标字段。进入 Host 受管环境的声明使用 `hostRuntimePath` 指定运行配置中的取值路径。只进入 Host 且不覆盖 Configuration Profile 的声明使用 `passThrough: true`，并且不使用 `target`。加载当前配置时，任何未在该文件中声明的 `HARNESS_COMFYUI_*` 环境变量都会中止配置加载。
 
-任一已登记 ComfyUI 实例升级前端、安装或升级影响 Workflow 序列化的自定义节点、或者改变前端导出行为后，必须修改 Host 级 `comfyui.frontendCompiler.instanceCacheEpoch` 并执行对应环境的 `pnpm prod:restart`、`pnpm dev:restart` 或 `pnpm web:restart`。此次修改会使该 Host 下全部已登记实例的旧缓存均不再命中。Host 不会把损坏缓存或 identity 不匹配当作 cache miss；调用者应当根据 `COMFYUI_API_WORKFLOW_CACHE_INVALID` 错误定位对应缓存文件或修改 Host 级缓存代次。
+任一已登记 ComfyUI 实例升级前端、安装或升级影响 Workflow 序列化的自定义节点、或者改变前端导出行为后，必须修改 Host 级 `comfyui.frontendCompiler.instanceCacheEpoch` 并执行对应环境的 `pnpm prod:restart`、`pnpm dev:restart` 或 `pnpm web:restart`。此次修改会使该 Host 下全部已登记实例的旧缓存均不再命中。Host 不会把无效 JSON、缓存 identity 不匹配或 API Workflow 结构无效当作缓存未命中。`COMFYUI_API_WORKFLOW_CACHE_INVALID` 指明的单个缓存 JSON 存在上述问题时，维护者应先停止对应环境，删除错误消息指明的缓存文件，再重新启动该环境并重试原请求；文件不存在时，Host 会执行新的官方前端导出并写入缓存。需要同时废弃该 Host 下全部已登记实例的缓存时，维护者应修改 `comfyui.frontendCompiler.instanceCacheEpoch` 并重启对应环境。
 
 ## 配置变更
 
-Configuration Profile 文件不热更新。生产 Desktop 修改后执行 `pnpm prod:restart` 与 `pnpm prod:status`；开发 Desktop 修改后执行 `pnpm dev:restart` 与 `pnpm dev:status`；Web Host 修改后执行 `pnpm web:restart`、`pnpm web:status` 与只读的 `pnpm web:health`。Web Host 的受管快照保存运行中的版本、运行根目录、监听地址与端口、数据路径、Official API Workflow Cache 路径、停止超时和日志读取参数。
+Configuration Profile 文件不热更新。生产 Desktop 修改后执行 `pnpm prod:restart` 与 `pnpm prod:status`；开发 Desktop 修改后执行 `pnpm dev:restart` 与 `pnpm dev:status`；Web Host 修改后执行 `pnpm web:restart`、`pnpm web:status` 与只读的 `pnpm web:health`。
 
 ## Harness-ComfyUI 数据源服务设置
 
@@ -166,7 +167,7 @@ Host 每次执行语义查询、读取 ComfyUI 实例或读取 Workflow bundle �
 
 ## 图片读取设置
 
-Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页通过已保存配置激活 Remote、单配置保存 Remote 或独立删除 Remote 修改该 namespace。该 namespace 包含以下属性：
+Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页调用 Host 的 `harnessComfyuiImageReader/activateProfile`、`harnessComfyuiImageReader/saveProfile` 和 `harnessComfyuiImageReader/deleteProfile` 接口修改该 namespace。该 namespace 包含以下属性：
 
 | 字段 | 规则与用途 |
 | --- | --- |
@@ -184,14 +185,14 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 | `configuration.profiles[].maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
 | `credentials.<profileId>` | OpenAI 兼容配置的可选 API Key；该字典的值使用 Settings `secret` role，浏览器只收到对应 `hasApiKey` 状态 |
 
-系统 Provider 与模型候选来自 Harness 当前 LLM 运行时，并且设置页只列出明确声明 `image` 输入能力的模型。OpenAI 兼容配置不依赖系统 Provider 目录；Host 向完整地址发送 OpenAI Chat Completions 格式的单张图片 Data URL、提示词、模型 ID、`temperature` 和 `max_tokens`。HTTP 地址不会提供传输加密；配置 API Key 时，使用者必须确认目标内网链路符合部署要求。
+系统 Provider 与模型候选来自 Harness 当前 LLM 运行时，并且设置页只列出明确声明 `image` 输入能力的模型。OpenAI 兼容配置不依赖系统 Provider 目录；Host 向完整地址发送 OpenAI Chat Completions 格式的单张图片 Data URL、提示词、模型 ID、`temperature` 和 `max_tokens`。当完整地址使用 HTTP 时，请求中的 Bearer API Key（如已配置）和 Data URL 图片数据不受 TLS 传输加密保护。
 
 设置页把 Host 返回的实际生效配置与 Client 当前编辑草稿分别保存。已保存配置选择器只列出 Host 返回的 `configuration.profiles[]`；使用者选择另一份已保存配置时，Client 立即调用激活 Remote，Host 只修改 `configuration.activeProfileId`，不修改配置内容或凭据。外部 Settings 写操作在草稿编辑期间切换实际生效配置时，普通保存只保存当前草稿并继续使用外部写操作已经激活的配置。新建或复制但没有保存的配置只存在于 Client 草稿，离开设置页后丢弃，且不会参与图片读取。
 
-设置页只提交当前编辑配置、`operation: create | update` 和明确的最终 `activateProfileId`，不提交 Client 中的配置数组或 `hasApiKey`。Host 每次保存都读取最新 Settings：`update` 在原索引替换仍然存在的同 ID 配置，`create` 只把尚不存在的新 ID 配置追加到列表末尾；Host 在同一次 `settings.replace()` 中保存草稿并把最终目标写入 `activeProfileId`。因此，“保存 A 并切换 B”不会产生 A 临时生效的中间状态。Host 根据持久化凭据派生每份配置的 `hasApiKey`。保存 runtime 配置会删除该 ID 的旧 API Key；保存 OpenAI 兼容配置时，`keep` 保留现有值，`replace` 写入新的 write-only API Key，`clear` 删除现有值。Client 不会收到已保存的 API Key 明文。
+设置页提交当前编辑配置、`operation: create | update`、最终 `activateProfileId`，以及 OpenAI 兼容配置所需的 `credential`；设置页不提交 Client 中的配置数组或 `hasApiKey`。Host 每次保存都读取最新 Settings：`update` 在原索引替换仍然存在的同 ID 配置，`create` 只把尚不存在的新 ID 配置追加到列表末尾；Host 在同一次 `settings.replace()` 中保存草稿并把最终目标写入 `activeProfileId`。因此，“保存 A 并切换 B”不会产生 A 临时生效的中间状态。Host 根据持久化凭据派生每份配置的 `hasApiKey`。runtime 配置的保存请求不包含 `credential`，Host 保存该配置时删除同 ID 的旧 API Key。OpenAI 兼容配置的保存请求必须包含 `credential: { action: "keep" }`、`credential: { action: "clear" }` 或 `credential: { action: "replace", apiKey: <新 API Key> }`；`keep` 保留现有值，`clear` 删除现有值，`replace` 写入请求中的新 API Key。新 API Key 只随 `replace` 请求发送；Host 的保存、读取、激活和删除响应均不返回 API Key 明文，只返回由持久化凭据派生的 `hasApiKey`。
 
 删除已保存配置使用独立 Host Remote。删除操作同时删除 `credentials.<profileId>`；删除非活动配置保持原 `activeProfileId`，删除活动配置时优先选择删除前列表中的后一项，不存在后一项时选择前一项。最后一份配置不能删除。Host 按调用顺序串行执行每次保存、激活或删除的“读取最新 Settings、校验、合并、`settings.replace()`”完整临界区，防止重叠请求根据旧快照覆盖先完成的修改。保存、激活或删除成功后，Host 返回完整 `configuration`；Client 用返回值替换持久化快照并重新加载 Host 指定的活动配置。
 
 Host 与 Client 使用同一固定顺序校验当前保存请求。每条名称、连接参数、模型、默认提示词、温度、最大输出 Token 数或 API Key 规则具有独立错误码；设置页在对应输入项附近显示该规则，并在保存按钮附近显示同一错误码的总结。其他配置不参与当前保存请求，也不能用 Client 中的未保存输入阻止当前配置保存。保存持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`；激活持久化失败使用 `IMAGE_READER_SETTINGS_ACTIVATE_FAILED`；删除持久化失败使用 `IMAGE_READER_SETTINGS_DELETE_FAILED`。Host 通过 Typert 业务失败载体把这些具体错误码发送给 Client，设置页不会把这些错误码改写为通用设置请求错误。Host 拒绝覆盖同 ID 的新建配置、重新创建并发删除的更新目标或激活不存在的已保存配置。保存或激活成功后，Host 返回的活动配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
 
-v0.36.0 继续注册旧 namespace `harness-comfyui-image-reader` 以读取 v0.35.x 的单配置用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，Host 不会重复迁移或覆盖。
+当前 Host 启动时同时注册旧 namespace `harness-comfyui-image-reader` 和新 namespace `harness-comfyui-image-reader-profiles`，并检查两个 namespace 的用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，当前 Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，当前 Host 不会重复迁移或覆盖。
