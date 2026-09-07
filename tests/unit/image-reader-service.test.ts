@@ -78,6 +78,16 @@ function fixture() {
 }
 
 describe('ImageReaderService', () => {
+  it('forwards each inspection session to the runtime model stream', async () => {
+    const { service, filePath, prepareCall } = fixture()
+    await Promise.all(['parent', 'child'].map(sessionId => service.inspect(filePath, { sessionId, prompt: sessionId })))
+    const prepared = await prepareCall.mock.results[0]!.value
+    expect(prepared.stream.mock.calls.map((call: any[]) => call[0].sessionId).sort()).toEqual(['child', 'parent'])
+    for (const [request] of prepared.stream.mock.calls) {
+      expect(request.messages[0].content[0].text).toBe(request.sessionId)
+    }
+  })
+
   it('publishes every image reading error code in the project error catalog', () => {
     expect(Object.keys(errorCatalog).filter(code => code.startsWith('IMAGE_READER_')).sort()).toEqual([
       'IMAGE_READER_API_KEY_REQUIRED',

@@ -131,6 +131,7 @@ describe('image reader Tools', () => {
     })
     expect(inspect).toHaveBeenLastCalledWith('/media/a.png', {
       prompt: undefined,
+      sessionId: 'session_1',
       signal: expect.any(AbortSignal),
     })
 
@@ -140,8 +141,17 @@ describe('image reader Tools', () => {
     )
     expect(inspect).toHaveBeenLastCalledWith('/media/a.png', {
       prompt: '只描述可见服饰。',
+      sessionId: 'session_1',
       signal: expect.any(AbortSignal),
     })
+  })
+
+  it('does not invent a session for execution outside an Agent', async () => {
+    const inspect = vi.fn(async () => ({ provider: 'p', model: 'm', filePath: '/media/a.png', observation: 'result' }))
+    const tool = createInspectImageTool({ inspect } as never)
+    const context = { ...execution('inspect_image', [], 'call_inspect'), agent: undefined }
+    await tool.execute({ file_path: '/media/a.png' }, context as never)
+    expect(inspect).toHaveBeenCalledWith('/media/a.png', expect.objectContaining({ sessionId: undefined }))
   })
 
   it('preserves the image reader provider diagnostic thrown by the service', async () => {

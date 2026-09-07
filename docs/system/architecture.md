@@ -69,7 +69,7 @@ pnpm web:start|restart
 | `config/` | 生产配置、schema 和环境变量映射 |
 | `profiles/` | Harness bundle composition 模板 |
 
-DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。DeepSeek Harness 核心源码保持未修改。DSH Desktop 的 `main` 分支维护移动桥接端口入口、聚合 Client Remote 补丁和产品 adapter 启用状态；当前 Harness ComfyUI 仓库只在启动 DSH Desktop 时传入 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，不复制 DSH Desktop 源码，也不把 Desktop 写入当前仓库 manifest 或 lockfile。开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库。
+DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。当前仓库通过公共接口接入 DeepSeek Harness；DSH Desktop 在自身的 `patches/` 目录维护受管依赖补丁，包括把模型请求的 Session ID 写入 `x-deepseek-harness-session-id` 请求头的 pi-ai 适配器补丁。DSH Desktop 的 `main` 分支维护移动桥接端口入口、聚合 Client Remote 补丁和产品 adapter 启用状态；当前 Harness ComfyUI 仓库只在启动 DSH Desktop 时传入 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，不复制 DSH Desktop 源码，也不把 Desktop 写入当前仓库 manifest 或 lockfile。开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库。
 
 Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示真实 Generation Run/Media 投影。Harness `0.1.2-rc.1` 不为尚未保存的空白 Session 分配 `details` 列宽；Client 仅在该状态通过公开 `shell.overlay` 扩展位显示空结果列。Session 保存后，`shell.overlay` 结果列退出，原生 `details` 结果列接管，页面只保留一个可见结果列。结果列按照“本会话媒体”“运行状态”的顺序显示页签，并在每次创建结果列组件时默认选择“本会话媒体”。工作台首次启用时自动打开结果列。`WorkbenchDock` 观察包含工作台按钮的 Harness AppFrame 上的 `data-details-collapsed` 属性；详情列关闭时，controller 的结果列状态为关闭，按钮显示“打开结果列”，详情列打开时，controller 的结果列状态为打开，按钮显示“关闭结果列”。用户点击工作台按钮、用户切换已保存 Session 或 Harness 的聊天和工具详情入口打开详情列后，`WorkbenchDock` 都会读取 `data-details-collapsed` 的新值、更新 controller 的结果列状态并显示与详情列状态一致的按钮文案。
 
@@ -184,6 +184,8 @@ Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_
 页面用浏览器原生视频控件播放视频；图片和视频保持原始宽高比完整显示，不裁切内容。图片加载后，页面读取 `naturalWidth` 和 `naturalHeight`；视频元数据加载后，页面读取 `videoWidth` 和 `videoHeight`。上述值定义为媒体文件的固有像素尺寸，不使用 Generation Request 中的 `width` 或 `height` 推测。切换媒体时尺寸先显示“读取中”，零尺寸或媒体加载失败时显示“尺寸不可用”；已经被替换的媒体产生迟到事件时不得覆盖当前媒体的尺寸。页面在媒体下方逐字符显示保存的正面提示词或明确缺失状态。
 
 ## 图片读取与 Prompt 对比
+
+`ImageReaderService.inspect()` 接收内部 `sessionId` 参数。`inspect_image` Tool 从 `exec.agent.session.id` 取得该值，受管 CLI 的 `image.inspect` 路由从已验证的 capability identity 取得该值；服务把该值传入 runtime 模型的 `prepared.stream()`。该参数不属于 Agent 可填写的 Tool schema、CLI 请求体或用户设置。
 
 `GenerationRuntime.readGenerationRunMedia()` 接受一至二十个完整 `run_id` 或唯一规范前缀，按输入顺序查询当前 Workspace，并为每个输入返回独立的成功元素或错误元素。成功元素包含原始 Generation Request 参数和 Saved Media 的本地图片路径。DSH Tool `get_generation_run_media` 与受管 CLI 命令 `generation resolve-media --stdin` 复用该运行时方法，且两种入口都不调用视觉模型。
 

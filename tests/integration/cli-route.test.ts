@@ -655,6 +655,12 @@ describe('Harness ComfyUI managed CLI route', () => {
       command: 'image.inspect', file_path: '/media/result.png', prompt: '只识别图片中的文字。',
     })
 
+    const spoofedSessionResponse = await post(server.origin, 'trusted', {
+      command: 'image.inspect', file_path: '/media/result.png', sessionId: 'other-session',
+    })
+    expect(spoofedSessionResponse.status).toBe(400)
+    expect(inspect).toHaveBeenCalledTimes(2)
+
     expect(mediaResponse.status).toBe(200)
     expect(await mediaResponse.json()).toEqual({
       ok: true,
@@ -680,10 +686,12 @@ describe('Harness ComfyUI managed CLI route', () => {
     })
     expect(inspect).toHaveBeenNthCalledWith(1, '/media/result.png', {
       prompt: undefined,
+      sessionId: 'session_1',
       signal: expect.any(AbortSignal),
     })
     expect(inspect).toHaveBeenNthCalledWith(2, '/media/result.png', {
       prompt: '只识别图片中的文字。',
+      sessionId: 'session_1',
       signal: expect.any(AbortSignal),
     })
     await server.close()
