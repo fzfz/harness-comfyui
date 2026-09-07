@@ -1,3 +1,22 @@
+# Harness ComfyUI v0.40.1
+
+v0.40.1 修复 OpenCode Go 模型调用缺少会话 ID 导致的 `400 MissingSessionID` 错误。
+
+## 会话身份传递
+
+- Desktop 适配器把真实 Session ID 传入 OpenCode Go 请求；重复调用和并发父子会话分别保留所属会话的身份。
+- 图片读取 Tool 从当前 Agent 获取 Session ID，managed CLI 从已授权的调用身份获取 Session ID，并把它传入系统视觉模型调用。CLI 不接受用户提交的会话 ID 覆盖调用身份。
+## 测试修复
+
+Desktop 删除会话测试等待目标会话行出现后再打开菜单；目标行始终未出现时，测试仍然失败。
+
+## 版本与部署依赖
+
+- Desktop 基线更新为自有仓库提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2`，对应已合并的 [Desktop PR #4](https://github.com/fzfz/dsh-desktop/pull/4)。[官方上游 PR #329](https://github.com/dataelement/dsh-desktop/pull/329) 已提交。
+- 本版本没有增加或升级依赖。生产部署复用已有锁定依赖，并应用新 Desktop 提交中的适配器补丁。
+- Desktop 锁文件仍包含 `image-size 1.2.1`；已记录的 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告保持不变。
+- GitHub Release 发布 Git tag 与发布说明，不附加产品安装包。
+
 # Harness ComfyUI v0.40.0
 
 v0.40.0 新增 `comfyui-iterate-generation` Skill 和独立的 `ComfyUI迭代预设`。使用者选择该预设后，可以通过自然语言多轮迭代请求或 `/comfyui-iterate-generation` 开始任务。

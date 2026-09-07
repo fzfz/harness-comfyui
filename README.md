@@ -35,10 +35,10 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 获取已发布源码
 
-以下示例安装 `v0.40.0`。在准备存放项目的目录中执行：
+以下示例安装 `v0.40.1`。在准备存放项目的目录中执行：
 
 ```sh
-git clone --branch v0.40.0 https://github.com/fzfz/harness-comfyui.git
+git clone --branch v0.40.1 https://github.com/fzfz/harness-comfyui.git
 cd harness-comfyui
 ```
 
@@ -51,7 +51,7 @@ cd harness-comfyui
 ```sh
 mkdir -p .local/upstreams
 git clone --branch main https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
-git -C .local/upstreams/dsh-desktop switch --detach 5e08355a58bb727cb0f48c794550202d9d59ed9f
+git -C .local/upstreams/dsh-desktop switch --detach f2a27b4461e8c15d21268533efb7b99bb9bb14f2
 ```
 
 先按 [DSH Desktop 依赖安装步骤](docs/system/releasing.md#dsh-desktop-的受控依赖安装)完成 Desktop 依赖安装，再回到本项目根目录执行：
