@@ -1,135 +1,234 @@
 # Harness ComfyUI
 
-Harness ComfyUI 是通过 DSH Desktop generation 接入 DeepSeek Harness 的 ComfyUI 集成项目。项目提供 Host 插件、使用 Harness 原生扩展位的 Client 插件、完整 Desktop 的生产与开发命令，以及独立 Web Host 调试命令。当前 Client 使用 `sidebar.footer.action`、`conversation.input.dock`、`details` 和 `shell.overlay` 提供 ComfyUI 工作台入口、上下文选择器与生成结果列，并保留 Harness 的 AppFrame、Session 列表、会话区和原生 composer。
+Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出图的 AI 助手。你只需说清想画什么、选好工作流模板和底模，助手就会根据需求查找作品、角色、画师和 LoRA，搭配画师风格与 LoRA、设置各自的权重，并设计提示词和绘图参数。你不用逐项打开工作流手动调参数，可以把精力放在画面本身。
 
-会话 Agent 运行期间，右侧“运行状态”持续查询当前会话的 Run；首批尚未创建或上一批已经完成时，面板也能自动显示随后创建的 Run。Agent 停止运行后，面板继续跟踪尚未结束的 Run，直到这些 Run 全部结束。
+这些工作由 Agent（对话中的 AI 助手）配合 Skills（负责查资料、设计提示词和生图的技能）完成。生成后，还能直接调用图片识别工具，对照要求检查画面，为下一轮调整提供建议。
 
-## 环境要求
+目前支持图片生成，后续计划支持视频和语音生成。
 
-- Node.js `22.19.0` 或 `24.0.0` 以上版本
-- pnpm `11.7.0`
-- 首次启动前，使用者必须把 `fzfz/dsh-desktop` 的 `5e08355a58bb727cb0f48c794550202d9d59ed9f` commit 检出到本地 `.local/upstreams/dsh-desktop`
-- 本机 Chrome 或 Chromium；production 默认路径为 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`，其他安装路径通过 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` 配置
-- 使用者必须准备一个独立部署并可通过 HTTP 或 HTTPS 访问的数据源服务。
+## 主要功能
 
-## 首次启动
+- **说出想画什么，助手自动找合适的素材。** 按需求的含义查询作品、角色、画师、画师串（多位画师的风格组合）和 LoRA（用于补充人物特征或画风的模型），根据查询结果搭配画师风格与 LoRA，并设置各自的权重，减少自己翻目录、试搭配的工作。
+- **选好模板和底模，绘图参数交给助手。** 根据当前选择设计正向提示词、负面提示词、图片宽高、步数和 CFG（画面对提示词的遵循强度）等参数，并填入工作流，无需逐项手动调整。
+- **三种生图模型，各用适合自己的提示词。** 支持 ANIMA、WAI-illustrious-SDXL 和 Krea2；助手根据选定模型使用对应技能设计提示词与画面参数。
+- **自动调用工作流，支持多个 ComfyUI 实例。** 助手把组合好的提示词和参数交给工作流，再将生成任务发送到目标实例。你可以在同一个界面里查看进度、浏览结果和下载原图。
+- **图片识别模型由你选，出图后还能继续分析。** 内置图片识别工具，支持供应商提供的图片识别模型，也支持自行填写 OpenAI 兼容接口，可接入你选择的无审核图片识别服务。它既能描述本地图片，也能对照生图要求指出画面偏差、提出修改建议。
+- **满意的图片，能找回当时的生成方法。** 每次生成都会保存描述和绘图设置，便于查询、复用和继续调整，不必凭记忆重新试参数。
 
-仅当当前 checkout 尚不存在 `.local/upstreams/dsh-desktop` 时执行以下完整首次准备：
+## 使用前准备
+
+本项目通过源码启动 DSH Desktop。GitHub Releases 提供版本记录和源码标签，不提供桌面安装包。当前默认配置使用 macOS 路径；在其他机器上使用前，需要按下文设置本机路径。
+
+| 准备项 | 要求与用途 |
+| --- | --- |
+| Git、Node.js、pnpm | 使用 Git 获取源码。Node.js 支持 `^22.19.0` 或 `>=24.0.0`；pnpm 使用 `11.7.0`。 |
+| DSH Desktop | 提供桌面窗口、对话和模型设置。按下文准备本版本要求的 Desktop 源码与依赖。 |
+| Chrome 或 Chromium | 安装在运行 Harness ComfyUI 的机器上，用于将 Workflow 转换为 ComfyUI 可执行的请求。 |
+| 数据源服务 | 单独部署、可通过 HTTP 或 HTTPS 访问的服务，提供角色、画风、生成模型、LoRA、ComfyUI 实例与 Workflow 目录。准备服务 URL 和端口。 |
+| ComfyUI 实例 | 在数据源服务中登记可访问的实例，并准备 Workflow 所需的模型、LoRA 和自定义节点。 |
+| 对话模型 | 为 Agent 理解需求、编写提示词和调用生图能力提供服务。默认配置使用 OpenCode Go，需要相应 API Key。 |
+| 图片读取模型 | 在需要描述图片或分析生成结果时使用，必须支持图片输入；在“设置 → ComfyUI → 图片读取”中单独配置。 |
+
+对话模型和图片读取模型通过模型服务接口工作；生成模型运行在 ComfyUI 实例中，负责实际出图。选择对话模型不会替换 ComfyUI 的生成模型。
+
+## 安装与首次启动
+
+### 1. 获取已发布源码
+
+以下示例安装 `v0.40.0`。在准备存放项目的目录中执行：
 
 ```sh
-(
-set -e
+git clone --branch v0.40.0 https://github.com/fzfz/harness-comfyui.git
+cd harness-comfyui
+```
+
+后续命令均在这个 `harness-comfyui` 目录中执行，除非步骤另有说明。
+
+### 2. 准备 DSH Desktop 与依赖
+
+首次安装时，执行以下命令获取本版本使用的 DSH Desktop：
+
+```sh
 mkdir -p .local/upstreams
 git clone --branch main https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
 git -C .local/upstreams/dsh-desktop switch --detach 5e08355a58bb727cb0f48c794550202d9d59ed9f
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
-)
 ```
 
-按照[docs/system/releasing.md 的受控依赖安装章节](docs/system/releasing.md#dsh-desktop-的受控依赖安装)安装 Desktop 依赖后，在 Harness checkout 根目录继续执行：
+先按 [DSH Desktop 依赖安装步骤](docs/system/releasing.md#dsh-desktop-的受控依赖安装)完成 Desktop 依赖安装，再回到本项目根目录执行：
 
 ```sh
-(
-set -e
 pnpm install --frozen-lockfile
 pnpm desktop:dependencies:link
-cp .env.example .env
-pnpm prod:start
-)
 ```
 
-`.env.example` 列出 Provider API Key、可覆盖的 Harness 业务配置，以及必须在 JSON 配置或 DSH Desktop 设置页修改的 Workspace、路径和图片读取接口。使用者在 Harness 的“ComfyUI”设置页填写数据源服务 URL 和端口。
+### 3. 填写本机配置
 
-`prod:start` 在前台执行 DSH Desktop `pnpm preview`，加载当前 Git tag 的插件 generation。另开一个终端检查状态：
+首次安装时创建环境文件：
+
+```sh
+cp .env.example .env
+```
+
+启动前完成以下设置：
+
+| 配置位置 | 需要填写的内容 |
+| --- | --- |
+| `.env` 中的 `OPENCODE_GO_API_KEY` | 将示例值替换为你的 OpenCode Go API Key，以使用默认对话模型。其他 Provider 和模型配置见[系统启动说明](docs/system/startup.md)。 |
+| `config/desktop-production.json` 中的 `startupWorkspacePath` | 改为本机用于保存工作文件的 Workspace 绝对目录，并提前创建该目录。Desktop 启动后会直接打开这个 Workspace。 |
+| `.env` 中的 `HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH` | 默认值是 `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`。如果本机浏览器不在这个位置，取消示例行注释并填写实际可执行文件的绝对路径。 |
+
+完整配置项及修改方式见[配置说明](docs/system/configuration.md)。数据源服务和图片读取模型在应用启动后通过设置页填写。
+
+### 4. 启动并确认应用可用
+
+```sh
+pnpm prod:start
+```
+
+保持这个终端运行。另开一个终端，进入同一项目目录，执行：
 
 ```sh
 pnpm prod:status
 pnpm prod:logs
 ```
 
-常用命令：
+启动成功后，`prod:status` 显示 `running`，Desktop 打开指定 Workspace，侧边栏提供“ComfyUI 工作台”入口。接下来配置数据源并完成第一次生图。
+
+## 完成第一次生图
+
+### 1. 连接数据源服务
+
+打开“设置 → ComfyUI → 数据源服务”，分别填写 URL 和端口并保存。例如，服务运行在本机 `18093` 端口时，URL 填写 `http://127.0.0.1`，端口填写 `18093`。URL 中不包含端口或接口路径。
+
+保存后，下一次目录查询使用新设置，无需重启应用。
+
+### 2. 创建会话并选择生图资源
+
+在“新建会话”菜单的预设选项中选择“ComfyUI工作台预设”；它也是本项目的默认预设。该预设提供本文介绍的提示词、生图和读图 Skills，无需另外安装。
+
+点击侧边栏“ComfyUI 工作台”，然后点击对话输入区附近的“插入上下文”。在资源列表中搜索并选择条目，最后点击“插入”，将选择加入当前消息。
+
+| 选择项 | 第一次生图时如何选择 |
+| --- | --- |
+| Workflow | 必须指定一个。选择已经在目标 ComfyUI 实例上准备好模型和节点的 Workflow。 |
+| 生成模型 | 可以使用 Workflow 的默认生成模型；Workflow 未指定默认模型时，必须另选一个。所选生成模型与 Workflow 必须属于相同底模。 |
+| LoRA | 可选。选择时必须与 Workflow 和生成模型属于相同底模。 |
+| 角色、画风 | 可选。选择后可在编写提示词时引用；不选择时直接描述画面。 |
+
+### 3. 先生成提示词结果
+
+下面以 WAI-illustrious-SDXL 为例。先选择适用于该底模的 Workflow 和生成模型，再发送：
+
+> 使用 wai-sdxl-prompt-builder，为以下画面生成提示词，并返回完整结果 JSON：雨后的街道，一位撑伞的旅人站在路灯下，湿润路面反射暖色灯光，竖幅构图。
+
+ANIMA 和 Krea2 分别使用 `anima-prompt-builder` 与 `krea2-anime-prompt-builder`。请求中的提示词类型应与选定生成模型对应。
+
+### 4. 提交生图并查看结果
+
+复制上一条回复中的完整结果 JSON，粘贴到下一条消息中。通过“插入上下文”为这条消息加入选定的 Workflow，以及需要显式指定的生成模型和 LoRA，然后发送：
+
+> 使用当前选择的 Workflow 和下方 Prompt Builder 结果 JSON 创建一张图片，图片尺寸使用 Workflow 默认值。
+
+将完整结果 JSON 放在这句话下面。生图请求需要携带这份 JSON；只发送画面描述时，Agent 会提示补充提示词结果。
+
+Agent 核对所选资源和参数后提交任务，并返回 Run ID。右侧“运行状态”显示任务进展；结果列关闭时，点击“打开结果列”。Agent 回复结束后，尚未结束的任务仍会继续更新，直到运行结束。生成成功后，结果列显示保存的图片。
+
+## 查看与使用生成结果
+
+点击结果列中的图片，在应用内打开查看窗口。查看窗口也支持播放已有生成记录中的视频；视频生成的专用技能属于后续计划。
+
+- 使用方向按钮或键盘左右键切换当前会话的媒体。
+- 在顶部查看像素尺寸，在媒体下方查看该次运行保存的正向提示词。
+- 点击 Run ID 旁的复制按钮，取得当前媒体所属生成任务的完整编号。
+- 点击“下载原文件”保存当前图片或视频；保存位置由 Desktop 的下载设置决定。
+- 在结果列点击“下载所属运行的 Workflow”，取得该媒体所属运行的工作流文件。
+
+每个 Run ID 对应一次生成调用。需要查询历史参数时，在该任务所属的 Workspace 中发送以下请求，并把占位文字替换为复制的完整 Run ID：
+
+> 查询 Run ID「在这里粘贴完整 Run ID」保存的生成参数和实际 Workflow，列出正向提示词、Seed、模型与 LoRA 选择。
+
+查询结果取决于该次运行保存的内容；未保存显式模型或 LoRA 选择时，可以继续查看实际 Workflow 中的配置。
+
+## 编写提示词与分析图片
+
+### 按目标选择提示词能力
+
+在采用“ComfyUI工作台预设”的会话中说明目标即可，也可以直接写出 Skill 名称：
+
+| 使用目的 | 请求示例 |
+| --- | --- |
+| ANIMA 提示词 | 使用 anima-prompt-builder，根据已选角色和画风，为雪夜车站场景构建十二槽 ANIMA3 Prompt。 |
+| WAI 提示词 | 使用 wai-sdxl-prompt-builder，将这段画面描述改写为 WAI-illustrious-SDXL 英文 Prompt，并返回完整结果 JSON。 |
+| Krea2 动漫提示词 | 使用 krea2-anime-prompt-builder，为全身正面站姿的舞蹈迁移源图编写提示词，并返回完整结果 JSON。 |
+| 人物立绘提示词 | 使用 character-portrait-prompt-designer，读取我提供的书籍目录，为指定人物设计基本外观和各场景的立绘提示词。 |
+
+人物立绘请求需要附上真实书籍目录与人物名；引用角色或画风目录内容时，通过“插入上下文”把对应条目加入同一条消息。
+
+### 配置图片读取模型
+
+打开“设置 → ComfyUI → 图片读取”，新建或编辑一份命名配置：
+
+- 选择“系统 Provider”时，选择支持图片输入的 Provider 和模型。
+- 选择“OpenAI 兼容接口”时，填写完整 Chat Completions 地址、模型 ID，以及接口需要的 API Key。
+- 填写默认读图提示词、温度和最大输出 Token，保存配置，并将其选为当前使用的配置。
+
+设置页支持保存多份配置并在它们之间切换。新的选择会用于下一次图片读取，无需重启应用。
+
+### 描述图片或改进生图提示词
+
+读取本地图片时，提供运行 Harness ComfyUI 的机器上可访问的图片绝对路径，例如：
+
+> 读取图片 /Users/me/Pictures/example.png，描述人物姿态、服装、构图和光照。
+
+分析生成结果时，提供 Run ID，例如：
+
+> 分析 Run ID「在这里粘贴完整 Run ID」的图片，对比原始提示词，指出人物姿态和光照的偏差，并给出下一轮提示词。
+
+分析完成后，需要重新出图时，先将改进提示词交给对应 Prompt Builder 生成完整结果 JSON，再按照“完成第一次生图”的步骤提交。
+
+### 连续多轮改进图片
+
+需要让助手连续生成、观察和调整图片时，在“新建会话”菜单中选择“ComfyUI迭代预设”，并说明画面目标。助手会先理解人物和故事，提出构图方案供你确认，再通过多轮生成与图片比较调整参数。你也可以提供已有迭代目录继续任务，或要求用新的随机种子复验选中的参数组合；迭代过程中会保存生成参数与图片。
+
+## 日常启动、停止与更新
+
+以下命令在安装的已发布版本项目根目录执行：
 
 | 命令 | 用途 |
 | --- | --- |
-| `pnpm prod:start` | 启动完整 DSH Desktop 生产环境 |
-| `pnpm prod:stop` | 停止受管进程 |
-| `pnpm prod:restart` | 使用当前 tag 和配置重启生产 Desktop |
-| `pnpm prod:status` | 查看进程状态 |
-| `pnpm prod:logs` | 读取生产 Desktop 日志 |
-| `pnpm prod:test` | 自动测试 Desktop、Web Host、worktree 配置和进程隔离 |
+| `pnpm prod:start` | 启动 Desktop；启动终端需要保持运行。 |
+| `pnpm prod:status` | 查看运行状态。 |
+| `pnpm prod:logs` | 查看 Desktop 日志。 |
+| `pnpm prod:stop` | 停止 Desktop。 |
+| `pnpm prod:restart` | 按当前版本和配置重启 Desktop。 |
 
-`prod:start` 和 `prod:restart` 根据当前源码生成 Client、Host 与 managed CLI 运行模块，打包并安装当前插件 generation，再启动 Electron。完整配置和运行目录说明见[系统启动](docs/system/startup.md)与[配置规范](docs/system/configuration.md)。
+修改 `.env` 或 JSON 配置文件后，执行 `pnpm prod:restart`。通过应用设置页保存的数据源服务和图片读取配置在下一次请求中生效。
 
-### 独立 worktree 开发验证
+更新前先停止 Desktop，并备份 `.env`、本机修改过的配置和 `.local/desktop-production/`。该运行目录包含会话、生成记录和保存的媒体。保留 `.local/upstreams/dsh-desktop`，按目标版本要求更新 Desktop 源码与依赖。
 
-Agent 在 `git worktree` 创建的独立 linked worktree 中验证未发布源码时使用：
+从 [Releases](https://github.com/fzfz/harness-comfyui/releases) 选择已发布版本，再按[版本更新步骤](docs/system/releasing.md#git-tag-生产部署命令)切换源码、更新依赖并启动。更新时保留本机路径配置与已有运行数据。
 
-```sh
-pnpm dev:start
-pnpm dev:status
-pnpm dev:logs
-pnpm dev:stop
-```
+## 常见问题与反馈
 
-`dev:start` 创建 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`，然后从主开发 checkout 的 DSH Desktop 底座执行原生 `pnpm dev`。worktree 不执行 `pnpm install`，不复制 `.env`，也不 clone 第二份 DSH Desktop。开发运行状态保存在 `.local/desktop-development/`。完整操作步骤见[独立 worktree 开发验证流程](docs/agents/worktree-development.md)。
+| 遇到的问题 | 检查与处理方法 |
+| --- | --- |
+| Desktop 无法启动 | 执行 `pnpm prod:logs`，根据错误检查 Node.js、pnpm、Desktop 依赖、Workspace 路径和 `.env`。详见[系统启动说明](docs/system/startup.md)。 |
+| 工作台无法读取资源 | 打开“设置 → ComfyUI → 数据源服务”，检查 URL、端口和服务运行状态。URL 与端口需要分别填写。 |
+| Agent 提示缺少 Workflow 或结果 JSON | 为当前消息插入一个 Workflow，并粘贴对应 Prompt Builder 返回的完整结果 JSON，再提交请求。 |
+| 生图报错 | 查看 Agent 返回的错误或“运行状态”中的失败信息。检查目标 ComfyUI 实例是否可访问、所选模型和 LoRA 是否匹配、Workflow 所需节点是否已安装，以及本机浏览器路径是否正确。 |
+| 图片读取失败 | 检查当前启用的图片读取配置、模型图片输入能力、接口地址与凭据；读取本地图片时检查绝对路径是否存在且可访问。 |
+| 历史 Run ID 查询不到结果 | 回到生成任务所属的 Workspace，使用查看窗口中复制的完整 Run ID 重试。 |
 
-单独调试 Web Host 时使用 `pnpm web:start|stop|restart|status|health|logs`；`web:*` 不启动 Electron，不能替代完整 Desktop 验收。
+需要帮助或报告问题时，请在 [GitHub Issues](https://github.com/fzfz/harness-comfyui/issues) 中提供：使用版本、操作步骤、预期结果、实际错误信息，以及适用时的 Run ID 和相关日志片段。
 
-### Agent Preset 与项目 CLI
+## 开发与贡献
 
-`prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都会校验 `agent-presets/` 下两个项目预设的配置及共享 `.mjs` 组件，并将这些文件写入当前运行使用的 DSH home 的 `.agent-presets/`。`ComfyUI工作台预设` 保留内部 ID `harness-comfyui-cli-candidate` 并继续作为默认 Preset，因此已有默认选择和 Session 引用不需要迁移；`ComfyUI迭代预设` 使用内部 ID `harness-comfyui-iteration`，为多轮图片迭代提供前台子 Agent。两个项目 Preset 都不向模型提供 8 个 Host 项目 Tool schema；Agent 按需读取当前 checkout 的项目 Skill 及其 CLI 参考文档，再通过项目 managed CLI 查询目录、提交生成任务、查询历史 Run、读取 Run 图片或读取用户提供的本地图片路径。Host 仍注册全部 8 个项目 Tool，选择 Harness `standard` Preset 的 Session 继续通过 Host 注册的项目 Tool 调用 ComfyUI。项目启动器不会修改 Harness `standard` Preset；启动器只清理本项目已经退役的 Preset 目录，并保留同一 DSH home 中的其他 Preset。
+准备修改源码时，先阅读[系统架构](docs/system/architecture.md)与[目录结构](docs/system/directory-structure.md)。独立 worktree 的准备和 Desktop 验证步骤见[开发环境说明](docs/agents/worktree-development.md)。
 
-当前 checkout `.agents/skills/` 下的 `anima-prompt-builder/`、`character-portrait-prompt-designer/`、`comfyui-generate/`、`comfyui-image-review/`、`comfyui-iterate-generation/`、`krea2-anime-prompt-builder/`、`local-image-reader/` 和 `wai-sdxl-prompt-builder/` 是这八个项目 Skill 的唯一源码目录。Desktop 与 Web Host 启动器通过受管环境变量 `HARNESS_COMFYUI_SKILL_DIR` 把该目录交给两个项目 Preset。两个项目 Preset 的 filesystem provider 都使用 `includeDefaultRoots: false`，因此外部 Workspace 或真实用户目录中的同名 Skill 不会覆盖这八项；`standard` 和其他非项目 Preset 不读取该目录，并继续按各自规则发现 Skill。
+开发 Desktop 使用 `pnpm dev:*`；`pnpm web:*` 用于单独调试 Web Host。完整自动化检查命令是 `pnpm quality`，测试范围见[测试说明](docs/system/testing.md)。提交问题前可以搜索已有 [Issues](https://github.com/fzfz/harness-comfyui/issues)；仓库的问题管理约定见[Issue 管理说明](docs/agents/issue-tracker.md)。
 
-`comfyui-iterate-generation` 根据每轮图片观察结果调整下一轮生成参数、恢复已有迭代任务、使用新 Seed 复验候选参数，并保存用户采用的生成参数与图片。该 Skill 先理解人物与故事、提出构图方案并取得用户确认，再使用 `ComfyUI迭代预设` 提供的前台子 Agent 分别完成构图、Prompt、生成、查询、观察、比较和归档阶段。
+## 相关文档
 
-`krea2-anime-prompt-builder` 根据当前文字、Character/Style `prompt_text` 和用户明确选定的历史正向 Prompt 构建一条 Krea2 动漫 Prompt。该 Skill 分别定义展示图与舞蹈或姿态迁移源图路线，并通过自己的 `references/generation-cli.md` 只读查询历史 Generation Run；该 Skill 不调用批量生成器，也不创建或覆盖提示词文件。
-
-managed CLI 的 Generation Request 不包含 Workspace、Session、Turn 或 Tool Call ID。Host 从当前前台 shell ToolExecution 和 workspace registry 派生这些身份并写入 Run Repository。同一个 Generation Request 允许多次独立提交；每次独立提交使用不同的前台 shell Tool Call，并产生独立的 `call_id` 与 `run_id`。
-
-Host 额外注册 `read_comfyui_run_inputs`。该 Tool 接收 1 至 20 个完整 Run ID 或最少包含八个 UUID 字符的短 Run ID，按输入顺序返回每个 Run 创建时传入 `generate_with_comfyui` 的 `title`、可选 `instance_id`、`template_id`、可选 `model`、完整 `parameters`、`loras` 和保存的 Actual Workflow。短 ID 只在当前 Workspace 中解析；唯一匹配时成功项返回完整 canonical Run ID，无匹配或匹配多个 Run 时只为该项返回错误并继续查询其他项。managed CLI 提供同一能力：
-
-```sh
-node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin <<'JSON'
-{"run_ids":["run_3c0ad3ed","run_d26923be"]}
-JSON
-```
-
-合法批量请求即使包含单项错误也返回退出码 0；调用者读取 `runs[].lookup_status` 分别处理每个结果。历史记录没有保存 `loras` 属性时，`arguments.loras: []` 只表示该次 `generate_with_comfyui` 调用没有保存显式结构化 LoRA 选择，不能据此判断 Actual Workflow 没有预置或活动 LoRA。历史记录没有保存 `model` 属性时不输出 `arguments.model`，表示该次调用没有保存显式模型覆盖，Run 使用 Actual Workflow 当时保存的模型。
-
-### 图片读取与数据源设置
-
-Harness 设置中的“ComfyUI”入口包含“图片读取”和“数据源服务”两个页签。“图片读取”页签支持切换、保存、复制和删除多份图片读取配置。每份图片读取配置可以从当前 LLM 运行时动态选择明确支持图片输入的系统 Provider 与模型，也可以填写 OpenAI 兼容 Chat Completions 完整地址、模型 ID 和可选 API Key；每份配置独立保存默认读图 Prompt、`temperature` 和最大输出 Token。API Key 作为 Harness Settings secret 保存，不进入浏览器设置快照。图片读取模型独立于当前 Session 模型和 ComfyUI 生图模型，设置页不硬编码任何 Provider。
-
-“数据源服务”页签分别保存数据源服务的 HTTP 或 HTTPS URL 与端口。Host 在发送上下文插入和语义查询请求以及读取 ComfyUI 实例信息和 Workflow bundle 前读取最新的数据源服务设置。插件发行包内置语义查询客户端和数据源读取客户端；插件运行时通过 HTTP 或 HTTPS 请求已配置的数据源服务，不读取或执行数据源仓库中的文件。`ComfyUI工作台预设` 启用后，系统在数据源服务 URL 或端口尚未保存时提示使用者填写这两项设置；系统在数据源服务检查请求失败时提示使用者检查 URL、端口和服务状态。
-
-### Run 图片查询与图片读取
-
-Host 注册 `get_generation_run_media` 与 `inspect_image`。前者按输入顺序查询一至二十个完整或唯一短 Run ID，并返回当前 Workspace 中每个 Run 的原始 `parameters` 与本地图片路径；后者一次只读取一个本地图片路径，并使用当前命名配置中的独立视觉模型返回观察文本。系统 Provider 配置复用 Harness LLM Runtime；OpenAI 兼容配置直接调用已配置的 Chat Completions 地址。`local-image-reader` Skill 使用自己的 `references/image-inspection-cli.md`，按用户提供的本地绝对路径逐图调用 `image inspect --stdin` 并返回观察结果。`comfyui-image-review` Skill 使用自己的 `references/cli.md` 先取得 Run 图片，再逐图读取，最后由 Agent 对比原始 Prompt 与观察文本并编写改进 Prompt。
-
-### Workflow 参数检查与生成
-
-Generation 请求只要求导入 UI Workflow。Host 使用当前 UI Workflow、目标实例 `/object_info`、节点输入名称、活动状态和上下游连线定位显式运行参数，不读取 Source 模板记录中的参数定义或 binding 元数据。模板检查只把能够控制全部活动图片输出最终可见尺寸的末端尺寸控件返回给 Agent；图片输出必须通过已连接的 `IMAGE` 输入或 `IMAGE` 类型连线接收图片，只接收非图片数据的辅助 output node 不参与尺寸判定。下游独立 resize 或 upscale 覆盖上游尺寸时，检查结果返回下游控件的精确参数 ID，避免把中间 latent 尺寸误报为最终图片尺寸。Host 使用 `/object_info` 的实时枚举校验运行参数，并在唯一大小写匹配时写入实例返回的精确值；无法匹配时，`generate_with_comfyui` 把具体参数目标、收到值和允许值返回给调用方。Source 读取、Workflow 编译或 Official API Workflow 准备中的其他错误也会在 Tool 返回 `run_id` 前返回调用方；只有成功返回 `run_id` 后的远端提交、观察、执行和媒体下载错误继续异步写入 Run。成功解析的 `/object_info` 在 Host 进程内缓存 10 分钟，同一实例的并发请求共享一个在途请求。Official API Workflow Cache 未命中时，Host 启动配置的本机浏览器，让目标 ComfyUI 官方前端调用 `loadGraphData()` 与 `graphToPrompt()` 生成基础 API Workflow；缓存命中时，Host 复制本地基础对象并覆盖本次已确认的运行输入。官方前端导出失败时请求明确失败，不会静默回退到手写导出。完整数据流见[系统架构](docs/system/architecture.md)。
-
-### 生成结果查看与下载
-
-结果列中的图片或视频在 DSH Desktop 原生 Modal 内打开同源媒体查看页，不创建浏览器新窗口。查看页按当前 Session 的媒体生成时间顺序提供较新与较早方向按钮，也支持不带修饰键的键盘左右键；首项和末项不会循环。Modal 主框架在媒体查看页 iframe 上方显示当前媒体所属 Generation Run 的完整 `run_id`；媒体查看页切换媒体后，Modal 主框架同步更新该值。用户点击独立复制按钮后，Modal 主框架把完整 `run_id` 写入浏览器剪贴板并显示成功或失败状态；Clipboard API 不可用或写入被拒绝时，用户仍可手动选择已显示的完整值。Modal footer 的“下载原文件”按钮通过当前 Session 的同源 Host 路由流式下载当前图片或视频的 Saved Media 原始字节，并使用 Generation Media 保存的 ComfyUI 原文件名；媒体查看页切换媒体后，按钮下载切换后的当前媒体。保存目录和同名文件处理由 DSH Desktop 中 Chromium 的下载策略决定，Client 不读取完整媒体 Blob，也不显示无法可靠确认的下载成功状态。查看页顶部显示媒体文件的固有像素尺寸，并在媒体下方显示该媒体所属 Generation Run 保存的原始正面提示词；未保存正面提示词时显示明确缺失状态。图片和视频保持原始宽高比完整显示，不裁切内容；视频使用浏览器原生播放控件。
-
-## 测试
-
-```sh
-pnpm quality
-```
-
-独立 linked worktree 的完整 Desktop 人工验证使用 `dev:*`，生产 checkout 使用 `prod:*`，独立 Web Host 调试使用 `web:*`。`prod:test` 使用临时目录和端口自动验证三种环境的生命周期、配置和进程隔离。
-
-## 文档
-
-- [技术栈](docs/system/technology-stack.md)
-- [系统架构](docs/system/architecture.md)
-- [目录结构](docs/system/directory-structure.md)
-- [配置规范](docs/system/configuration.md)
-- [测试规范](docs/system/testing.md)
-- [版本发布](docs/system/releasing.md)
-- [系统启动](docs/system/startup.md)
-- [v0.40.0 发布说明](docs/releasenotes.md)
+- **配置与运行**：[配置说明](docs/system/configuration.md)、[系统启动说明](docs/system/startup.md)。
+- **系统原理**：[技术栈](docs/system/technology-stack.md)、[系统架构](docs/system/architecture.md)、[目录结构](docs/system/directory-structure.md)。
+- **版本记录**：[发布说明](docs/releasenotes.md)、[GitHub Releases](https://github.com/fzfz/harness-comfyui/releases)。
