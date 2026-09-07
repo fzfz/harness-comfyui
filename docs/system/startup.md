@@ -29,8 +29,8 @@
 set -e
 mkdir -p .local/upstreams
 git clone --branch main https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
-git -C .local/upstreams/dsh-desktop switch --detach 5e08355a58bb727cb0f48c794550202d9d59ed9f
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
+git -C .local/upstreams/dsh-desktop switch --detach f2a27b4461e8c15d21268533efb7b99bb9bb14f2
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "f2a27b4461e8c15d21268533efb7b99bb9bb14f2"
 )
 ```
 

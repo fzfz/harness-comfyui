@@ -25,6 +25,12 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
+## 下一次发布的 Desktop 基线
+
+包含 OpenCode Go 会话修复的下一次 Harness ComfyUI 发布必须使用自有仓库 `fzfz/dsh-desktop` 的提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2`（[PR #4](https://github.com/fzfz/dsh-desktop/pull/4)）。发布执行者必须同步更新该发布的 README 安装命令、生产启动命令和发布说明，并验证 Desktop 请求携带真实会话 ID。该提交未变更 Desktop 的依赖版本和锁文件；已安装的 `@deepseek-ai/dsh-llm-pi-ai` 必须应用该提交中的补丁。
+
+下文标注 `v0.40.0` 的命令和依赖公告仍对应该已发布版本。
+
 ## Git tag 与 GitHub Release
 
 发布执行者必须从 Harness checkout 根目录执行以下命令；任一命令失败时，shell 必须立即停止：
