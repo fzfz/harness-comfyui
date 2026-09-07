@@ -1079,7 +1079,7 @@ async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
 }
 
 async function openSessionDeleteDialog(page, title) {
-  const opened = await page.evaluate(`(() => {
+  await waitForValue(page, `(() => {
     const row = [...document.querySelectorAll('[role="treeitem"]')]
       .find(node => node.textContent?.includes(${JSON.stringify(title)}))
     if (!(row instanceof HTMLElement)) return false
@@ -1091,8 +1091,8 @@ async function openSessionDeleteDialog(page, title) {
       clientY: bounds.top + bounds.height / 2
     }))
     return true
-  })()`)
-  if (!opened) throw new Error(`Session row is unavailable: ${title}`)
+  })()`, value => value === true)
+
   await waitForValue(
     page,
     `(() => {

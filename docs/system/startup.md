@@ -29,8 +29,8 @@
 set -e
 mkdir -p .local/upstreams
 git clone --branch main https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
-git -C .local/upstreams/dsh-desktop switch --detach 5e08355a58bb727cb0f48c794550202d9d59ed9f
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
+git -C .local/upstreams/dsh-desktop switch --detach f2a27b4461e8c15d21268533efb7b99bb9bb14f2
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "f2a27b4461e8c15d21268533efb7b99bb9bb14f2"
 )
 ```
 
@@ -102,10 +102,10 @@ pnpm dev:stop
 set -e
 pnpm prod:stop
 git fetch --tags
-git switch --detach v0.40.0
-git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git 5e08355a58bb727cb0f48c794550202d9d59ed9f
+git switch --detach v0.40.1
+git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git f2a27b4461e8c15d21268533efb7b99bb9bb14f2
 git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "5e08355a58bb727cb0f48c794550202d9d59ed9f"
+test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "f2a27b4461e8c15d21268533efb7b99bb9bb14f2"
 )
 ```
 
@@ -182,6 +182,6 @@ pnpm quality
 
 linked worktree 共享的 `.env` 可以保留 Provider 凭据、共享产品配置和既有端口变量。`dev:*` 不把共享 `.env` 中的 Desktop 移动桥接端口变量作为当前 worktree 的开发端口；`web:*` 不把共享 `.env` 中的 `HARNESS_COMFYUI_SERVER_PORT` 作为当前 worktree 的 Web Host 端口。开发 Desktop 移动桥接端口、独立 Web Host 端口、PID、日志、DSH home、业务数据和 Desktop 构建输出全部属于当前 worktree 的开发实例。
 
-## v0.40.0 的 Desktop 来源、依赖版本与插件启动验证要求
+## v0.40.1 的 Desktop 来源、依赖版本与插件启动验证要求
 
-`v0.40.0` 使用 `fzfz/dsh-desktop:main` 的提交 `5e08355a58bb727cb0f48c794550202d9d59ed9f`。该提交已合并官方上游提交 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3 提供的会话删除功能、用于禁用 Kimi PPT 的配置，以及用于在 Windows 上隐藏控制台的辅助模块打包修复。该 Desktop 提交、Harness `0.1.2-rc.1` 和 Cordis `4.0.2` 共同组成 Harness ComfyUI 插件的启动验证环境；验证人员必须确认 Desktop 能够启动，并成功加载当前 checkout 中的 Harness ComfyUI 插件源码。
+`v0.40.1` 使用 `fzfz/dsh-desktop:main` 的提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2`。该提交已合并官方上游提交 `8b018c991fe88abdb61939b280c3dbea020acfc8`，并包含 DSH Desktop PR #3 提供的会话删除功能、用于禁用 Kimi PPT 的配置，以及用于在 Windows 上隐藏控制台的辅助模块打包修复。该提交还包含 PR #4 提供的真实会话 ID 请求头补丁。该 Desktop 提交、Harness `0.1.2-rc.1` 和 Cordis `4.0.2` 共同组成 Harness ComfyUI 插件的启动验证环境；验证人员必须确认 Desktop 能够启动，并成功加载当前 checkout 中的 Harness ComfyUI 插件源码。

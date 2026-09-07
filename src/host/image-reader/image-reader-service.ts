@@ -4,6 +4,7 @@ import { open } from 'node:fs/promises'
 
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, type LlmCallConfig, type PreparedLlmCall, type StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 
 import {
@@ -29,6 +30,7 @@ export interface ImageInspection {
 }
 
 export interface ImageInspectionOptions {
+  readonly sessionId?: string
   readonly prompt?: string
   readonly signal?: AbortSignal
 }
@@ -108,12 +110,17 @@ async function observation(
   prepared: PreparedLlmCall,
   messages: ReturnType<typeof createUserMessage>[],
   profile: ImageReaderProfile,
+  sessionId: string | undefined,
   signal?: AbortSignal,
 ): Promise<string> {
   const deltas: string[] = []
   const completed: string[] = []
   try {
-    for await (const chunk of prepared.stream({ ...preparedOptions(prepared, messages), signal })) {
+    for await (const chunk of prepared.stream({
+      ...preparedOptions(prepared, messages),
+      ...(sessionId === undefined ? {} : { sessionId: sessionId as SessionId }),
+      signal,
+    })) {
       const value = chunk as StreamChunk
       if (value.type === 'text-delta') deltas.push(value.text)
       if (value.type === 'block-end' && value.block.type === 'text') completed.push(value.block.text)
@@ -265,7 +272,7 @@ export class ImageReaderService {
     if (profile.connectionType === 'openai-compatible') {
       return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, inspectionPrompt, signal)
     }
-    return this.inspectRuntime(profile, input, filePath, inspectionPrompt, signal)
+    return this.inspectRuntime(profile, input, filePath, inspectionPrompt, options.sessionId, signal)
   }
 
   private async inspectRuntime(
@@ -273,6 +280,7 @@ export class ImageReaderService {
     input: Awaited<ReturnType<typeof imageInput>>,
     filePath: string,
     prompt: string,
+    sessionId: string | undefined,
     signal?: AbortSignal,
   ): Promise<ImageInspection> {
     let attachment: ImageAttachmentRef
@@ -309,7 +317,7 @@ export class ImageReaderService {
       provider: prepared.config.provider,
       model: prepared.config.model,
       filePath,
-      observation: await observation(prepared, messages, profile, signal),
+      observation: await observation(prepared, messages, profile, sessionId, signal),
     })
   }
 

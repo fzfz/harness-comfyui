@@ -170,7 +170,11 @@ export function createInspectImageTool(service: Pick<ImageReaderService, 'inspec
       render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
     },
     async execute(args, exec) {
-      const result = await service.inspect(args.file_path, { prompt: args.prompt, signal: exec.signal })
+      const result = await service.inspect(args.file_path, {
+        prompt: args.prompt,
+        sessionId: exec.agent === undefined ? undefined : String(exec.agent.session.id),
+        signal: exec.signal,
+      })
       return Object.freeze({
         provider: result.provider,
         model: result.model,
