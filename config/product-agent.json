@@ -13,7 +13,8 @@
     "sharedFiles": [
       "project-tool-visibility.mjs",
       "project-system-prompt-visibility.mjs",
-      "project-subagent-workspace.mjs"
+      "project-subagent-workspace.mjs",
+      "project-iteration-dispatch.mjs"
     ]
   },
   "skills": {

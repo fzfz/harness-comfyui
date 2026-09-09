@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.40.1",
+  "version": "0.41.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
@@ -48,13 +48,13 @@
   "devDependencies": {
     "@types/node": "22.20.0",
     "@types/react": "18.3.31",
-    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/coverage-v8": "4.1.11",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-test-renderer": "18.3.1",
     "tsdown": "0.22.2",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.11"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.2",

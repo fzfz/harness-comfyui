@@ -1,3 +1,33 @@
+# Harness ComfyUI v0.41.0
+
+## 图片迭代的角色与交接
+
+主 Agent 通过四个角色工具派发构图、生成、观察和比较任务。各子 Agent 的 system prompt 定义自己的工作步骤。主 Agent 指定每次要求、输入文件和输出文件，角色工具按配置模板组装任务消息。首次派发创建子会话，后续派发使用 agent_id 指向已有子会话，DSH 原生通知返回任务状态和最终答复。
+
+迭代 Skill 定义理解故事与人物、推导画面目标和核心要素、生成、观察、比较和小步修改 Prompt 的循环。references/records.md 定义交接目录与文件名。旧的阶段模板和记录写入脚本已删除。
+
+## 手动 Goal 与子 Agent 模型配置
+
+ComfyUI迭代预设支持原生 /goal 命令。用户手动创建、修改、暂停、恢复和清除目标，主 Agent 读取已有目标并在达成后标记完成。
+
+四个子 Agent 不再固定 reasoningEffort。原生 DSH 在父子 Provider 和模型相同时继承父 Agent 当前请求的档位，在 Provider 或模型变化且未指定档位时清除继承值，使用目标模型或 Provider 的默认行为。显式指定不支持的档位仍会报错。
+
+## 依赖与自动化验证范围
+
+Vitest 和 @vitest/coverage-v8 升级并固定到 4.1.11，锁文件同步更新配套包。自动化测试覆盖角色模板、首次及后续派发、权限、原生 Goal 命令、推理档位继承与模型能力校验，以及真实 Desktop 的预设与命令加载。
+
+完整 `pnpm quality` 通过：1007 项单元与集成测试、55 项契约与安全测试、255 项生产测试、32 项原型测试和 2 项 Desktop 测试全部成功。覆盖率为 statements 93.54%、branches 86.79%、functions 100%、lines 96.17%。Harness 锁文件的全部依赖与生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+
+Desktop 继续使用提交 f2a27b4461e8c15d21268533efb7b99bb9bb14f2。其锁文件仍包含 image-size 1.2.1，该版本关联已记录的 GHSA-w3rx-r6r6-pgpr 和 GHSA-5p2g-fcmc-qvqq 两项安全公告。部署复用已有 Desktop 依赖。
+
+## 人工测试发现的未解决问题
+
+此前完整生图测试发现：子任务失败后主 Agent 接管其他角色；视觉观察存在人物肢体归属错误；比较将不确定证据判为通过；部分用户要求未达成时仍宣布完成；部分轮次记录缺失。这些问题尚未修复。本次推理档位修正及自动化检查不能作为完整生图流程验收通过的依据。
+
+## 发布产物
+
+GitHub Release 提供版本标签和发布说明，不附加产品安装包。
+
 # Harness ComfyUI v0.40.1
 
 v0.40.1 修复 OpenCode Go 模型调用缺少会话 ID 导致的 `400 MissingSessionID` 错误。

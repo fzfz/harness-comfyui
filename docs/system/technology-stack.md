@@ -14,7 +14,7 @@
 | API Workflow 缓存 | Node 文件系统与 SHA-256 | Node 内置 `node:fs/promises` 与 `node:crypto`；缓存使用 identity JSON、临时文件和原子 rename |
 | 配置校验 | Schemastery | `3.18.1` |
 | Web UI | React / React DOM | `18.3.1` |
-| 自动化测试 | Vitest / V8 coverage | `4.1.8`；阈值来自 `config/quality-gates.json` |
+| 自动化测试 | Vitest / V8 coverage | `4.1.11`；阈值来自 `config/quality-gates.json` |
 | Client 与 managed CLI 模块转换 | tsdown | `0.22.2`；Desktop `prod:*`/`dev:*` generation 打包与 Web Host `web:start`/`web:restart` 都生成浏览器 Client 和 Node.js managed CLI 运行模块，自动化测试验证 ModuleLoader、import policy 与 `node_modules` 安装形态 CLI 执行 |
 | 发布门禁 | pnpm、Vitest 与独立 linked worktree | 最终候选树执行 `pnpm quality`、`git diff --check` 和必需的独立审查 |
 

@@ -17,12 +17,13 @@
 | `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill 的唯一源码目录 |
 | `.agents/skills/comfyui-generate/` | Prompt Builder 结果消费、模板实际参数检查、Seed 分配、ComfyUI 生成、兼容性检查与历史 Generation Run 查询 Skill 的唯一源码目录 |
 | `.agents/skills/comfyui-image-review/` | 多 Run 图片读取与 Prompt 对比 Skill 的唯一源码目录，包含独立 CLI 参考 |
-| `.agents/skills/comfyui-iterate-generation/` | 多轮图片生成迭代、已有任务恢复、候选生成参数复验与采用结果保存 Skill 的唯一源码目录，包含各阶段提示词、迭代记录数据结构和生成参数调整说明 |
+| `.agents/skills/comfyui-iterate-generation/` | 主 Agent 调度图片迭代的 Skill 目录；SKILL.md 定义调度，references/records.md 定义交接文件，references/composition-design.md、references/iteration-method.md 和 references/run-query-cli.md 分别提供构图、比较和查询参考 |
 | `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫展示图、动作迁移源图 Prompt、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
 | `.agents/skills/local-image-reader/` | 用户提供本地图片路径的逐图视觉读取 Skill 的唯一源码目录，包含独立 CLI 参考 |
 | `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset 唯一源码目录；目录名是兼容性内部 ID，该 Preset 继续作为默认 Preset |
-| `agent-presets/harness-comfyui-iteration/` | 用户可见名称为 `ComfyUI迭代预设` 的附加受管产品 Preset 唯一源码目录；该 Preset 提供前台子 Agent |
+| `agent-presets/harness-comfyui-iteration/` | 用户可见名称为 `ComfyUI迭代预设` 的附加受管产品 Preset 唯一源码目录；agent.cordis.yml 保存主 persona、四份子 Agent persona 及派发参数、任务模板与模型配置 |
+| `agent-presets/project-iteration-dispatch.mjs` | 按角色配置的参数与模板组装任务消息，调用 DSH 原生接口创建子 Agent 或向已有子 Agent 投递后续任务 |
 | `agent-presets/project-subagent-workspace.mjs` | 迭代预设在子 Agent 首个 step 中验证父子 cwd 并把真实子 Session 登记到父 Session 所属 Workspace 的 component |
 | `agent-presets/project-tool-visibility.mjs` | 产品 Preset composition 加载时建立会话级 Tool restriction，控制该产品 Preset 会话 Tool 可见性的模块 |
 | `agent-presets/project-system-prompt-visibility.mjs` | 每次 `system-prompt/assemble` 完成其他段落组装后，删除配置指定段落并控制产品 Preset 会话系统提示词段落可见性的模块 |
