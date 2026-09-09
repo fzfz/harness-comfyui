@@ -299,6 +299,9 @@ describe('A/B project Tool visibility', () => {
           deny: expect.arrayContaining([
             ...roles.map(row => row.config.toolName),
             'interrupt_agent',
+            'get_goal',
+            'create_goal',
+            'update_goal',
           ]),
         },
       })
@@ -316,6 +319,8 @@ describe('A/B project Tool visibility', () => {
       '@deepseek-ai/dsh-skill-filesystem',
       '@deepseek-ai/dsh-tool-skill',
       '../project-subagent-workspace.mjs',
+      '@deepseek-ai/dsh-command-goal',
+      '@deepseek-ai/dsh-tool-goal',
       '../project-iteration-dispatch.mjs',
       '../project-iteration-dispatch.mjs',
       '../project-iteration-dispatch.mjs',

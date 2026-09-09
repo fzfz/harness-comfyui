@@ -940,7 +940,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId) {
   const expectedRepositorySkills = structuredClone(REPOSITORY_SKILL_CATALOG)
   const state = await page.evaluate(`new Promise((resolve, reject) => {
     window.__runPanelTestContext.inject(
-      ['remote.agentPresets', 'remote.session', 'remote.skills'],
+      ['remote.agentPresets', 'remote.session', 'remote.skills', 'remote.commands'],
       async injected => {
         try {
           const roster = await injected.remote.agentPresets.list()
@@ -975,7 +975,13 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId) {
             const skills = created.ok
               ? await injected.remote.skills.list({ sessionId: entry.sessionId })
               : null
-            sessions.push({ ...entry, created, skills })
+            const commands = created.ok
+              ? await injected.remote.commands.list(entry.sessionId)
+              : null
+            const goal = commands?.ok && commands.value.some(command => command.name === 'goal')
+              ? await injected.remote.commands.execute(entry.sessionId, '/goal', [])
+              : null
+            sessions.push({ ...entry, created, skills, commands, goal })
           }
           resolve({ roster, sessions })
         } catch (error) {
@@ -995,6 +1001,15 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId) {
     expect(session.created).toEqual(expect.objectContaining({ ok: true }))
     expect(session.skills).toEqual(expect.objectContaining({ ok: true }))
   }
+  const iterationSession = sessions.get('harness-comfyui-iteration')
+  expect(iterationSession.commands).toEqual(expect.objectContaining({ ok: true }))
+  expect(iterationSession.commands.value).toContainEqual(expect.objectContaining({ name: 'goal' }))
+  expect(iterationSession.goal).toEqual(expect.objectContaining({
+    ok: true,
+    value: expect.objectContaining({
+      result: expect.objectContaining({ kind: 'success', text: expect.stringContaining('No goal is currently set.') }),
+    }),
+  }))
   expect(sessions.get('implicit-default').created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
   expect(sessions.get(PRODUCT_PRESET_ID).created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
 
