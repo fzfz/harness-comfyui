@@ -12,7 +12,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.41.1',
+      version: '0.42.0',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.7.0',
@@ -128,7 +128,6 @@ describe('source workspace engineering contract', () => {
     const example = readFileSync(resolve(root, '.env.example'), 'utf8')
     for (const name of [
       'OPENCODE_GO_API_KEY',
-      'COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT',
       'HARNESS_COMFYUI_DEFAULT_INSTANCE_ID',
       'HARNESS_COMFYUI_FRONTEND_BROWSER_EXECUTABLE_PATH',
       'HARNESS_COMFYUI_FRONTEND_CACHE_EPOCH',

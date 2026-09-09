@@ -1,3 +1,27 @@
+# Harness ComfyUI v0.42.0
+
+## Desktop 基线与启动
+
+本版本改用自有仓库 fzfz/dsh-desktop-anywhere 的 Stable workspace，固定提交为 26c6b6c3117d11787e679456c387d823923035f9。Desktop 版本为 2.0.6，Harness 宿主版本为 0.1.2-rc.1，Electron 版本为 43.3.0。
+
+开发和生产启动器通过正式 Profile 安装插件，并根据当前启动 run 的 Renderer 健康记录、Host 监听端口归属和插件安装记录判断就绪。移动桥接端口不再是启动成功条件。独立 worktree 复用主 checkout 的业务依赖，并从固定 Stable workspace 解析宿主依赖。
+
+## 会话、模型与媒体
+
+自有 Desktop 基线补齐会话删除及失败重试、pi-ai 请求的真实会话 ID 请求头、模型目录和推理档位配置。请求头测试覆盖普通会话、显式传入子会话 ID 的模型请求及图片读取；子 Agent 自动执行路径不属于本次请求头端到端验证范围。
+
+宿主执行生成模型、LoRA 和 Workflow 查询 CLI 时，通过 ELECTRON_RUN_AS_NODE=1 让 Electron 子进程以 Node 模式执行 .mjs 入口，避免把 CLI 当作桌面应用启动。真实 Desktop 下载测试将测试文件保存到临时目录，避免自动验收反复弹出系统保存窗口。
+
+## 验证与依赖
+
+迁移候选通过完整 pnpm quality：1038 项 unit/integration/Skills、55 项 contract/security、260 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。Desktop fork 的完整 yarn check 与七项 GitHub CI 均通过。
+
+本版本未更改 Harness 项目的依赖版本。Desktop 将 pi-ai 与 pi-telemetry 精确固定到 0.84.4；2026-09-09 对两个精确版本的依赖公告查询返回空集合。
+
+## 发布与生产数据
+
+GitHub Release 提供版本标签和发布说明，不附加安装包。部署保留生产配置、会话和媒体原文件；新旧 Desktop 的用户目录不同，旧数据迁移须按单独的对象清单与验收方案执行。
+
 # Harness ComfyUI v0.41.1
 
 ## 读图模型上传前的图片处理

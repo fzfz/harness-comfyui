@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -61,7 +60,7 @@ import {
   type CatalogApi,
 } from '../../src/client/workbench/native-surfaces.tsx'
 
-const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
+const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
   create: (node: ReactNode, options?: { createNodeMock?: (element: { props: Record<string, unknown> }) => unknown }) => {
     root: {

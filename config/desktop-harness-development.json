@@ -1,32 +1,19 @@
 {
-  "executables": {
-    "dsh": "@deepseek-ai/dsh/lib/bin.js"
-  },
-  "packages": [
-    "@deepseek-ai/cordis",
+  "schemaVersion": 1,
+  "mainManifestSections": [
+    "dependencies",
+    "devDependencies"
+  ],
+  "candidateManifestSection": "peerDependencies",
+  "candidateDevelopmentPackages": [
     "@deepseek-ai/dsh",
-    "@deepseek-ai/dsh-agent",
-    "@deepseek-ai/dsh-api-remotes",
-    "@deepseek-ai/dsh-attachment",
     "@deepseek-ai/dsh-base",
-    "@deepseek-ai/dsh-client-connection",
-    "@deepseek-ai/dsh-client-locale",
-    "@deepseek-ai/dsh-client-ui-conversation",
-    "@deepseek-ai/dsh-client-ui-input-trigger",
-    "@deepseek-ai/dsh-client-ui-layout",
-    "@deepseek-ai/dsh-client-ui-primitives",
-    "@deepseek-ai/dsh-client-ui-settings",
-    "@deepseek-ai/dsh-client-ui-sidebar",
-    "@deepseek-ai/dsh-client-ui-slots",
-    "@deepseek-ai/dsh-invariants",
-    "@deepseek-ai/dsh-jobs",
-    "@deepseek-ai/dsh-llm",
-    "@deepseek-ai/dsh-session",
-    "@deepseek-ai/dsh-settings",
-    "@deepseek-ai/dsh-tools",
-    "@deepseek-ai/dsh-typert-protocol",
-    "@deepseek-ai/dsh-web-app",
-    "@deepseek-ai/dsh-workspace",
-    "sharp"
-  ]
+    "@deepseek-ai/dsh-web-app"
+  ],
+  "candidateExecutables": {
+    "dsh": {
+      "package": "@deepseek-ai/dsh",
+      "relativePath": "lib/bin.js"
+    }
+  }
 }

@@ -27,13 +27,12 @@ Before an Agent creates or modifies the custom `ComfyUI工作台预设`, a proje
 
 ### Independent worktree development verification
 
-- Before an Agent starts Harness from an independent git worktree for implementation or UI verification, the Agent must read and follow `docs/agents/worktree-development.md`.
-- Before an Agent starts a Desktop App in an independent worktree, the Agent must run `pnpm dev:status` from that worktree and may run `pnpm dev:start` from the same worktree only when the reported status is `stopped`.
-- Before an Agent uses a running Desktop App for development or testing, inspects it, or stops it in an independent worktree, the Agent must read the current worktree's `.local/desktop-development/desktop.pid`, confirm that the PID is the Desktop process-group leader, confirm that the process group's launch command references the current worktree's `.local/desktop-development/desktop-out`, and use operating-system socket inspection to enumerate every listening port owned by the process group. The Agent may send lifecycle signals only to that verified process group and may send local test traffic only to its enumerated listening ports.
-- The Agent must use `pnpm dev:start`, `pnpm dev:status`, `pnpm dev:logs`, and `pnpm dev:stop` for complete independent-worktree Desktop verification. The Agent must not use `pnpm prod:*` as a development startup path.
-- The Agent must keep the `dev:start` terminal in the foreground, verify `dev:status` from a second terminal, and stop the development Desktop before completing or abandoning the task.
-- The Agent must not run `pnpm install` or copy `.env` contents in an independent worktree. The Agent must use `pnpm dev:start` to prepare the independent worktree's dependencies and environment configuration.
-- The Agent may use `pnpm web:start`, `pnpm web:status`, `pnpm web:health`, `pnpm web:logs`, and `pnpm web:stop` only when the task requires isolated Web Host debugging. Web Host verification does not replace complete Desktop verification.
+- Before starting, testing, inspecting, or stopping an independent Desktop instance, Agents must read and follow `docs/agents/worktree-development.md`.
+- Agents must use `pnpm dev:start`, `dev:status`, `dev:logs`, and `dev:stop`; `prod:*` and `web:*` do not replace independent Desktop verification.
+- `config/desktop-baseline.json` defines the sole Desktop baseline. Agents must verify the selected workspace and installed package versions before testing.
+- Agents must verify the current process group's identity and listening ports. Startup acceptance requires the current run's healthy Renderer completion and the expected plugin installation; a listening port alone is insufficient.
+- `dev:start` prepares the worktree dependency view and `.env` link. Agents must not run `pnpm install` in the worktree or copy `.env` contents.
+- Agents must stop the test instance before finishing unless the user explicitly asks to keep it running for manual use.
 
 ### Production source discipline
 

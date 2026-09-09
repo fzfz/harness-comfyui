@@ -49,68 +49,19 @@ gh release create "v$release_version" \
 
 发布后核对远端 tag 指向最终提交完整 SHA，GitHub Release 指向该 tag，并确认 Release 附件列表为空。已经发布的 tag 与 GitHub Release 不得移动或覆盖；最终提交发生变化时必须使用新的版本号。
 
-## DSH Desktop 的受控依赖安装
+## 当前 Desktop 的安装准备
 
-部署执行者从 Harness checkout 根目录执行以下命令。`npm ci --ignore-scripts` 按 Desktop 的 `package-lock.json` 安装依赖，并跳过自动安装脚本；后续命令依次应用上游补丁、安装品牌资源与 Electron、安装 Node 架构包、检查终端原生预构建文件、设置终端辅助程序权限以及准备 esbuild。
+发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。
 
-```sh
-(
-set -e
-cd .local/upstreams/dsh-desktop
-export npm_config_cache="$PWD/../.npm-cache"
-npm ci --ignore-scripts --no-audit --no-fund
-npm run postinstall
-(cd node_modules/node && npm_config_ignore_scripts=true node installArchSpecificPackage.js)
-node node_modules/node-pty/scripts/prebuild.js
-node node_modules/@deepseek-ai/dsh-subprocess-local/scripts/ensure-spawn-helper.mjs
-node node_modules/esbuild/install.js
-)
-```
+发布执行者必须验证源码 origin、完整 commit、Desktop、Harness 和 Electron 版本与基线配置一致，并完成当前插件的真实 Desktop 门禁。旧 fork 的补丁及历史验收记录不能代替 anywhere Stable 的验收结果。
 
-## Git tag 生产部署命令
+## 生产部署与验收
 
-生产 checkout 保留本地 `.env`、`.local/upstreams/dsh-desktop` 和 `.local/desktop-production/`。从已发布 tag 更新并启动完整 Desktop：
+生产部署需要明确授权。部署执行者保留生产 checkout 的 .env、上游安装目录和运行状态，停止已核实身份的生产实例，从已发布 Git tag 更新受管源码。部署执行者按当前基线准备已获准的 Desktop 安装，并核对待运行提交与发布提交一致。
 
-```sh
-(
-set -e
-pnpm prod:stop
-git fetch --tags
-git switch --detach v0.41.1
-git -C .local/upstreams/dsh-desktop fetch https://github.com/fzfz/dsh-desktop.git f2a27b4461e8c15d21268533efb7b99bb9bb14f2
-git -C .local/upstreams/dsh-desktop switch --detach FETCH_HEAD
-test "$(git -C .local/upstreams/dsh-desktop rev-parse HEAD)" = "f2a27b4461e8c15d21268533efb7b99bb9bb14f2"
-)
-```
+部署执行者从生产 checkout 执行 pnpm prod:start，保持该终端运行，并在第二个终端执行 pnpm prod:status 与 pnpm prod:logs。prod:* 使用与 dev:* 相同的 Profile 安装和 Electron 生命周期实现，生产实例不启用远程调试端口。
 
-按照[releasing.md 的受控依赖安装章节](releasing.md#dsh-desktop-的受控依赖安装)安装 Desktop 依赖后，在 Harness checkout 根目录继续执行：
-
-```sh
-(
-set -e
-pnpm install --frozen-lockfile
-pnpm desktop:dependencies:link
-pnpm prod:start
-)
-```
-
-保持 `prod:start` 终端运行，在第二个终端执行：
-
-```sh
-pnpm prod:status
-pnpm prod:logs
-```
-
-生产运行期间使用：
-
-```sh
-pnpm prod:restart
-pnpm prod:stop
-```
-
-`prod:*` 管理完整 DSH Desktop 生产环境并调用 DSH Desktop `pnpm preview`。生产部署不得使用 `dev:*` 或 `web:*` 替代产品启动。
-
-`v0.41.1` 的 DSH Desktop checkout 必须使用 `fzfz/dsh-desktop` 仓库 `main` 分支的提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2`。该提交恢复聚合 Client 中的 `session/delete` Remote，禁止 DSH Desktop 加载 Kimi PPT adapter，并将 Windows 隐藏控制台辅助模块加入 Desktop 打包资源。Harness ComfyUI 仓库不得包含或复制 DSH Desktop 源码。
+验收执行者必须确认当前插件版本、Profile 安装来源、进程组启动入口、Host 监听端口归属，以及本次启动 run 的 Renderer 健康完成记录；随后确认 Client 显示 ComfyUI 工作台，remote.agentPresets.list 返回两个项目 Preset，remote.harnessComfyuiImageReader.models 返回配置中的模型分组，remote.harnessComfyuiCatalog.baseModels 返回数据源的基础模型记录。历史 v0.41.1 部署仍属于旧 fork，不因本次基线实现自动迁移。生产数据迁移须另行确定迁移对象与验收方案。
 
 ## 开发与 Web 调试边界
 

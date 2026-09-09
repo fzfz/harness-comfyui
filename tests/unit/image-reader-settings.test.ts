@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
 import { redactSecrets } from '@deepseek-ai/dsh-settings'
 import { describe, expect, it, vi } from 'vitest'
@@ -24,7 +23,7 @@ import {
 } from '../../src/client/image-reader/image-reader-settings.tsx'
 import { IMAGE_READER_SETTINGS_FIELD_BY_CODE } from '../../src/image-reader/settings-errors.ts'
 
-const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
+const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
   create: (node: ReactNode) => {
     root: { findAllByType(type: string): Array<{ props: Record<string, any> }> }

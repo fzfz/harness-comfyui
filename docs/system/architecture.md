@@ -2,52 +2,18 @@
 
 ## 启动与重启链路
 
-Desktop generation 是 DSH Desktop 把当前插件发布包及其依赖安装到 `<DSH_HOME>/profiles/.generations/live/<generation-id>/` 后形成的不可变完整安装目录。`<DSH_HOME>/profiles/.generations/desired.json` 保存需要启用的 generation ID；Desktop 启动前的 generation projection 把 `<DSH_HOME>/profiles/web/node_modules/harness-comfyui` 链接到所选 generation 中的 `node_modules/harness-comfyui`，并把 `harness-comfyui` 写入 web profile 的 bundle composition。
+仓库通过 config/desktop-baseline.json 选择唯一 anywhere-labs Stable Desktop。开发、生产和真实 Desktop 测试共用 Profile 安装与 Electron 生命周期实现。实例配置只控制运行目录、环境文件、Workspace 和测试选项。
 
-```text
-pnpm prod:start|restart
-  → scripts/desktop/production-cli.mjs
-  → config/desktop-production.json
-  → scripts/desktop/legacy-session-migration.mjs 合并旧生产 Session 数据
-  → 当前插件 Client/Host/managed CLI/Preset 物化与 generation 打包
-  → 当前 checkout 的 .local/upstreams/dsh-desktop
-  → DSH Desktop pnpm preview
-  → .local/desktop-production/ 中的 PID、日志、DSH home 和业务数据
-```
+插件 Host、Client 和 managed CLI 先构建为 JavaScript 安装产物，再注册到当前 Profile 的依赖和 dsh.profile.bundles。运行中的插件只从正式安装目录及选定宿主依赖解析模块。业务依赖由插件安装声明提供，宿主 peer 由基线 workspace 提供。
 
-独立 worktree 的完整 Desktop 开发入口复用同一产品配置和 Desktop 生命周期：
-
-```text
-pnpm dev:start|restart
-  → scripts/desktop/cli.mjs
-  → config/desktop-worktree.json 与 linked-worktree 门禁
-  → <worktree>/.env 和 <worktree>/node_modules 链接到 main
-  → config/desktop-production.json
-  → main 的 .local/upstreams/dsh-desktop
-  → 当前 worktree 插件 generation
-  → 当前 worktree 的移动桥接端口与 Electron Vite 输出目录
-  → DSH Desktop pnpm dev --outDir <worktree>/.local/desktop-development/desktop-out
-  → .local/desktop-development/
-```
-
-旧 Web Host 是独立调试入口：
-
-```text
-pnpm web:start|restart
-  → scripts/worktree/cli.mjs
-  → config/web-development.json
-  → scripts/production/ 中的共享 Web Host 生命周期
-  → .local/web-development/
-```
-
-`package.json.exports` 的 Host 入口直接指向 `src/index.ts`。Client 类型入口指向 `src/client/index.tsx`，浏览器运行入口是根据当前 Client 源码生成的 `.local/source-client/client.js`。managed CLI 运行入口是根据 `scripts/cli/harness-comfyui.mjs` 及其 TypeScript 依赖生成的 `.local/source-cli/harness-comfyui.mjs`。Desktop generation 打包包含 `scripts/source-client/` 中的两个数据源 HTTP 客户端。Desktop generation 打包和 Web Host start/restart 都先生成 Client 与 managed CLI 运行模块；运行中的插件不要求 Node.js 解释 `node_modules/harness-comfyui` 内的 TypeScript 文件。
+独立 worktree 保存自己的依赖视图、Desktop 输出、Profile、PID、日志和业务数据，复用主 checkout 已安装的工具与基线包。启动完成要求当前 run 的 Host 与 Renderer 成功以及插件安装身份一致。
 
 ## 模块职责
 
 | 模块 | 职责 |
 | --- | --- |
 | `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明、分配和释放 |
-| `scripts/desktop/` | Desktop 产品配置解析、worktree 链接准备、generation 打包安装、Electron dev/preview 启停、状态和日志 |
+| `scripts/desktop/` | Desktop 产品配置解析、worktree 链接准备、Profile 安装、Electron 启停、状态和日志 |
 | `scripts/desktop/legacy-session-migration.mjs` | 把旧 Web 生产 DSH home 的 Session、Attachment、Session 投影索引和 Workspace Session 关系合并到当前生产 DSH home |
 | `scripts/production/` | Client 与 managed CLI 运行模块生成、Web Host 配置解析、PID 与端口所有权、启停、状态、健康和日志的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 门禁、Web 调试配置和共享 Web Host 生命周期适配 |
@@ -69,7 +35,7 @@ pnpm web:start|restart
 | `config/` | 生产配置、schema 和环境变量映射 |
 | `profiles/` | Harness bundle composition 模板 |
 
-DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。当前仓库通过公共接口接入 DeepSeek Harness；DSH Desktop 在自身的 `patches/` 目录维护受管依赖补丁，包括把模型请求的 Session ID 写入 `x-deepseek-harness-session-id` 请求头的 pi-ai 适配器补丁。DSH Desktop 的 `main` 分支维护移动桥接端口入口、聚合 Client Remote 补丁和产品 adapter 启用状态；当前 Harness ComfyUI 仓库只在启动 DSH Desktop 时传入 `DSH_DESKTOP_MOBILE_BRIDGE_PORT`，不复制 DSH Desktop 源码，也不把 Desktop 写入当前仓库 manifest 或 lockfile。开发启动从已安装 Desktop 提供 Harness 模块，只把当前仓库打包为 `harness-comfyui` generation。Desktop generation registry 的 `desired.json` 和 profile 中的 generation `link:` 负责启用插件，插件源码不进入 Desktop 仓库。
+DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。当前仓库通过公共接口接入 DeepSeek Harness，并由 anywhere Stable workspace 解析宿主 peerDependencies。Profile 的 package.json 声明 harness-comfyui 安装来源，dsh.profile.bundles 注册插件。插件构建产物和业务依赖保存在实例安装目录；插件源码不进入 Desktop 仓库。
 
 Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示真实 Generation Run/Media 投影。Harness `0.1.2-rc.1` 不为尚未保存的空白 Session 分配 `details` 列宽；Client 仅在该状态通过公开 `shell.overlay` 扩展位显示空结果列。Session 保存后，`shell.overlay` 结果列退出，原生 `details` 结果列接管，页面只保留一个可见结果列。结果列按照“本会话媒体”“运行状态”的顺序显示页签，并在每次创建结果列组件时默认选择“本会话媒体”。工作台首次启用时自动打开结果列。`WorkbenchDock` 观察包含工作台按钮的 Harness AppFrame 上的 `data-details-collapsed` 属性；详情列关闭时，controller 的结果列状态为关闭，按钮显示“打开结果列”，详情列打开时，controller 的结果列状态为打开，按钮显示“关闭结果列”。用户点击工作台按钮、用户切换已保存 Session 或 Harness 的聊天和工具详情入口打开详情列后，`WorkbenchDock` 都会读取 `data-details-collapsed` 的新值、更新 controller 的结果列状态并显示与详情列状态一致的按钮文案。
 
@@ -79,7 +45,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 先把旧 Web 生产 DSH home 的 Session 数据合并到当前生产 DSH home，再更新浏览器 Client、Host 与 managed CLI 运行模块，物化 `ComfyUI工作台预设` 和 `ComfyUI迭代预设`、安装当前插件 generation 并执行 DSH Desktop `pnpm preview`。`dev:start` 不读取旧生产 DSH home；该命令更新相同产品模块和两个项目 Preset，安装当前 worktree generation，通过主开发 checkout 的端口声明目录取得移动桥接端口，并执行具有当前 worktree 独立输出目录的 DSH Desktop `pnpm dev`。启动器在 Desktop 确认监听后发布当前 PID 与端口状态。两个环境读取同一个 `cordis.patch.yml`、`config/desktop-production.json` 和当前 checkout 的 `config/product-agent.json`，把 Repository Skills 绝对路径写入 `HARNESS_COMFYUI_SKILL_DIR`，并写入各自隔离的 Desktop HOME、DSH home、PID 和日志目录。`cordis.patch.yml` 继续把 `harness-comfyui-cli-candidate` 设置为默认 Preset；`harness-comfyui-iteration` 只在用户显式选择时启用。
+`prod:start` 和 `dev:start` 构建浏览器 Client、Host 与 managed CLI，物化两个项目 Preset，准备 Profile 安装，并启动基线配置指定的 Electron。开发实例使用当前 worktree 的 desktop-out 入口及隔离 HOME、DSH home、PID 和日志目录。启动器通过端口声明分配 Host 端口，核对进程组持有该端口，并等待本次启动的 Renderer 健康完成事件。两个环境读取同一个 cordis.patch.yml 和当前 checkout 的 config/product-agent.json；harness-comfyui-cli-candidate 保持默认 Preset，harness-comfyui-iteration 由用户选择。
 
 `web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同的两个项目 Preset，再以前台子进程运行独立 Harness Web Host。Web Host 环境构建器从当前 checkout 的 `config/product-agent.json` 解析 Repository Skills，并在删除调用者提供的全部 `HARNESS_COMFYUI_*` 值后写入受管的 `HARNESS_COMFYUI_SKILL_DIR`。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 

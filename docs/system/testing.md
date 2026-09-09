@@ -19,11 +19,11 @@ pnpm dev:stop
 pnpm prod:test
 ```
 
-`prod:test` 使用临时目录和端口覆盖 Desktop `dev`/`preview` 模式、跨进程端口声明、双 worktree 并发、PID 与端口状态写入失败清理、restart、异常退出、worktree `.env`/`node_modules` 链接、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
+`prod:test` 使用临时目录和端口覆盖 Desktop 开发与生产实例、跨进程端口声明、双 worktree 并发、PID 与端口状态写入失败清理、restart、异常退出、worktree `.env` 链接与独立依赖目录、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
 
 ## 候选 Desktop 验证
 
-`DSH_DESKTOP_TEST_SOURCE` 为 `test:desktop` 指定候选 DSH Desktop 的绝对路径。`tests/desktop/desktop-live.test.mjs` 和 `tests/desktop/managed-shell-capability.test.ts` 通过 `tests/support/desktop-context.mjs` 读取该变量；省略该变量时，测试使用 `config/desktop-production.json` 指定的底座。该变量不修改 `dev:*` 或 `prod:*` 的启动路径。
+tests/support/desktop-context.mjs 使用 config/desktop-baseline.json 选择 anywhere Stable workspace。DSH_DESKTOP_TEST_SOURCE 只覆盖测试源码位置，测试仍校验固定 commit、Desktop、Harness 与 Electron 版本。宿主模块通过该 workspace 的 package.json 创建 Node createRequire 后解析。
 
 候选设置页通过重新编辑推理等级，将旧模型记录的 `reasoning.efforts` 转换为 `reasoningEfforts`。只打开设置页不会转换旧记录。设置页不再提供逐模型默认推理等级控件；用户在会话中选择推理等级。
 
@@ -31,21 +31,23 @@ pnpm prod:test
 
 ## 测试命令、专项验收与历史记录
 
-Desktop generation 插件安装产物是 `$DSH_HOME/profiles/.generations/live/<generation-id>/` 中包含插件包及其依赖的不可变完整安装目录。`$DSH_HOME/profiles/desired.json` 选择待启用的 generation，Web profile 中的 `node_modules/harness-comfyui` 链接到该 generation 的插件目录。
+Desktop 测试必须检查 Profile 的 package.json 声明 harness-comfyui 来源、dsh.profile.bundles 包含该插件，并核对实际 node_modules 链接指向本次构建的安装产物。启动测试同时检查进程组入口、监听端口归属及本次启动 run 的 Renderer 健康完成事件。旧运行的健康事件或只有端口监听不能使测试通过。
 
 | 命令 | 范围 |
 | --- | --- |
 | `pnpm test:unit` | Host、Agent、Client、配置和测试辅助模块 |
 | `pnpm test:integration` | Host 插件组合与逐媒体同源 HTTP 路由 |
-| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，验证实际启用的 `harness-comfyui` generation 与本次测试候选一致、`.env`、两个项目 Preset 在外部 Workspace 中读取 Preset-scoped Repository Skills、图片读取当前配置保存与具体字段错误、Provider 保存后重开持久化、媒体应用内 Modal，以及真实 DSH bash 调用取得项目 CLI capability |
+| `pnpm test:desktop` | 使用临时 Desktop HOME 启动真实 DSH Desktop，确认 Profile 加载本次插件安装产物、DSH home 的 .env 链接到测试环境文件、两个项目 Preset 在外部 Workspace 中读取项目 Skills；确认图片读取配置保存后可重新读取，无效 URL 和端口显示对应错误；确认 Provider 保存后重开仍保留设置、媒体在应用内 Modal 显示、真实 DSH bash 取得项目 CLI capability |
 | `pnpm test:contract` | package、Git 跟踪、本地发布门禁和安全合同 |
-| `pnpm prod:test` | Desktop dev/preview 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
+| `pnpm prod:test` | Desktop Profile 安装与 Electron 生命周期、worktree 链接、Web Host start/stop/restart/status/health/logs、PID、端口和真实 Client ModuleLoader |
 | `pnpm test:prototype` | 静态原型结构与数据关系 |
 | `pnpm test:coverage` | unit 与 integration 覆盖率 |
 | `pnpm quality` | 依赖检查、类型检查和全部必需测试 |
 | `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>` | 当前数据源服务全部 Workflow 模板、`config/verification/comfyui-workflow-parameter-support.json` 精确参数支持基线、目标实例实时 `/object_info`、组合参数编译、官方页面导出和缓存 miss→hit 一致性；省略 URL 或端口时使用本机默认值 |
 
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
+
+会话删除测试必须确认目标 Session 不可再读取，其他 Session 保持可读。模型请求测试必须确认普通 Session、子 Session 与图片读取请求携带各自真实 Session ID。
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。
 

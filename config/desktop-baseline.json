@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/fzfz/dsh-desktop-anywhere.git",
+    "commit": "26c6b6c3117d11787e679456c387d823923035f9",
+    "relativePath": ".local/upstreams/dsh-desktop-anywhere-owned",
+    "stableWorkspace": "dsh-plugin-desktop"
+  },
+  "packages": {
+    "desktop": {
+      "name": "dsh-plugin-desktop",
+      "version": "2.0.6"
+    },
+    "harness": {
+      "name": "@deepseek-ai/dsh",
+      "version": "0.1.2-rc.1"
+    },
+    "electron": {
+      "name": "electron",
+      "version": "43.3.0"
+    }
+  },
+  "profile": {
+    "name": "desktop",
+    "pluginPackageName": "harness-comfyui",
+    "setupStateVersion": 2,
+    "setupRevision": 1,
+    "setupStateRootDirectory": "profile-setup",
+    "setupStateFilename": "state.json"
+  },
+  "startup": {
+    "host": "127.0.0.1",
+    "mode": "compatibility",
+    "networkExposure": "loopback",
+    "openBrowser": false,
+    "readyTimeoutMs": 60000,
+    "stopTimeoutMs": 5000
+  },
+  "entrypoints": {
+    "desktopMain": "lib/main.js"
+  }
+}

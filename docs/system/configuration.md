@@ -1,40 +1,32 @@
 # 配置规范
 
-## Desktop 产品配置
+## Desktop 基线与实例配置
 
-`prod:start`、`prod:restart`、`dev:start` 和 `dev:restart` 共同读取 `config/desktop-production.json`：
+config/desktop-baseline.json 是开发、生产和真实 Desktop 测试共同读取的基线配置。
 
-| 字段 | 规则 |
+| 配置对象 | 字段用途 |
 | --- | --- |
-| `desktopSourceRelativePath` | DSH Desktop 相对 checkout 的目录；当前为 `.local/upstreams/dsh-desktop` |
-| `runtimeRelativeRoot` | 生产 Desktop 运行目录；当前为 `.local/desktop-production` |
-| `environmentFileRelativePath` | 生产 checkout 内的环境文件；当前为 `.env` |
-| `startupWorkspacePath` | Desktop 启动后直接打开的绝对 Workspace 目录 |
+| source | repository 与 commit 固定源码身份；relativePath 指定相对源码目录；stableWorkspace 指定 Stable 包目录 |
+| packages | desktop、harness、electron 分别声明运行包名称与精确版本 |
+| profile | name 指定 Profile 名称；pluginPackageName 指定插件名称；setupStateVersion 与 setupRevision 指定首次设置记录格式；setupStateRootDirectory 与 setupStateFilename 指定 user-data 下记录目录和文件名 |
+| startup | host、mode、networkExposure、openBrowser 定义新实例初始运行设置；readyTimeoutMs 与 stopTimeoutMs 定义启动等待和停止期限 |
+| entrypoints | desktopMain 指定 Stable workspace 中已构建的 Electron 主入口 |
 
-生产命令相对当前生产 checkout 解析 `desktopSourceRelativePath` 和 `environmentFileRelativePath`。开发命令从 `config/desktop-worktree.json.mainCheckoutPath` 解析 DSH Desktop 底座，并使用 worktree 根 `.env` 链接；因此开发与生产加载同一个产品配置结构，不存在第二套 Workspace、Preset、Provider 或模型配置。
+scripts/desktop/baseline.mjs 校验源码 origin、完整 commit 和实际安装包版本。config/desktop-production.json 只保存 runtimeRelativeRoot、environmentFileRelativePath 和 startupWorkspacePath。config/desktop-worktree.json 保存 mainCheckoutPath 和开发 runtimeRelativeRoot。开发命令相对主 checkout 解析基线源码目录，生产命令相对生产 checkout 解析。测试使用同一基线身份；路径覆盖不能绕过版本校验。
 
-生产 context 使用 `config/source-production.json.runtimeRelativeRoot` 定位旧 Web 生产 DSH home `<runtimeRelativeRoot>/dsh-home`。该路径只用于把旧 Session、Session Attachment、Session 投影索引和 Workspace Session 关系迁入当前生产 DSH home；开发 Desktop 不读取该旧生产目录。
+独立 worktree 的 .env 链接到主 checkout 已有 .env。worktree 自有 node_modules 由依赖准备模块建立：业务依赖与构建工具链接到主 checkout，宿主 peerDependencies 链接到候选 Stable workspace 的解析目录。已有不符合目标的路径会产生明确错误，不覆盖来源目录，也不执行 pnpm install。
 
-仓库根 `.env.example` 提供 `OPENCODE_GO_API_KEY` 与允许调用者覆盖的 `HARNESS_COMFYUI_*` 业务变量示例。该文件同时注明 Workspace、Desktop runtime、数据源服务默认端口和图片读取 OpenAI 兼容接口的实际配置位置；数据源服务 URL 和当前端口由使用者在 Harness 的“ComfyUI”设置页保存。
+每个实例分别保存 HOME、DSH_HOME、Profile、安装产物、日志、PID 和 desktop-out 启动入口。Profile 的 package.json 声明插件来源，dsh.profile.bundles 注册插件。候选官方 materializeProfile 在首次启动建立 Profile 的 pnpm-lock.yaml 与 node_modules/.modules.yaml，后续启动复用这些记录。首次设置初始化只针对新实例；已有用户设置保持原值。Repository Skills 的唯一源码路径由 config/product-agent.json.skills 定义。
 
-`config/desktop-worktree.json` 只声明 linked worktree 与生产环境之间的运行差异：
+Host 端口由独立实例分配并写入运行状态。启动器核对端口属于本次 Desktop 进程组，并等待本次启动 run 的 startup.run.completed 事件及 rendererStatus=healthy。移动桥接端口不属于 anywhere Stable 的就绪条件。远程调试端口只在显式测试配置下启用。
 
-| 字段 | 规则 |
-| --- | --- |
-| `mainCheckoutPath` | 主开发 checkout 的绝对路径 |
-| `runtimeRelativeRoot` | 当前 worktree 的 Desktop 运行目录；当前为 `.local/desktop-development` |
-
-`dev:start` 和 `dev:restart` 在读取 Desktop context 前创建并验证 `<worktree>/.env -> <main>/.env` 与 `<worktree>/node_modules -> <main>/node_modules`。正确链接保持不变；既有普通文件、普通目录或错误链接会中止启动。Repository Skills 路径只由当前 worktree 的 `config/product-agent.json.skills` 定义。Desktop 启动器在准备阶段不在隔离 Desktop HOME 下创建 `.agents/skills` 符号链接。隔离 Desktop HOME 下的 `.agents` 是符号链接时，Desktop 启动器保留该链接及其链接目标内容并中止启动；`.agents` 是非目录路径时，Desktop 启动器保留该路径及其内容并中止启动；`.agents/skills` 是符号链接时，Desktop 启动器只删除该链接；`.agents/skills` 是普通文件或普通目录时，Desktop 启动器保留其内容并中止启动。
-
-Desktop generation 是安装在当前 DSH home 的 `profiles/.generations/live/<generation-id>/` 中并且不再原位修改的完整插件包及依赖。generation staging 是 `profiles/.generations/staging/<uuid>/` 中的临时 pnpm 安装项目；安装成功后，DSH Desktop installer 把该目录提升为 generation。Desktop generation 安装器读取根 `node_modules/.modules.yaml` 的 `storeDir`。插件适配层向 staging 项目的 pnpm 命令传递 `--ignore-workspace` 和 `--store-dir <storeDir>`；staging 项目不加入当前 checkout 的 pnpm workspace，并使用自己的 virtual store 和 lockfile。DSH Desktop installer 不修改当前 checkout 的 `node_modules/.pnpm` 或 `pnpm-lock.yaml`。该安装过程不改变 `.env`、Workspace、Provider、Preset 或模型配置。开发 Desktop 的 Electron Vite 输出目录固定为当前 worktree 的 `.local/desktop-development/desktop-out/`。
-
-`COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT` 只定义生产 checkout 启动的 DSH Desktop 移动桥接监听端口，值必须是 1 至 65535 的整数。`prod:start` 从生产 checkout 的 `.env` 读取该值，使用该值完成启动前端口检查，并通过 DSH Desktop 的进程变量 `DSH_DESKTOP_MOBILE_BRIDGE_PORT` 传给 Desktop 主进程。`dev:start` 和 `dev:restart` 通过主开发 checkout 的 `.local/development-port-claims/` 为当前 worktree 声明空闲端口，并使用运行时端口覆盖传给 Desktop 子进程的两个端口变量；开发命令不读取共享 `.env` 中的端口作为开发端口。启动器在 Desktop 子进程监听端口后释放跨进程声明。
+仓库根 .env.example 提供 OPENCODE_GO_API_KEY 与允许调用者覆盖的 HARNESS_COMFYUI_* 业务变量示例。数据源服务 URL 与端口由用户在“ComfyUI”设置页保存。
 
 `cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用、前台 Bash 默认超时和默认 `ComfyUI工作台预设` 的共同来源。当前前台 Bash 默认超时为 `180000` 毫秒；单次 Tool Call 可以在 DSH 允许的上限内显式覆盖该值。`config/product-agent.json` 定义项目 Agent Preset 的写入结构：`repositoryRoot` 是当前插件包根目录，项目 Agent Preset 源码目录是 `<repositoryRoot>/<preset.sourceRootRelativePath>`，安装目录是 `<dshHome>/<preset.installRootRelativePath>`，受管内容包括 `preset.sharedFiles` 列出的共享 component 文件、`preset.id` 与 `preset.additionalManagedPresetIds` 对应的 Preset 目录，以及 `preset.retiredManagedPresetIds` 对应的待删除 Preset 目录。Desktop 开发与生产启动器在启动 DSH Desktop 前使用当前插件包中的 `cordis.patch.yml`，将默认及附加 Preset 配置和共享 component 文件写入各自隔离的 DSH home，并删除 `preset.retiredManagedPresetIds` 指定的目录。
 
 ## Web Host 调试配置
 
-`web:start` 和 `web:restart` 先根据 `config/desktop-worktree.json.mainCheckoutPath` 建立 worktree 的 `.env` 与 `node_modules` 链接，再读取 `config/web-development.json`，并依次读取：
+`web:start` 和 `web:restart` 先根据 `config/desktop-worktree.json.mainCheckoutPath` 建立 worktree 的 `.env` 链接与独立依赖目录，再读取 `config/web-development.json`，并依次读取：
 
 1. `config/source-production.json`
 2. `config/base.json`

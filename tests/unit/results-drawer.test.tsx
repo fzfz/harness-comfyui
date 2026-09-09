@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { createElement, type ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -54,7 +53,7 @@ import {
   type GenerationProjection,
 } from '../../src/generation/contract.ts'
 
-const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
+const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
   create: (node: ReactNode, options?: { readonly createNodeMock?: (element: { readonly type?: unknown }) => unknown }) => {
     root: {
