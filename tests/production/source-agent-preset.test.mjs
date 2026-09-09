@@ -293,7 +293,6 @@ describe('A/B project Tool visibility', () => {
         agentOptions: {
           provider: expect.any(String),
           model: expect.any(String),
-          reasoningEffort: expect.any(String),
         },
         toolFilter: {
           deny: expect.arrayContaining([

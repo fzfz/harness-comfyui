@@ -242,3 +242,59 @@ describe('iteration components in the target Desktop Tool Registry', () => {
     }
   })
 })
+
+
+describe('native child reasoning-effort inheritance', () => {
+  const parent = {
+    options: { provider: 'old-provider', model: 'old-model', reasoningEffort: 'low' },
+    session: { requestHeader: () => ({ config: {
+      provider: 'parent-provider', model: 'parent-model', reasoningEffort: 'max',
+    } }) },
+  }
+
+  it.each(roles)('lets $id use its own route default instead of a fixed effort', async role => {
+    const { resolveChildAgentOptions } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-subagent')).href)
+    const { registered, subagents } = registerTools()
+    await call(registered.get(role.config.toolName), task(roles.indexOf(role)), execution())
+    const requested = subagents.startContinuable.mock.calls[0][0].request.agentOptions
+    const resolved = resolveChildAgentOptions(parent, requested, 1)
+    expect(resolved).toMatchObject({ provider: requested.provider, model: requested.model })
+    expect(resolved).not.toHaveProperty('reasoningEffort')
+  })
+
+  it.each([
+    ['same route', {}, 'max'],
+    ['different provider', { provider: 'other-provider' }, undefined],
+    ['different model', { model: 'other-model' }, undefined],
+    ['explicit override', { provider: 'other-provider', reasoningEffort: 'high' }, 'high'],
+  ])('%s follows native inheritance', async (_label, requested, effort) => {
+    const { resolveChildAgentOptions } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-subagent')).href)
+    expect(resolveChildAgentOptions(parent, requested, 1).reasoningEffort).toBe(effort)
+  })
+
+  it('validates omitted and explicit effort against the installed OpenRouter model capabilities', async () => {
+    const { LlmRuntime } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-llm')).href)
+    const piRoot = resolve(desktop.desktopSource, 'node_modules/@earendil-works/pi-ai/dist')
+    const { getBuiltinModels } = await import(pathToFileURL(resolve(piRoot, 'providers/all.js')).href)
+    const { getSupportedThinkingLevels } = await import(pathToFileURL(resolve(piRoot, 'index.js')).href)
+    const model = getBuiltinModels('openrouter').find(model => model.id === roles[0].config.agentOptions.model)
+    expect(model).toBeDefined()
+    const info = { reasoning: { efforts: getSupportedThinkingLevels(model).map(id => ({ id })) } }
+    const validate = config => LlmRuntime.prototype.resolveCallWithInfo.call({}, config, info).config
+    const config = { provider: 'openrouter', model: model.id }
+    expect(validate(config)).not.toHaveProperty('reasoningEffort')
+    expect(() => validate({ ...config, reasoningEffort: 'max' }))
+      .toThrow(expect.objectContaining({ code: 'UNSUPPORTED_REASONING_EFFORT' }))
+  })
+
+  it.each([
+    ['provider default', { reasoning: { efforts: [{ id: 'high' }], defaultEffort: 'high' } }, 'high'],
+    ['model without reasoning', {}, undefined],
+  ])('preserves %s when effort is omitted', async (_label, info, effort) => {
+    const { LlmRuntime } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-llm')).href)
+    const config = { provider: 'other-provider', model: 'other-model' }
+    expect(LlmRuntime.prototype.resolveCallWithInfo.call({}, config, info).config.reasoningEffort).toBe(effort)
+    expect(() => LlmRuntime.prototype.resolveCallWithInfo.call({}, { ...config, reasoningEffort: 'max' }, info))
+      .toThrow(expect.objectContaining({ code: 'UNSUPPORTED_REASONING_EFFORT' }))
+  })
+})
