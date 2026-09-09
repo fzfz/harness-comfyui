@@ -4,6 +4,7 @@ import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { prepareDesktopDevelopmentCheckout } from './development-checkout.mjs'
+import { prepareDesktopDevelopmentSettings } from './development-settings.mjs'
 import {
   desktopWorktreeStatus,
   loadDesktopWorktreeContext,
@@ -20,7 +21,8 @@ export function parseArguments(argv) {
 }
 
 export async function runDesktopLifecycleCommand(command, options = {}) {
-  const context = await (options.loadContext ?? loadDesktopWorktreeContext)(options.contextOptions)
+  const context = options.loadedContext
+    ?? await (options.loadContext ?? loadDesktopWorktreeContext)(options.contextOptions)
   if (command === 'status') return desktopWorktreeStatus(context, options)
   if (command === 'stop') return stopDesktopWorktree(context, options)
   if (command === 'logs') return { status: 'logs', output: await readDesktopWorktreeLogs(context) }
@@ -30,7 +32,16 @@ export async function runDesktopLifecycleCommand(command, options = {}) {
 
 export async function runDesktopDevelopmentCommand(command, options = {}) {
   if (command === 'start' || command === 'restart') {
-    await (options.prepareCheckout ?? prepareDesktopDevelopmentCheckout)(options.contextOptions)
+    const checkout = await (options.prepareCheckout ?? prepareDesktopDevelopmentCheckout)(options.contextOptions)
+    const context = await (options.loadContext ?? loadDesktopWorktreeContext)(options.contextOptions)
+    const preparedSettings = await (
+      options.prepareDevelopmentSettings ?? prepareDesktopDevelopmentSettings
+    )({ checkout, context })
+    return runDesktopLifecycleCommand(command, {
+      ...options,
+      loadedContext: context,
+      prepareDesktopSettings: preparedSettings.materialize,
+    })
   }
   return runDesktopLifecycleCommand(command, options)
 }

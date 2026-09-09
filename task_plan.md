@@ -1,3 +1,38 @@
+# v0.42.1 受管开发配置发布与部署计划
+
+## 必须要实现的目标
+
+计划执行者把当前受管开发配置候选整理到 `codex/managed-dev-settings-v0.42.1` 分支，创建并合入 Pull Request；随后把 `origin/main` 同步到本地 `main`，从合并后的提交发布 v0.42.1，并把同一发布提交部署到生产目录 `/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env`。开发 worktree 的 `dev:start` 从仓库物化可跟踪的 Provider 与识图配置，并仅从主 checkout 的 Git 忽略私密来源物化声明的凭据。
+
+## 验收清单
+
+- 独立审阅者完成 Standards、Spec 和 Markdown 语义审阅，所有问题均已处理。
+- 独立发布 worktree 的最终候选通过 `pnpm quality` 和 `git diff --check`，通过后不再修改文件。
+- Pull Request 已合入，且本地 `main`、`origin/main` 与合并提交 SHA 一致。
+- `package.json`、`v0.42.1` 标签和 GitHub Release 指向同一个 `origin/main` 提交。
+- 生产目录保留 Git 忽略配置和运行状态，更新到发布提交后通过生产状态、进程组、监听端口、版本和日志检查。
+- 不读取、重启、停止或修改用户正在测试的独立 dev worktree。
+
+## 非本次目标
+
+- 不改变生产凭据内容、Provider 账户选择或识图模型参数。
+- 不安装或升级依赖，不修改上游 Desktop 安装目录。
+- 不操作用户当前测试中的独立 dev Desktop 生命周期。
+
+## 已获得的授权
+
+用户已明确授权创建 Pull Request、合入 `main`、同步 `origin/main` 到本地 `main`、发布版本并部署生产目录。此前用户已要求修改 `dev:start`，使非凭据配置来自仓库、凭据来自主 checkout 的 Git 忽略私密来源。
+
+## 执行阶段
+
+1. **进行中**：建立发布分支并固化当前候选。
+2. **待执行**：在独立发布 worktree 更新 v0.42.1 元数据，完成独立审阅和最终质量门禁。
+3. **待执行**：推送分支、创建并合入 Pull Request，同步本地 `main`。
+4. **待执行**：创建 v0.42.1 标签与 GitHub Release。
+5. **待执行**：验证并停止既有生产进程，更新生产目录，启动并完成发布后验证。
+
+---
+
 # 自有 Desktop fork 基线切换实施计划
 
 ## 必须要实现的目标

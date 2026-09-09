@@ -69,5 +69,5 @@ export async function prepareDesktopDevelopmentCheckout(options = {}) {
     mainCheckoutRoot: mainCheckoutPath,
     desktopWorkspace: baseline.desktopWorkspace,
   })
-  return { environmentSource, dependenciesSource, dependencyView, baseline, mainCheckoutPath }
+  return { definition, environmentSource, dependenciesSource, dependencyView, baseline, mainCheckoutPath }
 }

@@ -4,7 +4,7 @@
 
 config/desktop-baseline.json 是 Desktop 仓库、固定提交、Stable workspace 和预期运行版本的唯一配置来源。开发、生产准备及测试必须读取它；安装结果与配置不一致时，启动器报告具体差异并停止。
 
-config/desktop-worktree.json 定义独立开发实例的主 checkout 和运行目录。config/desktop-production.json 定义生产运行目录、环境文件和默认 Workspace。两个环境使用同一基线和插件加载机制，各自保存 HOME、DSH_HOME、Profile、PID、日志、数据库和媒体。
+config/desktop-worktree.json 定义独立开发实例的主 checkout、运行目录和受管开发 Settings 来源。config/desktop-production.json 定义生产运行目录、环境文件和默认 Workspace。两个环境使用同一基线和插件加载机制，各自保存 HOME、DSH_HOME、Profile、PID、日志、数据库和媒体。
 
 ## 主开发 checkout 依赖准备
 
@@ -25,7 +25,11 @@ desktop:dependencies:link 仅在独立 worktree 中运行，用于从主 checkou
 
 启动器先构建插件 Host、Client 和 managed CLI，物化当前项目 Preset，准备当前 Profile 的插件安装，再启动候选 Electron。插件包内包含自己的运行模块和数据源客户端；安装声明与 Profile bundles 必须共同指向该插件。首次启动由候选 Desktop 的官方 materializeProfile 使用内置 pnpm 建立 Profile 锁文件与安装元数据；后续启动复用符合候选格式的记录。仓库安装器不伪造这些文件。
 
-启动器只在新实例初始化首次设置。后续启动保留已保存设置，环境特有的端口和运行目录由实例配置决定。生产实例不打开开发调试端口。
+启动器只在新实例初始化 Stable Desktop 的首次设置。开发启动器随后在每次 `dev:start` 和 `dev:restart` 中更新受管 Provider、默认模型和图片读取 Settings，并保留其他用户设置。生产实例不打开开发调试端口。
+
+开发启动器从当前 worktree 的 `config/desktop-development-provider-settings.json` 和 `config/image-reader-profiles.json` 读取 Git 跟踪的非凭据配置。启动器从 `config/desktop-worktree.json` 指向的 main checkout 私密 DSH home 读取 Git 忽略的 Provider 凭据和图片读取凭据，再把受管值合并到当前 worktree 的 `settings.yaml` 和 `.credentials.yaml`。目标文件是权限 `0600` 的独立文件；启动器不复制未声明的 main 凭据，并保留当前 worktree 的非受管 Settings namespace、credential ref 和 credential record。
+
+`dev:start` 和 `dev:restart` 在停止或启动 Desktop 前校验跟踪配置、main 私密来源和当前目标文件。校验失败时，启动器不修改目标文件，也不停止已有 Desktop。`dev:start` 发现实例已运行时不写入配置；`dev:restart` 停止旧实例后物化配置，再启动新实例。`dev:status`、`dev:logs` 和 `dev:stop` 不执行配置初始化。
 
 start 保持在前台。status 报告实例进程与就绪状态；logs 汇总该实例的启动及 Host 日志并脱敏。stop 核对 PID 所属进程组和启动路径后停止该组；启动失败和停止超时必须在配置期限内结束，并清理本次端口声明。
 

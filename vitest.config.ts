@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 
 import ts from 'typescript'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 const qualityPolicy = JSON.parse(readFileSync(new URL('./config/quality-gates.json', import.meta.url), 'utf8'))
 
@@ -35,6 +35,7 @@ export default defineConfig({
   plugins: [standardDecoratorPlugin],
   resolve: { dedupe: ['react', 'react-dom'] },
   test: {
+    exclude: [...configDefaults.exclude, '**/.local/**'],
     deps: { optimizer: { ssr: { enabled: true, include: ['react', 'react-test-renderer'] } } },
     coverage: {
       provider: qualityPolicy.coverage.provider,

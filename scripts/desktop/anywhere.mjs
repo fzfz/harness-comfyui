@@ -841,6 +841,7 @@ export async function startDesktopWorktree(context, options = {}) {
   let log
   try {
     prepared = await prepareAnywhereDesktop(context, { ...options, recordedAt: startedAt })
+    if (options.prepareDesktopSettings !== undefined) await options.prepareDesktopSettings()
     const installation = await verifyManagedProfileInstallation(prepared.context, prepared)
     const entry = await writeDesktopEntry(prepared.context)
     const candidateRequire = packageRequire(prepared.context.desktopWorkspace)

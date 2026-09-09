@@ -1,3 +1,13 @@
+# v0.42.1 受管开发配置发布事实记录
+
+- 当前候选以 `c3011b51ae36df81a6c787ea8093be6b07a7151c`（v0.42.0、`origin/main`）为起点。
+- Provider 与识图的非凭据配置已拆分为可跟踪配置；凭据只从主 checkout 的 `.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness` 私密来源选择性物化。
+- 当前候选的完整 `pnpm quality`、`git diff --check`、私密值泄漏检查和主 checkout 私密来源预检均已通过。
+- 发布版本按补丁版本提升为 v0.42.1；本次没有依赖变更。
+- 用户正在测试的独立 dev worktree 不属于后续发布动作的操作目标。
+
+---
+
 # 基线切换事实记录
 
 ## 已确认的候选行为
