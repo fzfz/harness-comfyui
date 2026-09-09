@@ -66,7 +66,11 @@ Host 增加新的项目 Tool schema 时，两个 ComfyUI 产品 Preset 的 `loca
 
 ### 迭代预设的子 Agent 与 Workspace
 
-`ComfyUI迭代预设` 加载 `@deepseek-ai/dsh-tool-subagent`，并固定使用 `provider: spawn`、`toolName: subagent`、`enableRunInBackground: false`、`maxDepth: 1` 和 `modelSelectionSettings: false`。该 Preset 使用 Host 已有的 spawn provider，不注册其他 provider，不加载 fork、后台任务或子 Agent 控制 Tool。`ComfyUI工作台预设` 不加载 subagent Tool。
+`ComfyUI迭代预设` 在 agent.cordis.yml 中配置四个 `../project-iteration-dispatch.mjs` 实例，工具名为 `subagent_composition`、`subagent_generation`、`subagent_observation` 和 `subagent_comparison`。每个实例的 `config.persona` 定义对应子 Agent 的职责与工作流程，`config.agentOptions` 独立指定模型，`config.parameters` 定义调用参数，`config.taskTemplate` 定义任务消息标题、分组与字段顺序。component 按模板组装参数，使用原生 `startContinuable` 创建子会话；调用参数包含 `agent_id` 时，使用原生 `sendMessage` 向该子会话投递本次任务。配置使用 `provider: spawn` 和 `maxDepth: 1`。
+
+主 Agent 使用同一角色工具创建和续派任务，构图与生成任务分别继续使用各自此前创建的子会话，观察与比较每轮创建新子会话。DSH 负责完成通知。预设加载 `@deepseek-ai/dsh-tool-subagent-control`，供子 Agent 使用 `send_message` 向父 Agent 报告问题，并供主 Agent 使用 `interrupt_agent` 中断任务。子 Agent 的 `toolFilter.deny` 限制四个角色派发工具和 `interrupt_agent`。
+
+主 Agent 读取 `comfyui-iterate-generation` 的 `SKILL.md`，按照其中规定的流程派发每轮子任务；该 Skill 的 `references/records.md` 定义结果目录及文件名。主 Agent 在每次派发时传入实际输出路径，子 Agent 写文件并返回路径。主 Agent 向构图子 Agent 提供该 Skill 的 `references/composition-design.md`，向比较子 Agent 提供 `references/iteration-method.md`。生成子 Agent 使用实际模型对应的 Prompt Builder Skill 和 `comfyui-generate`；观察子 Agent 使用 `local-image-reader`。`ComfyUI工作台预设` 保持原工具配置。
 
 `ComfyUI迭代预设` 必须加载 `agent-presets/project-subagent-workspace.mjs`。该 component 在每次 `agent/pre-step` 中识别 `origin: subagent` 的真实子 Session，并使用子 Session header 的 `parentSession` 查找父 Agent。该 component 分别把父子 Session header 的 `cwd` 解析为真实路径，要求两个真实路径相同，再根据父 Session 的 `cwd` 确定 Workspace，并确认父 Session 已附加到该 Workspace。子 Session 尚未附加时，该 component 必须调用并等待 `Workspace.attachSession(<真实子 Session ID>)` 完成，然后继续本次 Agent step；同一子 Session 的后续 step 不得重复附加。父 Agent 找不到、父或子 Session 没有 `cwd`、任一 `cwd` 无法解析为真实路径、父子真实路径不同、无法根据父 Session 的 `cwd` 确定 Workspace、父 Session 未附加到该 Workspace，或 `attachSession` 失败时，错误必须指出无法登记的子 Session ID，以及对应的父 Session、`cwd` 或 Workspace 对象和失败原因，并停止该 Agent step。`ComfyUI工作台预设` 不加载该 component。
 
@@ -116,7 +120,7 @@ CLI 使用参考文档只描述 Skill 执行者能够直接使用的可执行入
 - `@deepseek-ai/dsh-skill-filesystem` 使用 `providerName: harness-comfyui` 和 `includeDefaultRoots: false`，且 `customSkillDirs` 只包含 `!!js process.env.HARNESS_COMFYUI_SKILL_DIR`；
 - composition 加载系统提示词可见性 component，并且该 component 只删除三个已声明的 Harness 自维护段落；
 - 两个产品 Preset 的模型 Tool roster 都不包含 Host 项目 Tool schema；
-- `ComfyUI迭代预设` 的 subagent 能力只加载前台 spawn subagent Tool，并把深度限制为一层且关闭模型选择；`ComfyUI工作台预设` 不加载 subagent Tool；
+- `ComfyUI迭代预设` 的四个角色工具分别采用配置的 persona 和模型，以一层 spawn 创建持续子会话；首次与后续派发按各角色配置的模板保留本次输入，后续派发指向该角色此前创建的子会话，子 Agent 工具权限符合配置；`ComfyUI工作台预设` 不加载这些工具；
 - Workspace component 只处理 subagent Session；子 Session 尚未附加时，component 使用真实子 Session ID 调用并等待 `Workspace.attachSession()`，等待完成后才继续本次 Agent step；同一子 Session 的后续 step 不重复附加，父 Agent、真实 `cwd`、Workspace、父 Session 的 Workspace 归属或附加操作无效时停止本次 Agent step；
 - `standard` Preset 的 Host 项目 Tool 可见性不受自定义 Preset 影响；
 - `pnpm prod:start`、`pnpm prod:restart`、`pnpm dev:start`、`pnpm dev:restart`、`pnpm web:start` 和 `pnpm web:restart` 都读取 `config/product-agent.json`，安装相同的两个受管产品 Preset 配置和 `preset.sharedFiles` 声明的共享 component 文件，并保留安装根目录中的用户自建 Preset。
@@ -132,7 +136,7 @@ CLI 使用参考文档只描述 Skill 执行者能够直接使用的可执行入
 - 省略 `agentPreset` 后最终采用 `harness-comfyui-cli-candidate` 的 Agent、显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Agent 和显式设置 `agentPreset: harness-comfyui-iteration` 的 Agent 都能够发现当前 checkout 的 Repository Skills；
 - 最终采用 `standard` 或其他非 ComfyUI 产品 Preset 的 Session 不会发现当前 checkout 的 Repository Skills，且 `standard` Session 仍能发现当前 checkout 之外的 Workspace 中的 Skill 和调用者用户主目录中的其他用户级 Skill；
 - 两个 ComfyUI 产品 Preset 中的 Agent 都能够按 `SKILL.md` 的读取条件读取 CLI 使用参考文档，并通过前台 shell Tool Call 调用该 CLI 使用参考文档指定的项目 managed CLI 命令；
-- `ComfyUI迭代预设` 的前台 subagent 能够继承父 Session 的模型设置，且首个 Agent step 开始业务调用前已经使用真实子 Session ID 登记到父 Session 所属 Workspace；第二层 subagent 请求必须被深度限制拒绝；
+- `ComfyUI迭代预设` 的四个子 Agent 分别使用自身 persona 和模型配置，完成通知能够回到主 Agent；构图和生成会话能够接收后续消息；首个 Agent step 前已将真实子 Session 登记到父 Session 所属 Workspace，子 Agent 的工具权限阻止再次委派；
 - 用户要求同一个 Generation Request 创建多个 Run 时，Agent 能够按照 CLI 使用参考文档执行多次独立提交。
 
 ### 语义 Review

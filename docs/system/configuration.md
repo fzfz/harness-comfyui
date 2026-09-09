@@ -71,7 +71,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 | `preset.sourceRootRelativePath` | 仓库根目录内的项目 Agent Preset 源码根目录；当前为 `agent-presets` |
 | `preset.installRootRelativePath` | 当前 production 或 worktree DSH home 内的安装根目录；当前为 `.agent-presets` |
 | `preset.retiredManagedPresetIds` | 本项目需要从安装根目录删除的已退役 Preset ID 数组；每项只使用小写字母、数字和连字符，数组不得包含默认或附加受管 Preset ID，数组项不得重复 |
-| `preset.sharedFiles` | 非空且互不重复的 `.mjs` basename 数组；每个源文件位于 `<repositoryRoot>/<preset.sourceRootRelativePath>/`，启动器把它写入 `<dshHome>/<preset.installRootRelativePath>/`，受管 Preset 的 `agent.cordis.yml` 按需通过相对路径加载这些共享 component；当前包含 `project-tool-visibility.mjs`、`project-system-prompt-visibility.mjs` 和 `project-subagent-workspace.mjs` |
+| `preset.sharedFiles` | 非空且互不重复的 `.mjs` basename 数组；每个源文件位于 `<repositoryRoot>/<preset.sourceRootRelativePath>/`，启动器把它写入 `<dshHome>/<preset.installRootRelativePath>/`，受管 Preset 的 `agent.cordis.yml` 按需通过相对路径加载这些共享 component；当前包含 `project-tool-visibility.mjs`、`project-system-prompt-visibility.mjs` 、`project-subagent-workspace.mjs` 和 `project-iteration-dispatch.mjs` |
 | `skills.sourceRootRelativePath` | 当前 checkout 内的 Repository Skills 相对目录；当前为 `.agents/skills` |
 | `skills.environmentVariable` | 产品 Preset 读取 Repository Skills 使用的受管环境变量名称；固定为 `HARNESS_COMFYUI_SKILL_DIR` |
 
@@ -196,3 +196,22 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 Host 与 Client 使用同一固定顺序校验当前保存请求。每条名称、连接参数、模型、默认提示词、温度、最大输出 Token 数或 API Key 规则具有独立错误码；设置页在对应输入项附近显示该规则，并在保存按钮附近显示同一错误码的总结。其他配置不参与当前保存请求，也不能用 Client 中的未保存输入阻止当前配置保存。保存持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`；激活持久化失败使用 `IMAGE_READER_SETTINGS_ACTIVATE_FAILED`；删除持久化失败使用 `IMAGE_READER_SETTINGS_DELETE_FAILED`。Host 通过 Typert 业务失败载体把这些具体错误码发送给 Client，设置页不会把这些错误码改写为通用设置请求错误。Host 拒绝覆盖同 ID 的新建配置、重新创建并发删除的更新目标或激活不存在的已保存配置。保存或激活成功后，Host 返回的活动配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
 
 当前 Host 启动时同时注册旧 namespace `harness-comfyui-image-reader` 和新 namespace `harness-comfyui-image-reader-profiles`，并检查两个 namespace 的用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，当前 Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，当前 Host 不会重复迁移或覆盖。
+
+## 图片迭代角色配置
+
+agent-presets/harness-comfyui-iteration/agent.cordis.yml 的 composition-agent、generation-agent、observation-agent、comparison-agent 四项均加载 ../project-iteration-dispatch.mjs。每项 config 的字段用途如下。
+
+| 字段 | 用途 |
+|---|---|
+| toolName、description | 角色工具的名称与调用说明 |
+| persona | 对应子 Agent 的独立 system prompt，定义其职责、工作流程和结果文件要求 |
+| agentOptions.provider、agentOptions.model、agentOptions.reasoningEffort | 对应子 Agent 的模型供应商、模型及推理设置 |
+| provider | spawn，创建独立子会话 |
+| maxDepth | 1，子 Agent 不能继续创建子 Agent |
+| toolFilter.deny | 子 Agent 不可使用的工具名称列表 |
+| parameters | 模型可见的调用参数 JSON Schema，定义本次要求、材料、参考和输出路径的数据结构 |
+| taskTemplate.title | 本角色任务消息的标题 |
+| taskTemplate.sections[].heading、taskTemplate.sections[].fields | 消息分组标题及该分组按顺序呈现的参数名；参数值以 JSON 保存到消息正文 |
+| outputSchema | 工具返回值 JSON Schema；首次返回 kind 和 subagentId，续派返回 messageId |
+
+同一 agent.cordis.yml 中 id 为 persona 的配置项通过 config.text 定义主 Agent 的调度与交付职责。主 Agent 首次调用角色工具时省略 agent_id，续派时填写原 subagentId。component 将本次参数按模板组装后交给 DSH 原生 startContinuable 或 sendMessage；DSH 发送子任务完成通知。tool-subagent-control 项提供子 Agent 向父 Agent 报告问题的 send_message 和主 Agent 中断任务的 interrupt_agent。交接文件名由迭代 Skill 的 records.md 定义。

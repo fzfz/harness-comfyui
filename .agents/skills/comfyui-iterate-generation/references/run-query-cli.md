@@ -1,13 +1,13 @@
 # CLI 用途与入口
 
-查询子 Agent 使用以下命令读取本任务的实际请求、Actual Workflow 和已保存图片。首次调用前完整读取本文件。
+生成 Agent 使用以下命令读取本任务的实际请求、Actual Workflow 和已保存图片。首次调用前完整读取本文件。
 
 ```sh
 node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin
 node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin
 ```
 
-在当前会话 Workspace 工作目录，通过前台 shell 调用。命令只读取结果，不创建 Run；本次 Tool Call 的受管环境提供 CLI 入口。不要将任务产物目录另设为 shell 工作目录，保存文件使用明确路径。
+生成 Agent 在当前会话的 Workspace 工作目录通过前台 shell 调用命令。命令只读取结果，不创建 Run。保存文件时使用明确路径。
 
 # 标准输入与 ID 来源
 
@@ -38,26 +38,22 @@ images 按 node_id 字符串、output_index 数值、media_id 字符串依次升
 
 run-inputs 和 resolve-media 不提供 Run 的完整运行状态。images=[] 只表示尚无已保存图片，不能据此断言运行中、失败或已完成；workflow_status=available 也不代表图片已经生成。保存完整原始输出，并将“未取得图片”与查询错误分开记录。
 
-# 查询顺序、复用与等待
+# 复用已查询结果并处理尚无图片的 Run
 
-每组 Run 先调用 run-inputs，保存实际请求与 Workflow，再调用 resolve-media。已成功保存的不可变请求和 Workflow 可复用；Workflow 暂不可用或用户要求刷新时重新查询。媒体第一次为空时，根据本阶段提供的查询间隔和次数上限重复 resolve-media，不重新提交图片。
-
-达到查询次数上限仍无图片，保存每次结果并返回 partial、next_action=wait，主 Agent 暂停在等待状态，向用户说明尚未取得图片。下次继续任务时再次查询。查询失败而没有任何可用项时返回 failed；其他项成功时保留并返回 partial。
-
-取得图片后复制到指定 media 目录，同时保留原路径、副本路径与媒体对应关系。恢复 accepted 请求只查询，未知提交没有可查询 ID 时保留 unknown 并返回问题，不因为查询不到就重发。
+生成 Agent 可复用已成功保存的请求和 Workflow；Workflow 暂不可用或任务要求刷新时重新查询。images 为空时，生成 Agent 记录并向主 Agent 报告尚未取得图片的 Run ID；继续任务时查询这些已有 Run。
 
 # 命令错误与修正条件
 
-非零退出码时 stdout 应为空，stderr 为单行 `ERROR_CODE: message`。保留真实退出码和 stderr；输出协议不符时报告协议问题并结束查询阶段。
+非零退出码时 stdout 应为空，stderr 为单行 `ERROR_CODE: message`。保留真实退出码和 stderr；输出协议不符时报告协议问题并结束本次查询。
 
 | 错误类别 | 处理动作 |
 |---|---|
-| CLI_ARGUMENT_INVALID、CLI_REQUEST_INVALID | 核对命令、run_ids 数量和格式；修正自己构造的输入后最多重试一次 |
+| CLI_ARGUMENT_INVALID、CLI_REQUEST_INVALID | 核对命令、run_ids 数量和格式；修正自己构造的无效输入后重试 |
 | CLI_REQUEST_TOO_LARGE、CLI_RESPONSE_TOO_LARGE | 减少同批 Run 数量；单个 Run 仍超限则报告并停止该项 |
-| CLI_ENVIRONMENT_INVALID、CLI_CAPABILITY_INVALID、GENERATION_WORKSPACE_REQUIRED | 报告当前会话无法使用受管查询，结束阶段；环境修复后由新的阶段调用，不传递或复用执行凭据 |
-| CLI_REQUEST_FAILED、CLI_PROTOCOL_ERROR、CLI_INTERNAL_ERROR 及其他命令错误 | 保存错误并结束阶段，具体原因消除后才重试 |
+| CLI_ENVIRONMENT_INVALID、CLI_CAPABILITY_INVALID、GENERATION_WORKSPACE_REQUIRED | 报告当前会话无法使用受管查询，结束本次查询；环境修复后再次调用，不传递或复用执行凭据 |
+| CLI_REQUEST_FAILED、CLI_PROTOCOL_ERROR、CLI_INTERNAL_ERROR 及其他命令错误 | 保存错误并结束本次查询，具体原因消除后才重试 |
 | GENERATION_RUN_ID_INVALID、GENERATION_RUN_ID_AMBIGUOUS | 报告该项，需要用户提供规范或更完整的 ID；其余项继续 |
 | GENERATION_RUN_NOT_FOUND | 报告当前 Workspace 未找到该 Run，保留原请求及原提交状态，不据此重发 |
 | GENERATION_REQUEST_INVALID、GENERATION_RUN_LOOKUP_FAILED | 保存该项错误；存储或输入问题解决后只重试该项 |
 
-调用取消时结束当前阶段并保存已有结果，不继续剩余查询。任务内原始查询文件按次数追加保存。
+调用取消时结束本次查询，保留已取得的结果。将查询结果或错误写入任务指定的生成结果文件。

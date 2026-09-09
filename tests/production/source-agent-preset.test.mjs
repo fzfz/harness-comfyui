@@ -37,6 +37,7 @@ const PRODUCT_SHARED_FILES = [
   'project-tool-visibility.mjs',
   SYSTEM_PROMPT_VISIBILITY_COMPONENT_FILE,
   SUBAGENT_WORKSPACE_COMPONENT_FILE,
+  'project-iteration-dispatch.mjs',
 ]
 const requireFromModule = createRequire(import.meta.url)
 const requireFromDsh = createRequire(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))
@@ -155,6 +156,7 @@ async function createRepositoryFixture() {
     'export function apply() {}\n',
     'utf8',
   )
+  await writeFile(resolve(sourceRoot, 'project-iteration-dispatch.mjs'), 'export function apply() {}\n', 'utf8')
   for (const [presetId, displayName] of [
     [PRODUCT_PRESET_ID, 'ComfyUI工作台预设'],
     [ITERATION_PRESET_ID, 'ComfyUI迭代预设'],
@@ -254,7 +256,7 @@ describe('A/B project Tool visibility', () => {
     ])
   })
 
-  it('adds foreground spawn delegation and Workspace registration only to the iteration Preset', async () => {
+  it('configures four continuable roles and Workspace registration only in the iteration Preset', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
     const [workbench, iteration] = await Promise.all([
       validateAgentPresetComposition(resolve(
@@ -272,21 +274,37 @@ describe('A/B project Tool visibility', () => {
     ])
 
     expect(workbench.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toBeUndefined()
-    expect(workbench.find(row => row.name === '@deepseek-ai/dsh-tool-subagent')).toBeUndefined()
+    expect(workbench.find(row => row.name === '../project-iteration-dispatch.mjs')).toBeUndefined()
     expect(iteration.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toMatchObject({
       id: 'project-subagent-workspace',
     })
-    expect(iteration.find(row => row.name === '@deepseek-ai/dsh-tool-subagent')).toEqual({
-      id: 'tool-subagent',
-      name: '@deepseek-ai/dsh-tool-subagent',
-      config: {
+    const roles = iteration.filter(row => row.name === '../project-iteration-dispatch.mjs')
+    expect(roles.map(row => row.config.toolName)).toEqual([
+      'subagent_composition',
+      'subagent_generation',
+      'subagent_observation',
+      'subagent_comparison',
+    ])
+    for (const role of roles) {
+      expect(role.config).toMatchObject({
         provider: 'spawn',
-        toolName: 'subagent',
-        enableRunInBackground: false,
         maxDepth: 1,
-        modelSelectionSettings: false,
-      },
-    })
+        persona: expect.any(String),
+        agentOptions: {
+          provider: expect.any(String),
+          model: expect.any(String),
+          reasoningEffort: expect.any(String),
+        },
+        toolFilter: {
+          deny: expect.arrayContaining([
+            ...roles.map(row => row.config.toolName),
+            'interrupt_agent',
+          ]),
+        },
+      })
+      expect(role.config.persona.length).toBeGreaterThan(0)
+    }
+    expect(new Set(roles.map(row => row.config.persona)).size).toBe(4)
     expect(iteration.map(row => row.name)).toEqual([
       '../project-tool-visibility.mjs',
       '../project-system-prompt-visibility.mjs',
@@ -298,7 +316,11 @@ describe('A/B project Tool visibility', () => {
       '@deepseek-ai/dsh-skill-filesystem',
       '@deepseek-ai/dsh-tool-skill',
       '../project-subagent-workspace.mjs',
-      '@deepseek-ai/dsh-tool-subagent',
+      '../project-iteration-dispatch.mjs',
+      '../project-iteration-dispatch.mjs',
+      '../project-iteration-dispatch.mjs',
+      '../project-iteration-dispatch.mjs',
+      '@deepseek-ai/dsh-tool-subagent-control',
       'cordis:group',
     ])
     expect(iteration.find(row => row.id === 'skill-filesystem')).toMatchObject({
@@ -1106,6 +1128,7 @@ describe('source product Agent Preset materialization', () => {
       'harness-comfyui-cli-candidate/preset.yml',
       'harness-comfyui-iteration/agent.cordis.yml',
       'harness-comfyui-iteration/preset.yml',
+      'project-iteration-dispatch.mjs',
       'project-subagent-workspace.mjs',
       'project-system-prompt-visibility.mjs',
       'project-tool-visibility.mjs',

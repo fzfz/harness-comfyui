@@ -1,3 +1,19 @@
+# 未发布：图片迭代角色与模板派发
+
+## 任务派发与文件交接
+
+主 Agent 使用四个角色工具派发构图、生成、独立观察和比较任务。每个子 Agent 的 system prompt 定义自己的工作流程；主 Agent 确定本次要求和完整读写路径，派发程序按照角色配置中的固定模板组装消息。首次任务创建持续子会话，后续任务通过同一角色工具的 agent_id 参数交给已有子会话，DSH 原生通知返回结束状态和最终答复。
+
+迭代 Skill 规定理解故事与人物、推导画面目标和核心要素、生成、独立观察、比较、小步修复 Prompt 的循环，并在 references/records.md 定义交接目录与文件名。原阶段模板和记录写入脚本已删除。
+
+## 依赖与自动化验证
+
+Vitest 和 @vitest/coverage-v8 固定升级到 4.1.11，锁文件同步更新配套 Vitest 包。
+
+完整 `pnpm quality` 通过：1007 项单元与集成测试、55 项契约与安全测试、237 项生产测试、32 项原型测试和 2 项 Desktop 测试全部成功。覆盖率为 statements 93.54%、branches 86.79%、functions 100%、lines 96.17%。全部依赖与生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+
+专项测试覆盖四个角色的消息模板、首次及后续派发、模型和权限参数、错误与取消，以及真实 Cordis/Tool Registry 的注册、调用、作用域隔离和释放。子会话服务使用受控替身；最终完整生图流程由用户手工验收。
+
 # Harness ComfyUI v0.40.1
 
 v0.40.1 修复 OpenCode Go 模型调用缺少会话 ID 导致的 `400 MissingSessionID` 错误。

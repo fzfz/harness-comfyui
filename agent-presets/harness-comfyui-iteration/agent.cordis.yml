@@ -1,4 +1,4 @@
-# Expose only preset-local shell, Skill, presentation, and foreground subagent Tools.
+# Configure each image role and its task message template.
 - id: project-tool-visibility
   name: ../project-tool-visibility.mjs
   config:
@@ -16,7 +16,7 @@
   name: '@deepseek-ai/dsh-persona'
   config:
     text: >-
-      You are the Harness ComfyUI iteration Agent. Choose project Skills according to the current user task. Use the managed project CLI and the foreground subagent Tool when the selected Skill requires staged delegation. Reply in the user's language.
+      You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison. Assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Ask the user only for consequential decisions the material cannot reasonably resolve. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. Reply in the user's language.
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'
@@ -54,14 +54,485 @@
 - id: project-subagent-workspace
   name: ../project-subagent-workspace.mjs
 
-- id: tool-subagent
-  name: '@deepseek-ai/dsh-tool-subagent'
+- id: composition-agent
+  name: ../project-iteration-dispatch.mjs
   config:
     provider: spawn
-    toolName: subagent
-    enableRunInBackground: false
+    toolName: subagent_composition
+    description: "向构图 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    parameters:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 本次任务的简短名称。
+        agent_id:
+          type: string
+          description: 继续任务时填写原 subagentId；首次创建时省略。
+        requirements:
+          type: array
+          items:
+            type: string
+          description: 用户要求和本次新增要求；保留原意。
+        input_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 需要读取的文件或目录完整路径。
+              purpose:
+                type: string
+                description: 该材料是什么。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 本次需要读取的故事、人物材料及构图修正所需反馈。
+        reference_files:
+          type: array
+          items:
+            type: string
+          description: 对应角色参考文档的完整路径。
+        output_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 父 Agent 指定的输出文件完整路径。
+              purpose:
+                type: string
+                description: 该文件需要保存的结果内容。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 本次需要写入的结果文件。
+      required:
+        - description
+        - requirements
+        - input_files
+        - reference_files
+        - output_files
+      additionalProperties: false
+    taskTemplate:
+      title: 构图任务
+      sections:
+        - heading: 本次任务名称
+          fields:
+            - description
+        - heading: 本次要求
+          fields:
+            - requirements
+        - heading: 需要读取的材料与参考
+          fields:
+            - input_files
+            - reference_files
+        - heading: 需要写入的结果文件
+          fields:
+            - output_files
+    outputSchema:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: continuable
+            subagentId:
+              type: string
+          required:
+            - kind
+            - subagentId
+          additionalProperties: false
+        - type: object
+          properties:
+            messageId:
+              type: string
+          required:
+            - messageId
+          additionalProperties: false
     maxDepth: 1
-    modelSelectionSettings: false
+    agentOptions:
+      provider: openrouter
+      model: deepseek/deepseek-v4-flash-0731
+      reasoningEffort: max
+    toolFilter:
+      deny:
+        - subagent_composition
+        - subagent_generation
+        - subagent_observation
+        - subagent_comparison
+        - interrupt_agent
+    persona: |-
+      You are the composition Agent.
+
+      1. Read the supplied composition reference and story, character material and user requirements. Understand the character's personality, motives, relationships and experience in the requested moment.
+      2. Derive what the viewer should understand or feel from the image. Identify the essential people, actions, relationships and visible details that express this goal, including necessary visual details not stated in the story. Explain the purpose of each essential element.
+      3. Design the subject, spatial relationships, focus, viewpoint and lighting. Distinguish physical distance from visual prominence and design illumination independently of the scene name. For a revision, use the supplied feedback to repair the design while preserving the goal and essential elements; support any corrected interpretation with material evidence.
+      4. Write the understanding, goal, essential elements, design, supporting material and any unresolved decision requiring user input to the file specified in the task. Return only that file path.
+
+- id: generation-agent
+  name: ../project-iteration-dispatch.mjs
+  config:
+    provider: spawn
+    toolName: subagent_generation
+    description: "向生成 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    parameters:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 本次任务的简短名称。
+        agent_id:
+          type: string
+          description: 继续任务时填写原 subagentId；首次创建时省略。
+        requirements:
+          type: array
+          items:
+            type: string
+          description: 用户要求和本次新增要求；保留原意。
+        input_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 需要读取的文件或目录完整路径。
+              purpose:
+                type: string
+                description: 该材料是什么。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 本次构图文件、此前比较、生成记录和 Builder JSON 文件。
+        reference_files:
+          type: array
+          items:
+            type: string
+          description: 对应角色参考文档的完整路径。
+        output_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 父 Agent 指定的输出文件完整路径。
+              purpose:
+                type: string
+                description: 该文件需要保存的结果内容。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 本次需要写入的结果文件。
+        supplied_data:
+          type: string
+          description: 已选 Workflow、模型、LoRA 信息，或子 Agent 请求在消息中接收的完整 Builder JSON 原文。
+      required:
+        - description
+        - requirements
+        - input_files
+        - reference_files
+        - output_files
+      additionalProperties: false
+    taskTemplate:
+      title: 生成任务
+      sections:
+        - heading: 本次任务名称
+          fields:
+            - description
+        - heading: 本次要求
+          fields:
+            - requirements
+        - heading: 需要读取的材料与参考
+          fields:
+            - input_files
+            - reference_files
+        - heading: 本次提供的生成数据
+          fields:
+            - supplied_data
+        - heading: 需要写入的结果文件
+          fields:
+            - output_files
+    outputSchema:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: continuable
+            subagentId:
+              type: string
+          required:
+            - kind
+            - subagentId
+          additionalProperties: false
+        - type: object
+          properties:
+            messageId:
+              type: string
+          required:
+            - messageId
+          additionalProperties: false
+    maxDepth: 1
+    agentOptions:
+      provider: openrouter
+      model: deepseek/deepseek-v4-flash-0731
+      reasoningEffort: max
+    toolFilter:
+      deny:
+        - subagent_composition
+        - subagent_generation
+        - subagent_observation
+        - subagent_comparison
+        - interrupt_agent
+    persona: |-
+      You are the generation Agent. Use the Skills named below and the references supplied with the task.
+
+      1. Read the supplied design and user requirements. For a revision, read the comparison results and previous generation records to identify the prompt changes needed and the image features to preserve.
+      2. Use comfyui-generate to inspect the selected Workflow, actual model and LoRA configuration. Read the actual model's Prompt Builder and construct the complete Builder JSON. Use its test image size and an aspect ratio suited to the composition. For a revision, make small prompt changes addressing the observed failures while preserving the image goal, essential elements and user requirements.
+      3. Save the complete Builder JSON to the file specified in the task. Use comfyui-generate to submit the image with that JSON according to its input instructions. If comfyui-generate requires the saved Builder JSON as input in a new task message, report its file path and request that JSON content from the parent Agent; use the received JSON for submission.
+      4. Use the returned Run IDs to query the actual generation parameters and image paths with the supplied Run query reference. Run IDs identify actual image-generation records.
+      5. Write the actual prompt, generation parameters or saved record paths, Run IDs, actual image paths and changes made to the result file specified in the task. Return only the specified Builder JSON and result file paths. If generation or querying fails, report the actual error.
+
+- id: observation-agent
+  name: ../project-iteration-dispatch.mjs
+  config:
+    provider: spawn
+    toolName: subagent_observation
+    description: "向观察 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    parameters:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 本次任务的简短名称。
+        agent_id:
+          type: string
+          description: 继续任务时填写原 subagentId；首次创建时省略。
+        output_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 父 Agent 指定的输出文件完整路径。
+              purpose:
+                type: string
+                description: 该文件需要保存的结果内容。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 本次需要写入的结果文件。
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 实际图片的完整路径。
+              run_id:
+                type: string
+                description: 该图片所属生成记录的 Run ID。
+            required:
+              - path
+              - run_id
+            additionalProperties: false
+          description: 需要独立观察的实际图片。
+        questions:
+          type: array
+          items:
+            type: string
+          description: 询问可见内容的中性问题。
+      required:
+        - description
+        - output_files
+        - images
+        - questions
+      additionalProperties: false
+    taskTemplate:
+      title: 观察任务
+      sections:
+        - heading: 本次任务名称
+          fields:
+            - description
+        - heading: 需要观察的图片与问题
+          fields:
+            - images
+            - questions
+        - heading: 需要写入的结果文件
+          fields:
+            - output_files
+    outputSchema:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: continuable
+            subagentId:
+              type: string
+          required:
+            - kind
+            - subagentId
+          additionalProperties: false
+        - type: object
+          properties:
+            messageId:
+              type: string
+          required:
+            - messageId
+          additionalProperties: false
+    maxDepth: 1
+    agentOptions:
+      provider: openrouter
+      model: deepseek/deepseek-v4-flash-0731
+      reasoningEffort: max
+    toolFilter:
+      deny:
+        - subagent_composition
+        - subagent_generation
+        - subagent_observation
+        - subagent_comparison
+        - interrupt_agent
+    persona: |-
+      You are the observation Agent. Use the Skills named below and the references supplied with the task.
+
+      1. Read the supplied image paths, their Run ID correspondence and neutral observation questions. Run IDs associate images with their generation records.
+      2. Use local-image-reader to observe the supplied images. Phrase questions about visible content without suggesting expected answers.
+      3. Save each image's original observation, image path, Run ID correspondence and observation model information to the file specified in the task. Preserve statements about what cannot be determined and any read errors. Return only that file path.
+
+- id: comparison-agent
+  name: ../project-iteration-dispatch.mjs
+  config:
+    provider: spawn
+    toolName: subagent_comparison
+    description: "向比较 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    parameters:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 本次任务的简短名称。
+        agent_id:
+          type: string
+          description: 继续任务时填写原 subagentId；首次创建时省略。
+        requirements:
+          type: array
+          items:
+            type: string
+          description: 用户要求和本次新增要求；保留原意。
+        input_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 需要读取的文件或目录完整路径。
+              purpose:
+                type: string
+                description: 该材料是什么。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 画面目标与核心要素所在的构图文件、独立观察记录，以及分析偏差所需的生成记录和此前结果。
+        reference_files:
+          type: array
+          items:
+            type: string
+          description: 对应角色参考文档的完整路径。
+        output_files:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: 父 Agent 指定的输出文件完整路径。
+              purpose:
+                type: string
+                description: 该文件需要保存的结果内容。
+            required:
+              - path
+              - purpose
+            additionalProperties: false
+          description: 本次需要写入的结果文件。
+      required:
+        - description
+        - requirements
+        - input_files
+        - reference_files
+        - output_files
+      additionalProperties: false
+    taskTemplate:
+      title: 比较任务
+      sections:
+        - heading: 本次任务名称
+          fields:
+            - description
+        - heading: 本次要求
+          fields:
+            - requirements
+        - heading: 需要读取的材料与参考
+          fields:
+            - input_files
+            - reference_files
+        - heading: 需要写入的结果文件
+          fields:
+            - output_files
+    outputSchema:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: continuable
+            subagentId:
+              type: string
+          required:
+            - kind
+            - subagentId
+          additionalProperties: false
+        - type: object
+          properties:
+            messageId:
+              type: string
+          required:
+            - messageId
+          additionalProperties: false
+    maxDepth: 1
+    agentOptions:
+      provider: openrouter
+      model: deepseek/deepseek-v4-flash-0731
+      reasoningEffort: max
+    toolFilter:
+      deny:
+        - subagent_composition
+        - subagent_generation
+        - subagent_observation
+        - subagent_comparison
+        - interrupt_agent
+    persona: |-
+      You are the comparison Agent.
+
+      1. Read the supplied comparison reference, image goal, essential elements, explicit user requirements and independent observations for each image.
+      2. Compare each requirement with the observations of that image. Check every necessary part of a compound requirement and identify the supporting observations. Mark insufficiently observed content as undetermined. Success requires the goal, essential elements and user requirements to hold in the same image.
+      3. For unmet requirements, use the supplied prompts, parameters and earlier results to analyze the discrepancy. Distinguish possible causes from demonstrated effects. When comparing iterations, identify the visible improvements and regressions that followed the changes. Recommend prompt corrections, features to preserve and any additional observation or composition work needed.
+      4. Write the per-image findings, supporting observations, remaining uncertainties and correction recommendations to the file specified in the task. Return only that file path.
+
+- id: tool-subagent-control
+  name: '@deepseek-ai/dsh-tool-subagent-control'
 
 - id: compaction
   name: cordis:group
