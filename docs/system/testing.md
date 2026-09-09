@@ -47,6 +47,8 @@ Desktop 测试必须检查 Profile 的 package.json 声明 harness-comfyui 来�
 
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
+v0.42.1 的生产测试覆盖受管 Provider 与图片读取配置的成功物化、目标未受管记录保留、凭据缺失、配置无效、路径越界、启动前失败、运行中重复启动不写入，以及 `dev:status`、`dev:logs`、`dev:stop` 不触发物化。当前版本的完整测试数量、覆盖率和依赖审计结果见[发布说明](../releasenotes.md#验证与依赖)。
+
 会话删除测试必须确认目标 Session 不可再读取，其他 Session 保持可读。模型请求测试必须确认普通 Session、子 Session 与图片读取请求携带各自真实 Session ID。
 
 新功能和缺陷修复必须覆盖成功、拒绝、清理和错误分支。语义文档由独立 Reviewer 阅读验收，不使用脚本判断语义质量。

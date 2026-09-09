@@ -9,7 +9,7 @@
 - 独立审阅者完成 Standards、Spec 和 Markdown 语义审阅，所有问题均已处理。
 - 独立发布 worktree 的最终候选通过 `pnpm quality` 和 `git diff --check`，通过后不再修改文件。
 - Pull Request 已合入，且本地 `main`、`origin/main` 与合并提交 SHA 一致。
-- `package.json`、`v0.42.1` 标签和 GitHub Release 指向同一个 `origin/main` 提交。
+- 发布提交中的 `package.json.version` 为 `0.42.1`；`v0.42.1` 标签解析到该提交，GitHub Release 使用该标签，`origin/main` 与该提交一致。
 - 生产目录保留 Git 忽略配置和运行状态，更新到发布提交后通过生产状态、进程组、监听端口、版本和日志检查。
 - 不读取、重启、停止或修改用户正在测试的独立 dev worktree。
 
@@ -25,8 +25,8 @@
 
 ## 执行阶段
 
-1. **进行中**：建立发布分支并固化当前候选。
-2. **待执行**：在独立发布 worktree 更新 v0.42.1 元数据，完成独立审阅和最终质量门禁。
+1. **已完成**：建立发布分支并固化当前候选。
+2. **进行中**：在独立发布 worktree 更新 v0.42.1 元数据，完成独立审阅和最终质量门禁。
 3. **待执行**：推送分支、创建并合入 Pull Request，同步本地 `main`。
 4. **待执行**：创建 v0.42.1 标签与 GitHub Release。
 5. **待执行**：验证并停止既有生产进程，更新生产目录，启动并完成发布后验证。
