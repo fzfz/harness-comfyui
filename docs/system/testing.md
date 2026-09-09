@@ -55,7 +55,7 @@ v0.42.1 的生产测试覆盖受管 Provider 与图片读取配置的成功物�
 
 数据源服务自动化测试启动临时 HTTP 和 HTTPS 服务并执行插件发行包中的 `scripts/source-client/imagegen-semantic-query.mjs` 与 `scripts/source-client/imagegen-comfyui-source-read.mjs`。测试记录并断言 discovery 请求以及两个客户端在 discovery 之后发送的每个 HTTP 请求的 method、path 和 body。测试同时断言每个被执行客户端的 stdout、stderr 和退出码。每个连接失败测试直接执行该测试对应的生产客户端。Host adapter 测试通过注入的子进程调用函数断言 `CatalogCli` 和 `GenerationSourceCli` 在每次请求前读取 `harness-comfyui-source` Settings 中最新的数据源服务 URL 和端口；真实数据源服务验收使用两个 Host adapter 的实际子进程执行器。
 
-统一设置页测试直接渲染现有 `ImageReaderSettingsPage`，确认切换至“数据源服务”并返回后保留未保存的图片读取草稿。数据源设置测试覆盖 HTTP 与 HTTPS scheme、IPv4 地址、IPv6 地址、主机名、端口最小值、端口最大值、低于最小值的端口、高于最大值的端口，以及包含内嵌端口、用户名、密码、非根路径、query string 或 fragment 的 URL；测试还覆盖保存成功和保存失败。预设提示测试覆盖 Settings 快照仍在加载、未保存地址、连接成功、连接失败和设置变化后重新执行数据源服务连接检查五个分支，并确认不依赖数据源服务的 Preset 不执行数据源服务连接检查。
+统一设置页测试直接渲染现有 `ImageReaderSettingsPage`，确认切换至“数据源服务”并返回后保留未保存的图片读取草稿。数据源设置测试覆盖 HTTP 与 HTTPS scheme、IPv4 地址、IPv6 地址、主机名、端口最小值、端口最大值、低于最小值的端口、高于最大值的端口，以及包含内嵌端口、用户名、密码、非根路径、query string 或 fragment 的 URL；测试还覆盖保存成功和保存失败。预设提示测试直接渲染 `src/client/settings/source-preset-tip.tsx` 的 `SourcePresetTip`，把 Settings 快照的 `value` 作为生效配置，把 `user` 作为用户覆盖层，并用同一份有效 `value` 分别覆盖空、部分和完整 `user`。`ComfyUI工作台预设` 的连接成功用例必须断言探针调用一次且渲染结果为 `null`；连接失败用例必须断言页面显示完整检查指引。Settings 加载用例和其他 Preset 用例必须断言探针调用次数为 0 且渲染结果为 `null`。生效地址变化用例必须断言旧探针收到已取消的信号、新探针被调用，并确认旧探针的迟到失败保持渲染结果为 `null`。
 
 真实数据源服务验收必须使用插件内置客户端和 Host 的 `CatalogCli`、`GenerationSourceCli` 连接已部署服务，完成实时 discovery、Base Model Search 与 Resolve、ComfyUI 实例 Search、实例读取和 Workflow bundle 读取。验收不得读取或执行数据源仓库中的文件，也不得使用测试自建 JSON 代替已部署服务的响应。
 

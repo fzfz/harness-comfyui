@@ -8,7 +8,6 @@ import type { SourceSettingsView } from '../../source-settings.ts'
 export const COMFYUI_PRESET_ID = 'harness-comfyui-cli-candidate'
 
 export const SOURCE_PRESET_TIP_COPY = Object.freeze({
-  notConfigured: '数据源服务尚未配置。请打开设置，在“ComfyUI → 数据源服务”中填写 URL 和端口。',
   checkFailed: '数据源服务检查失败。请打开设置，检查“ComfyUI → 数据源服务”的 URL、端口和服务状态。',
 })
 
@@ -25,23 +24,14 @@ export interface SourcePresetTipProps {
   readonly probe: (signal: AbortSignal) => Promise<unknown>
 }
 
-function savedSourceAddress(user: unknown): { readonly url: string; readonly port: number } | undefined {
-  if (user === null || typeof user !== 'object' || Array.isArray(user)) return undefined
-  const configuration = (user as { readonly configuration?: unknown }).configuration
-  if (configuration === null || typeof configuration !== 'object' || Array.isArray(configuration)) return undefined
-  const { url, port } = configuration as { readonly url?: unknown; readonly port?: unknown }
-  if (typeof url !== 'string' || url.length === 0 || !Number.isSafeInteger(port)) return undefined
-  return { url, port: port as number }
-}
-
 export function SourcePresetTip({ sessionId, useSessions, sourceScope, probe }: SourcePresetTipProps) {
   const preset = useSessions(state => state.byId[sessionId]?.projectionValues?.agentPreset)
   const settings = useSyncExternalStore(
     listener => sourceScope.subscribe(listener),
     () => sourceScope.getSnapshot(),
   )
-  const savedAddress = savedSourceAddress(settings.user)
-  const addressKey = savedAddress === undefined ? '' : `${savedAddress.url}\u0000${savedAddress.port}`
+  const effectiveAddress = settings.value?.configuration
+  const addressKey = effectiveAddress === undefined ? '' : `${effectiveAddress.url}\u0000${effectiveAddress.port}`
   const [notice, setNotice] = useState<{ readonly type: SourcePresetTipMessage; readonly sequence: number } | null>(null)
 
   useEffect(() => {
@@ -49,12 +39,8 @@ export function SourcePresetTip({ sessionId, useSessions, sourceScope, probe }: 
       setNotice(null)
       return
     }
-    if (settings.status !== 'ready') {
+    if (settings.status !== 'ready' || effectiveAddress === undefined) {
       setNotice(null)
-      return
-    }
-    if (savedAddress === undefined) {
-      setNotice(previous => ({ type: 'notConfigured', sequence: (previous?.sequence ?? 0) + 1 }))
       return
     }
 
