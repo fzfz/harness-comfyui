@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { nodeScriptEnvironment } from '../node-script-environment.ts'
 
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 
@@ -49,7 +50,7 @@ export const runSourceCliProcess: SourceCliProcess = (executable, args, signal) 
   }
   const command = executable.endsWith('.mjs') ? process.execPath : executable
   const commandArguments = executable.endsWith('.mjs') ? [executable, ...args] : args
-  const child = spawn(command, commandArguments, { shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
+  const child = spawn(command, commandArguments, { shell: false, stdio: ['ignore', 'pipe', 'pipe'], env: nodeScriptEnvironment(executable) })
   const stdout: Buffer[] = []
   const stderr: Buffer[] = []
   let outputBytes = 0

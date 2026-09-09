@@ -10,7 +10,7 @@ import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 
 import { materializeSourceCliModule } from '../../scripts/production/cli-module.mjs'
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 // @ts-expect-error The desktop test context is implemented as a Node.js ESM script.
-import { loadTestDesktopContext } from '../support/desktop-context.mjs'
+import { createTestDesktopRequire, loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 const temporaryDirectories: string[] = []
 
@@ -66,7 +66,7 @@ describe('DSH Desktop managed shell capability', () => {
     temporaryDirectories.push(root)
     const context = await loadTestDesktopContext()
     const fromDesktop = async (name: string) => import(pathToFileURL(
-      resolve(context.desktopSource, 'node_modules', name, 'lib/index.js'),
+      createTestDesktopRequire(context).resolve(name),
     ).href)
     const [webServer, systemPrompt, tools, shellEnv, subprocess, bash, toolBash] = await Promise.all([
       fromDesktop('@deepseek-ai/dsh-host-webserver'),

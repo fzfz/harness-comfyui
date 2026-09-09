@@ -72,7 +72,7 @@ afterEach(async () => {
 })
 
 describe('source worktree development definition', () => {
-  it('prepares main checkout links before loading the Web Host start modules', async () => {
+  it('prepares the environment link and candidate dependency view before loading Web Host start modules', async () => {
     const mainCheckout = await temporaryDirectory('harness-web-main-')
     const worktree = await temporaryDirectory('harness-web-worktree-')
     await Promise.all([
@@ -94,14 +94,29 @@ describe('source worktree development definition', () => {
       sourceWorktreeStartOptions: vi.fn(),
     }
 
+    const desktopWorkspace = resolve(mainCheckout, 'candidate/desktop')
+    const prepareDesktopDependencies = vi.fn(async () => {
+      await mkdir(resolve(worktree, 'node_modules'))
+      return { nodeModulesDir: resolve(worktree, 'node_modules') }
+    })
     await expect(runWebHostCommand('start', {
-      checkoutOptions: { repositoryRoot: worktree, definitionPath },
+      checkoutOptions: {
+        repositoryRoot: worktree,
+        definitionPath,
+        loadDesktopBaseline: async () => ({ desktopWorkspace }),
+        prepareDesktopDependencies,
+      },
       runSourceProductionCommand,
       runtime,
     })).resolves.toEqual({ evidence: { status: 'stopped' }, failed: false })
 
     expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
-    expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
+    expect((await lstat(resolve(worktree, 'node_modules'))).isDirectory()).toBe(true)
+    expect(prepareDesktopDependencies).toHaveBeenCalledWith({
+      repositoryRoot: worktree, mainCheckoutRoot: mainCheckout, desktopWorkspace,
+    })
+    expect(prepareDesktopDependencies.mock.invocationCallOrder[0])
+      .toBeLessThan(runSourceProductionCommand.mock.invocationCallOrder[0])
     expect(runSourceProductionCommand).toHaveBeenCalledWith('start', expect.objectContaining({
       commandPrefix: 'web',
       loadContext: runtime.loadSourceWorktreeContext,

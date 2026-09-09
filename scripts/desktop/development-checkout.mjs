@@ -2,6 +2,9 @@ import { lstat, readFile, readlink, stat, symlink } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { loadDesktopBaseline } from './baseline.mjs'
+import { prepareDesktopDependencies } from './dependencies.mjs'
+
 const defaultRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 async function requirePath(path, expectedType, label) {
@@ -56,6 +59,15 @@ export async function prepareDesktopDevelopmentCheckout(options = {}) {
   await requirePath(environmentSource, 'file', 'main checkout .env')
   await requirePath(dependenciesSource, 'directory', 'main checkout node_modules')
   await ensureLink(resolve(repositoryRoot, '.env'), environmentSource, 'file')
-  await ensureLink(resolve(repositoryRoot, 'node_modules'), dependenciesSource, 'dir')
-  return { environmentSource, dependenciesSource, mainCheckoutPath }
+  const baseline = await (options.loadDesktopBaseline ?? loadDesktopBaseline)({
+    repositoryRoot,
+    desktopSourceRoot: mainCheckoutPath,
+    ...(options.baselineDefinitionPath === undefined ? {} : { definitionPath: options.baselineDefinitionPath }),
+  })
+  const dependencyView = await (options.prepareDesktopDependencies ?? prepareDesktopDependencies)({
+    repositoryRoot,
+    mainCheckoutRoot: mainCheckoutPath,
+    desktopWorkspace: baseline.desktopWorkspace,
+  })
+  return { environmentSource, dependenciesSource, dependencyView, baseline, mainCheckoutPath }
 }

@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -13,7 +12,7 @@ import {
 } from '../../src/client/settings/harness-comfyui-settings.tsx'
 import { createImageReaderProfile } from '../../src/image-reader/settings.ts'
 
-const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
+const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
   create: (node: ReactNode) => {
     root: {

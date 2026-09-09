@@ -8,7 +8,7 @@ import {
   runDesktopCommandMain,
   runDesktopLifecycleCommand,
 } from './cli.mjs'
-import { loadDesktopProductionContext } from './worktree.mjs'
+import { loadDesktopProductionContext } from './anywhere.mjs'
 
 export { parseArguments }
 

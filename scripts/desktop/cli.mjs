@@ -10,7 +10,7 @@ import {
   readDesktopWorktreeLogs,
   startDesktopWorktree,
   stopDesktopWorktree,
-} from './worktree.mjs'
+} from './anywhere.mjs'
 
 const COMMANDS = Object.freeze(['start', 'stop', 'restart', 'status', 'logs'])
 

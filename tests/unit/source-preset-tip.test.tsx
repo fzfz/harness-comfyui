@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import { createElement, type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -16,7 +15,7 @@ import {
   SourcePresetTip,
 } from '../../src/client/settings/source-preset-tip.tsx'
 
-const { act, create } = createRequire(import.meta.url)('react-test-renderer') as {
+const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
     create: (node: ReactNode) => {
       root: { findByType(type: string): { props: Record<string, any> } }

@@ -33,33 +33,15 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ## 安装与首次启动
 
-### 1. 获取已发布源码
+### 1. 选择源码版本
 
-以下示例安装 `v0.41.1`。在准备存放项目的目录中执行：
-
-```sh
-git clone --branch v0.41.1 https://github.com/fzfz/harness-comfyui.git
-cd harness-comfyui
-```
-
-后续命令均在这个 `harness-comfyui` 目录中执行，除非步骤另有说明。
+当前开发源码使用 fzfz/dsh-desktop-anywhere Stable，基线由 config/desktop-baseline.json 固定。已发布 v0.41.1 使用旧 Desktop fork；安装已发布版本时应阅读该 tag 内的说明。第 2 步说明新基线的依赖准备。第 3、4 步仅适用于包含 desktop-baseline.json 的已发布版本的生产 checkout；本开发分支尚未发布。
 
 ### 2. 准备 DSH Desktop 与依赖
 
-首次安装时，执行以下命令获取本版本使用的 DSH Desktop：
+按 [Desktop 安装准备](docs/system/releasing.md#当前-desktop-的安装准备)准备基线配置指定的仓库、commit、Stable workspace 与锁定依赖。Desktop 必须完成安装和构建后才能启动本项目。
 
-```sh
-mkdir -p .local/upstreams
-git clone --branch main https://github.com/fzfz/dsh-desktop.git .local/upstreams/dsh-desktop
-git -C .local/upstreams/dsh-desktop switch --detach f2a27b4461e8c15d21268533efb7b99bb9bb14f2
-```
-
-先按 [DSH Desktop 依赖安装步骤](docs/system/releasing.md#dsh-desktop-的受控依赖安装)完成 Desktop 依赖安装，再回到本项目根目录执行：
-
-```sh
-pnpm install --frozen-lockfile
-pnpm desktop:dependencies:link
-```
+主 checkout 的项目依赖按 pnpm-lock.yaml 安装。独立 worktree 不执行 pnpm install；pnpm dev:start 从主 checkout 复用业务依赖和构建工具，并从基线 Stable workspace 解析宿主依赖。开发验收步骤见 [独立 worktree 开发规范](docs/agents/worktree-development.md)。
 
 ### 3. 填写本机配置
 
@@ -92,7 +74,7 @@ pnpm prod:status
 pnpm prod:logs
 ```
 
-启动成功后，`prod:status` 显示 `running`，Desktop 打开指定 Workspace，侧边栏提供“ComfyUI 工作台”入口。接下来配置数据源并完成第一次生图。
+启动成功后，`prod:status` 显示 `ready`，Desktop 打开指定 Workspace，侧边栏提供“ComfyUI 工作台”入口。接下来配置数据源并完成第一次生图。
 
 ## 完成第一次生图
 

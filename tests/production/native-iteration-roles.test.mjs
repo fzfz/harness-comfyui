@@ -10,8 +10,8 @@ import { loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 const desktop = await loadTestDesktopContext()
 const requireFromDesktop = createRequire(resolve(desktop.desktopSource, 'package.json'))
-const nativeTools = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-tools')).href)
-const controls = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-tool-subagent-control')).href)
+const nativeTools = requireFromDesktop('@deepseek-ai/dsh-tools')
+const controls = requireFromDesktop('@deepseek-ai/dsh-tool-subagent-control')
 const preset = await validateAgentPresetComposition(resolve(import.meta.dirname,
   '../../agent-presets/harness-comfyui-iteration/agent.cordis.yml'))
 const roles = preset.filter(entry => entry.name === '../project-iteration-dispatch.mjs')
@@ -182,7 +182,7 @@ describe('iteration task templates using the target Desktop subagent service int
 
 describe('iteration components in the target Desktop Tool Registry', () => {
   it('registers, executes and disposes role tools within their Cordis scope', async () => {
-    const load = name => import(pathToFileURL(requireFromDesktop.resolve(name)).href)
+    const load = name => requireFromDesktop(name)
     const [{ Context, Service }, { SystemPrompt }, { createScope }] = await Promise.all([
       load('@deepseek-ai/cordis'), load('@deepseek-ai/dsh-system-prompt'), load('@deepseek-ai/dsh-scope'),
     ])

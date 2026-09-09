@@ -1,74 +1,34 @@
-# 独立 worktree 开发验证流程
+# 独立 worktree Desktop 开发与验收
 
-## 适用范围
+## 启动前准备
 
-Agent 在从 `main` 创建的独立 linked worktree 中开发或验证完整 DSH Desktop 时，必须使用 `pnpm dev:*`。`pnpm web:*` 只用于单独调试 Web Host；`pnpm prod:*` 只用于已发布 Git tag 的生产 Desktop。
+开发者从 main 创建独立 linked worktree，并确认根目录 .git 是 worktree 元数据文件。config/desktop-worktree.json 指定主开发 checkout 和本实例运行目录；config/desktop-baseline.json 指定唯一 Desktop 版本。
 
-## 启动前检查
+主开发 checkout 必须已有 .env、项目构建工具和基线 Desktop 的完整安装。pnpm dev:start 启动器负责链接 .env 并准备独立 node_modules 依赖视图。业务依赖和构建工具复用主 checkout 的安装目录，宿主 peer 从基线 Desktop workspace 解析。启动器不得修改这些共享依赖目录。worktree 不执行 pnpm install，也不复制 .env。
 
-1. Agent 必须确认当前目录根 `.git` 是 linked-worktree 元数据文件。
-2. Agent 必须确认 `config/desktop-worktree.json.mainCheckoutPath` 指向主开发 checkout。
-3. 主开发 checkout 必须已经存在 `.env`、根 `node_modules` 和 `config/desktop-production.json.desktopSourceRelativePath` 指定的 DSH Desktop 底座。
-4. Agent 必须确认 `config/product-agent.json.skills.sourceRootRelativePath` 指向当前 worktree 内的 Repository Skills 目录，并确认该目录不是符号链接且真实路径没有离开当前 worktree。
-5. Agent 不得在 worktree 执行 `pnpm install`，不得复制 `.env`，不得为 worktree clone 第二份 DSH Desktop。
-6. worktree 根 `.env` 与 `node_modules` 不存在时，`dev:start` 或 `web:start` 创建指向主开发 checkout 对应路径的符号链接。若现有路径是普通文件、普通目录或指向其他目标的链接，Agent 必须先检查并保留其中需要保留的内容，再使该路径不存在或成为指向主开发 checkout 对应路径的正确符号链接，然后重新启动。
-7. Agent 不得修改主开发 checkout 的 `.env` 为当前 worktree 更换端口。开发启动器通过主开发 checkout 的 `.local/development-port-claims/` 声明当前 worktree 的 Desktop 移动桥接端口和独立 Web Host 端口，并在对应子进程监听端口后释放声明。
+启动器必须验证 config/product-agent.json 指定的 Repository Skills 目录属于当前 worktree，且该目录不是符号链接。
 
-## 启动与验收
+## 启动与实例身份核对
 
-Agent 必须在当前 worktree 根目录以前台方式启动完整 Desktop：
+开发者先运行 pnpm dev:status。实例停止时，在前台终端运行 pnpm dev:start；随后在第二个终端运行 pnpm dev:status 和 pnpm dev:logs。
 
-```sh
-pnpm dev:start
-```
+开发者操作实例或发送停止信号前，必须读取本 worktree 的 .local/desktop-development/desktop.pid，并用操作系统检查确认该 PID 是进程组首领，其启动命令指向当前 worktree 的 .local/desktop-development/desktop-out。开发者必须枚举该进程组实际监听的全部端口，只向确认归属的测试端口发送请求。
 
-Agent 必须在第二个终端执行：
+就绪要求包括当前进程拥有的 Host Web 监听端口、本次启动 run 的 startup.run.completed、rendererStatus 为 healthy，以及实际加载的当前 worktree 插件安装记录。旧启动事件和仅有进程或端口不能作为就绪证据。移动访问不参与 Desktop 启动判定。
 
-```sh
-pnpm dev:status
-pnpm dev:logs
-```
+## 插件功能验收
 
-`dev:status` 必须返回 `running`、当前 Desktop PID 和当前移动桥接端口。Agent 随后必须在 DSH Desktop 中确认：
+开发者必须确认以下结果：
 
-1. 系统直接打开 `config/desktop-production.json.startupWorkspacePath` 指定的 Workspace，不显示 Workspace 选择弹窗。
-2. 系统默认加载 `ComfyUI工作台预设`，不显示框架默认 Preset；新 Session roster 同时提供需要显式选择的 `ComfyUI迭代预设`。
-3. 默认 Agent 模型、视觉模型和 Provider 来自当前插件 `cordis.patch.yml`。
-4. 当前 worktree 的插件 generation 已启用。
-5. 当前任务修改项目 Skill 时，Agent 必须确认 Desktop 进程环境中的 `HARNESS_COMFYUI_SKILL_DIR` 等于当前 worktree 的 Repository Skills 绝对目录，并确认隔离 Desktop HOME 中不存在 `.agents/skills` 项目链接。
-6. Agent 必须在当前 worktree 外创建不含 Repository Skills 的 Workspace，并确认默认采用 `ComfyUI工作台预设`，或显式采用 `ComfyUI工作台预设`、`ComfyUI迭代预设` 的 Session 都读取当前 worktree 的八个 Repository Skills；采用其他非项目 Preset（包括 `standard`）的 Session 不得读取这些 Repository Skills。
-7. Agent 必须在真实 Desktop 中操作本次任务修改的界面或触发本次任务修改的运行行为，并记录实际结果。
+1. 系统打开环境配置指定的 Workspace，默认采用 ComfyUI工作台预设，并提供 ComfyUI迭代预设。
+2. 当前 Profile 加载当前 worktree 的 harness-comfyui 产物；Client 出现 ComfyUI 工作台。
+3. 默认模型、视觉模型和 Provider 与当前插件配置一致。
+4. remote.harnessComfyuiImageReader.models 返回配置中的模型分组；remote.harnessComfyuiCatalog.baseModels 返回数据源的基础模型记录。开发者必须对本次变更涉及的其他接口逐项执行 task_plan.md 中的功能验收条目，并记录请求与响应。
+5. 项目 Preset 的 Skills 来自当前 worktree，其他 Preset 不读取项目专用 Skills。
+6. 受管 CLI 在真实 Harness Bash 调用中获得 capability；Electron 宿主启动 .mjs 子进程时使用 Node 执行模式。
 
-启动失败时，Agent 必须执行 `pnpm dev:logs`，修正具体配置、依赖、端口或插件错误。Agent 不得改用 `pnpm prod:start` 验证未发布源码。
+## 结束与其他环境
 
-## Web Host 单独调试
+开发者完成验收后运行 pnpm dev:stop，再运行 pnpm dev:status 确认 stopped。用户明确要求保留实例供人工操作时，开发者报告该实例身份并保持前台启动终端运行。
 
-当前任务只涉及 Web Host、Client ModuleLoader 或 HTTP 路由时，Agent 可以执行：
-
-```sh
-pnpm web:start
-pnpm web:status
-pnpm web:health
-pnpm web:logs
-```
-
-`web:*` 不启动 DSH Desktop，不能替代完整 Desktop 验收。
-`web:start` 会先建立与 `dev:start` 相同的 `.env` 和 `node_modules` 链接；`web:health` 只检查已经存在的 Web Host 运行状态，不创建或修改链接。
-
-## 结束条件
-
-完整 Desktop 验收结束后执行：
-
-```sh
-pnpm dev:stop
-pnpm dev:status
-```
-
-如果启动了 Web Host，再执行：
-
-```sh
-pnpm web:stop
-pnpm web:status
-```
-
-对应 `status` 必须返回 `stopped`。开发 Desktop 状态只能位于当前 worktree 的 `.local/desktop-development/`；Web Host 状态只能位于 `.local/web-development/`。
+pnpm web:* 仅用于 Web Host 单独调试，不能替代完整 Desktop 验收。pnpm prod:* 只用于生产启动或受控临时生产配置测试，不能用于验收未发布的 worktree。

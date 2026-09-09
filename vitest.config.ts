@@ -33,7 +33,9 @@ const standardDecoratorPlugin = {
 
 export default defineConfig({
   plugins: [standardDecoratorPlugin],
+  resolve: { dedupe: ['react', 'react-dom'] },
   test: {
+    deps: { optimizer: { ssr: { enabled: true, include: ['react', 'react-test-renderer'] } } },
     coverage: {
       provider: qualityPolicy.coverage.provider,
       include: qualityPolicy.coverage.include,

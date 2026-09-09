@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
-import { lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
-import { createServer } from 'node:net'
+import { spawn } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
+import { mkdir, mkdtemp, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 
@@ -9,1172 +10,1169 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import {
   parseArguments,
-  runDesktopDevelopmentCommand,
   runDesktopLifecycleCommand,
 } from '../../scripts/desktop/cli.mjs'
 import {
-  desktopWorktreeStatus,
-  desktopWorktreeContext,
-  loadDesktopWorktreeContext,
-  installSourcePluginGeneration,
-  packagedPluginManifest,
-  prepareDesktopWorktree,
+  PROCESS_STATE_SCHEMA_VERSION,
   SOURCE_PLUGIN_PACKAGE_PATHS,
-  sourceProfileInitializeArguments,
-  sourcePluginRemoveArguments,
+  desktopWorktreeStatus,
+  loadDesktopWorktreeContext,
+  packagedPluginManifest,
+  prepareAnywhereDesktop,
+  readDesktopWorktreeLogs,
   startDesktopWorktree,
   stopDesktopWorktree,
-} from '../../scripts/desktop/worktree.mjs'
+  verifyManagedProfileInstallation,
+} from '../../scripts/desktop/anywhere.mjs'
+import { prepareDesktopDevelopmentCheckout } from '../../scripts/desktop/development-checkout.mjs'
 
 const roots = []
+const startedAt = '2026-09-09T12:00:00.000Z'
 
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
 
-async function fixture() {
-  const root = await mkdtemp(resolve(tmpdir(), 'desktop-worktree-'))
+async function fixture(name = 'desktop-anywhere-') {
+  const root = await mkdtemp(resolve(tmpdir(), name))
   roots.push(root)
-  const desktopSource = resolve(root, '.local/upstreams/dsh-desktop')
-  const workspace = resolve(root, 'workspace')
-  const skills = resolve(root, '.agents/skills')
-  const globalSkills = resolve(root, 'parent-home/.agents/skills')
-  const environmentFile = resolve(root, 'user.env')
-  await mkdir(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib'), { recursive: true })
-  await mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true })
-  await mkdir(resolve(root, 'node_modules/.pnpm'), { recursive: true })
-  await mkdir(workspace)
+  const desktopRepository = resolve(root, 'desktop-repository')
+  const desktopWorkspace = resolve(desktopRepository, 'dsh-plugin-desktop')
+  const repositorySkillsRoot = resolve(root, '.agents/skills')
+  const startupWorkspacePath = resolve(root, 'workspace')
+  const runtimeRoot = resolve(root, '.local/desktop-development')
+  const runtimeHome = resolve(runtimeRoot, 'home')
+  const dshHome = resolve(runtimeHome, 'harness')
   await Promise.all([
-    mkdir(skills, { recursive: true }),
-    mkdir(globalSkills, { recursive: true }),
+    mkdir(resolve(desktopWorkspace, 'lib'), { recursive: true }),
+    mkdir(resolve(desktopWorkspace, 'node_modules/electron'), { recursive: true }),
+    mkdir(resolve(desktopWorkspace, 'node_modules/yaml'), { recursive: true }),
+    mkdir(repositorySkillsRoot, { recursive: true }),
+    mkdir(startupWorkspacePath, { recursive: true }),
+    mkdir(resolve(root, 'config'), { recursive: true }),
   ])
-  await writeFile(resolve(root, '.git'), 'gitdir: fixture\n')
-  await writeFile(resolve(desktopSource, 'package.json'), '{}\n')
-  await writeFile(resolve(desktopSource, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '')
-  await writeFile(resolve(root, 'node_modules/.modules.yaml'), JSON.stringify({
-    storeDir: resolve(root, '.pnpm-store/v11'),
-    virtualStoreDir: '.pnpm',
-  }))
-  await writeFile(
-    environmentFile,
-    'KEY=value\nHARNESS_COMFYUI_SKILL_DIR=/env/file/override\nCOMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT=shared-development-port-must-not-be-read\n',
-  )
-  const definition = {
-    mainCheckoutPath: root,
-    runtimeRelativeRoot: '.local/desktop-development',
-  }
-  const definitionPath = resolve(root, 'config/desktop-worktree.json')
-  const productionDefinitionPath = resolve(root, 'config/desktop-production.json')
-  const productionDefinition = {
-    desktopSourceRelativePath: '.local/upstreams/dsh-desktop',
-    runtimeRelativeRoot: '.local/desktop-production',
-    environmentFileRelativePath: 'user.env',
-    startupWorkspacePath: workspace,
-  }
-  const sourceDefinition = {
-    source: {
-      catalogPort: 18093,
+  await Promise.all([
+    writeFile(resolve(desktopWorkspace, 'package.json'), JSON.stringify({ name: 'dsh-plugin-desktop' })),
+    writeFile(resolve(desktopWorkspace, 'lib/main.js'), 'export {}\n'),
+    writeFile(resolve(desktopWorkspace, 'node_modules/electron/package.json'), JSON.stringify({
+      name: 'electron', version: '43.3.0', main: 'index.cjs',
+    })),
+    writeFile(resolve(desktopWorkspace, 'node_modules/electron/index.cjs'), "module.exports = '/candidate/electron'\n"),
+    writeFile(resolve(desktopWorkspace, 'node_modules/yaml/package.json'), JSON.stringify({
+      name: 'yaml', version: '2.8.1', main: 'index.cjs',
+    })),
+    writeFile(resolve(desktopWorkspace, 'node_modules/yaml/index.cjs'), [
+      'exports.parse = JSON.parse',
+      'exports.stringify = value => JSON.stringify(value, null, 2)',
+      '',
+    ].join('\n')),
+    writeFile(resolve(root, '.env'), 'KEY=file-value\nHARNESS_COMFYUI_SKILL_DIR=/untrusted/override\n'),
+    writeFile(resolve(root, 'config/source-production.json'), JSON.stringify({ source: { catalogPort: 18093 } })),
+  ])
+  const baseline = Object.freeze({
+    packages: {
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.6' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.2-rc.1' },
+      electron: { name: 'electron', version: '43.3.0' },
     },
-  }
-  await mkdir(resolve(root, 'config'))
-  await writeFile(definitionPath, `${JSON.stringify(definition)}\n`)
-  await writeFile(productionDefinitionPath, `${JSON.stringify(productionDefinition)}\n`)
-  await writeFile(resolve(root, 'config/source-production.json'), `${JSON.stringify(sourceDefinition)}\n`)
-  await writeFile(resolve(root, 'config/product-agent.json'), `${JSON.stringify({
-    schemaVersion: 3,
-    preset: {
-      id: 'harness-comfyui-cli-candidate',
-      additionalManagedPresetIds: ['harness-comfyui-iteration'],
-      sourceRootRelativePath: 'agent-presets',
-      installRootRelativePath: '.agent-presets',
-      retiredManagedPresetIds: ['harness-comfyui-schema-control'],
-      sharedFiles: [
-        'project-tool-visibility.mjs',
-        'project-system-prompt-visibility.mjs',
-        'project-subagent-workspace.mjs',
-      ],
+    profile: {
+      name: 'desktop',
+      pluginPackageName: 'harness-comfyui',
+      setupStateVersion: 2,
+      setupRevision: 1,
     },
-    skills: {
-      sourceRootRelativePath: '.agents/skills',
-      environmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    startup: {
+      host: '127.0.0.1',
+      mode: 'compatibility',
+      networkExposure: 'loopback',
+      openBrowser: false,
+      readyTimeoutMs: 100,
+      stopTimeoutMs: 0,
     },
-  })}\n`)
-  await writeFile(resolve(root, 'config/environment-overrides.json'), `${JSON.stringify({
-    HARNESS_COMFYUI_SKILL_DIR: { passThrough: true, valueType: 'string' },
-  })}\n`)
-  return {
-    root,
-    definition,
-    definitionPath,
-    environmentFile,
-    globalSkills,
-    productionDefinition,
-    productionDefinitionPath,
-    skills,
-    sourceDefinition,
-    workspace,
-  }
-}
-
-async function freePort() {
-  const server = createServer()
-  await new Promise((resolveListen, reject) => {
-    server.once('error', reject)
-    server.listen(0, '0.0.0.0', resolveListen)
+    desktopRepository,
+    desktopWorkspace,
+    desktopMain: resolve(desktopWorkspace, 'lib/main.js'),
   })
-  const address = server.address()
-  if (address === null || typeof address === 'string') throw new Error('cannot allocate fixture port')
-  await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
-  return address.port
+  const context = Object.freeze({
+    mode: 'development',
+    repositoryRoot: root,
+    runtimeRoot,
+    runtimeHome,
+    userData: resolve(runtimeRoot, 'user-data'),
+    dshHome,
+    environmentFilePath: resolve(root, '.env'),
+    startupWorkspacePath,
+    catalogPort: 18093,
+    agentsHome: resolve(root, 'parent-home/.agents'),
+    pidFile: resolve(runtimeRoot, 'desktop.pid'),
+    stateFile: resolve(runtimeRoot, 'state/desktop.json'),
+    logFile: resolve(runtimeRoot, 'anywhere.log'),
+    lifecycleEvidenceFile: resolve(runtimeRoot, 'user-data/lifecycle-events/startup.jsonl'),
+    desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
+    managedPluginDirectory: resolve(runtimeRoot, 'managed-plugins/harness-comfyui'),
+    developmentPortClaimRoot: resolve(root, '.local/development-port-claims'),
+    desktopRepository,
+    desktopWorkspace,
+    desktopSource: desktopWorkspace,
+    desktopMain: baseline.desktopMain,
+    baseline,
+  })
+  return { baseline, context, repositorySkillsRoot, root }
 }
 
-function developmentPortReservation(port) {
-  return { port, release: vi.fn(async () => undefined) }
+async function installProfile(value, context = value.context) {
+  const plugin = { name: 'harness-comfyui', version: '0.40.0' }
+  const profileDirectory = resolve(context.dshHome, 'profiles/desktop')
+  const manifestPath = resolve(profileDirectory, 'package.json')
+  const specifier = 'link:../../managed-plugins/harness-comfyui'
+  await Promise.all([
+    mkdir(context.managedPluginDirectory, { recursive: true }),
+    mkdir(resolve(profileDirectory, 'node_modules'), { recursive: true }),
+  ])
+  await writeFile(resolve(context.managedPluginDirectory, 'package.json'), JSON.stringify(plugin) + '\n')
+  await writeFile(manifestPath, JSON.stringify({
+    dependencies: { [plugin.name]: specifier },
+    dsh: { profile: { bundles: [plugin.name] } },
+  }) + '\n')
+  const link = resolve(profileDirectory, 'node_modules', plugin.name)
+  await rm(link, { recursive: true, force: true })
+  await symlink(context.managedPluginDirectory, link, 'dir')
+  return { plugin, profile: { profileDirectory, manifestPath, specifier } }
 }
 
-describe('DSH Desktop worktree lifecycle', () => {
-  it('starts the complete development Desktop after linking the worktree environment and dependencies to main', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'desktop-development-command-'))
-    roots.push(root)
-    const mainCheckout = resolve(root, 'main')
-    const worktree = resolve(root, 'worktree')
-    const desktopSource = resolve(mainCheckout, '.local/upstreams/dsh-desktop')
-    const runtimeRoot = resolve(worktree, '.local/desktop-development')
+function preparationOptions(value, overrides = {}) {
+  const reservation = overrides.reservation ?? { port: 43155, release: vi.fn(async () => undefined) }
+  return {
+    loadProductAgentConfiguration: async () => ({
+      repositorySkillsRoot: value.repositorySkillsRoot,
+      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
+    }),
+    materializeCli: vi.fn(async () => undefined),
+    materializeClient: vi.fn(async () => undefined),
+    materializeHost: vi.fn(async () => undefined),
+    materializePreset: vi.fn(async () => undefined),
+    materializeManagedPlugin: async context => (await installProfile(value, context)).plugin,
+    ensureManagedProfile: async context => (await installProfile(value, context)).profile,
+    initializeDesktopSettings: async () => true,
+    initializeSetupState: async () => true,
+    reservePort: async () => reservation,
+    environment: {
+      PATH: '/caller/bin',
+      ELECTRON_RUN_AS_NODE: '1',
+      HARNESS_COMFYUI_SKILL_DIR: '/caller/skills',
+    },
+    recordedAt: startedAt,
+    ...overrides,
+    reservation,
+  }
+}
+
+function lifecycleLines(runId, outcome = 'ready') {
+  const events = [{ timestamp: startedAt, eventName: 'startup.run.started', runId }]
+  if (outcome === 'failed') {
+    events.push({
+      timestamp: startedAt,
+      eventName: 'startup.run.failed',
+      runId,
+      details: { finalStage: 'renderer' },
+    })
+  } else {
+    events.push(
+      {
+        timestamp: startedAt,
+        eventName: 'renderer.boot.completed',
+        runId,
+        details: { rendererStatus: 'healthy' },
+      },
+      {
+        timestamp: startedAt,
+        eventName: 'startup.run.completed',
+        runId,
+        details: { rendererStatus: 'healthy' },
+      },
+    )
+  }
+  return events.map(event => JSON.stringify(event)).join('\n') + '\n'
+}
+
+function childController(pid) {
+  const child = new EventEmitter()
+  child.pid = pid
+  let running = true
+  const close = (code = 0, signal = null) => {
+    if (!running) return
+    running = false
+    child.emit('close', code, signal)
+  }
+  const signalProcess = vi.fn((_pid, signal) => {
+    if (signal === 0) {
+      if (!running) throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+      return
+    }
+    if (signal === 'SIGTERM' || signal === 'SIGKILL') close(null, signal)
+  })
+  return { child, close, signalProcess, isRunning: () => running }
+}
+
+function processOptions(context, pid, controller, startTime = '42') {
+  return {
+    signalProcess: controller.signalProcess,
+    readProcessIdentity: async () => ({
+      startTime,
+      command: '/candidate/electron ' + resolve(context.desktopBuildOutput, 'main.cjs'),
+    }),
+    spawnSync: () => ({ status: 0, stdout: String(pid) + '\n', stderr: '' }),
+  }
+}
+
+async function writeLifecycle(context, text) {
+  await mkdir(dirname(context.lifecycleEvidenceFile), { recursive: true })
+  await writeFile(context.lifecycleEvidenceFile, text)
+}
+
+async function writeProcessState(context, {
+  pid,
+  ready,
+  runId,
+  webPorts,
+  startTime = '42',
+  runtimeIdentity = {
+    runtimeRoot: context.runtimeRoot,
+    stateFile: context.stateFile,
+    entryPath: resolve(context.desktopBuildOutput, 'main.cjs'),
+  },
+  processGroupMembers = [{
+    pid,
+    startTime,
+    command: '/candidate/electron ' + resolve(context.desktopBuildOutput, 'main.cjs'),
+  }],
+}) {
+  await mkdir(dirname(context.stateFile), { recursive: true })
+  await Promise.all([
+    writeFile(context.pidFile, String(pid) + '\n'),
+    writeFile(context.stateFile, JSON.stringify({
+      schemaVersion: PROCESS_STATE_SCHEMA_VERSION,
+      pid,
+      startedAt,
+      ready,
+      ...(runId === undefined ? {} : { runId }),
+      processIdentity: {
+        startTime,
+        command: '/candidate/electron ' + resolve(context.desktopBuildOutput, 'main.cjs'),
+      },
+      runtimeIdentity,
+      processGroupMembers,
+      webPorts,
+      installation: { packageName: 'harness-comfyui', version: '0.40.0' },
+    }) + '\n'),
+  ])
+}
+
+describe('anywhere Desktop development checkout and preparation', () => {
+  it('links the main environment and prepares the dependency view against the Stable workspace', async () => {
+    const value = await fixture('desktop-development-checkout-')
+    const mainCheckout = resolve(value.root, 'main')
+    const worktree = resolve(value.root, 'worktree')
     await Promise.all([
-      mkdir(resolve(mainCheckout, 'node_modules/.pnpm'), { recursive: true }),
-      mkdir(resolve(desktopSource, 'node_modules/.bin'), { recursive: true }),
-      mkdir(worktree, { recursive: true }),
+      mkdir(resolve(mainCheckout, 'node_modules'), { recursive: true }),
+      mkdir(worktree),
     ])
     await Promise.all([
       writeFile(resolve(mainCheckout, '.env'), 'KEY=value\n'),
-      writeFile(resolve(mainCheckout, 'node_modules/.modules.yaml'), JSON.stringify({
-        storeDir: resolve(mainCheckout, '.pnpm-store/v11'),
-        virtualStoreDir: '.pnpm',
-      })),
       writeFile(resolve(worktree, '.git'), 'gitdir: fixture\n'),
+      writeFile(resolve(worktree, 'desktop-worktree.json'), JSON.stringify({ mainCheckoutPath: mainCheckout })),
     ])
-    const definitionPath = resolve(worktree, 'desktop-worktree.json')
-    await writeFile(definitionPath, `${JSON.stringify({ mainCheckoutPath: mainCheckout })}\n`)
-    const spawnDesktop = vi.fn(() => {
-      const child = new EventEmitter()
-      child.pid = 43120
-      setTimeout(() => child.emit('close', 0, null), 10)
-      return child
-    })
-    const context = {
+    const prepareDesktopDependencies = vi.fn(async () => ({ nodeModulesRoot: resolve(worktree, 'node_modules') }))
+    await prepareDesktopDevelopmentCheckout({
       repositoryRoot: worktree,
-      desktopSource,
-      runtimeRoot,
-      runtimeHome: resolve(runtimeRoot, 'home'),
-      dshHome: resolve(runtimeRoot, 'home/Library/Application Support/dsh-desktop-dev/harness'),
-      pidFile: resolve(runtimeRoot, 'desktop.pid'),
-      mobileBridgeStateFile: resolve(runtimeRoot, 'state/mobile-bridge.json'),
-      harnessLog: resolve(runtimeRoot, 'harness.log'),
-      environmentFilePath: resolve(worktree, '.env'),
-      startupWorkspacePath: resolve(root, 'workspace'),
-      mobileBridgePort: undefined,
-      developmentPortClaimRoot: resolve(mainCheckout, '.local/development-port-claims'),
-      desktopBuildOutput: resolve(runtimeRoot, 'desktop-out'),
-      launchCommand: 'dev',
-      catalogPort: 18093,
-      agentsHome: resolve(root, 'parent-home/.agents'),
-      repositorySkillsRoot: resolve(root, '.agents/skills'),
-      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
-    }
-    await Promise.all([mkdir(context.startupWorkspacePath), mkdir(context.repositorySkillsRoot, { recursive: true })])
-    await mkdir(context.desktopBuildOutput, { recursive: true })
-    await writeFile(resolve(context.desktopBuildOutput, 'stale.js'), 'stale output\n')
-    const mobileBridgePort = await freePort()
-
-    const installPlugin = vi.fn()
-    await expect(runDesktopDevelopmentCommand('start', {
-      contextOptions: { repositoryRoot: worktree, definitionPath },
-      loadContext: async () => context,
-      loadProductAgentConfiguration: async () => ({
-        repositorySkillsRoot: context.repositorySkillsRoot,
-        repositorySkillsEnvironmentVariable: context.repositorySkillsEnvironmentVariable,
-      }),
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
-      installPlugin,
-      reservePort: async () => developmentPortReservation(mobileBridgePort),
-      waitForPortTakeover: async () => undefined,
-      remoteDebuggingPort: 43129,
-      spawnDesktop,
-    })).resolves.toMatchObject({ status: 'stopped', pid: 43120 })
+      definitionPath: resolve(worktree, 'desktop-worktree.json'),
+      loadDesktopBaseline: async () => value.baseline,
+      prepareDesktopDependencies,
+    })
 
     expect(resolve(worktree, await readlink(resolve(worktree, '.env')))).toBe(resolve(mainCheckout, '.env'))
-    expect(resolve(worktree, await readlink(resolve(worktree, 'node_modules')))).toBe(resolve(mainCheckout, 'node_modules'))
-    await expect(readFile(resolve(context.desktopBuildOutput, 'stale.js'), 'utf8'))
-      .rejects.toMatchObject({ code: 'ENOENT' })
-    expect(spawnDesktop).toHaveBeenCalledWith(
-      resolve(desktopSource, 'node_modules/node/bin/node'),
-      [
-        resolve(desktopSource, 'node_modules/pnpm/bin/pnpm.cjs'),
-        'dev',
-        '--outDir',
-        context.desktopBuildOutput,
-        '--remoteDebuggingPort',
-        '43129',
-      ],
-      expect.objectContaining({
-        cwd: desktopSource,
-        detached: true,
-        env: expect.objectContaining({
-          KEY: 'value',
-          COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT: String(mobileBridgePort),
-          DSH_DESKTOP_MOBILE_BRIDGE_PORT: String(mobileBridgePort),
-        }),
-      }),
-    )
-
-    await expect(runDesktopDevelopmentCommand('start', {
-      contextOptions: { repositoryRoot: worktree, definitionPath },
-      loadContext: async () => context,
-      loadProductAgentConfiguration: async () => ({
-        repositorySkillsRoot: context.repositorySkillsRoot,
-        repositorySkillsEnvironmentVariable: context.repositorySkillsEnvironmentVariable,
-      }),
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(root, 'harness-comfyui.tgz'),
-      installPlugin,
-      reservePort: async () => developmentPortReservation(mobileBridgePort),
-      waitForPortTakeover: async () => undefined,
-      remoteDebuggingPort: 43129,
-      spawnDesktop,
-    })).resolves.toMatchObject({ status: 'stopped', pid: 43120 })
-    expect(spawnDesktop).toHaveBeenCalledTimes(2)
+    expect(prepareDesktopDependencies).toHaveBeenCalledWith({
+      repositoryRoot: worktree,
+      mainCheckoutRoot: mainCheckout,
+      desktopWorkspace: value.baseline.desktopWorkspace,
+    })
   })
 
   it.each([
     ['a regular .env file', async worktree => writeFile(resolve(worktree, '.env'), 'LOCAL=true\n')],
     ['a wrong .env link', async (worktree, mainCheckout) => {
-      const wrongEnvironment = resolve(mainCheckout, 'wrong.env')
-      await writeFile(wrongEnvironment, 'WRONG=true\n')
-      await symlink(wrongEnvironment, resolve(worktree, '.env'), 'file')
+      const wrong = resolve(mainCheckout, 'wrong.env')
+      await writeFile(wrong, 'WRONG=true\n')
+      await symlink(wrong, resolve(worktree, '.env'), 'file')
     }],
-    ['a regular node_modules directory', async worktree => mkdir(resolve(worktree, 'node_modules'))],
-  ])('rejects %s instead of replacing worktree state', async (_name, createConflict) => {
-    const root = await mkdtemp(resolve(tmpdir(), 'desktop-development-conflict-'))
-    roots.push(root)
-    const mainCheckout = resolve(root, 'main')
-    const worktree = resolve(root, 'worktree')
-    await Promise.all([
-      mkdir(resolve(mainCheckout, 'node_modules'), { recursive: true }),
-      mkdir(worktree, { recursive: true }),
-    ])
+  ])('rejects %s without replacing worktree state', async (_name, createConflict) => {
+    const value = await fixture('desktop-development-conflict-')
+    const mainCheckout = resolve(value.root, 'main')
+    const worktree = resolve(value.root, 'worktree')
+    await Promise.all([mkdir(resolve(mainCheckout, 'node_modules'), { recursive: true }), mkdir(worktree)])
     await Promise.all([
       writeFile(resolve(mainCheckout, '.env'), 'KEY=value\n'),
       writeFile(resolve(worktree, '.git'), 'gitdir: fixture\n'),
+      writeFile(resolve(worktree, 'desktop-worktree.json'), JSON.stringify({ mainCheckoutPath: mainCheckout })),
     ])
     await createConflict(worktree, mainCheckout)
-    const definitionPath = resolve(worktree, 'desktop-worktree.json')
-    await writeFile(definitionPath, `${JSON.stringify({ mainCheckoutPath: mainCheckout })}\n`)
-    const loadContext = vi.fn()
-
-    await expect(runDesktopDevelopmentCommand('start', {
-      contextOptions: { repositoryRoot: worktree, definitionPath },
-      loadContext,
+    await expect(prepareDesktopDevelopmentCheckout({
+      repositoryRoot: worktree,
+      definitionPath: resolve(worktree, 'desktop-worktree.json'),
+      loadDesktopBaseline: async () => value.baseline,
+      prepareDesktopDependencies: async () => undefined,
     })).rejects.toThrow('development checkout')
-    expect(loadContext).not.toHaveBeenCalled()
   })
 
-  it('loads the directory-local paths used by this worktree', async () => {
+  it('loads isolated anywhere paths while resolving the Stable workspace from the main checkout baseline', async () => {
     const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    expect(context.runtimeRoot).toBe(resolve(value.root, '.local/desktop-development'))
-    expect(context.mobileBridgePort).toBeUndefined()
-    expect(context.mobileBridgeStateFile).toBe(resolve(
-      value.root,
-      '.local/desktop-development/state/mobile-bridge.json',
-    ))
-    expect(context.desktopBuildOutput).toBe(resolve(value.root, '.local/desktop-development/desktop-out'))
-    expect(context.dshHome).toBe(resolve(
-      value.root,
-      '.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness',
-    ))
-    expect(context.agentsHome).toBe(resolve(value.root, 'parent-home/.agents'))
-    expect(desktopWorktreeContext({
-      ...value.productionDefinition,
-      desktopMode: 'development',
-      runtimeRelativeRoot: value.definition.runtimeRelativeRoot,
-    }, value.sourceDefinition, {
-      repositoryRoot: value.root,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    }).desktopSource).toBe(resolve(value.root, '.local/upstreams/dsh-desktop'))
-  })
-
-  it('allows local release acceptance to use the current checkout as the Desktop source root', async () => {
-    const value = await fixture()
-    const candidateCheckout = resolve(value.root, 'candidate-checkout')
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      desktopSourceRoot: candidateCheckout,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    expect(context.desktopSource).toBe(resolve(candidateCheckout, '.local/upstreams/dsh-desktop'))
-  })
-
-  it('injects Preset-scoped Repository Skills and removes the isolated HOME legacy link', async () => {
-    const value = await fixture()
+    const definitionPath = resolve(value.root, 'config/desktop-worktree.json')
+    const productionDefinitionPath = resolve(value.root, 'config/desktop-production.json')
     await Promise.all([
-      writeFile(resolve(value.skills, 'candidate-marker.txt'), 'candidate\n'),
-      writeFile(resolve(value.globalSkills, 'global-marker.txt'), 'global\n'),
+      writeFile(definitionPath, JSON.stringify({
+        mainCheckoutPath: resolve(value.root, 'main'),
+        runtimeRelativeRoot: '.local/desktop-development',
+      })),
+      writeFile(productionDefinitionPath, JSON.stringify({
+        runtimeRelativeRoot: '.local/desktop-production',
+        environmentFileRelativePath: '.env',
+        startupWorkspacePath: value.context.startupWorkspacePath,
+      })),
     ])
+
     const context = await loadDesktopWorktreeContext({
       repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
+      definitionPath,
+      productionDefinitionPath,
+      baseline: value.baseline,
       homeDirectory: resolve(value.root, 'parent-home'),
     })
-    const environmentFileBefore = await readFile(value.environmentFile, 'utf8')
-    const legacySkillLink = resolve(context.runtimeHome, '.agents/skills')
-    await mkdir(dirname(legacySkillLink), { recursive: true })
-    await symlink(value.skills, legacySkillLink, 'dir')
-    const materializeCli = vi.fn(async () => undefined)
-    const materializeClient = vi.fn(async () => undefined)
-    const materializeHost = vi.fn(async () => undefined)
-    const materializePreset = vi.fn(async () => undefined)
-    const packagePlugin = vi.fn(async () => resolve(value.root, 'harness-comfyui.tgz'))
-    const installPlugin = vi.fn()
 
-    const activeContext = { ...context, mobileBridgePort: 45128 }
-    const prepared = await prepareDesktopWorktree(activeContext, {
-      materializeCli,
-      materializeClient,
-      materializeHost,
-      materializePreset,
-      packagePlugin,
-      installPlugin,
-      environment: { PATH: '/usr/bin', HARNESS_COMFYUI_SKILL_DIR: '/caller/override' },
+    expect(context).toMatchObject({
+      mode: 'development',
+      runtimeRoot: resolve(value.root, '.local/desktop-development'),
+      desktopWorkspace: value.baseline.desktopWorkspace,
+      desktopMain: value.baseline.desktopMain,
+      dshHome: resolve(value.root, '.local/desktop-development/home/harness'),
+      userData: resolve(value.root, '.local/desktop-development/user-data'),
     })
+    expect(context.developmentPortClaimRoot).toBe(
+      resolve(value.root, 'main/.local/development-port-claims'),
+    )
+  })
 
-    expect(resolve(activeContext.dshHome, await readlink(resolve(activeContext.dshHome, '.env')))).toBe(value.environmentFile)
-    expect(await readFile(value.environmentFile, 'utf8')).toBe(environmentFileBefore)
-    await expect(lstat(legacySkillLink)).rejects.toMatchObject({ code: 'ENOENT' })
-    await expect(readFile(resolve(value.skills, 'candidate-marker.txt'), 'utf8')).resolves.toBe('candidate\n')
-    await expect(readFile(resolve(value.globalSkills, 'global-marker.txt'), 'utf8')).resolves.toBe('global\n')
-    expect(materializeCli).toHaveBeenCalledWith(value.root)
-    expect(materializeClient).toHaveBeenCalledWith(value.root)
-    expect(materializeHost).toHaveBeenCalledWith(value.root)
-    expect(materializePreset).toHaveBeenCalledWith(value.root, activeContext.dshHome)
-    expect(packagePlugin).toHaveBeenCalledWith(expect.objectContaining({
-      ...activeContext,
-      repositorySkillsRoot: value.skills,
-      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
-    }))
-    expect(installPlugin).toHaveBeenCalledWith(expect.objectContaining({
-      ...activeContext,
-      repositorySkillsRoot: value.skills,
-      repositorySkillsEnvironmentVariable: 'HARNESS_COMFYUI_SKILL_DIR',
-    }), prepared.environment, resolve(value.root, 'harness-comfyui.tgz'))
+  it('prepares Preset-scoped Skills, the managed Profile, first-run state, and the isolated environment', async () => {
+    const value = await fixture()
+    const options = preparationOptions(value)
+    const prepared = await prepareAnywhereDesktop(value.context, options)
+    const installation = await verifyManagedProfileInstallation(prepared.context, prepared)
+
+    expect(options.materializeCli).toHaveBeenCalledWith(value.root)
+    expect(options.materializeClient).toHaveBeenCalledWith(value.root)
+    expect(options.materializeHost).toHaveBeenCalledWith(value.root)
+    expect(options.materializePreset).toHaveBeenCalledWith(value.root, value.context.dshHome)
+    expect(installation).toMatchObject({
+      packageName: 'harness-comfyui',
+      version: '0.40.0',
+      directory: await realpath(value.context.managedPluginDirectory),
+    })
     expect(prepared.environment).toMatchObject({
-      KEY: 'value',
-      HOME: activeContext.runtimeHome,
-      CFFIXED_USER_HOME: activeContext.runtimeHome,
-      DSH_HOME: activeContext.dshHome,
-      DSH_AGENTS_HOME: resolve(value.root, 'parent-home/.agents'),
-      HARNESS_COMFYUI_SKILL_DIR: value.skills,
+      KEY: 'file-value',
+      HOME: value.context.runtimeHome,
+      DSH_HOME: value.context.dshHome,
+      DSH_AGENTS_HOME: value.context.agentsHome,
+      HARNESS_COMFYUI_SKILL_DIR: value.repositorySkillsRoot,
       HARNESS_COMFYUI_CONFIGURATION_PROFILE: 'production',
-      HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: value.workspace,
-      HARNESS_COMFYUI_DATA_DIR: resolve(activeContext.runtimeRoot, 'data'),
+      HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: value.context.startupWorkspacePath,
+      HARNESS_COMFYUI_DATA_DIR: resolve(value.context.runtimeRoot, 'data'),
       HARNESS_COMFYUI_CATALOG_PORT: '18093',
-      DSH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
-      COMFYUI_WORKBENCH_DESKTOP_MOBILE_BRIDGE_PORT: '45128',
+      PATH: resolve(value.context.desktopWorkspace, 'node_modules/.bin') + ':/caller/bin',
     })
+    expect(prepared.environment).not.toHaveProperty('ELECTRON_RUN_AS_NODE')
+    expect(prepared.webPort).toBe(43155)
+  })
+
+  it('preserves saved Desktop settings and does not reserve a replacement Host port', async () => {
+    const value = await fixture()
+    const settingsPath = resolve(value.context.dshHome, 'settings.yaml')
+    await mkdir(value.context.dshHome, { recursive: true })
+    await writeFile(settingsPath, JSON.stringify({ 'dsh-desktop': { port: 43222, saved: true } }))
+    const reservePort = vi.fn()
+    const initializeDesktopSettings = vi.fn(async () => false)
+
+    const prepared = await prepareAnywhereDesktop(value.context, preparationOptions(value, {
+      reservePort,
+      initializeDesktopSettings,
+    }))
+
+    expect(prepared.webPort).toBe(43222)
+    expect(prepared.reservation).toBeUndefined()
+    expect(reservePort).not.toHaveBeenCalled()
+    expect(initializeDesktopSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ dshHome: value.context.dshHome }),
+      expect.any(Function),
+      43222,
+    )
+    expect(JSON.parse(await readFile(settingsPath, 'utf8'))['dsh-desktop'].saved).toBe(true)
+  })
+
+  it('stops preparation before Profile installation when a required build fails', async () => {
+    const value = await fixture()
+    const materializeManagedPlugin = vi.fn()
+    const ensureManagedProfile = vi.fn()
+
+    await expect(prepareAnywhereDesktop(value.context, preparationOptions(value, {
+      materializeCli: async () => { throw new Error('CLI bundle failed') },
+      materializeManagedPlugin,
+      ensureManagedProfile,
+    }))).rejects.toThrow('CLI bundle failed')
+    expect(materializeManagedPlugin).not.toHaveBeenCalled()
+    expect(ensureManagedProfile).not.toHaveBeenCalled()
+  })
+
+  it('rejects a Profile link that does not target the managed plugin installation', async () => {
+    const value = await fixture()
+    const installed = await installProfile(value)
+    const external = resolve(value.root, 'unexpected-plugin')
+    await mkdir(external)
+    await rm(resolve(installed.profile.profileDirectory, 'node_modules/harness-comfyui'))
+    await symlink(external, resolve(installed.profile.profileDirectory, 'node_modules/harness-comfyui'), 'dir')
+
+    await expect(verifyManagedProfileInstallation(value.context, installed))
+      .rejects.toThrow('link does not target the managed installation')
+  })
+})
+
+describe('anywhere Desktop development lifecycle', () => {
+  it('starts Electron and reports ready only after the current Renderer run and Host port ownership are verified', async () => {
+    const value = await fixture()
+    const controller = childController(43210)
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnDesktop: vi.fn(() => {
+        setTimeout(() => writeLifecycle(value.context, lifecycleLines('run-current')), 5)
+        return controller.child
+      }),
+      readProcessIdentity: async () => ({
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess: controller.signalProcess,
+      processGroupIsRunning: async () => controller.isRunning(),
+      readProcessGroupMembers: async pid => controller.isRunning() ? [{
+        pid,
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }] : [],
+      waitForPort: vi.fn(async () => undefined),
+      listeningPorts: vi.fn(async () => [43155, 43156]),
+    })
+    const start = startDesktopWorktree(value.context, options)
+
+    await vi.waitFor(async () => {
+      expect(JSON.parse(await readFile(value.context.stateFile, 'utf8'))).toMatchObject({
+        ready: true,
+        runId: 'run-current',
+        webPorts: [43155, 43156],
+        installation: { packageName: 'harness-comfyui', version: '0.40.0' },
+      })
+    })
+    await expect(desktopWorktreeStatus(value.context, {
+      ...processOptions(value.context, 43210, controller),
+      listeningPorts: async () => [43155, 43156],
+    })).resolves.toEqual({
+      status: 'ready',
+      pid: 43210,
+      runId: 'run-current',
+      webPorts: [43155, 43156],
+    })
+    expect(options.spawnDesktop).toHaveBeenCalledWith(
+      '/candidate/electron',
+      [
+        resolve(value.context.desktopBuildOutput, 'main.cjs'),
+        '--user-data-dir=' + value.context.userData,
+      ],
+      expect.objectContaining({
+        cwd: value.context.runtimeRoot,
+        detached: true,
+        env: expect.objectContaining({ DSH_HOME: value.context.dshHome }),
+      }),
+    )
+    expect(options.waitForPort).toHaveBeenCalledWith(43155, 43210, expect.any(Number))
+    expect(options.waitForPort.mock.calls[0][2]).toBeGreaterThan(0)
+    expect(options.waitForPort.mock.calls[0][2]).toBeLessThanOrEqual(100)
+    controller.close()
+    await expect(start).resolves.toEqual({ status: 'stopped', pid: 43210, code: 0, signal: null })
+    expect(options.reservation.release).toHaveBeenCalled()
+  })
+
+  it('keeps two worktree instances isolated by Profile, user data, PID state, and Host port', async () => {
+    const first = await fixture('desktop-anywhere-first-')
+    const second = await fixture('desktop-anywhere-second-')
+    const firstController = childController(43220)
+    const secondController = childController(43221)
+    const makeOptions = (value, controller, port, runId) => preparationOptions(value, {
+      reservation: { port, release: vi.fn(async () => undefined) },
+      now: () => new Date(startedAt),
+      spawnDesktop: vi.fn(() => {
+        setTimeout(() => writeLifecycle(value.context, lifecycleLines(runId)), 5)
+        return controller.child
+      }),
+      readProcessIdentity: async () => ({
+        startTime: String(controller.child.pid),
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess: controller.signalProcess,
+      processGroupIsRunning: async () => controller.isRunning(),
+      readProcessGroupMembers: async pid => controller.isRunning() ? [{
+        pid,
+        startTime: String(pid),
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }] : [],
+      waitForPort: async () => undefined,
+      listeningPorts: async () => [port],
+    })
+    const firstOptions = makeOptions(first, firstController, 43230, 'run-first')
+    const secondOptions = makeOptions(second, secondController, 43231, 'run-second')
+    const firstStart = startDesktopWorktree(first.context, firstOptions)
+    const secondStart = startDesktopWorktree(second.context, secondOptions)
+
+    await vi.waitFor(async () => {
+      expect(JSON.parse(await readFile(first.context.stateFile, 'utf8')).webPorts).toEqual([43230])
+      expect(JSON.parse(await readFile(second.context.stateFile, 'utf8')).webPorts).toEqual([43231])
+    })
+    expect(first.context.dshHome).not.toBe(second.context.dshHome)
+    expect(first.context.userData).not.toBe(second.context.userData)
+    expect(first.context.pidFile).not.toBe(second.context.pidFile)
+    expect(firstOptions.spawnDesktop.mock.calls[0][1]).toContain('--user-data-dir=' + first.context.userData)
+    expect(secondOptions.spawnDesktop.mock.calls[0][1]).toContain('--user-data-dir=' + second.context.userData)
+    firstController.close()
+    secondController.close()
+    await expect(Promise.all([firstStart, secondStart])).resolves.toEqual([
+      { status: 'stopped', pid: 43220, code: 0, signal: null },
+      { status: 'stopped', pid: 43221, code: 0, signal: null },
+    ])
   })
 
   it.each([
-    ['file', async path => writeFile(path, 'keep\n')],
-    ['directory', async path => mkdir(path)],
-  ])('rejects an isolated HOME legacy Skills %s without changing it', async (pathType, createPath) => {
+    ['a stale healthy run', JSON.stringify({
+      timestamp: '2026-09-09T11:59:59.000Z',
+      eventName: 'startup.run.completed',
+      runId: 'run-old',
+      details: { rendererStatus: 'healthy' },
+    }) + '\n', 'did not report a healthy current startup run'],
+    ['a failed current Renderer run', lifecycleLines('run-failed', 'failed'), 'failed at renderer'],
+  ])('terminates Electron and clears state when startup contains %s', async (_name, evidence, message) => {
     const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
+    const controller = childController(43232)
+    await writeLifecycle(value.context, evidence)
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnDesktop: () => controller.child,
+      readProcessIdentity: async () => ({
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess: controller.signalProcess,
+      processGroupIsRunning: async () => controller.isRunning(),
+      readyTimeoutMs: 30,
     })
-    const conflictPath = resolve(context.runtimeHome, '.agents/skills')
-    await mkdir(dirname(conflictPath), { recursive: true })
-    await createPath(conflictPath)
-    const materializeCli = vi.fn()
 
-    await expect(prepareDesktopWorktree(context, {
-      materializeCli,
-      migrateLegacySessionData: async () => undefined,
-    })).rejects.toThrow(`isolated Desktop HOME legacy Skills path conflict at ${conflictPath}: found ${pathType}`)
-
-    expect(materializeCli).not.toHaveBeenCalled()
-    expect((await lstat(conflictPath))[pathType === 'file' ? 'isFile' : 'isDirectory']()).toBe(true)
+    await expect(startDesktopWorktree(value.context, options)).rejects.toThrow(message)
+    expect(controller.signalProcess).toHaveBeenCalledWith(-43232, 'SIGTERM')
+    expect(options.reservation.release).toHaveBeenCalled()
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
-  it('rejects a symbolic-link .agents parent without changing the external Skills link', async () => {
+  it('rejects a Host port owned by another process and cleans up the failed Electron start', async () => {
     const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
+    const controller = childController(43233)
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnDesktop: () => {
+        setTimeout(() => writeLifecycle(value.context, lifecycleLines('run-wrong-port')), 5)
+        return controller.child
+      },
+      readProcessIdentity: async () => ({
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess: controller.signalProcess,
+      processGroupIsRunning: async () => controller.isRunning(),
+      readProcessGroupMembers: async pid => controller.isRunning() ? [{
+        pid,
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }] : [],
+      waitForPort: async () => undefined,
+      listeningPorts: async () => [43156],
     })
-    const externalAgents = await mkdtemp(resolve(tmpdir(), 'desktop-runtime-external-agents-'))
-    roots.push(externalAgents)
-    const externalSkillsLink = resolve(externalAgents, 'skills')
-    await symlink(value.skills, externalSkillsLink, 'dir')
-    await mkdir(context.runtimeHome, { recursive: true })
-    await symlink(externalAgents, resolve(context.runtimeHome, '.agents'), 'dir')
-    const materializeCli = vi.fn()
 
-    await expect(prepareDesktopWorktree(context, {
-      materializeCli,
-      migrateLegacySessionData: async () => undefined,
-    })).rejects.toThrow(`isolated Desktop HOME legacy Skills parent conflict at ${resolve(context.runtimeHome, '.agents')}: found symbolic link`)
-
-    expect(materializeCli).not.toHaveBeenCalled()
-    expect((await lstat(externalSkillsLink)).isSymbolicLink()).toBe(true)
-    expect(await readlink(externalSkillsLink)).toBe(value.skills)
+    await expect(startDesktopWorktree(value.context, options))
+      .rejects.toThrow('does not own configured Web port 43155')
+    expect(controller.signalProcess).toHaveBeenCalledWith(-43233, 'SIGTERM')
+    expect(options.reservation.release).toHaveBeenCalled()
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
-  it('rejects a regular-file .agents parent without changing it', async () => {
+  it('does not spawn Electron when Profile preparation fails', async () => {
     const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const agentsPath = resolve(context.runtimeHome, '.agents')
-    await mkdir(context.runtimeHome, { recursive: true })
-    await writeFile(agentsPath, 'keep\n')
-    const materializeCli = vi.fn()
-
-    await expect(prepareDesktopWorktree(context, {
-      materializeCli,
-      migrateLegacySessionData: async () => undefined,
-    })).rejects.toThrow(`isolated Desktop HOME legacy Skills parent conflict at ${agentsPath}: found file`)
-
-    expect(materializeCli).not.toHaveBeenCalled()
-    expect(await readFile(agentsPath, 'utf8')).toBe('keep\n')
-  })
-
-  it('rejects a missing Repository Skills root without falling back to global Skills', async () => {
-    const value = await fixture()
-    await rm(value.skills, { recursive: true, force: true })
-
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root does not exist: ${value.skills}`)
-  })
-
-  it('rejects a Repository Skills root that is not a directory', async () => {
-    const value = await fixture()
-    await rm(value.skills, { recursive: true, force: true })
-    await writeFile(value.skills, 'not a directory\n')
-
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root must be a directory: ${value.skills}`)
-  })
-
-  it('rejects a Repository Skills root symbolic link', async () => {
-    const value = await fixture()
-    const externalSkills = await mkdtemp(resolve(tmpdir(), 'external-skills-'))
-    roots.push(externalSkills)
-    await rm(value.skills, { recursive: true, force: true })
-    await symlink(externalSkills, value.skills, 'dir')
-
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root must not be a symbolic link: ${value.skills}`)
-  })
-
-  it('rejects a Repository Skills root whose real path leaves the current worktree', async () => {
-    const value = await fixture()
-    const externalAgents = await mkdtemp(resolve(tmpdir(), 'external-agents-'))
-    roots.push(externalAgents)
-    await mkdir(resolve(externalAgents, 'skills'))
-    await rm(resolve(value.root, '.agents'), { recursive: true, force: true })
-    await symlink(externalAgents, resolve(value.root, '.agents'), 'dir')
-
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    await expect(prepareDesktopWorktree(context)).rejects.toThrow(`Repository Skills root must stay inside the current checkout: ${value.skills}`)
-  })
-
-  it('keeps Desktop status, stop, and logs available when Repository Skills are missing', async () => {
-    const value = await fixture()
-    await rm(value.skills, { recursive: true, force: true })
-    const contextOptions = {
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      productionDefinitionPath: value.productionDefinitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    }
-
-    await expect(runDesktopLifecycleCommand('status', { contextOptions })).resolves.toEqual({ status: 'stopped' })
-    await expect(runDesktopLifecycleCommand('stop', { contextOptions })).resolves.toEqual({ status: 'stopped' })
-    await expect(runDesktopLifecycleCommand('logs', { contextOptions })).resolves.toEqual({
-      status: 'logs',
-      output: 'DSH Desktop Harness log has not been created.\n',
-    })
-    for (const command of ['start', 'restart']) {
-      await expect(runDesktopDevelopmentCommand(command, {
-        contextOptions,
-        prepareCheckout: async () => undefined,
-      })).rejects.toThrow(`Repository Skills root does not exist: ${value.skills}`)
-    }
-  })
-
-  it('does not package or install the Desktop plugin when the CLI bundle fails', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const packagePlugin = vi.fn()
-    const installPlugin = vi.fn()
-
-    await expect(prepareDesktopWorktree(context, {
-      materializeCli: async () => { throw new Error('CLI bundle failed') },
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin,
-      installPlugin,
-    })).rejects.toThrow('CLI bundle failed')
-    expect(packagePlugin).not.toHaveBeenCalled()
-    expect(installPlugin).not.toHaveBeenCalled()
-  })
-
-  it('keeps start in the foreground and lets the stop command terminate the Desktop process group', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const child = new EventEmitter()
-    child.pid = 43210
-    const spawnDesktop = vi.fn(() => child)
-    const mobileBridgePort = await freePort()
-    const startPromise = startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => developmentPortReservation(mobileBridgePort),
-      waitForPortTakeover: async () => undefined,
+    const spawnDesktop = vi.fn()
+    const options = preparationOptions(value, {
+      ensureManagedProfile: async () => { throw new Error('Profile install failed') },
       spawnDesktop,
-      signalProcess: () => { throw Object.assign(new Error('missing'), { code: 'ESRCH' }) },
     })
-    await vi.waitFor(async () => expect((await readFile(context.pidFile, 'utf8')).trim()).toBe('43210'))
-    await expect(desktopWorktreeStatus(context, { signalProcess: () => undefined })).resolves.toEqual({
-      status: 'running',
-      pid: 43210,
-      mobileBridgePort,
-    })
-    child.emit('close', 0, null)
-    await expect(startPromise).resolves.toMatchObject({ status: 'stopped', pid: 43210 })
 
-    await writeFile(context.pidFile, '43210\n')
-    let running = true
-    const signalProcess = vi.fn((pid, signal) => {
-      if (signal === 0 && !running) throw Object.assign(new Error('missing'), { code: 'ESRCH' })
-      if (pid === -43210 && signal === 'SIGTERM') running = false
-    })
-    await mkdir(resolve(context.mobileBridgeStateFile, '..'), { recursive: true })
-    await writeFile(context.mobileBridgeStateFile, `${JSON.stringify({
-      schemaVersion: 1,
-      mobileBridgePort,
-    })}\n`)
-    await expect(desktopWorktreeStatus(context, { signalProcess })).resolves.toEqual({
-      status: 'running',
-      pid: 43210,
-      mobileBridgePort,
-    })
-    await expect(stopDesktopWorktree(context, { signalProcess })).resolves.toEqual({ status: 'stopped', pid: 43210 })
-    await expect(desktopWorktreeStatus(context, { signalProcess })).resolves.toEqual({ status: 'stopped' })
+    await expect(startDesktopWorktree(value.context, options)).rejects.toThrow('Profile install failed')
+    expect(spawnDesktop).not.toHaveBeenCalled()
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
-  it('runs two linked-worktree Desktops concurrently with separate ports and process state', async () => {
-    const firstFixture = await fixture()
-    const secondFixture = await fixture()
-    const loadedFirstContext = await loadDesktopWorktreeContext({
-      repositoryRoot: firstFixture.root,
-      definitionPath: firstFixture.definitionPath,
-      homeDirectory: resolve(firstFixture.root, 'parent-home'),
+  it('does not spawn Electron or publish state when Host port reservation fails', async () => {
+    const value = await fixture()
+    const spawnDesktop = vi.fn()
+    const options = preparationOptions(value, {
+      reservePort: async () => { throw new Error('Host port reservation failed') },
+      spawnDesktop,
     })
-    const loadedSecondContext = await loadDesktopWorktreeContext({
-      repositoryRoot: secondFixture.root,
-      definitionPath: secondFixture.definitionPath,
-      homeDirectory: resolve(secondFixture.root, 'parent-home'),
+
+    await expect(startDesktopWorktree(value.context, options))
+      .rejects.toThrow('Host port reservation failed')
+    expect(spawnDesktop).not.toHaveBeenCalled()
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects duplicate start and mismatched PID identity before preparing or signalling a process', async () => {
+    const value = await fixture()
+    const controller = childController(43234)
+    await writeProcessState(value.context, { pid: 43234, ready: false, webPorts: [] })
+    const materializeCli = vi.fn()
+
+    await expect(startDesktopWorktree(value.context, {
+      materializeCli,
+      ...processOptions(value.context, 43234, controller),
+    })).rejects.toThrow('Desktop is already running with PID 43234')
+    expect(materializeCli).not.toHaveBeenCalled()
+
+    await expect(stopDesktopWorktree(value.context, {
+      signalProcess: controller.signalProcess,
+      readProcessIdentity: async () => ({ startTime: '99', command: '/unrelated/process' }),
+      spawnSync: () => ({ status: 0, stdout: '43234\n', stderr: '' }),
+    })).rejects.toThrow('is not the process-group leader launched from')
+    expect(controller.signalProcess).not.toHaveBeenCalledWith(-43234, expect.any(String))
+  })
+
+  it('reports starting, ready, failed ownership, and failed Renderer states', async () => {
+    const value = await fixture()
+    const controller = childController(43235)
+    const options = processOptions(value.context, 43235, controller)
+    await writeProcessState(value.context, {
+      pid: 43235, ready: false, runId: 'run-status', webPorts: [],
     })
-    const sharedClaimRoot = resolve(firstFixture.root, '.local/shared-development-port-claims')
-    const firstContext = { ...loadedFirstContext, developmentPortClaimRoot: sharedClaimRoot }
-    const secondContext = {
-      ...loadedSecondContext,
-      desktopSource: firstContext.desktopSource,
-      environmentFilePath: firstContext.environmentFilePath,
-      developmentPortClaimRoot: sharedClaimRoot,
+    await writeLifecycle(value.context, JSON.stringify({
+      timestamp: startedAt, eventName: 'startup.run.started', runId: 'run-status',
+    }) + '\n')
+    await expect(desktopWorktreeStatus(value.context, options)).resolves.toEqual({
+      status: 'starting', pid: 43235, runId: 'run-status', webPorts: [],
+    })
+
+    await writeProcessState(value.context, {
+      pid: 43235, ready: true, runId: 'run-status', webPorts: [43155],
+    })
+    await writeLifecycle(value.context, lifecycleLines('run-status'))
+    await expect(desktopWorktreeStatus(value.context, {
+      ...options, listeningPorts: async () => [43155],
+    })).resolves.toEqual({
+      status: 'ready', pid: 43235, runId: 'run-status', webPorts: [43155],
+    })
+    await expect(desktopWorktreeStatus(value.context, {
+      ...options, listeningPorts: async () => [43156],
+    })).resolves.toEqual({
+      status: 'failed', pid: 43235, runId: 'run-status', webPorts: [43156],
+    })
+
+    await writeLifecycle(value.context, lifecycleLines('run-status', 'failed'))
+    await expect(desktopWorktreeStatus(value.context, options)).resolves.toEqual({
+      status: 'failed', pid: 43235, runId: 'run-status', webPorts: [43155],
+    })
+  })
+
+  it('rejects stale state when the surviving process-group member identity no longer matches', async () => {
+    const value = await fixture()
+    const entryPath = resolve(value.context.desktopBuildOutput, 'main.cjs')
+    const recordedMember = {
+      pid: 43251,
+      startTime: 'recorded-child-start',
+      command: '/candidate/electron ' + entryPath + ' --renderer',
     }
-    const children = [new EventEmitter(), new EventEmitter()]
-    children[0].pid = 43220
-    children[1].pid = 43221
-    const allocatedPorts = []
-    const runningPids = new Set(children.map(child => child.pid))
-    const signalProcess = (pid, signal) => {
-      const processId = Math.abs(pid)
-      if (signal === 'SIGTERM') {
-        runningPids.delete(processId)
-        return
-      }
-      if (!runningPids.has(processId)) throw Object.assign(new Error('missing'), { code: 'ESRCH' })
-    }
-    const sharedStartOptions = {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async context => resolve(context.repositoryRoot, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
+    await writeProcessState(value.context, {
+      pid: 43249,
+      ready: true,
+      runId: 'run-stale-group',
+      webPorts: [43155],
+      processGroupMembers: [recordedMember],
+    })
+    const signalProcess = vi.fn((pid, signal) => {
+      if (pid === 43249 && signal === 0) throw Object.assign(new Error('leader exited'), { code: 'ESRCH' })
+    })
+    const options = {
       signalProcess,
+      processGroupIsRunning: async () => true,
+      readProcessGroupMembers: async () => [{
+        ...recordedMember,
+        startTime: 'reused-child-start',
+      }],
     }
-    const firstStart = startDesktopWorktree(firstContext, {
-      ...sharedStartOptions,
-      waitForPortTakeover: async () => undefined,
-      spawnDesktop: (_command, _arguments, spawnOptions) => {
-        allocatedPorts[0] = Number(spawnOptions.env.DSH_DESKTOP_MOBILE_BRIDGE_PORT)
-        return children[0]
+
+    await expect(desktopWorktreeStatus(value.context, options)).rejects.toThrow('process group')
+    await expect(stopDesktopWorktree(value.context, options)).rejects.toThrow('process group')
+    expect(signalProcess.mock.calls.filter(([_pid, signal]) => signal !== 0)).toEqual([])
+    await expect(readFile(value.context.pidFile, 'utf8')).resolves.toBe('43249\n')
+    await expect(readFile(value.context.stateFile, 'utf8')).resolves.not.toBe('')
+  })
+
+  it('rejects another worktree runtime identity before inspecting or signalling its process group', async () => {
+    const value = await fixture('desktop-current-worktree-')
+    const other = await fixture('desktop-other-worktree-')
+    const member = {
+      pid: 43253,
+      startTime: 'other-child-start',
+      command: '/candidate/electron ' + resolve(other.context.desktopBuildOutput, 'main.cjs'),
+    }
+    await writeProcessState(value.context, {
+      pid: 43252,
+      ready: true,
+      runId: 'run-other-worktree',
+      webPorts: [43156],
+      runtimeIdentity: {
+        runtimeRoot: other.context.runtimeRoot,
+        stateFile: other.context.stateFile,
+        entryPath: resolve(other.context.desktopBuildOutput, 'main.cjs'),
       },
+      processGroupMembers: [member],
     })
-    const secondStart = startDesktopWorktree(secondContext, {
-      ...sharedStartOptions,
-      waitForPortTakeover: async () => undefined,
-      spawnDesktop: (_command, _arguments, spawnOptions) => {
-        allocatedPorts[1] = Number(spawnOptions.env.DSH_DESKTOP_MOBILE_BRIDGE_PORT)
-        return children[1]
+    const signalProcess = vi.fn((pid, signal) => {
+      if (pid === 43252 && signal === 0) throw Object.assign(new Error('leader exited'), { code: 'ESRCH' })
+    })
+    const readProcessGroupMembers = vi.fn(async () => [member])
+    const options = {
+      signalProcess,
+      processGroupIsRunning: async () => true,
+      readProcessGroupMembers,
+    }
+
+    await expect(desktopWorktreeStatus(value.context, options)).rejects.toThrow('different worktree runtime')
+    await expect(stopDesktopWorktree(value.context, options)).rejects.toThrow('different worktree runtime')
+    expect(readProcessGroupMembers).not.toHaveBeenCalled()
+    expect(signalProcess.mock.calls.filter(([_pid, signal]) => signal !== 0)).toEqual([])
+    await expect(readFile(value.context.pidFile, 'utf8')).resolves.toBe('43252\n')
+  })
+
+  it('keeps and terminates a matching managed process group when the Electron leader has exited', async () => {
+    const value = await fixture()
+    let groupRunning = true
+    const member = {
+      pid: 43250,
+      startTime: 'managed-child-start',
+      command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs') + ' --renderer',
+    }
+    await writeProcessState(value.context, {
+      pid: 43239,
+      ready: true,
+      runId: 'run-leader-exited',
+      webPorts: [43155],
+      processGroupMembers: [member],
+    })
+    const signalProcess = vi.fn((pid, signal) => {
+      if (pid === 43239 && signal === 0) throw Object.assign(new Error('leader exited'), { code: 'ESRCH' })
+      if (pid === -43239 && signal === 'SIGTERM') groupRunning = false
+    })
+    const options = {
+      signalProcess,
+      processGroupIsRunning: async () => groupRunning,
+      readProcessGroupMembers: async () => [member],
+      stopTimeoutMs: 0,
+    }
+
+    await expect(desktopWorktreeStatus(value.context, options)).resolves.toEqual({
+      status: 'failed',
+      pid: 43239,
+      runId: 'run-leader-exited',
+      webPorts: [43155],
+    })
+    await expect(readFile(value.context.pidFile, 'utf8')).resolves.toBe('43239\n')
+    await expect(stopDesktopWorktree(value.context, options)).resolves.toEqual({
+      status: 'stopped',
+      pid: 43239,
+    })
+    expect(signalProcess).toHaveBeenCalledWith(-43239, 'SIGTERM')
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('terminates Electron and releases the port claim when initial state publication fails', async () => {
+    const value = await fixture()
+    const controller = childController(43240)
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnDesktop: () => {
+        writeFileSync(dirname(value.context.stateFile), 'state path conflict\n')
+        return controller.child
       },
+      readProcessIdentity: async () => ({
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess: controller.signalProcess,
+      processGroupIsRunning: async () => controller.isRunning(),
+    })
+
+    await expect(startDesktopWorktree(value.context, options)).rejects.toThrow()
+    expect(controller.signalProcess).toHaveBeenCalledWith(-43240, 'SIGTERM')
+    expect(options.reservation.release).toHaveBeenCalled()
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('reports an abnormal Electron exit after readiness and removes its process state', async () => {
+    const value = await fixture()
+    const controller = childController(43241)
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnDesktop: () => {
+        setTimeout(() => writeLifecycle(value.context, lifecycleLines('run-abnormal-exit')), 5)
+        return controller.child
+      },
+      readProcessIdentity: async () => ({
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess: controller.signalProcess,
+      processGroupIsRunning: async () => controller.isRunning(),
+      readProcessGroupMembers: async pid => controller.isRunning() ? [{
+        pid,
+        startTime: '42',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }] : [],
+      waitForPort: async () => undefined,
+      listeningPorts: async () => [43155],
+    })
+    const start = startDesktopWorktree(value.context, options)
+    await vi.waitFor(async () => {
+      expect(JSON.parse(await readFile(value.context.stateFile, 'utf8')).ready).toBe(true)
+    })
+    controller.close(7, null)
+
+    await expect(start).resolves.toEqual({ status: 'failed', pid: 43241, code: 7, signal: null })
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('uses the real leader exit event to clean a same-group child that keeps inherited log pipes open', async () => {
+    const value = await fixture('desktop-real-exit-event-')
+    const context = {
+      ...value.context,
+      baseline: {
+        ...value.baseline,
+        startup: { ...value.baseline.startup, readyTimeoutMs: 500, stopTimeoutMs: 1000 },
+      },
+    }
+    const holderPidFile = resolve(value.root, 'holder.pid')
+    const entryPath = resolve(context.desktopBuildOutput, 'main.cjs')
+    const holderCode = 'setInterval(() => undefined, 1000)'
+    const leaderCode = [
+      "const { spawn } = require('node:child_process')",
+      "const { writeFileSync } = require('node:fs')",
+      'const holder = spawn(' + JSON.stringify(process.execPath) + ', '
+        + JSON.stringify(['-e', holderCode]) + ", { stdio: ['ignore', 'inherit', 'inherit'] })",
+      'writeFileSync(' + JSON.stringify(holderPidFile) + ', String(holder.pid))',
+      'setTimeout(() => process.exit(0), 250)',
+    ].join(';')
+    let leaderPid
+    let holderPid
+    let exitAt
+    let closeAt
+    let termAt
+    const signalProcess = vi.fn((pid, signal) => {
+      if (pid < 0 && signal === 'SIGTERM') termAt = Date.now()
+      return process.kill(pid, signal)
+    })
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      readyTimeoutMs: 500,
+      spawnDesktop: () => {
+        const child = spawn(process.execPath, ['-e', leaderCode], {
+          detached: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        })
+        leaderPid = child.pid
+        child.once('exit', () => { exitAt = Date.now() })
+        child.once('close', () => { closeAt = Date.now() })
+        setTimeout(() => writeLifecycle(context, lifecycleLines('run-real-exit')), 40)
+        return child
+      },
+      readProcessIdentity: async pid => ({
+        startTime: 'fixture-start-' + String(pid),
+        command: pid === leaderPid
+          ? '/candidate/electron ' + entryPath
+          : '/fixture/pipe-holder ' + entryPath,
+      }),
+      signalProcess,
+      waitForPort: async () => undefined,
+      listeningPorts: async () => [43155],
+    })
+
+    try {
+      const result = await Promise.race([
+        startDesktopWorktree(context, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('real exit regression timed out')), 3000)),
+      ])
+      holderPid = Number(await readFile(holderPidFile, 'utf8'))
+
+      expect(result).toEqual({
+        status: 'failed',
+        pid: leaderPid,
+        code: 0,
+        signal: null,
+        residualProcessGroupTerminated: true,
+      })
+      expect(exitAt).toBeTypeOf('number')
+      expect(termAt).toBeTypeOf('number')
+      expect(termAt).toBeGreaterThanOrEqual(exitAt)
+      if (closeAt !== undefined) expect(termAt).toBeLessThanOrEqual(closeAt)
+      expect(signalProcess).toHaveBeenCalledWith(-leaderPid, 'SIGTERM')
+      await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    } finally {
+      if (Number.isSafeInteger(leaderPid) && leaderPid > 0) {
+        try { process.kill(-leaderPid, 'SIGKILL') } catch {}
+      }
+      if (Number.isSafeInteger(holderPid) && holderPid > 0) {
+        try { process.kill(holderPid, 'SIGKILL') } catch {}
+      }
+    }
+  })
+
+  it('does not signal when the leader identity disappears during stop revalidation', async () => {
+    const value = await fixture()
+    const pid = 43242
+    await writeProcessState(value.context, { pid, ready: true, webPorts: [43155] })
+    const signalProcess = vi.fn(() => undefined)
+    const identity = {
+      startTime: '42',
+      command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+    }
+    const readProcessIdentity = vi.fn()
+      .mockResolvedValueOnce(identity)
+      .mockResolvedValueOnce(null)
+    const readProcessGroupMembers = vi.fn(async () => [])
+
+    await expect(stopDesktopWorktree(value.context, {
+      signalProcess,
+      readProcessIdentity,
+      readProcessGroupMembers,
+      spawnSync: () => ({ status: 0, stdout: String(pid) + '\n', stderr: '' }),
+    })).resolves.toEqual({ status: 'stopped', pid })
+
+    expect(readProcessIdentity).toHaveBeenCalledTimes(2)
+    expect(readProcessGroupMembers).toHaveBeenCalledOnce()
+    expect(signalProcess.mock.calls.filter(([_pid, signal]) => signal !== 0)).toEqual([])
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('cleans a matching residual group when the leader disappears during stop revalidation', async () => {
+    const value = await fixture()
+    const pid = 43244
+    const member = {
+      pid: 43245,
+      startTime: 'managed-child-start',
+      command: '/candidate/electron '
+        + resolve(value.context.desktopBuildOutput, 'main.cjs')
+        + ' --renderer',
+    }
+    await writeProcessState(value.context, {
+      pid,
+      ready: true,
+      webPorts: [43155],
+      processGroupMembers: [member],
+    })
+    let groupRunning = true
+    const signalProcess = vi.fn((_target, signal) => {
+      if (signal === 'SIGTERM') groupRunning = false
+    })
+    const leaderIdentity = {
+      startTime: '42',
+      command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+    }
+    const readProcessIdentity = vi.fn()
+      .mockResolvedValueOnce(leaderIdentity)
+      .mockResolvedValueOnce(null)
+    const readProcessGroupMembers = vi.fn(async () => groupRunning ? [member] : [])
+
+    await expect(stopDesktopWorktree(value.context, {
+      signalProcess,
+      readProcessIdentity,
+      readProcessGroupMembers,
+      spawnSync: () => ({ status: 0, stdout: String(pid) + '\n', stderr: '' }),
+    })).resolves.toEqual({ status: 'stopped', pid })
+
+    expect(readProcessIdentity).toHaveBeenCalledTimes(2)
+    expect(readProcessGroupMembers).toHaveBeenCalled()
+    expect(signalProcess).toHaveBeenCalledWith(-pid, 'SIGTERM')
+    expect(signalProcess).not.toHaveBeenCalledWith(-pid, 'SIGKILL')
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('does not signal when a leader-exit group probe finds no matching live members', async () => {
+    const value = await fixture()
+    const controller = childController(43243)
+    const member = {
+      pid: 43243,
+      startTime: '42',
+      command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+    }
+    const readProcessGroupMembers = vi.fn()
+      .mockResolvedValueOnce([member])
+      .mockResolvedValueOnce([member])
+      .mockResolvedValueOnce([])
+    const processGroupIsRunning = vi.fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnDesktop: () => {
+        setTimeout(() => writeLifecycle(value.context, lifecycleLines('run-empty-residual')), 5)
+        return controller.child
+      },
+      readProcessIdentity: async () => ({ startTime: '42', command: member.command }),
+      readProcessGroupMembers,
+      processGroupIsRunning,
+      signalProcess: controller.signalProcess,
+      waitForPort: async () => undefined,
+      listeningPorts: async () => [43155],
+    })
+    const start = startDesktopWorktree(value.context, options)
+    await vi.waitFor(async () => {
+      expect(JSON.parse(await readFile(value.context.stateFile, 'utf8')).ready).toBe(true)
+    })
+    controller.close()
+
+    await expect(start).resolves.toEqual({ status: 'stopped', pid: 43243, code: 0, signal: null })
+    expect(readProcessGroupMembers).toHaveBeenCalledTimes(3)
+    expect(controller.signalProcess.mock.calls.filter(([_pid, signal]) => signal !== 0)).toEqual([])
+    await expect(readFile(value.context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(value.context.stateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('stops idempotently and escalates from SIGTERM to SIGKILL', async () => {
+    const value = await fixture()
+    let running = true
+    const signalProcess = vi.fn((_pid, signal) => {
+      if (signal === 0 && !running) throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+      if (signal === 'SIGKILL') running = false
+    })
+    const controller = { signalProcess }
+    await writeProcessState(value.context, { pid: 43236, ready: false, webPorts: [] })
+    const options = {
+      ...processOptions(value.context, 43236, controller),
+      processGroupIsRunning: async () => running,
+      stopTimeoutMs: 0,
+    }
+
+    await expect(stopDesktopWorktree(value.context, options)).resolves.toEqual({
+      status: 'stopped', pid: 43236,
+    })
+    expect(signalProcess).toHaveBeenCalledWith(-43236, 'SIGTERM')
+    expect(signalProcess).toHaveBeenCalledWith(-43236, 'SIGKILL')
+    await expect(stopDesktopWorktree(value.context, options)).resolves.toEqual({ status: 'stopped' })
+  })
+
+  it('runs restart as verified stop followed by a new foreground Electron start', async () => {
+    const value = await fixture()
+    const oldController = childController(43237)
+    await writeProcessState(value.context, { pid: 43237, ready: false, webPorts: [] })
+    const nextController = childController(43238)
+    const signalProcess = vi.fn((pid, signal) => {
+      if (pid === -43237 && signal === 'SIGTERM') oldController.close(null, 'SIGTERM')
+      if (pid === 43237 && signal === 0 && !oldController.isRunning()) {
+        throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+      }
+      if (pid === 43238 && signal === 0 && !nextController.isRunning()) {
+        throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+      }
+    })
+    const options = preparationOptions(value, {
+      now: () => new Date(startedAt),
+      spawnSync: () => ({ status: 0, stdout: '43237\n', stderr: '' }),
+      spawnDesktop: () => {
+        setTimeout(() => writeLifecycle(value.context, lifecycleLines('run-restart')), 5)
+        return nextController.child
+      },
+      readProcessIdentity: async pid => ({
+        startTime: pid === 43237 ? '42' : '43',
+        command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+      }),
+      signalProcess,
+      processGroupIsRunning: async pid => pid === 43237
+        ? oldController.isRunning()
+        : nextController.isRunning(),
+      readProcessGroupMembers: async pid => {
+        const controller = pid === 43237 ? oldController : nextController
+        if (!controller.isRunning()) return []
+        return [{
+          pid,
+          startTime: pid === 43237 ? '42' : '43',
+          command: '/candidate/electron ' + resolve(value.context.desktopBuildOutput, 'main.cjs'),
+        }]
+      },
+      waitForPort: async () => undefined,
+      listeningPorts: async () => [43155],
+    })
+    const restart = runDesktopLifecycleCommand('restart', {
+      loadContext: async () => value.context,
+      ...options,
     })
     await vi.waitFor(async () => {
-      expect((await readFile(firstContext.pidFile, 'utf8')).trim()).toBe('43220')
-      expect((await readFile(secondContext.pidFile, 'utf8')).trim()).toBe('43221')
+      expect(JSON.parse(await readFile(value.context.stateFile, 'utf8')).ready).toBe(true)
     })
-    expect(allocatedPorts[0]).not.toBe(allocatedPorts[1])
-    expect(firstContext.desktopSource).toBe(secondContext.desktopSource)
-    expect(firstContext.environmentFilePath).toBe(secondContext.environmentFilePath)
-    expect(firstContext.desktopBuildOutput).not.toBe(secondContext.desktopBuildOutput)
-
-    await expect(desktopWorktreeStatus(firstContext, { signalProcess })).resolves.toEqual({
-      status: 'running',
-      pid: 43220,
-      mobileBridgePort: allocatedPorts[0],
+    nextController.close()
+    await expect(restart).resolves.toEqual({
+      status: 'stopped', pid: 43238, code: 0, signal: null,
     })
-    await expect(desktopWorktreeStatus(secondContext, { signalProcess })).resolves.toEqual({
-      status: 'running',
-      pid: 43221,
-      mobileBridgePort: allocatedPorts[1],
-    })
-
-    await expect(stopDesktopWorktree(firstContext, { signalProcess })).resolves.toEqual({
-      status: 'stopped',
-      pid: 43220,
-    })
-    children[0].emit('close', 0, null)
-    await expect(firstStart).resolves.toMatchObject({ status: 'stopped', pid: 43220 })
-    await expect(desktopWorktreeStatus(secondContext, { signalProcess })).resolves.toEqual({
-      status: 'running',
-      pid: 43221,
-      mobileBridgePort: allocatedPorts[1],
-    })
-
-    await expect(stopDesktopWorktree(secondContext, { signalProcess })).resolves.toEqual({
-      status: 'stopped',
-      pid: 43221,
-    })
-    children[1].emit('close', 0, null)
-    await expect(secondStart).resolves.toMatchObject({ status: 'stopped', pid: 43221 })
   })
 
-  it('rejects a second Desktop before Electron starts when the mobile bridge port is occupied', async () => {
+  it('combines Desktop logs and redacts credentials and Harness environment values', async () => {
     const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const mobileBridgePort = await freePort()
-    const isolatedContext = { ...context, mobileBridgePort }
-    const server = createServer()
-    await new Promise((resolveListen, reject) => {
-      server.once('error', reject)
-      server.listen(mobileBridgePort, '0.0.0.0', resolveListen)
-    })
-    const spawnDesktop = vi.fn(() => { throw new Error('Electron must not start') })
-    try {
-      await expect(startDesktopWorktree(isolatedContext, {
-        materializeCli: async () => undefined,
-        materializeClient: async () => undefined,
-        materializeHost: async () => undefined,
-        materializePreset: async () => undefined,
-        packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-        installPlugin: () => undefined,
-        spawnDesktop,
-      })).rejects.toThrow(`DSH Desktop mobile bridge port ${mobileBridgePort} is already in use`)
-      expect(spawnDesktop).not.toHaveBeenCalled()
-    } finally {
-      await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()))
-    }
+    await Promise.all([
+      mkdir(resolve(value.context.userData, 'logs'), { recursive: true }),
+      mkdir(dirname(value.context.logFile), { recursive: true }),
+    ])
+    await Promise.all([
+      writeFile(
+        value.context.logFile,
+        'authorization: Bearer launch-secret\nHARNESS_COMFYUI_TOKEN=launch-token\n',
+      ),
+      writeFile(resolve(value.context.userData, 'logs/host.log'), 'password=host-secret\nhost ready\n'),
+    ])
+
+    const output = await readDesktopWorktreeLogs(value.context)
+    expect(output).toContain('authorization: Bearer [REDACTED]')
+    expect(output).toContain('HARNESS_COMFYUI_TOKEN=[REDACTED]')
+    expect(output).toContain('password=[REDACTED]')
+    expect(output).toContain('host ready')
+    expect(output).not.toContain('launch-secret')
+    expect(output).not.toContain('host-secret')
   })
 
-  it('does not publish Desktop state when an unrelated process takes the claimed port', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const mobileBridgePort = await freePort()
-    const reservation = developmentPortReservation(mobileBridgePort)
-    const child = new EventEmitter()
-    child.pid = 43232
-    const unrelatedServer = createServer()
-    const signalProcess = vi.fn((pid, signal) => {
-      if (pid === -43232 && signal === 'SIGTERM') {
-        unrelatedServer.close(() => child.emit('close', null, 'SIGTERM'))
-      }
-    })
-
-    await expect(startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => reservation,
-      spawnDesktop: () => {
-        unrelatedServer.listen(mobileBridgePort, '0.0.0.0')
-        return child
-      },
-      signalProcess,
-      mobileBridgeStartupTimeoutMs: 150,
-    })).rejects.toThrow(
-      `Desktop process group 43232 did not take ownership of mobile bridge port ${mobileBridgePort}`,
-    )
-    expect(signalProcess).toHaveBeenCalledWith(-43232, 'SIGTERM')
-    expect(reservation.release).toHaveBeenCalled()
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-    await expect(readFile(context.mobileBridgeStateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it('does not start Electron when development port reservation fails', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const spawnDesktop = vi.fn()
-
-    await expect(startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => { throw new Error('development port reservation failed') },
-      spawnDesktop,
-    })).rejects.toThrow('development port reservation failed')
-    expect(spawnDesktop).not.toHaveBeenCalled()
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-    await expect(readFile(context.mobileBridgeStateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it.each([
-    ['close', (child) => child.emit('close', 0, null)],
-    ['error', (child) => child.emit('error', new Error('Electron failed before mobile bridge takeover'))],
-  ])('observes a child %s before publishing Desktop process state', async (eventName, emitOutcome) => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const child = new EventEmitter()
-    child.pid = 43230
-    const reservation = developmentPortReservation(await freePort())
-    const signalProcess = vi.fn((pid, signal) => {
-      if (eventName === 'error' && pid === -43230 && signal === 'SIGTERM') {
-        queueMicrotask(() => child.emit('close', null, 'SIGTERM'))
-      }
-    })
-    const start = startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => reservation,
-      waitForPortTakeover: async () => new Promise(() => undefined),
-      spawnDesktop: () => {
-        queueMicrotask(() => emitOutcome(child))
-        return child
-      },
-      signalProcess,
-    })
-
-    if (eventName === 'error') await expect(start).rejects.toThrow('Electron failed before mobile bridge takeover')
-    else await expect(start).resolves.toEqual({ status: 'stopped', pid: 43230, code: 0, signal: null })
-    if (eventName === 'error') expect(signalProcess).toHaveBeenCalledWith(-43230, 'SIGTERM')
-    expect(reservation.release).toHaveBeenCalledOnce()
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-    await expect(readFile(context.mobileBridgeStateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it.each(['mobile bridge state', 'PID'])('terminates Electron when writing %s fails', async failureStage => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const child = new EventEmitter()
-    child.pid = 43231
-    const reservation = developmentPortReservation(await freePort())
-    const signalProcess = vi.fn((pid, signal) => {
-      if (pid === -43231 && signal === 'SIGTERM') queueMicrotask(() => child.emit('close', null, 'SIGTERM'))
-    })
-    const writeFailure = vi.fn(async () => { throw new Error(`${failureStage} write failed`) })
-    const options = {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => reservation,
-      waitForPortTakeover: async () => undefined,
-      spawnDesktop: () => child,
-      signalProcess,
-      ...(failureStage === 'mobile bridge state'
-        ? { writeMobileBridgeState: writeFailure }
-        : { writePid: writeFailure }),
-    }
-
-    await expect(startDesktopWorktree(context, options)).rejects.toThrow(`${failureStage} write failed`)
-    expect(signalProcess).toHaveBeenCalledWith(-43231, 'SIGTERM')
-    expect(reservation.release).toHaveBeenCalled()
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-    await expect(readFile(context.mobileBridgeStateFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it('does not create a PID file or start Electron when plugin preparation fails', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const spawnDesktop = vi.fn()
-
-    await expect(startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => { throw new Error('client bundle failed') },
-      reservePort: async () => developmentPortReservation(await freePort()),
-      spawnDesktop,
-    })).rejects.toThrow('client bundle failed')
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-    expect(spawnDesktop).not.toHaveBeenCalled()
-  })
-
-  it('removes the PID file when Electron emits a startup error', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const child = new EventEmitter()
-    child.pid = 43211
-    const signalProcess = vi.fn((pid, signal) => {
-      if (pid === -43211 && signal === 'SIGTERM') queueMicrotask(() => child.emit('close', null, 'SIGTERM'))
-    })
-    const start = startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => developmentPortReservation(await freePort()),
-      waitForPortTakeover: async () => undefined,
-      spawnDesktop: () => child,
-      signalProcess,
-    })
-    await vi.waitFor(async () => expect((await readFile(context.pidFile, 'utf8')).trim()).toBe('43211'))
-    child.emit('error', new Error('Electron failed to start'))
-
-    await expect(start).rejects.toThrow('Electron failed to start')
-    expect(signalProcess).toHaveBeenCalledWith(-43211, 'SIGTERM')
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it('reports a non-zero Electron exit and removes the PID file', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const child = new EventEmitter()
-    child.pid = 43212
-    const start = startDesktopWorktree(context, {
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => developmentPortReservation(await freePort()),
-      waitForPortTakeover: async () => undefined,
-      spawnDesktop: () => child,
-    })
-    await vi.waitFor(async () => expect((await readFile(context.pidFile, 'utf8')).trim()).toBe('43212'))
-    child.emit('close', 7, null)
-
-    await expect(start).resolves.toEqual({ status: 'failed', pid: 43212, code: 7, signal: null })
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it('rejects a duplicate start before preparing the plugin', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    await mkdir(resolve(context.pidFile, '..'), { recursive: true })
-    await writeFile(context.pidFile, '43213\n')
-    const materializeClient = vi.fn()
-
-    await expect(startDesktopWorktree({ ...context, mobileBridgePort: 45128 }, {
-      materializeClient,
-      signalProcess: () => undefined,
-    })).rejects.toThrow('DSH Desktop is already running with PID 43213')
-    expect(materializeClient).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    ['a non-object state', [], 'must be an object'],
-    ['an unknown property', { schemaVersion: 1, mobileBridgePort: 45128, unknown: true }, 'must contain exactly'],
-    ['an unsupported schema', { schemaVersion: 2, mobileBridgePort: 45128 }, 'schemaVersion must be 1'],
-    ['an invalid port', { schemaVersion: 1, mobileBridgePort: 0 }, 'mobileBridgePort must be an integer'],
-  ])('rejects %s for a running Desktop', async (_name, state, message) => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    await mkdir(resolve(context.mobileBridgeStateFile, '..'), { recursive: true })
-    await writeFile(context.pidFile, '43216\n')
-    await writeFile(context.mobileBridgeStateFile, `${JSON.stringify(state)}\n`)
-
-    await expect(desktopWorktreeStatus(context, { signalProcess: () => undefined })).rejects.toThrow(message)
-  })
-
-  it('rejects a running development Desktop without mobile bridge state', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    await mkdir(resolve(context.pidFile, '..'), { recursive: true })
-    await writeFile(context.pidFile, '43217\n')
-
-    await expect(desktopWorktreeStatus(context, { signalProcess: () => undefined }))
-      .rejects.toThrow('running DSH Desktop does not define its mobile bridge port')
-  })
-
-  it('allows stop to be repeated after the Desktop is already stopped', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-
-    await expect(stopDesktopWorktree(context)).resolves.toEqual({ status: 'stopped' })
-    await expect(stopDesktopWorktree(context)).resolves.toEqual({ status: 'stopped' })
-  })
-
-  it('fails stop when the Desktop process group does not exit before the timeout', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    await mkdir(resolve(context.pidFile, '..'), { recursive: true })
-    await writeFile(context.pidFile, '43214\n')
-
-    await expect(stopDesktopWorktree(context, {
-      signalProcess: () => undefined,
-      stopTimeoutMs: 0,
-    })).rejects.toThrow('DSH Desktop process 43214 did not stop')
-  })
-
-  it('runs restart as stop followed by a new foreground Desktop start', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    const child = new EventEmitter()
-    child.pid = 43215
-    const spawnDesktop = vi.fn(() => {
-      setTimeout(() => child.emit('close', 0, null), 10)
-      return child
-    })
-
-    await expect(runDesktopLifecycleCommand('restart', {
-      loadContext: async () => context,
-      materializeCli: async () => undefined,
-      materializeClient: async () => undefined,
-      materializeHost: async () => undefined,
-      materializePreset: async () => undefined,
-      packagePlugin: async () => resolve(value.root, 'harness-comfyui.tgz'),
-      installPlugin: () => undefined,
-      reservePort: async () => developmentPortReservation(await freePort()),
-      waitForPortTakeover: async () => undefined,
-      spawnDesktop,
-    })).resolves.toMatchObject({ status: 'stopped', pid: 43215 })
-    expect(spawnDesktop).toHaveBeenCalledOnce()
-    await expect(readFile(context.pidFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
-  })
-
-  it('accepts only the five Desktop worktree commands', () => {
+  it('accepts only the five Desktop lifecycle commands', () => {
     expect(parseArguments(['restart'])).toEqual({ command: 'restart' })
     expect(() => parseArguments(['health'])).toThrow('start, stop, restart, status, logs')
     expect(() => parseArguments([])).toThrow('start, stop, restart, status, logs')
   })
 
-  it('initializes the web profile without adding the plugin to the legacy shared tree', () => {
-    expect(sourcePluginRemoveArguments()).toEqual([
-      'plugin', '--profile', 'web', 'remove', '--workspace-root', 'harness-comfyui',
-    ])
-    expect(sourceProfileInitializeArguments()).toEqual([
-      'plugin', '--profile', 'web', 'install', '--no-frozen-lockfile',
-    ])
-  })
-
-  it('installs and enables the packaged plugin through the Desktop generation interfaces', async () => {
-    const value = await fixture()
-    const context = await loadDesktopWorktreeContext({
-      repositoryRoot: value.root,
-      definitionPath: value.definitionPath,
-      homeDirectory: resolve(value.root, 'parent-home'),
-    })
-    await mkdir(resolve(context.dshHome, 'profiles/web'), { recursive: true })
-    const installGeneration = vi.fn(async () => ({
-      ok: true,
-      generation: { id: 'harness-comfyui+0.36.1+fixture', pluginName: 'harness-comfyui' },
-    }))
-    const writeDesired = vi.fn(async () => undefined)
-    const projectGenerations = vi.fn(async () => undefined)
-    const spawnedGeneration = { pid: 43129 }
-    const spawnGenerationProcess = vi.fn(() => spawnedGeneration)
-    const loadDesktopModule = vi.fn(async specifier => {
-      if (specifier.endsWith('/installer')) return { installGeneration }
-      if (specifier.endsWith('/projection')) return { projectGenerations }
-      return {
-        withRegistryLock: async (_home, run) => run(),
-        readDesired: async () => ['other+1', 'harness-comfyui+old'],
-        listGenerations: async () => [
-          { id: 'other+1', pluginName: 'other' },
-          { id: 'harness-comfyui+old', pluginName: 'harness-comfyui' },
-        ],
-        writeDesired,
-      }
-    })
-
-    await installSourcePluginGeneration(context, { PATH: '/usr/bin' }, '/runtime/harness-comfyui.tgz', {
-      initializeProfile: async () => undefined,
-      loadDesktopModule,
-      spawnGenerationProcess,
-    })
-
-    expect(installGeneration).toHaveBeenCalledWith(expect.objectContaining({
-      dshHome: context.dshHome,
-      pluginSpec: '/runtime/harness-comfyui.tgz',
-      expectedPluginName: 'harness-comfyui',
-    }))
-    const generationSpawn = installGeneration.mock.calls[0][0].spawnProcess
-    expect(generationSpawn('/desktop/node', ['/desktop/pnpm.cjs', 'add', '/runtime/harness-comfyui.tgz'], {
-      cwd: '/runtime/staging',
-    })).toBe(spawnedGeneration)
-    expect(spawnGenerationProcess).toHaveBeenCalledWith(
-      '/desktop/node',
-      [
-        '/desktop/pnpm.cjs',
-        '--ignore-workspace',
-        '--store-dir',
-        resolve(value.root, '.pnpm-store/v11'),
-        'add',
-        '/runtime/harness-comfyui.tgz',
-      ],
-      { cwd: '/runtime/staging' },
-    )
-    expect(writeDesired).toHaveBeenCalledWith(context.dshHome, [
-      'other+1',
-      'harness-comfyui+0.36.1+fixture',
-    ])
-    expect(projectGenerations).toHaveBeenCalledWith(context.dshHome)
-    expect(await readFile(resolve(context.dshHome, 'profiles/web/.generations-migrated'), 'utf8')).not.toBe('')
-  })
-
-  it('uses the compiled Host module only in the packaged Desktop plugin', () => {
+  it('uses the compiled Host and managed CLI artifacts in the packaged plugin', () => {
     const source = {
       name: 'harness-comfyui',
       exports: {
@@ -1183,18 +1181,9 @@ describe('DSH Desktop worktree lifecycle', () => {
       },
     }
 
-    expect(packagedPluginManifest(source)).toMatchObject({
-      exports: {
-        '.': { types: './src/index.ts', default: './.local/source-host/index.js' },
-        './client': { default: './.local/source-client/client.js' },
-      },
-    })
+    expect(packagedPluginManifest(source).exports['.'].default).toBe('./.local/source-host/index.js')
     expect(source.exports['.'].default).toBe('./src/index.ts')
-  })
-
-  it('packages the compiled CLI without the CLI source entry', () => {
-    expect(SOURCE_PLUGIN_PACKAGE_PATHS)
-      .toContain(dirname(runtimeArtifacts.managedCli.outputEntryRelativePath))
+    expect(SOURCE_PLUGIN_PACKAGE_PATHS).toContain(dirname(runtimeArtifacts.managedCli.outputEntryRelativePath))
     expect(SOURCE_PLUGIN_PACKAGE_PATHS).not.toContain('scripts/cli')
     expect(SOURCE_PLUGIN_PACKAGE_PATHS).toContain('scripts/source-client')
   })

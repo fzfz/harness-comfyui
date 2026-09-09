@@ -29,13 +29,15 @@
 | `agent-presets/project-system-prompt-visibility.mjs` | 每次 `system-prompt/assemble` 完成其他段落组装后，删除配置指定段落并控制产品 Preset 会话系统提示词段落可见性的模块 |
 | `config/product-agent.json` | 保存 `preset.id`、`preset.additionalManagedPresetIds`、`preset.sourceRootRelativePath`、`preset.installRootRelativePath`、`preset.retiredManagedPresetIds`、`preset.sharedFiles`、`skills.sourceRootRelativePath` 和 `skills.environmentVariable` |
 | `config/` | 生产配置、开发配置、schema 和质量阈值 |
-| `config/desktop-production.json` | Desktop 相对源码目录、生产 runtime、`.env` 和默认 Workspace |
-| `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配移动桥接端口 |
+| `config/desktop-baseline.json` | 唯一 Desktop 来源、commit、Stable workspace、包版本和启动参数 |
+| `config/desktop-production.json` | 生产 runtime、`.env` 和默认 Workspace |
+| `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配 Host 端口 |
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
-| `config/desktop-harness-development.json` | 当前仓库开发与测试需要从已安装 DSH Desktop 提供的 Harness 包、Sharp 和可执行入口 |
+| `config/desktop-harness-development.json` | 开发与测试所需的宿主包和可执行入口声明 |
 | `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明模块 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、当前插件包及其依赖的安装和 `prod:*`/`dev:*` 生命周期 |
-| `scripts/desktop/legacy-session-migration.mjs` | 旧 Web 生产 DSH home 到当前 Desktop 生产 DSH home 的 Session 数据迁移 |
+| `scripts/desktop/baseline.mjs` | 校验 Desktop 来源、commit 与安装包版本 |
+| `scripts/desktop/dependency-view.mjs` | 建立 worktree 自有 node_modules，分别解析业务依赖与宿主依赖 |
 | `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 的 `start`、`stop`、`restart`、`status`、`health` 和 `logs` 的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
