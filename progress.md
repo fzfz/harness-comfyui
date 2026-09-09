@@ -107,3 +107,7 @@ PR #1 的七项 GitHub CI 全部通过，2026-09-09 已合入 fzfz/dsh-desktop-a
 合并后的第一次复验在自定义 Provider 测试中出现间歇超时。测试在 Max 标签更新后立即开始下一轮操作，可能在上一轮菜单尚未关闭时再次点击触发器，导致关闭旧菜单后等待新菜单超时。测试现已等待上一轮菜单关闭，并在超时错误中输出具体等待条件；独立 Reviewer 确认等待符合实际选择提交时序，原有断言全部保留。
 
 固定 main 提交 26c6b6c3117d11787e679456c387d823923035f9 后，完整 pnpm quality 返回 0，1389 项测试全部通过。记录保存在 .local/quality-merged-baseline-fixed.log。本次开发及自动化测试实例均已清理。Harness 适配在 codex/anywhere-desktop-baseline 独立分支交付。
+
+## v0.42.0 发布准备
+
+用户已授权 Harness PR、合并、同步 main、发布与生产部署。发布候选将版本更新为 0.42.0。独立 Spec 审查未发现阻断问题；Standards 审查发现主 checkout 的依赖命令执行目录描述错误，启动文档已将 desktop:dependencies:link 限定为独立 worktree 并列出主 checkout 的锁文件安装命令。生产 checkout 当前停止，仍位于 v0.41.1 提交；部署前保留生产配置与全部运行数据。

@@ -8,7 +8,9 @@ config/desktop-worktree.json 定义独立开发实例的主 checkout 和运行�
 
 ## 主开发 checkout 依赖准备
 
-主 checkout 保存已审核并按锁文件安装的 Desktop 与项目依赖。desktop:dependencies:link 按基线 workspace 解析宿主 peer 包，检查实际版本，并准备项目的依赖视图。该命令不得从其他 Desktop 借用缺失宿主包。
+主 checkout 保存已审核的依赖：项目依赖在主 checkout 按 pnpm-lock.yaml 执行 pnpm install --frozen-lockfile；Desktop 依赖在基线指定仓库按 yarn.lock 执行 corepack yarn install --immutable，并按该仓库的构建命令生成 Stable 产物。安装前必须完成 docs/system/releasing.md 规定的依赖审核与安装授权。
+
+desktop:dependencies:link 仅在独立 worktree 中运行，用于从主 checkout 和基线 Stable workspace 建立依赖视图；主 checkout 不运行该命令。该命令检查宿主 peer 包的实际版本，不从其他 Desktop 借用缺失宿主包。
 
 独立 worktree 的 dev:start 准备本地 node_modules 视图：构建工具和业务依赖链接到主 checkout 已安装目录，宿主 peer 链接到选定 Stable workspace 解析出的目录。.env 只创建到主 checkout 的链接，不复制凭据。任何依赖源缺失或版本不符都应中止准备。
 

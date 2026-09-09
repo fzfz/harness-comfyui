@@ -88,3 +88,24 @@ P1—P6、P8、P9 已完成。PR #1 的七项 GitHub CI 全部通过，PR 已合
 用户已授权在自己的 fork 创建 PR、合并到自己的 main，并将合并提交作为插件基线。本项取代此前仅准备本地 PR 草稿、不推送的限制；对 anywhere-labs 上游仓库仍不创建 PR。
 
 用户已有的 fzfz/dsh-desktop 属于 dataelement 旧项目。主 Agent 已新建 fzfz/dsh-desktop-anywhere，保留旧 fork。新 fork 的 main 从经过本轮验证的 Stable 起点 b39ffbf5621aea51e87f27e7b83d9c3e1ff5e24d 创建，并设为默认分支。主 Agent 将最终补丁复制到该 fork 的独立 checkout，运行专测、独立复核与完整插件门禁，然后创建 PR 并合入 main。插件 desktop-baseline.json 必须固定新 fork 的仓库 URL 和最终 main 完整提交 SHA。
+
+## P10：发布 v0.42.0 并部署生产目录
+
+### 必须要实现的目标
+
+计划执行者更新版本与发布文档，在独立 worktree 完成发布审查和最终质量门禁，创建 Harness PR 并合入 main，将本地 main 更新到 origin/main 对应的发布提交，发布 v0.42.0，随后从该 tag 更新生产 checkout 并验收完整 Desktop。
+
+### 验收清单
+
+- 发布候选通过独立 Standards、Spec、文档语义审查、pnpm quality 与 git diff --check；门禁通过后不再修改文件，直接提交。
+- PR 已合并，本地 main、origin/main、版本 tag 和生产 HEAD 指向同一发布提交。
+- 主 checkout 原有未提交内容保存到具名 Git stash，生产 .env、旧用户目录、数据库及媒体文件保留。
+- 生产 Desktop 的 Profile 插件版本、进程组、监听端口和当前 Renderer 健康记录通过验证，Client 显示 ComfyUI 工作台；remote.agentPresets.list 返回两个项目 Preset，remote.harnessComfyuiImageReader.models 返回配置中的模型分组，remote.harnessComfyuiCatalog.baseModels 返回数据源的基础模型记录。
+
+### 非本次目标
+
+本阶段不升级其他依赖，不发布安装包，不向 anywhere-labs 上游提交 PR。旧会话格式转换不包含在源码发布中，须在明确迁移对象并单独验证后执行。
+
+### 已获得的授权
+
+用户明确要求创建 PR、合入 main、同步 origin/main 到本地 main、发布版本并部署生产目录；此前已授权安装与运行当前 Desktop 基线。
