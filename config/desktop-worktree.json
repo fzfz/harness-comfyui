@@ -1,4 +1,9 @@
 {
   "mainCheckoutPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui",
-  "runtimeRelativeRoot": ".local/desktop-development"
+  "runtimeRelativeRoot": ".local/desktop-development",
+  "managedDshSettings": {
+    "providerConfigurationRelativePath": "config/desktop-development-provider-settings.json",
+    "imageReaderConfigurationRelativePath": "config/image-reader-profiles.json",
+    "privateSourceDshHomeRelativePath": ".local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness"
+  }
 }

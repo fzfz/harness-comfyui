@@ -31,12 +31,15 @@
 | `config/` | 生产配置、开发配置、schema 和质量阈值 |
 | `config/desktop-baseline.json` | 唯一 Desktop 来源、commit、Stable workspace、包版本和启动参数 |
 | `config/desktop-production.json` | 生产 runtime、`.env` 和默认 Workspace |
-| `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配 Host 端口 |
+| `config/desktop-worktree.json` | 主开发 checkout、开发 Desktop runtime、受管开发 Settings 配置和 main 私密 DSH 来源路径；开发启动器为每个 worktree 分配 Host 端口 |
+| `config/desktop-development-provider-settings.json` | `dev:start` 和 `dev:restart` 写入开发 DSH home 的 Provider、默认模型和 credential ref 名称；文件不保存凭据值 |
+| `config/image-reader-profiles.json` | `dev:start` 和 `dev:restart` 写入开发 DSH home 的图片读取配置；文件不保存凭据 |
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
 | `config/desktop-harness-development.json` | 开发与测试所需的宿主包和可执行入口声明 |
 | `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明模块 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、当前插件包及其依赖的安装和 `prod:*`/`dev:*` 生命周期 |
 | `scripts/desktop/baseline.mjs` | 校验 Desktop 来源、commit 与安装包版本 |
+| `scripts/desktop/development-settings.mjs` | 合并当前 checkout 的受管开发配置和 main 的 Git 忽略凭据，并写入当前 worktree 的隔离 DSH home |
 | `scripts/desktop/dependency-view.mjs` | 建立 worktree 自有 node_modules，分别解析业务依赖与宿主依赖 |
 | `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 的 `start`、`stop`、`restart`、`status`、`health` 和 `logs` 的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |

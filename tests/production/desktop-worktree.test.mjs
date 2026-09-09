@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import {
   parseArguments,
+  runDesktopDevelopmentCommand,
   runDesktopLifecycleCommand,
 } from '../../scripts/desktop/cli.mjs'
 import {
@@ -1103,10 +1104,20 @@ describe('anywhere Desktop development lifecycle', () => {
         throw Object.assign(new Error('missing'), { code: 'ESRCH' })
       }
     })
+    const events = []
+    const materialize = vi.fn(async () => {
+      expect(oldController.isRunning()).toBe(false)
+      events.push('materialize')
+    })
+    const prepareDevelopmentSettings = vi.fn(async () => {
+      events.push('validate')
+      return { materialize }
+    })
     const options = preparationOptions(value, {
       now: () => new Date(startedAt),
       spawnSync: () => ({ status: 0, stdout: '43237\n', stderr: '' }),
       spawnDesktop: () => {
+        events.push('spawn')
         setTimeout(() => writeLifecycle(value.context, lifecycleLines('run-restart')), 5)
         return nextController.child
       },
@@ -1130,8 +1141,13 @@ describe('anywhere Desktop development lifecycle', () => {
       waitForPort: async () => undefined,
       listeningPorts: async () => [43155],
     })
-    const restart = runDesktopLifecycleCommand('restart', {
+    const restart = runDesktopDevelopmentCommand('restart', {
       loadContext: async () => value.context,
+      prepareCheckout: async () => ({
+        definition: { managedDshSettings: {} },
+        mainCheckoutPath: value.root,
+      }),
+      prepareDevelopmentSettings,
       ...options,
     })
     await vi.waitFor(async () => {
@@ -1141,6 +1157,54 @@ describe('anywhere Desktop development lifecycle', () => {
     await expect(restart).resolves.toEqual({
       status: 'stopped', pid: 43238, code: 0, signal: null,
     })
+    expect(prepareDevelopmentSettings).toHaveBeenCalledOnce()
+    expect(materialize).toHaveBeenCalledOnce()
+    expect(events).toEqual(['validate', 'materialize', 'spawn'])
+  })
+
+  it('validates development settings but does not materialize them when start finds a running Desktop', async () => {
+    const value = await fixture()
+    const controller = childController(43244)
+    await writeProcessState(value.context, { pid: 43244, ready: false, webPorts: [] })
+    const materialize = vi.fn(async () => undefined)
+    const prepareDevelopmentSettings = vi.fn(async () => ({ materialize }))
+
+    await expect(runDesktopDevelopmentCommand('start', {
+      loadContext: async () => value.context,
+      prepareCheckout: async () => ({
+        definition: { managedDshSettings: {} },
+        mainCheckoutPath: value.root,
+      }),
+      prepareDevelopmentSettings,
+      ...processOptions(value.context, 43244, controller),
+      processGroupIsRunning: async () => true,
+    })).rejects.toThrow('Desktop is already running with PID 43244')
+    expect(prepareDevelopmentSettings).toHaveBeenCalledOnce()
+    expect(materialize).not.toHaveBeenCalled()
+  })
+
+  it('does not initialize development settings for status, logs, or stop', async () => {
+    const value = await fixture()
+    const prepareCheckout = vi.fn()
+    const prepareDevelopmentSettings = vi.fn()
+
+    await expect(runDesktopDevelopmentCommand('status', {
+      loadContext: async () => value.context,
+      prepareCheckout,
+      prepareDevelopmentSettings,
+    })).resolves.toEqual({ status: 'stopped' })
+    await expect(runDesktopDevelopmentCommand('logs', {
+      loadContext: async () => value.context,
+      prepareCheckout,
+      prepareDevelopmentSettings,
+    })).resolves.toEqual({ status: 'logs', output: 'Desktop log has not been created.\n' })
+    await expect(runDesktopDevelopmentCommand('stop', {
+      loadContext: async () => value.context,
+      prepareCheckout,
+      prepareDevelopmentSettings,
+    })).resolves.toEqual({ status: 'stopped' })
+    expect(prepareCheckout).not.toHaveBeenCalled()
+    expect(prepareDevelopmentSettings).not.toHaveBeenCalled()
   })
 
   it('combines Desktop logs and redacts credentials and Harness environment values', async () => {

@@ -45,7 +45,7 @@ Client 在已保存 Session 中通过 Harness 原生 `details` 扩展位显示�
 
 ## 进程与状态
 
-`prod:start` 和 `dev:start` 构建浏览器 Client、Host 与 managed CLI，物化两个项目 Preset，准备 Profile 安装，并启动基线配置指定的 Electron。开发实例使用当前 worktree 的 desktop-out 入口及隔离 HOME、DSH home、PID 和日志目录。启动器通过端口声明分配 Host 端口，核对进程组持有该端口，并等待本次启动的 Renderer 健康完成事件。两个环境读取同一个 cordis.patch.yml 和当前 checkout 的 config/product-agent.json；harness-comfyui-cli-candidate 保持默认 Preset，harness-comfyui-iteration 由用户选择。
+`prod:start` 和 `dev:start` 构建浏览器 Client、Host 与 managed CLI，物化两个项目 Preset，准备 Profile 安装，并启动基线配置指定的 Electron。开发实例使用当前 worktree 的 desktop-out 入口及隔离 HOME、DSH home、PID 和日志目录。`dev:start` 和 `dev:restart` 在启动 Electron 前，把当前 checkout 跟踪的 Provider 与图片读取配置和 main checkout 的 Git 忽略凭据合并到该实例的 DSH home；配置物化模块只管理声明的 Settings namespace 和 credential refs。启动器通过端口声明分配 Host 端口，核对进程组持有该端口，并等待本次启动的 Renderer 健康完成事件。两个环境读取同一个 cordis.patch.yml 和当前 checkout 的 config/product-agent.json；harness-comfyui-cli-candidate 保持默认 Preset，harness-comfyui-iteration 由用户选择。
 
 `web:start` 与 `web:restart` 通过主开发 checkout 的端口声明目录取得空闲回环端口，更新浏览器 Client 与 managed CLI 运行模块、物化相同的两个项目 Preset，再以前台子进程运行独立 Harness Web Host。Web Host 环境构建器从当前 checkout 的 `config/product-agent.json` 解析 Repository Skills，并在删除调用者提供的全部 `HARNESS_COMFYUI_*` 值后写入受管的 `HARNESS_COMFYUI_SKILL_DIR`。Web 进程管理器确认该 PID 监听声明端口后释放声明，并记录 PID、进程启动时间、命令和实际端口；`web:health` 只检查源码版本、Harness Web、Client ModuleLoader、Run Repository、Official API Workflow Cache 和 Saved Media。
 

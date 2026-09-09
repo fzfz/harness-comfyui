@@ -12,11 +12,15 @@ config/desktop-baseline.json 是开发、生产和真实 Desktop 测试共同读
 | startup | host、mode、networkExposure、openBrowser 定义新实例初始运行设置；readyTimeoutMs 与 stopTimeoutMs 定义启动等待和停止期限 |
 | entrypoints | desktopMain 指定 Stable workspace 中已构建的 Electron 主入口 |
 
-scripts/desktop/baseline.mjs 校验源码 origin、完整 commit 和实际安装包版本。config/desktop-production.json 只保存 runtimeRelativeRoot、environmentFileRelativePath 和 startupWorkspacePath。config/desktop-worktree.json 保存 mainCheckoutPath 和开发 runtimeRelativeRoot。开发命令相对主 checkout 解析基线源码目录，生产命令相对生产 checkout 解析。测试使用同一基线身份；路径覆盖不能绕过版本校验。
+scripts/desktop/baseline.mjs 校验源码 origin、完整 commit 和实际安装包版本。config/desktop-production.json 只保存 runtimeRelativeRoot、environmentFileRelativePath 和 startupWorkspacePath。config/desktop-worktree.json 保存 mainCheckoutPath、开发 runtimeRelativeRoot 和 managedDshSettings。开发命令相对主 checkout 解析基线源码目录，生产命令相对生产 checkout 解析。测试使用同一基线身份；路径覆盖不能绕过版本校验。
+
+`managedDshSettings` 定义开发 DSH Settings 的三个来源路径：`providerConfigurationRelativePath` 和 `imageReaderConfigurationRelativePath` 相对当前 worktree 解析，文件由 Git 跟踪且不得包含凭据；`privateSourceDshHomeRelativePath` 相对 main checkout 解析，目录必须位于 Git 忽略范围。`dev:start` 和 `dev:restart` 从该私密目录的 `settings.yaml` 读取已声明图片配置所需的凭据，并按照 Provider 配置声明的 credential ref 名称从 `.credentials.yaml` 读取对应凭据值。启动器只复制受管配置所需的凭据。
+
+`config/desktop-development-provider-settings.json` 的 `managedNamespaces` 固定包含 `agent-default-model`、`llm-deepseek` 和 `llm-pi-ai`；`credentialRefs` 列出启动器必须从 main 私密来源读取的 Provider credential ref 名称。`config/image-reader-profiles.json.configuration` 使用图片读取 Settings 的完整配置结构，但不包含 `credentials`。开发启动器把这两份配置写入当前 worktree 的隔离 DSH home，并保留其中的非受管用户值。
 
 独立 worktree 的 .env 链接到主 checkout 已有 .env。worktree 自有 node_modules 由依赖准备模块建立：业务依赖与构建工具链接到主 checkout，宿主 peerDependencies 链接到候选 Stable workspace 的解析目录。已有不符合目标的路径会产生明确错误，不覆盖来源目录，也不执行 pnpm install。
 
-每个实例分别保存 HOME、DSH_HOME、Profile、安装产物、日志、PID 和 desktop-out 启动入口。Profile 的 package.json 声明插件来源，dsh.profile.bundles 注册插件。候选官方 materializeProfile 在首次启动建立 Profile 的 pnpm-lock.yaml 与 node_modules/.modules.yaml，后续启动复用这些记录。首次设置初始化只针对新实例；已有用户设置保持原值。Repository Skills 的唯一源码路径由 config/product-agent.json.skills 定义。
+每个实例分别保存 HOME、DSH_HOME、Profile、安装产物、日志、PID 和 desktop-out 启动入口。Profile 的 package.json 声明插件来源，dsh.profile.bundles 注册插件。候选官方 materializeProfile 在首次启动建立 Profile 的 pnpm-lock.yaml 与 node_modules/.modules.yaml，后续启动复用这些记录。Stable Desktop 的首次设置初始化只针对新实例；开发启动器仍在每次启动中更新上述受管开发 Settings。Repository Skills 的唯一源码路径由 config/product-agent.json.skills 定义。
 
 Host 端口由独立实例分配并写入运行状态。启动器核对端口属于本次 Desktop 进程组，并等待本次启动 run 的 startup.run.completed 事件及 rendererStatus=healthy。移动桥接端口不属于 anywhere Stable 的就绪条件。远程调试端口只在显式测试配置下启用。
 

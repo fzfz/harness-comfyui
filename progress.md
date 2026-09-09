@@ -1,3 +1,13 @@
+# v0.42.1 受管开发配置发布进度
+
+- 2026-09-09：受管配置实现、针对性测试、完整 `pnpm quality` 与 `git diff --check` 已通过。
+- 2026-09-09：主 checkout 私密来源预检通过；可跟踪配置未包含私密值，私密文件由 Git 忽略并以 0600 权限保存。
+- 2026-09-09：用户授权创建 Pull Request、合入 main、同步本地 main、发布版本并部署生产目录。
+- 2026-09-09：已建立 `codex/managed-dev-settings-v0.42.1` 分支，并在 `/Volumes/4Tdisk/work/AI2/harness-comfyui-managed-dev-settings-release` 创建独立发布 worktree。
+- 当前阶段：v0.42.1 元数据、独立审阅与最终质量门禁。
+
+---
+
 # anywhere Desktop 基线实施与验收记录
 
 ## 实施位置与版本

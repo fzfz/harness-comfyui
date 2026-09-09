@@ -35,7 +35,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 选择源码版本
 
-v0.42.0 使用自有仓库 fzfz/dsh-desktop-anywhere 的 Stable workspace，具体提交与版本由 config/desktop-baseline.json 固定。生产 checkout 按以下步骤准备依赖并启动；历史版本使用各自 tag 内的安装说明。
+v0.42.1 使用自有仓库 fzfz/dsh-desktop-anywhere 的 Stable workspace，具体提交与版本由 config/desktop-baseline.json 固定。生产 checkout 按以下步骤准备依赖并启动；历史版本使用各自 tag 内的安装说明。
 
 ### 2. 准备 DSH Desktop 与依赖
 
@@ -43,7 +43,11 @@ v0.42.0 使用自有仓库 fzfz/dsh-desktop-anywhere 的 Stable workspace，具�
 
 主 checkout 的项目依赖按 pnpm-lock.yaml 安装。独立 worktree 不执行 pnpm install；pnpm dev:start 从主 checkout 复用业务依赖和构建工具，并从基线 Stable workspace 解析宿主依赖。开发验收步骤见 [独立 worktree 开发规范](docs/agents/worktree-development.md)。
 
-### 3. 填写本机配置
+### 3. 准备开发 worktree 配置
+
+独立 worktree 的 `dev:start` 从仓库配置物化非凭据 Provider 与图片读取配置，并从主 checkout 的 Git 忽略私密来源选择性物化所需凭据。配置来源、目标文件和覆盖规则见[系统配置说明](docs/system/configuration.md#desktop-基线与实例配置)。
+
+### 4. 填写本机配置
 
 首次安装时创建环境文件：
 
@@ -61,7 +65,7 @@ cp .env.example .env
 
 完整配置项及修改方式见[配置说明](docs/system/configuration.md)。数据源服务和图片读取模型在应用启动后通过设置页填写。
 
-### 4. 启动并确认应用可用
+### 5. 启动并确认应用可用
 
 ```sh
 pnpm prod:start

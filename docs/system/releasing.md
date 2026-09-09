@@ -25,9 +25,9 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.41.1 的 Desktop 基线
+## v0.42.1 的发布范围与 Desktop 基线
 
-本版本使用自有仓库 `fzfz/dsh-desktop` 的提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2`（[PR #4](https://github.com/fzfz/dsh-desktop/pull/4)）。该提交未变更 Desktop 的依赖版本和锁文件；已安装的 `@deepseek-ai/dsh-llm-pi-ai` 必须应用该提交中的补丁。读图真实模型验收因现有模型额度、凭据和地区限制未进入 CLI 调用；用户获知该阻塞后，已授权继续发布与生产部署。部署验收必须确认 Desktop 运行、当前插件版本为 `0.41.1`，并确认生产 generation 包含 `config/image-reader-processing.json` 和 `src/host/image-reader/image-reader-input.ts`。
+v0.42.1 继续使用 `config/desktop-baseline.json` 固定的 `fzfz/dsh-desktop-anywhere` Stable workspace，不修改 Desktop 基线、Desktop 锁文件或 Harness 依赖。该版本只为独立 worktree 的 `dev:start` 与 `dev:restart` 增加受管开发配置物化；生产启动不读取开发私密来源。部署验收必须确认 Desktop 运行，当前插件版本为 `0.42.1`，且生产 checkout 与发布提交一致。
 
 ## Git tag 与 GitHub Release
 
@@ -61,7 +61,7 @@ gh release create "v$release_version" \
 
 部署执行者从生产 checkout 执行 pnpm prod:start，保持该终端运行，并在第二个终端执行 pnpm prod:status 与 pnpm prod:logs。prod:* 使用与 dev:* 相同的 Profile 安装和 Electron 生命周期实现，生产实例不启用远程调试端口。
 
-验收执行者必须确认当前插件版本、Profile 安装来源、进程组启动入口、Host 监听端口归属，以及本次启动 run 的 Renderer 健康完成记录；随后确认 Client 显示 ComfyUI 工作台，remote.agentPresets.list 返回两个项目 Preset，remote.harnessComfyuiImageReader.models 返回配置中的模型分组，remote.harnessComfyuiCatalog.baseModels 返回数据源的基础模型记录。历史 v0.41.1 部署仍属于旧 fork，不因本次基线实现自动迁移。生产数据迁移须另行确定迁移对象与验收方案。
+验收执行者必须确认当前插件版本、Profile 安装来源、进程组启动入口、Host 监听端口归属，以及本次启动 run 的 Renderer 健康完成记录；随后确认 Client 显示 ComfyUI 工作台，remote.agentPresets.list 返回两个项目 Preset，remote.harnessComfyuiImageReader.models 返回配置中的模型分组，remote.harnessComfyuiCatalog.baseModels 返回数据源的基础模型记录。生产数据迁移须另行确定迁移对象与验收方案。
 
 ## 开发与 Web 调试边界
 

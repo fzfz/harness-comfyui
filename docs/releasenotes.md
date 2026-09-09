@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.42.1
+
+## 独立 worktree 的受管开发配置
+
+独立 worktree 执行 `pnpm dev:start` 或 `pnpm dev:restart` 时，启动器先读取仓库中的 Provider 与图片读取配置，再把配置物化到该 worktree 自己的 DSH home。仓库跟踪 `config/desktop-development-provider-settings.json` 和 `config/image-reader-profiles.json`，用于维护非凭据 Provider 设置、凭据引用名称和图片读取配置。
+
+启动器只从主 checkout 的 Git 忽略私密来源 `.local/desktop-development/home/Library/Application Support/dsh-desktop-dev/harness` 读取声明的凭据，并把目标 Settings 和凭据文件写成权限为 0600 的独立文件。启动器不复制整份私密 Settings，不覆盖目标中未受管的 Settings namespace、凭据引用或凭据记录。缺少、无效或越界的配置会在启动 Desktop 前终止；`dev:status`、`dev:logs` 和 `dev:stop` 不物化配置。
+
+## 验证与依赖
+
+完整 `pnpm quality` 通过：1038 项 unit/integration/Skills、55 项 contract/security、276 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.63%、branches 87.02%、functions 100%、lines 96.19%。完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+
+Vitest 默认排除 `.local` 运行目录，避免主 checkout 保存的 Stable Desktop 源码参与仓库测试文件筛选。本版本没有增加或升级 Harness ComfyUI 依赖，也没有修改 Desktop 基线或 Desktop 锁文件。
+
+## 发布与部署
+
+GitHub Release 只包含 Git tag 与 Release 记录，不附加产品安装包。生产部署保留 Git 忽略配置、会话、生成记录和媒体文件。
+
 # Harness ComfyUI v0.42.0
 
 ## Desktop 基线与启动
