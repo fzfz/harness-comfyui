@@ -35,10 +35,10 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 获取已发布源码
 
-以下示例安装 `v0.40.1`。在准备存放项目的目录中执行：
+以下示例安装 `v0.41.0`。在准备存放项目的目录中执行：
 
 ```sh
-git clone --branch v0.40.1 https://github.com/fzfz/harness-comfyui.git
+git clone --branch v0.41.0 https://github.com/fzfz/harness-comfyui.git
 cd harness-comfyui
 ```
 

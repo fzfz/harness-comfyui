@@ -237,12 +237,14 @@ git diff --check
 
 计划执行者必须把最终测试数量、覆盖率和依赖审计结果写入当前版本的 `docs/releasenotes.md` 和本文件。任何审查修正或门禁修正改变候选树后，计划执行者必须重新执行受影响的独立审查和完整 `pnpm quality`。
 
-## 图片迭代模板派发的自动化验证与完整质量检查
+## v0.41.0 图片迭代的自动化验证与完整质量检查
 
 tests/production/native-iteration-roles.test.mjs 从当前预设读取四份角色配置，使用目标 Desktop 提供的 schema 接口验证工具参数和返回值。测试向生产派发 component 提供受控子会话服务，检查首次和后续消息的完整内容、角色 persona、模型、工具权限和实际接收者，并覆盖错误与取消。
 
 同一文件还使用真实 Cordis、SystemPrompt 和 ToolRuntime 加载四个生产 component，验证首次调用、后续投递、作用域隔离、单 component 释放、整体释放和重新注册。tests/production/source-agent-preset.test.mjs 验证配置结构和共享 component 的安装。
 
-完整 `pnpm quality` 通过：1007 项单元与集成测试、55 项契约与安全测试、237 项生产测试、32 项原型测试和 2 项 Desktop 测试全部成功。覆盖率为 statements 93.54%、branches 86.79%、functions 100%、lines 96.17%。全部依赖与生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+完整 `pnpm quality` 通过：1007 项单元与集成测试、55 项契约与安全测试、255 项生产测试、32 项原型测试和 2 项 Desktop 测试全部成功。覆盖率为 statements 93.54%、branches 86.79%、functions 100%、lines 96.17%。Harness 锁文件的全部依赖与生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+
+原生接口测试还覆盖 Goal 命令与状态变更、子 Agent 推理档位继承、Provider 或模型切换时清除继承档位，以及目标模型能力校验。Desktop 测试验证迭代会话可以发现并执行 /goal。
 
 上述自动化测试不调用 Agent 语言模型、视觉模型或 ComfyUI 生图服务；真实子 Agent 的完整生图、独立观察与比较流程由用户手工验收。
