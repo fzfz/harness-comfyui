@@ -13,12 +13,13 @@
 | CDP 通信 | Node WebSocket | Node 22 内置稳定 `WebSocket`；项目使用原始 CDP 消息，不引入 Playwright、Puppeteer 或第三方 WebSocket 包 |
 | API Workflow 缓存 | Node 文件系统与 SHA-256 | Node 内置 `node:fs/promises` 与 `node:crypto`；缓存使用 identity JSON、临时文件和原子 rename |
 | 配置校验 | Schemastery | `3.18.1` |
+| 图片缩放与同格式编码 | Sharp | `0.35.4`；读图服务在模型调用前把 PNG、JPEG、WebP 和 GIF 无条件等比缩放到原宽高的 70%，并保留输入格式、alpha 通道和动画信息 |
 | Web UI | React / React DOM | `18.3.1` |
 | 自动化测试 | Vitest / V8 coverage | `4.1.11`；阈值来自 `config/quality-gates.json` |
 | Client 与 managed CLI 模块转换 | tsdown | `0.22.2`；Desktop `prod:*`/`dev:*` generation 打包与 Web Host `web:start`/`web:restart` 都生成浏览器 Client 和 Node.js managed CLI 运行模块，自动化测试验证 ModuleLoader、import policy 与 `node_modules` 安装形态 CLI 执行 |
 | 发布门禁 | pnpm、Vitest 与独立 linked worktree | 最终候选树执行 `pnpm quality`、`git diff --check` 和必需的独立审查 |
 
-当前仓库拥有的直接依赖在 `package.json` 中使用精确版本，完整解析结果保存在 `pnpm-lock.yaml`。DSH Desktop 和 DeepSeek Harness 属于宿主边界；插件通过 peer 范围声明兼容接口，不把宿主的 `node_modules` 路径写入 manifest 或 lockfile。
+当前仓库拥有的直接依赖在 `package.json` 中使用精确版本，完整解析结果保存在 `pnpm-lock.yaml`。Sharp 是插件 generation 的直接运行时依赖；独立 worktree 的测试环境通过 `config/desktop-harness-development.json` 从已安装 DSH Desktop 链接同版本 Sharp。DSH Desktop 和 DeepSeek Harness 属于宿主边界；插件通过 peer 范围声明兼容接口，不把宿主的 `node_modules` 路径写入 manifest 或 lockfile。
 
 当前 Node 24.14.0 会为内置 `node:sqlite` 输出 ExperimentalWarning；项目没有为 SQLite 增加第三方依赖。
 

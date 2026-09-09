@@ -197,7 +197,9 @@ Host 使用同一设置修改队列串行处理保存、激活和删除请求。
 
 `ImageReaderRemoteService` 在 Typert Remote 边界把保存、激活和删除产生的 `ImageReaderError` 转换为 `TypertRemoteFailure`。Typert carrier 因此把具体业务错误码、错误消息和空 details 对象写入 Remote 失败结果；Client 不使用 carrier 的通用异常码替换图片读取设置业务错误码。
 
-`runtime` 配置把图片保存为 Harness Attachment，再使用配置中的系统 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用。`openai-compatible` 配置不经过 Harness LLM Runtime 或 Attachment Store；Host 把同一张图片编码为 Data URL，向配置的完整 Chat Completions 地址发送模型 ID、提示词、`temperature` 和 `max_tokens`。OpenAI 兼容适配器只解析 Chat Completions 的 HTTP JSON 传输外壳，并把 `choices[0].message.content` 当作普通字符串；runtime 适配器也直接收集普通模型文本。两种适配器都不要求或解析模型文本中的 JSON。`inspect_image` 在模型调用完成后把普通字符串包装为包含 `provider`、`model`、`file_path` 和 `observation` 的结构化 Tool 结果；CLI stdout 继续输出同一对象的 JSON。OpenAI 兼容响应体的声明长度与实际流式累计长度都不能超过 1 MiB，读取响应体和解析传输外壳时继续传播调用者取消。
+`prepareImageReaderInput()` 在两个 Provider 分支之前读取并验证 PNG、JPEG、WebP 或 GIF 文件。该函数在内存中把每一帧等比缩放到原宽高的 70%，再按输入文件签名对应的格式重新编码；整数像素使用长边四舍五入和最小一像素规则。PNG、WebP 与 GIF 保留 alpha 通道，动画 GIF 与动画 WebP 保留帧数、各帧延时和循环次数。该函数不覆盖原图，也不创建磁盘临时文件。
+
+`runtime` 配置把缩放后的同格式图片保存为 Harness Attachment，再使用配置中的系统 Provider、模型、`temperature` 和最大输出 Token 准备独立 LLM 调用。`openai-compatible` 配置不经过 Harness LLM Runtime 或 Attachment Store；Host 把缩放后的同格式图片编码为使用对应 MIME 类型的 Data URL，向配置的完整 Chat Completions 地址发送模型 ID、提示词、`temperature` 和 `max_tokens`。OpenAI 兼容适配器只解析 Chat Completions 的 HTTP JSON 传输外壳，并把 `choices[0].message.content` 当作普通字符串；runtime 适配器也直接收集普通模型文本。两种适配器都不要求或解析模型文本中的 JSON。`inspect_image` 在模型调用完成后把普通字符串包装为包含 `provider`、`model`、`file_path` 和 `observation` 的结构化 Tool 结果；CLI stdout 继续输出同一对象的 JSON，其中 `file_path` 仍指向用户原图。OpenAI 兼容响应体的声明长度与实际流式累计长度都不能超过 1 MiB，读取响应体和解析传输外壳时继续传播调用者取消。
 
 API Key 作为 `credentials.<profileId>` Settings secret 保存，Client 收到的凭据状态只包含每份配置的 `hasApiKey`。OpenAI 兼容配置的 `keep` 保留已有 API Key，`replace` 写入新值，`clear` 删除已有值。删除已保存配置时，Host 同时删除对应凭据；删除活动配置时，Host 优先激活原列表中的后一项，不存在后一项时激活前一项。新 namespace 尚无用户值时，Host 把旧单配置 namespace 的用户 Provider、模型、提示词、`temperature` 和最大输出 Token 迁移为一份 `runtime` 配置。
 

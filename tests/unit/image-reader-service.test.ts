@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import sharp from 'sharp'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
@@ -9,7 +10,7 @@ import {
   createImageReaderProfile,
   IMAGE_READER_PROMPT_MAX_LENGTH,
 } from '../../src/image-reader/settings.ts'
-import { ImageReaderService } from '../../src/host/image-reader/image-reader-service.ts'
+import { ImageReaderService, type ImageReaderServiceOptions } from '../../src/host/image-reader/image-reader-service.ts'
 import {
   IMAGE_READER_FAILURE_DIAGNOSTIC_LIMITS,
   createRuntimeImageReaderFailureContext,
@@ -19,16 +20,26 @@ import {
 } from '../../src/host/image-reader/errors.ts'
 
 const temporaryDirectories: string[] = []
+type SaveImageInput = Parameters<ImageReaderServiceOptions['attachments']['saveImage']>[0]
+const validPngFixture = await sharp({
+  create: {
+    width: 100,
+    height: 80,
+    channels: 4,
+    background: { r: 20, g: 40, b: 60, alpha: 0.5 },
+  },
+}).png().toBuffer()
+const validJpegFixture = await sharp(validPngFixture).jpeg({ quality: 100 }).toBuffer()
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { recursive: true, force: true })
 })
 
-function fixture() {
+function fixture(prepareInput?: ImageReaderServiceOptions['prepareInput']) {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-image-reader-'))
   temporaryDirectories.push(root)
   const filePath = join(root, 'result.png')
-  writeFileSync(filePath, Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  writeFileSync(filePath, validPngFixture)
   const scope = {
     get: vi.fn(() => ({
       configuration: {
@@ -54,9 +65,9 @@ function fixture() {
     mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
   } as const
   const attachment = {
-    attachmentId: 'attachment_1', mediaType: 'image/png', bytes: 8, width: 1, height: 1,
+    attachmentId: 'attachment_1', mediaType: 'image/png', bytes: 405, width: 70, height: 56,
   }
-  const saveImage = vi.fn(async () => attachment)
+  const saveImage = vi.fn(async (_input: SaveImageInput) => attachment)
   const stream = vi.fn(async function* () {
     yield { type: 'text-delta', index: 0, text: '主体为白发角色。' }
     yield { type: 'finish', reason: { kind: 'stop' } }
@@ -73,7 +84,13 @@ function fixture() {
     saveImage,
     prepareCall,
     fetch,
-    service: new ImageReaderService({ scope, attachments: { imageLimits, saveImage }, llm: { prepareCall }, fetch } as never),
+    service: new ImageReaderService({
+      scope,
+      attachments: { imageLimits, saveImage },
+      llm: { prepareCall },
+      fetch,
+      ...(prepareInput === undefined ? {} : { prepareInput }),
+    } as never),
   }
 }
 
@@ -144,6 +161,10 @@ describe('ImageReaderService', () => {
       observation: '主体为白发角色。',
     })
     expect(saveImage).toHaveBeenCalledWith(expect.objectContaining({ mediaType: 'image/png', name: 'result.png' }))
+    const uploaded = saveImage.mock.calls[0]![0]
+    await expect(sharp(uploaded.data).metadata()).resolves.toMatchObject({
+      format: 'png', width: 70, height: 56, hasAlpha: true,
+    })
     expect(prepareCall).toHaveBeenCalledWith({
       provider: 'vision-provider', model: 'vision-model', temperature: 0.35, maxTokens: 1536,
     }, expect.any(AbortSignal))
@@ -153,6 +174,37 @@ describe('ImageReaderService', () => {
       { type: 'image', attachment: expect.objectContaining({ attachmentId: 'attachment_1' }) },
     ])
   })
+
+  it.each(['runtime', 'openai-compatible'] as const)(
+    'stops before the %s upload when cancellation becomes visible after conversion',
+    async (connectionType) => {
+      const controller = new AbortController()
+      const reason = new DOMException('cancelled before upload', 'AbortError')
+      const { service, filePath, scope, saveImage, prepareCall, fetch } = fixture(async () => {
+        controller.abort(reason)
+        return { data: validPngFixture, mediaType: 'image/png', name: 'result.png' }
+      })
+      if (connectionType === 'openai-compatible') {
+        scope.get.mockReturnValue({
+          configuration: {
+            activeProfileId: 'custom',
+            profiles: [{
+              ...createImageReaderProfile('custom'),
+              connectionType: 'openai-compatible',
+              endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+              model: 'qwen-vl',
+              defaultPrompt: '完整观察图片',
+            }],
+          },
+          credentials: {},
+        })
+      }
+      await expect(service.inspect(filePath, { signal: controller.signal })).rejects.toBe(reason)
+      expect(saveImage).not.toHaveBeenCalled()
+      expect(prepareCall).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
+    },
+  )
 
   it('uses the active settings prompt as the only prompt source', async () => {
     const { service, filePath, scope, prepareCall } = fixture()
@@ -253,7 +305,7 @@ describe('ImageReaderService', () => {
   it('uses the encoded image signature and rejects invalid or oversized files before attachment admission', async () => {
     const mismatch = fixture()
     const jpegPath = join(mismatch.filePath, '..', 'mislabeled.png')
-    writeFileSync(jpegPath, Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]))
+    writeFileSync(jpegPath, validJpegFixture)
     await mismatch.service.inspect(jpegPath)
     expect(mismatch.saveImage).toHaveBeenCalledWith(expect.objectContaining({ mediaType: 'image/jpeg' }))
 
@@ -291,10 +343,7 @@ describe('ImageReaderService', () => {
 
   it('preserves the runtime profile snapshot and provider failure whitelist without copying prohibited values', async () => {
     const { service, filePath, scope, saveImage, prepareCall } = fixture()
-    writeFileSync(filePath, Uint8Array.from([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-      ...Buffer.from('IMAGE_INPUT_SENTINEL'),
-    ]))
+    writeFileSync(filePath, Buffer.concat([validPngFixture, Buffer.from('IMAGE_INPUT_SENTINEL')]))
     saveImage.mockResolvedValueOnce({
       attachmentId: 'ATTACHMENT_REF_SENTINEL', mediaType: 'image/png', bytes: 28, width: 1, height: 1,
     })
@@ -491,14 +540,20 @@ describe('ImageReaderService', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer local-secret' },
     })
-    expect(JSON.parse(request!.body as string)).toEqual({
+    const requestBody = JSON.parse(request!.body as string)
+    expect(requestBody).toMatchObject({
       model: 'qwen-vl',
       messages: [{ role: 'user', content: [
         { type: 'text', text: '完整观察图片' },
-        { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw0KGgo=' } },
+        { type: 'image_url', image_url: { url: expect.stringMatching(/^data:image\/png;base64,/u) } },
       ] }],
       temperature: 0.15,
       max_tokens: 3072,
+    })
+    const dataUrl = requestBody.messages[0].content[1].image_url.url as string
+    const uploaded = Buffer.from(dataUrl.slice('data:image/png;base64,'.length), 'base64')
+    await expect(sharp(uploaded).metadata()).resolves.toMatchObject({
+      format: 'png', width: 70, height: 56, hasAlpha: true,
     })
     expect(saveImage).not.toHaveBeenCalled()
     expect(prepareCall).not.toHaveBeenCalled()

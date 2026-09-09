@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "resizeScale": 0.7,
+  "dimensionRounding": "round",
+  "minimumDimension": 1,
+  "preserveInputFormat": true,
+  "preserveAlpha": true,
+  "preserveAnimation": true,
+  "formatOptions": {
+    "jpeg": {
+      "quality": 100,
+      "chromaSubsampling": "4:4:4"
+    },
+    "png": {},
+    "webp": {
+      "lossless": true,
+      "exact": true
+    },
+    "gif": {
+      "reuse": true,
+      "keepDuplicateFrames": true
+    }
+  }
+}
