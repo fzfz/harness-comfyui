@@ -68,8 +68,8 @@ describe('DSH Desktop managed shell capability', () => {
     const fromDesktop = async (name: string) => import(pathToFileURL(
       createTestDesktopRequire(context).resolve(name),
     ).href)
-    const [webServer, systemPrompt, tools, shellEnv, subprocess, bash, toolBash] = await Promise.all([
-      fromDesktop('@deepseek-ai/dsh-host-webserver'),
+    const [desktopWebServer, systemPrompt, tools, shellEnv, subprocess, bash, toolBash] = await Promise.all([
+      fromDesktop('dsh-plugin-desktop/webserver'),
       fromDesktop('@deepseek-ai/dsh-system-prompt'),
       fromDesktop('@deepseek-ai/dsh-tools'),
       fromDesktop('@deepseek-ai/dsh-shell-env'),
@@ -91,9 +91,17 @@ describe('DSH Desktop managed shell capability', () => {
     const projectPlugin = await import(`${pathToFileURL(hostModule).href}?test=${crypto.randomUUID()}`)
     const ctx = new Context()
     provideProjectHostDependencies(ctx)
+    ctx.provide('desktopBrowserAccess' as never, {
+      ordinaryBrowserEnabled: false,
+      rendererHeader: {
+        name: 'x-dsh-desktop-renderer',
+        value: Buffer.alloc(32, 7).toString('base64url'),
+      },
+      setOrdinaryBrowserEnabled: vi.fn(),
+    } as never)
     const fibers = []
     try {
-      fibers.push(await ctx.plugin(webServer.default, { host: '127.0.0.1', port: 0 }))
+      fibers.push(await ctx.plugin(desktopWebServer.default, { host: '127.0.0.1', port: 0 }))
       fibers.push(await ctx.plugin(systemPrompt.default, {}))
       fibers.push(await ctx.plugin(tools.default, { mode: 'native' }))
       fibers.push(await ctx.plugin(shellEnv, { dshHome: resolve(root, 'dsh-home') }))
@@ -127,6 +135,19 @@ describe('DSH Desktop managed shell capability', () => {
       expect(apiUrl).toBe(`http://${activeWebServer.host}:${activeWebServer.port}/api/harness-comfyui/cli/v1`)
       expect(activeWebServer.port).not.toBe(4173)
       expect(capability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+      const rejected = await fetch(apiUrl!, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ command: 'generation.run-inputs', run_ids: ['run_missing'] }),
+      })
+      expect(rejected.status).toBe(401)
+      await expect(rejected.json()).resolves.toEqual({
+        ok: false,
+        error: {
+          code: 'CLI_CAPABILITY_INVALID',
+          message: 'The shell-call capability is missing, expired, or invalid.',
+        },
+      })
       expect(semanticQueryCliPath).toBe(resolve(process.cwd(), 'scripts/source-client/imagegen-semantic-query.mjs'))
       expect(sourceUrl).toBe('https://catalog.example.com')
       expect(sourcePort).toBe('18443')
