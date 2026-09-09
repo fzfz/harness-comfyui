@@ -26,6 +26,7 @@
     "@deepseek-ai/dsh-tools",
     "@deepseek-ai/dsh-typert-protocol",
     "@deepseek-ai/dsh-web-app",
-    "@deepseek-ai/dsh-workspace"
+    "@deepseek-ai/dsh-workspace",
+    "sharp"
   ]
 }

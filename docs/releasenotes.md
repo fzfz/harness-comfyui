@@ -1,3 +1,27 @@
+# Harness ComfyUI v0.41.1
+
+## 读图模型上传前的图片处理
+
+读图服务在调用视觉模型前，先在内存中把有效图片无条件等比缩放至原宽高的 70%。PNG、JPEG、WebP 和 GIF 保持输入格式；PNG、WebP 和 GIF 保留透明像素，动画 GIF 与动画 WebP 保留帧数、各帧延时和循环次数。处理管线不添加背景、不移除 alpha 通道、不裁剪、不自动旋转，也不修改或上传用户原图。
+
+系统 Provider 路径只把处理结果保存为 Harness Attachment；OpenAI-compatible 路径只把处理结果编码为保持原 MIME 类型的 Data URL。转换失败、输入或输出超过图片字节限制以及调用取消都会终止本次识别，系统不会回退上传原图。
+
+## 依赖与自动化验证
+
+本版本新增并精确固定运行时依赖 Sharp `0.35.4`。锁文件包含对应平台包，依赖构建脚本检查确认 Sharp 没有 lifecycle script。Harness ComfyUI 仓库的完整依赖与生产依赖审计均报告 critical 0、high 0、moderate 0、low 0；Desktop 依赖的已知漏洞见“Desktop 基线与生产部署”章节。
+
+完整 `pnpm quality` 通过：1031 项 unit/integration、55 项 contract/security、255 项 production、32 项 prototype 和 2 项 Desktop 测试成功。覆盖率为 statements 93.63%、branches 86.96%、functions 100%、lines 96.19%。独立 Standards Review、独立 Spec Review、Skill CLI 参考文档语义 Review、发布文档语义 Review 和 `git diff --check` 均通过。
+
+## 真实模型验收例外
+
+隔离 Desktop 成功创建省略 Preset、显式 `harness-comfyui-cli-candidate` 和显式 `harness-comfyui-iteration` 的三个 Session，三个 Session 均发现 `local-image-reader`。`opencode-go/deepseek-v4-flash` 在首个模型步骤返回月度额度 `QUOTA`，`deepseek-official/deepseek-v4-flash` 返回 `MISSING_CREDENTIAL`，`opencode-go/muse-spark-1.2-contributor` 返回 `FORBIDDEN`。这些模型均未执行读图 CLI，因此本次验收没有视觉模型识别结果。用户获知该阻塞后，明确授权继续创建 PR、合入 `main`、发布 `v0.41.1` 并部署生产目录。
+
+## Desktop 基线与生产部署
+
+Desktop 继续使用提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2`。Desktop 锁文件仍包含 `image-size 1.2.1`；该版本关联已记录的 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。生产部署按照受控依赖安装流程保留该记录，并安装 Harness 新增的 Sharp `0.35.4`。
+
+GitHub Release 提供版本标签和发布说明，不附加产品安装包。
+
 # Harness ComfyUI v0.41.0
 
 ## 图片迭代的角色与交接

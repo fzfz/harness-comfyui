@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.41.0",
+  "version": "0.41.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
@@ -43,7 +43,8 @@
     "prod:test": "vitest run tests/production --maxWorkers=1 --no-file-parallelism"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "3.18.1"
+    "@deepseek-ai/schemastery": "3.18.1",
+    "sharp": "0.35.4"
   },
   "devDependencies": {
     "@types/node": "22.20.0",

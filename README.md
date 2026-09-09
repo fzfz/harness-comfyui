@@ -35,10 +35,10 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 获取已发布源码
 
-以下示例安装 `v0.41.0`。在准备存放项目的目录中执行：
+以下示例安装 `v0.41.1`。在准备存放项目的目录中执行：
 
 ```sh
-git clone --branch v0.41.0 https://github.com/fzfz/harness-comfyui.git
+git clone --branch v0.41.1 https://github.com/fzfz/harness-comfyui.git
 cd harness-comfyui
 ```
 
@@ -173,6 +173,8 @@ Agent 核对所选资源和参数后提交任务，并返回 Run ID。右侧“�
 - 填写默认读图提示词、温度和最大输出 Token，保存配置，并将其选为当前使用的配置。
 
 设置页支持保存多份配置并在它们之间切换。新的选择会用于下一次图片读取，无需重启应用。
+
+系统向视觉模型发送图片前，会在内存中把 PNG、JPEG、WebP 或 GIF 无条件等比缩放至原宽高的 70%。处理结果保持输入格式；PNG、WebP 和 GIF 的透明像素以及动画 GIF/WebP 的帧、延时和循环次数继续保留。系统不会修改或上传用户原图。
 
 ### 描述图片或改进生图提示词
 

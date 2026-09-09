@@ -13,15 +13,15 @@ Harness ComfyUI 图片读取 CLI 为 `comfyui-image-review` Skill 提供两个�
 
 Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。Managed environment 自动提供 CLI 脚本路径、Host endpoint 和当前 shell Tool Call 的短期 capability。
 
-Skill 执行者必须从当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。Host 使用该工作目录解析当前 Workspace，并验证当前 Session 属于该 Workspace。Skill 执行者不得向命令提供 Workspace ID、Session ID、Turn、Tool Call ID、Host endpoint 或 capability。
+Skill 执行者必须在当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。命令使用当前 Session 和 Workspace，Skill 执行者只需提供本文件定义的命令参数。
 
-Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图 Prompt、`temperature`、最大输出 Token 和调用该模型所需的连接信息。Skill 执行者可以提供只覆盖本次视觉模型调用的 `prompt`；CLI 自行处理当前命名配置的连接方式。本文件包含全部调用合同，无需系统注入的 Tool schema。
+Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图 Prompt、`temperature`、最大输出 Token 和调用该模型所需的连接信息。Skill 执行者可以提供只覆盖本次视觉模型调用的 `prompt`；CLI 自行处理当前命名配置的连接方式。
 
 ## 命令与调用时机
 
 Skill 执行者必须按以下顺序调用命令：
 
-1. Skill 执行者把“ID 与运行值的来源”章节定义的来源取得的 `run_id` 按原顺序分成每组一至二十个。
+1. Skill 执行者按照“Run ID 与图片路径的来源”章节取得 `run_id`，并按原顺序将这些 ID 分成每组一至二十个。
 2. Skill 执行者为每组调用一次 `generation resolve-media --stdin`。
 3. Skill 执行者按每个成功 Run 的 `images` 顺序处理图片。
 4. Skill 执行者为每张图片分别调用一次 `image inspect --stdin`。该命令一次只接受一个 `file_path`。
@@ -46,7 +46,7 @@ Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象�
 }
 ```
 
-`run_ids` 必须是只包含一至二十个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的规范 Run ID 前缀。规范 Run ID 前缀必须至少包含八个 UUID 字符。CLI 保留输入顺序和重复值。
+`run_ids` 必须是只包含一至二十个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的 Run ID 前缀。前缀必须从完整 ID 开头连续截取，并至少包含 `run_` 与 UUID 部分开头的八个小写十六进制字符；前缀延伸到 UUID 连字符的位置时必须保留该连字符。例如，完整 ID `run_01234567-89ab-cdef-0123-456789abcdef` 对应的最短合法前缀是 `run_01234567`。CLI 保留输入顺序和重复值。
 
 缺失 `run_ids`、`run_ids` 不是数组、元素不是字符串、数组为空、数组超过二十项或输入 JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。
 
@@ -77,19 +77,17 @@ Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 
 `file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 不得包含 U+0000–U+001F 或 U+007F–U+009F 控制字符，因此换行符和制表符也不合法。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小不得超过 Host 当前图片输入上限。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。
 
+视觉模型接收的是每帧宽高约为原图 70% 的图片，最小边长为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。原图保持不变，成功输出的 `file_path` 指向输入原图。
+
 `prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图 Prompt；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图 Prompt，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串，可以包含 JSON 转义后的换行符。
 
 缺失 `file_path`、`file_path` 或 `prompt` 的类型错误、路径违反字符限制或输入 JSON 包含其他属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。
 
-## ID 与运行值的来源
+## Run ID 与图片路径的来源
 
 Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果中的 `run_id`，取得 `generation resolve-media --stdin` 的 `run_ids`。当前消息包含明确 `run_id` 时，Skill 执行者按这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按对应提交结果的返回顺序传递。Skill 执行者不得选择用户没有指代的历史 Generation Run，也不得猜测 Generation Run ID。
 
-Host 使用 managed environment 中的当前 Session 工作目录解析 Workspace。Skill 执行者不得在 stdin 中填写 `workspace_id`、`session_id`、`turn` 或 `call_id`。
-
 Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image inspect --stdin` 的 `file_path`。Skill 执行者不得从 `filename`、`media_id` 或 `run_id` 拼接本地路径。
-
-`image inspect --stdin` 使用 Harness“图片读取”设置中的当前命名配置。Skill 执行者必须提供 `file_path`；用户明确指定本次图片观察要求时，Skill 执行者同时提供完整的 `prompt`。Skill 执行者不提供连接信息、模型、凭据、`temperature` 或最大输出 Token。
 
 ## 输出与完成语义
 
@@ -162,10 +160,10 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |
 | `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试，不得复用旧 capability。 |
 | `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须删除多余 JSON 空白并缩短输入；`generation resolve-media --stdin` 仍然超限时，Skill 执行者必须把 Run ID 按更小批次查询。 |
-| `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须减少当前 Run 批次；单图命令出现该错误时，Skill 执行者必须报告错误并停止重试当前图片。 |
-| `CLI_PROTOCOL_ERROR` | Host 返回了无效的 JSON 或错误 envelope。Skill 执行者必须检查 Host 状态和日志后重试。 |
+| `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。查询多个 Run 时，Skill 执行者必须减少每批 Run 数量后重试；查询单个 Run 或读取单张图片时，Skill 执行者必须报告错误并停止重试该请求。 |
+| `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |
 | `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |
-| `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生未分类内部错误。Skill 执行者必须报告错误码并检查 Host 日志，不得原样重复调用。 |
+| `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并停止重试当前请求。 |
 
 上述命令级错误没有对应的逐 Run 结果。Skill 执行者不得为命令级错误编造 `run_id`。
 
@@ -177,10 +175,10 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 | 错误码 | 修正与重试 |
 | --- | --- |
-| `GENERATION_RUN_ID_INVALID` | Skill 执行者必须报告该元素的 `run_id`、`error.code` 和 `error.message`，并使用安全的完整 Run ID 或至少八个规范 UUID 前缀字符重新查询。 |
+| `GENERATION_RUN_ID_INVALID` | Skill 执行者必须报告该元素的 `run_id`、`error.code` 和 `error.message`，并请用户提供完整 Generation Run ID；取得该 ID 后，只重新查询该 Run。 |
 | `GENERATION_RUN_ID_AMBIGUOUS` | Skill 执行者必须请用户提供更多 Run ID 字符，并只重试该 Run。 |
 | `GENERATION_RUN_NOT_FOUND` | Skill 执行者必须报告当前 Workspace 中没有该 Run，并跳过该 Run。 |
-| `GENERATION_RUN_LOOKUP_FAILED` | Skill 执行者必须报告 Host 日志查询错误，并在 Host 存储状态恢复后只重试该 Run。 |
+| `GENERATION_RUN_LOOKUP_FAILED` | Skill 执行者必须报告该 Run 查询失败，同时提供 `run_id`、`error.code` 和 `error.message`。用户确认查询服务恢复后，Skill 执行者只重试该 Run。 |
 
 ### image inspect --stdin 错误
 
@@ -189,7 +187,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |
 | `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图 Prompt。 |
 | `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |
-| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，或目标不是 Host 可读取的非空普通文件，或文件超过 Host 当前图片输入上限，或文件读取失败，或图片内容签名不是 PNG、JPEG、WebP 或 GIF。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的、满足这些输入条件的 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
+| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的、满足这些输入条件且可以完成缩放的 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
 | `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。Host 图片读取服务恢复后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试当前图片。 |

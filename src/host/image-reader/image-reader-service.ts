@@ -1,6 +1,4 @@
 import { Buffer } from 'node:buffer'
-import { basename, isAbsolute } from 'node:path'
-import { open } from 'node:fs/promises'
 
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, type LlmCallConfig, type PreparedLlmCall, type StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -19,6 +17,7 @@ import {
   isAbortError,
   runtimeImageReaderFailureMessage,
 } from './errors.ts'
+import { prepareImageReaderInput, type PreparedImageReaderInput } from './image-reader-input.ts'
 
 const IMAGE_READER_MAX_RESPONSE_BYTES = 1_048_576
 
@@ -37,6 +36,7 @@ export interface ImageInspectionOptions {
 
 export interface ImageReaderServiceOptions {
   readonly scope: Pick<SettingsScope<ImageReaderSettingsSection>, 'get'>
+  readonly prepareInput?: typeof prepareImageReaderInput
   readonly attachments: {
     readonly imageLimits: ImageAttachmentLimits
     saveImage(input: { readonly data: Uint8Array; readonly mediaType: ImageMediaType; readonly name?: string }): Promise<ImageAttachmentRef>
@@ -51,52 +51,8 @@ function abort(signal?: AbortSignal): never {
   throw signal?.reason instanceof Error ? signal.reason : new DOMException('Image inspection was cancelled.', 'AbortError')
 }
 
-function imageMediaType(data: Uint8Array): ImageMediaType | undefined {
-  if (
-    data.length >= 8
-    && data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47
-    && data[4] === 0x0d && data[5] === 0x0a && data[6] === 0x1a && data[7] === 0x0a
-  ) return 'image/png'
-  if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return 'image/jpeg'
-  const ascii = (offset: number, value: string) => value
-    .split('')
-    .every((character, index) => data[offset + index] === character.charCodeAt(0))
-  if (data.length >= 6 && (ascii(0, 'GIF87a') || ascii(0, 'GIF89a'))) return 'image/gif'
-  if (data.length >= 12 && ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp'
-  return undefined
-}
-
-async function imageInput(
-  filePath: string,
-  maxImageBytes: number,
-  signal?: AbortSignal,
-): Promise<{ data: Uint8Array; mediaType: ImageMediaType; name: string }> {
+function ensureNotAborted(signal?: AbortSignal): void {
   if (signal?.aborted === true) abort(signal)
-  if (!isAbsolute(filePath)) {
-    throw new ImageReaderError('IMAGE_READER_FILE_INVALID', 'The image path must be an absolute path to a PNG, JPEG, WebP, or GIF file.')
-  }
-  let handle: Awaited<ReturnType<typeof open>> | undefined
-  try {
-    handle = await open(filePath, 'r')
-    const file = await handle.stat()
-    if (!file.isFile() || file.size < 1 || file.size > maxImageBytes) throw new Error('invalid image file size')
-    const data = new Uint8Array(file.size)
-    let offset = 0
-    while (offset < data.byteLength) {
-      signal?.throwIfAborted()
-      const { bytesRead } = await handle.read(data, offset, data.byteLength - offset, offset)
-      if (bytesRead === 0) throw new Error('image file changed while reading')
-      offset += bytesRead
-    }
-    const mediaType = imageMediaType(data)
-    if (mediaType === undefined) throw new Error('unsupported image signature')
-    return { data, mediaType, name: basename(filePath) }
-  } catch (error) {
-    if (isAbortError(error, signal)) abort(signal)
-    throw new ImageReaderError('IMAGE_READER_FILE_INVALID', 'The image file could not be read.', { cause: error })
-  } finally {
-    await handle?.close()
-  }
 }
 
 function preparedOptions(prepared: PreparedLlmCall, messages: ReturnType<typeof createUserMessage>[]) {
@@ -268,7 +224,11 @@ export class ImageReaderService {
       )
     }
     const inspectionPrompt = prompt ?? profile.defaultPrompt
-    const input = await imageInput(filePath, this.options.attachments.imageLimits.maxImageBytes, signal)
+    const input = await (this.options.prepareInput ?? prepareImageReaderInput)(
+      filePath,
+      this.options.attachments.imageLimits.maxImageBytes,
+      signal,
+    )
     if (profile.connectionType === 'openai-compatible') {
       return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, inspectionPrompt, signal)
     }
@@ -277,7 +237,7 @@ export class ImageReaderService {
 
   private async inspectRuntime(
     profile: ImageReaderProfile,
-    input: Awaited<ReturnType<typeof imageInput>>,
+    input: PreparedImageReaderInput,
     filePath: string,
     prompt: string,
     sessionId: string | undefined,
@@ -285,6 +245,7 @@ export class ImageReaderService {
   ): Promise<ImageInspection> {
     let attachment: ImageAttachmentRef
     try {
+      ensureNotAborted(signal)
       attachment = await this.options.attachments.saveImage(input)
     } catch (error) {
       if (isAbortError(error, signal)) abort(signal)
@@ -298,6 +259,7 @@ export class ImageReaderService {
     }
     let prepared: PreparedLlmCall
     try {
+      ensureNotAborted(signal)
       prepared = await this.options.llm.prepareCall(config, signal)
     } catch (error) {
       if (isAbortError(error, signal)) abort(signal)
@@ -313,6 +275,7 @@ export class ImageReaderService {
       ],
       source: { kind: 'plugin', plugin: 'harness-comfyui' },
     })]
+    ensureNotAborted(signal)
     return Object.freeze({
       provider: prepared.config.provider,
       model: prepared.config.model,
@@ -324,7 +287,7 @@ export class ImageReaderService {
   private async inspectOpenAiCompatible(
     profile: ImageReaderProfile,
     apiKey: string | undefined,
-    input: Awaited<ReturnType<typeof imageInput>>,
+    input: PreparedImageReaderInput,
     filePath: string,
     prompt: string,
     signal?: AbortSignal,
@@ -333,6 +296,7 @@ export class ImageReaderService {
     if (apiKey !== undefined) headers.Authorization = `Bearer ${apiKey}`
     let response: Response
     try {
+      ensureNotAborted(signal)
       response = await this.fetch(profile.endpoint, {
         method: 'POST',
         headers,

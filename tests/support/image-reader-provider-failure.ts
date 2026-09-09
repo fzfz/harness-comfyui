@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import sharp from 'sharp'
 import { vi } from 'vitest'
 
 import { createImageReaderProfile } from '../../src/image-reader/settings.ts'
@@ -19,13 +20,22 @@ export const IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS = Object.freeze([
 
 export const IMAGE_READER_SENTINEL_PROMPT = 'PROMPT_SENTINEL'
 
+const validSentinelPng = Buffer.concat([
+  await sharp({
+    create: {
+      width: 32,
+      height: 32,
+      channels: 4,
+      background: { r: 20, g: 40, b: 60, alpha: 0.5 },
+    },
+  }).png().toBuffer(),
+  Buffer.from('IMAGE_INPUT_SENTINEL'),
+])
+
 export function createImageReaderProviderFailureFixture() {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-image-reader-failure-'))
   const filePath = join(root, 'sentinel.png')
-  writeFileSync(filePath, Uint8Array.from([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    ...Buffer.from('IMAGE_INPUT_SENTINEL'),
-  ]))
+  writeFileSync(filePath, validSentinelPng)
   const scope = {
     get: vi.fn(() => ({
       configuration: {
@@ -45,7 +55,7 @@ export function createImageReaderProviderFailureFixture() {
     replace: vi.fn(async () => undefined),
   }
   const saveImage = vi.fn(async () => ({
-    attachmentId: 'ATTACHMENT_REF_SENTINEL', mediaType: 'image/png' as const, bytes: 28, width: 1, height: 1,
+    attachmentId: 'ATTACHMENT_REF_SENTINEL', mediaType: 'image/png' as const, bytes: 256, width: 22, height: 22,
   }))
   const prepareCall = vi.fn(async (): Promise<any> => ({
     config: { provider: 'opencode-go', model: 'qwen3.8-flash', temperature: 0.1, maxTokens: 8192 },

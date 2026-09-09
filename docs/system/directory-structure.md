@@ -6,7 +6,7 @@
 | `src/host/cli/` | managed CLI 的 shell capability 与 loopback Host route |
 | `src/cli/` | managed project CLI 的 argv、request、Generation Request、模板运行参数检查、随机 Seed、历史 Run 输入查询、Run 图片路径查询和单图读取结构化合同 |
 | `src/host/generation/` | Generation Runtime、Source、Workflow 参数检查与编译、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 输入查询 Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
-| `src/host/image-reader/` | 图片读取设置迁移与保存、视觉模型目录、系统 Provider/OpenAI 兼容适配和单图读取 Tool |
+| `src/host/image-reader/` | 图片读取设置迁移与保存、视觉模型目录、模型上报前的 70% 同格式图片缩放、系统 Provider/OpenAI 兼容适配和单图读取 Tool |
 | `src/host/tools/` | Harness 项目 Tool 注册入口 |
 | `src/generation/` | Generation Host/Client、Tool 与 CLI 共享合同 |
 | `src/image-reader/` | 命名图片读取配置、凭据更新、视觉模型目录和 Remote 的 Host/Client 共享合同 |
@@ -32,7 +32,7 @@
 | `config/desktop-production.json` | Desktop 相对源码目录、生产 runtime、`.env` 和默认 Workspace |
 | `config/desktop-worktree.json` | 主开发 checkout 和开发 Desktop runtime；开发启动器为每个 worktree 分配移动桥接端口 |
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
-| `config/desktop-harness-development.json` | 当前仓库开发与测试需要从已安装 DSH Desktop 提供的 Harness 包和可执行入口 |
+| `config/desktop-harness-development.json` | 当前仓库开发与测试需要从已安装 DSH Desktop 提供的 Harness 包、Sharp 和可执行入口 |
 | `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明模块 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、当前插件包及其依赖的安装和 `prod:*`/`dev:*` 生命周期 |
 | `scripts/desktop/legacy-session-migration.mjs` | 旧 Web 生产 DSH home 到当前 Desktop 生产 DSH home 的 Session 数据迁移 |
