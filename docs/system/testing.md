@@ -47,7 +47,7 @@ Desktop 测试必须检查 Profile 的 package.json 声明 harness-comfyui 来�
 
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
-v0.42.1 的生产测试覆盖受管 Provider 与图片读取配置的成功物化、目标未受管记录保留、凭据缺失、配置无效、路径越界、启动前失败、运行中重复启动不写入，以及 `dev:status`、`dev:logs`、`dev:stop` 不触发物化。当前版本的完整测试数量、覆盖率和依赖审计结果见[发布说明](../releasenotes.md#验证与依赖)。
+v0.42.2 的生产测试覆盖受管 Provider 与图片读取配置的成功物化、目标未受管记录保留、凭据缺失、配置无效、路径越界、启动前失败、运行中重复启动不写入，以及 `dev:status`、`dev:logs`、`dev:stop` 执行期间受管开发配置保持原状。最终候选的完整 `pnpm quality` 通过：1041 项 unit/integration/Skills、55 项 contract/security、276 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.65%、branches 87.01%、functions 100%、lines 96.19%；完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。当前版本的行为和发布范围见[发布说明](../releasenotes.md#数据源提示判定)。
 
 会话删除测试必须确认目标 Session 不可再读取，其他 Session 保持可读。模型请求测试必须确认普通 Session、子 Session 与图片读取请求携带各自真实 Session ID。
 

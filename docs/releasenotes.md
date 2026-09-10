@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.42.2
+
+## 数据源提示判定
+
+`SourcePresetTip` 现在读取 Harness Settings 快照的生效配置 `value.configuration`。默认配置、base 配置和用户覆盖配置经过 schema 合成后，只要形成有效地址，`ComfyUI工作台预设` 就会执行 Catalog 探针；探针成功时页面保持无提示，探针失败时页面提示用户检查“ComfyUI → 数据源服务”的 URL、端口和服务状态。
+
+回归测试使用同一份有效生效配置覆盖空、部分和完整用户覆盖层，并覆盖 Settings 加载、其他 Preset、连接失败、生效地址变化、旧探针取消及取消后的迟到失败。
+
+## 验证与依赖
+
+完整 `pnpm quality` 通过：1041 项 unit/integration/Skills、55 项 contract/security、276 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.65%、branches 87.01%、functions 100%、lines 96.19%。完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+
+本版本继续使用 `config/desktop-baseline.json` 固定的 Desktop 2.0.6、Harness 0.1.2-rc.1 和 Electron 43.3.0。本版本的依赖、Desktop 基线和 Desktop 锁文件保持 `v0.42.1` 的内容。
+
+## 发布与部署
+
+GitHub Release 包含 Git tag 与 Release 记录，附件列表为空。生产部署保留 Git 忽略配置、会话、生成记录和媒体文件。
+
 # Harness ComfyUI v0.42.1
 
 ## 独立 worktree 的受管开发配置
