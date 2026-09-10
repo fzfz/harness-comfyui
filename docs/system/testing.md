@@ -47,7 +47,7 @@ Desktop 测试必须检查 Profile 的 package.json 声明 harness-comfyui 来�
 
 覆盖率阈值由 `config/quality-gates.json` 唯一定义：lines 91%、functions 100%、statements 88%、branches 79%。
 
-v0.42.2 的生产测试覆盖受管 Provider 与图片读取配置的成功物化、目标未受管记录保留、凭据缺失、配置无效、路径越界、启动前失败、运行中重复启动不写入，以及 `dev:status`、`dev:logs`、`dev:stop` 执行期间受管开发配置保持原状。最终候选的完整 `pnpm quality` 通过：1041 项 unit/integration/Skills、55 项 contract/security、276 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.65%、branches 87.01%、functions 100%、lines 96.19%；完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。当前版本的行为和发布范围见[发布说明](../releasenotes.md#数据源提示判定)。
+v0.42.3 的测试继续覆盖 v0.42.2 的受管开发配置物化和 `SourcePresetTip` 生效配置判定，并使用真实 Desktop WebServer 验证 managed CLI route 的成功与拒绝分支。普通浏览器访问关闭时，前台 Bash 携带有效 capability 的 managed CLI 请求必须成功；直接省略 capability 的请求必须返回结构化 401；未声明 route-authenticated 的普通 route 必须继续返回 403。最终候选的完整 `pnpm quality` 通过：1041 项 unit/integration/Skills、55 项 contract/security、276 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.65%、branches 87.01%、functions 100%、lines 96.19%；完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。当前版本的行为和发布范围见[发布说明](../releasenotes.md#managed-cli-的-desktop-路由门禁)。
 
 会话删除测试必须确认目标 Session 不可再读取，其他 Session 保持可读。模型请求测试必须确认普通 Session、子 Session 与图片读取请求携带各自真实 Session ID。
 

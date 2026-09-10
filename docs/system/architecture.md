@@ -77,6 +77,8 @@ ANIMA、Krea2 和 WAI Prompt Builder 的语义查询命令使用同一个前台 
 
 `read_comfyui_run_inputs` Tool 从 Tool Call、Session cwd 和 workspace registry 派生当前 Workspace；CLI 查询从短期 shell capability 派生当前 Workspace。两条入口都只把 `workspaceId` 和用户提供的 `run_id` 交给 `GenerationRuntime.readGenerationRunInputs()`，不接受调用者提供的 Workspace ID、Session ID、Turn 或 Tool Call ID。
 
+`DSH_HARNESS_COMFYUI_CLI_API` 指向当前 Desktop 进程内部 WebServer 上的 Harness CLI route。Harness CLI route 声明 `desktopBrowserAccess: route-authenticated`，使 Desktop WebServer 只对该 route 跳过外层 Renderer 浏览器访问门禁；请求进入 CLI route 后仍必须通过 `CliShellCapabilityStore` 的短期 capability 验证。其他 Desktop WebServer route 继续受 Renderer 浏览器访问门禁控制。Skill 的 managed CLI 命令通过该 route 调用 Host 中的 Catalog、Generation 和图片读取业务能力。插件内置数据源客户端分别读取数据源服务 URL 和端口，并直接请求数据源服务。
+
 `GenerationRuntime.readGenerationRunInputs()` 要求一次查询包含 1 至 20 个字符串，并按照输入顺序逐项读取 Run Repository 的 `request_json` 和 Run 目录中的 Actual Workflow。Runtime 先检查当前 Workspace 中的完整 Run ID 精确匹配；没有精确匹配且输入是最少八个 UUID 字符的 canonical 起始片段时，Runtime 只在当前 Workspace 中读取最多两个前缀匹配。零个匹配返回 `GENERATION_RUN_NOT_FOUND`，唯一匹配返回完整 canonical `run_id`，多个匹配返回 `GENERATION_RUN_ID_AMBIGUOUS` 并要求调用者增加前缀长度。当前 Workspace 之外的 Run 不参与前缀唯一性判定。合法请求中的无效 ID、缺失 Run、歧义前缀、损坏请求或未分类读取故障只产生对应结果项；后续 Run 继续查询。取消信号终止整个查询。
 
 `krea2-anime-prompt-builder` 使用自身 `references/generation-cli.md` 调用 `generation run-inputs --stdin`。用户只要求查询时，该 Skill 按 `runs[]` 顺序报告生成参数、Actual Workflow 状态和逐项错误；可用项使用 CLI 返回的 canonical 完整 `run_id`，错误项保留 CLI 返回的请求 `run_id`。用户还要求构建或修改 Prompt 时，该 Skill 完成查询后继续 Prompt 流程；用户明确要求复用某个可用结果时，该 Skill 读取该结果实际保存的 `arguments.parameters.positive_prompt`。该 Skill 不自动拆分查询，不调用 Python 生成器，也不创建批量输出文件。

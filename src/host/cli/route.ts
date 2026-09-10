@@ -21,7 +21,6 @@ import {
   GenerationRuntimeError,
   type GenerationRuntime,
 } from '../generation/generation-runtime.ts'
-import type { GenerationWebServer } from '../generation/media-routes.ts'
 import { ImageReaderError } from '../image-reader/errors.ts'
 import type { ImageReaderService } from '../image-reader/image-reader-service.ts'
 import type {
@@ -40,8 +39,17 @@ interface CliCatalog {
   search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage>
 }
 
+interface CliWebServer {
+  register(route: {
+    readonly kind: 'prefix'
+    readonly path: string
+    readonly desktopBrowserAccess?: 'route-authenticated'
+    readonly handler: (request: IncomingMessage, response: ServerResponse) => void | Promise<void>
+  }): () => void
+}
+
 export interface RegisterHarnessComfyuiCliRouteOptions {
-  readonly webServer: GenerationWebServer
+  readonly webServer: CliWebServer
   readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
   readonly catalog: CliCatalog
   readonly runtime: Pick<
@@ -250,6 +258,7 @@ export function registerHarnessComfyuiCliRoute(options: RegisterHarnessComfyuiCl
   return options.webServer.register({
     kind: 'prefix',
     path: CLI_ROUTE_PATH,
+    desktopBrowserAccess: 'route-authenticated',
     async handler(request, response) {
       if (request.method !== 'POST') {
         response.setHeader('allow', 'POST')

@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.42.3
+
+## managed CLI 的 Desktop 路由门禁
+
+Harness 的 managed CLI route 声明 `desktopBrowserAccess: route-authenticated`。Desktop WebServer 只对该 route 跳过外层 Renderer 浏览器访问门禁，并把请求交给 Harness CLI route；Harness CLI route 继续验证前台 shell Tool Call 获得的短期 capability，缺少、过期或无效的 capability 返回 401。其他 Desktop WebServer route 继续使用 Renderer 浏览器访问门禁，并在普通浏览器访问关闭时返回 403。
+
+`DSH_HARNESS_COMFYUI_CLI_API` 指向当前 Desktop 进程内部 WebServer 上的 Harness CLI route。Skill 的 managed CLI 命令把 Catalog、Generation 和图片读取业务请求发送到该 route。插件内置数据源客户端分别读取已保存的数据源 URL 和端口，并直接请求数据源服务。本版本保留原有 Skill、CLI 命令、环境变量名称、数据源地址和 Provider 配置。
+
+## 验证与依赖
+
+Desktop Stable 与 Beta 的完整 `corepack yarn check` 通过，Desktop PR #2 的 7 项 GitHub CI 全部通过，并以提交 `9f11761767f043b770d974de251a414451a002f2` 合入 Desktop `main`。Desktop 测试验证 route-authenticated route 缺少 Bearer capability 时返回 401、有效 capability 时返回 200，并验证同一 WebServer 上的普通 route 即使携带该 Bearer capability 仍返回 403。Harness 的真实 Desktop 测试使用 Desktop WebServer 且关闭普通浏览器访问，验证前台 Bash 通过 managed CLI 取得业务响应，并验证直接缺少 capability 的请求返回结构化 401。
+
+完整 `pnpm quality` 通过：1041 项 unit/integration/Skills、55 项 contract/security、276 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.65%、branches 87.01%、functions 100%、lines 96.19%。完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。本版本没有增加或升级 Harness ComfyUI 依赖；Desktop 基线只前移到包含路由门禁修复的合并提交，Desktop 版本、Harness 宿主版本、Electron 版本和锁文件保持不变。
+
+## 发布与部署
+
+GitHub Release 只包含 Git tag 与 Release 记录，不附加产品安装包。生产部署保留 Git 忽略配置、会话、生成记录和媒体文件。
+
 # Harness ComfyUI v0.42.2
 
 ## 数据源提示判定
