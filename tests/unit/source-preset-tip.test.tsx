@@ -11,9 +11,10 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
 
 import {
   COMFYUI_PRESET_ID,
-  SOURCE_PRESET_TIP_COPY,
   SourcePresetTip,
 } from '../../src/client/settings/source-preset-tip.tsx'
+
+const CHECK_FAILED_COPY = '数据源服务检查失败。请打开设置，检查“ComfyUI → 数据源服务”的 URL、端口和服务状态。'
 
 const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
@@ -39,8 +40,8 @@ function settingsStore(user: unknown, initialStatus: 'loading' | 'ready' = 'read
   return {
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener) },
-    setUser(next: unknown) {
-      snapshot = { ...snapshot, user: next, revision: snapshot.revision + 1 }
+    setValue(configuration: { readonly url: string; readonly port: number }) {
+      snapshot = { ...snapshot, value: { configuration }, revision: snapshot.revision + 1 }
       for (const listener of listeners) listener()
     },
     setStatus(status: 'loading' | 'ready') {
@@ -82,8 +83,12 @@ describe('ComfyUI preset data source tip', () => {
     renderer.unmount()
   })
 
-  it('asks the user to configure the data source when URL or port is absent from the user layer', async () => {
-    const sourceScope = settingsStore({ configuration: { url: 'http://127.0.0.1' } })
+  it.each([
+    { name: 'absent', user: undefined },
+    { name: 'partial', user: { configuration: { url: 'http://127.0.0.1' } } },
+    { name: 'complete', user: { configuration: { url: 'https://catalog.example.com', port: 443 } } },
+  ])('checks the effective data source when the user override layer is $name', async ({ user }) => {
+    const sourceScope = settingsStore(user)
     const probe = vi.fn(async () => undefined)
     let renderer!: ReturnType<typeof create>
 
@@ -93,8 +98,8 @@ describe('ComfyUI preset data source tip', () => {
       } as never))
     })
 
-    expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_PRESET_TIP_COPY.notConfigured)
-    expect(probe).not.toHaveBeenCalled()
+    expect(renderer.toJSON()).toBeNull()
+    expect(probe).toHaveBeenCalledOnce()
     renderer.unmount()
   })
 
@@ -126,7 +131,7 @@ describe('ComfyUI preset data source tip', () => {
       await Promise.resolve()
     })
 
-    expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_PRESET_TIP_COPY.checkFailed)
+    expect(renderer.root.findByType('div').props['data-toast']).toBe(CHECK_FAILED_COPY)
     expect(probe).toHaveBeenCalledOnce()
     await act(async () => {
       renderer.root.findByType('div').props.onClick()
@@ -135,7 +140,7 @@ describe('ComfyUI preset data source tip', () => {
     renderer.unmount()
   })
 
-  it('checks again with the production Catalog probe after the saved URL or port changes', async () => {
+  it('cancels the old check and checks again after the effective URL or port changes', async () => {
     const sourceScope = settingsStore({ configuration: { url: 'http://127.0.0.1', port: 18093 } })
     const probe = vi.fn()
       .mockRejectedValueOnce(new Error('offline'))
@@ -148,13 +153,44 @@ describe('ComfyUI preset data source tip', () => {
       } as never))
       await Promise.resolve()
     })
-    expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_PRESET_TIP_COPY.checkFailed)
+    expect(renderer.root.findByType('div').props['data-toast']).toBe(CHECK_FAILED_COPY)
 
     await act(async () => {
-      sourceScope.setUser({ configuration: { url: 'https://catalog.example.com', port: 443 } })
+      sourceScope.setValue({ url: 'https://catalog.example.com', port: 443 })
       await Promise.resolve()
     })
     expect(probe).toHaveBeenCalledTimes(2)
+    expect(probe.mock.calls[0]?.[0].aborted).toBe(true)
+    expect(renderer.toJSON()).toBeNull()
+    renderer.unmount()
+  })
+
+  it('ignores a cancelled check that fails after the effective address changes', async () => {
+    let rejectOldCheck!: (error: Error) => void
+    const oldCheck = new Promise<unknown>((_resolve, reject) => { rejectOldCheck = reject })
+    const sourceScope = settingsStore(undefined)
+    const probe = vi.fn()
+      .mockReturnValueOnce(oldCheck)
+      .mockResolvedValueOnce(undefined)
+    let renderer!: ReturnType<typeof create>
+
+    await act(async () => {
+      renderer = create(createElement(SourcePresetTip, {
+        sessionId: 'session_1', useSessions: useSessions(COMFYUI_PRESET_ID), sourceScope, probe,
+      } as never))
+    })
+
+    await act(async () => {
+      sourceScope.setValue({ url: 'https://catalog.example.com', port: 443 })
+      await Promise.resolve()
+    })
+    expect(probe).toHaveBeenCalledTimes(2)
+    expect(probe.mock.calls[0]?.[0].aborted).toBe(true)
+
+    await act(async () => {
+      rejectOldCheck(new Error('late offline response'))
+      await oldCheck.catch(() => undefined)
+    })
     expect(renderer.toJSON()).toBeNull()
     renderer.unmount()
   })
