@@ -4,11 +4,11 @@
 
 ## 平台
 
-**Harness Core**：项目依赖的 DeepSeek Harness `0.1.2-rc.1` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
+**Harness Core**：项目依赖的 DeepSeek Harness `0.1.5-rc.1` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
 
 **Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册数据源服务 Settings、Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
 
-**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生设置入口、`sidebar.footer.action`、`conversation.input.dock`、`details` 与 `shell.overlay` 扩展位呈现统一 ComfyUI 设置页、项目入口、上下文控件和 Generation Run/Media 结果列。`.local/source-client/client.js` 是 Web Host 与 Desktop generation 根据 Client Module 源码生成并交给 Harness ModuleLoader 的浏览器构建产物。Harness `0.1.2-rc.1` 在空白 Session 中把 `details` 列宽固定为零，因此空白 Session 使用 `shell.overlay` 显示空结果列；已保存 Session 使用 `details` 读取真实 Generation Run/Media 投影。两个结果列的 Session 条件互斥。Client Module 不替换 Harness 的 root、sidebar、conversation 或 composer，也不自动创建或打开项目 Session。
+**Client Module**：`src/client/index.tsx` 提供的浏览器模块。Client Module 通过 Harness ModuleLoader 加载，并使用 Harness 原生设置入口、`sidebar.footer.action`、`conversation.input.dock` 与 `sidebar.right.pane.tab` 扩展位呈现统一 ComfyUI 设置页、项目入口、上下文控件和 Generation Run/Media 结果页。`.local/source-client/client.js` 是 Web Host 与 Desktop 根据 Client Module 源码生成的浏览器构建产物。空白与已保存 Session 共用原生右侧栏中的工作台页签，结果页读取对应 Session 的真实 Generation Run/Media 投影。Client Module 通过宿主服务操作自有页签，保留 Harness 对 root、sidebar、conversation 和 composer 的管理。项目 Session 的创建和打开由宿主响应用户的明确操作处理。
 
 **Project Tool Registry**：`src/host/tools/register-project-tools.ts` 提供的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
 

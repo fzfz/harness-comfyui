@@ -8,7 +8,7 @@ config/desktop-worktree.json 定义独立开发实例的主 checkout、运行目
 
 ## 主开发 checkout 依赖准备
 
-主 checkout 保存已审核的依赖：项目依赖在主 checkout 按 pnpm-lock.yaml 执行 pnpm install --frozen-lockfile；Desktop 依赖在基线指定仓库按 yarn.lock 执行 corepack yarn install --immutable，并按该仓库的构建命令生成 Stable 产物。安装前必须完成 docs/system/releasing.md 规定的依赖审核与安装授权。
+主 checkout 保存已审核的依赖：项目依赖在主 checkout 按 pnpm-lock.yaml 执行 pnpm install --frozen-lockfile；Desktop 2.0.9 依赖在基线指定仓库按 yarn.lock 执行 corepack yarn install --immutable，随后执行 corepack yarn workspace dsh-community-market build、corepack yarn workspace dsh-plugin-desktop build 和 corepack yarn workspace dsh-plugin-desktop prepare:electron-native。本机使用已安装的 Node 24.14.0 完成 fs-ext 2.1.1 的 Node 绑定构建；prepare:electron-native 生成 Electron 43.3.0 对应的绑定。安装前必须完成 docs/system/releasing.md 规定的依赖审核与安装授权。
 
 desktop:dependencies:link 仅在独立 worktree 中运行，用于从主 checkout 和基线 Stable workspace 建立依赖视图；主 checkout 不运行该命令。该命令检查宿主 peer 包的实际版本，不从其他 Desktop 借用缺失宿主包。
 

@@ -1,3 +1,21 @@
+# 未发布：Desktop 2.0.9 基线
+
+## 依赖与宿主接口
+
+开发基线更新为自有 Desktop 仓库中的 Stable 2.0.9、DSH 0.1.5-rc.1 和 Electron 43.3.0，源码提交由 config/desktop-baseline.json 固定。宿主保留会话永久删除、真实 Session 请求头、Provider 推理等级编辑与 managed CLI 路由鉴权补丁。Harness 的宿主 peer 下限更新为 0.1.5-rc.1，并声明原生右侧栏依赖。
+
+工作台结果页通过原生右侧栏页签显示，空白与已保存 Session 使用同一实现。关闭结果页只关闭工作台自己的页签，其他宿主页签由 Desktop 继续管理。两个项目预设按新宿主 schema 把 Persona 正文配置为 `prefix`。依赖安装、启动验收和开发规范同步到新基线。
+
+## 安装审核
+
+Desktop 2.0.9 原锁文件的安装前公告检查记录了 24 项高危和 12 项中危匹配，涉及开发工具与宿主运行依赖。安装使用经过审核的原锁定版本；本次适配只增加自有宿主补丁。Harness 锁文件的完整依赖及生产依赖公告检查均为零发现。
+
+## 验证
+
+自有 Desktop 的完整 `corepack yarn check` 通过：Market 263 项、Stable 1375 项和 Beta 1327 项测试成功；Stable 8 项、Beta 7 项跳过。本次改动修正了市场测试的代理隔离、Windows 反向补丁路径和 CLI 版本检查的临时工作目录，并保留原有行为断言。
+
+本次候选的分项验收通过：1045 项 unit/integration/Skills、55 项 contract/security、278 项 production、32 项 prototype 和 4 项真实 Desktop 测试。覆盖率为 statements 93.62%、branches 86.94%、functions 100%、lines 96.18%。真实 Desktop 测试验证会话删除、Provider 推理等级保存、结果轮询、原生页签隔离，以及媒体下载内容与复制结果。
+
 # Harness ComfyUI v0.42.3
 
 ## managed CLI 的 Desktop 路由门禁

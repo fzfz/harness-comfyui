@@ -157,7 +157,7 @@ function sessionInput(draft = '') {
 }
 
 function activeController(): WorkbenchController {
-  const controller = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+  const controller = new WorkbenchController({ openTab: vi.fn() })
   controller.toggle()
   return controller
 }
@@ -186,7 +186,7 @@ describe('native Harness workbench surfaces', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('renders a native left entry in wide and rail modes and toggles its active state', () => {
-    const controller = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const controller = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchEntry, { wide: true, workbench: controller }))
@@ -205,9 +205,10 @@ describe('native Harness workbench surfaces', () => {
     act(() => renderer!.unmount())
   })
 
-  it('shows “关闭结果列” when the result column is open and “打开结果列” when it is closed; calls closeDetails() when the user clicks “关闭结果列”; and calls openDetails() when the user clicks “打开结果列”', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+  it('opens the native results tab and closes its bound tab action from the dock', () => {
+    const sidebarRight = { openTab: vi.fn() }
+    const closeResultTab = vi.fn()
+    const controller = new WorkbenchController(sidebarRight)
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
@@ -218,51 +219,31 @@ describe('native Harness workbench surfaces', () => {
 
     act(() => controller.toggle())
     expect(buttonByText(renderer!, WORKBENCH_COPY.closeResults)).toBeDefined()
-    expect(layout.openDetails).toHaveBeenCalledOnce()
+    expect(sidebarRight.openTab).toHaveBeenCalledOnce()
+    act(() => { controller.bindResultsTab('session-1', 'result-tab', true, closeResultTab) })
 
     act(() => {
       ;(buttonByText(renderer!, WORKBENCH_COPY.closeResults).props.onClick as () => void)()
     })
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
+    expect(closeResultTab).toHaveBeenCalledOnce()
 
     act(() => {
       ;(buttonByText(renderer!, WORKBENCH_COPY.openResults).props.onClick as () => void)()
     })
     expect(buttonByText(renderer!, WORKBENCH_COPY.closeResults)).toBeDefined()
-    expect(layout.openDetails).toHaveBeenCalledTimes(2)
+    expect(sidebarRight.openTab).toHaveBeenCalledTimes(2)
 
     act(() => controller.closeResults())
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
-    expect(layout.closeDetails).toHaveBeenCalledTimes(2)
+    expect(closeResultTab).toHaveBeenCalledTimes(2)
     act(() => renderer!.unmount())
   })
 
-  it('shows “关闭结果列” after Harness opens the details column outside the workbench controller', () => {
-    let deliverMutations: MutationCallback | undefined
-    const observe = vi.fn()
-    const disconnect = vi.fn()
-    class TestMutationObserver {
-      constructor(callback: MutationCallback) {
-        deliverMutations = callback
-      }
-
-      observe = observe
-      disconnect = disconnect
-    }
-    vi.stubGlobal('MutationObserver', TestMutationObserver)
-    let collapsed = true
-    const frame = Object.assign(new EventTarget(), {
-      hasAttribute: vi.fn(() => collapsed),
-      querySelector: vi.fn(() => ({})),
-    })
-    const body = new EventTarget()
-    vi.stubGlobal('document', Object.assign(new EventTarget(), {
-      body,
-      querySelector: vi.fn(() => frame),
-    }))
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+  it('reflects native result-tab visibility without observing layout DOM attributes', () => {
+    const controller = new WorkbenchController({ openTab: vi.fn() })
+    controller.toggle()
+    controller.closeResults()
     let renderer: ReturnType<typeof create>
     act(() => {
       renderer = create(createElement(WorkbenchDock, {
@@ -270,55 +251,23 @@ describe('native Harness workbench surfaces', () => {
         sessionId: 'session-1', sessionInput: sessionInput() as never, workbench: controller,
       }))
     })
-    expect(observe).toHaveBeenCalledWith(body, {
-      attributes: true,
-      attributeFilter: ['data-details-collapsed'],
-      subtree: true,
-    })
-
-    act(() => controller.toggle())
-    act(() => {
-      ;(buttonByText(renderer!, WORKBENCH_COPY.closeResults).props.onClick as () => void)()
-    })
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
 
-    act(() => {
-      deliverMutations?.([
-        { attributeName: 'data-unrelated', target: frame } as unknown as MutationRecord,
-        { attributeName: 'data-details-collapsed', target: new EventTarget() } as unknown as MutationRecord,
-        {
-          attributeName: 'data-details-collapsed',
-          target: Object.assign(new EventTarget(), {
-            hasAttribute: vi.fn(() => true),
-            querySelector: vi.fn(() => null),
-          }),
-        } as unknown as MutationRecord,
-      ], {} as MutationObserver)
-    })
-    expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
-
-    collapsed = false
-    act(() => {
-      layout.openDetails()
-      deliverMutations?.([{
-        attributeName: 'data-details-collapsed',
-        target: frame,
-      } as unknown as MutationRecord], {} as MutationObserver)
-    })
+    let release: () => void
+    act(() => { release = controller.bindResultsTab('session-1', 'result-tab', true, vi.fn()) })
     expect(buttonByText(renderer!, WORKBENCH_COPY.closeResults)).toBeDefined()
 
-    act(() => {
-      ;(buttonByText(renderer!, WORKBENCH_COPY.closeResults).props.onClick as () => void)()
-    })
+    act(() => release!())
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
-    expect(layout.closeDetails).toHaveBeenCalledTimes(2)
     act(() => renderer!.unmount())
-    expect(disconnect).toHaveBeenCalledOnce()
   })
 
-  it('closes an open result column when the saved Session changes and reopens it in one click', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+  it('shows each Session result-tab visibility after switching Sessions', () => {
+    const sidebarRight = { openTab: vi.fn() }
+    const controller = new WorkbenchController(sidebarRight)
+    controller.toggle()
+    controller.closeResults()
+    sidebarRight.openTab.mockClear()
     const renderDock = (sessionId: string) => createElement(WorkbenchDock, {
       catalog: catalog(), dialogNavigation: freshDialogNavigation(sessionId), input: inputState() as never,
       sessionId, sessionInput: sessionInput() as never, workbench: controller,
@@ -326,32 +275,25 @@ describe('native Harness workbench surfaces', () => {
     let renderer: ReturnType<typeof create>
     act(() => { renderer = create(renderDock('session-1')) })
 
-    act(() => controller.toggle())
+    act(() => { controller.bindResultsTab('session-1', 'tab-1', true, vi.fn()) })
     expect(buttonByText(renderer!, WORKBENCH_COPY.closeResults)).toBeDefined()
 
     act(() => { renderer!.update(renderDock('session-2')) })
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
 
-    act(() => { renderer!.update(renderDock('session-3')) })
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
-    expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
-
-    act(() => {
-      ;(buttonByText(renderer!, WORKBENCH_COPY.openResults).props.onClick as () => void)()
-    })
-    expect(layout.openDetails).toHaveBeenCalledTimes(2)
+    act(() => { controller.bindResultsTab('session-2', 'tab-2', true, vi.fn()) })
     expect(buttonByText(renderer!, WORKBENCH_COPY.closeResults)).toBeDefined()
 
-    act(() => { renderer!.update(renderDock('session-4')) })
-    expect(layout.closeDetails).toHaveBeenCalledTimes(2)
+    act(() => {
+      ;(buttonByText(renderer!, WORKBENCH_COPY.closeResults).props.onClick as () => void)()
+    })
     expect(buttonByText(renderer!, WORKBENCH_COPY.openResults)).toBeDefined()
+    expect(sidebarRight.openTab).not.toHaveBeenCalled()
     act(() => renderer!.unmount())
   })
 
   it('keeps the dock absent until entry and removes selected contexts from the workbench pill', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+    const controller = new WorkbenchController({ openTab: vi.fn() })
     const draft = serializeWorkbenchContext(CONTEXT_OPTIONS[0]!.context)
     const input = sessionInput(draft)
     let renderer: ReturnType<typeof create>

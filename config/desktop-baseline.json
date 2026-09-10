@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "source": {
     "repository": "https://github.com/fzfz/dsh-desktop-anywhere.git",
-    "commit": "9f11761767f043b770d974de251a414451a002f2",
-    "relativePath": ".local/upstreams/dsh-desktop-anywhere-owned",
+    "commit": "46c3d0e9947ca061a5628526347164973e0d4b74",
+    "relativePath": ".local/upstreams/dsh-desktop-2.0.9-owned",
     "stableWorkspace": "dsh-plugin-desktop"
   },
   "packages": {
     "desktop": {
       "name": "dsh-plugin-desktop",
-      "version": "2.0.6"
+      "version": "2.0.9"
     },
     "harness": {
       "name": "@deepseek-ai/dsh",
-      "version": "0.1.2-rc.1"
+      "version": "0.1.5-rc.1"
     },
     "electron": {
       "name": "electron",

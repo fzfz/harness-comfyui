@@ -3,15 +3,15 @@ import type { IConversation } from '@deepseek-ai/dsh-client-ui-conversation/clie
 import type { CatalogContext } from '../../catalog/contract.ts'
 import {
   replaceWorkbenchContextLines,
+  WORKBENCH_RESULTS_TAB,
   workbenchContextsFromDraft,
   workbenchContextKey,
 } from './contract.ts'
 
 type WorkbenchListener = () => void
 
-export interface WorkbenchLayoutActions {
-  readonly openDetails: () => void
-  readonly closeDetails: () => void
+export interface WorkbenchSidebarRightActions {
+  readonly openTab: (kind: string) => void
 }
 
 export type WorkbenchSessionInput = ReturnType<IConversation['input']['for']>
@@ -20,10 +20,14 @@ export class WorkbenchController {
   private active = false
   private currentSessionId: string | undefined
   private resultsOpen = false
+  private readonly resultTabs = new Map<string, Map<string, {
+    readonly visible: boolean
+    readonly close: () => void
+  }>>()
   private readonly listeners = new Set<WorkbenchListener>()
   private readonly resultListeners = new Set<WorkbenchListener>()
 
-  constructor(private readonly layout: WorkbenchLayoutActions) {}
+  constructor(private readonly sidebarRight: WorkbenchSidebarRightActions) {}
 
   readonly getSnapshot = (): boolean => this.active
 
@@ -44,15 +48,38 @@ export class WorkbenchController {
   }
 
   syncCurrentSession(sessionId: string): void {
-    const changed = this.currentSessionId !== undefined && this.currentSessionId !== sessionId
+    if (this.currentSessionId === sessionId) return
     this.currentSessionId = sessionId
-    if (changed && this.resultsOpen) this.closeResults()
+    this.syncResultsOpen(this.visibleResultTab(sessionId) !== undefined)
   }
 
-  syncDetailsOpen(open: boolean): void {
+  bindResultsTab(
+    sessionId: string,
+    tabId: string,
+    visible: boolean,
+    close: () => void,
+  ): () => void {
+    const tabs = this.resultTabs.get(sessionId) ?? new Map()
+    this.resultTabs.set(sessionId, tabs)
+    const binding = { visible, close }
+    tabs.set(tabId, binding)
+    if (this.currentSessionId === sessionId) this.syncResultsOpen(this.visibleResultTab(sessionId) !== undefined)
+    return () => {
+      if (tabs.get(tabId) !== binding) return
+      tabs.delete(tabId)
+      if (tabs.size === 0) this.resultTabs.delete(sessionId)
+      if (this.currentSessionId === sessionId) this.syncResultsOpen(this.visibleResultTab(sessionId) !== undefined)
+    }
+  }
+
+  private syncResultsOpen(open: boolean): void {
     if (this.resultsOpen === open) return
     this.resultsOpen = open
     for (const listener of this.resultListeners) listener()
+  }
+
+  private visibleResultTab(sessionId: string): { readonly visible: boolean; readonly close: () => void } | undefined {
+    return Array.from(this.resultTabs.get(sessionId)?.values() ?? []).find(tab => tab.visible)
   }
 
   toggle(): void {
@@ -63,13 +90,14 @@ export class WorkbenchController {
   }
 
   openResults(): void {
-    this.layout.openDetails()
-    this.syncDetailsOpen(true)
+    this.sidebarRight.openTab(WORKBENCH_RESULTS_TAB.kind)
+    this.syncResultsOpen(true)
   }
 
   closeResults(): void {
-    this.layout.closeDetails()
-    this.syncDetailsOpen(false)
+    const visible = this.currentSessionId === undefined ? undefined : this.visibleResultTab(this.currentSessionId)
+    visible?.close()
+    this.syncResultsOpen(false)
   }
 }
 

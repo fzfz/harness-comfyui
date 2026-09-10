@@ -51,7 +51,7 @@ gh release create "v$release_version" \
 
 ## 当前 Desktop 的安装准备
 
-发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。
+发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。Desktop 2.0.9 的 Stable 构建与 Electron 原生绑定准备命令见[启动规范](startup.md#主开发-checkout-依赖准备)。
 
 发布执行者必须验证源码 origin、完整 commit、Desktop、Harness 和 Electron 版本与基线配置一致，并完成当前插件的真实 Desktop 门禁。旧 fork 的补丁及历史验收记录不能代替 anywhere Stable 的验收结果。
 

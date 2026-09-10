@@ -28,8 +28,8 @@ function baseline(overrides = {}) {
       stableWorkspace: 'dsh-plugin-desktop',
     },
     packages: {
-      desktop: { name: 'dsh-plugin-desktop', version: '2.0.6' },
-      harness: { name: '@deepseek-ai/dsh', version: '0.1.2-rc.1' },
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.9' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.1' },
       electron: { name: 'electron', version: '43.3.0' },
     },
     profile: {
@@ -67,8 +67,8 @@ describe('anywhere Stable Desktop baseline', () => {
     const parsed = parseDesktopBaseline(baseline())
     expect(parsed.source.commit).toBe('b39ffbf5621aea51e87f27e7b83d9c3e1ff5e24d')
     expect(parsed.packages).toEqual({
-      desktop: { name: 'dsh-plugin-desktop', version: '2.0.6' },
-      harness: { name: '@deepseek-ai/dsh', version: '0.1.2-rc.1' },
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.9' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.1' },
       electron: { name: 'electron', version: '43.3.0' },
     })
     expect(parsed.startup).toEqual({
@@ -99,9 +99,9 @@ describe('anywhere Stable Desktop baseline', () => {
     const root = await mkdtemp(resolve(tmpdir(), 'anywhere-baseline-'))
     const desktopRepository = resolve(root, '.local/upstreams/dsh-desktop-anywhere-candidate')
     const workspace = resolve(desktopRepository, 'dsh-plugin-desktop')
-    await writePackage(workspace, { name: 'dsh-plugin-desktop', version: '2.0.6' }, 'lib/main.js')
+    await writePackage(workspace, { name: 'dsh-plugin-desktop', version: '2.0.9' }, 'lib/main.js')
     await writePackage(resolve(workspace, 'node_modules/@deepseek-ai/dsh'), {
-      name: '@deepseek-ai/dsh', version: '0.1.2-rc.1',
+      name: '@deepseek-ai/dsh', version: '0.1.5-rc.1',
     })
     await writePackage(resolve(workspace, 'node_modules/electron'), { name: 'electron', version: '43.3.0' })
     const definitionPath = resolve(root, 'desktop-baseline.json')
@@ -162,8 +162,8 @@ describe('anywhere managed Profile contract', () => {
       version: 2,
       profileHash: expect.stringMatching(/^[0-9a-f]{64}$/u),
       outcome: 'skipped',
-      desktopVersion: '2.0.6',
-      dshVersion: '0.1.2-rc.1',
+      desktopVersion: '2.0.9',
+      dshVersion: '0.1.5-rc.1',
       setupRevision: 1,
       recordedAt: '2026-09-09T01:02:03.000Z',
     })

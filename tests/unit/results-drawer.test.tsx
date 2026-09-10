@@ -43,7 +43,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 
 import { GenerationProjectionStore } from '../../src/client/workbench/generation-store.ts'
 import { WorkbenchController } from '../../src/client/workbench/controller.ts'
-import { WorkbenchDetails, WorkbenchResultsOverlay } from '../../src/client/workbench/results-drawer.tsx'
+import { WorkbenchDetails } from '../../src/client/workbench/results-drawer.tsx'
 import { GENERATION_ERROR_COPY, RESULTS_COPY } from '../../src/client/workbench/results-contract.ts'
 import {
   GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,
@@ -145,13 +145,26 @@ function deferredVoid() {
   return { promise, resolve, reject }
 }
 
-function renderDetails(workbench: WorkbenchController) {
+function useTabInfo(close = vi.fn(), visible = true) {
+  return () => ({
+    sidebar: { expanded: true, fullscreen: false },
+    panel: { id: 'pane-1' },
+    tab: {
+      id: 'result-tab-1',
+      visible,
+      actions: { close },
+    },
+  })
+}
+
+function renderDetails(workbench: WorkbenchController, close = vi.fn()) {
   installMessageWindow()
   return create(createElement(WorkbenchDetails, {
     sessionId: 'session-1',
     useSession: ((selector: (snapshot: unknown) => unknown) => selector({
       running: false,
     })) as never,
+    useTabInfo: useTabInfo(close) as never,
     workbench,
     generationStore: generationStore as never,
   }), {
@@ -166,12 +179,13 @@ describe('native Generation result drawer', () => {
     const sessionSnapshot = Object.freeze({ running: true })
     let latest: GenerationProjection = { ...projection, runs: [], media: [], hasActiveRuns: false }
     const store = new GenerationProjectionStore({ list: async () => latest }, 1000)
-    const workbench = new WorkbenchController({ openDetails() {}, closeDetails() {} })
+    const workbench = new WorkbenchController({ openTab() {} })
     let renderer!: ReturnType<typeof create>
     await act(async () => {
       renderer = create(createElement(WorkbenchDetails, {
         sessionId: 'session-1',
         useSession: selector => selector(sessionSnapshot),
+        useTabInfo: useTabInfo() as never,
         workbench,
         generationStore: store,
       }))
@@ -200,10 +214,10 @@ describe('native Generation result drawer', () => {
       hasActiveRuns: false,
     }))
     const store = new GenerationProjectionStore({ list }, 1000)
-    const workbench = new WorkbenchController({ openDetails() {}, closeDetails() {} })
+    const workbench = new WorkbenchController({ openTab() {} })
     const useSession = <Selected,>(selector: (snapshot: typeof sessionSnapshot) => Selected) => selector(sessionSnapshot)
     const details = (sessionId: string) => createElement(WorkbenchDetails, {
-      sessionId, useSession, workbench, generationStore: store,
+      sessionId, useSession, useTabInfo: useTabInfo() as never, workbench, generationStore: store,
     })
     let renderer!: ReturnType<typeof create>
     await act(async () => { renderer = create(details('session-1')) })
@@ -263,9 +277,10 @@ describe('native Generation result drawer', () => {
       .not.toBe(GENERATION_ERROR_COPY.GENERATION_PARAMETER_CONTRACT_UNSUPPORTED)
   })
 
-  it('keeps the blank Session overlay narrower than the shared result drawer', () => {
+  it('uses the native right-sidebar surface without a blank Session overlay', () => {
     const styles = readFileSync(new URL('../../src/client/styles.css', import.meta.url), 'utf8')
-    expect(styles).toContain('.harness-comfyui-results-drawer.harness-comfyui-results-overlay {')
+    expect(styles).toContain('[data-plugin="harness-comfyui-sidebar-right"] {')
+    expect(styles).not.toContain('harness-comfyui-results-overlay')
   })
 
   it('fits image and video previews inside the media container without cropping', () => {
@@ -303,8 +318,8 @@ describe('native Generation result drawer', () => {
     expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto;')
   })
 
-  it('orders “本会话媒体” before “运行状态”, defaults to “本会话媒体”, switches to “运行状态” and back, and keeps the “运行状态” tab selected after closing and reopening the result column', () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+  it('orders “本会话媒体” before “运行状态”, defaults to “本会话媒体”, switches to “运行状态” and back, and resets to “本会话媒体” when the native result tab is recreated', () => {
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
 
@@ -347,68 +362,44 @@ describe('native Generation result drawer', () => {
     expect(renderer!.root.findAllByProps({ role: 'tabpanel' }).map(panel => panel.props.hidden))
       .toEqual([false, true])
 
-    act(() => {
-      workbench.closeResults()
-      workbench.openResults()
-    })
+    act(() => renderer!.unmount())
+    act(() => { renderer = renderDetails(workbench) })
     expect(renderer!.root.findAllByType('button')
       .filter(button => button.props.role === 'tab')
       .map(tab => tab.props['aria-selected']))
-      .toEqual([false, true])
+      .toEqual([true, false])
     act(() => renderer!.unmount())
   })
 
-  it('renders a closable fallback drawer for an open blank Session', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const workbench = new WorkbenchController(layout)
-    workbench.openResults()
+  it('renders a blank Session in the same native result tab and closes its owned tab', () => {
+    const close = vi.fn()
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => {
-      renderer = create(createElement(WorkbenchResultsOverlay, {
+      renderer = create(createElement(WorkbenchDetails, {
+        sessionId: 'session-blank',
+        useSession: (selector: (state: { running: boolean }) => unknown) => selector({ running: false }),
+        useTabInfo: useTabInfo(close) as never,
         workbench,
-        useSessions: (selector: (state: unknown) => unknown) => selector({
-          current: 'session-blank',
-          byId: { 'session-blank': { blank: true } },
-        }),
+        generationStore: generationStore as never,
       } as never))
     })
 
     expect(renderer!.root.findAllByProps({
-      className: 'harness-comfyui-results-drawer harness-comfyui-results-overlay',
+      className: 'harness-comfyui-results-drawer',
     })).toHaveLength(1)
-    expect(renderer!.root.findByProps({ 'data-plugin': 'harness-comfyui-overlay' }).props['data-session-id'])
+    expect(renderer!.root.findByProps({ 'data-plugin': 'harness-comfyui-sidebar-right' }).props['data-session-id'])
       .toBe('session-blank')
-    expect(renderer!.root.findAllByType('small')[0]!.props.children)
-      .toEqual([0, ' 个运行 · ', 0, ' 个媒体'])
 
     act(() => {
       ;(renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.close }).props.onClick as () => void)()
     })
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
-    expect(renderer!.toJSON()).toBeNull()
-    act(() => renderer!.unmount())
-  })
-
-  it('does not render the fallback drawer for a saved Session', () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
-    workbench.openResults()
-    let renderer: ReturnType<typeof create>
-    act(() => {
-      renderer = create(createElement(WorkbenchResultsOverlay, {
-        workbench,
-        useSessions: (selector: (state: unknown) => unknown) => selector({
-          current: 'session-saved',
-          byId: { 'session-saved': { blank: false } },
-        }),
-      } as never))
-    })
-
-    expect(renderer!.toJSON()).toBeNull()
+    expect(close).toHaveBeenCalledOnce()
     act(() => renderer!.unmount())
   })
 
   it('shows real Run projections and one Workflow download icon on every visible media card', () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     expect(renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')).toHaveLength(2)
@@ -486,7 +477,7 @@ describe('native Generation result drawer', () => {
       body: { append },
     })
     vi.stubGlobal('fetch', fetchMock)
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -535,7 +526,7 @@ describe('native Generation result drawer', () => {
     const clickError = new Error('native download click failed')
     const anchor = { href: '', download: '', click: vi.fn(() => { throw clickError }), remove: vi.fn() }
     vi.stubGlobal('document', { createElement: vi.fn(() => anchor), body: { append: vi.fn() } })
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -554,7 +545,7 @@ describe('native Generation result drawer', () => {
 
   it('accepts current-media messages only from the open Session Media Viewer iframe', () => {
     const environment = installMessageWindow()
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -595,7 +586,7 @@ describe('native Generation result drawer', () => {
   it('copies the complete current Run ID from the main frame', async () => {
     const writeText = vi.fn(async () => undefined)
     vi.stubGlobal('navigator', { clipboard: { writeText } })
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -620,7 +611,7 @@ describe('native Generation result drawer', () => {
 
   it('asks the user to select the displayed Run ID when Clipboard API is unavailable', async () => {
     vi.stubGlobal('navigator', {})
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -644,7 +635,7 @@ describe('native Generation result drawer', () => {
 
   it('asks the user to retry or select the Run ID when clipboard permission is denied', async () => {
     vi.stubGlobal('navigator', { clipboard: { writeText: async () => { throw new Error('permission denied') } } })
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -670,7 +661,7 @@ describe('native Generation result drawer', () => {
     const write = deferredVoid()
     vi.stubGlobal('navigator', { clipboard: { writeText: () => write.promise } })
     const environment = installMessageWindow()
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -707,7 +698,7 @@ describe('native Generation result drawer', () => {
     it(`ignores an old ${completion} after the media Modal closes and reopens`, async () => {
       const write = deferredVoid()
       vi.stubGlobal('navigator', { clipboard: { writeText: () => write.promise } })
-      const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+      const workbench = new WorkbenchController({ openTab: vi.fn() })
       let renderer: ReturnType<typeof create>
       act(() => { renderer = renderDetails(workbench) })
       act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -744,7 +735,7 @@ describe('native Generation result drawer', () => {
 
   it('removes the current-media message listener when the Modal closes and when the gallery unmounts', () => {
     const environment = installMessageWindow()
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -763,7 +754,7 @@ describe('native Generation result drawer', () => {
   })
 
   it('opens the complete Run error in a native error-details dialog', () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
 
@@ -787,7 +778,7 @@ describe('native Generation result drawer', () => {
   })
 
   it('keeps a media card visible and shows catalog copy when its preview or Workflow is missing', async () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     await act(async () => { renderer = renderDetails(workbench) })
     await act(async () => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })
@@ -825,22 +816,22 @@ describe('native Generation result drawer', () => {
     await act(async () => renderer!.unmount())
   })
 
-  it('changes the selected Run and closes through the Harness layout service', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const workbench = new WorkbenchController(layout)
+  it('changes the selected Run and closes through the owned native tab action', () => {
+    const close = vi.fn()
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
-    act(() => { renderer = renderDetails(workbench) })
+    act(() => { renderer = renderDetails(workbench, close) })
     const runCards = renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')
     expect(runCards[0]!.props['aria-pressed']).toBe(false)
     act(() => { (runCards[1]!.props.onClick as () => void)() })
     expect(renderer!.root.findAllByType('button').filter(button => button.props.className === 'harness-comfyui-run-card')[1]!.props['aria-pressed']).toBe(true)
     act(() => { (renderer!.root.findByProps({ 'aria-label': RESULTS_COPY.close }).props.onClick as () => void)() })
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
+    expect(close).toHaveBeenCalledOnce()
     act(() => renderer!.unmount())
   })
 
   it('filters real media by turn and kind and keeps independent pagination', async () => {
-    const workbench = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+    const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>
     act(() => { renderer = renderDetails(workbench) })
     act(() => { (buttonByText(renderer!, RESULTS_COPY.sessionTab).props.onClick as () => void)() })

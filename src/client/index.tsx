@@ -3,6 +3,7 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 
 import HARNESS_COMFYUI_REMOTE from '../remote.ts'
@@ -23,19 +24,26 @@ import { HarnessComfyuiSettingsPage } from './settings/harness-comfyui-settings.
 import { SourcePresetTip } from './settings/source-preset-tip.tsx'
 
 import {
-  WORKBENCH_DETAILS_PRIORITY,
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
-  WORKBENCH_RESULTS_OVERLAY_ID,
+  WORKBENCH_RESULTS_TAB,
 } from './workbench/contract.ts'
 import { WorkbenchController } from './workbench/controller.ts'
 import { ContextDialogNavigationStore } from './workbench/context-dialog-navigation.ts'
 import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
-import { WorkbenchDetails, WorkbenchResultsOverlay } from './workbench/results-drawer.tsx'
+import { WorkbenchDetails } from './workbench/results-drawer.tsx'
 
 export const name = 'harness-comfyui'
-export const inject = ['slots', 'sessions', 'conversation', 'remote', 'layout', 'settingsScope'] as const
+export const inject = [
+  'slots',
+  'sessions',
+  'conversation',
+  'remote',
+  'sidebarRight',
+  'sidebarRightTabs',
+  'settingsScope',
+] as const
 
 interface ClientSessions {
   readonly scope: (sessionId: string) => Context | undefined
@@ -62,12 +70,17 @@ class CatalogRequestError extends Error {
 }
 
 export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
-  const workbench = new WorkbenchController(ctx.layout)
+  const workbench = new WorkbenchController(ctx.sidebarRight)
   const contextDialogNavigationStore = new ContextDialogNavigationStore(() => globalThis.localStorage)
   const clientSessions = ctx.sessions
   const disposers: Array<() => void | Promise<void>> = [() => contextDialogNavigationStore.dispose()]
   try {
     disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
+    disposers.push(ctx.sidebarRightTabs.register({
+      id: WORKBENCH_RESULTS_TAB.id,
+      kind: WORKBENCH_RESULTS_TAB.kind,
+      title: () => WORKBENCH_RESULTS_TAB.title,
+    }))
     const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE, GENERATION_REMOTE_SERVICE, IMAGE_READER_REMOTE_SERVICE], (remoteContext) => {
       const remoteCatalog = remoteContext.get(CATALOG_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiCatalog
       const remoteGeneration = remoteContext.get(GENERATION_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiGeneration
@@ -178,17 +191,11 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
             probe: catalog.baseModels,
           }),
         }, SourcePresetTip)),
-        ctx.slots.inject('details', () => ctx.slots.register({
-          name: 'details',
-          priority: WORKBENCH_DETAILS_PRIORITY,
+        ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
+          name: 'sidebar.right.pane.tab',
+          key: WORKBENCH_RESULTS_TAB.id,
           inject: () => ({ workbench, generationStore }),
         }, WorkbenchDetails)),
-        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-          name: 'shell.overlay',
-          id: WORKBENCH_RESULTS_OVERLAY_ID,
-          order: 20,
-          inject: () => ({ workbench }),
-        }, WorkbenchResultsOverlay)),
         ctx.slots.inject('settings.section', () => ctx.slots.register({
           name: 'settings.section',
           id: SOURCE_SETTINGS_SECTION_ID,
