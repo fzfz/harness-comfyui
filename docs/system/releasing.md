@@ -25,9 +25,9 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.42.2 的发布范围与 Desktop 基线
+## v0.42.3 的发布范围与 Desktop 基线
 
-v0.42.2 继续使用 `config/desktop-baseline.json` 固定的 `fzfz/dsh-desktop-anywhere` Stable workspace，并保留 `v0.42.1` 的 Desktop 基线、Desktop 锁文件、Harness 依赖和受管开发配置物化。独立 worktree 的 `dev:start` 与 `dev:restart` 从开发私密来源读取声明的凭据；生产启动读取生产 checkout 自身的配置。该版本让 `SourcePresetTip` 使用 Settings 生效配置判断数据源地址；有效地址触发 Catalog 探针，探针失败时显示数据源服务检查指引。部署验收必须确认 Desktop 运行，当前插件版本为 `0.42.2`，且生产 checkout 与发布提交一致。
+v0.42.3 把 `config/desktop-baseline.json` 前移到包含 route-authenticated 路由门禁修复的 `fzfz/dsh-desktop-anywhere` Stable 提交。Harness managed CLI route 使用该声明把认证交给自身的短期 shell capability；其他 Desktop WebServer route 继续使用 Renderer 浏览器访问门禁。该版本保留 `v0.42.2` 的受管开发配置物化和 `SourcePresetTip` 生效配置判定，并保持 Desktop 版本、Harness 宿主版本、Electron 版本、Desktop 锁文件和 Harness 依赖不变。部署验收必须确认 Desktop 运行，当前插件版本为 `0.42.3`，且生产 checkout 与发布提交一致。
 
 ## Git tag 与 GitHub Release
 
