@@ -1,8 +1,8 @@
-# 未发布：Desktop 2.0.9 基线
+# Harness ComfyUI v0.43.0
 
 ## 依赖与宿主接口
 
-开发基线更新为自有 Desktop 仓库中的 Stable 2.0.9、DSH 0.1.5-rc.1 和 Electron 43.3.0，源码提交由 config/desktop-baseline.json 固定。宿主保留会话永久删除、真实 Session 请求头、Provider 推理等级编辑与 managed CLI 路由鉴权补丁。Harness 的宿主 peer 下限更新为 0.1.5-rc.1，并声明原生右侧栏依赖。
+Desktop 基线更新为自有 Desktop 仓库中的 Stable 2.0.9、DSH 0.1.5-rc.1 和 Electron 43.3.0，源码提交由 config/desktop-baseline.json 固定。宿主保留会话永久删除、真实 Session 请求头、Provider 推理等级编辑与 managed CLI 路由鉴权补丁。Harness 的宿主 peer 下限更新为 0.1.5-rc.1，并声明原生右侧栏依赖。
 
 工作台结果页通过原生右侧栏页签显示，空白与已保存 Session 使用同一实现。关闭结果页只关闭工作台自己的页签，其他宿主页签由 Desktop 继续管理。两个项目预设按新宿主 schema 把 Persona 正文配置为 `prefix`。依赖安装、启动验收和开发规范同步到新基线。
 

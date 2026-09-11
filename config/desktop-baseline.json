@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": {
     "repository": "https://github.com/fzfz/dsh-desktop-anywhere.git",
-    "commit": "46c3d0e9947ca061a5628526347164973e0d4b74",
+    "commit": "94748d71134ad0912334ffbd420c1bfc0d421b49",
     "relativePath": ".local/upstreams/dsh-desktop-2.0.9-owned",
     "stableWorkspace": "dsh-plugin-desktop"
   },
