@@ -120,6 +120,14 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           if (!result.value.ok) throw new CatalogRequestError(result.value.error.code, result.value.error.message)
           return result.value.value
         },
+        details: async (request: Parameters<typeof remoteCatalog.details>[0], signal: AbortSignal) => {
+          ensureActive(signal)
+          const result = await remoteCatalog.details(request)
+          ensureActive(signal)
+          if (!result.ok) throw new CatalogRequestError(result.error.code, `${result.error.code}: ${result.error.message}`)
+          if (!result.value.ok) throw new CatalogRequestError(result.value.error.code, result.value.error.message)
+          return result.value.value
+        },
         baseModels: async (signal: AbortSignal) => {
           ensureActive(signal)
           const result = await remoteCatalog.baseModels()

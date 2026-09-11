@@ -296,8 +296,10 @@ describe('NodeWorkerComfyFrontend', () => {
       await expect(promise).rejects.toMatchObject({ code: 'COMFYUI_REQUEST_CANCELED' })
 
       expect(workerProcess?.signalCode).toBe('SIGKILL')
-      expect(() => process.kill(workerPid, 0)).toThrow(expect.objectContaining({ code: 'ESRCH' }))
-      expect(() => process.kill(fakeChromePid, 0)).toThrow(expect.objectContaining({ code: 'ESRCH' }))
+      await vi.waitFor(() => {
+        expect(() => process.kill(workerPid, 0)).toThrow(expect.objectContaining({ code: 'ESRCH' }))
+        expect(() => process.kill(fakeChromePid, 0)).toThrow(expect.objectContaining({ code: 'ESRCH' }))
+      })
       expect(() => process.kill(unrelated.pid!, 0)).not.toThrow()
     } finally {
       controller.abort()

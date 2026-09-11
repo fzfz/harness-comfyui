@@ -1,3 +1,5 @@
+import { CatalogDetailsPanel } from './catalog-details.tsx'
+import { CATALOG_PRESENTATION, type CatalogDetails, type CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import {
@@ -71,6 +73,7 @@ export function WorkbenchEntry({ wide, workbench }: WorkbenchEntryProps) {
 }
 
 export interface CatalogApi {
+  readonly details: (request: CatalogDetailsRequest, signal: AbortSignal) => Promise<CatalogDetails>
   readonly search: (request: CatalogQueryRequest, signal: AbortSignal) => Promise<CatalogPage>
   readonly baseModels: (signal: AbortSignal) => Promise<BaseModelList>
 }
@@ -131,6 +134,13 @@ function WorkbenchDockSession({
   const [selectedOptions, setSelectedOptions] = useState<ReadonlyMap<string, CatalogContext>>(new Map())
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [detailsItem, setDetailsItem] = useState<CatalogItem | null>(null)
+  const detailOpenerRef = useRef<HTMLButtonElement | null>(null)
+  const listRef = useRef<HTMLDivElement | null>(null)
+  const listScroll = useRef(0)
+  const galleryScroll = useRef(0)
+  const restoreDetailFocus = useRef(false)
+  const detailPanelRef = useRef<HTMLDivElement | null>(null)
   const [galleryItem, setGalleryItem] = useState<CatalogItem | null>(null)
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [galleryLoadFailed, setGalleryLoadFailed] = useState(false)
@@ -265,10 +275,24 @@ function WorkbenchDockSession({
     }
     if (!restoreGalleryFocusRef.current) return
     restoreGalleryFocusRef.current = false
+    const content = detailsItem !== null ? detailPanelRef.current?.querySelector('.harness-comfyui-catalog-detail') : listRef.current?.closest('.harness-comfyui-catalog-modal-content')
+    if (content) content.scrollTop = galleryScroll.current
+    if (detailsItem !== null) {
+      detailPanelRef.current?.querySelector<HTMLButtonElement>('.harness-comfyui-detail-preview')?.focus({ preventScroll: true })
+      return
+    }
     galleryOpenerCardRef.current
       ?.querySelector<HTMLButtonElement>('.harness-comfyui-card-preview')
-      ?.focus()
-  }, [galleryItem])
+      ?.focus({ preventScroll: true })
+  }, [galleryItem, detailsItem])
+
+  useEffect(() => {
+    if (detailsItem !== null || !restoreDetailFocus.current) return
+    restoreDetailFocus.current = false
+    const content = listRef.current?.closest('.harness-comfyui-catalog-modal-content')
+    if (content) content.scrollTop = listScroll.current
+    detailOpenerRef.current?.focus({ preventScroll: true })
+  }, [detailsItem])
 
   if (!active) return null
 
@@ -279,12 +303,19 @@ function WorkbenchDockSession({
     setGalleryItem(null)
     setGalleryIndex(0)
     setGalleryLoadFailed(false)
+    setDetailsItem(null)
     setDialogOpen(false)
     setBaseModelMenuOpen(false)
     setSelectedOptions(new Map())
   }
 
+  const closeDetails = () => {
+    restoreDetailFocus.current = true
+    setDetailsItem(null)
+  }
+
   const openDialog = () => {
+    setDetailsItem(null)
     setBaseModels(null)
     setBaseModelStatus('idle')
     setBaseModelError(null)
@@ -337,6 +368,7 @@ function WorkbenchDockSession({
 
   const openGallery = (option: CatalogItem) => {
     if (option.coverUrl === null) return
+    galleryScroll.current = (detailsItem !== null ? detailPanelRef.current?.querySelector('.harness-comfyui-catalog-detail') : listRef.current?.closest('.harness-comfyui-catalog-modal-content'))?.scrollTop ?? 0
     galleryOpenerKeyRef.current = workbenchContextKey(option.context)
     setGalleryIndex(0)
     setGalleryLoadFailed(false)
@@ -388,12 +420,12 @@ function WorkbenchDockSession({
 
       <Modal
         open={dialogOpen}
-        onClose={galleryItem === null ? closeDialog : closeGallery}
-        title={galleryItem === null ? WORKBENCH_COPY.dialogTitle : `${WORKBENCH_COPY.galleryTitle}：${galleryItem.label}`}
-        closeLabel={galleryItem === null ? WORKBENCH_COPY.closeDialog : WORKBENCH_COPY.closeGallery}
+        onClose={galleryItem !== null ? closeGallery : detailsItem !== null ? closeDetails : closeDialog}
+        title={galleryItem === null ? (detailsItem === null ? WORKBENCH_COPY.dialogTitle : `${CATALOG_PRESENTATION.copy.details}：${detailsItem.label}`) : `${WORKBENCH_COPY.galleryTitle}：${galleryItem.label}`}
+        closeLabel={galleryItem !== null && detailsItem !== null ? CATALOG_PRESENTATION.copy.returnToDetails : detailsItem !== null ? CATALOG_PRESENTATION.copy.returnToList : galleryItem === null ? WORKBENCH_COPY.closeDialog : WORKBENCH_COPY.closeGallery}
         className={`harness-comfyui-catalog-modal${galleryItem === null ? '' : ' harness-comfyui-gallery-modal'}`}
-        contentClassName={`harness-comfyui-catalog-modal-content${galleryItem === null ? '' : ' harness-comfyui-gallery-modal-content'}`}
-        footer={galleryItem === null ? (
+        contentClassName={`harness-comfyui-catalog-modal-content${galleryItem !== null ? ' harness-comfyui-gallery-modal-content' : detailsItem !== null ? ' harness-comfyui-detail-modal-content' : ''}`}
+        footer={galleryItem === null && detailsItem === null ? (
           <>
             <span className="harness-comfyui-selection-count">
               {WORKBENCH_COPY.selected} {selectedOptions.size}
@@ -405,10 +437,9 @@ function WorkbenchDockSession({
               {WORKBENCH_COPY.confirm}
             </Button>
           </>
-        ) : null}
+        ) : detailsItem !== null && galleryItem === null ? <Button variant="ghost" onClick={closeDetails}>{CATALOG_PRESENTATION.copy.returnToList}</Button> : null}
       >
-        {galleryItem === null ? (
-          <>
+          <div ref={listRef} hidden={galleryItem !== null || detailsItem !== null}>
             {navigationPersistenceError === null ? null : (
               <span className="harness-comfyui-catalog-state">{navigationPersistenceError}</span>
             )}
@@ -512,22 +543,25 @@ function WorkbenchDockSession({
                         <img src={option.coverUrl} alt={`${option.label} 封面`} loading="lazy" />
                       </Button>
                     )}
-                    <Button
-                      className="harness-comfyui-card-select"
-                      variant="toolbar"
-                      aria-pressed={selected}
-                      aria-label={`${selected ? WORKBENCH_COPY.selectedItem : WORKBENCH_COPY.selectItem} ${option.label}`}
-                      onClick={() => toggleOption(option)}
-                    >
-                      <span className="harness-comfyui-card-selection" aria-hidden="true">
-                        {selected ? <IconCheckOutline16 /> : null}
+                    <span className="harness-comfyui-card-copy">
+                      <strong title={option.label}>{option.label}</strong>
+                      <small>{option.subtitle}</small>
+                    </span>
+                    <div className="harness-comfyui-card-actions">
+                      <Button className="harness-comfyui-card-select" variant={selected ? 'primary' : 'toolbar'} size="sm"
+                        aria-pressed={selected} aria-label={`${selected ? WORKBENCH_COPY.selectedItem : WORKBENCH_COPY.selectItem} ${option.label}`}
+                        onClick={() => toggleOption(option)}>
                         {selected ? WORKBENCH_COPY.selectedItem : WORKBENCH_COPY.selectItem}
-                      </span>
-                      <span className="harness-comfyui-card-copy">
-                        <strong>{option.label}</strong>
-                        <small>{option.subtitle}</small>
-                      </span>
-                    </Button>
+                      </Button>
+                      <Button variant="toolbar" size="sm" aria-label={`${CATALOG_PRESENTATION.copy.details} ${option.label}`}
+                        onClick={event => {
+                          listScroll.current = listRef.current?.closest('.harness-comfyui-catalog-modal-content')?.scrollTop ?? 0
+                          detailOpenerRef.current = event.currentTarget
+                          setDetailsItem(option)
+                        }}>
+                        {CATALOG_PRESENTATION.copy.details}
+                      </Button>
+                    </div>
                   </div>
                 )
               }) : null}
@@ -560,8 +594,12 @@ function WorkbenchDockSession({
             </div>
           </div>
             </div>
-          </>
-        ) : (
+          </div>
+        {detailsItem !== null && <div ref={detailPanelRef} hidden={galleryItem !== null} className="harness-comfyui-detail-container">
+          <CatalogDetailsPanel request={{ kind: detailsItem.context.kind, id: detailsItem.context.id }} load={catalog.details}
+            preview={detailsItem.coverUrl === null ? null : () => openGallery(detailsItem)} />
+        </div>}
+        {galleryItem !== null && (
           <div className="harness-comfyui-gallery">
             <div className="harness-comfyui-gallery-stage">
               <Button

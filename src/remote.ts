@@ -1,3 +1,4 @@
+import { parseCatalogDetailsRequest, parseCatalogDetailsResult, type CatalogDetailsRequest, type CatalogDetails } from './catalog/details-schema.ts'
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 
 import GENERATION_REMOTE from './generation/remote.ts'
@@ -16,12 +17,14 @@ import {
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespaceMap {
     harnessComfyuiCatalog: {
+      details: (request: CatalogDetailsRequest) => Promise<RemoteResult<CatalogOperationResult<CatalogDetails>>>
       search: (request: CatalogQueryRequest) => Promise<RemoteResult<CatalogOperationResult<CatalogPage>>>
       baseModels: () => Promise<RemoteResult<CatalogOperationResult<BaseModelList>>>
     }
   }
 
   interface TypertRemoteMap {
+    'harnessComfyuiCatalog/details': (request: CatalogDetailsRequest) => Promise<RemoteResult<CatalogOperationResult<CatalogDetails>>>
     'harnessComfyuiCatalog/search': (request: CatalogQueryRequest) => Promise<RemoteResult<CatalogOperationResult<CatalogPage>>>
     'harnessComfyuiCatalog/baseModels': () => Promise<RemoteResult<CatalogOperationResult<BaseModelList>>>
   }
@@ -64,6 +67,18 @@ export const CATALOG_REMOTE: TypertRemoteContribution = Object.freeze({
       typeSymbol: 'harness-comfyui/catalog#BaseModelResult',
       schema: Object.freeze({ parse: parseBaseModelResult }),
     }),
+  }), Object.freeze({
+    id: 'harness-comfyui#harnessComfyuiCatalog/details',
+    service: CATALOG_REMOTE_NAMESPACE,
+    namespace: CATALOG_REMOTE_NAMESPACE,
+    method: 'details',
+    invocation: Object.freeze({ kind: 'direct' as const }),
+    parameters: Object.freeze([Object.freeze({
+      name: 'request', wire: 'request', source: 'json' as const,
+      codec: Object.freeze({ mode: 'strict' as const, typeSymbol: 'harness-comfyui/catalog#CatalogDetailsRequest', schema: Object.freeze({ parse: parseCatalogDetailsRequest }) }),
+    })]),
+    cancellation: Object.freeze({ parameter: 'signal' as const }),
+    result: Object.freeze({ mode: 'strict' as const, typeSymbol: 'harness-comfyui/catalog#CatalogDetailsResult', schema: Object.freeze({ parse: parseCatalogDetailsResult }) }),
   })]),
 })
 
