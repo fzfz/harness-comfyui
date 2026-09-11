@@ -13,17 +13,21 @@ describe('Catalog Remote service', () => {
     const baseModelList = { items: [{ id: '2', label: 'wai' }] } as const
     const search = vi.fn(async () => page)
     const baseModels = vi.fn(async () => baseModelList)
-    const service = new CatalogRemoteService(context, { search, baseModels } as never)
+    const details = vi.fn(async () => ({ kind: 'work', id: '1', fields: [] }))
+    const service = new CatalogRemoteService(context, { search, baseModels, details } as never)
 
     expect(remoteMethods(service)).toEqual([
       { method: 'search', invocation: { kind: 'direct' } },
       { method: 'baseModels', invocation: { kind: 'direct' } },
+      { method: 'details', invocation: { kind: 'direct' } },
     ])
     const request = { kind: 'model', query: '', page: 1, baseModelId: null } as const
     await expect(service.search(request, controller.signal)).resolves.toEqual({ ok: true, value: page })
     expect(search).toHaveBeenCalledWith(request, controller.signal)
     await expect(service.baseModels(controller.signal)).resolves.toEqual({ ok: true, value: baseModelList })
     expect(baseModels).toHaveBeenCalledWith(controller.signal)
+    await expect(service.details({ kind: 'work', id: '1' }, controller.signal)).resolves.toEqual({ ok: true, value: { kind: 'work', id: '1', fields: [] } })
+    expect(details).toHaveBeenCalledWith({ kind: 'work', id: '1' }, controller.signal)
     await context.fiber.dispose()
   })
 
@@ -31,6 +35,7 @@ describe('Catalog Remote service', () => {
     const context = new Context()
     const failure = new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
     const service = new CatalogRemoteService(context, {
+      details: vi.fn(async () => { throw failure }),
       search: vi.fn(async () => { throw failure }),
       baseModels: vi.fn(async () => { throw failure }),
     } as never)
@@ -42,6 +47,7 @@ describe('Catalog Remote service', () => {
       ok: false,
       error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog template parameter is invalid.' },
     })
+    await expect(service.details({ kind: 'work', id: '1' }, new AbortController().signal)).resolves.toMatchObject({ ok: false, error: { code: 'CATALOG_PROTOCOL_ERROR' } })
     await expect(service.baseModels(new AbortController().signal)).resolves.toEqual({
       ok: false,
       error: { code: 'CATALOG_PROTOCOL_ERROR', message: 'Catalog template parameter is invalid.' },
@@ -53,6 +59,7 @@ describe('Catalog Remote service', () => {
     const context = new Context()
     const abort = new DOMException('cancelled', 'AbortError')
     const service = new CatalogRemoteService(context, {
+      details: vi.fn(async () => { throw abort }),
       search: vi.fn(async () => { throw abort }),
       baseModels: vi.fn(async () => { throw new Error('unexpected') }),
     } as never)
@@ -61,6 +68,7 @@ describe('Catalog Remote service', () => {
       { kind: 'model', query: '', page: 1, baseModelId: null },
       new AbortController().signal,
     )).rejects.toBe(abort)
+    await expect(service.details({ kind: 'work', id: '1' }, new AbortController().signal)).rejects.toBe(abort)
     await expect(service.baseModels(new AbortController().signal)).rejects.toThrow('unexpected')
     await context.fiber.dispose()
   })

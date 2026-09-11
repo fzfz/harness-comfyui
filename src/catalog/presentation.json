@@ -1,0 +1,245 @@
+{
+  "pageSize": 8,
+  "copy": {
+    "details": "详情",
+    "returnToList": "返回资源列表",
+    "retry": "重试",
+    "emptyValue": "未填写",
+    "returnToDetails": "返回详情"
+  },
+  "fields": {
+    "id": {
+      "label": "记录 ID",
+      "type": "id"
+    },
+    "base_model_id": {
+      "label": "基础模型 ID",
+      "type": "id"
+    },
+    "file_name": {
+      "label": "文件名",
+      "type": "text"
+    },
+    "file_format": {
+      "label": "文件格式",
+      "type": "text"
+    },
+    "precision_or_quantization": {
+      "label": "精度 / 量化",
+      "type": "text"
+    },
+    "author": {
+      "label": "作者",
+      "type": "text"
+    },
+    "version": {
+      "label": "版本",
+      "type": "text"
+    },
+    "description": {
+      "label": "说明",
+      "type": "text"
+    },
+    "usage": {
+      "label": "使用方法",
+      "type": "text"
+    },
+    "skill_name": {
+      "label": "Skill 名称",
+      "type": "text"
+    },
+    "model_id": {
+      "label": "生成模型 ID",
+      "type": "id"
+    },
+    "trigger_words_json": {
+      "label": "触发词",
+      "type": "list"
+    },
+    "weight": {
+      "label": "建议权重",
+      "type": "number"
+    },
+    "name": {
+      "label": "名称",
+      "type": "text"
+    },
+    "aliases_json": {
+      "label": "别名",
+      "type": "list"
+    },
+    "category_name": {
+      "label": "作品类别",
+      "type": "text"
+    },
+    "character_names": {
+      "label": "角色",
+      "type": "list"
+    },
+    "work_id": {
+      "label": "作品 ID",
+      "type": "id"
+    },
+    "works.name": {
+      "label": "所属作品",
+      "type": "text"
+    },
+    "prompt_text": {
+      "label": "提示词",
+      "type": "text"
+    },
+    "style_description": {
+      "label": "画风说明",
+      "type": "text"
+    },
+    "canonical_tag": {
+      "label": "标准标签",
+      "type": "text"
+    },
+    "category": {
+      "label": "标签类别",
+      "type": "number"
+    },
+    "post_count": {
+      "label": "使用次数",
+      "type": "number"
+    },
+    "title": {
+      "label": "标题",
+      "type": "text"
+    },
+    "artist_string": {
+      "label": "画师串",
+      "type": "text"
+    },
+    "style_ids": {
+      "label": "关联画风 ID",
+      "type": "list"
+    },
+    "lora_id": {
+      "label": "LoRA ID",
+      "type": "id"
+    },
+    "template_type": {
+      "label": "模板类型",
+      "type": "text"
+    }
+  },
+  "kinds": {
+    "model": {
+      "details": [
+        "id",
+        "base_model_id",
+        "file_name",
+        "file_format",
+        "precision_or_quantization",
+        "author",
+        "version",
+        "description",
+        "usage",
+        "skill_name"
+      ],
+      "summary": [
+        "author",
+        "file_format"
+      ]
+    },
+    "lora": {
+      "details": [
+        "id",
+        "base_model_id",
+        "model_id",
+        "file_name",
+        "file_format",
+        "precision_or_quantization",
+        "author",
+        "version",
+        "description",
+        "usage",
+        "trigger_words_json",
+        "weight"
+      ],
+      "summary": [
+        "version",
+        "weight"
+      ]
+    },
+    "work": {
+      "details": [
+        "id",
+        "name",
+        "aliases_json",
+        "category_name",
+        "character_names"
+      ],
+      "summary": [
+        "category_name"
+      ]
+    },
+    "character": {
+      "details": [
+        "id",
+        "work_id",
+        "works.name",
+        "name",
+        "aliases_json",
+        "prompt_text"
+      ],
+      "summary": [
+        "works.name"
+      ]
+    },
+    "style": {
+      "details": [
+        "id",
+        "base_model_id",
+        "name",
+        "aliases_json",
+        "prompt_text",
+        "style_description"
+      ],
+      "summary": [
+        "style_description"
+      ]
+    },
+    "prompt-term": {
+      "details": [
+        "id",
+        "canonical_tag",
+        "aliases_json",
+        "category",
+        "post_count"
+      ],
+      "summary": [
+        "category",
+        "post_count"
+      ]
+    },
+    "artist-string": {
+      "details": [
+        "id",
+        "base_model_id",
+        "title",
+        "description",
+        "artist_string",
+        "style_ids"
+      ],
+      "summary": [
+        "description"
+      ]
+    },
+    "comfyui-template": {
+      "details": [
+        "id",
+        "base_model_id",
+        "model_id",
+        "lora_id",
+        "title",
+        "template_type"
+      ],
+      "summary": [
+        "template_type"
+      ]
+    }
+  }
+}

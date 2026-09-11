@@ -1,4 +1,5 @@
-export const CATALOG_PAGE_SIZE = 9
+import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
+export const CATALOG_PAGE_SIZE = presentation.pageSize
 export const CATALOG_BASE_MODEL_PAGE_SIZE = 20
 export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = 100
 export const CATALOG_QUERY_TIMEOUT_MS = 15_000
@@ -23,7 +24,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: '生成模型',
     path: '/internal/semantic/generation-models',
     labelField: 'file_name',
-    subtitleFields: Object.freeze(['author', 'file_format']),
+    subtitleFields: Object.freeze(presentation.kinds['model'].summary),
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -31,7 +32,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: 'LoRA',
     path: '/internal/semantic/loras',
     labelField: 'file_name',
-    subtitleFields: Object.freeze(['author', 'version']),
+    subtitleFields: Object.freeze(presentation.kinds['lora'].summary),
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -39,7 +40,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: '作品',
     path: '/internal/semantic/works',
     labelField: 'name',
-    subtitleFields: Object.freeze(['category_name']),
+    subtitleFields: Object.freeze(presentation.kinds['work'].summary),
     baseModelScoped: false,
   }),
   Object.freeze({
@@ -47,7 +48,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: '角色',
     path: '/internal/semantic/characters',
     labelField: 'name',
-    subtitleFields: Object.freeze(['works.name']),
+    subtitleFields: Object.freeze(presentation.kinds['character'].summary),
     baseModelScoped: false,
   }),
   Object.freeze({
@@ -55,7 +56,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: '画师或画风',
     path: '/internal/semantic/styles',
     labelField: 'name',
-    subtitleFields: Object.freeze(['prompt_text']),
+    subtitleFields: Object.freeze(presentation.kinds['style'].summary),
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -63,7 +64,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: '提示词条目',
     path: '/internal/semantic/prompt-terms',
     labelField: 'canonical_tag',
-    subtitleFields: Object.freeze(['post_count']),
+    subtitleFields: Object.freeze(presentation.kinds['prompt-term'].summary),
     baseModelScoped: false,
   }),
   Object.freeze({
@@ -71,7 +72,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: '画师串',
     path: '/internal/semantic/artist-prompt-strings',
     labelField: 'title',
-    subtitleFields: Object.freeze(['description']),
+    subtitleFields: Object.freeze(presentation.kinds['artist-string'].summary),
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -79,7 +80,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     label: 'Workflow 模板',
     path: '/internal/semantic/comfyui-templates',
     labelField: 'title',
-    subtitleFields: Object.freeze(['template_type']),
+    subtitleFields: Object.freeze(presentation.kinds['comfyui-template'].summary),
     baseModelScoped: true,
   }),
 ] as const)
@@ -464,7 +465,7 @@ export function parseCatalogItem(value: unknown): CatalogItem {
   return Object.freeze({
     context: parseCatalogContext(input.context),
     label: itemText(input.label, 'catalog item label', 500),
-    subtitle: itemText(input.subtitle, 'catalog item subtitle', 500),
+    subtitle: input.subtitle === '' ? '' : itemText(input.subtitle, 'catalog item subtitle', 500),
     coverUrl: parsedCoverUrl,
     sampleImageUrls: sampleImageUrls(input.sampleImageUrls, parsedCoverUrl),
   })
@@ -511,7 +512,7 @@ export function parseBaseModelList(value: unknown): BaseModelList {
   return Object.freeze({ items: Object.freeze(input.items.map(parseBaseModelItem)) })
 }
 
-function parseCatalogOperationResult<T>(
+export function parseCatalogOperationResult<T>(
   value: unknown,
   parseValue: (input: unknown) => T,
   subject: string,

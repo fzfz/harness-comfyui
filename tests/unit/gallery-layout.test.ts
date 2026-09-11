@@ -34,13 +34,14 @@ describe('catalog image gallery layout', () => {
     expect(body).toContain('overflow: hidden;')
   })
 
-  it('shows oversized images at natural dimensions inside a two-axis scroll container', () => {
+  it('fits the complete image into the available gallery width and height', () => {
     const currentImage = declarations('.harness-comfyui-gallery-current')
     const image = declarations('.harness-comfyui-gallery-current img')
 
     expect(currentImage).toContain('overflow: auto;')
-    expect(image).toContain('max-width: none;')
-    expect(image).toContain('max-height: none;')
+    expect(image).toContain('width: 100%;')
+    expect(image).toContain('height: 100%;')
+    expect(image).toContain('object-fit: contain;')
     expect(image).toContain('margin: auto;')
   })
 })

@@ -41,7 +41,7 @@ Client 通过 DSH 0.1.5-rc.1 的 `sidebarRightTabs` 注册 ComfyUI 结果页，�
 
 `WorkbenchDetails` 在订阅 `GenerationProjectionStore` 后，把 `SessionSnapshot.running` 传给 Store 的 `setSessionRunning()`。此后，`WorkbenchDetails` 仅在该布尔值变化时再次调用 `setSessionRunning()`。Store 按 Session 共享查询、快照和计时器：有实际订阅者时，只要会话 Agent 正在运行或最近一次成功投影包含活动 Run，就继续调用 Generation Remote。会话运行状态变化会立即触发查询；会话 Agent 停止且投影没有活动 Run 后，Store 停止轮询。普通正文事件和工具事件不会触发结果查询。最后一个订阅者退出或 Store 释放时，Store 取消请求并清除对应的计时器、运行状态和缓存；旧请求的迟到响应不能更新快照或恢复计时器。
 
-“插入上下文”资源卡片把封面预览按钮与记录选择按钮作为同级交互。封面预览按钮在同一个 Catalog `Modal` 中切换到图片画廊；关闭画廊后恢复 Catalog 查询、分页和待确认选择。画廊 header 不参与 flex 收缩，画廊 body 只占用 Modal 中 header 之外的剩余高度；图片按固有尺寸显示，超出查看区域时由该区域提供水平和垂直滚动条。`CatalogItem.coverUrl` 与 `CatalogItem.sampleImageUrls` 只属于 Client 展示投影，不进入 `CatalogContext` 或 composer 草稿。
+“插入上下文”资源卡片把封面预览按钮与记录选择按钮作为同级交互。封面预览按钮在同一个 Catalog `Modal` 中切换到图片画廊；关闭画廊后恢复 Catalog 查询、分页和待确认选择。画廊 header 保持完整高度，画廊 body 使用 Modal 中 header 之外的剩余高度；图片通过 `object-fit: contain` 居中适配可用宽高。资源列表采用两列、每页八项，卡片封面沿用完整缩放和居中方式。卡片摘要和分类详情字段从 `src/catalog/presentation.json` 读取，详情 Remote 的结构由 `src/catalog/details-schema.ts` 定义。用户点击卡片的详情按钮后，Catalog Remote 按类别和记录 ID 查询真实数据源；详情展示文本字段，Workflow 模板只展示元数据。列表在查看详情和预览时保留挂载，返回时恢复滚动位置和入口焦点。`CatalogItem.coverUrl` 与 `CatalogItem.sampleImageUrls` 只属于 Client 展示投影，不进入 `CatalogContext` 或 composer 草稿。
 
 ## 进程与状态
 

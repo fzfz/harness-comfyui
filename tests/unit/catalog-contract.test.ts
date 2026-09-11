@@ -117,17 +117,17 @@ describe('catalog Remote contract', () => {
     expect(() => parseCatalogComfyuiInstancePage(value)).toThrow(message)
   })
 
-  it('accepts one complete nine-card page and rejects a tenth card', () => {
-    const items = Array.from({ length: 9 }, (_, index) => ({
+  it('accepts one complete eight-card page and rejects a ninth card', () => {
+    const items = Array.from({ length: 8 }, (_, index) => ({
       context: { kind: 'model' as const, id: String(index + 1), file_name: `model-${index + 1}` },
       label: `model-${index + 1}`,
       subtitle: 'safetensors',
       coverUrl: COVER,
       sampleImageUrls: [],
     }))
-    const page = { kind: 'model' as const, query: '', page: 1, items, totalCount: 9 }
+    const page = { kind: 'model' as const, query: '', page: 1, items, totalCount: 8 }
 
-    expect(parseCatalogPage(page).items).toHaveLength(9)
+    expect(parseCatalogPage(page).items).toHaveLength(8)
     expect(() => parseCatalogPage({
       ...page,
       items: [...items, { ...items[0]!, context: { ...items[0]!.context, id: '10' } }],
@@ -247,7 +247,7 @@ describe('catalog Remote contract', () => {
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'lora', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'kind'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '0', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'id'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: '', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'label'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: '', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: false, coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: 'file:///tmp/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 0 }, 'total count'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null }], totalCount: 1 }, 'properties'],

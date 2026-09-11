@@ -1,3 +1,4 @@
+import type { CatalogDetailsRequest, CatalogDetails } from '../../catalog/details-schema.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 
@@ -38,6 +39,15 @@ export class CatalogRemoteService extends TypertRemoteService {
     }
   }
 
+  async details(request: CatalogDetailsRequest, signal: AbortSignal): Promise<CatalogOperationResult<CatalogDetails>> {
+    try {
+      return catalogOperationSuccess(await this.catalog.details(request, signal))
+    } catch (error) {
+      if (error instanceof CatalogCliError) return catalogOperationFailure({ code: error.code, message: error.message })
+      throw error
+    }
+  }
+
   async baseModels(signal: AbortSignal): Promise<CatalogOperationResult<BaseModelList>> {
     try {
       return catalogOperationSuccess(await this.catalog.baseModels(signal))
@@ -65,6 +75,13 @@ Remote(CatalogRemoteService.prototype.baseModels, {
   private: false,
   static: false,
   name: 'baseModels',
+  addInitializer(initialize: (this: CatalogRemoteService) => void) {
+    catalogRemoteInitializers.push(service => initialize.call(service))
+  },
+} as never)
+
+Remote(CatalogRemoteService.prototype.details, {
+  private: false, static: false, name: 'details',
   addInitializer(initialize: (this: CatalogRemoteService) => void) {
     catalogRemoteInitializers.push(service => initialize.call(service))
   },
