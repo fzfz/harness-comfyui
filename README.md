@@ -17,12 +17,12 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ## 使用前准备
 
-本项目通过源码启动 DSH Desktop。GitHub Releases 提供版本记录和源码标签，不提供桌面安装包。当前默认配置使用 macOS 路径；在其他机器上使用前，需要按下文设置本机路径。
+本项目通过源码启动 DSH Desktop，也提供普通 Node.js 与 DSH 的纯 CLI 入口。GitHub Releases 提供版本记录和源码标签，不提供桌面安装包。当前默认配置使用 macOS 路径；在其他机器上使用前，需要按下文设置本机路径。
 
 | 准备项 | 要求与用途 |
 | --- | --- |
 | Git、Node.js、pnpm | 使用 Git 获取源码。Node.js 支持 `^22.19.0` 或 `>=24.0.0`；pnpm 使用 `11.7.0`。 |
-| DSH Desktop | 提供桌面窗口、对话和模型设置。按下文准备本版本要求的 Desktop 源码与依赖。 |
+| DSH Desktop（桌面模式） | 提供桌面窗口、对话和模型设置。按下文准备本版本要求的 Desktop 源码与依赖。 |
 | Chrome 或 Chromium | 安装在运行 Harness ComfyUI 的机器上，用于将 Workflow 转换为 ComfyUI 可执行的请求。 |
 | 数据源服务 | 单独部署、可通过 HTTP 或 HTTPS 访问的服务，提供角色、画风、生成模型、LoRA、ComfyUI 实例与 Workflow 目录。准备服务 URL 和端口。 |
 | ComfyUI 实例 | 在数据源服务中登记可访问的实例，并准备 Workflow 所需的模型、LoRA 和自定义节点。 |
@@ -35,7 +35,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 选择源码版本
 
-当前开发基线使用自有仓库 fzfz/dsh-desktop-anywhere 的 Desktop Stable 2.0.9 与 DSH 0.1.5-rc.1，固定提交和安装路径由 config/desktop-baseline.json 指定。普通浏览器访问关闭时，Harness managed CLI route 仍使用自身的短期 capability 完成认证。已发布版本的生产安装使用对应 tag 中的基线配置和说明。
+当前开发基线使用自有仓库 fzfz/dsh-desktop-anywhere 的 Desktop Stable 2.0.9 与 DSH 0.1.5-rc.1，固定提交和安装路径由 config/desktop-baseline.json 指定。managed CLI 使用 DSH 进程内的专用回环 HTTP 服务，并通过前台 shell Tool Call 的短期 capability 认证。已发布版本的生产安装使用对应 tag 中的基线配置和说明。
 
 ### 2. 准备 DSH Desktop 与依赖
 
@@ -178,6 +178,16 @@ Agent 核对所选资源和参数后提交任务，并返回 Run ID。右侧“�
 
 需要让助手连续生成、观察和调整图片时，在“新建会话”菜单中选择“ComfyUI迭代预设”，并说明画面目标。助手会先理解人物和故事，提出构图方案供你确认，再通过多轮生成与图片比较调整参数。你也可以提供已有迭代目录继续任务，或要求用新的随机种子复验选中的参数组合；迭代过程中会保存生成参数与图片。
 
+## 纯 CLI 运行
+
+纯 CLI 使用普通 Node.js 与 DSH `0.1.5-rc.1`，从当前目录创建 Session 和 Workspace。先准备 `profiles/comfyui-cli/package.json` 声明的精确 DSH 依赖、项目构建工具和业务依赖，并在独立 DSH home 配置 Provider、模型及凭据；目录和配置步骤见[纯 DSH CLI 启动说明](docs/system/startup.md#纯-dsh-cli)。
+
+```sh
+pnpm cli:run -- "请读取指定本地图片并描述画面"
+```
+
+任务文本需要给出实际图片绝对路径。生成任务需要最终图片时，调用者应在任务文本中要求 Agent 查询生成结果并在取得结果后结束。CLI 使用独立的会话、生成记录和媒体目录，复用 Desktop 的业务实现。
+
 ## 日常启动、停止与更新
 
 以下命令在安装的已发布版本项目根目录执行：
@@ -194,7 +204,7 @@ Agent 核对所选资源和参数后提交任务，并返回 Run ID。右侧“�
 
 更新前先停止 Desktop，并备份 `.env`、本机修改过的配置和 `.local/desktop-production/`。该运行目录包含会话、生成记录和保存的媒体。保留 `.local/upstreams/dsh-desktop`，按目标版本要求更新 Desktop 源码与依赖。
 
-从 [Releases](https://github.com/fzfz/harness-comfyui/releases) 选择已发布版本，再按[版本更新步骤](docs/system/releasing.md#git-tag-生产部署命令)切换源码、更新依赖并启动。更新时保留本机路径配置与已有运行数据。
+从 [Releases](https://github.com/fzfz/harness-comfyui/releases) 选择已发布版本，再按[版本更新步骤](docs/system/releasing.md#生产部署与验收)切换源码、更新依赖并启动。更新时保留本机路径配置与已有运行数据。
 
 ## 常见问题与反馈
 

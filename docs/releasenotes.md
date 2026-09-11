@@ -1,4 +1,4 @@
-# 未发布：CLI 与 Desktop 解耦
+# Harness ComfyUI v0.44.0
 
 ## 架构与运行入口
 
