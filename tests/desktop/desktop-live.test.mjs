@@ -117,7 +117,37 @@ async function startModelRequestCaptureServer() {
   const server = createHttpServer((request, response) => {
     if (request.method === 'GET' && request.url === '/internal/semantic') {
       response.writeHead(200, { 'content-type': 'application/json' })
-      response.end(JSON.stringify(semanticDiscovery()))
+      const discovery = semanticDiscovery()
+      const operation = structuredClone(discovery.paths['/internal/semantic/base-models'].post)
+      operation.operationId = 'querySemanticComfyuiTemplatesForSkill'
+      operation['x-harness-tool-name'] = 'query_semantic_comfyui_templates'
+      discovery.paths['/internal/semantic/comfyui-templates'] = { post: operation }
+      operation.requestBody.content['application/json'].schema.$ref = '#/components/schemas/CatalogTemplateRequest'
+      for (const suffix of ['Request', 'SearchRequest', 'ResolveRequest']) {
+        discovery.components.schemas[`CatalogTemplate${suffix}`] = JSON.parse(JSON.stringify(discovery.components.schemas[`CatalogBaseModel${suffix}`]).replaceAll('CatalogBaseModel', 'CatalogTemplate'))
+      }
+      discovery.components.schemas.CatalogTemplateSearchRequest.properties.base_model_id = { type: 'string', minLength: 1, maxLength: 20, pattern: '^[1-9][0-9]{0,19}$', description: 'Base model identifier for catalog filtering', example: '123' }
+      response.end(JSON.stringify(discovery))
+      return
+    }
+    if (request.method === 'GET' && request.url?.startsWith('/catalog-image/')) {
+      const dimensions = request.url.includes('wide') ? [3000, 500] : request.url.includes('small') ? [32, 32] : [500, 3000]
+      response.writeHead(200, { 'content-type': 'image/svg+xml' })
+      response.end(`<svg xmlns="http://www.w3.org/2000/svg" width="${dimensions[0]}" height="${dimensions[1]}"><rect width="100%" height="100%" fill="#508080"/><circle cx="50%" cy="50%" r="15" fill="white"/></svg>`)
+      return
+    }
+    if (request.method === 'POST' && request.url === '/internal/semantic/comfyui-templates') {
+      const chunks = []
+      request.on('data', chunk => chunks.push(chunk))
+      request.on('end', () => {
+        const input = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+        const origin = `http://127.0.0.1:${server.address().port}`
+        const record = id => ({ id, base_model_id: 123, model_id: null, lora_id: null, title: `Catalog template ${id}`, template_type: 'text_to_image', workflow_json: {}, cover_url: `${origin}/catalog-image/tall.svg`, sample_image_urls: [`${origin}/catalog-image/wide.svg`, `${origin}/catalog-image/small.svg`] })
+        const resolving = input.mode === 'resolve'
+        const all = Array.from({ length: 9 }, (_, index) => record(index + 1))
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({ status: 'ok', message: null, results: resolving ? [{ ...record(Number(input.id)), template_type: 'text_to_image\n' + 'Long detail text '.repeat(200) }] : all.slice((input.page - 1) * input.page_size, input.page * input.page_size), page: resolving ? 1 : input.page, page_size: resolving ? 1 : input.page_size, total_count: resolving ? 1 : 9 }))
+      })
       return
     }
     if (request.method === 'POST' && request.url === '/internal/semantic/base-models') {
@@ -884,6 +914,55 @@ async function captureProjectClientContext(page) {
   return identifier
 }
 
+async function verifyContextDialog(page, context) {
+  const viewport = await page.evaluate(`({ width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio, mobile: false })`)
+  await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')].find(b => b.textContent.trim() === '插入上下文').click(), true)`)
+  await waitForValue(page, `document.querySelectorAll('.harness-comfyui-catalog-card').length`, count => count === 8)
+  const cards = await page.evaluate(`(() => {
+    const grid = document.querySelector('.harness-comfyui-catalog-items')
+    const img = grid.querySelector('img')
+    return { columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length, fit: getComputedStyle(img).objectFit, base: document.querySelector('.harness-comfyui-base-model-row button').textContent.trim() }
+  })()`)
+  expect(cards).toEqual({ columns: 2, fit: 'contain', base: '全部底模' })
+  await page.evaluate(`(document.querySelector('.harness-comfyui-catalog-modal-content').scrollTop = 200, true)`)
+  const listScroll = await page.evaluate(`document.querySelector('.harness-comfyui-catalog-modal-content').scrollTop`)
+  expect(listScroll).toBeGreaterThan(0)
+  await page.evaluate(`(document.querySelector('.harness-comfyui-card-select').click(), document.querySelector('[aria-label="详情 Catalog template 1"]').click(), true)`)
+  await waitForValue(page, `document.querySelector('.harness-comfyui-catalog-detail dl')?.textContent`, text => text?.includes('Catalog template 1'))
+  expect(await page.evaluate(`document.querySelector('.harness-comfyui-catalog-detail').textContent.includes('workflow_json')`)).toBe(false)
+  await page.evaluate(`(document.querySelector('.harness-comfyui-catalog-detail').scrollTop = 100, true)`)
+  const detailScroll = await page.evaluate(`document.querySelector('.harness-comfyui-catalog-detail').scrollTop`)
+  expect(detailScroll).toBeGreaterThan(0)
+  expect(await page.evaluate(`document.querySelector('.harness-comfyui-detail-modal-content').scrollTop`)).toBe(0)
+  await page.evaluate(`(document.querySelector('.harness-comfyui-detail-preview').click(), true)`)
+  await page.command('Emulation.setDeviceMetricsOverride', { width: 700, height: 500, deviceScaleFactor: 1, mobile: false })
+  for (const imageIndex of [0, 1, 2]) {
+    await waitForValue(page, `(() => { const image = document.querySelector('.harness-comfyui-gallery-current img'); return !!image?.complete && image.naturalWidth > 0 })()`, ready => ready === true)
+    expect(await page.evaluate(`(() => {
+      const image = document.querySelector('.harness-comfyui-gallery-current img')
+      const stage = image.parentElement
+      const a = image.getBoundingClientRect(), b = stage.getBoundingClientRect()
+      return getComputedStyle(image).objectFit === 'contain' && a.width <= b.width && a.height <= b.height && stage.scrollWidth === stage.clientWidth && stage.scrollHeight === stage.clientHeight
+    })()`)).toBe(true)
+    if (imageIndex < 2) await page.evaluate(`(document.querySelector('[aria-label="下一张图片"]').click(), true)`)
+  }
+  const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
+  await writeFile(resolve(context.repositoryRoot, '.local/context-dialog-gallery.png'), Buffer.from(screenshot.data, 'base64'))
+  await page.command('Emulation.setDeviceMetricsOverride', viewport)
+  await waitForValue(page, `window.innerWidth`, width => width === viewport.width)
+  await page.evaluate(`(document.querySelector('[role="dialog"] button[aria-label="返回详情"]').click(), true)`)
+  await waitForValue(page, `document.querySelector('[role="dialog"]')?.getAttribute('aria-label')`, title => title === '详情：Catalog template 1')
+  expect(await page.evaluate(`document.querySelector('.harness-comfyui-catalog-detail').scrollTop`)).toBe(detailScroll)
+  await page.evaluate(`([...document.querySelectorAll('[role="dialog"] button')].find(b => b.textContent.trim() === '返回资源列表').click(), true)`)
+  await waitForValue(page, `document.activeElement?.getAttribute('aria-label')`, label => label === '详情 Catalog template 1')
+  expect(await page.evaluate(`document.querySelector('.harness-comfyui-catalog-modal-content').scrollTop`)).toBe(listScroll)
+  expect(await page.evaluate(`document.querySelector('.harness-comfyui-card-select').getAttribute('aria-pressed')`)).toBe('true')
+  await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-catalog-pagination button')].find(b => b.textContent.trim() === '下一页').click(), true)`)
+  await waitForValue(page, `document.querySelectorAll('.harness-comfyui-catalog-card').length`, count => count === 1)
+  await page.evaluate(`([...document.querySelectorAll('[role="dialog"] button')].find(b => b.textContent.trim() === '取消').click(), true)`)
+  await waitForValue(page, `document.querySelector('.harness-comfyui-catalog-modal') === null`, closed => closed === true)
+}
+
 async function verifyKimiPptDisabled(page, sessionId) {
   const state = await page.evaluate(`(async () => {
     const ctx = window.__runPanelTestContext
@@ -1415,6 +1494,7 @@ description: ${USER_SKILL_DESCRIPTION}
       })
       downloadBehaviorEnabled = true
       await waitForValue(page, 'window.innerWidth', value => value >= 680)
+      const desktopViewport = await page.evaluate(`({ width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio, mobile: false })`)
       const desktopOrigin = await page.evaluate('window.location.origin')
       const initial = await waitForValue(
         page,
@@ -1865,6 +1945,7 @@ description: ${USER_SKILL_DESCRIPTION}
       await page.evaluate(`window.__runPanelTestContext.sidebarRight.openTab('guide')`)
       await waitForValue(page, `document.querySelector('[data-sidebar-right-guide]') !== null`, value => value === true)
       await page.evaluate(`(document.querySelector('.harness-comfyui-sidebar-entry')?.click(), true)`)
+      await waitForValue(page, `!!document.querySelector('.harness-comfyui-dock-actions')`, value => value === true)
       await verifyRunDiscovery(page, context, identity, stagedRunRepository, mediaFixture)
       await waitForValue(
         page,
@@ -2209,6 +2290,9 @@ description: ${USER_SKILL_DESCRIPTION}
         `document.querySelector('[role="dialog"].harness-comfyui-media-viewer-modal') === null`,
         value => value === true,
       )
+      await page.command('Emulation.setDeviceMetricsOverride', desktopViewport)
+      await waitForValue(page, 'window.innerWidth', width => width === desktopViewport.width)
+      await verifyContextDialog(page, context)
     } catch (error) {
       const pageState = await page.evaluate(`({
         text: document.body.innerText,

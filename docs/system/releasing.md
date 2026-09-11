@@ -25,9 +25,9 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.43.0 的发布范围与 Desktop 基线
+## v0.43.1 的发布范围与 Desktop 基线
 
-v0.43.0 使用自有 Desktop 2.0.9 与 DSH 0.1.5-rc.1，固定提交由 config/desktop-baseline.json 指定。工作台结果页采用原生右侧栏页签，两个项目预设采用 Persona prefix 配置。会话删除、真实 Session 请求头、Provider 推理配置和 managed CLI 路由鉴权继续由自有 Desktop 补丁提供。部署验收必须确认当前插件版本为 0.43.0，生产 checkout 与发布提交一致，并满足下文的生产部署验收条件。
+v0.43.1 使用自有 Desktop 2.0.9 与 DSH 0.1.5-rc.1，固定提交由 config/desktop-baseline.json 指定。工作台结果页采用原生右侧栏页签，两个项目预设采用 Persona prefix 配置。会话删除、真实 Session 请求头、Provider 推理配置和 managed CLI 路由鉴权继续由自有 Desktop 补丁提供。部署验收必须确认当前插件版本为 0.43.1，生产 checkout 与发布提交一致，并满足下文的生产部署验收条件。
 
 ## Git tag 与 GitHub Release
 

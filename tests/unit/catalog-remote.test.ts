@@ -12,6 +12,7 @@ describe('Catalog Remote contribution', () => {
     expect(HARNESS_COMFYUI_REMOTE.descriptors.map(descriptor => descriptor.id)).toEqual([
       'harness-comfyui#harnessComfyuiCatalog/search',
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
+      'harness-comfyui#harnessComfyuiCatalog/details',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',
       'harness-comfyui#harnessComfyuiImageReader/activateProfile',
@@ -124,7 +125,7 @@ describe('Catalog Remote contribution', () => {
 
   it('mounts strict cancellable catalog and base-model methods', () => {
     expect(CATALOG_REMOTE.package).toBe('harness-comfyui')
-    expect(CATALOG_REMOTE.descriptors).toHaveLength(2)
+    expect(CATALOG_REMOTE.descriptors).toHaveLength(3)
     expect(CATALOG_REMOTE.descriptors[0]).toMatchObject({
       service: 'harnessComfyuiCatalog',
       namespace: 'harnessComfyuiCatalog',

@@ -7,7 +7,7 @@ import {
   type CatalogCliProcess,
 } from '../../src/host/catalog/catalog-cli.ts'
 
-function response(results: readonly unknown[], totalCount = results.length, page = 1, pageSize = 9): string {
+function response(results: readonly unknown[], totalCount = results.length, page = 1, pageSize = 8): string {
   return JSON.stringify({
     status: 'ok',
     message: null,
@@ -118,7 +118,7 @@ describe('Catalog CLI adapter', () => {
             kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
           },
           label: 'wai_txt2img_lora',
-          subtitle: 'text_to_image',
+          subtitle: '模板类型：text_to_image',
           coverUrl: 'http://127.0.0.1:18092/media/images/template.webp',
           sampleImageUrls: [
             'http://127.0.0.1:18092/media/images/template-2.webp',
@@ -135,7 +135,7 @@ describe('Catalog CLI adapter', () => {
       '--mode', 'search',
       '--query', 'wai',
       '--page', '2',
-      '--page_size', '9',
+      '--page_size', '8',
       '--base_model_id', '2',
     ], controller.signal)
     expect(JSON.stringify((await catalog(execute).search(
@@ -443,4 +443,14 @@ describe('Catalog CLI adapter', () => {
       new AbortController().signal,
     )).rejects.toMatchObject({ code: 'CATALOG_RESPONSE_TOO_LARGE' })
   })
+})
+
+it('omits repeated titles and empty metadata from card summaries', async () => {
+  const execute: CatalogCliProcess = async () => ({ exitCode: 0, stderr: '', stdout: response([{ id: 1, file_name: 'name', author: 'name', file_format: '', cover_url: null, sample_image_urls: [] }]) })
+  expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('')
+})
+it('shows distinct model metadata once and keeps a zero LoRA weight', async () => {
+  const execute: CatalogCliProcess = async () => ({ exitCode: 0, stderr: '', stdout: response([{ id: 1, file_name: 'name', author: 'A', file_format: 'A', version: 'v1', weight: 0, cover_url: null, sample_image_urls: [] }]) })
+  expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('作者：A')
+  expect((await catalog(execute).search({ kind: 'lora', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('版本：v1 · 建议权重：0')
 })

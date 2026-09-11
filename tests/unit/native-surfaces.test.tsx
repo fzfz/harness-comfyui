@@ -139,7 +139,7 @@ function catalog(items: readonly CatalogItem[] = CONTEXT_OPTIONS, totalCount?: n
     if (signal.aborted) throw new DOMException('cancelled', 'AbortError')
     return { items: [{ id: '2', label: 'wai' }, { id: '1', label: 'anima' }] }
   })
-  return { search, baseModels } as never
+  return { search, baseModels, details: vi.fn(async () => ({ kind: 'comfyui-template', id: '37', fields: [{ key: 'title', value: 'wai_txt2img_lora' }] })) } as never
 }
 
 function inputState(draft = '') {
@@ -433,37 +433,37 @@ describe('native Harness workbench surfaces', () => {
     })
     act(() => { (preview.props.onClick as () => void)() })
 
-    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.coverUrl)
+    expect(renderer!.root.findAllByType('img').at(-1)!.props.src).toBe(option.coverUrl)
     expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.disabled).toBe(true)
     expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(false)
 
     act(() => {
       ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
     })
-    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[0])
+    expect(renderer!.root.findAllByType('img').at(-1)!.props.src).toBe(option.sampleImageUrls[0])
 
     act(() => {
       ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.onClick as () => void)()
     })
-    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.coverUrl)
+    expect(renderer!.root.findAllByType('img').at(-1)!.props.src).toBe(option.coverUrl)
     act(() => {
       ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
     })
-    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[0])
+    expect(renderer!.root.findAllByType('img').at(-1)!.props.src).toBe(option.sampleImageUrls[0])
 
     const right = new Event('keydown', { cancelable: true })
     Object.defineProperty(right, 'key', { value: 'ArrowRight' })
     act(() => { documentTarget.dispatchEvent(right) })
     expect(right.defaultPrevented).toBe(true)
-    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[1])
+    expect(renderer!.root.findAllByType('img').at(-1)!.props.src).toBe(option.sampleImageUrls[1])
     expect(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(true)
 
     const left = new Event('keydown', { cancelable: true })
     Object.defineProperty(left, 'key', { value: 'ArrowLeft' })
     act(() => { documentTarget.dispatchEvent(left) })
-    expect(renderer!.root.findAllByType('img')[0]!.props.src).toBe(option.sampleImageUrls[0])
+    expect(renderer!.root.findAllByType('img').at(-1)!.props.src).toBe(option.sampleImageUrls[0])
 
-    act(() => { (renderer!.root.findAllByType('img')[0]!.props.onError as () => void)() })
+    act(() => { (renderer!.root.findAllByType('img').at(-1)!.props.onError as () => void)() })
     expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.imageLoadFailed)
     act(() => {
       ;(renderer!.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as () => void)()
@@ -902,6 +902,7 @@ describe('native Harness workbench surfaces', () => {
   it('aborts the previous Session requests when the reused Dock changes Session', async () => {
     const activeSignals: AbortSignal[] = []
     const pendingApi = {
+      details: vi.fn(),
       search: vi.fn((_request: CatalogQueryRequest, signal: AbortSignal) => {
         activeSignals.push(signal)
         return new Promise<never>(() => undefined)
@@ -941,6 +942,7 @@ describe('native Harness workbench surfaces', () => {
       code: 'CATALOG_RESPONSE_TOO_LARGE',
     })
     const failedApi = {
+      details: vi.fn(),
       search: vi.fn(async () => { throw queryFailure }),
       baseModels: vi.fn(async () => { throw baseFailure }),
     }
@@ -960,6 +962,7 @@ describe('native Harness workbench surfaces', () => {
 
     const activeSignals: AbortSignal[] = []
     const pendingApi = {
+      details: vi.fn(),
       search: vi.fn((_request: CatalogQueryRequest, signal: AbortSignal) => {
         activeSignals.push(signal)
         return new Promise<never>(() => undefined)
@@ -981,4 +984,67 @@ describe('native Harness workbench surfaces', () => {
     expect(activeSignals.every(signal => signal.aborted)).toBe(true)
     act(() => renderer!.unmount())
   })
+})
+
+import { CatalogDetailsPanel } from '../../src/client/workbench/catalog-details.tsx'
+import type { CatalogDetails } from '../../src/catalog/details-schema.ts'
+
+it('returns from details and its gallery without changing the draft, selection or query', async () => {
+  const api = catalog()
+  const input = sessionInput()
+  const navigation = freshDialogNavigation()
+  const opener = { focus: vi.fn() }
+  let renderer: ReturnType<typeof create>
+  act(() => { renderer = create(createElement(WorkbenchDock, {
+    catalog: api, dialogNavigation: navigation, input: inputState() as never,
+    sessionId: 'details-session', sessionInput: input as never, workbench: activeController(),
+  })) })
+  await openDialog(renderer!)
+  const option = CONTEXT_OPTIONS[0]!
+  act(() => { (renderer!.root.findByProps({ 'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}` }).props.onClick as Function)() })
+  await act(async () => { (renderer!.root.findByProps({ 'aria-label': `详情 ${option.label}` }).props.onClick as Function)({ currentTarget: opener }) })
+  expect(renderer!.root.findAllByType('dd').map(item => item.props.children)).toContain(option.label)
+  expect(input.setDraft).not.toHaveBeenCalled()
+  const query = navigation.getSnapshot()
+  act(() => { (buttonByText(renderer!, WORKBENCH_COPY.openGallery).props.onClick as Function)() })
+  expect(renderer!.root.findByProps({ role: 'dialog' }).props['aria-label']).toContain(WORKBENCH_COPY.galleryTitle)
+  act(() => { (renderer!.root.findByProps({ role: 'dialog' }).props.onClick as Function)() })
+  expect(renderer!.root.findByProps({ role: 'dialog' }).props['aria-label']).toBe(`详情：${option.label}`)
+  act(() => { (buttonByText(renderer!, '返回资源列表').props.onClick as Function)() })
+  expect(opener.focus).toHaveBeenCalledWith({ preventScroll: true })
+  expect(navigation.getSnapshot()).toBe(query)
+  expect(renderer!.root.findByProps({ 'aria-label': `${WORKBENCH_COPY.selectedItem} ${option.label}` }).props['aria-pressed']).toBe(true)
+  act(() => { (buttonByText(renderer!, WORKBENCH_COPY.confirm).props.onClick as Function)() })
+  expect(workbenchContextsFromDraft(input.setDraft.mock.calls[0]![0] as string)).toEqual([option.context])
+  act(() => renderer!.unmount())
+})
+it('shows detail failures, retries and renders zero, empty and multi-value fields', async () => {
+  const result: CatalogDetails = { kind: 'prompt-term', id: '1', fields: [
+    { key: 'post_count', value: 0 }, { key: 'aliases_json', value: ['a', 'b'] }, { key: 'category', value: null },
+    { key: 'description', value: '' }, { key: 'character_names', value: [] },
+  ] }
+  const load = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(result)
+  let renderer: ReturnType<typeof create>
+  await act(async () => { renderer = create(createElement(CatalogDetailsPanel, { request: { kind: 'prompt-term', id: '1' }, load, preview: null })) })
+  expect(JSON.stringify(renderer!.toJSON())).toContain('CATALOG_REMOTE_FAILED')
+  await act(async () => { (buttonByText(renderer!, '重试').props.onClick as Function)() })
+  expect(renderer!.root.findAllByType('dd').map(item => item.props.children)).toEqual(['0', 'a、b', '未填写', '未填写', '未填写'])
+  expect(load.mock.calls[0]![1].aborted).toBe(true)
+  act(() => renderer!.unmount())
+  expect(load.mock.calls[1]![1].aborted).toBe(true)
+})
+it('cancels closed details and ignores late responses and failures', async () => {
+  const pending: { resolve: (value: CatalogDetails) => void; reject: (value: unknown) => void; signal: AbortSignal }[] = []
+  const load = vi.fn((_request, signal) => new Promise<CatalogDetails>((resolve, reject) => pending.push({ resolve, reject, signal })))
+  let renderer: ReturnType<typeof create>
+  const props = { request: { kind: 'work' as const, id: '1' }, load, preview: null }
+  act(() => { renderer = create(createElement(CatalogDetailsPanel, props)) })
+  expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.loading)
+  act(() => { renderer!.update(createElement(CatalogDetailsPanel, { ...props, request: { kind: 'work', id: '2' } })) })
+  expect(pending[0]!.signal.aborted).toBe(true)
+  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', fields: [{ key: 'name', value: '旧内容' }] }) })
+  expect(JSON.stringify(renderer!.toJSON())).not.toContain('旧内容')
+  act(() => renderer!.unmount())
+  await act(async () => pending[1]!.reject(new Error('late')))
+  expect(pending[1]!.signal.aborted).toBe(true)
 })

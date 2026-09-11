@@ -1,3 +1,4 @@
+import { CATALOG_PRESENTATION, CATALOG_FIELDS, parseCatalogDetails, parseCatalogDetailsRequest, type CatalogDetails, type CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import { spawn } from 'node:child_process'
 import { nodeScriptEnvironment } from '../node-script-environment.ts'
 
@@ -145,14 +146,18 @@ function sourceLabel(value: unknown): string {
   return value
 }
 
-function sourceSubtitle(result: Record<string, unknown>, fields: readonly string[], fallback: string): string {
+function sourceSubtitle(result: Record<string, unknown>, fields: readonly string[], label: string): string {
+  const values = new Set<string>()
+  const parts: string[] = []
   for (const field of fields) {
     const value = result[field]
-    if ((typeof value === 'string' && value.trim().length > 0) || typeof value === 'number') {
-      return String(value).slice(0, 500)
-    }
+    if (typeof value !== 'string' && typeof value !== 'number') continue
+    const text = String(value).trim()
+    if (text === '' || text === label.trim() || values.has(text)) continue
+    values.add(text)
+    parts.push(`${CATALOG_FIELDS[field]!.label}：${text}`)
   }
-  return fallback
+  return parts.join(' · ').slice(0, 500)
 }
 
 function sourceCoverUrl(value: unknown): string | null {
@@ -323,7 +328,7 @@ function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): Catalo
     return Object.freeze({
       context: sourceContext(request.kind, id, result),
       label: sourceLabel(result[definition.labelField]),
-      subtitle: sourceSubtitle(result, definition.subtitleFields, definition.label),
+      subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
       coverUrl: sourceCoverUrl(result.cover_url),
       sampleImageUrls: sourceSampleImageUrls(result.sample_image_urls),
     })
@@ -451,6 +456,27 @@ export class CatalogCli {
     ]
     const result = await this.run(args, signal)
     return normalizeEnvelope(request, parseCliJson(result))
+  }
+
+  async details(input: CatalogDetailsRequest, signal: AbortSignal): Promise<CatalogDetails> {
+    const request = parseCatalogDetailsRequest(input)
+    const result = await this.run([
+      '--timeout-ms', String(CATALOG_QUERY_TIMEOUT_MS),
+      '--path', catalogDefinition(request.kind).path,
+      '--mode', 'resolve', '--id', request.id,
+    ], signal)
+    const source = resolvedRecord(parseCliJson(result), 'details')
+    try {
+      return parseCatalogDetails({
+        ...request,
+        fields: CATALOG_PRESENTATION.kinds[request.kind].details.map(key => ({
+          key,
+          value: CATALOG_FIELDS[key]!.type === 'id' && source[key] !== null ? sourceId(source[key]) : source[key],
+        })),
+      })
+    } catch (error) {
+      throw new CatalogCliError('CATALOG_PROTOCOL_ERROR', error instanceof Error ? error.message : String(error))
+    }
   }
 
   async baseModels(signal: AbortSignal): Promise<BaseModelList> {

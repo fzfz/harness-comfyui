@@ -188,7 +188,7 @@ describe('Harness Client plugin registration', () => {
       conversation: { input: { for: inputFor } },
       remote: {
         $mount: vi.fn(async () => remoteDispose),
-        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels },
+        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', fields: [] } } })) },
         harnessComfyuiGeneration: { list: remoteGenerationList },
       },
       sidebarRight: { openTab: vi.fn() },
@@ -447,13 +447,14 @@ describe('Harness Client plugin registration', () => {
     sessionOneNavigation.update(state => ({ ...state, currentPage: 2 }))
     expect(sessionOneNavigation.getSnapshot().state.currentPage).toBe(2)
     expect(sessionTwoDock.dialogNavigation.getSnapshot().state.currentPage).toBe(1)
-    const catalog = (dockFace as { catalog: { search: Function; baseModels: Function } }).catalog
+    const catalog = (dockFace as { catalog: { search: Function; baseModels: Function; details: Function } }).catalog
     await expect(catalog.search(
       { kind: 'model', query: '', page: 1, baseModelId: null },
       new AbortController().signal,
     )).resolves.toEqual({ kind: 'model', query: '', page: 1, items: [], totalCount: 0 })
     await expect(catalog.baseModels(new AbortController().signal))
       .resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
+    await expect(catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).resolves.toEqual({ kind: 'work', id: '1', fields: [] })
     const generationStore = (detailsFace as { generationStore: { subscribe: Function; getSnapshot: Function } }).generationStore
     const stopGeneration = generationStore.subscribe('session-1', vi.fn())
     await vi.waitFor(() => expect(remoteGenerationList).toHaveBeenCalledOnce())
@@ -573,14 +574,14 @@ describe('Harness Client plugin registration', () => {
       conversation: { input: { for: vi.fn(() => ({})) } },
       remote: {
         $mount: vi.fn(async () => vi.fn()),
-        harnessComfyuiCatalog: { search: remoteFailure, baseModels: remoteFailure },
+        harnessComfyuiCatalog: { search: remoteFailure, baseModels: remoteFailure, details: remoteFailure },
       },
       layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
     }
     installImmediateInject(context)
     const dispose = await apply(context as never)
     const dock = registrations.get('conversation.input.dock')!.inject('session-1' as never) as {
-      catalog: { search: Function; baseModels: Function }
+      catalog: { search: Function; baseModels: Function; details: Function }
     }
     await expect(dock.catalog.search(
       { kind: 'model', query: '', page: 1, baseModelId: null },
@@ -588,6 +589,7 @@ describe('Harness Client plugin registration', () => {
     ))
       .rejects.toThrow('remote-failed')
     await expect(dock.catalog.baseModels(new AbortController().signal)).rejects.toThrow('remote-failed')
+    await expect(dock.catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).rejects.toThrow('remote-failed')
 
     const controller = new AbortController()
     controller.abort()
@@ -620,7 +622,7 @@ describe('Harness Client plugin registration', () => {
       conversation: { input: { for: vi.fn(() => ({})) } },
       remote: {
         $mount: vi.fn(async () => vi.fn()),
-        harnessComfyuiCatalog: { search: catalogFailure, baseModels: catalogFailure },
+        harnessComfyuiCatalog: { search: catalogFailure, baseModels: catalogFailure, details: catalogFailure },
         harnessComfyuiGeneration: { list: vi.fn() },
       },
       layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
@@ -628,7 +630,7 @@ describe('Harness Client plugin registration', () => {
     installImmediateInject(context)
     const dispose = await apply(context as never)
     const dock = registrations.get('conversation.input.dock')!.inject('session-1' as never) as {
-      catalog: { search: Function; baseModels: Function }
+      catalog: { search: Function; baseModels: Function; details: Function }
     }
 
     await expect(dock.catalog.search(
@@ -638,6 +640,7 @@ describe('Harness Client plugin registration', () => {
       code: 'CATALOG_PROTOCOL_ERROR',
       message: 'Catalog template parameter is invalid.',
     })
+    await expect(dock.catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR' })
     await expect(dock.catalog.baseModels(new AbortController().signal)).rejects.toMatchObject({
       code: 'CATALOG_PROTOCOL_ERROR',
       message: 'Catalog template parameter is invalid.',
