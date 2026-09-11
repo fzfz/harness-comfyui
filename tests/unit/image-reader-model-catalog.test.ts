@@ -1,3 +1,5 @@
+import { registerImageReaderSettings } from '../../src/host/image-reader/settings-registration.ts'
+import { ImageReaderConfigurationService } from '../../src/host/image-reader/configuration-service.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { describe, expect, it, vi } from 'vitest'
@@ -13,7 +15,6 @@ import {
 } from '../../src/image-reader/settings.ts'
 import {
   ImageReaderRemoteService,
-  registerImageReaderSettings,
 } from '../../src/host/image-reader/image-reader-host.ts'
 
 function remoteFailure(code: string): object {
@@ -144,14 +145,14 @@ describe('image reader Host settings and model catalog', () => {
     const context = new Context()
     const listModels = vi.fn(async (provider: string) => provider === 'provider-b'
       ? [
-          { provider, id: 'vision-b', name: 'Vision B', description: '', inputModalities: ['text', 'image'] },
-          { provider, id: 'unknown-b', name: 'Unknown B' },
-        ]
+        { provider, id: 'vision-b', name: 'Vision B', description: '', inputModalities: ['text', 'image'] },
+        { provider, id: 'unknown-b', name: 'Unknown B' },
+      ]
       : [
-          { provider, id: 'text-a', name: 'Text A', inputModalities: ['text'] },
-          { provider, id: 'vision-a', name: 'Vision A', description: 'Reads images', inputModalities: ['image'] },
-        ])
-    const service = new ImageReaderRemoteService(context, {
+        { provider, id: 'text-a', name: 'Text A', inputModalities: ['text'] },
+        { provider, id: 'vision-a', name: 'Vision A', description: 'Reads images', inputModalities: ['image'] },
+      ])
+    const service = createRemote(context, {
       listProviders: vi.fn(() => [
         { id: 'provider-a', name: 'Provider A' },
         { id: 'provider-b', name: 'Provider B' },
@@ -178,7 +179,7 @@ describe('image reader Host settings and model catalog', () => {
 
   it('keeps successful providers when another provider model catalog fails', async () => {
     const context = new Context()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => [
         { id: 'provider-a', name: 'Provider A' },
         { id: 'provider-b', name: 'Provider B' },
@@ -214,7 +215,7 @@ describe('image reader Host settings and model catalog', () => {
       get: vi.fn(() => current),
       replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -244,7 +245,7 @@ describe('image reader Host settings and model catalog', () => {
       get: vi.fn(() => current),
       replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -285,7 +286,7 @@ describe('image reader Host settings and model catalog', () => {
         controller.abort(new DOMException('cancelled after commit', 'AbortError'))
       }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -317,7 +318,7 @@ describe('image reader Host settings and model catalog', () => {
       })),
       replace: vi.fn(async () => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -363,7 +364,7 @@ describe('image reader Host settings and model catalog', () => {
       })),
       replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -402,7 +403,7 @@ describe('image reader Host settings and model catalog', () => {
       })),
       replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -435,7 +436,7 @@ describe('image reader Host settings and model catalog', () => {
   it('returns the exact current-profile validation error without writing Settings', async () => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -491,7 +492,7 @@ describe('image reader Host settings and model catalog', () => {
   it('does not recreate deleted updates, overwrite colliding creates, or save with a missing activation target', async () => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -538,7 +539,7 @@ describe('image reader Host settings and model catalog', () => {
   ])('rejects one current-profile rule with its unique code %#', async (request, code) => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -564,7 +565,7 @@ describe('image reader Host settings and model catalog', () => {
       })),
       replace: vi.fn(async (_section: ImageReaderSettingsSection) => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -583,7 +584,7 @@ describe('image reader Host settings and model catalog', () => {
   ])('applies one OpenAI-compatible credential action %#', async (credential, expectedApiKey, hasApiKey) => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -603,7 +604,7 @@ describe('image reader Host settings and model catalog', () => {
   it('clears an existing API Key when its profile is saved as runtime', async () => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -638,7 +639,7 @@ describe('image reader Host settings and model catalog', () => {
       })),
       replace: vi.fn(async () => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -670,7 +671,7 @@ describe('image reader Host settings and model catalog', () => {
       })),
       replace: vi.fn(async () => undefined),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -700,7 +701,7 @@ describe('image reader Host settings and model catalog', () => {
         controller.abort(new DOMException('cancelled after commit', 'AbortError'))
       }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -726,7 +727,7 @@ describe('image reader Host settings and model catalog', () => {
         get: vi.fn(() => ({ configuration: { activeProfileId, profiles }, credentials: {} })),
         replace: vi.fn(async () => undefined),
       }
-      const service = new ImageReaderRemoteService(context, {
+      const service = createRemote(context, {
         listProviders: vi.fn(() => []),
         listModels: vi.fn(async () => []),
       } as never, scope as never)
@@ -744,7 +745,7 @@ describe('image reader Host settings and model catalog', () => {
   ])('rejects an invalid or missing delete target %#', async (profileId, code) => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -757,7 +758,7 @@ describe('image reader Host settings and model catalog', () => {
   it('rejects deletion of the only persisted profile', async () => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -789,7 +790,7 @@ describe('image reader Host settings and model catalog', () => {
         current = section
       }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -856,7 +857,7 @@ describe('image reader Host settings and model catalog', () => {
         current = section
       }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -906,7 +907,7 @@ describe('image reader Host settings and model catalog', () => {
         current = section
       }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -954,7 +955,7 @@ describe('image reader Host settings and model catalog', () => {
           current = section
         }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -988,7 +989,7 @@ describe('image reader Host settings and model catalog', () => {
   it('distinguishes persistence failure from invalid input and returns committed data after cancellation', async () => {
     const context = new Context()
     const scope = settings()
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -1017,7 +1018,7 @@ describe('image reader Host settings and model catalog', () => {
         throw new Error('disk full')
       }),
     }
-    const service = new ImageReaderRemoteService(context, {
+    const service = createRemote(context, {
       listProviders: vi.fn(() => []),
       listModels: vi.fn(async () => []),
     } as never, scope as never)
@@ -1027,3 +1028,7 @@ describe('image reader Host settings and model catalog', () => {
     await context.fiber.dispose()
   })
 })
+
+function createRemote(context: Context, llm: ConstructorParameters<typeof ImageReaderConfigurationService>[0], settings: ConstructorParameters<typeof ImageReaderConfigurationService>[1]) {
+  return new ImageReaderRemoteService(context, new ImageReaderConfigurationService(llm, settings))
+}

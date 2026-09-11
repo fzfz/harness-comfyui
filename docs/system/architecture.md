@@ -8,6 +8,25 @@
 
 独立 worktree 保存自己的依赖视图、Desktop 输出、Profile、PID、日志和业务数据，复用主 checkout 已安装的工具与基线包。启动完成要求当前 run 的 Host 与 Renderer 成功以及插件安装身份一致。
 
+## 服务端插件装配
+
+`harness-comfyui` 包通过 DSH bundle 的 Cordis patch 装配独立服务端入口。各入口使用 `name`、`inject`、`apply` 和 Cordis 生命周期注册服务与资源。
+
+| 入口 | 依赖与职责 |
+| --- | --- |
+| `/core` | 依赖 tools、settings、workspaceRegistry；提供 `harnessComfyuiCore` Service，管理 Catalog、GenerationRuntime、数据源配置和 coordinator，注册七个 Catalog/Generation Tool。 |
+| `/image-reader` | 依赖 settings、attachments、llm、tools；提供 `imageReader` Service，管理读图配置、两种 Provider 和 `inspect_image` Tool。 |
+| `/cli` | 依赖两个业务 Service、shellEnv、tools、workspaceRegistry；管理专用 HTTP listener、请求分发与 capability。 |
+| 包根入口与 `/web` | 依赖两个业务 Service、webServer、workspaceRegistry；注册 Catalog、Generation、ImageReader Remote 和媒体路由。 |
+| `/cli-workspace` | 依赖 agents、workspaceRegistry；在根 Session 的首个 Agent step 前按真实 cwd 创建 Workspace 并附加真实 Session ID。子 Session 由迭代预设的既有 component 登记。 |
+| `/cli-runner` | 依赖 agents、sessions、agentDefaultModel、agentPresets、harnessComfyuiCli；创建真实 Session，在 Agent 发布前挂载项目 Preset，执行任务并保存会话后请求 DSH 退出。 |
+
+根 `cordis.patch.yml` 装配 core、image-reader 和 cli。Desktop 的 Profile 准备脚本以及 `profiles/comfyui-workbench/cordis.patch.yml` 通过包根入口 `harness-comfyui` 装配 Web 插件，使 DSH ClientModuleRegistry 能发现包的 Client 声明；`/web` 是同一插件的子路径入口，Client 保留既有 `/client` 入口。`profiles/comfyui-cli/` 使用 DSH base、headless 与项目 bundle，并加载 CLI Workspace component、agent-presets 服务和 cli-runner。该 Profile 停用 base 的全局 Agent 工具组件，由挂载的项目 Preset 创建本地工具。
+
+core 和 image-reader 各自拥有一份业务服务实例。CLI 和 Web 引用这两份实例；独立 image-reader Context 只需表中四个 DSH 服务。ImageReader Remote 把配置操作委托给 imageReader Service，原 Settings namespace、配置 ID、凭据与迁移行为保持原有合同。
+
+CLI 卸载时撤销 capability、关闭连接并等待活动请求退出，等待期限由 `cliServer.shutdownTimeoutMs` 定义。image-reader 卸载时取消并等待自身调用，其等待期限由插件 `shutdownTimeoutMs` 控制；core 关闭 coordinator 后关闭 Runtime。短命 CLI 子进程只提交业务请求，持久 Run 由 DSH 进程内的 coordinator 推进。headless 退出后，下一次使用同一运行目录启动时恢复尚未完成的 Run。
+
 ## 模块职责
 
 | 模块 | 职责 |
@@ -77,7 +96,7 @@ ANIMA、Krea2 和 WAI Prompt Builder 的语义查询命令使用同一个前台 
 
 `read_comfyui_run_inputs` Tool 从 Tool Call、Session cwd 和 workspace registry 派生当前 Workspace；CLI 查询从短期 shell capability 派生当前 Workspace。两条入口都只把 `workspaceId` 和用户提供的 `run_id` 交给 `GenerationRuntime.readGenerationRunInputs()`，不接受调用者提供的 Workspace ID、Session ID、Turn 或 Tool Call ID。
 
-`DSH_HARNESS_COMFYUI_CLI_API` 指向当前 Desktop 进程内部 WebServer 上的 Harness CLI route。Harness CLI route 声明 `desktopBrowserAccess: route-authenticated`，使 Desktop WebServer 只对该 route 跳过外层 Renderer 浏览器访问门禁；请求进入 CLI route 后仍必须通过 `CliShellCapabilityStore` 的短期 capability 验证。其他 Desktop WebServer route 继续受 Renderer 浏览器访问门禁控制。Skill 的 managed CLI 命令通过该 route 调用 Host 中的 Catalog、Generation 和图片读取业务能力。插件内置数据源客户端分别读取数据源服务 URL 和端口，并直接请求数据源服务。
+`DSH_HARNESS_COMFYUI_CLI_API` 指向 `harness-comfyui/cli` 在当前 DSH 进程内创建的专用 Node.js HTTP 服务。该服务监听 `127.0.0.1:0`，监听完成后向 shellEnv 提供实际地址；每个请求由 `CliShellCapabilityStore` 验证前台 Tool Call 的短期 capability。Desktop WebServer 继续管理网页与媒体路由及其浏览器访问门禁。插件内置数据源客户端读取数据源 Settings 中的 URL 和端口，并直接请求数据源服务。
 
 `GenerationRuntime.readGenerationRunInputs()` 要求一次查询包含 1 至 20 个字符串，并按照输入顺序逐项读取 Run Repository 的 `request_json` 和 Run 目录中的 Actual Workflow。Runtime 先检查当前 Workspace 中的完整 Run ID 精确匹配；没有精确匹配且输入是最少八个 UUID 字符的 canonical 起始片段时，Runtime 只在当前 Workspace 中读取最多两个前缀匹配。零个匹配返回 `GENERATION_RUN_NOT_FOUND`，唯一匹配返回完整 canonical `run_id`，多个匹配返回 `GENERATION_RUN_ID_AMBIGUOUS` 并要求调用者增加前缀长度。当前 Workspace 之外的 Run 不参与前缀唯一性判定。合法请求中的无效 ID、缺失 Run、歧义前缀、损坏请求或未分类读取故障只产生对应结果项；后续 Run 继续查询。取消信号终止整个查询。
 
@@ -159,11 +178,7 @@ Session Media Viewer 使用 `GenerationRuntime.queryMedia()` 返回的 `created_
 
 `ImageReaderService.inspect()` 一次读取一个本地图片路径，并从 `configuration.activeProfileId` 解析当前命名配置。DSH Tool `inspect_image` 与受管 CLI `image inspect --stdin` 都可以提供本次调用专用的 `prompt`；该值通过非空与长度校验后原样覆盖本次默认提示词，不修改 Settings。Tool 或 CLI 省略 `prompt` 时，服务使用活动配置保存的 `defaultPrompt`。
 
-图片读取设置页分别维护 Host 返回的 `persistedConfiguration` 和 Client 当前表单的 `editorDraft`。已保存配置选择器只显示 `persistedConfiguration.profiles`；使用者选择已保存配置后，Client 通过 `activateProfile({ profileId })` 请求 Host 只修改 `configuration.activeProfileId`。新建或复制配置只创建 Client 草稿，保存成功前不会进入已保存配置选择器，也不会参与下一次图片读取。已保存配置或未保存配置存在修改时，保存并切换另一份已保存配置的请求通过一次 `saveProfile({ operation, activateProfileId, profile, ... })` 完成 Settings 提交。Settings scope 在草稿编辑期间报告另一份实际生效配置时，普通保存请求把该实际配置作为 `activateProfileId`，避免保存草稿时隐式撤销外部激活结果。
-
-Host 使用同一设置修改队列串行处理保存、激活和删除请求。`operation: 'create'` 只追加不存在的配置 ID，`operation: 'update'` 只更新仍然存在的配置 ID；Host 在同一次 `settings.replace()` 中保存草稿、处理该配置的凭据动作并设置最终 `activeProfileId`。写请求发出后，Client 等待 Host 的权威结果；Host 已经返回成功配置时，Client 即使同时收到本地取消信号也采用该配置。
-
-`ImageReaderRemoteService` 在 Typert Remote 边界把保存、激活和删除产生的 `ImageReaderError` 转换为 `TypertRemoteFailure`。Typert carrier 因此把具体业务错误码、错误消息和空 details 对象写入 Remote 失败结果；Client 不使用 carrier 的通用异常码替换图片读取设置业务错误码。
+image-reader 插件拥有命名配置与凭据的管理，Web 中的 `ImageReaderRemoteService` 负责将业务失败转换为 Typert Remote 失败。设置页草稿、配置保存与激活、并发写入和失败处理规则统一见 [图片读取配置](configuration.md)。
 
 `prepareImageReaderInput()` 在两个 Provider 分支之前读取并验证 PNG、JPEG、WebP 或 GIF 文件。该函数在内存中把每一帧等比缩放到原宽高的 70%，再按输入文件签名对应的格式重新编码；整数像素使用长边四舍五入和最小一像素规则。PNG、WebP 与 GIF 保留 alpha 通道，动画 GIF 与动画 WebP 保留帧数、各帧延时和循环次数。该函数不覆盖原图，也不创建磁盘临时文件。
 

@@ -1,3 +1,4 @@
+import webPluginPatch from '../../config/web-plugin-patch.json' with { type: 'json' }
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { createWriteStream } from 'node:fs'
@@ -305,6 +306,17 @@ async function ensureManagedProfile(context, plugin) {
     specifier,
   })
   await writeAtomicJson(manifestPath, manifest)
+  const patchPath = resolve(profileDirectory, 'cordis.patch.yml')
+  const yaml = packageRequire(context.desktopWorkspace)('yaml')
+  const patch = yaml.parse(await readFile(patchPath, 'utf8'))
+  if (!Array.isArray(patch)) throw new Error('Desktop profile cordis.patch.yml must contain a patch list.')
+  const webId = webPluginPatch[0].insert[0].id
+  const retained = patch.flatMap(row => {
+    if (!row.insert?.some(plugin => plugin.id === webId)) return [row]
+    const insert = row.insert.filter(plugin => plugin.id !== webId)
+    return insert.length === 0 ? [] : [{ ...row, insert }]
+  })
+  await writeFile(patchPath, yaml.stringify([...retained, ...webPluginPatch]))
   await replaceSymbolicLink(context.managedPluginDirectory, resolve(profileDirectory, 'node_modules', plugin.name))
   return { profileDirectory, manifestPath, specifier }
 }

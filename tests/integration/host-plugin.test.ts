@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
-import * as harnessComfyui from '../../src/index.ts'
+import * as harnessComfyui from '../support/product-plugin.ts'
 import {
   reportFrontendAttemptDiagnostic,
   reportGenerationRunInputLookupError,
@@ -199,10 +199,7 @@ describe('Harness ComfyUI Host plugin', () => {
       kind: 'prefix',
       path: '/api/harness-comfyui/media',
     }))
-    expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
-      kind: 'prefix',
-      path: '/api/harness-comfyui/cli/v1',
-    }))
+    expect(registerRoute).not.toHaveBeenCalledWith(expect.objectContaining({ path: '/api/harness-comfyui/cli/v1' }))
     expect(registerShellEnvironment).toHaveBeenCalledWith(expect.objectContaining({
       name: 'harness-comfyui-cli',
     }))
@@ -226,7 +223,7 @@ describe('Harness ComfyUI Host plugin', () => {
     expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI)
       .toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
     expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_CLI_API)
-      .toBe('http://127.0.0.1:43199/api/harness-comfyui/cli/v1')
+      .toMatch(/^http:\/\/127\.0\.0\.1:\d+\/api\/harness-comfyui\/cli\/v1$/)
     expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI)
       .toBe(resolve(process.cwd(), 'scripts/source-client/imagegen-semantic-query.mjs'))
     expect(contributor.resolve(execution).DSH_HARNESS_COMFYUI_SOURCE_URL).toBe('http://127.0.0.1')
@@ -242,7 +239,7 @@ describe('Harness ComfyUI Host plugin', () => {
   it('loads the packaged Host with Remote markers visible to the Desktop Harness protocol', async () => {
     stubTestProfileEnvironment()
     const output = await materializeTestHostModule()
-    const packaged = await import(`${pathToFileURL(output).href}?test=${crypto.randomUUID()}`) as typeof harnessComfyui
+    const packaged = await harnessComfyui.packagedProduct(output)
     const ctx = new Context()
     provideHostServices(ctx)
 
@@ -309,7 +306,7 @@ describe('Harness ComfyUI Host plugin', () => {
   it('passes a JSON-representable invalid value through the strict Remote wire codec to the mounted Host', async () => {
     stubTestProfileEnvironment()
     const output = await materializeTestHostModule()
-    const packaged = await import(`${pathToFileURL(output).href}?test=${crypto.randomUUID()}`) as typeof harnessComfyui
+    const packaged = await harnessComfyui.packagedProduct(output)
     const ctx = new Context()
     provideHostServices(ctx)
     const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })

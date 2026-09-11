@@ -1,4 +1,4 @@
-# Desktop 与 Web Host 启动
+# Desktop、Web Host 与纯 DSH CLI 启动
 
 ## Desktop 基线与环境配置
 
@@ -39,7 +39,7 @@ start 保持在前台。status 报告实例进程与就绪状态；logs 汇总�
 
 ## 项目运行配置
 
-启动器从 config/product-agent.json 解析当前 checkout 的 Repository Skills 目录，写入 HARNESS_COMFYUI_SKILL_DIR；调用者或 .env 不得覆盖该目录。DSH_AGENTS_HOME 保留调用者的用户级 Skills 根。两个项目 Preset 的 Skills 隔离要求见 docs/agents/comfyui-workbench-preset-and-skill-development.md。
+启动器从 config/product-agent.json 解析当前 checkout 的 Repository Skills 目录，写入 HARNESS_COMFYUI_SKILL_DIR；启动器必须以验证后的路径覆盖调用者或 .env 提供的目录值。DSH_AGENTS_HOME 保留调用者的用户级 Skills 根。两个项目 Preset 的 Skills 隔离要求见 docs/agents/comfyui-workbench-preset-and-skill-development.md。
 
 插件配置定义默认模型和 Provider。启动器注入当前环境的 Workspace、数据目录、运行数据库、媒体目录和日志目录。数据源地址通过 ComfyUI 设置页保存；Host 后续请求读取最新设置，不要求数据源源码位于本仓库旁。
 
@@ -51,4 +51,14 @@ pnpm web:start、pnpm web:status、pnpm web:health、pnpm web:logs、pnpm web:st
 
 ## 生产更新
 
-生产更新必须使用已发布插件版本和 config/desktop-baseline.json 指定的 Desktop 提交。部署人员保留生产配置和运行数据，按照 docs/system/releasing.md 执行发布门禁。旧数据迁移必须单独验证，开发启动器不得为测试改写生产目录。
+生产更新必须使用已发布插件版本和 config/desktop-baseline.json 指定的 Desktop 提交。部署人员保留生产配置和运行数据，按照 docs/system/releasing.md 执行发布门禁。旧数据迁移必须单独验证，开发启动器必须将测试数据写入独立开发运行目录。
+
+## 纯 DSH CLI
+
+`pnpm cli:run -- "任务文本"` 通过 `scripts/cli/run.mjs` 构建核心 Host 与 managed CLI，准备 `profiles/comfyui-cli/`，然后以前台普通 Node.js 子进程启动已安装的 `@deepseek-ai/dsh` headless 入口。调用者必须预先准备 DSH `0.1.5-rc.1`、其 base/headless bundle、workspace 与 agent-presets 公共包、项目构建工具和业务依赖；本命令读取当前 checkout 的包解析环境。worktree 的已有依赖视图可用于开发验收，启动脚本本身只解析 DSH 公共包。
+
+`config/cli-runtime.json` 定义隔离运行目录 `.local/cli-runtime/`、DSH Profile 名称、环境文件及业务目录。启动器在该目录保存 DSH home、数据库、Run 和媒体，读取当前 checkout 的 `.env`，并安装 `config/product-agent.json` 中的项目 Preset。调用者在该 DSH home 配置可用 Provider、模型及凭据后提交任务。前台任务结束或收到终止信号时，DSH 退出并释放插件资源。
+
+调用者需要本次任务取得最终生成结果时，必须在任务文本中要求 Agent 查询 Run 状态并在取得最终结果后结束。`generation submit` 的成功输出表示 Run 已持久接纳；后续启动使用同一运行目录继续推进未完成的 Run。managed CLI 的执行身份仍由 DSH 前台 shell Tool Call 提供。
+
+纯 CLI Profile 使用项目 `/cli-runner` 插件挂载 `config/product-agent.json.preset.id` 指定的默认 Preset，随后执行任务。DSH headless bundle 提供任务参数和应用退出服务；项目 runner 在会话保存完成后请求退出。纯 CLI 构建产物包含 core、image-reader、cli、cli-workspace、cli-runner 和 Workflow 编译 Worker。

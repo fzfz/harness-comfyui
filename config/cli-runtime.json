@@ -1,0 +1,14 @@
+{
+  "profile": "comfyui-cli",
+  "runtimeRelativeRoot": ".local/cli-runtime",
+  "environmentFile": ".env",
+  "configurationProfile": "production",
+  "runtimePaths": {
+    "HARNESS_COMFYUI_DATA_DIR": "data",
+    "HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY": "data/api-workflow-cache",
+    "HARNESS_COMFYUI_RUN_REPOSITORY_FILE": "data/runs.sqlite",
+    "HARNESS_COMFYUI_RUN_DIRECTORY": "runs",
+    "HARNESS_COMFYUI_SAVED_MEDIA_DIRECTORY": "saved-media",
+    "HARNESS_COMFYUI_LOG_DIRECTORY": "logs"
+  }
+}

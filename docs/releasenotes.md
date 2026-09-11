@@ -1,3 +1,21 @@
+# Harness ComfyUI v0.44.0
+
+## 架构与运行入口
+
+`harness-comfyui` 分为 core、image-reader、cli 与 Web 展示插件。读图插件独立管理配置、Provider 和 Tool；CLI 使用 DSH 进程内的专用回环 HTTP 服务。`pnpm cli:run -- "任务文本"` 使用普通 Node.js 和 DSH Profile，挂载项目 Preset，并在独立目录保存 Session、Run 与媒体。
+
+## 依赖审核
+
+纯 CLI Profile 声明 `@deepseek-ai/dsh`、`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-headless`、`@deepseek-ai/dsh-workspace`、`@deepseek-ai/dsh-agent-presets`，版本均为 `0.1.5-rc.1`，分别提供启动器、基础服务、任务参数与退出服务、Workspace 和 Preset 装配。本次使用已安装基线，未安装或升级依赖。
+
+2026-09-11 的已安装依赖图检查覆盖 475 个包，解析完整，未包含 Electron 或 Desktop 包。npm 公告接口对该依赖图返回 6 项高危和 5 项中危匹配：`js-yaml 4.3.1` 一项高危、宿主 `sharp 0.35.3` 一项高危、`fast-uri 3.1.5` 四项高危、`qs 6.15.3` 两项中危、`hono 4.13.2` 三项中危。以上结果表示版本命中公告，尚未逐项确认业务路径是否可利用。后续独立安装须重新审核这些传递依赖；本次保留用户选定的 DSH 基线。项目业务使用的 `sharp` 仍为 `0.35.4`，本仓库锁文件的完整与生产依赖审计均为零发现。
+
+## 验证与待完成验收
+
+完整质量检查和覆盖率结果见 [CLI 解耦候选验证](system/testing.md#cli-解耦候选验证)。纯 DSH 的真实模型已读取 local-image-reader Skill 并通过 CLI 完成测试图片读图，返回红色观察结果。受控集成测试确认 Generation Run 在进程退出后持久保存，并在同目录重启后完成任务和媒体下载。
+
+Desktop 隔离实例已确认当前插件安装、Client 加载、Renderer 健康和监听端口归属，并已停止。Desktop 的真实模型矩阵尚未通过：七个 Session 的 cliproxy 请求均在 Tool Call 前返回 TIMEOUT，后续更换模型、Provider 和移除 shell 代理环境变量的测试仍超时。该结果保留为待完成验收，自动化 Desktop 测试和纯 CLI 读图成功分别记录。
+
 # Harness ComfyUI v0.43.1
 
 ## 插入上下文弹窗

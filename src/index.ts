@@ -1,2 +1,1 @@
-export { apply, Config, inject, name } from './host/plugin.ts'
-export type { Config as HostPluginConfig } from './host/plugin.ts'
+export { apply, inject, name } from './host/web/plugin.ts'

@@ -43,7 +43,10 @@ export async function materializeSourceHostModule(repositoryRoot, options = {}) 
     config: false,
     logLevel: 'silent',
     entry: {
-      index: resolve(sourceRoot, 'src/index.ts'),
+      ...(options.web === false ? {} : { index: resolve(sourceRoot, 'src/index.ts') }),
+      ...Object.fromEntries(Object.entries(runtimeArtifacts.hostPlugins)
+        .filter(([name]) => options.web !== false || name !== 'web')
+        .map(([name, artifact]) => [name, resolve(sourceRoot, artifact.sourceEntryRelativePath)])),
       'comfy-frontend-worker': resolve(
         sourceRoot,
         runtimeArtifacts.frontendCompilerWorker.sourceEntryRelativePath,
@@ -59,5 +62,5 @@ export async function materializeSourceHostModule(repositoryRoot, options = {}) 
     outExtensions: () => ({ js: '.js', dts: '.d.ts' }),
     plugins: [hostImportPolicy],
   })
-  return output
+  return options.web === false ? resolve(dirname(output), 'core.js') : output
 }

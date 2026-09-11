@@ -25,9 +25,17 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.43.1 的发布范围与 Desktop 基线
+## v0.44.0 的发布范围与 Desktop 基线
 
-v0.43.1 使用自有 Desktop 2.0.9 与 DSH 0.1.5-rc.1，固定提交由 config/desktop-baseline.json 指定。工作台结果页采用原生右侧栏页签，两个项目预设采用 Persona prefix 配置。会话删除、真实 Session 请求头、Provider 推理配置和 managed CLI 路由鉴权继续由自有 Desktop 补丁提供。部署验收必须确认当前插件版本为 0.43.1，生产 checkout 与发布提交一致，并满足下文的生产部署验收条件。
+v0.44.0 将 managed CLI、Catalog/Generation、图片读取和 Web 展示分别装配，增加纯 DSH CLI Profile。Desktop、DSH 与 Electron 版本继续使用 config/desktop-baseline.json 的既有基线。部署验收必须确认当前插件版本为 0.44.0，生产 checkout 与发布提交一致，并完成本文规定的生产验收。已记录的 Desktop 真实模型验收超时和基线依赖公告见 [v0.44.0 发布说明](../releasenotes.md#harness-comfyui-v0440)。
+
+## v0.43.1 的历史发布范围与 Desktop 基线
+
+v0.43.1 改进插入上下文弹窗的两列资源列表、分类详情和图片预览，具体范围见 [v0.43.1 发布说明](../releasenotes.md#harness-comfyui-v0431)。共用 Desktop 基线见下文 v0.43.0 历史说明。该版本的部署验收确认插件版本为 0.43.1、生产 checkout 与发布提交一致。
+
+## v0.43.0 的历史发布范围与 Desktop 基线
+
+v0.43.0 使用自有 Desktop 2.0.9 与 DSH 0.1.5-rc.1，固定提交由 config/desktop-baseline.json 指定。工作台结果页采用原生右侧栏页签，两个项目预设采用 Persona prefix 配置。会话删除、真实 Session 请求头、Provider 推理配置和 managed CLI 路由鉴权继续由自有 Desktop 补丁提供。该版本的部署验收确认插件版本为 0.43.0、生产 checkout 与发布提交一致。
 
 ## Git tag 与 GitHub Release
 

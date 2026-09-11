@@ -3,7 +3,9 @@
 | 路径 | 内容 |
 | --- | --- |
 | `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
-| `src/host/cli/` | managed CLI 的 shell capability 与 loopback Host route |
+| `src/host/core/` | Catalog/Generation 插件、共享服务与配置 schema |
+| `src/host/cli/` | CLI 插件、专用 HTTP listener、请求分发、shell capability 与根 Session Workspace 登记 |
+| `src/host/web/` | Remote 与媒体路由的 Web 插件装配 |
 | `src/cli/` | managed project CLI 的 argv、request、Generation Request、模板运行参数检查、随机 Seed、历史 Run 输入查询、Run 图片路径查询和单图读取结构化合同 |
 | `src/host/generation/` | Generation Runtime、Source、Workflow 参数检查与编译、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 输入查询 Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
 | `src/host/image-reader/` | 图片读取设置迁移与保存、视觉模型目录、模型上报前的 70% 同格式图片缩放、系统 Provider/OpenAI 兼容适配和单图读取 Tool |
@@ -45,7 +47,7 @@
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
 | `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
 | `scripts/profile/product-agent-config.mjs` | 公开 `loadProductAgentConfiguration(repositoryRoot)`；该函数校验产品 Agent 配置结构、Repository Skills 目录类型与 checkout 边界、环境变量名称及其 pass-through 声明，并返回 `preset`、`repositorySkillsRoot` 和 `repositorySkillsEnvironmentVariable` |
-| `scripts/cli/` | managed CLI 构建的源码入口；Desktop 与 Web Host 准备链把该入口及其 TypeScript 依赖生成到 `.local/source-cli/` |
+| `scripts/cli/` | managed CLI 源码与纯 DSH 前台启动入口；构建产物位于 `.local/source-cli/` |
 | `scripts/source-client/` | 该目录保存插件发行包内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务。 |
 | `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |
 | `scripts/testing/` | 自动化测试使用的辅助模块 |
@@ -60,6 +62,8 @@
 | `prototype/` | 工作台和 Session Media Viewer 静态原型及原型测试；不是运行时数据来源 |
 | `docs/system/` | 当前系统规范 |
 
-以下本地文件和目录不进入版本控制：`.local/desktop-production/`、`.local/desktop-development/`、`.local/web-development/`、`.local/source-cli/`、`.local/source-client/`、`coverage/`、`lib/` 和 `node_modules/`。linked worktree 根 `.env` 与 `node_modules` 是指向主开发 checkout 的符号链接，也不进入版本控制。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
+以下本地文件和目录不进入版本控制：`.local/desktop-production/`、`.local/desktop-development/`、`.local/web-development/`、`.local/source-cli/`、`.local/source-client/`、`coverage/`、`lib/` 和 `node_modules/`。linked worktree 的 `.env` 链接到主开发 checkout；`node_modules` 是 worktree 自有目录，分别链接主 checkout 的业务依赖和选定宿主包。依赖视图规则见 `configuration.md`。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
 
 `src/host/generation/workflow-compiler.ts` 检查目标 Workflow 的实际运行参数、编译参数值、改写 Actual Workflow、筛选活动输出节点，并生成运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 在 Official API Workflow Cache miss 时启动浏览器和 CDP session，通过目标 ComfyUI 官方前端的 `loadGraphData()` 与 `graphToPrompt()` 导出 Official Base API Workflow。`src/host/generation/official-api-workflow.ts` 计算缓存 identity、读取和保存缓存文件、把同一缓存键的并发 miss 合并为一次官方前端导出，并把本次运行参数的非连接输入值覆盖到 Official Base API Workflow 的副本。
+
+`profiles/comfyui-cli/` 保存纯 DSH Profile，`config/cli-runtime.json` 保存其运行目录配置。服务端入口与产物路径统一在 `config/runtime-artifacts.json.hostPlugins` 声明。

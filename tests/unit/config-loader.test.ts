@@ -336,6 +336,7 @@ describe('production Configuration Profile loader', () => {
       'jobs',
       'media',
       'client',
+      'cliServer',
       'server',
       'process',
     ])

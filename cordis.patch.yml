@@ -1,12 +1,17 @@
 - insert:
-    - id: harness-comfyui
-      name: harness-comfyui
+    - id: harness-comfyui-core
+      name: harness-comfyui/core
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
         startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+    - id: harness-comfyui-image-reader
+      name: harness-comfyui/image-reader
+      config:
         imageReaderDefaultModel:
           provider: opencode-go
           model: qwen3.7-plus
+    - id: harness-comfyui-cli
+      name: harness-comfyui/cli
 
 - id: agent-default-model
   config:

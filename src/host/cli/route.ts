@@ -1,77 +1,18 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { dispatch } from './dispatch.ts'
 
 import {
   CLI_MAX_BODY_BYTES,
   CLI_ROUTE_PATH,
-  parseCliRequest,
-  toGenerationRequest,
-  type CliRequest,
+  parseCliRequest
 } from '../../cli/contract.ts'
-import {
-  CATALOG_COMFYUI_INSTANCE_QUERY,
-  type CatalogComfyuiInstancePage,
-  type CatalogPage,
-  type CatalogQueryRequest,
-  type CatalogResolvedGenerationModel,
-  type CatalogResolvedLora,
-  type CatalogResolvedTemplate,
-} from '../../catalog/contract.ts'
 import { CatalogCliError } from '../catalog/catalog-cli.ts'
 import {
-  GenerationRuntimeError,
-  type GenerationRuntime,
+  GenerationRuntimeError
 } from '../generation/generation-runtime.ts'
 import { ImageReaderError } from '../image-reader/errors.ts'
-import type { ImageReaderService } from '../image-reader/image-reader-service.ts'
-import type {
-  CliExecutionIdentity,
-  CliShellCapabilityStore,
-} from './shell-capability.ts'
 
-interface CliCatalog {
-  resolveTemplate(id: string, signal: AbortSignal): Promise<CatalogResolvedTemplate>
-  resolveGenerationModel(id: string, signal: AbortSignal): Promise<CatalogResolvedGenerationModel>
-  resolveLora(id: string, signal: AbortSignal): Promise<CatalogResolvedLora>
-  queryComfyuiInstances(
-    input: typeof CATALOG_COMFYUI_INSTANCE_QUERY,
-    signal: AbortSignal,
-  ): Promise<CatalogComfyuiInstancePage>
-  search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage>
-}
-
-interface CliWebServer {
-  register(route: {
-    readonly kind: 'prefix'
-    readonly path: string
-    readonly desktopBrowserAccess?: 'route-authenticated'
-    readonly handler: (request: IncomingMessage, response: ServerResponse) => void | Promise<void>
-  }): () => void
-}
-
-export interface RegisterHarnessComfyuiCliRouteOptions {
-  readonly webServer: CliWebServer
-  readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
-  readonly catalog: CliCatalog
-  readonly runtime: Pick<
-    GenerationRuntime,
-    'acceptGeneration' | 'inspectTemplateRuntimeParameters' | 'readGenerationRunInputs' | 'readGenerationRunMedia'
-  >
-  readonly imageReader: Pick<ImageReaderService, 'inspect'>
-  readonly workspaceRegistry: {
-    resolveByPath(path: string): Promise<{
-      readonly id: string | number
-      readonly sessionIds: readonly (string | number)[]
-    } | undefined>
-  }
-}
-
-const RANDOM_SEED_MAX_EXCLUSIVE = 2_147_483_648
-
-function ordinaryRandomSeeds(count: number): readonly number[] {
-  const seeds = new Set<number>()
-  while (seeds.size < count) seeds.add(Math.floor(Math.random() * RANDOM_SEED_MAX_EXCLUSIVE))
-  return Object.freeze([...seeds])
-}
+import type { CliHandlerOptions } from './schema.ts'
 
 interface CliErrorBody {
   readonly code: string
@@ -146,92 +87,6 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   }
 }
 
-async function generationIdentity(
-  options: RegisterHarnessComfyuiCliRouteOptions,
-  identity: CliExecutionIdentity,
-) {
-  const workspace = await options.workspaceRegistry.resolveByPath(identity.cwd)
-  if (
-    workspace === undefined
-    || !workspace.sessionIds.some(sessionId => String(sessionId) === identity.sessionId)
-  ) {
-    throw new GenerationRuntimeError(
-      'GENERATION_WORKSPACE_REQUIRED',
-      'The current Session is not attached to a Harness Workspace.',
-    )
-  }
-  return Object.freeze({
-    workspaceId: String(workspace.id),
-    sessionId: identity.sessionId,
-    turn: identity.turn,
-    callId: identity.callId,
-  })
-}
-
-async function dispatch(
-  options: RegisterHarnessComfyuiCliRouteOptions,
-  identity: CliExecutionIdentity,
-  request: CliRequest,
-  signal: AbortSignal,
-): Promise<unknown> {
-  switch (request.command) {
-    case 'catalog.template.resolve':
-      return options.catalog.resolveTemplate(request.id, signal)
-    case 'catalog.generation-model.resolve':
-      return options.catalog.resolveGenerationModel(request.id, signal)
-    case 'catalog.lora.resolve':
-      return options.catalog.resolveLora(request.id, signal)
-    case 'catalog.instance.list':
-      return options.catalog.queryComfyuiInstances(CATALOG_COMFYUI_INSTANCE_QUERY, signal)
-    case 'catalog.search':
-      return options.catalog.search({
-        kind: request.kind,
-        query: request.query,
-        page: request.page,
-        baseModelId: request.base_model_id,
-      }, signal)
-    case 'generation.submit': {
-      const owner = await generationIdentity(options, identity)
-      const accepted = await options.runtime.acceptGeneration(owner, toGenerationRequest(request.request), signal)
-      return Object.freeze({ run_id: accepted.runId })
-    }
-    case 'generation.inspect-template-parameters':
-      return options.runtime.inspectTemplateRuntimeParameters({
-        templateId: request.template_id,
-        instanceId: request.instance_id,
-      }, signal)
-    case 'generation.random-seeds':
-      return Object.freeze({ seeds: ordinaryRandomSeeds(request.count) })
-    case 'generation.run-inputs': {
-      const owner = await generationIdentity(options, identity)
-      return options.runtime.readGenerationRunInputs({
-        workspaceId: owner.workspaceId,
-        runIds: request.run_ids,
-      }, signal)
-    }
-    case 'generation.resolve-media': {
-      const owner = await generationIdentity(options, identity)
-      return options.runtime.readGenerationRunMedia({
-        workspaceId: owner.workspaceId,
-        runIds: request.run_ids,
-      }, signal)
-    }
-    case 'image.inspect': {
-      const result = await options.imageReader.inspect(request.file_path, {
-        prompt: request.prompt,
-        sessionId: identity.sessionId,
-        signal,
-      })
-      return Object.freeze({
-        provider: result.provider,
-        model: result.model,
-        file_path: result.filePath,
-        observation: result.observation,
-      })
-    }
-  }
-}
-
 function reportedError(error: unknown): { readonly status: number; readonly error: CliErrorBody } {
   if (error instanceof CliHttpError) {
     return { status: error.status, error: { code: error.code, message: error.message } }
@@ -254,54 +109,49 @@ function reportedError(error: unknown): { readonly status: number; readonly erro
   }
 }
 
-export function registerHarnessComfyuiCliRoute(options: RegisterHarnessComfyuiCliRouteOptions): () => void {
-  return options.webServer.register({
-    kind: 'prefix',
-    path: CLI_ROUTE_PATH,
-    desktopBrowserAccess: 'route-authenticated',
-    async handler(request, response) {
-      if (request.method !== 'POST') {
-        response.setHeader('allow', 'POST')
-        sendFailure(response, 405, { code: 'CLI_METHOD_INVALID', message: 'The managed CLI endpoint accepts POST requests.' })
+export function createCliHandler(options: CliHandlerOptions) {
+  return async (request: IncomingMessage, response: ServerResponse) => {
+    if (request.method !== 'POST') {
+      response.setHeader('allow', 'POST')
+      sendFailure(response, 405, { code: 'CLI_METHOD_INVALID', message: 'The managed CLI endpoint accepts POST requests.' })
+      return
+    }
+    const url = new URL(request.url ?? '/', 'http://127.0.0.1')
+    if (url.pathname !== CLI_ROUTE_PATH || url.search.length > 0) {
+      sendFailure(response, 404, { code: 'CLI_ROUTE_NOT_FOUND', message: 'The managed CLI route was not found.' })
+      return
+    }
+    const abortController = new AbortController()
+    const abortRequest = abortController.abort.bind(abortController)
+    const abortClosedResponse = abortIncompleteCliResponse.bind(undefined, response, abortController)
+    request.once('aborted', abortRequest)
+    response.once('close', abortClosedResponse)
+    try {
+      const capability = bearerCapability(request)
+      const identity = options.capabilities.authorize(capability)
+      if (identity === undefined) {
+        throw new CliHttpError(
+          401,
+          'CLI_CAPABILITY_INVALID',
+          'The shell-call capability is missing, expired, or invalid.',
+        )
+      }
+      const cliRequest = parseCliRequest(await readJsonBody(request))
+      const data = await dispatch(options, identity, cliRequest, abortController.signal)
+      sendSuccess(response, data)
+    } catch (error) {
+      if (response.destroyed || response.writableEnded) return
+      if (response.headersSent) {
+        response.destroy(error instanceof Error ? error : undefined)
         return
       }
-      const url = new URL(request.url ?? '/', 'http://127.0.0.1')
-      if (url.pathname !== CLI_ROUTE_PATH || url.search.length > 0) {
-        sendFailure(response, 404, { code: 'CLI_ROUTE_NOT_FOUND', message: 'The managed CLI route was not found.' })
-        return
-      }
-      const abortController = new AbortController()
-      const abortRequest = abortController.abort.bind(abortController)
-      const abortClosedResponse = abortIncompleteCliResponse.bind(undefined, response, abortController)
-      request.once('aborted', abortRequest)
-      response.once('close', abortClosedResponse)
-      try {
-        const capability = bearerCapability(request)
-        const identity = options.capabilities.authorize(capability)
-        if (identity === undefined) {
-          throw new CliHttpError(
-            401,
-            'CLI_CAPABILITY_INVALID',
-            'The shell-call capability is missing, expired, or invalid.',
-          )
-        }
-        const cliRequest = parseCliRequest(await readJsonBody(request))
-        const data = await dispatch(options, identity, cliRequest, abortController.signal)
-        sendSuccess(response, data)
-      } catch (error) {
-        if (response.destroyed || response.writableEnded) return
-        if (response.headersSent) {
-          response.destroy(error instanceof Error ? error : undefined)
-          return
-        }
-        const report = reportedError(error)
-        sendFailure(response, report.status, report.error)
-      } finally {
-        request.removeListener('aborted', abortRequest)
-        response.removeListener('close', abortClosedResponse)
-      }
-    },
-  })
+      const report = reportedError(error)
+      sendFailure(response, report.status, report.error)
+    } finally {
+      request.removeListener('aborted', abortRequest)
+      response.removeListener('close', abortClosedResponse)
+    }
+  }
 }
 
 export function abortIncompleteCliResponse(

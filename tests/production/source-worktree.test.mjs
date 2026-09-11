@@ -347,7 +347,7 @@ describe('source worktree development Profile materialization', () => {
       profileName: 'comfyui-workbench',
     })
 
-    expect(await readFile(resolve(result.profileDirectory, 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
+    expect(await readFile(resolve(result.profileDirectory, 'cordis.patch.yml'), 'utf8')).toBe('- insert:\n    - id: harness-comfyui-web\n      name: harness-comfyui\n')
     expect(await pathExists(resolve(dshHome, '.env'))).toBe(false)
   })
 

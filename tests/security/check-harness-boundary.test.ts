@@ -23,13 +23,16 @@ function fixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-boundary-'))
   for (const directory of [
     'src/host/tools',
+    'src/host/core',
+    'src/host/image-reader',
     'profiles/comfyui-workbench',
     'profiles/comfyui-workbench-development',
   ]) {
     mkdirSync(join(root, directory), { recursive: true })
   }
   writeFileSync(join(root, 'src/host/tools/register-project-tools.ts'), 'ctx.tools.register(definition)\n')
-  writeFileSync(join(root, 'src/host/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
+  writeFileSync(join(root, 'src/host/core/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
+  writeFileSync(join(root, 'src/host/image-reader/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
   if (otherSource) writeFileSync(join(root, 'src/other.ts'), otherSource)
   writeFileSync(join(root, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
@@ -43,14 +46,19 @@ function fixture(otherSource = ''): string {
   writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - .\n')
   writeFileSync(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n")
   writeFileSync(join(root, 'cordis.patch.yml'), `- insert:
-    - id: harness-comfyui
-      name: harness-comfyui
+    - id: harness-comfyui-core
+      name: harness-comfyui/core
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
         startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+    - id: harness-comfyui-image-reader
+      name: harness-comfyui/image-reader
+      config:
         imageReaderDefaultModel:
           provider: opencode-go
           model: qwen3.7-plus
+    - id: harness-comfyui-cli
+      name: harness-comfyui/cli
 
 - id: agent-default-model
   config:
@@ -71,7 +79,10 @@ function fixture(otherSource = ''): string {
   config:
     default: harness-comfyui-cli-candidate
 `)
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), '[]\n')
+  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- insert:
+    - id: harness-comfyui-web
+      name: harness-comfyui
+`)
   writeFileSync(join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'), '[]\n')
   return root
 }
@@ -90,6 +101,15 @@ function updateJson(root: string, path: string, update: (value: Record<string, a
 describe('Harness source boundary', () => {
   it('accepts one project Tool registry in the Host plugin', () => {
     const root = fixture()
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts public Agent model selection and Session identity exports', () => {
+    const root = fixture("import { installModelSelection } from '@deepseek-ai/dsh-agent'\nimport { SessionId } from '@deepseek-ai/dsh-session'\n")
     try {
       expect(run(root)).toMatchObject({ status: 0, stderr: '' })
     } finally {
