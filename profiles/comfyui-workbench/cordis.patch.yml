@@ -1,1 +1,3 @@
-[]
+- insert:
+    - id: harness-comfyui-web
+      name: harness-comfyui

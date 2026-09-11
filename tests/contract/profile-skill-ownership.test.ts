@@ -12,7 +12,8 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
       'utf8',
     )
 
-    expect(profilePatch).toBe('[]\n')
+    expect(profilePatch).toBe('- insert:\n    - id: harness-comfyui-web\n      name: harness-comfyui\n')
+    expect(profilePatch).not.toMatch(/skill-filesystem|tool-skill|\.agents\/skills/u)
 
     const developmentProfilePatch = readFileSync(
       resolve(repositoryRoot, 'profiles/comfyui-workbench-development/cordis.patch.yml'),

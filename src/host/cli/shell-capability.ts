@@ -1,5 +1,5 @@
-import { randomBytes } from 'node:crypto'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { randomBytes } from 'node:crypto'
 import { CLI_ENVIRONMENT_NAMES } from '../../cli/contract.ts'
 import type { SourceAddress } from '../../source-settings.ts'
 
@@ -87,6 +87,11 @@ export class CliShellCapabilityStore {
     this.byExecution.set(execution.token, issued)
     this.byValue.set(value, issued)
     return this.environmentFor(value)
+  }
+
+  clear(): void {
+    this.byExecution.clear()
+    this.byValue.clear()
   }
 
   authorize(value: string): CliExecutionIdentity | undefined {

@@ -10,7 +10,7 @@ import { CLI_ROUTE_PATH } from '../../src/cli/contract.ts'
 import { CatalogCliError } from '../../src/host/catalog/catalog-cli.ts'
 import {
   abortIncompleteCliResponse,
-  registerHarnessComfyuiCliRoute,
+  createCliHandler,
 } from '../../src/host/cli/route.ts'
 import {
   GenerationRuntime,
@@ -907,3 +907,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     await generationServer.close()
   })
 })
+
+function registerHarnessComfyuiCliRoute(options: Parameters<typeof createCliHandler>[0] & { webServer: { register(route: { kind: 'prefix'; path: string; handler: ReturnType<typeof createCliHandler> }): () => void } }) {
+  return options.webServer.register({ kind: 'prefix', path: '/api/harness-comfyui/cli/v1', handler: createCliHandler(options) })
+}

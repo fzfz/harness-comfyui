@@ -1,3 +1,4 @@
+import { packagedProduct } from '../support/product-plugin.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -45,15 +46,15 @@ function provideProjectHostDependencies(ctx: Context): void {
       get: vi.fn(() => namespace === 'harness-comfyui-source'
         ? { configuration: { url: 'https://catalog.example.com', port: 18443 } }
         : {
-            configuration: {
-              activeProfileId: 'default',
-              profiles: [{
-                id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
-                hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
-              }],
-            },
-            credentials: {},
-          }),
+          configuration: {
+            activeProfileId: 'default',
+            profiles: [{
+              id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
+              hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
+            }],
+          },
+          credentials: {},
+        }),
       replace: vi.fn(async () => undefined),
     })),
     describe: vi.fn(() => []),
@@ -88,7 +89,7 @@ describe('DSH Desktop managed shell capability', () => {
 
     await materializeSourceCliModule(process.cwd())
     const hostModule = await materializeSourceHostModule(process.cwd())
-    const projectPlugin = await import(`${pathToFileURL(hostModule).href}?test=${crypto.randomUUID()}`)
+    const projectPlugin = await packagedProduct(hostModule)
     const ctx = new Context()
     provideProjectHostDependencies(ctx)
     ctx.provide('desktopBrowserAccess' as never, {
@@ -132,7 +133,8 @@ describe('DSH Desktop managed shell capability', () => {
       const [cliPath, apiUrl, capability, semanticQueryCliPath, sourceUrl, sourcePort, responseText] = result.value?.stdout?.text?.trim().split('\n') ?? []
       expect(cliPath).toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
       const activeWebServer = (ctx as Context & { webServer: { host: string; port: number } }).webServer
-      expect(apiUrl).toBe(`http://${activeWebServer.host}:${activeWebServer.port}/api/harness-comfyui/cli/v1`)
+      expect(apiUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/api\/harness-comfyui\/cli\/v1$/)
+      expect(new URL(apiUrl!).port).not.toBe(String(activeWebServer.port))
       expect(activeWebServer.port).not.toBe(4173)
       expect(capability).toMatch(/^[A-Za-z0-9_-]{43}$/u)
       const rejected = await fetch(apiUrl!, {

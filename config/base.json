@@ -42,5 +42,10 @@
   },
   "process": {
     "shutdownTimeoutMs": 10000
+  },
+  "cliServer": {
+    "host": "127.0.0.1",
+    "port": 0,
+    "shutdownTimeoutMs": 5000
   }
 }

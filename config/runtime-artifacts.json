@@ -6,5 +6,31 @@
   "managedCli": {
     "sourceEntryRelativePath": "scripts/cli/harness-comfyui.mjs",
     "outputEntryRelativePath": ".local/source-cli/harness-comfyui.mjs"
+  },
+  "hostPlugins": {
+    "core": {
+      "sourceEntryRelativePath": "src/host/core/plugin.ts",
+      "outputEntryRelativePath": ".local/source-host/core.js"
+    },
+    "image-reader": {
+      "sourceEntryRelativePath": "src/host/image-reader/plugin.ts",
+      "outputEntryRelativePath": ".local/source-host/image-reader.js"
+    },
+    "cli": {
+      "sourceEntryRelativePath": "src/host/cli/plugin.ts",
+      "outputEntryRelativePath": ".local/source-host/cli.js"
+    },
+    "web": {
+      "sourceEntryRelativePath": "src/host/web/plugin.ts",
+      "outputEntryRelativePath": ".local/source-host/web.js"
+    },
+    "cli-workspace": {
+      "sourceEntryRelativePath": "src/host/cli/workspace.ts",
+      "outputEntryRelativePath": ".local/source-host/cli-workspace.js"
+    },
+    "cli-runner": {
+      "sourceEntryRelativePath": "src/host/cli/runner.ts",
+      "outputEntryRelativePath": ".local/source-host/cli-runner.js"
+    }
   }
 }

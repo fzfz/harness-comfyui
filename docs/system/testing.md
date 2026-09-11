@@ -11,7 +11,7 @@ pnpm dev:logs
 pnpm dev:stop
 ```
 
-生产 checkout 的完整 Desktop 使用 `pnpm prod:*`。Agent 不得使用生产入口验证 linked worktree 中的未发布源码。只需要 Web Host 时使用 `pnpm web:*`；Web Host 验证不能代替真实 Desktop 验收。
+生产 checkout 的完整 Desktop 使用 `pnpm prod:*`。Agent 必须使用 `dev:*` 入口验证 linked worktree 中的未发布源码。只需要 Web Host 时使用 `pnpm web:*`；Web Host 验证不能代替真实 Desktop 验收。
 
 生产、开发、Web Host 进程和配置隔离的自动化验证使用：
 
@@ -27,9 +27,9 @@ tests/support/desktop-context.mjs 使用 config/desktop-baseline.json 选择 any
 
 当前候选基线为 Desktop 2.0.9、DSH 0.1.5-rc.1 和 Electron 43.3.0，固定源码身份以 config/desktop-baseline.json 为准。门禁必须使用该安装中的宿主包，验证原有会话删除、Session 请求头、模型推理等级编辑和 managed CLI 路由行为。工作台界面测试必须覆盖原生右侧栏中的结果页、空白与已保存 Session，以及关闭结果页后其他宿主页签保持可用。
 
-自有 Desktop 的完整 `corepack yarn check` 通过：Market 263 项、Stable 1375 项和 Beta 1327 项测试成功；Stable 8 项、Beta 7 项跳过。本次改动修正了市场测试的代理隔离、Windows 反向补丁路径和 CLI 版本检查的临时工作目录，并保留原有行为断言。
+自有 Desktop 的完整 `corepack yarn check` 通过：Market 263 项、Stable 1375 项和 Beta 1327 项测试成功；Stable 8 项、Beta 7 项跳过。v0.43.0 修正了市场测试的代理隔离、Windows 反向补丁路径和 CLI 版本检查的临时工作目录，并保留原有行为断言。
 
-本次候选的分项验收通过：1045 项 unit/integration/Skills、55 项 contract/security、278 项 production、32 项 prototype 和 4 项真实 Desktop 测试。覆盖率为 statements 93.62%、branches 86.94%、functions 100%、lines 96.18%。真实 Desktop 测试验证会话删除、Provider 推理等级保存、结果轮询、原生页签隔离，以及媒体下载内容与复制结果。
+v0.43.0 候选的分项验收通过：1045 项 unit/integration/Skills、55 项 contract/security、278 项 production、32 项 prototype 和 4 项真实 Desktop 测试。覆盖率为 statements 93.62%、branches 86.94%、functions 100%、lines 96.18%。真实 Desktop 测试验证会话删除、Provider 推理等级保存、结果轮询、原生页签隔离，以及媒体下载内容与复制结果。
 
 候选设置页通过重新编辑推理等级，将旧模型记录的 `reasoning.efforts` 转换为 `reasoningEfforts`。只打开设置页不会转换旧记录。设置页不再提供逐模型默认推理等级控件；用户在会话中选择推理等级。
 
@@ -63,9 +63,9 @@ v0.42.3 的测试继续覆盖 v0.42.2 的受管开发配置物化和 `SourcePres
 
 统一设置页测试直接渲染现有 `ImageReaderSettingsPage`，确认切换至“数据源服务”并返回后保留未保存的图片读取草稿。数据源设置测试覆盖 HTTP 与 HTTPS scheme、IPv4 地址、IPv6 地址、主机名、端口最小值、端口最大值、低于最小值的端口、高于最大值的端口，以及包含内嵌端口、用户名、密码、非根路径、query string 或 fragment 的 URL；测试还覆盖保存成功和保存失败。预设提示测试直接渲染 `src/client/settings/source-preset-tip.tsx` 的 `SourcePresetTip`，把 Settings 快照的 `value` 作为生效配置，把 `user` 作为用户覆盖层，并用同一份有效 `value` 分别覆盖空、部分和完整 `user`。`ComfyUI工作台预设` 的连接成功用例必须断言探针调用一次且渲染结果为 `null`；连接失败用例必须断言页面显示完整检查指引。Settings 加载用例和其他 Preset 用例必须断言探针调用次数为 0 且渲染结果为 `null`。生效地址变化用例必须断言旧探针收到已取消的信号、新探针被调用，并确认旧探针的迟到失败保持渲染结果为 `null`。
 
-真实数据源服务验收必须使用插件内置客户端和 Host 的 `CatalogCli`、`GenerationSourceCli` 连接已部署服务，完成实时 discovery、Base Model Search 与 Resolve、ComfyUI 实例 Search、实例读取和 Workflow bundle 读取。验收不得读取或执行数据源仓库中的文件，也不得使用测试自建 JSON 代替已部署服务的响应。
+真实数据源服务验收必须使用插件内置客户端和 Host 的 `CatalogCli`、`GenerationSourceCli` 连接已部署服务，完成实时 discovery、Base Model Search 与 Resolve、ComfyUI 实例 Search、实例读取和 Workflow bundle 读取。验收必须将依赖限定为插件内置客户端和已部署服务，并以已部署服务的实际响应判断结果。
 
-Repository Skills 可见性测试必须在当前 checkout 外创建临时 Workspace。测试在该 Workspace 中创建名称为 `comfyui-generate`、描述唯一的同名 Skill，并在受控的 `DSH_AGENTS_HOME` 中创建名称和描述均唯一的用户 Skill。未传入 `agentPreset` 且创建后 `agentPreset` 等于 `harness-comfyui-cli-candidate` 的 Session、显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Session，以及显式设置 `agentPreset: harness-comfyui-iteration` 的 Session，都必须通过 `remote.skills.list()` 返回八个 Repository Skills；每个返回项的名称和描述必须分别与当前 checkout 中对应 Repository Skill 的名称和描述一致，并且不得返回上述两个测试 Skill。显式设置 `agentPreset: standard` 的 Session 必须返回外部 Workspace 中的 `comfyui-generate` Skill 和受控用户 Skill，且不得返回当前 checkout 中的 `comfyui-generate` Skill。测试还必须遍历产品运行时注册的每个 Preset ID；除 `harness-comfyui-cli-candidate` 和 `harness-comfyui-iteration` 之外，每个 Preset 对应 Session 的 Skill 列表均不得包含任何名称和描述同时匹配当前 checkout Repository Skill 的返回项。
+Repository Skills 可见性测试必须在当前 checkout 外创建临时 Workspace。测试在该 Workspace 中创建名称为 `comfyui-generate`、描述唯一的同名 Skill，并在受控的 `DSH_AGENTS_HOME` 中创建名称和描述均唯一的用户 Skill。未传入 `agentPreset` 且创建后 `agentPreset` 等于 `harness-comfyui-cli-candidate` 的 Session、显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Session，以及显式设置 `agentPreset: harness-comfyui-iteration` 的 Session，都必须通过 `remote.skills.list()` 返回八个 Repository Skills；每个返回项的名称和描述必须分别与当前 checkout 中对应 Repository Skill 的名称和描述一致，并且必须将上述两个测试 Skill 排除在返回结果之外。显式设置 `agentPreset: standard` 的 Session 必须返回外部 Workspace 中的 `comfyui-generate` Skill 和受控用户 Skill，且必须将当前 checkout 中的 `comfyui-generate` Skill 排除在返回结果之外。测试还必须遍历产品运行时注册的每个 Preset ID；除 `harness-comfyui-cli-candidate` 和 `harness-comfyui-iteration` 之外，每个 Preset 对应 Session 的 Skill 列表均必须将名称和描述同时匹配当前 checkout Repository Skill 的条目排除在返回结果之外。
 
 真实模型验收必须分别覆盖以下三种 Session 创建方式：不传入 `agentPreset` 并确认创建后的 `agentPreset` 等于 `harness-comfyui-cli-candidate`，显式设置 `agentPreset: harness-comfyui-cli-candidate`，以及显式设置 `agentPreset: harness-comfyui-iteration`。每种 Session 的模型都必须读取 `local-image-reader/SKILL.md` 和 `references/image-inspection-cli.md`，再通过前台 shell Tool Call 执行 `image inspect --stdin`。实施任务的最终回复必须记录每个 Session 的 Workspace、Preset、模型、Skill 实际路径、参考文档实际路径、CLI stdin、退出码、stdout 和 stderr。
 
@@ -262,3 +262,19 @@ tests/production/native-iteration-roles.test.mjs 从当前预设读取四份角�
 原生接口测试还覆盖 Goal 命令与状态变更、子 Agent 推理档位继承、Provider 或模型切换时清除继承档位，以及目标模型能力校验。Desktop 测试验证迭代会话可以发现并执行 /goal。
 
 上述自动化测试不调用 Agent 语言模型、视觉模型或 ComfyUI 生图服务；真实子 Agent 的完整生图、独立观察与比较流程由用户手工验收。
+
+## CLI 与独立读图插件验证
+
+`tests/integration/headless-cli.test.ts` 从已安装 DSH 公共包解析真实 Bash 执行链，构建纯服务端产物，并在只装配业务插件与 CLI 的 Context 中执行 Node.js CLI。测试检查产物导入边界、独立 endpoint、历史查询、随机 Seed、媒体查询及卸载后的端口释放。
+
+`tests/integration/image-reader-plugin.test.ts` 仅提供 settings、attachments、llm、tools，验证 DSH Provider 与 OpenAI 兼容 HTTP 读图、配置操作、Session 传递、取消和卸载。`tests/integration/cli-server.test.ts` 验证并行实例、初始化失败、请求失败和关闭期限；`tests/unit/cli-workspace.test.ts` 验证根 Session 在 Agent step 前完成 Workspace 登记。
+
+上述测试与现有 CLI 协议、Generation 持久化和 Desktop 测试共同执行。真实模型验收继续遵循 `docs/agents/comfyui-workbench-preset-and-skill-development.md`，完整 Desktop 验收继续遵循 `docs/agents/worktree-development.md`。
+
+`tests/integration/headless-generation.test.mjs` 启动真实 DSH Profile、项目 Preset 和前台 Bash，使用受控模型与 ComfyUI HTTP 服务，验证 Run 在进程退出后持久保存，并在同一目录再次启动后完成生成与媒体下载。测试仅替换 Workflow 编译准备环节；CLI、Session、Workspace、数据库与 coordinator 使用生产实现。`tests/production/cli-runtime.test.mjs` 验证准备路径、精确版本、环境隔离和子进程退出；`tests/unit/cli-runner.test.ts` 验证 Preset 挂载、任务结果与退出码。
+
+## CLI 解耦候选验证
+
+完整 `pnpm quality` 通过：1070 项 unit/integration/Skills、56 项 contract/security、287 项 production、32 项 prototype 和 4 项真实 Desktop 测试，共 1449 项。覆盖率为 statements 93.78%、branches 87.02%、functions 100%、lines 96.24%。本仓库锁文件的完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
+
+纯 DSH 真实读图的成功结果、Desktop 真实模型矩阵的待完成验收，以及另行检查的已安装 DSH 传递依赖公告，统一记录在 [未发布说明](../releasenotes.md#未发布cli-与-desktop-解耦)。

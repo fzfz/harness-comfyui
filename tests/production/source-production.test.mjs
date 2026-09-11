@@ -421,7 +421,7 @@ describe('Web Host shared process commands', () => {
     expect(resolve(dirname(profileLink), await readlink(profileLink))).toBe(repositoryRoot)
     const profileManifest = JSON.parse(await readFile(resolve(dirname(dirname(profileLink)), 'package.json'), 'utf8'))
     expect(profileManifest.dependencies).toEqual({ 'harness-comfyui': `file:${repositoryRoot}` })
-    expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe('[]\n')
+    expect(await readFile(resolve(dirname(dirname(profileLink)), 'cordis.patch.yml'), 'utf8')).toBe('- insert:\n    - id: harness-comfyui-web\n      name: harness-comfyui\n')
     expect(await pathExists(resolve(fixture.runtimeRoot, 'dsh-home/.env'))).toBe(false)
     expect(await pathExists(resolve(
       fixture.runtimeRoot,

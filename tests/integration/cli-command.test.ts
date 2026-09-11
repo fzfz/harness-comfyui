@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeCliModule, sourceCliModulePath } from '../../scripts/production/cli-module.mjs'
 import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
-import { registerHarnessComfyuiCliRoute } from '../../src/host/cli/route.ts'
+import { createCliHandler } from '../../src/host/cli/route.ts'
 import {
   IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS,
   IMAGE_READER_SENTINEL_PROMPT,
@@ -477,3 +477,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 })
+
+function registerHarnessComfyuiCliRoute(options: Parameters<typeof createCliHandler>[0] & { webServer: { register(route: { kind: 'prefix'; path: string; handler: ReturnType<typeof createCliHandler> }): () => void } }) {
+  return options.webServer.register({ kind: 'prefix', path: '/api/harness-comfyui/cli/v1', handler: createCliHandler(options) })
+}

@@ -5,9 +5,10 @@ import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const registryPath = 'src/host/tools/register-project-tools.ts'
-const pluginPath = 'src/host/plugin.ts'
+const pluginPaths = ['src/host/core/plugin.ts', 'src/host/image-reader/plugin.ts']
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
+  ['@deepseek-ai/dsh-agent', 'value-or-type'],
   ['@deepseek-ai/dsh-api-remotes/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-input-trigger/client', 'type-only'],
@@ -18,7 +19,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-settings/client', 'type-only'],
   ['@deepseek-ai/dsh-attachment', 'type-only'],
   ['@deepseek-ai/dsh-llm', 'value-or-type'],
-  ['@deepseek-ai/dsh-session', 'type-only'],
+  ['@deepseek-ai/dsh-session', 'value-or-type'],
   ['@deepseek-ai/dsh-settings', 'value-or-type'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
@@ -46,14 +47,19 @@ const directDependencyFields = Object.freeze([
   'optionalDependencies',
 ])
 const expectedLoaderPatch = `- insert:
-    - id: harness-comfyui
-      name: harness-comfyui
+    - id: harness-comfyui-core
+      name: harness-comfyui/core
       config:
         configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
         startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
+    - id: harness-comfyui-image-reader
+      name: harness-comfyui/image-reader
+      config:
         imageReaderDefaultModel:
           provider: opencode-go
           model: qwen3.7-plus
+    - id: harness-comfyui-cli
+      name: harness-comfyui/cli
 
 - id: agent-default-model
   config:
@@ -74,7 +80,9 @@ const expectedLoaderPatch = `- insert:
   config:
     default: harness-comfyui-cli-candidate
 `
-const expectedProfilePatch = `[]
+const expectedProfilePatch = `- insert:
+    - id: harness-comfyui-web
+      name: harness-comfyui
 `
 const expectedDevelopmentProfilePatch = `[]
 `
@@ -400,12 +408,12 @@ function scan(root) {
   }
 
   for (const entry of registryCalls) {
-    if (entry.relativePath !== pluginPath) {
-      throw new Error(`registerProjectTools() is only allowed in ${pluginPath}; found ${entry.relativePath}`)
+    if (!pluginPaths.includes(entry.relativePath)) {
+      throw new Error(`registerProjectTools() is only allowed in ${pluginPaths.join(', ')}; found ${entry.relativePath}`)
     }
   }
-  if (registryCalls.length !== 1) {
-    throw new Error(`expected exactly one registerProjectTools() call in ${pluginPath}; found ${registryCalls.length}`)
+  if (registryCalls.length !== pluginPaths.length || pluginPaths.some(path => registryCalls.filter(entry => entry.relativePath === path).length !== 1)) {
+    throw new Error(`expected one registerProjectTools() call per plugin in ${pluginPaths.join(', ')}; found ${registryCalls.length}`)
   }
   validateStructuredHarnessBoundary(root)
 }

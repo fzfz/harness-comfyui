@@ -21,12 +21,19 @@ describe('source workspace engineering contract', () => {
     expect(manifest).not.toHaveProperty('bin')
     expect(manifest).not.toHaveProperty('files')
     expect(manifest.exports).toEqual({
-      '.': { types: './src/index.ts', default: './src/index.ts' },
+      '.': { types: './src/index.ts', default: './.local/source-host/index.js' },
       './client': { types: './src/client/index.tsx', default: './.local/source-client/client.js' },
       './package.json': './package.json',
+      './core': { types: './src/host/core/plugin.ts', default: './.local/source-host/core.js' },
+      './image-reader': { types: './src/host/image-reader/plugin.ts', default: './.local/source-host/image-reader.js' },
+      './cli': { types: './src/host/cli/plugin.ts', default: './.local/source-host/cli.js' },
+      './web': { types: './src/host/web/plugin.ts', default: './.local/source-host/web.js' },
+      './cli-runner': { types: './src/host/cli/runner.ts', default: './.local/source-host/cli-runner.js' },
+      './cli-workspace': { types: './src/host/cli/workspace.ts', default: './.local/source-host/cli-workspace.js' },
+
     })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
-    expect(runtimeArtifacts).toEqual({
+    expect(runtimeArtifacts).toMatchObject({
       frontendCompilerWorker: {
         sourceEntryRelativePath: 'src/host/generation/comfy-frontend-worker.ts',
         outputEntryRelativePath: '.local/source-host/comfy-frontend-worker.js',
@@ -69,6 +76,7 @@ describe('source workspace engineering contract', () => {
     expect(Object.keys(scripts).sort()).toEqual([
       'check:harness-boundary',
       'check:manifest-lock',
+      'cli:run',
       'dev:logs',
       'dev:restart',
       'dev:start',

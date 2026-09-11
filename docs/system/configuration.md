@@ -189,7 +189,7 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 
 设置页提交当前编辑配置、`operation: create | update`、最终 `activateProfileId`，以及 OpenAI 兼容配置所需的 `credential`；设置页不提交 Client 中的配置数组或 `hasApiKey`。Host 每次保存都读取最新 Settings：`update` 在原索引替换仍然存在的同 ID 配置，`create` 只把尚不存在的新 ID 配置追加到列表末尾；Host 在同一次 `settings.replace()` 中保存草稿并把最终目标写入 `activeProfileId`。因此，“保存 A 并切换 B”不会产生 A 临时生效的中间状态。Host 根据持久化凭据派生每份配置的 `hasApiKey`。runtime 配置的保存请求不包含 `credential`，Host 保存该配置时删除同 ID 的旧 API Key。OpenAI 兼容配置的保存请求必须包含 `credential: { action: "keep" }`、`credential: { action: "clear" }` 或 `credential: { action: "replace", apiKey: <新 API Key> }`；`keep` 保留现有值，`clear` 删除现有值，`replace` 写入请求中的新 API Key。新 API Key 只随 `replace` 请求发送；Host 的保存、读取、激活和删除响应均不返回 API Key 明文，只返回由持久化凭据派生的 `hasApiKey`。
 
-删除已保存配置使用独立 Host Remote。删除操作同时删除 `credentials.<profileId>`；删除非活动配置保持原 `activeProfileId`，删除活动配置时优先选择删除前列表中的后一项，不存在后一项时选择前一项。最后一份配置不能删除。Host 按调用顺序串行执行每次保存、激活或删除的“读取最新 Settings、校验、合并、`settings.replace()`”完整临界区，防止重叠请求根据旧快照覆盖先完成的修改。保存、激活或删除成功后，Host 返回完整 `configuration`；Client 用返回值替换持久化快照并重新加载 Host 指定的活动配置。
+删除已保存配置使用独立 Host Remote。删除操作同时删除 `credentials.<profileId>`；删除非活动配置保持原 `activeProfileId`，删除活动配置时优先选择删除前列表中的后一项，不存在后一项时选择前一项。最后一份配置不能删除。Host 按调用顺序串行执行每次保存、激活或删除的“读取最新 Settings、校验、合并、`settings.replace()`”完整临界区，防止重叠请求根据旧快照覆盖先完成的修改。保存、激活或删除成功后，Host 返回完整 `configuration`；Client 用返回值替换持久化快照并重新加载 Host 指定的活动配置；Host 已返回成功配置时，Client 即使同时收到本地取消信号，也采用该配置。
 
 Host 与 Client 使用同一固定顺序校验当前保存请求。每条名称、连接参数、模型、默认提示词、温度、最大输出 Token 数或 API Key 规则具有独立错误码；设置页在对应输入项附近显示该规则，并在保存按钮附近显示同一错误码的总结。其他配置不参与当前保存请求，也不能用 Client 中的未保存输入阻止当前配置保存。保存持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`；激活持久化失败使用 `IMAGE_READER_SETTINGS_ACTIVATE_FAILED`；删除持久化失败使用 `IMAGE_READER_SETTINGS_DELETE_FAILED`。Host 通过 Typert 业务失败载体把这些具体错误码发送给 Client，设置页不会把这些错误码改写为通用设置请求错误。Host 拒绝覆盖同 ID 的新建配置、重新创建并发删除的更新目标或激活不存在的已保存配置。保存或激活成功后，Host 返回的活动配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
 
@@ -212,4 +212,14 @@ agent-presets/harness-comfyui-iteration/agent.cordis.yml 的 composition-agent�
 | taskTemplate.sections[].heading、taskTemplate.sections[].fields | 消息分组标题及该分组按顺序呈现的参数名；参数值以 JSON 保存到消息正文 |
 | outputSchema | 工具返回值 JSON Schema；首次返回 kind 和 subagentId，续派返回 messageId |
 
-同一 agent.cordis.yml 中 id 为 persona 的配置项通过 config.text 定义主 Agent 的调度与交付职责。主 Agent 首次调用角色工具时省略 agent_id，续派时填写原 subagentId。component 将本次参数按模板组装后交给 DSH 原生 startContinuable 或 sendMessage；DSH 发送子任务完成通知。tool-subagent-control 项提供子 Agent 向父 Agent 报告问题的 send_message 和主 Agent 中断任务的 interrupt_agent。交接文件名由迭代 Skill 的 records.md 定义。
+同一 agent.cordis.yml 中 id 为 persona 的配置项通过 config.prefix 定义主 Agent 的调度与交付职责。主 Agent 首次调用角色工具时省略 agent_id，续派时填写原 subagentId。component 将本次参数按模板组装后交给 DSH 原生 startContinuable 或 sendMessage；DSH 发送子任务完成通知。tool-subagent-control 项提供子 Agent 向父 Agent 报告问题的 send_message 和主 Agent 中断任务的 interrupt_agent。交接文件名由迭代 Skill 的 records.md 定义。
+
+## CLI 专用服务与纯 DSH 运行目录
+
+`config/base.json.cliServer` 由 `config/schema.ts` 校验，采用项目 Configuration Profile 的既有覆盖顺序。`host` 固定为 `127.0.0.1`，`port` 固定为 `0`，由操作系统分配当前实例端口；`shutdownTimeoutMs` 为关闭连接后等待活动请求结束的期限，默认 `5000` 毫秒。
+
+`config/cli-runtime.json` 由 `config/cli-runtime-schema.mjs` 校验。`profile` 选择 `profiles/` 下的纯 DSH composition，`runtimeRelativeRoot` 选择 checkout 下的运行目录，`environmentFile` 选择 checkout 下的环境文件，`configurationProfile` 选择 `production` 业务配置。`runtimePaths` 将业务目录环境变量映射到运行目录下的相对路径。启动器清除调用者的 `HARNESS_COMFYUI_*` 值后，注入这些目录和当前 checkout 的 Repository Skills 路径。
+
+CLI 的 DSH Settings 与 Credentials 保存在自身 DSH home；数据源和图片读取配置分别由 core 与 image-reader 插件注册。Desktop 开发配置物化继续使用本章既有规则。
+
+`config/image-reader-runtime.json.shutdownTimeoutMs` 定义独立读图插件的默认关闭等待期限，为 `5000` 毫秒。Cordis 插件 Config 可以覆盖该值；`src/image-reader/plugin-schema.ts` 统一校验正整数毫秒值。关闭时插件取消活动请求，等待期限到达后向 DSH 日志报告仍未结束的请求。

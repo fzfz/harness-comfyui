@@ -87,7 +87,7 @@ export async function materializeSourceProfile(repositoryRoot, dshHome, options)
   }
   const manifestPath = resolve(profileDirectory, 'package.json')
   const manifest = requireRecord(JSON.parse(await readFile(manifestPath, 'utf8')), 'source profile manifest')
-  manifest.dependencies = { 'harness-comfyui': `file:${sourceRoot}` }
+  manifest.dependencies = { ...manifest.dependencies, 'harness-comfyui': `file:${sourceRoot}` }
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
   await ensureSourcePackageLink(profileDirectory, sourceRoot)
   return {

@@ -48,6 +48,11 @@ export interface ConfigurationProfileValues {
   client: {
     runRefreshIntervalMs: number
   }
+  cliServer: {
+    host: '127.0.0.1'
+    port: 0
+    shutdownTimeoutMs: number
+  }
   server: {
     host: string
     port: number
@@ -98,6 +103,11 @@ const ConfigurationProfileSchema = Schema.object({
   }).required(),
   client: Schema.object({
     runRefreshIntervalMs: positiveInteger,
+  }).required(),
+  cliServer: Schema.object({
+    host: Schema.const('127.0.0.1').required(),
+    port: Schema.const(0).required(),
+    shutdownTimeoutMs: positiveInteger,
   }).required(),
   server: Schema.object({
     host: Schema.const('127.0.0.1').required(),

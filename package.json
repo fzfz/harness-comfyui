@@ -40,7 +40,8 @@
     "web:health": "node scripts/worktree/cli.mjs health",
     "web:logs": "node scripts/worktree/cli.mjs logs",
     "desktop:dependencies:link": "node scripts/desktop/dependencies.mjs",
-    "prod:test": "vitest run tests/production --maxWorkers=1 --no-file-parallelism"
+    "prod:test": "vitest run tests/production --maxWorkers=1 --no-file-parallelism",
+    "cli:run": "node scripts/cli/run.mjs"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "3.18.1",
@@ -131,12 +132,36 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "default": "./.local/source-host/index.js"
     },
     "./client": {
       "types": "./src/client/index.tsx",
       "default": "./.local/source-client/client.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./core": {
+      "types": "./src/host/core/plugin.ts",
+      "default": "./.local/source-host/core.js"
+    },
+    "./image-reader": {
+      "types": "./src/host/image-reader/plugin.ts",
+      "default": "./.local/source-host/image-reader.js"
+    },
+    "./cli": {
+      "types": "./src/host/cli/plugin.ts",
+      "default": "./.local/source-host/cli.js"
+    },
+    "./web": {
+      "types": "./src/host/web/plugin.ts",
+      "default": "./.local/source-host/web.js"
+    },
+    "./cli-runner": {
+      "types": "./src/host/cli/runner.ts",
+      "default": "./.local/source-host/cli-runner.js"
+    },
+    "./cli-workspace": {
+      "types": "./src/host/cli/workspace.ts",
+      "default": "./.local/source-host/cli-workspace.js"
+    }
   }
 }

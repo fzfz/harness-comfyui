@@ -152,4 +152,17 @@ describe('CLI shell capability', () => {
       DSH_HARNESS_COMFYUI_SOURCE_PORT: '443',
     })
   })
+  it('clears all capabilities and execution mappings on plugin shutdown', () => {
+    let serial = 0
+    const store = new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: 'http://127.0.0.1', ...sourceOptions, createCapability: () => `capability-${++serial}` })
+    const first = execution()
+    const second = execution({ token: Symbol('second') })
+    const a = store.environment(first).DSH_HARNESS_COMFYUI_CLI_CAPABILITY!
+    const b = store.environment(second).DSH_HARNESS_COMFYUI_CLI_CAPABILITY!
+    store.clear()
+    expect(store.authorize(a)).toBeUndefined()
+    expect(store.authorize(b)).toBeUndefined()
+    expect(store.environment(first).DSH_HARNESS_COMFYUI_CLI_CAPABILITY).not.toBe(a)
+  })
+
 })

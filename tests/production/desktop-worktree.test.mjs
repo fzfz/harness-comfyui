@@ -887,10 +887,11 @@ describe('anywhere Desktop development lifecycle', () => {
       "const { writeFileSync } = require('node:fs')",
       'const holder = spawn(' + JSON.stringify(process.execPath) + ', '
         + JSON.stringify(['-e', holderCode]) + ", { stdio: ['ignore', 'inherit', 'inherit'] })",
-      'writeFileSync(' + JSON.stringify(holderPidFile) + ', String(holder.pid))',
-      'setTimeout(() => process.exit(0), 250)',
+      'holder.once("spawn", () => { writeFileSync(' + JSON.stringify(holderPidFile) + ', String(holder.pid)); process.stdout.write("holder-ready\\n") })',
+      'process.on("message", () => process.exit(0))',
     ].join(';')
     let leaderPid
+    let leader
     let holderPid
     let exitAt
     let closeAt
@@ -905,12 +906,13 @@ describe('anywhere Desktop development lifecycle', () => {
       spawnDesktop: () => {
         const child = spawn(process.execPath, ['-e', leaderCode], {
           detached: true,
-          stdio: ['ignore', 'pipe', 'pipe'],
+          stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
         })
+        leader = child
         leaderPid = child.pid
         child.once('exit', () => { exitAt = Date.now() })
         child.once('close', () => { closeAt = Date.now() })
-        setTimeout(() => writeLifecycle(context, lifecycleLines('run-real-exit')), 40)
+        child.stdout.once('data', () => { void writeLifecycle(context, lifecycleLines('run-real-exit')) })
         return child
       },
       readProcessIdentity: async pid => ({
@@ -925,8 +927,16 @@ describe('anywhere Desktop development lifecycle', () => {
     })
 
     try {
+      const started = startDesktopWorktree(context, options)
+      await vi.waitFor(async () => {
+        const state = JSON.parse(await readFile(context.stateFile, 'utf8'))
+        holderPid = Number(await readFile(holderPidFile, 'utf8'))
+        expect(state.ready).toBe(true)
+        expect(state.processGroupMembers.some(member => member.pid === holderPid)).toBe(true)
+      })
+      leader.send('exit')
       const result = await Promise.race([
-        startDesktopWorktree(context, options),
+        started,
         new Promise((_, reject) => setTimeout(() => reject(new Error('real exit regression timed out')), 3000)),
       ])
       holderPid = Number(await readFile(holderPidFile, 'utf8'))

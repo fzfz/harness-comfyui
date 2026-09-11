@@ -1,7 +1,7 @@
+import { createGenerationRunMediaTool } from '../../src/host/generation/generation-media-tool.ts'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  createGenerationRunMediaTool,
   createInspectImageTool,
 } from '../../src/host/image-reader/image-reader-tool.ts'
 import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
