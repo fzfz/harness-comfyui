@@ -239,16 +239,8 @@ async function connectDesktopPage(port, timeoutMs = 60_000) {
   })
   let commandId = 0
   const pending = new Map()
-  const generationResponses = new Set()
-  const completedGenerationResponses = []
   socket.addEventListener('message', event => {
     const message = JSON.parse(String(event.data))
-    if (message.method === 'Network.responseReceived' && new URL(message.params.response.url).pathname.endsWith('/harnessComfyuiGeneration/list')) {
-      generationResponses.add(message.params.requestId)
-    }
-    if (message.method === 'Network.loadingFinished' && generationResponses.delete(message.params.requestId)) {
-      completedGenerationResponses.push(message.params.requestId)
-    }
     const resolveCommand = pending.get(message.id)
     if (resolveCommand === undefined) return
     pending.delete(message.id)
@@ -257,7 +249,7 @@ async function connectDesktopPage(port, timeoutMs = 60_000) {
   const command = (method, params = {}) => new Promise((resolveCommand, reject) => {
     const id = ++commandId
     pending.set(id, message => {
-      if (message.error !== undefined) reject(new Error(message.error.message))
+      if (message.error !== undefined) reject(new Error(`${method}: ${message.error.message}; params=${JSON.stringify(params)}`))
       else resolveCommand(message.result)
     })
     socket.send(JSON.stringify({ id, method, params }))
@@ -269,24 +261,7 @@ async function connectDesktopPage(port, timeoutMs = 60_000) {
     }
     return result.result.value
   }
-  const waitForGenerationProjection = async (sessionId, runCount) => {
-    const deadline = Date.now() + 10_000
-    while (Date.now() < deadline) {
-      const requestId = completedGenerationResponses.shift()
-      if (requestId === undefined) {
-        await delay(50)
-        continue
-      }
-      const { body, base64Encoded } = await command('Network.getResponseBody', { requestId })
-      expect(base64Encoded).toBe(false)
-      const response = JSON.parse(body)
-      if (response.result.ok && response.result.value.sessionId === sessionId && response.result.value.runs.length === runCount) {
-        return response.result.value
-      }
-    }
-    throw new Error(`Desktop did not receive a Generation projection with ${runCount} Runs for ${sessionId}`)
-  }
-  return { close: () => socket.close(), command, evaluate, waitForGenerationProjection }
+  return { close: () => socket.close(), command, evaluate }
 }
 
 async function connectDesktopBrowser(port, timeoutMs = 60_000) {
@@ -336,7 +311,7 @@ async function connectDesktopBrowser(port, timeoutMs = 60_000) {
   const command = (method, params = {}) => new Promise((resolveCommand, reject) => {
     const id = ++commandId
     pending.set(id, message => {
-      if (message.error !== undefined) reject(new Error(message.error.message))
+      if (message.error !== undefined) reject(new Error(`${method}: ${message.error.message}; params=${JSON.stringify(params)}`))
       else resolveCommand(message.result)
     })
     socket.send(JSON.stringify({ id, method, params }))
@@ -410,28 +385,28 @@ async function waitForValue(page, expression, accept, timeoutMs = 60_000) {
 }
 
 async function clickMainFrameElement(page, selector) {
-  const point = await page.evaluate(`(() => {
-    const element = document.querySelector(${JSON.stringify(selector)})
-    if (!(element instanceof HTMLElement)) return null
-    element.scrollIntoView({ block: 'center', inline: 'center' })
-    const bounds = element.getBoundingClientRect()
-    return {
-      x: bounds.left + bounds.width / 2,
-      y: bounds.top + bounds.height / 2,
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight
-    }
-  })()`)
-  if (point === null) throw new Error(`Desktop element is unavailable: ${selector}`)
-  if (point.x < 0 || point.x > point.viewportWidth || point.y < 0 || point.y > point.viewportHeight) {
-    throw new Error(`Desktop element is outside the viewport after scrolling: ${selector} at ${JSON.stringify(point)}`)
+  const result = await page.command('Runtime.evaluate', {
+    expression: `(() => {
+      const element = document.querySelector(${JSON.stringify(selector)})
+      if (!(element instanceof HTMLElement)) return false
+      element.scrollIntoView({ block: 'center', inline: 'center' })
+      if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+        || element.matches(':disabled, [aria-disabled="true"]')) return false
+      const bounds = element.getBoundingClientRect()
+      const x = bounds.left + bounds.width / 2
+      const y = bounds.top + bounds.height / 2
+      if (bounds.width <= 0 || bounds.height <= 0 || x < 0 || x > innerWidth || y < 0 || y > innerHeight) return false
+      const hit = document.elementFromPoint(x, y)
+      if (hit !== element && !element.contains(hit)) return false
+      element.click()
+      return true
+    })()`,
+    returnByValue: true,
+    userGesture: true,
+  })
+  if (result.exceptionDetails !== undefined || result.result.value !== true) {
+    throw new Error(`Desktop element click failed: ${selector}`)
   }
-  await page.command('Input.dispatchMouseEvent', {
-    type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1,
-  })
-  await page.command('Input.dispatchMouseEvent', {
-    type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1,
-  })
 }
 
 async function openSettings(page) {
@@ -439,7 +414,7 @@ async function openSettings(page) {
     page,
     `(() => {
       const trigger = [...document.querySelectorAll('button[aria-haspopup="dialog"][aria-expanded]')]
-        .find(node => !node.hasAttribute('aria-label') && /^(|设置|Settings)$/.test(node.textContent?.trim() ?? ''))
+        .find(node => /^(设置|Settings)$/.test(node.getAttribute('aria-label') ?? ''))
       if (!trigger) return false
       trigger.click()
       return true
@@ -717,60 +692,53 @@ async function seedSavedDesktopSession(context) {
     fibers.push(await ctx.plugin(storageDomain, { backend: 'json' }))
     fibers.push(await ctx.plugin(workspace.default, {}))
 
-    const sessionId = 'session-desktop-media'
-    const session = ctx.sessions.create(sessionId, {
-      meta: {
+    const createSavedSession = async (id, title) => {
+      const sessionId = sessions.SessionId(id)
+      const createdAt = Date.now()
+      const handle = await ctx.sessionPersistence.create({
+        version: sessions.SESSION_FORMAT_VERSION,
+        id: sessionId,
+        createdAt,
         cwd: context.startupWorkspacePath,
+        isSeeded: false,
+        delegationDepth: 0,
         agentPreset: 'harness-comfyui-cli-candidate',
-      },
-    })
-    session.append('session/title', {
-      title: 'Desktop media session',
-      messageSeqs: [],
-      source: { kind: 'user' },
-    })
-    session.append('turn/start', { turn: 1 })
-    session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
-    await ctx.sessions.flush(session)
-    const switchSessionId = 'session-desktop-switch'
-    const switchSession = ctx.sessions.create(switchSessionId, {
-      meta: {
-        cwd: context.startupWorkspacePath,
-        agentPreset: 'harness-comfyui-cli-candidate',
-      },
-    })
-    switchSession.append('session/title', {
-      title: 'Desktop session switch target',
-      messageSeqs: [],
-      source: { kind: 'user' },
-    })
-    switchSession.append('turn/start', { turn: 1 })
-    switchSession.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
-    await ctx.sessions.flush(switchSession)
-    const deleteSessionId = 'session-desktop-delete'
+      })
+      try {
+        await handle.append([
+          {
+            type: 'session/title',
+            seq: 0,
+            time: createdAt,
+            data: { title, messageSeqs: [], source: { kind: 'user' } },
+          },
+          { type: 'turn/start', seq: 1, time: createdAt + 1, data: { turn: 1 } },
+          {
+            type: 'turn/end',
+            seq: 2,
+            time: createdAt + 2,
+            data: { turn: 1, reason: { kind: 'completed' } },
+          },
+        ])
+        await handle.flush()
+      } finally {
+        await handle.close()
+      }
+      return sessionId
+    }
+
+    const sessionId = await createSavedSession('session-desktop-media', 'Desktop media session')
+    const switchSessionId = await createSavedSession('session-desktop-switch', 'Desktop session switch target')
     const deleteSessionTitle = 'Desktop deletion target'
-    const deleteSession = ctx.sessions.create(deleteSessionId, {
-      meta: {
-        cwd: context.startupWorkspacePath,
-        agentPreset: 'harness-comfyui-cli-candidate',
-      },
-    })
-    deleteSession.append('session/title', {
-      title: deleteSessionTitle,
-      messageSeqs: [],
-      source: { kind: 'user' },
-    })
-    deleteSession.append('turn/start', { turn: 1 })
-    deleteSession.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
-    await ctx.sessions.flush(deleteSession)
+    const deleteSessionId = await createSavedSession('session-desktop-delete', deleteSessionTitle)
     const ownedWorkspace = await ctx.workspaceRegistry.create(context.startupWorkspacePath)
-    await ownedWorkspace.attachSession(session.id)
-    await ownedWorkspace.attachSession(switchSession.id)
-    await ownedWorkspace.attachSession(deleteSession.id)
+    await ownedWorkspace.attachSession(sessionId)
+    await ownedWorkspace.attachSession(switchSessionId)
+    await ownedWorkspace.attachSession(deleteSessionId)
     return {
-      sessionId,
-      switchSessionId,
-      deleteSessionId,
+      sessionId: String(sessionId),
+      switchSessionId: String(switchSessionId),
+      deleteSessionId: String(deleteSessionId),
       deleteSessionTitle,
       workspaceId: String(ownedWorkspace.id),
     }
@@ -1244,14 +1212,33 @@ function publishSavedDesktopRun(context, stagedRunRepository, runId) {
 
 async function verifyRunDiscovery(page, context, identity, stagedRunRepository, mediaFixture) {
   const sessionId = JSON.stringify(identity.sessionId)
-  await page.command('Network.enable')
+  await page.evaluate(`new Promise((resolve, reject) => {
+    window.__runPanelTestContext.inject(['connection'], injected => {
+      try {
+        const rpc = injected.connection.rpc
+        const original = rpc.call
+        window.__generationProjectionResponses = []
+        window.__restoreGenerationObserver = () => { rpc.call = original }
+        rpc.call = async function (...args) {
+          const response = await original.apply(this, args)
+          if (args[1] === 'harnessComfyuiGeneration/list') window.__generationProjectionResponses.push(response)
+          return response
+        }
+        resolve()
+      } catch (error) { reject(error) }
+    })
+  })`)
+  const waitForProjection = runCount => waitForValue(page, `
+    window.__generationProjectionResponses.find(response => response.ok
+      && response.value.sessionId === ${sessionId}
+      && response.value.runs.length === ${runCount})?.value`, value => value !== undefined, 10_000)
   await page.evaluate(`(() => {
     const ctx = window.__runPanelTestContext
     window.__runPanelSession = ctx.sessions.sessionOf(ctx.sessions.resolveAgentScope(${sessionId}))
     ctx.sessions.handleSessionStatus(${sessionId}, true)
   })()`)
   try {
-    await page.waitForGenerationProjection(identity.sessionId, 0)
+    await waitForProjection(0)
     await page.evaluate('void (window.__runningSessionSnapshot = window.__runPanelSession.getSnapshot())')
     const counts = `(() => {
     const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
@@ -1262,14 +1249,14 @@ async function verifyRunDiscovery(page, context, identity, stagedRunRepository, 
   })()`
     expect(await page.evaluate(counts)).toEqual({ runs: 0, summary: '0 个运行 · 0 个媒体' })
     publishSavedDesktopRun(context, stagedRunRepository, mediaFixture.older.runId)
-    expect((await page.waitForGenerationProjection(identity.sessionId, 1)).hasActiveRuns).toBe(false)
+    expect((await waitForProjection(1)).hasActiveRuns).toBe(false)
     await waitForValue(page, counts, value => value?.runs === 1 && value.summary === '1 个运行 · 1 个媒体')
     publishSavedDesktopRun(context, stagedRunRepository, mediaFixture.newer.runId)
     await waitForValue(page, counts, value => value?.runs === 2 && value.summary === '2 个运行 · 2 个媒体')
     expect(await page.evaluate('window.__runningSessionSnapshot === window.__runPanelSession.getSnapshot()')).toBe(true)
     expect(await page.evaluate('window.__runningSessionSnapshot.running')).toBe(true)
   } finally {
-    await page.command('Network.disable')
+    await page.evaluate('window.__restoreGenerationObserver()')
     await page.evaluate(`window.__runPanelTestContext.sessions.handleSessionStatus(${sessionId}, false)`)
   }
 }
@@ -1379,6 +1366,26 @@ description: ${USER_SKILL_DESCRIPTION}
     let contextCaptureScript
     try {
       contextCaptureScript = await captureProjectClientContext(page)
+      await page.evaluate(`(() => {
+        const notice = [...document.querySelectorAll('[role="dialog"]')]
+          .find(dialog => dialog.textContent?.includes('内测声明'))
+        const proceed = [...(notice?.querySelectorAll('button') ?? [])]
+          .find(button => button.textContent?.trim() === '继续')
+        proceed?.click()
+      })()`)
+      await waitForValue(page, `[...document.querySelectorAll('[role="dialog"]')]
+        .every(dialog => !dialog.textContent?.includes('内测声明'))`, value => value === true)
+      await page.evaluate(`(async () => {
+        const remote = window.__runPanelTestContext.get('remote.session')
+        for (const [id, title] of ${JSON.stringify([
+          [identity.sessionId, 'Desktop media session'],
+          [identity.switchSessionId, 'Desktop session switch target'],
+          [identity.deleteSessionId, identity.deleteSessionTitle],
+        ])}) {
+          const renamed = await remote.rename({ sessionId: id, title })
+          if (!renamed.ok) throw new Error(JSON.stringify(renamed))
+        }
+      })()`)
       await verifyPresetScopedRepositorySkills(page, identity.workspaceId)
       await verifyKimiPptDisabled(page, identity.sessionId)
       await verifyKimiPptHostRequestDisabled(page, promptCapture, identity.workspaceId)
@@ -1420,15 +1427,6 @@ description: ${USER_SKILL_DESCRIPTION}
         value => value.ready && value.preset,
       )
       expect(initial.workspaceChooser).toBe(false)
-      await page.evaluate(`(() => {
-        const notice = [...document.querySelectorAll('[role="dialog"]')]
-          .find(dialog => dialog.textContent?.includes('内测声明'))
-        const proceed = [...(notice?.querySelectorAll('button') ?? [])]
-          .find(button => button.textContent?.trim() === '继续')
-        proceed?.click()
-      })()`)
-      await waitForValue(page, `[...document.querySelectorAll('[role="dialog"]')]
-        .every(dialog => !dialog.textContent?.includes('内测声明'))`, value => value === true)
       expect(resolve(context.dshHome, await readlink(resolve(context.dshHome, '.env')))).toBe(environmentFilePath)
       const profileManifest = JSON.parse(await readFile(resolve(context.dshHome, 'profiles', context.baseline.profile.name, 'package.json'), 'utf8'))
       expect(profileManifest.dependencies['harness-comfyui']).toMatch(/^link:/u)
@@ -1864,6 +1862,8 @@ description: ${USER_SKILL_DESCRIPTION}
           .some(node => node.textContent?.includes('Desktop media session') && node.getAttribute('aria-selected') === 'true')`,
         value => value === true,
       )
+      await page.evaluate(`window.__runPanelTestContext.sidebarRight.openTab('guide')`)
+      await waitForValue(page, `document.querySelector('[data-sidebar-right-guide]') !== null`, value => value === true)
       await page.evaluate(`(document.querySelector('.harness-comfyui-sidebar-entry')?.click(), true)`)
       await verifyRunDiscovery(page, context, identity, stagedRunRepository, mediaFixture)
       await waitForValue(
@@ -1875,7 +1875,7 @@ description: ${USER_SKILL_DESCRIPTION}
           const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
             .find(button => button.textContent?.trim() === '关闭结果列')
           return drawer === null ? null : {
-            detailsCollapsed: drawer.closest('[data-details-collapsed="true"]') !== null,
+            tabVisible: drawer.getAttribute('data-tab-visible') === 'true',
             media: drawer.textContent?.includes('2 个媒体') === true,
             tabs: tabs.map(tab => tab.textContent?.trim()),
             selected: tabs.map(tab => tab.getAttribute('aria-selected')),
@@ -1883,7 +1883,7 @@ description: ${USER_SKILL_DESCRIPTION}
             toggle: toggle?.textContent?.trim() ?? ''
           }
         })()`,
-        value => value?.detailsCollapsed === false
+        value => value?.tabVisible === true
           && value?.media === true
           && JSON.stringify(value?.tabs) === JSON.stringify(['本会话媒体', '运行状态'])
           && JSON.stringify(value?.selected) === JSON.stringify(['true', 'false'])
@@ -1900,47 +1900,20 @@ description: ${USER_SKILL_DESCRIPTION}
             .find(button => button.textContent?.trim() === '打开结果列')
           return {
             drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            nativeGuideVisible: (() => {
+              const guide = document.querySelector('[data-sidebar-right-guide]')
+              const panel = guide?.closest('[data-sidebar-right-panel]')
+              return !!guide && panel?.hasAttribute('data-sidebar-right-open') === true
+                && panel.getAttribute('aria-hidden') !== 'true'
+                && guide.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+            })(),
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
             toggle: toggle?.textContent?.trim() ?? ''
           }
         })()`,
-        value => value?.drawerExists === true
-          && value?.detailsCollapsed === true
-          && value?.toggle === '打开结果列',
-      )
-      await page.evaluate('window.__runPanelTestContext.layout.openDetails()')
-      await waitForValue(
-        page,
-        `(() => {
-          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
-          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
-            .find(button => button.textContent?.trim() === '关闭结果列')
-          return {
-            drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
-            toggle: toggle?.textContent?.trim() ?? ''
-          }
-        })()`,
-        value => value?.drawerExists === true
-          && value?.detailsCollapsed === false
-          && value?.toggle === '关闭结果列',
-      )
-      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
-        .find(node => node.textContent?.trim() === '关闭结果列')?.click(), true)`)
-      await waitForValue(
-        page,
-        `(() => {
-          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
-          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
-            .find(button => button.textContent?.trim() === '打开结果列')
-          return {
-            drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
-            toggle: toggle?.textContent?.trim() ?? ''
-          }
-        })()`,
-        value => value?.drawerExists === true
-          && value?.detailsCollapsed === true
+        value => value?.drawerExists === false
+          && value?.nativeGuideVisible === true
+          && value?.tabVisible === false
           && value?.toggle === '打开结果列',
       )
       await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
@@ -1953,12 +1926,48 @@ description: ${USER_SKILL_DESCRIPTION}
             .find(button => button.textContent?.trim() === '关闭结果列')
           return {
             drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
             toggle: toggle?.textContent?.trim() ?? ''
           }
         })()`,
         value => value?.drawerExists === true
-          && value?.detailsCollapsed === false
+          && value?.tabVisible === true
+          && value?.toggle === '关闭结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '关闭结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '打开结果列')
+          return {
+            drawerExists: drawer !== null,
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === false
+          && value?.tabVisible === false
+          && value?.toggle === '打开结果列',
+      )
+      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+        .find(node => node.textContent?.trim() === '打开结果列')?.click(), true)`)
+      await waitForValue(
+        page,
+        `(() => {
+          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
+          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
+            .find(button => button.textContent?.trim() === '关闭结果列')
+          return {
+            drawerExists: drawer !== null,
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
+            toggle: toggle?.textContent?.trim() ?? ''
+          }
+        })()`,
+        value => value?.drawerExists === true
+          && value?.tabVisible === true
           && value?.toggle === '关闭结果列',
       )
       await page.evaluate(`(() => {
@@ -1978,13 +1987,13 @@ description: ${USER_SKILL_DESCRIPTION}
           return {
             selected,
             drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
             toggle: toggle?.textContent?.trim() ?? ''
           }
         })()`,
         value => value?.selected === true
-          && value?.drawerExists === true
-          && value?.detailsCollapsed === true
+          && value?.drawerExists === false
+          && value?.tabVisible === false
           && value?.toggle === '打开结果列',
       )
       await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
@@ -1997,12 +2006,12 @@ description: ${USER_SKILL_DESCRIPTION}
             .find(button => button.textContent?.trim() === '关闭结果列')
           return {
             drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
             toggle: toggle?.textContent?.trim() ?? ''
           }
         })()`,
         value => value?.drawerExists === true
-          && value?.detailsCollapsed === false
+          && value?.tabVisible === true
           && value?.toggle === '关闭结果列',
       )
       await page.evaluate(`(() => {
@@ -2018,35 +2027,17 @@ description: ${USER_SKILL_DESCRIPTION}
             .some(node => node.textContent?.includes('Desktop media session') && node.getAttribute('aria-selected') === 'true')
           const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
           const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
-            .find(button => button.textContent?.trim() === '打开结果列')
+            .find(button => button.textContent?.trim() === '关闭结果列')
           return {
             selected,
             drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
+            tabVisible: drawer?.getAttribute('data-tab-visible') === 'true',
             toggle: toggle?.textContent?.trim() ?? ''
           }
         })()`,
         value => value?.selected === true
           && value?.drawerExists === true
-          && value?.detailsCollapsed === true
-          && value?.toggle === '打开结果列',
-      )
-      await page.evaluate(`([...document.querySelectorAll('.harness-comfyui-dock-actions button')]
-        .find(node => node.textContent?.trim() === '打开结果列')?.click(), true)`)
-      await waitForValue(
-        page,
-        `(() => {
-          const drawer = document.querySelector('.harness-comfyui-results-drawer[data-session-id="${identity.sessionId}"]')
-          const toggle = [...document.querySelectorAll('.harness-comfyui-dock-actions button')]
-            .find(button => button.textContent?.trim() === '关闭结果列')
-          return {
-            drawerExists: drawer !== null,
-            detailsCollapsed: drawer !== null && drawer.closest('[data-details-collapsed="true"]') !== null,
-            toggle: toggle?.textContent?.trim() ?? ''
-          }
-        })()`,
-        value => value?.drawerExists === true
-          && value?.detailsCollapsed === false
+          && value?.tabVisible === true
           && value?.toggle === '关闭结果列',
       )
       await page.evaluate(`([...document.querySelectorAll('[role="tab"]')]

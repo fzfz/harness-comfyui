@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
+import type { UseSidebarRightTabInfo } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+
 import {
   generationMediaContentUrl,
   generationMediaDownloadUrl,
@@ -35,23 +37,14 @@ import {
 
 type FilterKey = 'turn' | 'kind'
 
-interface SessionListView {
-  readonly current?: string
-  readonly byId: Readonly<Record<string, { readonly blank: boolean } | undefined>>
-}
-
 type UseSessionSnapshot = <Selected>(selector: (snapshot: { readonly running: boolean }) => Selected) => Selected
 
 export interface WorkbenchDetailsProps {
   readonly sessionId: string
   readonly useSession: UseSessionSnapshot
+  readonly useTabInfo: UseSidebarRightTabInfo
   readonly workbench: WorkbenchController
   readonly generationStore: GenerationProjectionStore
-}
-
-export interface WorkbenchResultsOverlayProps {
-  readonly workbench: WorkbenchController
-  readonly useSessions: <Selected>(selector: (state: SessionListView) => Selected) => Selected
 }
 
 interface FilterMenuProps {
@@ -513,19 +506,22 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
 
 interface WorkbenchResultsProps {
   readonly sessionId: string
-  readonly surface: 'details' | 'overlay'
-  readonly workbench: WorkbenchController
+  readonly sidebarExpanded: boolean
+  readonly tabVisible: boolean
+  readonly close: () => void
   readonly snapshot: GenerationStoreSnapshot
 }
 
-function WorkbenchResults({ sessionId, surface, workbench, snapshot }: WorkbenchResultsProps) {
+function WorkbenchResults({ sessionId, sidebarExpanded, tabVisible, close, snapshot }: WorkbenchResultsProps) {
   const [activeTab, setActiveTab] = useState<ResultTab>('session')
   const { runs, media } = snapshot.projection
   return (
     <aside
-      className={`harness-comfyui-results-drawer${surface === 'overlay' ? ' harness-comfyui-results-overlay' : ''}`}
-      data-plugin={`harness-comfyui-${surface}`}
+      className="harness-comfyui-results-drawer"
+      data-plugin="harness-comfyui-sidebar-right"
       data-session-id={sessionId}
+      data-sidebar-expanded={sidebarExpanded}
+      data-tab-visible={tabVisible}
     >
       <header className="harness-comfyui-results-header">
         <div>
@@ -535,7 +531,7 @@ function WorkbenchResults({ sessionId, surface, workbench, snapshot }: Workbench
         <div className="harness-comfyui-results-header-actions">
           <Button
             variant="toolbar" size="sm" icon={<IconCloseOutline16 />}
-            aria-label={RESULTS_COPY.close} onClick={() => workbench.closeResults()}
+            aria-label={RESULTS_COPY.close} onClick={close}
           />
         </div>
       </header>
@@ -570,43 +566,25 @@ function WorkbenchResults({ sessionId, surface, workbench, snapshot }: Workbench
   )
 }
 
-export function WorkbenchDetails({ sessionId, useSession, workbench, generationStore }: WorkbenchDetailsProps) {
+export function WorkbenchDetails({ sessionId, useSession, useTabInfo, workbench, generationStore }: WorkbenchDetailsProps) {
+  const tabInfo = useTabInfo()
   const sessionRunning = useSession(snapshot => snapshot.running)
   const subscribe = useCallback((listener: () => void) => generationStore.subscribe(sessionId, listener), [generationStore, sessionId])
   const getSnapshot = useCallback(() => generationStore.getSnapshot(sessionId), [generationStore, sessionId])
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   useEffect(() => generationStore.setSessionRunning(sessionId, sessionRunning), [generationStore, sessionId, sessionRunning])
-  return <WorkbenchResults sessionId={sessionId} surface="details" workbench={workbench} snapshot={snapshot} />
-}
-
-export function WorkbenchResultsOverlay({ useSessions, workbench }: WorkbenchResultsOverlayProps) {
-  const resultsOpen = useSyncExternalStore(
-    workbench.subscribeResults,
-    workbench.getResultsSnapshot,
-    workbench.getResultsSnapshot,
-  )
-  const blankSessionId = useSessions(state => {
-    const current = state.current
-    if (current === undefined || state.byId[current]?.blank === false) return undefined
-    return current
-  })
-  const snapshot = useMemo<GenerationStoreSnapshot>(() => Object.freeze({
-    projection: Object.freeze({
-      sessionId: blankSessionId ?? '',
-      runs: Object.freeze([]),
-      media: Object.freeze([]),
-      hasActiveRuns: false,
-      refreshAfterMs: 0,
-    }),
-    errorCode: null,
-  }), [blankSessionId])
-
-  if (!resultsOpen || blankSessionId === undefined) return null
+  useEffect(() => workbench.bindResultsTab(
+    sessionId,
+    tabInfo.tab.id,
+    tabInfo.tab.visible,
+    tabInfo.tab.actions.close,
+  ), [sessionId, tabInfo.tab.id, tabInfo.tab.visible, tabInfo.tab.actions.close, workbench])
   return (
     <WorkbenchResults
-      sessionId={blankSessionId}
-      surface="overlay"
-      workbench={workbench}
+      sessionId={sessionId}
+      sidebarExpanded={tabInfo.sidebar.expanded}
+      tabVisible={tabInfo.tab.visible}
+      close={tabInfo.tab.actions.close}
       snapshot={snapshot}
     />
   )

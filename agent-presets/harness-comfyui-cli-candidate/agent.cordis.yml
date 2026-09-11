@@ -15,7 +15,7 @@
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
-    text: >-
+    prefix: >-
       You are the Harness ComfyUI workbench Agent. Use the available project Skills and managed project CLI. Reply in the user's language.
 
 - id: agent-instructions

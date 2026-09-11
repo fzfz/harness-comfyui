@@ -16,6 +16,7 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-layout',
   '@deepseek-ai/dsh-client-ui-settings',
   '@deepseek-ai/dsh-client-ui-sidebar',
+  '@deepseek-ai/dsh-client-ui-sidebar-right',
 ]
 
 function fixture(otherSource = ''): string {

@@ -25,9 +25,9 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.42.3 的发布范围与 Desktop 基线
+## v0.43.0 的发布范围与 Desktop 基线
 
-v0.42.3 把 `config/desktop-baseline.json` 前移到包含 route-authenticated 路由门禁修复的 `fzfz/dsh-desktop-anywhere` Stable 提交。Harness managed CLI route 使用该声明把认证交给自身的短期 shell capability；其他 Desktop WebServer route 继续使用 Renderer 浏览器访问门禁。该版本保留 `v0.42.2` 的受管开发配置物化和 `SourcePresetTip` 生效配置判定，并保持 Desktop 版本、Harness 宿主版本、Electron 版本、Desktop 锁文件和 Harness 依赖不变。部署验收必须确认 Desktop 运行，当前插件版本为 `0.42.3`，且生产 checkout 与发布提交一致。
+v0.43.0 使用自有 Desktop 2.0.9 与 DSH 0.1.5-rc.1，固定提交由 config/desktop-baseline.json 指定。工作台结果页采用原生右侧栏页签，两个项目预设采用 Persona prefix 配置。会话删除、真实 Session 请求头、Provider 推理配置和 managed CLI 路由鉴权继续由自有 Desktop 补丁提供。部署验收必须确认当前插件版本为 0.43.0，生产 checkout 与发布提交一致，并满足下文的生产部署验收条件。
 
 ## Git tag 与 GitHub Release
 
@@ -51,7 +51,7 @@ gh release create "v$release_version" \
 
 ## 当前 Desktop 的安装准备
 
-发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。
+发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。Desktop 2.0.9 的 Stable 构建与 Electron 原生绑定准备命令见[启动规范](startup.md#主开发-checkout-依赖准备)。
 
 发布执行者必须验证源码 origin、完整 commit、Desktop、Harness 和 Electron 版本与基线配置一致，并完成当前插件的真实 Desktop 门禁。旧 fork 的补丁及历史验收记录不能代替 anywhere Stable 的验收结果。
 

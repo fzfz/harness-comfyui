@@ -1,10 +1,11 @@
 import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
 import { parseCatalogContext, type CatalogContext } from '../../catalog/contract.ts'
+import resultsTab from './results-tab.json' with { type: 'json' }
+import { resultsTabSchema } from './results-tab-schema.ts'
 
 export const WORKBENCH_ENTRY_ID = 'harness-comfyui-workbench'
 export const WORKBENCH_DOCK_ID = 'harness-comfyui-context-dock'
-export const WORKBENCH_RESULTS_OVERLAY_ID = 'harness-comfyui-results-overlay'
-export const WORKBENCH_DETAILS_PRIORITY = -10
+export const WORKBENCH_RESULTS_TAB = Object.freeze(resultsTabSchema(resultsTab))
 export const WORKBENCH_CONTEXT_RECORD_TYPE = 'comfyui-context'
 
 export const WORKBENCH_COPY = Object.freeze({

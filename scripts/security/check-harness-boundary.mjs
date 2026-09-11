@@ -14,6 +14,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-layout/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-primitives', 'value-or-type'],
   ['@deepseek-ai/dsh-client-ui-sidebar/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-ui-sidebar-right/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-settings/client', 'type-only'],
   ['@deepseek-ai/dsh-attachment', 'type-only'],
   ['@deepseek-ai/dsh-llm', 'value-or-type'],
@@ -33,6 +34,7 @@ const frozenClientInject = Object.freeze([
   '@deepseek-ai/dsh-client-ui-layout',
   '@deepseek-ai/dsh-client-ui-settings',
   '@deepseek-ai/dsh-client-ui-sidebar',
+  '@deepseek-ai/dsh-client-ui-sidebar-right',
 ])
 const forbiddenSourceProtocols = /^(?:patch|file|link|workspace|npm|git|github|gitlab|bitbucket):/iu
 const forbiddenSourceBinding = /(?:^|[\s{])(?:patch|file|link|workspace|npm):(?:[./*@]|https?:)/iu

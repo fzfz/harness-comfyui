@@ -214,6 +214,17 @@ describe('A/B project Tool visibility', () => {
     expect(restrict).toHaveBeenCalledWith({ deny: inheritedSchemas.map(schema => schema.name) })
   })
 
+  it.each([PRODUCT_PRESET_ID, ITERATION_PRESET_ID])('validates %s persona against the selected host schema', async (presetId) => {
+    const rows = await validateAgentPresetComposition(resolve(import.meta.dirname,
+      '../../agent-presets', presetId, 'agent.cordis.yml'))
+    const persona = rows.find(row => row.name === '@deepseek-ai/dsh-persona')
+    const { Config } = requireFromDsh('@deepseek-ai/dsh-persona')
+    expect(Config(persona.config)).toMatchObject({ prefix: persona.config.prefix })
+    expect(persona.config.prefix).toBeTypeOf('string')
+    expect(persona.config).not.toHaveProperty('text')
+    expect(() => Config({ text: persona.config.prefix })).toThrow()
+  })
+
   it('uses identical A/B composition except the visibility mode', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
     const paths = [

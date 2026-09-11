@@ -21,7 +21,7 @@ import { apply, inject, name } from '../../src/client/index.tsx'
 import {
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
-  WORKBENCH_RESULTS_OVERLAY_ID,
+  WORKBENCH_RESULTS_TAB,
 } from '../../src/client/workbench/contract.ts'
 
 type Registration = {
@@ -52,6 +52,8 @@ afterEach(() => {
 })
 
 function installImmediateInject(context: Record<string, any>): void {
+  context.sidebarRight ??= { openTab: vi.fn() }
+  context.sidebarRightTabs ??= { register: vi.fn(() => vi.fn()) }
   context.remote.harnessComfyuiImageReader ??= {
     models: vi.fn(async () => ({ ok: true, value: { groups: [], failures: [] } })),
     saveProfile: vi.fn(async (request: any) => ({
@@ -173,6 +175,12 @@ describe('Harness Client plugin registration', () => {
       ok: true,
       value: { sessionId: 'session-1', runs: [], media: [], hasActiveRuns: false, refreshAfterMs: 1000 },
     }))
+    const unregisterResultsTab = vi.fn()
+    const registerResultsTab = vi.fn((_definition: {
+      id: string
+      kind: string
+      title: () => string
+    }) => unregisterResultsTab)
 
     const context = {
       slots: { inject: slotInject, register },
@@ -183,19 +191,27 @@ describe('Harness Client plugin registration', () => {
         harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels },
         harnessComfyuiGeneration: { list: remoteGenerationList },
       },
-      layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
+      sidebarRight: { openTab: vi.fn() },
+      sidebarRightTabs: { register: registerResultsTab },
     }
     installImmediateInject(context)
     const dispose = await apply(context as never)
 
     expect(name).toBe('harness-comfyui')
-    expect(inject).toEqual(['slots', 'sessions', 'conversation', 'remote', 'layout', 'settingsScope'])
+    expect(inject).toEqual([
+      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'settingsScope',
+    ])
+    expect(registerResultsTab).toHaveBeenCalledWith({
+      id: WORKBENCH_RESULTS_TAB.id,
+      kind: WORKBENCH_RESULTS_TAB.kind,
+      title: expect.any(Function),
+    })
+    expect(registerResultsTab.mock.calls[0]![0].title()).toBe(WORKBENCH_RESULTS_TAB.title)
     expect([...registrations.keys()]).toEqual([
       'sidebar.footer.action',
       'conversation.input.dock',
       'conversation.session.header.actions',
-      'details',
-      'shell.overlay',
+      'sidebar.right.pane.tab',
       'settings.section',
     ])
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
@@ -210,10 +226,8 @@ describe('Harness Client plugin registration', () => {
       id: 'harness-comfyui-source-tip',
       order: 10,
     })
-    expect(registrations.get('details')).toMatchObject({ priority: -10 })
-    expect(registrations.get('shell.overlay')).toMatchObject({
-      id: WORKBENCH_RESULTS_OVERLAY_ID,
-      order: 20,
+    expect(registrations.get('sidebar.right.pane.tab')).toMatchObject({
+      key: WORKBENCH_RESULTS_TAB.id,
     })
     expect(registrations.get('settings.section')).toMatchObject({
       id: 'harness-comfyui-settings',
@@ -224,8 +238,7 @@ describe('Harness Client plugin registration', () => {
     const entryFace = registrations.get('sidebar.footer.action')!.inject()
     const dockFace = registrations.get('conversation.input.dock')!.inject('session-1' as never)
     const sourceTipFace = registrations.get('conversation.session.header.actions')!.inject()
-    const detailsFace = registrations.get('details')!.inject('session-1' as never)
-    const overlayFace = registrations.get('shell.overlay')!.inject()
+    const detailsFace = registrations.get('sidebar.right.pane.tab')!.inject('session-1' as never)
     const imageReaderSettingsFace = registrations.get('settings.section')!.inject()
     expect(entryFace).toMatchObject({ workbench: expect.any(Object) })
     expect(dockFace).toMatchObject({
@@ -249,7 +262,6 @@ describe('Harness Client plugin registration', () => {
     await expect((sourceTipFace as { probe(signal: AbortSignal): Promise<unknown> }).probe(new AbortController().signal))
       .resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
     expect(detailsFace).toMatchObject({ workbench: expect.any(Object), generationStore: expect.any(Object) })
-    expect(overlayFace).toMatchObject({ workbench: expect.any(Object) })
     expect(imageReaderSettingsFace).toMatchObject({
       imageReaderScope: expect.objectContaining({ getSnapshot: expect.any(Function) }),
       imageReaderApi: expect.objectContaining({
@@ -453,16 +465,15 @@ describe('Harness Client plugin registration', () => {
     expect(injectionDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
-    expect(injectionDisposers.get('details')).toHaveBeenCalledOnce()
-    expect(injectionDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
+    expect(injectionDisposers.get('sidebar.right.pane.tab')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('settings.section')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
-    expect(registrationDisposers.get('details')).toHaveBeenCalledOnce()
-    expect(registrationDisposers.get('shell.overlay')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('sidebar.right.pane.tab')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('settings.section')).toHaveBeenCalledOnce()
     expect(remoteDispose).toHaveBeenCalledOnce()
+    expect(unregisterResultsTab).toHaveBeenCalledOnce()
   })
 
   it('registers the Session dock when reading the browser localStorage property throws', async () => {

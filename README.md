@@ -35,7 +35,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 选择源码版本
 
-v0.42.3 使用自有仓库 fzfz/dsh-desktop-anywhere 的 Stable workspace，具体提交与版本由 config/desktop-baseline.json 固定。本版本允许 Harness managed CLI route 在普通浏览器访问关闭时使用自身的短期 capability 完成认证；完整门禁结果见[发布说明](docs/releasenotes.md#验证与依赖)。生产 checkout 按以下步骤准备依赖并启动；历史版本使用各自 tag 内的安装说明。
+当前开发基线使用自有仓库 fzfz/dsh-desktop-anywhere 的 Desktop Stable 2.0.9 与 DSH 0.1.5-rc.1，固定提交和安装路径由 config/desktop-baseline.json 指定。普通浏览器访问关闭时，Harness managed CLI route 仍使用自身的短期 capability 完成认证。已发布版本的生产安装使用对应 tag 中的基线配置和说明。
 
 ### 2. 准备 DSH Desktop 与依赖
 

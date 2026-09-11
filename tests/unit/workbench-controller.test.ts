@@ -7,6 +7,7 @@ import {
   replaceWorkbenchContextLines,
   serializeWorkbenchContext,
   WORKBENCH_CONTEXT_RECORD_TYPE,
+  WORKBENCH_RESULTS_TAB,
   workbenchContextsFromDraft,
 } from '../../src/client/workbench/contract.ts'
 import {
@@ -31,8 +32,8 @@ function sessionInput(draft = '') {
 
 describe('ComfyUI workbench controller', () => {
   it('publishes entry state changes and removes subscribers', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+    const sidebarRight = { openTab: vi.fn() }
+    const controller = new WorkbenchController(sidebarRight)
     const listener = vi.fn()
     const unsubscribe = controller.subscribe(listener)
 
@@ -40,69 +41,94 @@ describe('ComfyUI workbench controller', () => {
     controller.toggle()
     expect(controller.getSnapshot()).toBe(true)
     expect(listener).toHaveBeenCalledOnce()
-    expect(layout.openDetails).toHaveBeenCalledOnce()
+    expect(sidebarRight.openTab).toHaveBeenCalledWith(WORKBENCH_RESULTS_TAB.kind)
 
     unsubscribe()
     controller.toggle()
     expect(controller.getSnapshot()).toBe(false)
     expect(listener).toHaveBeenCalledOnce()
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
   })
 
-  it('opens and closes the native result drawer without changing workbench state', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+  it('opens the native result tab and closes only the visible owned tab without changing workbench state', () => {
+    const sidebarRight = { openTab: vi.fn() }
+    const controller = new WorkbenchController(sidebarRight)
     const listener = vi.fn()
+    const closeOwnedTab = vi.fn()
     const unsubscribe = controller.subscribeResults(listener)
+    controller.syncCurrentSession('session-1')
 
     expect(controller.getResultsSnapshot()).toBe(false)
     controller.openResults()
     expect(controller.getResultsSnapshot()).toBe(true)
+    const unbind = controller.bindResultsTab('session-1', 'result-tab-1', true, closeOwnedTab)
     controller.closeResults()
     expect(controller.getResultsSnapshot()).toBe(false)
 
     expect(controller.getSnapshot()).toBe(false)
-    expect(layout.openDetails).toHaveBeenCalledOnce()
-    expect(layout.closeDetails).toHaveBeenCalledOnce()
+    expect(sidebarRight.openTab).toHaveBeenCalledWith(WORKBENCH_RESULTS_TAB.kind)
+    expect(closeOwnedTab).toHaveBeenCalledOnce()
     expect(listener).toHaveBeenCalledTimes(2)
 
     unsubscribe()
+    unbind()
     controller.openResults()
     expect(listener).toHaveBeenCalledTimes(2)
   })
 
-  it('sets resultsOpen to true for an external open and false for an external close, notifies only when the value changes, and never calls layout actions', () => {
-    const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
-    const controller = new WorkbenchController(layout)
+  it('tracks current Session tab visibility and ignores stale binding cleanup', () => {
+    const sidebarRight = { openTab: vi.fn() }
+    const controller = new WorkbenchController(sidebarRight)
     const listener = vi.fn()
     controller.subscribeResults(listener)
+    controller.syncCurrentSession('session-1')
+    const staleUnbind = controller.bindResultsTab('session-1', 'result-tab', true, vi.fn())
 
-    controller.syncDetailsOpen(true)
     expect(controller.getResultsSnapshot()).toBe(true)
     expect(listener).toHaveBeenCalledOnce()
-    expect(layout.openDetails).not.toHaveBeenCalled()
-    expect(layout.closeDetails).not.toHaveBeenCalled()
 
-    controller.syncDetailsOpen(true)
-    expect(listener).toHaveBeenCalledOnce()
-
-    controller.syncDetailsOpen(false)
+    const currentUnbind = controller.bindResultsTab('session-1', 'result-tab', false, vi.fn())
     expect(controller.getResultsSnapshot()).toBe(false)
+    staleUnbind()
+    expect(controller.getResultsSnapshot()).toBe(false)
+
+    currentUnbind()
     expect(listener).toHaveBeenCalledTimes(2)
-    expect(layout.openDetails).not.toHaveBeenCalled()
-    expect(layout.closeDetails).not.toHaveBeenCalled()
+    expect(sidebarRight.openTab).not.toHaveBeenCalled()
   })
 
-  it('keeps the result state aligned with the workbench entry toggle', () => {
-    const controller = new WorkbenchController({ openDetails: vi.fn(), closeDetails: vi.fn() })
+  it('switches result state between Sessions without closing either Session tab', () => {
+    const controller = new WorkbenchController({ openTab: vi.fn() })
+    const closeSession1 = vi.fn()
+    const closeSession2 = vi.fn()
+    controller.syncCurrentSession('session-1')
+    const unbindSession1 = controller.bindResultsTab('session-1', 'tab-1', true, closeSession1)
+    controller.bindResultsTab('session-2', 'tab-2', false, closeSession2)
+
+    expect(controller.getResultsSnapshot()).toBe(true)
+    controller.syncCurrentSession('session-2')
+    expect(controller.getResultsSnapshot()).toBe(false)
+    expect(closeSession1).not.toHaveBeenCalled()
+
+    unbindSession1()
+    expect(controller.getResultsSnapshot()).toBe(false)
+    expect(closeSession1).not.toHaveBeenCalled()
+    expect(closeSession2).not.toHaveBeenCalled()
+  })
+
+  it('keeps the result state aligned with the workbench entry toggle when the owned tab is bound', () => {
+    const controller = new WorkbenchController({ openTab: vi.fn() })
+    const close = vi.fn()
+    controller.syncCurrentSession('session-1')
 
     controller.toggle()
     expect(controller.getSnapshot()).toBe(true)
     expect(controller.getResultsSnapshot()).toBe(true)
+    controller.bindResultsTab('session-1', 'tab-1', true, close)
 
     controller.toggle()
     expect(controller.getSnapshot()).toBe(false)
     expect(controller.getResultsSnapshot()).toBe(false)
+    expect(close).toHaveBeenCalledOnce()
   })
 
   it('serializes only the exact structured context JSON record', () => {
