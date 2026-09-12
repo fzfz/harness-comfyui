@@ -104,7 +104,7 @@ describe('GenerationSourceCli', () => {
     })
     expect(process).toHaveBeenCalledWith(
       '/source-read.mjs',
-      ['--url', 'https://catalog.example.com', '--port', '18093', '--timeout-ms', '120000', 'instance', '--id', '2'],
+      ['--quiet', '--url', 'https://catalog.example.com', '--port', '18093', '--timeout-ms', '120000', 'instance', '--id', '2'],
       expect.any(AbortSignal),
     )
   })
@@ -212,7 +212,7 @@ describe('GenerationSourceCli', () => {
     address = { url: 'https://catalog.example.com', port: 443 }
     await source.readInstance('2')
 
-    expect(process.mock.calls[0]?.[1].slice(0, 4)).toEqual(['--url', 'http://127.0.0.1', '--port', '18093'])
-    expect(process.mock.calls[1]?.[1].slice(0, 4)).toEqual(['--url', 'https://catalog.example.com', '--port', '443'])
+    expect(process.mock.calls[0]?.[1].slice(0, 5)).toEqual(['--quiet', '--url', 'http://127.0.0.1', '--port', '18093'])
+    expect(process.mock.calls[1]?.[1].slice(0, 5)).toEqual(['--quiet', '--url', 'https://catalog.example.com', '--port', '443'])
   })
 })

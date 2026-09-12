@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import help from '../../config/desktop-production-cli-help.json' with { type: 'json' }
+
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -20,7 +22,7 @@ export async function runDesktopProductionCommand(command, options = {}) {
 }
 
 export async function main(argv = process.argv.slice(2)) {
-  return runDesktopCommandMain(argv, runDesktopProductionCommand)
+  return runDesktopCommandMain(argv, runDesktopProductionCommand, help)
 }
 
 function isMainModule() {

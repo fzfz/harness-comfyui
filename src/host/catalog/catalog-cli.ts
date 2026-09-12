@@ -436,6 +436,7 @@ export class CatalogCli {
   private run(args: readonly string[], signal: AbortSignal): Promise<CatalogCliProcessResult> {
     const address = readSourceAddress(this.options.settings)
     return this.execute(this.options.executable, [
+      '--quiet',
       '--url', address.url,
       '--port', String(address.port),
       ...args,

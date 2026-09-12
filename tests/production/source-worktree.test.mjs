@@ -416,7 +416,7 @@ describe('source worktree development Profile materialization', () => {
 
 describe('Web Host command adapter', () => {
   it('exposes the six lifecycle commands under the web command prefix', () => {
-    expect(helpText()).toContain('Usage: pnpm web:<command>')
+    expect(helpText()).toContain('pnpm web:<command>')
     for (const command of ['start', 'stop', 'restart', 'status', 'health', 'logs']) {
       expect(parseArguments([command])).toEqual({ command })
     }

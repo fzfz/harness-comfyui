@@ -1,0 +1,22 @@
+{
+  "semantic": {
+    "invocation": "node \"$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI\"",
+    "help": "--quiet 只省略成功 NEXT 提示。退出码为 0 表示成功，stdout 保持服务 JSON；stderr 的 NEXT 是操作提示。\n下一步: 使用 --url 与 --port 获取实时操作列表，再选择 --path <实际路径> --help。查看命令行工具的总帮助时无需联网；查看具体操作的帮助时，工具需要联网获取服务接口描述。URL 和端口取自当前数据源配置。",
+    "search": "本页首项记录可作为候选；按任务要求核对后读取它: {cli} --url {url} --port {port} --path {path} --mode resolve --id {id}",
+    "resolve": "记录已返回。将实际 id 与记录内容用于提示词或模型选择；查看其他操作: {cli} --url {url} --port {port} --help",
+    "discovery": "从返回的 paths 选择操作: {cli} --url {url} --port {port} --path <实际路径> --help",
+    "error": "按错误修正参数；连接或超时错误请核对数据源 URL、端口与服务状态。查看调用方式: {cli} --help",
+    "searchEmpty": "本页 results 为空。按任务要求调整 --query、页码或筛选条件；查看可用字段: {cli} --url {url} --port {port} --path {path} --help",
+    "searchUnstructured": "已返回服务 JSON，当前结果未提供可用于下一条命令的首项 id。查看该操作的实际返回结构: {cli} --url {url} --port {port} --path {path} --help"
+  },
+  "source": {
+    "invocation": "node <CLI路径>",
+    "help": "--quiet 只省略成功 NEXT 提示，stdout 保持服务 JSON；按退出码判断结果。错误正文之后附加 NEXT 操作提示。\n下一步: {cli} instance --help 或 {cli} template-bundle --help。ID 来自实例或模板目录，URL 和端口取自当前数据源配置。",
+    "instance": "实例记录已返回，可将实例 id 用于生成参数检查。读取模板源: {cli} template-bundle --help",
+    "template-bundle": "模板源已返回。使用模板实际参数定义准备生成请求；查看输入说明: {cli} template-bundle --help",
+    "discovery": "已取得服务接口描述。选择记录类型: {cli} instance --help 或 {cli} template-bundle --help",
+    "error": "按错误修正参数；连接或超时错误请核对数据源 URL、端口与服务状态。查看调用方式: {cli} --help",
+    "empty": "服务返回空 JSON 结果。核对所选目录 ID 与服务记录，再按命令帮助查询: {cli} --help",
+    "unstructured": "服务已返回 JSON，其中未提供记录 id。先核对响应内容和所选目录 ID，再按命令帮助查询: {cli} --help"
+  }
+}

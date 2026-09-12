@@ -73,7 +73,7 @@ describe('Prompt Builder generation-output validator CLI', () => {
       })
 
       expect(result.status).toBe(0)
-      expect(result.stderr).toBe('')
+      expect(result.stderr).toContain('NEXT:')
       expect(JSON.parse(result.stdout)).toEqual(input)
     } finally {
       rmSync(directory, { recursive: true, force: true })

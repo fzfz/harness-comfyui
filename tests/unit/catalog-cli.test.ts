@@ -50,6 +50,7 @@ describe('Catalog CLI adapter', () => {
       total_count: 1,
     })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--quiet',
       '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
@@ -128,6 +129,7 @@ describe('Catalog CLI adapter', () => {
         totalCount: 35,
       })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--quiet',
       '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
@@ -166,6 +168,7 @@ describe('Catalog CLI adapter', () => {
       model_id: '1',
     })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--quiet',
       '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
@@ -231,6 +234,7 @@ describe('Catalog CLI adapter', () => {
       weight: 1,
     })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--quiet',
       '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
@@ -264,6 +268,7 @@ describe('Catalog CLI adapter', () => {
       skill_name: 'wai-sdxl-prompt-builder',
     })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--quiet',
       '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
@@ -339,6 +344,7 @@ describe('Catalog CLI adapter', () => {
       items: [{ id: '3', label: 'krea2' }, { id: '2', label: 'wai' }, { id: '1', label: 'anima' }],
     })
     expect(execute).toHaveBeenCalledWith('/source/imagegen-semantic-query.mjs', [
+      '--quiet',
       '--url', 'https://catalog.example.com',
       '--port', '18093',
       '--timeout-ms', '15000',
@@ -384,8 +390,8 @@ describe('Catalog CLI adapter', () => {
     address = { url: 'https://catalog.example.com', port: 443 }
     await client.search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)
 
-    expect(execute.mock.calls[0]?.[1].slice(0, 4)).toEqual(['--url', 'http://127.0.0.1', '--port', '18093'])
-    expect(execute.mock.calls[1]?.[1].slice(0, 4)).toEqual(['--url', 'https://catalog.example.com', '--port', '443'])
+    expect(execute.mock.calls[0]?.[1].slice(0, 5)).toEqual(['--quiet', '--url', 'http://127.0.0.1', '--port', '18093'])
+    expect(execute.mock.calls[1]?.[1].slice(0, 5)).toEqual(['--quiet', '--url', 'https://catalog.example.com', '--port', '443'])
   })
 
   it('terminates a running child process when the caller aborts', async () => {

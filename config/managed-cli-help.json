@@ -1,0 +1,285 @@
+{
+  "invocation": "node \"$DSH_HARNESS_COMFYUI_CLI\"",
+  "nodes": {
+    "": {
+      "summary": "查询目录、创建生成任务、读取历史结果或观察本地图片。",
+      "details": [],
+      "next": [
+        "查看目录查询帮助: {cli} catalog --help",
+        "查看生成任务帮助: {cli} generation --help",
+        "查看本地读图帮助: {cli} image --help"
+      ],
+      "after": [
+        "查找模型或模板: {cli} catalog --help",
+        "生成或读取 Run: {cli} generation --help",
+        "观察已有图片: {cli} image --help"
+      ]
+    },
+    "catalog": {
+      "summary": "查找及解析模型、LoRA、模板和 ComfyUI 实例。",
+      "details": [],
+      "next": [
+        "先搜索目录: {cli} catalog search --help",
+        "选择执行实例: {cli} catalog instance list --help"
+      ],
+      "after": [
+        "先搜索目录: {cli} catalog search --help",
+        "选择执行实例: {cli} catalog instance list --help"
+      ]
+    },
+    "generation": {
+      "summary": "检查模板输入、提交生成、读取 Run 参数与媒体。",
+      "details": [],
+      "next": [
+        "先检查模板参数: {cli} generation inspect-template-parameters --help",
+        "已有 Run: {cli} generation run-inputs --help"
+      ],
+      "after": [
+        "先检查模板参数: {cli} generation inspect-template-parameters --help",
+        "已有 Run: {cli} generation run-inputs --help"
+      ]
+    },
+    "image": {
+      "summary": "使用当前图片读取配置的视觉模型观察本地图片。",
+      "details": [],
+      "next": [
+        "{cli} image inspect --help"
+      ],
+      "after": [
+        "{cli} image inspect --help"
+      ]
+    },
+    "catalog template": {
+      "summary": "查询Workflow 模板。",
+      "details": [],
+      "next": [
+        "{cli} catalog template resolve --help"
+      ],
+      "after": [
+        "{cli} catalog template resolve --help"
+      ]
+    },
+    "catalog generation-model": {
+      "summary": "查询生成模型。",
+      "details": [],
+      "next": [
+        "{cli} catalog generation-model resolve --help"
+      ],
+      "after": [
+        "{cli} catalog generation-model resolve --help"
+      ]
+    },
+    "catalog lora": {
+      "summary": "查询LoRA。",
+      "details": [],
+      "next": [
+        "{cli} catalog lora resolve --help"
+      ],
+      "after": [
+        "{cli} catalog lora resolve --help"
+      ]
+    },
+    "catalog instance": {
+      "summary": "查询ComfyUI 实例。",
+      "details": [],
+      "next": [
+        "{cli} catalog instance list --help"
+      ],
+      "after": [
+        "{cli} catalog instance list --help"
+      ]
+    },
+    "catalog template resolve": {
+      "summary": "根据目录返回的 ID 读取Workflow 模板记录。",
+      "details": [
+        "参数: --id <string> 必填，使用搜索结果的稳定 ID；没有 stdin。",
+        "结果: 对应目录记录 JSON，包含记录 ID 和可用元数据。只读查询。",
+        "示例（ID 1 仅为示例）: {cli} catalog template resolve --id 1"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "记录 ID 用于后续生成选择；先检查模板: {cli} generation inspect-template-parameters --help"
+      ]
+    },
+    "catalog generation-model resolve": {
+      "summary": "根据目录返回的 ID 读取生成模型记录。",
+      "details": [
+        "参数: --id <string> 必填，使用搜索结果的稳定 ID；没有 stdin。",
+        "结果: 对应目录记录 JSON，包含记录 ID 和可用元数据。只读查询。",
+        "示例（ID 1 仅为示例）: {cli} catalog generation-model resolve --id 1"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "记录 ID 用于后续生成选择；先检查模板: {cli} generation inspect-template-parameters --help"
+      ]
+    },
+    "catalog lora resolve": {
+      "summary": "根据目录返回的 ID 读取LoRA记录。",
+      "details": [
+        "参数: --id <string> 必填，使用搜索结果的稳定 ID；没有 stdin。",
+        "结果: 对应目录记录 JSON，包含记录 ID 和可用元数据。只读查询。",
+        "示例（ID 1 仅为示例）: {cli} catalog lora resolve --id 1"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "记录 ID 用于后续生成选择；先检查模板: {cli} generation inspect-template-parameters --help"
+      ]
+    },
+    "catalog instance list": {
+      "summary": "列出可用 ComfyUI 实例。",
+      "details": [
+        "参数: 无；没有 stdin。结果: results 数组中的实例 ID 与目录信息；只读。",
+        "执行: {cli} catalog instance list"
+      ],
+      "next": [
+        "执行 {cli} catalog instance list，并读取 stdout JSON 中的 results。"
+      ],
+      "after": [
+        "使用 results 中的实例 id 检查模板: {cli} generation inspect-template-parameters --help"
+      ]
+    },
+    "catalog search": {
+      "summary": "按类别和关键词搜索目录。",
+      "details": [
+        "参数: --kind 必填，model|lora|work|character|style|prompt-term|artist-string|comfyui-template；--query 必填字符串（可空）；--page 必填正整数，从 1 开始；--base-model-id 可选稳定 ID。",
+        "结果: 搜索记录与分页信息；只读，没有 stdin。",
+        "示例: {cli} catalog search --kind comfyui-template --query \"\" --page 1"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "{result_summary}",
+        "模板 id 用于 {cli} catalog template resolve --id <实际ID>；model id 用于 catalog generation-model resolve；lora id 用于 catalog lora resolve。",
+        "其他类别的记录用于构造提示词；查询细节: {cli} catalog search --help"
+      ]
+    },
+    "image inspect": {
+      "summary": "观察一张本地图片，等待视觉模型完成。",
+      "details": [
+        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
+        "file_path: 必填绝对路径字符串，最长 10000 字符，无控制字符，来自用户或真实媒体查询。目标为非空 PNG/JPEG/WebP/GIF 普通文件，受当前输入大小限制。prompt: 可选非空白字符串，最多 32768 字符。",
+        "输出与作用: provider、model、file_path、observation；每次调用产生一次视觉模型请求，不修改原图或生成记录。",
+        "示例（按实际查询结果替换值）:\n{cli} image inspect --stdin <<'JSON'\n{\"file_path\": \"/absolute/path/result.png\"}\nJSON",
+        "省略 prompt 使用当前图片读取配置的 defaultPrompt；可在 Harness 设置 → 图片读取中查看和修改。需要针对当前图提问时，在输入 JSON 中提供 prompt。"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "读取已完成；从 observation 字段提取并复用观察文本。",
+        "观察其他图片时替换 file_path，再按本命令调用。"
+      ]
+    },
+    "generation inspect-template-parameters": {
+      "summary": "读取模板在指定实例上的参数与尺寸候选。",
+      "details": [
+        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
+        "template_id、instance_id: 必填非空字符串，来自模板与实例目录。",
+        "输出与作用: parameters、size_candidates；只读，不创建 Run。",
+        "示例（按实际查询结果替换值）:\n{cli} generation inspect-template-parameters --stdin <<'JSON'\n{\"template_id\": \"1\", \"instance_id\": \"2\"}\nJSON"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "按 parameters 与 size_candidates 构造生成请求: {cli} generation submit --help"
+      ]
+    },
+    "generation random-seeds": {
+      "summary": "生成本次需要的随机 Seed。",
+      "details": [
+        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
+        "count: 必填整数，1 至 20。",
+        "输出与作用: seeds 整数数组；不创建 Run。",
+        "示例（按实际查询结果替换值）:\n{cli} generation random-seeds --stdin <<'JSON'\n{\"count\": 1}\nJSON"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "将 seeds 值填入模板指定的 seed 参数: {cli} generation submit --help"
+      ]
+    },
+    "generation run-inputs": {
+      "summary": "读取历史 Run 的生成请求和 Actual Workflow。",
+      "details": [
+        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
+        "run_ids: 必填字符串数组，1 至 20 项；使用提交返回的 run_id，也接受 run_ 加至少八个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
+        "输出与作用: runs 按输入顺序返回生成参数、workflow_status 和逐项错误。 只读。",
+        "示例（按实际查询结果替换值）:\n{cli} generation run-inputs --stdin <<'JSON'\n{\"run_ids\": [\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}\nJSON"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "使用 runs 中可用参数构造新请求；逐项处理缺失或歧义 Run。"
+      ]
+    },
+    "generation resolve-media": {
+      "summary": "查询 Run 产生的本地图片路径。",
+      "details": [
+        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
+        "run_ids: 必填字符串数组，1 至 20 项；使用提交返回的 run_id，也接受 run_ 加至少八个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
+        "输出与作用: runs 按输入顺序返回 images（含 file_path）及逐项错误；尚无图片并不表示已经完成。 只读。",
+        "示例（按实际查询结果替换值）:\n{cli} generation resolve-media --stdin <<'JSON'\n{\"run_ids\": [\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}\nJSON"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "使用 images 中实际 file_path 读取图片: {cli} image inspect --help；尚无图片时结合工作台 Run 状态再查询。"
+      ]
+    },
+    "generation submit": {
+      "summary": "创建一个持久生成 Run；返回表示已接受。",
+      "details": [
+        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
+        "必填 title、instance_id、template_id、model、parameters、loras。title 非空，最长 500；ID 来自目录。model 为 null 或 {id,file_name}；parameters 使用模板检查返回的参数名和值；loras 为数组（最多100项），每项 {id,file_name,weight,trigger_words}，weight 为有限数，trigger_words 为最多100项且不重复的字符串数组。",
+        "输出与作用: run_id；创建生成任务。同一 shell Tool Call 的相同请求重放同一个 Run，多个独立 Run 各用一次新的前台 Tool Call。",
+        "示例（按实际查询结果替换值）:\n{cli} generation submit --stdin <<'JSON'\n{\"title\": \"example\", \"instance_id\": \"2\", \"template_id\": \"1\", \"model\": null, \"parameters\": {\"positive_prompt\": \"example\", \"seed\": 1}, \"loras\": []}\nJSON"
+      ],
+      "next": [
+        "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
+      ],
+      "after": [
+        "Run 已接受。查询此 Run 的图片路径: printf '%s\\n' {run_ids_json} | {cli} generation resolve-media --stdin"
+      ]
+    }
+  },
+  "messages": {
+    "splitCommand": "Pass each command word as a separate argv element: {argv}. {help}",
+    "invalidProperties": "{label} has invalid properties; expected: {expected}; received: {actual}",
+    "invalidOption": "CLI command options are invalid: {option} is unknown or repeated; allowed: {allowed}",
+    "emptyResults": "本页无结果。调整 query、kind 或 page 后重新搜索。",
+    "availableResults": "读取 items[].context.id 与 kind。comfyui-template、model、lora 分别使用对应的目录 resolve 命令；其他类别的记录用于构造提示词。",
+    "providerFailure": "打开 Harness 设置中的“图片读取”，核对当前配置的视觉模型、连接地址和服务状态；修正后重新执行本命令。",
+    "invalidCommand": "CLI command is invalid; received argv: {argv}. Pass the command words and options shown by --help"
+  },
+  "valueOptions": [
+    "--kind",
+    "--query",
+    "--page",
+    "--base-model-id",
+    "--id"
+  ],
+  "commonDetails": [
+    "执行命令通过受管前台 shell 调用。--help 离线可用。--quiet 只省略成功后的 NEXT 提示。",
+    "输出: 业务成功 stdout 为 JSON、退出 0；失败 stdout 为空、stderr 为错误码和修正指引，本地输入或环境错误退出 2，Host 或 Provider 错误退出 1。帮助输出到 stdout，退出 0。",
+    "使用退出码判断成功；stderr 的 NEXT: 是操作提示。示例路径与 ID 须替换为用户输入或查询结果。",
+    "术语: Run 是生成记录，run_id 是其标识；Workspace 是会话所属工作目录；Actual Workflow 是该 Run 实际执行的工作流。"
+  ],
+  "providerErrorCodes": [
+    "IMAGE_READER_MODEL_NOT_CONFIGURED",
+    "IMAGE_READER_MODEL_UNAVAILABLE",
+    "IMAGE_READER_MODEL_IMAGE_UNSUPPORTED",
+    "IMAGE_READER_PROVIDER_FAILED",
+    "IMAGE_READER_EMPTY_RESPONSE"
+  ]
+}

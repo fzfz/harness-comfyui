@@ -9,13 +9,13 @@ Skill 执行者使用 Catalog CLI 查询 Workflow 模板、生成模型、LoRA �
 `DSH_HARNESS_COMFYUI_CLI` 保存 Catalog CLI 入口脚本路径。Skill 执行者使用以下格式调用 Catalog CLI；命令不接受参数时省略 `[options]`。
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" <command> [options]
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet <command> [options]
 ```
 
 ## 命令与调用条件
 
 - Skill 执行者取得 `template_id` 后，调用 `catalog template resolve --id '<template_id>'`。
-- 用户指定了 `model_id` 时，Skill 执行者调用 `catalog generation-model resolve --id '<model_id>'`。用户没有指定 `model_id`，并且 Workflow 模板查询结果的 `model_id` 非空时，Skill 执行者使用该值调用同一命令。用户没有指定 `model_id`，并且 Workflow 模板查询结果的 `model_id` 为 `null` 时，Skill 执行者不调用生成模型查询命令，报告当前模板没有默认生成模型，并等待用户指定 `model_id`。
+- 用户指定了 `model_id` 时，Skill 执行者调用 `catalog generation-model resolve --id '<model_id>'`。用户没有指定 `model_id`，并且 Workflow 模板查询结果的 `model_id` 非空时，Skill 执行者使用该值调用同一命令。用户没有指定 `model_id`，并且 Workflow 模板查询结果的 `model_id` 为 `null` 时，Skill 执行者报告当前模板没有默认生成模型，并等待用户指定 `model_id` 后查询该模型。
 - Skill 执行者取得一个或多个 `lora_id` 后，按每个 `lora_id` 首次出现的顺序去重，并针对去重后的每个 `lora_id` 调用一次 `catalog lora resolve --id '<lora_id>'`。
 - Skill 执行者检查 Workflow 参数或构造 Generation Request 时，如果需要 `instance_id`，则调用 `catalog instance list`。
 - 用户要求搜索 Workflow 模板、生成模型或 LoRA 时，Skill 执行者调用 `catalog search`。
@@ -40,9 +40,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" <command> [options]
 
 `model_id` 来自当前消息中生成模型选择的 `comfyui-context.data.id`、用户按照 `model_id: 12` 形式给出的 ID，或者用户从 `catalog search` 结果中选定的 `items[].context.id`。多个来源给出不同 ID 时，Skill 执行者报告这些 ID，并等待用户指定一个 `model_id`。
 
-用户没有指定 `model_id` 时，Workflow 模板查询结果中非空的 `model_id` 是默认生成模型 ID。
-
-用户指定了 `model_id` 时，Skill 执行者把该模型的成功查询结果用于构造 Generation Request 的 `model` 对象。用户没有指定 `model_id`，并且查询了 Workflow 模板的默认生成模型时，Skill 执行者把 Generation Request 的 `model` 设为 `null`。用户没有指定 `model_id`，并且 Workflow 模板查询结果的 `model_id` 为 `null` 时，Skill 执行者在收到用户指定的 `model_id` 以前不构造 Generation Request。
+用户指定了 `model_id` 时，Skill 执行者把该模型的成功查询结果用于构造 Generation Request 的 `model` 对象。用户没有指定 `model_id`，并且查询了 Workflow 模板的默认生成模型时，Skill 执行者把 Generation Request 的 `model` 设为 `null`。
 
 `lora_id` 有序列表来自以下任一来源：当前消息中的一个或多个 LoRA 选择，其 ID 按选择顺序取自各自的 `comfyui-context.data.id`；用户依次给出的一个或多个 `lora_id: <ID>` 项；用户依次从 `catalog search` 结果中选定的 `items[].context.id`。多个来源给出不同的 LoRA ID 有序列表时，Skill 执行者报告这些有序列表，并等待用户指定最终列表。
 
@@ -68,13 +66,13 @@ node "$DSH_HARNESS_COMFYUI_CLI" <command> [options]
 {"status":"ok","message":null,"results":[{"id":"2"}],"page":1,"page_size":100,"total_count":1}
 ```
 
-`results[]` 按返回顺序包含零个或多个 ComfyUI 实例对象；每个对象的 `id` 属性保存 ComfyUI 实例 ID。
+`results[]` 中每个 ComfyUI 实例对象的 `id` 属性保存该实例的 ID。
 
 `catalog search` 成功时输出一个 JSON 对象。`kind` 保存搜索对象类型，`query` 保存搜索文本，`page` 保存当前结果页码，`items` 保存当前页的搜索结果数组，`totalCount` 保存符合搜索条件的结果总数。每个 `items[]` 的 `context` 保存搜索结果的对象类型和对象 ID，`label` 保存展示名称，`subtitle` 保存展示副标题，`coverUrl` 保存封面图片地址，`sampleImageUrls` 保存样图地址数组。Workflow 模板、生成模型和 LoRA 的 `context` 分别包含 `{kind,id,title}`、`{kind,id,file_name}` 和 `{kind,id,file_name}`；`kind` 保存对象类型，`id` 保存对象 ID，`title` 保存 Workflow 模板标题，`file_name` 保存生成模型或 LoRA 文件名。
 
 `catalog search` 返回非空 `items` 时，Skill 执行者按照返回顺序列出每项的 `context.id`、`context.kind`、`label` 和 `subtitle`，然后等待用户选择。`items` 为空时，Skill 执行者报告本页没有搜索结果。
 
-命令成功时退出码为 `0`，stderr 为空，stdout 包含一行完整 JSON。命令失败时退出码非零，stderr 使用 `错误码: 错误消息` 格式。
+使用 `--quiet` 调用命令且命令成功时，退出码为 `0`，stderr 为空，stdout 包含一行完整 JSON。命令失败时退出码非零，stderr 使用 `错误码: 错误消息` 格式。
 
 ## 错误处理与重试
 
@@ -86,3 +84,7 @@ resolve 命令返回的 `id` 与输入 `--id` 不相同时，Skill 执行者按�
 ## 查询结果复用
 
 处理当前用户请求期间，Skill 执行者保存每个成功输出的完整 JSON。Skill 执行者再次需要相同命令和参数的查询结果时，使用已保存的 JSON；命令或参数发生变化时，Skill 执行者重新调用对应命令。
+
+## 帮助与操作提示
+
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

@@ -62,14 +62,14 @@ Skill 执行者构造包含且只包含下列十个属性的 JSON 对象。下�
 `scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把完整生成结果 JSON 写入命令的标准输入：
 
 ```sh
-node scripts/validate-output.mjs
+node scripts/validate-output.mjs --quiet
 ```
 
 ## 校验结果
 
-校验成功时，命令返回退出码 `0`，stderr 为空，stdout 写入一行通过校验的生成结果 JSON。Skill 执行者返回 stdout 中的生成结果。
+使用 `--quiet` 校验成功时，命令返回退出码 `0`，stderr 为空，stdout 写入一行通过校验的生成结果 JSON。Skill 执行者返回 stdout 中的生成结果。
 
-生成结果不符合 `references/generation-output-schema.json`、模型路线、负向模式或尺寸一致性规则时，命令返回退出码 `2`，stdout 为空，stderr 写入一个 JSON 对象。该对象的 `violations` 属性必须是非空数组；数组中的每个对象必须包含字符串属性 `path` 和 `message`。`path` 指向生成结果中不符合规则的属性，`message` 说明该属性违反的规则：
+生成结果不符合 `references/generation-output-schema.json`、模型路线、负向模式或尺寸一致性规则时，命令返回退出码 `2`，stdout 为空，stderr 首行写入一个 JSON 对象，后续行写入 `NEXT:` 修正提示；`--quiet` 仅省略成功提示。该对象的 `violations` 属性必须是非空数组；数组中的每个对象必须包含字符串属性 `path` 和 `message`。`path` 指向生成结果中不符合规则的属性，`message` 说明该属性违反的规则：
 
 ```json
 {
@@ -88,4 +88,8 @@ node scripts/validate-output.mjs
 
 命令没有返回退出码时，Skill 执行者报告命令调用提供的完整错误信息并停止本次执行。命令调用没有提供错误信息时，Skill 执行者报告“生成结果校验命令没有返回退出码或错误信息”，然后停止本次执行。命令返回 `0`、`1`、`2` 以外的退出码时，Skill 执行者报告实际退出码和 stderr 的完整内容，然后停止本次执行。
 
-退出码 `0` 对应的 stdout、stderr 或从 stdout 解析得到的 JSON 对象不符合退出码 `0` 的成功结果结构，或者退出码 `2` 对应的 stdout、stderr 或从 stderr 解析得到的 `violations[]` 不符合退出码 `2` 的失败结果结构时，Skill 执行者报告实际退出码、不符合要求的输出通道或属性、实际结果和预期要求，然后停止本次执行。
+退出码 `0` 对应的 stdout、stderr 或从 stdout 解析得到的 JSON 对象不符合退出码 `0` 的成功结果结构，或者退出码 `2` 对应的 stdout、stderr 或从 stderr 首行解析得到的 `violations[]` 不符合退出码 `2` 的失败结果结构时，Skill 执行者报告实际退出码、不符合要求的输出通道或属性、实际结果和预期要求，然后停止本次执行。
+
+## 帮助与操作提示
+
+Skill 执行者运行 `node scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。

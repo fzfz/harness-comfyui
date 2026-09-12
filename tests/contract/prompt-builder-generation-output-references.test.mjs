@@ -62,7 +62,7 @@ describe('Prompt Builder generation output references', () => {
     const executableDocuments = `${skill}\n${validatorReference}`
 
     expect(executableDocuments).not.toMatch(/\brun_skill_script\b|\bfinalize_skill_error\b/u)
-    expect(validatorReference).toContain('node scripts/validate-output.mjs --prompt-format')
+    expect(validatorReference).toContain('node scripts/validate-output.mjs --quiet --prompt-format')
   })
 
   it('keeps every Skill-owned reference linked from its SKILL.md', () => {
@@ -122,8 +122,9 @@ describe('Prompt Builder generation output references', () => {
       for (const profile of profiles.size_profiles) {
         for (const purpose of ['test', 'final']) {
           const input = builderResult({ route, mode: routeContract.negative_mode, profile, purpose })
-          const accepted = spawnSync(process.execPath, [script], { input: JSON.stringify(input), encoding: 'utf8' })
+          const accepted = spawnSync(process.execPath, [script, '--quiet'], { input: JSON.stringify(input), encoding: 'utf8' })
           expect(accepted.status, accepted.stderr).toBe(0)
+          expect(accepted.stderr).toBe('')
           expect(JSON.parse(accepted.stdout)).toEqual(input)
         }
       }
@@ -131,7 +132,7 @@ describe('Prompt Builder generation output references', () => {
     const [route, routeContract] = Object.entries(profiles.model_routes)[0]
     const profile = profiles.size_profiles[0]
     for (const extraProperty of ['seed', 'seed_mode']) {
-      const rejected = spawnSync(process.execPath, [script], {
+      const rejected = spawnSync(process.execPath, [script, '--quiet'], {
         input: JSON.stringify({
           ...builderResult({ route, mode: routeContract.negative_mode, profile }),
           [extraProperty]: extraProperty === 'seed' ? 42 : 'random',
@@ -140,7 +141,8 @@ describe('Prompt Builder generation output references', () => {
       })
       expect(rejected.status).toBe(2)
       expect(rejected.stdout).toBe('')
-      expect(JSON.parse(rejected.stderr).violations).toContainEqual(expect.objectContaining({ path: extraProperty }))
+      expect(rejected.stderr).toContain('NEXT:')
+      expect(JSON.parse(rejected.stderr.split('\n')[0]).violations).toContainEqual(expect.objectContaining({ path: extraProperty }))
     }
   })
 

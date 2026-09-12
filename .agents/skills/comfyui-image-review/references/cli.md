@@ -7,11 +7,11 @@ Harness ComfyUI 图片读取 CLI 为 `comfyui-image-review` Skill 提供两个�
 - `generation resolve-media --stdin` 只查询一个或多个 ComfyUI Generation Run 的原始 `parameters` 与本地图片路径；
 - `image inspect --stdin` 使用图片读取设置中的独立视觉模型观察一张本地图片。
 
-两个命令都不比较 Generation Prompt 与图片观察，不编写改进 Prompt，也不创建新的 ComfyUI Generation Run。Skill 执行者负责在取得 `parameters` 与 `observation` 后完成语义对比。
+Skill 执行者必须在取得 `parameters` 与 `observation` 后完成语义对比，并编写改进 Prompt。
 
 ## 调用环境与可执行入口
 
-Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。Managed environment 自动提供 CLI 脚本路径、Host endpoint 和当前 shell Tool Call 的短期 capability。
+Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在 Harness 提供的受管前台 shell 工具调用（shell Tool Call）中，通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。受管环境通过 `DSH_HARNESS_COMFYUI_CLI` 环境变量提供 CLI 脚本路径。
 
 Skill 执行者必须在当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。命令使用当前 Session 和 Workspace，Skill 执行者只需提供本文件定义的命令参数。
 
@@ -26,7 +26,7 @@ Skill 执行者必须按以下顺序调用命令：
 3. Skill 执行者按每个成功 Run 的 `images` 顺序处理图片。
 4. Skill 执行者为每张图片分别调用一次 `image inspect --stdin`。该命令一次只接受一个 `file_path`。
 
-某个 Run 的查询结果为逐 Run 错误时，Skill 执行者必须跳过该 Run 的图片读取。某个成功 Run 的 `images` 为空时，Skill 执行者不得调用 `image inspect --stdin`。
+Skill 执行者必须跳过返回逐 Run 错误或 `images` 为空数组的 Run，继续处理其他成功 Run 的图片。
 
 ## 参数与标准输入
 
@@ -35,18 +35,18 @@ Skill 执行者必须按以下顺序调用命令：
 命令行固定为：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
 ```
 
 Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象：
 
 ```json
 {
-  "run_ids": ["run_123", "run_456"]
+  "run_ids": ["run_01234567-89ab-4cde-8fab-0123456789ab", "run_89abcdef-0123-4567-89ab-cdef01234567"]
 }
 ```
 
-`run_ids` 必须是只包含一至二十个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的 Run ID 前缀。前缀必须从完整 ID 开头连续截取，并至少包含 `run_` 与 UUID 部分开头的八个小写十六进制字符；前缀延伸到 UUID 连字符的位置时必须保留该连字符。例如，完整 ID `run_01234567-89ab-cdef-0123-456789abcdef` 对应的最短合法前缀是 `run_01234567`。CLI 保留输入顺序和重复值。
+`run_ids` 必须是只包含一至二十个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的 Run ID 前缀。前缀必须从完整 ID 开头连续截取，并至少包含 `run_` 与 UUID 部分开头的八个小写十六进制字符；前缀延伸到 UUID 连字符的位置时必须保留该连字符。例如，完整 ID `run_01234567-89ab-4cde-8fab-0123456789ab` 对应的最短合法前缀是 `run_01234567`。CLI 保留输入顺序和重复值。
 
 缺失 `run_ids`、`run_ids` 不是数组、元素不是字符串、数组为空、数组超过二十项或输入 JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。
 
@@ -55,7 +55,7 @@ Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象�
 命令行固定为：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin
 ```
 
 Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
@@ -75,7 +75,7 @@ Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 }
 ```
 
-`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 不得包含 U+0000–U+001F 或 U+007F–U+009F 控制字符，因此换行符和制表符也不合法。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小不得超过 Host 当前图片输入上限。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。
+`file_path` 必须是长度为一至一万个字符、字符范围排除 U+0000–U+001F 和 U+007F–U+009F 控制字符的字符串。该范围排除换行符和制表符。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须小于或等于 Host 当前图片输入上限。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。
 
 视觉模型接收的是每帧宽高约为原图 70% 的图片，最小边长为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。原图保持不变，成功输出的 `file_path` 指向输入原图。
 
@@ -85,13 +85,13 @@ Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 
 ## Run ID 与图片路径的来源
 
-Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果中的 `run_id`，取得 `generation resolve-media --stdin` 的 `run_ids`。当前消息包含明确 `run_id` 时，Skill 执行者按这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按对应提交结果的返回顺序传递。Skill 执行者不得选择用户没有指代的历史 Generation Run，也不得猜测 Generation Run ID。
+Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果中的 `run_id`，取得 `generation resolve-media --stdin` 的 `run_ids`。当前消息包含明确 `run_id` 时，Skill 执行者按这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按对应提交结果的返回顺序传递。
 
-Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image inspect --stdin` 的 `file_path`。Skill 执行者不得从 `filename`、`media_id` 或 `run_id` 拼接本地路径。
+Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image inspect --stdin` 的 `file_path`。
 
 ## 输出与完成语义
 
-每个命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON，stderr 为空。命令级失败时，CLI 不在 stdout 输出 JSON，stderr 只包含一行 `ERROR_CODE: message`。
+每个使用 `--quiet` 的命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON，stderr 为空。命令级失败时，CLI 不在 stdout 输出 JSON，stderr 只包含一行 `ERROR_CODE: message`。
 
 ### generation resolve-media --stdin 输出
 
@@ -99,7 +99,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 {
   "runs": [
     {
-      "run_id": "run_123",
+      "run_id": "run_01234567-89ab-4cde-8fab-0123456789ab",
       "lookup_status": "available",
       "title": "角色立绘",
       "parameters": {
@@ -121,7 +121,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
       ]
     },
     {
-      "run_id": "run_missing",
+      "run_id": "run_89abcdef-0123-4567-89ab-cdef01234567",
       "lookup_status": "error",
       "error": {
         "code": "GENERATION_RUN_NOT_FOUND",
@@ -134,7 +134,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 `runs` 为每个输入 `run_id` 返回一个元素。成功元素的 `run_id` 是解析后的完整 Generation Run ID；错误元素的 `run_id` 保留输入值。某个 Run 没有已保存图片时，成功元素的 `images` 是空数组。逐 Run 错误不改变命令的退出码 `0`，并且不阻止 CLI 返回其他 Run 的结果。
 
-每个 `images` 数组先按 SQLite `BINARY` 顺序比较 `node_id`，再按数值升序比较 `output_index`，最后按 SQLite `BINARY` 顺序比较 `media_id`。因此 ASCII `node_id` `"10"` 排在 `"2"` 之前。`parameters` 是 Host 接受该 Run 时保存的原始 Generation Request 参数。
+`parameters` 是 Host 接受该 Run 时保存的原始 Generation Request 参数。
 
 ### image inspect --stdin 输出
 
@@ -147,7 +147,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 }
 ```
 
-`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 只包含视觉模型返回的图片观察文本，并且是 Skill 执行者用于 Prompt 对比的图片观察。该输出表示视觉模型调用已经完成，不表示 Prompt 对比已经完成。
+`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是本次视觉模型调用完成后返回的图片观察文本。Skill 执行者按“CLI 的用途与适用任务”章节完成后续语义对比。
 
 ## 错误、修正与重试
 
@@ -158,14 +158,14 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |
 | `CLI_REQUEST_INVALID` | stdin JSON 不符合对应命令的输入合同。Skill 执行者必须修正 JSON 属性、类型、数量或字符限制后重试。 |
 | `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |
-| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试，不得复用旧 capability。 |
+| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的短期调用凭证。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |
 | `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须删除多余 JSON 空白并缩短输入；`generation resolve-media --stdin` 仍然超限时，Skill 执行者必须把 Run ID 按更小批次查询。 |
 | `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。查询多个 Run 时，Skill 执行者必须减少每批 Run 数量后重试；查询单个 Run 或读取单张图片时，Skill 执行者必须报告错误并停止重试该请求。 |
 | `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |
 | `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |
 | `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并停止重试当前请求。 |
 
-上述命令级错误没有对应的逐 Run 结果。Skill 执行者不得为命令级错误编造 `run_id`。
+上述命令级错误没有对应的逐 Run 结果。Skill 执行者必须按命令级错误报告错误码和错误文本。
 
 ### generation resolve-media --stdin 错误
 
@@ -194,28 +194,28 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本，并继续处理其他图片。当前命名配置对应的模型服务恢复后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_EMPTY_RESPONSE` | Skill 执行者必须报告当前 `file_path` 没有观察文本，并继续处理其他图片。本次调用包含 `prompt` 时，Skill 执行者检查该 `prompt` 后可以重试；省略 `prompt` 时，用户检查当前配置的默认读图 Prompt 后可以重试。 |
 
-用户或宿主取消当前命令时，Skill 执行者必须立即结束本次 Skill 执行。调用取消不属于 `IMAGE_READER_PROVIDER_FAILED`，Skill 执行者不得继续调用后续图片。
+用户或宿主取消当前命令时，Skill 执行者必须将结果按取消处理，与 `IMAGE_READER_PROVIDER_FAILED` 分别报告，并立即结束本次 Skill 执行。
 
 ## 副作用与重复调用
 
 `generation resolve-media --stdin` 是只读命令。该命令不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt 对比结果。Skill 执行者可以为不同 Run 批次重复调用该命令；相同输入的后续调用重新读取当前 Host 存储状态。
 
-`image inspect --stdin` 不修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。Skill 执行者默认必须为每张图片调用一次；重试同一图片会再次发起请求。CLI 不缓存或覆盖前一次成功观察。
+`image inspect --stdin` 不修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。Skill 执行者重试同一图片时，该命令会再次发起视觉模型请求。CLI 不缓存或覆盖前一次成功观察。
 
 ## 完整调用示例
 
-以下 `run_123` 来自用户消息中的 Generation Run ID：
+以下 `run_01234567-89ab-4cde-8fab-0123456789ab` 来自用户消息中的 Generation Run ID：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin <<'JSON'
-{"run_ids":["run_123"]}
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin <<'JSON'
+{"run_ids":["run_01234567-89ab-4cde-8fab-0123456789ab"]}
 JSON
 ```
 
 假设前一条命令返回 `runs[0].images[0].file_path` 为 `/absolute/local/path/result.png`，Skill 执行者调用：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png"}
 JSON
 ```
@@ -223,7 +223,11 @@ JSON
 用户要求本次检查双手细节时，Skill 执行者调用：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png","prompt":"逐项观察双手的手指数、遮挡关系和明显形变；只报告图片中可见的内容。"}
 JSON
 ```
+
+## 帮助与操作提示
+
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
