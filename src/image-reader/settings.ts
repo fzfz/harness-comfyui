@@ -1,3 +1,4 @@
+import bundledProfiles from '../../config/image-reader-profiles.json' with { type: 'json' }
 import Schema from '@deepseek-ai/schemastery'
 
 export const IMAGE_READER_CONNECTION_TYPES = Object.freeze(['runtime', 'openai-compatible'] as const)
@@ -18,48 +19,7 @@ export const IMAGE_READER_MAX_TOKENS_MIN = 1
 export const IMAGE_READER_MAX_TOKENS_MAX = 32_768
 export const IMAGE_READER_DEFAULT_PROFILE_ID = 'default'
 
-export const IMAGE_READER_DEFAULT_PROMPT = `# Role
-
-You are a Master-level Vision Prompt Engineering Expert. Your task is to analyze the <|image|> and generate a response with a strictly ordered Tag List and a Stylized Spatial Caption.
-
-# Section 1: Strict Tagging Sequence (1-10)
-
-You must output the tags in this EXACT order:
-
-1. **Quality**: masterpiece, best quality
-2. **Aesthetic**: score_9, score_8
-3. **Period**: year 2025, newest
-4. **Meta**: highres, official art
-5. **Safety**: {safe, sensitive, nsfw, explicit} (Must be accurate)
-6. **Subject Count**: e.g., 1girl, 2girls
-7. **Character Names**: (Full name)
-8. **Series Names**: (Full series title)
-9. **Artist Tags**: ALWAYS prefix with @ (e.g., @artist_name)
-10. **General Tags**: (Visual details: hair, eyes, clothing, pose, background)
-
-# Section 2: Stylized Spatial Caption (The "Composition" Rule)
-
-Write a concise paragraph (max 60 words) that MUST integrate:
-
-- **Perspective & Interaction**: Camera angle (e.g., side view, low angle) and how the character's body contacts the environment (e.g., "hips resting on a ledge", "leaning back against a wall").
-
-# Constraints
-
-- **Order is Law**: Character/Series/Artist MUST come before General Tags.
-- **Safety Honesty**: If the image is suggestive (e.g., focusing on ass/cleavage), use "sensitive" or "nsfw".
-- **No Headers**: Do not output "Section 1" or "Part 2". Just the tags and the caption.
-
-# Mandatory Output Format (Strictly Follow)
-
-[Tag 1], [Tag 2], [Tag 3], [Tag 4], [Tag 5], [Tag 6], [Tag 7], [Tag 8], [Tag 9], [Tag 10]
-
-[Your Section 2 Caption Paragraph Here]
-
-# Example
-
-masterpiece, score_9, year 2025, highres, safe, 4girls, gotoh hitori, ijichi nijika, kita ikuyo, yamada ryo, bocchi the rock!, kessoku band, @tansuan_(ensj3875), @abpart, @magurotatakighn, @konya_karasue, @yunsang, @omone_hokoma_agm, @aoi_sakura_(seak5545), @gainoob, blonde hair, blue eyes, blue hair, blush, braid, closed eyes, closed mouth, color coordination, column lineup, crossed bangs, expressionless, floating hair, green eyes, grid lineup, long hair, looking at viewer, mole, mole under eye, multiple girls, one eye closed, open mouth, parted bangs, pink hair, red hair, short hair, side ponytail, side ponytail with braided base, smile, v, yellow eyes, absurdres, commentary request,
-
-Four Kessoku Band members are depicted in a dynamic, close-up composition, lying on their backs on water with expressive, varied facial expressions under bright, sparkling lighting.`
+export const IMAGE_READER_DEFAULT_PROMPT = bundledProfiles.configuration.profiles.find(profile => profile.id === IMAGE_READER_DEFAULT_PROFILE_ID)!.defaultPrompt
 
 export interface ImageReaderProfile {
   readonly id: string
@@ -111,7 +71,7 @@ export const IMAGE_READER_LEGACY_SETTINGS_DEFAULTS: LegacyImageReaderSettingsSec
   configuration: Object.freeze({
     provider: '',
     model: '',
-    defaultPrompt: '请准确描述图片中的主体、构图、姿态、服装、环境、光线、风格、明显缺陷和可见文字。只报告图片中可以观察到的内容。',
+    defaultPrompt: IMAGE_READER_DEFAULT_PROMPT,
     temperature: 0.2,
     maxTokens: 2048,
   }),

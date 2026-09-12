@@ -2,6 +2,12 @@ import runtime from '../../config/image-reader-runtime.json' with { type: 'json'
 import Schema from '@deepseek-ai/schemastery'
 import type { ImageReaderDefaultModel } from './settings.ts'
 
+export const imageReaderRuntimeSchema = Schema.object({
+  shutdownTimeoutMs: Schema.natural().min(1).required(),
+  diagnosticLogFormat: Schema.string().min(1).required(),
+})
+imageReaderRuntimeSchema(runtime)
+
 export interface Config { readonly shutdownTimeoutMs?: number; readonly imageReaderDefaultModel?: ImageReaderDefaultModel }
 export const Config = Schema.object({
   shutdownTimeoutMs: Schema.natural().min(1).default(runtime.shutdownTimeoutMs),

@@ -167,7 +167,8 @@
         "file_path: 必填绝对路径字符串，最长 10000 字符，无控制字符，来自用户或真实媒体查询。目标为非空 PNG/JPEG/WebP/GIF 普通文件，受当前输入大小限制。prompt: 可选非空白字符串，最多 32768 字符。",
         "输出与作用: provider、model、file_path、observation；每次调用产生一次视觉模型请求，不修改原图或生成记录。",
         "示例（按实际查询结果替换值）:\n{cli} image inspect --stdin <<'JSON'\n{\"file_path\": \"/absolute/path/result.png\"}\nJSON",
-        "省略 prompt 使用当前图片读取配置的 defaultPrompt；可在 Harness 设置 → 图片读取中查看和修改。需要针对当前图提问时，在输入 JSON 中提供 prompt。"
+        "省略 prompt 使用当前图片读取配置的 defaultPrompt；可在 Harness 设置 → 图片读取中查看和修改。需要针对当前图提问时，在输入 JSON 中提供 prompt。",
+        "IMAGE_READER_OUTPUT_LIMIT 表示视觉模型达到输出 token 上限，图片观察尚未正常结束；检查本次 prompt、当前图片读取配置的默认提示词和输出上限，修正后重新读取图片。"
       ],
       "next": [
         "按上方示例替换真实输入后执行命令；成功后读取 stdout JSON 和 stderr 的 NEXT 提示。"
@@ -280,6 +281,7 @@
     "IMAGE_READER_MODEL_UNAVAILABLE",
     "IMAGE_READER_MODEL_IMAGE_UNSUPPORTED",
     "IMAGE_READER_PROVIDER_FAILED",
-    "IMAGE_READER_EMPTY_RESPONSE"
+    "IMAGE_READER_EMPTY_RESPONSE",
+    "IMAGE_READER_OUTPUT_LIMIT"
   ]
 }

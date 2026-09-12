@@ -1,4 +1,6 @@
+import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
 import { Buffer } from 'node:buffer'
+import { imageReaderDiagnosticSchema, type ImageReaderDiagnostic } from '../../image-reader/diagnostics-schema.ts'
 
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, type LlmCallConfig, type PreparedLlmCall, type StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -44,6 +46,7 @@ export interface ImageReaderServiceOptions {
   readonly llm: {
     prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>
   }
+  readonly onDiagnostic?: (record: ImageReaderDiagnostic) => void
   readonly fetch?: typeof globalThis.fetch
 }
 
@@ -125,6 +128,10 @@ function responseRecord(value: unknown): Record<string, unknown> | undefined {
 function chatCompletionText(value: unknown): string | undefined {
   const body = responseRecord(value)
   const choice = Array.isArray(body?.choices) ? responseRecord(body.choices[0]) : undefined
+  if (choice?.finish_reason === 'length') {
+    const entry = errorCatalog.IMAGE_READER_OUTPUT_LIMIT
+    throw new ImageReaderError('IMAGE_READER_OUTPUT_LIMIT', `${entry.reason} ${entry.next_step}`)
+  }
   const message = responseRecord(choice?.message)
   return typeof message?.content === 'string' ? message.content.trim() : undefined
 }
@@ -136,7 +143,7 @@ function declaredResponseBytes(response: Response): number | undefined {
   return Number.isSafeInteger(bytes) ? bytes : undefined
 }
 
-async function limitedResponseJson(response: Response, signal?: AbortSignal): Promise<unknown> {
+async function limitedResponseJson(response: Response, signal?: AbortSignal, onComplete?: () => void): Promise<unknown> {
   if ((declaredResponseBytes(response) ?? 0) > IMAGE_READER_MAX_RESPONSE_BYTES) {
     throw new ImageReaderError(
       'IMAGE_READER_PROVIDER_FAILED',
@@ -171,6 +178,7 @@ async function limitedResponseJson(response: Response, signal?: AbortSignal): Pr
       }
       chunks.push(next.value)
     }
+    onComplete?.()
     const body = new Uint8Array(bytes)
     let offset = 0
     for (const chunk of chunks) {
@@ -224,15 +232,37 @@ export class ImageReaderService {
       )
     }
     const inspectionPrompt = prompt ?? profile.defaultPrompt
-    const input = await (this.options.prepareInput ?? prepareImageReaderInput)(
-      filePath,
-      this.options.attachments.imageLimits.maxImageBytes,
-      signal,
-    )
-    if (profile.connectionType === 'openai-compatible') {
-      return this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, inspectionPrompt, signal)
+    const started = performance.now()
+    let previous = started
+    let requestId: string | undefined
+    const emit = (stage: ImageReaderDiagnostic['stage'], providerRequestId?: string) => {
+      if (providerRequestId !== undefined && providerRequestId.length > 0) requestId = providerRequestId
+      const now = performance.now()
+      const record: ImageReaderDiagnostic = {
+        stage, elapsedMs: now - started, stageElapsedMs: now - previous,
+        profileId: profile.id, model: profile.model,
+        ...(requestId === undefined ? {} : { requestId }),
+      }
+      previous = now
+      imageReaderDiagnosticSchema(record)
+      this.options.onDiagnostic?.(Object.freeze(record))
     }
-    return this.inspectRuntime(profile, input, filePath, inspectionPrompt, options.sessionId, signal)
+    emit('preparing')
+    try {
+      const input = await (this.options.prepareInput ?? prepareImageReaderInput)(
+        filePath, this.options.attachments.imageLimits.maxImageBytes, signal,
+      )
+      emit('input_prepared')
+      const result = profile.connectionType === 'openai-compatible'
+        ? await this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, inspectionPrompt, emit, signal)
+        : await this.inspectRuntime(profile, input, filePath, inspectionPrompt, options.sessionId, emit, signal)
+      emit('completed')
+      return result
+    } catch (error) {
+      const providerRequestId = error instanceof ImageReaderError ? error.runtimeFailure?.requestId : undefined
+      emit(isAbortError(error, signal) ? 'cancelled' : 'failed', providerRequestId)
+      throw error
+    }
   }
 
   private async inspectRuntime(
@@ -241,6 +271,7 @@ export class ImageReaderService {
     filePath: string,
     prompt: string,
     sessionId: string | undefined,
+    emit: (stage: ImageReaderDiagnostic['stage'], requestId?: string) => void,
     signal?: AbortSignal,
   ): Promise<ImageInspection> {
     let attachment: ImageAttachmentRef
@@ -276,6 +307,7 @@ export class ImageReaderService {
       source: { kind: 'plugin', plugin: 'harness-comfyui' },
     })]
     ensureNotAborted(signal)
+    emit('request_sent')
     return Object.freeze({
       provider: prepared.config.provider,
       model: prepared.config.model,
@@ -290,6 +322,7 @@ export class ImageReaderService {
     input: PreparedImageReaderInput,
     filePath: string,
     prompt: string,
+    emit: (stage: ImageReaderDiagnostic['stage'], requestId?: string) => void,
     signal?: AbortSignal,
   ): Promise<ImageInspection> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -297,6 +330,7 @@ export class ImageReaderService {
     let response: Response
     try {
       ensureNotAborted(signal)
+      emit('request_sent')
       response = await this.fetch(profile.endpoint, {
         method: 'POST',
         headers,
@@ -322,13 +356,14 @@ export class ImageReaderService {
         { cause: error },
       )
     }
+    emit('response_headers', response.headers.get('x-request-id') ?? undefined)
     if (!response.ok) {
       throw new ImageReaderError(
         'IMAGE_READER_PROVIDER_FAILED',
         `The configured OpenAI-compatible endpoint returned HTTP ${response.status}.`,
       )
     }
-    const body = await limitedResponseJson(response, signal)
+    const body = await limitedResponseJson(response, signal, () => emit('response_complete'))
     const result = chatCompletionText(body)
     if (result === undefined) {
       throw new ImageReaderError(

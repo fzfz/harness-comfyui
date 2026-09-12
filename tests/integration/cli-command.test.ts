@@ -6,6 +6,8 @@ import { join, resolve } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
+import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeCliModule, sourceCliModulePath } from '../../scripts/production/cli-module.mjs'
 import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
@@ -376,6 +378,22 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
     })
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('reports an output limit through the Host route and installed CLI with an actionable next step', async () => {
+    const entry = errorCatalog.IMAGE_READER_OUTPUT_LIMIT
+    const server = await serveImageReader({ inspect: async () => {
+      throw new ImageReaderError('IMAGE_READER_OUTPUT_LIMIT', `${entry.reason} ${entry.next_step}`)
+    } })
+    try {
+      const result = await runCli({ args: ['image', 'inspect', '--stdin'], stdin: JSON.stringify({ file_path: '/media/result.png' }), apiUrl: server.apiUrl })
+      expect(result.exitCode).toBe(1)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toContain('IMAGE_READER_OUTPUT_LIMIT')
+      expect(result.stderr).toContain(entry.reason)
+      expect(result.stderr).toContain(entry.next_step)
+      expect(result.stderr).toContain('image inspect --help')
+    } finally { await server.close() }
   })
 
   it('prints the complete Host image provider diagnostic as one stderr line', async () => {
