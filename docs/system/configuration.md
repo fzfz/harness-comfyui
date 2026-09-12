@@ -195,6 +195,14 @@ Host 与 Client 使用同一固定顺序校验当前保存请求。每条名称�
 
 当前 Host 启动时同时注册旧 namespace `harness-comfyui-image-reader` 和新 namespace `harness-comfyui-image-reader-profiles`，并检查两个 namespace 的用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，当前 Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，当前 Host 不会重复迁移或覆盖。
 
+### 默认提示词与阶段诊断
+
+`src/image-reader/settings.ts` 从 `config/image-reader-profiles.json` 中 ID 为 `default` 的记录读取新建配置的默认提示词。内置配置采用事实观察用途。已保存的 Settings 用户值继续覆盖默认值；单次 `image inspect` 的 prompt 覆盖该次调用的活动配置提示词。
+
+`config/image-reader-runtime.json` 保存 `shutdownTimeoutMs` 和 `diagnosticLogFormat`，由 `src/image-reader/plugin-schema.ts` 校验。`shutdownTimeoutMs` 是插件卸载时等待已取消的活动请求退出的期限，以毫秒计，插件配置中的同名字段可覆盖此默认值；`diagnosticLogFormat` 是 Host logger 的阶段日志格式模板。`src/image-reader/diagnostics-schema.ts` 定义 stage、elapsedMs、stageElapsedMs、profileId、model 和可选 requestId；两个耗时字段均以毫秒计：`elapsedMs` 从本次图片准备开始前建立的计时起点计算，`stageElapsedMs` 从上一条阶段记录的时间计算，首条记录从本次计时起点计算。服务提供 `x-request-id` 响应头或 runtime 失败 request ID 时，日志记录该字段。响应头到达只代表 HTTP 响应已经开始；`response_complete` 表示正文读完，后续解析和完成原因检查通过后才记录 `completed`。
+
+OpenAI-compatible 的 `finish_reason=length` 对应 `IMAGE_READER_OUTPUT_LIMIT`；错误原因与操作指引由 `config/error-catalog.json` 提供，managed CLI 的帮助补充检查本次 prompt、默认提示词和输出上限的步骤。
+
 ## 图片迭代角色配置
 
 agent-presets/harness-comfyui-iteration/agent.cordis.yml 的 composition-agent、generation-agent、observation-agent、comparison-agent 四项均加载 ../project-iteration-dispatch.mjs。每项 config 的字段用途如下。

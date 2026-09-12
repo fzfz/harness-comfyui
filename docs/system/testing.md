@@ -284,3 +284,9 @@ tests/production/native-iteration-roles.test.mjs 从当前预设读取四份角�
 完整 `pnpm quality` 通过：1073 项 unit/integration/Skills、55 项 contract/security、278 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功。覆盖率为 statements 93.8%、branches 87.37%、functions 100%、lines 96.32%。Harness 完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。
 
 真实 Desktop 测试验证原生两列卡片、每页 8 项、末页剩余项、完整封面、分类详情和小窗口图片适配。详情及资源列表的返回操作保留滚动位置、焦点和选择。窄窗口弹窗验收位于会话及结果页验收之后，测试显式恢复保存的视口尺寸，并在结束时清理模拟视口。
+
+## v0.44.1 CLI 帮助与图片读取验证
+
+实现候选的完整 pnpm quality 通过：1174 项 unit/integration/Skills、56 项 contract/security、287 项 production、32 项 prototype、4 项 Desktop 自动化测试。覆盖率为 statements 93.98%、branches 87.49%、functions 100%、lines 96.4%。本仓库锁文件的完整依赖和生产依赖审计均为 critical 0、high 0、moderate 0、low 0。
+
+本版新增 CLI 帮助的 stdin 与运行时副作用检查、参数拆分错误指引、默认提示词、阶段诊断、输出上限错误和 logger 接入测试。真实原图回放、headless 受管 Bash 调用，以及尚未通过的视觉事实和 Desktop 会话验收统一记录在 [v0.44.1 发布说明](../releasenotes.md#harness-comfyui-v0441)。最终发布候选按发布规范再次执行完整门禁。

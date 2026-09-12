@@ -25,7 +25,11 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.44.0 的发布范围与 Desktop 基线
+## v0.44.1 的发布范围与 Desktop 基线
+
+v0.44.1 发布渐进式 CLI 帮助、参数修正指引、事实观察默认提示词、请求阶段日志与输出截断错误。Desktop 基线保持 config/desktop-baseline.json 中的现有版本。部署验收必须确认当前插件版本为 0.44.1，生产 checkout 与发布提交一致。部署保留已保存的图片读取配置；默认提示词修复、真实回放结果及尚未通过的验收见 [v0.44.1 发布说明](../releasenotes.md#harness-comfyui-v0441)。
+
+## v0.44.0 的历史发布范围与 Desktop 基线
 
 v0.44.0 将 managed CLI、Catalog/Generation、图片读取和 Web 展示分别装配，增加纯 DSH CLI Profile。Desktop、DSH 与 Electron 版本继续使用 config/desktop-baseline.json 的既有基线。部署验收必须确认当前插件版本为 0.44.0，生产 checkout 与发布提交一致，并完成本文规定的生产验收。已记录的 Desktop 真实模型验收超时和基线依赖公告见 [v0.44.0 发布说明](../releasenotes.md#harness-comfyui-v0440)。
 

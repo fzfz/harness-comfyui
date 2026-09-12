@@ -1,3 +1,23 @@
+# Harness ComfyUI v0.44.1
+
+## CLI 帮助与错误指引
+
+managed CLI 提供根、分类和叶命令的渐进式帮助，覆盖参数、stdin 示例及下一步操作。Desktop、Web Host、纯 DSH 启动入口、数据源客户端和三个提示词验证器同步提供帮助与操作指引。帮助在读取 stdin 或启动业务运行时之前处理。业务成功结果保持原 stdout 合同，NEXT 指引写入 stderr，`--quiet` 可省略成功指引。
+
+命令行把 `image inspect` 合并为一个参数时，CLI 返回参数错误并展示正确拆分方法。Skill 引用文档同步说明帮助入口和 stdout、stderr 的用途。
+
+## 图片读取默认配置与诊断
+
+仓库内置配置和新建图片读取配置使用事实观察提示词，保留模型、温度和输出上限。已有用户保存的命名配置继续使用原值。原标签提示词与现场 Qwen 模型的组合在原图回放中持续重复；非流式服务先返回响应头和保活空白，完整正文迟迟未返回，最终被外层期限取消。
+
+Host 增加请求阶段和耗时日志，区分响应头到达、响应体结束以及调用取消。OpenAI-compatible 返回 `finish_reason=length` 时报告 `IMAGE_READER_OUTPUT_LIMIT`，引导检查本次 prompt、当前图片读取配置的默认提示词和输出上限。
+
+## 验证与已知限制
+
+发布前实现检查通过：1174 项 unit/integration/Skills、56 项 contract/security、287 项 production、32 项 prototype、4 项 Desktop 自动化测试；覆盖率为 statements 93.98%、branches 87.49%、functions 100%、lines 96.4%。本仓库锁文件的完整依赖和生产依赖审计均为 critical 0、high 0、moderate 0、low 0。本次未新增或升级依赖，继续使用 Desktop 2.0.9、DSH 0.1.5-rc.1、Electron 43.3.0。已安装宿主依赖的既有公告见 [v0.44.0 依赖审核](#依赖审核)。
+
+原图使用现场模型、温度 0.2 和 max_tokens 8192，连续三次正常停止，分别耗时 25.39、29.89、30.77 秒。真实 headless Harness 的受管 Bash 两种调用均成功。独立 Reviewer 仍发现画外手部、遮挡姿态及视角误判，事实可靠性验收未通过。隔离 Desktop 健康启动通过，CUA 控制服务故障阻断了其中的真实会话验收；headless 成功和 Desktop 自动化测试分别记录。详细证据见[图片读取修复验证记录](../image-inspect-fix-verification.md)。
+
 # Harness ComfyUI v0.44.0
 
 ## 架构与运行入口
