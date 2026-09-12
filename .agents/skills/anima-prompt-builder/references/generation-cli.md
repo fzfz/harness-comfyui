@@ -7,7 +7,7 @@
 `DSH_HARNESS_COMFYUI_CLI` 保存 CLI 入口脚本路径。Skill 执行者使用以下命令：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" generation run-inputs --stdin
+node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
 ```
 
 ## 标准输入
@@ -26,7 +26,7 @@ Skill 执行者把用户给出的 `run_id` 按原顺序写入只包含 `run_ids`
 
 ## 成功输出
 
-命令成功时返回退出码 `0`，stderr 为空，stdout 写入一行只包含 `runs` 的 JSON 对象。`runs` 是数组，其元素数量和元素顺序必须分别与输入 `run_ids` 的元素数量和元素顺序一致。
+使用 `--quiet` 的命令成功时返回退出码 `0`，stderr 为空，stdout 写入一行只包含 `runs` 的 JSON 对象。`runs` 是数组，其元素数量和元素顺序必须分别与输入 `run_ids` 的元素数量和元素顺序一致。
 
 ### `runs` 数组项：生成参数和 Actual Workflow 均可用
 
@@ -94,31 +94,35 @@ Skill 执行者按照 `runs[]` 的顺序处理每个结果项。一个结果项�
 
 - `GENERATION_RUN_ID_INVALID`：输入字符串不符合完整 Run ID 或短 Run ID 格式。Skill 执行者请求用户提供符合“标准输入”一节格式的 Run ID。
 - `GENERATION_RUN_ID_AMBIGUOUS`：短 Run ID 匹配多个 Generation Run。Skill 执行者请求用户提供更长的 UUID 起始片段或完整 Run ID。
-- `GENERATION_RUN_NOT_FOUND`：没有找到匹配的 Generation Run。Skill 执行者向用户说明未找到与该结果项 `run_id` 匹配的 Generation Run。
-- `GENERATION_REQUEST_INVALID`：该 Generation Run 保存的生成参数无法解析。Skill 执行者报告 `error.message`。
-- `GENERATION_RUN_LOOKUP_FAILED`：读取该 Generation Run 时发生其他错误。Skill 执行者报告 `error.message`。
+- `GENERATION_RUN_NOT_FOUND`：没有找到匹配的 Generation Run。Skill 执行者向用户说明未找到与该结果项 `run_id` 匹配的 Generation Run，并请用户核对后提供正确的 Run ID。
+- `GENERATION_REQUEST_INVALID`：该 Generation Run 保存的生成参数无法解析。Skill 执行者报告 `error.message`，并请用户直接提供该次生成的参数，或提供另一个可查询的 Run ID。
+- `GENERATION_RUN_LOOKUP_FAILED`：读取该 Generation Run 时发生其他错误。Skill 执行者报告 `error.message`，并告知用户可以在解决消息所述问题后明确要求重新查询。
 
 ## 命令级错误与返回协议错误
 
 命令返回非零退出码时，Skill 执行者检查 stdout 是否为空，并检查 stderr 是否为一行 `错误码: 错误消息`。任一条件不满足时，Skill 执行者逐条报告违反的返回协议条件并停止本次历史查询。两项条件均满足时，Skill 执行者按照以下规则处理：
 
-- stderr 中的错误码为 `CLI_REQUEST_INVALID` 时，Skill 执行者检查标准输入 JSON 是否只包含 `run_ids` 属性，并检查 `run_ids` 是否为包含 1 至 20 个字符串的数组。Skill 执行者发现并修正自己构造的 JSON 后自动重试一次；该次重试是本次历史查询唯一允许的自动重试。Skill 执行者没有发现可修正的输入错误时，不重试，直接报告 stderr 并停止本次历史查询。自动重试返回非零退出码时，Skill 执行者按照本节首段重新检查 stdout 和 stderr；任一返回协议条件不满足时，逐条报告违反的条件并停止本次历史查询；两项条件均满足时，报告 stderr 并停止本次历史查询。自动重试返回退出码 `0` 时，Skill 执行者按照本节最后一段检查 stderr 和 stdout。
-- stderr 中的错误码不是 `CLI_REQUEST_INVALID` 时，Skill 执行者不重试，报告 stderr 并停止本次历史查询。
+- stderr 中的错误码为 `CLI_REQUEST_INVALID` 时，Skill 执行者按照“标准输入”一节检查自己构造的 JSON。Skill 执行者发现并修正自己构造的 JSON 后自动重试一次；该次重试是本次历史查询唯一允许的自动重试。Skill 执行者没有发现可修正的输入错误时，直接报告 stderr 并停止本次历史查询。自动重试返回非零退出码时，Skill 执行者按照本节首段重新检查 stdout 和 stderr；任一返回协议条件不满足时，逐条报告违反的条件并停止本次历史查询；两项条件均满足时，报告 stderr 并停止本次历史查询。自动重试返回退出码 `0` 时，Skill 执行者按照本节最后一段检查 stderr 和 stdout。
+- stderr 中的错误码不是 `CLI_REQUEST_INVALID` 时，Skill 执行者报告 stderr 并停止本次历史查询。
 
-命令返回退出码 `0` 后，如果 stderr 非空，Skill 执行者报告 stderr 内容并停止本次历史查询。如果 stdout 不是单行 JSON 对象、该对象包含 `runs` 之外的属性、`runs` 不是数组、`runs` 的元素数量与输入 `run_ids` 的元素数量不同、`runs` 的元素不能按输入 `run_ids` 的顺序一一对应，或者任一结果项不符合“成功输出”一节定义的对应结构，Skill 执行者逐条报告 stdout 违反的返回协议条件，并停止本次历史查询。
+使用 `--quiet` 的命令返回退出码 `0` 后，如果 stderr 非空，Skill 执行者报告 stderr 内容并停止本次历史查询。如果 stdout 不是单行 JSON 对象、该对象包含 `runs` 之外的属性、`runs` 不是数组、`runs` 的元素数量与输入 `run_ids` 的元素数量不同、`runs` 的元素不能按输入 `run_ids` 的顺序一一对应，或者任一结果项不符合“成功输出”一节定义的对应结构，Skill 执行者逐条报告 stdout 违反的返回协议条件，并停止本次历史查询。
 
 ## 调用次数与结果复用
 
-Skill 执行者把用户一次查询请求中给出的全部 `run_id` 按原顺序放入同一个 `run_ids` 数组。用户给出的 `run_id` 数量不在 1 至 20 个范围内时，Skill 执行者请求用户提供 1 至 20 个 `run_id`，并且不调用命令。
+Skill 执行者按照“标准输入”一节，将用户一次查询请求中的全部 `run_id` 构造成一个输入数组。用户提供的数量超出该节规定的范围时，Skill 执行者请求用户提供符合数量要求的 `run_id`，并在收到符合要求的输入后继续查询。
 
 只有同时满足退出码为 `0`、stderr 为空且 stdout 符合“成功输出”一节全部返回协议的调用，才产生可复用结果。Skill 执行者按照该次调用使用的完整 `run_ids` 数组及其元素顺序保存可复用结果。
 
 Skill 执行者按照以下顺序处理当前完整 `run_ids` 数组：
 
-1. 用户明确要求重新查询当前完整 `run_ids` 数组时，Skill 执行者使用该数组调用命令一次，不复用已有结果。
-2. 用户没有明确要求重新查询，并且本次 Skill 执行中已有一次成功调用使用了内容和顺序完全相同的 `run_ids` 数组时，Skill 执行者不调用命令，按照数组下标复用该次调用的 `runs[]` 结果项。重复的 `run_id` 分别复用其所在位置对应的结果项。
+1. 用户明确要求重新查询当前完整 `run_ids` 数组时，Skill 执行者使用该数组发起一次新的调用，并使用该次调用的结果。
+2. 用户没有明确要求重新查询，并且本次 Skill 执行中已有一次成功调用使用了内容和顺序完全相同的 `run_ids` 数组时，Skill 执行者直接按照数组下标复用该次调用的 `runs[]` 结果项。重复的 `run_id` 分别复用其所在位置对应的结果项。
 3. 用户没有明确要求重新查询，并且当前完整 `run_ids` 数组没有可复用结果时，Skill 执行者使用该数组发起一次初始调用。
 
-第 1 项或第 3 项产生的调用返回后，Skill 执行者按照“命令级错误与返回协议错误”一节处理该次返回。该次调用因 `CLI_REQUEST_INVALID` 触发自动重试时，Skill 执行者只使用修正后的标准输入 JSON 中的完整 `run_ids` 数组重试一次。初始调用、用户明确要求的重新查询和该次唯一允许的自动重试之外，Skill 执行者不再调用命令。
+第 1 项或第 3 项产生的调用返回后，Skill 执行者按照“命令级错误与返回协议错误”一节处理该次返回。该节允许的自动重试必须使用修正后的标准输入 JSON 中的完整 `run_ids` 数组。Skill 执行者将命令调用限定为初始调用、用户明确要求的重新查询，以及该节规定的唯一一次自动重试。
 
 初始调用、用户明确要求的重新查询或自动重试满足成功条件时，Skill 执行者保存该次调用的可复用结果，并按照“成功输出”和“单项错误处理”两节处理 `runs[]`。调用没有满足成功条件时，Skill 执行者按照“命令级错误与返回协议错误”一节报告对应错误并停止本次历史查询。
+
+## 帮助与操作提示
+
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

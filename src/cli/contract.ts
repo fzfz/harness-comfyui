@@ -1,3 +1,4 @@
+import help from '../../config/managed-cli-help.json' with { type: 'json' }
 import {
   parseCatalogPageNumber,
   parseCatalogQueryText,
@@ -89,7 +90,7 @@ function exactKeys(value: Record<string, unknown>, expected: readonly string[], 
   const keys = Object.keys(value).sort()
   const wanted = [...expected].sort()
   if (keys.length !== wanted.length || keys.some((key, index) => key !== wanted[index])) {
-    throw new TypeError(`${label} has invalid properties`)
+    throw new TypeError(help.messages.invalidProperties.replaceAll('{label}', label).replaceAll('{expected}', wanted.join(', ')).replaceAll('{actual}', keys.join(', ')))
   }
 }
 
@@ -267,7 +268,7 @@ function optionMap(argv: readonly string[], allowed: readonly string[]): Map<str
   for (let index = 0; index < argv.length; index += 2) {
     const name = argv[index]!
     const value = argv[index + 1]!
-    if (!allowed.includes(name) || options.has(name)) throw new TypeError('CLI command options are invalid')
+    if (!allowed.includes(name) || options.has(name)) throw new TypeError(help.messages.invalidOption.replaceAll('{option}', name).replaceAll('{allowed}', allowed.join(', ')))
     options.set(name, value)
   }
   return options
@@ -381,7 +382,7 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
       ...(hasPrompt ? { prompt: source.prompt } : {}),
     })
   }
-  throw new TypeError('CLI command is invalid')
+  throw new TypeError(help.messages.invalidCommand.replace('{argv}', JSON.stringify(argv)))
 }
 
 export function toGenerationRequest(request: CliGenerationRequest): GenerationRequest {

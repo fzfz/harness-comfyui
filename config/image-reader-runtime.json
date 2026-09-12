@@ -1,3 +1,4 @@
 {
-  "shutdownTimeoutMs": 5000
+  "shutdownTimeoutMs": 5000,
+  "diagnosticLogFormat": "Image inspection stage: %s"
 }

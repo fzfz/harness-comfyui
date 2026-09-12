@@ -53,6 +53,7 @@ export class ImageReaderPluginService extends Service {
 export async function apply(ctx: Context, config: Config): Promise<void> {
   const defaults = config.imageReaderDefaultModel === undefined ? undefined : createImageReaderSettingsDefaults(config.imageReaderDefaultModel)
   const scope = await registerImageReaderSettings(ctx, defaults)
-  const service = new ImageReaderPluginService(ctx, new ImageReaderConfigurationService(ctx.llm, scope), new ImageReaderService({ scope, attachments: ctx.attachments, llm: ctx.llm }), config.shutdownTimeoutMs ?? runtime.shutdownTimeoutMs)
+  const logger = ctx.logger('harness-comfyui-image-reader')
+  const service = new ImageReaderPluginService(ctx, new ImageReaderConfigurationService(ctx.llm, scope), new ImageReaderService({ scope, attachments: ctx.attachments, llm: ctx.llm, onDiagnostic: record => logger.info(runtime.diagnosticLogFormat, JSON.stringify(record)) }), config.shutdownTimeoutMs ?? runtime.shutdownTimeoutMs)
   ctx.effect(() => registerProjectTools(ctx, [createInspectImageTool(service)]), 'Image inspection Tool')
 }

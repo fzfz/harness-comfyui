@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import help from '../../config/desktop-cli-help.json' with { type: 'json' }
+import { presentationArguments, renderHelp, helpHint, nextSteps } from '../cli/help.mjs'
+
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -46,11 +49,17 @@ export async function runDesktopDevelopmentCommand(command, options = {}) {
   return runDesktopLifecycleCommand(command, options)
 }
 
-export async function runDesktopCommandMain(argv, runCommand) {
-  const { command } = parseArguments(argv)
-  const result = await runCommand(command)
+export async function runDesktopCommandMain(argv, runCommand, definition = help) {
+  const { args, quiet } = presentationArguments(argv)
+  const output = renderHelp(definition, args)
+  if (output !== undefined) { process.stdout.write(output); return 0 }
+  let command
+  try { ({ command } = parseArguments(args)) } catch (error) { throw new Error(`${error.message}. ${helpHint(definition, args)}`) }
+  let result
+  try { result = await runCommand(command) } catch (error) { throw new Error(`${error.message}. ${helpHint(definition, args)}`) }
   if (result.status === 'logs') process.stdout.write(result.output)
   else process.stdout.write(`${JSON.stringify(result)}\n`)
+  nextSteps(definition, command, quiet && result.status !== 'failed', { status: result.status })
   return result.status === 'failed' ? 1 : 0
 }
 

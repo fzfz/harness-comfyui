@@ -217,6 +217,7 @@ export class GenerationSourceCli implements GenerationSource {
     const effectiveSignal = signal ?? new AbortController().signal
     const address = readSourceAddress(this.options.settings)
     const output = await this.execute(this.options.executable, [
+      '--quiet',
       '--url', address.url,
       '--port', String(address.port),
       '--timeout-ms', String(SOURCE_QUERY_TIMEOUT_MS),

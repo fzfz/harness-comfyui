@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { renderedHelp, sourceNext, sourceErrorNext } from './guidance.mjs';
 
 import { request as requestHttp } from 'node:http';
 import { request as requestHttps } from 'node:https';
@@ -11,7 +12,7 @@ const CLI_VERSION = '2.0.0';
 const DEFAULT_TIMEOUT_MS = 120000;
 const DISCOVERY_PATH = '/internal/semantic';
 const HTTP_METHODS = Object.freeze(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
-const GLOBAL_OPTION_NAMES = new Set(['url', 'port', 'path', 'timeout-ms', 'help', 'version', 'discovery-json']);
+const GLOBAL_OPTION_NAMES = new Set(['url', 'port', 'path', 'timeout-ms', 'help', 'version', 'discovery-json', 'quiet']);
 const BUSINESS_OPTION_NAMES = new Set(['mode', 'query', 'page', 'page_size', 'base_model_id', 'work_id', 'id']);
 const KNOWN_OPTION_NAMES = new Set([...GLOBAL_OPTION_NAMES, ...BUSINESS_OPTION_NAMES]);
 const CATALOG_OPERATION_PATH_PATTERN = /^\/internal\/semantic\/[^/?#]+$/u;
@@ -169,9 +170,15 @@ function parseArguments(argv) {
     dynamicArguments: [],
     businessArguments: Object.create(null)
   };
+  parsed.quiet = false;
   const seen = new Set();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
+    if (argument === '--quiet') {
+      if (parsed.quiet) fail('INVALID_ARGUMENT', '--quiet may appear only once');
+      parsed.quiet = true;
+      continue;
+    }
     if (!argument.startsWith('--')) fail('INVALID_ARGUMENT', `positional arguments are not supported: ${argument}`);
     if (argument.includes('=')) fail('INVALID_ARGUMENT', `equals-form arguments are not supported: ${argument}`);
     if (argument === '--help') {
@@ -983,7 +990,7 @@ function parseResponseJson(body, label) {
   }
   if (text.trim() === '') fail('CONTRACT_PROTOCOL_ERROR', `${label} must be a non-empty JSON value`, 6);
   try {
-    JSON.parse(text);
+    return JSON.parse(text);
   } catch {
     fail('CONTRACT_PROTOCOL_ERROR', `${label} must be one JSON value`, 6);
   }
@@ -1024,11 +1031,11 @@ async function executeQuery({ request }, execution) {
   }
   execution.throwIfAborted();
   const status = response.status;
-  parseResponseJson(response.body, status >= 200 && status < 300 ? 'successful query response' : 'Catalog error response');
+  const result = parseResponseJson(response.body, status >= 200 && status < 300 ? 'successful query response' : 'Catalog error response');
   if (status >= 200 && status < 300) {
     execution.throwIfAborted();
     process.stdout.write(response.body);
-    return;
+    return result;
   }
   execution.throwIfAborted();
   throw new ServiceHttpError(response.body, 7);
@@ -1084,11 +1091,11 @@ function renderPathHelp({ url, port, path, operation, details }) {
     'Output:',
     "  The CLI requires the target service's 2xx response body to be non-empty, strictly UTF-8, and exactly one JSON value.",
     '  The CLI does not validate the 2xx response body against a response Schema or validate its fields.',
-    '  The CLI writes the original 2xx response body Buffer to stdout without adding or removing bytes, writes nothing to stderr, and exits with code 0.',
-    '  For any non-2xx response with a non-empty, strictly UTF-8 body containing exactly one JSON value, the CLI writes the original response body Buffer to stderr without adding or removing bytes, writes nothing to stdout, and exits with code 7.',
+    '  The CLI writes the original 2xx response body Buffer to stdout without adding or removing bytes, writes NEXT guidance to stderr (empty with --quiet), and exits with code 0.',
+    '  For any non-2xx response with a non-empty, strictly UTF-8 body containing exactly one JSON value, the CLI writes the original response body Buffer to stderr without changing the body bytes, then appends NEXT guidance, writes nothing to stdout, and exits with code 7.',
     '  The CLI does not validate the non-2xx HTTP status declaration, response Schema, response fields, or error code.',
-    '  For an empty body, invalid UTF-8 body, invalid JSON body, or body containing multiple JSON values, the CLI writes a fixed CONTRACT_PROTOCOL_ERROR object to stderr, writes nothing to stdout, and exits with code 6.',
-    '  The CLI reports argument failures with its fixed CLI error object and exit code 2, connection failures with exit code 4, timeout failures with exit code 5, and SIGINT or SIGTERM cancellation with exit code 130 or 143; each failure writes only the fixed CLI error object to stderr and writes nothing to stdout.'
+    '  For an empty body, invalid UTF-8 body, invalid JSON body, or body containing multiple JSON values, the CLI writes a fixed CONTRACT_PROTOCOL_ERROR object followed by NEXT guidance to stderr, writes nothing to stdout, and exits with code 6.',
+    '  The CLI reports argument failures with its fixed CLI error object and exit code 2, connection failures with exit code 4, timeout failures with exit code 5, and SIGINT or SIGTERM cancellation with exit code 130 or 143; each failure writes the CLI error object and NEXT guidance to stderr and writes nothing to stdout.'
   );
   return `${lines.join('\n')}\n`;
 }
@@ -1136,7 +1143,7 @@ async function main(argv = [], testHooks = {}) {
     return;
   }
   if (options.help && options.path === null && options.port === null && options.url === null) {
-    process.stdout.write(renderTopLevelHelp({ url: null, port: null, operations: [] }));
+    process.stdout.write(renderedHelp('semantic', CLI_NAME, renderTopLevelHelp({ url: null, port: null, operations: [] })));
     return;
   }
   if (options.url === null || options.port === null) fail('INVALID_ARGUMENT', '--url and --port are required before contacting the Source service');
@@ -1148,6 +1155,7 @@ async function main(argv = [], testHooks = {}) {
     const operations = collectOperations(discovery);
     if (options.discoveryJson) {
       process.stdout.write(discoveryResponse.buffer);
+      sourceNext('semantic', options);
       return;
     }
     if (options.path !== null) {
@@ -1156,27 +1164,28 @@ async function main(argv = [], testHooks = {}) {
       const details = operationParameters({ discovery, path: selected.path, operation: selected.operation });
       if (options.help) {
         if (options.dynamicArguments.length > 0) fail('INVALID_ARGUMENT', 'path help does not accept business parameters');
-        process.stdout.write(renderPathHelp({ url: options.url, port: options.port, path: selected.path, operation: selected, details }));
+        process.stdout.write(renderedHelp('semantic', CLI_NAME, renderPathHelp({ url: options.url, port: options.port, path: selected.path, operation: selected, details })));
         return;
       }
       const mode = options.businessArguments.mode;
       const modeDetails = requestDetailsForMode(details, mode);
       const parsedInput = parseDynamicInput({ details: modeDetails, dynamicArguments: options.dynamicArguments });
       execution.throwIfAborted();
-      await executeQuery({
+      const result = await executeQuery({
         request: buildQueryRequest({ url: options.url, port: options.port, selected, details: modeDetails, parsedInput }),
         discovery,
         operation: selected.operation
       }, execution);
+      sourceNext('semantic', options, result);
       return;
     }
-    process.stdout.write(renderTopLevelHelp({ url: options.url, port: options.port, operations }));
+    process.stdout.write(renderedHelp('semantic', CLI_NAME, renderTopLevelHelp({ url: options.url, port: options.port, operations })));
   } finally {
     execution.dispose();
   }
 }
 
-function writeError(error) {
+function writeErrorBody(error) {
   if (error instanceof ServiceHttpError) {
     process.stderr.write(error.responseBody);
     process.exitCode = error.exitCode;
@@ -1212,6 +1221,11 @@ function writeError(error) {
   }
   process.stderr.write(`${safeJsonStringify({ error: { code: publicError.code, message: publicError.message } })}\n`);
   process.exitCode = publicError.exitCode;
+}
+
+function writeError(error) {
+  writeErrorBody(error);
+  sourceErrorNext('semantic', error);
 }
 
 if (process.argv[1] !== undefined && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) main(process.argv.slice(2)).catch(writeError);

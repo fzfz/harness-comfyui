@@ -6,6 +6,8 @@ import { join, resolve } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
+import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeCliModule, sourceCliModulePath } from '../../scripts/production/cli-module.mjs'
 import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
@@ -42,6 +44,7 @@ async function runCli(input: {
   readonly stdin?: string
   readonly apiUrl: string
   readonly capability?: string
+  readonly keepStdinOpen?: boolean
 }): Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [cliPath, ...input.args], {
@@ -62,7 +65,7 @@ async function runCli(input: {
       stdout: Buffer.concat(stdout).toString('utf8'),
       stderr: Buffer.concat(stderr).toString('utf8'),
     }))
-    child.stdin.end(input.stdin ?? '')
+    if (!input.keepStdinOpen) child.stdin.end(input.stdin ?? '')
   })
 }
 
@@ -93,7 +96,82 @@ async function serveImageReader(imageReader: unknown) {
   }
 }
 
+function expectCliResult(actual: {exitCode: number; stdout: string; stderr: string}, expected: {exitCode: number; stdout: string; stderr: string}) {
+  expect(actual.exitCode).toBe(expected.exitCode)
+  expect(actual.stdout).toBe(expected.stdout)
+  if (expected.exitCode === 0) expect(actual.stderr).toMatch(/^NEXT: /)
+  else {
+    expect(actual.stderr).toContain(expected.stderr.trimEnd())
+    expect(actual.stderr).toContain('--help')
+  }
+}
+
 describe('installed managed Harness ComfyUI CLI executable', () => {
+  it.each(['--quiet', '--help'])('preserves literal query value %s', async query => {
+    const result = await runCli({ args: ['catalog', 'search', '--kind', 'model', '--query', query, '--page', '1'], apiUrl: 'invalid' })
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain('CLI_ENVIRONMENT_INVALID:')
+    expect(result.stdout).toBe('')
+  })
+  it('keeps successful JSON identical when quiet suppresses the next action', async () => {
+    const host = await serveImageReader({ inspect: async () => ({ provider: 'test', model: 'vision', filePath: '/tmp/image.png', observation: 'blue square' }) })
+    try {
+      const input = { apiUrl: host.apiUrl, stdin: '{"file_path":"/tmp/image.png"}' }
+      const normal = await runCli({ ...input, args: ['image', 'inspect', '--stdin'] })
+      const quiet = await runCli({ ...input, args: ['image', 'inspect', '--stdin', '--quiet'] })
+      expect(normal.exitCode).toBe(0)
+      expect(quiet.exitCode).toBe(0)
+      expect(normal.stdout).toBe(quiet.stdout)
+      expect(normal.stderr).toContain('observation')
+      expect(quiet.stderr).toBe('')
+    } finally { await host.close() }
+  })
+
+  it.each([
+    ['catalog'], ['catalog', 'template'], ['catalog', 'template', 'resolve'],
+    ['catalog', 'generation-model'], ['catalog', 'generation-model', 'resolve'],
+    ['catalog', 'lora'], ['catalog', 'lora', 'resolve'], ['catalog', 'instance'], ['catalog', 'instance', 'list'], ['catalog', 'search'],
+    ['generation'], ['generation', 'submit'], ['generation', 'inspect-template-parameters'], ['generation', 'random-seeds'], ['generation', 'run-inputs'], ['generation', 'resolve-media'],
+  ])('provides offline help for %j', async (...command) => {
+    const result = await runCli({ args: [...command, '--help'], apiUrl: '', keepStdinOpen: true })
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('下一步')
+    expect(result.stderr).toBe('')
+  })
+
+  it.each([
+    ['image inspect --stdin'], ['image inspect', '--stdin'], ['image', 'inspect'],
+    ['image', 'inspect', '--stdin', '--extra'], ['--hlep'], ['--quiet', '--quiet'],
+  ])('classifies malformed argv %j before reading input', async (...args) => {
+    const result = await runCli({ args, apiUrl: '', keepStdinOpen: true })
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain('CLI_ARGUMENT_INVALID')
+    expect(result.stderr).toContain('--help')
+  })
+  it('guides from offline root help to image help without waiting for stdin', async () => {
+    for (const args of [['--help'], ['image', '--help'], ['image', 'inspect', '--help']]) {
+      const result = await runCli({ args, apiUrl: '', keepStdinOpen: true })
+      expect(result.exitCode).toBe(0)
+      expect(result.stderr).toBe('')
+      expect(result.stdout).toContain('下一步')
+      expect(result.stdout).toContain('image')
+      if (args.length === 3) {
+        expect(result.stdout).toContain('file_path')
+        expect(result.stdout).toContain('EOF')
+        expect(result.stdout).toContain('observation')
+      }
+    }
+  })
+
+  it('explains the production Python argv mistake as an argument error', async () => {
+    const result = await runCli({ args: ['image inspect', '--stdin'], stdin: '{}', apiUrl: '' })
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain('CLI_ARGUMENT_INVALID:')
+    expect(result.stderr).toContain("'image', 'inspect', '--stdin'")
+    expect(result.stderr).toContain('image inspect --help')
+    expect(result.stdout).toBe('')
+  })
+
   it('derives the source runtime output from the managed CLI artifact definition', () => {
     expect(sourceCliModulePath(process.cwd()))
       .toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
@@ -131,7 +209,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       capability: 'capability_from_host',
     })
 
-    expect(result).toEqual({ exitCode: 0, stdout: '{"run_id":"run_cli_1"}\n', stderr: '' })
+    expectCliResult(result, { exitCode: 0, stdout: '{"run_id":"run_cli_1"}\n', stderr: '' })
     expect(authorization).toBe('Bearer capability_from_host')
     expect(posted).toEqual({ command: 'generation.submit', request: generation })
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
@@ -173,7 +251,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
     })
 
-    expect(result).toEqual({ exitCode: 0, stdout: `${JSON.stringify(data)}\n`, stderr: '' })
+    expectCliResult(result, { exitCode: 0, stdout: `${JSON.stringify(data)}\n`, stderr: '' })
     expect(posted).toEqual({ command: 'generation.run-inputs', run_ids: ['run_1', 'missing'] })
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
@@ -208,12 +286,12 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl,
     })
 
-    expect(inspection).toEqual({
+    expectCliResult(inspection, {
       exitCode: 0,
       stdout: `${JSON.stringify({ parameters: [], size_candidates: [] })}\n`,
       stderr: '',
     })
-    expect(seeds).toEqual({ exitCode: 0, stdout: `${JSON.stringify({ seeds: [12, 34] })}\n`, stderr: '' })
+    expectCliResult(seeds, { exitCode: 0, stdout: `${JSON.stringify({ seeds: [12, 34] })}\n`, stderr: '' })
     expect(posted).toEqual([
       { command: 'generation.inspect-template-parameters', template_id: '34', instance_id: '2' },
       { command: 'generation.random-seeds', count: 2 },
@@ -266,9 +344,9 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl,
     })
 
-    expect(mediaResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(media)}\n`, stderr: '' })
-    expect(inspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
-    expect(promptedInspectionResult).toEqual({ exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
+    expectCliResult(mediaResult, { exitCode: 0, stdout: `${JSON.stringify(media)}\n`, stderr: '' })
+    expectCliResult(inspectionResult, { exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
+    expectCliResult(promptedInspectionResult, { exitCode: 0, stdout: `${JSON.stringify(inspection)}\n`, stderr: '' })
     expect(posted).toEqual([
       { command: 'generation.resolve-media', run_ids: ['run_1'] },
       { command: 'image.inspect', file_path: '/media/result.png' },
@@ -293,13 +371,29 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
     })
 
-    expect(result).toEqual({
+    expectCliResult(result, {
       exitCode: 2,
       stdout: '',
-      stderr: 'CLI_ARGUMENT_INVALID: CLI command is invalid\n',
+      stderr: 'CLI_ARGUMENT_INVALID: CLI command is invalid; received argv: ["image","run-media","--stdin"]. Pass the command words and options shown by --help\n',
     })
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('reports an output limit through the Host route and installed CLI with an actionable next step', async () => {
+    const entry = errorCatalog.IMAGE_READER_OUTPUT_LIMIT
+    const server = await serveImageReader({ inspect: async () => {
+      throw new ImageReaderError('IMAGE_READER_OUTPUT_LIMIT', `${entry.reason} ${entry.next_step}`)
+    } })
+    try {
+      const result = await runCli({ args: ['image', 'inspect', '--stdin'], stdin: JSON.stringify({ file_path: '/media/result.png' }), apiUrl: server.apiUrl })
+      expect(result.exitCode).toBe(1)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toContain('IMAGE_READER_OUTPUT_LIMIT')
+      expect(result.stderr).toContain(entry.reason)
+      expect(result.stderr).toContain(entry.next_step)
+      expect(result.stderr).toContain('image inspect --help')
+    } finally { await server.close() }
   })
 
   it('prints the complete Host image provider diagnostic as one stderr line', async () => {
@@ -322,7 +416,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
     })
 
-    expect(result).toEqual({
+    expectCliResult(result, {
       exitCode: 1,
       stdout: '',
       stderr: `IMAGE_READER_PROVIDER_FAILED: ${diagnostic}\n`,
@@ -374,7 +468,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
 
     expect(result.exitCode).toBe(2)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toBe('CLI_REQUEST_INVALID: CLI request run_ids must contain between 1 and 20 strings\n')
+    expect(result.stderr).toContain('CLI_REQUEST_INVALID: CLI request run_ids must contain between 1 and 20 strings')
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
@@ -399,7 +493,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
 
       expect(result.exitCode).toBe(2)
       expect(result.stdout).toBe('')
-      expect(result.stderr).toContain('CLI_ARGUMENT_INVALID: ')
+      expect(result.stderr).toContain('CLI_REQUEST_INVALID: ')
     }
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
@@ -415,7 +509,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl: 'http://127.0.0.1:1/api/harness-comfyui/cli/v1',
     })
 
-    expect(result).toEqual({
+    expectCliResult(result, {
       exitCode: 2,
       stdout: '',
       stderr: 'CLI_REQUEST_TOO_LARGE: stdin exceeds the maximum request size\n',
@@ -466,7 +560,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl: 'https://example.com/api/harness-comfyui/cli/v1',
     })
 
-    expect(hostFailure).toEqual({
+    expectCliResult(hostFailure, {
       exitCode: 1,
       stdout: '',
       stderr: 'CATALOG_QUERY_FAILED: Catalog is unavailable.\n',

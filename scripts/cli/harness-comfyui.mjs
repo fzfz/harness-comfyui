@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 import { stdin, stdout, stderr } from 'node:process'
+import definition from '../../config/managed-cli-help.json' with { type: 'json' }
+import { parseManagedHelpDefinition } from './help-schema.mjs'
+const help = parseManagedHelpDefinition(definition)
+import { presentationArguments, renderHelp, helpHint, nextSteps, shellQuote } from './help.mjs'
 
 import {
   CLI_MAX_BODY_BYTES,
@@ -70,7 +74,17 @@ async function responseJson(response) {
 }
 
 async function main() {
-  const argv = process.argv.slice(2)
+  let argv
+  let quiet
+  try {
+    ({ args: argv, quiet } = presentationArguments(process.argv.slice(2), help.valueOptions))
+    const output = renderHelp(help, argv)
+    if (output !== undefined) { stdout.write(output); return }
+  } catch (error) {
+    stderr.write(`CLI_ARGUMENT_INVALID: ${error.message} ${helpHint(help, [])}\n`)
+    process.exitCode = 2
+    return
+  }
   const command = argv.join(' ')
   const needsStdin = argv.length === 3 && (
     command === 'generation submit --stdin'
@@ -82,19 +96,20 @@ async function main() {
   )
   let request
   try {
+    if (/^(image|generation|catalog) /.test(argv[0] ?? '')) {
+      const words = argv.flatMap((value, index) => index === 0 ? value.split(/\s+/) : [value])
+      const example = "['node', CLI, " + words.map(shellQuote).join(', ') + ']'
+      throw new TypeError(help.messages.splitCommand.replaceAll('{argv}', example).replaceAll('{help}', helpHint(help, words)))
+    }
     request = parseCliArguments(argv, await stdinText(needsStdin))
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
     const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'
       ? error.code
-      : command === 'generation inspect-template-parameters --stdin'
-      || command === 'generation random-seeds --stdin'
-      || command === 'generation run-inputs --stdin'
-      || command === 'generation resolve-media --stdin'
-      || command === 'image inspect --stdin'
+      : needsStdin
       ? 'CLI_REQUEST_INVALID'
       : 'CLI_ARGUMENT_INVALID'
-    stderr.write(`${code}: ${message}\n`)
+    stderr.write(`${code}: ${message} ${helpHint(help, argv)}\n`)
     process.exitCode = 2
     return
   }
@@ -106,7 +121,7 @@ async function main() {
     capability = environment(CLI_ENVIRONMENT_NAMES.capability)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Managed CLI environment is invalid'
-    stderr.write(`CLI_ENVIRONMENT_INVALID: ${message}\n`)
+    stderr.write(`CLI_ENVIRONMENT_INVALID: ${message} ${helpHint(help, argv)}\n`)
     process.exitCode = 2
     return
   }
@@ -132,14 +147,20 @@ async function main() {
       ) {
         throw new Error(`CLI_PROTOCOL_ERROR: Host returned HTTP ${response.status} without a valid error`)
       }
-      stderr.write(`${error.code}: ${error.message}\n`)
+      stderr.write(`${error.code}: ${error.message} ${help.providerErrorCodes.includes(error.code) ? help.messages.providerFailure + ' ' : ''}${helpHint(help, argv)}\n`)
       process.exitCode = 1
       return
     }
     stdout.write(`${JSON.stringify(envelope.data)}\n`)
+    nextSteps(help, request.command.replaceAll('.', ' '), quiet, {
+      run_ids_json: request.command === 'generation.submit' ? shellQuote(JSON.stringify({ run_ids: [envelope.data.run_id] })) : '',
+      result_summary: request.command === 'catalog.search' && Array.isArray(envelope.data?.items) && envelope.data.items.length === 0
+        ? help.messages.emptyResults
+        : help.messages.availableResults,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Host request failed'
-    stderr.write(`${message.includes(':') ? message : `CLI_REQUEST_FAILED: ${message}`}\n`)
+    stderr.write(`${message.includes(':') ? message : `CLI_REQUEST_FAILED: ${message}`}. ${helpHint(help, argv)}\n`)
     process.exitCode = 1
   }
 }

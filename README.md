@@ -17,6 +17,12 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 - **图片识别模型由你选，出图后还能继续分析。** 内置图片识别工具，支持供应商提供的图片识别模型，也支持自行填写 OpenAI 兼容接口，可接入你选择的无审核图片识别服务。它既能描述本地图片，也能对照生图要求指出画面偏差、提出修改建议。
 - **满意的图片，能找回当时的生成方法。** 每次生成都会保存描述和绘图设置，便于查询、复用和继续调整，不必凭记忆重新试参数。
 
+## CLI 帮助与图片读取
+
+当前版本为 v0.44.1。Agent 可通过 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 查看命令分类，再通过 `node "$DSH_HARNESS_COMFYUI_CLI" image --help` 和 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --help` 逐层查看参数、stdin 示例和下一步操作。帮助调用在本地完成；业务调用默认将 JSON 结果写入 stdout，将 NEXT 指引写入 stderr，`--quiet` 可省略成功指引。
+
+仓库内置图片读取配置与新建配置默认使用事实观察提示词。已有命名配置保留已保存的提示词；需要采用新默认用途时，在“设置 → ComfyUI → 图片读取”中编辑该配置。输出达到模型 token 上限时，CLI 报告 `IMAGE_READER_OUTPUT_LIMIT` 并提示检查参数。观察结果仍须对照原图核实，当前视觉模型的遮挡姿态误判记录见 [v0.44.1 发布说明](docs/releasenotes.md#harness-comfyui-v0441)。
+
 ## 使用前准备
 
 本项目通过源码启动 DSH Desktop，也提供普通 Node.js 与 DSH 的纯 CLI 入口。GitHub Releases 提供版本记录和源码标签，不提供桌面安装包。当前默认配置使用 macOS 路径；在其他机器上使用前，需要按下文设置本机路径。

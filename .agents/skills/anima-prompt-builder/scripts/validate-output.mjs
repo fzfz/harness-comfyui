@@ -1,3 +1,4 @@
+import { runWithHelp, errorGuide } from './cli-help.mjs'
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -315,8 +316,7 @@ function emptyInputTemplate() {
   };
 }
 
-function parseCliArguments() {
-  const args = process.argv.slice(2);
+function parseCliArguments(args) {
   const unknown = args.find((argument) => argument !== '--print-input-template' && argument !== '--prompt-format');
   if (unknown !== undefined) throw new Error(`unknown CLI argument: ${unknown}`);
   if (args.includes('--print-input-template') && args.includes('--prompt-format')) {
@@ -334,8 +334,8 @@ async function readStdin() {
   return inputText;
 }
 
-async function runCli() {
-  const options = parseCliArguments();
+async function runCli(args) {
+  const options = parseCliArguments(args);
   const inputText = await readStdin();
   if (options.printInputTemplate) {
     if (inputText.trim().length > 0) fail('$', '--print-input-template requires empty stdin');
@@ -355,7 +355,7 @@ async function runCli() {
 
 if (process.argv[1]
   && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) {
-  runCli().catch((error) => {
+  runWithHelp(runCli).catch((error) => {
     const normalized = error instanceof Error ? error : new Error(String(error));
     if (normalized instanceof PromptOutputValidationError) {
       process.stderr.write(`${JSON.stringify({ violations: [{ path: normalized.path, message: normalized.message }] })}\n`);
@@ -364,5 +364,5 @@ if (process.argv[1]
     }
     process.stderr.write(`${normalized.name}: ${normalized.message}\n`);
     process.exitCode = 1;
-  });
+  }).finally(errorGuide);
 }

@@ -4,15 +4,15 @@
 
 Harness ComfyUI 本地图片读取 CLI 使用 Harness“图片读取”设置中当前命名配置的视觉模型读取一张本地图片。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时，`local-image-reader` Skill 调用 `image inspect --stdin`。
 
-该命令只读取调用者提供的本地图片路径并返回视觉模型观察文本。该命令不查询 Generation Run，不读取 Generation Prompt，不比较生成意图，也不创建 ComfyUI Generation Run。
+该命令只读取调用者提供的本地图片路径并返回视觉模型观察文本。调用副作用见“副作用与重复调用”。
 
 ## 调用环境与可执行入口
 
-Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。Managed environment 自动提供 CLI 脚本路径、Host endpoint 和当前 shell Tool Call 的短期 capability。
+Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。受管前台 shell Tool Call 自动提供 CLI 脚本路径、Host 连接地址和本次调用的短期授权凭证（capability）。
 
-Skill 执行者可以从当前 Session 工作目录调用该命令。该命令不使用工作目录解析 Workspace，也不使用工作目录解析 `file_path`；`file_path` 必须保持为用户提供或指代的本地绝对路径。
+Skill 执行者可以从当前 Session 工作目录调用该命令。`file_path` 的条件和来源分别见“参数与标准输入”和“图片路径与提示词的来源”。
 
-用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图提示词、`temperature`、最大输出 Token 和模型连接信息。Skill 执行者提供本地图片路径，并且可以提供只覆盖本次视觉模型调用的 `prompt`；Skill 执行者不提供执行身份、模型配置或其他读图参数。
+用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图提示词、`temperature`、最大输出 Token 和模型连接信息。Skill 执行者按“参数与标准输入”提供本次输入。
 
 ## 命令与调用时机
 
@@ -26,7 +26,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 
 ## 参数与标准输入
 
-该命令没有额外命令行参数。Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
+该命令接受可选的 `--quiet`，用于省略成功后的操作提示。Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 
 ```json
 {
@@ -43,7 +43,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 }
 ```
 
-`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小不得超过 Host 当前图片输入上限。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。`file_path` 不得包含 U+0000–U+001F 或 U+007F–U+009F 控制字符，因此换行符和制表符也不合法。
+`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须在 Host 当前图片输入上限以内。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。`file_path` 中的字符必须位于 U+0000–U+001F 和 U+007F–U+009F 控制字符范围以外。
 
 视觉模型接收的是缩小后的图片：每帧宽高约为原图的 70%，输出尺寸取整数像素且每边至少为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。用户原图保持不变，成功输出中的 `file_path` 仍为输入的原图绝对路径。
 
@@ -53,13 +53,13 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 
 ## 图片路径与提示词的来源
 
-该命令不使用 Workflow 模板 ID、生成模型 ID、LoRA ID、ComfyUI 实例 ID 或 Generation Run ID。Skill 执行者必须从用户消息中明确提供的本地图片绝对路径，或用户明确指代的当前消息图片附件所提供的本地绝对路径，取得 `file_path`。Skill 执行者不得根据文件名、URL、媒体 ID 或 Run ID 拼接本地路径。
+Skill 执行者必须从用户消息中明确提供的本地图片绝对路径，或用户明确指代的当前消息图片附件所提供的本地绝对路径，取得 `file_path`。
 
 用户没有指定本次观察重点或返回格式时，Skill 执行者省略 `prompt`；用户明确指定本次观察要求时，Skill 执行者从该要求构造可独立理解的完整 `prompt`。
 
 ## 输出与完成语义
 
-命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON，stderr 为空：
+命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON；省略 `--quiet` 时，stderr 包含以 `NEXT:` 开头的操作提示：
 
 ```json
 {
@@ -81,7 +81,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 | `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |
 | `CLI_REQUEST_INVALID` | stdin JSON 不符合输入合同。Skill 执行者必须修正 `file_path` 的属性名、类型、长度或字符，修正 `prompt` 的属性名或类型，或删除额外属性后重试。 |
 | `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |
-| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试，不得复用旧 capability。 |
+| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |
 | `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须确认本次 JSON 只包含一个 `file_path` 和可选 `prompt`，并缩短过长输入。 |
 | `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须报告当前 `file_path` 和错误码，并停止重试当前图片。 |
 | `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |
@@ -97,7 +97,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 | `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本；当前命名配置对应的模型服务恢复后，Skill 执行者可以重试。 |
 | `IMAGE_READER_EMPTY_RESPONSE` | 当前视觉模型调用没有返回观察文本。Skill 执行者必须报告当前 `file_path`；本次调用包含 `prompt` 时检查该 `prompt`，省略 `prompt` 时请用户检查当前配置的默认读图提示词，然后重试。 |
 
-调用取消不属于 `IMAGE_READER_PROVIDER_FAILED`。
+调用取消时，Skill 执行者按“命令与调用时机”结束本次执行。
 
 ## 副作用与重复调用
 
@@ -120,3 +120,29 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png","prompt":"只识别图片中可见的文字，并按从上到下的顺序返回。"}
 JSON
 ```
+
+## 帮助与 Python 调用
+
+Skill 执行者需要发现命令时，从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。
+
+Python 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：
+
+```python
+import json
+import os
+import subprocess
+
+result = subprocess.run(
+    ["node", os.environ["DSH_HARNESS_COMFYUI_CLI"], "image", "inspect", "--stdin"],
+    input=json.dumps({"file_path": "/absolute/local/path/result.png"}),
+    text=True,
+    capture_output=True,
+)
+if result.returncode == 0:
+    observation = json.loads(result.stdout)["observation"]
+    print(observation)
+else:
+    print(result.stderr)
+```
+
+错误消息中的帮助入口提供对应调用方式。

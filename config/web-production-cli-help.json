@@ -1,0 +1,124 @@
+{
+  "invocation": "node scripts/production/cli.mjs",
+  "nodes": {
+    "": {
+      "summary": "管理生产 Web Host。",
+      "details": [
+        "--help 离线展示帮助；--quiet 省略成功 NEXT 提示。所有命令均无位置参数。",
+        "成功退出 0；失败退出 1，错误与下一步输出到 stderr。"
+      ],
+      "next": [
+        "先检查实例状态: {cli} status --help"
+      ],
+      "after": []
+    },
+    "start": {
+      "summary": "启动实例并等待就绪。",
+      "details": [
+        "用法: {cli} start [--quiet]",
+        "参数: 无业务参数；无需 stdin。",
+        "输出: 运行证据 JSON，status 表示实际状态。",
+        "副作用: 启动当前配置的实例进程并创建运行产物。"
+      ],
+      "next": [
+        "执行: {cli} start",
+        "查看状态帮助: {cli} status --help"
+      ],
+      "after": [
+        "当前状态: {status}。",
+        "检查状态: {cli} status",
+        "读取日志: {cli} logs"
+      ]
+    },
+    "stop": {
+      "summary": "停止实例并释放运行资源。",
+      "details": [
+        "用法: {cli} stop [--quiet]",
+        "参数: 无业务参数；无需 stdin。",
+        "输出: 运行证据 JSON，status 表示实际状态。",
+        "副作用: 停止当前配置的实例进程并更新运行状态。"
+      ],
+      "next": [
+        "执行: {cli} stop",
+        "查看状态帮助: {cli} status --help"
+      ],
+      "after": [
+        "当前状态: {status}。",
+        "检查状态: {cli} status",
+        "读取日志: {cli} logs"
+      ]
+    },
+    "restart": {
+      "summary": "停止后重新启动实例。",
+      "details": [
+        "用法: {cli} restart [--quiet]",
+        "参数: 无业务参数；无需 stdin。",
+        "输出: 运行证据 JSON，status 表示实际状态。",
+        "副作用: 停止当前配置的实例进程后重新启动，并更新运行产物。"
+      ],
+      "next": [
+        "执行: {cli} restart",
+        "查看状态帮助: {cli} status --help"
+      ],
+      "after": [
+        "当前状态: {status}。",
+        "检查状态: {cli} status",
+        "读取日志: {cli} logs"
+      ]
+    },
+    "status": {
+      "summary": "读取当前运行状态。",
+      "details": [
+        "用法: {cli} status [--quiet]",
+        "参数: 无业务参数；无需 stdin。",
+        "输出: 运行证据 JSON，status 表示实际状态。",
+        "副作用: 只读查询。"
+      ],
+      "next": [
+        "执行: {cli} status",
+        "查看状态帮助: {cli} status --help"
+      ],
+      "after": [
+        "当前状态: {status}。",
+        "检查状态: {cli} status",
+        "读取日志: {cli} logs"
+      ]
+    },
+    "health": {
+      "summary": "检查服务健康状态。",
+      "details": [
+        "用法: {cli} health [--quiet]",
+        "参数: 无业务参数；无需 stdin。",
+        "输出: 运行证据 JSON，status 表示实际状态。",
+        "副作用: 只读查询。"
+      ],
+      "next": [
+        "执行: {cli} health",
+        "查看状态帮助: {cli} status --help"
+      ],
+      "after": [
+        "当前状态: {status}。",
+        "检查状态: {cli} status",
+        "读取日志: {cli} logs"
+      ]
+    },
+    "logs": {
+      "summary": "读取运行日志。",
+      "details": [
+        "用法: {cli} logs [--quiet]",
+        "参数: 无业务参数；无需 stdin。",
+        "输出: 日志文本。",
+        "副作用: 只读查询。"
+      ],
+      "next": [
+        "执行: {cli} logs",
+        "查看状态帮助: {cli} status --help"
+      ],
+      "after": [
+        "当前状态: {status}。",
+        "检查状态: {cli} status",
+        "读取日志: {cli} logs"
+      ]
+    }
+  }
+}

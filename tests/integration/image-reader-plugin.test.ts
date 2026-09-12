@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import imageReaderRuntime from '../../config/image-reader-runtime.json' with { type: 'json' }
 import * as imageReader from '../../src/host/image-reader/plugin.ts'
 import { createImageReaderProfile, IMAGE_READER_SETTINGS_NAMESPACE, type ImageReaderSettingsSection } from '../../src/image-reader/settings.ts'
 import { startCliServer } from '../../src/host/cli/server.ts'
@@ -49,6 +50,9 @@ describe('independent image reader plugin', () => {
     expect(f.register).toHaveBeenCalledOnce()
     expect(await f.ctx.imageReader.inspect(f.file, { sessionId: 'real-session' })).toMatchObject({ observation: '红色', provider: 'test' })
     expect(f.stream.mock.calls[0]![0]).toMatchObject({ sessionId: 'real-session' })
+    const records = f.ctx.logger.buffer.filter(entry => entry.name === 'harness-comfyui-image-reader')
+    expect(records.map(entry => entry.args[0])).toEqual(Array(4).fill(imageReaderRuntime.diagnosticLogFormat))
+    expect(records.map(entry => JSON.parse(entry.args[1]).stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'completed'])
     for (const name of ['harnessComfyuiCore', 'workspaceRegistry', 'webServer']) expect(f.ctx.get(name)).toBeUndefined()
     await expect(f.ctx.imageReader.inspect('/missing/image.png')).rejects.toMatchObject({ code: 'IMAGE_READER_FILE_INVALID' })
   })

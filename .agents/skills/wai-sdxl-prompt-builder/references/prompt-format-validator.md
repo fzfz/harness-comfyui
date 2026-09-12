@@ -7,10 +7,10 @@ Skill 执行者完成 Prompt 冲突处理、权重设计和自检后，完整读
 `scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把“标准输入”一节定义的 JSON 对象写入命令的标准输入：
 
 ```sh
-node scripts/validate-output.mjs --prompt-format
+node scripts/validate-output.mjs --quiet --prompt-format
 ```
 
-Prompt 格式校验只使用 `--prompt-format` 参数。
+Prompt 格式校验使用 `--prompt-format` 选择模式，使用 `--quiet` 省略成功提示。
 
 ## 标准输入
 
@@ -64,7 +64,7 @@ payload
 
 带圆括号的数组元素必须按照 `references/prompt-weight-policy.json` 中 `syntax.payload` 的规则转义 `payload` 内作为文本使用的反斜杠、圆括号和方括号。每个数组元素最多使用一层权重圆括号。
 
-`quality[]` 中的 `payload` 与 `references/prompt-weight-policy.json` 中 `recommendations.unweighted_quality.content[]` 的任一字符串相同时，该数组元素必须直接使用 `payload`，不添加圆括号或显式权重。
+`quality[]` 中的 `payload` 与 `references/prompt-weight-policy.json` 中 `recommendations.unweighted_quality.content[]` 的任一字符串相同时，该数组元素必须直接使用 `payload`。
 
 ### `relation_narrative`
 
@@ -84,7 +84,7 @@ payload
 
 ## 成功结果
 
-校验成功时，命令返回退出码 `0`，stderr 为空，stdout 写入一行包含且只包含以下五个属性的 JSON：
+使用 `--quiet` 校验成功时，命令返回退出码 `0`，stderr 为空，stdout 写入一行包含且只包含以下五个属性的 JSON：
 
 ```json
 {
@@ -100,7 +100,7 @@ Skill 执行者从 stdout JSON 读取 `prompt_text` 和 `display_text`；`prompt
 
 ## 输入格式失败
 
-标准输入不符合本文件的格式规则时，命令返回退出码 `2`，stdout 为空，stderr 写入一行 JSON：
+标准输入不符合本文件的格式规则时，命令返回退出码 `2`，stdout 为空，stderr 首行写入 JSON：
 
 ```json
 {
@@ -138,3 +138,7 @@ Skill 执行者从 stdout JSON 读取 `prompt_text` 和 `display_text`；`prompt
 - 退出码 `2` 对应的 stdout、stderr 或 `violations[]` 不符合“输入格式失败”一节。
 
 Skill 执行者报告不符合协议的具体退出码值、JSON 属性或输出通道及其不符合协议的内容，然后停止本次执行。返回协议错误不进入三次格式校验流程。
+
+## 帮助与操作提示
+
+Skill 执行者运行 `node scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功结果的 stderr 包含 `NEXT:` 提示。输入格式失败时，stderr 首行 JSON 后附有 `NEXT:` 修正指引。Skill 执行者结合该指引，按照“输入格式失败”一节处理错误。

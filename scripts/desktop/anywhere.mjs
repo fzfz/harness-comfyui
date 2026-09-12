@@ -43,6 +43,8 @@ const SOURCE_PLUGIN_PACKAGE_PATHS = Object.freeze([
   'cordis.patch.yml',
   'config',
   'scripts/source-client',
+  'scripts/cli/help.mjs',
+  'scripts/cli/help-schema.mjs',
   'src',
   dirname(runtimeArtifacts.managedCli.outputEntryRelativePath),
   '.local/source-client',

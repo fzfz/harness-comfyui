@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import help from '../../config/launcher-cli-help.json' with { type: 'json' }
+import { presentationArguments, renderHelp, nextSteps, helpHint } from './help.mjs'
 import { spawn } from 'node:child_process'
 import { mkdir, symlink, readlink, readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -54,10 +56,15 @@ export async function prepareCliRuntime(repositoryRoot) {
   }
 }
 
-export async function main(args = process.argv.slice(2)) {
+export async function main(argv = process.argv.slice(2)) {
+  const { args, quiet } = presentationArguments(argv)
+  const output = renderHelp(help, args)
+  if (output !== undefined) { process.stdout.write(output); return }
+  if (args.some(arg => arg.startsWith('-') && arg !== '--')) throw new TypeError(`Unknown launcher option. ${helpHint(help, [])}`)
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
   const runtime = await prepareCliRuntime(root)
   process.exitCode = await runCliProcess(runtime, args)
+  nextSteps(help, '', quiet && process.exitCode === 0, { exit_code: String(process.exitCode) })
 }
 
 export async function runCliProcess(runtime, args) {

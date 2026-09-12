@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { imageReaderDiagnosticSchema, type ImageReaderDiagnostic } from '../../src/image-reader/diagnostics-schema.ts'
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import {
   createImageReaderProfile,
@@ -77,15 +78,18 @@ function fixture(prepareInput?: ImageReaderServiceOptions['prepareInput']) {
     inputModalities: ['text', 'image'],
     stream,
   }))
+  const diagnostics: ImageReaderDiagnostic[] = []
   const fetch = vi.fn<typeof globalThis.fetch>()
   return {
     filePath,
+    diagnostics,
     scope,
     saveImage,
     prepareCall,
     fetch,
     service: new ImageReaderService({
       scope,
+      onDiagnostic: (record: ImageReaderDiagnostic) => diagnostics.push(record),
       attachments: { imageLimits, saveImage },
       llm: { prepareCall },
       fetch,
@@ -95,6 +99,12 @@ function fixture(prepareInput?: ImageReaderServiceOptions['prepareInput']) {
 }
 
 describe('ImageReaderService', () => {
+  it('records runtime success without inventing HTTP response stages', async () => {
+    const { service, filePath, diagnostics } = fixture()
+    await expect(service.inspect(filePath)).resolves.toMatchObject({ observation: '主体为白发角色。' })
+    expect(diagnostics.map(item => item.stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'completed'])
+  })
+
   it('forwards each inspection session to the runtime model stream', async () => {
     const { service, filePath, prepareCall } = fixture()
     await Promise.all(['parent', 'child'].map(sessionId => service.inspect(filePath, { sessionId, prompt: sessionId })))
@@ -129,6 +139,7 @@ describe('ImageReaderService', () => {
       'IMAGE_READER_MODEL_REQUIRED',
       'IMAGE_READER_MODEL_TOO_LONG',
       'IMAGE_READER_MODEL_UNAVAILABLE',
+      'IMAGE_READER_OUTPUT_LIMIT',
       'IMAGE_READER_PROFILE_ACTIVATION_TARGET_NOT_FOUND',
       'IMAGE_READER_PROFILE_ALREADY_EXISTS',
       'IMAGE_READER_PROFILE_ID_FORMAT_INVALID',
@@ -321,15 +332,17 @@ describe('ImageReaderService', () => {
   })
 
   it('maps provider failure and empty output into stable errors', async () => {
-    const { service, filePath, prepareCall } = fixture()
+    const { service, filePath, prepareCall, diagnostics } = fixture()
     prepareCall.mockResolvedValueOnce({
       config: { provider: 'vision-provider', model: 'vision-model', temperature: 0.35, maxTokens: 1536 },
       inputModalities: ['image'],
       stream: async function* () {
-        yield { type: 'finish', reason: { kind: 'error', failure: { code: 'REMOTE', message: 'failed' } } }
+        yield { type: 'finish', reason: { kind: 'error', failure: { code: 'REMOTE', message: 'failed', requestId: 'provider-request' } } }
       },
     })
     await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
+    expect(diagnostics.map(item => item.stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'failed'])
+    expect(diagnostics.at(-1)).toMatchObject({ requestId: 'provider-request', profileId: 'runtime', model: 'vision-model' })
 
     prepareCall.mockResolvedValueOnce({
       config: { provider: 'vision-provider', model: 'vision-model', temperature: 0.35, maxTokens: 1536 },
@@ -491,6 +504,9 @@ describe('ImageReaderService', () => {
     })
     await expect(callerAbort.service.inspect(callerAbort.filePath, { signal: controller.signal }))
       .rejects.toMatchObject({ name: 'AbortError' })
+    expect(callerAbort.diagnostics.map(item => item.stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'cancelled'])
+    expect(callerAbort.diagnostics.at(-1)).not.toHaveProperty('requestId')
+    expect(providerAbort.diagnostics.map(item => item.stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'failed'])
   })
 
   it('maps attachment admission and model preparation failures into stable errors', async () => {
@@ -505,8 +521,50 @@ describe('ImageReaderService', () => {
       .rejects.toMatchObject({ code: 'IMAGE_READER_MODEL_UNAVAILABLE' })
   })
 
+  it('records headers without completion while a keepalive body waits, then records cancellation', async () => {
+    const { service, filePath, scope, fetch, diagnostics } = fixture()
+    scope.get.mockReturnValue({ configuration: { activeProfileId: 'custom', profiles: [{
+      ...createImageReaderProfile('custom'), connectionType: 'openai-compatible',
+      endpoint: 'http://localhost/v1/chat/completions', model: 'vision-model',
+    }] }, credentials: { custom: 'private-api-key' } })
+    fetch.mockResolvedValueOnce(new Response(new ReadableStream({ start(controller) {
+      controller.enqueue(new TextEncoder().encode(' '))
+    } }), { headers: { 'x-request-id': 'request-visible' } }))
+    const controller = new AbortController()
+    const result = service.inspect(filePath, { prompt: 'private prompt', signal: controller.signal })
+    const rejection = expect(result).rejects.toMatchObject({ name: 'AbortError' })
+    await vi.waitFor(() => expect(diagnostics.map(item => item.stage)).toEqual([
+      'preparing', 'input_prepared', 'request_sent', 'response_headers',
+    ]))
+    controller.abort()
+    await rejection
+    expect(diagnostics.at(-1)).toMatchObject({ stage: 'cancelled', profileId: 'custom', model: 'vision-model', requestId: 'request-visible' })
+    for (const record of diagnostics) {
+      expect(record.elapsedMs).toBeGreaterThanOrEqual(0)
+      expect(record.stageElapsedMs).toBeGreaterThanOrEqual(0)
+      expect(Object.keys(record).sort()).toEqual((record.requestId === undefined
+        ? ['elapsedMs', 'model', 'profileId', 'stage', 'stageElapsedMs']
+        : ['elapsedMs', 'model', 'profileId', 'requestId', 'stage', 'stageElapsedMs']).sort())
+    }
+    expect(JSON.stringify(diagnostics)).not.toContain('private')
+    expect(JSON.stringify(diagnostics)).not.toContain(filePath)
+  })
+
+  it('rejects a truncated OpenAI-compatible observation instead of returning partial success', async () => {
+    const { service, filePath, scope, fetch, diagnostics } = fixture()
+    scope.get.mockReturnValue({ configuration: { activeProfileId: 'custom', profiles: [{
+      ...createImageReaderProfile('custom'), connectionType: 'openai-compatible',
+      endpoint: 'http://localhost/v1/chat/completions', model: 'vision-model',
+    }] }, credentials: {} })
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{
+      finish_reason: 'length', message: { content: 'repeated partial observation' },
+    }] })))
+    await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_OUTPUT_LIMIT' })
+    expect(diagnostics.map(item => item.stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'response_headers', 'response_complete', 'failed'])
+  })
+
   it('reads one image through an OpenAI-compatible Chat Completions endpoint without attachment admission', async () => {
-    const { service, filePath, scope, fetch, saveImage, prepareCall } = fixture()
+    const { service, filePath, scope, fetch, saveImage, prepareCall, diagnostics } = fixture()
     scope.get.mockReturnValue({
       configuration: {
         activeProfileId: 'custom',
@@ -524,7 +582,7 @@ describe('ImageReaderService', () => {
       credentials: { custom: 'local-secret' },
     })
     fetch.mockResolvedValueOnce(new Response(JSON.stringify({
-      choices: [{ message: { content: '可见一名银发人物。' } }],
+      choices: [{ finish_reason: 'stop', message: { content: '可见一名银发人物。' } }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
 
     await expect(service.inspect(filePath)).resolves.toEqual({
@@ -533,6 +591,11 @@ describe('ImageReaderService', () => {
       filePath,
       observation: '可见一名银发人物。',
     })
+    expect(diagnostics.map(item => item.stage)).toEqual(['preparing', 'input_prepared', 'request_sent', 'response_headers', 'response_complete', 'completed'])
+    for (const record of diagnostics) {
+      expect(imageReaderDiagnosticSchema(record)).toMatchObject(record)
+      expect(record).not.toHaveProperty('requestId')
+    }
     expect(fetch).toHaveBeenCalledOnce()
     const [endpoint, request] = fetch.mock.calls[0]!
     expect(endpoint).toBe('http://127.0.0.1:11434/v1/chat/completions')

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { renderedHelp, sourceNext, sourceErrorNext } from './guidance.mjs';
 
 import { realpathSync } from 'node:fs';
 import { TextDecoder } from 'node:util';
@@ -117,9 +118,15 @@ function sourceOrigin(url, port) {
 
 function parseArguments(argv) {
   const parsed = { url: null, port: null, timeoutMs: DEFAULT_TIMEOUT_MS, help: false, version: false, discoveryJson: false, command: null, id: null };
+  parsed.quiet = false;
   const seen = new Set();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
+    if (argument === '--quiet') {
+      if (parsed.quiet) fail('INVALID_ARGUMENT', '--quiet may appear only once');
+      parsed.quiet = true;
+      continue;
+    }
     if (!argument.startsWith('--')) {
       if (!['instance', 'template-bundle'].includes(argument) || parsed.command !== null) invalid(`unsupported positional argument: ${argument}`);
       parsed.command = argument;
@@ -224,7 +231,7 @@ async function executeSourceRead({ url, port, path }, execution) {
   if (response.status >= 200 && response.status < 300) {
     execution.throwIfAborted();
     process.stdout.write(response.buffer);
-    return;
+    return response.body;
   }
   execution.throwIfAborted();
   throw new ServiceHttpError(response.buffer);
@@ -232,12 +239,12 @@ async function executeSourceRead({ url, port, path }, execution) {
 
 async function executeInstance({ url, port, id }, execution) {
   const path = INSTANCE_PATH.replace('{instance_id}', encodeURIComponent(id));
-  await executeSourceRead({ url, port, path }, execution);
+  return executeSourceRead({ url, port, path }, execution);
 }
 
 async function executeTemplateBundle({ url, port, id }, execution) {
   const path = TEMPLATE_BUNDLE_PATH.replace('{template_id}', encodeURIComponent(id));
-  await executeSourceRead({ url, port, path }, execution);
+  return executeSourceRead({ url, port, path }, execution);
 }
 
 function renderTopLevelHelp() {
@@ -285,10 +292,10 @@ function renderInstanceHelp() {
     `  ${CLI_NAME} --url http://127.0.0.1 --port 8188 instance --id 31`,
     '',
     'Output:',
-    '  2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value; the CLI does not validate a response Schema or fields, and writes the original body Buffer to stdout without adding or removing bytes; stderr is empty and exit code is 0.',
-    '  Non-2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value, then writes the original body Buffer to stderr without adding or removing bytes; stdout is empty and exit code is 7; the CLI does not validate the declared HTTP status, Schema, fields, or error code.',
-    '  Target body failure: an empty body, invalid UTF-8, invalid JSON, or multiple JSON values leaves stdout empty, writes the fixed CONTRACT_PROTOCOL_ERROR JSON to stderr, and exits 6.',
-    '  Local failure: the CLI writes a fixed CLI error JSON to stderr, leaves stdout empty, and exits with its corresponding non-zero code for invalid arguments, discovery failure, connection failure, timeout, cancellation, or any other local failure.',
+    '  2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value; the CLI does not validate a response Schema or fields, and writes the original body Buffer to stdout without adding or removing bytes; stderr carries NEXT guidance (empty with --quiet) and exit code is 0.',
+    '  Non-2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value, then writes the original body Buffer to stderr without changing the body bytes, then appends NEXT guidance; stdout is empty and exit code is 7; the CLI does not validate the declared HTTP status, Schema, fields, or error code.',
+    '  Target body failure: an empty body, invalid UTF-8, invalid JSON, or multiple JSON values leaves stdout empty, writes the fixed CONTRACT_PROTOCOL_ERROR JSON followed by NEXT guidance to stderr, and exits 6.',
+    '  Local failure: the CLI writes a fixed CLI error JSON followed by NEXT guidance to stderr, leaves stdout empty, and exits with its corresponding non-zero code for invalid arguments, discovery failure, connection failure, timeout, cancellation, or any other local failure.',
     ''
   ].join('\n');
 }
@@ -310,10 +317,10 @@ function renderTemplateBundleHelp() {
     `  ${CLI_NAME} --url http://127.0.0.1 --port 8188 template-bundle --id 284001`,
     '',
     'Output:',
-    '  2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value; the CLI does not validate a response Schema or fields, and writes the original body Buffer to stdout without adding or removing bytes; stderr is empty and exit code is 0.',
-    '  Non-2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value, then writes the original body Buffer to stderr without adding or removing bytes; stdout is empty and exit code is 7; the CLI does not validate the declared HTTP status, Schema, fields, or error code.',
-    '  Target body failure: an empty body, invalid UTF-8, invalid JSON, or multiple JSON values leaves stdout empty, writes the fixed CONTRACT_PROTOCOL_ERROR JSON to stderr, and exits 6.',
-    '  Local failure: the CLI writes a fixed CLI error JSON to stderr, leaves stdout empty, and exits with its corresponding non-zero code for invalid arguments, discovery failure, connection failure, timeout, cancellation, or any other local failure.',
+    '  2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value; the CLI does not validate a response Schema or fields, and writes the original body Buffer to stdout without adding or removing bytes; stderr carries NEXT guidance (empty with --quiet) and exit code is 0.',
+    '  Non-2xx body: the CLI requires the target HTTP body to be non-empty, decode as strict UTF-8, and contain exactly one JSON value, then writes the original body Buffer to stderr without changing the body bytes, then appends NEXT guidance; stdout is empty and exit code is 7; the CLI does not validate the declared HTTP status, Schema, fields, or error code.',
+    '  Target body failure: an empty body, invalid UTF-8, invalid JSON, or multiple JSON values leaves stdout empty, writes the fixed CONTRACT_PROTOCOL_ERROR JSON followed by NEXT guidance to stderr, and exits 6.',
+    '  Local failure: the CLI writes a fixed CLI error JSON followed by NEXT guidance to stderr, leaves stdout empty, and exits with its corresponding non-zero code for invalid arguments, discovery failure, connection failure, timeout, cancellation, or any other local failure.',
     ''
   ].join('\n');
 }
@@ -326,9 +333,9 @@ async function main(argv = [], testHooks = {}) {
     return;
   }
   if (options.help) {
-    process.stdout.write(options.command === 'instance'
+    process.stdout.write(renderedHelp('source', CLI_NAME, options.command === 'instance'
       ? renderInstanceHelp()
-      : options.command === 'template-bundle' ? renderTemplateBundleHelp() : renderTopLevelHelp());
+      : options.command === 'template-bundle' ? renderTemplateBundleHelp() : renderTopLevelHelp()));
     return;
   }
   const execution = createExecutionContext(options.timeoutMs);
@@ -337,19 +344,22 @@ async function main(argv = [], testHooks = {}) {
     execution.throwIfAborted();
     if (options.discoveryJson) {
       process.stdout.write(discoveryResponse.buffer);
+      sourceNext('source', options);
       return;
     }
+    let result;
     if (options.command === 'instance') {
-      await executeInstance({ url: options.url, port: options.port, id: options.id }, execution);
+      result = await executeInstance({ url: options.url, port: options.port, id: options.id }, execution);
     } else {
-      await executeTemplateBundle({ url: options.url, port: options.port, id: options.id }, execution);
+      result = await executeTemplateBundle({ url: options.url, port: options.port, id: options.id }, execution);
     }
+    sourceNext('source', options, result);
   } finally {
     execution.dispose();
   }
 }
 
-function writeError(error) {
+function writeErrorBody(error) {
   if (error instanceof ServiceHttpError) {
     process.stderr.write(error.responseBuffer);
     process.exitCode = error.exitCode;
@@ -365,6 +375,11 @@ function writeError(error) {
   const message = CLI_ERROR_MESSAGES[code];
   process.stderr.write(`${safeJsonStringify({ error: { code, message } })}\n`);
   process.exitCode = code === 'INVALID_ARGUMENT' ? 2 : code === 'DISCOVERY_HTTP_ERROR' ? 3 : code === 'SOURCE_CONNECTION_FAILED' ? 4 : code === 'TOTAL_TIMEOUT' ? 5 : 6;
+}
+
+function writeError(error) {
+  writeErrorBody(error);
+  sourceErrorNext('source', error);
 }
 
 let directInvocation = false;

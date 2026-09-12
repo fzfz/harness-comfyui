@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import help from '../../config/web-production-cli-help.json' with { type: 'json' }
+import { presentationArguments, renderHelp, helpHint, nextSteps } from '../cli/help.mjs'
+
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -19,20 +22,7 @@ import {
   prepareSourceRuntime,
 } from './runtime.mjs'
 
-export function helpText() {
-  return [
-    'Usage: pnpm web:<command>',
-    '',
-    'Commands:',
-    '  start    Start the independent Web Host',
-    '  stop     Stop the managed Web Host process',
-    '  restart  Restart the managed Web Host process',
-    '  status   Show managed Web Host process status',
-    '  health   Check managed Web Host process health',
-    '  logs     Read managed Web Host process logs',
-    '',
-  ].join('\n')
-}
+export function helpText() { return renderHelp(help, ['--help']) }
 
 export function parseArguments(argv) {
   if (argv.length === 0 || (argv.length === 1 && argv[0] === '--help')) return { command: 'help' }
@@ -177,13 +167,18 @@ export async function runSourceProductionCommand(command, options = {}) {
 }
 
 export async function main(argv = process.argv.slice(2)) {
-  const { command } = parseArguments(argv)
+  const { args, quiet } = presentationArguments(argv)
+  const output = renderHelp(help, args)
+  if (output !== undefined) { process.stdout.write(output); return 0 }
+  let command
+  try { ({ command } = parseArguments(args)) } catch (error) { throw new Error(`${error.message}. ${helpHint(help, args)}`) }
   if (command === 'help') {
     process.stdout.write(helpText())
     return 0
   }
   const result = await runSourceProductionCommand(command)
   if (command !== 'logs') process.stdout.write(`${JSON.stringify(result.evidence)}\n`)
+  nextSteps(help, command, quiet && !result.failed, { status: result.evidence.status })
   return result.failed ? 1 : 0
 }
 
@@ -200,7 +195,7 @@ if (isMainModule()) {
   main().then(
     status => { process.exitCode = status },
     error => {
-      process.stderr.write(`Web Host: ${error instanceof Error ? error.message : String(error)}\n`)
+      process.stderr.write(`Web Host: ${error instanceof Error ? error.message : String(error)} ${helpHint(help, process.argv.slice(2))}\n`)
       process.exitCode = 1
     },
   )

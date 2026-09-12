@@ -171,7 +171,59 @@ function sendJson(response, status, value) {
   response.end(body)
 }
 
+function expectClientResult(result, expected) {
+  expect(result.exitCode).toBe(expected.exitCode)
+  expect(result.stdout).toBe(expected.stdout)
+  if (expected.exitCode === 0) {
+    expect(result.stderr).toMatch(/^NEXT: /)
+  } else {
+    const separator = result.stderr.lastIndexOf('\nNEXT: ')
+    expect(separator).toBeGreaterThanOrEqual(0)
+    expect(result.stderr.slice(0, separator)).toBe(expected.stderr)
+    expect(result.stderr.slice(separator)).toContain('--help')
+  }
+}
+
 describe('built-in semantic query client', () => {
+  it.each([false, true])('preserves discovery JSON and exit success with quiet=%s', async quiet => {
+    const body = JSON.stringify(semanticDiscovery(), null, 2) + '\n'
+    const server = await startServer((request, response) => {
+      response.writeHead(200, { 'content-type': 'application/json' })
+      response.end(body)
+    })
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--discovery-json', ...(quiet ? ['--quiet'] : [])])
+      expect(result.exitCode).toBe(0)
+      expect(result.stdout).toBe(body)
+      if (quiet) expect(result.stderr).toBe('')
+      else expect(result.stderr).toMatch(/^NEXT: .*--path <实际路径> --help\n$/)
+    } finally { await server.close() }
+  })
+
+  it('adds a next operation without changing the successful JSON bytes', async () => {
+    const server = await startServer((request, response) => sendJson(response, 200,
+      request.url === '/internal/semantic' ? semanticDiscovery() : { results: [{ id: '42' }] }))
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/base-models', '--mode', 'search'])
+      expect(result.exitCode).toBe(0)
+      expect(result.stdout).toBe('{"results":[{"id":"42"}]}')
+      expect(result.stderr).toContain('NEXT:')
+      expect(result.stderr).toContain("--mode resolve --id '42'")
+    } finally { await server.close() }
+  })
+  it('distinguishes empty search results and quiet output', async () => {
+    const server = await startServer((request, response) => sendJson(response, 200,
+      request.url === '/internal/semantic' ? semanticDiscovery() : { results: [] }))
+    try {
+      const args = ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/base-models', '--mode', 'search']
+      const normal = await runClient(SEMANTIC_CLIENT, args)
+      const quiet = await runClient(SEMANTIC_CLIENT, [...args, '--quiet'])
+      expect(normal.exitCode).toBe(0)
+      expect(normal.stderr).toContain('results 为空')
+      expect(normal.stderr).not.toContain('--mode resolve --id')
+      expect(quiet).toEqual({ exitCode: 0, stdout: normal.stdout, stderr: '' })
+    } finally { await server.close() }
+  })
   it.each([
     'http://catalog.example.com:80',
     'https://catalog.example.com:443',
@@ -180,7 +232,7 @@ describe('built-in semantic query client', () => {
       '--url', url, '--port', '18093',
       '--path', '/internal/semantic/base-models', '--mode', 'search',
     ])
-    expect(result).toEqual({
+    expectClientResult(result, {
       exitCode: 2,
       stdout: '',
       stderr: '{"error":{"code":"INVALID_ARGUMENT","message":"CLI arguments are invalid."}}\n',
@@ -203,7 +255,7 @@ describe('built-in semantic query client', () => {
         '--url', 'http://127.0.0.1', '--port', String(server.port),
         '--path', '/internal/semantic/base-models', ...businessArgs,
       ])
-      expect(result).toEqual({ exitCode: 0, stdout: JSON.stringify(expectedResponse), stderr: '' })
+      expectClientResult(result, { exitCode: 0, stdout: JSON.stringify(expectedResponse), stderr: '' })
       expect(requests).toEqual([
         { method: 'GET', path: '/internal/semantic', body: '' },
         { method: 'POST', path: '/internal/semantic/base-models', body: JSON.stringify(expectedBody) },
@@ -225,7 +277,7 @@ describe('built-in semantic query client', () => {
         '--url', 'http://127.0.0.1', '--port', String(server.port),
         '--path', '/internal/semantic/base-models', '--mode', 'search',
       ])
-      expect(result).toEqual({ exitCode: 7, stdout: '', stderr: JSON.stringify(errorBody) })
+      expectClientResult(result, { exitCode: 7, stdout: '', stderr: JSON.stringify(errorBody) })
     } finally {
       await server.close()
     }
@@ -239,7 +291,7 @@ describe('built-in semantic query client', () => {
       '--url', 'http://127.0.0.1', '--port', String(port),
       '--path', '/internal/semantic/base-models', '--mode', 'search',
     ])
-    expect(result).toEqual({
+    expectClientResult(result, {
       exitCode: 4,
       stdout: '',
       stderr: '{"error":{"code":"SOURCE_CONNECTION_FAILED","message":"Source service is unavailable."}}\n',
@@ -256,7 +308,7 @@ describe('built-in semantic query client', () => {
         '--url', 'http://127.0.0.1', '--port', String(server.port),
         '--path', '/internal/semantic/base-models', '--mode', 'search',
       ])
-      expect(result).toEqual({
+      expectClientResult(result, {
         exitCode: 4,
         stdout: '',
         stderr: '{"error":{"code":"SOURCE_CONNECTION_FAILED","message":"Source service is unavailable."}}\n',
@@ -279,7 +331,7 @@ describe('built-in semantic query client', () => {
         '--url', 'https://127.0.0.1', '--port', String(server.port),
         '--path', '/internal/semantic/base-models', '--mode', 'search',
       ], { NODE_TLS_REJECT_UNAUTHORIZED: '0', NODE_NO_WARNINGS: '1' })
-      expect(result).toEqual({ exitCode: 0, stdout: '{"ok":true}', stderr: '' })
+      expectClientResult(result, { exitCode: 0, stdout: '{"ok":true}', stderr: '' })
       expect(paths).toEqual(['/internal/semantic', '/internal/semantic/base-models'])
     } finally {
       await server.close()
@@ -288,6 +340,25 @@ describe('built-in semantic query client', () => {
 })
 
 describe('built-in Source read client', () => {
+  it.each(['instance', 'template-bundle'])('describes actual %s responses', async command => {
+    const successful = command === 'instance'
+      ? { id: '31', title: 'test', url: 'http://localhost', credential_type: 'none' }
+      : { id: '31', title: 'test', workflow_json: { nodes: [] } }
+    for (const [body, message] of [[null, '空 JSON 结果'], [[], '空 JSON 结果'], [{}, '未提供记录 id'], [successful, command === 'instance' ? '实例记录已返回' : '模板源已返回']]) {
+      const server = await startServer((request, response) => sendJson(response, 200,
+        request.url === '/internal/comfyui-source' ? { openapi: '3.1.0', paths: {} } : body))
+      try {
+        for (const quiet of [false, true]) {
+          const result = await runClient(SOURCE_READ_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), command, '--id', '31', ...(quiet ? ['--quiet'] : [])])
+          expect(result.exitCode).toBe(0)
+          expect(result.stdout).toBe(JSON.stringify(body))
+          if (quiet) expect(result.stderr).toBe('')
+          else expect(result.stderr).toContain(message)
+        }
+      } finally { await server.close() }
+    }
+  })
+
   it.each([
     'http://catalog.example.com:80',
     'https://catalog.example.com:443',
@@ -295,7 +366,7 @@ describe('built-in Source read client', () => {
     const result = await runClient(SOURCE_READ_CLIENT, [
       '--url', url, '--port', '18093', 'instance', '--id', '31',
     ])
-    expect(result).toEqual({
+    expectClientResult(result, {
       exitCode: 2,
       stdout: '',
       stderr: '{"error":{"code":"INVALID_ARGUMENT","message":"CLI arguments are invalid."}}\n',
@@ -317,7 +388,7 @@ describe('built-in Source read client', () => {
       const result = await runClient(SOURCE_READ_CLIENT, [
         '--url', 'http://127.0.0.1', '--port', String(server.port), command, '--id', id,
       ])
-      expect(result).toEqual({ exitCode: 0, stdout: JSON.stringify(expectedResponse), stderr: '' })
+      expectClientResult(result, { exitCode: 0, stdout: JSON.stringify(expectedResponse), stderr: '' })
       expect(requests).toEqual([
         { method: 'GET', path: '/internal/comfyui-source', body: '' },
         { method: 'GET', path: targetPath, body: '' },
@@ -334,7 +405,7 @@ describe('built-in Source read client', () => {
     const result = await runClient(SOURCE_READ_CLIENT, [
       '--url', 'http://127.0.0.1', '--port', String(port), 'instance', '--id', '31',
     ])
-    expect(result).toEqual({
+    expectClientResult(result, {
       exitCode: 4,
       stdout: '',
       stderr: '{"error":{"code":"SOURCE_CONNECTION_FAILED","message":"Source service is unavailable."}}\n',
@@ -352,7 +423,7 @@ describe('built-in Source read client', () => {
       const result = await runClient(SOURCE_READ_CLIENT, [
         '--url', 'http://127.0.0.1', '--port', String(server.port), 'instance', '--id', '31',
       ])
-      expect(result).toEqual({ exitCode: 7, stdout: '', stderr: JSON.stringify(errorBody) })
+      expectClientResult(result, { exitCode: 7, stdout: '', stderr: JSON.stringify(errorBody) })
     } finally {
       await server.close()
     }
@@ -369,7 +440,7 @@ describe('built-in Source read client', () => {
       const result = await runClient(SOURCE_READ_CLIENT, [
         '--url', 'https://127.0.0.1', '--port', String(server.port), 'instance', '--id', '31',
       ], { NODE_TLS_REJECT_UNAUTHORIZED: '0', NODE_NO_WARNINGS: '1' })
-      expect(result).toEqual({ exitCode: 0, stdout: '{"status":"ok"}', stderr: '' })
+      expectClientResult(result, { exitCode: 0, stdout: '{"status":"ok"}', stderr: '' })
       expect(paths).toEqual(['/internal/comfyui-source', '/internal/comfyui-source/instances/31'])
     } finally {
       await server.close()
@@ -391,7 +462,7 @@ describe('built-in source client lifecycle', () => {
       const result = await runClient(script, [
         '--url', 'http://127.0.0.1', '--port', String(server.port), '--timeout-ms', '25', ...clientArgs,
       ])
-      expect(result).toEqual({
+      expectClientResult(result, {
         exitCode: 5,
         stdout: '',
         stderr: '{"error":{"code":"TOTAL_TIMEOUT","message":"Source request timed out."}}\n',
@@ -416,7 +487,7 @@ describe('built-in source client lifecycle', () => {
       const result = await runClient(script, [
         '--url', 'http://127.0.0.1', '--port', String(server.port), ...clientArgs,
       ], {}, child => { childProcess = child })
-      expect(result).toEqual({
+      expectClientResult(result, {
         exitCode,
         stdout: '',
         stderr: `${JSON.stringify({ error: { code: 'PROCESS_CANCELLED', message } })}\n`,

@@ -1,0 +1,56 @@
+{
+  "name": "anima",
+  "modes": {
+    "": "校验完整生成目标 JSON，返回原结构。",
+    "--prompt-format": "校验分槽提示词，返回 kind、result、contract_version、prompt_text 和 display_text。",
+    "--print-input-template": "输出分槽空模板。stdin 必须为空并关闭。填写模板后使用 --prompt-format。"
+  },
+  "input": "写入一个 JSON 对象后关闭 stdin（EOF）。默认模式输入字段与约束如下；model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ 1000000 - megapixels) ÷ megapixels 最多为 5%。",
+  "output": "成功 stdout 输出 JSON，退出 0；错误 stderr 输出字段位置与原因，退出非零。只校验输入，不生图、不修改文件。--quiet 省略成功 NEXT 提示。",
+  "failure": "按错误中的字段位置修正输入后再次校验。查看帮助: {cli} --help",
+  "next": "复制下方 JSON 示例并按用户要求修改，保存为 input.json 后执行: {cli} < input.json",
+  "format": "输入为 {slots,display_text}。每槽为字符串数组，空槽使用 []；display_text 为非空单行中文说明。标签使用 payload、(payload) 或 (payload:weight)；natural_language 使用英文小写完整句子。",
+  "formatReference": "references/03-output-protocol.md",
+  "example": {
+    "model_route": "anima-aesthetic-v1.1",
+    "positive_prompt": "one adult dancer, full body",
+    "negative_mode": "native_negative",
+    "negative_prompt": "bad quality",
+    "positive_avoidance": null,
+    "generation_purpose": "test",
+    "aspect_ratio": "1:1",
+    "width": 1024,
+    "height": 1024,
+    "megapixels": 1
+  },
+  "formatExample": {
+    "slots": {
+      "quality": [
+        "masterpiece",
+        "best quality",
+        "score_7",
+        "highres",
+        "safe"
+      ],
+      "artist_style": [
+        "@say_hana"
+      ],
+      "count_gender": [],
+      "character_series": [],
+      "appearance": [],
+      "clothing_state": [],
+      "pose_action_sex": [],
+      "expression_reaction": [],
+      "camera_shot": [],
+      "scene_environment": [],
+      "detail_mood": [],
+      "natural_language": []
+    },
+    "display_text": "提示词格式示例。"
+  },
+  "after": {
+    "": "校验通过。将 stdout JSON 交给生成步骤；本命令尚未创建图片。",
+    "--prompt-format": "格式校验通过。将 stdout 中的 prompt_text 写入完整生成目标的 positive_prompt，补齐生成字段后运行: {cli} < input.json",
+    "--print-input-template": "将 stdout 模板保存为 input.json，填写槽位后运行: {cli} --prompt-format < input.json"
+  }
+}

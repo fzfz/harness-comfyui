@@ -66,7 +66,7 @@ function expectBothInvalid(value) {
 }
 
 function runCli(script, input) {
-  return spawnSync(process.execPath, [script, '--prompt-format'], {
+  return spawnSync(process.execPath, [script, '--prompt-format', '--quiet'], {
     input: JSON.stringify(input),
     encoding: 'utf8',
   })
@@ -251,8 +251,9 @@ describe('Prompt Builder weight CLI contract', () => {
   ])('%s reports an invalid weight on stderr with exit code 2', (_name, script, input, path) => {
     const result = runCli(script, input)
     expect(result.status).toBe(2)
+    expect(result.stderr).toContain('NEXT:')
     expect(result.stdout).toBe('')
-    expect(JSON.parse(result.stderr)).toEqual({
+    expect(JSON.parse(result.stderr.split('\n')[0])).toEqual({
       violations: [expect.objectContaining({ path })],
     })
   })

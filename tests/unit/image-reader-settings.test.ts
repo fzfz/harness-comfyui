@@ -117,6 +117,10 @@ function inputByType(renderer: ReturnType<typeof create>, type: string, index = 
   return renderer.root.findAllByType('input').filter(input => input.props.type === type)[index]!
 }
 
+it('creates profiles with the approved factual observation prompt', () => {
+  expect(createImageReaderProfile('new-profile').defaultPrompt).toBe('请准确描述图片中的主体、构图、姿态、服装、环境、光线、风格、明显缺陷和可见文字。只报告图片中可以观察到的内容。')
+})
+
 describe('image reader settings page behavior', () => {
   it('decodes a complete multi-profile configuration and rejects duplicate or missing active ids', () => {
     const custom = Object.freeze({
