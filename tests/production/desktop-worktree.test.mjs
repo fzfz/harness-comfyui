@@ -72,8 +72,8 @@ async function fixture(name = 'desktop-anywhere-') {
   ])
   const baseline = Object.freeze({
     packages: {
-      desktop: { name: 'dsh-plugin-desktop', version: '2.0.9' },
-      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.1' },
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.11' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.2' },
       electron: { name: 'electron', version: '43.3.0' },
     },
     profile: {

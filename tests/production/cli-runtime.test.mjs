@@ -56,7 +56,7 @@ describe('pure CLI startup', () => {
   it('rejects wrong DSH versions before building', async () => {
     const root = await fixture()
     await writeFile(join(root, 'node_modules/@deepseek-ai/dsh/package.json'), JSON.stringify({ version: '0.0.1' }))
-    await expect(prepareCliRuntime(root)).rejects.toThrow('requires 0.1.5-rc.1')
+    await expect(prepareCliRuntime(root)).rejects.toThrow('requires 0.1.5-rc.2')
     expect(mocks.host).not.toHaveBeenCalled()
   })
   it('rejects wrong existing bundle links', async () => {

@@ -8,7 +8,7 @@ config/desktop-worktree.json 定义独立开发实例的主 checkout、运行目
 
 ## 主开发 checkout 依赖准备
 
-主 checkout 保存已审核的依赖：项目依赖在主 checkout 按 pnpm-lock.yaml 执行 pnpm install --frozen-lockfile；Desktop 2.0.9 依赖在基线指定仓库按 yarn.lock 执行 corepack yarn install --immutable，随后执行 corepack yarn workspace dsh-community-market build、corepack yarn workspace dsh-plugin-desktop build 和 corepack yarn workspace dsh-plugin-desktop prepare:electron-native。本机使用已安装的 Node 24.14.0 完成 fs-ext 2.1.1 的 Node 绑定构建；prepare:electron-native 生成 Electron 43.3.0 对应的绑定。安装前必须完成 docs/system/releasing.md 规定的依赖审核与安装授权。
+主 checkout 保存已审核的依赖：项目依赖在主 checkout 按 pnpm-lock.yaml 执行 pnpm install --frozen-lockfile；Desktop 2.0.11 依赖在基线指定仓库按 yarn.lock 执行 corepack yarn install --immutable，随后执行 corepack yarn workspace dsh-community-market build、corepack yarn workspace dsh-plugin-desktop build 和 corepack yarn workspace dsh-plugin-desktop prepare:electron-native。本机使用已安装的 Node 24.14.0 完成 fs-ext 2.1.1 的 Node 绑定构建；prepare:electron-native 生成 Electron 43.3.0 对应的绑定。安装前必须完成 docs/system/releasing.md 规定的依赖审核与安装授权。
 
 desktop:dependencies:link 仅在独立 worktree 中运行，用于从主 checkout 和基线 Stable workspace 建立依赖视图；主 checkout 不运行该命令。该命令检查宿主 peer 包的实际版本，不从其他 Desktop 借用缺失宿主包。
 
@@ -55,7 +55,7 @@ pnpm web:start、pnpm web:status、pnpm web:health、pnpm web:logs、pnpm web:st
 
 ## 纯 DSH CLI
 
-`pnpm cli:run -- "任务文本"` 通过 `scripts/cli/run.mjs` 构建核心 Host 与 managed CLI，准备 `profiles/comfyui-cli/`，然后以前台普通 Node.js 子进程启动已安装的 `@deepseek-ai/dsh` headless 入口。调用者必须预先准备 DSH `0.1.5-rc.1`、其 base/headless bundle、workspace 与 agent-presets 公共包、项目构建工具和业务依赖；本命令读取当前 checkout 的包解析环境。worktree 的已有依赖视图可用于开发验收，启动脚本本身只解析 DSH 公共包。
+`pnpm cli:run -- "任务文本"` 通过 `scripts/cli/run.mjs` 构建核心 Host 与 managed CLI，准备 `profiles/comfyui-cli/`，然后以前台普通 Node.js 子进程启动已安装的 `@deepseek-ai/dsh` headless 入口。调用者必须预先准备 DSH `0.1.5-rc.2`、其 base/headless bundle、workspace 与 agent-presets 公共包、项目构建工具和业务依赖；本命令读取当前 checkout 的包解析环境。worktree 的已有依赖视图可用于开发验收，启动脚本本身只解析 DSH 公共包。
 
 `config/cli-runtime.json` 定义隔离运行目录 `.local/cli-runtime/`、DSH Profile 名称、环境文件及业务目录。启动器在该目录保存 DSH home、数据库、Run 和媒体，读取当前 checkout 的 `.env`，并安装 `config/product-agent.json` 中的项目 Preset。调用者在该 DSH home 配置可用 Provider、模型及凭据后提交任务。前台任务结束或收到终止信号时，DSH 退出并释放插件资源。
 

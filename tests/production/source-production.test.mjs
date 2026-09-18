@@ -496,6 +496,7 @@ describe('Web Host shared process commands', () => {
       `client-modules: bundle ${invalidUrl} loaded without registering "harness-comfyui" via __ModuleLoader__.load`,
     )
 
+    await rm(resolve(repositoryRoot, '.local/source-host/index.js'), { force: true })
     const fixture = await createFixture({ realDsh: true })
     const processStatePath = resolve(fixture.runtimeRoot, 'state/process.json')
     const start = runSourceProductionCommand('start', { loadContext: async () => fixture.context })

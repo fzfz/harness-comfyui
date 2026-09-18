@@ -4,7 +4,7 @@
 
 ## 平台
 
-**Harness Core**：项目依赖的 DeepSeek Harness `0.1.5-rc.1` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
+**Harness Core**：项目依赖的 DeepSeek Harness `0.1.5-rc.2` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过公共 package export 与 profile composition 接入，不修改 Harness package 源码。
 
 **Host Plugin**：`src/host/plugin.ts` 导出的 Harness Host 插件。Host Plugin 在启动时加载并校验唯一的 `production` Configuration Profile，注册数据源服务 Settings、Catalog Remote、Generation Remote、两个 Generation Tool、媒体路由和 Generation Coordinator。
 
@@ -84,6 +84,6 @@
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。当前值为 `0.39.9`。
+**Product Version**：根 `package.json.version` 中的 SemVer。候选变更及状态见 [发布说明](docs/releasenotes.md)。
 
-**GitHub Release**：指向已通过本地发布门禁和独立审查的精确提交的 Git tag 与 GitHub Release 记录。本版本发布完成后的标签为 `v0.39.9`；发布不创建或附加产品包。
+**GitHub Release**：指向已通过本地发布门禁和独立审查的精确提交的 Git tag 与 GitHub Release 记录。标签按 `v<package.json.version>` 命名，Release 仅包含 tag 与发布记录。

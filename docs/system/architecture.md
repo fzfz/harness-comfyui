@@ -56,7 +56,7 @@ CLI 卸载时撤销 capability、关闭连接并等待活动请求退出，等�
 
 DSH Desktop、DeepSeek Harness 与当前仓库保持三个源码边界。当前仓库通过公共接口接入 DeepSeek Harness，并由 anywhere Stable workspace 解析宿主 peerDependencies。Profile 的 package.json 声明 harness-comfyui 安装来源，dsh.profile.bundles 注册插件。插件构建产物和业务依赖保存在实例安装目录；插件源码不进入 Desktop 仓库。
 
-Client 通过 DSH 0.1.5-rc.1 的 `sidebarRightTabs` 注册 ComfyUI 结果页，并通过 `sidebar.right.pane.tab` 扩展位显示当前 Session 的 Generation Run/Media 投影。已保存和空白 Session 使用同一个原生侧栏页签。工作台首次启用时打开结果页；关闭操作只关闭工作台自己的页签，其他宿主页签继续由原生侧栏管理。结果页按照“本会话媒体”“运行状态”的顺序显示内容页签，并在每次创建组件时默认选择“本会话媒体”。工作台按钮依据原生结果页的可见状态显示“打开结果列”或“关闭结果列”。
+Client 通过 DSH 0.1.5-rc.2 的 `sidebarRightTabs` 注册 ComfyUI 结果页，并通过 `sidebar.right.pane.tab` 扩展位显示当前 Session 的 Generation Run/Media 投影。已保存和空白 Session 使用同一个原生侧栏页签。工作台首次启用时打开结果页；关闭操作只关闭工作台自己的页签，其他宿主页签继续由原生侧栏管理。结果页按照“本会话媒体”“运行状态”的顺序显示内容页签，并在每次创建组件时默认选择“本会话媒体”。工作台按钮依据原生结果页的可见状态显示“打开结果列”或“关闭结果列”。
 
 `WorkbenchDetails` 在订阅 `GenerationProjectionStore` 后，把 `SessionSnapshot.running` 传给 Store 的 `setSessionRunning()`。此后，`WorkbenchDetails` 仅在该布尔值变化时再次调用 `setSessionRunning()`。Store 按 Session 共享查询、快照和计时器：有实际订阅者时，只要会话 Agent 正在运行或最近一次成功投影包含活动 Run，就继续调用 Generation Remote。会话运行状态变化会立即触发查询；会话 Agent 停止且投影没有活动 Run 后，Store 停止轮询。普通正文事件和工具事件不会触发结果查询。最后一个订阅者退出或 Store 释放时，Store 取消请求并清除对应的计时器、运行状态和缓存；旧请求的迟到响应不能更新快照或恢复计时器。
 

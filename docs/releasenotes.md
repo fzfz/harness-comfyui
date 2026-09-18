@@ -1,3 +1,19 @@
+# Harness ComfyUI v0.44.2（候选）
+
+## Desktop 与 DSH 基线
+
+候选基线升级为自有 Desktop 2.0.11 Stable、DSH 0.1.5-rc.2 和 Electron 43.3.0，固定 fork 提交为 `a3ac8fe929e3b32e62c032d120071f5f09ff6210`。Stable 保留会话删除、Workspace、持久化、真实 Session 请求头、模型推理设置和 managed CLI 路由鉴权补丁。插件 DSH peer 范围更新为 `>=0.1.5-rc.2 <0.1.6`，依赖视图按标准 SemVer 规则拒绝 0.1.6 Alpha，纯 CLI Profile 固定到 RC.2；本仓库包管理器更新为 pnpm 11.11.0。
+
+fork 的 Beta 通道按上游保留 DSH 0.1.6-alpha.1，完成构建和既有测试；八项自有 DSH 包补丁仅移植至 Stable。Beta 属于后续兼容性迁移范围。
+
+Web Host 启动流程现在自行构建 Host 入口，纯 CLI 先运行并清理 Web 产物后，Web Host 仍能正常启动。
+
+## 依赖审计与验收状态
+
+fork 更新 sharp、pnpm、xmldom、fast-uri、js-yaml、hono、qs 和 Vitest 相关包，精确版本及审计证据见[基线验证记录](verification/upstream-baseline-20260919.md)。最终依赖审计保留 adm-zip 0.6.0 的中危公告 GHSA-vwc7-r8mq-g2x9；用户已批准保留该版本并记录公告。
+
+fork 完整 `corepack yarn check` 通过。独立 Desktop 健康启动、插件安装来源、Catalog 和 ImageReader Remote 验证通过，纯 CLI 真实模型任务以退出码 0 结束。Desktop 真实模型会话因 Electron 网络连接超时尚未完成，三种 Preset 的真实读图验收保持待完成。最终插件门禁状态随候选提交交付；本版本尚未推送、发布或部署。
+
 # Harness ComfyUI v0.44.1
 
 ## CLI 帮助与错误指引

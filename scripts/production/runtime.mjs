@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { validateSourceRuntime } from './contract.mjs'
+import { materializeSourceHostModule } from './host-module.mjs'
 import { materializeSourceCliModule } from './cli-module.mjs'
 import { materializeSourceClientModule } from './client-module.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
@@ -395,6 +396,7 @@ export async function prepareSourceRuntime(context, options = {}) {
   await assertExecutable(context.dshExecutable, 'source production dsh executable')
   await mkdir(context.runtime.paths.apiWorkflowCacheDirectory, { recursive: true })
   await (options.materializeCli ?? materializeSourceCliModule)(context.repositoryRoot)
+  await materializeSourceHostModule(context.repositoryRoot)
   await materializeSourceClientModule(context.repositoryRoot)
   await materializeSourceProfile(context.repositoryRoot, context.dshHome, {
     profileName: context.dshProfile,
