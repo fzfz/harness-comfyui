@@ -57,7 +57,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 ## 项目 Agent Preset 配置
 
-DSH 0.1.5-rc.1 的 `@deepseek-ai/dsh-persona` 使用 `config.prefix` 保存 Persona 正文。两个产品 Preset 的 `agent.cordis.yml` 必须按该字段提供原有 Persona；预设测试直接使用所选 Desktop 的 Persona schema 校验配置。
+DSH 0.1.5-rc.2 的 `@deepseek-ai/dsh-persona` 使用 `config.prefix` 保存 Persona 正文。两个产品 Preset 的 `agent.cordis.yml` 必须按该字段提供原有 Persona；预设测试直接使用所选 Desktop 的 Persona schema 校验配置。
 
 `config/product-agent.json` 是项目自有 Agent Preset 和 Repository Skills 路径的唯一结构化来源。该文件必须只包含以下字段：
 

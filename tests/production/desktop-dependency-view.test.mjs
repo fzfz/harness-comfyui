@@ -1,10 +1,12 @@
 import { chmod, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 import { afterEach, describe, expect, it } from 'vitest'
+
+import { createTestDesktopRequire, loadTestDesktopContext } from '../support/desktop-context.mjs'
 
 import { prepareDesktopDependencyView } from '../../scripts/desktop/dependency-view.mjs'
 
@@ -25,7 +27,7 @@ async function writePackage(nodeModules, name, version, bin) {
 function versionSatisfies(version, range) {
   if (range === version) return true
   if (range === '^2.0.0') return /^2\./u.test(version)
-  if (range === '>=0.1.5-rc.1 <0.2.0') return version === '0.1.5-rc.1'
+  if (range === '>=0.1.5-rc.2 <0.1.6') return version === '0.1.5-rc.2'
   return false
 }
 
@@ -50,9 +52,9 @@ async function fixture() {
   }
   const candidateManifest = {
     name: 'dsh-plugin-desktop',
-    version: '2.0.9',
+    version: '2.0.11',
     dependencies: {
-      '@deepseek-ai/dsh': '0.1.5-rc.1',
+      '@deepseek-ai/dsh': '0.1.5-rc.2',
       'fixture-host': '2.1.0',
       react: '18.3.1',
     },
@@ -74,7 +76,7 @@ async function fixture() {
     writePackage(mainNodeModules, 'typescript', '6.0.3', { tsc: 'bin/tsc' }),
     writePackage(candidateNodeModules, 'fixture-host', '2.1.0'),
     writePackage(candidateNodeModules, 'react', '18.3.1'),
-    writePackage(candidateNodeModules, '@deepseek-ai/dsh', '0.1.5-rc.1'),
+    writePackage(candidateNodeModules, '@deepseek-ai/dsh', '0.1.5-rc.2'),
   ])
   await mkdir(resolve(candidateNodeModules, '@deepseek-ai/dsh/lib'), { recursive: true })
   await writeFile(resolve(candidateNodeModules, '@deepseek-ai/dsh/lib/bin.js'), '#!/usr/bin/env node\nprocess.stdout.write("candidate-dsh")\n')
@@ -93,6 +95,33 @@ async function fixture() {
 }
 
 describe('Desktop dependency view', () => {
+  it.each([
+    ['0.1.5-rc.1', false],
+    ['0.1.5-rc.2', true],
+    ['0.1.5', true],
+    ['0.1.6-alpha.1', false],
+    ['0.1.6', false],
+  ])('validates DSH %s against the declared peer range (accepted=%s)', async (version, accepted) => {
+    const value = await fixture()
+    const candidateRequire = createTestDesktopRequire(await loadTestDesktopContext())
+    await symlink(dirname(candidateRequire.resolve('semver/package.json')), resolve(value.candidateNodeModules, 'semver'), 'dir')
+    const manifestPath = resolve(value.repositoryRoot, 'package.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+    const projectManifest = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'))
+    const range = projectManifest.peerDependencies['@deepseek-ai/dsh-agent']
+    manifest.peerDependencies['@deepseek-ai/dsh-agent'] = range
+    await writeFile(manifestPath, JSON.stringify(manifest))
+    await writePackage(value.candidateNodeModules, '@deepseek-ai/dsh-agent', version)
+
+    const preparation = prepareDesktopDependencyView({ ...value, versionSatisfies: undefined })
+    if (accepted) {
+      await expect(preparation).resolves.toMatchObject({ changed: true })
+    } else {
+      await expect(preparation).rejects.toThrow(`Candidate Desktop peer dependency @deepseek-ai/dsh-agent version "${version}" does not satisfy ${range}`)
+      expect(await readlink(resolve(value.repositoryRoot, 'node_modules'))).toBe(value.mainNodeModules)
+    }
+  })
+
   it('creates an isolated resolver view from main tools and candidate peer dependencies', async () => {
     const value = await fixture()
 
@@ -110,7 +139,7 @@ describe('Desktop dependency view', () => {
     const requireFromView = createRequire(resolve(value.repositoryRoot, 'package.json'))
     expect(requireFromView('sharp')).toBe('sharp@0.35.4')
     expect(requireFromView('fixture-host')).toBe('fixture-host@2.1.0')
-    expect(requireFromView('@deepseek-ai/dsh')).toBe('@deepseek-ai/dsh@0.1.5-rc.1')
+    expect(requireFromView('@deepseek-ai/dsh')).toBe('@deepseek-ai/dsh@0.1.5-rc.2')
     expect(spawnSync(resolve(value.repositoryRoot, 'node_modules/.bin/tsc'), ['--version'], { encoding: 'utf8' })).toMatchObject({
       status: 0,
       stdout: 'Version 6.0.3\n',

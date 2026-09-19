@@ -1,0 +1,970 @@
+{
+  "observedOn": "2026-09-19",
+  "candidateCommit": "733146e376a8819a96de8ed38ceba2a63d6bd90c",
+  "startup": [
+    {
+      "schemaVersion": 1,
+      "timestamp": "2026-09-19T01:39:41.921Z",
+      "monotonicMs": 3816.676,
+      "durationMs": 694.422,
+      "runId": "81222ef0-605c-4b53-b5cc-553206a789da",
+      "operationId": "a4c4b34f-a76b-48f5-a58c-6b5a0c94c56e",
+      "eventName": "renderer.boot.completed",
+      "details": {
+        "rendererStatus": "healthy"
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "timestamp": "2026-09-19T01:39:41.953Z",
+      "monotonicMs": 3848.956,
+      "durationMs": 3848.954,
+      "runId": "81222ef0-605c-4b53-b5cc-553206a789da",
+      "operationId": "a4c4b34f-a76b-48f5-a58c-6b5a0c94c56e",
+      "eventName": "startup.run.completed",
+      "details": {
+        "finalStage": "health-commit",
+        "rendererStatus": "healthy"
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "sessionId": "baseline-resume-default-20260919",
+      "creationMode": "default",
+      "creation": {
+        "id": "baseline-resume-default-20260919",
+        "created": {
+          "ok": true,
+          "value": {
+            "sessionId": "baseline-resume-default-20260919",
+            "agentPreset": "harness-comfyui-cli-candidate"
+          }
+        },
+        "selected": {
+          "ok": true,
+          "value": {
+            "selected": {
+              "provider": "cliproxy",
+              "model": "gpt-5.6-luna"
+            }
+          }
+        },
+        "sent": {
+          "ok": true,
+          "value": {
+            "accepted": true
+          }
+        }
+      },
+      "header": {
+        "version": 3,
+        "id": "baseline-resume-default-20260919",
+        "createdAt": 1789782008488,
+        "cwd": "/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness",
+        "isSeeded": false,
+        "agentPreset": "harness-comfyui-cli-candidate"
+      },
+      "model": {
+        "provider": "cliproxy",
+        "model": "gpt-5.6-luna"
+      },
+      "skillPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md",
+      "referencePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md",
+      "readCall": {
+        "type": "tool/call",
+        "seq": 24,
+        "time": 1789782018540,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "callId": "call_zvGrnBwLVBNqKbWUQoJNy1UJ",
+          "name": "bash",
+          "arguments": "{\"command\":\"cat /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md && printf '\\\\n--- references/image-inspection-cli.md ---\\\\n' && cat /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"读取本地读图技能与 CLI 合同文档\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+        }
+      },
+      "readResult": {
+        "type": "tool/result",
+        "seq": 25,
+        "time": 1789782018563,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_zvGrnBwLVBNqKbWUQoJNy1UJ"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_zvGrnBwLVBNqKbWUQoJNy1UJ",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "---\nname: local-image-reader\ndescription: 使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。\n---\n\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。\n\n同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n当前 Agent 必须按输入顺序为每张图片分别调用一次 `node \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n1. `file_path`；\n2. CLI 返回的 `provider` 与 `model`；\n3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。\n\n当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。\n\n--- references/image-inspection-cli.md ---\n# Harness ComfyUI 本地图片读取 CLI 参考\n\n## CLI 的用途与适用任务\n\nHarness ComfyUI 本地图片读取 CLI 使用 Harness“图片读取”设置中当前命名配置的视觉模型读取一张本地图片。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时，`local-image-reader` Skill 调用 `image inspect --stdin`。\n\n该命令只读取调用者提供的本地图片路径并返回视觉模型观察文本。调用副作用见“副作用与重复调用”。\n\n## 调用环境与可执行入口\n\nHarness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node \"$DSH_HARNESS_COMFYUI_CLI\"` 执行本文件定义的命令。受管前台 shell Tool Call 自动提供 CLI 脚本路径、Host 连接地址和本次调用的短期授权凭证（capability）。\n\nSkill 执行者可以从当前 Session 工作目录调用该命令。`file_path` 的条件和来源分别见“参数与标准输入”和“图片路径与提示词的来源”。\n\n用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图提示词、`temperature`、最大输出 Token 和模型连接信息。Skill 执行者按“参数与标准输入”提供本次输入。\n\n## 命令与调用时机\n\nSkill 执行者必须为每张待读取图片分别调用一次：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin\n```\n\n该命令一次只接受一个本地图片路径。Skill 执行者读取多张图片时，必须按用户提供的路径顺序完成多次独立调用。用户或宿主取消调用后，Skill 执行者必须立即结束本次 Skill 执行。\n\n## 参数与标准输入\n\n该命令接受可选的 `--quiet`，用于省略成功后的操作提示。Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：\n\n```json\n{\n  \"file_path\": \"/absolute/local/path/result.png\"\n}\n```\n\n用户为本次视觉观察指定提示词时，Skill 执行者必须增加可选的 `prompt`：\n\n```json\n{\n  \"file_path\": \"/absolute/local/path/result.png\",\n  \"prompt\": \"只识别图片中可见的文字，并按从上到下的顺序返回。\"\n}\n```\n\n`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须在 Host 当前图片输入上限以内。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。`file_path` 中的字符必须位于 U+0000–U+001F 和 U+007F–U+009F 控制字符范围以外。\n\n视觉模型接收的是缩小后的图片：每帧宽高约为原图的 70%，输出尺寸取整数像素且每边至少为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。用户原图保持不变，成功输出中的 `file_path` 仍为输入的原图绝对路径。\n\n`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。\n\n缺失 `file_path`、`file_path` 不是字符串、路径超过长度限制、路径包含控制字符、`prompt` 不是字符串或 stdin JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。CLI 不接受调用时 Provider、模型、凭据、`temperature` 或最大输出 Token。\n\n## 图片路径与提示词的来源\n\nSkill 执行者必须从用户消息中明确提供的本地图片绝对路径，或用户明确指代的当前消息图片附件所提供的本地绝对路径，取得 `file_path`。\n\n用户没有指定本次观察重点或返回格式时，Skill 执行者省略 `prompt`；用户明确指定本次观察要求时，Skill 执行者从该要求构造可独立理解的完整 `prompt`。\n\n## 输出与完成语义\n\n命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON；省略 `--quiet` 时，stderr 包含以 `NEXT:` 开头的操作提示：\n\n```json\n{\n  \"provider\": \"provider-route\",\n  \"model\": \"vision-model\",\n  \"file_path\": \"/absolute/local/path/result.png\",\n  \"observation\": \"图片中可见一名白发人物，采用半身正面构图。\"\n}\n```\n\n`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是视觉模型返回的图片观察文本。该输出表示本次视觉模型调用已经完成。\n\n命令级失败时，CLI 不在 stdout 输出 JSON，stderr 只包含一行 `ERROR_CODE: message`，进程退出码非 `0`。\n\n## 错误、修正与重试\n\n| 错误码 | 含义与修正动作 |\n| --- | --- |\n| `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |\n| `CLI_REQUEST_INVALID` | stdin JSON 不符合输入合同。Skill 执行者必须修正 `file_path` 的属性名、类型、长度或字符，修正 `prompt` 的属性名或类型，或删除额外属性后重试。 |\n| `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |\n| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |\n| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须确认本次 JSON 只包含一个 `file_path` 和可选 `prompt`，并缩短过长输入。 |\n| `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须报告当前 `file_path` 和错误码，并停止重试当前图片。 |\n| `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |\n| `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |\n| `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图提示词。 |\n| `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |\n| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`；用户提供满足输入条件且可以完成缩放的本地图片绝对路径后，Skill 执行者可以重试。 |\n| `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`；Host 图片读取服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本；当前命名配置对应的模型服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_EMPTY_RESPONSE` | 当前视觉模型调用没有返回观察文本。Skill 执行者必须报告当前 `file_path`；本次调用包含 `prompt` 时检查该 `prompt`，省略 `prompt` 时请用户检查当前配置的默认读图提示词，然后重试。 |\n\n调用取消时，Skill 执行者按“命令与调用时机”结束本次执行。\n\n## 副作用与重复调用\n\n`image inspect --stdin` 不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。重复调用同一路径会再次发起视觉模型请求。CLI 不缓存或覆盖前一次成功观察。\n\n## 完整调用示例\n\n以下 `/absolute/local/path/result.png` 来自用户消息中明确提供的本地图片绝对路径。用户没有指定本次观察重点，因此命令省略 `prompt`：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\"}\nJSON\n```\n\n用户要求只识别图片文字时，Skill 执行者调用：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\",\"prompt\":\"只识别图片中可见的文字，并按从上到下的顺序返回。\"}\nJSON\n```\n\n## 帮助与 Python 调用\n\nSkill 执行者需要发现命令时，从 `node \"$DSH_HARNESS_COMFYUI_CLI\" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。\n\nPython 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：\n\n```python\nimport json\nimport os\nimport subprocess\n\nresult = subprocess.run(\n    [\"node\", os.environ[\"DSH_HARNESS_COMFYUI_CLI\"], \"image\", \"inspect\", \"--stdin\"],\n    input=json.dumps({\"file_path\": \"/absolute/local/path/result.png\"}),\n    text=True,\n    capture_output=True,\n)\nif result.returncode == 0:\n    observation = json.loads(result.stdout)[\"observation\"]\n    print(observation)\nelse:\n    print(result.stderr)\n```\n\n错误消息中的帮助入口提供对应调用方式。\n"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "5bfe6b50-8e47-49b6-b54b-1fb61a7087b2"
+          }
+        },
+        "sourceEventSeqs": [
+          24
+        ],
+        "surfaceOp": "append"
+      },
+      "cliCall": {
+        "type": "tool/call",
+        "seq": 29,
+        "time": 1789782024111,
+        "data": {
+          "turn": 1,
+          "step": 3,
+          "callId": "call_PXy558XoKmG01uoab76cvBMn",
+          "name": "bash",
+          "arguments": "{\"command\":\"printf '%s\\\\n' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin\",\"description\":\"执行受管前台 Bash 本地读图\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+        }
+      },
+      "cliResult": {
+        "type": "tool/result",
+        "seq": 30,
+        "time": 1789782026066,
+        "data": {
+          "turn": 1,
+          "step": 3,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_PXy558XoKmG01uoab76cvBMn"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_PXy558XoKmG01uoab76cvBMn",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片主体颜色是红色。\"}\n[stderr]\nNEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "ad221fd6-8812-4b67-811d-d746e6c29fc1"
+          }
+        },
+        "sourceEventSeqs": [
+          29
+        ],
+        "surfaceOp": "append"
+      },
+      "stdin": {
+        "file_path": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png",
+        "prompt": "只用一句话说明图片主体颜色。"
+      },
+      "exitCode": 0,
+      "exitCodeEvidence": "Bash foreground presenter emits [exit code: N] for every nonzero exit; no marker, timeout, or abort appears.",
+      "stdout": "{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片主体颜色是红色。\"}\n",
+      "stderr": "NEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n",
+      "completedTurn": {
+        "type": "turn/end",
+        "seq": 35,
+        "time": 1789782037035,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "earlierAttempts": [],
+      "creationRequest": {
+        "workspaceId": "036c7988-c557-46d6-8c81-df0a8e12bffe",
+        "sessionId": "baseline-resume-default-20260919"
+      },
+      "creationRequestEvidence": "Recorded from the functions.exec invocation that submitted these three sequential remote.session.create calls; the response was persisted in .local/baseline-resume-created.json.",
+      "skillDiscoveryCall": {
+        "type": "tool/call",
+        "seq": 18,
+        "time": 1789782012330,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "callId": "call_PViBeN1RFCHvLgrXQvzYqiOK",
+          "name": "skill",
+          "arguments": "{\"name\":\"local-image-reader\"}"
+        }
+      },
+      "skillDiscoveryResult": {
+        "type": "tool/result",
+        "seq": 19,
+        "time": 1789782012338,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_PViBeN1RFCHvLgrXQvzYqiOK"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_PViBeN1RFCHvLgrXQvzYqiOK",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<skill_content name=\"local-image-reader\">\n<skill_resources>\nBase directory for this skill: /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader\nResolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.\n</skill_resources>\n\n<skill_instructions>\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。\n\n同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n当前 Agent 必须按输入顺序为每张图片分别调用一次 `node \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n1. `file_path`；\n2. CLI 返回的 `provider` 与 `model`；\n3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。\n\n当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。\n</skill_instructions>\n</skill_content>"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "af915478-83a8-423f-88fe-ff77644dd8fd"
+          }
+        },
+        "sourceEventSeqs": [
+          18
+        ],
+        "surfaceOp": "append"
+      }
+    },
+    {
+      "sessionId": "baseline-resume-workbench-20260919",
+      "creationMode": "workbench",
+      "creation": {
+        "id": "baseline-resume-workbench-20260919",
+        "created": {
+          "ok": true,
+          "value": {
+            "sessionId": "baseline-resume-workbench-20260919",
+            "agentPreset": "harness-comfyui-cli-candidate"
+          }
+        },
+        "selected": {
+          "ok": true,
+          "value": {
+            "selected": {
+              "provider": "cliproxy",
+              "model": "gpt-5.6-luna"
+            }
+          }
+        },
+        "sent": {
+          "ok": true,
+          "value": {
+            "accepted": true
+          }
+        }
+      },
+      "header": {
+        "version": 3,
+        "id": "baseline-resume-workbench-20260919",
+        "createdAt": 1789782008564,
+        "cwd": "/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness",
+        "isSeeded": false,
+        "agentPreset": "harness-comfyui-cli-candidate"
+      },
+      "model": {
+        "provider": "cliproxy",
+        "model": "gpt-5.6-luna"
+      },
+      "skillPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md",
+      "referencePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md",
+      "readCall": {
+        "type": "tool/call",
+        "seq": 24,
+        "time": 1789782018643,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "callId": "call_lK2BnaSKzJdXb2yjxM2jOIns",
+          "name": "bash",
+          "arguments": "{\"command\":\"cat /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md && printf '\\\\n--- references/image-inspection-cli.md ---\\\\n' && cat /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"读取本地读图技能与 CLI 文档\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+        }
+      },
+      "readResult": {
+        "type": "tool/result",
+        "seq": 25,
+        "time": 1789782018662,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_lK2BnaSKzJdXb2yjxM2jOIns"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_lK2BnaSKzJdXb2yjxM2jOIns",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "---\nname: local-image-reader\ndescription: 使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。\n---\n\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。\n\n同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n当前 Agent 必须按输入顺序为每张图片分别调用一次 `node \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n1. `file_path`；\n2. CLI 返回的 `provider` 与 `model`；\n3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。\n\n当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。\n\n--- references/image-inspection-cli.md ---\n# Harness ComfyUI 本地图片读取 CLI 参考\n\n## CLI 的用途与适用任务\n\nHarness ComfyUI 本地图片读取 CLI 使用 Harness“图片读取”设置中当前命名配置的视觉模型读取一张本地图片。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时，`local-image-reader` Skill 调用 `image inspect --stdin`。\n\n该命令只读取调用者提供的本地图片路径并返回视觉模型观察文本。调用副作用见“副作用与重复调用”。\n\n## 调用环境与可执行入口\n\nHarness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node \"$DSH_HARNESS_COMFYUI_CLI\"` 执行本文件定义的命令。受管前台 shell Tool Call 自动提供 CLI 脚本路径、Host 连接地址和本次调用的短期授权凭证（capability）。\n\nSkill 执行者可以从当前 Session 工作目录调用该命令。`file_path` 的条件和来源分别见“参数与标准输入”和“图片路径与提示词的来源”。\n\n用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图提示词、`temperature`、最大输出 Token 和模型连接信息。Skill 执行者按“参数与标准输入”提供本次输入。\n\n## 命令与调用时机\n\nSkill 执行者必须为每张待读取图片分别调用一次：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin\n```\n\n该命令一次只接受一个本地图片路径。Skill 执行者读取多张图片时，必须按用户提供的路径顺序完成多次独立调用。用户或宿主取消调用后，Skill 执行者必须立即结束本次 Skill 执行。\n\n## 参数与标准输入\n\n该命令接受可选的 `--quiet`，用于省略成功后的操作提示。Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：\n\n```json\n{\n  \"file_path\": \"/absolute/local/path/result.png\"\n}\n```\n\n用户为本次视觉观察指定提示词时，Skill 执行者必须增加可选的 `prompt`：\n\n```json\n{\n  \"file_path\": \"/absolute/local/path/result.png\",\n  \"prompt\": \"只识别图片中可见的文字，并按从上到下的顺序返回。\"\n}\n```\n\n`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须在 Host 当前图片输入上限以内。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。`file_path` 中的字符必须位于 U+0000–U+001F 和 U+007F–U+009F 控制字符范围以外。\n\n视觉模型接收的是缩小后的图片：每帧宽高约为原图的 70%，输出尺寸取整数像素且每边至少为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。用户原图保持不变，成功输出中的 `file_path` 仍为输入的原图绝对路径。\n\n`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。\n\n缺失 `file_path`、`file_path` 不是字符串、路径超过长度限制、路径包含控制字符、`prompt` 不是字符串或 stdin JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。CLI 不接受调用时 Provider、模型、凭据、`temperature` 或最大输出 Token。\n\n## 图片路径与提示词的来源\n\nSkill 执行者必须从用户消息中明确提供的本地图片绝对路径，或用户明确指代的当前消息图片附件所提供的本地绝对路径，取得 `file_path`。\n\n用户没有指定本次观察重点或返回格式时，Skill 执行者省略 `prompt`；用户明确指定本次观察要求时，Skill 执行者从该要求构造可独立理解的完整 `prompt`。\n\n## 输出与完成语义\n\n命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON；省略 `--quiet` 时，stderr 包含以 `NEXT:` 开头的操作提示：\n\n```json\n{\n  \"provider\": \"provider-route\",\n  \"model\": \"vision-model\",\n  \"file_path\": \"/absolute/local/path/result.png\",\n  \"observation\": \"图片中可见一名白发人物，采用半身正面构图。\"\n}\n```\n\n`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是视觉模型返回的图片观察文本。该输出表示本次视觉模型调用已经完成。\n\n命令级失败时，CLI 不在 stdout 输出 JSON，stderr 只包含一行 `ERROR_CODE: message`，进程退出码非 `0`。\n\n## 错误、修正与重试\n\n| 错误码 | 含义与修正动作 |\n| --- | --- |\n| `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |\n| `CLI_REQUEST_INVALID` | stdin JSON 不符合输入合同。Skill 执行者必须修正 `file_path` 的属性名、类型、长度或字符，修正 `prompt` 的属性名或类型，或删除额外属性后重试。 |\n| `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |\n| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |\n| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须确认本次 JSON 只包含一个 `file_path` 和可选 `prompt`，并缩短过长输入。 |\n| `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须报告当前 `file_path` 和错误码，并停止重试当前图片。 |\n| `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |\n| `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |\n| `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图提示词。 |\n| `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |\n| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`；用户提供满足输入条件且可以完成缩放的本地图片绝对路径后，Skill 执行者可以重试。 |\n| `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`；Host 图片读取服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本；当前命名配置对应的模型服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_EMPTY_RESPONSE` | 当前视觉模型调用没有返回观察文本。Skill 执行者必须报告当前 `file_path`；本次调用包含 `prompt` 时检查该 `prompt`，省略 `prompt` 时请用户检查当前配置的默认读图提示词，然后重试。 |\n\n调用取消时，Skill 执行者按“命令与调用时机”结束本次执行。\n\n## 副作用与重复调用\n\n`image inspect --stdin` 不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。重复调用同一路径会再次发起视觉模型请求。CLI 不缓存或覆盖前一次成功观察。\n\n## 完整调用示例\n\n以下 `/absolute/local/path/result.png` 来自用户消息中明确提供的本地图片绝对路径。用户没有指定本次观察重点，因此命令省略 `prompt`：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\"}\nJSON\n```\n\n用户要求只识别图片文字时，Skill 执行者调用：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\",\"prompt\":\"只识别图片中可见的文字，并按从上到下的顺序返回。\"}\nJSON\n```\n\n## 帮助与 Python 调用\n\nSkill 执行者需要发现命令时，从 `node \"$DSH_HARNESS_COMFYUI_CLI\" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。\n\nPython 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：\n\n```python\nimport json\nimport os\nimport subprocess\n\nresult = subprocess.run(\n    [\"node\", os.environ[\"DSH_HARNESS_COMFYUI_CLI\"], \"image\", \"inspect\", \"--stdin\"],\n    input=json.dumps({\"file_path\": \"/absolute/local/path/result.png\"}),\n    text=True,\n    capture_output=True,\n)\nif result.returncode == 0:\n    observation = json.loads(result.stdout)[\"observation\"]\n    print(observation)\nelse:\n    print(result.stderr)\n```\n\n错误消息中的帮助入口提供对应调用方式。\n"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "95f2fecc-182d-4cb5-95af-e77e0edd8658"
+          }
+        },
+        "sourceEventSeqs": [
+          24
+        ],
+        "surfaceOp": "append"
+      },
+      "cliCall": {
+        "type": "tool/call",
+        "seq": 52,
+        "time": 1789782094566,
+        "data": {
+          "turn": 2,
+          "step": 1,
+          "callId": "call_tA9q8y6PnrluQhkmgPj5ybjy",
+          "name": "bash",
+          "arguments": "{\"command\":\"set -o pipefail\\nprintf '%s\\\\n' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin\\nstatus=$?\\nprintf '退出码: %s\\\\n' \\\"$status\\\"\\nexit \\\"$status\\\"\",\"description\":\"执行本地图片主体颜色观察\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+        }
+      },
+      "cliResult": {
+        "type": "tool/result",
+        "seq": 53,
+        "time": 1789782095746,
+        "data": {
+          "turn": 2,
+          "step": 1,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_tA9q8y6PnrluQhkmgPj5ybjy"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_tA9q8y6PnrluQhkmgPj5ybjy",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片的主体颜色是红色。\"}\n退出码: 0\n[stderr]\nNEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "b0e59197-275b-4cea-9112-20596fa7661c"
+          }
+        },
+        "sourceEventSeqs": [
+          52
+        ],
+        "surfaceOp": "append"
+      },
+      "stdin": {
+        "file_path": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png",
+        "prompt": "只用一句话说明图片主体颜色。"
+      },
+      "exitCode": 0,
+      "exitCodeEvidence": "The same foreground shell printed exit code 0 immediately after the CLI pipeline.",
+      "stdout": "{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片的主体颜色是红色。\"}\n",
+      "stderr": "NEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n",
+      "completedTurn": {
+        "type": "turn/end",
+        "seq": 58,
+        "time": 1789782106894,
+        "data": {
+          "turn": 2,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "earlierAttempts": [
+        {
+          "type": "tool/call",
+          "seq": 29,
+          "time": 1789782025420,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "callId": "call_Y6smVlgjNTiUyuKl7u7YzOpx",
+            "name": "bash",
+            "arguments": "{\"command\":\"set +e\\nstdout=$(printf '%s\\\\n' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin 2> >(cat >&2))\\nstatus=$?\\nprintf '\\\\n--- CAPTURED STDOUT ---\\\\n%s\\\\n' \\\"$stdout\\\"\\nprintf '%s\\\\n' \\\"$status\\\" > /tmp/local-image-reader-exit-code.txt\\nexit \\\"$status\\\"\",\"description\":\"执行受管前台 Bash 真实读图\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 30,
+          "time": 1789782025442,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "message": {
+              "source": {
+                "kind": "tool",
+                "callId": "call_Y6smVlgjNTiUyuKl7u7YzOpx"
+              },
+              "content": [
+                {
+                  "type": "tool-result",
+                  "toolCallId": "call_Y6smVlgjNTiUyuKl7u7YzOpx",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "\n--- CAPTURED STDOUT ---\n\n[stderr]\nbash: line 1: /dev/fd/62: Operation not permitted\n[sandbox: file access denied under workspace-write mode]\n[sandbox: escalation available — retry this exact command once with sandbox_permissions (the narrowest wider mode that suffices) + justification; the approval prompt asks the user]\n[exit code: 1]"
+                    }
+                  ],
+                  "isError": false
+                }
+              ],
+              "role": "user",
+              "id": "f931fd03-442a-4701-8b15-ba3de5ecb2b4"
+            }
+          },
+          "sourceEventSeqs": [
+            29
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 34,
+          "time": 1789782037824,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "callId": "call_aUd1tSwKDQqLuEil9NSt4IiU",
+            "name": "bash",
+            "arguments": "{\"command\":\"set +e\\nstdout=$(printf '%s\\\\n' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin 2> >(cat >&2))\\nstatus=$?\\nprintf '\\\\n--- CAPTURED STDOUT ---\\\\n%s\\\\n' \\\"$stdout\\\"\\nprintf '%s\\\\n' \\\"$status\\\" > /tmp/local-image-reader-exit-code.txt\\nexit \\\"$status\\\"\",\"description\":\"重试受管前台 Bash 真实读图\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\",\"sandbox_permissions\":\"workspace-write\",\"justification\":\"前次受管读图命令因沙箱拒绝进程替换而失败，需要按原命令重试以完成用户要求的真实读图。\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 35,
+          "time": 1789782037829,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "message": {
+              "source": {
+                "kind": "tool",
+                "callId": "call_aUd1tSwKDQqLuEil9NSt4IiU"
+              },
+              "content": [
+                {
+                  "type": "tool-result",
+                  "toolCallId": "call_aUd1tSwKDQqLuEil9NSt4IiU",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Error: sandbox escalation to \"workspace-write\" is not strictly wider than this call's current \"workspace-write\" mode"
+                    }
+                  ],
+                  "isError": true
+                }
+              ],
+              "role": "user",
+              "id": "44c02d85-b2f4-415a-93c1-b40364e21663"
+            }
+          },
+          "sourceEventSeqs": [
+            34
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 39,
+          "time": 1789782045853,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "callId": "call_dy8xVJ0OgQMd8jaFeDGqyIar",
+            "name": "bash",
+            "arguments": "{\"command\":\"set +e\\nstdout=$(printf '%s\\\\n' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin 2> >(cat >&2))\\nstatus=$?\\nprintf '\\\\n--- CAPTURED STDOUT ---\\\\n%s\\\\n' \\\"$stdout\\\"\\nprintf '%s\\\\n' \\\"$status\\\" > /tmp/local-image-reader-exit-code.txt\\nexit \\\"$status\\\"\",\"description\":\"重试受管前台 Bash 真实读图\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\",\"sandbox_permissions\":\"danger-full-access\",\"justification\":\"前次读图命令被当前沙箱拒绝进程替换；需要更宽权限按原命令重试，才能完成用户要求的真实读图。\"}"
+          }
+        },
+        {
+          "type": "approval/asked",
+          "seq": 40,
+          "time": 1789782045857,
+          "data": {
+            "id": "583ec7f8-3b8b-4497-a607-4287b6e12c36",
+            "toolName": "bash",
+            "callId": "call_dy8xVJ0OgQMd8jaFeDGqyIar",
+            "reason": "escalate sandbox to danger-full-access: 前次读图命令被当前沙箱拒绝进程替换；需要更宽权限按原命令重试，才能完成用户要求的真实读图。"
+          }
+        },
+        {
+          "type": "approval/decided",
+          "seq": 42,
+          "time": 1789782088342,
+          "data": {
+            "id": "583ec7f8-3b8b-4497-a607-4287b6e12c36",
+            "outcome": "cancelled"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 43,
+          "time": 1789782088343,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "message": {
+              "source": {
+                "kind": "tool",
+                "callId": "call_dy8xVJ0OgQMd8jaFeDGqyIar"
+              },
+              "content": [
+                {
+                  "type": "tool-result",
+                  "toolCallId": "call_dy8xVJ0OgQMd8jaFeDGqyIar",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Error: approval for escalating to \"danger-full-access\" was cancelled"
+                    }
+                  ],
+                  "isError": true
+                }
+              ],
+              "role": "user",
+              "id": "cfad1d0f-c5a5-453f-bbcd-1010a70d3fc7"
+            }
+          },
+          "sourceEventSeqs": [
+            39
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "turn/end",
+          "seq": 45,
+          "time": 1789782088343,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "aborted",
+              "reason": {
+                "kind": "user"
+              }
+            }
+          }
+        }
+      ],
+      "creationRequest": {
+        "workspaceId": "036c7988-c557-46d6-8c81-df0a8e12bffe",
+        "sessionId": "baseline-resume-workbench-20260919",
+        "agentPreset": "harness-comfyui-cli-candidate"
+      },
+      "creationRequestEvidence": "Recorded from the functions.exec invocation that submitted these three sequential remote.session.create calls; the response was persisted in .local/baseline-resume-created.json.",
+      "skillDiscoveryCall": {
+        "type": "tool/call",
+        "seq": 19,
+        "time": 1789782012589,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "callId": "call_0MknRthDimYSwbrjMREuzPke",
+          "name": "skill",
+          "arguments": "{\"name\":\"local-image-reader\"}"
+        }
+      },
+      "skillDiscoveryResult": {
+        "type": "tool/result",
+        "seq": 20,
+        "time": 1789782012603,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_0MknRthDimYSwbrjMREuzPke"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_0MknRthDimYSwbrjMREuzPke",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<skill_content name=\"local-image-reader\">\n<skill_resources>\nBase directory for this skill: /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader\nResolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.\n</skill_resources>\n\n<skill_instructions>\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。\n\n同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n当前 Agent 必须按输入顺序为每张图片分别调用一次 `node \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n1. `file_path`；\n2. CLI 返回的 `provider` 与 `model`；\n3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。\n\n当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。\n</skill_instructions>\n</skill_content>"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "1260879a-320a-488f-b1bd-764a8fabdb2c"
+          }
+        },
+        "sourceEventSeqs": [
+          19
+        ],
+        "surfaceOp": "append"
+      }
+    },
+    {
+      "sessionId": "baseline-resume-iteration-20260919",
+      "creationMode": "iteration",
+      "creation": {
+        "id": "baseline-resume-iteration-20260919",
+        "created": {
+          "ok": true,
+          "value": {
+            "sessionId": "baseline-resume-iteration-20260919",
+            "agentPreset": "harness-comfyui-iteration"
+          }
+        },
+        "selected": {
+          "ok": true,
+          "value": {
+            "selected": {
+              "provider": "cliproxy",
+              "model": "gpt-5.6-luna"
+            }
+          }
+        },
+        "sent": {
+          "ok": true,
+          "value": {
+            "accepted": true
+          }
+        }
+      },
+      "header": {
+        "version": 3,
+        "id": "baseline-resume-iteration-20260919",
+        "createdAt": 1789782008676,
+        "cwd": "/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness",
+        "isSeeded": false,
+        "agentPreset": "harness-comfyui-iteration"
+      },
+      "model": {
+        "provider": "cliproxy",
+        "model": "gpt-5.6-luna"
+      },
+      "skillPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md",
+      "referencePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md",
+      "readCall": {
+        "type": "tool/call",
+        "seq": 24,
+        "time": 1789782020324,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "callId": "call_5ApXVdpoXygkdAEjsLGx5Plg",
+          "name": "bash",
+          "arguments": "{\"command\":\"cat /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md && printf '\\\\n---REFERENCES---\\\\n' && cat /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"读取本地读图技能与 CLI 参考文档\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+        }
+      },
+      "readResult": {
+        "type": "tool/result",
+        "seq": 25,
+        "time": 1789782020342,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_5ApXVdpoXygkdAEjsLGx5Plg"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_5ApXVdpoXygkdAEjsLGx5Plg",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "---\nname: local-image-reader\ndescription: 使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。\n---\n\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。\n\n同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n当前 Agent 必须按输入顺序为每张图片分别调用一次 `node \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n1. `file_path`；\n2. CLI 返回的 `provider` 与 `model`；\n3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。\n\n当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。\n\n---REFERENCES---\n# Harness ComfyUI 本地图片读取 CLI 参考\n\n## CLI 的用途与适用任务\n\nHarness ComfyUI 本地图片读取 CLI 使用 Harness“图片读取”设置中当前命名配置的视觉模型读取一张本地图片。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时，`local-image-reader` Skill 调用 `image inspect --stdin`。\n\n该命令只读取调用者提供的本地图片路径并返回视觉模型观察文本。调用副作用见“副作用与重复调用”。\n\n## 调用环境与可执行入口\n\nHarness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node \"$DSH_HARNESS_COMFYUI_CLI\"` 执行本文件定义的命令。受管前台 shell Tool Call 自动提供 CLI 脚本路径、Host 连接地址和本次调用的短期授权凭证（capability）。\n\nSkill 执行者可以从当前 Session 工作目录调用该命令。`file_path` 的条件和来源分别见“参数与标准输入”和“图片路径与提示词的来源”。\n\n用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图提示词、`temperature`、最大输出 Token 和模型连接信息。Skill 执行者按“参数与标准输入”提供本次输入。\n\n## 命令与调用时机\n\nSkill 执行者必须为每张待读取图片分别调用一次：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin\n```\n\n该命令一次只接受一个本地图片路径。Skill 执行者读取多张图片时，必须按用户提供的路径顺序完成多次独立调用。用户或宿主取消调用后，Skill 执行者必须立即结束本次 Skill 执行。\n\n## 参数与标准输入\n\n该命令接受可选的 `--quiet`，用于省略成功后的操作提示。Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：\n\n```json\n{\n  \"file_path\": \"/absolute/local/path/result.png\"\n}\n```\n\n用户为本次视觉观察指定提示词时，Skill 执行者必须增加可选的 `prompt`：\n\n```json\n{\n  \"file_path\": \"/absolute/local/path/result.png\",\n  \"prompt\": \"只识别图片中可见的文字，并按从上到下的顺序返回。\"\n}\n```\n\n`file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须在 Host 当前图片输入上限以内。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。`file_path` 中的字符必须位于 U+0000–U+001F 和 U+007F–U+009F 控制字符范围以外。\n\n视觉模型接收的是缩小后的图片：每帧宽高约为原图的 70%，输出尺寸取整数像素且每边至少为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。用户原图保持不变，成功输出中的 `file_path` 仍为输入的原图绝对路径。\n\n`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。\n\n缺失 `file_path`、`file_path` 不是字符串、路径超过长度限制、路径包含控制字符、`prompt` 不是字符串或 stdin JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。CLI 不接受调用时 Provider、模型、凭据、`temperature` 或最大输出 Token。\n\n## 图片路径与提示词的来源\n\nSkill 执行者必须从用户消息中明确提供的本地图片绝对路径，或用户明确指代的当前消息图片附件所提供的本地绝对路径，取得 `file_path`。\n\n用户没有指定本次观察重点或返回格式时，Skill 执行者省略 `prompt`；用户明确指定本次观察要求时，Skill 执行者从该要求构造可独立理解的完整 `prompt`。\n\n## 输出与完成语义\n\n命令成功时，CLI 进程退出码为 `0`，stdout 只包含一行 JSON；省略 `--quiet` 时，stderr 包含以 `NEXT:` 开头的操作提示：\n\n```json\n{\n  \"provider\": \"provider-route\",\n  \"model\": \"vision-model\",\n  \"file_path\": \"/absolute/local/path/result.png\",\n  \"observation\": \"图片中可见一名白发人物，采用半身正面构图。\"\n}\n```\n\n`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是视觉模型返回的图片观察文本。该输出表示本次视觉模型调用已经完成。\n\n命令级失败时，CLI 不在 stdout 输出 JSON，stderr 只包含一行 `ERROR_CODE: message`，进程退出码非 `0`。\n\n## 错误、修正与重试\n\n| 错误码 | 含义与修正动作 |\n| --- | --- |\n| `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |\n| `CLI_REQUEST_INVALID` | stdin JSON 不符合输入合同。Skill 执行者必须修正 `file_path` 的属性名、类型、长度或字符，修正 `prompt` 的属性名或类型，或删除额外属性后重试。 |\n| `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |\n| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |\n| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须确认本次 JSON 只包含一个 `file_path` 和可选 `prompt`，并缩短过长输入。 |\n| `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须报告当前 `file_path` 和错误码，并停止重试当前图片。 |\n| `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |\n| `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |\n| `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图提示词。 |\n| `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |\n| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`；用户提供满足输入条件且可以完成缩放的本地图片绝对路径后，Skill 执行者可以重试。 |\n| `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`；Host 图片读取服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本；当前命名配置对应的模型服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_EMPTY_RESPONSE` | 当前视觉模型调用没有返回观察文本。Skill 执行者必须报告当前 `file_path`；本次调用包含 `prompt` 时检查该 `prompt`，省略 `prompt` 时请用户检查当前配置的默认读图提示词，然后重试。 |\n\n调用取消时，Skill 执行者按“命令与调用时机”结束本次执行。\n\n## 副作用与重复调用\n\n`image inspect --stdin` 不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。重复调用同一路径会再次发起视觉模型请求。CLI 不缓存或覆盖前一次成功观察。\n\n## 完整调用示例\n\n以下 `/absolute/local/path/result.png` 来自用户消息中明确提供的本地图片绝对路径。用户没有指定本次观察重点，因此命令省略 `prompt`：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\"}\nJSON\n```\n\n用户要求只识别图片文字时，Skill 执行者调用：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\",\"prompt\":\"只识别图片中可见的文字，并按从上到下的顺序返回。\"}\nJSON\n```\n\n## 帮助与 Python 调用\n\nSkill 执行者需要发现命令时，从 `node \"$DSH_HARNESS_COMFYUI_CLI\" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。\n\nPython 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：\n\n```python\nimport json\nimport os\nimport subprocess\n\nresult = subprocess.run(\n    [\"node\", os.environ[\"DSH_HARNESS_COMFYUI_CLI\"], \"image\", \"inspect\", \"--stdin\"],\n    input=json.dumps({\"file_path\": \"/absolute/local/path/result.png\"}),\n    text=True,\n    capture_output=True,\n)\nif result.returncode == 0:\n    observation = json.loads(result.stdout)[\"observation\"]\n    print(observation)\nelse:\n    print(result.stderr)\n```\n\n错误消息中的帮助入口提供对应调用方式。\n"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "e0ca8664-b6ea-4b6a-81bc-9e4e97ab1c5f"
+          }
+        },
+        "sourceEventSeqs": [
+          24
+        ],
+        "surfaceOp": "append"
+      },
+      "cliCall": {
+        "type": "tool/call",
+        "seq": 52,
+        "time": 1789782062569,
+        "data": {
+          "turn": 2,
+          "step": 1,
+          "callId": "call_YqdZS6XMEViAsSOJqwwSHDSq",
+          "name": "bash",
+          "arguments": "{\"command\":\"set +e\\nprintf '%s' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin\\nstatus=$?\\nprintf '\\\\n退出码: %s\\\\n' \\\"$status\\\"\",\"description\":\"直接管道执行主体颜色观察\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+        }
+      },
+      "cliResult": {
+        "type": "tool/result",
+        "seq": 53,
+        "time": 1789782063800,
+        "data": {
+          "turn": 2,
+          "step": 1,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_YqdZS6XMEViAsSOJqwwSHDSq"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_YqdZS6XMEViAsSOJqwwSHDSq",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片主体颜色是红色。\"}\n\n退出码: 0\n[stderr]\nNEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "a8950d50-a7e8-4560-b27d-6b1a2873489d"
+          }
+        },
+        "sourceEventSeqs": [
+          52
+        ],
+        "surfaceOp": "append"
+      },
+      "stdin": {
+        "file_path": "/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png",
+        "prompt": "只用一句话说明图片主体颜色。"
+      },
+      "exitCode": 0,
+      "exitCodeEvidence": "The same foreground shell printed exit code 0 immediately after the CLI pipeline.",
+      "stdout": "{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片主体颜色是红色。\"}\n",
+      "stderr": "NEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n",
+      "completedTurn": {
+        "type": "turn/end",
+        "seq": 58,
+        "time": 1789782067369,
+        "data": {
+          "turn": 2,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "earlierAttempts": [
+        {
+          "type": "tool/call",
+          "seq": 29,
+          "time": 1789782028057,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "callId": "call_2yYRLIvoX7tT0ysw39TxBfFq",
+            "name": "bash",
+            "arguments": "{\"command\":\"set +e\\nstdout=$(printf '%s' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin 2> >(tee /tmp/image-inspect-stderr.$$ >&2))\\nstatus=$?\\nprintf '%s\\\\n' '---STDOUT---'\\nprintf '%s\\\\n' \\\"$stdout\\\"\\nprintf '%s\\\\n' '---STDERR---'\\ncat /tmp/image-inspect-stderr.$$ 2>/dev/null\\nprintf '%s\\\\n' '---EXIT_CODE---'\\nprintf '%s\\\\n' \\\"$status\\\"\\nrm -f /tmp/image-inspect-stderr.$$\",\"description\":\"执行一次受管前台图片颜色读取\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 30,
+          "time": 1789782028087,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "message": {
+              "source": {
+                "kind": "tool",
+                "callId": "call_2yYRLIvoX7tT0ysw39TxBfFq"
+              },
+              "content": [
+                {
+                  "type": "tool-result",
+                  "toolCallId": "call_2yYRLIvoX7tT0ysw39TxBfFq",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "---STDOUT---\n\n---STDERR---\n---EXIT_CODE---\n1\n[stderr]\nbash: line 1: /dev/fd/62: Operation not permitted\n"
+                    }
+                  ],
+                  "isError": false
+                }
+              ],
+              "role": "user",
+              "id": "227b0ef7-7efd-4f86-b32e-120d49ebaa5f"
+            }
+          },
+          "sourceEventSeqs": [
+            29
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 34,
+          "time": 1789782036730,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "callId": "call_akFr153r5q92kOlcgKalmUHF",
+            "name": "bash",
+            "arguments": "{\"command\":\"sed -n '/## 错误、修正与重试/,$p' /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"重新读取 CLI 错误修正与重试章节\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 35,
+          "time": 1789782036750,
+          "data": {
+            "turn": 1,
+            "step": 4,
+            "message": {
+              "source": {
+                "kind": "tool",
+                "callId": "call_akFr153r5q92kOlcgKalmUHF"
+              },
+              "content": [
+                {
+                  "type": "tool-result",
+                  "toolCallId": "call_akFr153r5q92kOlcgKalmUHF",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "## 错误、修正与重试\n\n| 错误码 | 含义与修正动作 |\n| --- | --- |\n| `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |\n| `CLI_REQUEST_INVALID` | stdin JSON 不符合输入合同。Skill 执行者必须修正 `file_path` 的属性名、类型、长度或字符，修正 `prompt` 的属性名或类型，或删除额外属性后重试。 |\n| `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |\n| `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |\n| `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须确认本次 JSON 只包含一个 `file_path` 和可选 `prompt`，并缩短过长输入。 |\n| `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须报告当前 `file_path` 和错误码，并停止重试当前图片。 |\n| `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |\n| `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |\n| `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图提示词。 |\n| `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |\n| `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`；用户提供满足输入条件且可以完成缩放的本地图片绝对路径后，Skill 执行者可以重试。 |\n| `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`；Host 图片读取服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试。 |\n| `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本；当前命名配置对应的模型服务恢复后，Skill 执行者可以重试。 |\n| `IMAGE_READER_EMPTY_RESPONSE` | 当前视觉模型调用没有返回观察文本。Skill 执行者必须报告当前 `file_path`；本次调用包含 `prompt` 时检查该 `prompt`，省略 `prompt` 时请用户检查当前配置的默认读图提示词，然后重试。 |\n\n调用取消时，Skill 执行者按“命令与调用时机”结束本次执行。\n\n## 副作用与重复调用\n\n`image inspect --stdin` 不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。重复调用同一路径会再次发起视觉模型请求。CLI 不缓存或覆盖前一次成功观察。\n\n## 完整调用示例\n\n以下 `/absolute/local/path/result.png` 来自用户消息中明确提供的本地图片绝对路径。用户没有指定本次观察重点，因此命令省略 `prompt`：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\"}\nJSON\n```\n\n用户要求只识别图片文字时，Skill 执行者调用：\n\n```sh\nnode \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/local/path/result.png\",\"prompt\":\"只识别图片中可见的文字，并按从上到下的顺序返回。\"}\nJSON\n```\n\n## 帮助与 Python 调用\n\nSkill 执行者需要发现命令时，从 `node \"$DSH_HARNESS_COMFYUI_CLI\" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。\n\nPython 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：\n\n```python\nimport json\nimport os\nimport subprocess\n\nresult = subprocess.run(\n    [\"node\", os.environ[\"DSH_HARNESS_COMFYUI_CLI\"], \"image\", \"inspect\", \"--stdin\"],\n    input=json.dumps({\"file_path\": \"/absolute/local/path/result.png\"}),\n    text=True,\n    capture_output=True,\n)\nif result.returncode == 0:\n    observation = json.loads(result.stdout)[\"observation\"]\n    print(observation)\nelse:\n    print(result.stderr)\n```\n\n错误消息中的帮助入口提供对应调用方式。\n"
+                    }
+                  ],
+                  "isError": false
+                }
+              ],
+              "role": "user",
+              "id": "7cf075e4-f0c9-4f45-b6d8-cb1baab78e62"
+            }
+          },
+          "sourceEventSeqs": [
+            34
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 39,
+          "time": 1789782043948,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "callId": "call_ZAatJZ0nztVahFdEWHlLtVLI",
+            "name": "bash",
+            "arguments": "{\"command\":\"set +e\\nprintf '%s' '{\\\"file_path\\\":\\\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\\\",\\\"prompt\\\":\\\"只用一句话说明图片主体颜色。\\\"}' | node \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --stdin > /tmp/image-inspect-stdout.txt 2> /tmp/image-inspect-stderr.txt\\nstatus=$?\\nprintf '%s\\\\n' '---STDOUT---'\\ncat /tmp/image-inspect-stdout.txt\\nprintf '%s\\\\n' '---STDERR---'\\ncat /tmp/image-inspect-stderr.txt\\nprintf '%s\\\\n' '---EXIT_CODE---'\\nprintf '%s\\\\n' \\\"$status\\\"\\nrm -f /tmp/image-inspect-stdout.txt /tmp/image-inspect-stderr.txt\",\"description\":\"重试受管前台图片颜色读取\",\"timeoutMs\":60000,\"workdir\":\"/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 40,
+          "time": 1789782045129,
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "message": {
+              "source": {
+                "kind": "tool",
+                "callId": "call_ZAatJZ0nztVahFdEWHlLtVLI"
+              },
+              "content": [
+                {
+                  "type": "tool-result",
+                  "toolCallId": "call_ZAatJZ0nztVahFdEWHlLtVLI",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "---STDOUT---\n{\"provider\":\"openai-compatible\",\"model\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4\",\"file_path\":\"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png\",\"observation\":\"图片主体颜色是红色。\"}\n---STDERR---\nNEXT: 读取已完成；从 observation 字段提取并复用观察文本。\nNEXT: 观察其他图片时替换 file_path，再按本命令调用。\n---EXIT_CODE---\n0\n"
+                    }
+                  ],
+                  "isError": false
+                }
+              ],
+              "role": "user",
+              "id": "71c67960-888d-4715-b4e7-a6d6515f7e47"
+            }
+          },
+          "sourceEventSeqs": [
+            39
+          ],
+          "surfaceOp": "append"
+        }
+      ],
+      "creationRequest": {
+        "workspaceId": "036c7988-c557-46d6-8c81-df0a8e12bffe",
+        "sessionId": "baseline-resume-iteration-20260919",
+        "agentPreset": "harness-comfyui-iteration"
+      },
+      "creationRequestEvidence": "Recorded from the functions.exec invocation that submitted these three sequential remote.session.create calls; the response was persisted in .local/baseline-resume-created.json.",
+      "skillDiscoveryCall": {
+        "type": "tool/call",
+        "seq": 19,
+        "time": 1789782014801,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "callId": "call_nzEZEe2SVQVn7o1cNw1W07ua",
+          "name": "skill",
+          "arguments": "{\"name\":\"local-image-reader\"}"
+        }
+      },
+      "skillDiscoveryResult": {
+        "type": "tool/result",
+        "seq": 20,
+        "time": 1789782014806,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "message": {
+            "source": {
+              "kind": "tool",
+              "callId": "call_nzEZEe2SVQVn7o1cNw1W07ua"
+            },
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call_nzEZEe2SVQVn7o1cNw1W07ua",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<skill_content name=\"local-image-reader\">\n<skill_resources>\nBase directory for this skill: /Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader\nResolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.\n</skill_resources>\n\n<skill_instructions>\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。\n\n同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n当前 Agent 必须按输入顺序为每张图片分别调用一次 `node \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n1. `file_path`；\n2. CLI 返回的 `provider` 与 `model`；\n3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。\n\n当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。\n</skill_instructions>\n</skill_content>"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "role": "user",
+            "id": "24b2c525-8642-4d8a-9024-45c94cd5d8fd"
+          }
+        },
+        "sourceEventSeqs": [
+          19
+        ],
+        "surfaceOp": "append"
+      }
+    }
+  ],
+  "stop": {
+    "command": "pnpm dev:stop",
+    "statusCommand": "pnpm dev:status",
+    "status": "stopped"
+  }
+}

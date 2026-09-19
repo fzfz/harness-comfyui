@@ -124,7 +124,7 @@ async function loadVersionSatisfies(desktopWorkspace) {
     throw new Error(`Candidate Desktop semver dependency is unavailable: ${error instanceof Error ? error.message : String(error)}`)
   }
   if (typeof semver?.satisfies !== 'function') throw new Error('Candidate Desktop semver dependency does not export satisfies()')
-  return (version, range) => semver.satisfies(version, range, { includePrerelease: true })
+  return (version, range) => semver.satisfies(version, range)
 }
 
 async function packageExecutables(packages, label) {

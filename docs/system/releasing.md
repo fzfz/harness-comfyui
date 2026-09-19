@@ -25,13 +25,17 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.44.1 的发布范围与 Desktop 基线
+## v0.44.2 的发布范围与发布条件
 
-v0.44.1 发布渐进式 CLI 帮助、参数修正指引、事实观察默认提示词、请求阶段日志与输出截断错误。Desktop 基线保持 config/desktop-baseline.json 中的现有版本。部署验收必须确认当前插件版本为 0.44.1，生产 checkout 与发布提交一致。部署保留已保存的图片读取配置；默认提示词修复、真实回放结果及尚未通过的验收见 [v0.44.1 发布说明](../releasenotes.md#harness-comfyui-v0441)。
+v0.44.2 更新 Stable 基线、DSH peer 范围、纯 CLI Profile 和包管理器版本，详情见 [v0.44.2 发布说明](../releasenotes.md#harness-comfyui-v0442)。用户已授权创建 PR、合入 main、同步本地 main、发布 v0.44.2 并部署生产目录。三种 Preset 的真实 Desktop 模型验收已完成，证据见[基线验证记录](../verification/upstream-baseline-20260919.md)。发布执行者必须按本文件核对最终提交与发布门禁。
+
+## v0.44.1 的历史发布范围与 Desktop 基线
+
+v0.44.1 发布渐进式 CLI 帮助、参数修正指引、事实观察默认提示词、请求阶段日志与输出截断错误。该历史版本使用 Desktop 2.0.9、DSH 0.1.5-rc.1 和 Electron 43.3.0，源码身份以 v0.44.1 tag 中的 config/desktop-baseline.json 为准。部署验收必须确认当前插件版本为 0.44.1，生产 checkout 与发布提交一致。部署保留已保存的图片读取配置；默认提示词修复、真实回放结果及尚未通过的验收见 [v0.44.1 发布说明](../releasenotes.md#harness-comfyui-v0441)。
 
 ## v0.44.0 的历史发布范围与 Desktop 基线
 
-v0.44.0 将 managed CLI、Catalog/Generation、图片读取和 Web 展示分别装配，增加纯 DSH CLI Profile。Desktop、DSH 与 Electron 版本继续使用 config/desktop-baseline.json 的既有基线。部署验收必须确认当前插件版本为 0.44.0，生产 checkout 与发布提交一致，并完成本文规定的生产验收。已记录的 Desktop 真实模型验收超时和基线依赖公告见 [v0.44.0 发布说明](../releasenotes.md#harness-comfyui-v0440)。
+v0.44.0 将 managed CLI、Catalog/Generation、图片读取和 Web 展示分别装配，增加纯 DSH CLI Profile。该历史版本的 Desktop、DSH 与 Electron 基线以 v0.44.0 tag 中的 config/desktop-baseline.json 为准。部署验收必须确认当前插件版本为 0.44.0，生产 checkout 与发布提交一致，并完成本文规定的生产验收。已记录的 Desktop 真实模型验收超时和基线依赖公告见 [v0.44.0 发布说明](../releasenotes.md#harness-comfyui-v0440)。
 
 ## v0.43.1 的历史发布范围与 Desktop 基线
 
@@ -63,7 +67,7 @@ gh release create "v$release_version" \
 
 ## 当前 Desktop 的安装准备
 
-发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。Desktop 2.0.9 的 Stable 构建与 Electron 原生绑定准备命令见[启动规范](startup.md#主开发-checkout-依赖准备)。
+发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。Desktop 2.0.11 的 Stable 构建与 Electron 原生绑定准备命令见[启动规范](startup.md#主开发-checkout-依赖准备)。
 
 发布执行者必须验证源码 origin、完整 commit、Desktop、Harness 和 Electron 版本与基线配置一致，并完成当前插件的真实 Desktop 门禁。旧 fork 的补丁及历史验收记录不能代替 anywhere Stable 的验收结果。
 
@@ -84,6 +88,6 @@ gh release create "v$release_version" \
 
 ## v0.41.1 的 Desktop 版本与依赖公告
 
-上述 Desktop 提交包含提交 `8b018c991fe88abdb61939b280c3dbea020acfc8` 的全部变更，以及 DSH Desktop PR #3 和 PR #4 引入的变更。
+v0.41.1 使用的 `fzfz/dsh-desktop` 提交 `f2a27b4461e8c15d21268533efb7b99bb9bb14f2` 包含提交 `8b018c991fe88abdb61939b280c3dbea020acfc8` 的全部变更，以及 DSH Desktop PR #3 和 PR #4 引入的变更。
 
 生产部署按照该 Desktop 提交的 `package-lock.json` 安装全部锁定依赖，其中包含 `pptxgenjs 4.0.1 → image-size 1.2.1`。2026-09-05 的安装前检查发现 `GHSA-w3rx-r6r6-pgpr` 和 `GHSA-5p2g-fcmc-qvqq` 两项高危公告。用户已明确授权执行该锁文件安装；发布记录必须保留这两项发现。
