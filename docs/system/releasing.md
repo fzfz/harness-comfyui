@@ -25,9 +25,9 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.44.2 的候选范围与发布条件
+## v0.44.2 的发布范围与发布条件
 
-v0.44.2 更新 Stable 基线、DSH peer 范围、纯 CLI Profile 和包管理器版本，详情见 [v0.44.2 候选说明](../releasenotes.md#harness-comfyui-v0442候选)。实施授权覆盖候选准备和本地提交；推送、发布及生产部署需要用户另行授权。三种 Preset 的真实 Desktop 模型验收已完成，证据见[基线验证记录](../verification/upstream-baseline-20260919.md)。取得发布授权后，发布执行者必须按本文件核对最终提交与发布门禁。
+v0.44.2 更新 Stable 基线、DSH peer 范围、纯 CLI Profile 和包管理器版本，详情见 [v0.44.2 发布说明](../releasenotes.md#harness-comfyui-v0442)。用户已授权创建 PR、合入 main、同步本地 main、发布 v0.44.2 并部署生产目录。三种 Preset 的真实 Desktop 模型验收已完成，证据见[基线验证记录](../verification/upstream-baseline-20260919.md)。发布执行者必须按本文件核对最终提交与发布门禁。
 
 ## v0.44.1 的历史发布范围与 Desktop 基线
 

@@ -19,7 +19,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ## CLI 帮助与图片读取
 
-当前候选版本为 v0.44.2，更新 Desktop Stable 基线至 2.0.11，并将 DSH 插件支持范围收敛到 0.1.5 发布线。Agent 可通过 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 查看命令分类，再通过 `node "$DSH_HARNESS_COMFYUI_CLI" image --help` 和 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --help` 逐层查看参数、stdin 示例和下一步操作。帮助调用在本地完成；业务调用默认将 JSON 结果写入 stdout，将 NEXT 指引写入 stderr，`--quiet` 可省略成功指引。
+当前版本为 v0.44.2，更新 Desktop Stable 基线至 2.0.11，并将 DSH 插件支持范围收敛到 0.1.5 发布线。Agent 可通过 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 查看命令分类，再通过 `node "$DSH_HARNESS_COMFYUI_CLI" image --help` 和 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --help` 逐层查看参数、stdin 示例和下一步操作。帮助调用在本地完成；业务调用默认将 JSON 结果写入 stdout，将 NEXT 指引写入 stderr，`--quiet` 可省略成功指引。
 
 仓库内置图片读取配置与新建配置默认使用事实观察提示词。已有命名配置保留已保存的提示词；需要采用新默认用途时，在“设置 → ComfyUI → 图片读取”中编辑该配置。输出达到模型 token 上限时，CLI 报告 `IMAGE_READER_OUTPUT_LIMIT` 并提示检查参数。观察结果仍须对照原图核实，当前视觉模型的遮挡姿态误判记录见 [v0.44.1 发布说明](docs/releasenotes.md#harness-comfyui-v0441)。
 
