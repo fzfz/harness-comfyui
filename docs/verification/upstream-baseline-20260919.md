@@ -43,9 +43,9 @@ Stable 的八项 DSH patch 已移植到 RC.2 实际安装包，涉及 api-remote
 
 依赖视图使用标准 SemVer 预发布匹配规则；新增真实 semver 回归覆盖 RC.1 拒绝、RC.2 与 0.1.5 接受、0.1.6-alpha.1 与 0.1.6 拒绝。修复前 Alpha 用例失败，修复后 12 项依赖视图测试全部通过。
 
-首次完整插件门禁通过依赖检查、typecheck、1174 项 unit/integration/Skills 和 56 项 contract/security，在 Web Host 真实启动测试中发现缺少 Host 入口构建。实施 Agent 为 `scripts/production/runtime.mjs` 补上既有 Host 构建函数调用；回归测试先删除旧入口文件，再验证真实启动和 Client ModuleLoader 注册，修复后该测试通过。最终完整门禁将覆盖该修复。
+首次完整插件门禁通过依赖检查、typecheck、1174 项 unit/integration/Skills 和 56 项 contract/security，在 Web Host 真实启动测试中发现缺少 Host 入口构建。实施 Agent 为 `scripts/production/runtime.mjs` 补上既有 Host 构建函数调用；回归测试先删除旧入口文件，再验证真实启动和 Client ModuleLoader 注册，修复后该测试通过。候选提交 `733146e376a8819a96de8ed38ceba2a63d6bd90c` 的完整 `pnpm quality` 随后通过：1174 项 unit/integration/Skills、56 项 contract/security、292 项 production、32 项 prototype 和 4 项 Desktop 测试，共 1558 项。覆盖率为 statements 93.98%、branches 87.49%、functions 100%、lines 96.4%；`git diff --check` 通过。
 
-开发调试实例已由 `pnpm dev:stop` 停止，`pnpm dev:status` 返回 stopped。源码 Standards 复审通过；Spec 复审确认版本范围缺口已关闭，真实模型验收继续列为未完成。文档语义审阅已完成，并对后续新增记录继续复审。
+开发调试实例已由 `pnpm dev:stop` 停止，`pnpm dev:status` 返回 stopped。源码 Standards 复审通过；Spec 复审确认版本范围缺口已关闭。首次交付时未完成的真实模型验收已按下章补齐。后续证据与文档更新继续接受独立审阅。
 
 | 计划验收项 | 本仓库的最终自动化证据入口 |
 | --- | --- |
@@ -58,12 +58,44 @@ Stable 的八项 DSH patch 已移植到 RC.2 实际安装包，涉及 api-remote
 
 上述表格标明验收项的测试位置；真实模型执行结果单独记录于下章，最终完整命令结果随候选交付报告。
 
-## 待完成的真实模型验收
+## 真实模型验收
 
-真实 Desktop Workspace 为 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`。省略 Preset 的 `baseline-default-20260919` Session 创建后为 `harness-comfyui-cli-candidate`，使用 cliproxy/gpt-5.6-luna，在首次工具调用前反复返回 TIMEOUT。补充 Session `baseline-default-deepseek-20260919` 使用 deepseek-official/deepseek-v4.1-flash-expires-on-0910，返回 TRANSPORT。实施 Agent 已取消这些请求。
+首次尝试中，`baseline-default-20260919` Session 使用 cliproxy/gpt-5.6-luna，在首次工具调用前返回 TIMEOUT；`baseline-default-deepseek-20260919` 使用 deepseek-official/deepseek-v4.1-flash-expires-on-0910，返回 TRANSPORT。当时同机 Node 和 curl 成功，Electron 最小网络请求超时。2026-09-19 用户要求继续后，Electron 最小请求在 115 毫秒内收到内网模型服务预期的 401 未认证响应。原网络阻塞不再复现，具体网络控制原因未确认。
 
-同机 Node 和 curl 访问相同服务成功；新安装的 Electron 在 Node 执行模式下访问 DeepSeek 和内网模型端口也超时。该证据表明阻塞与 Electron 执行环境相关，具体网络控制原因仍待确认。
+本轮首先使用 `pnpm dev:start/status/logs` 验证正式开发入口，run 为 `5f71c3c5-5183-4204-a4e6-c39f6a62f536`，PID/PGID 为 57443，进程组监听端口为 49661、62789，Renderer healthy。随后执行 `pnpm dev:stop`，通过既有开发生命周期导出函数启动前台调试实例以采集 Session Remote 证据；该实例 run 为 `81222ef0-605c-4b53-b5cc-553206a789da`，PID/PGID 为 59883，进程组监听端口为 49661、63172、CDP 49991，Renderer healthy。Profile 的插件依赖为 `link:../../../../managed-plugins/harness-comfyui`，该产物版本为 0.44.2。调试启动属于补充验收，正式命令入口的健康结果单独保留。
 
-三种 Preset 的真实 Skill → 前台 Bash → `image inspect --stdin` 验收尚未通过。上述会话没有读到目标 Skill，也没有生成 CLI stdin、退出码、stdout/stderr 或视觉观察结果。网络恢复后，验收 Agent 必须重跑默认工作台、显式工作台和显式迭代三种创建方式，记录计划要求的完整证据，再关闭此项。
+三个 Session 的 Workspace 均为 `/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness`，Agent 模型均为 `cliproxy/gpt-5.6-luna`。每个 Agent 都通过 Skill Tool 发现 `local-image-reader`，再完整读取以下两份当前 worktree 文档，并在前台 Bash 中执行 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin`，显式 `timeoutMs: 60000`。
 
-最终插件 `pnpm quality`、独立审阅、`git diff --check`、测试实例停止状态与本地提交结果由实施 Agent 在候选交付时报告。待完成的真实模型验收必须在发布前通过。
+- Skill：`/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/SKILL.md`
+- CLI 参考：`/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.agents/skills/local-image-reader/references/image-inspection-cli.md`
+
+| Session ID | 创建方式与实际 Preset | 成功调用/结果事件 seq | 退出码 | stdout 的 observation |
+| --- | --- | --- | --- | --- |
+| baseline-resume-default-20260919 | 省略 agentPreset → harness-comfyui-cli-candidate | 29 / 30 | 0 | 图片主体颜色是红色。 |
+| baseline-resume-workbench-20260919 | 显式 harness-comfyui-cli-candidate | 52 / 53 | 0 | 图片的主体颜色是红色。 |
+| baseline-resume-iteration-20260919 | 显式 harness-comfyui-iteration | 52 / 53 | 0 | 图片主体颜色是红色。 |
+
+三次成功调用使用相同 stdin：
+
+```json
+{"file_path":"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png","prompt":"只用一句话说明图片主体颜色。"}
+```
+
+CLI stdout 为一行四属性 JSON。下例对应默认工作台与显式迭代 Session；显式工作台的 `observation` 使用上表原文，其余字段相同。
+
+```json
+{"provider":"openai-compatible","model":"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-MLX-mxfp4","file_path":"/Volumes/4Tdisk/work/AI2/harness-comfyui-plan-upstream-baseline-20260919/.local/acceptance-red.png","observation":"图片主体颜色是红色。"}
+```
+
+三次成功调用的 CLI stderr 相同：
+
+```text
+NEXT: 读取已完成；从 observation 字段提取并复用观察文本。
+NEXT: 观察其他图片时替换 file_path，再按本命令调用。
+```
+
+默认 Session 的退出码依据 DSH Bash 输出合同确认：非零退出会追加 `[exit code: N]`，该次结果没有非零、超时或取消标记。另两个 Session 在 CLI 管道后直接读取并打印退出码 0。原始调用、结果、文档读取输出和完成事件见[逐会话 JSON 证据](upstream-baseline-20260919-sessions.json)。测试图片为预先生成的纯红色 PNG，三个观察结果均与该图片一致。
+
+显式工作台与迭代 Session 最初为捕获输出采用 Bash 进程替换，受到 workspace-write 沙箱对 `/dev/fd/62` 的限制。实施 Agent 取消了工作台 Session 的权限扩大请求，随后通过用户提示指导其使用简单前台管道；两个 Session 在原权限下成功。JSON 证据保留了失败尝试，验收结果以上表成功调用为准。
+
+三种创建方式的真实 Skill → 前台 Bash → CLI → 视觉模型流程全部通过。验收结束后，`pnpm dev:stop` 停止 PID 59883，`pnpm dev:status` 确认 stopped。此次补充只更新验收记录和发布状态说明；最终文档候选的独立审阅、完整门禁与提交结果随交付报告。

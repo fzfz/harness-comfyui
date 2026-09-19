@@ -27,7 +27,7 @@ git diff --check
 
 ## v0.44.2 的候选范围与发布条件
 
-v0.44.2 更新 Stable 基线、DSH peer 范围、纯 CLI Profile 和包管理器版本，详情见 [v0.44.2 候选说明](../releasenotes.md#harness-comfyui-v0442候选)。实施授权覆盖候选准备和本地提交；推送、发布及生产部署需要用户另行授权。发布执行者必须先完成[基线验证记录](../verification/upstream-baseline-20260919.md)中待完成的真实 Desktop 模型验收，再执行本文件的发布门禁。
+v0.44.2 更新 Stable 基线、DSH peer 范围、纯 CLI Profile 和包管理器版本，详情见 [v0.44.2 候选说明](../releasenotes.md#harness-comfyui-v0442候选)。实施授权覆盖候选准备和本地提交；推送、发布及生产部署需要用户另行授权。三种 Preset 的真实 Desktop 模型验收已完成，证据见[基线验证记录](../verification/upstream-baseline-20260919.md)。取得发布授权后，发布执行者必须按本文件核对最终提交与发布门禁。
 
 ## v0.44.1 的历史发布范围与 Desktop 基线
 

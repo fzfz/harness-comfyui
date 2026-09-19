@@ -12,7 +12,7 @@ Web Host 启动流程现在自行构建 Host 入口，纯 CLI 先运行并清理
 
 fork 更新 sharp、pnpm、xmldom、fast-uri、js-yaml、hono、qs 和 Vitest 相关包，精确版本及审计证据见[基线验证记录](verification/upstream-baseline-20260919.md)。最终依赖审计保留 adm-zip 0.6.0 的中危公告 GHSA-vwc7-r8mq-g2x9；用户已批准保留该版本并记录公告。
 
-fork 完整 `corepack yarn check` 通过。独立 Desktop 健康启动、插件安装来源、Catalog 和 ImageReader Remote 验证通过，纯 CLI 真实模型任务以退出码 0 结束。Desktop 真实模型会话因 Electron 网络连接超时尚未完成，三种 Preset 的真实读图验收保持待完成。最终插件门禁状态随候选提交交付；本版本尚未推送、发布或部署。
+fork 完整 `corepack yarn check` 通过。独立 Desktop 健康启动、插件安装来源、Catalog 和 ImageReader Remote 验证通过，纯 CLI 真实模型任务以退出码 0 结束。首次 Electron 网络超时在继续验收时不再复现。默认工作台、显式工作台、显式迭代三个 Session 均读取当前 worktree 的 Skill 和参考文档，经真实前台 Bash 完成视觉模型调用，退出码均为 0。候选源码的完整 `pnpm quality` 共 1558 项测试通过，测试实例已停止；逐会话输入输出见基线验证记录。本版本尚未推送、发布或部署。
 
 # Harness ComfyUI v0.44.1
 
