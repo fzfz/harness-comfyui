@@ -9,8 +9,8 @@ import type { } from '../image-reader/plugin.ts'
 export const name = 'harness-comfyui-web'
 export const inject = ['harnessComfyuiCore', 'imageReader', 'webServer', 'workspaceRegistry'] as const
 export function apply(ctx: Context): void {
-  const { catalog, runtime, profile } = ctx.harnessComfyuiCore.services
-  new CatalogRemoteService(ctx, catalog)
+  const { catalog, runtime, profile, sourceAddress } = ctx.harnessComfyuiCore.services
+  new CatalogRemoteService(ctx, catalog, sourceAddress)
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)
   new ImageReaderRemoteService(ctx, ctx.imageReader)
   ctx.effect(() => registerGenerationMediaRoutes({

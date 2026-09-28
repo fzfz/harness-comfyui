@@ -10,6 +10,7 @@ import {
   readdir,
   rename,
   rm,
+  writeFile,
 } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -27,7 +28,7 @@ async function loadDshPresetDialect() {
   dshPresetDialectPromise ??= Promise.all([
     import(pathToFileURL(requireFromDsh.resolve('js-yaml')).href),
     import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis-plugin-include')).href),
-  ]).then(([yaml, include]) => ({ load: yaml.load, entryListSchema: include.entryListSchema }))
+  ]).then(([yaml, include]) => ({ load: yaml.load, dump: yaml.dump, entryListSchema: include.entryListSchema }))
   return dshPresetDialectPromise
 }
 
@@ -257,4 +258,46 @@ export async function materializeSourceProductAgentPreset(repositoryRoot, dshHom
     await rm(resolve(installRoot, presetId), { recursive: true, force: true })
   }
   return { installRoot, sharedFiles, presets, retiredPresetIds: config.retiredPresetIds }
+}
+
+export async function materializeDeclaredAgentPresetPatch(productAgentPreset, profileDirectory) {
+  const { load, dump, entryListSchema } = await loadDshPresetDialect()
+  const declarations = []
+  for (const { presetId, targetDirectory } of productAgentPreset.presets) {
+    const metadata = load(await readFile(resolve(targetDirectory, 'preset.yml'), 'utf8'))
+    if (typeof metadata?.name !== 'string' || metadata.name.length === 0) {
+      throw new TypeError(`Agent Preset ${presetId} preset.yml must contain a non-empty name`)
+    }
+    const compositionPath = resolve(targetDirectory, 'agent.cordis.yml')
+    const rows = await validateAgentPresetComposition(compositionPath)
+    const absolute = entries => entries.map(row => ({
+      ...row,
+      name: row.name.startsWith('.') ? resolve(dirname(compositionPath), row.name) : row.name,
+      ...(row.group === true ? { config: absolute(row.config) } : {}),
+    }))
+    declarations.push({
+      id: `preset-${presetId}`,
+      name: '@deepseek-ai/dsh-agent-preset',
+      config: { id: presetId, name: metadata.name, plugins: absolute(rows) },
+    })
+  }
+  const patchPath = resolve(profileDirectory, 'cordis.patch.yml')
+  const current = load(await readFile(patchPath, 'utf8'), { schema: entryListSchema })
+  if (!Array.isArray(current)) throw new TypeError(`Desktop Profile patch must be a list: ${patchPath}`)
+  const ownedIds = new Set(declarations.map(row => row.id))
+  const retained = current.flatMap(row => {
+    if (ownedIds.has(row?.id)) return []
+    if (!Array.isArray(row?.insert)) return [row]
+    const insert = row.insert.filter(entry => !ownedIds.has(entry?.id))
+    return insert.length === 0 ? [] : [{ ...row, insert }]
+  })
+  retained.push({ insert: declarations })
+  const staging = `${patchPath}.${randomUUID()}.next`
+  try {
+    await writeFile(staging, dump(retained, { schema: entryListSchema }), { encoding: 'utf8', mode: 0o600, flag: 'wx' })
+    await rename(staging, patchPath)
+  } finally {
+    await rm(staging, { force: true })
+  }
+  return patchPath
 }

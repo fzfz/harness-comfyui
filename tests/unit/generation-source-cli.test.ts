@@ -34,7 +34,7 @@ const workflow = {
 }
 
 function settings() {
-  return { get: () => ({ configuration: { url: 'https://catalog.example.com', port: 18093 } }) }
+  return { get: () => ({ url: 'https://catalog.example.com', port: 18093 }) }
 }
 
 describe('GenerationSourceCli', () => {
@@ -204,7 +204,7 @@ describe('GenerationSourceCli', () => {
     }))
     const source = new GenerationSourceCli({
       executable: '/source-read.mjs',
-      settings: { get: () => ({ configuration: address }) },
+      settings: { get: () => address },
       process,
     })
 

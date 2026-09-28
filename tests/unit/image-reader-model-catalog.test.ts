@@ -1,4 +1,4 @@
-import { registerImageReaderSettings } from '../../src/host/image-reader/settings-registration.ts'
+import { imageReaderSettingsStore } from '../../src/host/image-reader/settings-registration.ts'
 import { ImageReaderConfigurationService } from '../../src/host/image-reader/configuration-service.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
@@ -6,9 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   IMAGE_READER_SETTINGS_DEFAULTS,
-  IMAGE_READER_LEGACY_SETTINGS_DEFAULTS,
-  IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
-  IMAGE_READER_SETTINGS_NAMESPACE,
+  IMAGE_READER_PROFILE_ENTRY_ID,
   createImageReaderSettingsDefaults,
   createImageReaderProfile,
   type ImageReaderSettingsSection,
@@ -22,105 +20,25 @@ function remoteFailure(code: string): object {
 }
 
 describe('image reader Host settings and model catalog', () => {
-  it('uses the runtime environment visual model as the base without creating user settings', async () => {
-    const defaults = createImageReaderSettingsDefaults({
-      provider: 'opencode-go',
-      model: 'vision-model',
-    })
-    const legacy = { get: vi.fn(() => IMAGE_READER_LEGACY_SETTINGS_DEFAULTS) }
-    const current = { get: vi.fn(), replace: vi.fn(async () => undefined) }
-    const register = vi.fn((namespace: string) => namespace === IMAGE_READER_LEGACY_SETTINGS_NAMESPACE ? legacy : current)
-    const describe = vi.fn(() => [
-      { ns: IMAGE_READER_LEGACY_SETTINGS_NAMESPACE },
-      { ns: IMAGE_READER_SETTINGS_NAMESPACE },
-    ])
-
-    await registerImageReaderSettings({ settings: { register, describe } } as never, defaults)
-
-    expect(register).toHaveBeenNthCalledWith(
-      2,
-      IMAGE_READER_SETTINGS_NAMESPACE,
-      expect.anything(),
-      { base: defaults, applies: 'live', validate: expect.any(Function) },
-    )
-    expect(defaults.configuration.profiles[0]).toMatchObject({
-      connectionType: 'runtime',
-      provider: 'opencode-go',
-      endpoint: '',
-      model: 'vision-model',
-      hasApiKey: false,
-    })
-    expect(current.replace).not.toHaveBeenCalled()
-  })
-
-  it('registers legacy and current namespaces without migrating an absent legacy user section', async () => {
-    const legacy = { get: vi.fn(() => IMAGE_READER_LEGACY_SETTINGS_DEFAULTS) }
-    const current = { get: vi.fn(), replace: vi.fn(async () => undefined) }
-    const register = vi.fn((namespace: string) => namespace === IMAGE_READER_LEGACY_SETTINGS_NAMESPACE ? legacy : current)
-    const describe = vi.fn(() => [
-      { ns: IMAGE_READER_LEGACY_SETTINGS_NAMESPACE },
-      { ns: IMAGE_READER_SETTINGS_NAMESPACE },
-    ])
-    await expect(registerImageReaderSettings({ settings: { register, describe } } as never)).resolves.toBe(current)
-    expect(register).toHaveBeenNthCalledWith(
-      1,
-      IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
-      expect.anything(),
-      { base: IMAGE_READER_LEGACY_SETTINGS_DEFAULTS, applies: 'live' },
-    )
-    expect(register).toHaveBeenNthCalledWith(
-      2,
-      IMAGE_READER_SETTINGS_NAMESPACE,
-      expect.anything(),
-      { base: IMAGE_READER_SETTINGS_DEFAULTS, applies: 'live', validate: expect.any(Function) },
-    )
-    expect(current.replace).not.toHaveBeenCalled()
-  })
-
-  it('migrates an existing single image-reader configuration exactly once', async () => {
-    const legacyValue = {
-      configuration: {
-        provider: 'opencode-go',
-        model: 'vision-model',
-        defaultPrompt: '旧提示词',
-        temperature: 0.35,
-        maxTokens: 3072,
-      },
-    }
-    const legacy = { get: vi.fn(() => legacyValue) }
-    const current = { get: vi.fn(), replace: vi.fn(async () => undefined) }
-    const register = vi.fn((namespace: string) => namespace === IMAGE_READER_LEGACY_SETTINGS_NAMESPACE ? legacy : current)
-    const describe = vi.fn(() => [
-      { ns: IMAGE_READER_LEGACY_SETTINGS_NAMESPACE, user: legacyValue },
-      { ns: IMAGE_READER_SETTINGS_NAMESPACE },
-    ])
-    await expect(registerImageReaderSettings({ settings: { register, describe } } as never)).resolves.toBe(current)
-    expect(current.replace).toHaveBeenCalledWith({
-      configuration: {
-        activeProfileId: 'default',
-        profiles: [{
-          id: 'default',
-          name: '原图片读取配置',
-          connectionType: 'runtime',
-          provider: 'opencode-go',
-          endpoint: '',
-          model: 'vision-model',
-          hasApiKey: false,
-          defaultPrompt: '旧提示词',
-          temperature: 0.35,
-          maxTokens: 3072,
-        }],
-      },
+  it('reads the runtime visual model until the Profile entry supplies a value', () => {
+    const defaults = createImageReaderSettingsDefaults({ provider: 'opencode-go', model: 'vision-model' })
+    const describe = vi.fn(() => [])
+    const replace = vi.fn(async () => undefined)
+    const store = imageReaderSettingsStore({ settings: { describe, replace } } as never, defaults)
+    expect(store.get().configuration.profiles[0]).toMatchObject({ provider: 'opencode-go', model: 'vision-model' })
+    expect(replace).not.toHaveBeenCalled()
+    describe.mockReturnValueOnce([{ ns: IMAGE_READER_PROFILE_ENTRY_ID, value: {
+      configuration: { activeProfileId: 'default', profiles: [{ ...createImageReaderProfile('default'), model: 'saved-model' }] },
       credentials: {},
-    })
+    } }] as never)
+    expect(store.get().configuration.profiles[0]?.model).toBe('saved-model')
+  })
 
-    describe.mockReturnValueOnce([
-      { ns: IMAGE_READER_LEGACY_SETTINGS_NAMESPACE, user: legacyValue },
-      { ns: IMAGE_READER_SETTINGS_NAMESPACE, user: { configuration: {} } },
-    ] as never)
-    current.replace.mockClear()
-    await registerImageReaderSettings({ settings: { register, describe } } as never)
-    expect(current.replace).not.toHaveBeenCalled()
+  it('writes validated settings to the existing Profile entry', async () => {
+    const replace = vi.fn(async () => undefined)
+    const store = imageReaderSettingsStore({ settings: { describe: () => [], replace } } as never)
+    await store.replace(IMAGE_READER_SETTINGS_DEFAULTS)
+    expect(replace).toHaveBeenCalledWith(IMAGE_READER_PROFILE_ENTRY_ID, IMAGE_READER_SETTINGS_DEFAULTS)
   })
 
   function settings() {
@@ -140,6 +58,22 @@ describe('image reader Host settings and model catalog', () => {
     const replace = vi.fn(async (_section: ImageReaderSettingsSection) => undefined)
     return { get, replace }
   }
+
+  it('reads the Profile image reader configuration through its remote method', async () => {
+    const context = new Context()
+    const scope = settings()
+    const service = createRemote(context, {
+      listProviders: vi.fn(() => []),
+      listModels: vi.fn(async () => []),
+    } as never, scope as never)
+    const signal = new AbortController().signal
+
+    await expect(service.configuration(signal)).resolves.toEqual(scope.get().configuration)
+    const cancelled = new AbortController()
+    cancelled.abort()
+    await expect(service.configuration(cancelled.signal)).rejects.toMatchObject({ name: 'AbortError' })
+    await context.fiber.dispose()
+  })
 
   it('lists only models that explicitly declare image input without provider hardcoding', async () => {
     const context = new Context()
@@ -162,6 +96,7 @@ describe('image reader Host settings and model catalog', () => {
 
     expect(remoteMethods(service)).toEqual([
       { method: 'models', invocation: { kind: 'direct' } },
+      { method: 'configuration', invocation: { kind: 'direct' } },
       { method: 'saveProfile', invocation: { kind: 'direct' } },
       { method: 'activateProfile', invocation: { kind: 'direct' } },
       { method: 'deleteProfile', invocation: { kind: 'direct' } },

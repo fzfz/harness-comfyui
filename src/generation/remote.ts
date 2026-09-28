@@ -20,7 +20,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 }
 
-export const GENERATION_REMOTE: TypertRemoteContribution = Object.freeze({
+export const GENERATION_REMOTE = Object.freeze({
   package: 'harness-comfyui',
   descriptors: Object.freeze([Object.freeze({
     id: 'harness-comfyui#harnessComfyuiGeneration/list',
@@ -35,16 +35,16 @@ export const GENERATION_REMOTE: TypertRemoteContribution = Object.freeze({
       codec: Object.freeze({
         mode: 'strict' as const,
         typeSymbol: 'harness-comfyui/generation#GenerationProjectionRequest',
-        schema: Object.freeze({ parse: parseGenerationProjectionRequest }),
+        create: () => Object.freeze({ parse: parseGenerationProjectionRequest }),
       }),
     })]),
     cancellation: Object.freeze({ parameter: 'signal' as const }),
     result: Object.freeze({
       mode: 'strict' as const,
       typeSymbol: 'harness-comfyui/generation#GenerationProjection',
-      schema: Object.freeze({ parse: parseGenerationProjection }),
+      create: () => Object.freeze({ parse: parseGenerationProjection }),
     }),
   })]),
-})
+}) satisfies TypertRemoteContribution
 
 export default GENERATION_REMOTE

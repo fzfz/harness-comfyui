@@ -6,6 +6,7 @@ import {
   SOURCE_SETTINGS_SCHEMA,
   SourceSettingsValidationError,
   createSourceSettingsDefaults,
+  configuredSourceAddress,
   decodeSourceSettingsView,
   readSourceAddress,
   sourceOrigin,
@@ -21,11 +22,20 @@ describe('data source settings', () => {
     })
     expect(Schema.resolve(defaults, SOURCE_SETTINGS_SCHEMA, {}, true)[0]).toEqual(defaults)
 
-    let current = defaults
+    let current = defaults.configuration
     const scope = { get: () => current }
     expect(readSourceAddress(scope)).toEqual({ url: 'http://127.0.0.1', port: 18093 })
-    current = { configuration: { url: 'https://catalog.example.com', port: 443 } }
+    current = { url: 'https://catalog.example.com', port: 443 }
     expect(readSourceAddress(scope)).toEqual({ url: 'https://catalog.example.com', port: 443 })
+  })
+
+  it('uses the selected profile port until a volatile Profile value is supplied', () => {
+    expect(configuredSourceAddress(undefined, 18094)).toEqual({ url: 'http://127.0.0.1', port: 18094 })
+    let current = { url: 'https://catalog.example.com', port: 443 }
+    const configuration = { get: () => current }
+    expect(configuredSourceAddress(configuration, 18094)).toEqual(current)
+    current = { url: 'https://next.example.com', port: 8443 }
+    expect(configuredSourceAddress(configuration, 18094)).toEqual(current)
   })
 
   it.each([

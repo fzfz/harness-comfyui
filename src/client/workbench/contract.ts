@@ -5,7 +5,7 @@ import { resultsTabSchema } from './results-tab-schema.ts'
 
 export const WORKBENCH_ENTRY_ID = 'harness-comfyui-workbench'
 export const WORKBENCH_DOCK_ID = 'harness-comfyui-context-dock'
-export const WORKBENCH_RESULTS_TAB = Object.freeze(resultsTabSchema(resultsTab))
+export const WORKBENCH_RESULTS_TAB = Object.freeze(resultsTabSchema(resultsTab) as typeof resultsTab)
 export const WORKBENCH_CONTEXT_RECORD_TYPE = 'comfyui-context'
 
 export const WORKBENCH_COPY = Object.freeze({

@@ -26,15 +26,15 @@ async function candidateModules() {
   const fromDesktop = name => import(pathToFileURL(requireFromDesktop.resolve(name)).href)
   const [llm, deepseekAdapter, piAdapter, sessions] = await Promise.all([
     fromDesktop('@deepseek-ai/dsh-llm'),
-    fromDesktop('@deepseek-ai/dsh-llm-deepseek'),
+    fromDesktop('@deepseek-ai/dsh-llm-deepseek-api-key'),
     fromDesktop('@deepseek-ai/dsh-llm-pi-ai'),
     fromDesktop('@deepseek-ai/dsh-session'),
   ])
   return { llm, deepseekAdapter, piAdapter, sessions }
 }
 
-function sseResponse(response) {
-  const chunks = [
+function sseResponse(response, endpoint) {
+  const completionChunks = [
     {
       id: 'session-identity-capture',
       object: 'chat.completion.chunk',
@@ -50,8 +50,20 @@ function sseResponse(response) {
       choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
     },
   ]
+  const messageChunks = [
+    { type: 'message_start', message: { usage: { input_tokens: 1, output_tokens: 0 } } },
+    { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+    { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'captured' } },
+    { type: 'content_block_stop', index: 0 },
+    { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 1 } },
+    { type: 'message_stop' },
+  ]
   response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' })
-  response.end(`${chunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`)
+  if (endpoint === '/v1/messages') {
+    response.end(messageChunks.map(chunk => `event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`).join(''))
+    return
+  }
+  response.end(`${completionChunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`)
 }
 
 async function requestCaptureServer() {
@@ -74,10 +86,10 @@ async function requestCaptureServer() {
         }))
         return
       }
-      if (request.url === '/v1/chat/completions' && request.method === 'POST') {
+      if ((request.url === '/v1/chat/completions' || request.url === '/v1/messages') && request.method === 'POST') {
         chatRequests.push({ headers: request.headers, body: Buffer.concat(body).toString('utf8') })
         waiters.splice(0).forEach(resolveWaiter => resolveWaiter())
-        sseResponse(response)
+        sseResponse(response, request.url)
         return
       }
       response.writeHead(404)

@@ -12,9 +12,11 @@ describe('Catalog Remote contribution', () => {
     expect(HARNESS_COMFYUI_REMOTE.descriptors.map(descriptor => descriptor.id)).toEqual([
       'harness-comfyui#harnessComfyuiCatalog/search',
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
+      'harness-comfyui#harnessComfyuiCatalog/sourceAddress',
       'harness-comfyui#harnessComfyuiCatalog/details',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',
+      'harness-comfyui#harnessComfyuiImageReader/configuration',
       'harness-comfyui#harnessComfyuiImageReader/activateProfile',
       'harness-comfyui#harnessComfyuiImageReader/saveProfile',
       'harness-comfyui#harnessComfyuiImageReader/deleteProfile',
@@ -56,13 +58,13 @@ describe('Catalog Remote contribution', () => {
       },
       credential: { action: 'replace', apiKey: '' },
     }
-    expect(request.schema.parse(runtime)).toEqual(runtime)
-    expect(request.schema.parse(custom)).toEqual(custom)
-    expect(descriptor.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
-    expect(() => request.schema.parse({ ...runtime, credential: { action: 'keep' } })).toThrow('properties')
-    expect(() => request.schema.parse({ ...runtime, profile: { ...runtime.profile, endpoint: '' } })).toThrow('properties')
-    expect(() => request.schema.parse({ ...custom, profile: { ...custom.profile, provider: '' }, credential: { action: 'keep' } })).toThrow('properties')
-    expect(() => request.schema.parse({ profile: runtime.profile })).toThrow()
+    expect(request.create().parse(runtime)).toEqual(runtime)
+    expect(request.create().parse(custom)).toEqual(custom)
+    expect(descriptor.result.create().parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
+    expect(() => request.create().parse({ ...runtime, credential: { action: 'keep' } })).toThrow('properties')
+    expect(() => request.create().parse({ ...runtime, profile: { ...runtime.profile, endpoint: '' } })).toThrow('properties')
+    expect(() => request.create().parse({ ...custom, profile: { ...custom.profile, provider: '' }, credential: { action: 'keep' } })).toThrow('properties')
+    expect(() => request.create().parse({ profile: runtime.profile })).toThrow()
 
     const activation = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'activateProfile')!
     expect(activation).toMatchObject({
@@ -74,9 +76,9 @@ describe('Catalog Remote contribution', () => {
     })
     const activateRequest = activation.parameters[0]!.codec
     if (activateRequest.mode !== 'strict' || activation.result.mode !== 'strict') throw new Error('strict codecs required')
-    expect(activateRequest.schema.parse({ profileId: '' })).toEqual({ profileId: '' })
-    expect(activation.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
-    expect(() => activateRequest.schema.parse({ profileId: 'runtime', force: true })).toThrow('properties')
+    expect(activateRequest.create().parse({ profileId: '' })).toEqual({ profileId: '' })
+    expect(activation.result.create().parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
+    expect(() => activateRequest.create().parse({ profileId: 'runtime', force: true })).toThrow('properties')
 
     const deletion = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'deleteProfile')!
     expect(deletion).toMatchObject({
@@ -88,9 +90,9 @@ describe('Catalog Remote contribution', () => {
     })
     const deleteRequest = deletion.parameters[0]!.codec
     if (deleteRequest.mode !== 'strict' || deletion.result.mode !== 'strict') throw new Error('strict codecs required')
-    expect(deleteRequest.schema.parse({ profileId: '' })).toEqual({ profileId: '' })
-    expect(deletion.result.schema.parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
-    expect(() => deleteRequest.schema.parse({ profileId: 'runtime', force: true })).toThrow('properties')
+    expect(deleteRequest.create().parse({ profileId: '' })).toEqual({ profileId: '' })
+    expect(deletion.result.create().parse({ configuration: savedConfiguration })).toEqual({ configuration: savedConfiguration })
+    expect(() => deleteRequest.create().parse({ profileId: 'runtime', force: true })).toThrow('properties')
   })
 
   it('mounts the strict cancellable runtime visual-model catalog', () => {
@@ -105,7 +107,7 @@ describe('Catalog Remote contribution', () => {
     })
     const result = descriptor.result
     if (result.mode !== 'strict') throw new Error('strict codec required')
-    expect(result.schema.parse({
+    expect(result.create().parse({
       groups: [{
         provider: 'provider-a',
         name: 'Provider A',
@@ -120,12 +122,25 @@ describe('Catalog Remote contribution', () => {
       }],
       failures: [{ provider: 'provider-b', message: 'catalog unavailable' }],
     })
-    expect(() => result.schema.parse({ groups: [], failures: [], provider: 'hardcoded' })).toThrow('properties')
+    expect(() => result.create().parse({ groups: [], failures: [], provider: 'hardcoded' })).toThrow('properties')
+  })
+
+  it('validates the current image reader configuration returned for the Settings page', () => {
+    const descriptor = IMAGE_READER_REMOTE.descriptors.find(candidate => candidate.method === 'configuration')!
+    expect(descriptor).toMatchObject({ parameters: [], cancellation: { parameter: 'signal' }, result: { mode: 'strict' } })
+    if (descriptor.result.mode !== 'strict') throw new Error('strict codec required')
+    const configuration = {
+      activeProfileId: 'default',
+      profiles: [{ id: 'default', name: 'Default', connectionType: 'runtime', provider: 'p', endpoint: '', model: 'm', hasApiKey: false, defaultPrompt: 'Describe', temperature: 0.2, maxTokens: 2048 }],
+    }
+    expect(descriptor.result.create().parse(configuration)).toEqual(configuration)
+    expect(() => descriptor.result.create().parse({ ...configuration, activeProfileId: 'missing' })).toThrow()
+    expect(() => descriptor.result.create().parse({ ...configuration, profiles: [] })).toThrow()
   })
 
   it('mounts strict cancellable catalog and base-model methods', () => {
     expect(CATALOG_REMOTE.package).toBe('harness-comfyui')
-    expect(CATALOG_REMOTE.descriptors).toHaveLength(3)
+    expect(CATALOG_REMOTE.descriptors).toHaveLength(4)
     expect(CATALOG_REMOTE.descriptors[0]).toMatchObject({
       service: 'harnessComfyuiCatalog',
       namespace: 'harnessComfyuiCatalog',
@@ -154,9 +169,9 @@ describe('Catalog Remote contribution', () => {
     const descriptor = CATALOG_REMOTE.descriptors[0]!
     const request = descriptor.parameters[0]!.codec
     if (request.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('strict codecs required')
-    expect(request.schema.parse({ kind: 'model', query: '', page: 1, baseModelId: null }))
+    expect(request.create().parse({ kind: 'model', query: '', page: 1, baseModelId: null }))
       .toEqual({ kind: 'model', query: '', page: 1, baseModelId: null })
-    expect(descriptor.result.schema.parse({
+    expect(descriptor.result.create().parse({
       ok: true,
       value: {
         kind: 'model',
@@ -189,7 +204,7 @@ describe('Catalog Remote contribution', () => {
     })
     const baseModels = CATALOG_REMOTE.descriptors[1]!
     if (baseModels.result.mode !== 'strict') throw new Error('strict codec required')
-    expect(baseModels.result.schema.parse({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } }))
+    expect(baseModels.result.create().parse({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } }))
       .toEqual({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } })
   })
 
@@ -197,7 +212,7 @@ describe('Catalog Remote contribution', () => {
     const descriptor = CATALOG_REMOTE.descriptors[0]!
     const result = descriptor.result
     if (result.mode !== 'strict') throw new Error('strict codec required')
-    expect(() => result.schema.parse({
+    expect(() => result.create().parse({
       ok: true,
       value: {
         kind: 'model',
@@ -212,5 +227,16 @@ describe('Catalog Remote contribution', () => {
         totalCount: 1,
       },
     })).toThrow('properties')
+  })
+
+  it('validates the live source address returned for the Settings page', () => {
+    const descriptor = CATALOG_REMOTE.descriptors.find(candidate => candidate.method === 'sourceAddress')!
+    expect(descriptor).toMatchObject({ parameters: [], cancellation: { parameter: 'signal' }, result: { mode: 'strict' } })
+    if (descriptor.result.mode !== 'strict') throw new Error('strict codec required')
+    expect(descriptor.result.create().parse({ ok: true, value: { url: 'http://127.0.0.1', port: 8188 } }))
+      .toEqual({ ok: true, value: { url: 'http://127.0.0.1', port: 8188 } })
+    expect(() => descriptor.result.create().parse({ ok: true, value: { url: 'http://127.0.0.1:8188', port: 8188 } })).toThrow()
+    expect(() => descriptor.result.create().parse({ ok: true, value: { url: 'http://127.0.0.1', port: 0 } })).toThrow()
+    expect(() => descriptor.result.create().parse({ ok: true, value: { url: 'http://127.0.0.1', port: 8188, token: 'x' } })).toThrow()
   })
 })

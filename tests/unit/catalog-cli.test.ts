@@ -21,7 +21,7 @@ function response(results: readonly unknown[], totalCount = results.length, page
 function catalog(process: CatalogCliProcess): CatalogCli {
   return new CatalogCli({
     executable: '/source/imagegen-semantic-query.mjs',
-    settings: { get: () => ({ configuration: { url: 'https://catalog.example.com', port: 18093 } }) },
+    settings: { get: () => ({ url: 'https://catalog.example.com', port: 18093 }) },
     process,
   })
 }
@@ -373,7 +373,7 @@ describe('Catalog CLI adapter', () => {
   it('rejects invalid adapter configuration before a query', () => {
     expect(() => new CatalogCli({
       executable: '',
-      settings: { get: () => ({ configuration: { url: 'http://127.0.0.1', port: 18093 } }) },
+      settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) },
     })).toThrow('executable')
   })
 
@@ -382,7 +382,7 @@ describe('Catalog CLI adapter', () => {
     const execute = vi.fn<CatalogCliProcess>(async () => ({ exitCode: 0, stdout: response([]), stderr: '' }))
     const client = new CatalogCli({
       executable: '/source/imagegen-semantic-query.mjs',
-      settings: { get: () => ({ configuration: address }) },
+      settings: { get: () => address },
       process: execute,
     })
 

@@ -2,11 +2,12 @@ import runtime from '../../../config/image-reader-runtime.json' with { type: 'js
 import { drainPendingRequests } from '../pending-requests.ts'
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { createImageReaderSettingsDefaults } from '../../image-reader/settings.ts'
+import type { ImageReaderConfiguration } from '../../image-reader/settings.ts'
 import { registerProjectTools } from '../tools/register-project-tools.ts'
 import { ImageReaderConfigurationService } from './configuration-service.ts'
 import { ImageReaderService, type ImageInspectionOptions } from './image-reader-service.ts'
 import { createInspectImageTool } from './image-reader-tool.ts'
-import { registerImageReaderSettings } from './settings-registration.ts'
+import { imageReaderSettingsStore } from './settings-registration.ts'
 
 export { Config } from '../../image-reader/plugin-schema.ts'
 import type { Config } from '../../image-reader/plugin-schema.ts'
@@ -20,7 +21,7 @@ declare module '@deepseek-ai/cordis' {
 export class ImageReaderPluginService extends Service {
   private readonly controller = new AbortController()
   private readonly pending = new Set<Promise<unknown>>()
-  constructor(ctx: Context, private readonly configuration: ImageReaderConfigurationService, private readonly reader: ImageReaderService, shutdownTimeoutMs: number) {
+  constructor(ctx: Context, private readonly configurationService: ImageReaderConfigurationService, private readonly reader: ImageReaderService, shutdownTimeoutMs: number) {
     super(ctx, 'imageReader')
     ctx.effect(() => async () => {
       this.controller.abort()
@@ -35,15 +36,16 @@ export class ImageReaderPluginService extends Service {
     void pending.then(cleanup, cleanup)
     return pending
   }
-  models(signal: AbortSignal) { return this.run(signal, signal => this.configuration.models(signal)) }
+  configuration(): ImageReaderConfiguration { return this.configurationService.configuration() }
+  models(signal: AbortSignal) { return this.run(signal, signal => this.configurationService.models(signal)) }
   saveProfile(request: Parameters<ImageReaderConfigurationService['saveProfile']>[0], signal: AbortSignal) {
-    return this.run(signal, signal => this.configuration.saveProfile(request, signal))
+    return this.run(signal, signal => this.configurationService.saveProfile(request, signal))
   }
   activateProfile(request: Parameters<ImageReaderConfigurationService['activateProfile']>[0], signal: AbortSignal) {
-    return this.run(signal, signal => this.configuration.activateProfile(request, signal))
+    return this.run(signal, signal => this.configurationService.activateProfile(request, signal))
   }
   deleteProfile(request: Parameters<ImageReaderConfigurationService['deleteProfile']>[0], signal: AbortSignal) {
-    return this.run(signal, signal => this.configuration.deleteProfile(request, signal))
+    return this.run(signal, signal => this.configurationService.deleteProfile(request, signal))
   }
   inspect(filePath: string, options: ImageInspectionOptions = {}) {
     return this.run(options.signal, signal => this.reader.inspect(filePath, { ...options, signal }))
@@ -52,7 +54,7 @@ export class ImageReaderPluginService extends Service {
 
 export async function apply(ctx: Context, config: Config): Promise<void> {
   const defaults = config.imageReaderDefaultModel === undefined ? undefined : createImageReaderSettingsDefaults(config.imageReaderDefaultModel)
-  const scope = await registerImageReaderSettings(ctx, defaults)
+  const scope = imageReaderSettingsStore(ctx, defaults)
   const logger = ctx.logger('harness-comfyui-image-reader')
   const service = new ImageReaderPluginService(ctx, new ImageReaderConfigurationService(ctx.llm, scope), new ImageReaderService({ scope, attachments: ctx.attachments, llm: ctx.llm, onDiagnostic: record => logger.info(runtime.diagnosticLogFormat, JSON.stringify(record)) }), config.shutdownTimeoutMs ?? runtime.shutdownTimeoutMs)
   ctx.effect(() => registerProjectTools(ctx, [createInspectImageTool(service)]), 'Image inspection Tool')

@@ -7,6 +7,7 @@ import {
   parseDeleteImageReaderProfileRequest,
   parseDeleteImageReaderProfileResult,
   parseImageReaderModelCatalog,
+  parseImageReaderCurrentConfiguration,
   parseSaveImageReaderProfileRequest,
   parseSaveImageReaderProfileResult,
   type ActivateImageReaderProfileRequest,
@@ -17,11 +18,13 @@ import {
   type SaveImageReaderProfileRequest,
   type SaveImageReaderProfileResult,
 } from './contract.ts'
+import type { ImageReaderConfiguration } from './settings.ts'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespaceMap {
     harnessComfyuiImageReader: {
       models: () => Promise<RemoteResult<ImageReaderModelCatalog>>
+      configuration: () => Promise<RemoteResult<ImageReaderConfiguration>>
       activateProfile: (request: ActivateImageReaderProfileRequest) => Promise<RemoteResult<ActivateImageReaderProfileResult>>
       saveProfile: (request: SaveImageReaderProfileRequest) => Promise<RemoteResult<SaveImageReaderProfileResult>>
       deleteProfile: (request: DeleteImageReaderProfileRequest) => Promise<RemoteResult<DeleteImageReaderProfileResult>>
@@ -30,13 +33,14 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 
   interface TypertRemoteMap {
     'harnessComfyuiImageReader/models': () => Promise<RemoteResult<ImageReaderModelCatalog>>
+    'harnessComfyuiImageReader/configuration': () => Promise<RemoteResult<ImageReaderConfiguration>>
     'harnessComfyuiImageReader/activateProfile': (request: ActivateImageReaderProfileRequest) => Promise<RemoteResult<ActivateImageReaderProfileResult>>
     'harnessComfyuiImageReader/saveProfile': (request: SaveImageReaderProfileRequest) => Promise<RemoteResult<SaveImageReaderProfileResult>>
     'harnessComfyuiImageReader/deleteProfile': (request: DeleteImageReaderProfileRequest) => Promise<RemoteResult<DeleteImageReaderProfileResult>>
   }
 }
 
-export const IMAGE_READER_REMOTE: TypertRemoteContribution = Object.freeze({
+export const IMAGE_READER_REMOTE = Object.freeze({
   package: 'harness-comfyui',
   descriptors: Object.freeze([Object.freeze({
     id: 'harness-comfyui#harnessComfyuiImageReader/models',
@@ -49,7 +53,20 @@ export const IMAGE_READER_REMOTE: TypertRemoteContribution = Object.freeze({
     result: Object.freeze({
       mode: 'strict' as const,
       typeSymbol: 'harness-comfyui/image-reader#ImageReaderModelCatalog',
-      schema: Object.freeze({ parse: parseImageReaderModelCatalog }),
+      create: () => Object.freeze({ parse: parseImageReaderModelCatalog }),
+    }),
+  }), Object.freeze({
+    id: 'harness-comfyui#harnessComfyuiImageReader/configuration',
+    service: IMAGE_READER_REMOTE_NAMESPACE,
+    namespace: IMAGE_READER_REMOTE_NAMESPACE,
+    method: 'configuration',
+    invocation: Object.freeze({ kind: 'direct' as const }),
+    parameters: Object.freeze([]),
+    cancellation: Object.freeze({ parameter: 'signal' as const }),
+    result: Object.freeze({
+      mode: 'strict' as const,
+      typeSymbol: 'harness-comfyui/image-reader#ImageReaderConfiguration',
+      create: () => Object.freeze({ parse: parseImageReaderCurrentConfiguration }),
     }),
   }), Object.freeze({
     id: 'harness-comfyui#harnessComfyuiImageReader/activateProfile',
@@ -64,14 +81,14 @@ export const IMAGE_READER_REMOTE: TypertRemoteContribution = Object.freeze({
       codec: Object.freeze({
         mode: 'strict' as const,
         typeSymbol: 'harness-comfyui/image-reader#ActivateImageReaderProfileRequest',
-        schema: Object.freeze({ parse: parseActivateImageReaderProfileRequest }),
+        create: () => Object.freeze({ parse: parseActivateImageReaderProfileRequest }),
       }),
     })]),
     cancellation: Object.freeze({ parameter: 'signal' as const }),
     result: Object.freeze({
       mode: 'strict' as const,
       typeSymbol: 'harness-comfyui/image-reader#ActivateImageReaderProfileResult',
-      schema: Object.freeze({ parse: parseActivateImageReaderProfileResult }),
+      create: () => Object.freeze({ parse: parseActivateImageReaderProfileResult }),
     }),
   }), Object.freeze({
     id: 'harness-comfyui#harnessComfyuiImageReader/saveProfile',
@@ -86,14 +103,14 @@ export const IMAGE_READER_REMOTE: TypertRemoteContribution = Object.freeze({
       codec: Object.freeze({
         mode: 'strict' as const,
         typeSymbol: 'harness-comfyui/image-reader#SaveImageReaderProfileRequest',
-        schema: Object.freeze({ parse: parseSaveImageReaderProfileRequest }),
+        create: () => Object.freeze({ parse: parseSaveImageReaderProfileRequest }),
       }),
     })]),
     cancellation: Object.freeze({ parameter: 'signal' as const }),
     result: Object.freeze({
       mode: 'strict' as const,
       typeSymbol: 'harness-comfyui/image-reader#SaveImageReaderProfileResult',
-      schema: Object.freeze({ parse: parseSaveImageReaderProfileResult }),
+      create: () => Object.freeze({ parse: parseSaveImageReaderProfileResult }),
     }),
   }), Object.freeze({
     id: 'harness-comfyui#harnessComfyuiImageReader/deleteProfile',
@@ -108,16 +125,16 @@ export const IMAGE_READER_REMOTE: TypertRemoteContribution = Object.freeze({
       codec: Object.freeze({
         mode: 'strict' as const,
         typeSymbol: 'harness-comfyui/image-reader#DeleteImageReaderProfileRequest',
-        schema: Object.freeze({ parse: parseDeleteImageReaderProfileRequest }),
+        create: () => Object.freeze({ parse: parseDeleteImageReaderProfileRequest }),
       }),
     })]),
     cancellation: Object.freeze({ parameter: 'signal' as const }),
     result: Object.freeze({
       mode: 'strict' as const,
       typeSymbol: 'harness-comfyui/image-reader#DeleteImageReaderProfileResult',
-      schema: Object.freeze({ parse: parseDeleteImageReaderProfileResult }),
+      create: () => Object.freeze({ parse: parseDeleteImageReaderProfileResult }),
     }),
   })]),
-})
+}) satisfies TypertRemoteContribution
 
 export default IMAGE_READER_REMOTE

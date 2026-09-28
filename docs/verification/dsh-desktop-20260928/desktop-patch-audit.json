@@ -1,0 +1,354 @@
+[
+  {
+    "package": "@agents-anywhere/dsh-bridge-next",
+    "version": "0.1.0-dev.0.desktop.c125aab0a5f30.r1188e1a1",
+    "source": "patches/agents-anywhere-connector-httpx.patch",
+    "sha256": "50b32e04328b514ccd2807e330d6697db34b193d58986f7f2941d31fdd2399fa",
+    "addedLines": 17,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-api-remotes",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-api-remotes@0.1.7-rc.2.patch",
+    "sha256": "ff5759263cf915bd7fcf1fa916127415a71d2333f3229b78babc873a090ba262",
+    "addedLines": 31,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-api-session-controller",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-api-session-controller@0.1.7-rc.2.patch",
+    "sha256": "cf2abe68ab94fab41a571a8625098920f9f4d655f4aab359daeff1f1a9a242e1",
+    "addedLines": 463,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-app-boot",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-app-boot@0.1.7-rc.2.patch",
+    "sha256": "3ff8ff5ecacac032a6016d9b89a8a3c74816db568cfa5f0a9543af3f1950457f",
+    "addedLines": 18,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-modules",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-modules@0.1.7-rc.2.patch",
+    "sha256": "843ef14ef8b386f60f6b39bae1974cd2ad6475fa536d3001c4d9fafd783a4dd9",
+    "addedLines": 1,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-conversation",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-conversation@0.1.7-rc.2.patch",
+    "sha256": "10ee70c997b7d91cc280312cf9f3cfc1b95313085a8aeed151970e5de79349fb",
+    "addedLines": 3,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-directory-picker-browse",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-directory-picker-browse@0.1.7-rc.2.patch",
+    "sha256": "1b0b3bbd150e218c366fff6927992536d60ca325faaa2fd8c67251f3d017a1b2",
+    "addedLines": 70,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-plugin-manager",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-plugin-manager@0.1.7-rc.2.patch",
+    "sha256": "9ae6e26c41aa42cd11706612551587fd64c6ffeb409631adbc3847e6af1661c3",
+    "addedLines": 92,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-primitives",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-primitives@0.1.7-rc.2.patch",
+    "sha256": "2898104fa4c01679fdee06da0e2fdb5da09cf47fbc1feb40fcd7fdffe11b6c74",
+    "addedLines": 20,
+    "riskFlags": {
+      "auto_background": [
+        37,
+        42,
+        46
+      ]
+    },
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-settings-account",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-settings-account@0.1.7-rc.2.patch",
+    "sha256": "e86d59d162b9befbb5d61bc3c73c1589d7ede37641f487c4ca430ed423b220af",
+    "addedLines": 94,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-settings-general",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-settings-general@0.1.7-rc.2.patch",
+    "sha256": "dd54b8820da95f3961c1678b6b65233fce570021e32ea94f6007a0ab87344625",
+    "addedLines": 30,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-settings-models",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-settings-models@0.1.7-rc.2.patch",
+    "sha256": "2187ef2a7ec47d610b35ddcad20611614433a9c411cf729c3c6d6f8e7b50d56c",
+    "addedLines": 103,
+    "riskFlags": {
+      "auto_background": [
+        13
+      ]
+    },
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-sidebar",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-sidebar@0.1.7-rc.2.patch",
+    "sha256": "3cd5963af68bc6d7abaee58d7bfa6358321c5c7ddcd3fd0617ec8b6d5cfccacb",
+    "addedLines": 1,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-client-ui-workspace",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-client-ui-workspace@0.1.7-rc.2.patch",
+    "sha256": "18544e43c74b799641102c7e543a7b98621781ebf99bff5a31cb3acb2c59646b",
+    "addedLines": 76,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-experimental-computer-use-cua-driver-native",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-experimental-computer-use-cua-driver-native@0.1.7-rc.2.patch",
+    "sha256": "db5f9ad966af4bc21a8e13d50002f8bfb21d50a56eb3fa94af2f3512e59c815e",
+    "addedLines": 16,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-hmr",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-hmr@0.1.7-rc.2.patch",
+    "sha256": "cf05e912c85f1aa46296b9118e1b1cc78249c350d42b2c80f74bbd566a7d2ec9",
+    "addedLines": 3,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-host-directory-picker-browse",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-host-directory-picker-browse@0.1.7-rc.2.patch",
+    "sha256": "eb395e34d8fc833290cbb476cc1826e398d14c114a609cbf3588d40dd2ce8257",
+    "addedLines": 4,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-host-open-in-app",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-host-open-in-app@0.1.7-rc.2.patch",
+    "sha256": "cae2b4c548b22f0632479e54008f3baa00eed2401262497d51bd8ec53e24bc3d",
+    "addedLines": 10,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-llm-pi-ai",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-llm-pi-ai@0.1.7-rc.2.patch",
+    "sha256": "134f7aa3b61cd2be98853688c9385fd87026b684208b069f8e0cf99bd45a8936",
+    "addedLines": 8,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-native-command",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-native-command@0.1.7-rc.2.patch",
+    "sha256": "46b56fbd51b6409e896a471309813bac619621561538018742743bfec147d795",
+    "addedLines": 2,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-plugin-manager",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-plugin-manager@0.1.7-rc.2.patch",
+    "sha256": "c827e5457be08e9f21794e8036bffc57941cee992a488224a8a10ceefdd7fef3",
+    "addedLines": 6,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-plugin-package-inventory-deepseek@0.1.7-rc.2.patch",
+    "sha256": "6ccddd9a52dbbc978a8bf96588ff4f42e5077fce5d239f078a71951ab498ce3d",
+    "addedLines": 14,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-ptc-runtime-node",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-ptc-runtime-node@0.1.7-rc.2.patch",
+    "sha256": "a8fe73dfffcebee5a5d6a83c95b77270ad1f049336d0ff099ae2cfefb004fd43",
+    "addedLines": 4,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-sandbox-windows-acl",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-sandbox-windows-acl@0.1.7-rc.2.patch",
+    "sha256": "fe7a0a99e4b7f1877e7004e6c37cef2109234bc2a703bb36f6dbbdfcca501060",
+    "addedLines": 46,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-session-persistence-jsonl",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-session-persistence-jsonl@0.1.7-rc.2.patch",
+    "sha256": "7c46fd257a3fdf55f765b1840d65c3d92e8f82699ff5e41253f57a8bfe34d877",
+    "addedLines": 44,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-session-persistence",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-session-persistence@0.1.7-rc.2.patch",
+    "sha256": "eab8d95ae74050acdf32ea9fe6c12922d3cedc6e69cd809e43977afaacc9725d",
+    "addedLines": 7,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-subprocess-local",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-subprocess-local@0.1.7-rc.2.patch",
+    "sha256": "078c88094a67d6500eadace13c4cfacb9d8cbbe6cc5a0917fc1d99165f41df30",
+    "addedLines": 8,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-web-app",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-web-app@0.1.7-rc.2.patch",
+    "sha256": "aa1991fe002fa36d28f1c9987a55722dbf2b487ea7e7b620b89e5d2738a6a4ab",
+    "addedLines": 6,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh-workspace",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh-workspace@0.1.7-rc.2.patch",
+    "sha256": "b83d31c56b8bd09e6238393fadec8351d5b83eefa22cab69623cd14d2afeb334",
+    "addedLines": 82,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@deepseek-ai/dsh",
+    "version": "0.1.7-rc.2",
+    "source": "patches/dsh@0.1.7-rc.2.patch",
+    "sha256": "8747d8b58b82fdc92155c6055a397d53ba9524231bad8539d4c6edf7f76ae9f2",
+    "addedLines": 8,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "@vscode/ripgrep",
+    "version": "1.18.0",
+    "source": "patches/vscode-ripgrep@1.18.0.patch",
+    "sha256": "67f076c2d8595fd98ac91b25333faca041fd6c23918c63517d01070a6dde1cea",
+    "addedLines": 7,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "app-builder-lib",
+    "version": "26.15.7",
+    "source": "patches/app-builder-lib@26.15.7.patch",
+    "sha256": "f6237929e62a3dae05899382493cf2fe4dfac6870ee7b2d06c430e5aa6a51d43",
+    "addedLines": 27,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "dshmarket",
+    "version": "1.66.0",
+    "source": ".yarn/patches/dshmarket-desktop.patch",
+    "sha256": "0f1b7f1e6dc270ca7ded2326eec500eb037280b8612f940c3b9599385d1e714f",
+    "addedLines": 26,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "fs-ext",
+    "version": "2.1.1",
+    "source": "patches/fs-ext@2.1.1.patch",
+    "sha256": "88a60ddb01d524c3faa06827b37828637388cbe18441138fa10fa24a46b9803c",
+    "addedLines": 31,
+    "riskFlags": {
+      "process_execution": [
+        34
+      ]
+    },
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "fsevents",
+    "version": "2.3.3",
+    "source": "Yarn built-in optional compatibility patch",
+    "selector": "fsevents@patch:fsevents@npm%3A~2.3.3#optional!builtin<compat/fsevents>",
+    "staticRisk": "内建补丁内容未在仓库中，需由 Yarn 4.18.0 发行包核对"
+  },
+  {
+    "package": "open",
+    "version": "11.0.1",
+    "source": "patches/open@11.0.1.patch",
+    "sha256": "383484d0b84b1bb856145936155333d024f1dfc5d6eaf86104b2a00bac8e8612",
+    "addedLines": 1,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "pnpm",
+    "version": "11.11.0",
+    "source": "patches/pnpm@11.11.0.patch",
+    "sha256": "fd9a44ac5e63d7c4a34590e2301123fecab80e7c694d74e2606d480a45de232a",
+    "addedLines": 9,
+    "riskFlags": {},
+    "staticRisk": "命中项需人工检查行为和调用条件；无命中仅表示关键词未发现"
+  },
+  {
+    "package": "typescript",
+    "version": "6.0.3",
+    "source": "Yarn built-in optional compatibility patch",
+    "selector": "typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>",
+    "staticRisk": "内建补丁内容未在仓库中，需由 Yarn 4.18.0 发行包核对"
+  }
+]

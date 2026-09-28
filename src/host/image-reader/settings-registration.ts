@@ -1,42 +1,34 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { type SettingsScope } from '@deepseek-ai/dsh-settings'
 
 import {
-  IMAGE_READER_LEGACY_SETTINGS_DEFAULTS,
-  IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
-  IMAGE_READER_LEGACY_SETTINGS_SCHEMA,
   IMAGE_READER_SETTINGS_DEFAULTS,
-  IMAGE_READER_SETTINGS_NAMESPACE,
-  IMAGE_READER_SETTINGS_SCHEMA,
-  migrateLegacyImageReaderSettings,
+  IMAGE_READER_PROFILE_ENTRY_ID,
   validateImageReaderSettingsSection,
   type ImageReaderSettingsSection,
-  type LegacyImageReaderSettingsSection
 } from '../../image-reader/settings.ts'
 
-export async function registerImageReaderSettings(
+export interface ImageReaderSettingsStore {
+  get(): ImageReaderSettingsSection
+  replace(section: ImageReaderSettingsSection): Promise<void>
+}
+
+export function imageReaderSettingsStore(
   ctx: Pick<Context, 'settings'>,
   defaults: ImageReaderSettingsSection = IMAGE_READER_SETTINGS_DEFAULTS,
-): Promise<SettingsScope<ImageReaderSettingsSection>> {
-  const legacy = ctx.settings.register<typeof IMAGE_READER_LEGACY_SETTINGS_NAMESPACE, LegacyImageReaderSettingsSection>(
-    IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
-    IMAGE_READER_LEGACY_SETTINGS_SCHEMA as never,
-    { base: IMAGE_READER_LEGACY_SETTINGS_DEFAULTS, applies: 'live' },
-  )
-  const current = ctx.settings.register<typeof IMAGE_READER_SETTINGS_NAMESPACE, ImageReaderSettingsSection>(
-    IMAGE_READER_SETTINGS_NAMESPACE,
-    IMAGE_READER_SETTINGS_SCHEMA as never,
-    { base: defaults, applies: 'live', validate: validateImageReaderSettingsSection },
-  )
-  const descriptors = ctx.settings.describe()
-  const legacyUserExists = descriptors.some(descriptor => (
-    descriptor.ns === IMAGE_READER_LEGACY_SETTINGS_NAMESPACE && descriptor.user !== undefined
-  ))
-  const currentUserExists = descriptors.some(descriptor => (
-    descriptor.ns === IMAGE_READER_SETTINGS_NAMESPACE && descriptor.user !== undefined
-  ))
-  if (legacyUserExists && !currentUserExists) {
-    await current.replace(migrateLegacyImageReaderSettings(legacy.get()))
+): ImageReaderSettingsStore {
+  return {
+    get() {
+      const value = ctx.settings.describe().find(row => row.ns === IMAGE_READER_PROFILE_ENTRY_ID)?.value as Partial<ImageReaderSettingsSection> | undefined
+      const section = {
+        configuration: value?.configuration ?? defaults.configuration,
+        credentials: value?.credentials ?? defaults.credentials,
+      }
+      validateImageReaderSettingsSection(section)
+      return section
+    },
+    async replace(section) {
+      validateImageReaderSettingsSection(section)
+      await ctx.settings.replace(IMAGE_READER_PROFILE_ENTRY_ID, section)
+    },
   }
-  return current
 }

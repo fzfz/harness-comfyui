@@ -122,7 +122,7 @@ describe('source workspace engineering contract', () => {
       expect(version, `devDependencies.${name}`).toMatch(exactVersion)
     }
     for (const [name, version] of Object.entries(manifest.peerDependencies as Record<string, string>)) {
-      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe('>=0.1.5-rc.2 <0.1.6')
+      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe('>=0.1.7-rc.2 <0.1.8')
       else expect(version, `peerDependencies.${name}`).toMatch(exactVersion)
     }
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())

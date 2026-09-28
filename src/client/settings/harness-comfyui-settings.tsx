@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from 'react'
 
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
+
+import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
 
 import {
   SourceSettingsValidationError,
@@ -35,7 +37,7 @@ const SETTINGS_TAB_IDS: Readonly<Record<SettingsTab, string>> = Object.freeze({
 export interface HarnessComfyuiSettingsPageProps extends SettingsSectionOwnerProps {
   readonly imageReaderScope: ImageReaderSettingsPageProps['scope']
   readonly imageReaderApi: ImageReaderSettingsPageProps['api']
-  readonly sourceScope: SettingsScope<SourceSettingsView>
+  readonly sourceScope: ConfigForm<SourceSettingsView>
 }
 
 function sourceErrorMessage(error: SourceSettingsValidationError): string {
@@ -123,10 +125,14 @@ export function HarnessComfyuiSettingsPage({
     setFieldError(null)
     setSaveStatus('saving')
     try {
-      await sourceScope.mutate([
+      const saved = await sourceScope.mutate([
         { op: 'set', path: ['configuration', 'url'], value: url },
         { op: 'set', path: ['configuration', 'port'], value: nextPort },
       ], settings.revision)
+      if (!saved) {
+        setSaveStatus('error')
+        return
+      }
       setDirty(false)
       setSaveStatus('saved')
     } catch {
@@ -201,7 +207,7 @@ export function HarnessComfyuiSettingsPage({
           </header>
 
           {settings.status === 'loading' ? <p role="status">正在读取数据源服务设置…</p> : null}
-          {settings.status === 'unavailable' ? <p role="alert">当前 Harness 环境的数据源服务设置需要启用写入权限。请联系负责配置 Harness 环境的人员启用写入权限后再修改。</p> : null}
+          {settings.status === 'unavailable' ? <p role="alert">{errorCatalog.SOURCE_SETTINGS_UNAVAILABLE.reason}{errorCatalog.SOURCE_SETTINGS_UNAVAILABLE.next_step}</p> : null}
           {settings.status === 'ready' && !settings.writable ? <p role="alert">当前数据源服务设置处于只读状态。请联系负责配置 Harness 环境的人员启用写入权限后再修改。</p> : null}
 
           <form noValidate onSubmit={(event) => { event.preventDefault(); void save() }}>

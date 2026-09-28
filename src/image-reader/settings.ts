@@ -1,4 +1,5 @@
 import bundledProfiles from '../../config/image-reader-profiles.json' with { type: 'json' }
+import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import Schema from '@deepseek-ai/schemastery'
 
 export const IMAGE_READER_CONNECTION_TYPES = Object.freeze(['runtime', 'openai-compatible'] as const)
@@ -65,6 +66,7 @@ export interface LegacyImageReaderSettingsSection {
 
 export const IMAGE_READER_LEGACY_SETTINGS_NAMESPACE = 'harness-comfyui-image-reader'
 export const IMAGE_READER_SETTINGS_NAMESPACE = 'harness-comfyui-image-reader-profiles'
+export const IMAGE_READER_PROFILE_ENTRY_ID = settingsEntryIds.imageReader
 export const IMAGE_READER_SETTINGS_SECTION_ID = 'harness-comfyui-image-reader'
 
 export const IMAGE_READER_LEGACY_SETTINGS_DEFAULTS: LegacyImageReaderSettingsSection = Object.freeze({
@@ -136,7 +138,7 @@ const imageReaderProfileSchema = Schema.object({
   maxTokens: Schema.natural().min(IMAGE_READER_MAX_TOKENS_MIN).max(IMAGE_READER_MAX_TOKENS_MAX).required(),
 })
 
-const imageReaderConfigurationSchema = Schema.object({
+export const imageReaderConfigurationSchema = Schema.object({
   activeProfileId: Schema.string().min(1).max(80).required(),
   profiles: Schema.array(imageReaderProfileSchema).min(1).max(IMAGE_READER_MAX_PROFILES).required(),
 })
@@ -151,9 +153,11 @@ export const IMAGE_READER_LEGACY_SETTINGS_SCHEMA = Schema.object({
   }).required(),
 })
 
+export const imageReaderCredentialsSchema = Schema.dict(Schema.string().max(IMAGE_READER_API_KEY_MAX_LENGTH).role('secret'))
+
 export const IMAGE_READER_SETTINGS_SCHEMA = Schema.object({
   configuration: imageReaderConfigurationSchema.required(),
-  credentials: Schema.dict(Schema.string().max(IMAGE_READER_API_KEY_MAX_LENGTH).role('secret')).required(),
+  credentials: imageReaderCredentialsSchema.required(),
 })
 
 function record(value: unknown): Record<string, unknown> | undefined {

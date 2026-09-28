@@ -25,9 +25,9 @@ pnpm prod:test
 
 tests/support/desktop-context.mjs 使用 config/desktop-baseline.json 选择 anywhere Stable workspace。DSH_DESKTOP_TEST_SOURCE 只覆盖测试源码位置，测试仍校验固定 commit、Desktop、Harness 与 Electron 版本。宿主模块通过该 workspace 的 package.json 创建 Node createRequire 后解析。
 
-当前候选基线为 Desktop 2.0.11、DSH 0.1.5-rc.2 和 Electron 43.3.0，固定源码身份以 config/desktop-baseline.json 为准。门禁必须使用该安装中的宿主包，验证原有会话删除、Session 请求头、模型推理等级编辑和 managed CLI 路由行为。工作台界面测试必须覆盖原生右侧栏中的结果页、空白与已保存 Session，以及关闭结果页后其他宿主页签保持可用。
+当前候选基线为 Desktop 2.0.15、DSH 0.1.7-rc.2 和 Electron 44.0.0，固定源码身份以 config/desktop-baseline.json 为准。门禁必须使用该安装中的宿主包，验证原有会话删除、Session 请求头、模型推理等级编辑和 managed CLI 路由行为。工作台界面测试必须覆盖原生右侧栏中的结果页、空白与已保存 Session，以及关闭结果页后其他宿主页签保持可用。
 
-v0.44.2 候选的 fork 完整检查、真实运行结果与待完成验收见[基线验证记录](../verification/upstream-baseline-20260919.md)。
+本次升级候选的锁文件、安装与构建检查见[依赖安装审计](../verification/dsh-desktop-20260928/desktop-install-audit.md)，隔离迁移测试、Desktop 启动证据与待完成的真实会话验收见[运行验收记录](../verification/dsh-desktop-20260928/runtime-acceptance.md)。
 
 v0.43.0 的自有 Desktop 完整 `corepack yarn check` 通过：Market 263 项、Stable 1375 项和 Beta 1327 项测试成功；Stable 8 项、Beta 7 项跳过。v0.43.0 修正了市场测试的代理隔离、Windows 反向补丁路径和 CLI 版本检查的临时工作目录，并保留原有行为断言。
 

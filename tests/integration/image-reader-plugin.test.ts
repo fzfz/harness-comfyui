@@ -6,12 +6,12 @@ import sharp from 'sharp'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import imageReaderRuntime from '../../config/image-reader-runtime.json' with { type: 'json' }
 import * as imageReader from '../../src/host/image-reader/plugin.ts'
-import { createImageReaderProfile, IMAGE_READER_SETTINGS_NAMESPACE, type ImageReaderSettingsSection } from '../../src/image-reader/settings.ts'
+import { createImageReaderProfile, IMAGE_READER_PROFILE_ENTRY_ID, type ImageReaderSettingsSection } from '../../src/image-reader/settings.ts'
 import { startCliServer } from '../../src/host/cli/server.ts'
 
 const cleanup: (() => Promise<unknown>)[] = []
 afterEach(async () => { for (const dispose of cleanup.splice(0).reverse()) await dispose() })
-async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtime', endpoint = '', config: imageReader.Config = {}) {
+async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtime', endpoint = '', config: Parameters<typeof imageReader.Config>[0] = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'independent-reader-'))
   cleanup.push(() => rm(directory, { recursive: true, force: true }))
   const file = join(directory, 'image.png')
@@ -33,10 +33,11 @@ async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtim
     prepareCall: async (config: unknown) => ({ config, inputModalities: ['text', 'image'], stream }),
   } as never)
   ctx.provide('settings', {
-    register: (ns: string, _schema: unknown, options: { base: unknown }) => ns === IMAGE_READER_SETTINGS_NAMESPACE
-      ? { get: () => settings, replace: async (value: ImageReaderSettingsSection) => { settings = value } }
-      : { get: () => options.base },
-    describe: () => [],
+    describe: () => [{ ns: IMAGE_READER_PROFILE_ENTRY_ID, value: settings }],
+    replace: async (ns: string, value: ImageReaderSettingsSection) => {
+      if (ns !== IMAGE_READER_PROFILE_ENTRY_ID) throw new Error(`Unexpected Settings entry: ${ns}`)
+      settings = value
+    },
   } as never)
   const fiber = ctx.plugin(imageReader, config)
   await fiber

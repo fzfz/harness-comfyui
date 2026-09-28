@@ -1,0 +1,4 @@
+{
+  "core": "harness-comfyui-core",
+  "imageReader": "harness-comfyui-image-reader"
+}

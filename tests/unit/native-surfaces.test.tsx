@@ -7,12 +7,12 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
     Button: ({ icon: _icon, children, ...props }: Record<string, unknown>) => React.createElement(
       'button', props, children as ReactNode,
     ),
-    IconCheckOutline16: () => React.createElement('i', { 'data-icon': 'check' }),
-    IconChevronDownOutline14: () => React.createElement('i', { 'data-icon': 'chevron' }),
-    IconChevronLeftOutline14: () => React.createElement('i', { 'data-icon': 'chevron-left' }),
-    IconChevronRightOutline14: () => React.createElement('i', { 'data-icon': 'chevron-right' }),
-    IconSparkle16: () => React.createElement('i', { 'data-icon': 'sparkle' }),
-    IconSearchOutline16: () => React.createElement('i', { 'data-icon': 'search' }),
+    IconCheckOutlineRegular: () => React.createElement('i', { 'data-icon': 'check' }),
+    IconChevronDownOutlineRegular: () => React.createElement('i', { 'data-icon': 'chevron' }),
+    IconChevronLeftOutlineRegular: () => React.createElement('i', { 'data-icon': 'chevron-left' }),
+    IconChevronRightOutlineRegular: () => React.createElement('i', { 'data-icon': 'chevron-right' }),
+    IconSparkleRegular: () => React.createElement('i', { 'data-icon': 'sparkle' }),
+    IconSearchOutlineRegular: () => React.createElement('i', { 'data-icon': 'search' }),
     Input: ({ icon: _icon, ...props }: Record<string, unknown>) => React.createElement('input', props),
     Menu: ({ open, anchor, items, onSelect, onClose }: Record<string, unknown>) => React.createElement(
       'div',

@@ -1,9 +1,11 @@
-import { mkdtemp, mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { createRequire } from 'node:module'
 
 import { describe, expect, it, vi } from 'vitest'
+import yamlFixture from '../support/fake-profile-yaml.cjs'
+import { IMAGE_READER_SETTINGS_DEFAULTS } from '../../src/image-reader/settings.ts'
 
 import {
   loadDesktopBaseline,
@@ -13,6 +15,7 @@ import {
   currentStartupLifecycle,
   desktopSetupState,
   initializeDesktopSettings,
+  readConfiguredWebPort,
   prepareAnywhereDesktop,
   reconcileManagedProfileManifest,
   resolveInstalledPackageManifest,
@@ -28,9 +31,9 @@ function baseline(overrides = {}) {
       stableWorkspace: 'dsh-plugin-desktop',
     },
     packages: {
-      desktop: { name: 'dsh-plugin-desktop', version: '2.0.11' },
-      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.2' },
-      electron: { name: 'electron', version: '43.3.0' },
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.15' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.7-rc.2' },
+      electron: { name: 'electron', version: '44.0.0' },
     },
     profile: {
       name: 'desktop',
@@ -67,9 +70,9 @@ describe('anywhere Stable Desktop baseline', () => {
     const parsed = parseDesktopBaseline(baseline())
     expect(parsed.source.commit).toBe('b39ffbf5621aea51e87f27e7b83d9c3e1ff5e24d')
     expect(parsed.packages).toEqual({
-      desktop: { name: 'dsh-plugin-desktop', version: '2.0.11' },
-      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.2' },
-      electron: { name: 'electron', version: '43.3.0' },
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.15' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.7-rc.2' },
+      electron: { name: 'electron', version: '44.0.0' },
     })
     expect(parsed.startup).toEqual({
       host: '127.0.0.1',
@@ -99,11 +102,11 @@ describe('anywhere Stable Desktop baseline', () => {
     const root = await mkdtemp(resolve(tmpdir(), 'anywhere-baseline-'))
     const desktopRepository = resolve(root, '.local/upstreams/dsh-desktop-anywhere-candidate')
     const workspace = resolve(desktopRepository, 'dsh-plugin-desktop')
-    await writePackage(workspace, { name: 'dsh-plugin-desktop', version: '2.0.11' }, 'lib/main.js')
+    await writePackage(workspace, { name: 'dsh-plugin-desktop', version: '2.0.15' }, 'lib/main.js')
     await writePackage(resolve(workspace, 'node_modules/@deepseek-ai/dsh'), {
-      name: '@deepseek-ai/dsh', version: '0.1.5-rc.2',
+      name: '@deepseek-ai/dsh', version: '0.1.7-rc.2',
     })
-    await writePackage(resolve(workspace, 'node_modules/electron'), { name: 'electron', version: '43.3.0' })
+    await writePackage(resolve(workspace, 'node_modules/electron'), { name: 'electron', version: '44.0.0' })
     const definitionPath = resolve(root, 'desktop-baseline.json')
     await writeFile(definitionPath, `${JSON.stringify(baseline())}\n`)
     const spawnSync = (_command, args) => args.includes('rev-parse')
@@ -162,60 +165,295 @@ describe('anywhere managed Profile contract', () => {
       version: 2,
       profileHash: expect.stringMatching(/^[0-9a-f]{64}$/u),
       outcome: 'skipped',
-      desktopVersion: '2.0.11',
-      dshVersion: '0.1.5-rc.2',
+      desktopVersion: '2.0.15',
+      dshVersion: '0.1.7-rc.2',
       setupRevision: 1,
       recordedAt: '2026-09-09T01:02:03.000Z',
     })
   })
 
-  it('adds the Desktop section to existing settings without replacing other settings', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'anywhere-settings-'))
-    const context = {
-      dshHome: root,
-      baseline: parseDesktopBaseline(baseline()),
+  async function desktopSettingsFixture(label, patch = [{ insert: [{ id: 'desktop-shell', config: { mode: 'compatibility' } }] }]) {
+    const root = await mkdtemp(resolve(tmpdir(), label))
+    const profileDirectory = resolve(root, 'profiles/desktop')
+    const desktopWorkspace = resolve(root, 'desktop-workspace')
+    await mkdir(profileDirectory, { recursive: true })
+    await mkdir(desktopWorkspace, { recursive: true })
+    await writeFile(resolve(profileDirectory, 'cordis.patch.yml'), `${JSON.stringify(patch)}\n`)
+    await writeFile(resolve(desktopWorkspace, 'cordis.patch.yml'), `${JSON.stringify([
+      { insert: [{ id: 'desktop-shell', config: { mode: 'compatibility' } }] },
+    ])}\n`)
+    await writeFile(resolve(root, 'cordis.patch.yml'), `${JSON.stringify([{ insert: [
+      { id: 'harness-comfyui-core', config: {
+        configurationProfile: 'profile-expression', startupWorkspacePath: 'workspace-expression',
+      } },
+      { id: 'harness-comfyui-image-reader', config: {
+        imageReaderDefaultModel: { provider: 'provider-a', model: 'vision-a' },
+      } },
+    ] }])}\n`)
+    return {
+      root,
+      profileDirectory,
+      context: { repositoryRoot: root, desktopWorkspace, dshHome: root, baseline: parseDesktopBaseline(baseline()) },
+      yaml: yamlFixture,
     }
-    const yaml = { parse: JSON.parse, stringify: value => `${JSON.stringify(value, null, 2)}\n` }
-    await writeFile(resolve(root, 'settings.yaml'), `${JSON.stringify({ llm: { provider: 'saved' } })}\n`)
-    await expect(initializeDesktopSettings(context, () => yaml, 45_678)).resolves.toBe(true)
-    expect(JSON.parse(await readFile(resolve(root, 'settings.yaml'), 'utf8'))).toEqual({
-      llm: { provider: 'saved' },
-      'dsh-desktop': {
-        mode: 'compatibility',
-        port: 45_678,
-        networkExposure: 'loopback',
-        openBrowser: false,
-      },
+  }
+
+  it('fills the Profile Desktop entry and keeps settings.yaml absent on a fresh start', async () => {
+    const value = await desktopSettingsFixture('anywhere-profile-settings-')
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patchPath = resolve(value.profileDirectory, 'cordis.patch.yml')
+    const patch = JSON.parse(await readFile(patchPath, 'utf8'))
+    expect(patch[0].insert[0].config).toEqual({ mode: 'compatibility', port: 45_678, networkExposure: 'loopback', openBrowser: false })
+    expect((await stat(patchPath)).mode & 0o777).toBe(0o600)
+    await expect(readFile(resolve(value.root, 'settings.yaml'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readConfiguredWebPort(value.context, () => value.yaml, value.profileDirectory)).resolves.toBe(45_678)
+  })
+
+  it('adds a Desktop override when the Profile patch contains only other plugins', async () => {
+    const value = await desktopSettingsFixture('anywhere-bundle-only-desktop-', [
+      { insert: [{ id: 'harness-comfyui-web', name: 'harness-comfyui' }] },
+    ])
+    await expect(readConfiguredWebPort(value.context, () => value.yaml, value.profileDirectory)).resolves.toBeUndefined()
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch.find(row => row.id === 'desktop-shell').config).toMatchObject({
+      mode: 'compatibility', port: 45_678, networkExposure: 'loopback', openBrowser: false,
     })
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(false)
   })
 
-  it('preserves a complete saved Desktop section on repeated preparation', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'anywhere-saved-settings-'))
-    const context = { dshHome: root, baseline: parseDesktopBaseline(baseline()) }
-    const source = `${JSON.stringify({
-      'dsh-desktop': { mode: 'advanced', port: 49_999, networkExposure: 'lan', openBrowser: true },
+  it('retains an existing Profile port when archiving a pending legacy Desktop section', async () => {
+    const value = await desktopSettingsFixture('anywhere-saved-profile-', [
+      { insert: [{ id: 'desktop-shell', config: { mode: 'advanced', port: 49_999, networkExposure: 'lan', openBrowser: true } }] },
+    ])
+    const source = `${JSON.stringify({ 'dsh-desktop': { mode: 'compatibility', port: 45_678 } })}\n`
+    await writeFile(resolve(value.root, 'settings.yaml'), source)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    await expect(readFile(resolve(value.root, 'settings.yaml'))).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readFile(resolve(value.root, 'settings.yaml.imported'), 'utf8')).toBe(source)
+    await expect(readConfiguredWebPort(value.context, () => value.yaml, value.profileDirectory)).resolves.toBe(49_999)
+  })
+
+  it('moves saved Desktop appearance and logging settings into the Profile', async () => {
+    const value = await desktopSettingsFixture('anywhere-legacy-appearance-', [
+      { insert: [{ id: 'desktop-shell', config: { mode: 'compatibility', logLevel: 'warn' } }] },
+    ])
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'dsh-desktop': {
+        mode: 'advanced',
+        port: 45_678,
+        macosMaterial: 'transparent',
+        windowsMaterial: 'mica',
+        linuxMaterial: 'transparent',
+        logLevel: 'debug',
+      },
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch[0].insert[0].config).toMatchObject({
+      mode: 'advanced',
+      port: 45_678,
+      macosMaterial: 'transparent',
+      windowsMaterial: 'mica',
+      linuxMaterial: 'transparent',
+      logLevel: 'warn',
+    })
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(false)
+  })
+
+  it('moves project settings before the DSH legacy importer can discard their old namespace IDs', async () => {
+    const value = await desktopSettingsFixture('anywhere-project-settings-')
+    const source = { configuration: { url: 'http://127.0.0.1', port: 23_456 } }
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'harness-comfyui-source': source,
+      'harness-comfyui-image-reader-profiles': IMAGE_READER_SETTINGS_DEFAULTS,
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch.find(row => row.id === 'harness-comfyui-core').config).toMatchObject({
+      ...source, configurationProfile: 'profile-expression', startupWorkspacePath: 'workspace-expression',
+    })
+    expect(patch.find(row => row.id === 'harness-comfyui-image-reader').config).toMatchObject({
+      ...IMAGE_READER_SETTINGS_DEFAULTS,
+      imageReaderDefaultModel: { provider: 'provider-a', model: 'vision-a' },
+    })
+    await expect(readFile(resolve(value.root, 'settings.yaml'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(false)
+  })
+
+  it('keeps a saved image reader Profile when the old document contains different credentials', async () => {
+    const value = await desktopSettingsFixture('anywhere-saved-image-profile-', [
+      { insert: [{ id: 'desktop-shell', config: { mode: 'compatibility' } }] },
+      { id: 'harness-comfyui-image-reader', config: { configuration: IMAGE_READER_SETTINGS_DEFAULTS.configuration } },
+    ])
+    const oldImage = {
+      configuration: {
+        activeProfileId: 'old-api',
+        profiles: [{
+          id: 'old-api', name: 'Old API', connectionType: 'openai-compatible', provider: '',
+          endpoint: 'https://example.test/v1/chat/completions', model: 'old-vision', hasApiKey: true,
+          defaultPrompt: 'Describe the image.', temperature: 0.2, maxTokens: 2048,
+        }],
+      },
+      credentials: { 'old-api': 'old-secret' },
+    }
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'harness-comfyui-image-reader-profiles': oldImage,
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch.find(row => row.id === 'harness-comfyui-image-reader').config).toEqual({
+      configuration: IMAGE_READER_SETTINGS_DEFAULTS.configuration,
+      imageReaderDefaultModel: { provider: 'provider-a', model: 'vision-a' },
+    })
+    await expect(readFile(resolve(value.root, 'settings.yaml'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('keeps a nested Profile source entry ahead of the old source namespace', async () => {
+    const current = { configuration: { url: 'http://127.0.0.1', port: 49_000 } }
+    const value = await desktopSettingsFixture('anywhere-nested-source-profile-', [
+      { insert: [
+        { id: 'desktop-shell', config: { mode: 'compatibility' } },
+        { id: 'harness-comfyui-core', config: current },
+      ] },
+    ])
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'harness-comfyui-source': { configuration: { url: 'http://127.0.0.1', port: 23_456 } },
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch[0].insert[1].config).toMatchObject({
+      ...current, configurationProfile: 'profile-expression', startupWorkspacePath: 'workspace-expression',
+    })
+    expect(patch.some(row => row.id === 'harness-comfyui-core')).toBe(false)
+  })
+
+  it('keeps a saved dynamic source expression when importing an old static source value', async () => {
+    const dynamic = { __jsExpr: 'process.env.SOURCE_ADDRESS' }
+    const value = await desktopSettingsFixture('anywhere-dynamic-source-profile-', [
+      { insert: [{ id: 'desktop-shell', config: { mode: 'compatibility' } }] },
+      { id: 'harness-comfyui-core', config: { configuration: dynamic } },
+    ])
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'harness-comfyui-source': { configuration: { url: 'http://127.0.0.1', port: 23_456 } },
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch.find(row => row.id === 'harness-comfyui-core').config.configuration).toEqual(dynamic)
+  })
+
+  it('converts the older image reader shape into a runtime Profile', async () => {
+    const value = await desktopSettingsFixture('anywhere-older-image-settings-')
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'harness-comfyui-image-reader': {
+        configuration: {
+          provider: 'provider-a', model: 'vision-a', defaultPrompt: 'Read this image.',
+          temperature: 0.3, maxTokens: 1024,
+        },
+      },
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    const image = patch.find(row => row.id === 'harness-comfyui-image-reader').config
+    expect(image.configuration.profiles[0]).toMatchObject({
+      connectionType: 'runtime', provider: 'provider-a', model: 'vision-a',
+      defaultPrompt: 'Read this image.', temperature: 0.3, maxTokens: 1024,
+    })
+    expect(image.credentials).toEqual({})
+  })
+
+  it('preserves an invalid old project setting for repair before launch', async () => {
+    const value = await desktopSettingsFixture('anywhere-invalid-source-settings-')
+    const old = `${JSON.stringify({
+      'harness-comfyui-source': { configuration: { url: 'not-a-url', port: 23_456 } },
     })}\n`
-    await writeFile(resolve(root, 'settings.yaml'), source)
-    const yaml = { parse: JSON.parse, stringify: value => `${JSON.stringify(value)}\n` }
-    await expect(initializeDesktopSettings(context, () => yaml, 45_678)).resolves.toBe(false)
-    expect(await readFile(resolve(root, 'settings.yaml'), 'utf8')).toBe(source)
+    await writeFile(resolve(value.root, 'settings.yaml'), old)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).rejects.toThrow()
+    expect(await readFile(resolve(value.root, 'settings.yaml'), 'utf8')).toBe(old)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch.some(row => row.id === 'harness-comfyui-core')).toBe(false)
   })
 
-  it('replaces saved port zero with the port claimed for this managed run', async () => {
-    const root = await mkdtemp(resolve(tmpdir(), 'anywhere-zero-port-settings-'))
-    const context = { dshHome: root, baseline: parseDesktopBaseline(baseline()) }
-    await writeFile(resolve(root, 'settings.yaml'), `${JSON.stringify({
+  it('preserves real YAML expression tags when importing a source override', async () => {
+    const checkout = JSON.parse(await readFile(resolve('config/desktop-worktree.json'), 'utf8'))
+    const selected = JSON.parse(await readFile(resolve('config/desktop-baseline.json'), 'utf8'))
+    const desktopRoot = resolve(checkout.mainCheckoutPath, selected.source.relativePath)
+    const yaml = createRequire(resolve(desktopRoot, selected.source.stableWorkspace, 'package.json'))('yaml')
+    const root = await mkdtemp(resolve(tmpdir(), 'anywhere-real-yaml-source-'))
+    const profileDirectory = resolve(root, 'profiles/desktop')
+    await mkdir(profileDirectory, { recursive: true })
+    await writeFile(resolve(root, 'cordis.patch.yml'), await readFile(resolve('cordis.patch.yml')))
+    await writeFile(resolve(profileDirectory, 'cordis.patch.yml'), '- insert:\n    - id: desktop-shell\n      config:\n        mode: compatibility\n')
+    await writeFile(resolve(root, 'settings.yaml'), 'harness-comfyui-source:\n  configuration:\n    url: http://127.0.0.1\n    port: 23456\n')
+    const context = { repositoryRoot: root, dshHome: root, baseline: parseDesktopBaseline(baseline()) }
+    await expect(initializeDesktopSettings(context, () => yaml, 45_678, profileDirectory)).resolves.toBe(true)
+    const saved = await readFile(resolve(profileDirectory, 'cordis.patch.yml'), 'utf8')
+    expect(saved).toContain('configurationProfile: !!js')
+    expect(saved).toContain('startupWorkspacePath: !!js')
+    const document = yaml.parseDocument(saved, { customTags: [{ tag: 'tag:yaml.org,2002:js', resolve: value => value }] })
+    expect(document.errors).toEqual([])
+    const core = document.toJS().find(row => row.id === 'harness-comfyui-core')
+    expect(core.config.configuration).toEqual({ url: 'http://127.0.0.1', port: 23_456 })
+  })
+
+  it('moves a pending legacy port zero into the Profile before archiving the document', async () => {
+    const value = await desktopSettingsFixture('anywhere-zero-port-settings-')
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
       'dsh-desktop': { mode: 'compatibility', port: 0, networkExposure: 'loopback', openBrowser: false },
     })}\n`)
-    const yaml = { parse: JSON.parse, stringify: value => `${JSON.stringify(value)}\n` }
-    await expect(initializeDesktopSettings(context, () => yaml, 45_678)).resolves.toBe(true)
-    expect(JSON.parse(await readFile(resolve(root, 'settings.yaml'), 'utf8'))['dsh-desktop'].port).toBe(45_678)
+    await expect(readConfiguredWebPort(value.context, () => value.yaml, value.profileDirectory)).resolves.toBe(0)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 45_678, value.profileDirectory)).resolves.toBe(true)
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch[0].insert[0].config.port).toBe(45_678)
+    await expect(readFile(resolve(value.root, 'settings.yaml'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('retains other legacy sections for the DSH importer', async () => {
+    const value = await desktopSettingsFixture('anywhere-other-legacy-')
+    await writeFile(resolve(value.root, 'settings.yaml'), `${JSON.stringify({
+      'dsh-desktop': { mode: 'advanced', port: 49_999, networkExposure: 'lan', openBrowser: true },
+      'agent-default-model': { provider: 'saved', model: 'saved-model' },
+    })}\n`)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 49_999, value.profileDirectory)).resolves.toBe(true)
+    expect(JSON.parse(await readFile(resolve(value.root, 'settings.yaml'), 'utf8'))).toEqual({
+      'agent-default-model': { provider: 'saved', model: 'saved-model' },
+    })
+    const patch = JSON.parse(await readFile(resolve(value.profileDirectory, 'cordis.patch.yml'), 'utf8'))
+    expect(patch[0].insert[0].config).toMatchObject({ mode: 'advanced', port: 49_999, networkExposure: 'lan', openBrowser: true })
+  })
+
+  it('preserves an existing migration archive when a legacy Desktop section reappears', async () => {
+    const value = await desktopSettingsFixture('anywhere-archive-collision-')
+    const pending = `${JSON.stringify({ 'dsh-desktop': { port: 49_999 } })}\n`
+    await writeFile(resolve(value.root, 'settings.yaml'), pending)
+    await writeFile(resolve(value.root, 'settings.yaml.imported'), 'saved archive\n')
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 49_999, value.profileDirectory))
+      .rejects.toThrow('resolve the archive collision before startup')
+    expect(await readFile(resolve(value.root, 'settings.yaml'), 'utf8')).toBe(pending)
+    expect(await readFile(resolve(value.root, 'settings.yaml.imported'), 'utf8')).toBe('saved archive\n')
+  })
+
+  it('rejects duplicate legacy Desktop sections before changing either value', async () => {
+    const value = await desktopSettingsFixture('anywhere-duplicate-legacy-')
+    const source = `${JSON.stringify({
+      'desktop-shell': { port: 41_001 },
+      'dsh-desktop': { port: 41_002 },
+    })}\n`
+    await writeFile(resolve(value.root, 'settings.yaml'), source)
+    await expect(initializeDesktopSettings(value.context, () => value.yaml, 41_001, value.profileDirectory))
+      .rejects.toThrow('resolve the duplicate Desktop sections before startup')
+    expect(await readFile(resolve(value.root, 'settings.yaml'), 'utf8')).toBe(source)
   })
 
   it('releases a claimed Web port when later preparation fails', async () => {
     const root = await mkdtemp(resolve(tmpdir(), 'anywhere-prepare-failure-'))
     const dshHome = resolve(root, 'home/harness')
     await mkdir(dshHome, { recursive: true })
+    const profileDirectory = resolve(dshHome, 'profiles/desktop')
+    await mkdir(profileDirectory, { recursive: true })
+    await writeFile(resolve(profileDirectory, 'cordis.patch.yml'), `${JSON.stringify([
+      { insert: [{ id: 'desktop-shell', config: { mode: 'compatibility' } }] },
+    ])}\n`)
     await writeFile(resolve(root, '.env'), 'KEY=value\n')
     const release = vi.fn(async () => {})
     const parsed = parseDesktopBaseline(baseline())
@@ -230,6 +468,10 @@ describe('anywhere managed Profile contract', () => {
       developmentPortClaimRoot: resolve(root, 'claims'),
       baseline: parsed,
     }
+    const yamlDirectory = resolve(context.desktopWorkspace, 'node_modules/yaml')
+    await mkdir(yamlDirectory, { recursive: true })
+    await writeFile(resolve(yamlDirectory, 'package.json'), JSON.stringify({ name: 'yaml', main: 'index.cjs' }))
+    await writeFile(resolve(yamlDirectory, 'index.cjs'), await readFile(resolve('tests/support/fake-profile-yaml.cjs')))
     const noOperation = async () => {}
     await expect(prepareAnywhereDesktop(context, {
       loadProductAgentConfiguration: async () => ({
@@ -242,7 +484,7 @@ describe('anywhere managed Profile contract', () => {
       materializePreset: noOperation,
       materializeManagedPlugin: async () => ({ name: 'harness-comfyui', version: '0.41.1' }),
       ensureManagedProfile: async () => ({
-        profileDirectory: resolve(dshHome, 'profiles/desktop'),
+        profileDirectory,
         manifestPath: resolve(dshHome, 'profiles/desktop/package.json'),
         specifier: 'link:../../managed-plugins/harness-comfyui',
       }),

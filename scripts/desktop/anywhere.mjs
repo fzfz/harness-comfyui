@@ -1,4 +1,5 @@
 import webPluginPatch from '../../config/web-plugin-patch.json' with { type: 'json' }
+import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { createWriteStream } from 'node:fs'
@@ -310,56 +311,231 @@ async function ensureManagedProfile(context, plugin) {
   await writeAtomicJson(manifestPath, manifest)
   const patchPath = resolve(profileDirectory, 'cordis.patch.yml')
   const yaml = packageRequire(context.desktopWorkspace)('yaml')
-  const patch = yaml.parse(await readFile(patchPath, 'utf8'))
+  const document = parseDesktopProfileDocument(yaml, await readFile(patchPath, 'utf8'))
+  const patch = document.toJS()
   if (!Array.isArray(patch)) throw new Error('Desktop profile cordis.patch.yml must contain a patch list.')
   const webId = webPluginPatch[0].insert[0].id
-  const retained = patch.flatMap(row => {
-    if (!row.insert?.some(plugin => plugin.id === webId)) return [row]
-    const insert = row.insert.filter(plugin => plugin.id !== webId)
-    return insert.length === 0 ? [] : [{ ...row, insert }]
-  })
-  await writeFile(patchPath, yaml.stringify([...retained, ...webPluginPatch]))
+  for (let index = patch.length - 1; index >= 0; index -= 1) {
+    const insert = patch[index]?.insert
+    if (!Array.isArray(insert) || !insert.some(plugin => plugin?.id === webId)) continue
+    const rowNode = document.getIn([index, 'insert'], true)
+    rowNode.items = rowNode.items.filter((_node, entryIndex) => insert[entryIndex]?.id !== webId)
+    if (rowNode.items.length === 0) document.contents.items.splice(index, 1)
+  }
+  for (const row of webPluginPatch) document.contents.add(document.createNode(row))
+  await writePrivateText(patchPath, String(document))
   await replaceSymbolicLink(context.managedPluginDirectory, resolve(profileDirectory, 'node_modules', plugin.name))
   return { profileDirectory, manifestPath, specifier }
 }
 
-async function initializeDesktopSettings(context, candidateRequire, webPort) {
-  const path = resolve(context.dshHome, 'settings.yaml')
-  const yaml = candidateRequire('yaml')
-  let settings = {}
-  try {
-    settings = yaml.parse(await readFile(path, 'utf8')) ?? {}
-    if (!isRecord(settings)) throw new Error('Desktop settings root must be an object')
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error
-  }
-  const currentDesktop = settings['dsh-desktop']
-  if (currentDesktop !== undefined && !isRecord(currentDesktop)) {
-    throw new Error('Desktop settings dsh-desktop must be an object')
-  }
-  const desktop = {
-    mode: context.baseline.startup.mode,
-    port: webPort,
-    networkExposure: context.baseline.startup.networkExposure,
-    openBrowser: context.baseline.startup.openBrowser,
-    ...(currentDesktop ?? {}),
-    ...(currentDesktop?.port === 0 ? { port: webPort } : {}),
-  }
-  if (isRecord(currentDesktop)
-    && currentDesktop.mode !== undefined
-    && Number.isSafeInteger(currentDesktop.port)
-    && currentDesktop.port > 0
-    && currentDesktop.networkExposure !== undefined
-    && currentDesktop.openBrowser !== undefined) return false
-  await mkdir(dirname(path), { recursive: true })
+async function writePrivateText(path, source) {
   const temporary = `${path}.${randomUUID()}.next`
   try {
-    await writeFile(temporary, yaml.stringify({ ...settings, 'dsh-desktop': desktop }), {
-      encoding: 'utf8', mode: 0o600, flag: 'wx',
-    })
+    await writeFile(temporary, source, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
     await rename(temporary, path)
   } finally {
     await rm(temporary, { force: true })
+  }
+}
+
+async function writePrivateYaml(path, yaml, value) {
+  return writePrivateText(path, yaml.stringify(value))
+}
+
+function parseDesktopProfileDocument(yaml, source) {
+  const document = yaml.parseDocument(source, {
+    customTags: [{ tag: 'tag:yaml.org,2002:js', resolve: value => value }],
+  })
+  if (document.errors.length > 0) throw new Error(`Desktop Profile patch is invalid: ${document.errors[0].message}`)
+  return document
+}
+
+async function readLegacyDesktopSettings(context, yaml) {
+  const path = resolve(context.dshHome, 'settings.yaml')
+  let source
+  try { source = await readFile(path, 'utf8') } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    throw error
+  }
+  if (await pathExists(`${path}.imported`)) {
+    throw new Error('Desktop settings.yaml and settings.yaml.imported both exist; resolve the archive collision before startup')
+  }
+  const settings = yaml.parse(source)
+  if (!isRecord(settings)) throw new Error('Desktop settings.yaml root must be an object')
+  if (Object.hasOwn(settings, 'desktop-shell') && Object.hasOwn(settings, 'dsh-desktop')) {
+    throw new Error('Desktop settings.yaml contains both desktop-shell and dsh-desktop; resolve the duplicate Desktop sections before startup')
+  }
+  const section = settings['desktop-shell'] ?? settings['dsh-desktop']
+  if (section !== undefined && !isRecord(section)) throw new Error('Desktop settings section must be an object')
+  return { path, settings, section }
+}
+
+function desktopPatchEntry(patch) {
+  if (!Array.isArray(patch)) throw new Error('Desktop Profile cordis.patch.yml must contain a patch list')
+  for (const [index, row] of patch.entries()) {
+    if (row?.id === 'desktop-shell') return { entry: row, path: [index] }
+    const nestedIndex = row?.insert?.findIndex(entry => entry?.id === 'desktop-shell') ?? -1
+    if (nestedIndex >= 0) return { entry: row.insert[nestedIndex], path: [index, 'insert', nestedIndex] }
+  }
+  return { entry: undefined, path: undefined }
+}
+
+function checkedDesktopPort(value) {
+  if (value === undefined) return undefined
+  if (!Number.isSafeInteger(value) || value < 0 || value > 65_535) {
+    throw new Error('desktop-shell.config.port must be an integer from 0 through 65535')
+  }
+  return value
+}
+
+async function readDesktopProfilePatch(profileDirectory, yaml) {
+  const path = resolve(profileDirectory, 'cordis.patch.yml')
+  const document = parseDesktopProfileDocument(yaml, await readFile(path, 'utf8'))
+  const { entry, path: entryPath } = desktopPatchEntry(document.toJS())
+  if (entry?.config !== undefined && !isRecord(entry.config)) {
+    throw new Error('Desktop Profile desktop-shell.config must be an object')
+  }
+  return { path, document, entry, entryPath }
+}
+
+async function bundledDesktopConfig(context, yaml) {
+  const path = resolve(context.desktopWorkspace, 'cordis.patch.yml')
+  const document = parseDesktopProfileDocument(yaml, await readFile(path, 'utf8'))
+  const { entry } = desktopPatchEntry(document.toJS())
+  if (!isRecord(entry?.config)) throw new Error('Desktop bundle must contain desktop-shell.config')
+  return entry.config
+}
+
+function profileEntryLocations(rows, id) {
+  return rows.flatMap((row, index) => [
+    ...(row?.id === id ? [{ entry: row, path: [index] }] : []),
+    ...(Array.isArray(row?.insert) ? row.insert.flatMap((entry, nestedIndex) =>
+      entry?.id === id ? [{ entry, path: [index, 'insert', nestedIndex] }] : []) : []),
+  ])
+}
+
+async function bundledPluginConfig(context, yaml, id) {
+  const document = parseDesktopProfileDocument(yaml, await readFile(resolve(context.repositoryRoot, 'cordis.patch.yml'), 'utf8'))
+  const rows = document.toJS()
+  if (!Array.isArray(rows)) throw new Error('Repository cordis.patch.yml must contain a patch list')
+  const locations = profileEntryLocations(rows, id)
+  if (locations.length !== 1) throw new Error(`Repository cordis.patch.yml must contain one entry ${id}`)
+  const node = document.getIn([...locations[0].path, 'config'], true)
+  if (node === undefined) throw new Error(`Repository cordis.patch.yml entry ${id} must contain config`)
+  return { value: locations[0].entry.config, node }
+}
+
+async function mergeLegacyProjectSettings(context, yaml, profile, legacy) {
+  if (legacy === undefined) return []
+  const { SOURCE_SETTINGS_NAMESPACE, validateSourceSettingsSection } = await import('../../src/source-settings.ts')
+  const {
+    IMAGE_READER_LEGACY_SETTINGS_NAMESPACE,
+    IMAGE_READER_SETTINGS_NAMESPACE,
+    migrateLegacyImageReaderSettings,
+    validateImageReaderSettingsSection,
+  } = await import('../../src/image-reader/settings.ts')
+  const settings = legacy.settings
+  const migrated = [SOURCE_SETTINGS_NAMESPACE, IMAGE_READER_LEGACY_SETTINGS_NAMESPACE, IMAGE_READER_SETTINGS_NAMESPACE]
+    .filter(name => Object.hasOwn(settings, name))
+  if (migrated.length === 0) return migrated
+  const source = settings[SOURCE_SETTINGS_NAMESPACE]
+  const modernImage = settings[IMAGE_READER_SETTINGS_NAMESPACE]
+  const olderImage = settings[IMAGE_READER_LEGACY_SETTINGS_NAMESPACE]
+  if (source !== undefined) validateSourceSettingsSection(source)
+  const image = modernImage ?? (olderImage === undefined ? undefined : migrateLegacyImageReaderSettings(olderImage))
+  if (image !== undefined) validateImageReaderSettingsSection(image)
+  for (const [id, value] of [[settingsEntryIds.core, source], [settingsEntryIds.imageReader, image]]) {
+    if (value === undefined) continue
+    const inherited = await bundledPluginConfig(context, yaml, id)
+    const rows = profile.document.toJS()
+    const locations = profileEntryLocations(rows, id)
+    if (locations.length > 1) throw new Error(`Desktop Profile contains duplicate entry ${id}`)
+    if (locations.length === 0) {
+      const configNode = inherited.node.clone()
+      for (const [field, fieldValue] of Object.entries(value)) configNode.set(field, profile.document.createNode(fieldValue))
+      profile.document.contents.add(profile.document.createNode({ id, config: configNode }))
+      continue
+    }
+    const { entry, path } = locations[0]
+    const current = entry.config
+    if (current !== undefined && !isRecord(current)) throw new Error(`Desktop Profile entry ${id}.config must be an object`)
+    const hasSavedImage = id === settingsEntryIds.imageReader && current !== undefined
+      && (Object.hasOwn(current, 'configuration') || Object.hasOwn(current, 'credentials'))
+    const merged = { ...inherited.value, ...value, ...current }
+    if (hasSavedImage) {
+      delete merged.configuration
+      delete merged.credentials
+      Object.assign(merged, current)
+    }
+    const savedConfigurationNode = profile.document.getIn([...path, 'config', 'configuration'], true)
+    const dynamicSourceConfiguration = id === settingsEntryIds.core
+      && savedConfigurationNode?.tag === 'tag:yaml.org,2002:js'
+    if (id === settingsEntryIds.core) {
+      if (!dynamicSourceConfiguration) validateSourceSettingsSection(merged)
+    } else if (!hasSavedImage) validateImageReaderSettingsSection(merged)
+    for (const [field, fieldValue] of Object.entries(inherited.value)) {
+      if (current?.[field] === undefined) profile.document.setIn([...path, 'config', field], inherited.node.get(field, true).clone())
+    }
+    if (!hasSavedImage) {
+      for (const [field, fieldValue] of Object.entries(value)) {
+        if (current?.[field] === undefined) profile.document.setIn([...path, 'config', field], fieldValue)
+      }
+    }
+  }
+  return migrated
+}
+
+async function initializeDesktopSettings(context, candidateRequire, webPort, profileDirectory) {
+  const yaml = candidateRequire('yaml')
+  const profile = await readDesktopProfilePatch(profileDirectory, yaml)
+  const legacy = await readLegacyDesktopSettings(context, yaml)
+  const current = profile.entry?.config ?? {}
+  const inherited = legacy?.section ?? {}
+  const currentPort = checkedDesktopPort(current.port)
+  const inheritedPort = checkedDesktopPort(inherited.port)
+  const migrateLegacy = legacy?.section !== undefined
+  const preferLegacy = migrateLegacy && currentPort === undefined
+  const resolvedPort = currentPort === 0 ? webPort
+    : currentPort !== undefined ? currentPort
+      : inheritedPort && inheritedPort > 0 ? inheritedPort : webPort
+  const config = {
+    ...current,
+    mode: (preferLegacy ? inherited.mode ?? current.mode : current.mode ?? inherited.mode) ?? context.baseline.startup.mode,
+    macosMaterial: current.macosMaterial ?? inherited.macosMaterial,
+    windowsMaterial: current.windowsMaterial ?? inherited.windowsMaterial,
+    linuxMaterial: current.linuxMaterial ?? inherited.linuxMaterial,
+    networkExposure: (preferLegacy ? inherited.networkExposure ?? current.networkExposure : current.networkExposure ?? inherited.networkExposure) ?? context.baseline.startup.networkExposure,
+    openBrowser: (preferLegacy ? inherited.openBrowser ?? current.openBrowser : current.openBrowser ?? inherited.openBrowser) ?? context.baseline.startup.openBrowser,
+    logLevel: current.logLevel ?? inherited.logLevel,
+    port: resolvedPort,
+  }
+  const changedFields = ['mode', 'macosMaterial', 'windowsMaterial', 'linuxMaterial', 'port', 'networkExposure', 'openBrowser', 'logLevel']
+    .filter(field => current[field] !== config[field])
+  const migratedProjectSections = await mergeLegacyProjectSettings(context, yaml, profile, legacy)
+  const profileChanged = changedFields.length > 0 || migratedProjectSections.length > 0
+  if (!profileChanged && !migrateLegacy) return false
+  if (profileChanged) {
+    if (profile.entryPath === undefined) {
+      const inherited = await bundledDesktopConfig(context, yaml)
+      const complete = Object.fromEntries(Object.entries({ ...inherited, ...config }).filter(([, value]) => value !== undefined))
+      profile.document.contents.add(profile.document.createNode({ id: 'desktop-shell', config: complete }))
+    } else {
+      for (const field of changedFields) {
+        profile.document.setIn([...profile.entryPath, 'config', field], config[field])
+      }
+    }
+    await writePrivateText(profile.path, String(profile.document))
+  }
+  if (migrateLegacy || migratedProjectSections.length > 0) {
+    const remaining = { ...legacy.settings }
+    delete remaining['desktop-shell']
+    delete remaining['dsh-desktop']
+    for (const name of migratedProjectSections) delete remaining[name]
+    if (Object.keys(remaining).length === 0) {
+      await rename(legacy.path, `${legacy.path}.imported`)
+    } else {
+      await writePrivateYaml(legacy.path, yaml, remaining)
+    }
   }
   return true
 }
@@ -394,21 +570,13 @@ async function initializeSetupState(context, profileDirectory, recordedAt) {
   return true
 }
 
-async function readConfiguredWebPort(context, candidateRequire) {
-  const settingsPath = resolve(context.dshHome, 'settings.yaml')
-  try {
-    const source = await readFile(settingsPath, 'utf8')
-    const value = candidateRequire('yaml').parse(source)
-    const configured = value?.['dsh-desktop']?.port
-    if (configured === undefined) return undefined
-    if (!Number.isSafeInteger(configured) || configured < 0 || configured > 65_535) {
-      throw new Error('dsh-desktop.port must be an integer from 0 through 65535')
-    }
-    return configured
-  } catch (error) {
-    if (error?.code === 'ENOENT') return undefined
-    throw error
-  }
+async function readConfiguredWebPort(context, candidateRequire, profileDirectory) {
+  const yaml = candidateRequire('yaml')
+  const profile = await readDesktopProfilePatch(profileDirectory, yaml)
+  const profilePort = checkedDesktopPort(profile.entry?.config?.port)
+  if (profilePort !== undefined) return profilePort
+  const legacy = await readLegacyDesktopSettings(context, yaml)
+  return checkedDesktopPort(legacy?.section?.port)
 }
 
 function desktopEnvironment(context, productAgent, environment, candidateBinDirectory) {
@@ -452,11 +620,11 @@ export async function prepareAnywhereDesktop(context, options = {}) {
   await materializeCli(activeContext.repositoryRoot)
   await materializeClient(activeContext.repositoryRoot)
   await materializeHost(activeContext.repositoryRoot)
-  await materializePreset(activeContext.repositoryRoot, activeContext.dshHome)
+  const productAgentPreset = await materializePreset(activeContext.repositoryRoot, activeContext.dshHome)
   const plugin = await (options.materializeManagedPlugin ?? materializeManagedPlugin)(activeContext)
   const profile = await (options.ensureManagedProfile ?? ensureManagedProfile)(activeContext, plugin)
   const candidateRequire = packageRequire(activeContext.desktopWorkspace)
-  const existingPort = await readConfiguredWebPort(activeContext, candidateRequire)
+  const existingPort = await readConfiguredWebPort(activeContext, candidateRequire, profile.profileDirectory)
   const reservation = existingPort === undefined || existingPort === 0
     ? await (options.reservePort ?? reserveDevelopmentPort)(
       activeContext.baseline.startup.host,
@@ -466,7 +634,7 @@ export async function prepareAnywhereDesktop(context, options = {}) {
   try {
     const webPort = reservation?.port ?? existingPort
     const recordedAt = options.recordedAt ?? new Date().toISOString()
-    await (options.initializeDesktopSettings ?? initializeDesktopSettings)(activeContext, candidateRequire, webPort)
+    await (options.initializeDesktopSettings ?? initializeDesktopSettings)(activeContext, candidateRequire, webPort, profile.profileDirectory)
     await (options.initializeSetupState ?? initializeSetupState)(activeContext, profile.profileDirectory, recordedAt)
     const fileEnvironment = await readDesktopEnvironment(activeContext.environmentFilePath)
     const mergedEnvironment = { ...fileEnvironment, ...(options.environment ?? process.env) }
@@ -476,7 +644,7 @@ export async function prepareAnywhereDesktop(context, options = {}) {
       mergedEnvironment,
       resolve(activeContext.desktopWorkspace, 'node_modules/.bin'),
     )
-    return { context: activeContext, environment, plugin, profile, webPort, reservation }
+    return { context: activeContext, environment, plugin, profile, productAgentPreset, webPort, reservation }
   } catch (error) {
     await reservation?.release()
     throw error
@@ -855,7 +1023,11 @@ export async function startDesktopWorktree(context, options = {}) {
   let log
   try {
     prepared = await prepareAnywhereDesktop(context, { ...options, recordedAt: startedAt })
-    if (options.prepareDesktopSettings !== undefined) await options.prepareDesktopSettings()
+    if (options.prepareDesktopSettings !== undefined) await options.prepareDesktopSettings(prepared.profile.profileDirectory)
+    if (prepared.productAgentPreset !== undefined) {
+      const { materializeDeclaredAgentPresetPatch } = await import('../profile/agent-preset.mjs')
+      await materializeDeclaredAgentPresetPatch(prepared.productAgentPreset, prepared.profile.profileDirectory)
+    }
     const installation = await verifyManagedProfileInstallation(prepared.context, prepared)
     const entry = await writeDesktopEntry(prepared.context)
     const candidateRequire = packageRequire(prepared.context.desktopWorkspace)

@@ -75,7 +75,7 @@ function fixture(otherSource = ''): string {
   config:
     timeoutMs: 180000
 
-- id: agent-presets
+- id: agent-preset-registry
   config:
     default: harness-comfyui-cli-candidate
 `)

@@ -9,11 +9,15 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export class ImageReaderRemoteService extends TypertRemoteService {
-  constructor(ctx: Context, private readonly service: Pick<ImageReaderConfigurationService, 'models' | 'saveProfile' | 'activateProfile' | 'deleteProfile'>) {
+  constructor(ctx: Context, private readonly service: Pick<ImageReaderConfigurationService, 'models' | 'configuration' | 'saveProfile' | 'activateProfile' | 'deleteProfile'>) {
     super(ctx, IMAGE_READER_REMOTE_NAMESPACE)
     for (const initialize of imageReaderRemoteInitializers) initialize(this)
   }
   models(signal: AbortSignal) { return this.service.models(signal) }
+  async configuration(signal: AbortSignal) {
+    signal.throwIfAborted()
+    return this.service.configuration()
+  }
   private async mutation<T>(operation: Promise<T>): Promise<T> {
     try { return await operation } catch (error) {
       if (error instanceof ImageReaderError) throw new RemoteError(error.code, error.message, Object.freeze({}))
@@ -37,6 +41,15 @@ Remote(ImageReaderRemoteService.prototype.models, {
   private: false,
   static: false,
   name: 'models',
+  addInitializer(initialize: (this: ImageReaderRemoteService) => void) {
+    imageReaderRemoteInitializers.push(service => initialize.call(service))
+  },
+} as never)
+
+Remote(ImageReaderRemoteService.prototype.configuration, {
+  private: false,
+  static: false,
+  name: 'configuration',
   addInitializer(initialize: (this: ImageReaderRemoteService) => void) {
     imageReaderRemoteInitializers.push(service => initialize.call(service))
   },

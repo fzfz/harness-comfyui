@@ -1,3 +1,13 @@
+# 升级候选：Desktop 2.0.15 与 DSH 0.1.7-rc.2（未发布）
+
+本次候选将 Desktop 升至 2.0.15、DSH 升至 0.1.7-rc.2、Electron 升至 44.0.0，并将 Cordis 升至 4.0.4。插件 DSH peer 范围改为 `>=0.1.7-rc.2 <0.1.8`；纯 CLI Profile 将 DSH 包固定在 0.1.7-rc.2。`config/desktop-baseline.json` 固定自有 fork 提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302`。
+
+两个受管产品 Preset 通过 `agent-preset-registry` 和 `@deepseek-ai/dsh-agent-preset` 显式注册，保留现有 Preset ID、默认工作台 Preset、各自的 Tool 与 Skill 隔离以及迭代预设的角色子 Agent。启动器继续从当前 checkout 安装受管 Preset 文件，并保留用户自建 Preset。
+
+开发启动器将 Provider、默认模型和图片读取配置写入当前 Profile 的 `cordis.patch.yml`，并将凭据写入隔离 DSH home 的 `.credentials.yaml`。开发与生产共用的启动准备流程将旧 `settings.yaml` 中的 Desktop、数据源和图片读取设置迁入对应 Profile 条目，DSH 导入其余设置。开发启动器在重复启动时保留用户已保存的 Provider、图片读取配置和 Web 端口。
+
+候选 fork 的 1,466 个锁文件条目已逐项审计，1,146 个 npm 包版本经 OSV 静态扫描未命中公告；Node 24 下的不可变安装、Market 与 Stable 构建、Electron 44 原生绑定准备均已通过。证据和剩余的来源确认见[依赖安装审计](verification/dsh-desktop-20260928/desktop-install-audit.md)。[隔离验收记录](verification/dsh-desktop-20260928/runtime-acceptance.md)确认本次 Desktop Renderer 健康、插件来源和测试实例停止；真实模型与产品功能调用、Market workspace 的 peer 告警、完整质量门禁和发布门禁仍须完成。
+
 # Harness ComfyUI v0.44.2
 
 ## Desktop 与 DSH 基线

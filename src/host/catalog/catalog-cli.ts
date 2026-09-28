@@ -2,7 +2,6 @@ import { CATALOG_PRESENTATION, CATALOG_FIELDS, parseCatalogDetails, parseCatalog
 import { spawn } from 'node:child_process'
 import { nodeScriptEnvironment } from '../node-script-environment.ts'
 
-import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 
 import {
   CATALOG_BASE_MODEL_PAGE_SIZE,
@@ -35,7 +34,7 @@ import {
 } from '../../catalog/contract.ts'
 import {
   readSourceAddress,
-  type SourceSettingsSection,
+  type SourceAddress,
 } from '../../source-settings.ts'
 
 const MAX_CLI_OUTPUT_BYTES = 32 * 1024 * 1024
@@ -68,7 +67,7 @@ export type CatalogCliProcess = (
 
 export interface CatalogCliOptions {
   readonly executable: string
-  readonly settings: Pick<SettingsScope<SourceSettingsSection>, 'get'>
+  readonly settings: { get(): SourceAddress }
   readonly process?: CatalogCliProcess
 }
 

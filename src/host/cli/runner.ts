@@ -14,7 +14,7 @@ export async function runCliTask(ctx: Context & CliRunnerServices, config: Confi
   const selection = ctx.agentDefaultModel.currentSelection()
   const { agent } = await ctx.agents.create({
     sessionId: SessionId(`session-${randomUUID()}`),
-    meta: { cwd: process.cwd() },
+    meta: { cwd: process.cwd(), agentPreset: config.preset },
     agentOptions: { provider: selection.provider, model: selection.model },
     setup: async agentCtx => {
       await ctx.agentPresets.mount(agentCtx, config.preset)

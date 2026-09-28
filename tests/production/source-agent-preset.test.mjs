@@ -1,4 +1,4 @@
-import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  materializeDeclaredAgentPresetPatch,
   materializeSourceProductAgentPreset,
   replaceOwnedAgentPresetDirectory,
   validateAgentPresetComposition,
@@ -187,6 +188,39 @@ afterEach(async () => {
 })
 
 describe('A/B project Tool visibility', () => {
+  it('materializes the two managed product Presets as literal Profile declarations', async () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..')
+    const { load } = await import(pathToFileURL(requireFromDsh.resolve('js-yaml')).href)
+    const { entryListSchema } = await import(pathToFileURL(requireFromDsh.resolve('@deepseek-ai/cordis-plugin-include')).href)
+    const bundle = load(await readFile(resolve(repositoryRoot, 'cordis.patch.yml'), 'utf8'), { schema: entryListSchema })
+    expect(bundle.find(row => row.id === 'agent-preset-registry')?.config.default).toBe(PRODUCT_PRESET_ID)
+    expect(bundle.flatMap(row => row.insert ?? []).filter(row => row.name === '@deepseek-ai/dsh-agent-preset')).toEqual([])
+    const home = await temporaryDirectory('harness-declared-presets-')
+    const productAgentPreset = await materializeSourceProductAgentPreset(repositoryRoot, home)
+    const profileDirectory = resolve(home, 'profiles/test')
+    await mkdir(profileDirectory, { recursive: true })
+    const patchPath = resolve(profileDirectory, 'cordis.patch.yml')
+    await writeFile(patchPath, '- id: existing\n  config:\n    enabled: true\n')
+    await materializeDeclaredAgentPresetPatch(productAgentPreset, profileDirectory)
+    await materializeDeclaredAgentPresetPatch(productAgentPreset, profileDirectory)
+    const rows = load(await readFile(patchPath, 'utf8'), { schema: entryListSchema })
+    expect(rows.find(row => row.id === 'existing')?.config.enabled).toBe(true)
+    const declarations = rows.flatMap(row => row.insert ?? []).filter(row => row.name === '@deepseek-ai/dsh-agent-preset')
+    expect(declarations.map(row => row.config.id)).toEqual([PRODUCT_PRESET_ID, ITERATION_PRESET_ID])
+    for (const declaration of declarations) {
+      const metadata = load(await readFile(resolve(home, '.agent-presets', declaration.config.id, 'preset.yml'), 'utf8'))
+      expect(declaration.config.name).toBe(metadata.name)
+      expect(Array.isArray(declaration.config.plugins)).toBe(true)
+      const plugins = declaration.config.plugins
+      expect(plugins[0].name).toBe(resolve(home, '.agent-presets/project-tool-visibility.mjs'))
+      expect(plugins[0].config.mode).toBe('local-only')
+      expect(plugins.find(row => row.id === 'skill-filesystem')).toMatchObject({
+        name: '@deepseek-ai/dsh-skill-filesystem',
+        config: { providerName: 'harness-comfyui', includeDefaultRoots: false },
+      })
+    }
+  })
+
   it('keeps Host-global schemas in A and removes the same schemas from B', async () => {
     const pluginPath = resolve(import.meta.dirname, '../..', 'agent-presets/project-tool-visibility.mjs')
     const { apply } = await import(pathToFileURL(pluginPath).href)
@@ -577,13 +611,13 @@ describe('iteration Preset subagent Workspace registration', () => {
     const next = vi.fn()
 
     await expect(listener({ agent: testAgent('session_child', 'subagent', cwd, 'session_missing') }, next))
-      .rejects.toThrow('parent Session session_missing was not found')
+      .rejects.toThrow('parent Session session_missing was not found; set the child Session header.parentSession field to an existing parent Session ID')
     expect(next).not.toHaveBeenCalled()
   })
 
   it.each([
-    ['child', undefined, 'same', 'child Session has no cwd'],
-    ['parent', 'same', undefined, 'parent Session has no cwd'],
+    ['child', undefined, 'same', 'child Session has no cwd; set the child Session cwd to its parent Session cwd'],
+    ['parent', 'same', undefined, 'parent Session has no cwd; set the parent Session cwd to a directory within its Workspace'],
   ])('stops when the %s Session cwd is missing', async (_name, childCwdValue, parentCwdValue, message) => {
     const cwd = await temporaryDirectory('harness-subagent-missing-cwd-')
     const parent = testAgent(
@@ -607,10 +641,11 @@ describe('iteration Preset subagent Workspace registration', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  it('reports an unavailable cwd before resolving a Workspace', async () => {
+  it.each(['child', 'parent'])('reports an unavailable %s cwd before resolving a Workspace', async label => {
     const cwd = await temporaryDirectory('harness-subagent-unavailable-cwd-')
-    const parent = testAgent('session_parent', 'user', cwd)
-    const child = testAgent('session_child', 'subagent', resolve(cwd, 'missing'), parent.session.id)
+    const missingCwd = resolve(cwd, 'missing')
+    const parent = testAgent('session_parent', 'user', label === 'parent' ? missingCwd : cwd)
+    const child = testAgent('session_child', 'subagent', label === 'child' ? missingCwd : cwd, parent.session.id)
     const resolveByPath = vi.fn()
     const listener = await loadSubagentWorkspaceListener({
       agents: { get: vi.fn(() => parent) },
@@ -619,7 +654,7 @@ describe('iteration Preset subagent Workspace registration', () => {
     const next = vi.fn()
 
     await expect(listener({ agent: child }, next))
-      .rejects.toThrow(`child Session cwd is unavailable at ${resolve(cwd, 'missing')}`)
+      .rejects.toThrow(`${label} Session cwd at ${missingCwd} is unavailable:`)
     expect(resolveByPath).not.toHaveBeenCalled()
     expect(next).not.toHaveBeenCalled()
   })
@@ -637,8 +672,13 @@ describe('iteration Preset subagent Workspace registration', () => {
       workspaceRegistry: { resolveByPath },
     })
     const next = vi.fn()
+    const [resolvedChildCwd, resolvedParentCwd] = await Promise.all([
+      realpath(childCwd),
+      realpath(parentCwd),
+    ])
 
-    await expect(listener({ agent: child }, next)).rejects.toThrow('child cwd')
+    await expect(listener({ agent: child }, next))
+      .rejects.toThrow(`child cwd ${resolvedChildCwd} differs from parent cwd ${resolvedParentCwd}; set the child Session cwd to the parent cwd`)
     expect(resolveByPath).not.toHaveBeenCalled()
     expect(next).not.toHaveBeenCalled()
   })
@@ -656,7 +696,7 @@ describe('iteration Preset subagent Workspace registration', () => {
     const next = vi.fn()
 
     await expect(listener({ agent: child }, next)).rejects.toMatchObject({
-      message: `cannot register subagent Session session_child: Workspace lookup failed for parent cwd ${cwd}`,
+      message: `Registration of subagent Session session_child failed because Workspace lookup for parent cwd ${cwd} failed with Workspace storage read failed; check the Workspace registry and parent Session cwd, then retry.`,
       cause,
     })
     expect(resolveByPath).toHaveBeenCalledExactlyOnceWith(cwd)
@@ -673,7 +713,8 @@ describe('iteration Preset subagent Workspace registration', () => {
     })
     const next = vi.fn()
 
-    await expect(listener({ agent: child }, next)).rejects.toThrow('no Workspace contains parent cwd')
+    await expect(listener({ agent: child }, next))
+      .rejects.toThrow(`no Workspace contains parent cwd ${cwd}; register a Workspace containing that cwd or set the parent Session cwd to a directory in an existing Workspace`)
     expect(next).not.toHaveBeenCalled()
   })
 
@@ -691,7 +732,7 @@ describe('iteration Preset subagent Workspace registration', () => {
     const next = vi.fn()
 
     await expect(listener({ agent: child }, next))
-      .rejects.toThrow('parent Session session_parent is not attached to Workspace workspace_1')
+      .rejects.toThrow('parent Session session_parent is not attached to Workspace workspace_1; attach the parent Session to that Workspace')
     expect(attachSession).not.toHaveBeenCalled()
     expect(next).not.toHaveBeenCalled()
   })
@@ -714,7 +755,7 @@ describe('iteration Preset subagent Workspace registration', () => {
     const next = vi.fn()
 
     await expect(listener({ agent: child }, next))
-      .rejects.toThrow('cannot register subagent Session session_child with Workspace workspace_1')
+      .rejects.toThrow('Workspace workspace_1 could not attach the child Session: storage rejected attachment; check the Workspace Session record and retry')
     expect(attachSession).toHaveBeenCalledWith(child.session.id)
     expect(next).not.toHaveBeenCalled()
   })

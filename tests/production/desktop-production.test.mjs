@@ -66,23 +66,19 @@ async function fixture() {
     writeFile(resolve(desktopWorkspace, 'package.json'), JSON.stringify({ name: 'dsh-plugin-desktop' })),
     writeFile(resolve(desktopWorkspace, 'lib/main.js'), 'export {}\n'),
     writeFile(resolve(desktopWorkspace, 'node_modules/electron/package.json'), JSON.stringify({
-      name: 'electron', version: '43.3.0', main: 'index.cjs',
+      name: 'electron', version: '44.0.0', main: 'index.cjs',
     })),
     writeFile(resolve(desktopWorkspace, 'node_modules/electron/index.cjs'), "module.exports = '/candidate/electron'\n"),
     writeFile(resolve(desktopWorkspace, 'node_modules/yaml/package.json'), JSON.stringify({
       name: 'yaml', version: '2.8.1', main: 'index.cjs',
     })),
-    writeFile(resolve(desktopWorkspace, 'node_modules/yaml/index.cjs'), [
-      'exports.parse = JSON.parse',
-      'exports.stringify = value => JSON.stringify(value, null, 2)',
-      '',
-    ].join('\n')),
+    writeFile(resolve(desktopWorkspace, 'node_modules/yaml/index.cjs'), await readFile(resolve('tests/support/fake-profile-yaml.cjs'))),
   ])
   const baseline = Object.freeze({
     packages: {
-      desktop: { name: 'dsh-plugin-desktop', version: '2.0.11' },
-      harness: { name: '@deepseek-ai/dsh', version: '0.1.5-rc.2' },
-      electron: { name: 'electron', version: '43.3.0' },
+      desktop: { name: 'dsh-plugin-desktop', version: '2.0.15' },
+      harness: { name: '@deepseek-ai/dsh', version: '0.1.7-rc.2' },
+      electron: { name: 'electron', version: '44.0.0' },
     },
     profile: {
       name: 'desktop',
@@ -124,6 +120,9 @@ async function installProfile(value, context = value.context) {
     dependencies: { [plugin.name]: specifier },
     dsh: { profile: { bundles: [plugin.name] } },
   }) + '\n')
+  await writeFile(resolve(profileDirectory, 'cordis.patch.yml'), JSON.stringify([
+    { insert: [{ id: 'desktop-shell', config: { mode: 'compatibility' } }] },
+  ]) + '\n')
   const link = resolve(profileDirectory, 'node_modules', plugin.name)
   await rm(link, { recursive: true, force: true })
   await symlink(context.managedPluginDirectory, link, 'dir')

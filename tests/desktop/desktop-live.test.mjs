@@ -443,11 +443,28 @@ async function openSettings(page) {
   await waitForValue(
     page,
     `(() => {
+      if ([...document.querySelectorAll('[role="dialog"]')]
+        .some(dialog => dialog.textContent?.includes('ComfyUI'))) return true
       const trigger = [...document.querySelectorAll('button[aria-haspopup="dialog"][aria-expanded]')]
         .find(node => /^(设置|Settings)$/.test(node.getAttribute('aria-label') ?? ''))
-      if (!trigger) return false
-      trigger.click()
-      return true
+      if (trigger) { trigger.click(); return true }
+      const account = [...document.querySelectorAll('button[aria-haspopup="menu"][aria-expanded]')]
+        .find(node => /^(账号菜单|Account menu)$/.test(node.getAttribute('aria-label') ?? ''))
+      account?.click()
+      return account !== undefined
+    })()`,
+    value => value === true,
+  )
+  await waitForValue(
+    page,
+    `(() => {
+      if ([...document.querySelectorAll('[role="dialog"]')]
+        .some(dialog => dialog.textContent?.includes('ComfyUI'))) return true
+      const action = [...document.querySelectorAll('[role="menuitem"]')]
+        .find(node => [...node.children].some(child =>
+          child.tagName === 'SPAN' && /^(设置|Settings)$/.test(child.textContent?.trim() ?? '')))
+      action?.click()
+      return action !== undefined
     })()`,
     value => value === true,
   )
@@ -541,6 +558,7 @@ async function verifyCustomProviderReasoning(page, context, providers) {
     return !!button
   })()`)).toBe(true)
   for (const provider of Object.values(providers)) {
+    for (let attempt = 0; attempt < 2; attempt++) {
     await waitForValue(page, `(() => {
       const button = [...document.querySelectorAll('button')].find(node =>
         node.getAttribute('aria-label')?.startsWith('编辑 ')
@@ -557,7 +575,11 @@ async function verifyCustomProviderReasoning(page, context, providers) {
     for (const [index, model] of provider.models.entries()) {
       if (!model.reasoning) continue
       const label = `推理等级 ${index + 1}`
-      await page.evaluate(`(document.querySelector('button[aria-label="模型设置 ${index + 1}"]')?.click(), true)`)
+      expect(await page.evaluate(`(() => {
+        const button = document.querySelector('button[aria-label="模型选项 ${index + 1}"]')
+        button?.click()
+        return !!button
+      })()`)).toBe(true)
       expect(await waitForValue(page, `document.querySelector('input[aria-label=${JSON.stringify(label)}]')?.value`,
         value => value !== undefined, 3_000)).toBe('low, medium, high, max')
       await page.evaluate(`(() => {
@@ -566,9 +588,32 @@ async function verifyCustomProviderReasoning(page, context, providers) {
         input.dispatchEvent(new Event('input', { bubbles: true }))
       })()`)
     }
-    await page.evaluate(`([...document.querySelectorAll('.dshProviderEditorStickyFooter button')]
-      .find(node => node.textContent?.trim() === '保存')?.click(), true)`)
+    const saveState = await page.evaluate(`(() => {
+      const footer = document.querySelector('.dshProviderEditorStickyFooter')
+      const button = [...(footer?.querySelectorAll('button') ?? [])]
+        .find(node => node.textContent?.trim() === '保存')
+      if (button && !button.disabled) button.click()
+      return { found: !!button, disabled: button?.disabled,
+        errors: [...document.querySelectorAll('[role="dialog"] p')].map(node => node.textContent?.trim()).filter(Boolean) }
+    })()`)
+    expect(saveState, `Provider ${provider.displayName} save state`).toEqual(expect.objectContaining({ found: true, disabled: false }))
+    const outcome = await waitForValue(page, `(() => {
+      const footer = document.querySelector('.dshProviderEditorStickyFooter')
+      return { closed: footer === null,
+        feedback: [...(footer?.parentElement?.querySelectorAll('p') ?? [])]
+          .map(node => node.textContent?.trim()).filter(Boolean) }
+    })()`, value => value.closed === true || value.feedback.some(message => message.includes('请关闭后重新打开')), 3_000)
+    if (outcome.closed) break
+    expect(attempt, `Provider ${provider.displayName} settings conflict after reopening`).toBe(0)
+    expect(await page.evaluate(`(() => {
+      const footer = document.querySelector('.dshProviderEditorStickyFooter')
+      const cancel = [...(footer?.querySelectorAll('button') ?? [])]
+        .find(node => node.textContent?.trim() === '取消')
+      cancel?.click()
+      return !!cancel
+    })()`)).toBe(true)
     await waitForValue(page, `document.querySelector('.dshProviderEditorStickyFooter') === null`, value => value === true)
+    }
   }
   await closeSettings(page)
   expect(await page.evaluate(`(() => {
@@ -581,8 +626,14 @@ async function verifyCustomProviderReasoning(page, context, providers) {
     return selected.some(node => node.textContent?.includes('新会话'))
       && selected.every(node => !node.textContent?.includes('Desktop media session'))
   })()`, value => value === true)
-  const { parse } = createTestDesktopRequire(context)('yaml')
-  const persisted = parse(await readFile(resolve(context.dshHome, 'settings.yaml'), 'utf8'))['llm-pi-ai'].providers
+  const yaml = createTestDesktopRequire(context)('js-yaml')
+  const profileSchema = yaml.DEFAULT_SCHEMA.extend([new yaml.Type('tag:yaml.org,2002:js', {
+    kind: 'scalar', construct: expression => expression,
+  })])
+  const profilePatch = yaml.load(await readFile(resolve(context.dshHome, 'profiles', context.baseline.profile.name, 'cordis.patch.yml'), 'utf8'), {
+    schema: profileSchema,
+  })
+  const persisted = profilePatch.find(entry => entry.id === 'llm-pi-ai').config.providers
   for (const [route, provider] of Object.entries(providers)) {
     for (const model of provider.models) {
       const actual = persisted[route].models.find(candidate => candidate.id === model.id)
@@ -1160,14 +1211,10 @@ async function openSessionDeleteDialog(page, title) {
     const row = [...document.querySelectorAll('[role="treeitem"]')]
       .find(node => node.textContent?.includes(${JSON.stringify(title)}))
     if (!(row instanceof HTMLElement)) return false
-    const bounds = row.getBoundingClientRect()
-    row.dispatchEvent(new MouseEvent('contextmenu', {
-      bubbles: true,
-      cancelable: true,
-      clientX: bounds.left + bounds.width / 2,
-      clientY: bounds.top + bounds.height / 2
-    }))
-    return true
+    const actions = [...row.querySelectorAll('button')]
+      .find(button => button.getAttribute('aria-label')?.includes(${JSON.stringify(title)}))
+    actions?.click()
+    return actions !== undefined
   })()`, value => value === true)
 
   await waitForValue(
@@ -1313,7 +1360,9 @@ async function verifyRunDiscovery(page, context, identity, stagedRunRepository, 
       && response.value.runs.length === ${runCount})?.value`, value => value !== undefined, 10_000)
   await page.evaluate(`(() => {
     const ctx = window.__runPanelTestContext
-    window.__runPanelSession = ctx.sessions.sessionOf(ctx.sessions.resolveAgentScope(${sessionId}))
+    const binding = ctx.sessions.binding(${sessionId})
+    if (!binding) throw new Error('Selected Desktop session has no active binding')
+    window.__runPanelSession = binding.session
     ctx.sessions.handleSessionStatus(${sessionId}, true)
   })()`)
   try {
@@ -1703,6 +1752,21 @@ description: ${USER_SKILL_DESCRIPTION}
         value => value === true,
       )
       await clickImageReaderButton(page, '放弃当前修改并切换')
+      const switchedSurface = await waitForValue(page, `(() => {
+        const section = document.querySelector('.harness-comfyui-image-reader-settings')
+        if (!section) return 'unmounted'
+        const profile = [...section.querySelectorAll('label')]
+          .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前生效配置')
+          ?.querySelector('select')
+        return profile?.value === ${JSON.stringify(firstProfile.id)} ? 'active' : null
+      })()`, value => value !== null)
+      if (switchedSurface === 'active') await delay(300)
+      if (switchedSurface === 'unmounted'
+        || await page.evaluate(`document.querySelector('.harness-comfyui-image-reader-settings') === null`)) {
+        await openSettings(page)
+        await page.evaluate(`([...document.querySelectorAll('button')]
+          .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
+      }
       await waitForValue(
         page,
         `(() => {
@@ -1713,11 +1777,12 @@ description: ${USER_SKILL_DESCRIPTION}
             ?.querySelector('select')
           const model = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '视觉模型')
             ?.querySelector('select')
-          return profile?.value === ${JSON.stringify(firstProfile.id)}
-            && provider?.value === 'deepseek-official'
-            && model?.value === ${JSON.stringify(selectedModel)}
+          return { profile: profile?.value, provider: provider?.value, model: model?.value,
+            feedback: [...document.querySelectorAll('.harness-comfyui-image-reader-settings [role="alert"]')]
+              .map(node => node.textContent?.trim()).filter(Boolean) }
         })()`,
-        value => value === true,
+        value => value.profile === firstProfile.id
+          && value.provider === 'deepseek-official' && value.model === selectedModel,
       )
 
       await selectImageReaderProfile(page, openAiProfile.id)

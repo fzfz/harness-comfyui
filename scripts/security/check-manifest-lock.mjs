@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 export const dependencySecurityPolicyFile = 'config/dependency-security-policy.json'
 const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
-const harnessPeerVersion = '>=0.1.5-rc.2 <0.1.6'
+const harnessPeerVersion = '>=0.1.7-rc.2 <0.1.8'
 
 function parseArguments(argv) {
   if (argv.length === 0) return repositoryRoot

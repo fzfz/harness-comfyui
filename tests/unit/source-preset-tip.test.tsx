@@ -2,7 +2,7 @@ import { createElement, type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
-  IconWarningOutline16: () => createElement('span', { 'data-warning-icon': true }),
+  IconWarningOutlineRegular: () => createElement('span', { 'data-warning-icon': true }),
   Toast: ({ text, onDone }: { text: string; onDone: () => void }) => createElement('div', {
     'data-toast': text,
     onClick: onDone,

@@ -55,11 +55,8 @@ it('persists accepted headless runs across process exit and finishes them after 
     await writeFile(bundlePatch, (await readFile(bundlePatch, 'utf8')).replace('name: harness-comfyui/core', `name: ${JSON.stringify(fixturePlugin)}`))
     const patchPath = join(runtime.environment.DSH_HOME, 'profiles/comfyui-cli/cordis.patch.yml')
     const patch = await readFile(patchPath, 'utf8')
-    await writeFile(patchPath, `${patch}\n- id: harness-comfyui-cli-runner\n  config:\n    preset: harness-comfyui-cli-candidate\n    task: !!js ctx.headlessStartup.task\n`)
-    await writeFile(join(runtime.environment.DSH_HOME, 'settings.yaml'), JSON.stringify({
-      'agent-default-model': { provider: 'fixture', model: 'fixture' },
-      'llm-pi-ai': { providers: { fixture: { displayName: 'Fixture', api: 'openai-completions', apiKeyEnv: 'HEADLESS_TEST_KEY', baseURL: `${origin}/v1`, models: [{ id: 'fixture', name: 'Fixture', contextWindow: 100000, maxTokens: 2000 }] } } },
-    }))
+    const fixtureProvider = { fixture: { displayName: 'Fixture', api: 'openai-completions', apiKeyEnv: 'HEADLESS_TEST_KEY', baseURL: `${origin}/v1`, models: [{ id: 'fixture', name: 'Fixture', contextWindow: 100000, maxTokens: 2000 }] } }
+    await writeFile(patchPath, `${patch}\n- id: agent-default-model\n  config: ${JSON.stringify({ provider: 'fixture', model: 'fixture' })}\n- id: llm-pi-ai\n  config: ${JSON.stringify({ providers: fixtureProvider })}\n- id: harness-comfyui-cli-runner\n  config:\n    preset: harness-comfyui-cli-candidate\n    task: !!js ctx.headlessStartup.task\n`)
     const run = stage => new Promise((done, reject) => {
       const child = spawn(process.execPath, [runtime.executable, '--profile', 'comfyui-cli', 'Exercise generation lifecycle.'], {
         cwd: workspace, env: { ...runtime.environment, HEADLESS_TEST_STAGE: stage, HEADLESS_TEST_ORIGIN: origin, HEADLESS_TEST_KEY: 'fixture-key' }, stdio: ['ignore', 'pipe', 'pipe'],

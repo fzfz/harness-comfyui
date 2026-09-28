@@ -14,11 +14,13 @@ describe('Catalog Remote service', () => {
     const search = vi.fn(async () => page)
     const baseModels = vi.fn(async () => baseModelList)
     const details = vi.fn(async () => ({ kind: 'work', id: '1', fields: [] }))
-    const service = new CatalogRemoteService(context, { search, baseModels, details } as never)
+    const readSourceAddress = vi.fn(() => ({ url: 'http://127.0.0.1', port: 8188 }))
+    const service = new CatalogRemoteService(context, { search, baseModels, details } as never, readSourceAddress)
 
     expect(remoteMethods(service)).toEqual([
       { method: 'search', invocation: { kind: 'direct' } },
       { method: 'baseModels', invocation: { kind: 'direct' } },
+      { method: 'sourceAddress', invocation: { kind: 'direct' } },
       { method: 'details', invocation: { kind: 'direct' } },
     ])
     const request = { kind: 'model', query: '', page: 1, baseModelId: null } as const
@@ -26,6 +28,12 @@ describe('Catalog Remote service', () => {
     expect(search).toHaveBeenCalledWith(request, controller.signal)
     await expect(service.baseModels(controller.signal)).resolves.toEqual({ ok: true, value: baseModelList })
     expect(baseModels).toHaveBeenCalledWith(controller.signal)
+    await expect(service.sourceAddress(controller.signal)).resolves.toEqual({ ok: true, value: { url: 'http://127.0.0.1', port: 8188 } })
+    expect(readSourceAddress).toHaveBeenCalledOnce()
+    const cancelled = new AbortController()
+    cancelled.abort()
+    await expect(service.sourceAddress(cancelled.signal)).rejects.toMatchObject({ name: 'AbortError' })
+    expect(readSourceAddress).toHaveBeenCalledOnce()
     await expect(service.details({ kind: 'work', id: '1' }, controller.signal)).resolves.toEqual({ ok: true, value: { kind: 'work', id: '1', fields: [] } })
     expect(details).toHaveBeenCalledWith({ kind: 'work', id: '1' }, controller.signal)
     await context.fiber.dispose()
@@ -38,7 +46,7 @@ describe('Catalog Remote service', () => {
       details: vi.fn(async () => { throw failure }),
       search: vi.fn(async () => { throw failure }),
       baseModels: vi.fn(async () => { throw failure }),
-    } as never)
+    } as never, () => ({ url: 'http://127.0.0.1', port: 8188 }))
 
     await expect(service.search(
       { kind: 'comfyui-template', query: '', page: 1, baseModelId: null },
@@ -62,7 +70,7 @@ describe('Catalog Remote service', () => {
       details: vi.fn(async () => { throw abort }),
       search: vi.fn(async () => { throw abort }),
       baseModels: vi.fn(async () => { throw new Error('unexpected') }),
-    } as never)
+    } as never, () => ({ url: 'http://127.0.0.1', port: 8188 }))
 
     await expect(service.search(
       { kind: 'model', query: '', page: 1, baseModelId: null },
