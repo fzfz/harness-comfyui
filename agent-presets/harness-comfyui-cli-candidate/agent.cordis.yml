@@ -51,6 +51,73 @@
 - id: tool-skill
   name: '@deepseek-ai/dsh-tool-skill'
 
+- id: project-subagent-workspace
+  name: ../project-subagent-workspace.mjs
+
+- id: task-agent
+  name: ../project-iteration-dispatch.mjs
+  config:
+    provider: spawn
+    toolName: subagent_task
+    description: "在当前父 Session 的 Workspace 中派发子 Agent 任务。首次省略 agent_id；续派时填写首次返回的 subagentId。description 是会话列表中的任务标签，task 是完整任务正文。首次返回子会话 ID，续派返回消息 ID；完成状态由原生通知提供。"
+    parameters:
+      type: object
+      properties:
+        description:
+          type: string
+          description: 子 Agent 会话在列表中显示的简短任务标签。
+        task:
+          type: string
+          description: 本次交给子 Agent 的完整任务要求和输入材料。
+        agent_id:
+          type: string
+          description: 续派时填写此前返回的 subagentId；首次创建时省略。
+      required:
+        - description
+        - task
+      additionalProperties: false
+    taskTemplate:
+      title: 子 Agent 任务
+      sections:
+        - heading: 本次任务
+          fields:
+            - task
+    outputSchema:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              const: continuable
+            subagentId:
+              type: string
+          required:
+            - kind
+            - subagentId
+          additionalProperties: false
+        - type: object
+          properties:
+            messageId:
+              type: string
+          required:
+            - messageId
+          additionalProperties: false
+    maxDepth: 1
+    agentOptions: {}
+    nonEmptyFieldErrors:
+      description: 请填写子 Agent 会话的简短任务标签 description，然后重新派发。
+      task: 请填写本次子 Agent 任务正文 task，然后重新派发。
+      agent_id: 请填写首次派发返回的子会话 ID，或省略 agent_id 以创建新子会话。
+    toolFilter:
+      deny:
+        - subagent_task
+        - interrupt_agent
+    persona: >-
+      You are a task subagent of the ComfyUI workbench Agent. Complete the assigned task in the parent's Workspace, use available project Skills and managed project CLI when relevant, and report the concrete result or blocking error to the parent Agent. Reply in the user's language.
+
+- id: tool-subagent-control
+  name: '@deepseek-ai/dsh-tool-subagent-control'
+
 - id: compaction
   name: cordis:group
   group: true

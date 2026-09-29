@@ -21,13 +21,17 @@ pnpm prod:test
 
 `prod:test` 使用临时目录和端口覆盖 Desktop 开发与生产实例、跨进程端口声明、双 worktree 并发、PID 与端口状态写入失败清理、restart、异常退出、worktree `.env` 链接与独立依赖目录、Web Host 六项生命周期和真实 Client ModuleLoader。真实界面验收使用 `docs/agents/worktree-development.md` 的完整 Desktop 流程。
 
-## 候选 Desktop 验证
+## v0.44.3 Desktop 验证
 
 tests/support/desktop-context.mjs 使用 config/desktop-baseline.json 选择 anywhere Stable workspace。DSH_DESKTOP_TEST_SOURCE 只覆盖测试源码位置，测试仍校验固定 commit、Desktop、Harness 与 Electron 版本。宿主模块通过该 workspace 的 package.json 创建 Node createRequire 后解析。
 
-当前候选基线为 Desktop 2.0.15、DSH 0.1.7-rc.2 和 Electron 44.0.0，固定源码身份以 config/desktop-baseline.json 为准。门禁必须使用该安装中的宿主包，验证原有会话删除、Session 请求头、模型推理等级编辑和 managed CLI 路由行为。工作台界面测试必须覆盖原生右侧栏中的结果页、空白与已保存 Session，以及关闭结果页后其他宿主页签保持可用。
+v0.44.3 基线为 Desktop 2.0.15、DSH 0.1.7-rc.2 和 Electron 44.0.0，固定源码身份以 config/desktop-baseline.json 为准。门禁必须使用该安装中的宿主包，验证原有会话删除、Session 请求头、模型推理等级编辑和 managed CLI 路由行为。工作台界面测试必须覆盖原生右侧栏中的结果页、空白与已保存 Session，以及关闭结果页后其他宿主页签保持可用。
 
-本次升级候选的锁文件、安装与构建检查见[依赖安装审计](../verification/dsh-desktop-20260928/desktop-install-audit.md)，隔离迁移测试、Desktop 启动证据与待完成的真实会话验收见[运行验收记录](../verification/dsh-desktop-20260928/runtime-acceptance.md)。
+v0.44.3 的锁文件、安装与构建检查见[依赖安装审计](../verification/dsh-desktop-20260928/desktop-install-audit.md)，隔离迁移测试、Desktop 启动证据与同一 Generation Request 双 Run 的验收见[运行验收记录](../verification/dsh-desktop-20260928/runtime-acceptance.md)。v0.44.3 的 `pnpm quality` 已通过：1207 项 unit/integration/Skills、58 项 contract/security、346 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功；覆盖率为 statements 94.07%、branches 87.52%、functions 100%、lines 96.5%。完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。真实工作台 Session 已对同一 Generation Request 连续提交两个不同的 Run，并核对两份 `run-inputs` 的 Workflow 与参数。当前 Desktop 媒体查看器测试临时捕获 `navigator.clipboard.writeText` 的参数，确认两次调用分别传入对应媒体的完整 Run ID，并确认界面分别显示对应的复制成功文案；该自动化测试不验证操作系统剪贴板权限或实际写入。
+
+`tests/unit/source-client.test.mjs` 验证 Catalog Prompt-term 的分类字段、重复 `category_ids`、条件 `allOf`、Schema 示例与默认值，以及非法输入在发送请求前被拒绝。`tests/production/native-workbench-subagent.test.mjs` 验证工作台的 `subagent_task` 创建、按 `agent_id` 续派、继承父模型、原生输出合同、空字段、取消和错误传播；真实父子 Session 与 Workspace 归属见[运行验收记录](../verification/dsh-desktop-20260928/runtime-acceptance.md)。
+
+## v0.43.0 历史验证
 
 v0.43.0 的自有 Desktop 完整 `corepack yarn check` 通过：Market 263 项、Stable 1375 项和 Beta 1327 项测试成功；Stable 8 项、Beta 7 项跳过。v0.43.0 修正了市场测试的代理隔离、Windows 反向补丁路径和 CLI 版本检查的临时工作目录，并保留原有行为断言。
 

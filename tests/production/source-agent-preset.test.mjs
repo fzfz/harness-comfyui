@@ -1,4 +1,5 @@
 import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -14,19 +15,6 @@ import {
 } from '../../scripts/profile/agent-preset.mjs'
 import { loadProductAgentConfiguration } from '../../scripts/profile/product-agent-config.mjs'
 import { prepareSourceWorktreeRuntime } from '../../scripts/worktree/runtime.mjs'
-import {
-  COMFYUI_INSTANCE_QUERY_TOOL_NAME,
-  GENERATION_MODEL_RESOLVER_TOOL_NAME,
-  LORA_RESOLVER_TOOL_NAME,
-  TEMPLATE_RESOLVER_TOOL_NAME,
-} from '../../src/host/catalog/catalog-tool.ts'
-import { GENERATION_TOOL_NAME } from '../../src/host/generation/generation-tool.ts'
-import { GENERATION_RUN_INPUT_TOOL_NAME } from '../../src/host/generation/generation-run-input-tool.ts'
-import {
-  GENERATION_RUN_MEDIA_TOOL_NAME,
-  INSPECT_IMAGE_TOOL_NAME,
-} from '../../src/host/image-reader/image-reader-tool.ts'
-
 const temporaryPaths = []
 const CONTROL_PRESET_ID = 'harness-comfyui-schema-control'
 const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
@@ -221,31 +209,157 @@ describe('A/B project Tool visibility', () => {
     }
   })
 
-  it('keeps Host-global schemas in A and removes the same schemas from B', async () => {
+  it('hides initial and later Host tools while keeping Preset bash and skill tools visible', () => {
+    const script = `
+      import { createRequire } from 'node:module'
+      import { pathToFileURL } from 'node:url'
+      const requireFromDsh = createRequire(${JSON.stringify(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))})
+      const load = async name => import(pathToFileURL(requireFromDsh.resolve(name)).href)
+      const [{ Context }, { createScope, bindScopeParent }, { SystemPrompt }, { ToolRuntime }] = await Promise.all([
+        load('@deepseek-ai/cordis'), load('@deepseek-ai/dsh-scope'),
+        load('@deepseek-ai/dsh-system-prompt'), load('@deepseek-ai/dsh-tools'),
+      ])
+      const { apply } = await import(${JSON.stringify(pathToFileURL(resolve(import.meta.dirname, '../..', 'agent-presets/project-tool-visibility.mjs')).href)})
+      const ctx = new Context()
+      new SystemPrompt(ctx, {})
+      new ToolRuntime(ctx, {})
+      const controlKey = { agentPreset: 'control' }
+      const candidateKey = { agentPreset: 'candidate' }
+      const control = createScope(ctx, controlKey)
+      const candidate = createScope(ctx, candidateKey)
+      const agentKey = { agent: 'candidate-child' }
+      bindScopeParent(agentKey, candidateKey)
+      const agent = createScope(ctx, agentKey)
+      const tool = name => ({
+        name, description: name, parameters: { type: 'object', properties: {} },
+        output: { schema: { type: 'string' }, render: () => [] }, execute: async () => '',
+      })
+      const names = key => ctx.tools.schemas(key).map(schema => schema.name)
+      ctx.tools.register(tool('initial-host'))
+      candidate.ctx.tools.register(tool('bash'))
+      candidate.ctx.tools.register(tool('skill'))
+      apply(control.ctx, { mode: 'inherit-host-global' })
+      apply(candidate.ctx, { mode: 'local-only' })
+      const initial = { control: names(controlKey), candidate: names(candidateKey), agent: names(agentKey) }
+      ctx.tools.register(tool('later-host'))
+      const later = { control: names(controlKey), candidate: names(candidateKey), agent: names(agentKey) }
+      ctx.emit('tools/change')
+      const duplicateEvent = names(agentKey)
+      await agent.dispose()
+      await candidate.dispose()
+      const afterDispose = names(candidateKey)
+      await control.dispose()
+      console.log(JSON.stringify({ initial, later, duplicateEvent, afterDispose }))
+    `
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    }))
+    expect(result.initial).toEqual({ control: ['initial-host'], candidate: ['bash', 'skill'], agent: ['bash', 'skill'] })
+    expect(result.later).toEqual({ control: ['initial-host', 'later-host'], candidate: ['bash', 'skill'], agent: ['bash', 'skill'] })
+    expect(result.duplicateEvent).toEqual(['bash', 'skill'])
+    expect(result.afterDispose).toEqual(['initial-host', 'later-host'])
+  })
+
+  it('handles an empty initial Host registry and a late registration', () => {
+    const script = `
+      import { createRequire } from 'node:module'
+      import { pathToFileURL } from 'node:url'
+      const requireFromDsh = createRequire(${JSON.stringify(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))})
+      const load = async name => import(pathToFileURL(requireFromDsh.resolve(name)).href)
+      const [{ Context }, { createScope }, { SystemPrompt }, { ToolRuntime }] = await Promise.all([
+        load('@deepseek-ai/cordis'), load('@deepseek-ai/dsh-scope'),
+        load('@deepseek-ai/dsh-system-prompt'), load('@deepseek-ai/dsh-tools'),
+      ])
+      const { apply } = await import(${JSON.stringify(pathToFileURL(resolve(import.meta.dirname, '../..', 'agent-presets/project-tool-visibility.mjs')).href)})
+      const ctx = new Context()
+      new SystemPrompt(ctx, {})
+      new ToolRuntime(ctx, {})
+      const key = { agentPreset: 'candidate' }
+      const preset = createScope(ctx, key)
+      apply(preset.ctx, { mode: 'local-only' })
+      const initial = ctx.tools.schemas(key).map(schema => schema.name)
+      ctx.tools.register({
+        name: 'late-host', description: 'Late Host tool',
+        parameters: { type: 'object', properties: {} },
+        output: { schema: { type: 'string' }, render: () => [] }, execute: async () => '',
+      })
+      const later = ctx.tools.schemas(key).map(schema => schema.name)
+      await preset.dispose()
+      const afterDispose = ctx.tools.schemas(key).map(schema => schema.name)
+      console.log(JSON.stringify({ initial, later, afterDispose }))
+    `
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    }))
+    expect(result).toEqual({ initial: [], later: [], afterDispose: ['late-host'] })
+  })
+
+  it.each(['ptc', 'both'])('keeps the reserved run_code transport and Preset tools in global %s mode', mode => {
+    const script = `
+      import { createRequire } from 'node:module'
+      import { pathToFileURL } from 'node:url'
+      const requireFromDsh = createRequire(${JSON.stringify(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))})
+      const load = async name => import(pathToFileURL(requireFromDsh.resolve(name)).href)
+      const [{ Context }, { createScope }, { SystemPrompt }, { ToolRuntime }] = await Promise.all([
+        load('@deepseek-ai/cordis'), load('@deepseek-ai/dsh-scope'),
+        load('@deepseek-ai/dsh-system-prompt'), load('@deepseek-ai/dsh-tools'),
+      ])
+      const { apply } = await import(${JSON.stringify(pathToFileURL(resolve(import.meta.dirname, '../..', 'agent-presets/project-tool-visibility.mjs')).href)})
+      const ctx = new Context()
+      new SystemPrompt(ctx, {})
+      new ToolRuntime(ctx, { mode: ${JSON.stringify(mode)} })
+      const key = { agentPreset: 'candidate' }
+      const preset = createScope(ctx, key)
+      const tool = name => ({
+        name, description: name, parameters: { type: 'object', properties: {} },
+        output: { schema: { type: 'string' }, render: () => [] }, execute: async () => '',
+      })
+      ctx.tools.register(tool('initial-host'))
+      preset.ctx.tools.register(tool('bash'))
+      preset.ctx.tools.register(tool('skill'))
+      apply(preset.ctx, { mode: 'local-only' })
+      const initial = ctx.tools.schemas(key).map(schema => schema.name)
+      ctx.tools.register(tool('late-host'))
+      const later = ctx.tools.schemas(key).map(schema => schema.name)
+      await preset.dispose()
+      console.log(JSON.stringify({ initial, later }))
+    `
+    const result = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    }))
+    expect(result.initial).toEqual(['bash', 'skill', 'run_code'])
+    expect(result.later).toEqual(['bash', 'skill', 'run_code'])
+  })
+
+  it('rejects invalid project Tool visibility modes', async () => {
     const pluginPath = resolve(import.meta.dirname, '../..', 'agent-presets/project-tool-visibility.mjs')
     const { apply } = await import(pathToFileURL(pluginPath).href)
-    const inheritedSchemas = [
-      { name: TEMPLATE_RESOLVER_TOOL_NAME },
-      { name: GENERATION_MODEL_RESOLVER_TOOL_NAME },
-      { name: LORA_RESOLVER_TOOL_NAME },
-      { name: COMFYUI_INSTANCE_QUERY_TOOL_NAME },
-      { name: GENERATION_TOOL_NAME },
-      { name: GENERATION_RUN_INPUT_TOOL_NAME },
-      { name: GENERATION_RUN_MEDIA_TOOL_NAME },
-      { name: INSPECT_IMAGE_TOOL_NAME },
-    ]
-    const restrict = vi.fn(() => vi.fn())
     const ctx = {
-      tools: { schemas: vi.fn(() => inheritedSchemas), restrict },
+      root: { tools: { schemas: () => [] } },
+      tools: { restrict: vi.fn() },
+      effect: vi.fn(),
+    }
+    for (const config of [null, {}, { mode: 'unknown' }]) {
+      expect(() => apply(ctx, config)).toThrow(TypeError)
+    }
+    expect(ctx.effect).not.toHaveBeenCalled()
+  })
+
+  it('unsubscribes when the Host rejects a restriction', async () => {
+    const pluginPath = resolve(import.meta.dirname, '../..', 'agent-presets/project-tool-visibility.mjs')
+    const { apply } = await import(pathToFileURL(pluginPath).href)
+    const stopListening = vi.fn()
+    const restrict = vi.fn(() => { throw new Error('restriction failed') })
+    const ctx = {
+      root: { tools: { schemas: () => [{ name: 'host-tool' }] } },
+      tools: { restrict },
+      on: vi.fn(() => stopListening),
       effect: effect => effect(),
     }
-
-    apply(ctx, { mode: 'inherit-host-global' })
-    expect(restrict).not.toHaveBeenCalled()
-
-    apply(ctx, { mode: 'local-only' })
-    expect(restrict).toHaveBeenCalledOnce()
-    expect(restrict).toHaveBeenCalledWith({ deny: inheritedSchemas.map(schema => schema.name) })
+    expect(() => apply(ctx, { mode: 'local-only' })).toThrow('restriction failed')
+    expect(restrict).toHaveBeenCalledWith({ deny: ['host-tool'] })
+    expect(ctx.on).toHaveBeenCalledWith('tools/change', expect.any(Function))
+    expect(stopListening).toHaveBeenCalledOnce()
   })
 
   it.each([PRODUCT_PRESET_ID, ITERATION_PRESET_ID])('validates %s persona against the selected host schema', async (presetId) => {
@@ -259,14 +373,16 @@ describe('A/B project Tool visibility', () => {
     expect(() => Config({ text: persona.config.prefix })).toThrow()
   })
 
-  it('uses identical A/B composition except the visibility mode', async () => {
+  it('keeps the base A/B composition identical except the visibility mode', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
     const paths = [
       resolve(repositoryRoot, 'tests/fixtures/agent-presets', CONTROL_PRESET_ID, 'agent.cordis.yml'),
       resolve(repositoryRoot, 'agent-presets', PRODUCT_PRESET_ID, 'agent.cordis.yml'),
     ]
     const [control, candidate] = await Promise.all(paths.map(validateAgentPresetComposition))
-    const normalizedCandidate = structuredClone(candidate)
+    const normalizedCandidate = structuredClone(candidate.filter(row => ![
+      'project-subagent-workspace', 'task-agent', 'tool-subagent-control',
+    ].includes(row.id)))
     normalizedCandidate[0].config.mode = 'inherit-host-global'
 
     expect(normalizedCandidate).toEqual(control)
@@ -301,7 +417,7 @@ describe('A/B project Tool visibility', () => {
     ])
   })
 
-  it('configures four continuable roles and Workspace registration only in the iteration Preset', async () => {
+  it('configures workbench continuation and four iteration roles with Workspace registration', async () => {
     const repositoryRoot = resolve(import.meta.dirname, '../..')
     const [workbench, iteration] = await Promise.all([
       validateAgentPresetComposition(resolve(
@@ -318,8 +434,33 @@ describe('A/B project Tool visibility', () => {
       )),
     ])
 
-    expect(workbench.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toBeUndefined()
-    expect(workbench.find(row => row.name === '../project-iteration-dispatch.mjs')).toBeUndefined()
+    expect(workbench.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toMatchObject({
+      id: 'project-subagent-workspace',
+    })
+    const workbenchRoles = workbench.filter(row => row.name === '../project-iteration-dispatch.mjs')
+    expect(workbenchRoles).toHaveLength(1)
+    expect(workbenchRoles[0].config).toMatchObject({
+      toolName: 'subagent_task',
+      provider: 'spawn',
+      maxDepth: 1,
+      agentOptions: {},
+      toolFilter: { deny: ['subagent_task', 'interrupt_agent'] },
+    })
+    expect(workbench.map(row => row.name)).toEqual([
+      '../project-tool-visibility.mjs',
+      '../project-system-prompt-visibility.mjs',
+      '@deepseek-ai/dsh-persona',
+      '@deepseek-ai/dsh-agent-instructions',
+      '@deepseek-ai/dsh-tool-bash',
+      '@deepseek-ai/dsh-tool-pwsh',
+      '@deepseek-ai/dsh-agent-tool-presentation',
+      '@deepseek-ai/dsh-skill-filesystem',
+      '@deepseek-ai/dsh-tool-skill',
+      '../project-subagent-workspace.mjs',
+      '../project-iteration-dispatch.mjs',
+      '@deepseek-ai/dsh-tool-subagent-control',
+      'cordis:group',
+    ])
     expect(iteration.find(row => row.name === `../${SUBAGENT_WORKSPACE_COMPONENT_FILE}`)).toMatchObject({
       id: 'project-subagent-workspace',
     })

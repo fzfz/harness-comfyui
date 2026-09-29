@@ -1,12 +1,12 @@
-# 升级候选：Desktop 2.0.15 与 DSH 0.1.7-rc.2（未发布）
+# Harness ComfyUI v0.44.3
 
-本次候选将 Desktop 升至 2.0.15、DSH 升至 0.1.7-rc.2、Electron 升至 44.0.0，并将 Cordis 升至 4.0.4。插件 DSH peer 范围改为 `>=0.1.7-rc.2 <0.1.8`；纯 CLI Profile 将 DSH 包固定在 0.1.7-rc.2。`config/desktop-baseline.json` 固定自有 fork 提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302`。
+v0.44.3 将 Desktop 升至 2.0.15、DSH 升至 0.1.7-rc.2、Electron 升至 44.0.0，并将 Cordis 升至 4.0.4。插件 DSH peer 范围改为 `>=0.1.7-rc.2 <0.1.8`；纯 CLI Profile 将 DSH 包固定在 0.1.7-rc.2。`config/desktop-baseline.json` 固定自有 fork 提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302`。
 
-两个受管产品 Preset 通过 `agent-preset-registry` 和 `@deepseek-ai/dsh-agent-preset` 显式注册，保留现有 Preset ID、默认工作台 Preset、各自的 Tool 与 Skill 隔离以及迭代预设的角色子 Agent。启动器继续从当前 checkout 安装受管 Preset 文件，并保留用户自建 Preset。
+两个受管产品 Preset 通过 `agent-preset-registry` 和 `@deepseek-ai/dsh-agent-preset` 显式注册，保留现有 Preset ID、默认工作台 Preset、各自的 Tool 与 Skill 隔离以及迭代预设的角色子 Agent。工作台预设新增 `subagent_task`，支持在同一父 Session 的 Workspace 中创建子 Agent，并按返回的 `subagentId` 续派任务。启动器继续从当前 checkout 安装受管 Preset 文件，并保留用户自建 Preset。
 
 开发启动器将 Provider、默认模型和图片读取配置写入当前 Profile 的 `cordis.patch.yml`，并将凭据写入隔离 DSH home 的 `.credentials.yaml`。开发与生产共用的启动准备流程将旧 `settings.yaml` 中的 Desktop、数据源和图片读取设置迁入对应 Profile 条目，DSH 导入其余设置。开发启动器在重复启动时保留用户已保存的 Provider、图片读取配置和 Web 端口。
 
-候选 fork 的 1,466 个锁文件条目已逐项审计，1,146 个 npm 包版本经 OSV 静态扫描未命中公告；Node 24 下的不可变安装、Market 与 Stable 构建、Electron 44 原生绑定准备均已通过。证据和剩余的来源确认见[依赖安装审计](verification/dsh-desktop-20260928/desktop-install-audit.md)。[隔离验收记录](verification/dsh-desktop-20260928/runtime-acceptance.md)确认本次 Desktop Renderer 健康、插件来源和测试实例停止；真实模型与产品功能调用、Market workspace 的 peer 告警、完整质量门禁和发布门禁仍须完成。
+本次 fork 的 1,466 个锁文件条目已逐项审计，1,146 个 npm 包版本经 OSV 静态扫描未命中公告；Node 24 下的不可变安装、Market 与 Stable 构建、Electron 44 原生绑定准备均已通过。证据和剩余的来源确认见[依赖安装审计](verification/dsh-desktop-20260928/desktop-install-audit.md)。[隔离验收记录](verification/dsh-desktop-20260928/runtime-acceptance.md)确认 Desktop Renderer 健康、插件来源和测试实例停止；运行验收 Agent 使用 OpenRouter 免费模型完成工作台、自建 Preset、Tool 隔离、图片读取 CLI、迭代预设四角色派发及构图角色续派，以及工作台子 Agent 续派验收。四角色联测没有验证视觉模型观察或实际图像生成；双 Run 验收独立完成。Catalog Source 的条件 schema 已适配，真实 managed CLI 的实例、模板和模型查询均成功。同一工作台 Session 对已恢复的 ComfyUI 实例 `win3080` 完成模板参数检查，并用相同请求连续提交两个不同的 Generation Run；两个 Run 的 `run-inputs` 均返回可用的 Workflow 和相同参数。v0.44.3 的 `pnpm quality` 已通过：1207 项 unit/integration/Skills、58 项 contract/security、346 项 production、32 项 prototype 和 4 项真实 Desktop 测试成功；覆盖率为 statements 94.07%、branches 87.52%、functions 100%、lines 96.5%。完整依赖和生产依赖审计均报告 critical 0、high 0、moderate 0、low 0。Yarn 仍报告 `dsh-community-market` 的 peer dependency 未满足。不可变安装、Market 与 Stable 构建，以及隔离 Desktop 的真实模型主路径均已通过；现有验收尚未覆盖 Community Market 的实际功能调用，因此该告警对 Market 功能的影响尚未确认，详情见[依赖安装审计](verification/dsh-desktop-20260928/desktop-install-audit.md#验收清单)。PR 合入、origin/main 完整提交核对、Git tag、GitHub Release 与生产部署须按[发布规范](system/releasing.md)完成。
 
 # Harness ComfyUI v0.44.2
 

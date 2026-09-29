@@ -8,23 +8,25 @@
 
 根 `package.json` 固定 `yarn@4.18.0`，并记录 650 项 resolutions。Stable workspace `dsh-plugin-desktop/package.json` 固定 Desktop `2.0.15` 和 Electron `44.0.0`；DSH tarball 为 `0.1.7-rc.2`。Beta、Next、Fabric 和 Market workspace 的 manifest 与锁文件条目纳入同一清单。本仓库 `config/desktop-baseline.json` 指向上述最终提交。
 
-依赖审计 Agent 对 276 个本地 tarball 重新计算 SHA-256：文件全部存在，计算值全部等于[逐项清单](desktop-install-items.json)中的值，清单中的 276 个 `sha256MatchesProvenance` 字段均为 `true`。DSH 来源声明指向 `deepseek-harness` 提交 `477b4f420553e8a52c2fbccc464d7561b239c443`；Agents Anywhere 来源声明指向提交 `125aab0a5f30ac535fee59f3571eabd050ac909f`。这些结果证明本地归档与 fork 中的来源声明一致；上游提交到归档的独立重建或正式构建证明仍待来源验收 Agent 提交。
+依赖审计 Agent 对 276 个本地 tarball 重新计算 SHA-256：文件全部存在，计算值全部等于[逐项清单](desktop-install-items.json)中的值，清单中的 276 个 `sha256MatchesProvenance` 字段均为 `true`。DSH 来源声明指向 `deepseek-harness` 提交 `477b4f420553e8a52c2fbccc464d7561b239c443`；Agents Anywhere 来源声明指向提交 `125aab0a5f30ac535fee59f3571eabd050ac909f`。只读核对确认两个提交均存在于各自官方 GitHub Git API。fork 内 DSH manifest 列出的 314 个归档及 Agents Anywhere 来源声明列出的 1 个归档，各自与声明的 SHA-256 相符。这些结果证明本地归档与 fork 中的来源声明一致；来源验收 Agent 仍须提供从上游源码独立重建这些归档的证明。
 
-[补丁审计清单](desktop-patch-audit.json)覆盖 36 个 fork 内 patch 和 2 个 Yarn 内建兼容 patch。最终 `dsh-api-session-controller` patch 的 SHA-256 为 `cf2abe68ab94fab41a571a8625098920f9f4d655f4aab359daeff1f1a9a242e1`，新增 463 行；其锁文件 patch hash 为 `f632a7`，Yarn checksum 为 `10c0/040060d5ce1d5e8e370b7349a491bbb4a1a06434583d1e653ef19aed7816fa3b82578b81825a27492eba817750f646e0b4a60912c70b7b5b092a2ca383f5261a`。其余 35 个 fork 内 patch 的 SHA-256 和新增行数与前一审计记录一致。Yarn 内建 patch 的内容仍须对照 Yarn 4.18.0 发行包核对。
+[补丁审计清单](desktop-patch-audit.json)覆盖 36 个 fork 内 patch 和 2 个 Yarn 内建兼容 patch。最终 `dsh-api-session-controller` patch 的 SHA-256 为 `cf2abe68ab94fab41a571a8625098920f9f4d655f4aab359daeff1f1a9a242e1`，新增 463 行；其锁文件 patch hash 为 `f632a7`，Yarn checksum 为 `10c0/040060d5ce1d5e8e370b7349a491bbb4a1a06434583d1e653ef19aed7816fa3b82578b81825a27492eba817750f646e0b4a60912c70b7b5b092a2ca383f5261a`。其余 35 个 fork 内 patch 的 SHA-256 和新增行数与前一审计记录一致。只读核对确认 Corepack Yarn 4.18.0 的 `fsevents` 和 `typescript` 两个内建 patch 的编码载荷与 Yarn 官方源码中同版本的字符串一致；本次核对未解码载荷正文。
 
 安全审计 Agent 对同一组 1,146 个精确 npm 包版本执行 OSV `querybatch`，保存的[命中结果](desktop-osv-hits.json)为空数组。最终 fork 只修改 patch 和锁文件对应条目的 hash、checksum；npm 包版本组保持一致。该查询结果仅说明当日 OSV 对这些名称和版本没有返回公告，vendored 源码、补丁行为及运行安全分别由来源和运行验收确认。
 
-安装执行 Agent 的任务操作记录显示：在 Node 24 环境中运行 `corepack yarn install --immutable` 成功；`corepack yarn workspace dsh-community-market build`、`corepack yarn workspace dsh-plugin-desktop build` 和 `corepack yarn workspace dsh-plugin-desktop prepare:electron-native` 均退出 0。最初使用 Node 25 构建 `fs-ext` 失败，改用 Node 24 后通过。最终 patch 更新后，安装执行 Agent 再次运行 `corepack yarn install --immutable` 并通过，随后在提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302` 的干净工作树上重新执行上述三个构建命令，均退出 0；`prepare:electron-native` 输出确认 Electron 44.0.0 的 darwin-arm64 ABI 149 绑定。当前 fork 中存在 `dsh-community-market/lib/index.js`、`dsh-plugin-desktop/lib/main.js` 和 `dsh-plugin-desktop/node_modules/fs-ext/prebuilds/darwin-arm64/electron.abi149.node`。任务未将完整终端日志另存到本目录。实施 Agent 在本仓库运行 `pnpm check:manifest-lock` 并通过，其终端输出也未另存到本目录。
+安装执行 Agent 的任务操作记录显示：在 Node 24 环境中运行 `corepack yarn install --immutable` 成功；`corepack yarn workspace dsh-community-market build`、`corepack yarn workspace dsh-plugin-desktop build` 和 `corepack yarn workspace dsh-plugin-desktop prepare:electron-native` 均退出 0。最初使用 Node 25 构建 `fs-ext` 失败，改用 Node 24 后通过。最终 patch 更新后，安装执行 Agent 再次运行 `corepack yarn install --immutable` 并通过，随后在提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302` 的干净工作树上重新执行上述三个构建命令，均退出 0；`prepare:electron-native` 输出确认 Electron 44.0.0 的 darwin-arm64 ABI 149 绑定。当前 fork 中存在 `dsh-community-market/lib/index.js`、`dsh-plugin-desktop/lib/main.js` 和 `dsh-plugin-desktop/node_modules/fs-ext/prebuilds/darwin-arm64/electron.abi149.node`。`corepack yarn explain peer-requirements` 对 `dsh-community-market` 报告未满足的 peer dependency，例如 `p7b328a` 缺少 `@deepseek-ai/cordis-plugin-loader`。Market 和 Stable 构建已通过，插件的实际功能调用仍待真模型运行验收。任务未将完整终端日志另存到本目录。实施 Agent 在本仓库运行 `pnpm check:manifest-lock` 并通过，其终端输出也未另存到本目录。
 
 ## 验收清单
 
 - [x] 最终 fork 提交、Desktop 基线、1,466 项锁文件与逐项安装清单对应。
 - [x] 276 个 tarball 的本地 SHA-256 与清单中的值对应；来源清单记录相同的归档摘要。
+- [x] 官方 GitHub Git API 存在两个声明的上游提交；fork 内 DSH 的 314 个归档及 Agents Anywhere 的 1 个归档均符合各自声明的 SHA-256。
 - [x] 36 个 fork 内 patch 的当前 SHA-256 与补丁审计清单对应；另有 2 个 Yarn 内建 patch 记录在清单中。
+- [x] Corepack Yarn 4.18.0 的两个内建 patch 编码载荷与官方源码中同版本的字符串一致；载荷正文尚未解码核对。
 - [x] OSV 查询保存了 1,146 个精确 npm 版本的零命中结果，最终 patch 提交保持这组版本不变。
 - [x] 获授权的 Node 24 安装与三个构建命令已执行并通过；最终 patch 提交后的 immutable 安装已通过；本仓库 manifest-lock 检查已通过。
-- [ ] 来源验收 Agent 须提供 vendored tarball 与声明上游提交之间的独立来源证明，并核对 Yarn 内建 patch 的发行内容。
-- [ ] 运行验收 Agent 须核对 `dsh-community-market` 的 peer dependency 告警、最终 patch 后的实际调用、Electron 原生绑定与插件功能；最终候选树的 `pnpm quality` 另行记录。
+- [ ] 来源验收 Agent 须提供从声明的上游提交独立重建 vendored 归档的证明，并核对两个 Yarn 内建 patch 与 Yarn 4.18.0 发行包的实际内容。
+- [ ] 运行验收 Agent 须核对 `dsh-community-market` 的 peer dependency 告警及其运行影响，并通过真模型实际调用验收最终 patch、Electron 原生绑定与插件功能；最终候选树的 `pnpm quality` 另行记录。
 
 ## 非本次目标
 

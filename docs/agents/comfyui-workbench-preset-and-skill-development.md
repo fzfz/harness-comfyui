@@ -35,7 +35,9 @@ Desktop 启动器通过 `DSH_AGENTS_HOME=<调用者用户主目录>/.agents` 保
 
 ### Tool schema 可见性
 
-两个 ComfyUI 产品 Preset 必须通过 DSH/Cordis plugin component 机制加载 `agent-presets/project-tool-visibility.mjs`，并把该 component 的 `config.mode` 设置为 `local-only`。`project-tool-visibility.mjs` 使用 DSH Tool Registry restriction 建立当前 Preset 的 Tool view。两个 Preset 向模型提供的 Tool schema 必须仅来自各自加载的 Tool。
+本文将当前 Preset 加载、由模型直接调用或经 `run_code` 调用的 Tool 称为末端 Tool。
+
+两个 ComfyUI 产品 Preset 必须通过 DSH/Cordis plugin component 机制加载 `agent-presets/project-tool-visibility.mjs`，并把该 component 的 `config.mode` 设置为 `local-only`。`project-tool-visibility.mjs` 使用 DSH Tool Registry restriction 建立当前 Preset 的 Tool view。两个 Preset 向模型提供的末端 Tool schema 必须仅来自各自加载的 Tool。DSH 在 PTC 或 both 展示模式下提供保留的 `run_code` 传输；该传输只能调用当前 Preset scope 已可见的末端 Tool。
 
 当前 Host 注册的项目 Tool schema 包含：
 
@@ -62,6 +64,10 @@ Host 增加新的项目 Tool schema 时，两个 ComfyUI 产品 Preset 的 `loca
 
 该 component 只能修改 `PromptAssembly.sections`。该 component 必须保留 `deployment:persona`、Tool 使用说明以及 `PromptAssembly.contexts`、`PromptAssembly.tools` 和 `PromptAssembly.variables`。Harness `standard`、`minimal`、`cordis` 和其他 Agent Preset 必须保留各自现有的系统提示词 assembly。
 
+### 工作台预设的子 Agent 续派
+
+`ComfyUI工作台预设` 在 `agent.cordis.yml` 中配置 `subagent_task`。主 Agent 首次调用时提供 `description` 子任务标签和 `task` 任务正文，工具通过 DSH 原生 `startContinuable` 创建子 Session 并返回 `subagentId`；主 Agent 后续调用将该值传入 `agent_id`，工具通过 DSH 原生 `sendMessage` 向同一个子 Session 续派任务。子 Session 继承父 Session 的模型与 Provider，并且其工具权限禁止再次委派。DSH 将子 Session 的完成通知返回父 Agent。
+
 ### 迭代预设的子 Agent 与 Workspace
 
 `ComfyUI迭代预设` 在 agent.cordis.yml 中配置四个 `../project-iteration-dispatch.mjs` 实例，工具名为 `subagent_composition`、`subagent_generation`、`subagent_observation` 和 `subagent_comparison`。每个实例的 `config.persona` 定义对应子 Agent 的职责与工作流程，`config.agentOptions` 独立指定模型，`config.parameters` 定义调用参数，`config.taskTemplate` 定义任务消息标题、分组与字段顺序。component 按模板组装参数，使用原生 `startContinuable` 创建子会话；调用参数包含 `agent_id` 时，使用原生 `sendMessage` 向该子会话投递本次任务。配置使用 `provider: spawn` 和 `maxDepth: 1`。
@@ -70,11 +76,11 @@ Host 增加新的项目 Tool schema 时，两个 ComfyUI 产品 Preset 的 `loca
 
 主 Agent 读取 `comfyui-iterate-generation` 的 `SKILL.md`，按照其中规定的流程派发每轮子任务；该 Skill 的 `references/records.md` 定义结果目录及文件名。主 Agent 在每次派发时传入实际输出路径，子 Agent 写文件并返回路径。主 Agent 向构图子 Agent 提供该 Skill 的 `references/composition-design.md`，向比较子 Agent 提供 `references/iteration-method.md`。生成子 Agent 使用实际模型对应的 Prompt Builder Skill 和 `comfyui-generate`；观察子 Agent 使用 `local-image-reader`。
 
-`ComfyUI迭代预设` 必须加载 `agent-presets/project-subagent-workspace.mjs`。该 component 必须在每次 `agent/pre-step` 识别 `origin: subagent` 的真实子 Session，并根据该子 Session header 的 `parentSession` 找到父 Session。该 component 必须把父子 Session header 的 `cwd` 分别解析为真实路径，核对两个真实路径相同，再根据父 Session 的 `cwd` 确定 Workspace，并确认父 Session 已附加到该 Workspace。
+两个 ComfyUI 产品预设必须加载 `agent-presets/project-subagent-workspace.mjs`。该 component 必须在每次 `agent/pre-step` 识别 `origin: subagent` 的真实子 Session，并根据该子 Session header 的 `parentSession` 找到父 Session。该 component 必须把父子 Session header 的 `cwd` 分别解析为真实路径，核对两个真实路径相同，再根据父 Session 的 `cwd` 确定 Workspace，并确认父 Session 已附加到该 Workspace。
 
 子 Session 尚未附加时，该 component 必须调用并等待 `Workspace.attachSession(<真实子 Session ID>)` 完成，然后继续本次 Agent step；同一子 Session 的后续 step 必须复用首次附加的结果。
 
-以下任一情况发生时，该 component 必须停止本次 Agent step，并在错误中写明无法登记的子 Session ID、失败原因、出错的父 Session、`cwd` 或 Workspace，以及需要检查或修正的具体字段或附加操作：父 Session 不存在；父或子 Session 缺少 `cwd`；任一 `cwd` 无法解析为真实路径；父子真实路径不同；根据父 Session 的 `cwd` 找不到 Workspace；父 Session 尚未附加到该 Workspace；`attachSession` 失败。Workspace component 仅由 `ComfyUI迭代预设` 加载。
+以下任一情况发生时，该 component 必须停止本次 Agent step，并在错误中写明无法登记的子 Session ID、失败原因、出错的父 Session、`cwd` 或 Workspace，以及需要检查或修正的具体字段或附加操作：父 Session 不存在；父或子 Session 缺少 `cwd`；任一 `cwd` 无法解析为真实路径；父子真实路径不同；根据父 Session 的 `cwd` 找不到 Workspace；父 Session 尚未附加到该 Workspace；`attachSession` 失败。
 
 ## 项目 Skill 的 CLI 使用参考文档
 
@@ -122,11 +128,12 @@ CLI 使用参考文档必须使用 CLI 的真实命令、真实参数名和真�
 真实模型验收至少确认以下行为：
 
 - `standard` Preset 可以继续使用 Host 注册的项目 Tool；
-- 两个 ComfyUI 产品 Preset 都仅向模型提供各自加载的 Tool schema；
+- 两个 ComfyUI 产品 Preset 都仅向模型提供各自加载的末端 Tool schema；在 PTC 或 both 展示模式下，`run_code` 传输只能调用当前 Preset scope 已可见的末端 Tool；
 - 省略 `agentPreset` 后最终采用 `harness-comfyui-cli-candidate` 的 Agent、显式设置 `agentPreset: harness-comfyui-cli-candidate` 的 Agent 和显式设置 `agentPreset: harness-comfyui-iteration` 的 Agent 都能够发现当前 checkout 的 Repository Skills；
 - 最终采用 `standard` 或其他非 ComfyUI 产品 Preset 的 Session，其 Repository Skills 列表必须排除当前 checkout 的 `.agents/skills/`；`standard` Session 必须发现当前 checkout 之外的 Workspace 中的 Skill 和调用者用户主目录中的其他用户级 Skill；
 - 两个 ComfyUI 产品 Preset 中的 Agent 都能够按 `SKILL.md` 的读取条件读取 CLI 使用参考文档，并通过前台 shell Tool Call 调用该 CLI 使用参考文档指定的项目 managed CLI 命令；
 - `ComfyUI迭代预设` 的四个子 Agent 的 Session 配置或运行记录分别包含该子 Agent 对应的 persona 与模型 ID，完成通知能够回到主 Agent；构图和生成会话能够接收后续消息；首个 Agent step 前已将真实子 Session 登记到父 Session 所属 Workspace，子 Agent 的工具权限阻止再次委派；
+- `ComfyUI工作台预设` 的主 Agent 能够通过 `subagent_task` 创建子 Session，并将返回的 `subagentId` 传入 `agent_id`，在同一子 Session 续派；子 Session 的请求、响应、父 Session ID、Workspace 路径与完成通知均可核对，子 Agent 的工具权限阻止再次委派；
 - 用户要求同一个 Generation Request 创建多个 Run 时，Agent 能够按照 CLI 使用参考文档执行多次独立提交。
 
 ### 语义 Review

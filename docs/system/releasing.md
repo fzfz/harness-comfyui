@@ -25,9 +25,9 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## 待发布升级的范围与发布条件
+## v0.44.3 的发布范围与发布条件
 
-当前候选把 Desktop 更新到 2.0.15、DSH 更新到 0.1.7-rc.2、Electron 更新到 44.0.0，并迁移产品 Preset 注册和 Profile 设置持久化。发布执行者必须以最终 `config/desktop-baseline.json` 的源码提交和包版本为准，完成本文的审查、门禁、发布和生产验收。发布版本由用户在另行发布授权时确定；执行者按[本次升级计划](../plans/dsh-desktop-20260928.md#已获得的授权)核对发布与生产部署各自的授权范围。
+v0.44.3 把 Desktop 更新到 2.0.15、DSH 更新到 0.1.7-rc.2、Electron 更新到 44.0.0，并迁移产品 Preset 注册和 Profile 设置持久化。发布执行者必须以最终 `config/desktop-baseline.json` 的源码提交和包版本为准，完成本文的审查和门禁。发布执行者按[本次升级计划](../plans/dsh-desktop-20260928.md#已获得的授权)核对发布与生产部署各自的授权范围，发布 v0.44.3 并验收生产实例。部署验收执行者必须在 v0.44.3 生产实例启动后，使用 OpenRouter 免费模型，依据[运行验收记录](../verification/dsh-desktop-20260928/runtime-acceptance.md)中的工作台、续派和 CLI 通过条件逐项验证，并记录生产实例的请求、响应、Session ID、Preset、Workspace 路径和失败原因。
 
 ## v0.44.2 的历史发布范围与发布条件
 

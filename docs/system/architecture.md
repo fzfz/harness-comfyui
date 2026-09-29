@@ -18,7 +18,7 @@
 | `/image-reader` | 依赖 settings、attachments、llm、tools；提供 `imageReader` Service，管理读图配置、两种 Provider 和 `inspect_image` Tool。 |
 | `/cli` | 依赖两个业务 Service、shellEnv、tools、workspaceRegistry；管理专用 HTTP listener、请求分发与 capability。 |
 | 包根入口与 `/web` | 依赖两个业务 Service、webServer、workspaceRegistry；注册 Catalog、Generation、ImageReader Remote 和媒体路由。 |
-| `/cli-workspace` | 依赖 agents、workspaceRegistry；在根 Session 的首个 Agent step 前按真实 cwd 创建 Workspace 并附加真实 Session ID。子 Session 由迭代预设的既有 component 登记。 |
+| `/cli-workspace` | 依赖 agents、workspaceRegistry；在根 Session 的首个 Agent step 前按真实 cwd 创建 Workspace 并附加真实 Session ID。两个产品预设通过 `project-subagent-workspace.mjs` 登记子 Session。 |
 | `/cli-runner` | 依赖 agents、sessions、agentDefaultModel、agentPresets、harnessComfyuiCli；创建真实 Session，在 Agent 发布前挂载项目 Preset，执行任务并保存会话后请求 DSH 退出。 |
 
 根 `cordis.patch.yml` 装配 core、image-reader 和 cli，并在 DSH Preset registry 中指定默认产品 Preset。`scripts/profile/agent-preset.mjs` 将两个产品 Preset 的完整声明写入运行时 Profile patch。Desktop 的 Profile 准备脚本以及 `profiles/comfyui-workbench/cordis.patch.yml` 通过包根入口 `harness-comfyui` 装配 Web 插件，使 DSH ClientModuleRegistry 能发现包的 Client 声明；`/web` 是同一插件的子路径入口，Client 保留既有 `/client` 入口。`profiles/comfyui-cli/` 使用 DSH base、headless 与项目 bundle，并加载 CLI Workspace component、Preset registry、两个产品 Preset 和 cli-runner。该 Profile 停用 base 的全局 Agent 工具组件，由挂载的项目 Preset 创建本地工具。
@@ -71,6 +71,10 @@ Client 通过 DSH 0.1.7-rc.2 的 `sidebarRightTabs` 注册 ComfyUI 结果页，�
 `prod:test` 使用 Vitest 和临时运行目录自动调用同一套进程管理模块，覆盖 `start`、`stop`、`restart`、`status`、`health`、`logs`、PID 身份和端口异常分支。
 
 生产 Desktop 状态写入 `.local/desktop-production/`；开发 Desktop 状态写入当前 worktree 的 `.local/desktop-development/`；Web Host 调试状态写入 `.local/web-development/`。配置变更在下一次对应入口的 start 或 restart 时生效。
+
+## 子 Agent 与 Workspace
+
+工作台主 Agent 通过 `subagent_task` 创建子 Session，并通过 `agent_id` 向同一个子 Session 续派。两个产品预设使用 `project-subagent-workspace.mjs` 将子 Session 登记到父 Session 所属 Workspace。
 
 ## Generation 生命周期
 

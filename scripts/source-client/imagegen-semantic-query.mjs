@@ -13,7 +13,7 @@ const DEFAULT_TIMEOUT_MS = 120000;
 const DISCOVERY_PATH = '/internal/semantic';
 const HTTP_METHODS = Object.freeze(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
 const GLOBAL_OPTION_NAMES = new Set(['url', 'port', 'path', 'timeout-ms', 'help', 'version', 'discovery-json', 'quiet']);
-const BUSINESS_OPTION_NAMES = new Set(['mode', 'query', 'page', 'page_size', 'base_model_id', 'work_id', 'id']);
+const BUSINESS_OPTION_NAMES = new Set(['mode', 'query', 'page', 'page_size', 'base_model_id', 'work_id', 'root_id', 'category_ids', 'category_match', 'classification_status', 'id']);
 const KNOWN_OPTION_NAMES = new Set([...GLOBAL_OPTION_NAMES, ...BUSINESS_OPTION_NAMES]);
 const CATALOG_OPERATION_PATH_PATTERN = /^\/internal\/semantic\/[^/?#]+$/u;
 const CLI_ERROR_MESSAGES = Object.freeze({
@@ -58,7 +58,7 @@ const CATALOG_OPERATION_REGISTRY = Object.freeze({
   '/internal/semantic/prompt-terms': Object.freeze({
     operationId: 'querySemanticPromptTermsForSkill',
     toolName: 'query_semantic_prompt_terms',
-    searchFields: Object.freeze([])
+    searchFields: Object.freeze(['root_id', 'category_ids', 'category_match', 'classification_status'])
   }),
   '/internal/semantic/artist-prompt-strings': Object.freeze({
     operationId: 'querySemanticArtistPromptStringsForSkill',
@@ -201,7 +201,7 @@ function parseArguments(argv) {
     }
     const optionName = argument.slice(2);
     if (!KNOWN_OPTION_NAMES.has(optionName)) fail('INVALID_ARGUMENT', `unknown option: --${optionName}`);
-    if (seen.has(argument)) fail('INVALID_ARGUMENT', `${argument} may appear only once`);
+    if (seen.has(argument) && optionName !== 'category_ids') fail('INVALID_ARGUMENT', `${argument} may appear only once`);
     seen.add(argument);
     const value = argv[index + 1];
     if (value === undefined || value.startsWith('--')) fail('INVALID_ARGUMENT', `${argument} requires a value`);
@@ -322,10 +322,19 @@ function catalogFieldDetails({ schema, discovery, label, required }) {
   return { name: label.slice(label.lastIndexOf('.') + 1), location: 'requestBody', required, schema: details, description, example };
 }
 
+function validateCategoryCondition(value, label) {
+  if (Object.hasOwn(value, 'category_match') && !Object.hasOwn(value, 'category_ids')) fail('DISCOVERY_PROTOCOL_ERROR', `${label} violates category_match condition`, 6);
+}
+
 function validateCatalogBranch({ schema, discovery, label, mode, allowedSearchFields }) {
-  if (!isObject(schema) || schema.type !== 'object' || schema.additionalProperties !== false || Object.hasOwn(schema, 'oneOf') || Object.hasOwn(schema, 'anyOf') || Object.hasOwn(schema, 'allOf')) {
+  if (!isObject(schema) || schema.type !== 'object' || schema.additionalProperties !== false || Object.hasOwn(schema, 'oneOf') || Object.hasOwn(schema, 'anyOf')) {
     fail('DISCOVERY_PROTOCOL_ERROR', `${label} must be a closed object branch`, 6);
   }
+  const categoryCondition = mode === 'search' && allowedSearchFields.includes('category_match');
+  if (categoryCondition) {
+    const expectedCondition = [{ if: { required: ['category_match'] }, then: { required: ['category_ids'] } }];
+    if (!valuesEqual(schema.allOf, expectedCondition)) fail('DISCOVERY_PROTOCOL_ERROR', `${label}.allOf must require category_ids when category_match is present`, 6);
+  } else if (Object.hasOwn(schema, 'allOf')) fail('DISCOVERY_PROTOCOL_ERROR', `${label}.allOf is unsupported`, 6);
   requireCatalogText(schema.description, `${label}.description`);
   const properties = schema.properties;
   if (!isObject(properties)) fail('DISCOVERY_PROTOCOL_ERROR', `${label}.properties must be an object`, 6);
@@ -353,14 +362,32 @@ function validateCatalogBranch({ schema, discovery, label, mode, allowedSearchFi
     if (pageSize.type !== 'integer' || pageSize.minimum !== 1 || pageSize.maximum !== 100 || pageSize.default !== 20) fail('DISCOVERY_PROTOCOL_ERROR', `${label}.page_size is invalid`, 6);
     for (const name of filterNames) {
       const filter = fields.find((field) => field.name === name).schema;
-      if (filter.type !== 'string' || filter.minLength !== 1 || filter.maxLength !== 20 || filter.pattern !== '^[1-9][0-9]{0,19}$') fail('DISCOVERY_PROTOCOL_ERROR', `${label}.${name} is invalid`, 6);
+      if (name === 'root_id') {
+        if (filter.type !== 'string' || filter.pattern !== '^[a-z][a-z0-9_]*$') fail('DISCOVERY_PROTOCOL_ERROR', `${label}.${name} is invalid`, 6);
+      } else if (name === 'category_ids') {
+        if (filter.type !== 'array' || filter.minItems !== 1 || filter.maxItems !== 16 || filter.uniqueItems !== true || filter.item.type !== 'string' || filter.item.pattern !== '^[a-z][a-z0-9_]*$') fail('DISCOVERY_PROTOCOL_ERROR', `${label}.${name} is invalid`, 6);
+      } else if (name === 'category_match') {
+        if (filter.type !== 'string' || !valuesEqual(filter.enum, ['any', 'all']) || filter.default !== 'all') fail('DISCOVERY_PROTOCOL_ERROR', `${label}.${name} is invalid`, 6);
+      } else if (name === 'classification_status') {
+        if (filter.type !== 'string' || !valuesEqual(filter.enum, ['classified', 'evidence_gap', 'coverage_gap', 'unclassified'])) fail('DISCOVERY_PROTOCOL_ERROR', `${label}.${name} is invalid`, 6);
+      } else if (filter.type !== 'string' || filter.minLength !== 1 || filter.maxLength !== 20 || filter.pattern !== '^[1-9][0-9]{0,19}$') fail('DISCOVERY_PROTOCOL_ERROR', `${label}.${name} is invalid`, 6);
     }
   } else {
     const id = fields.find((field) => field.name === 'id').schema;
     if (id.type !== 'string' || id.minLength !== 1 || id.maxLength !== 20 || id.pattern !== '^[1-9][0-9]{0,19}$') fail('DISCOVERY_PROTOCOL_ERROR', `${label}.id is invalid`, 6);
   }
   const example = Object.fromEntries(fields.map((field) => [field.name, field.example]));
-  return { schema, fields, example };
+  const branchSchema = { ...schema };
+  delete branchSchema.allOf;
+  if (categoryCondition) {
+    for (const annotation of ['example', 'default']) {
+      if (!Object.hasOwn(branchSchema, annotation)) continue;
+      const annotationLabel = `${label}.${annotation}`;
+      schemaDetails(branchSchema, discovery, label);
+      validateCategoryCondition(branchSchema[annotation], annotationLabel);
+    }
+  }
+  return { schema: branchSchema, fields, example, categoryCondition };
 }
 
 function mergeCatalogSchemas(base, overlay) {
@@ -418,14 +445,19 @@ function catalogRequestDetails({ discovery, path, operation }) {
     assertSafeText(name, `${operation.operationId}.requestBody.example`);
     if (!isObject(sourceExample) || !Object.hasOwn(sourceExample, 'value') || !isObject(sourceExample.value)) fail('DISCOVERY_PROTOCOL_ERROR', `${operation.operationId}.requestBody example ${name} must contain an object value`, 6);
     if (sourceExample.value.mode !== name) fail('DISCOVERY_PROTOCOL_ERROR', `${operation.operationId}.requestBody example ${name} must match its named branch`, 6);
-    const branch = name === 'resolve' ? resolve.schema : search.schema;
+    const selectedBranch = name === 'resolve' ? resolve : search;
+    const branch = selectedBranch.schema;
     if (branch === null) fail('DISCOVERY_PROTOCOL_ERROR', `${operation.operationId}.requestBody example ${name} has an invalid mode`, 6);
     const branchDetails = schemaDetails(branch, discovery, `${operation.operationId}.requestBody.example.${name}`);
     matchesSchemaValue(sourceExample.value, branchDetails, `${operation.operationId}.requestBody.example.${name}`);
+    if (selectedBranch.categoryCondition) validateCategoryCondition(sourceExample.value, `${operation.operationId}.requestBody example ${name}`);
   }
-  if (Object.hasOwn(root, 'example')) {
-    const rootDetails = schemaDetails(search.schema, discovery, `${operation.operationId}.requestBody.schema.example`);
-    matchesSchemaValue(root.example, rootDetails, `${operation.operationId}.requestBody.schema.example`);
+  for (const annotation of ['example', 'default']) {
+    if (!Object.hasOwn(root, annotation)) continue;
+    const annotationLabel = `${operation.operationId}.requestBody.schema.${annotation}`;
+    const rootDetails = schemaDetails(search.schema, discovery, annotationLabel);
+    matchesSchemaValue(root[annotation], rootDetails, annotationLabel);
+    if (search.categoryCondition) validateCategoryCondition(root[annotation], annotationLabel);
   }
   return {
     parameters: [],
@@ -925,6 +957,7 @@ function parseDynamicInput({ details, dynamicArguments }) {
     if (!definition.required || parsed.has(definition.name)) continue;
     if (definition.location !== 'requestBody' || details.requestBody.required || requestBodyProvided) invalidInput(`missing required parameter: --${definition.name}`);
   }
+  if (details.requestBody?.categoryCondition && parsed.has('category_match') && !parsed.has('category_ids')) invalidInput('--category_match requires --category_ids');
   return parsed;
 }
 
@@ -938,6 +971,7 @@ function requestDetailsForMode(details, mode) {
       schema: branch.schema,
       properties: branch.fields,
       example: branch.example,
+      categoryCondition: branch.categoryCondition,
       branches: details.requestBody.branches
     }
   };

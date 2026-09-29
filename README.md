@@ -17,9 +17,13 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 - **图片识别模型由你选，出图后还能继续分析。** 内置图片识别工具，支持供应商提供的图片识别模型，也支持自行填写 OpenAI 兼容接口，可接入你选择的无审核图片识别服务。它既能描述本地图片，也能对照生图要求指出画面偏差、提出修改建议。
 - **满意的图片，能找回当时的生成方法。** 每次生成都会保存描述和绘图设置，便于查询、复用和继续调整，不必凭记忆重新试参数。
 
+## 当前版本验收
+
+v0.44.3 将 Desktop Stable 基线更新至 2.0.15，并将 DSH 插件 peer 范围更新为 `>=0.1.7-rc.2 <0.1.8`。OpenRouter 免费模型已验收工作台、用户自建预设、工具隔离、图片读取命令、迭代预设的四角色派发与构图角色续派，并验证以相同请求提交的两次生成任务；数据目录中的实例、模板和生成模型查询成功。四角色联测的视觉观察限制见 [v0.44.3 发布说明](docs/releasenotes.md#harness-comfyui-v0443)。
+
 ## CLI 帮助与图片读取
 
-当前已发布版本为 v0.44.2；升级候选将 Desktop Stable 基线更新至 2.0.15，并将 DSH 插件 peer 范围更新为 `>=0.1.7-rc.2 <0.1.8`。Agent 可通过 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 查看命令分类，再通过 `node "$DSH_HARNESS_COMFYUI_CLI" image --help` 和 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --help` 逐层查看参数、stdin 示例和下一步操作。帮助调用在本地完成；业务调用默认将 JSON 结果写入 stdout，将 NEXT 指引写入 stderr，`--quiet` 可省略成功指引。
+Agent 可通过 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 查看命令分类，再通过 `node "$DSH_HARNESS_COMFYUI_CLI" image --help` 和 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --help` 逐层查看参数、stdin 示例和下一步操作。帮助调用在本地完成；业务调用默认将 JSON 结果写入 stdout，将 NEXT 指引写入 stderr，`--quiet` 可省略成功指引。
 
 仓库内置图片读取配置与新建配置默认使用事实观察提示词。已有命名配置保留已保存的提示词；需要采用新默认用途时，在“设置 → ComfyUI → 图片读取”中编辑该配置。输出达到模型 token 上限时，CLI 报告 `IMAGE_READER_OUTPUT_LIMIT` 并提示检查参数。观察结果仍须对照原图核实，当前视觉模型的遮挡姿态误判记录见 [v0.44.1 发布说明](docs/releasenotes.md#harness-comfyui-v0441)。
 
@@ -43,7 +47,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ### 1. 选择源码版本
 
-升级候选使用自有仓库 fzfz/dsh-desktop-anywhere 的 Desktop Stable 2.0.15 与 DSH 0.1.7-rc.2，固定提交和安装路径由 config/desktop-baseline.json 指定。managed CLI 使用 DSH 进程内的专用回环 HTTP 服务，并通过前台 shell Tool Call 的短期 capability 认证。已发布版本的生产安装使用对应 tag 中的基线配置和说明。
+v0.44.3 使用自有仓库 fzfz/dsh-desktop-anywhere 的 Desktop Stable 2.0.15、DSH 0.1.7-rc.2 和 Electron 44.0.0，固定提交和安装路径由 config/desktop-baseline.json 指定。managed CLI 使用 DSH 进程内的专用回环 HTTP 服务，并通过前台 shell Tool Call 的短期 capability 认证。已发布版本的生产安装使用对应 tag 中的基线配置和说明。
 
 ### 2. 准备 DSH Desktop 与依赖
 
