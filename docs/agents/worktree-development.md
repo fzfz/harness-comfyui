@@ -2,7 +2,7 @@
 
 ## 启动前准备
 
-开发者从 main 创建独立 linked worktree，并确认根目录 .git 是 worktree 元数据文件。config/desktop-worktree.json 指定主开发 checkout 和本实例运行目录；config/desktop-baseline.json 指定 Desktop 2.0.11、DSH 0.1.5-rc.2 的固定提交和实际安装路径。
+开发者从 main 创建独立 linked worktree，并确认根目录 .git 是 worktree 元数据文件。config/desktop-worktree.json 指定主开发 checkout 和本实例运行目录；config/desktop-baseline.json 以包版本固定候选 Desktop 2.0.15 与 DSH 0.1.7-rc.2，并指定 Desktop 完整提交和实际安装路径。开发者启动前必须核对 config/desktop-baseline.json 中的版本与所选 Desktop workspace 的已安装版本一致。
 
 主开发 checkout 必须已有 .env、项目构建工具和基线 Desktop 的完整安装。pnpm dev:start 启动器负责链接 .env 并准备独立 node_modules 依赖视图。业务依赖和构建工具复用主 checkout 的安装目录，宿主 peer 从基线 Desktop workspace 解析。启动器不得修改这些共享依赖目录。worktree 不执行 pnpm install，也不复制 .env。
 

@@ -11,16 +11,18 @@ import { CATALOG_REMOTE_SERVICE } from '../catalog/contract.ts'
 import { GENERATION_REMOTE_SERVICE } from '../generation/contract.ts'
 import { IMAGE_READER_REMOTE_SERVICE } from '../image-reader/contract.ts'
 import {
-  IMAGE_READER_SETTINGS_NAMESPACE,
-  decodeImageReaderSettingsView,
+  IMAGE_READER_PROFILE_ENTRY_ID,
+  type ImageReaderSettingsView,
 } from '../image-reader/settings.ts'
 import {
-  decodeSourceSettingsView,
-  SOURCE_SETTINGS_NAMESPACE,
+  SOURCE_PROFILE_ENTRY_ID,
   SOURCE_SETTINGS_SECTION_ID,
+  type SourceSettingsView,
 } from '../source-settings.ts'
 import { ImageReaderSettingsError } from './image-reader/image-reader-settings.tsx'
 import { HarnessComfyuiSettingsPage } from './settings/harness-comfyui-settings.tsx'
+import { withImageReaderConfiguration } from './settings/image-reader-settings-form.ts'
+import { withSourceAddress } from './settings/source-settings-form.ts'
 import { SourcePresetTip } from './settings/source-preset-tip.tsx'
 
 import {
@@ -42,7 +44,7 @@ export const inject = [
   'remote',
   'sidebarRight',
   'sidebarRightTabs',
-  'settingsScope',
+  'configForms',
 ] as const
 
 interface ClientSessions {
@@ -85,14 +87,25 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       const remoteCatalog = remoteContext.get(CATALOG_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiCatalog
       const remoteGeneration = remoteContext.get(GENERATION_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiGeneration
       const remoteImageReader = remoteContext.get(IMAGE_READER_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiImageReader
-      const imageReaderSettingsScope = ctx.settingsScope.bind({
-        namespace: IMAGE_READER_SETTINGS_NAMESPACE,
-        decode: decodeImageReaderSettingsView,
-      })
-      const sourceSettingsScope = ctx.settingsScope.bind({
-        namespace: SOURCE_SETTINGS_NAMESPACE,
-        decode: decodeSourceSettingsView,
-      })
+      const imageReaderForm = withImageReaderConfiguration(
+        ctx.configForms.get<ImageReaderSettingsView>(IMAGE_READER_PROFILE_ENTRY_ID),
+        async () => {
+          const result = await remoteImageReader.configuration()
+          if (!result.ok) throw new ImageReaderSettingsError(result.error.code, result.error.code)
+          return result.value
+        },
+      )
+      const imageReaderSettingsScope = imageReaderForm.form
+      const sourceForm = withSourceAddress(
+        ctx.configForms.get<SourceSettingsView>(SOURCE_PROFILE_ENTRY_ID),
+        async () => {
+          const result = await remoteCatalog.sourceAddress()
+          if (!result.ok) throw new CatalogRequestError(result.error.code, result.error.message)
+          if (!result.value.ok) throw new CatalogRequestError(result.value.error.code, result.value.error.message)
+          return result.value.value
+        },
+      )
+      const sourceSettingsScope = sourceForm.form
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
       }
@@ -165,6 +178,8 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         },
       }
       return [
+        () => imageReaderForm.dispose(),
+        () => sourceForm.dispose(),
         () => generationStore.dispose(),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
           name: 'sidebar.footer.action',

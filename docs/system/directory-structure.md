@@ -23,6 +23,7 @@
 | `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫展示图、动作迁移源图 Prompt、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
 | `.agents/skills/local-image-reader/` | 用户提供本地图片路径的逐图视觉读取 Skill 的唯一源码目录，包含独立 CLI 参考 |
 | `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
+| `cordis.patch.yml` | 装配项目插件，并通过 `agent-preset-registry` 和两个 `@deepseek-ai/dsh-agent-preset` 条目显式注册产品 Preset |
 | `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset 唯一源码目录；目录名是兼容性内部 ID，该 Preset 继续作为默认 Preset |
 | `agent-presets/harness-comfyui-iteration/` | 用户可见名称为 `ComfyUI迭代预设` 的附加受管产品 Preset 唯一源码目录；agent.cordis.yml 保存主 persona、四份子 Agent persona 及派发参数、任务模板与模型配置 |
 | `agent-presets/project-iteration-dispatch.mjs` | 按角色配置的参数与模板组装任务消息，调用 DSH 原生接口创建子 Agent 或向已有子 Agent 投递后续任务 |
@@ -31,17 +32,18 @@
 | `agent-presets/project-system-prompt-visibility.mjs` | 每次 `system-prompt/assemble` 完成其他段落组装后，删除配置指定段落并控制产品 Preset 会话系统提示词段落可见性的模块 |
 | `config/product-agent.json` | 保存 `preset.id`、`preset.additionalManagedPresetIds`、`preset.sourceRootRelativePath`、`preset.installRootRelativePath`、`preset.retiredManagedPresetIds`、`preset.sharedFiles`、`skills.sourceRootRelativePath` 和 `skills.environmentVariable` |
 | `config/` | 生产配置、开发配置、schema 和质量阈值 |
+| `config/settings-entry-ids.json` | 保存 core 与图片读取插件的 Profile Settings 条目 ID |
 | `config/desktop-baseline.json` | 唯一 Desktop 来源、commit、Stable workspace、包版本和启动参数 |
 | `config/desktop-production.json` | 生产 runtime、`.env` 和默认 Workspace |
 | `config/desktop-worktree.json` | 主开发 checkout、开发 Desktop runtime、受管开发 Settings 配置和 main 私密 DSH 来源路径；开发启动器为每个 worktree 分配 Host 端口 |
-| `config/desktop-development-provider-settings.json` | `dev:start` 和 `dev:restart` 写入开发 DSH home 的 Provider、默认模型和 credential ref 名称；文件不保存凭据值 |
-| `config/image-reader-profiles.json` | `dev:start` 和 `dev:restart` 写入开发 DSH home 的图片读取配置；文件不保存凭据 |
+| `config/desktop-development-provider-settings.json` | `dev:start` 和 `dev:restart` 补齐开发 Profile patch 的 Provider、默认模型和 credential ref 名称；文件不保存凭据值 |
+| `config/image-reader-profiles.json` | `dev:start` 和 `dev:restart` 补齐开发 Profile patch 的图片读取配置；文件不保存凭据 |
 | `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
 | `config/desktop-harness-development.json` | 开发与测试所需的宿主包和可执行入口声明 |
 | `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明模块 |
 | `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、当前插件包及其依赖的安装和 `prod:*`/`dev:*` 生命周期 |
 | `scripts/desktop/baseline.mjs` | 校验 Desktop 来源、commit 与安装包版本 |
-| `scripts/desktop/development-settings.mjs` | 合并当前 checkout 的受管开发配置和 main 的 Git 忽略凭据，并写入当前 worktree 的隔离 DSH home |
+| `scripts/desktop/development-settings.mjs` | 合并当前 checkout 的受管开发配置和 main 的 Git 忽略凭据，在当前 worktree 的隔离 Profile patch 中补齐缺失值，并将缺失的凭据写入 `.credentials.yaml` |
 | `scripts/desktop/dependency-view.mjs` | 建立 worktree 自有 node_modules，分别解析业务依赖与宿主依赖 |
 | `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 的 `start`、`stop`、`restart`、`status`、`health` 和 `logs` 的共享实现 |
 | `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |

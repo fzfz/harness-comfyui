@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { materializeSourceHostModule } from '../../scripts/production/host-module.mjs'
 import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
+import { IMAGE_READER_PROFILE_ENTRY_ID } from '../../src/image-reader/settings.ts'
 import * as harnessComfyui from '../support/product-plugin.ts'
 import {
   reportFrontendAttemptDiagnostic,
@@ -79,27 +80,11 @@ function provideHostServices(ctx: Context) {
     listModels: vi.fn(async () => []),
     prepareCall,
   } as never)
-  const registerSettings = vi.fn((namespace?: string, _schema?: unknown, options?: { base?: unknown }) => namespace === 'harness-comfyui-source'
-    ? {
-      get: vi.fn(() => options?.base),
-      replace: vi.fn(async () => undefined),
-    }
-    : ({
-      get: vi.fn(() => ({
-        configuration: {
-          activeProfileId: 'default',
-          profiles: [{
-            id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
-            hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
-          }],
-        },
-        credentials: {},
-      })),
-      replace: vi.fn(async () => undefined),
-    }))
+  const describeSettings = vi.fn(() => [])
+  const replaceSettings = vi.fn(async () => undefined)
   ctx.provide('settings' as never, {
-    register: registerSettings,
-    describe: vi.fn(() => []),
+    describe: describeSettings,
+    replace: replaceSettings,
   } as never)
   ctx.provide('workspaceRegistry', {
     create: createWorkspace,
@@ -109,7 +94,8 @@ function provideHostServices(ctx: Context) {
     createWorkspace,
     disposeShellEnvironment,
     registerRoute,
-    registerSettings,
+    describeSettings,
+    replaceSettings,
     registerShellEnvironment,
     registerTool,
     prepareCall,
@@ -248,6 +234,7 @@ describe('Harness ComfyUI Host plugin', () => {
 
     expect(remoteMethods(imageReader)).toEqual([
       { method: 'models', invocation: { kind: 'direct' } },
+      { method: 'configuration', invocation: { kind: 'direct' } },
       { method: 'saveProfile', invocation: { kind: 'direct' } },
       { method: 'activateProfile', invocation: { kind: 'direct' } },
       { method: 'deleteProfile', invocation: { kind: 'direct' } },
@@ -262,8 +249,11 @@ describe('Harness ComfyUI Host plugin', () => {
     const ctx = new Context()
     const logger = { error: vi.fn(), info: vi.fn() }
     vi.spyOn(ctx, 'logger').mockReturnValue(logger as never)
-    const { prepareCall, registerSettings, registerTool, saveImage } = provideHostServices(ctx)
-    registerSettings.mockImplementation(() => failureFixture.scope)
+    const { prepareCall, describeSettings, registerTool, saveImage } = provideHostServices(ctx)
+    describeSettings.mockImplementation(() => [{
+      ns: IMAGE_READER_PROFILE_ENTRY_ID,
+      value: { ...failureFixture.scope.get(), credentials: {} },
+    }] as never)
     saveImage.mockImplementation(failureFixture.saveImage)
     prepareCall.mockImplementation(failureFixture.prepareCall)
     const fiber = await ctx.plugin(harnessComfyui, { configurationProfile: 'production' })
@@ -331,7 +321,7 @@ describe('Harness ComfyUI Host plugin', () => {
       },
       credential: { action: 'clear' },
     }))
-    const parsedRequest = requestCodec.schema.parse(wireValue)
+    const parsedRequest = requestCodec.create().parse(wireValue)
 
     expect(parsedRequest).toEqual(wireValue)
     await expect(imageReader.saveProfile(parsedRequest, new AbortController().signal)).rejects.toMatchObject({
@@ -365,7 +355,7 @@ describe('Harness ComfyUI Host plugin', () => {
   it('registers the configured visual model as the image-reader base', async () => {
     stubTestProfileEnvironment()
     const ctx = new Context()
-    const { registerSettings } = provideHostServices(ctx)
+    provideHostServices(ctx)
 
     const fiber = await ctx.plugin(harnessComfyui, {
       configurationProfile: 'production',
@@ -375,22 +365,13 @@ describe('Harness ComfyUI Host plugin', () => {
       },
     })
 
-    expect(registerSettings).toHaveBeenNthCalledWith(
-      3,
-      'harness-comfyui-image-reader-profiles',
-      expect.anything(),
-      expect.objectContaining({
-        base: expect.objectContaining({
-          configuration: expect.objectContaining({
-            profiles: [expect.objectContaining({
-              connectionType: 'runtime',
-              provider: 'opencode-go',
-              model: 'vision-model',
-            })],
-          }),
-        }),
-      }),
-    )
+    expect(ctx.imageReader.configuration()).toEqual(expect.objectContaining({
+      profiles: [expect.objectContaining({
+        connectionType: 'runtime',
+        provider: 'opencode-go',
+        model: 'vision-model',
+      })],
+    }))
     await fiber.dispose()
     await ctx.fiber.dispose()
   })

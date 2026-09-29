@@ -13,7 +13,7 @@ const configuration = parseCliRuntime(definition)
 import { materializeSourceCliModule } from '../production/cli-module.mjs'
 import { materializeSourceHostModule } from '../production/host-module.mjs'
 import { materializeSourceProfile } from '../profile/source.mjs'
-import { materializeSourceProductAgentPreset } from '../profile/agent-preset.mjs'
+import { materializeDeclaredAgentPresetPatch, materializeSourceProductAgentPreset } from '../profile/agent-preset.mjs'
 import { loadProductAgentConfiguration } from '../profile/product-agent-config.mjs'
 
 export async function prepareCliRuntime(repositoryRoot) {
@@ -41,7 +41,8 @@ export async function prepareCliRuntime(repositoryRoot) {
     const source = dirname(dshRequire.resolve(`@deepseek-ai/${name}/package.json`))
     try { await symlink(source, target, 'dir') } catch (error) { if (error.code !== 'EEXIST') throw error; if (resolve(dirname(target), await readlink(target)) !== source) throw new Error(`CLI Profile dependency ${target} must point to ${source}. Recreate this Profile dependency link.`) }
   }
-  await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
+  const productAgentPreset = await materializeSourceProductAgentPreset(repositoryRoot, dshHome)
+  await materializeDeclaredAgentPresetPatch(productAgentPreset, profileDirectory)
   const product = await loadProductAgentConfiguration(repositoryRoot)
   const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('HARNESS_COMFYUI_')))
   return {

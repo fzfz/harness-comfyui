@@ -1,9 +1,7 @@
 import { spawn } from 'node:child_process'
 import { nodeScriptEnvironment } from '../node-script-environment.ts'
 
-import type { SettingsScope } from '@deepseek-ai/dsh-settings'
-
-import { readSourceAddress, type SourceSettingsSection } from '../../source-settings.ts'
+import { readSourceAddress, type SourceAddress } from '../../source-settings.ts'
 import { GenerationRuntimeError, type JsonValue } from './generation-runtime.ts'
 import type {
   ComfyInstanceSource,
@@ -31,7 +29,7 @@ export type SourceCliProcess = (
 
 export interface GenerationSourceCliOptions {
   readonly executable: string
-  readonly settings: Pick<SettingsScope<SourceSettingsSection>, 'get'>
+  readonly settings: { get(): SourceAddress }
   readonly process?: SourceCliProcess
 }
 

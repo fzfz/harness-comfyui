@@ -11,11 +11,11 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
       if (children !== undefined) content.push(children as ReactNode)
       return React.createElement('button', props, ...content)
     },
-    IconChevronDownOutline14: () => React.createElement('i'),
-    IconChevronLeftOutline14: () => React.createElement('i'),
-    IconChevronRightOutline14: () => React.createElement('i'),
-    IconCloseOutline16: () => React.createElement('i'),
-    IconDownloadOutline16: () => React.createElement('i', { 'data-icon': 'download' }),
+    IconChevronDownOutlineRegular: () => React.createElement('i'),
+    IconChevronLeftOutlineRegular: () => React.createElement('i'),
+    IconChevronRightOutlineRegular: () => React.createElement('i'),
+    IconCloseOutlineRegular: () => React.createElement('i'),
+    IconDownloadOutlineRegular: () => React.createElement('i', { 'data-icon': 'download' }),
     Modal: ({ open, onClose, title, closeLabel, children, footer }: Record<string, unknown>) => (
       open
         ? React.createElement(

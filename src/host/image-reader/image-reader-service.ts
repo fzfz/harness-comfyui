@@ -5,13 +5,17 @@ import { imageReaderDiagnosticSchema, type ImageReaderDiagnostic } from '../../i
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, type LlmCallConfig, type PreparedLlmCall, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { SettingsScope } from '@deepseek-ai/dsh-settings'
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'harness-comfyui-image-reader': { kind: 'harness-comfyui-image-reader' }
+  }
+}
 
 import {
   activeImageReaderProfile,
   IMAGE_READER_PROMPT_MAX_LENGTH,
   type ImageReaderProfile,
-  type ImageReaderSettingsSection,
 } from '../../image-reader/settings.ts'
 import {
   ImageReaderError,
@@ -20,6 +24,7 @@ import {
   runtimeImageReaderFailureMessage,
 } from './errors.ts'
 import { prepareImageReaderInput, type PreparedImageReaderInput } from './image-reader-input.ts'
+import type { ImageReaderSettingsStore } from './settings-registration.ts'
 
 const IMAGE_READER_MAX_RESPONSE_BYTES = 1_048_576
 
@@ -37,7 +42,7 @@ export interface ImageInspectionOptions {
 }
 
 export interface ImageReaderServiceOptions {
-  readonly scope: Pick<SettingsScope<ImageReaderSettingsSection>, 'get'>
+  readonly scope: Pick<ImageReaderSettingsStore, 'get'>
   readonly prepareInput?: typeof prepareImageReaderInput
   readonly attachments: {
     readonly imageLimits: ImageAttachmentLimits
@@ -304,7 +309,7 @@ export class ImageReaderService {
         { type: 'text', text: prompt },
         { type: 'image', attachment },
       ],
-      source: { kind: 'plugin', plugin: 'harness-comfyui' },
+      source: { kind: 'harness-comfyui-image-reader' },
     })]
     ensureNotAborted(signal)
     emit('request_sent')

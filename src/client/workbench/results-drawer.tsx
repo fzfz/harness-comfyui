@@ -15,11 +15,11 @@ import {
 
 import {
   Button,
-  IconChevronDownOutline14,
-  IconChevronLeftOutline14,
-  IconChevronRightOutline14,
-  IconCloseOutline16,
-  IconDownloadOutline16,
+  IconChevronDownOutlineRegular,
+  IconChevronLeftOutlineRegular,
+  IconChevronRightOutlineRegular,
+  IconCloseOutlineRegular,
+  IconDownloadOutlineRegular,
   Menu,
   Modal,
   Pill,
@@ -79,7 +79,7 @@ function FilterMenu(props: FilterMenuProps) {
             onClick={() => props.onOpen(props.id)}
           >
             <span>{selected.label}</span>
-            <IconChevronDownOutline14 />
+            <IconChevronDownOutlineRegular size={14} />
           </Button>
         )}
       />
@@ -417,7 +417,7 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
                 <div className="harness-comfyui-media-workflow-row">
                   <code>{item.runId}</code>
                   <Button
-                    variant="toolbar" size="sm" icon={<IconDownloadOutline16 />}
+                    variant="toolbar" size="sm" icon={<IconDownloadOutlineRegular size={16} />}
                     aria-label={`下载 ${item.filename} 所属 Workflow`}
                     title={RESULTS_COPY.downloadWorkflow}
                     onClick={async () => {
@@ -448,7 +448,7 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
             {viewerCurrentMedia === null ? null : (
               <Button
                 variant="outline"
-                icon={<IconDownloadOutline16 />}
+                icon={<IconDownloadOutlineRegular size={16} />}
                 aria-label={`${RESULTS_COPY.downloadOriginalMediaButtonLabelPrefix}${viewerCurrentMedia.filename}`}
                 onClick={() => downloadOriginalMedia(viewerCurrentMedia, sessionId)}
               >
@@ -489,13 +489,13 @@ function ProjectionMediaGallery({ media, sessionId }: { readonly media: readonly
       </Modal>
       <nav className="harness-comfyui-media-pagination" aria-label="本会话媒体分页">
         <Button
-          variant="outline" size="sm" icon={<IconChevronLeftOutline14 />}
+          variant="outline" size="sm" icon={<IconChevronLeftOutlineRegular size={14} />}
           aria-label={RESULTS_COPY.previousPage} disabled={currentPage <= 1}
           onClick={() => setPage(value => Math.max(1, value - 1))}
         />
         <span>第 {currentPage} / {pageCount} 页</span>
         <Button
-          variant="outline" size="sm" icon={<IconChevronRightOutline14 />}
+          variant="outline" size="sm" icon={<IconChevronRightOutlineRegular size={14} />}
           aria-label={RESULTS_COPY.nextPage} disabled={currentPage >= pageCount}
           onClick={() => setPage(value => Math.min(pageCount, value + 1))}
         />
@@ -530,7 +530,7 @@ function WorkbenchResults({ sessionId, sidebarExpanded, tabVisible, close, snaps
         </div>
         <div className="harness-comfyui-results-header-actions">
           <Button
-            variant="toolbar" size="sm" icon={<IconCloseOutline16 />}
+            variant="toolbar" size="sm" icon={<IconCloseOutlineRegular size={16} />}
             aria-label={RESULTS_COPY.close} onClick={close}
           />
         </div>

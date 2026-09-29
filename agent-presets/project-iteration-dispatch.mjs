@@ -24,6 +24,11 @@ export function apply(ctx, config) {
     },
     async execute(args, exec) {
       exec.signal.throwIfAborted()
+      for (const [field, errorMessage] of Object.entries(config.nonEmptyFieldErrors ?? {})) {
+        if (args[field] !== undefined && (typeof args[field] !== 'string' || args[field].trim().length === 0)) {
+          throw new Error(errorMessage)
+        }
+      }
       const message = [{ type: 'text', text: taskMessage(config.taskTemplate, args) }]
       if (args.agent_id !== undefined) {
         const messageId = await ctx.subagents.sendMessage(exec.agent, args.agent_id, message,

@@ -3,12 +3,9 @@ import { Service, type Context, type Logger } from '@deepseek-ai/cordis'
 import runtimeArtifacts from '../../../config/runtime-artifacts.json' with { type: 'json' }
 import { loadProfile } from '../../config/load-profile.ts'
 import {
-  createSourceSettingsDefaults,
+  configuredSourceAddress,
   readSourceAddress,
-  SOURCE_SETTINGS_NAMESPACE,
-  SOURCE_SETTINGS_SCHEMA,
-  validateSourceSettingsSection,
-  type SourceSettingsSection,
+  type SourceAddress,
 } from '../../source-settings.ts'
 import { CatalogCli } from '../catalog/catalog-cli.ts'
 import {
@@ -39,7 +36,7 @@ export { Config } from './schema.ts'
 import { Config, type CoreServices } from './schema.ts'
 
 export const name = 'harness-comfyui-core'
-export const inject = ['tools', 'workspaceRegistry', 'settings'] as const
+export const inject = ['tools', 'workspaceRegistry'] as const
 
 
 declare module '@deepseek-ai/cordis' { interface Context { harnessComfyuiCore: ComfyuiCoreService } }
@@ -82,24 +79,20 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   if (config.startupWorkspacePath !== undefined) {
     await ctx.workspaceRegistry.create(config.startupWorkspacePath)
   }
-  const sourceSettingsScope = ctx.settings.register<typeof SOURCE_SETTINGS_NAMESPACE, SourceSettingsSection>(
-    SOURCE_SETTINGS_NAMESPACE,
-    SOURCE_SETTINGS_SCHEMA as never,
-    {
-      base: createSourceSettingsDefaults(profile.source.catalogPort),
-      applies: 'live',
-      validate: validateSourceSettingsSection,
+  const sourceSettings = {
+    get(): SourceAddress {
+      return configuredSourceAddress(config.configuration, profile.source.catalogPort)
     },
-  )
+  }
   const semanticQueryClientPath = repositoryResource('scripts/source-client/imagegen-semantic-query.mjs')
   const sourceReadClientPath = repositoryResource('scripts/source-client/imagegen-comfyui-source-read.mjs')
   const catalog = new CatalogCli({
     executable: semanticQueryClientPath,
-    settings: sourceSettingsScope,
+    settings: sourceSettings,
   })
   const source = new GenerationSourceCli({
     executable: sourceReadClientPath,
-    settings: sourceSettingsScope,
+    settings: sourceSettings,
   })
   const generationLogger = ctx.logger('harness-comfyui')
   const frontendCompiler = new NodeWorkerComfyFrontend({
@@ -143,7 +136,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       runtime.close()
     }
   }, 'Generation coordinator')
-  new ComfyuiCoreService(ctx, { catalog, runtime, profile, sourceAddress: () => readSourceAddress(sourceSettingsScope), semanticQueryClientPath })
+  new ComfyuiCoreService(ctx, { catalog, runtime, profile, sourceAddress: () => readSourceAddress(sourceSettings), semanticQueryClientPath })
   ctx.effect(() => registerProjectTools(ctx, [
     createTemplateResolverTool(catalog),
     createLoraResolverTool(catalog),

@@ -623,7 +623,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
       </header>
 
       {settings.status === 'loading' ? <p role="status">正在读取图片读取设置…</p> : null}
-      {settings.status === 'unavailable' ? <p role="alert">当前 Harness 环境没有提供可写的图片读取设置。</p> : null}
+      {settings.status === 'unavailable' ? <p role="alert">{errorCatalog.IMAGE_READER_SETTINGS_UNAVAILABLE.reason}{errorCatalog.IMAGE_READER_SETTINGS_UNAVAILABLE.next_step}</p> : null}
       {settings.status === 'ready' && !settings.writable ? <p role="alert">当前图片读取设置为只读；当前配置的修改不能保存。</p> : null}
       {catalogStatus === 'error' ? <p role="alert">系统模型目录读取失败：{catalogError} 请点击“刷新系统模型”重试。OpenAI 兼容配置仍可编辑。</p> : null}
       {modelCatalog?.failures.map(failure => (

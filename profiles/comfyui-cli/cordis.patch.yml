@@ -6,10 +6,10 @@
 - id: headless-runner
   disabled: true
 - insert:
-    - id: agent-presets
-      name: '@deepseek-ai/dsh-agent-presets'
+    - id: agent-preset-registry
+      name: '@deepseek-ai/dsh-agent-preset-registry'
       config:
-        default: standard
+        default: harness-comfyui-cli-candidate
     - id: harness-comfyui-cli-runner
       name: harness-comfyui/cli-runner
       inject: [headlessStartup, harnessComfyuiCli, workspaceRegistry, agentPresets]

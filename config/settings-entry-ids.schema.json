@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness ComfyUI Settings Profile entry IDs",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["core", "imageReader"],
+  "properties": {
+    "core": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "imageReader": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+  }
+}

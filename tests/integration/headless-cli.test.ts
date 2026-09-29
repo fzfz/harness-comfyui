@@ -27,7 +27,7 @@ describe('pure DSH managed CLI', () => {
       create: async () => ({ id: 'workspace', sessionIds: ['session'] }),
       resolveByPath: async () => ({ id: 'workspace', sessionIds: ['session'] }),
     } as never)
-    ctx.provide('settings', { register: (_name: string, _schema: unknown, options: { base: unknown }) => ({ get: () => options.base }), describe: () => [] } as never)
+    ctx.provide('settings', { describe: () => [], replace: async () => undefined } as never)
     ctx.provide('attachments', {} as never)
     ctx.provide('llm', { listProviders: () => [], listModels: async () => [] } as never)
     try {

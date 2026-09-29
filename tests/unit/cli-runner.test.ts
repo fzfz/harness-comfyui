@@ -8,7 +8,7 @@ function fixture(events: unknown[] = []) {
   const ctx = {
     get: vi.fn(() => ({ await: async (): Promise<void> => undefined })),
     agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
-    agentPresets: { mount: vi.fn(async () => undefined) },
+    agentPresets: { mount: vi.fn(async (_ctx: unknown, id: string) => ({ id })) },
     agents: { create: vi.fn(async (options: any) => { await options.setup(ctx); return { agent } }) },
     sessions: { flush: vi.fn(async () => undefined) }, appExit: vi.fn(),
   }
@@ -28,6 +28,7 @@ describe('pure CLI task runner', () => {
       expect(f.ctx.agentPresets.mount).toHaveBeenCalledWith(f.ctx, 'harness-comfyui-cli-candidate')
       expect(installModelSelection).toHaveBeenCalledWith(f.ctx, { current: { provider: 'test', model: 'test' }, assembled: undefined })
       expect(f.ctx.agents.create.mock.calls[0]![0].meta.cwd).toBe(process.cwd())
+      expect(f.ctx.agents.create.mock.calls[0]![0].meta.agentPreset).toBe('harness-comfyui-cli-candidate')
       expect(f.agent.followup).toHaveBeenCalledOnce()
       expect(f.ctx.sessions.flush).toHaveBeenCalledWith(f.agent.session)
       expect(stdout).toHaveBeenCalledWith('done\n')

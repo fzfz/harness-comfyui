@@ -11,6 +11,7 @@ import {
   parseGenerationProjectionRequest,
   parseGenerationMediaViewerCurrentMessage,
 } from '../../src/generation/contract.ts'
+import { GENERATION_REMOTE } from '../../src/generation/remote.ts'
 
 const projection = {
   sessionId: 'session_1',
@@ -27,6 +28,15 @@ const projection = {
 } as const
 
 describe('Generation projection contract', () => {
+  it('exposes strict request and result parsers through the current Typert factories', () => {
+    const descriptor = GENERATION_REMOTE.descriptors[0]
+    expect(descriptor.parameters[0].codec.create().parse({ sessionId: 'session_1', turn: null }))
+      .toEqual({ sessionId: 'session_1', turn: null })
+    expect(descriptor.result.create().parse(projection)).toEqual(projection)
+    expect(() => descriptor.parameters[0].codec.create().parse({ sessionId: '', turn: null })).toThrow()
+    expect(() => descriptor.result.create().parse({ ...projection, runs: null })).toThrow()
+  })
+
   it('parses only the closed Session Media Viewer current-media message', () => {
     const message = {
       type: GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE,

@@ -27,7 +27,7 @@ async function writePackage(nodeModules, name, version, bin) {
 function versionSatisfies(version, range) {
   if (range === version) return true
   if (range === '^2.0.0') return /^2\./u.test(version)
-  if (range === '>=0.1.5-rc.2 <0.1.6') return version === '0.1.5-rc.2'
+  if (range === '>=0.1.7-rc.2 <0.1.8') return version === '0.1.7-rc.2'
   return false
 }
 
@@ -52,9 +52,9 @@ async function fixture() {
   }
   const candidateManifest = {
     name: 'dsh-plugin-desktop',
-    version: '2.0.11',
+    version: '2.0.15',
     dependencies: {
-      '@deepseek-ai/dsh': '0.1.5-rc.2',
+      '@deepseek-ai/dsh': '0.1.7-rc.2',
       'fixture-host': '2.1.0',
       react: '18.3.1',
     },
@@ -76,7 +76,7 @@ async function fixture() {
     writePackage(mainNodeModules, 'typescript', '6.0.3', { tsc: 'bin/tsc' }),
     writePackage(candidateNodeModules, 'fixture-host', '2.1.0'),
     writePackage(candidateNodeModules, 'react', '18.3.1'),
-    writePackage(candidateNodeModules, '@deepseek-ai/dsh', '0.1.5-rc.2'),
+    writePackage(candidateNodeModules, '@deepseek-ai/dsh', '0.1.7-rc.2'),
   ])
   await mkdir(resolve(candidateNodeModules, '@deepseek-ai/dsh/lib'), { recursive: true })
   await writeFile(resolve(candidateNodeModules, '@deepseek-ai/dsh/lib/bin.js'), '#!/usr/bin/env node\nprocess.stdout.write("candidate-dsh")\n')
@@ -96,11 +96,11 @@ async function fixture() {
 
 describe('Desktop dependency view', () => {
   it.each([
-    ['0.1.5-rc.1', false],
-    ['0.1.5-rc.2', true],
-    ['0.1.5', true],
-    ['0.1.6-alpha.1', false],
-    ['0.1.6', false],
+    ['0.1.7-rc.1', false],
+    ['0.1.7-rc.2', true],
+    ['0.1.7', true],
+    ['0.1.8-alpha.1', false],
+    ['0.1.8', false],
   ])('validates DSH %s against the declared peer range (accepted=%s)', async (version, accepted) => {
     const value = await fixture()
     const candidateRequire = createTestDesktopRequire(await loadTestDesktopContext())
@@ -139,7 +139,7 @@ describe('Desktop dependency view', () => {
     const requireFromView = createRequire(resolve(value.repositoryRoot, 'package.json'))
     expect(requireFromView('sharp')).toBe('sharp@0.35.4')
     expect(requireFromView('fixture-host')).toBe('fixture-host@2.1.0')
-    expect(requireFromView('@deepseek-ai/dsh')).toBe('@deepseek-ai/dsh@0.1.5-rc.2')
+    expect(requireFromView('@deepseek-ai/dsh')).toBe('@deepseek-ai/dsh@0.1.7-rc.2')
     expect(spawnSync(resolve(value.repositoryRoot, 'node_modules/.bin/tsc'), ['--version'], { encoding: 'utf8' })).toMatchObject({
       status: 0,
       stdout: 'Version 6.0.3\n',

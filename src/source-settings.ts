@@ -1,7 +1,8 @@
 import Schema from '@deepseek-ai/schemastery'
-import type { SettingsScope } from '@deepseek-ai/dsh-settings'
+import settingsEntryIds from '../config/settings-entry-ids.json' with { type: 'json' }
 
 export const SOURCE_SETTINGS_NAMESPACE = 'harness-comfyui-source'
+export const SOURCE_PROFILE_ENTRY_ID = settingsEntryIds.core
 export const SOURCE_SETTINGS_SECTION_ID = 'harness-comfyui-settings'
 export const SOURCE_SETTINGS_DEFAULT_URL = 'http://127.0.0.1'
 
@@ -32,11 +33,13 @@ export interface SourceSettingsSection {
 
 export type SourceSettingsView = SourceSettingsSection
 
+export const SOURCE_ADDRESS_SCHEMA = Schema.object({
+  url: Schema.string().min(1).max(2048).required(),
+  port: Schema.natural().min(1).max(65535).required(),
+})
+
 export const SOURCE_SETTINGS_SCHEMA = Schema.object({
-  configuration: Schema.object({
-    url: Schema.string().min(1).max(2048).required(),
-    port: Schema.natural().min(1).max(65535).required(),
-  }).required(),
+  configuration: SOURCE_ADDRESS_SCHEMA.required(),
 })
 
 export function createSourceSettingsDefaults(port: number): SourceSettingsSection {
@@ -103,10 +106,19 @@ export function decodeSourceSettingsView(value: unknown): SourceSettingsView | u
 }
 
 export function readSourceAddress(
-  scope: Pick<SettingsScope<SourceSettingsSection>, 'get'>,
+  scope: { get(): SourceAddress },
 ): SourceAddress {
-  const { url, port } = scope.get().configuration
+  const { url, port } = scope.get()
   return Object.freeze({ url, port })
+}
+
+export function configuredSourceAddress(
+  configuration: { get(): SourceAddress } | undefined,
+  profilePort: number,
+): SourceAddress {
+  const address = configuration?.get() ?? createSourceSettingsDefaults(profilePort).configuration
+  validateSourceSettingsSection({ configuration: address })
+  return Object.freeze({ url: address.url, port: address.port })
 }
 
 export function sourceOrigin(address: SourceAddress): string {

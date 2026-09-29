@@ -42,22 +42,8 @@ function provideProjectHostDependencies(ctx: Context): void {
     prepareCall: vi.fn(),
   } as never)
   ctx.provide('settings' as never, {
-    register: vi.fn((namespace: string) => ({
-      get: vi.fn(() => namespace === 'harness-comfyui-source'
-        ? { configuration: { url: 'https://catalog.example.com', port: 18443 } }
-        : {
-          configuration: {
-            activeProfileId: 'default',
-            profiles: [{
-              id: 'default', name: '默认配置', connectionType: 'runtime', provider: '', endpoint: '', model: '',
-              hasApiKey: false, defaultPrompt: '描述图片', temperature: 0.2, maxTokens: 2048,
-            }],
-          },
-          credentials: {},
-        }),
-      replace: vi.fn(async () => undefined),
-    })),
     describe: vi.fn(() => []),
+    replace: vi.fn(async () => undefined),
   } as never)
 }
 
@@ -109,7 +95,9 @@ describe('DSH Desktop managed shell capability', () => {
       fibers.push(await ctx.plugin(subprocess.default, {}))
       fibers.push(await ctx.plugin(bash.default, {}))
       fibers.push(await ctx.plugin(toolBash, { enableRunInBackground: true }))
-      fibers.push(await ctx.plugin(projectPlugin, { configurationProfile: 'production' }))
+      fibers.push(await ctx.plugin(projectPlugin, {
+        configurationProfile: 'production',
+      } as never))
 
       const callId = 'call_managed_shell_1'
       const result = await (ctx as Context & { tools: { execute(input: unknown): Promise<unknown> } }).tools.execute({
@@ -151,8 +139,8 @@ describe('DSH Desktop managed shell capability', () => {
         },
       })
       expect(semanticQueryCliPath).toBe(resolve(process.cwd(), 'scripts/source-client/imagegen-semantic-query.mjs'))
-      expect(sourceUrl).toBe('https://catalog.example.com')
-      expect(sourcePort).toBe('18443')
+      expect(sourceUrl).toBe('http://127.0.0.1')
+      expect(sourcePort).toBe('18093')
       expect(JSON.parse(responseText!)).toEqual({
         runs: [{
           run_id: 'run_missing',

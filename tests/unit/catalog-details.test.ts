@@ -4,7 +4,7 @@ import { CatalogCli, type CatalogCliProcess } from '../../src/host/catalog/catal
 const work = { id: 1, name: '作品', aliases_json: ['别名'], category_name: '游戏', character_names: ['角色'], cover_url: null, sample_image_urls: [] }
 function cli(source: unknown) {
   const process = vi.fn<CatalogCliProcess>(async () => ({ exitCode: 0, stderr: '', stdout: JSON.stringify({ status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [source] }) }))
-  return { process, api: new CatalogCli({ executable: '/source/catalog.mjs', settings: { get: () => ({ configuration: { url: 'http://127.0.0.1', port: 18093 } }) }, process }) }
+  return { process, api: new CatalogCli({ executable: '/source/catalog.mjs', settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, process }) }
 }
 describe('Catalog details', () => {
   it('resolves a work by identity and projects its own readable fields', async () => {
@@ -41,8 +41,8 @@ it('preserves nulls, empty lists and multiline text, with strict remote fields',
   expect(detail.fields[3]?.value).toBeNull()
   expect(parseCatalogDetailsResult({ ok: true, value: detail })).toEqual({ ok: true, value: detail })
   const descriptor = CATALOG_REMOTE.descriptors.find(item => item.method === 'details')!
-  expect((descriptor.parameters[0]!.codec as { schema: { parse: (value: unknown) => unknown } }).schema.parse({ kind: 'work', id: '1' })).toEqual({ kind: 'work', id: '1' })
-  expect((descriptor.result as { schema: { parse: (value: unknown) => unknown } }).schema.parse({ ok: true, value: detail })).toEqual({ ok: true, value: detail })
+  expect((descriptor.parameters[0]!.codec as { create: () => { parse: (value: unknown) => unknown } }).create().parse({ kind: 'work', id: '1' })).toEqual({ kind: 'work', id: '1' })
+  expect((descriptor.result as { create: () => { parse: (value: unknown) => unknown } }).create().parse({ ok: true, value: detail })).toEqual({ ok: true, value: detail })
   for (const bad of [null, { ...detail, extra: true }, { ...detail, fields: [] }, { ...detail, fields: [{ key: 'secret', value: 'x' }, ...detail.fields.slice(1)] }]) expect(() => parseCatalogDetails(bad)).toThrow()
 })
 it('keeps zero-valued tag counts and numeric categories', async () => {
@@ -82,6 +82,6 @@ it.each([
   { exitCode: 0, stderr: '', stdout: JSON.stringify({ status: 'ok', message: null, results: [], page: 1, page_size: 1, total_count: 0 }), code: 'CATALOG_PROTOCOL_ERROR' },
   { exitCode: 1, stderr: 'unavailable', stdout: '', code: 'CATALOG_QUERY_FAILED' },
 ])('reports missing records and failed source queries %#', async ({ code, ...result }) => {
-  const api = new CatalogCli({ executable: '/source/catalog.mjs', settings: { get: () => ({ configuration: { url: 'http://127.0.0.1', port: 18093 } }) }, process: async () => result })
+  const api = new CatalogCli({ executable: '/source/catalog.mjs', settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, process: async () => result })
   await expect(api.details({ kind: 'work', id: '1' }, new AbortController().signal)).rejects.toMatchObject({ code })
 })

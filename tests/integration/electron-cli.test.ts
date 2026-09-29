@@ -14,7 +14,7 @@ afterEach(async () => {
 })
 describe.each([['catalog', runCatalogCliProcess], ['source', runSourceCliProcess]] as const)('%s CLI runtime', (_name, execute) => {
   it('preserves native executable environment under Electron', async () => {
-    Object.defineProperty(process.versions, 'electron', { value: '43.3.0', configurable: true })
+    Object.defineProperty(process.versions, 'electron', { value: '44.0.0', configurable: true })
     const inheritedMode = process.env.ELECTRON_RUN_AS_NODE
     const result = await execute(process.execPath, ['-e', 'console.log(process.env.ELECTRON_RUN_AS_NODE ?? "unset")'], new AbortController().signal)
     expect(process.env.ELECTRON_RUN_AS_NODE).toBe(inheritedMode)
@@ -22,7 +22,7 @@ describe.each([['catalog', runCatalogCliProcess], ['source', runSourceCliProcess
     expect(result.stdout.trim()).toBe(inheritedMode ?? 'unset')
   })
   it.each([false, true])('executes the script with Electron runtime = %s', async electron => {
-    if (electron) Object.defineProperty(process.versions, 'electron', { value: '43.3.0', configurable: true })
+    if (electron) Object.defineProperty(process.versions, 'electron', { value: '44.0.0', configurable: true })
     else Reflect.deleteProperty(process.versions, 'electron')
     directory = await mkdtemp(join(tmpdir(), 'harness-cli-runtime-'))
     const script = join(directory, 'probe.mjs')

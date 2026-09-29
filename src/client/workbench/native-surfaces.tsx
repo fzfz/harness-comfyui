@@ -4,12 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import {
   Button,
-  IconCheckOutline16,
-  IconChevronDownOutline14,
-  IconChevronLeftOutline14,
-  IconChevronRightOutline14,
-  IconSearchOutline16,
-  IconSparkle16,
+  IconCheckOutlineRegular,
+  IconChevronDownOutlineRegular,
+  IconChevronLeftOutlineRegular,
+  IconChevronRightOutlineRegular,
+  IconSearchOutlineRegular,
+  IconSparkleRegular,
   Input,
   Menu,
   Modal,
@@ -61,7 +61,7 @@ export function WorkbenchEntry({ wide, workbench }: WorkbenchEntryProps) {
       className="harness-comfyui-sidebar-entry"
       variant="toolbar"
       size="sm"
-      icon={<IconSparkle16 />}
+      icon={<IconSparkleRegular size={16} />}
       aria-label={WORKBENCH_COPY.entry}
       aria-pressed={active}
       title={WORKBENCH_COPY.entry}
@@ -469,7 +469,7 @@ function WorkbenchDockSession({
                 onClick={() => setBaseModelMenuOpen(open => !open)}
               >
                 <span>{activeBaseModelLabel}</span>
-                <IconChevronDownOutline14 />
+                <IconChevronDownOutlineRegular size={14} />
               </Button>
             )}
           />
@@ -483,7 +483,7 @@ function WorkbenchDockSession({
                 key={definition.kind}
                 variant={definition.kind === selectedKind ? 'primary' : 'toolbar'}
                 size="sm"
-                icon={definition.kind === selectedKind ? <IconCheckOutline16 /> : undefined}
+                icon={definition.kind === selectedKind ? <IconCheckOutlineRegular size={16} /> : undefined}
                 aria-pressed={definition.kind === selectedKind}
                 onClick={() => selectKind(definition.kind)}
               >
@@ -500,7 +500,7 @@ function WorkbenchDockSession({
               }}
             >
               <Input
-                icon={<IconSearchOutline16 />}
+                icon={<IconSearchOutlineRegular size={16} />}
                 value={queryText}
                 maxLength={200}
                 placeholder={`${WORKBENCH_COPY.search}${catalogDefinition(selectedKind).label}`}
@@ -609,7 +609,7 @@ function WorkbenchDockSession({
                 disabled={galleryIndex === 0}
                 onClick={() => moveGallery(-1)}
               >
-                <IconChevronLeftOutline14 />
+                <IconChevronLeftOutlineRegular size={14} />
               </Button>
               <div
                 ref={galleryFocusRef}
@@ -637,7 +637,7 @@ function WorkbenchDockSession({
                 disabled={galleryIndex >= galleryImageUrls.length - 1}
                 onClick={() => moveGallery(1)}
               >
-                <IconChevronRightOutline14 />
+                <IconChevronRightOutlineRegular size={14} />
               </Button>
             </div>
             <span className="harness-comfyui-gallery-count" aria-live="polite">

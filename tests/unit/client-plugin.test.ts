@@ -2,18 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Button: () => null,
-  IconCheckOutline16: () => null,
-  IconChevronDownOutline14: () => null,
-  IconChevronLeftOutline14: () => null,
-  IconChevronRightOutline14: () => null,
-  IconCloseOutline16: () => null,
-  IconSearchOutline16: () => null,
-  IconSparkle16: () => null,
+  IconCheckOutlineRegular: () => null,
+  IconChevronDownOutlineRegular: () => null,
+  IconChevronLeftOutlineRegular: () => null,
+  IconChevronRightOutlineRegular: () => null,
+  IconCloseOutlineRegular: () => null,
+  IconDownloadOutlineRegular: () => null,
+  IconSearchOutlineRegular: () => null,
+  IconSparkleRegular: () => null,
   Input: () => null,
   Menu: () => null,
   Modal: () => null,
   Pill: () => null,
-  IconWarningOutline16: () => null,
+  IconWarningOutlineRegular: () => null,
   Toast: () => null,
 }))
 
@@ -54,7 +55,15 @@ afterEach(() => {
 function installImmediateInject(context: Record<string, any>): void {
   context.sidebarRight ??= { openTab: vi.fn() }
   context.sidebarRightTabs ??= { register: vi.fn(() => vi.fn()) }
+  context.remote.harnessComfyuiCatalog.sourceAddress ??= vi.fn(async () => ({
+    ok: true,
+    value: { ok: true, value: { url: 'http://127.0.0.1', port: 18093 } },
+  }))
   context.remote.harnessComfyuiImageReader ??= {
+    configuration: vi.fn(async () => ({
+      ok: true,
+      value: context.configForms.get('harness-comfyui-image-reader').getSnapshot().value.configuration,
+    })),
     models: vi.fn(async () => ({ ok: true, value: { groups: [], failures: [] } })),
     saveProfile: vi.fn(async (request: any) => ({
       ok: true,
@@ -69,12 +78,12 @@ function installImmediateInject(context: Record<string, any>): void {
       ok: true,
       value: {
         configuration: {
-          ...context.settingsScope.bind().getSnapshot().value.configuration,
+          ...context.configForms.get('harness-comfyui-image-reader').getSnapshot().value.configuration,
           activeProfileId: request.profileId,
         },
       },
     })),
-    deleteProfile: vi.fn(async () => ({ ok: true, value: { configuration: context.settingsScope.bind().getSnapshot().value.configuration } })),
+    deleteProfile: vi.fn(async () => ({ ok: true, value: { configuration: context.configForms.get('harness-comfyui-image-reader').getSnapshot().value.configuration } })),
   }
   const imageReaderScope = {
       getSnapshot: () => ({
@@ -91,9 +100,9 @@ function installImmediateInject(context: Record<string, any>): void {
         base: {}, user: {}, revision: 0, writable: true, mode: 'host',
       }),
       subscribe: () => vi.fn(),
-      mutate: vi.fn(async () => undefined),
-      set: vi.fn(async () => undefined),
-      unset: vi.fn(async () => undefined),
+      mutate: vi.fn(async () => true),
+      set: vi.fn(async () => true),
+      unset: vi.fn(async () => true),
   }
   const sourceScope = {
     getSnapshot: () => ({
@@ -106,11 +115,13 @@ function installImmediateInject(context: Record<string, any>): void {
       mode: 'host',
     }),
     subscribe: () => vi.fn(),
-    mutate: vi.fn(async () => undefined),
+    mutate: vi.fn(async () => true),
+    set: vi.fn(async () => true),
+    unset: vi.fn(async () => true),
   }
-  context.settingsScope ??= {
-    bind: vi.fn((options?: { namespace?: string }) => (
-      options?.namespace === 'harness-comfyui-source' ? sourceScope : imageReaderScope
+  context.configForms ??= {
+    get: vi.fn((entryId: string) => (
+      entryId === 'harness-comfyui-core' ? sourceScope : imageReaderScope
     )),
   }
   context.get = vi.fn((service: string) => {
@@ -188,7 +199,7 @@ describe('Harness Client plugin registration', () => {
       conversation: { input: { for: inputFor } },
       remote: {
         $mount: vi.fn(async () => remoteDispose),
-        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', fields: [] } } })) },
+        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, sourceAddress: vi.fn(async () => ({ ok: true, value: { ok: true, value: { url: 'http://127.0.0.1', port: 18093 } } })), details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', fields: [] } } })) },
         harnessComfyuiGeneration: { list: remoteGenerationList },
       },
       sidebarRight: { openTab: vi.fn() },
@@ -199,7 +210,7 @@ describe('Harness Client plugin registration', () => {
 
     expect(name).toBe('harness-comfyui')
     expect(inject).toEqual([
-      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'settingsScope',
+      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms',
     ])
     expect(registerResultsTab).toHaveBeenCalledWith({
       id: WORKBENCH_RESULTS_TAB.id,

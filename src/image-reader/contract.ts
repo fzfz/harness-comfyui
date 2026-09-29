@@ -41,6 +41,12 @@ export interface ImageReaderModelCatalog {
   readonly failures: readonly ImageReaderModelCatalogFailure[]
 }
 
+export function parseImageReaderCurrentConfiguration(value: unknown): ImageReaderConfiguration {
+  const configuration = decodeImageReaderConfiguration(value)
+  if (configuration === undefined) throw new TypeError('The ImageReader Host returned an invalid configuration. Check the ImageReader plugin configuration and reopen Settings.')
+  return configuration
+}
+
 export type ImageReaderCredentialAction =
   | { readonly action: 'keep' }
   | { readonly action: 'replace'; readonly apiKey: string }

@@ -7,15 +7,22 @@ function includesSession(workspace, sessionId) {
   return workspace.sessionIds.some(id => String(id) === String(sessionId))
 }
 
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 async function sessionRealpath(cwd, label, sessionId) {
   if (typeof cwd !== 'string' || cwd.length === 0) {
-    throw new Error(`cannot register subagent Session ${String(sessionId)}: ${label} Session has no cwd`)
+    const action = label === 'child'
+      ? 'set the child Session cwd to its parent Session cwd'
+      : 'set the parent Session cwd to a directory within its Workspace'
+    throw new Error(`Registration of subagent Session ${String(sessionId)} failed because its ${label} Session has no cwd; ${action}.`)
   }
   try {
     return await realpath(cwd)
   } catch (error) {
     throw new Error(
-      `cannot register subagent Session ${String(sessionId)}: ${label} Session cwd is unavailable at ${cwd}`,
+      `Registration of subagent Session ${String(sessionId)} failed because its ${label} Session cwd at ${cwd} is unavailable: ${errorMessage(error)}; check that the path exists and is accessible, then retry.`,
       { cause: error },
     )
   }
@@ -30,7 +37,7 @@ export function apply(ctx) {
     const parent = ctx.agents.get(childHeader.parentSession)
     if (parent === undefined || parent === null) {
       throw new Error(
-        `cannot register subagent Session ${String(childSessionId)}: parent Session ${String(childHeader.parentSession)} was not found`,
+        `Registration of subagent Session ${String(childSessionId)} failed because parent Session ${String(childHeader.parentSession)} was not found; set the child Session header.parentSession field to an existing parent Session ID.`,
       )
     }
 
@@ -41,7 +48,7 @@ export function apply(ctx) {
     ])
     if (childCwd !== parentCwd) {
       throw new Error(
-        `cannot register subagent Session ${String(childSessionId)}: child cwd ${childCwd} differs from parent cwd ${parentCwd}`,
+        `Registration of subagent Session ${String(childSessionId)} failed because child cwd ${childCwd} differs from parent cwd ${parentCwd}; set the child Session cwd to the parent cwd.`,
       )
     }
 
@@ -50,18 +57,18 @@ export function apply(ctx) {
       workspace = await ctx.workspaceRegistry.resolveByPath(parentHeader.cwd)
     } catch (error) {
       throw new Error(
-        `cannot register subagent Session ${String(childSessionId)}: Workspace lookup failed for parent cwd ${parentHeader.cwd}`,
+        `Registration of subagent Session ${String(childSessionId)} failed because Workspace lookup for parent cwd ${parentHeader.cwd} failed with ${errorMessage(error)}; check the Workspace registry and parent Session cwd, then retry.`,
         { cause: error },
       )
     }
     if (workspace === undefined || workspace === null) {
       throw new Error(
-        `cannot register subagent Session ${String(childSessionId)}: no Workspace contains parent cwd ${parentHeader.cwd}`,
+        `Registration of subagent Session ${String(childSessionId)} failed because no Workspace contains parent cwd ${parentHeader.cwd}; register a Workspace containing that cwd or set the parent Session cwd to a directory in an existing Workspace.`,
       )
     }
     if (!includesSession(workspace, parent.session.id)) {
       throw new Error(
-        `cannot register subagent Session ${String(childSessionId)}: parent Session ${String(parent.session.id)} is not attached to Workspace ${String(workspace.id)}`,
+        `Registration of subagent Session ${String(childSessionId)} failed because parent Session ${String(parent.session.id)} is not attached to Workspace ${String(workspace.id)}; attach the parent Session to that Workspace.`,
       )
     }
     if (!includesSession(workspace, childSessionId)) {
@@ -69,7 +76,7 @@ export function apply(ctx) {
         await workspace.attachSession(childSessionId)
       } catch (error) {
         throw new Error(
-          `cannot register subagent Session ${String(childSessionId)} with Workspace ${String(workspace.id)}`,
+          `Registration of subagent Session ${String(childSessionId)} failed because Workspace ${String(workspace.id)} could not attach the child Session: ${errorMessage(error)}; check the Workspace Session record and retry the attachment.`,
           { cause: error },
         )
       }

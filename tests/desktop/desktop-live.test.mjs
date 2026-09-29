@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import repositorySkillCatalogFixture from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import productAgentConfig from '../../config/product-agent.json' with { type: 'json' }
+import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 
 import {
   desktopWorktreeStatus,
@@ -415,39 +416,100 @@ async function waitForValue(page, expression, accept, timeoutMs = 60_000) {
 }
 
 async function clickMainFrameElement(page, selector) {
-  const result = await page.command('Runtime.evaluate', {
-    expression: `(() => {
-      const element = document.querySelector(${JSON.stringify(selector)})
-      if (!(element instanceof HTMLElement)) return false
-      element.scrollIntoView({ block: 'center', inline: 'center' })
-      if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
-        || element.matches(':disabled, [aria-disabled="true"]')) return false
-      const bounds = element.getBoundingClientRect()
-      const x = bounds.left + bounds.width / 2
-      const y = bounds.top + bounds.height / 2
-      if (bounds.width <= 0 || bounds.height <= 0 || x < 0 || x > innerWidth || y < 0 || y > innerHeight) return false
-      const hit = document.elementFromPoint(x, y)
-      if (hit !== element && !element.contains(hit)) return false
-      element.click()
-      return true
-    })()`,
-    returnByValue: true,
-    userGesture: true,
-  })
-  if (result.exceptionDetails !== undefined || result.result.value !== true) {
-    throw new Error(`Desktop element click failed: ${selector}`)
-  }
+  const deadline = Date.now() + 3_000
+  let state
+  do {
+    const result = await page.command('Runtime.evaluate', {
+      expression: `(() => {
+        const element = document.querySelector(${JSON.stringify(selector)})
+        if (!(element instanceof HTMLElement)) return { found: false, clicked: false }
+        element.scrollIntoView({ block: 'center', inline: 'center' })
+        const visible = element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+        const disabled = element.matches(':disabled, [aria-disabled="true"]')
+        const bounds = element.getBoundingClientRect()
+        const x = bounds.left + bounds.width / 2
+        const y = bounds.top + bounds.height / 2
+        const inViewport = bounds.width > 0 && bounds.height > 0
+          && x >= 0 && x <= innerWidth && y >= 0 && y <= innerHeight
+        const hit = inViewport ? document.elementFromPoint(x, y) : null
+        const hitTarget = hit ? {
+          tag: hit.tagName,
+          ariaLabel: hit.getAttribute('aria-label'),
+          className: typeof hit.className === 'string' ? hit.className : null,
+        } : null
+        const state = {
+          found: true, visible, disabled,
+          bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+          inViewport, hit: hit === element || element.contains(hit), hitTarget,
+          visibilityChecks: {
+            default: element.checkVisibility(),
+            opacity: element.checkVisibility({ checkOpacity: true }),
+            opacityAndCSS: visible,
+          },
+          styleChain: (() => {
+            const chain = []
+            for (let node = element; node instanceof HTMLElement; node = node.parentElement) {
+              const style = getComputedStyle(node)
+              chain.push({
+                tag: node.tagName,
+                className: typeof node.className === 'string' ? node.className : null,
+                opacity: style.opacity,
+                visibility: style.visibility,
+                display: style.display,
+                animations: node.getAnimations({ subtree: false }).map(animation => ({
+                  currentTime: animation.currentTime,
+                  playState: animation.playState,
+                })),
+              })
+            }
+            return chain
+          })(),
+          clicked: false,
+        }
+        if (visible && !disabled && inViewport && state.hit) {
+          element.click()
+          state.clicked = true
+        }
+        return state
+      })()`,
+      returnByValue: true,
+      userGesture: true,
+    })
+    state = result.exceptionDetails === undefined
+      ? result.result.value
+      : { exception: result.exceptionDetails.text ?? 'Runtime.evaluate failed' }
+    if (state?.clicked === true) return
+    await delay(100)
+  } while (Date.now() < deadline)
+  throw new Error(`Desktop element click failed: ${selector}; last state: ${JSON.stringify(state)}`)
 }
 
 async function openSettings(page) {
   await waitForValue(
     page,
     `(() => {
+      if ([...document.querySelectorAll('[role="dialog"]')]
+        .some(dialog => dialog.textContent?.includes('ComfyUI'))) return true
       const trigger = [...document.querySelectorAll('button[aria-haspopup="dialog"][aria-expanded]')]
         .find(node => /^(设置|Settings)$/.test(node.getAttribute('aria-label') ?? ''))
-      if (!trigger) return false
-      trigger.click()
-      return true
+      if (trigger) { trigger.click(); return true }
+      const account = [...document.querySelectorAll('button[aria-haspopup="menu"][aria-expanded]')]
+        .find(node => /^(账号菜单|Account menu)$/.test(node.getAttribute('aria-label') ?? ''))
+      account?.click()
+      return account !== undefined
+    })()`,
+    value => value === true,
+  )
+  await waitForValue(
+    page,
+    `(() => {
+      if ([...document.querySelectorAll('[role="dialog"]')]
+        .some(dialog => dialog.textContent?.includes('ComfyUI'))) return true
+      const action = [...document.querySelectorAll('[role="menuitem"]')]
+        .find(node => [...node.children].some(child =>
+          child.tagName === 'SPAN' && /^(设置|Settings)$/.test(child.textContent?.trim() ?? '')))
+      action?.click()
+      return action !== undefined
     })()`,
     value => value === true,
   )
@@ -541,6 +603,7 @@ async function verifyCustomProviderReasoning(page, context, providers) {
     return !!button
   })()`)).toBe(true)
   for (const provider of Object.values(providers)) {
+    for (let attempt = 0; attempt < 2; attempt++) {
     await waitForValue(page, `(() => {
       const button = [...document.querySelectorAll('button')].find(node =>
         node.getAttribute('aria-label')?.startsWith('编辑 ')
@@ -557,7 +620,11 @@ async function verifyCustomProviderReasoning(page, context, providers) {
     for (const [index, model] of provider.models.entries()) {
       if (!model.reasoning) continue
       const label = `推理等级 ${index + 1}`
-      await page.evaluate(`(document.querySelector('button[aria-label="模型设置 ${index + 1}"]')?.click(), true)`)
+      expect(await page.evaluate(`(() => {
+        const button = document.querySelector('button[aria-label="模型选项 ${index + 1}"]')
+        button?.click()
+        return !!button
+      })()`)).toBe(true)
       expect(await waitForValue(page, `document.querySelector('input[aria-label=${JSON.stringify(label)}]')?.value`,
         value => value !== undefined, 3_000)).toBe('low, medium, high, max')
       await page.evaluate(`(() => {
@@ -566,9 +633,32 @@ async function verifyCustomProviderReasoning(page, context, providers) {
         input.dispatchEvent(new Event('input', { bubbles: true }))
       })()`)
     }
-    await page.evaluate(`([...document.querySelectorAll('.dshProviderEditorStickyFooter button')]
-      .find(node => node.textContent?.trim() === '保存')?.click(), true)`)
+    const saveState = await page.evaluate(`(() => {
+      const footer = document.querySelector('.dshProviderEditorStickyFooter')
+      const button = [...(footer?.querySelectorAll('button') ?? [])]
+        .find(node => node.textContent?.trim() === '保存')
+      if (button && !button.disabled) button.click()
+      return { found: !!button, disabled: button?.disabled,
+        errors: [...document.querySelectorAll('[role="dialog"] p')].map(node => node.textContent?.trim()).filter(Boolean) }
+    })()`)
+    expect(saveState, `Provider ${provider.displayName} save state`).toEqual(expect.objectContaining({ found: true, disabled: false }))
+    const outcome = await waitForValue(page, `(() => {
+      const footer = document.querySelector('.dshProviderEditorStickyFooter')
+      return { closed: footer === null,
+        feedback: [...(footer?.parentElement?.querySelectorAll('p') ?? [])]
+          .map(node => node.textContent?.trim()).filter(Boolean) }
+    })()`, value => value.closed === true || value.feedback.some(message => message.includes('请关闭后重新打开')), 3_000)
+    if (outcome.closed) break
+    expect(attempt, `Provider ${provider.displayName} settings conflict after reopening`).toBe(0)
+    expect(await page.evaluate(`(() => {
+      const footer = document.querySelector('.dshProviderEditorStickyFooter')
+      const cancel = [...(footer?.querySelectorAll('button') ?? [])]
+        .find(node => node.textContent?.trim() === '取消')
+      cancel?.click()
+      return !!cancel
+    })()`)).toBe(true)
     await waitForValue(page, `document.querySelector('.dshProviderEditorStickyFooter') === null`, value => value === true)
+    }
   }
   await closeSettings(page)
   expect(await page.evaluate(`(() => {
@@ -581,8 +671,14 @@ async function verifyCustomProviderReasoning(page, context, providers) {
     return selected.some(node => node.textContent?.includes('新会话'))
       && selected.every(node => !node.textContent?.includes('Desktop media session'))
   })()`, value => value === true)
-  const { parse } = createTestDesktopRequire(context)('yaml')
-  const persisted = parse(await readFile(resolve(context.dshHome, 'settings.yaml'), 'utf8'))['llm-pi-ai'].providers
+  const yaml = createTestDesktopRequire(context)('js-yaml')
+  const profileSchema = yaml.DEFAULT_SCHEMA.extend([new yaml.Type('tag:yaml.org,2002:js', {
+    kind: 'scalar', construct: expression => expression,
+  })])
+  const profilePatch = yaml.load(await readFile(resolve(context.dshHome, 'profiles', context.baseline.profile.name, 'cordis.patch.yml'), 'utf8'), {
+    schema: profileSchema,
+  })
+  const persisted = profilePatch.find(entry => entry.id === 'llm-pi-ai').config.providers
   for (const [route, provider] of Object.entries(providers)) {
     for (const model of provider.models) {
       const actual = persisted[route].models.find(candidate => candidate.id === model.id)
@@ -605,6 +701,11 @@ async function verifyCustomProviderReasoning(page, context, providers) {
         option.click()
       })()`)
       await waitForValue(page, `document.querySelector('[role="menu"][aria-label="模型与推理等级"]') === null`, value => value === true)
+      const selectedLabel = await waitForValue(page,
+        `([...document.querySelectorAll('button[aria-haspopup="menu"]')]
+          .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))?.getAttribute('aria-label') ?? '')`,
+        label => label.includes(model.name), 5_000)
+      expect(selectedLabel, `Selected model for ${route}/${model.id}`).toContain(model.name)
       await page.evaluate(`([...document.querySelectorAll('button[aria-haspopup="menu"]')]
         .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))?.click(), true)`)
       await waitForValue(page, `(() => {
@@ -615,15 +716,72 @@ async function verifyCustomProviderReasoning(page, context, providers) {
       })()`, value => value === true)
       const levels = await waitForValue(page, `[...document.querySelectorAll('[role="menuitemradio"]')].map(node => node.textContent.trim())`, value => value.length === 5)
       expect(levels).toEqual(['Default', 'Low', 'Medium', 'High', 'Max'])
+      const maxOption = `(() => {
+        const option = [...document.querySelectorAll('[role="menuitemradio"]')]
+          .find(node => node.textContent?.trim() === 'Max')
+        return { found: !!option, disabled: !!option?.disabled,
+          ariaDisabled: option?.getAttribute('aria-disabled') ?? null }
+      })()`
+      try {
+        await waitForValue(page, maxOption,
+          value => value.found && !value.disabled && value.ariaDisabled !== 'true', 3_000)
+      } catch {
+        const state = await page.evaluate(`(() => {
+          const trigger = [...document.querySelectorAll('button[aria-haspopup="menu"]')]
+            .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))
+          const menu = document.querySelector('[role="menu"][aria-label="模型与推理等级"]')
+          return {
+            option: ${maxOption},
+            label: trigger?.getAttribute('aria-label') ?? null,
+            triggerDisabled: !!trigger?.disabled,
+            menuOpen: !!menu,
+            menuText: menu?.textContent?.trim() ?? null,
+            alerts: [...document.querySelectorAll('[role="alert"], [data-sonner-toast]')]
+              .map(node => node.textContent?.trim()).filter(Boolean),
+          }
+        })()`)
+        throw new Error(`Max option unavailable for ${route}/${model.id}: ${JSON.stringify(state)}`)
+      }
+      expect(await page.evaluate(`(() => {
+        const option = [...document.querySelectorAll('[role="menuitemradio"]')]
+          .find(node => node.textContent?.trim() === 'Max')
+        if (!option || option.disabled || option.getAttribute('aria-disabled') === 'true') return false
+        option.click()
+        return true
+      })()`), `Max option for ${route}/${model.id} must be clickable`).toBe(true)
+      const reasoningState = `(() => {
+        const trigger = [...document.querySelectorAll('button[aria-haspopup="menu"]')]
+          .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))
+        const menu = document.querySelector('[role="menu"][aria-label="模型与推理等级"]')
+        const max = [...(menu?.querySelectorAll('[role="menuitemradio"]') ?? [])]
+          .find(node => node.textContent?.trim() === 'Max')
+        return {
+          label: trigger?.getAttribute('aria-label') ?? null,
+          triggerDisabled: !!trigger?.disabled,
+          menuOpen: !!menu,
+          maxFound: !!max,
+          maxDisabled: !!max?.disabled,
+          maxAriaDisabled: max?.getAttribute('aria-disabled') ?? null,
+          maxChecked: max?.getAttribute('aria-checked') ?? null,
+          menuText: menu?.textContent?.trim() ?? null,
+          alerts: [...document.querySelectorAll('[role="alert"], [data-sonner-toast]')]
+            .map(node => node.textContent?.trim()).filter(Boolean),
+        }
+      })()`
+      let selection
+      try {
+        selection = await waitForValue(page, reasoningState,
+          value => value.label?.includes('推理等级 Max'), 5_000)
+      } catch {
+        selection = await page.evaluate(reasoningState)
+      }
+      expect(selection.label, `Max selection failed for ${route}/${model.id}: ${JSON.stringify(selection)}`)
+        .toContain('推理等级 Max')
+      await waitForValue(page, `document.querySelector('[role="menu"][aria-label="模型与推理等级"]') === null`, value => value === true)
       if (route === 'cliproxy' && model.id === 'gpt-5.6-luna') {
         const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
         await writeFile(resolve(context.repositoryRoot, '.local/custom-provider-reasoning.png'), Buffer.from(screenshot.data, 'base64'))
       }
-      await page.evaluate(`([...document.querySelectorAll('[role="menuitemradio"]')]
-        .find(node => node.textContent?.trim() === 'Max')?.click(), true)`)
-      await waitForValue(page, `([...document.querySelectorAll('button[aria-haspopup="menu"]')]
-        .find(node => node.getAttribute('aria-label')?.startsWith('选择模型'))?.getAttribute('aria-label') ?? '').includes('推理等级 Max')`, value => value === true)
-      await waitForValue(page, `document.querySelector('[role="menu"][aria-label="模型与推理等级"]') === null`, value => value === true)
     }
   }
 }
@@ -1160,14 +1318,10 @@ async function openSessionDeleteDialog(page, title) {
     const row = [...document.querySelectorAll('[role="treeitem"]')]
       .find(node => node.textContent?.includes(${JSON.stringify(title)}))
     if (!(row instanceof HTMLElement)) return false
-    const bounds = row.getBoundingClientRect()
-    row.dispatchEvent(new MouseEvent('contextmenu', {
-      bubbles: true,
-      cancelable: true,
-      clientX: bounds.left + bounds.width / 2,
-      clientY: bounds.top + bounds.height / 2
-    }))
-    return true
+    const actions = [...row.querySelectorAll('button')]
+      .find(button => button.getAttribute('aria-label')?.includes(${JSON.stringify(title)}))
+    actions?.click()
+    return actions !== undefined
   })()`, value => value === true)
 
   await waitForValue(
@@ -1313,7 +1467,9 @@ async function verifyRunDiscovery(page, context, identity, stagedRunRepository, 
       && response.value.runs.length === ${runCount})?.value`, value => value !== undefined, 10_000)
   await page.evaluate(`(() => {
     const ctx = window.__runPanelTestContext
-    window.__runPanelSession = ctx.sessions.sessionOf(ctx.sessions.resolveAgentScope(${sessionId}))
+    const binding = ctx.sessions.binding(${sessionId})
+    if (!binding) throw new Error('Selected Desktop session has no active binding')
+    window.__runPanelSession = binding.session
     ctx.sessions.handleSessionStatus(${sessionId}, true)
   })()`)
   try {
@@ -1441,9 +1597,13 @@ description: ${USER_SKILL_DESCRIPTION}
     const page = await connectDesktopPage(debuggingPort)
     let browser = null
     let downloadBehaviorEnabled = false
+    let clipboardCaptureInstalled = false
     let deviceMetricsOverridden = false
     let contextCaptureScript
     try {
+      await page.command('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      })
       contextCaptureScript = await captureProjectClientContext(page)
       await page.evaluate(`(() => {
         const notice = [...document.querySelectorAll('[role="dialog"]')]
@@ -1677,18 +1837,78 @@ description: ${USER_SKILL_DESCRIPTION}
       await setImageReaderField(page, '温度', '0.65')
       await setImageReaderField(page, '最大输出 Token 数', '4096')
       await clickImageReaderButton(page, '保存当前配置')
+      const saveSurface = await waitForValue(page, `(() => {
+        const section = document.querySelector('.harness-comfyui-image-reader-settings')
+        const text = section?.innerText ?? ''
+        return {
+          present: !!section,
+          saved: text.includes('配置“Desktop OpenAI 视觉”已保存并生效。'),
+          error: [...(section?.querySelectorAll('[role="alert"]') ?? [])]
+            .map(node => node.textContent?.trim()).find(message => message?.includes('保存失败')) ?? null,
+          pending: text.includes('正在保存…'),
+        }
+      })()`, value => value.saved || value.error !== null || !value.present, 10_000)
+      if (saveSurface.error !== null) throw new Error(`OpenAI image reader profile save failed: ${saveSurface.error}`)
+      if (!saveSurface.present
+        || await page.evaluate(`document.querySelector('.harness-comfyui-image-reader-settings') === null`)) {
+        await openSettings(page)
+        await page.evaluate(`([...document.querySelectorAll('button')]
+          .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
+      }
       const openAiProfile = await waitForValue(
         page,
         `(() => {
-          const select = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
-            .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前生效配置')
-            ?.querySelector('select')
-          return select instanceof HTMLSelectElement && document.body.innerText.includes('配置“Desktop OpenAI 视觉”已保存并生效。')
-            ? { id: select.value, options: [...select.options].map(option => option.value) }
-            : null
+          const section = document.querySelector('.harness-comfyui-image-reader-settings')
+          const labels = [...(section?.querySelectorAll('label') ?? [])]
+          const controlFor = text => labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === text)
+            ?.querySelector('input, textarea, select')
+          const select = controlFor('当前生效配置')
+          return select instanceof HTMLSelectElement ? {
+            id: select.value,
+            options: [...select.options].map(option => option.value),
+            name: controlFor('配置名称')?.value,
+            endpoint: controlFor('Chat Completions 地址')?.value,
+            model: controlFor('模型 ID')?.value,
+            prompt: controlFor('读图提示词')?.value,
+            temperature: controlFor('温度')?.value,
+            maxTokens: controlFor('最大输出 Token 数')?.value,
+            errors: [...section.querySelectorAll('[role="alert"]')].map(node => node.textContent?.trim()).filter(Boolean),
+          } : null
         })()`,
         value => value?.options.length === 2 && value.id !== firstProfile.id,
+        10_000,
       )
+      expect(openAiProfile).toMatchObject({
+        name: 'Desktop OpenAI 视觉',
+        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        model: 'desktop-qwen-vl',
+        prompt: 'Desktop 已保存的默认读图提示词',
+        temperature: '0.65',
+        maxTokens: '4096',
+        errors: [],
+      })
+      const yaml = createTestDesktopRequire(context)('js-yaml')
+      const profileSchema = yaml.DEFAULT_SCHEMA.extend([new yaml.Type('tag:yaml.org,2002:js', {
+        kind: 'scalar', construct: expression => expression,
+      })])
+      const storedImageSettings = yaml.load(await readFile(
+        resolve(context.dshHome, 'profiles', context.baseline.profile.name, 'cordis.patch.yml'), 'utf8',
+      ), { schema: profileSchema }).find(entry => entry.id === settingsEntryIds.imageReader)?.config
+      const storedOpenAiProfile = storedImageSettings?.configuration?.profiles
+        ?.find(profile => profile.id === openAiProfile.id)
+      expect(storedImageSettings?.configuration?.activeProfileId).toBe(openAiProfile.id)
+      expect(storedOpenAiProfile).toMatchObject({
+        id: openAiProfile.id,
+        name: 'Desktop OpenAI 视觉',
+        connectionType: 'openai-compatible',
+        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        model: 'desktop-qwen-vl',
+        defaultPrompt: 'Desktop 已保存的默认读图提示词',
+        temperature: 0.65,
+        maxTokens: 4096,
+        hasApiKey: true,
+      })
+      expect(storedImageSettings?.credentials?.[openAiProfile.id]).toBe('desktop-write-only-key')
 
       await setImageReaderField(page, '配置名称', '')
       await setImageReaderField(page, 'Chat Completions 地址', '')
@@ -1703,6 +1923,21 @@ description: ${USER_SKILL_DESCRIPTION}
         value => value === true,
       )
       await clickImageReaderButton(page, '放弃当前修改并切换')
+      const switchedSurface = await waitForValue(page, `(() => {
+        const section = document.querySelector('.harness-comfyui-image-reader-settings')
+        if (!section) return 'unmounted'
+        const profile = [...section.querySelectorAll('label')]
+          .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前生效配置')
+          ?.querySelector('select')
+        return profile?.value === ${JSON.stringify(firstProfile.id)} ? 'active' : null
+      })()`, value => value !== null)
+      if (switchedSurface === 'active') await delay(300)
+      if (switchedSurface === 'unmounted'
+        || await page.evaluate(`document.querySelector('.harness-comfyui-image-reader-settings') === null`)) {
+        await openSettings(page)
+        await page.evaluate(`([...document.querySelectorAll('button')]
+          .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
+      }
       await waitForValue(
         page,
         `(() => {
@@ -1713,11 +1948,12 @@ description: ${USER_SKILL_DESCRIPTION}
             ?.querySelector('select')
           const model = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '视觉模型')
             ?.querySelector('select')
-          return profile?.value === ${JSON.stringify(firstProfile.id)}
-            && provider?.value === 'deepseek-official'
-            && model?.value === ${JSON.stringify(selectedModel)}
+          return { profile: profile?.value, provider: provider?.value, model: model?.value,
+            feedback: [...document.querySelectorAll('.harness-comfyui-image-reader-settings [role="alert"]')]
+              .map(node => node.textContent?.trim()).filter(Boolean) }
         })()`,
-        value => value === true,
+        value => value.profile === firstProfile.id
+          && value.provider === 'deepseek-official' && value.model === selectedModel,
       )
 
       await selectImageReaderProfile(page, openAiProfile.id)
@@ -1794,6 +2030,25 @@ description: ${USER_SKILL_DESCRIPTION}
         value => value === true,
       )
       await clickImageReaderButton(page, '放弃当前修改并切换')
+      const discardedSurface = await waitForValue(
+        page,
+        `(() => {
+          const section = document.querySelector('.harness-comfyui-image-reader-settings')
+          if (!section) return 'unmounted'
+          const profile = [...section.querySelectorAll('label')]
+            .find(label => label.querySelector(':scope > span')?.textContent?.trim() === '当前生效配置')
+            ?.querySelector('select')
+          return profile?.value === ${JSON.stringify(firstProfile.id)} ? 'active' : null
+        })()`,
+        value => value !== null,
+        10_000,
+      )
+      if (discardedSurface === 'unmounted'
+        || await page.evaluate(`document.querySelector('.harness-comfyui-image-reader-settings') === null`)) {
+        await openSettings(page)
+        await page.evaluate(`([...document.querySelectorAll('button')]
+          .find(node => node.textContent?.trim() === 'ComfyUI')?.click(), true)`)
+      }
       await waitForValue(
         page,
         `(() => {
@@ -2171,6 +2426,15 @@ description: ${USER_SKILL_DESCRIPTION}
         downloadPath,
       })).resolves.toMatchObject({ progress: { state: 'completed' } })
 
+      await page.evaluate(`(() => {
+        window.__desktopCopiedRunIds = []
+        window.__desktopClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: { writeText: async value => { window.__desktopCopiedRunIds.push(value) } },
+        })
+      })()`)
+      clipboardCaptureInstalled = true
       await clickMainFrameElement(page, '.harness-comfyui-media-viewer-copy-button')
       const newerCopy = await waitForValue(
         page,
@@ -2233,6 +2497,10 @@ description: ${USER_SKILL_DESCRIPTION}
         button: '已复制',
         announcement: `已复制完整 Run ID：${mediaFixture.older.runId}`,
       })
+      expect(await page.evaluate('window.__desktopCopiedRunIds')).toEqual([
+        mediaFixture.newer.runId,
+        mediaFixture.older.runId,
+      ])
 
       const geometryExpression = `(() => {
         const row = document.querySelector('.harness-comfyui-media-viewer-run-id-row')
@@ -2303,9 +2571,17 @@ description: ${USER_SKILL_DESCRIPTION}
       throw error
     } finally {
       if (contextCaptureScript !== undefined) {
-        await page.command('Page.removeScriptToEvaluateOnNewDocument', { identifier: contextCaptureScript })
+        await page.command('Page.removeScriptToEvaluateOnNewDocument', { identifier: contextCaptureScript }).catch(() => undefined)
       }
       if (deviceMetricsOverridden) await page.command('Emulation.clearDeviceMetricsOverride').catch(() => undefined)
+      if (clipboardCaptureInstalled) {
+        await page.evaluate(`(() => {
+          if (window.__desktopClipboardDescriptor === undefined) delete navigator.clipboard
+          else Object.defineProperty(navigator, 'clipboard', window.__desktopClipboardDescriptor)
+          delete window.__desktopClipboardDescriptor
+          delete window.__desktopCopiedRunIds
+        })()`).catch(() => undefined)
+      }
       if (browser !== null && downloadBehaviorEnabled) {
         await browser.command('Browser.setDownloadBehavior', { behavior: 'default' }).catch(() => undefined)
       }

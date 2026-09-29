@@ -10,6 +10,7 @@ import {
   createImageReaderProfile,
   decodeImageReaderConfiguration,
   decodeImageReaderSettingsView,
+  migrateLegacyImageReaderSettings,
   validateImageReaderConfiguration,
   type ImageReaderConfiguration,
 } from '../../src/image-reader/settings.ts'
@@ -122,6 +123,19 @@ it('creates profiles with the approved factual observation prompt', () => {
 })
 
 describe('image reader settings page behavior', () => {
+  it('converts a legacy single-model configuration into the default named profile', () => {
+    const legacy = { configuration: {
+      provider: 'provider-a', model: 'vision-a', defaultPrompt: '旧提示词', temperature: 0.4, maxTokens: 128,
+    } }
+    expect(migrateLegacyImageReaderSettings(legacy)).toMatchObject({
+      configuration: {
+        activeProfileId: 'default',
+        profiles: [{ id: 'default', name: '原图片读取配置', provider: 'provider-a', model: 'vision-a', defaultPrompt: '旧提示词', temperature: 0.4, maxTokens: 128 }],
+      },
+      credentials: {},
+    })
+  })
+
   it('decodes a complete multi-profile configuration and rejects duplicate or missing active ids', () => {
     const custom = Object.freeze({
       ...createImageReaderProfile('custom'),
@@ -1353,7 +1367,7 @@ describe('image reader settings page behavior', () => {
     const api = { models: vi.fn(async () => modelCatalog), saveProfile: vi.fn(), deleteProfile: vi.fn() }
     const cases = [
       { scope: settingsScope(runtimeConfiguration, { status: 'loading' }), text: '正在读取图片读取设置', disabled: true },
-      { scope: settingsScope(runtimeConfiguration, { status: 'unavailable' }), text: '当前 Harness 环境没有提供可写的图片读取设置', disabled: true },
+      { scope: settingsScope(runtimeConfiguration, { status: 'unavailable' }), text: '图片读取设置命名空间未向当前页面开放', disabled: true },
       { scope: settingsScope(runtimeConfiguration, { writable: false }), text: '当前图片读取设置为只读；当前配置的修改不能保存', disabled: true },
       { scope: settingsScope(runtimeConfiguration), text: '保存配置“系统视觉”', disabled: false },
     ] as const

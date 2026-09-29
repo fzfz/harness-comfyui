@@ -120,6 +120,22 @@ function semanticDiscovery() {
   }
 }
 
+function promptTermDiscovery() {
+  const discovery = semanticDiscovery()
+  const path = discovery.paths['/internal/semantic/base-models']
+  delete discovery.paths['/internal/semantic/base-models']
+  discovery.paths['/internal/semantic/prompt-terms'] = path
+  path.post.operationId = 'querySemanticPromptTermsForSkill'
+  path.post['x-harness-tool-name'] = 'query_semantic_prompt_terms'
+  const search = discovery.components.schemas.CatalogBaseModelSearchRequest
+  search.properties.root_id = { type: 'string', pattern: '^[a-z][a-z0-9_]*$', description: 'Root ID', example: 'clothing' }
+  search.properties.category_ids = { type: 'array', minItems: 1, maxItems: 16, uniqueItems: true, items: { type: 'string', pattern: '^[a-z][a-z0-9_]*$' }, description: 'Category IDs', example: ['skirts'] }
+  search.properties.category_match = { type: 'string', enum: ['any', 'all'], default: 'all', description: 'Category matching mode', example: 'any' }
+  search.properties.classification_status = { type: 'string', enum: ['classified', 'evidence_gap', 'coverage_gap', 'unclassified'], description: 'Classification status', example: 'classified' }
+  search.allOf = [{ if: { required: ['category_match'] }, then: { required: ['category_ids'] } }]
+  return discovery
+}
+
 async function requestBody(request) {
   const chunks = []
   for await (const chunk of request) chunks.push(Buffer.from(chunk))
@@ -185,6 +201,90 @@ function expectClientResult(result, expected) {
 }
 
 describe('built-in semantic query client', () => {
+  it('accepts prompt-term category filters and sends typed values', async () => {
+    const requests = []
+    const server = await startServer(async (request, response) => {
+      if (request.url === '/internal/semantic') return sendJson(response, 200, promptTermDiscovery())
+      requests.push(JSON.parse(await requestBody(request)))
+      sendJson(response, 200, { results: [] })
+    })
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', '--root_id', 'clothing', '--category_ids', 'skirts', '--category_ids', 'dresses', '--category_match', 'all', '--classification_status', 'classified', '--quiet'])
+      expect(result).toEqual({ exitCode: 0, stdout: '{"results":[]}', stderr: '' })
+      expect(requests).toEqual([{ mode: 'search', root_id: 'clothing', category_ids: ['skirts', 'dresses'], category_match: 'all', classification_status: 'classified' }])
+    } finally { await server.close() }
+  })
+
+  it.each([
+    [['--category_match', 'any'], 'category_match'],
+    [['--category_ids', 'skirts', '--category_ids', 'skirts'], 'unique'],
+    [Array.from({ length: 17 }, (_, index) => ['--category_ids', `category_${index}`]).flat(), 'maximum'],
+    [['--category_ids', 'INVALID'], 'pattern'],
+    [['--root_id', 'INVALID'], 'root pattern'],
+    [['--classification_status', 'unknown'], 'enum'],
+  ])('rejects invalid prompt-term filters before sending a query: %s', async (filterArgs, _reason) => {
+    let queryCount = 0
+    const server = await startServer((request, response) => {
+      if (request.url === '/internal/semantic') sendJson(response, 200, promptTermDiscovery())
+      else { queryCount += 1; sendJson(response, 200, { results: [] }) }
+    })
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', ...filterArgs, '--quiet'])
+      expect(result.exitCode).toBe(2)
+      expect(queryCount).toBe(0)
+    } finally { await server.close() }
+  })
+
+  it('rejects a changed prompt-term allOf condition during discovery', async () => {
+    const discovery = promptTermDiscovery()
+    discovery.components.schemas.CatalogBaseModelSearchRequest.allOf[0].then.required = ['root_id']
+    const server = await startServer((request, response) => sendJson(response, 200, discovery))
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', '--quiet'])
+      expect(result.exitCode).toBe(6)
+    } finally { await server.close() }
+  })
+  it.each(['example', 'default'])('rejects a prompt-term root %s that violates the category condition', async annotation => {
+    const discovery = promptTermDiscovery()
+    discovery.components.schemas.CatalogBaseModelRequest[annotation] = { mode: 'search', category_match: 'any' }
+    const server = await startServer((request, response) => sendJson(response, 200, discovery))
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', '--quiet'])
+      expect(result.exitCode).toBe(6)
+      expect(result.stderr).toContain('CONTRACT_PROTOCOL_ERROR')
+    } finally { await server.close() }
+  })
+  it('accepts a prompt-term root default with category_match and category_ids', async () => {
+    const discovery = promptTermDiscovery()
+    discovery.components.schemas.CatalogBaseModelRequest.default = { mode: 'search', category_match: 'any', category_ids: ['skirts'] }
+    const server = await startServer((request, response) => sendJson(response, 200,
+      request.url === '/internal/semantic' ? discovery : { results: [] }))
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', '--quiet'])
+      expect(result).toEqual({ exitCode: 0, stdout: '{"results":[]}', stderr: '' })
+    } finally { await server.close() }
+  })
+  it.each(['example', 'default'])('rejects a prompt-term search branch %s that violates the category condition', async annotation => {
+    const discovery = promptTermDiscovery()
+    discovery.components.schemas.CatalogBaseModelSearchRequest[annotation] = { mode: 'search', category_match: 'any' }
+    const server = await startServer((request, response) => sendJson(response, 200, discovery))
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', '--quiet'])
+      expect(result.exitCode).toBe(6)
+      expect(result.stderr).toContain('CONTRACT_PROTOCOL_ERROR')
+    } finally { await server.close() }
+  })
+  it('rejects a named prompt-term search example that violates the category condition', async () => {
+    const discovery = promptTermDiscovery()
+    const examples = discovery.paths['/internal/semantic/prompt-terms'].post.requestBody.content['application/json'].examples
+    examples.search.value.category_match = 'any'
+    const server = await startServer((request, response) => sendJson(response, 200, discovery))
+    try {
+      const result = await runClient(SEMANTIC_CLIENT, ['--url', 'http://127.0.0.1', '--port', String(server.port), '--path', '/internal/semantic/prompt-terms', '--mode', 'search', '--quiet'])
+      expect(result.exitCode).toBe(6)
+      expect(result.stderr).toContain('CONTRACT_PROTOCOL_ERROR')
+    } finally { await server.close() }
+  })
   it.each([false, true])('preserves discovery JSON and exit success with quiet=%s', async quiet => {
     const body = JSON.stringify(semanticDiscovery(), null, 2) + '\n'
     const server = await startServer((request, response) => {

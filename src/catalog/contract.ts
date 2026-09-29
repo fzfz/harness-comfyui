@@ -1,4 +1,5 @@
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
+import { validateSourceSettingsSection, type SourceAddress } from '../source-settings.ts'
 export const CATALOG_PAGE_SIZE = presentation.pageSize
 export const CATALOG_BASE_MODEL_PAGE_SIZE = 20
 export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = 100
@@ -544,6 +545,18 @@ export function parseCatalogPageResult(value: unknown): CatalogOperationResult<C
 
 export function parseBaseModelResult(value: unknown): CatalogOperationResult<BaseModelList> {
   return parseCatalogOperationResult(value, parseBaseModelList, 'base model result')
+}
+
+export function parseCatalogSourceAddress(value: unknown): SourceAddress {
+  const input = record(value, 'catalog source address')
+  exactKeys(input, ['url', 'port'], 'catalog source address')
+  const address = { url: input.url, port: input.port } as SourceAddress
+  validateSourceSettingsSection({ configuration: address })
+  return Object.freeze(address)
+}
+
+export function parseCatalogSourceAddressResult(value: unknown): CatalogOperationResult<SourceAddress> {
+  return parseCatalogOperationResult(value, parseCatalogSourceAddress, 'catalog source address result')
 }
 
 export function catalogOperationSuccess<T>(value: T): CatalogOperationResult<T> {

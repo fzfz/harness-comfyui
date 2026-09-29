@@ -1,5 +1,5 @@
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
-import { type SettingsScope } from '@deepseek-ai/dsh-settings'
+import type { ImageReaderSettingsStore } from './settings-registration.ts'
 
 import {
   type ActivateImageReaderProfileRequest,
@@ -25,15 +25,19 @@ import { ImageReaderError } from './errors.ts'
 
 export class ImageReaderConfigurationService {
   private readonly llm: Pick<LlmRuntime, 'listProviders' | 'listModels'>
-  private readonly settings: SettingsScope<ImageReaderSettingsSection>
+  private readonly settings: ImageReaderSettingsStore
   private settingsMutationTail: Promise<void> = Promise.resolve()
 
   constructor(
     llm: Pick<LlmRuntime, 'listProviders' | 'listModels'>,
-    settings: SettingsScope<ImageReaderSettingsSection>,
+    settings: ImageReaderSettingsStore,
   ) {
     this.llm = llm
     this.settings = settings
+  }
+
+  configuration(): ImageReaderSettingsSection['configuration'] {
+    return this.settings.get().configuration
   }
 
   async models(signal: AbortSignal): Promise<ImageReaderModelCatalog> {

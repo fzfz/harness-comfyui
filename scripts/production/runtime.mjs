@@ -9,7 +9,7 @@ import { materializeSourceCliModule } from './cli-module.mjs'
 import { materializeSourceClientModule } from './client-module.mjs'
 import { assertNoRunningHost, processStatePath, writeAtomicJson } from './process.mjs'
 import { loadProfile } from '../../src/config/load-profile.ts'
-import { materializeSourceProductAgentPreset } from '../profile/agent-preset.mjs'
+import { materializeDeclaredAgentPresetPatch, materializeSourceProductAgentPreset } from '../profile/agent-preset.mjs'
 import { materializeSourceProfile } from '../profile/source.mjs'
 
 export { SOURCE_PRODUCTION_COMMANDS } from './commands.mjs'
@@ -398,7 +398,7 @@ export async function prepareSourceRuntime(context, options = {}) {
   await (options.materializeCli ?? materializeSourceCliModule)(context.repositoryRoot)
   await materializeSourceHostModule(context.repositoryRoot)
   await materializeSourceClientModule(context.repositoryRoot)
-  await materializeSourceProfile(context.repositoryRoot, context.dshHome, {
+  const profile = await materializeSourceProfile(context.repositoryRoot, context.dshHome, {
     profileName: context.dshProfile,
     ...(context.userEnvironmentFilePath === undefined
       ? {}
@@ -407,6 +407,9 @@ export async function prepareSourceRuntime(context, options = {}) {
   const productAgentPreset = await (
     options.materializeProductAgentPreset ?? materializeSourceProductAgentPreset
   )(context.repositoryRoot, context.dshHome)
+  if (productAgentPreset !== undefined) {
+    await materializeDeclaredAgentPresetPatch(productAgentPreset, profile.profileDirectory)
+  }
   await writeAtomicJson(context.sourceRuntimeStatePath, {
     schemaVersion: SOURCE_RUNTIME_STATE_SCHEMA_VERSION,
     runtimeId: context.definition.runtimeId,

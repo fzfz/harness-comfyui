@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
-import { IconWarningOutline16, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import { IconWarningOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 
 import type { SourceSettingsView } from '../../source-settings.ts'
 
@@ -20,7 +20,7 @@ export interface SourcePresetTipProps {
       readonly projectionValues?: { readonly agentPreset?: string }
     } | undefined>>
   }) => Selected) => Selected
-  readonly sourceScope: SettingsScope<SourceSettingsView>
+  readonly sourceScope: ConfigForm<SourceSettingsView>
   readonly probe: (signal: AbortSignal) => Promise<unknown>
 }
 
@@ -59,7 +59,7 @@ export function SourcePresetTip({ sessionId, useSessions, sourceScope, probe }: 
     <Toast
       key={`${notice.type}-${notice.sequence}`}
       text={SOURCE_PRESET_TIP_COPY[notice.type]}
-      icon={<IconWarningOutline16 />}
+      icon={<IconWarningOutlineRegular size={16} />}
       holdMs={6000}
       onDone={() => setNotice(null)}
     />

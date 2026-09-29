@@ -14,19 +14,19 @@ config/desktop-baseline.json 是开发、生产和真实 Desktop 测试共同读
 
 scripts/desktop/baseline.mjs 校验源码 origin、完整 commit 和实际安装包版本。config/desktop-production.json 只保存 runtimeRelativeRoot、environmentFileRelativePath 和 startupWorkspacePath。config/desktop-worktree.json 保存 mainCheckoutPath、开发 runtimeRelativeRoot 和 managedDshSettings。开发命令相对主 checkout 解析基线源码目录，生产命令相对生产 checkout 解析。测试使用同一基线身份；路径覆盖不能绕过版本校验。
 
-`managedDshSettings` 定义开发 DSH Settings 的三个来源路径：`providerConfigurationRelativePath` 和 `imageReaderConfigurationRelativePath` 相对当前 worktree 解析，文件由 Git 跟踪且不得包含凭据；`privateSourceDshHomeRelativePath` 相对 main checkout 解析，目录必须位于 Git 忽略范围。`dev:start` 和 `dev:restart` 从该私密目录的 `settings.yaml` 读取已声明图片配置所需的凭据，并按照 Provider 配置声明的 credential ref 名称从 `.credentials.yaml` 读取对应凭据值。启动器只复制受管配置所需的凭据。
+`managedDshSettings` 定义开发 DSH 配置的三个来源路径：`providerConfigurationRelativePath` 和 `imageReaderConfigurationRelativePath` 相对当前 worktree 解析，文件由 Git 跟踪且只保存非凭据配置；`privateSourceDshHomeRelativePath` 相对 main checkout 解析，目录必须位于 Git 忽略范围。`dev:start` 和 `dev:restart` 优先从该私密目录的当前 Profile 读取图片读取凭据，再读取尚未导入的 `settings.yaml`，最后读取 `settings.yaml.imported`；它们按照 Provider 配置声明的 credential ref 名称从 `.credentials.yaml` 读取对应凭据值。启动器只复制受管配置所需的凭据。
 
-`config/desktop-development-provider-settings.json` 的 `managedNamespaces` 固定包含 `agent-default-model`、`llm-deepseek` 和 `llm-pi-ai`；`credentialRefs` 列出启动器必须从 main 私密来源读取的 Provider credential ref 名称。`config/image-reader-profiles.json.configuration` 使用图片读取 Settings 的完整配置结构，但不包含 `credentials`。开发启动器把这两份配置写入当前 worktree 的隔离 DSH home，并保留其中的非受管用户值。
+`config/desktop-development-provider-settings.json` 的 `managedNamespaces` 固定包含 `agent-default-model`、`llm-deepseek` 和 `llm-pi-ai`；`credentialRefs` 列出启动器必须从 main 私密来源读取的 Provider credential ref 名称。`config/image-reader-profiles.json.configuration` 使用当前 Profile 图片读取条目的完整 `configuration` 结构；图片读取凭据来源按本节第一个 `managedDshSettings` 段落确定。开发启动器把这两份配置的缺失值写入隔离 DSH home 中当前 Profile 的 `cordis.patch.yml`，并保留已有的用户值。
 
 独立 worktree 的 .env 链接到主 checkout 已有 .env。worktree 自有 node_modules 由依赖准备模块建立：业务依赖与构建工具链接到主 checkout，宿主 peerDependencies 链接到候选 Stable workspace 的解析目录。已有不符合目标的路径会产生明确错误，不覆盖来源目录，也不执行 pnpm install。
 
-每个实例分别保存 HOME、DSH_HOME、Profile、安装产物、日志、PID 和 desktop-out 启动入口。Profile 的 package.json 声明插件来源，dsh.profile.bundles 注册插件。候选官方 materializeProfile 在首次启动建立 Profile 的 pnpm-lock.yaml 与 node_modules/.modules.yaml，后续启动复用这些记录。Stable Desktop 的首次设置初始化只针对新实例；开发启动器仍在每次启动中更新上述受管开发 Settings。Repository Skills 的唯一源码路径由 config/product-agent.json.skills 定义。
+每个实例分别保存 HOME、DSH_HOME、Profile、安装产物、日志、PID 和 desktop-out 启动入口。Profile 的 package.json 声明插件来源，dsh.profile.bundles 注册插件。候选官方 materializeProfile 在首次启动建立 Profile 的 pnpm-lock.yaml 与 node_modules/.modules.yaml，后续启动复用这些记录。Stable Desktop 的首次设置初始化只针对新实例；开发启动器只补齐 Profile patch 中缺失的开发配置。旧 `settings.yaml` 的迁移与归档顺序按[启动规范](startup.md#desktop-生命周期)执行。重复启动保留 Profile 中用户已保存的 Provider、图片读取配置和 Web 端口。Repository Skills 的唯一源码路径由 config/product-agent.json.skills 定义。
 
 Host 端口由独立实例分配并写入运行状态。启动器核对端口属于本次 Desktop 进程组，并等待本次启动 run 的 startup.run.completed 事件及 rendererStatus=healthy。移动桥接端口不属于 anywhere Stable 的就绪条件。远程调试端口只在显式测试配置下启用。
 
 仓库根 .env.example 提供 OPENCODE_GO_API_KEY 与允许调用者覆盖的 HARNESS_COMFYUI_* 业务变量示例。数据源服务 URL 与端口由用户在“ComfyUI”设置页保存。
 
-`cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用、前台 Bash 默认超时和默认 `ComfyUI工作台预设` 的共同来源。当前前台 Bash 默认超时为 `180000` 毫秒；单次 Tool Call 可以在 DSH 允许的上限内显式覆盖该值。`config/product-agent.json` 定义项目 Agent Preset 的写入结构：`repositoryRoot` 是当前插件包根目录，项目 Agent Preset 源码目录是 `<repositoryRoot>/<preset.sourceRootRelativePath>`，安装目录是 `<dshHome>/<preset.installRootRelativePath>`，受管内容包括 `preset.sharedFiles` 列出的共享 component 文件、`preset.id` 与 `preset.additionalManagedPresetIds` 对应的 Preset 目录，以及 `preset.retiredManagedPresetIds` 对应的待删除 Preset 目录。Desktop 开发与生产启动器在启动 DSH Desktop 前使用当前插件包中的 `cordis.patch.yml`，将默认及附加 Preset 配置和共享 component 文件写入各自隔离的 DSH home，并删除 `preset.retiredManagedPresetIds` 指定的目录。
+`cordis.patch.yml` 是默认 Agent 模型、视觉模型、Provider 环境变量引用、前台 Bash 默认超时和默认 `ComfyUI工作台预设` ID 的共同来源。该文件以 `@deepseek-ai/dsh-agent-preset-registry` 指定默认 ID。`scripts/profile/agent-preset.mjs` 从已安装的 `preset.yml` 和 `agent.cordis.yml` 生成两个 `@deepseek-ai/dsh-agent-preset` 声明，并写入运行时 Profile 的 `cordis.patch.yml`。当前前台 Bash 默认超时为 `180000` 毫秒；单次 Tool Call 可以在 DSH 允许的上限内显式覆盖该值。`config/product-agent.json` 定义项目 Agent Preset 的写入结构：`repositoryRoot` 是当前插件包根目录，项目 Agent Preset 源码目录是 `<repositoryRoot>/<preset.sourceRootRelativePath>`，安装目录是 `<dshHome>/<preset.installRootRelativePath>`，受管内容包括 `preset.sharedFiles` 列出的共享 component 文件、`preset.id` 与 `preset.additionalManagedPresetIds` 对应的 Preset 目录，以及 `preset.retiredManagedPresetIds` 对应的待删除 Preset 目录。Desktop 开发与生产启动器在启动 DSH Desktop 前使用当前插件包中的 `cordis.patch.yml`，将默认及附加 Preset 配置和共享 component 文件写入各自隔离的 DSH home，并删除 `preset.retiredManagedPresetIds` 指定的目录。
 
 ## Web Host 调试配置
 
@@ -57,7 +57,7 @@ Web Host 的 `stop`、`status`、`health` 和 `logs` 使用 `.local/web-developm
 
 ## 项目 Agent Preset 配置
 
-DSH 0.1.5-rc.2 的 `@deepseek-ai/dsh-persona` 使用 `config.prefix` 保存 Persona 正文。两个产品 Preset 的 `agent.cordis.yml` 必须按该字段提供原有 Persona；预设测试直接使用所选 Desktop 的 Persona schema 校验配置。
+DSH 0.1.7-rc.2 的 `@deepseek-ai/dsh-persona` 使用 `config.prefix` 保存 Persona 正文。两个产品 Preset 的 `agent.cordis.yml` 必须按该字段提供原有 Persona；预设测试直接使用所选 Desktop 的 Persona schema 校验配置。
 
 `config/product-agent.json` 是项目自有 Agent Preset 和 Repository Skills 路径的唯一结构化来源。该文件必须只包含以下字段：
 
@@ -75,7 +75,7 @@ DSH 0.1.5-rc.2 的 `@deepseek-ai/dsh-persona` 使用 `config.prefix` 保存 Pers
 
 `<repositoryRoot>/<preset.sourceRootRelativePath>/<preset-id>` 必须为 `preset.id` 和 `preset.additionalManagedPresetIds` 中的每个受管 ID 提供项目 Agent Preset 源码目录；每个目录只包含非空普通文件 `agent.cordis.yml` 和 `preset.yml`。启动器在首次写入配置前检查 `preset.sharedFiles` 中的每个 `.mjs` 文件是非空、可读的普通文件，可以作为模块加载，并且导出 `apply()`。启动器还使用 DSH YAML dialect 解析每个受管 Preset 的 `agent.cordis.yml`，检查顶层及 group 配置中的每一项都是包含插件名称的 plugin row，并确认每个非 `cordis:` component 都能由 DSH 解析；相对路径 component 还必须通过前述共享 `.mjs` 文件检查。任一检查失败时，启动器不开始本轮配置写入。`<dshHome>/<preset.installRootRelativePath>` 的现有目录链必须由普通目录组成；符号链接或非目录路径会中止准备过程。启动器分别原子替换 `preset.sharedFiles` 指定的受管共享文件，以及 `preset.id` 和 `preset.additionalManagedPresetIds` 指定的每个受管产品 Preset，再删除 `preset.retiredManagedPresetIds` 指定的精确路径。删除符号链接形式的退役路径时，启动器只删除链接，不改变链接目标。启动器保留同一安装根目录中的其他 Preset。
 
-`prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都读取该配置，并把 `preset.id` 与 `preset.additionalManagedPresetIds` 对应的相同 Preset 配置写入各自隔离的 DSH home。当前插件 `cordis.patch.yml` 把 `harness-comfyui-cli-candidate` 设置为这些环境的默认 Preset；附加受管 Preset 不改变默认值。启动器不修改 Harness `standard` Preset 的源码。
+`prod:start`、`prod:restart`、`dev:start`、`dev:restart`、`web:start` 和 `web:restart` 都读取该配置，并把 `preset.id` 与 `preset.additionalManagedPresetIds` 对应的相同 Preset 配置写入各自隔离的 DSH home。当前插件 `cordis.patch.yml` 明确注册两个产品 Preset，并把 `harness-comfyui-cli-candidate` 设置为默认值。DSH 的 Preset registry 根据声明行加载插件列表；启动器保留 Harness `standard` Preset 的源码。
 
 `loadProductAgentConfiguration(repositoryRoot)` 验证 Repository Skills 目录存在、目录本身不是符号链接且真实路径位于 `repositoryRoot` 内。Desktop 启动器的 `start` 和 `restart` 命令与 Web Host 环境构建器在启动子进程前调用该函数；Desktop 启动器的 `status`、`logs` 和 `stop` 命令只读取既有运行状态，因此 Repository Skills 配置损坏时仍可用于诊断和停止进程。Desktop 启动器在合并 `.env` 与调用者环境后，把经过验证的 Repository Skills 绝对路径写入 Desktop 子进程环境的 `HARNESS_COMFYUI_SKILL_DIR`。Web Host 环境构建器先从 Web Host 子进程环境中移除调用者提供的全部 `HARNESS_COMFYUI_*` 环境变量，再把经过验证的 Repository Skills 绝对路径写入该子进程环境的 `HARNESS_COMFYUI_SKILL_DIR`。Repository Skills 目录验证失败时，Desktop 启动器和 Web Host 环境构建器都中止对应子进程的启动，并且不读取调用者用户主目录下的 `.agents/skills` 作为 Repository Skills 来源。
 
@@ -113,7 +113,7 @@ DSH 0.1.5-rc.2 的 `@deepseek-ai/dsh-persona` 使用 `config.prefix` 保存 Pers
 | `comfyui.frontendCompiler.preReadiness.domainEnableMs` | 本机浏览器目标完成全部 Chrome DevTools domain enable 命令的共同正整数阶段时限，毫秒；production 默认值为 `10000` |
 | `comfyui.frontendCompiler.preReadiness.navigationMs` | 本机浏览器目标完成 `Page.navigate` 的正整数阶段时限，毫秒；production 默认值为 `10000` |
 | `comfyui.frontendCompiler.preReadiness.infrastructureAttempts` | 同一次缓存未命中时的浏览器会话尝试次数；缓存未命中表示目标缓存文件不存在。重试只覆盖前端就绪检查开始前的临时浏览器目录创建失败、浏览器启动失败、浏览器在发布有效 `DevToolsActivePort` 前退出、`DevToolsActivePort` 缺失或无效、创建 DevTools 页面目标失败、连接 DevTools WebSocket 失败、启用 DevTools domain 失败、页面目标崩溃，以及 `Page.navigate` 失败；对应阶段超时也属于同类故障。前端就绪检查要求页面加载完成、ComfyUI app 同时提供 graph、`loadGraphData()` 与 `graphToPrompt()`，并且 splash loader 已隐藏。请求拦截失败、前端就绪检查失败和 Workflow 导出失败不会重试。该字段只允许 `1` 或 `2`；production 默认值为 `2` |
-| `source.catalogPort` | 数据源服务 Settings 首次注册时使用的默认端口；production 默认值为 `18093` |
+| `source.catalogPort` | Profile entry 未指定数据源端口时使用的默认端口；production 默认值为 `18093` |
 | `jobs.pollIntervalMs` | ComfyUI Job 轮询间隔，毫秒 |
 | `jobs.missingObservationMs` | 已提交 Run 首次收到 ComfyUI Job `unknown` 结果、`COMFYUI_CONNECTION_FAILED` 或 `COMFYUI_REQUEST_TIMEOUT` 时开始计时；后续 `pending` 或 `running` 结果清除该起点，再次收到前述缺失结果且已经达到该毫秒数时把 Run 判定为失败 |
 | `media.maxFileBytes` | 单个 ComfyUI 输出媒体允许保存的最大字节数 |
@@ -152,20 +152,20 @@ Configuration Profile 文件不热更新。生产 Desktop 修改后执行 `pnpm 
 
 ## Harness-ComfyUI 数据源服务设置
 
-Host 使用 `harness-comfyui-source` Settings namespace 保存数据源服务 URL 和端口。Client 在 Harness 的“ComfyUI”设置页中通过“数据源服务”页签保存以下字段：
+Host 使用当前 Profile 的 `harness-comfyui-core` 条目保存数据源服务 URL 和端口。Client 在 Harness 的“ComfyUI”设置页中通过“数据源服务”页签保存以下字段：
 
 | 字段 | 规则与用途 |
 | --- | --- |
 | `configuration.url` | 数据源服务的 HTTP 或 HTTPS URL；该值包含协议和主机名，可以包含根路径 `/`，不包含用户名、密码、端口、其他路径、query 或 fragment |
 | `configuration.port` | 数据源服务端口，必须是 `1` 至 `65535` 的整数 |
 
-Host 每次执行语义查询、读取 ComfyUI 实例或读取 Workflow bundle 时，均使用该 namespace 的最新值。保存成功后，Host 的下一次请求立即使用新的 URL 和端口，无需重启 Harness。配置文件中的 `source.catalogPort` 和 `HARNESS_COMFYUI_CATALOG_PORT` 只提供该 namespace 的默认端口；已保存的 Settings 用户值覆盖默认端口。
+Host 每次执行语义查询、读取 ComfyUI 实例或读取 Workflow bundle 时，均使用当前 Profile 条目的最新值。保存成功后，Host 的下一次请求立即使用新的 URL 和端口，无需重启 Harness。配置文件中的 `source.catalogPort` 和 `HARNESS_COMFYUI_CATALOG_PORT` 只提供默认端口；当前 Profile 中已保存的用户值覆盖默认端口。
 
 插件发行包包含 `scripts/source-client/imagegen-semantic-query.mjs` 和 `scripts/source-client/imagegen-comfyui-source-read.mjs`。Host 使用这两个内置客户端请求已配置的数据源服务，不读取或执行数据源仓库中的文件。
 
 ## 图片读取设置
 
-Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图片读取设置。Client 的“图片读取”设置页调用 Host 的 `harnessComfyuiImageReader/activateProfile`、`harnessComfyuiImageReader/saveProfile` 和 `harnessComfyuiImageReader/deleteProfile` 接口修改该 namespace。该 namespace 包含以下属性：
+Host 使用当前 Profile 的 `harness-comfyui-image-reader` 条目保存图片读取设置。Client 的“图片读取”设置页调用 Host 的 `harnessComfyuiImageReader/activateProfile`、`harnessComfyuiImageReader/saveProfile` 和 `harnessComfyuiImageReader/deleteProfile` 接口修改该条目。该条目包含以下属性：
 
 | 字段 | 规则与用途 |
 | --- | --- |
@@ -181,7 +181,7 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 | `configuration.profiles[].defaultPrompt` | `inspect_image` 或 `image inspect --stdin` 省略本次 `prompt` 时使用的默认读图提示词 |
 | `configuration.profiles[].temperature` | 独立视觉模型调用使用的数值，范围为 `0` 至 `2` |
 | `configuration.profiles[].maxTokens` | 独立视觉模型调用允许返回的最大 Token 数，范围为 `1` 至 `32768` |
-| `credentials.<profileId>` | OpenAI 兼容配置的可选 API Key；该字典的值使用 Settings `secret` role，浏览器只收到对应 `hasApiKey` 状态 |
+| `credentials.<profileId>` | OpenAI 兼容配置的可选 API Key；当前 Profile 的字段使用 Settings `secret` role，浏览器只收到对应 `hasApiKey` 状态 |
 
 系统 Provider 与模型候选来自 Harness 当前 LLM 运行时，并且设置页只列出明确声明 `image` 输入能力的模型。OpenAI 兼容配置不依赖系统 Provider 目录；Host 向完整地址发送 OpenAI Chat Completions 格式的单张图片 Data URL、提示词、模型 ID、`temperature` 和 `max_tokens`。当完整地址使用 HTTP 时，请求中的 Bearer API Key（如已配置）和 Data URL 图片数据不受 TLS 传输加密保护。
 
@@ -193,11 +193,11 @@ Host 使用 `harness-comfyui-image-reader-profiles` Settings namespace 保存图
 
 Host 与 Client 使用同一固定顺序校验当前保存请求。每条名称、连接参数、模型、默认提示词、温度、最大输出 Token 数或 API Key 规则具有独立错误码；设置页在对应输入项附近显示该规则，并在保存按钮附近显示同一错误码的总结。其他配置不参与当前保存请求，也不能用 Client 中的未保存输入阻止当前配置保存。保存持久化失败使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`；激活持久化失败使用 `IMAGE_READER_SETTINGS_ACTIVATE_FAILED`；删除持久化失败使用 `IMAGE_READER_SETTINGS_DELETE_FAILED`。Host 通过 Typert 业务失败载体把这些具体错误码发送给 Client，设置页不会把这些错误码改写为通用设置请求错误。Host 拒绝覆盖同 ID 的新建配置、重新创建并发删除的更新目标或激活不存在的已保存配置。保存或激活成功后，Host 返回的活动配置实时应用于下一次 `inspect_image` 调用，不需要重启 Host。
 
-当前 Host 启动时同时注册旧 namespace `harness-comfyui-image-reader` 和新 namespace `harness-comfyui-image-reader-profiles`，并检查两个 namespace 的用户值。仅当旧 namespace 存在用户值并且新 namespace 尚无用户值时，当前 Host 把旧 Provider、模型、默认提示词、`temperature` 和最大输出 Token 原样迁移到名为“原图片读取配置”的 `runtime` 配置。新 namespace 已存在用户值时，当前 Host 不会重复迁移或覆盖。
+启动器在 Host 启动前检查旧 `settings.yaml` 的 `harness-comfyui-image-reader-profiles` 和更早的 `harness-comfyui-image-reader` 设置。当前 Profile 中已经保存的 `harness-comfyui-image-reader` 条目优先；没有当前条目时，启动器使用较新的旧设置，并在仅有更早格式时将其 Provider、模型、默认提示词、`temperature` 和最大输出 Token 的原值写入名为“原图片读取配置”的 `runtime` 配置。启动器在迁移后从待导入旧文件移除对应字段；重复启动保留当前 Profile 中的用户值。
 
 ### 默认提示词与阶段诊断
 
-`src/image-reader/settings.ts` 从 `config/image-reader-profiles.json` 中 ID 为 `default` 的记录读取新建配置的默认提示词。内置配置采用事实观察用途。已保存的 Settings 用户值继续覆盖默认值；单次 `image inspect` 的 prompt 覆盖该次调用的活动配置提示词。
+`src/image-reader/settings.ts` 从 `config/image-reader-profiles.json` 中 ID 为 `default` 的记录读取新建配置的默认提示词。内置配置采用事实观察用途。当前 Profile 中已保存的用户值继续覆盖默认值；单次 `image inspect` 的 prompt 覆盖该次调用的活动配置提示词。
 
 `config/image-reader-runtime.json` 保存 `shutdownTimeoutMs` 和 `diagnosticLogFormat`，由 `src/image-reader/plugin-schema.ts` 校验。`shutdownTimeoutMs` 是插件卸载时等待已取消的活动请求退出的期限，以毫秒计，插件配置中的同名字段可覆盖此默认值；`diagnosticLogFormat` 是 Host logger 的阶段日志格式模板。`src/image-reader/diagnostics-schema.ts` 定义 stage、elapsedMs、stageElapsedMs、profileId、model 和可选 requestId；两个耗时字段均以毫秒计：`elapsedMs` 从本次图片准备开始前建立的计时起点计算，`stageElapsedMs` 从上一条阶段记录的时间计算，首条记录从本次计时起点计算。服务提供 `x-request-id` 响应头或 runtime 失败 request ID 时，日志记录该字段。响应头到达只代表 HTTP 响应已经开始；`response_complete` 表示正文读完，后续解析和完成原因检查通过后才记录 `completed`。
 

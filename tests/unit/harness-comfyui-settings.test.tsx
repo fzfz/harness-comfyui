@@ -42,7 +42,7 @@ function imageReaderScope() {
   }
 }
 
-function sourceScope(mutate: (...args: any[]) => Promise<unknown> = vi.fn(async () => undefined)) {
+function sourceScope(mutate: (...args: any[]) => Promise<unknown> = vi.fn(async () => true)) {
   const snapshot = Object.freeze({
     status: 'ready' as const,
     writable: true,
@@ -186,7 +186,7 @@ describe('Harness-ComfyUI unified settings page', () => {
   })
 
   it('keeps the source draft across tabs and saves URL and port in one Settings mutation', async () => {
-    const mutate = vi.fn(async () => undefined)
+    const mutate = vi.fn(async () => true)
     let renderer!: ReturnType<typeof create>
     await act(async () => {
       renderer = create(createElement(HarnessComfyuiSettingsPage, props(mutate) as never))
@@ -222,7 +222,7 @@ describe('Harness-ComfyUI unified settings page', () => {
     ['source-port', '65536', SOURCE_SETTINGS_COPY.portInvalid],
     ['source-port', '1.5', SOURCE_SETTINGS_COPY.portInvalid],
   ])('shows the exact field error and does not write for invalid %s', async (field, value, message) => {
-    const mutate = vi.fn(async () => undefined)
+    const mutate = vi.fn(async () => true)
     let renderer!: ReturnType<typeof create>
     await act(async () => {
       renderer = create(createElement(HarnessComfyuiSettingsPage, props(mutate) as never))
@@ -259,6 +259,24 @@ describe('Harness-ComfyUI unified settings page', () => {
     })
     expect(input(renderer, 'source-url').props.value).toBe('https://catalog.example.com')
     expect(input(renderer, 'source-port').props.value).toBe('443')
+    expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_SETTINGS_COPY.saveFailed)
+    renderer.unmount()
+  })
+
+  it('keeps the source draft when ConfigForms refuses a write', async () => {
+    const mutate = vi.fn(async () => false)
+    let renderer!: ReturnType<typeof create>
+    await act(async () => {
+      renderer = create(createElement(HarnessComfyuiSettingsPage, props(mutate) as never))
+      await Promise.resolve()
+      button(renderer, '数据源服务').props.onClick()
+    })
+    await act(async () => {
+      input(renderer, 'source-url').props.onChange({ target: { value: 'https://catalog.example.com' } })
+      renderer.root.findAllByType('form')[0]!.props.onSubmit({ preventDefault: vi.fn() })
+      await Promise.resolve()
+    })
+    expect(input(renderer, 'source-url').props.value).toBe('https://catalog.example.com')
     expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_SETTINGS_COPY.saveFailed)
     renderer.unmount()
   })

@@ -25,7 +25,11 @@ git diff --check
 4. 本地 `HEAD` 与 `origin/main` 指向同一个完整提交 SHA。
 5. 目标 Git tag 与 GitHub Release 尚不存在。
 
-## v0.44.2 的发布范围与发布条件
+## v0.44.3 的发布范围与发布条件
+
+v0.44.3 把 Desktop 更新到 2.0.15、DSH 更新到 0.1.7-rc.2、Electron 更新到 44.0.0，并迁移产品 Preset 注册和 Profile 设置持久化。发布执行者必须以最终 `config/desktop-baseline.json` 的源码提交和包版本为准，完成本文的审查和门禁。发布执行者按[本次升级计划](../plans/dsh-desktop-20260928.md#已获得的授权)核对发布与生产部署各自的授权范围，发布 v0.44.3 并验收生产实例。部署验收执行者必须在 v0.44.3 生产实例启动后，使用 OpenRouter 免费模型，依据[运行验收记录](../verification/dsh-desktop-20260928/runtime-acceptance.md)中的工作台、续派和 CLI 通过条件逐项验证，并记录生产实例的请求、响应、Session ID、Preset、Workspace 路径和失败原因。
+
+## v0.44.2 的历史发布范围与发布条件
 
 v0.44.2 更新 Stable 基线、DSH peer 范围、纯 CLI Profile 和包管理器版本，详情见 [v0.44.2 发布说明](../releasenotes.md#harness-comfyui-v0442)。用户已授权创建 PR、合入 main、同步本地 main、发布 v0.44.2 并部署生产目录。三种 Preset 的真实 Desktop 模型验收已完成，证据见[基线验证记录](../verification/upstream-baseline-20260919.md)。发布执行者必须按本文件核对最终提交与发布门禁。
 
@@ -67,7 +71,7 @@ gh release create "v$release_version" \
 
 ## 当前 Desktop 的安装准备
 
-发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。Desktop 2.0.11 的 Stable 构建与 Electron 原生绑定准备命令见[启动规范](startup.md#主开发-checkout-依赖准备)。
+发布执行者从待发布提交读取 config/desktop-baseline.json，并准备其中指定的 fzfz/dsh-desktop-anywhere commit 与 Stable workspace。发布执行者必须按照该 commit 的 yarn.lock 预先列出依赖版本、安装步骤和依赖审计结果；取得安装授权后才安装和构建。开发启动脚本只使用已安装环境，不自动安装或升级上游依赖。Desktop 2.0.15 的 Stable 构建与 Electron 原生绑定准备要求见[启动规范](startup.md#主开发-checkout-依赖准备)。
 
 发布执行者必须验证源码 origin、完整 commit、Desktop、Harness 和 Electron 版本与基线配置一致，并完成当前插件的真实 Desktop 门禁。旧 fork 的补丁及历史验收记录不能代替 anywhere Stable 的验收结果。
 
