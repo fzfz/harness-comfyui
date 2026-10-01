@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "ui": {
+    "pluginNavigationAriaLabel": "插件",
+    "addPluginButtonText": "添加插件",
+    "packageInputPlaceholder": "例如 dsh-plugin-whale-pet",
+    "installButtonText": "安装",
+    "enableNowButtonText": "立即启用",
+    "alreadyInstalledText": "该插件已安装",
+    "installedHeadingText": "已安装",
+    "installFailureHeadingText": "插件安装失败",
+    "unknownResultHeadingText": "未能获取安装结果",
+    "nothingInstalledText": "安装完成，没有新增依赖。",
+    "restartRequiredText": "已安装，下次启动后加载。",
+    "enabledBundleSwitchLabelTemplate": "启用 {name}"
+  },
+  "evidence": {
+    "resultFilename": "official-plugin-install.json",
+    "screenshots": {
+      "pluginsPage": "plugins-page.png",
+      "installDialog": "install-dialog.png",
+      "installResult": "install-result.png",
+      "enabledBundle": "enabled-bundle.png"
+    }
+  }
+}

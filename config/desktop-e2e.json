@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "modes": {
+    "defaultMode": "fresh",
+    "fresh": {
+      "persistent": false
+    },
+    "development": {
+      "persistent": true,
+      "environmentRootRelativePath": ".local/desktop-development/official-environment",
+      "environmentFilePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
+      "credentialEnvironmentNames": ["OPENROUTER_API_KEY", "OPENCODE_GO_API_KEY"],
+      "requiredEnvironmentNames": ["OPENROUTER_API_KEY"],
+      "initialProfilePatches": [
+        {
+          "id": "agent-default-model",
+          "config": {
+            "provider": "openrouter",
+            "model": "stealth/space-bunny-alpha"
+          }
+        },
+        {
+          "id": "llm-pi-ai",
+          "config": {
+            "providers": {
+              "openrouter": {
+                "displayName": "OpenRouter",
+                "api": "openai-completions",
+                "baseURL": "https://openrouter.ai/api/v1",
+                "apiKeyEnv": "OPENROUTER_API_KEY",
+                "models": [
+                  {
+                    "id": "stealth/space-bunny-alpha",
+                    "input": ["text", "image"],
+                    "contextWindow": 1000000,
+                    "maxTokens": 8192
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "directoryNames": {
+        "dshHome": "dsh-home",
+        "electronUserData": "user-data",
+        "workspace": "workspace"
+      },
+      "leaseFilename": "active-probe.json"
+    }
+  },
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
+    "bundleId": "com.deepseek.dsh",
+    "version": "0.2.0-rc.2"
+  },
+  "paths": {
+    "runRootRelativePath": ".local/desktop-e2e",
+    "directoryNames": {
+      "dshHome": "dsh-home",
+      "electronUserData": "user-data",
+      "workspace": "workspace",
+      "logs": "logs",
+      "evidence": "evidence"
+    },
+    "profileRelativePath": "profiles/desktop",
+    "profilePatchFilename": "cordis.patch.yml",
+    "runRecordFilename": "run.json",
+    "diagnosticFilename": "diagnostic.log",
+    "outputFilenames": {
+      "stdoutLog": "desktop.stdout.log",
+      "stderrLog": "desktop.stderr.log",
+      "startupReadyEvidence": "startup-ready.json",
+      "preparationFailureEvidence": "preparation-failure.json",
+      "failureEvidence": "failure.json",
+      "cleanupFailureEvidence": "cleanup-failure.json",
+      "stopRequestEvidence": "stop-request.json",
+      "stopResultEvidence": "stop-result.json"
+    }
+  },
+  "ports": {
+    "allocation": "held-loopback-ephemeral",
+    "host": "127.0.0.1",
+    "roles": ["host", "rendererCdp", "hostInspector"],
+    "requiredForReady": ["host", "rendererCdp"]
+  },
+  "startup": {
+    "startupTimeoutMs": 60000,
+    "portReadyTimeoutMs": 45000,
+    "singleInstanceExitWindowMs": 12000,
+    "stopTimeoutMs": 5000,
+    "killTimeoutMs": 5000,
+    "pollIntervalMs": 100
+  },
+  "rendererCdp": {
+    "maxPayloadSize": 67108864
+  },
+  "readiness": {
+    "rendererTargetTitle": "DeepSeek Harness",
+    "rendererSessionTitleSeparator": " — ",
+    "applicationUrlPrefix": "dsh-app://",
+    "documentReadyState": "complete",
+    "requireVisibleBodyText": true
+  },
+  "invocation": {
+    "environmentNames": {
+      "dshHome": "DSH_HOME",
+      "electronUserData": "DSH_DESKTOP_USER_DATA_DIR",
+      "diagnosticFile": "DSH_DESKTOP_DIAGNOSTIC_FILE",
+      "hostInspectorPort": "DSH_DESKTOP_HOST_INSPECT_PORT"
+    },
+    "unsetEnvironmentNames": ["ELECTRON_RUN_AS_NODE"],
+    "arguments": [
+      "--user-data-dir={electronUserData}",
+      "--remote-debugging-port={rendererCdpPort}",
+      "--remote-debugging-address={loopbackHost}"
+    ]
+  },
+  "profilePortPatch": {
+    "entryId": "webserver",
+    "hostField": "host",
+    "portField": "port"
+  },
+  "capabilities": {
+    "defaultApplicationLogsIsolated": false,
+    "applicationHostHealthVerified": false,
+    "pluginIdentityVerified": false
+  },
+  "commandRunner": {
+    "invocationDirectoryEnvironmentName": "HARNESS_COMFYUI_DESKTOP_TEST_INVOCATION_DIRECTORY",
+    "invocationsRelativePath": ".local/desktop-e2e/desktop-test-runner/invocations",
+    "descriptorDirectoryName": "runs",
+    "invocationFilename": "invocation.json",
+    "cancellationFilename": "cancel-request.json",
+    "resultFilename": "cancellation-result.json",
+    "pendingStartDrainTimeoutMs": 80000,
+    "commandStopTimeoutMs": 5000,
+    "commandKillTimeoutMs": 5000
+  }
+}

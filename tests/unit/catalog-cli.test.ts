@@ -27,6 +27,17 @@ function catalog(process: CatalogCliProcess): CatalogCli {
 }
 
 describe('Catalog CLI adapter', () => {
+  it('preserves the configured source address and CLI connection error', async () => {
+    const diagnostic = '{"error":{"code":"SOURCE_CONNECTION_FAILED","message":"Source service is unavailable."}}\n'
+    const client = catalog(async () => ({ exitCode: 4, stdout: '', stderr: diagnostic }))
+    await expect(client.baseModels(new AbortController().signal)).rejects.toMatchObject({
+      code: 'CATALOG_QUERY_FAILED', exitCode: 4,
+      message: expect.stringContaining('https://catalog.example.com:18093'),
+    })
+    await expect(client.baseModels(new AbortController().signal)).rejects.toMatchObject({
+      message: expect.stringContaining(diagnostic.trim()),
+    })
+  })
   it('queries the ComfyUI instance directory with the fixed CLI request and returns only instance ids', async () => {
     const execute = vi.fn<CatalogCliProcess>(async () => ({
       exitCode: 0,

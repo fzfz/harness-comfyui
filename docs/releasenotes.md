@@ -1,3 +1,13 @@
+# Harness ComfyUI v0.45.0
+
+v0.45.0 将 Harness ComfyUI 交付方式升级为官方 DeepSeek Harness Desktop `0.2.0-rc.2` 插件。发行 tarball 包含 Host、Client、managed CLI、Workflow worker、两个 ComfyUI 预设和八个项目 Skill。用户通过官方插件管理器安装发行包，在插件详情页配置数据源、图片读取与浏览器。
+
+插件使用官方 Profile、数据根和凭据引用，支持迭代父会话显示子会话生成结果，并在服务连接失败时保留具体地址、原始诊断和操作指引。仓库移除第三方 Desktop、Web 和 headless 宿主启动链路，保留隔离的官方 Desktop 开发测试入口。
+
+产品代码已通过完整的 `pnpm quality` 检查，其中 2,116 项测试通过；八个 Skill 的指定真实执行分支和工作台、迭代两个正式 ComfyUI Run 通过。历史数据试迁移核对 1,627 条 Run、1,462 个媒体文件和两个 Workspace。
+
+本轮按用户最新要求执行合并、发布、正式迁移和安装，并停止追加验收。此前未完成的验收继续保留原状态，具体范围见[交付记录](verification/official-desktop-plugin/delivery-scope-20261001.json)，逐项证据见[验收记录](verification/official-desktop-plugin/acceptance-status.json)。旧生产目录与原数据继续保留。
+
 # Harness ComfyUI v0.44.3
 
 v0.44.3 将 Desktop 升至 2.0.15、DSH 升至 0.1.7-rc.2、Electron 升至 44.0.0，并将 Cordis 升至 4.0.4。插件 DSH peer 范围改为 `>=0.1.7-rc.2 <0.1.8`；纯 CLI Profile 将 DSH 包固定在 0.1.7-rc.2。`config/desktop-baseline.json` 固定自有 fork 提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302`。

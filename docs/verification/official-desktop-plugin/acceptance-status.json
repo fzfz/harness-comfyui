@@ -1,0 +1,869 @@
+{
+  "schemaVersion": 1,
+  "phase": "实施中",
+  "branch": "codex/official-desktop-plan",
+  "sourceBaseCommit": "742570c4d7ab17272baac0eb3211536751002c9a",
+  "codeCompletion": "实现与诊断修复完成；相同产品代码的完整pnpm quality共2,116项测试通过。",
+  "candidateAcceptance": "已有结果见逐项记录；本轮按用户最新要求交付，不宣称此前全部验收通过。",
+  "release": "用户已要求按现有结果立即合并发布；发布结果由本轮交付记录保存。",
+  "productionSwitch": "本轮执行正式迁移和官方插件安装；旧目录与原数据保留。",
+  "items": [
+    {
+      "id": "A1",
+      "status": "未通过",
+      "evidence": [
+        "../../../tests/production/plugin-package.test.mjs",
+        "dependency-audit.json",
+        "current-candidate-progress-20261001.json"
+      ],
+      "reason": "当前0.45.0受限官方UI安装、Host/Client业务与重启查询通过；源码未物理移走且运行采用测试专用Chromium参数，完整A1继续未通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A1"
+      }
+    },
+    {
+      "id": "A2",
+      "status": "未通过",
+      "evidence": [
+        "../../../tests/production/plugin-package.test.mjs",
+        "current-candidate-progress-20261001.json"
+      ],
+      "reason": "151项必需Skill/Preset激活检查及当前包资源回归通过；受限运行安装包只读且源码不可访问，物理移走源码后的使用仍待验收。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A2"
+      }
+    },
+    {
+      "id": "A3",
+      "status": "通过",
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "reason": "官方启用、停用、重复加载和重启的运行行为，以及对应源码与自动化组合证据通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A3"
+      }
+    },
+    {
+      "id": "A4",
+      "status": "通过",
+      "evidence": [
+        ".local/desktop-e2e/release-update-20261001/evidence/a4-completion.json",
+        ".local/desktop-e2e/release-update-20261001/evidence/restored-predecessor-business-request/business-request.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-update-lifecycle-audit.json"
+      ],
+      "reason": "官方兼容前驱更新、非空凭据引用与数据保留、失败恢复回装、冷重启及一次实际历史Run业务请求均通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A4"
+      },
+      "previousReasons": [
+        "隔离官方兼容候选更新、无效包失败和原备份回装已执行；五个真实Run/媒体及配置保留，官方Renderer打开416×624媒体成功。非空图片读取测试值被写入Profile内，宿主凭据引用及非空引用恢复尚未通过；正在核对官方公开接口。"
+      ]
+    },
+    {
+      "id": "A5",
+      "status": "通过",
+      "evidence": [
+        "../../../tests/unit/installed-presets.test.mjs",
+        "business-e2e-migration.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "reason": "两个预设在仓库外Workspace工作，Skill作用域与隐式官方默认预设分别通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A5"
+      }
+    },
+    {
+      "id": "A6",
+      "status": "未通过",
+      "evidence": [
+        "skill-script-authorization.json",
+        "../../../tests/integration/cli-help.test.ts"
+      ],
+      "reason": "三个已批准脚本和八个Skill文档完成Host Node入口适配，22项回归通过且语义复审通过；真实项目Skill模型矩阵尚未通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A6"
+      }
+    },
+    {
+      "id": "A7",
+      "status": "通过",
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "reason": "实际首派、同会话续派、四角色、指定中断和权限约束通过；首步前附加由源码、单元测试和真实Workspace关联组合证据支持。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A7"
+      }
+    },
+    {
+      "id": "A8",
+      "status": "通过",
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json",
+        ".local/desktop-e2e/release-preparation-20261001/a8-native-errors-result.json"
+      ],
+      "reason": "正式Run、媒体与Workflow下载、冷重启、上下文查询及官方界面的具体服务连接诊断通过。不可达服务界面属于受控回归，正式Run属于真实服务验收。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A8"
+      },
+      "previousReasons": [
+        "实际目录查询、上下文插入、五次正式Run、媒体与Workflow下载、重启后Run及媒体投影已核对；最终候选重装后的完整业务与错误提示验收待完成。"
+      ]
+    },
+    {
+      "id": "A9",
+      "status": "未通过",
+      "evidence": [
+        "../../../tests/unit/node-script-environment.test.ts",
+        "current-candidate-progress-20261001.json"
+      ],
+      "reason": "当前受限官方Host的SQLite持久化、数据源客户端、Workflow worker和Chrome编译有实际业务证据；Sharp实际处理及临时Chrome具体PID和退出状态仍需补证。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A9"
+      }
+    },
+    {
+      "id": "A10",
+      "status": "通过",
+      "evidence": [
+        "../../../tests/unit/browser-settings-page.test.tsx",
+        "../../../tests/unit/browser-settings.test.ts",
+        "../../../tests/unit/plugin-storage.test.ts",
+        "../../../tests/integration/host-plugin.test.ts",
+        "business-e2e-migration.json",
+        "three-blockers-resolution-20261001.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "reason": "三个设置的实际保存、失败草稿保留、重装冷重启及无效路径检查通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A10"
+      },
+      "previousReasons": [
+        "保存失败位置提示、特殊路径原样显示和草稿保留已修复，36项定向回归及独立复审通过。隔离更新后的配置读回和媒体打开通过；宿主凭据引用尚未通过，最终候选重验待完成。"
+      ]
+    },
+    {
+      "id": "A11",
+      "status": "未通过",
+      "evidence": [],
+      "reason": "Run 活动期间卸载及重新启用、异常安装、数据只读、重复安装和带空格路径生成验收尚未执行。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A11"
+      }
+    },
+    {
+      "id": "A12",
+      "status": "产品代码门禁通过",
+      "evidence": [
+        "dependency-audit.json",
+        "current-desktop-regression.json",
+        ".local/desktop-e2e/three-blockers-20261001/final-quality-result.json",
+        ".local/desktop-e2e/three-blockers-20261001/final-quality-os-cleanup.json"
+      ],
+      "reason": "产品代码Standards、Spec与Simplify审阅通过，完整quality共2,116项测试通过；文档修订后按用户最新要求停止重新启动测试应用。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A12"
+      },
+      "previousReasons": [
+        "阶段性 pnpm quality:fast 的 1,741 项测试通过，函数覆盖率为100%；后续 CDP、资源身份和测试追踪环境问题已修复并完成定向独立审查。当前 pnpm test:desktop 的13个文件263项测试零跳过通过；最终候选完整审查、pnpm quality 和 git diff --check 尚未完成。",
+        "最终代码候选独立审查已完成；pnpm quality 的2,095项测试、类型检查、构建及安全检查通过，git diff --check通过。对应代码已提交9542f8d；后续验收记录变更按项目门禁复验。"
+      ]
+    },
+    {
+      "id": "A13",
+      "status": "通过",
+      "evidence": [
+        "application-capabilities.json",
+        "development-initialization.json",
+        ".local/desktop-e2e/ea601836-6f1b-41d7-b3f7-5dc7a178fa96/evidence/official-lifecycle-a13-browser-save-failure.json",
+        ".local/desktop-e2e/lifecycle-fixtures/90eb1778-b859-4e75-9c2c-57bd52bda735/evidence/official-desktop-lifecycle-a13.json",
+        ".local/desktop-e2e/reviews/a13-a14-gate-independent-review.json",
+        "current-desktop-regression.json",
+        "a13-current-targeted-acceptance.json",
+        ".local/desktop-e2e/reviews/required-resource-browser-full-desktop-evidence-review.json"
+      ],
+      "reason": "当前6fe39255夹具的双实例隔离、Session/Workspace归属、另一实例退出后请求、重启与候选加载断言通过；清理观察确认日常实例PID/PGID11329继续存在。较早68d1e215运行完成522个对象、416个文件的原路径及字节比较，历史证据见desktop-regression-68d1e215.json。当前完整入口原始证据独立审阅通过；最终候选门禁状态见currentQualityAttempt.blocker。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A13"
+      },
+      "scope": "当前0.45.0候选tarball的自动化回归，源码基线及dirty状态见current-desktop-regression.json。"
+    },
+    {
+      "id": "A14",
+      "status": "通过",
+      "evidence": [
+        "business-e2e-migration.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/reviews/a13-a14-gate-independent-review.json",
+        "desktop-gate-and-legacy-cleanup.json",
+        "current-desktop-regression.json",
+        ".local/desktop-e2e/reviews/required-resource-browser-full-desktop-evidence-review.json"
+      ],
+      "reason": "当前 pnpm test:desktop 自动完成候选构建、官方界面安装和启用、实际加载身份核对、完整受控生成、媒体和历史业务断言。13个文件263项测试零跳过通过；当前证据已通过独立审阅；最终候选全树质量门禁及A18真实验收待完成。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A14"
+      },
+      "scope": "当前0.45.0候选tarball的自动化回归，源码基线及dirty状态见current-desktop-regression.json。"
+    },
+    {
+      "id": "A15",
+      "status": "通过",
+      "evidence": [
+        "application-capabilities.json",
+        ".local/desktop-e2e/lifecycle-fixtures/db028b2d-ae0a-4b7c-8fab-0ba936ac8e3c/evidence/official-desktop-lifecycle-a15-success.json",
+        ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-failure.json",
+        ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-cancel.json",
+        ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-timeout.json",
+        ".local/desktop-e2e/lifecycle-fixtures/ee5f0f01-9fb6-4db0-8a20-65f5bb5ae144/evidence/official-desktop-lifecycle-a15-port-conflict.json",
+        ".local/desktop-e2e/lifecycle-fixtures/db028b2d-ae0a-4b7c-8fab-0ba936ac8e3c/evidence/official-desktop-lifecycle-a15-debug.json",
+        ".local/desktop-e2e/reviews/a15-cleanup-independent-review.json",
+        "desktop-gate-and-legacy-cleanup.json",
+        "current-desktop-regression.json",
+        "command-cancellation-actual.json",
+        ".local/desktop-e2e/reviews/required-resource-browser-full-desktop-evidence-review.json"
+      ],
+      "reason": "六个生命周期实机场景与完整入口通过；整个命令取消清理的23项纯测试及独立复审通过。测试 runner 接收SIGTERM时整条命令退出143，外层进程组接收SIGINT时退出130；两个实际信号场景均清理本轮应用、端口和租约。当前完整入口证据已通过独立审阅；最终候选全树质量门禁及A18真实验收待完成。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A15"
+      },
+      "scope": "当前0.45.0候选tarball的自动化回归，源码基线及dirty状态见current-desktop-regression.json。"
+    },
+    {
+      "id": "A16",
+      "status": "未通过",
+      "evidence": [
+        "release-migration-authorization-20261001.json"
+      ],
+      "reason": "生产安装、数据迁移及验收已获本轮用户明确授权；正式发行包上的生产真实业务矩阵尚未执行。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A16"
+      }
+    },
+    {
+      "id": "A17",
+      "status": "未通过",
+      "evidence": [],
+      "reason": "旧环境退役尚待单独授权，生产验收、备份验证和历史数据处置选择尚未完成。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A17"
+      }
+    },
+    {
+      "id": "A18",
+      "status": "未通过",
+      "evidence": [
+        "free-model-preflight.json",
+        "release-preparation-progress-20261001.json"
+      ],
+      "reason": "八个Skill指定分支和两个正式ComfyUI Run通过；5/6真实矩阵通过，其他Preset真实免费模型作用域证据不足。生产完整真实矩阵未执行；按用户最新要求移出本轮交付条件，保持未通过。",
+      "definition": {
+        "file": "docs/plans/official-desktop-plugin-20260929.md",
+        "section": "验收清单",
+        "id": "A18"
+      }
+    }
+  ],
+  "pendingAuthorization": [
+    {
+      "action": "旧环境归档及物理删除",
+      "state": "按主方案保留独立授权边界；当前迁移保留原目录和数据"
+    }
+  ],
+  "externalBlockers": [
+    {
+      "service": "OpenRouter免费模型",
+      "status": "此前真实服务失败记录保留；八个指定Skill分支已经独立验收通过。",
+      "observedErrors": [
+        "HTTP429限流",
+        "PI_AI_ERROR：Provider returned an empty response"
+      ],
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/failed-cohere-attempt.json",
+        ".local/desktop-e2e/release-preparation-20261001/space-composition-delivery.json"
+      ],
+      "requiredAction": "执行者保留此前失败证据；本轮按用户最新交付范围发布，停止追加真实模型重试。"
+    }
+  ],
+  "regressionEvidence": {
+    "pluginPackage": {
+      "result": "14 tests passed",
+      "test": "tests/production/plugin-package.test.mjs",
+      "limit": "官方 UI 候选安装已完成，完整运行矩阵仍待验收。"
+    },
+    "workerRuntime": {
+      "result": "70 related tests passed; typecheck passed",
+      "limit": "官方Host已实际执行数据源客户端与Workflow worker；无系统Node/pnpm的受限环境及最终候选重验尚未完成。"
+    },
+    "storageConfiguration": {
+      "result": "20 tests passed",
+      "test": "tests/unit/config-loader.test.ts",
+      "limit": "官方home已接线，17项Host集成及20项配置加载回归通过；官方设置界面尚未验收。"
+    },
+    "profileYaml": {
+      "result": "18 tests passed",
+      "test": "tests/production/official-profile-patch.test.mjs",
+      "limit": "标准公共 SDK 依赖视图接入后，开发入口已实际启动并复用配置。"
+    },
+    "skillHelp": {
+      "result": "22 tests passed; independent semantic review passed",
+      "test": "tests/integration/cli-help.test.ts"
+    },
+    "exactPeers": {
+      "result": "4 tests passed",
+      "test": "tests/security/check-manifest-lock.test.ts",
+      "limit": "已批准的准确依赖视图已安装；manifest-lock 检查通过，最终质量门禁待完成。"
+    },
+    "rendererCdp": {
+      "result": "当前CDP和生命周期纯测试82项通过，probe纯测试47项通过；规范符合性与目标符合性独立审阅通过，完整官方Desktop入口263项零跳过通过。",
+      "test": "tests/production/renderer-cdp.test.mjs",
+      "actualRunId": "8376511c-40e1-4701-a849-4f2b3229968a",
+      "evidence": ".local/desktop-e2e/8376511c-40e1-4701-a849-4f2b3229968a/evidence/renderer-fixture.json",
+      "cleanup": "stopped; ports released",
+      "limit": "当前结果为自动化回归；最终候选完整审查、完整质量门禁与真实验收尚未完成。",
+      "currentEvidence": "current-desktop-regression.json"
+    },
+    "shellCapability": {
+      "result": "10 tests passed",
+      "test": "tests/unit/cli-shell-capability.test.ts"
+    },
+    "officialDesktopFullEntry": {
+      "result": "11 test files; 217 passed; zero skipped",
+      "classification": "automated-regression",
+      "acceptanceClaim": false,
+      "evidence": "desktop-gate-and-legacy-cleanup.json",
+      "limit": "本条保留首次完整入口结果；当前结果见officialDesktopCurrentEntry。",
+      "historical": true
+    },
+    "legacyCleanup": {
+      "result": "80 legacy files deleted plus two obsolete native Goal regression files; plugin preset contracts retained and migrated",
+      "boundaryCheck": "passed",
+      "limit": "删除仅发生在开发 worktree；旧生产目录及旧安装保持原状。"
+    },
+    "officialDesktopCurrentEntry": {
+      "result": "13个文件，263项测试通过，零跳过",
+      "classification": "automated-regression",
+      "evidence": "current-desktop-regression.json",
+      "finalCandidateAccepted": false
+    }
+  },
+  "realAcceptance": {
+    "eightSkills": "未通过",
+    "twoPresets": "未通过",
+    "workbenchSubagentFirstAndContinuation": "未通过",
+    "fourIterationRoles": "未通过",
+    "imageReading": "未通过",
+    "historyAndResultUsage": "未通过",
+    "formalWorkbenchRun": "未通过",
+    "formalIterationRun": "未通过",
+    "modelCatalog": "stealth/space-bunny-alpha 已核对输入和输出零价格、工具及图片输入能力；正式工作台请求实际成本为零。nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 已核对零价格和图片能力，实际图片读取 HTTP 200；此前限流与能力失败记录保留。",
+    "latestRealAttempt": "release-preparation-progress-20261001.json"
+  },
+  "production": "生产目录保持原状",
+  "credentialReadiness": {
+    "source": "主开发仓库根 .env",
+    "openrouter": "已配置",
+    "opencode": "已配置",
+    "privacy": "只向隔离实例注入，不记录凭据值"
+  },
+  "currentTypecheck": "通过；使用官方 0.2.0-rc.2 公共 SDK 依赖视图。",
+  "authorizationRecords": [
+    {
+      "action": "官方公共API开发依赖及隔离Profile候选插件依赖安装",
+      "object": "dependency-audit.json",
+      "state": "已批准安装，开发依赖视图已接入",
+      "approvalStatement": "命令实际运行还需接入待授权安装的依赖视图：批准",
+      "evidence": "dependency-installation.json"
+    },
+    {
+      "action": "三个项目Skill的CLI帮助脚本适配Host Node入口",
+      "object": "skill-script-authorization.json",
+      "state": "已批准实施"
+    },
+    {
+      "action": "补足公共 SDK peer 依赖及 undici@8.11.2",
+      "object": "dependency-peer-supplement.json",
+      "state": "已批准安装，准确版本已安装并链接至 worktree"
+    }
+  ],
+  "developmentInitialization": {
+    "status": "通过",
+    "scope": "新建隔离开发环境从凭据环境变量引用完成官方初始化，复用持久目录后再次进入主界面；两轮进程与端口均已清理。",
+    "record": "docs/verification/official-desktop-plugin/development-initialization.json",
+    "officialDevCommandsMigrated": false
+  },
+  "currentReviewFindings": [
+    {
+      "scope": "probe默认readiness",
+      "result": "43项probe测试通过；强制停止前的本run lease及端口归属复核，已通过独立Reviewer的三个定向测试和两个真实OS复现场景。",
+      "evidence": ".local/desktop-e2e/reviews/probe-stop-final-review.json"
+    },
+    {
+      "scope": "SQLite初始化",
+      "result": "实际WAL/SHM异常、句柄关闭、只读路径及字面值错误文案已经修复，独立复审通过。",
+      "evidence": ".local/desktop-e2e/reviews/storage-initialization-final-review.json"
+    },
+    {
+      "scope": "官方插件安装夹具",
+      "result": "启用请求及启用确认超时、最终截图超时分类均已TDD修复；46项纯测试及独立复审通过。",
+      "evidence": ".local/desktop-e2e/reviews/installer-timeout-review.json"
+    },
+    {
+      "scope": "A13/A14/A15 规范符合性与目标符合性独立审阅",
+      "standards": "1项P1：实际候选加载结果有八字段，生命周期schema只接受三字段",
+      "spec": "1项P1及3项P2：命令取消清理、运行资源核对、既有环境只读比较和调试停止输出",
+      "state": "所列问题已修复，定向独立复审和实际回归通过；最终全树审查待完成。",
+      "evidence": [
+        ".local/desktop-e2e/reviews/a13-a14-standards-final-review.json",
+        ".local/desktop-e2e/reviews/a13-a14-spec-final-review.json"
+      ],
+      "resolutionEvidence": [
+        ".local/desktop-e2e/reviews/cdp-transport-standards-final-review.json",
+        ".local/desktop-e2e/reviews/cdp-transport-spec-final-review.json",
+        ".local/desktop-e2e/reviews/command-cancellation-spawn-guard-final-review.json",
+        "a13-current-targeted-acceptance.json",
+        "command-cancellation-actual.json",
+        "current-desktop-regression.json"
+      ]
+    },
+    {
+      "scope": "语义502、迭代结果投影、官方凭据引用",
+      "state": "三项定向修复和实际服务验收完成；独立Standards及必要Simplify通过，Spec缺口修复后复审通过，相关语义审阅通过。",
+      "evidence": "three-blockers-resolution-20261001.json"
+    }
+  ],
+  "browserAndStorageRegression": {
+    "result": "105 Host/config/schema/storage/client tests passed; 44 build/package tests passed; 24 storage/initialization/wire tests passed; additional SQLite open/close failure tests: 9 passed; typecheck passed",
+    "candidateAppAcceptance": false,
+    "independentCodeReview": "storage initialization and literal-path fixes independently passed; final candidate tree review pending",
+    "independentSemanticReview": "passed for supplied browser/storage copy",
+    "semanticEvidence": ".local/desktop-e2e/reviews/browser-storage-final-semantic-review.json",
+    "reviewEvidence": ".local/desktop-e2e/reviews/storage-initialization-final-review.json"
+  },
+  "lifecycleActualAttempts": {
+    "classification": "automated-regression",
+    "candidateAcceptanceCompleted": false,
+    "result": "当前71382253运行的完整入口263项零跳过通过，原始证据独立审阅8项通过；13个run对应12个实际启动进程组，39个配置端口和租约已释放。较早68d1e215运行的19项独立审阅保存在desktop-regression-68d1e215.json。",
+    "a13": {
+      "fixtureId": "90eb1778-b859-4e75-9c2c-57bd52bda735",
+      "candidateVersion": "0.45.0",
+      "applicationVersion": "0.2.0-rc.2",
+      "evidence": ".local/desktop-e2e/lifecycle-fixtures/90eb1778-b859-4e75-9c2c-57bd52bda735/evidence/official-desktop-lifecycle-a13.json",
+      "runIds": [
+        "065f8968-ee63-492a-b5e6-cb311dfcf688",
+        "88acb86a-d370-451d-bc25-9c704371a04a",
+        "646fc810-f52b-4aa5-b187-8be7da8f8750",
+        "26878cf7-057f-439b-b598-19d73b00a837"
+      ],
+      "hostReadOnlyRequest": {
+        "runId": "88acb86a-d370-451d-bc25-9c704371a04a",
+        "operation": "Host Remote session.list after stopping the left instance",
+        "ok": true
+      },
+      "pluginManagerResponse": "完整 RemoteResult<BundleInfo[]> 保留在两个重启环境证据中，并按 SDK 字段校验；目标包版本、installed 与 enabled 均匹配。",
+      "cleanup": {
+        "processGroupsAbsent": true,
+        "portsReleased": 12,
+        "developmentLeasesAbsent": true
+      },
+      "independentReview": "pending"
+    },
+    "a15": {
+      "scenarioEvidence": [
+        {
+          "scenario": "a15-successful-start-stop",
+          "runId": "661b4219-fced-4d49-9312-f1a2ba68363d",
+          "evidence": ".local/desktop-e2e/lifecycle-fixtures/db028b2d-ae0a-4b7c-8fab-0ba936ac8e3c/evidence/official-desktop-lifecycle-a15-success.json"
+        },
+        {
+          "scenario": "a15-start-failure",
+          "runId": "420a448b-f7d7-461a-99ac-4f550112f212",
+          "evidence": ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-failure.json"
+        },
+        {
+          "scenario": "a15-cancel-after-launch",
+          "runId": "47d57efc-c949-4413-b824-783b59205828",
+          "evidence": ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-cancel.json"
+        },
+        {
+          "scenario": "a15-startup-timeout",
+          "runId": "e71cfc69-2843-451c-9e6b-7ba80c2032c3",
+          "evidence": ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-timeout.json"
+        },
+        {
+          "scenario": "a15-port-conflict",
+          "runId": "47a04f66-2dc9-4715-9f81-8cd69f54d0a5",
+          "evidence": ".local/desktop-e2e/lifecycle-fixtures/ee5f0f01-9fb6-4db0-8a20-65f5bb5ae144/evidence/official-desktop-lifecycle-a15-port-conflict.json"
+        },
+        {
+          "scenario": "a15-debug-retention",
+          "runId": "30eefbb0-9e27-4035-90a2-2e986a0c6f8c",
+          "evidence": ".local/desktop-e2e/lifecycle-fixtures/db028b2d-ae0a-4b7c-8fab-0ba936ac8e3c/evidence/official-desktop-lifecycle-a15-debug.json"
+        }
+      ],
+      "observedCleanup": {
+        "processGroupsAbsent": true,
+        "portsReleased": true,
+        "leasePathsCheckedAbsent": true,
+        "limitation": "最终候选树的完整独立审查待完成。"
+      },
+      "independentReview": "passed after lease identity and actual absence checks were added",
+      "independentReviewEvidence": ".local/desktop-e2e/reviews/a15-cleanup-independent-review.json"
+    },
+    "earlierFailuresRetained": [
+      ".local/desktop-e2e/lifecycle-fixtures/da9b304a-c786-4967-9a45-77053ab53300/evidence/official-desktop-lifecycle-a15-port-conflict.json"
+    ],
+    "latestFullEntry": {
+      "command": "pnpm test:desktop",
+      "testFilesPassed": 9,
+      "testFilesTotal": 12,
+      "testsPassed": 222,
+      "testsTotal": 225,
+      "status": "未通过",
+      "failures": [
+        "A13 会话缓存尚未落盘时立即读取失败",
+        "A14 官方组合脚本未被现有单模块匹配条件定位",
+        "probe 测试仍使用旧默认模型期望"
+      ],
+      "cleanup": {
+        "runCount": 9,
+        "processGroupsAbsent": true,
+        "listeningPortsAbsent": 27,
+        "leasesAbsent": 9,
+        "dailyInstancePreserved": true
+      },
+      "limit": "该条保留第一次失败尝试的结果；后续两次重验分别见latestFullEntryAfterRepair和latestObservedEntry。",
+      "failureEvidence": ".local/desktop-e2e/lifecycle-fixtures/fab55e6d-e226-4c8b-92bd-99f3fbb4f029/evidence/desktop-test-runner-failure.json",
+      "repairProgress": "该次尝试后，三项失败完成定向修正，78项纯测试通过；后续重验结果保留在同一对象的后续条目中。",
+      "historical": true
+    },
+    "latestFullEntryAfterRepair": {
+      "command": "pnpm test:desktop",
+      "testFilesPassed": 10,
+      "testFilesTotal": 12,
+      "testsPassed": 229,
+      "testsTotal": 231,
+      "status": "未通过",
+      "failedCases": [
+        "A13 Renderer 候选脚本事件定位超时",
+        "Live business Renderer 候选脚本事件定位超时"
+      ],
+      "observedScriptUrl": "dsh-app://app/plugins/??harness-comfyui/client.js&rev=35de464b09a3",
+      "repairBoundary": "同一官方组合加载协议的模块列表长度为1；继续使用同一算法处理，保持同rev map与候选代码严格字节比较。",
+      "cleanup": {
+        "evidence": ".local/desktop-e2e/desktop-test-runner/runner-attempt-20261001.json",
+        "runCount": 10,
+        "processGroupsAbsent": true,
+        "listeningPortsAbsent": 30,
+        "leasesAbsent": true,
+        "dailyInstancePreserved": true
+      },
+      "historical": true
+    },
+    "latestObservedEntry": {
+      "command": "pnpm test:desktop",
+      "result": "通过",
+      "exitCode": 0,
+      "testFilesPassed": 13,
+      "testFilesTotal": 13,
+      "testsPassed": 263,
+      "testsTotal": 263,
+      "testsSkipped": 0,
+      "durationSeconds": 171.06,
+      "invocationId": "71382253-93f8-4234-9850-c8e882a53344",
+      "log": ".local/desktop-e2e/desktop-test-runner/required-resource-browser-full-desktop-20261001.log",
+      "classification": "automated-regression",
+      "evidence": "current-desktop-regression.json",
+      "cleanup": {
+        "evidence": ".local/desktop-e2e/desktop-test-runner/required-resource-browser-full-desktop-20261001-os-cleanup.json",
+        "runCount": 13,
+        "processGroupsAbsent": true,
+        "listeningPortsAbsent": 39,
+        "leasesAbsent": true,
+        "dailyInstancePreserved": true,
+        "actualProcessGroupCount": 12
+      }
+    },
+    "latestTargetedDiagnostic": {
+      "classification": "automated-regression",
+      "command": "official-desktop-lifecycle.test.mjs -t keeps two development environments independent",
+      "testsPassed": 0,
+      "testsFailed": 1,
+      "testsSkipped": 6,
+      "status": "未通过",
+      "failure": {
+        "method": "Debugger.getScriptSource",
+        "socketReadyState": 3,
+        "cause": "native Undici socket-close TypeError",
+        "log": ".local/desktop-e2e/desktop-test-runner/a13-restart-diagnostic-20261001.log"
+      },
+      "initialClientBytes": {
+        "instances": 2,
+        "actualFragmentByteLength": 316146,
+        "matchesCandidate": true
+      },
+      "cleanup": {
+        "evidence": ".local/desktop-e2e/desktop-test-runner/a13-restart-diagnostic-os-cleanup.json",
+        "includesEarlierPreparationErrorAttempt": true,
+        "runCount": 5,
+        "processGroupsAbsent": true,
+        "listeningPortsAbsent": 15,
+        "leasesAbsent": true,
+        "dailyInstancePreserved": true
+      },
+      "existingEnvironment": {
+        "classification": "controlled-regression-environment",
+        "packageVersion": "0.44.3",
+        "fileCount": 266,
+        "unchangedPaths": true,
+        "unchangedBytes": true,
+        "before": ".local/desktop-e2e/a13-existing-environment-preservation/before.json",
+        "after": ".local/desktop-e2e/a13-existing-environment-preservation/after.json",
+        "independentReview": "pending"
+      }
+    },
+    "observedEntryHistory": [
+      {
+        "command": "pnpm test:desktop",
+        "testsPassed": 230,
+        "testsTotal": 232,
+        "testFilesPassed": 10,
+        "testFilesTotal": 12,
+        "status": "未通过",
+        "failedCases": [
+          "A13 重启后的 Renderer CDP 连接错误",
+          "Live business 重启后的 Renderer CDP 连接错误"
+        ],
+        "candidateClientBytes": "A13 首次两个实例已取得 sourceMap 单 section 的实际候选严格字节核对通过证据",
+        "cleanup": {
+          "evidence": ".local/desktop-e2e/desktop-test-runner/runner-attempt-20261001-single-module.json",
+          "runCount": 11,
+          "processGroupsAbsent": true,
+          "listeningPortsAbsent": 33,
+          "leasesAbsent": true,
+          "dailyInstancePreserved": true
+        }
+      }
+    ],
+    "currentScenarioEvidence": [
+      {
+        "scenario": "a13-parallel-instances",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a13.json"
+      },
+      {
+        "scenario": "a15-cancel-after-launch",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a15-cancel.json"
+      },
+      {
+        "scenario": "a15-debug-retention",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a15-debug.json"
+      },
+      {
+        "scenario": "a15-start-failure",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a15-failure.json"
+      },
+      {
+        "scenario": "a15-port-conflict",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a15-port-conflict.json"
+      },
+      {
+        "scenario": "a15-successful-start-stop",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a15-success.json"
+      },
+      {
+        "scenario": "a15-startup-timeout",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/6fe39255-c2f8-42a5-a40a-d8796396a3b6/evidence/official-desktop-lifecycle-a15-timeout.json"
+      }
+    ],
+    "latestTargetedAcceptance": "a13-current-targeted-acceptance.json"
+  },
+  "candidatePackagePreparation": "candidate-package-preparation.json",
+  "scopeControl": {
+    "plan": "docs/plans/official-desktop-plugin-20260929.md",
+    "userInstruction": "继续原计划，禁止越界",
+    "withdrawn": "跨全部UI阶段的通用失败采集、脱敏和路径认证扩展已收回；18项生命周期纯测试通过。",
+    "retained": "官方候选构建安装、真实界面业务断言、本轮身份核对与清理、原有日志/安装截图证据",
+    "next": "实施者必须继续剩余A1至A18验收；凭据SDK已经授权安装并完成引用适配、实际操作及重装重启后读图。完整候选与生产验收仍分别保持未完成。",
+    "sessionDeletion": "按用户指示排除官方宿主会话删除选择器、删除恢复及相关测试。"
+  },
+  "currentQualityAttempt": {
+    "command": "pnpm quality",
+    "status": "产品代码完整门禁通过；后续仅修订验收记录，按用户最新要求停止重新启动测试应用。",
+    "testsPassed": 2116,
+    "failedTests": 0,
+    "evidence": ".local/desktop-e2e/release-preparation-20261001/a8-final-code-quality.log",
+    "coverage": {
+      "statements": 94.11,
+      "branches": 87.43,
+      "functions": 100,
+      "lines": 96.63
+    }
+  },
+  "currentCandidateProgress": "current-candidate-progress-20261001.json",
+  "resolvedExternalBlockers": [
+    {
+      "service": "实际数据源 styles 与 prompt-terms 搜索",
+      "status": "HTTP 200",
+      "resolution": "通过现有受管停止、启动命令重启数据源进程；同配置只读查询与运行服务复测通过。",
+      "evidence": "source-semantic-resolution-20261001.json",
+      "historicalEvidence": [
+        {
+          "service": "实际数据源 styles 与 prompt-terms 搜索",
+          "status": "HTTP 502",
+          "message": "Catalog dependency is unavailable.",
+          "evidence": ".local/desktop-e2e/service-preflight-20261001/",
+          "requiredAction": "数据源维护者必须恢复对应 Catalog dependency；验收执行者必须在服务恢复后重试语义搜索。",
+          "lastVerified": "2026-10-01",
+          "recheck": {
+            "observedAt": "2026-09-30T21:30:31Z",
+            "stylesStatus": 502,
+            "promptTermsStatus": 502,
+            "evidence": [
+              ".local/desktop-e2e/service-preflight-20261001/styles-recheck-2026-09-30T21-30-31.745Z.json",
+              ".local/desktop-e2e/service-preflight-20261001/prompt-terms-recheck-2026-09-30T21-30-31.798Z.json"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "threeRequestedFixes": "three-blockers-resolution-20261001.json",
+  "releaseAuthorization": "release-migration-authorization-20261001.json",
+  "implementationCommit": "9542f8d4e578ff58f365154ab5c2a18d13da2307",
+  "pullRequest": "https://github.com/fzfz/harness-comfyui/pull/2",
+  "releasePreparation": "release-preparation-progress-20261001.json",
+  "finalRealSkillIndex": "final-real-skill-index-20261001.json",
+  "deliveryScope": "用户最新要求仅执行合并、发布、正式数据迁移和插件安装；此前未完成的扩展验收移出本轮交付条件，其历史状态继续保留。",
+  "historicalQualityAttempt": {
+    "command": "pnpm quality:fast",
+    "status": "最终代码候选完整pnpm quality通过；后续记录变更按项目门禁复验",
+    "unitIntegrationSkillsPassed": 1337,
+    "failedTests": 0,
+    "coverage": {
+      "statements": 94.15,
+      "branches": 87.56,
+      "functions": 100,
+      "lines": 96.6
+    },
+    "blocker": "候选A1至A11和A18的剩余实际验收继续按逐项状态执行。",
+    "latestCoverageDiagnostic": {
+      "command": "pnpm exec vitest run tests/unit tests/integration tests/skills --coverage --coverage.reporter=json --coverage.reporter=text-summary --coverage.reportOnFailure=true --testTimeout=30000",
+      "testFilesPassed": 72,
+      "testsPassed": 1336,
+      "failedTests": 0,
+      "status": "覆盖率门禁未通过",
+      "coverage": {
+        "statements": 94.04,
+        "branches": 87.41,
+        "functions": 99.57,
+        "lines": 96.53
+      },
+      "uncoveredFunctions": 6,
+      "limit": "本条仅记录覆盖率问题的诊断结果；最终候选门禁状态见 currentQualityAttempt.blocker。"
+    },
+    "contractMigration": {
+      "initialResult": "67/68 项通过；唯一失败为测试引用已退役 profiles 文件",
+      "repair": "迁移至当前 bundle 与两个 Preset，并保留整份 patch 的 Skill 归属保护",
+      "targetedResult": "通过；typecheck 通过",
+      "independentReview": "通过",
+      "evidence": ".local/desktop-e2e/reviews/profile-skill-ownership-final-review.json",
+      "limit": "本条仅覆盖迁移后的契约测试及独立审阅；最终候选门禁状态见 currentQualityAttempt.blocker。"
+    },
+    "prototype": {
+      "command": "pnpm test:prototype",
+      "testsPassed": 32,
+      "failedTests": 0,
+      "status": "通过",
+      "limit": "本条仅覆盖静态原型回归；最终候选门禁状态见 currentQualityAttempt.blocker。"
+    },
+    "latestCoverageResult": {
+      "command": "pnpm test:coverage",
+      "testFilesPassed": 72,
+      "testsPassed": 1337,
+      "failedTests": 0,
+      "status": "通过",
+      "coverage": {
+        "statements": 94.15,
+        "branches": 87.56,
+        "functions": 100,
+        "lines": 96.6
+      },
+      "functionsCovered": 1418,
+      "functionsTotal": 1418,
+      "limit": "本条保留 CDP 与测试追踪环境变量修正前的覆盖率结果；当前 Desktop 回归见 current-desktop-regression.json，最终候选门禁状态见 currentQualityAttempt.blocker。"
+    },
+    "latestFastGate": {
+      "command": "pnpm quality:fast",
+      "status": "通过",
+      "checks": {
+        "harnessBoundary": "通过",
+        "typecheck": "通过",
+        "coverageTestsPassed": 1337,
+        "contractSecurityTestsPassed": 68,
+        "productionTestsPassed": 304,
+        "prototypeTestsPassed": 32
+      },
+      "totalTestsPassed": 1741,
+      "coverage": {
+        "statements": 94.15,
+        "branches": 87.56,
+        "functions": 100,
+        "lines": 96.6
+      },
+      "limit": "本条保留 CDP 与测试追踪环境变量修正前的 quality:fast 结果；当前 Desktop 回归见 current-desktop-regression.json，最终候选门禁状态见 currentQualityAttempt.blocker。"
+    },
+    "previousCoverageFailure": {
+      "historical": true,
+      "command": "pnpm quality:fast",
+      "unitIntegrationSkillsPassed": 1334,
+      "failedTests": 0,
+      "coverage": {
+        "statements": 93.62,
+        "branches": 87.41,
+        "functions": 98.51,
+        "lines": 96.16
+      },
+      "status": "当时函数覆盖率未达到门禁条件；后续结果见latestFastGate"
+    },
+    "latestRequestedFixGate": {
+      "command": "pnpm quality && git diff --check",
+      "log": ".local/desktop-e2e/three-blockers-20261001/final-quality.log",
+      "result": ".local/desktop-e2e/three-blockers-20261001/final-quality-result.json",
+      "scope": "本次三项修复后的候选树；整体候选验收状态继续由A1至A18定义。"
+    }
+  }
+}

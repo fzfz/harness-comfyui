@@ -1,0 +1,39 @@
+{
+  "observedAt": "2026-10-01T03:12:19.059Z",
+  "source": "https://openrouter.ai/api/v1/models",
+  "id": "stealth/space-bunny-alpha",
+  "pricing": {
+    "prompt": "0",
+    "completion": "0"
+  },
+  "architecture": {
+    "modality": "text+image+video->text",
+    "input_modalities": [
+      "text",
+      "image",
+      "video"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "tokenizer": "Other",
+    "instruct_type": null
+  },
+  "supportedParameters": [
+    "include_reasoning",
+    "max_tokens",
+    "reasoning",
+    "reasoning_effort",
+    "response_format",
+    "temperature",
+    "tool_choice",
+    "tools",
+    "top_p"
+  ],
+  "contextLength": 1000000,
+  "topProvider": {
+    "context_length": 1000000,
+    "max_completion_tokens": 524288,
+    "is_moderated": false
+  }
+}

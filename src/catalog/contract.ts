@@ -1,5 +1,6 @@
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
 import { validateSourceSettingsSection, type SourceAddress } from '../source-settings.ts'
+import { ERROR_CATALOG } from '../../config/error-catalog-schema.ts'
 export const CATALOG_PAGE_SIZE = presentation.pageSize
 export const CATALOG_BASE_MODEL_PAGE_SIZE = 20
 export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = 100
@@ -534,7 +535,7 @@ export function parseCatalogOperationResult<T>(
     ok: false,
     error: Object.freeze({
       code: error.code as CatalogErrorCode,
-      message: itemText(error.message, `${subject} error message`, 1_000),
+      message: itemText(error.message, `${subject} error message`, ERROR_CATALOG.CATALOG_QUERY_FAILED.message_limit),
     }),
   })
 }

@@ -1,5 +1,5 @@
 {
-  "invocation": "node \"$DSH_HARNESS_COMFYUI_CLI\"",
+  "invocation": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\"",
   "nodes": {
     "": {
       "summary": "查询目录、创建生成任务、读取历史结果或观察本地图片。",

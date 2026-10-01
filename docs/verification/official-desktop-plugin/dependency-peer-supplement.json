@@ -1,0 +1,957 @@
+{
+  "schemaVersion": 1,
+  "status": "已批准安装",
+  "queriedAt": "2026-09-30T08:50:06Z",
+  "baseAudit": {
+    "path": "docs/verification/official-desktop-plugin/dependency-audit.json",
+    "status": "已批准安装",
+    "rootCount": 33,
+    "packageVersionCount": 101,
+    "dependencyView": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/official-desktop-development-dependencies",
+    "packageManager": "pnpm@11.11.0",
+    "autoInstallPeers": false
+  },
+  "scope": "只补足现有 33 个 SDK 安装根在 autoInstallPeers=false 下报告的缺失 peer，并递归收集由这些 peer 引出的必要公开 peer 闭包和普通依赖。未下载包归档、未读取外部源码、未运行安装脚本、未修改已批准 manifest 或 lock。",
+  "missingPeerCheck": {
+    "reportedNames": [
+      "@deepseek-ai/dsh-scope",
+      "@deepseek-ai/dsh-session-projection",
+      "@deepseek-ai/dsh-system-prompt",
+      "@deepseek-ai/dsh-launch-environment",
+      "@deepseek-ai/dsh-shell",
+      "@deepseek-ai/dsh-fs",
+      "@deepseek-ai/dsh-skill",
+      "@deepseek-ai/dsh-ptc-runtime",
+      "@deepseek-ai/dsh-sandbox",
+      "@deepseek-ai/dsh-sandbox-policy",
+      "@deepseek-ai/dsh-user-approval",
+      "@deepseek-ai/dsh-session-persistence",
+      "@deepseek-ai/dsh-storage",
+      "@deepseek-ai/dsh-storage-domain",
+      "@deepseek-ai/cordis-plugin-group"
+    ],
+    "versionRequirement": "14 个 @deepseek-ai/dsh-* 包均为 0.2.0-rc.2；@deepseek-ai/cordis-plugin-group 为 ~1.0.4。精确 npm 元数据查询确认范围内只有 1.0.4。",
+    "analysis": "dsh-agent 与 dsh-tools 的实际 runtime import 需要各自非 optional public peer；tests/integration/host-plugin.test.ts 的官方 SDK 集成检查复现 dsh-tools/lib/index.js 缺少 @deepseek-ai/dsh-scope 的运行时导入失败。project-installed-skills.mjs 动态导入 dsh-skill-filesystem；CLI profile 使用 dsh-shell-env 和 dsh-agent-preset-registry。仓库仅 type-import dsh-workspace，其 storage、storage-domain 和 session-persistence peer 用于声明及完整 peer 解析。",
+    "usageEvidence": [
+      {
+        "package": "@deepseek-ai/dsh-agent",
+        "form": "runtime value import",
+        "location": "src/host/cli/runner.ts:2-4",
+        "detail": "imports installModelSelection and uses dsh-llm/dsh-session runtime APIs"
+      },
+      {
+        "package": "@deepseek-ai/dsh-tools",
+        "form": "runtime value import plus types",
+        "location": "src/host/tools/register-project-tools.ts:6-9",
+        "detail": "imports defineTool for Host tool definitions"
+      },
+      {
+        "package": "@deepseek-ai/dsh-tools",
+        "form": "runtime value import plus types",
+        "location": "src/host/image-reader/image-reader-tool.ts:1",
+        "detail": "imports defineTool"
+      },
+      {
+        "package": "@deepseek-ai/dsh-tools",
+        "form": "runtime SDK integration result",
+        "location": ".local/desktop-e2e/dependency-peer-supplement/host-sdk-integration-failure.json",
+        "detail": "实际执行记录中的 dsh-tools/lib/index.js 因缺少 @deepseek-ai/dsh-scope 无法导入。"
+      },
+      {
+        "package": "@deepseek-ai/dsh-workspace",
+        "form": "type-only import",
+        "location": "src/host/generation/generation-tool.ts:3",
+        "detail": "imports WorkspaceRegistry; peers support declaration and complete peer graph resolution"
+      },
+      {
+        "package": "@deepseek-ai/dsh-skill-filesystem",
+        "form": "dynamic runtime import",
+        "location": "agent-presets/project-installed-skills.mjs:17",
+        "detail": "loads filesystem skill provider"
+      },
+      {
+        "package": "@deepseek-ai/dsh-shell-env",
+        "form": "profile dependency",
+        "location": "tests/integration/headless-cli.test.ts:48-49",
+        "detail": "headless CLI profile loads system-prompt, tools and shell-env plugins"
+      },
+      {
+        "package": "@deepseek-ai/dsh-agent-preset-registry",
+        "form": "SDK root and preset dependency",
+        "location": "profiles/comfyui-cli/cordis.patch.yml:3-10; agent-presets/presets.cordis.yml:2",
+        "detail": "registry/app-boot graph requires launch-environment and cordis-plugin-group"
+      }
+    ]
+  },
+  "packages": [
+    {
+      "name": "@deepseek-ai/dsh-scope",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-agent and other SDK public peers",
+      "purpose": "Scoped-context registration primitive (scope tags, scope-filtered event dispatch) for the DeepSeek Harness",
+      "whyIncluded": "Required peer of dsh-agent, dsh-api-remotes and dsh-session; the actual integration failure is recorded in .local/desktop-e2e/dependency-peer-supplement/host-sdk-integration-failure.json",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-scope/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-agent",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-agent-preset-registry",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-api-remotes",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-client-connection",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-session",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-tools",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-projection",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-agent",
+      "purpose": "Session-projection seam: the merge-extensible projection type table, the provider contract, and the ctx.sessionProjections registry serving whole current values of log-derived per-session state",
+      "whyIncluded": "Required peer of runtime dsh-agent import in src/host/cli/runner.ts.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-session-projection/0.2.0-rc.2",
+      "dependencies": {
+        "zod": "^4.4.3"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-agent",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-agent-preset-registry",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-system-prompt",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-agent and @deepseek-ai/dsh-app-boot",
+      "purpose": "System prompt assembly registry for the DeepSeek Harness",
+      "whyIncluded": "Required by agent/app-boot peer graph and selected by the headless CLI profile.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-system-prompt/0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-agent",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-agent-preset-registry",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-app-boot",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        },
+        {
+          "package": "@deepseek-ai/dsh-tools",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-launch-environment",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-app-boot",
+      "purpose": "Immutable DeepSeek Harness launch environment that records which layer supplied each value",
+      "whyIncluded": "Required non-optional peer of dsh-app-boot in the selected agent-preset registry graph.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-launch-environment/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-app-boot",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-shell-env",
+      "purpose": "Abstract bash executor seam (ctx.shell) for the DeepSeek Harness",
+      "whyIncluded": "Required peer of approved dsh-shell-env used by the headless CLI profile.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-shell/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-shell-env",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-skill-filesystem",
+      "purpose": "Abstract filesystem capability seam (ctx.fs) for the DeepSeek Harness — vocabulary types, the FileSystem service (text IO + optional version-guarded atomic mutations), and the fs/* policy event vocabulary",
+      "whyIncluded": "Required peer of dsh-skill-filesystem, dynamically imported by agent-presets/project-installed-skills.mjs.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-fs/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-skill-filesystem",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-skill-filesystem",
+      "purpose": "Agent skill provider registry for the DeepSeek Harness",
+      "whyIncluded": "Required peer of dsh-skill-filesystem, dynamically imported by agent-presets/project-installed-skills.mjs.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-skill/0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-skill-filesystem",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-ptc-runtime",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-tools",
+      "purpose": "Abstract PTC execution seam (ctx.ptcRuntime) for the DeepSeek Harness",
+      "whyIncluded": "Required peer of dsh-tools imported at runtime for Host tool definitions.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-ptc-runtime/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-tools",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-tools and capability peer closure",
+      "purpose": "Abstract process-sandbox seam (ctx.sandbox) for the DeepSeek Harness: same-world confinement vocabulary and the SandboxProvider contract",
+      "whyIncluded": "Required peer of dsh-tools and other included capability peers.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-sandbox/0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-tools",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox-policy",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-tools",
+      "purpose": "Per-call sandbox policy resolver and current model context: deployment fallbacks plus each session's mode and workspace root, shared by every enforcing capability family",
+      "whyIncluded": "Required peer of dsh-tools imported at runtime for Host tool definitions.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-sandbox-policy/0.2.0-rc.2",
+      "dependencies": {
+        "zod": "^4.4.3",
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-tools",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-user-approval",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-tools",
+      "purpose": "User-approval seam (ctx.approval) for the DeepSeek Harness: one-shot permission decisions dispatched to composed answerers over the approval/request waterfall, fail-closed by default",
+      "whyIncluded": "Required peer of dsh-tools imported at runtime for Host tool definitions.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-user-approval/0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-tools",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-persistence",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-workspace",
+      "purpose": "Abstract durable session persistence seam (ctx.sessionPersistence) for the DeepSeek Harness",
+      "whyIncluded": "Required peer of dsh-workspace; repository usage is type-only through WorkspaceRegistry.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-session-persistence/0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-timeout": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-workspace",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-workspace",
+      "purpose": "Storage hub (ctx.storage): named backend registry plus mounted data-form facilities for the DeepSeek Harness",
+      "whyIncluded": "Required peer of dsh-workspace; repository usage is type-only through WorkspaceRegistry.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-storage/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-workspace",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage-domain",
+      "version": "0.2.0-rc.2",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-workspace",
+      "purpose": "Domain data form (ctx.storage.domain): schema-validated, event-emitting KV domains over storage backends for the DeepSeek Harness",
+      "whyIncluded": "Required peer of dsh-workspace; repository usage is type-only through WorkspaceRegistry.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-storage-domain/0.2.0-rc.2",
+      "dependencies": {
+        "zod": "^4.4.3",
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-storage": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-workspace",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-group",
+      "version": "1.0.4",
+      "role": "missing-peer",
+      "via": "@deepseek-ai/dsh-app-boot",
+      "purpose": "Nested plugin group for cordis",
+      "whyIncluded": "Required peer of dsh-app-boot; npm registry has only 1.0.4 in the ~1.0.4 range.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fcordis-plugin-group/1.0.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-app-boot",
+          "version": "0.2.0-rc.2",
+          "range": "~1.0.4",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess",
+      "version": "0.2.0-rc.2",
+      "role": "transitive-peer",
+      "via": "@deepseek-ai/dsh-shell",
+      "purpose": "Subprocess seam (ctx.subprocess) for the DeepSeek Harness — managed process groups, bounded spill-backed output, and escalated kills behind one abstract service",
+      "whyIncluded": "Required peer closure of dsh-shell; it is reached after adding dsh-shell.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-subprocess/0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-http-proxy": "0.2.0-rc.2"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-shell",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "@deepseek-ai/dsh-http-proxy",
+      "version": "0.2.0-rc.2",
+      "role": "transitive-peer",
+      "via": "@deepseek-ai/dsh-subprocess",
+      "purpose": "Process-wide outbound HTTP proxy policy for DeepSeek Harness: resolve it from the launch environment and install it as undici's global dispatcher",
+      "whyIncluded": "Required peer closure of dsh-subprocess.",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-http-proxy/0.2.0-rc.2",
+      "dependencies": {
+        "undici": "^8.10.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "peerDependenciesMeta": {},
+      "engines": {},
+      "installScripts": {},
+      "otherLifecycleScripts": {},
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-subprocess",
+          "version": "0.2.0-rc.2",
+          "range": "0.2.0-rc.2",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。"
+    },
+    {
+      "name": "undici",
+      "version": "8.11.2",
+      "role": "transitive-dependency",
+      "via": "@deepseek-ai/dsh-http-proxy dependency",
+      "purpose": "An HTTP/1.1 client, written from scratch for Node.js",
+      "whyIncluded": "New regular dependency of dsh-http-proxy, constrained by ^8.10.0.",
+      "source": "https://registry.npmjs.org/undici/8.11.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "peerDependenciesMeta": {},
+      "engines": {
+        "node": ">=22.19.0"
+      },
+      "installScripts": {},
+      "otherLifecycleScripts": {
+        "prepare": "husky && node ./scripts/platform-shell.js"
+      },
+      "requiredBy": [
+        {
+          "package": "@deepseek-ai/dsh-http-proxy",
+          "version": "0.2.0-rc.2",
+          "range": "^8.10.0",
+          "optional": false
+        }
+      ],
+      "advisoryIds": [],
+      "advisoryQueryAt": "2026-09-30T08:50:06Z",
+      "securityOpinion": "OSV 对此精确版本未返回公告；npm 元数据未声明 preinstall、install 或 postinstall。保留 prepare 元数据，新增安装仍须禁用所有包脚本。"
+    }
+  ],
+  "manifestDelta": {
+    "target": ".local/desktop-e2e/dependency-audit-20260930/sdk-package.json",
+    "newDirectDependencies": {
+      "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-launch-environment": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-shell": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-fs": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-skill": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-ptc-runtime": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-sandbox-policy": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-user-approval": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-session-persistence": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-storage": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+      "@deepseek-ai/cordis-plugin-group": "1.0.4",
+      "@deepseek-ai/dsh-subprocess": "0.2.0-rc.2",
+      "@deepseek-ai/dsh-http-proxy": "0.2.0-rc.2"
+    },
+    "newDirectDependencyCount": 17,
+    "newTransitiveDependencies": {
+      "undici": "8.11.2"
+    },
+    "newUniquePackageVersionCount": 18,
+    "reusedPackages": [
+      {
+        "name": "@deepseek-ai/cordis",
+        "version": "4.0.4",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/cordis-plugin-loader",
+        "version": "1.0.5",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-agent",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-agent-preset-registry",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-api-remotes",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-app-boot",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-brand",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-client-connection",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-invariants",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-llm",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-shell-env",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-skill-filesystem",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-timeout",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-tools",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-util-values",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/dsh-workspace",
+        "version": "0.2.0-rc.2",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "@deepseek-ai/schemastery",
+        "version": "3.18.4",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      },
+      {
+        "name": "zod",
+        "version": "4.6.5",
+        "sourceAudit": "docs/verification/official-desktop-plugin/dependency-audit.json",
+        "decision": "复用已批准准确版本，不加入新增安装清单"
+      }
+    ],
+    "reusedPackageCount": 19,
+    "resolutionPolicy": {
+      "autoInstallPeers": false,
+      "pinEveryNewPackageInPnpmOverrides": true,
+      "minimumReleaseAgeExcludeAdditions": [
+        "@deepseek-ai/dsh-fs@0.2.0-rc.2",
+        "@deepseek-ai/dsh-http-proxy@0.2.0-rc.2",
+        "@deepseek-ai/dsh-launch-environment@0.2.0-rc.2",
+        "@deepseek-ai/dsh-ptc-runtime@0.2.0-rc.2",
+        "@deepseek-ai/dsh-sandbox-policy@0.2.0-rc.2",
+        "@deepseek-ai/dsh-sandbox@0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope@0.2.0-rc.2",
+        "@deepseek-ai/dsh-session-persistence@0.2.0-rc.2",
+        "@deepseek-ai/dsh-session-projection@0.2.0-rc.2",
+        "@deepseek-ai/dsh-shell@0.2.0-rc.2",
+        "@deepseek-ai/dsh-skill@0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain@0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage@0.2.0-rc.2",
+        "@deepseek-ai/dsh-subprocess@0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt@0.2.0-rc.2",
+        "@deepseek-ai/dsh-user-approval@0.2.0-rc.2"
+      ],
+      "disableAllPackageScripts": true
+    },
+    "note": "只列相对已批准 101 个版本的新包；已批准版本只出现在 reusedPackages。"
+  },
+  "scriptsAndNativeReview": {
+    "newInstallScripts": [],
+    "newNativePackagesOrNativeInstallHooks": [],
+    "lifecycleScriptMetadata": [
+      {
+        "package": "undici",
+        "version": "8.11.2",
+        "script": "prepare: husky && node ./scripts/platform-shell.js",
+        "classification": "npm registry metadata prepare hook; not preinstall/install/postinstall; keep all package scripts disabled during authorized installation"
+      }
+    ],
+    "reviewBoundary": "未下载 npm tarball 或执行包内脚本；分类依据为精确 npm 版本元数据。"
+  },
+  "advisories": [
+    {
+      "package": "fflate",
+      "version": "0.8.2",
+      "id": "GHSA-px8p-9vwx-vf98",
+      "cve": "CVE-2026-45820",
+      "severity": "MODERATE",
+      "impact": "malformed ZIP64 archives can cause unzipSync to loop indefinitely (availability / denial of service)",
+      "fixedVersion": "0.8.3",
+      "source": "https://api.osv.dev/v1/query",
+      "disposition": "不属于本补充包闭包；现有 dependency-audit.json 已排除完整 @deepseek-ai/dsh Host SDK，原因为其 libreoffice-kit 路径引入 fflate@0.8.2。保持该排除。",
+      "queriedAt": "2026-09-30T08:50:06Z"
+    }
+  ],
+  "approvalRequest": {
+    "required": true,
+    "responsible": "主 Agent",
+    "status": "已批准补充清单安装",
+    "exactAction": "在隔离开发依赖视图中，按 manifestDelta.newDirectDependencies 添加 17 个准确直接依赖版本，并锁定唯一新增传递依赖 undici@8.11.2；更新对应锁文件；保持 autoInstallPeers=false；禁用全部包脚本；复用已批准审计中的准确版本。",
+    "productionChanges": false,
+    "packageScripts": "保持禁用；undici 存在 prepare hook 元数据。",
+    "explicitlyExcluded": [
+      "@deepseek-ai/dsh@0.2.0-rc.2 完整 Host SDK 及其 fflate@0.8.2 依赖路径",
+      "任何未列入 manifestDelta 的包或版本"
+    ]
+  },
+  "openChecks": [],
+  "evidenceFiles": [
+    ".local/desktop-e2e/dependency-peer-supplement/registry-osv-closure.json",
+    ".local/desktop-e2e/dependency-peer-supplement/registry-osv-direct.json",
+    ".local/desktop-e2e/dependency-peer-supplement/osv-fflate.json",
+    ".local/desktop-e2e/dependency-peer-supplement/manifest-delta.json",
+    ".local/desktop-e2e/dependency-peer-supplement/host-sdk-integration-failure.json"
+  ],
+  "approval": {
+    "date": "2026-09-30",
+    "statement": "批准补充清单安装",
+    "scope": "17 个直接准确 peer 及 undici@8.11.2，禁用全部脚本安装和链接依赖视图"
+  },
+  "preparationOpenChecks": [
+    "由主 Agent 取得对 17 个直接新增版本与 undici@8.11.2 的授权。",
+    "授权后核对实际锁文件解析图，确认没有清单外包；本准备任务未执行安装。",
+    "安装后由主 Agent 确认 SDK peer check 清空；本准备任务未测试或启动 Desktop。"
+  ],
+  "installation": {
+    "status": "已批准清单安装完成",
+    "record": "dependency-installation.json",
+    "resolvedPackageVersionCount": 119,
+    "unapprovedPackageVersionCount": 0,
+    "missingPeerCount": 0,
+    "allPackageScriptsDisabled": true,
+    "productionChanges": false
+  }
+}

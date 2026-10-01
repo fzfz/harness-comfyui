@@ -59,10 +59,10 @@ Skill 执行者构造包含且只包含下列十个属性的 JSON 对象。下�
 
 ## 校验命令
 
-`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把完整生成结果 JSON 写入命令的标准输入：
+`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE`。Skill 执行者设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，从 Skill 目录执行以下命令，并把完整生成结果 JSON 写入命令的标准输入：
 
 ```sh
-node scripts/validate-output.mjs --quiet
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --quiet
 ```
 
 ## 校验结果
@@ -92,4 +92,4 @@ node scripts/validate-output.mjs --quiet
 
 ## 帮助与操作提示
 
-Skill 执行者运行 `node scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。
+Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。

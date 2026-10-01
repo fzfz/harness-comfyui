@@ -12,7 +12,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.44.3',
+      version: '0.45.0',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.11.0',
@@ -28,7 +28,6 @@ describe('source workspace engineering contract', () => {
       './image-reader': { types: './src/host/image-reader/plugin.ts', default: './.local/source-host/image-reader.js' },
       './cli': { types: './src/host/cli/plugin.ts', default: './.local/source-host/cli.js' },
       './web': { types: './src/host/web/plugin.ts', default: './.local/source-host/web.js' },
-      './cli-runner': { types: './src/host/cli/runner.ts', default: './.local/source-host/cli-runner.js' },
       './cli-workspace': { types: './src/host/cli/workspace.ts', default: './.local/source-host/cli-workspace.js' },
 
     })
@@ -45,73 +44,25 @@ describe('source workspace engineering contract', () => {
     })
   })
 
-  it('exposes only source process management and automated quality commands', () => {
+  it('exposes plugin build, packing and official Desktop verification commands', () => {
     const scripts = readJson('package.json').scripts as Record<string, string>
     expect(scripts).toMatchObject({
-      'prod:start': 'node scripts/desktop/production-cli.mjs start',
-      'prod:stop': 'node scripts/desktop/production-cli.mjs stop',
-      'prod:restart': 'node scripts/desktop/production-cli.mjs restart',
-      'prod:status': 'node scripts/desktop/production-cli.mjs status',
-      'prod:logs': 'node scripts/desktop/production-cli.mjs logs',
-      'dev:start': 'node scripts/desktop/cli.mjs start',
-      'dev:stop': 'node scripts/desktop/cli.mjs stop',
-      'dev:restart': 'node scripts/desktop/cli.mjs restart',
-      'dev:status': 'node scripts/desktop/cli.mjs status',
-      'dev:logs': 'node scripts/desktop/cli.mjs logs',
-      'web:start': 'node scripts/worktree/cli.mjs start',
-      'web:stop': 'node scripts/worktree/cli.mjs stop',
-      'web:restart': 'node scripts/worktree/cli.mjs restart',
-      'web:status': 'node scripts/worktree/cli.mjs status',
-      'web:health': 'node scripts/worktree/cli.mjs health',
-      'web:logs': 'node scripts/worktree/cli.mjs logs',
-      'desktop:dependencies:link': 'node scripts/desktop/dependencies.mjs',
-      'prod:test': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
+      build: 'node scripts/build/cli.mjs build',
+      'pack:plugin': 'node scripts/build/cli.mjs pack',
+      'test:production': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
       'test:contract': 'vitest run tests/contract tests/security',
-      'test:desktop': 'vitest run tests/desktop --maxWorkers=1 --no-file-parallelism --testTimeout=120000',
+      'test:desktop': 'node tests/desktop/run-desktop-tests.mjs',
       'verify:comfyui-workflows': 'node --experimental-strip-types scripts/verification/comfyui-workflow-matrix.mjs',
       'quality:preinstall': 'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
-      'quality:fast': 'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run prod:test && pnpm run test:prototype',
+      'quality:fast': 'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype',
       quality: 'pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop',
     })
-    expect(Object.keys(scripts).sort()).toEqual([
-      'check:harness-boundary',
-      'check:manifest-lock',
-      'cli:run',
-      'dev:logs',
-      'dev:restart',
-      'dev:start',
-      'dev:status',
-      'dev:stop',
-      'desktop:dependencies:link',
-      'prod:logs',
-      'prod:restart',
-      'prod:start',
-      'prod:status',
-      'prod:stop',
-      'prod:test',
-      'quality',
-      'quality:fast',
-      'quality:preinstall',
-      'security:advisories',
-      'security:build-scripts',
-      'test:contract',
-      'test:coverage',
-      'test:desktop',
-      'test:integration',
-      'test:prototype',
-      'test:unit',
-      'typecheck',
-      'verify:comfyui-workflows',
-      'web:health',
-      'web:logs',
-      'web:restart',
-      'web:start',
-      'web:status',
-      'web:stop',
-    ].sort())
+    expect(Object.keys(scripts).filter(name => /^(?:prod|dev|web):/u.test(name))).toEqual([])
+    expect(scripts).not.toHaveProperty('desktop:dependencies:link')
+    expect(scripts).not.toHaveProperty('cli:run')
   })
 
-  it('pins installed dependencies while allowing bounded Harness peer versions', () => {
+  it('pins installed dependencies and official Harness SDK peer versions', () => {
     const manifest = readJson('package.json')
     const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/u
     for (const [name, version] of Object.entries(manifest.dependencies as Record<string, string>)) {
@@ -122,7 +73,7 @@ describe('source workspace engineering contract', () => {
       expect(version, `devDependencies.${name}`).toMatch(exactVersion)
     }
     for (const [name, version] of Object.entries(manifest.peerDependencies as Record<string, string>)) {
-      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe('>=0.1.7-rc.2 <0.1.8')
+      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe(readJson('config/desktop-e2e.json').application.version)
       else expect(version, `peerDependencies.${name}`).toMatch(exactVersion)
     }
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())
@@ -148,7 +99,6 @@ describe('source workspace engineering contract', () => {
       'HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS',
       'HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS',
       'HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES',
-      'HARNESS_COMFYUI_SERVER_PORT',
     ]) {
       expect(example, `${name} must have an example assignment`).toMatch(
         new RegExp(`^(?:#\\s*)?${name}=`, 'mu'),
@@ -156,21 +106,12 @@ describe('source workspace engineering contract', () => {
     }
   })
 
-  it('keeps the public DSH bundle and source profile composition explicit', () => {
+  it('keeps the official plugin bundle separate from Host Profile management', () => {
     const manifest = readJson('package.json')
     expect(manifest.exports).not.toHaveProperty('./agent')
     expect(manifest.dsh.bundle).toEqual({ patch: './cordis.patch.yml' })
     expect(manifest.dsh.client.platform).toBe('web')
-    expect(readJson('profiles/comfyui-workbench/package.json').dsh.profile.bundles).toEqual([
-      '@deepseek-ai/dsh-base',
-      '@deepseek-ai/dsh-web-app',
-      'harness-comfyui',
-    ])
-    expect(readJson('profiles/comfyui-workbench-development/package.json').dsh.profile.bundles).toEqual([
-      '@deepseek-ai/dsh-base',
-      '@deepseek-ai/dsh-web-app',
-      'harness-comfyui',
-    ])
+    expect(manifest.exports).not.toHaveProperty('./cli-runner')
     expect(readFileSync(resolve(root, 'pnpm-workspace.yaml'), 'utf8')).toMatch(/^packages:\n  - \.$/mu)
   })
 })

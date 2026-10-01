@@ -50,7 +50,7 @@ export function createImageReaderProviderFailureFixture() {
           maxTokens: 8192,
         }],
       },
-      credentials: { 'runtime-profile': 'CREDENTIAL_SENTINEL' },
+      credentialRefs: {},
     })),
     replace: vi.fn(async () => undefined),
   }
@@ -78,6 +78,7 @@ export function createImageReaderProviderFailureFixture() {
   }))
   const service = new ImageReaderService({
     scope,
+    credentials: { resolve: vi.fn(async () => ({ value: 'CREDENTIAL_SENTINEL', source: 'test' })) },
     attachments: {
       imageLimits: {
         maxImageBytes: 1024,

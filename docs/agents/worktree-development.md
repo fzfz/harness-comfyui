@@ -1,34 +1,35 @@
-# 独立 worktree Desktop 开发与验收
+# 独立 worktree 官方 Desktop 开发与验收
 
-## 启动前准备
+## 完整验收
 
-开发者从 main 创建独立 linked worktree，并确认根目录 .git 是 worktree 元数据文件。config/desktop-worktree.json 指定主开发 checkout 和本实例运行目录；config/desktop-baseline.json 以包版本固定候选 Desktop 2.0.15 与 DSH 0.1.7-rc.2，并指定 Desktop 完整提交和实际安装路径。开发者启动前必须核对 config/desktop-baseline.json 中的版本与所选 Desktop workspace 的已安装版本一致。
+开发者在独立 worktree 中使用 `pnpm test:desktop` 执行官方 Desktop 完整 E2E。该命令构建并打包当前候选插件，通过官方插件管理界面安装、启用插件，连接本轮 Renderer CDP，执行界面和业务断言，并保存运行记录、日志与证据。
 
-主开发 checkout 必须已有 .env、项目构建工具和基线 Desktop 的完整安装。pnpm dev:start 启动器负责链接 .env 并准备独立 node_modules 依赖视图。业务依赖和构建工具复用主 checkout 的安装目录，宿主 peer 从基线 Desktop workspace 解析。启动器不得修改这些共享依赖目录。worktree 不执行 pnpm install，也不复制 .env。
+自动化验收使用 `config/desktop-e2e.json` 的默认 `fresh` 模式。每轮运行都使用独立 Harness home、Electron user-data、Workspace、端口、插件安装位置和证据目录。测试完成后，验收记录必须显示本轮应用进程和端口已释放。
 
-启动器必须验证 config/product-agent.json 指定的 Repository Skills 目录属于当前 worktree，且该目录不是符号链接。
+完整 E2E 的应用身份、Renderer 就绪条件、插件版本与安装位置、业务结果及清理断言由 `tests/desktop/` fixtures 和测试文件执行。`pnpm test:desktop` 通过表示本轮候选树满足这些自动化断言；交互调试 probe 单独使用时提供进程与 Renderer 状态，不单独证明插件安装和业务测试通过。
 
-## 启动与实例身份核对
+## 交互调试
 
-开发者先运行 pnpm dev:status。实例停止时，在前台终端运行 pnpm dev:start；随后在第二个终端运行 pnpm dev:status 和 pnpm dev:logs。
+开发者使用已安装官方应用进行交互调试时，直接运行以下 probe 命令：
 
-开发者操作实例或发送停止信号前，必须读取本 worktree 的 .local/desktop-development/desktop.pid，并用操作系统检查确认该 PID 是进程组首领，其启动命令指向当前 worktree 的 .local/desktop-development/desktop-out。开发者必须枚举该进程组实际监听的全部端口，只向确认归属的测试端口发送请求。
+```sh
+node tests/desktop/fixtures/official-desktop-probe.mjs start --mode development
+node tests/desktop/fixtures/official-desktop-probe.mjs status --run-id <run-id>
+node tests/desktop/fixtures/official-desktop-probe.mjs stop --run-id <run-id>
+```
 
-就绪要求包括当前进程拥有的 Host Web 监听端口、本次启动 run 的 startup.run.completed、rendererStatus 为 healthy，以及实际加载的当前 worktree 插件安装记录。旧启动事件和仅有进程或端口不能作为就绪证据。移动访问不参与 Desktop 启动判定。
+`start` 返回的 `runId` 标识本轮进程、端口、记录和证据。开发者使用该 ID 执行 `status`，并在调试结束时执行 `stop`。probe 仅在操作系统核对 PID、进程组、应用启动命令和本轮监听端口均匹配后向该进程组发信号。停止结果必须报告本轮进程已退出且本轮端口已释放。
 
-## 插件功能验收
+`development` 模式共享当前 worktree 下的持久 Harness home、Electron user-data 和 Workspace，位置由 `config/desktop-e2e.json` 定义，当前根目录为 `.local/desktop-development/official-environment/`。本轮唯一运行材料位于 `.local/desktop-e2e/<run-id>/`。development 环境使用 `active-probe.json` 租约保护共享设置与业务数据；同一 worktree 的持久环境已被租用时，probe 会拒绝另一轮并发启动。
 
-开发者必须确认以下结果：
+开发者首次使用该持久目录时，通过官方应用完成首次 Profile 初始化和 Provider、模型设置。后续交互调试继续复用官方保存的 Profile、Provider、模型、插件设置、Workspace 和业务数据。probe 只在首次创建 Profile patch 时写入 `initialProfilePatches`；当前初始模型项是 OpenRouter `stealth/space-bunny-alpha`，凭据只以 `OPENROUTER_API_KEY` 环境变量名称引用。此初始值不会覆盖已保存配置、官方全局默认模型或其他 Preset 的模型。后续运行只更新本轮 Host 端口，保留其余用户设置。
 
-1. 系统打开环境配置指定的 Workspace，默认采用 ComfyUI工作台预设，并提供 ComfyUI迭代预设。
-2. 当前 Profile 加载当前 worktree 的 harness-comfyui 产物；Client 出现 ComfyUI 工作台。
-3. 默认模型、视觉模型和 Provider 与当前插件配置一致。
-4. remote.harnessComfyuiImageReader.models 返回配置中的模型分组；remote.harnessComfyuiCatalog.baseModels 返回数据源的基础模型记录。开发者必须对本次变更涉及的其他接口逐项执行 task_plan.md 中的功能验收条目，并记录请求与响应。
-5. 项目 Preset 的 Skills 来自当前 worktree，其他 Preset 不读取项目专用 Skills。
-6. 受管 CLI 在真实 Harness Bash 调用中获得 capability；Electron 宿主启动 .mjs 子进程时使用 Node 执行模式。
+开发环境凭据由 `config/desktop-e2e.json` 的 `environmentFilePath`、`credentialEnvironmentNames` 和 `requiredEnvironmentNames` 控制。probe 只从 main checkout `.env` 读取已声明的凭据名，并把相应变量传给本轮应用进程；当前必需凭据为 `OPENROUTER_API_KEY`，`OPENCODE_GO_API_KEY` 是可选项。main `.env` 的其他字段不构成本轮 probe 的输入，也不会被传给本轮应用。
 
-## 结束与其他环境
+启动失败、端口冲突、取消、超时和清理失败的记录保存在本轮 evidence 目录。准备阶段失败写入配置所指定的 `preparation-failure.json`。开发者检查证据时使用 `run.json`、stdout/stderr 文件和 JSON 证据文件；probe 没有单独的日志或帮助子命令。
 
-开发者完成验收后运行 pnpm dev:stop，再运行 pnpm dev:status 确认 stopped。用户明确要求保留实例供人工操作时，开发者报告该实例身份并保持前台启动终端运行。
+## 检查入口
 
-pnpm web:* 仅用于 Web Host 单独调试，不能替代完整 Desktop 验收。pnpm prod:* 只用于生产启动或受控临时生产配置测试，不能用于验收未发布的 worktree。
+- 启动、Profile 保存和官方应用生命周期规则见 `docs/system/startup.md`。
+- 插件配置来源、覆盖顺序和持久数据目录见 `docs/system/configuration.md`。
+- 自动化命令、E2E 覆盖与本地门禁见 `docs/system/testing.md`。

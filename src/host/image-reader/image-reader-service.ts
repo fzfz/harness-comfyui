@@ -25,6 +25,7 @@ import {
 } from './errors.ts'
 import { prepareImageReaderInput, type PreparedImageReaderInput } from './image-reader-input.ts'
 import type { ImageReaderSettingsStore } from './settings-registration.ts'
+import type { ImageReaderCredentialStore } from './credential-store.ts'
 
 const IMAGE_READER_MAX_RESPONSE_BYTES = 1_048_576
 
@@ -43,6 +44,7 @@ export interface ImageInspectionOptions {
 
 export interface ImageReaderServiceOptions {
   readonly scope: Pick<ImageReaderSettingsStore, 'get'>
+  readonly credentials: Pick<ImageReaderCredentialStore, 'resolve'>
   readonly prepareInput?: typeof prepareImageReaderInput
   readonly attachments: {
     readonly imageLimits: ImageAttachmentLimits
@@ -254,12 +256,35 @@ export class ImageReaderService {
     }
     emit('preparing')
     try {
+      let apiKey: string | undefined
+      const reference = settings.credentialRefs[profile.id]
+      if (profile.connectionType === 'openai-compatible' && reference !== undefined) {
+        let resolved: Awaited<ReturnType<ImageReaderCredentialStore['resolve']>>
+        try {
+          resolved = await this.options.credentials.resolve(reference)
+        } catch (error) {
+          if (isAbortError(error, signal)) abort(signal)
+          throw new ImageReaderError(
+            'IMAGE_READER_CREDENTIAL_PROVIDER_READ_FAILED',
+            'The official credential provider could not resolve the image reader credential for this inspection.',
+            { cause: error },
+          )
+        }
+        ensureNotAborted(signal)
+        if (resolved === undefined) {
+          throw new ImageReaderError(
+            'IMAGE_READER_CREDENTIAL_REFERENCE_MISSING',
+            'The active image reader profile references a credential that the official credential provider cannot resolve.',
+          )
+        }
+        apiKey = resolved.value
+      }
       const input = await (this.options.prepareInput ?? prepareImageReaderInput)(
         filePath, this.options.attachments.imageLimits.maxImageBytes, signal,
       )
       emit('input_prepared')
       const result = profile.connectionType === 'openai-compatible'
-        ? await this.inspectOpenAiCompatible(profile, settings.credentials[profile.id], input, filePath, inspectionPrompt, emit, signal)
+        ? await this.inspectOpenAiCompatible(profile, apiKey, input, filePath, inspectionPrompt, emit, signal)
         : await this.inspectRuntime(profile, input, filePath, inspectionPrompt, options.sessionId, emit, signal)
       emit('completed')
       return result

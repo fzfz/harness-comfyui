@@ -18,6 +18,7 @@ export async function apply(ctx: Context): Promise<void> {
   const server = await startCliServer(origin => {
     capabilities = new CliShellCapabilityStore({
       cliPath: repositoryResource(runtimeArtifacts.managedCli.outputEntryRelativePath),
+      nodeExecutable: process.execPath,
       apiUrl: `${origin}${CLI_ROUTE_PATH}`,
       semanticQueryCliPath: core.semanticQueryClientPath,
       sourceAddress: core.sourceAddress,

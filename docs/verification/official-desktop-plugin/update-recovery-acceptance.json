@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "status": "未通过",
+  "classification": "isolated-installed-application-acceptance",
+  "candidateAcceptanceCompleted": false,
+  "scope": "A4 official-compatible update and backup restoration; A10 configuration readback",
+  "applicationVersion": "0.2.0-rc.2",
+  "versions": [
+    "0.44.3",
+    "0.45.0",
+    "0.44.3"
+  ],
+  "checks": {
+    "old-before-update": {
+      "sourceAddressPreserved": true,
+      "imageReaderConfigurationPreserved": true,
+      "runIdentityStatusAndWorkspacePreserved": true,
+      "mediaIdentityAndPathPreserved": true,
+      "visibleRunCount": 5,
+      "visibleMediaCount": 5
+    },
+    "new-after-update": {
+      "sourceAddressPreserved": true,
+      "imageReaderConfigurationPreserved": true,
+      "runIdentityStatusAndWorkspacePreserved": true,
+      "mediaIdentityAndPathPreserved": true,
+      "visibleRunCount": 5,
+      "visibleMediaCount": 5
+    },
+    "old-after-recovery": {
+      "sourceAddressPreserved": true,
+      "imageReaderConfigurationPreserved": true,
+      "runIdentityStatusAndWorkspacePreserved": true,
+      "mediaIdentityAndPathPreserved": true,
+      "visibleRunCount": 5,
+      "visibleMediaCount": 5
+    }
+  },
+  "expectedInvalidPackageFailureExitCode": 1,
+  "backupCredentialPermissionsPreserved": true,
+  "unrelatedProfileRowsPreserved": true,
+  "allThreeInstancesStopped": true,
+  "portsReleased": true,
+  "privateEvidence": ".local/desktop-e2e/a4-update-3e5c87a2-57c3-429c-b154-764e43135bbc/summary.json",
+  "limitations": [
+    "非空测试凭据保存与更新读回已验证，但宿主凭据引用及其恢复尚未通过。",
+    "两个候选均已通过官方 Renderer 打开已有真实 Run 的媒体；最终候选完整验收仍待完成。",
+    "候选源码树尚未提交，最终独立审查及质量门禁尚未通过。"
+  ],
+  "productionModified": false,
+  "releasePerformed": false,
+  "nonemptyCredentialSupplement": {
+    "status": "未通过",
+    "privateEvidenceRoot": ".local/desktop-e2e/a4-update-3e5c87a2-57c3-429c-b154-764e43135bbc",
+    "oldRunId": "e66aa7b9-a497-49f7-923c-8428b08a087a",
+    "newRunId": "ead07cd8-9a29-4bf1-b642-ffab0a682c6b",
+    "versions": [
+      "0.44.3",
+      "0.45.0"
+    ],
+    "realRunCountPreserved": 5,
+    "realMediaCountPreserved": 5,
+    "sourceAddressAndImageReaderConfigurationPreserved": true,
+    "mediaViewer": {
+      "runId": "run_2e867409-7be9-446e-aafc-840b13aab041",
+      "mediaId": "media_b7058473-48ec-4552-952b-d94fb05801f4",
+      "width": 416,
+      "height": 624,
+      "decodedInOfficialRenderer": true
+    },
+    "controlledNonemptyCredentialStatePreserved": true,
+    "hostCredentialReferenceVerified": false,
+    "blocker": "图片读取测试值保存在 Profile credentials 字段内；role(secret) 尚未形成宿主凭据引用。正在核对固定官方版本的公开存取接口。",
+    "expectedInvalidPackageFailureExitCode": 1,
+    "nonemptyReferenceRestorePassed": false,
+    "originalBackupRestored": true,
+    "originalCandidateReinstalled": "0.44.3",
+    "allStartedInstancesStopped": true,
+    "portsReleased": true,
+    "dailyInstanceModified": false,
+    "productionModified": false
+  }
+}

@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 
 import {
   GENERATION_REMOTE_NAMESPACE,
@@ -8,7 +9,10 @@ import {
   type GenerationRunProjectionStatus,
 } from '../../generation/contract.ts'
 import type { GenerationRuntime } from './generation-runtime.ts'
-import { workspaceIdForSession, type WorkspaceRegistryProjection } from './workspace-access.ts'
+import {
+  workspaceSessionScopeForSession,
+  type WorkspaceRegistryProjection,
+} from './workspace-access.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -22,6 +26,7 @@ export class GenerationRemoteService extends TypertRemoteService {
   private readonly runtime: Pick<GenerationRuntime, 'queryRuns' | 'queryMedia'>
   private readonly refreshAfterMs: number
   private readonly workspaceRegistry: WorkspaceRegistryProjection
+  private readonly sessionPersistence: Pick<SessionPersistence, 'stat'>
 
   constructor(
     ctx: Context,
@@ -33,15 +38,32 @@ export class GenerationRemoteService extends TypertRemoteService {
     this.runtime = runtime
     this.refreshAfterMs = refreshAfterMs
     this.workspaceRegistry = workspaceRegistry
+    this.sessionPersistence = ctx.sessionPersistence
     if (!Number.isSafeInteger(refreshAfterMs) || refreshAfterMs < 1) throw new TypeError('Generation refresh interval is invalid.')
     for (const initialize of generationRemoteInitializers) initialize(this)
   }
 
   async list(request: GenerationProjectionRequest, signal: AbortSignal): Promise<GenerationProjection> {
     signal.throwIfAborted()
-    const workspaceId = workspaceIdForSession(this.workspaceRegistry, request.sessionId)
+    const sessionScope = await workspaceSessionScopeForSession(
+      this.workspaceRegistry,
+      this.sessionPersistence,
+      request.sessionId,
+      signal,
+    )
+    signal.throwIfAborted()
     const turn = request.turn ?? undefined
-    const runs = this.runtime.queryRuns({ workspaceId, sessionId: request.sessionId, turn }).map(run => Object.freeze({
+    const runSnapshots = sessionScope.sessionIds.flatMap(sessionId => this.runtime.queryRuns({
+      workspaceId: sessionScope.workspaceId,
+      sessionId,
+      turn,
+    }))
+    runSnapshots.sort((left, right) =>
+      right.createdAt - left.createdAt
+      || right.updatedAt - left.updatedAt
+      || (left.runId === right.runId ? 0 : left.runId > right.runId ? -1 : 1),
+    )
+    const runs = runSnapshots.map(run => Object.freeze({
       runId: run.runId,
       turn: run.turn,
       title: run.title,
@@ -53,7 +75,17 @@ export class GenerationRemoteService extends TypertRemoteService {
       createdAt: run.createdAt,
       updatedAt: run.updatedAt,
     }))
-    const media = this.runtime.queryMedia({ workspaceId, sessionId: request.sessionId, turn }).map(item => Object.freeze({
+    const mediaSnapshots = sessionScope.sessionIds.flatMap(sessionId => this.runtime.queryMedia({
+      workspaceId: sessionScope.workspaceId,
+      sessionId,
+      turn,
+    }))
+    mediaSnapshots.sort((left, right) =>
+      right.createdAt - left.createdAt
+      || right.outputIndex - left.outputIndex
+      || (left.mediaId === right.mediaId ? 0 : left.mediaId > right.mediaId ? -1 : 1),
+    )
+    const media = mediaSnapshots.map(item => Object.freeze({
       mediaId: item.mediaId,
       runId: item.runId,
       turn: item.turn,

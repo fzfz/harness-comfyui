@@ -288,7 +288,22 @@ describe('ComfyHttpTransport', () => {
       fetchImplementation: vi.fn(async () => { throw new Error('offline') }),
     })
     await expect(disconnected.observe({ instanceId: '2', instanceOrigin, promptId, outputNodeIds: ['3'] }))
-      .rejects.toMatchObject({ code: 'COMFYUI_CONNECTION_FAILED' })
+      .rejects.toMatchObject({ code: 'COMFYUI_CONNECTION_FAILED', message: expect.stringContaining('http://127.0.0.1:8188') })
+  })
+
+  it.each([
+    [new TypeError('fetch failed', { cause: new Error('connect ECONNREFUSED 127.0.0.1:8188') }), 'fetch failed\nError: connect ECONNREFUSED 127.0.0.1:8188'],
+    [new TypeError('fetch failed', { cause: new AggregateError([new Error('connect ECONNREFUSED ::1:8188'), new Error('connect ECONNREFUSED 127.0.0.1:8188')]) }), 'fetch failed\nAggregateError\nError: connect ECONNREFUSED ::1:8188\nError: connect ECONNREFUSED 127.0.0.1:8188'],
+    [new TypeError('fetch failed', { cause: new AggregateError([]) }), 'fetch failed\nAggregateError'],
+    ['connection closed', 'connection closed'],
+  ])('preserves the request address and original connection diagnostic %#', async (failure, diagnostic) => {
+    const transport = new ComfyHttpTransport({ source, fetchImplementation: vi.fn(async () => { throw failure }) })
+    await expect(transport.observe({
+      instanceId: '2', instanceOrigin, promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042', outputNodeIds: ['3'],
+    })).rejects.toMatchObject({
+      code: 'COMFYUI_CONNECTION_FAILED',
+      message: expect.stringContaining(`ComfyUI 实例 http://127.0.0.1:8188 的 /api/jobs/0193f85c-86fb-4ad9-8d2b-28cf39e8b042 请求失败：${diagnostic}`),
+    })
   })
 
   it('keeps the request timeout active while JSON and media bodies are read', async () => {

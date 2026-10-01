@@ -11,6 +11,7 @@ import {
   createImageReaderProfile,
   IMAGE_READER_PROMPT_MAX_LENGTH,
 } from '../../src/image-reader/settings.ts'
+import { IMAGE_READER_CREDENTIAL_REF_PREFIX, type ImageReaderCredentialRef } from '../../src/image-reader/credential-schema.ts'
 import { ImageReaderService, type ImageReaderServiceOptions } from '../../src/host/image-reader/image-reader-service.ts'
 import {
   IMAGE_READER_FAILURE_DIAGNOSTIC_LIMITS,
@@ -54,9 +55,11 @@ function fixture(prepareInput?: ImageReaderServiceOptions['prepareInput']) {
           maxTokens: 1536,
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })),
   }
+  const credentialRef = `${IMAGE_READER_CREDENTIAL_REF_PREFIX}${'b'.repeat(32)}` as ImageReaderCredentialRef
+  const credentialResolve = vi.fn(async (_reference: ImageReaderCredentialRef): Promise<{ value: string; source: string } | undefined> => undefined)
   const imageLimits = {
     maxImageBytes: 1024,
     maxImagesPerMessage: 1,
@@ -84,11 +87,14 @@ function fixture(prepareInput?: ImageReaderServiceOptions['prepareInput']) {
     filePath,
     diagnostics,
     scope,
+    credentialRef,
+    credentialResolve,
     saveImage,
     prepareCall,
     fetch,
     service: new ImageReaderService({
       scope,
+      credentials: { resolve: credentialResolve },
       onDiagnostic: (record: ImageReaderDiagnostic) => diagnostics.push(record),
       attachments: { imageLimits, saveImage },
       llm: { prepareCall },
@@ -120,6 +126,15 @@ describe('ImageReaderService', () => {
       'IMAGE_READER_API_KEY_REQUIRED',
       'IMAGE_READER_API_KEY_TOO_LONG',
       'IMAGE_READER_ATTACHMENT_FAILED',
+      'IMAGE_READER_CREDENTIAL_COMMITTED_CLEANUP_FAILED',
+      'IMAGE_READER_CREDENTIAL_COMMITTED_WRITE_REJECTED',
+      'IMAGE_READER_CREDENTIAL_COMMIT_STATUS_UNKNOWN',
+      'IMAGE_READER_CREDENTIAL_PROVIDER_READ_FAILED',
+      'IMAGE_READER_CREDENTIAL_PROVIDER_WRITE_FAILED',
+      'IMAGE_READER_CREDENTIAL_REFERENCE_MISSING',
+      'IMAGE_READER_CREDENTIAL_REFERENCE_READ_ONLY',
+      'IMAGE_READER_CREDENTIAL_REFERENCE_UNAVAILABLE',
+      'IMAGE_READER_CREDENTIAL_STAGE_CLEANUP_FAILED',
       'IMAGE_READER_DEFAULT_PROMPT_REQUIRED',
       'IMAGE_READER_DEFAULT_PROMPT_TOO_LONG',
       'IMAGE_READER_EMPTY_RESPONSE',
@@ -208,7 +223,7 @@ describe('ImageReaderService', () => {
               defaultPrompt: '完整观察图片',
             }],
           },
-          credentials: {},
+          credentialRefs: {},
         })
       }
       await expect(service.inspect(filePath, { signal: controller.signal })).rejects.toBe(reason)
@@ -232,7 +247,7 @@ describe('ImageReaderService', () => {
           maxTokens: 1536,
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
 
     await service.inspect(filePath, { signal: new AbortController().signal })
@@ -298,7 +313,7 @@ describe('ImageReaderService', () => {
           maxTokens: 1000,
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
     await expect(service.inspect(filePath)).rejects.toMatchObject({ code })
   })
@@ -356,7 +371,7 @@ describe('ImageReaderService', () => {
   })
 
   it('preserves the runtime profile snapshot and provider failure whitelist without copying prohibited values', async () => {
-    const { service, filePath, scope, saveImage, prepareCall } = fixture()
+    const { service, filePath, scope, saveImage, prepareCall, credentialResolve } = fixture()
     writeFileSync(filePath, Buffer.concat([validPngFixture, Buffer.from('IMAGE_INPUT_SENTINEL')]))
     saveImage.mockResolvedValueOnce({
       attachmentId: 'ATTACHMENT_REF_SENTINEL', mediaType: 'image/png', bytes: 28, width: 1, height: 1,
@@ -381,7 +396,7 @@ describe('ImageReaderService', () => {
           maxTokens: 8192,
         }],
       },
-      credentials: { 'runtime-profile': 'CREDENTIAL_SENTINEL' },
+      credentialRefs: {},
     })
     prepareCall.mockResolvedValueOnce({
       config: { provider: 'opencode-go', model: 'qwen3.8-flash', temperature: 0.1, maxTokens: 8192 },
@@ -436,6 +451,7 @@ describe('ImageReaderService', () => {
       expect(serializedError).not.toContain(source)
       expect(error.message).not.toContain(source)
     }
+    expect(credentialResolve).not.toHaveBeenCalled()
     for (const spy of consoleSpies) {
       expect(spy).not.toHaveBeenCalled()
       spy.mockRestore()
@@ -523,11 +539,12 @@ describe('ImageReaderService', () => {
   })
 
   it('records headers without completion while a keepalive body waits, then records cancellation', async () => {
-    const { service, filePath, scope, fetch, diagnostics } = fixture()
+    const { service, filePath, scope, fetch, diagnostics, credentialRef, credentialResolve } = fixture()
     scope.get.mockReturnValue({ configuration: { activeProfileId: 'custom', profiles: [{
       ...createImageReaderProfile('custom'), connectionType: 'openai-compatible',
-      endpoint: 'http://localhost/v1/chat/completions', model: 'vision-model',
-    }] }, credentials: { custom: 'private-api-key' } })
+      endpoint: 'http://localhost/v1/chat/completions', model: 'vision-model', hasApiKey: true,
+    }] }, credentialRefs: { custom: credentialRef } })
+    credentialResolve.mockResolvedValue({ value: 'private-api-key', source: 'test' })
     fetch.mockResolvedValueOnce(new Response(new ReadableStream({ start(controller) {
       controller.enqueue(new TextEncoder().encode(' '))
     } }), { headers: { 'x-request-id': 'request-visible' } }))
@@ -556,7 +573,7 @@ describe('ImageReaderService', () => {
     scope.get.mockReturnValue({ configuration: { activeProfileId: 'custom', profiles: [{
       ...createImageReaderProfile('custom'), connectionType: 'openai-compatible',
       endpoint: 'http://localhost/v1/chat/completions', model: 'vision-model',
-    }] }, credentials: {} })
+    }] }, credentialRefs: {} })
     fetch.mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{
       finish_reason: 'length', message: { content: 'repeated partial observation' },
     }] })))
@@ -565,7 +582,7 @@ describe('ImageReaderService', () => {
   })
 
   it('reads one image through an OpenAI-compatible Chat Completions endpoint without attachment admission', async () => {
-    const { service, filePath, scope, fetch, saveImage, prepareCall, diagnostics } = fixture()
+    const { service, filePath, scope, fetch, saveImage, prepareCall, diagnostics, credentialRef, credentialResolve } = fixture()
     scope.get.mockReturnValue({
       configuration: {
         activeProfileId: 'custom',
@@ -580,8 +597,9 @@ describe('ImageReaderService', () => {
           maxTokens: 3072,
         }],
       },
-      credentials: { custom: 'local-secret' },
+      credentialRefs: { custom: credentialRef },
     })
+    credentialResolve.mockResolvedValue({ value: 'local-secret', source: 'test' })
     fetch.mockResolvedValueOnce(new Response(JSON.stringify({
       choices: [{ finish_reason: 'stop', message: { content: '可见一名银发人物。' } }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
@@ -623,6 +641,88 @@ describe('ImageReaderService', () => {
     expect(prepareCall).not.toHaveBeenCalled()
   })
 
+  it('resolves an OpenAI-compatible credential for each inspection and keeps the request value local', async () => {
+    const { service, filePath, scope, fetch, credentialRef, credentialResolve } = fixture()
+    scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+          hasApiKey: true,
+        }],
+      },
+      credentialRefs: { custom: credentialRef },
+    })
+    let currentValue = 'first-provider-key'
+    credentialResolve.mockImplementation(async reference => ({ value: currentValue, source: 'test' }))
+    fetch
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: 'first' } }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: 'second' } }] }), { status: 200 }))
+
+    const firstInspection = service.inspect(filePath)
+    currentValue = 'rotated-provider-key'
+    await expect(firstInspection).resolves.toMatchObject({ observation: 'first' })
+    await expect(service.inspect(filePath)).resolves.toMatchObject({ observation: 'second' })
+
+    expect(credentialResolve).toHaveBeenCalledTimes(2)
+    expect(credentialResolve).toHaveBeenNthCalledWith(1, credentialRef)
+    expect(credentialResolve).toHaveBeenNthCalledWith(2, credentialRef)
+    expect(fetch.mock.calls.map(([, request]) => new Headers(request!.headers).get('Authorization'))).toEqual([
+      'Bearer first-provider-key',
+      'Bearer rotated-provider-key',
+    ])
+    expect(scope.get.mock.results.map(result => result.value.credentialRefs)).toEqual([
+      { custom: credentialRef },
+      { custom: credentialRef },
+    ])
+  })
+
+  it('rejects a missing configured reference or provider resolution failure before sending HTTP', async () => {
+    const missing = fixture()
+    missing.scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+          hasApiKey: true,
+        }],
+      },
+      credentialRefs: { custom: missing.credentialRef },
+    })
+    await expect(missing.service.inspect(missing.filePath))
+      .rejects.toMatchObject({ code: 'IMAGE_READER_CREDENTIAL_REFERENCE_MISSING' })
+    expect(missing.fetch).not.toHaveBeenCalled()
+    expect(missing.saveImage).not.toHaveBeenCalled()
+    expect(missing.credentialResolve).toHaveBeenCalledWith(missing.credentialRef)
+
+    const failed = fixture()
+    const providerError = new Error('provider error sentinel')
+    failed.scope.get.mockReturnValue({
+      configuration: {
+        activeProfileId: 'custom',
+        profiles: [{
+          ...createImageReaderProfile('custom'),
+          connectionType: 'openai-compatible',
+          endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+          model: 'qwen-vl',
+          hasApiKey: true,
+        }],
+      },
+      credentialRefs: { custom: failed.credentialRef },
+    })
+    failed.credentialResolve.mockRejectedValueOnce(providerError)
+    const error = await failed.service.inspect(failed.filePath).catch(value => value)
+    expect(error).toMatchObject({ code: 'IMAGE_READER_CREDENTIAL_PROVIDER_READ_FAILED', cause: providerError })
+    expect(failed.fetch).not.toHaveBeenCalled()
+    expect(JSON.stringify(error)).not.toContain('provider error sentinel')
+  })
+
   it('sends a per-call prompt verbatim to an OpenAI-compatible endpoint', async () => {
     const { service, filePath, scope, fetch } = fixture()
     scope.get.mockReturnValue({
@@ -636,7 +736,7 @@ describe('ImageReaderService', () => {
           defaultPrompt: '不应使用的默认提示词',
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
     fetch.mockResolvedValueOnce(new Response(JSON.stringify({
       choices: [{ message: { content: '普通文本观察，不是 JSON。' } }],
@@ -650,7 +750,7 @@ describe('ImageReaderService', () => {
   })
 
   it('omits authorization for an unkeyed endpoint and maps HTTP or response failures', async () => {
-    const { service, filePath, scope, fetch } = fixture()
+    const { service, filePath, scope, fetch, credentialResolve } = fixture()
     scope.get.mockReturnValue({
       configuration: {
         activeProfileId: 'custom',
@@ -661,7 +761,7 @@ describe('ImageReaderService', () => {
           model: 'qwen-vl',
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
     fetch.mockResolvedValueOnce(new Response('', { status: 401 }))
     await expect(service.inspect(filePath)).rejects.toMatchObject({
@@ -669,6 +769,7 @@ describe('ImageReaderService', () => {
       message: 'The configured OpenAI-compatible endpoint returned HTTP 401.',
     })
     expect(fetch.mock.calls[0]![1]!.headers).toEqual({ 'Content-Type': 'application/json' })
+    expect(credentialResolve).not.toHaveBeenCalled()
 
     fetch.mockResolvedValueOnce(new Response('not json', { status: 200 }))
     await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
@@ -692,7 +793,7 @@ describe('ImageReaderService', () => {
           model: 'qwen-vl',
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
     fetch.mockRejectedValueOnce(new Error('connection refused'))
     await expect(service.inspect(filePath)).rejects.toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
@@ -717,7 +818,7 @@ describe('ImageReaderService', () => {
           model: 'qwen-vl',
         }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
     fetch.mockResolvedValueOnce(new Response('{}', {
       status: 200,

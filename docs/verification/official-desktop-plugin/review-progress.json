@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "category": "阶段性独立审阅",
+  "finalCandidateReviewCompleted": false,
+  "reviews": [
+    {
+      "scope": "方案",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "files": [
+        "docs/plans/official-desktop-plugin-20260929.md"
+      ]
+    },
+    {
+      "scope": "开发规范",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "files": [
+        "docs/agents/worktree-development.md",
+        "docs/agents/comfyui-workbench-preset-and-skill-development.md"
+      ]
+    },
+    {
+      "scope": "八个项目Skill文档与三个帮助JSON",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "corrections": [
+        "图片观察分类条件集中定义",
+        "按原始参数名处理已有Prompt字段",
+        "正向句式与相对Skill路径"
+      ]
+    },
+    {
+      "scope": "公共Node入口说明、YAML加载错误、工作台Preset说明、环境变量碰撞错误",
+      "kind": "独立语义审阅",
+      "result": "通过"
+    },
+    {
+      "scope": "构建、打包与Host Node运行入口",
+      "kind": "Simplify",
+      "result": "发现问题并修复",
+      "findings": [
+        "目录后代私密路径检查",
+        "受管环境变量名称碰撞"
+      ],
+      "validation": "新增用例先失败，修复后打包与CLI/Node相关26项通过"
+    },
+    {
+      "scope": "Simplify修改后的打包/schema/Node环境最终diff",
+      "kind": "新上下文正确性与遗漏复审",
+      "result": "通过",
+      "limit": "环境变量错误句子后续经独立语义审阅调整；最终候选全树审查仍须完成"
+    },
+    {
+      "scope": "插件数据存储与实际SQLite初始化",
+      "kind": "独立代码复审",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/storage-initialization-final-review.json",
+      "limit": "当前实现范围通过；最终候选全树审查仍须完成"
+    },
+    {
+      "scope": "候选版本发布说明新增段落",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/candidate-release-note-final-semantic-review.json"
+    },
+    {
+      "scope": "官方安装与更新用户指南",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "files": [
+        "docs/user/install-update.md"
+      ],
+      "evidence": ".local/desktop-e2e/reviews/install-guide-semantic-review.json",
+      "limit": "实际更新/回装验收及最终候选树审查待完成"
+    },
+    {
+      "scope": "Host 启动资源检查、配置和打包清单",
+      "kind": "独立 Standards、Spec 与 Simplify",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/a11-resource-fix-independent-review.json",
+      "limit": "通过范围限定于报告审阅的成果；后续修改须重新审阅。"
+    },
+    {
+      "scope": "插件激活、Remote 与 managed CLI 生命周期回归",
+      "kind": "独立 Standards、Spec 与 Simplify",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/activation-regression-independent-review.json",
+      "limit": "通过范围限定于报告审阅的成果；后续修改须重新审阅。"
+    },
+    {
+      "scope": "浏览器关闭测试中的 OS 进程退出等待",
+      "kind": "独立正确性复审",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/worker-cleanup-wait-independent-review.json",
+      "limit": "通过范围限定于报告审阅的成果；后续修改须重新审阅。"
+    },
+    {
+      "scope": "最终配置保存失败和资源缺失提示",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/final-configuration-diagnostics-semantic-review.json",
+      "limit": "通过范围限定于报告审阅的成果；后续修改须重新审阅。"
+    },
+    {
+      "scope": "设置页面字面值、保存失败与 Electron CLI 回归",
+      "kind": "独立正确性复审",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/settings-review-fixes-independent-review.json",
+      "limit": "通过范围限定于报告审阅的成果；后续修改须重新审阅。"
+    },
+    {
+      "scope": "产品源码、产品配置、Preset 资源及纯插件构建",
+      "kind": "独立 Simplify",
+      "result": "通过；两项可选清理已采纳",
+      "evidence": ".local/desktop-e2e/reviews/plugin-candidate-simplify-review.json",
+      "applied": [
+        "移除无人调用的 web=false Host 构建分支",
+        "删除未参与实际构建的 HOST_MODULE_POLICY 导出"
+      ],
+      "validation": "Host 构建、Host 激活和迁移合同 23 项通过，typecheck 通过；Host 构建修改独立复审通过。"
+    },
+    {
+      "scope": "纯插件 Host 构建及旧 Profile 合同迁移",
+      "kind": "独立正确性、Standards、Spec 与 Simplify",
+      "result": "构建器通过；合同测试的整份 patch 保护已补回，最终复审通过",
+      "evidence": ".local/desktop-e2e/reviews/host-build-contract-cleanup-review.json",
+      "limit": "最终候选完整门禁仍待完成。",
+      "finalEvidence": ".local/desktop-e2e/reviews/profile-skill-ownership-final-review.json"
+    },
+    {
+      "scope": "Core 覆盖率测试的浏览器环境隔离",
+      "kind": "独立最终正确性复审",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/activation-environment-isolation-final-review.json",
+      "validation": "相同合法覆盖下红测失败、修正后9项定向测试与typecheck通过；完整quality:fast也已通过。"
+    },
+    {
+      "scope": "Renderer CDP公开依赖与清理",
+      "kind": "独立 Standards、Spec 与 Simplify",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/cdp-transport-standards-final-review.json",
+      "limit": "通过范围限定于报告中的成果；最终候选完整审查待完成。"
+    },
+    {
+      "scope": "整个测试命令取消清理与启动竞态",
+      "kind": "独立正确性复审",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/command-cancellation-spawn-guard-final-review.json",
+      "limit": "通过范围限定于报告中的成果；最终候选完整审查待完成。"
+    },
+    {
+      "scope": "测试追踪环境变量的子进程移除",
+      "kind": "独立 Standards、Spec 与 Simplify",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/probe-runner-environment-standards-review.json",
+      "limit": "通过范围限定于报告中的成果；最终候选完整审查待完成。"
+    },
+    {
+      "scope": "当前A13与实际信号记录",
+      "kind": "独立语义审阅",
+      "result": "通过",
+      "evidence": ".local/desktop-e2e/reviews/signal-recipient-record-correction-review.json",
+      "limit": "通过范围限定于报告中的成果；最终候选完整审查待完成。"
+    },
+    {
+      "scope": "当前完整Desktop回归的原始证据",
+      "kind": "独立事实验收",
+      "result": "19项全部通过",
+      "evidence": ".local/desktop-e2e/reviews/current-full-desktop-regression-evidence-review.json",
+      "limit": "本结论覆盖当前自动化候选；最终全树门禁与真实A18验收另行完成。"
+    }
+  ],
+  "remaining": [
+    "A1/A2/A9 无系统 Node、源码隔离和安装目录只读的官方应用验收",
+    "A4/A10 宿主凭据 SDK 安装授权与实现验收",
+    "最终候选完整 Standards Review、Spec Review 与 Simplify",
+    "完整 pnpm quality 与最终 git diff --check",
+    "真实 A18 候选矩阵"
+  ]
+}

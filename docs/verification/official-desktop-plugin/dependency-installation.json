@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "stage": "installed-and-linked",
+  "approved": true,
+  "rootCount": 50,
+  "resolvedCount": 119,
+  "unapprovedCount": 0,
+  "view": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/official-desktop-development-dependencies",
+  "ignoreScripts": true,
+  "peerInstallation": false,
+  "checkedAt": "2026-09-30T09:21:47.851Z",
+  "installCommand": "pnpm install --frozen-lockfile --ignore-scripts",
+  "installExitCode": 0,
+  "worktreeInstallPerformed": false,
+  "worktreeView": "node_modules/.official-desktop-dependency-view.json",
+  "typecheckStatus": "官方 SDK 类型检查通过。",
+  "peerCheck": {
+    "exitCode": 0,
+    "missingPeerCount": 0
+  },
+  "supplement": "dependency-peer-supplement.json"
+}

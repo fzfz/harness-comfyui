@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 1,
+  "category": "actual-external-services",
+  "candidateVersion": "0.45.0",
+  "applicationVersion": "0.2.0-rc.2",
+  "implementationCommit": "9542f8d4e578ff58f365154ab5c2a18d13da2307",
+  "workspaceId": "5bff6b58-a550-42e4-aade-b61f13412531",
+  "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0",
+  "model": {
+    "provider": "openrouter",
+    "id": "stealth/space-bunny-alpha",
+    "inputPrice": "0",
+    "outputPrice": "0",
+    "catalogEvidence": ".local/desktop-e2e/release-preparation-20261001/free-model-catalog.json",
+    "actualRoutesEvidence": [
+      ".local/desktop-e2e/real-candidate-20261001/actual-provider-route-receipts.json",
+      ".local/desktop-e2e/release-preparation-20261001/new-actual-provider-route-receipts.json"
+    ]
+  },
+  "candidateBinding": {
+    "currentIdentity": ".local/desktop-e2e/release-preparation-20261001/artifacts-final-aggregate/candidate-source-identity.json",
+    "previousRealCandidate": ".local/desktop-e2e/three-blockers-20261001/artifacts/harness-comfyui-0.45.0.tgz",
+    "resourceComparison": ".local/desktop-e2e/release-preparation-20261001/artifacts-final-aggregate/previous-real-candidate-resource-comparison.json",
+    "condition": "Skill、Persona和Preset资源与previousRealCandidate固定归档的原始字节相同；A8诊断界面验收使用currentIdentity指定的artifacts-final-aggregate归档。脱离源码运行验收未执行。"
+  },
+  "items": [
+    {
+      "skill": "krea2-anime-prompt-builder",
+      "executedBranch": "历史参数与 Actual Workflow 查询",
+      "sessionId": "session-29fd0eec-58f0-4c15-93d2-22c77bfd13c9",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/real-candidate-20261001/krea2-anime-prompt-builder-request.json",
+      "nativeSession": ".local/desktop-e2e/real-candidate-20261001/completed-branches-evidence/krea2-anime-prompt-builder-latest-page.json",
+      "nativeProjection": ".local/desktop-e2e/real-candidate-20261001/completed-branches-evidence/krea2-anime-prompt-builder-latest-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder",
+      "status": "通过",
+      "priorAudits": [
+        ".local/desktop-e2e/reviews/current-completed-real-skills-audit.json",
+        ".local/desktop-e2e/reviews/current-corrected-real-skills-audit.json"
+      ],
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/README.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/actual-workflow.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/cli-exit-code.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/cli-stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/cli-stdin-input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/cli-stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/krea2-anime-prompt-builder/run-arguments.json"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "wai-sdxl-prompt-builder",
+      "executedBranch": "历史参数与 Actual Workflow 查询",
+      "sessionId": "session-68589925-7c21-487f-bc43-f058c74892cf",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/real-candidate-20261001/wai-sdxl-prompt-builder-request.json",
+      "nativeSession": ".local/desktop-e2e/real-candidate-20261001/completed-branches-evidence/wai-sdxl-prompt-builder-latest-page.json",
+      "nativeProjection": ".local/desktop-e2e/real-candidate-20261001/completed-branches-evidence/wai-sdxl-prompt-builder-latest-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder",
+      "status": "通过",
+      "priorAudits": [
+        ".local/desktop-e2e/reviews/current-completed-real-skills-audit.json",
+        ".local/desktop-e2e/reviews/current-corrected-real-skills-audit.json"
+      ],
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/actual-workflow.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/command.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/exit-code.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/run-input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/wai-sdxl-prompt-builder/summary.md"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "character-portrait-prompt-designer",
+      "executedBranch": "历史参数与 Actual Workflow 查询；子图数量纠正",
+      "sessionId": "session-5477d8fa-8fe7-4975-bd18-a41022b2e007",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/real-candidate-20261001/character-portrait-prompt-designer-request.json",
+      "nativeSession": ".local/desktop-e2e/real-candidate-20261001/corrected-branches-evidence/character-portrait-prompt-designer-latest-page.json",
+      "nativeProjection": ".local/desktop-e2e/real-candidate-20261001/corrected-branches-evidence/character-portrait-prompt-designer-latest-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer",
+      "status": "通过",
+      "priorAudits": [
+        ".local/desktop-e2e/reviews/current-completed-real-skills-audit.json",
+        ".local/desktop-e2e/reviews/current-corrected-real-skills-audit.json"
+      ],
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/actual-workflow.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/correction.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/exit-code.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/run-input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/stdout.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-history/character-portrait-prompt-designer/summary.md"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "local-image-reader",
+      "executedBranch": "单张本地图片读取；原始 stdin 归档纠正",
+      "sessionId": "session-d4a5bc22-a8f0-4d96-8e61-9946918dc155",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/real-candidate-20261001/local-image-reader-request.json",
+      "nativeSession": ".local/desktop-e2e/real-candidate-20261001/corrected-branches-evidence/local-image-reader-latest-page.json",
+      "nativeProjection": ".local/desktop-e2e/real-candidate-20261001/corrected-branches-evidence/local-image-reader-latest-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader",
+      "status": "通过",
+      "priorAudits": [
+        ".local/desktop-e2e/reviews/current-completed-real-skills-audit.json",
+        ".local/desktop-e2e/reviews/current-corrected-real-skills-audit.json"
+      ],
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/cli-command.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/cli-exit-code.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/cli-request.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/cli-stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/cli-stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/corrected-original-command.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/corrected-original-stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/report.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/local-image-reader/report.md"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "comfyui-image-review",
+      "executedBranch": "Run 参数、媒体解析、独立视觉观察、比较与正式 Prompt；不确定项强化纠正",
+      "sessionId": "session-3d3cec8a-6ee1-4878-9dc4-ac75abd8ffe7",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/real-candidate-20261001/comfyui-image-review-request.json",
+      "nativeSession": ".local/desktop-e2e/real-candidate-20261001/final-corrected-branches-evidence/comfyui-image-review-latest-page.json",
+      "nativeProjection": ".local/desktop-e2e/real-candidate-20261001/final-corrected-branches-evidence/comfyui-image-review-latest-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review",
+      "status": "通过",
+      "priorAudits": [
+        ".local/desktop-e2e/reviews/current-completed-real-skills-audit.json",
+        ".local/desktop-e2e/reviews/current-corrected-real-skills-audit.json",
+        ".local/desktop-e2e/reviews/final-corrected-real-skills-audit.json"
+      ],
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/cli/01-resolve-media.input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/cli/01-resolve-media.output.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/cli/01-resolve-media.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/cli/02-image-inspect.input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/cli/02-image-inspect.output.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/cli/02-image-inspect.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/comparison.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/correction/README.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/correction/corrected-comparison.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/correction/corrected-report.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/correction/improved-prompt.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/improved-prompt.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/observation.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/skill-image/comfyui-image-review/review-report.md"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "anima-prompt-builder",
+      "executedBranch": "实际 Run 的历史参数与完整 Actual Workflow 查询",
+      "sessionId": "session-d008916c-e442-4605-ad2c-8b04ae1f744f",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/release-preparation-20261001/anima-history-space-request.json",
+      "nativeSession": ".local/desktop-e2e/release-preparation-20261001/anima-history-space-correction-session.json",
+      "nativeProjection": ".local/desktop-e2e/release-preparation-20261001/anima-history-space-correction-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space",
+      "priorAudits": [
+        ".local/desktop-e2e/release-preparation-20261001/anima-history-space-final-review.json"
+      ],
+      "status": "通过",
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/command.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/correction.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/exit_code.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/report.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-anima-history-space/summary.json"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "comfyui-generate",
+      "executedBranch": "真实 Workflow43/model3/LoRA[]/7:9 完整生成及结果读取",
+      "sessionId": "session-75952982-19a6-40b3-aac5-9f61df84ee6f",
+      "agentPreset": "harness-comfyui-cli-candidate",
+      "request": ".local/desktop-e2e/real-candidate-20261001/formal-workbench-contract-correction-request.json",
+      "nativeSession": ".local/desktop-e2e/real-candidate-20261001/final-corrected-branches-evidence/workbench-latest-page.json",
+      "nativeProjection": ".local/desktop-e2e/real-candidate-20261001/final-corrected-branches-evidence/workbench-latest-projections.json",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction",
+      "runId": "run_da030924-4b1f-449c-ba7e-9a115cb89b42",
+      "priorAudits": [
+        ".local/desktop-e2e/reviews/current-corrected-real-skills-audit.json"
+      ],
+      "status": "通过",
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/REPORT.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/ROUND-1-RETROSPECTIVE.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/acceptance-correction.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/accepted-image-7x9.png",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/actual-workflow.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/api-workflow.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/image-inspect-stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/image-inspect.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/image-inspect.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/image-inspect.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/request.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/artifacts/source-snapshot.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/generation-result-input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/generation-result.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/generation-result.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/generation-result.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/prompt-format.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/prompt-format.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/prompt-format.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/builder/slots-input.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/01-template-resolve.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/01-template-resolve.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/01-template-resolve.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/02-generation-model-resolve.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/02-generation-model-resolve.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/02-generation-model-resolve.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/03-instance-list.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/03-instance-list.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/03-instance-list.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/04-inspect-stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/04-inspect.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/04-inspect.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/catalog/04-inspect.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/01-random-seeds-stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/01-random-seeds.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/01-random-seeds.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/01-random-seeds.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/02-submit-stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/02-submit.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/02-submit.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/02-submit.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/03-resolve-media.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/03-resolve-media.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/03-resolve-media.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/03-run-stdin.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/04-run-inputs.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/04-run-inputs.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/generation/04-run-inputs.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/references-audit/11-pose-action-sex.verbatim.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/references-audit/anima-references.sha256",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/01-base-models.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/01-base-models.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/01-base-models.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/02-styles-search.cmd.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/02-styles-search.stderr.txt",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/02-styles-search.stdout.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/formal-workbench-contract-correction/semantic/90-http-probe.txt"
+      ],
+      "missingIndexedFiles": []
+    },
+    {
+      "skill": "comfyui-iterate-generation",
+      "executedBranch": "四角色实际第二轮正式 Run、实际图片读取与比较；同轮关闭回复纠正",
+      "parentSessionId": "session-73b86f8b-1c71-4cf0-b9e6-64644597db31",
+      "generationSessionId": "ccbd5e6a-6ad4-425e-acec-7c80e7cb57f1",
+      "agentPreset": "harness-comfyui-iteration",
+      "request": ".local/desktop-e2e/release-preparation-20261001/iteration-corrected-second-round-request.json",
+      "nativeSession": ".local/desktop-e2e/release-preparation-20261001/observation-close-only-session.json",
+      "nativeProjection": ".local/desktop-e2e/release-preparation-20261001/observation-close-only-projections.json",
+      "childSessionDirectory": ".local/desktop-e2e/release-preparation-20261001",
+      "cliAndResultDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002",
+      "runId": "run_7927dbc2-b05a-4c64-986b-ee3ca37019b6",
+      "priorAudits": [
+        ".local/desktop-e2e/release-preparation-20261001/round2-independent-contract-review.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "status": "通过",
+      "savedFiles": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/actual-workflow.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/builder.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/comparison-001.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/comparison-002.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/contract-review-note.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/generation.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/observation-001.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/observation-002.md",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/resolve-media.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-real-workspace-w2SEE0/release-formal-iteration-space/rounds/002/run-inputs-raw.json"
+      ],
+      "missingIndexedFiles": [],
+      "generationHandoffCorrection": ".local/desktop-e2e/release-preparation-20261001/generation-handoff-read-live-session.json"
+    }
+  ],
+  "olderFailures": "保留原始失败、修正请求和独立报告；逐项结论仅覆盖指定的最终执行分支。",
+  "productionAcceptance": "正式发行包安装后的生产真实验收尚未执行。",
+  "finalIndependentReview": ".local/desktop-e2e/release-preparation-20261001/final-eight-skills-independent-review.json"
+}

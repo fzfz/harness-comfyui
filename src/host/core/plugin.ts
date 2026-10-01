@@ -1,6 +1,5 @@
 import { Service, type Context, type Logger } from '@deepseek-ai/cordis'
 
-import runtimeArtifacts from '../../../config/runtime-artifacts.json' with { type: 'json' }
 import { loadProfile } from '../../config/load-profile.ts'
 import {
   configuredSourceAddress,
@@ -31,12 +30,13 @@ import { SourceGenerationPreparer } from '../generation/source-preparer.ts'
 import { ComfyWorkflowCompiler } from '../generation/workflow-compiler.ts'
 import { registerProjectTools } from '../tools/register-project-tools.ts'
 
-import { repositoryResource } from '../resource-path.ts'
+import { assertPluginRuntimeResourcesAvailable } from '../plugin-resources.ts'
+import { assertPluginStorageWritable } from './plugin-storage.ts'
 export { Config } from './schema.ts'
 import { Config, type CoreServices } from './schema.ts'
 
 export const name = 'harness-comfyui-core'
-export const inject = ['tools', 'workspaceRegistry'] as const
+export const inject = ['tools', 'workspaceRegistry', 'dshHomePath'] as const
 
 
 declare module '@deepseek-ai/cordis' { interface Context { harnessComfyuiCore: ComfyuiCoreService } }
@@ -70,22 +70,41 @@ export function reportFrontendAttemptDiagnostic(
 
 /** Validate the selected Configuration Profile before Host startup completes. */
 export async function apply(ctx: Context, config: Config): Promise<void> {
+  const runtimeResources = assertPluginRuntimeResourcesAvailable()
   const {
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector,
     HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: _startupWorkspacePath,
     ...environment
   } = process.env
-  const profile = loadProfile(config.configurationProfile, { environment })
+  const homeContext = ctx as Context & { dshHomePath(...segments: string[]): string }
+  const profile = loadProfile(config.configurationProfile, {
+    environment,
+    storageRoot: homeContext.dshHomePath(),
+    ...(config.dataDirectory === undefined ? {} : { dataDirectory: config.dataDirectory }),
+  })
+  const browserExecutablePath = () => config.browserExecutablePath?.get()
+    ?? profile.comfyui.frontendCompiler.browserExecutablePath
+  const effectiveProfile: CoreServices['profile'] = {
+    ...profile,
+    comfyui: {
+      ...profile.comfyui,
+      frontendCompiler: {
+        ...profile.comfyui.frontendCompiler,
+        get browserExecutablePath() { return browserExecutablePath() },
+      },
+    },
+  }
+  assertPluginStorageWritable(effectiveProfile.paths)
   if (config.startupWorkspacePath !== undefined) {
     await ctx.workspaceRegistry.create(config.startupWorkspacePath)
   }
   const sourceSettings = {
     get(): SourceAddress {
-      return configuredSourceAddress(config.configuration, profile.source.catalogPort)
+      return configuredSourceAddress(config.configuration, effectiveProfile.source.catalogPort)
     },
   }
-  const semanticQueryClientPath = repositoryResource('scripts/source-client/imagegen-semantic-query.mjs')
-  const sourceReadClientPath = repositoryResource('scripts/source-client/imagegen-comfyui-source-read.mjs')
+  const semanticQueryClientPath = runtimeResources.semanticQueryClient
+  const sourceReadClientPath = runtimeResources.sourceReadClient
   const catalog = new CatalogCli({
     executable: semanticQueryClientPath,
     settings: sourceSettings,
@@ -96,37 +115,37 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   })
   const generationLogger = ctx.logger('harness-comfyui')
   const frontendCompiler = new NodeWorkerComfyFrontend({
-    nodeExecutable: 'node',
-    workerModulePath: repositoryResource(runtimeArtifacts.frontendCompilerWorker.outputEntryRelativePath),
-    browserExecutablePath: profile.comfyui.frontendCompiler.browserExecutablePath,
-    timeoutMs: profile.comfyui.frontendCompiler.timeoutMs,
-    preReadiness: profile.comfyui.frontendCompiler.preReadiness,
+    nodeExecutable: process.execPath,
+    workerModulePath: runtimeResources.frontendCompilerWorker,
+    get browserExecutablePath() { return browserExecutablePath() },
+    timeoutMs: effectiveProfile.comfyui.frontendCompiler.timeoutMs,
+    preReadiness: effectiveProfile.comfyui.frontendCompiler.preReadiness,
     reportDiagnostic: reportFrontendAttemptDiagnostic.bind(undefined, generationLogger),
   })
   const officialApiWorkflowCompiler = new OfficialApiWorkflowCompiler({
-    cacheDirectory: profile.paths.apiWorkflowCacheDirectory,
-    instanceCacheEpoch: profile.comfyui.frontendCompiler.instanceCacheEpoch,
+    cacheDirectory: effectiveProfile.paths.apiWorkflowCacheDirectory,
+    instanceCacheEpoch: effectiveProfile.comfyui.frontendCompiler.instanceCacheEpoch,
     frontend: frontendCompiler,
   })
   const runtime = new GenerationRuntime({
-    runRepositoryFile: profile.paths.runRepositoryFile,
-    runDirectory: profile.paths.runDirectory,
-    savedMediaDirectory: profile.paths.savedMediaDirectory,
+    runRepositoryFile: effectiveProfile.paths.runRepositoryFile,
+    runDirectory: effectiveProfile.paths.runDirectory,
+    savedMediaDirectory: effectiveProfile.paths.savedMediaDirectory,
     preparer: new SourceGenerationPreparer({
-      defaultInstanceId: profile.comfyui.defaultInstanceId,
+      defaultInstanceId: effectiveProfile.comfyui.defaultInstanceId,
       source,
       compiler: new ComfyWorkflowCompiler({
-        timeoutMs: profile.comfyui.frontendCompiler.timeoutMs,
+        timeoutMs: effectiveProfile.comfyui.frontendCompiler.timeoutMs,
         officialApiWorkflowCompiler,
       }),
     }),
     transport: new ComfyHttpTransport({ source, maxMediaBytes: profile.media.maxFileBytes }),
-    missingObservationMs: profile.jobs.missingObservationMs,
+    missingObservationMs: effectiveProfile.jobs.missingObservationMs,
     reportRunInputLookupError: reportGenerationRunInputLookupError.bind(undefined, generationLogger),
   })
   const coordinator = new GenerationCoordinator({
     runtime,
-    pollIntervalMs: profile.jobs.pollIntervalMs,
+    pollIntervalMs: effectiveProfile.jobs.pollIntervalMs,
     onError: generationLogger.error.bind(generationLogger),
   })
   ctx.effect(() => {
@@ -136,7 +155,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       runtime.close()
     }
   }, 'Generation coordinator')
-  new ComfyuiCoreService(ctx, { catalog, runtime, profile, sourceAddress: () => readSourceAddress(sourceSettings), semanticQueryClientPath })
+  new ComfyuiCoreService(ctx, { catalog, runtime, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings), semanticQueryClientPath })
   ctx.effect(() => registerProjectTools(ctx, [
     createTemplateResolverTool(catalog),
     createLoraResolverTool(catalog),

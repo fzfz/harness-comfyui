@@ -1,0 +1,1823 @@
+{
+  "schemaVersion": 1,
+  "status": "已批准安装",
+  "queriedAt": "2026-09-30T05:49:44.419Z",
+  "source": "https://registry.npmjs.org",
+  "advisorySource": "https://api.osv.dev/v1/querybatch",
+  "roots": [
+    {
+      "name": "@deepseek-ai/cordis",
+      "version": "4.0.4"
+    },
+    {
+      "name": "@deepseek-ai/schemastery",
+      "version": "3.18.4"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-remotes",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-connection",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-locale",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-input-trigger",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-primitives",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-right",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-slots",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-invariants",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-jobs",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-settings",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tools",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-protocol",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-workspace",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "react",
+      "version": "18.3.1"
+    },
+    {
+      "name": "react-dom",
+      "version": "18.3.1"
+    },
+    {
+      "name": "sharp",
+      "version": "0.35.4"
+    },
+    {
+      "name": "@deepseek-ai/dsh-home-paths",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset-registry",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill-filesystem",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell-env",
+      "version": "0.2.0-rc.2"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "version": "1.0.9",
+      "purpose": "开发夹具读取及重写官方Profile YAML，保留!!js表达式"
+    },
+    {
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "purpose": "开发夹具解析与序列化官方Profile YAML"
+    }
+  ],
+  "packages": [
+    {
+      "name": "@deepseek-ai/cordis",
+      "version": "4.0.4",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fcordis/4.0.4",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/cosmokit": "~1.8.5",
+        "@standard-schema/spec": "^1.1.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5",
+        "@deepseek-ai/cordis-plugin-include": "~1.0.9"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "version": "1.0.9",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fcordis-plugin-include/1.0.9",
+      "via": "@deepseek-ai/dsh@0.2.0-rc.2",
+      "dependencies": {
+        "js-yaml": "^4.1.0",
+        "@deepseek-ai/cosmokit": "~1.8.5"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5"
+      },
+      "installScripts": {},
+      "purpose": "开发夹具读取及重写官方Profile YAML，保留!!js表达式",
+      "securityOpinion": "精确版本OSV查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:46.296Z"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-loader",
+      "version": "1.0.5",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fcordis-plugin-loader/1.0.5",
+      "via": "@deepseek-ai/dsh-settings@0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/cosmokit": "~1.8.5",
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "node-addon-require-builtin": "^0.1.6"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/cosmokit",
+      "version": "1.8.5",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fcosmokit/1.8.5",
+      "via": "@deepseek-ai/schemastery@3.18.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-agent/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-workspace": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-agent-preset/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5",
+        "@deepseek-ai/dsh-agent-preset-registry": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset-registry",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-agent-preset-registry/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "zod": "^4.4.3",
+        "js-yaml": "^4.2.0",
+        "@deepseek-ai/schemastery": "~3.18.4",
+        "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-settings": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5",
+        "@deepseek-ai/cordis-plugin-include": "~1.0.9",
+        "@deepseek-ai/dsh-session-projection": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-remotes",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-api-remotes/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/dsh-deque": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-app-boot",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-app-boot/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh@0.2.0-rc.2",
+      "dependencies": {
+        "ajv": "^8.20.0",
+        "semver": "^7.8.5",
+        "js-yaml": "^4.2.0",
+        "resolve.exports": "^2.0.3",
+        "@eslint-community/regexpp": "^4.12.2",
+        "node-addon-require-builtin": "^0.1.6",
+        "@deepseek-ai/dsh-atomic-write": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-package-manifest": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+        "@deepseek-ai/cordis-plugin-group": "~1.0.4",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5",
+        "@deepseek-ai/cordis-plugin-include": "~1.0.9",
+        "@deepseek-ai/dsh-launch-environment": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-atomic-write",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-atomic-write/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-attachment/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-brand",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-brand/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-llm@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-connection",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-connection/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "zod": "^4.4.3",
+        "@deepseek-ai/schemastery": "~3.18.4",
+        "@deepseek-ai/dsh-credentials": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-locale",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-locale/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-conversation/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-input-trigger",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-input-trigger/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-layout/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-primitives",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-primitives/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-settings/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-sidebar/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-right",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-sidebar-right/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-slots",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-client-ui-slots/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-config-editor",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-config-editor/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-settings@0.2.0-rc.2",
+      "dependencies": {
+        "yaml": "^2.8.1",
+        "js-yaml": "^4.1.0",
+        "@deepseek-ai/dsh-atomic-write": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-hmr": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5",
+        "@deepseek-ai/cordis-plugin-include": "~1.0.9"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-credentials",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-credentials/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-client-connection@0.2.0-rc.2",
+      "dependencies": {
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-deque",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-deque/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-api-remotes@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-home-paths",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-home-paths/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-invariants",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-invariants/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-jobs",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-jobs/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-workspace": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-llm/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "zod": "^4.4.3",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-timeout": "0.2.0-rc.2",
+        "@deepseek-ai/schemastery": "~3.18.4",
+        "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-package-manifest",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-package-manifest/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-app-boot@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-session/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-settings",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-settings/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "yaml": "^2.8.1",
+        "@deepseek-ai/cosmokit": "~1.8.5",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-config-editor": "0.2.0-rc.2",
+        "@deepseek-ai/cordis-plugin-loader": "~1.0.5"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/schemastery": "~3.18.4",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell-env",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-shell-env/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-shell": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill-filesystem",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-skill-filesystem/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "yaml": "^2.4.2",
+        "chokidar": "^5.0.0",
+        "@deepseek-ai/schemastery": "~3.18.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-fs": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-skill": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-timeout",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-timeout/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-llm@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tools",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-tools/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2",
+        "@deepseek-ai/schemastery": "~3.18.4",
+        "@deepseek-ai/dsh-util-values": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-agent": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-scope": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-ptc-runtime": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-user-approval": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-sandbox-policy": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-protocol",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-typert-protocol/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-crypto",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-util-crypto/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-llm@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-values",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-util-values/0.2.0-rc.2",
+      "via": "@deepseek-ai/dsh-api-remotes@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4"
+      },
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/dsh-workspace",
+      "version": "0.2.0-rc.2",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fdsh-workspace/0.2.0-rc.2",
+      "via": "direct",
+      "dependencies": {
+        "zod": "^4.4.3",
+        "@deepseek-ai/dsh-brand": "0.2.0-rc.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "~4.0.4",
+        "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-session-persistence": "0.2.0-rc.2"
+      },
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@deepseek-ai/schemastery",
+      "version": "3.18.4",
+      "source": "https://registry.npmjs.org/%40deepseek-ai%2Fschemastery/3.18.4",
+      "via": "direct",
+      "dependencies": {
+        "@deepseek-ai/cosmokit": "~1.8.5",
+        "@standard-schema/spec": "^1.1.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "官方插件 Host 或 Client 公共 API",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@emnapi/runtime",
+      "version": "1.11.3",
+      "source": "https://registry.npmjs.org/%40emnapi%2Fruntime/1.11.3",
+      "via": "@img/sharp-wasm32@0.35.4",
+      "dependencies": {
+        "tslib": "^2.4.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@eslint-community/regexpp",
+      "version": "4.12.2",
+      "source": "https://registry.npmjs.org/%40eslint-community%2Fregexpp/4.12.2",
+      "via": "@deepseek-ai/dsh-app-boot@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/colour",
+      "version": "1.1.0",
+      "source": "https://registry.npmjs.org/%40img%2Fcolour/1.1.0",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-darwin-arm64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-darwin-arm64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-darwin-arm64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-darwin-x64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-darwin-x64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-darwin-x64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-freebsd-wasm32",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-freebsd-wasm32/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {
+        "@img/sharp-wasm32": "0.35.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-darwin-arm64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-darwin-arm64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-darwin-x64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-darwin-x64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-arm",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linux-arm/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-arm64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linux-arm64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-ppc64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linux-ppc64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-riscv64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linux-riscv64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-s390x",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linux-s390x/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-x64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linux-x64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linuxmusl-arm64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linuxmusl-arm64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-libvips-linuxmusl-x64",
+      "version": "1.3.3",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-libvips-linuxmusl-x64/1.3.3",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linux-arm",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linux-arm/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linux-arm": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linux-arm64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linux-arm64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linux-arm64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linux-ppc64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linux-ppc64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linux-ppc64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linux-riscv64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linux-riscv64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linux-riscv64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linux-s390x",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linux-s390x/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linux-s390x": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linux-x64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linux-x64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linux-x64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linuxmusl-arm64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linuxmusl-arm64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linuxmusl-arm64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-linuxmusl-x64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-linuxmusl-x64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {
+        "@img/sharp-libvips-linuxmusl-x64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-wasm32",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-wasm32/0.35.4",
+      "via": "@img/sharp-freebsd-wasm32@0.35.4",
+      "dependencies": {
+        "@emnapi/runtime": "^1.11.3"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-webcontainers-wasm32",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-webcontainers-wasm32/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {
+        "@img/sharp-wasm32": "0.35.4"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-win32-arm64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-win32-arm64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-win32-ia32",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-win32-ia32/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@img/sharp-win32-x64",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/%40img%2Fsharp-win32-x64/0.35.4",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "@standard-schema/spec",
+      "version": "1.1.0",
+      "source": "https://registry.npmjs.org/%40standard-schema%2Fspec/1.1.0",
+      "via": "@deepseek-ai/schemastery@3.18.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "ajv",
+      "version": "8.20.0",
+      "source": "https://registry.npmjs.org/ajv/8.20.0",
+      "via": "@deepseek-ai/dsh-app-boot@0.2.0-rc.2",
+      "dependencies": {
+        "fast-deep-equal": "^3.1.3",
+        "fast-uri": "^3.0.1",
+        "json-schema-traverse": "^1.0.0",
+        "require-from-string": "^2.0.2"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "argparse",
+      "version": "2.0.1",
+      "source": "https://registry.npmjs.org/argparse/2.0.1",
+      "via": "js-yaml@4.3.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "chokidar",
+      "version": "5.0.0",
+      "source": "https://registry.npmjs.org/chokidar/5.0.0",
+      "via": "@deepseek-ai/dsh-skill-filesystem@0.2.0-rc.2",
+      "dependencies": {
+        "readdirp": "^5.0.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "detect-libc",
+      "version": "2.1.2",
+      "source": "https://registry.npmjs.org/detect-libc/2.1.2",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "fast-deep-equal",
+      "version": "3.1.3",
+      "source": "https://registry.npmjs.org/fast-deep-equal/3.1.3",
+      "via": "ajv@8.20.0",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "fast-uri",
+      "version": "3.1.8",
+      "source": "https://registry.npmjs.org/fast-uri/3.1.8",
+      "via": "ajv@8.20.0",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "js-tokens",
+      "version": "4.0.0",
+      "source": "https://registry.npmjs.org/js-tokens/4.0.0",
+      "via": "loose-envify@1.4.0",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "source": "https://registry.npmjs.org/js-yaml/4.3.2",
+      "via": "@deepseek-ai/dsh@0.2.0-rc.2",
+      "dependencies": {
+        "argparse": "^2.0.1"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "json-schema-traverse",
+      "version": "1.0.0",
+      "source": "https://registry.npmjs.org/json-schema-traverse/1.0.0",
+      "via": "ajv@8.20.0",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "source": "https://registry.npmjs.org/loose-envify/1.4.0",
+      "via": "react@18.3.1",
+      "dependencies": {
+        "js-tokens": "^3.0.0 || ^4.0.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-native-custom-loader",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-native-custom-loader/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin/0.1.6",
+      "via": "@deepseek-ai/dsh@0.2.0-rc.2",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {
+        "node-addon-require-builtin-darwin-arm64": "0.1.6",
+        "node-addon-require-builtin-darwin-x64": "0.1.6",
+        "node-addon-require-builtin-linux-arm64-gnu": "0.1.6",
+        "node-addon-require-builtin-linux-x64-gnu": "0.1.6",
+        "node-addon-require-builtin-win32-arm64-msvc": "0.1.6",
+        "node-addon-require-builtin-win32-x64-msvc": "0.1.6",
+        "node-addon-require-builtin-win32-ia32-msvc": "0.1.6"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-darwin-arm64",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-darwin-arm64/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-darwin-x64",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-darwin-x64/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-linux-arm64-gnu",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-linux-arm64-gnu/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-linux-x64-gnu",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-linux-x64-gnu/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-win32-arm64-msvc",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-win32-arm64-msvc/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-win32-ia32-msvc",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-win32-ia32-msvc/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "node-addon-require-builtin-win32-x64-msvc",
+      "version": "0.1.6",
+      "source": "https://registry.npmjs.org/node-addon-require-builtin-win32-x64-msvc/0.1.6",
+      "via": "node-addon-require-builtin@0.1.6",
+      "dependencies": {
+        "node-addon-native-custom-loader": "0.1.6"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "react",
+      "version": "18.3.1",
+      "source": "https://registry.npmjs.org/react/18.3.1",
+      "via": "direct",
+      "dependencies": {
+        "loose-envify": "^1.1.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "官方 Client React peer",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "react-dom",
+      "version": "18.3.1",
+      "source": "https://registry.npmjs.org/react-dom/18.3.1",
+      "via": "direct",
+      "dependencies": {
+        "scheduler": "^0.23.2",
+        "loose-envify": "^1.1.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {
+        "react": "^18.3.1"
+      },
+      "installScripts": {},
+      "purpose": "官方 Client React peer",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "readdirp",
+      "version": "5.1.1",
+      "source": "https://registry.npmjs.org/readdirp/5.1.1",
+      "via": "chokidar@5.0.0",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "require-from-string",
+      "version": "2.0.2",
+      "source": "https://registry.npmjs.org/require-from-string/2.0.2",
+      "via": "ajv@8.20.0",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "resolve.exports",
+      "version": "2.0.3",
+      "source": "https://registry.npmjs.org/resolve.exports/2.0.3",
+      "via": "@deepseek-ai/dsh-app-boot@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "scheduler",
+      "version": "0.23.2",
+      "source": "https://registry.npmjs.org/scheduler/0.23.2",
+      "via": "react-dom@18.3.1",
+      "dependencies": {
+        "loose-envify": "^1.1.0"
+      },
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "semver",
+      "version": "7.8.5",
+      "source": "https://registry.npmjs.org/semver/7.8.5",
+      "via": "sharp@0.35.4",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "sharp",
+      "version": "0.35.4",
+      "source": "https://registry.npmjs.org/sharp/0.35.4",
+      "via": "direct",
+      "dependencies": {
+        "semver": "^7.8.5",
+        "@img/colour": "^1.1.0",
+        "detect-libc": "^2.1.2"
+      },
+      "optionalDependencies": {
+        "@img/sharp-linux-arm": "0.35.4",
+        "@img/sharp-linux-x64": "0.35.4",
+        "@img/sharp-win32-x64": "0.35.4",
+        "@img/sharp-darwin-x64": "0.35.4",
+        "@img/sharp-win32-ia32": "0.35.4",
+        "@img/sharp-linux-arm64": "0.35.4",
+        "@img/sharp-linux-ppc64": "0.35.4",
+        "@img/sharp-linux-s390x": "0.35.4",
+        "@img/sharp-win32-arm64": "0.35.4",
+        "@img/sharp-darwin-arm64": "0.35.4",
+        "@img/sharp-linux-riscv64": "0.35.4",
+        "@img/sharp-linuxmusl-x64": "0.35.4",
+        "@img/sharp-freebsd-wasm32": "0.35.4",
+        "@img/sharp-linuxmusl-arm64": "0.35.4",
+        "@img/sharp-libvips-linux-arm": "1.3.3",
+        "@img/sharp-libvips-linux-x64": "1.3.3",
+        "@img/sharp-libvips-darwin-x64": "1.3.3",
+        "@img/sharp-libvips-linux-arm64": "1.3.3",
+        "@img/sharp-libvips-linux-ppc64": "1.3.3",
+        "@img/sharp-libvips-linux-s390x": "1.3.3",
+        "@img/sharp-libvips-darwin-arm64": "1.3.3",
+        "@img/sharp-webcontainers-wasm32": "0.35.4",
+        "@img/sharp-libvips-linux-riscv64": "1.3.3",
+        "@img/sharp-libvips-linuxmusl-x64": "1.3.3",
+        "@img/sharp-libvips-linuxmusl-arm64": "1.3.3"
+      },
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "插件图片处理运行依赖",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "tslib",
+      "version": "2.8.1",
+      "source": "https://registry.npmjs.org/tslib/2.8.1",
+      "via": "@emnapi/runtime@1.11.3",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "yaml",
+      "version": "2.9.1",
+      "source": "https://registry.npmjs.org/yaml/2.9.1",
+      "via": "@deepseek-ai/dsh-settings@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    },
+    {
+      "name": "zod",
+      "version": "4.6.5",
+      "source": "https://registry.npmjs.org/zod/4.6.5",
+      "via": "@deepseek-ai/dsh-client-connection@0.2.0-rc.2",
+      "dependencies": {},
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "installScripts": {},
+      "purpose": "传递依赖，父级来源见 via",
+      "securityOpinion": "本次精确版本 OSV 查询未返回公告；安装脚本保持禁用",
+      "advisoryQueryAt": "2026-09-30T05:49:44.419Z"
+    }
+  ],
+  "advisories": [],
+  "installation": {
+    "executor": "主 Agent",
+    "dependencyView": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/official-desktop-development-dependencies",
+    "manifest": ".local/desktop-e2e/dependency-audit-20260930/sdk-package.json",
+    "packageManager": "pnpm@11.11.0",
+    "actions": [
+      "按精确清单生成锁文件，核对全部解析版本属于本清单",
+      "禁用依赖安装脚本，安装经过核对的锁文件",
+      "将 worktree 的 Host peer 依赖视图接到本次安装",
+      "使用官方应用内置 pnpm@11.7.0，在隔离 E2E Profile 安装本地候选插件包及清单内的 sharp 运行依赖"
+    ],
+    "completion": "准确版本安装和锁文件核对通过；隔离 Profile 的插件版本与候选一致",
+    "production": "生产目录保持原状"
+  },
+  "excludedHostPackage": {
+    "name": "@deepseek-ai/dsh",
+    "version": "0.2.0-rc.2",
+    "reason": "已安装官方 Desktop 提供 Host；完整 Host SDK 传递依赖 libreoffice-kit 使用 fflate@0.8.2，存在 GHSA-px8p-9vwx-vf98，当前开发依赖视图使用公共 API 包"
+  },
+  "limits": [
+    "本清单来自只读 npm 元数据解析，包管理器实际锁文件仍须核对",
+    "公告数据库未报告漏洞不能证明软件不存在漏洞",
+    "解析出现清单外包或版本时，执行者先提交补充清单与审计，等待对应授权"
+  ],
+  "approval": {
+    "date": "2026-09-30",
+    "statement": "命令实际运行还需接入待授权安装的依赖视图：批准",
+    "scope": "dependency-audit.json installation列明的依赖视图接入与准确版本安装"
+  }
+}

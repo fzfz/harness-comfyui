@@ -168,7 +168,8 @@ function ProjectionRunList({ runs }: { readonly runs: readonly GenerationRunProj
               <span><small>{RESULTS_COPY.runId}</small><code>{errorRun.runId}</code></span>
               <span><small>{RESULTS_COPY.errorCode}</small><code>{errorRun.errorCode}</code></span>
             </div>
-            <pre>{errorRun.errorMessage ?? generationErrorCopy(errorRun.errorCode ?? '')}</pre>
+            <p>{generationErrorCopy(errorRun.errorCode ?? '')}</p>
+            {errorRun.errorMessage === null ? null : <pre>{errorRun.errorMessage}</pre>}
           </div>
         )}
       </Modal>

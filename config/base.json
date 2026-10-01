@@ -1,11 +1,11 @@
 {
   "paths": {
-    "dataDir": "",
-    "apiWorkflowCacheDirectory": "",
-    "runRepositoryFile": "",
-    "runDirectory": "",
-    "savedMediaDirectory": "",
-    "logDirectory": ""
+    "dataDir": "data/plugins/harness-comfyui",
+    "apiWorkflowCacheDirectory": "data/plugins/harness-comfyui/api-workflow-cache",
+    "runRepositoryFile": "data/plugins/harness-comfyui/runs.sqlite",
+    "runDirectory": "data/plugins/harness-comfyui/runs",
+    "savedMediaDirectory": "data/plugins/harness-comfyui/media",
+    "logDirectory": "data/plugins/harness-comfyui/logs"
   },
   "comfyui": {
     "defaultInstanceId": "",
@@ -33,15 +33,8 @@
   "media": {
     "maxFileBytes": 536870912
   },
-  "server": {
-    "host": "127.0.0.1",
-    "port": 4173
-  },
   "client": {
     "runRefreshIntervalMs": 1000
-  },
-  "process": {
-    "shutdownTimeoutMs": 10000
   },
   "cliServer": {
     "host": "127.0.0.1",

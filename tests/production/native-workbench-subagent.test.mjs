@@ -1,18 +1,17 @@
-import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it, vi } from 'vitest'
+import {
+  assertObjectJsonSchema,
+  assertSupportedJsonSchema,
+  validateJsonSchemaValue,
+} from '@deepseek-ai/dsh-tools'
 
 import { apply } from '../../agent-presets/project-iteration-dispatch.mjs'
-import { validateAgentPresetComposition } from '../../scripts/profile/agent-preset.mjs'
+import { readProjectAgentPresetResources } from '../../scripts/build/agent-preset-resources.mjs'
 
-const requireFromModule = createRequire(import.meta.url)
-const requireFromDsh = createRequire(requireFromModule.resolve('@deepseek-ai/dsh/package.json'))
-const nativeTools = requireFromDsh('@deepseek-ai/dsh-tools')
-const controls = requireFromDsh('@deepseek-ai/dsh-tool-subagent-control')
-const composition = await validateAgentPresetComposition(resolve(import.meta.dirname,
-  '../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'))
+const repositoryRoot = resolve(import.meta.dirname, '../..')
+const { composition } = await readProjectAgentPresetResources(repositoryRoot, 'harness-comfyui-cli-candidate')
 const role = composition.find(entry => entry.id === 'task-agent')
 
 function setup() {
@@ -24,14 +23,13 @@ function setup() {
   }
   const ctx = {
     tools: { register: tool => {
-      nativeTools.assertObjectJsonSchema(tool.parameters)
-      nativeTools.assertSupportedJsonSchema(tool.output.schema)
+      assertObjectJsonSchema(tool.parameters)
+      assertSupportedJsonSchema(tool.output.schema)
       registered.set(tool.name, tool)
     } },
     subagents,
   }
   apply(ctx, role.config)
-  controls.apply(ctx)
   return { registered, subagents }
 }
 
@@ -42,22 +40,23 @@ function execution(signal = new AbortController().signal) {
 const task = { description: '核对生成参数', task: '读取输入文件并核对本轮生成参数。\n报告具体结果。' }
 const message = [{ type: 'text', text: `# 子 Agent 任务\n\n## 本次任务\n${JSON.stringify({ task: task.task }, null, 2)}` }]
 
-describe('workbench native subagent tool', () => {
-  it('registers one dispatch tool and the native communication tools', () => {
-    expect([...setup().registered.keys()]).toEqual(['subagent_task', 'send_message', 'interrupt_agent'])
+describe('workbench project subagent dispatch component', () => {
+  it('registers its dispatch tool and declares workspace and native control components', () => {
+    expect([...setup().registered.keys()]).toEqual(['subagent_task'])
     expect(role.config.toolFilter.deny).toEqual(['subagent_task', 'interrupt_agent'])
     expect(role.config.parameters.required).toEqual(['description', 'task'])
     expect(role.config.parameters.additionalProperties).toBe(false)
     expect(role.config.agentOptions).toEqual({})
     expect(composition.find(entry => entry.name === '../project-subagent-workspace.mjs')).toBeDefined()
+    expect(composition.find(entry => entry.name === '@deepseek-ai/dsh-tool-subagent-control')).toBeDefined()
   })
 
-  it('creates a real continuable child under the calling parent with inherited model and Workspace', async () => {
+  it('requests a continuable child through the Subagents service boundary', async () => {
     const { registered, subagents } = setup()
     const exec = execution()
     const result = await registered.get('subagent_task').execute(task, exec)
     expect(result).toEqual({ kind: 'continuable', subagentId: 'child-1' })
-    expect(nativeTools.validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
+    expect(validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
     expect(subagents.startContinuable).toHaveBeenCalledExactlyOnceWith({
       provider: 'spawn', label: task.description, signal: exec.signal,
       request: {
@@ -74,7 +73,7 @@ describe('workbench native subagent tool', () => {
     const exec = execution()
     const result = await registered.get('subagent_task').execute({ ...task, agent_id: 'child-1' }, exec)
     expect(result).toEqual({ messageId: 'message-1' })
-    expect(nativeTools.validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
+    expect(validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
     expect(subagents.sendMessage).toHaveBeenCalledExactlyOnceWith(exec.agent, 'child-1', message,
       { signal: exec.signal })
     expect(subagents.startContinuable).not.toHaveBeenCalled()
@@ -83,7 +82,7 @@ describe('workbench native subagent tool', () => {
   it.each([
     {}, { description: 'label' }, { task: 'body' }, { ...task, prompt: 'unexpected' },
   ])('rejects missing or unknown fields at the native Tool schema', args => {
-    expect(nativeTools.validateJsonSchemaValue(role.config.parameters, args, '')).not.toEqual([])
+    expect(validateJsonSchemaValue(role.config.parameters, args, '')).not.toEqual([])
   })
 
   it.each([
@@ -119,23 +118,4 @@ describe('workbench native subagent tool', () => {
     expect(subagents.sendMessage).not.toHaveBeenCalled()
   })
 
-  it('inherits the current parent route and effort through the installed native resolver', async () => {
-    const { resolveChildAgentOptions, childSessionMeta } = await import(pathToFileURL(
-      requireFromDsh.resolve('@deepseek-ai/dsh-subagent')).href)
-    const parent = {
-      options: { provider: 'old', model: 'old' },
-      ctx: { get: () => ({ composedPreset: () => 'harness-comfyui-cli-candidate' }) },
-      session: {
-        header: { id: 'parent-1', cwd: '/workspace' },
-        requestHeader: () => ({ config: { provider: 'openrouter', model: 'parent-model', reasoningEffort: 'high' } }),
-      },
-    }
-    expect(resolveChildAgentOptions(parent, role.config.agentOptions, 1)).toMatchObject({
-      provider: 'openrouter', model: 'parent-model', reasoningEffort: 'high', subagentDepth: 1,
-    })
-    expect(childSessionMeta(parent, 1, 0)).toMatchObject({
-      cwd: '/workspace', parentSession: 'parent-1', origin: 'subagent', delegationDepth: 1,
-      agentPreset: 'harness-comfyui-cli-candidate',
-    })
-  })
 })

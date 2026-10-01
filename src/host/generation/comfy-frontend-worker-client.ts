@@ -3,6 +3,7 @@ import { isAbsolute } from 'node:path'
 
 import type { JsonValue } from '../../generation/run-input-contract.ts'
 import type { ChromeComfyFrontendOptions, FrontendAttemptDiagnostic } from './comfy-frontend-browser.ts'
+import { nodeScriptEnvironment } from '../node-script-environment.ts'
 import { GenerationRuntimeError } from './generation-error.ts'
 import type { ComfyFrontendExporter, ComfyFrontendExporterInput } from './official-api-workflow.ts'
 
@@ -35,7 +36,11 @@ export interface NodeWorkerComfyFrontendOptions {
   readonly spawnImplementation?: (
     executable: string,
     arguments_: readonly string[],
-    options: { readonly stdio: ['pipe', 'pipe', 'pipe']; readonly detached: true },
+    options: {
+      readonly stdio: ['pipe', 'pipe', 'pipe']
+      readonly detached: true
+      readonly env: NodeJS.ProcessEnv
+    },
   ) => FrontendCompilerWorkerProcess
   readonly reportDiagnostic?: (diagnostic: FrontendAttemptDiagnostic) => void
 }
@@ -177,6 +182,7 @@ export class NodeWorkerComfyFrontend implements ComfyFrontendExporter {
       child = this.spawnImplementation(this.options.nodeExecutable, [this.options.workerModulePath], {
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: true,
+        env: nodeScriptEnvironment(this.options.nodeExecutable),
       })
     } catch (error) {
       throw runtimeError('Harness Host could not start the official frontend compiler worker.', error)

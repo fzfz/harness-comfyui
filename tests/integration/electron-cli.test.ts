@@ -16,7 +16,7 @@ describe.each([['catalog', runCatalogCliProcess], ['source', runSourceCliProcess
   it('preserves native executable environment under Electron', async () => {
     Object.defineProperty(process.versions, 'electron', { value: '44.0.0', configurable: true })
     const inheritedMode = process.env.ELECTRON_RUN_AS_NODE
-    const result = await execute(process.execPath, ['-e', 'console.log(process.env.ELECTRON_RUN_AS_NODE ?? "unset")'], new AbortController().signal)
+    const result = await execute('/bin/sh', ['-c', 'printf "%s\\n" "${ELECTRON_RUN_AS_NODE-unset}"'], new AbortController().signal)
     expect(process.env.ELECTRON_RUN_AS_NODE).toBe(inheritedMode)
     expect(result.exitCode).toBe(0)
     expect(result.stdout.trim()).toBe(inheritedMode ?? 'unset')

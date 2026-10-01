@@ -1,0 +1,384 @@
+{
+  "schemaVersion": 1,
+  "category": "真实服务阶段性验收",
+  "candidateVersion": "0.44.3",
+  "applicationVersion": "0.2.0-rc.2",
+  "candidateAcceptanceCompleted": false,
+  "productionAcceptanceCompleted": false,
+  "checkedAt": "2026-09-30T11:59:31.303737+00:00",
+  "runId": "a96abffc-50d5-419f-a017-30d26127ac5c",
+  "workspaceId": "c1e9df51-7d96-441e-8cae-050c8cc24d41",
+  "privateEvidenceDirectory": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence",
+  "model": {
+    "provider": "openrouter",
+    "id": "stealth/space-bunny-alpha",
+    "inputPrice": 0,
+    "outputPrice": 0,
+    "priceAndCapabilityEvidence": ".local/desktop-e2e/model-discovery-20260930/stealth-space-bunny-alpha-selected-model.json",
+    "actualGenerationCost": 0,
+    "actualCostEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/workbench-final-openrouter-generation.json"
+  },
+  "localImageReader": {
+    "status": "通过",
+    "scope": "实际截图的全部可见文字读取",
+    "request": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/vision-text-acceptance-request.json",
+    "response": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/space-bunny-vision-text-review-input.json",
+    "independentReview": "全部可见文字、大小写、顺序和原始响应保留均通过；此前图标观察的失败记录保留。"
+  },
+  "skillsObserved": [
+    {
+      "skill": "anima-prompt-builder",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/workbench-complete-history.json"
+    },
+    {
+      "skill": "comfyui-generate",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/workbench-complete-history.json"
+    },
+    {
+      "skill": "comfyui-iterate-generation",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/iteration-complete-history.json"
+    },
+    {
+      "skill": "krea2-anime-prompt-builder",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/krea-complete-history.json"
+    },
+    {
+      "skill": "wai-sdxl-prompt-builder",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/wai-complete-history.json"
+    },
+    {
+      "skill": "character-portrait-prompt-designer",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/portrait-complete-history.json"
+    },
+    {
+      "skill": "comfyui-image-review",
+      "status": "未通过",
+      "observed": "实际 Skill 调用与前台 CLI 已执行；完整独立核对尚未完成。",
+      "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/imageReview-complete-history.json"
+    }
+  ],
+  "workbenchDelegation": {
+    "status": "未通过",
+    "observed": "免费模型子会话首派及同一会话续派均已完成；Session、Workspace 和通知的独立核对尚未完成。",
+    "childSessionId": "59afd78c-45c8-4ac3-9fba-10baeff14dc2",
+    "continuationMessageId": "360a0f0d-543b-4058-a1c1-bf3c00fa15b3",
+    "historyEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/workbenchDelegation-complete-history.json"
+  },
+  "formalRuns": [
+    {
+      "runId": "run_ef9348a6-699b-48c2-9a69-3de764256689",
+      "promptId": "bd306a94-f1a8-43b5-9375-d815da3ca7ef",
+      "sessionId": "5571e529-8f74-43c9-b03a-89e5c609f26b",
+      "templateId": "43",
+      "instanceId": "2",
+      "seed": 1016747839,
+      "executionStatus": "succeeded",
+      "comfyStatus": "success",
+      "mediaCount": 1,
+      "acceptanceStatus": "未通过",
+      "remaining": "画面目标的独立视觉核对及最终候选重装后的真实矩阵复验尚未通过。",
+      "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-run-consistency.json",
+      "executedPromptEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-executed-prompt-audit.json"
+    },
+    {
+      "runId": "run_778d4d06-25c6-431e-8e49-33c9b7fc2d6a",
+      "promptId": "0b3680bb-6d4a-4d86-bbb7-188e88137ce4",
+      "sessionId": "session-a08f9e62-2b9c-4d5f-a56a-f62686790f90",
+      "templateId": "43",
+      "instanceId": "2",
+      "seed": 962400695,
+      "executionStatus": "succeeded",
+      "comfyStatus": "success",
+      "mediaCount": 1,
+      "acceptanceStatus": "未通过",
+      "remaining": "画面目标的独立视觉核对及最终候选重装后的真实矩阵复验尚未通过。",
+      "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-run-consistency.json",
+      "executedPromptEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-executed-prompt-audit.json"
+    },
+    {
+      "runId": "run_2e867409-7be9-446e-aafc-840b13aab041",
+      "promptId": "d189101c-2fb3-4750-8707-842ee0b5f1e2",
+      "sessionId": "session-a08f9e62-2b9c-4d5f-a56a-f62686790f90",
+      "templateId": "43",
+      "instanceId": "2",
+      "seed": 962400695,
+      "executionStatus": "succeeded",
+      "comfyStatus": "success",
+      "mediaCount": 1,
+      "acceptanceStatus": "未通过",
+      "remaining": "画面目标的独立视觉核对及最终候选重装后的真实矩阵复验尚未通过。",
+      "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-run-consistency.json",
+      "executedPromptEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-executed-prompt-audit.json"
+    },
+    {
+      "runId": "run_91fe6c59-acb3-4480-8ba9-41928120a114",
+      "promptId": "480cc43c-fe89-41d5-a371-70856e998f5e",
+      "sessionId": "5571e529-8f74-43c9-b03a-89e5c609f26b",
+      "templateId": "43",
+      "instanceId": "2",
+      "seed": 615835089,
+      "executionStatus": "succeeded",
+      "comfyStatus": "success",
+      "mediaCount": 1,
+      "acceptanceStatus": "未通过",
+      "remaining": "画面目标的独立视觉核对及最终候选重装后的真实矩阵复验尚未通过。",
+      "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-run-consistency.json",
+      "executedPromptEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-executed-prompt-audit.json"
+    },
+    {
+      "runId": "run_cc7d9600-b2fa-4d49-b40d-d40d6c5fa79b",
+      "promptId": "508cb854-0e27-408f-8962-b62293687b92",
+      "sessionId": "5571e529-8f74-43c9-b03a-89e5c609f26b",
+      "templateId": "43",
+      "instanceId": "2",
+      "seed": 615835089,
+      "executionStatus": "succeeded",
+      "comfyStatus": "success",
+      "mediaCount": 1,
+      "acceptanceStatus": "未通过",
+      "remaining": "画面目标的独立视觉核对及最终候选重装后的真实矩阵复验尚未通过。",
+      "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-run-consistency.json",
+      "executedPromptEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/formal-executed-prompt-audit.json"
+    }
+  ],
+  "uiResult": {
+    "status": "未通过",
+    "observed": "工作台第二轮实际媒体查看器显示416×624，媒体下载字节与磁盘一致，Workflow下载结构与Actual Workflow一致；已重启读取五个成功Run及媒体投影，工作台历史媒体控件显示。最终候选重装后的完整复验待完成。",
+    "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/workbench-round2-ui-download-evidence.json"
+  },
+  "externalBlock": {
+    "service": "实际数据源的 styles 与 prompt-terms 搜索",
+    "httpStatus": 502,
+    "message": "Catalog dependency is unavailable.",
+    "evidence": ".local/desktop-e2e/service-preflight-20260930/*-actual-post-response.json",
+    "remainingAction": "数据源维护者恢复对应 Catalog dependency 后重试语义搜索。"
+  },
+  "remaining": [
+    "迭代四角色完整续派、观察和比较验收",
+    "最终候选的全矩阵独立核对",
+    "新自动化 E2E 与旧业务断言迁移",
+    "最终候选质量门禁与提交",
+    "另行授权后的发布及生产切换验收"
+  ],
+  "visionModel": {
+    "provider": "openrouter",
+    "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "inputPrice": 0,
+    "outputPrice": 0,
+    "priceAndCapabilityEvidence": ".local/desktop-e2e/model-discovery-20260930/nemotron-omni-vision-selected-model.json",
+    "configurationEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/image-reader-nemotron-configuration.json",
+    "status": "项目实际图片读取取得字符串观察，CLI退出码0；观察内容的独立图片核对尚未完成。",
+    "actualRequestEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/nemotron-recorded-request-1.json",
+    "actualResponseEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/nemotron-recorded-response-1.json",
+    "earlierFailures": "此前三次项目读图返回无效Chat Completions响应，失败CLI输出保留；后续实际记录请求返回HTTP200与字符串观察。"
+  },
+  "temporaryConfigurationRestoration": {
+    "restored": true,
+    "temporaryVisionCredentialsDeleted": true,
+    "evidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/temporary-configuration-restoration.json"
+  },
+  "restartVerification": {
+    "status": "通过",
+    "scope": "本次已安装候选重启后的五个成功Run及媒体投影读取，工作台历史媒体控件显示",
+    "runId": "e3fe1ad6-b080-4fe3-842c-e721e5ff4eec",
+    "projections": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/restart-generation-projections.json",
+    "ui": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/restart-session-ui.json",
+    "cleanup": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/restart-history-cleanup.json",
+    "limit": "最终候选重装后仍须重复真实矩阵及媒体查看下载。"
+  },
+  "candidateSourceLimit": "本记录来自实施阶段已安装0.44.3候选；后续skills隔离与CLI帮助变更尚须在最终候选安装后完成相同真实验收。",
+  "workspaceSnapshotEvidence": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/a96abffc-50d5-419f-a017-30d26127ac5c/evidence/workspace-snapshot.json",
+  "latestIndependentMediaReview": {
+    "status": "未通过",
+    "evidence": ".local/desktop-e2e/reviews/formal-latest-media-review.json",
+    "reviewedRunIds": [
+      "run_2e867409-7be9-446e-aafc-840b13aab041",
+      "run_91fe6c59-acb3-4480-8ba9-41928120a114",
+      "run_cc7d9600-b2fa-4d49-b40d-d40d6c5fa79b"
+    ],
+    "visionObservation": "具有图像依据；发长错认和取景遗漏仍未通过",
+    "finalCandidateCovered": false
+  },
+  "latestIndependentSkillAudit": {
+    "status": "最终候选未通过",
+    "historicalCandidateVersion": "0.44.3",
+    "currentCandidateVersion": "0.45.0",
+    "finalCandidateCovered": false,
+    "evidence": ".local/desktop-e2e/reviews/existing-real-skill-evidence-audit.json",
+    "summary": {
+      "historicalBranchPassed": [
+        "comfyui-generate",
+        "krea2-anime-prompt-builder",
+        "wai-sdxl-prompt-builder",
+        "character-portrait-prompt-designer",
+        "local-image-reader（仅第二轮文字提取）"
+      ],
+      "historicalBranchNotPassed": [
+        "anima-prompt-builder",
+        "comfyui-iterate-generation",
+        "comfyui-image-review"
+      ],
+      "finalCandidateMatrixStatus": "未通过",
+      "remainingProvenanceLimits": [
+        "仅一项实际账单样本，未保存逐调用总费用汇总。",
+        "查询/读图Session到Workspace UUID的完整Host映射没有单独投影；共享目录、Session历史与实际Run范围可核对。",
+        "本次是保存证据审阅，图像像素真实性沿用既有独立图像审阅，未重放任何服务调用。"
+      ]
+    },
+    "skills": [
+      {
+        "skill": "anima-prompt-builder",
+        "observedBranch": "自然语言画面构建及校验；后续定向修改",
+        "historicalBranchStatus": "未通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "未通过",
+          "modelCompletesBranch": "未通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。"
+        ]
+      },
+      {
+        "skill": "comfyui-generate",
+        "observedBranch": "ANIMA Builder结果创建图片；后续使用指定Seed再生成；UI上下文Catalog核对",
+        "historicalBranchStatus": "通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "通过",
+          "modelCompletesBranch": "通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。",
+          "未覆盖非空LoRA、兼容性异常和其他生成模型；这些不是该次请求分支的失败原因。"
+        ]
+      },
+      {
+        "skill": "krea2-anime-prompt-builder",
+        "observedBranch": "仅历史Run参数和Actual Workflow查询",
+        "historicalBranchStatus": "通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "通过",
+          "modelCompletesBranch": "通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。",
+          "Prompt构建、Character/Style或书籍人物设计分支未在本次执行；仅作为范围限制。"
+        ]
+      },
+      {
+        "skill": "wai-sdxl-prompt-builder",
+        "observedBranch": "仅历史Run参数和Actual Workflow查询",
+        "historicalBranchStatus": "通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "通过",
+          "modelCompletesBranch": "通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。",
+          "Prompt构建、Character/Style或书籍人物设计分支未在本次执行；仅作为范围限制。"
+        ]
+      },
+      {
+        "skill": "character-portrait-prompt-designer",
+        "observedBranch": "仅历史Run参数和Actual Workflow查询",
+        "historicalBranchStatus": "通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "通过",
+          "modelCompletesBranch": "通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。",
+          "Prompt构建、Character/Style或书籍人物设计分支未在本次执行；仅作为范围限制。"
+        ]
+      },
+      {
+        "skill": "comfyui-iterate-generation",
+        "observedBranch": "四角色首次派发、迭代及原构图/生成会话续派",
+        "historicalBranchStatus": "未通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "未通过",
+          "modelCompletesBranch": "未通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。"
+        ]
+      },
+      {
+        "skill": "comfyui-image-review",
+        "observedBranch": "单Run图像比较；后续双Run指定观察；单张诊断续派",
+        "historicalBranchStatus": "未通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "通过",
+          "modelCompletesBranch": "未通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。"
+        ]
+      },
+      {
+        "skill": "local-image-reader",
+        "observedBranch": "指定截图的全部可见文字逐字读取（第二轮）",
+        "historicalBranchStatus": "通过",
+        "finalCandidateStatus": "未通过",
+        "checks": {
+          "requestMatchesDescription": "通过",
+          "fullSkillRead": "通过",
+          "branchReferencesRead": "通过",
+          "modelCompletesBranch": "通过",
+          "foregroundCliEvidence": "通过",
+          "sessionWorkspaceAndFreeModel": "通过"
+        },
+        "coverageLimits": [
+          "本次结论仅覆盖已记录的实际请求分支；0.45.0安装后的同分支真实重验仍缺失。",
+          "第二轮只验文字，不覆盖首轮图标/布局结论；图片像素本次未重读，未验证多图顺序、重复路径和失败继续分支。"
+        ]
+      }
+    ]
+  }
+}

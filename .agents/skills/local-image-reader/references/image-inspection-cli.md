@@ -8,7 +8,7 @@ Harness ComfyUI 本地图片读取 CLI 使用 Harness“图片读取”设置中
 
 ## 调用环境与可执行入口
 
-Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在受管前台 shell Tool Call 中通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。受管前台 shell Tool Call 自动提供 CLI 脚本路径、Host 连接地址和本次调用的短期授权凭证（capability）。
+Harness ComfyUI Host 必须处于运行状态。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE`、CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`、Host 连接地址和本次调用的短期授权凭证（capability）。Skill 执行者必须设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，并执行本文件定义的命令。
 
 Skill 执行者可以从当前 Session 工作目录调用该命令。`file_path` 的条件和来源分别见“参数与标准输入”和“图片路径与提示词的来源”。
 
@@ -16,13 +16,11 @@ Skill 执行者可以从当前 Session 工作目录调用该命令。`file_path`
 
 ## 命令与调用时机
 
-Skill 执行者必须为每张待读取图片分别调用一次：
+每张图片的调用次数、输入顺序和取消处理按 `SKILL.md` 第 4 节执行。`image inspect --stdin` 每次只接受一个 `file_path`：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 ```
-
-该命令一次只接受一个本地图片路径。Skill 执行者读取多张图片时，必须按用户提供的路径顺序完成多次独立调用。用户或宿主取消调用后，Skill 执行者必须立即结束本次 Skill 执行。
 
 ## 参数与标准输入
 
@@ -34,7 +32,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 }
 ```
 
-用户为本次视觉观察指定提示词时，Skill 执行者必须增加可选的 `prompt`：
+提示词何时提供以及提示词内容如何构造按 `SKILL.md` 第 3 节执行。调用者提供可选的 `prompt` 时，stdin 使用以下字段：
 
 ```json
 {
@@ -47,15 +45,13 @@ node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin
 
 视觉模型接收的是缩小后的图片：每帧宽高约为原图的 70%，输出尺寸取整数像素且每边至少为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。用户原图保持不变，成功输出中的 `file_path` 仍为输入的原图绝对路径。
 
-`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。
+`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。
 
 缺失 `file_path`、`file_path` 不是字符串、路径超过长度限制、路径包含控制字符、`prompt` 不是字符串或 stdin JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。CLI 不接受调用时 Provider、模型、凭据、`temperature` 或最大输出 Token。
 
 ## 图片路径与提示词的来源
 
-Skill 执行者必须从用户消息中明确提供的本地图片绝对路径，或用户明确指代的当前消息图片附件所提供的本地绝对路径，取得 `file_path`。
-
-用户没有指定本次观察重点或返回格式时，Skill 执行者省略 `prompt`；用户明确指定本次观察要求时，Skill 执行者从该要求构造可独立理解的完整 `prompt`。
+图片 `file_path` 的来源按 `SKILL.md` 第 2 节执行；`prompt` 的选择和构造按 `SKILL.md` 第 3 节执行。
 
 ## 输出与完成语义
 
@@ -105,25 +101,25 @@ Skill 执行者必须从用户消息中明确提供的本地图片绝对路径�
 
 ## 完整调用示例
 
-以下 `/absolute/local/path/result.png` 来自用户消息中明确提供的本地图片绝对路径。用户没有指定本次观察重点，因此命令省略 `prompt`：
+以下命令展示只传入 `file_path` 时的输入格式：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png"}
 JSON
 ```
 
-用户要求只识别图片文字时，Skill 执行者调用：
+以下命令展示 `file_path` 与可选 `prompt` 一起传入时的输入格式：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png","prompt":"只识别图片中可见的文字，并按从上到下的顺序返回。"}
 JSON
 ```
 
 ## 帮助与 Python 调用
 
-Skill 执行者需要发现命令时，从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。
+Skill 执行者需要发现命令时，从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入 `image --help` 和 `image inspect --help`。命令帮助提供参数、JSON 示例和结果用途；帮助调用直接退出。
 
 Python 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：
 
@@ -132,11 +128,21 @@ import json
 import os
 import subprocess
 
+node_environment = os.environ.copy()
+node_environment["ELECTRON_RUN_AS_NODE"] = "1"
 result = subprocess.run(
-    ["node", os.environ["DSH_HARNESS_COMFYUI_CLI"], "image", "inspect", "--stdin"],
+    [
+        os.environ["DSH_HARNESS_COMFYUI_NODE_EXECUTABLE"],
+        "--expose-internals",
+        os.environ["DSH_HARNESS_COMFYUI_CLI"],
+        "image",
+        "inspect",
+        "--stdin",
+    ],
     input=json.dumps({"file_path": "/absolute/local/path/result.png"}),
     text=True,
     capture_output=True,
+    env=node_environment,
 )
 if result.returncode == 0:
     observation = json.loads(result.stdout)["observation"]

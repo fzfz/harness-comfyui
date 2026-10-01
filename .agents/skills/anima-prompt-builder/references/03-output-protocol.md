@@ -4,10 +4,10 @@
 
 本文件定义 ANIMA 十二槽 Prompt 的组合格式和校验器调用协议。Skill 执行者完成槽位内容、冲突处理、权重设计和自检后调用校验器。
 
-`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。Skill 执行者从该目录执行以下命令，并把“标准输入”一节定义的 JSON 对象写入标准输入：
+`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE`。Skill 执行者设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，从 Skill 目录执行以下命令，并把“标准输入”一节定义的 JSON 对象写入标准输入：
 
 ```sh
-node scripts/validate-output.mjs --quiet --prompt-format
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --quiet --prompt-format
 ```
 
 Prompt 格式校验使用 `--prompt-format` 选择模式，使用 `--quiet` 省略成功提示。
@@ -87,4 +87,4 @@ Skill 执行者从 stdout JSON 读取 `prompt_text` 和 `display_text`。
 
 ## 帮助与操作提示
 
-Skill 执行者运行 `node scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功结果的 stderr 包含 `NEXT:` 提示。输入格式失败时，stderr 首行 JSON 后附有 `NEXT:` 修正指引。Skill 执行者结合该指引，按照“输入格式失败”一节处理错误。
+Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功结果的 stderr 包含 `NEXT:` 提示。输入格式失败时，stderr 首行 JSON 后附有 `NEXT:` 修正指引。Skill 执行者结合该指引，按照“输入格式失败”一节处理错误。

@@ -187,6 +187,17 @@ function sendJson(response, status, value) {
   response.end(body)
 }
 
+describe('Host Node source client help', () => {
+  it.each([SEMANTIC_CLIENT, SOURCE_READ_CLIENT])('uses the Host executable in help for %s', async script => {
+    const result = await runClient(script, ['--help'])
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals ')
+    expect(result.stdout).not.toContain('node ')
+    if (script === SEMANTIC_CLIENT) expect(result.stdout).toContain('"$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI"')
+    else expect(result.stdout).toContain(script)
+  })
+})
+
 function expectClientResult(result, expected) {
   expect(result.exitCode).toBe(expected.exitCode)
   expect(result.stdout).toBe(expected.stdout)

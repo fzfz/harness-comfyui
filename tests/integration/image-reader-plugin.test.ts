@@ -1,3 +1,4 @@
+import { createTestCredentialProvider } from '../support/credential-provider.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -17,9 +18,10 @@ async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtim
   const file = join(directory, 'image.png')
   await writeFile(file, await sharp({ create: { width: 10, height: 10, channels: 3, background: 'red' } }).png().toBuffer())
   let settings: ImageReaderSettingsSection = {
-    configuration: { activeProfileId: 'vision', profiles: [{ ...createImageReaderProfile('vision'), connectionType, endpoint, provider: connectionType === 'runtime' ? 'test' : '', model: 'vision', defaultPrompt: '观察颜色' }] }, credentials: {},
+    configuration: { activeProfileId: 'vision', profiles: [{ ...createImageReaderProfile('vision'), connectionType, endpoint, provider: connectionType === 'runtime' ? 'test' : '', model: 'vision', defaultPrompt: '观察颜色' }] }, credentialRefs: {},
   }
   const ctx = new Context()
+  ctx.provide('credentials' as never, createTestCredentialProvider() as never)
   const unregister = vi.fn()
   const register = vi.fn(() => unregister)
   const stream = vi.fn(async function*(_request: any) { yield { type: 'text-delta', index: 0, text: '红色' }; yield { type: 'finish', reason: { kind: 'stop' } } })
@@ -33,7 +35,7 @@ async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtim
     prepareCall: async (config: unknown) => ({ config, inputModalities: ['text', 'image'], stream }),
   } as never)
   ctx.provide('settings', {
-    describe: () => [{ ns: IMAGE_READER_PROFILE_ENTRY_ID, value: settings }],
+    describe: () => [{ ns: IMAGE_READER_PROFILE_ENTRY_ID, value: settings, user: settings }],
     replace: async (ns: string, value: ImageReaderSettingsSection) => {
       if (ns !== IMAGE_READER_PROFILE_ENTRY_ID) throw new Error(`Unexpected Settings entry: ${ns}`)
       settings = value
@@ -46,7 +48,7 @@ async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtim
 }
 
 describe('independent image reader plugin', () => {
-  it('reads through DSH LLM with only settings, attachments, llm and tools', async () => {
+  it('reads through DSH LLM with the documented Host services', async () => {
     const f = await fixture()
     expect(f.register).toHaveBeenCalledOnce()
     expect(await f.ctx.imageReader.inspect(f.file, { sessionId: 'real-session' })).toMatchObject({ observation: '红色', provider: 'test' })

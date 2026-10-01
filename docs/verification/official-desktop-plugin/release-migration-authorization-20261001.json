@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "approvedAt": "2026-10-01",
+  "source": "当前会话中用户的明确指令",
+  "instruction": "创建PR,合入origin/main ，发布版本，本地旧生产目录数据迁移，并在本地desktop app安装插件，并验收",
+  "approvedActions": [
+    "创建PR",
+    "合入origin/main",
+    "发布版本",
+    "旧生产历史数据迁移",
+    "在本机官方Desktop安装插件",
+    "正式安装后的验收"
+  ],
+  "candidate": {
+    "version": "0.45.0",
+    "branch": "codex/official-desktop-plan",
+    "implementationCommit": "9542f8d4e578ff58f365154ab5c2a18d13da2307",
+    "pullRequest": "https://github.com/fzfz/harness-comfyui/pull/2"
+  },
+  "executionConditions": "plan字段所指方案中的验收完成条件继续适用；执行者完成隔离试迁移及官方运行时验证后执行正式迁移。",
+  "retainedBoundaries": [
+    "保留现有官方Provider、默认模型和其他插件",
+    "保留旧生产原目录和运行数据",
+    "旧环境归档及物理删除按plan字段所指方案单独授权"
+  ],
+  "plan": "docs/plans/official-desktop-plugin-20260929.md"
+}

@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceItemNames": {
+    "A13": "两个测试环境独立运行并保持既有实例原状",
+    "A15": "成功、失败、取消、超时、端口冲突及调试退出的证据与清理",
+    "A18": "免费真实模型矩阵与正式ComfyUI Run验收"
+  },
+  "scope": "A15中测试runner接收SIGTERM与命令外层进程组接收SIGINT时，整条pnpm test:desktop命令的退出和资源清理。",
+  "currentWholeCommandCancellationPassed": true,
+  "a15Completed": true,
+  "cases": [
+    {
+      "signal": "SIGTERM",
+      "passed": true,
+      "requestedAt": "2026-09-30T23:10:44.655Z",
+      "completedAt": "2026-09-30T23:10:51.059Z",
+      "phase": "tests",
+      "runnerExitCode": 143,
+      "outerExitCode": 143,
+      "cleanupSucceeded": true,
+      "runIds": [
+        "48499f4d-c08e-4ee8-9857-51ba6f3bc8c2",
+        "d71ef9b0-8322-4850-87ad-de7b8db9159b"
+      ],
+      "ports": [
+        {
+          "port": 59694,
+          "listenerAbsent": true
+        },
+        {
+          "port": 59695,
+          "listenerAbsent": true
+        },
+        {
+          "port": 59696,
+          "listenerAbsent": true
+        },
+        {
+          "port": 59691,
+          "listenerAbsent": true
+        },
+        {
+          "port": 59692,
+          "listenerAbsent": true
+        },
+        {
+          "port": 59693,
+          "listenerAbsent": true
+        }
+      ],
+      "processGroupsAbsent": true,
+      "leasesAbsent": true,
+      "outerGroupAbsent": true,
+      "testGroupAbsent": true,
+      "dailyInstancePid": 11329,
+      "dailyInstancePresent": true,
+      "evidence": ".local/desktop-e2e/command-cancellation-actual/40957a0a-9d98-49f1-ae63-7211240f3631/result.json",
+      "signalRequest": ".local/desktop-e2e/command-cancellation-actual/40957a0a-9d98-49f1-ae63-7211240f3631/signal-request.json",
+      "runnerResult": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/desktop-test-runner/invocations/407975fc-9bb0-47b2-85f6-8b23b7f923ec/cancellation-result.json",
+      "signalRecipient": {
+        "kind": "test-runner",
+        "target": 95707,
+        "runnerPid": 95707,
+        "outerProcessGroupId": 95571
+      }
+    },
+    {
+      "signal": "SIGINT",
+      "passed": true,
+      "requestedAt": "2026-09-30T23:11:25.550Z",
+      "completedAt": "2026-09-30T23:11:31.887Z",
+      "phase": "tests",
+      "runnerExitCode": 130,
+      "outerExitCode": 130,
+      "cleanupSucceeded": true,
+      "runIds": [
+        "13cbf510-25cc-45c5-b564-4c2e21a8a0ed",
+        "8c060356-8422-422e-a6e8-b807cc020743"
+      ],
+      "ports": [
+        {
+          "port": 60354,
+          "listenerAbsent": true
+        },
+        {
+          "port": 60356,
+          "listenerAbsent": true
+        },
+        {
+          "port": 60358,
+          "listenerAbsent": true
+        },
+        {
+          "port": 60353,
+          "listenerAbsent": true
+        },
+        {
+          "port": 60355,
+          "listenerAbsent": true
+        },
+        {
+          "port": 60357,
+          "listenerAbsent": true
+        }
+      ],
+      "processGroupsAbsent": true,
+      "leasesAbsent": true,
+      "outerGroupAbsent": true,
+      "testGroupAbsent": true,
+      "dailyInstancePid": 11329,
+      "dailyInstancePresent": true,
+      "evidence": ".local/desktop-e2e/command-cancellation-actual/1ca90976-650a-4fd2-8b16-5f50d0dae79b/result.json",
+      "signalRequest": ".local/desktop-e2e/command-cancellation-actual/1ca90976-650a-4fd2-8b16-5f50d0dae79b/signal-request.json",
+      "runnerResult": "/Users/fzfz/.codex/worktrees/official-desktop-plan/harness-comfyui/.local/desktop-e2e/desktop-test-runner/invocations/27f1d3bd-5bdb-4a1e-bdfa-fcb665912483/cancellation-result.json",
+      "signalRecipient": {
+        "kind": "outer-process-group",
+        "target": -9619,
+        "runnerPid": 9649,
+        "outerProcessGroupId": 9619
+      }
+    }
+  ],
+  "pureRegression": {
+    "testFiles": [
+      "tests/production/official-desktop-test-runner.test.mjs",
+      "tests/production/official-command-cancellation.test.mjs"
+    ],
+    "passed": 23
+  },
+  "independentReview": ".local/desktop-e2e/reviews/command-cancellation-spawn-guard-final-review.json",
+  "controllerPreparationFailure": {
+    "directory": ".local/desktop-e2e/command-cancellation-actual/47394628-d0de-4d46-b51a-36713caab2db",
+    "reason": "私有验收驱动先读取尚未创建的invocation目录而退出。主Agent随后核对本轮runner身份并发送SIGTERM；runner返回143并清理其两个实例。正式两轮信号验收在驱动先创建观测目录后执行。",
+    "runnerResult": ".local/desktop-e2e/desktop-test-runner/invocations/0695d677-51c3-40ef-8f21-126391f52c32/cancellation-result.json"
+  },
+  "limitations": [
+    "此记录证明整条命令的两种实际取消清理；A15当前候选的六个场景及完整入口见current-desktop-regression.json，最终全树质量门禁仍待完成。",
+    "日常实例的设置、安装和业务保留情况由A13前后快照独立判断。",
+    "测试使用受控自动化服务，此记录不构成真实模型或正式ComfyUI Run验收。"
+  ],
+  "a15CurrentCandidateEvidence": "current-desktop-regression.json",
+  "a15IndependentEvidenceReview": ".local/desktop-e2e/reviews/current-full-desktop-regression-evidence-review.json"
+}

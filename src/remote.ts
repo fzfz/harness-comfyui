@@ -4,6 +4,7 @@ import type { SourceAddress } from './source-settings.ts'
 
 import GENERATION_REMOTE from './generation/remote.ts'
 import IMAGE_READER_REMOTE from './image-reader/remote.ts'
+import { BROWSER_SETTINGS_REMOTE } from './browser-settings/remote.ts'
 import {
   CATALOG_REMOTE_NAMESPACE,
   parseBaseModelResult,
@@ -105,6 +106,7 @@ export const HARNESS_COMFYUI_REMOTE = Object.freeze({
     ...CATALOG_REMOTE.descriptors,
     ...GENERATION_REMOTE.descriptors,
     ...IMAGE_READER_REMOTE.descriptors,
+    ...BROWSER_SETTINGS_REMOTE.descriptors,
   ]),
 }) satisfies TypertRemoteContribution
 

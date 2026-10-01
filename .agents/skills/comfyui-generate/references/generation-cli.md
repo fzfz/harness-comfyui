@@ -2,12 +2,12 @@
 
 ## 调用入口
 
-`DSH_HARNESS_COMFYUI_CLI` 保存 Generation CLI 入口脚本路径。Skill 执行者使用以下入口调用三个命令：
+受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Generation CLI 入口脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下入口以 Node 模式调用三个命令：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin
 ```
 
 ## 命令与调用条件
@@ -118,7 +118,7 @@ Skill 执行者只复用退出码为 `0` 且符合“成功输出与失败输出
 Skill 执行者使用以下命令查询两个 Generation Run：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
 {"run_ids":["run_3c0ad3ed","run_d26923be"]}
 JSON
 ```
@@ -126,7 +126,7 @@ JSON
 Skill 执行者使用以下命令为三张图片取得 Seed：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin <<'JSON'
 {"count":3}
 JSON
 ```
@@ -134,7 +134,7 @@ JSON
 Skill 执行者使用以下命令提交一张图片：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin <<'JSON'
 {
   "title":"角色立绘",
   "instance_id":"2",
@@ -155,4 +155,4 @@ JSON
 
 ## 帮助与操作提示
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

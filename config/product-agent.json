@@ -5,20 +5,9 @@
     "additionalManagedPresetIds": [
       "harness-comfyui-iteration"
     ],
-    "sourceRootRelativePath": "agent-presets",
-    "installRootRelativePath": ".agent-presets",
-    "retiredManagedPresetIds": [
-      "harness-comfyui-schema-control"
-    ],
-    "sharedFiles": [
-      "project-tool-visibility.mjs",
-      "project-system-prompt-visibility.mjs",
-      "project-subagent-workspace.mjs",
-      "project-iteration-dispatch.mjs"
-    ]
+    "sourceRootRelativePath": "agent-presets"
   },
   "skills": {
-    "sourceRootRelativePath": ".agents/skills",
-    "environmentVariable": "HARNESS_COMFYUI_SKILL_DIR"
+    "sourceRootRelativePath": ".agents/skills"
   }
 }

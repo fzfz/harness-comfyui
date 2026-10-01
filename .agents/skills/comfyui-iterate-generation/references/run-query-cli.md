@@ -3,11 +3,11 @@
 生成 Agent 使用以下命令读取本任务的实际请求、Actual Workflow 和已保存图片。生成 Agent 必须在首次调用前完整读取本文件。
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
 ```
 
-生成 Agent 在当前会话的 Workspace 工作目录通过前台 shell 调用命令。命令只读取结果，不创建 Run。结果保存要求见“命令错误与修正条件”。
+受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`。生成 Agent 在当前会话的 Workspace 工作目录设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，并调用命令。命令只读取结果，不创建 Run。结果保存要求见“命令错误与修正条件”。
 
 # 标准输入与 ID 来源
 
@@ -16,7 +16,7 @@ node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
 ID 来自用户明确指定的历史 Run，或本任务生成子 Agent 已保存的真实提交结果。使用完整 Run ID，或 `run_` 加 UUID 至少前八个字符的规范前缀；短 ID 保留 UUID 中原有连字符位置，例如 `run_3c0ad3ed-9f27`。生成 Agent 仅使用上述来源的 ID。
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
 {"run_ids":["run_3c0ad3ed"]}
 JSON
 ```
@@ -60,4 +60,4 @@ run-inputs 和 resolve-media 不提供 Run 的完整运行状态；workflow_stat
 
 ## 帮助与操作提示
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

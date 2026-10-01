@@ -13,7 +13,11 @@ import {
   renderGenerationMediaViewerPage,
   type GenerationMediaViewerItem,
 } from './media-viewer-page.ts'
-import { workspaceIdForSession, type WorkspaceRegistryProjection } from './workspace-access.ts'
+import {
+  workspaceSessionScopeForSession,
+  type SessionPersistenceProjection,
+  type WorkspaceRegistryProjection,
+} from './workspace-access.ts'
 
 export const GENERATION_MEDIA_ROUTE_PREFIX = GENERATION_MEDIA_URL_PREFIX
 
@@ -32,6 +36,7 @@ export interface RegisterGenerationMediaRoutesOptions {
   readonly runtime: Pick<GenerationRuntime,
     'getMedia' | 'queryMedia' | 'positivePromptForRun' | 'mediaContentPath' | 'mediaRunId' | 'actualWorkflowPath'>
   readonly workspaceRegistry: WorkspaceRegistryProjection
+  readonly sessionPersistence: SessionPersistenceProjection
 }
 
 function send(response: ServerResponse, status: number, message: string): void {
@@ -114,20 +119,40 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
         return
       }
       const mediaId = match[1]!
+      const abortController = new AbortController()
+      const abortOnDisconnect = (): void => {
+        if (!response.headersSent && !response.writableEnded) abortController.abort()
+      }
+      request.once('aborted', abortOnDisconnect)
+      response.once('close', abortOnDisconnect)
       try {
         const sessionId = url.searchParams.get('session_id')
         if (sessionId === null || sessionId.length === 0 || sessionId.length > 10_000) {
           send(response, 404, 'Not Found')
           return
         }
-        const workspaceId = workspaceIdForSession(options.workspaceRegistry, sessionId)
+        const sessionScope = await workspaceSessionScopeForSession(
+          options.workspaceRegistry,
+          options.sessionPersistence,
+          sessionId,
+          abortController.signal,
+        )
+        abortController.signal.throwIfAborted()
         const media = options.runtime.getMedia(mediaId)
-        if (media.workspaceId !== workspaceId || media.sessionId !== sessionId) {
+        if (media.workspaceId !== sessionScope.workspaceId || !sessionScope.sessionIds.includes(media.sessionId)) {
           send(response, 404, 'Not Found')
           return
         }
         if (match[2] === 'view') {
-          const sessionMedia = options.runtime.queryMedia({ workspaceId, sessionId })
+          const sessionMedia = sessionScope.sessionIds.flatMap(relatedSessionId => options.runtime.queryMedia({
+            workspaceId: sessionScope.workspaceId,
+            sessionId: relatedSessionId,
+          }))
+          sessionMedia.sort((left, right) =>
+            right.createdAt - left.createdAt
+            || right.outputIndex - left.outputIndex
+            || (left.mediaId === right.mediaId ? 0 : left.mediaId > right.mediaId ? -1 : 1),
+          )
           const positivePrompts = new Map(
             [...new Set(sessionMedia.map(item => item.runId))]
               .map(runId => [runId, options.runtime.positivePromptForRun(runId)] as const),
@@ -164,6 +189,7 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
           'GENERATION_ARTIFACT_NOT_FOUND',
         )
       } catch (error) {
+        if (abortController.signal.aborted) return
         if (response.headersSent) {
           response.destroy(error instanceof Error ? error : undefined)
           return
@@ -182,6 +208,9 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
           }
         }
         send(response, 500, 'Internal Server Error')
+      } finally {
+        request.off('aborted', abortOnDisconnect)
+        response.off('close', abortOnDisconnect)
       }
     },
   })

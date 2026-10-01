@@ -1,0 +1,569 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceClaim": false,
+  "sourceAssertions": "tests/desktop/desktop-live.test.mjs",
+  "targetAssertions": "tests/desktop/official-desktop-live.test.mjs",
+  "currentCandidateExecution": {
+    "status": "passed: migrated plugin business regression completed in the official installed App",
+    "reason": "The latest complete run passed all retained plugin business assertions. Host Session deletion and native model/reasoning editor regressions were excluded under the user instruction and approved plugin maintenance scope. The controlled services are automated regression fixtures; A18 real-service acceptance remains incomplete.",
+    "lastLocalChecks": {
+      "testFiles": [
+        "tests/desktop/fixtures/official-business-fixture.test.mjs",
+        "tests/desktop/fixtures/official-business-media.test.mjs"
+      ],
+      "result": "8 pure tests passed; 5 mjs syntax checks passed; complete official business E2E 1 passed (45.01 s)"
+    },
+    "latestOfficialAppAttempt": {
+      "status": "passed",
+      "classification": "automated-regression",
+      "acceptanceClaim": false,
+      "applicationVersion": "0.2.0-rc.2",
+      "pluginVersion": "0.45.0",
+      "fixtureId": "2c1ea529-a008-4cd0-b4db-aa29c16613fe",
+      "runIds": [
+        "89831b2b-d52d-402a-a975-36266c006866",
+        "c31d1721-98b2-44a7-afe8-c7fd235ba2d8",
+        "e22b46a3-85a9-4c3d-b53e-7fba83ba9934"
+      ],
+      "passedAssertions": [
+        "preset-and-skill-scope",
+        "workspace-and-user-skill-marker-retrieval",
+        "disabled-kimi-ppt-model-request",
+        "catalog-and-base-model-settings",
+        "image-reader-settings-and-secret-storage",
+        "workflow-browser-invalid-path-draft-save-and-restart",
+        "saved-media-history-viewer-download-copy-responsive-layout",
+        "context-dialog",
+        "controlled-official-generation-through-frontend-worker-runtime-and-media-ui"
+      ],
+      "generation": {
+        "schemaVersion": 1,
+        "classification": "automated-regression",
+        "acceptanceClaim": false,
+        "sessionTitle": "Desktop controlled generation session",
+        "sessionId": "session-5d994a49-d0d0-456d-a5cd-0bdf45d046c2",
+        "promptId": "3674e471-3e6c-488b-8a9b-e2b210020837",
+        "runId": "run_0cb424dd-cdf4-4e47-9788-0edad80ae767",
+        "runTitle": "Controlled official Desktop generation",
+        "runStatus": "succeeded",
+        "output": {
+          "filename": "official-desktop-controlled.png",
+          "mediaType": "image/png",
+          "byteSize": 70
+        },
+        "frontend": {
+          "publicMethodsObserved": [
+            "graph",
+            "loadGraphData",
+            "graphToPrompt"
+          ],
+          "nodeTypesRegistered": true,
+          "workflowLoaded": true,
+          "graphExported": true
+        },
+        "transport": {
+          "objectInfoRequests": 1,
+          "promptSubmissions": 1,
+          "jobPolls": 2,
+          "mediaDownloads": 1,
+          "historyShapeVerified": true,
+          "productHistoryPolls": 0
+        },
+        "modelToolCalls": {
+          "generationToolAvailable": true,
+          "toolResultReturned": true
+        }
+      },
+      "generationAfterRestart": {
+        "schemaVersion": 1,
+        "classification": "automated-regression",
+        "acceptanceClaim": false,
+        "sessionId": "session-5d994a49-d0d0-456d-a5cd-0bdf45d046c2",
+        "runId": "run_0cb424dd-cdf4-4e47-9788-0edad80ae767",
+        "runStatus": "succeeded",
+        "mediaFilename": "official-desktop-controlled.png",
+        "uiRunAndMediaVisible": true
+      },
+      "cleanup": {
+        "allStopped": true,
+        "processGroupsAbsent": [
+          29559,
+          35091,
+          40825
+        ],
+        "listenerPortsEmpty": [
+          62675,
+          62676,
+          62677,
+          62884,
+          62885,
+          62886,
+          63162,
+          63163,
+          63164
+        ],
+        "allLeasesAbsent": true
+      },
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    "earlierOfficialAppAttempt": {
+      "status": "partial; business run failed after the listed assertions passed",
+      "applicationVersion": "0.2.0-rc.2",
+      "pluginVersion": "0.44.3",
+      "candidateTarballPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-8028RE/artifacts/harness-comfyui-0.44.3.tgz",
+      "installationRunId": "0e60adbb-1dd3-4dd1-898e-66adedcd6666",
+      "businessRunId": "4413c4bd-ee09-42e7-b07c-646d838ce12c",
+      "installation": "The official Plugins UI installed and enabled the packed harness-comfyui@0.44.3 package, saved all four required screenshots, and verified the installed package version. The installation run stopped with portsReleased=true before a separate business run started; both runs stopped with portsReleased=true in finally cleanup.",
+      "passedAssertions": [
+        "The independent fixture repository and complete Desktop environment are outside the source checkout; the probe root has no Git marker and the Workspace boundary evidence confirms it.",
+        "Implicit default resolves to standard; product presets expose the eight installed-project Skills; standard/PTC retain two Workspace Skills, one user Skill, and three host Office Skills; minimal/cordis expose the three host Office Skills only. Source-category and non-product exclusion assertions matched the captured roster.",
+        "A real standard Session selected in mainView submitted the marker prompt; the provider received two skill tool calls and the actual Workspace and user SKILL.md tool results with their absolute external paths and unique marker strings. Assistant output and Session history contained both markers.",
+        "The Kimi/PPT UI/Skill checks and a real controlled-provider request with the PPT tool unavailable passed."
+      ],
+      "failure": "The controlled generation flow reached its real composer prompt, but FIFO request capture returned a previous unrelated completion, so the assertion that the captured request contained the generation prompt failed. The business fixture now matches requests by predicate and has a unit test for queued matching, future matching, unmatched-request preservation, invalid predicates, and timeout cleanup. A rerun remains required.",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/official-business-audit.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/0e60adbb-1dd3-4dd1-898e-66adedcd6666/official-plugin-install.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/0e60adbb-1dd3-4dd1-898e-66adedcd6666/stop-result.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/4413c4bd-ee09-42e7-b07c-646d838ce12c/official-business-workspace-boundary.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/4413c4bd-ee09-42e7-b07c-646d838ce12c/official-business-preset-skill-paths.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/4413c4bd-ee09-42e7-b07c-646d838ce12c/official-business-skill-markers.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/4413c4bd-ee09-42e7-b07c-646d838ce12c/official-business-failure.json",
+        ".local/desktop-e2e/official-business-audit/66214822-b6b1-4f3d-944e-77dc71a93b7e/4413c4bd-ee09-42e7-b07c-646d838ce12c/stop-result.json"
+      ]
+    },
+    "latestRerun": {
+      "status": "passed",
+      "classification": "automated-regression",
+      "acceptanceClaim": false,
+      "applicationVersion": "0.2.0-rc.2",
+      "pluginVersion": "0.45.0",
+      "fixtureId": "2c1ea529-a008-4cd0-b4db-aa29c16613fe",
+      "runIds": [
+        "89831b2b-d52d-402a-a975-36266c006866",
+        "c31d1721-98b2-44a7-afe8-c7fd235ba2d8",
+        "e22b46a3-85a9-4c3d-b53e-7fba83ba9934"
+      ],
+      "passedAssertions": [
+        "preset-and-skill-scope",
+        "workspace-and-user-skill-marker-retrieval",
+        "disabled-kimi-ppt-model-request",
+        "catalog-and-base-model-settings",
+        "image-reader-settings-and-secret-storage",
+        "workflow-browser-invalid-path-draft-save-and-restart",
+        "saved-media-history-viewer-download-copy-responsive-layout",
+        "context-dialog",
+        "controlled-official-generation-through-frontend-worker-runtime-and-media-ui"
+      ],
+      "generation": {
+        "schemaVersion": 1,
+        "classification": "automated-regression",
+        "acceptanceClaim": false,
+        "sessionTitle": "Desktop controlled generation session",
+        "sessionId": "session-5d994a49-d0d0-456d-a5cd-0bdf45d046c2",
+        "promptId": "3674e471-3e6c-488b-8a9b-e2b210020837",
+        "runId": "run_0cb424dd-cdf4-4e47-9788-0edad80ae767",
+        "runTitle": "Controlled official Desktop generation",
+        "runStatus": "succeeded",
+        "output": {
+          "filename": "official-desktop-controlled.png",
+          "mediaType": "image/png",
+          "byteSize": 70
+        },
+        "frontend": {
+          "publicMethodsObserved": [
+            "graph",
+            "loadGraphData",
+            "graphToPrompt"
+          ],
+          "nodeTypesRegistered": true,
+          "workflowLoaded": true,
+          "graphExported": true
+        },
+        "transport": {
+          "objectInfoRequests": 1,
+          "promptSubmissions": 1,
+          "jobPolls": 2,
+          "mediaDownloads": 1,
+          "historyShapeVerified": true,
+          "productHistoryPolls": 0
+        },
+        "modelToolCalls": {
+          "generationToolAvailable": true,
+          "toolResultReturned": true
+        }
+      },
+      "generationAfterRestart": {
+        "schemaVersion": 1,
+        "classification": "automated-regression",
+        "acceptanceClaim": false,
+        "sessionId": "session-5d994a49-d0d0-456d-a5cd-0bdf45d046c2",
+        "runId": "run_0cb424dd-cdf4-4e47-9788-0edad80ae767",
+        "runStatus": "succeeded",
+        "mediaFilename": "official-desktop-controlled.png",
+        "uiRunAndMediaVisible": true
+      },
+      "cleanup": {
+        "allStopped": true,
+        "processGroupsAbsent": [
+          29559,
+          35091,
+          40825
+        ],
+        "listenerPortsEmpty": [
+          62675,
+          62676,
+          62677,
+          62884,
+          62885,
+          62886,
+          63162,
+          63163,
+          63164
+        ],
+        "allLeasesAbsent": true
+      },
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    "settingsIntegration": {
+      "status": "未通过",
+      "observedFailure": "Official SettingsForms refuses the non-volatile browserExecutablePath field; Profile remained unchanged.",
+      "repair": "Scoped core schema/live configuration fix in progress; plugin settings route migrated."
+    },
+    "previousRunBeforeImageReaderMigration": {
+      "status": "partial; automated regression only; no real-service acceptance claim",
+      "applicationVersion": "0.2.0-rc.2",
+      "pluginVersion": "0.45.0",
+      "candidateTarballPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-JRMeDd/artifacts/harness-comfyui-0.45.0.tgz",
+      "installationRunId": "0c5a3c78-d233-4ef9-a0f7-31b80f231ed2",
+      "businessRunId": "b57819ed-caa3-4a8f-bd55-34b7282c41c3",
+      "installation": "Official Plugins UI installed and enabled the candidate, verified its version, then a separately started business instance loaded the candidate.",
+      "passedAssertions": [
+        "Preset and eight project Skill source/scope matrix passed in the independent Workspace.",
+        "Real Host tool calls retrieved both controlled Workspace and user Skill bodies, and the assistant and cold Session history contained both markers.",
+        "Kimi/PPT disabled UI, Skill, system text and tool checks passed.",
+        "The packaged generation tool compiled the controlled frontend Workflow, submitted a prompt, polled jobs, saved the controlled PNG, persisted a succeeded Run and rendered the output."
+      ],
+      "controlledGeneration": {
+        "runId": "run_ea6861ab-7607-4b90-bb2b-35d1e7c00fcd",
+        "promptId": "bd62d789-5cd3-42f7-9d70-ef2e75168ab1",
+        "seed": 424242,
+        "classification": "automated-regression",
+        "acceptanceClaim": false
+      },
+      "failure": "The copied third-party Host model-menu assertion expected role=menuitemradio under the old Chinese menu label and OpenCode Go models absent from the official test Profile.",
+      "cleanup": {
+        "registryStates": [
+          "stopped",
+          "stopped"
+        ],
+        "processGroupsAbsent": [
+          34063,
+          39701
+        ],
+        "listenerPortsEmpty": [
+          50576,
+          50577,
+          50578,
+          50777,
+          50778,
+          50779
+        ],
+        "leaseReleased": true
+      },
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/c7fec9be-b336-4567-a75d-a027aeb3dde9/b57819ed-caa3-4a8f-bd55-34b7282c41c3/official-business-controlled-generation.json",
+        ".local/desktop-e2e/official-business-audit/c7fec9be-b336-4567-a75d-a027aeb3dde9/b57819ed-caa3-4a8f-bd55-34b7282c41c3/official-business-controlled-generation.png",
+        ".local/desktop-e2e/official-business-audit/c7fec9be-b336-4567-a75d-a027aeb3dde9/b57819ed-caa3-4a8f-bd55-34b7282c41c3/official-business-preset-skill-paths.json",
+        ".local/desktop-e2e/official-business-audit/c7fec9be-b336-4567-a75d-a027aeb3dde9/b57819ed-caa3-4a8f-bd55-34b7282c41c3/official-business-skill-markers.json",
+        ".local/desktop-e2e/official-business-audit/c7fec9be-b336-4567-a75d-a027aeb3dde9/b57819ed-caa3-4a8f-bd55-34b7282c41c3/official-business-failure.json",
+        ".local/desktop-e2e/official-business-audit/c7fec9be-b336-4567-a75d-a027aeb3dde9/official-business-audit.json"
+      ]
+    },
+    "previousRunBeforeStoragePathCorrection": {
+      "status": "partial; automated regression only",
+      "applicationVersion": "0.2.0-rc.2",
+      "pluginVersion": "0.45.0",
+      "installationRunId": "9493bd3c-d5bc-4e00-9da9-1f6ccf9b4599",
+      "businessRunId": "3747934d-2e02-4443-9d99-f2cfc038c7d6",
+      "candidateTarballPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-OCu0sr/artifacts/harness-comfyui-0.45.0.tgz",
+      "passedAssertions": [
+        "Preset and eight project Skill source/scope matrix passed in the independent Workspace.",
+        "Real Host tool calls retrieved both controlled Workspace and user Skill bodies, and the assistant and cold Session history contained both markers.",
+        "Kimi/PPT disabled UI, Skill, system text and tool checks passed.",
+        "The packaged generation tool compiled the controlled frontend Workflow, submitted a prompt, polled jobs, saved the controlled PNG, persisted a succeeded Run and rendered the output.",
+        "Plugin visual models include the configured controlled vision model and exclude its text-only sibling; switching to the second Provider with no model yields IMAGE_READER_MODEL_REQUIRED.",
+        "Image Reader settings save and reload preserve the selected Provider/model; profile create/save/switch/copy/delete, dirty state choices and write-only credential preservation passed."
+      ],
+      "controlledGeneration": {
+        "runId": "run_cde02d2d-5455-421d-b2a8-14b516f09888",
+        "classification": "automated-regression",
+        "acceptanceClaim": false
+      },
+      "failure": "publishSavedDesktopRun opened the obsolete dsh-home/data/runs.sqlite path. Since main had no generation_runs table, the unqualified INSERT selected attached fixture.generation_runs as its target and violated its existing uniqueness constraint. The real plugin database contained the successful controlled generation only.",
+      "cleanup": {
+        "registryStates": [
+          "stopped",
+          "stopped"
+        ],
+        "processGroupsAbsent": [
+          14873,
+          20399
+        ],
+        "listenerPortsEmpty": [
+          54942,
+          54943,
+          54944,
+          55193,
+          55194,
+          55195
+        ],
+        "leaseReleased": true
+      },
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/6d7c21eb-7cf6-4779-8190-2c947b79fc4b/3747934d-2e02-4443-9d99-f2cfc038c7d6/official-business-controlled-generation.json",
+        ".local/desktop-e2e/official-business-audit/6d7c21eb-7cf6-4779-8190-2c947b79fc4b/3747934d-2e02-4443-9d99-f2cfc038c7d6/official-business-preset-skill-paths.json",
+        ".local/desktop-e2e/official-business-audit/6d7c21eb-7cf6-4779-8190-2c947b79fc4b/3747934d-2e02-4443-9d99-f2cfc038c7d6/official-business-skill-markers.json",
+        ".local/desktop-e2e/official-business-audit/6d7c21eb-7cf6-4779-8190-2c947b79fc4b/3747934d-2e02-4443-9d99-f2cfc038c7d6/official-business-failure.json",
+        ".local/desktop-e2e/official-business-audit/6d7c21eb-7cf6-4779-8190-2c947b79fc4b/official-business-audit.json"
+      ]
+    }
+  },
+  "migratedAssertions": [
+    {
+      "id": "official-ui-install-enable-version-restart",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "Linked-worktree startup and installed-package/profile symlink checks in the live Desktop test."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Packed candidate build, official Plugins UI install/enable, installed package version check, stop, restart, and persisted generation history."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "preset-roster-and-skill-scope",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "verifyPresetScopedRepositorySkills: implicit default, product presets, standard/PTC, minimal/cordis, exact eight installed-project Skills, and non-product isolation."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "verifyPresetScopedRepositorySkills: same matrix plus source paths and source-category counts; standard/PTC expect two Workspace Skills including the unique-name Skill and retain the comfyui-generate name collision."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "workspace-user-skill-tool-retrieval",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "Workspace/user Skill presence only; no unique Skill-body retrieval assertion."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "verifyWorkspaceAndUserSkillMarkers: foreground composer request; two actual skill tool calls; each tool result contains its named Skill body; actual absolute Skill paths come from remote.skills.list and resolve to marker-bearing source files; assistant output and cold Session history contain both markers."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "fixtureContractTest": "tests/desktop/fixtures/official-business-fixture.test.mjs: 2 tests passed, including the controlled completion-service tool-call/tool-result sequence and marker-request schema boundary.",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "disabled-kimi-ppt-ui-and-request",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "verifyKimiPptDisabled and verifyKimiPptHostRequestDisabled: UI slots, Skill listing, prompt system text, and available tool names."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "verifyKimiPptDisabled and verifyKimiPptHostRequestDisabled use public Remote and a real Host request to the controlled provider."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "approvedContractChange": "The DeepSeek-only x-deepseek-harness-session-id header assertion was removed. The test retains the real Session prompt/request/source association checks against the provider-neutral OpenAI-compatible contract.",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "session-delete-failure-success-and-history",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "verifySessionDeletion: visible rejection preserves target; restoring the original RPC allows deletion; unrelated Session survives and deleted/kept cold-history reads are checked."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Session deletion, RPC rejection/restoration, deleted-Session cold-history checks, and the deletion fixture were removed. Plugin Run and history checks remain."
+      },
+      "currentCandidateStatus": "excluded by explicit user instruction on 2026-10-01",
+      "evidence": []
+    },
+    {
+      "id": "catalog-context-dialog",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "verifyContextDialog and Catalog Remote assertions: card count/layout, detail fields, image gallery, scroll restoration, selection, and pagination."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "verifyContextDialog plus controlled Source/Semantic services and Catalog/Image Reader Remotes."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "models-provider-reasoning-and-settings",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "Custom provider reasoning levels and model menu visibility."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Copied native Host model-menu, fixed OpenCode Go model and Provider reasoning-editor assertions were removed. Plugin visual model catalogue and actual generation provider/model assertions remain in their plugin business cases."
+      },
+      "currentCandidateStatus": "excluded from plugin maintenance scope; removal syntax validation awaits the concurrent controlled Image Reader fixture edit",
+      "evidence": []
+    },
+    {
+      "id": "image-reader-profiles-credentials-dirty-state",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "Image Reader defaults, provider/model options, profile creation/save/switch/copy/delete, dirty-change decisions, persisted settings, and masked credential behavior."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Explicit controlled vision/text models and Image Reader default; vision filtering, missing-model validation, configuration creation/save/switch/copy/delete, dirty-change decisions, persisted settings and write-only credentials."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "saved-media-history-viewer-download-copy-responsive-layout",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "verifyRunDiscovery, Media Viewer run history, source-byte downloads, Run ID clipboard action, and desktop/narrow viewport layout."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Seeded run/media records are observed through the packaged Client Module and official Host APIs; viewer, downloads, clipboard, responsive layout, and session switching remain asserted."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "controlled-frontend-generation-and-restart-history",
+      "legacy": {
+        "file": "tests/desktop/desktop-live.test.mjs",
+        "assertion": "Seeded Generation Runtime history and media discovery; the legacy test did not run the packaged frontend compiler-to-media generation flow."
+      },
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Foreground composer triggers the packaged generation tool; controlled LiteGraph frontend registers nodes, loads workflow and exports API workflow; Host reads object_info, submits prompt, polls actual /api/jobs transport, saves controlled media, renders Run/Media, and restores them after restart."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "scopeLimit": "The controlled HTTP ComfyUI frontend and marked PNG are automated regression fixtures, not actual ComfyUI acceptance evidence.",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    },
+    {
+      "id": "workflow-browser-settings-A10",
+      "new": {
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "assertion": "Use the packaged Browser settings UI to reject a missing path while preserving its draft, save the effective valid path, verify the Profile field and UI value after the existing application restart."
+      },
+      "currentCandidateStatus": "passed in the complete 0.45.0 official App business run",
+      "scopeLimit": "Actual missing-path draft preservation, save, Profile field and application restart passed. Plugin reinstallation and an actual Profile write failure remain separate A10/A4 tasks.",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/e22b46a3-85a9-4c3d-b53e-7fba83ba9934/official-business-result.json",
+        ".local/desktop-e2e/official-business-audit/2c1ea529-a008-4cd0-b4db-aa29c16613fe/official-business-audit.json"
+      ]
+    }
+  ],
+  "notCoveredByBusinessMigration": [
+    {
+      "id": "A7-subagent-first-step-and-lifecycle",
+      "legacyCoverage": "The old desktop-live test checks the iteration preset /goal command only; it does not cover first-step Workspace registration, subagent continuation, interrupt, or deny behavior.",
+      "newCoverage": "Not covered by official-desktop-live.test.mjs.",
+      "status": "not covered; separate root/lifecycle work is required"
+    },
+    {
+      "id": "A13-parallel-instance-business-isolation",
+      "legacyCoverage": "Single-instance test only.",
+      "newCoverage": "This business test installs and restarts one isolated environment; it does not run two official Desktop instances concurrently and then prove one remains usable after stopping the other.",
+      "status": "not covered here; lifecycle owner has a separate A13 test"
+    },
+    {
+      "id": "A15-failure-cancel-timeout-port-conflict",
+      "legacyCoverage": "No lifecycle failure matrix.",
+      "newCoverage": "This test verifies successful cleanup in finally and captures install/business failure evidence; it does not induce actual cancellation, timeout, or port-conflict cases.",
+      "status": "not covered here; lifecycle owner has a separate A15 test"
+    },
+    {
+      "id": "probe-readiness-child-exit-race",
+      "legacyCoverage": "The legacy Desktop test does not provide a cancellation/child-exit race assertion for the probe startup readiness commit.",
+      "newCoverage": "The business test reaches automatic finally cleanup after its generation request assertion failure, but that failure does not test the probe race.",
+      "status": "Probe fixes passed targeted regression and independent real OS review; the next business run remains required."
+    },
+    {
+      "id": "A1-A9-system-path-without-node-pnpm",
+      "legacyCoverage": "No restricted PATH test.",
+      "newCoverage": "Not covered; the agreed A14/Skills pass does not add the proposed launchPath field.",
+      "status": "deferred by parent instruction"
+    },
+    {
+      "id": "A2-source-removed-runtime",
+      "legacyCoverage": "Not covered.",
+      "newCoverage": "Build/pack installs a real tarball in the official profile while source remains available; this does not prove execution after moving the source checkout away.",
+      "status": "not covered"
+    },
+    {
+      "id": "A8-real-comfyui-acceptance",
+      "legacyCoverage": "Seeded data exercises history UI; it does not prove formal ComfyUI generation acceptance.",
+      "newCoverage": "Generation uses controlled ComfyUI Source, LiteGraph, Jobs, History, View, and PNG fixtures.",
+      "status": "automated regression only; real ComfyUI acceptance remains separate"
+    }
+  ],
+  "scopeChanges": [
+    {
+      "date": "2026-10-01",
+      "authority": "direct user instruction",
+      "scope": "宿主会话删除及相关失败恢复、选择器修复和回归测试",
+      "action": "移出本次插件验收；撤回为其准备的会话填充请求；保留插件Session、Run及历史功能验收。"
+    },
+    {
+      "date": "2026-10-01",
+      "authority": "approved plan: maintenance scope concentrates on plugin business; optional scope choice was offered",
+      "scope": "copied Host model menu and Provider reasoning-editor regressions",
+      "action": "Remove Host regression helpers/calls from the new business test; preserve plugin visual catalogue, settings, actual generation requests, Run and history assertions."
+    }
+  ]
+}

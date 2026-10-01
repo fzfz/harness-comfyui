@@ -16,6 +16,7 @@ import {
 } from '../../generation/run-input-contract.ts'
 import type { GenerationRunMediaResult } from '../../image-reader/run-media-contract.ts'
 import { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
+import { PluginStorageError } from '../plugin-storage-error.ts'
 import type {
   GenerationTemplateRuntimeParameterInspectionInput,
   WorkflowRuntimeParameterInspection,
@@ -271,6 +272,18 @@ const CANONICAL_RUN_ID_GLOB = `${RUN_ID_PREFIX}${Array.from({ length: UUID_LENGT
 )).join('')}`
 const RUN_ID_INVALID_MESSAGE = `Generation Run ID is invalid. Use a safe complete Run ID or a canonical prefix containing at least ${MIN_RUN_INPUT_ID_PREFIX_LENGTH} UUID characters.`
 
+function storageInitializationFailure(error: unknown, path: string): unknown {
+  if (
+    error !== null
+    && typeof error === 'object'
+    && 'code' in error
+    && error.code === 'ERR_SQLITE_ERROR'
+  ) {
+    return new PluginStorageError(path, error)
+  }
+  return error
+}
+
 function isCanonicalRunIdPrefix(value: string): boolean {
   if (!value.startsWith(RUN_ID_PREFIX)) return false
   const uuidPrefix = value.slice(RUN_ID_PREFIX.length)
@@ -495,20 +508,48 @@ export class GenerationRuntime {
 
   constructor(options: GenerationRuntimeOptions) {
     this.options = options
-    mkdirSync(dirname(options.runRepositoryFile), { recursive: true })
-    mkdirSync(options.runDirectory, { recursive: true })
-    mkdirSync(options.savedMediaDirectory, { recursive: true })
-    this.database = new DatabaseSync(options.runRepositoryFile)
     this.createRunId = options.createRunId ?? (() => `${RUN_ID_PREFIX}${randomUUID()}`)
     this.createPromptId = options.createPromptId ?? randomUUID
     this.createMediaId = options.createMediaId ?? (() => `media_${randomUUID()}`)
     this.now = options.now ?? Date.now
     this.missingObservationMs = options.missingObservationMs ?? 30_000
-    this.readJsonArtifact = options.readJsonArtifact ?? readGenerationJsonArtifact
-    this.reportRunInputLookupError = options.reportRunInputLookupError
     if (!Number.isSafeInteger(this.missingObservationMs) || this.missingObservationMs < 0) {
       throw new TypeError('missingObservationMs is invalid')
     }
+    this.readJsonArtifact = options.readJsonArtifact ?? readGenerationJsonArtifact
+    this.reportRunInputLookupError = options.reportRunInputLookupError
+    mkdirSync(dirname(options.runRepositoryFile), { recursive: true })
+    mkdirSync(options.runDirectory, { recursive: true })
+    mkdirSync(options.savedMediaDirectory, { recursive: true })
+    let database: DatabaseSync
+    try {
+      database = new DatabaseSync(options.runRepositoryFile)
+    } catch (error) {
+      throw storageInitializationFailure(error, options.runRepositoryFile)
+    }
+    this.database = database
+    try {
+      this.initializeDatabase()
+    } catch (error) {
+      const failure = storageInitializationFailure(error, options.runRepositoryFile)
+      try {
+        this.database.close()
+      } catch (closeError) {
+        if (failure !== null && (typeof failure === 'object' || typeof failure === 'function') && Object.isExtensible(failure)) {
+          Object.defineProperty(failure, 'databaseCloseError', { value: closeError })
+        } else {
+          throw new AggregateError(
+            [failure, closeError],
+            'Generation Runtime initialization failed and the SQLite database could not be closed.',
+            { cause: failure },
+          )
+        }
+      }
+      throw failure
+    }
+  }
+
+  private initializeDatabase(): void {
     this.database.exec(`
       PRAGMA foreign_keys = ON;
       PRAGMA journal_mode = WAL;

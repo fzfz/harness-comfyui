@@ -19,17 +19,24 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
 }))
 
 import { apply, inject, name } from '../../src/client/index.tsx'
+import pluginPackage from '../../config/plugin-package.json' with { type: 'json' }
 import {
   WORKBENCH_DOCK_ID,
   WORKBENCH_ENTRY_ID,
   WORKBENCH_RESULTS_TAB,
 } from '../../src/client/workbench/contract.ts'
+import type { ImageReaderSettingsApi } from '../../src/client/image-reader/image-reader-settings.tsx'
+import type { SaveImageReaderProfileRequest } from '../../src/image-reader/contract.ts'
+import type { ImageReaderConfiguration } from '../../src/image-reader/settings.ts'
+import { BROWSER_SETTINGS_REMOTE_SERVICE } from '../../src/browser-settings-schema.ts'
 
 type Registration = {
   name: string
-  id: string
-  order: number
+  id?: string
+  key?: string
+  order?: number
   inject: (...args: never[]) => unknown
+  component?: (props: any) => unknown
 }
 
 class MemoryStorage {
@@ -85,6 +92,13 @@ function installImmediateInject(context: Record<string, any>): void {
     })),
     deleteProfile: vi.fn(async () => ({ ok: true, value: { configuration: context.configForms.get('harness-comfyui-image-reader').getSnapshot().value.configuration } })),
   }
+  context.remote.harnessComfyuiBrowserSettings ??= {
+    configuration: vi.fn(async () => ({ ok: true, value: { browserExecutablePath: '/profile/browser' } })),
+    validate: vi.fn(async (request: { browserExecutablePath: string }) => ({
+      ok: true,
+      value: { ok: true, value: request },
+    })),
+  }
   const imageReaderScope = {
       getSnapshot: () => ({
         status: 'ready',
@@ -107,7 +121,7 @@ function installImmediateInject(context: Record<string, any>): void {
   const sourceScope = {
     getSnapshot: () => ({
       status: 'ready',
-      value: { configuration: { url: 'http://127.0.0.1', port: 18093 } },
+      value: { configuration: { url: 'http://127.0.0.1', port: 18093 }, browserExecutablePath: '/profile/browser' },
       base: { configuration: { url: 'http://127.0.0.1', port: 18093 } },
       user: undefined,
       revision: 0,
@@ -128,6 +142,7 @@ function installImmediateInject(context: Record<string, any>): void {
     if (service === 'remote.harnessComfyuiCatalog') return context.remote.harnessComfyuiCatalog
     if (service === 'remote.harnessComfyuiGeneration') return context.remote.harnessComfyuiGeneration
     if (service === 'remote.harnessComfyuiImageReader') return context.remote.harnessComfyuiImageReader
+    if (service === BROWSER_SETTINGS_REMOTE_SERVICE) return context.remote.harnessComfyuiBrowserSettings
     return undefined
   })
   context.inject = vi.fn((_services: readonly string[], callback: (scope: unknown) => unknown) => {
@@ -157,8 +172,8 @@ describe('Harness Client plugin registration', () => {
     const injectionDisposers = new Map<string, ReturnType<typeof vi.fn>>()
     const registrations = new Map<string, Registration>()
 
-    const register = vi.fn((registration: Registration) => {
-      registrations.set(registration.name, registration)
+    const register = vi.fn((registration: Registration, component?: (props: any) => unknown) => {
+      registrations.set(registration.name, { ...registration, component })
       const dispose = vi.fn()
       registrationDisposers.set(registration.name, dispose)
       return dispose
@@ -209,9 +224,16 @@ describe('Harness Client plugin registration', () => {
     const dispose = await apply(context as never)
 
     expect(name).toBe('harness-comfyui')
+    expect(name).toBe(pluginPackage.packageName)
     expect(inject).toEqual([
       'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms',
     ])
+    expect((context as any).inject).toHaveBeenCalledWith([
+      'remote.harnessComfyuiCatalog',
+      'remote.harnessComfyuiGeneration',
+      'remote.harnessComfyuiImageReader',
+      BROWSER_SETTINGS_REMOTE_SERVICE,
+    ], expect.any(Function))
     expect(registerResultsTab).toHaveBeenCalledWith({
       id: WORKBENCH_RESULTS_TAB.id,
       kind: WORKBENCH_RESULTS_TAB.kind,
@@ -223,7 +245,7 @@ describe('Harness Client plugin registration', () => {
       'conversation.input.dock',
       'conversation.session.header.actions',
       'sidebar.right.pane.tab',
-      'settings.section',
+      'plugins.bundle.config',
     ])
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
@@ -240,17 +262,17 @@ describe('Harness Client plugin registration', () => {
     expect(registrations.get('sidebar.right.pane.tab')).toMatchObject({
       key: WORKBENCH_RESULTS_TAB.id,
     })
-    expect(registrations.get('settings.section')).toMatchObject({
-      id: 'harness-comfyui-settings',
-      order: 40,
-      label: 'ComfyUI',
+    expect(registrations.get('plugins.bundle.config')).toMatchObject({
+      key: pluginPackage.packageName,
     })
 
     const entryFace = registrations.get('sidebar.footer.action')!.inject()
     const dockFace = registrations.get('conversation.input.dock')!.inject('session-1' as never)
     const sourceTipFace = registrations.get('conversation.session.header.actions')!.inject()
     const detailsFace = registrations.get('sidebar.right.pane.tab')!.inject('session-1' as never)
-    const imageReaderSettingsFace = registrations.get('settings.section')!.inject()
+    const bundleConfigRegistration = registrations.get('plugins.bundle.config')!
+    expect(bundleConfigRegistration.key).toBe(pluginPackage.packageName)
+    const imageReaderSettingsFace = bundleConfigRegistration.inject()
     expect(entryFace).toMatchObject({ workbench: expect.any(Object) })
     expect(dockFace).toMatchObject({
       catalog: expect.objectContaining({ search: expect.any(Function), baseModels: expect.any(Function) }),
@@ -283,20 +305,63 @@ describe('Harness Client plugin registration', () => {
       }),
       sourceScope: expect.objectContaining({ getSnapshot: expect.any(Function), mutate: expect.any(Function) }),
     })
-    const imageReaderFace = imageReaderSettingsFace as {
-      imageReaderScope: { getSnapshot(): { value: { configuration: unknown } } }
-      imageReaderApi: {
-        models(signal: AbortSignal): Promise<unknown>
-        saveProfile(request: unknown, signal: AbortSignal): Promise<unknown>
-        activateProfile(request: unknown, signal: AbortSignal): Promise<unknown>
-        deleteProfile(request: unknown, signal: AbortSignal): Promise<unknown>
+    expect(bundleConfigRegistration.component).toBeTypeOf('function')
+    expect(bundleConfigRegistration.component!({ ...imageReaderSettingsFace as object, view: 'summary' })).toBeNull()
+    const settingsPage = bundleConfigRegistration.component!({ ...imageReaderSettingsFace as object, view: 'page' }) as {
+      props: { close: () => void }
+    }
+    expect(settingsPage).toMatchObject({
+      props: {
+        imageReaderScope: expect.any(Object),
+        sourceScope: expect.any(Object),
+        browserScope: expect.any(Object),
+        browserApi: expect.objectContaining({
+          configuration: expect.any(Function),
+          validate: expect.any(Function),
+        }),
+        close: expect.any(Function),
+      },
+    })
+    settingsPage.props.close()
+    expect(remoteDispose).not.toHaveBeenCalled()
+    const browserSettingsFace = imageReaderSettingsFace as {
+      browserScope: { getSnapshot(): { value: { browserExecutablePath: string } } }
+      browserApi: {
+        configuration(signal: AbortSignal): Promise<{ browserExecutablePath: string }>
+        validate(request: { browserExecutablePath: string }, signal: AbortSignal): Promise<unknown>
       }
+    }
+    expect(browserSettingsFace.browserScope.getSnapshot().value.browserExecutablePath).toBe('/profile/browser')
+    const browserRemote = (context.remote as any).harnessComfyuiBrowserSettings
+    const activeBrowserSignal = new AbortController().signal
+    await expect(browserSettingsFace.browserApi.configuration(activeBrowserSignal))
+      .resolves.toEqual({ browserExecutablePath: '/profile/browser' })
+    await expect(browserSettingsFace.browserApi.validate(
+      { browserExecutablePath: '/profile/other-browser' }, activeBrowserSignal,
+    )).resolves.toEqual({ ok: true, value: { browserExecutablePath: '/profile/other-browser' } })
+    expect(browserRemote.configuration).toHaveBeenCalledOnce()
+    expect(browserRemote.validate).toHaveBeenCalledWith({ browserExecutablePath: '/profile/other-browser' })
+    const validationCallsBeforeAbort = browserRemote.validate.mock.calls.length
+    await expect(browserSettingsFace.browserApi.validate(
+      { browserExecutablePath: '/profile/other-browser' }, AbortSignal.abort(),
+    )).rejects.toMatchObject({ name: 'AbortError' })
+    expect(browserRemote.validate).toHaveBeenCalledTimes(validationCallsBeforeAbort)
+    browserRemote.configuration.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'BROWSER_REMOTE_UNAVAILABLE', message: 'Remote configuration failed' },
+    })
+    await expect(browserSettingsFace.browserApi.configuration(new AbortController().signal))
+      .rejects.toThrow('BROWSER_REMOTE_UNAVAILABLE: Remote configuration failed')
+
+    const imageReaderFace = imageReaderSettingsFace as {
+      imageReaderScope: { getSnapshot(): { value: { configuration: ImageReaderConfiguration } } }
+      imageReaderApi: ImageReaderSettingsApi
     }
     await expect(imageReaderFace.imageReaderApi.models(new AbortController().signal)).resolves.toEqual({ groups: [], failures: [] })
     const configuration = imageReaderFace.imageReaderScope.getSnapshot().value.configuration
-    const profile = (configuration as any).profiles[0]
-    await expect(imageReaderFace.imageReaderApi.saveProfile(
-      { profile: {
+    const profile = configuration.profiles[0]!
+    const saveRequest: SaveImageReaderProfileRequest = {
+      profile: {
         id: profile.id,
         name: profile.name,
         connectionType: 'runtime',
@@ -305,9 +370,16 @@ describe('Harness Client plugin registration', () => {
         defaultPrompt: profile.defaultPrompt,
         temperature: profile.temperature,
         maxTokens: profile.maxTokens,
-      }, operation: 'update', activateProfileId: profile.id },
+      },
+      operation: 'update',
+      activateProfileId: profile.id,
+    }
+    await expect(imageReaderFace.imageReaderApi.saveProfile(
+      saveRequest,
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
+    const imageReaderRemote = (context.remote as any).harnessComfyuiImageReader
+    expect(imageReaderRemote.saveProfile).toHaveBeenCalledWith(saveRequest)
     await expect(imageReaderFace.imageReaderApi.activateProfile(
       { profileId: profile.id },
       new AbortController().signal,
@@ -316,25 +388,10 @@ describe('Harness Client plugin registration', () => {
       { profileId: 'default' },
       new AbortController().signal,
     )).resolves.toEqual({ configuration })
-    const imageReaderRemote = (context.remote as any).harnessComfyuiImageReader
-
     for (const write of [
       {
         remote: imageReaderRemote.saveProfile,
-        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.saveProfile({
-          profile: {
-            id: profile.id,
-            name: profile.name,
-            connectionType: 'runtime',
-            provider: profile.provider,
-            model: profile.model,
-            defaultPrompt: profile.defaultPrompt,
-            temperature: profile.temperature,
-            maxTokens: profile.maxTokens,
-          },
-          operation: 'update',
-          activateProfileId: profile.id,
-        }, signal),
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.saveProfile(saveRequest, signal),
       },
       {
         remote: imageReaderRemote.activateProfile,
@@ -358,20 +415,7 @@ describe('Harness Client plugin registration', () => {
       {
         remote: imageReaderRemote.saveProfile,
         errorCode: 'IMAGE_READER_SETTINGS_SAVE_FAILED',
-        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.saveProfile({
-          profile: {
-            id: profile.id,
-            name: profile.name,
-            connectionType: 'runtime',
-            provider: profile.provider,
-            model: profile.model,
-            defaultPrompt: profile.defaultPrompt,
-            temperature: profile.temperature,
-            maxTokens: profile.maxTokens,
-          },
-          operation: 'update',
-          activateProfileId: profile.id,
-        }, signal),
+        call: (signal: AbortSignal) => imageReaderFace.imageReaderApi.saveProfile(saveRequest, signal),
       },
       {
         remote: imageReaderRemote.activateProfile,
@@ -478,12 +522,12 @@ describe('Harness Client plugin registration', () => {
     expect(injectionDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.right.pane.tab')).toHaveBeenCalledOnce()
-    expect(injectionDisposers.get('settings.section')).toHaveBeenCalledOnce()
+    expect(injectionDisposers.get('plugins.bundle.config')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
     expect(registrationDisposers.get('sidebar.right.pane.tab')).toHaveBeenCalledOnce()
-    expect(registrationDisposers.get('settings.section')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('plugins.bundle.config')).toHaveBeenCalledOnce()
     expect(remoteDispose).toHaveBeenCalledOnce()
     expect(unregisterResultsTab).toHaveBeenCalledOnce()
   })
@@ -538,6 +582,7 @@ describe('Harness Client plugin registration', () => {
       remote: {
         $mount: vi.fn(async () => vi.fn()),
         harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
       },
       layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
     }
@@ -558,6 +603,7 @@ describe('Harness Client plugin registration', () => {
       remote: {
         $mount: vi.fn(async () => remoteDispose),
         harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
       },
       layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
     }
@@ -586,6 +632,7 @@ describe('Harness Client plugin registration', () => {
       remote: {
         $mount: vi.fn(async () => vi.fn()),
         harnessComfyuiCatalog: { search: remoteFailure, baseModels: remoteFailure, details: remoteFailure },
+        harnessComfyuiGeneration: { list: vi.fn() },
       },
       layout: { openDetails: vi.fn(), closeDetails: vi.fn(), toggleSidebar: vi.fn() },
     }

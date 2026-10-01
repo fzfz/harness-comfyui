@@ -1,8 +1,7 @@
 import { CATALOG_PRESENTATION, CATALOG_FIELDS, parseCatalogDetails, parseCatalogDetailsRequest, type CatalogDetails, type CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import { spawn } from 'node:child_process'
 import { nodeScriptEnvironment } from '../node-script-environment.ts'
-
-
+import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
 import {
   CATALOG_BASE_MODEL_PAGE_SIZE,
   CATALOG_BASE_MODEL_PATH,
@@ -37,7 +36,7 @@ import {
   type SourceAddress,
 } from '../../source-settings.ts'
 
-const MAX_CLI_OUTPUT_BYTES = 32 * 1024 * 1024
+const MAX_CLI_OUTPUT_BYTES = ERROR_CATALOG.CATALOG_RESPONSE_TOO_LARGE.output_limit
 
 export type CatalogCliErrorCode = CatalogErrorCode
 
@@ -412,9 +411,6 @@ function normalizeComfyuiInstances(value: unknown): CatalogComfyuiInstancePage {
 }
 
 function parseCliJson(result: CatalogCliProcessResult): unknown {
-  if (result.exitCode !== 0 || result.stderr.length > 0 || result.stdout.length === 0) {
-    throw new CatalogCliError('CATALOG_QUERY_FAILED', 'Catalog CLI query failed.', result.exitCode)
-  }
   try {
     return JSON.parse(result.stdout) as unknown
   } catch {
@@ -432,14 +428,21 @@ export class CatalogCli {
     this.execute = options.process ?? runCatalogCliProcess
   }
 
-  private run(args: readonly string[], signal: AbortSignal): Promise<CatalogCliProcessResult> {
+  private async run(args: readonly string[], signal: AbortSignal): Promise<CatalogCliProcessResult> {
     const address = readSourceAddress(this.options.settings)
-    return this.execute(this.options.executable, [
+    const result = await this.execute(this.options.executable, [
       '--quiet',
       '--url', address.url,
       '--port', String(address.port),
       ...args,
     ], signal)
+    if (result.exitCode !== 0 || result.stderr.length > 0 || result.stdout.length === 0) {
+      const message = ERROR_CATALOG.CATALOG_QUERY_FAILED.diagnostic_template
+        .replaceAll('{url}', address.url).replaceAll('{port}', String(address.port))
+        .replaceAll('{exitCode}', String(result.exitCode)).replaceAll('{diagnostic}', result.stderr.trim())
+      throw new CatalogCliError('CATALOG_QUERY_FAILED', message, result.exitCode)
+    }
+    return result
   }
 
   async search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {

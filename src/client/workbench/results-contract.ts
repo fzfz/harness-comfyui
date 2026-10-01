@@ -1,4 +1,4 @@
-import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
+import { ERROR_CATALOG as errorCatalog, type ErrorCatalogEntry } from '../../../config/error-catalog-schema.ts'
 
 export type ResultTab = 'current' | 'session'
 
@@ -38,14 +38,7 @@ export const RESULTS_COPY = Object.freeze({
   outputIndex: '输出',
 })
 
-export interface GenerationErrorCopy {
-  readonly code: string
-  readonly title: string
-  readonly reason: string
-  readonly next_step: string
-  readonly cancellable: boolean
-  readonly confirm_repeat: boolean
-}
+export type GenerationErrorCopy = ErrorCatalogEntry
 
 export const GENERATION_ERROR_COPY: Readonly<Record<string, GenerationErrorCopy>> = Object.freeze(errorCatalog)
 

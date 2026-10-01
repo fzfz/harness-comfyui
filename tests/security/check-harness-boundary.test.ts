@@ -18,6 +18,21 @@ const clientInject = [
   '@deepseek-ai/dsh-client-ui-sidebar',
   '@deepseek-ai/dsh-client-ui-sidebar-right',
 ]
+type BundleEntry = { id: string; name: string }
+const officialBundleEntries: BundleEntry[] = [
+  { id: 'harness-comfyui-core', name: 'harness-comfyui/core' },
+  { id: 'harness-comfyui-image-reader', name: 'harness-comfyui/image-reader' },
+  { id: 'harness-comfyui-cli', name: 'harness-comfyui/cli' },
+  { id: 'harness-comfyui', name: 'harness-comfyui' },
+  { id: 'harness-comfyui-presets', name: './agent-presets/project-installed-presets.mjs' },
+]
+
+function writeBundle(root: string, update: (entries: BundleEntry[]) => void = () => {}) {
+  const entries = officialBundleEntries.map(entry => ({ ...entry }))
+  update(entries)
+  const rows = entries.map(entry => `    - id: ${entry.id}\n      name: ${entry.name}`).join('\n')
+  writeFileSync(join(root, 'cordis.patch.yml'), `- insert:\n${rows}\n`)
+}
 
 function fixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-boundary-'))
@@ -25,8 +40,6 @@ function fixture(otherSource = ''): string {
     'src/host/tools',
     'src/host/core',
     'src/host/image-reader',
-    'profiles/comfyui-workbench',
-    'profiles/comfyui-workbench-development',
   ]) {
     mkdirSync(join(root, directory), { recursive: true })
   }
@@ -45,45 +58,7 @@ function fixture(otherSource = ''): string {
   }, null, 2)}\n`)
   writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages:\n  - .\n')
   writeFileSync(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n")
-  writeFileSync(join(root, 'cordis.patch.yml'), `- insert:
-    - id: harness-comfyui-core
-      name: harness-comfyui/core
-      config:
-        configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-        startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
-    - id: harness-comfyui-image-reader
-      name: harness-comfyui/image-reader
-      config:
-        imageReaderDefaultModel:
-          provider: opencode-go
-          model: qwen3.7-plus
-    - id: harness-comfyui-cli
-      name: harness-comfyui/cli
-
-- id: agent-default-model
-  config:
-    provider: opencode-go
-    model: deepseek-v4-flash
-
-- id: llm-pi-ai
-  config:
-    providers:
-      opencode-go:
-        apiKeyEnv: OPENCODE_GO_API_KEY
-
-- id: bash-sandbox
-  config:
-    timeoutMs: 180000
-
-- id: agent-preset-registry
-  config:
-    default: harness-comfyui-cli-candidate
-`)
-  writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- insert:
-    - id: harness-comfyui-web
-      name: harness-comfyui
-`)
-  writeFileSync(join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'), '[]\n')
+  writeBundle(root, () => {})
   return root
 }
 
@@ -99,7 +74,7 @@ function updateJson(root: string, path: string, update: (value: Record<string, a
 }
 
 describe('Harness source boundary', () => {
-  it('accepts one project Tool registry in the Host plugin', () => {
+  it('accepts the official plugin bundle without repository-owned Host Profiles', () => {
     const root = fixture()
     try {
       expect(run(root)).toMatchObject({ status: 0, stderr: '' })
@@ -121,6 +96,116 @@ describe('Harness source boundary', () => {
     const root = fixture("import type { WorkspaceRegistry } from '@deepseek-ai/dsh-workspace'\n")
     try {
       expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts a public DSH home path type-only import', () => {
+    const root = fixture("import type { DSH_HOME_ENV } from '@deepseek-ai/dsh-home-paths'\n")
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts public credential references and durable Session metadata types', () => {
+    const root = fixture("import { credentialRef } from '@deepseek-ai/dsh-credentials'\nimport type { CredentialRef } from '@deepseek-ai/dsh-credentials/types'\nimport type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'\n")
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('requires a type-only durable Session metadata import', () => {
+    const root = fixture("import { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'\n")
+    try {
+      expect(run(root).stderr).toContain("must import '@deepseek-ai/dsh-session-persistence' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('requires a type-only credential types subpath import', () => {
+    const root = fixture("import { CredentialRef } from '@deepseek-ai/dsh-credentials/types'\n")
+    try {
+      expect(run(root).stderr).toContain("must import '@deepseek-ai/dsh-credentials/types' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each(['dsh-credentials', 'dsh-session-persistence'])('rejects the %s source subpath', name => {
+    const root = fixture(`import type { Internal } from '@deepseek-ai/${name}/src/index.ts'\n`)
+    try {
+      expect(run(root).status).not.toBe(0)
+      expect(run(root).stderr).toContain('Harness source')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a value import from the type-only DSH home path permission', () => {
+    const root = fixture("import { dshHomePath } from '@deepseek-ai/dsh-home-paths'\n")
+    try {
+      expect(run(root).stderr).toContain("must import '@deepseek-ai/dsh-home-paths' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('requires the complete official Host, Client, and Preset bundle entries', () => {
+    for (const missingId of [
+      'harness-comfyui-core',
+      'harness-comfyui-image-reader',
+      'harness-comfyui-cli',
+      'harness-comfyui',
+      'harness-comfyui-presets',
+    ]) {
+      const root = fixture()
+      try {
+        writeBundle(root, bundle => {
+          const retained = bundle.filter(entry => entry.id !== missingId)
+          bundle.splice(0, bundle.length, ...retained)
+        })
+        expect(run(root).stderr, `missing ${missingId}`).toContain('complete Host, Client, and Preset entries')
+      } finally {
+        rmSync(root, { recursive: true, force: true })
+      }
+    }
+  })
+
+  it('rejects global model, sandbox, and default Preset overrides in the official bundle patch', () => {
+    for (const id of ['agent-default-model', 'bash-sandbox', 'agent-preset-registry']) {
+      const root = fixture()
+      try {
+        writeBundle(root, bundle => {
+          bundle.push({ id, name: id })
+        })
+        expect(run(root).stderr, `unexpected ${id}`).toContain('must not override global defaults')
+      } finally {
+        rmSync(root, { recursive: true, force: true })
+      }
+    }
+  })
+
+  it('rejects malformed official bundle YAML', () => {
+    const root = fixture()
+    try {
+      writeFileSync(join(root, 'cordis.patch.yml'), 'insert: [unterminated\n')
+      expect(run(root).stderr).toContain('could not parse cordis.patch.yml')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects recursive aliases in official bundle YAML', () => {
+    const root = fixture()
+    try {
+      writeFileSync(join(root, 'cordis.patch.yml'), 'recursive: &recursive [*recursive]\n')
+      expect(run(root).stderr).toContain('must not contain cyclic YAML aliases')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -180,41 +265,4 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it('rejects profile patch drift', () => {
-    const root = fixture()
-    try {
-      writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), 'invalid: true\n')
-      expect(run(root).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
-    } finally {
-      rmSync(root, { recursive: true, force: true })
-    }
-  })
-
-  it('rejects development Profile patch drift', () => {
-    const root = fixture()
-    try {
-      writeFileSync(
-        join(root, 'profiles/comfyui-workbench-development/cordis.patch.yml'),
-        '- id: agent-default-model\n  config:\n    provider: deepseek-official\n    model: deepseek-v4-flash\n',
-      )
-      expect(run(root).stderr).toContain('profiles/comfyui-workbench-development/cordis.patch.yml')
-    } finally {
-      rmSync(root, { recursive: true, force: true })
-    }
-  })
-
-  it('rejects Profile-level Skill plugins that duplicate the selected Agent Preset', () => {
-    const root = fixture()
-    try {
-      writeFileSync(join(root, 'profiles/comfyui-workbench/cordis.patch.yml'), `- id: skill-filesystem
-  disabled: false
-
-- id: tool-skill
-  disabled: false
-`)
-      expect(run(root).stderr).toContain('profiles/comfyui-workbench/cordis.patch.yml')
-    } finally {
-      rmSync(root, { recursive: true, force: true })
-    }
-  })
 })

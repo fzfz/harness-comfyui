@@ -29,8 +29,6 @@ const productionEnvironment = {
   HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS: '2',
   HARNESS_COMFYUI_CATALOG_PORT: '18093',
   HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS: '1100',
-  HARNESS_COMFYUI_SERVER_HOST: '127.0.0.1',
-  HARNESS_COMFYUI_SERVER_PORT: '4199',
 }
 
 function copyConfiguration(prefix: string): string {
@@ -40,6 +38,58 @@ function copyConfiguration(prefix: string): string {
 }
 
 describe('production Configuration Profile loader', () => {
+  it('uses the browser path saved in the plugin configuration', () => {
+    const profile = loadProfile('production', {
+      environment: {},
+      storageRoot: '/official-home',
+      browserExecutablePath: '/Applications/Chromium With Spaces.app/Contents/MacOS/Chromium',
+    })
+    expect(profile.comfyui.frontendCompiler.browserExecutablePath)
+      .toBe('/Applications/Chromium With Spaces.app/Contents/MacOS/Chromium')
+  })
+
+  it('reports the profile field and correction for an invalid saved browser path', () => {
+    expect(() => loadProfile('production', { environment: {}, browserExecutablePath: 'relative/browser' }))
+      .toThrowError(expect.objectContaining({
+        name: 'ConfigurationProfileError',
+        profileName: 'production',
+        property: 'comfyui.frontendCompiler.browserExecutablePath',
+      }))
+  })
+
+  it('uses the plugin data directory configuration for all business storage', () => {
+    const profile = loadProfile('production', {
+      environment: productionEnvironment,
+      storageRoot: '/official-home',
+      dataDirectory: '/Custom Plugin Data With Spaces',
+    })
+    expect(profile.paths).toEqual({
+      dataDir: '/Custom Plugin Data With Spaces',
+      apiWorkflowCacheDirectory: '/Custom Plugin Data With Spaces/api-workflow-cache',
+      runRepositoryFile: '/Custom Plugin Data With Spaces/runs.sqlite',
+      runDirectory: '/Custom Plugin Data With Spaces/runs',
+      savedMediaDirectory: '/Custom Plugin Data With Spaces/media',
+      logDirectory: '/Custom Plugin Data With Spaces/logs',
+    })
+  })
+
+  it('derives custom data directory children from the selected configuration root', () => {
+    const configRoot = copyConfiguration('plugin-data-configuration-root-')
+    try {
+      const basePath = join(configRoot, 'base.json')
+      const base = JSON.parse(readFileSync(basePath, 'utf8'))
+      base.paths.savedMediaDirectory = `${base.paths.dataDir}/custom-media`
+      writeFileSync(basePath, JSON.stringify(base), 'utf8')
+      const profile = loadProfile('production', { configRoot, environment: {}, dataDirectory: '/Custom Data' })
+      expect(profile.paths.savedMediaDirectory).toBe('/Custom Data/custom-media')
+    } finally { rmSync(configRoot, { recursive: true, force: true }) }
+  })
+
+  it.each(['', 'relative/data', '/data\0suffix'])('rejects invalid plugin data directory %j with a configuration field', dataDirectory => {
+    expect(() => loadProfile('production', { environment: {}, dataDirectory }))
+      .toThrowError(expect.objectContaining({ name: 'ConfigurationProfileError', property: 'dataDirectory' }))
+  })
+
   it('loads the production profile and applies declared environment overrides', () => {
     const profile = loadProfile('production', {
       configRoot: 'config',
@@ -50,7 +100,7 @@ describe('production Configuration Profile loader', () => {
     })
 
     expect(profile.configurationProfile).toBe('production')
-    expect(profile.server.port).toBe(4199)
+    expect(profile.cliServer).toEqual({ host: '127.0.0.1', port: 0, shutdownTimeoutMs: 5000 })
     expect(profile.client.runRefreshIntervalMs).toBe(1200)
     expect(profile.source.catalogPort).toBe(18093)
     expect(profile.paths.dataDir).toBe('.local/production/data')
@@ -70,18 +120,15 @@ describe('production Configuration Profile loader', () => {
     })
   })
 
-  it('accepts the Repository Skills path as pass-through without changing the Configuration Profile', () => {
-    const expected = loadProfile('production', { configRoot: 'config', environment: productionEnvironment })
-    const actual = loadProfile('production', {
+  it.each([
+    'HARNESS_COMFYUI_SERVER_HOST',
+    'HARNESS_COMFYUI_SERVER_PORT',
+    'HARNESS_COMFYUI_SKILL_DIR',
+  ])('rejects retired configuration environment variable %s', key => {
+    expect(() => loadProfile('production', {
       configRoot: 'config',
-      environment: {
-        ...productionEnvironment,
-        HARNESS_COMFYUI_SKILL_DIR: '/repository/.agents/skills',
-      },
-    })
-
-    expect(actual).toEqual(expected)
-    expect(actual).not.toHaveProperty('repositorySkillsRoot')
+      environment: { [key]: 'retired-value' },
+    })).toThrowError(expect.objectContaining({ property: key }))
   })
 
   it.each([
@@ -100,7 +147,7 @@ describe('production Configuration Profile loader', () => {
       configRoot: 'config',
       environment: {
         ...productionEnvironment,
-        HARNESS_COMFYUI_SERVER_PORT: 'not-a-port',
+        HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS: 'not-a-number',
       },
     })).toThrowError(ConfigurationProfileError)
 
@@ -109,27 +156,27 @@ describe('production Configuration Profile loader', () => {
         configRoot: 'config',
         environment: {
           ...productionEnvironment,
-          HARNESS_COMFYUI_SERVER_PORT: 'not-a-port',
+          HARNESS_COMFYUI_FRONTEND_COMPILER_TIMEOUT_MS: 'not-a-number',
         },
       })
     } catch (error) {
       expect(error).toMatchObject({
         profileName: 'production',
-        property: 'server.port',
+        property: 'comfyui.frontendCompiler.timeoutMs',
       })
       expect((error as Error).message).toContain('config/profiles/production.json')
       return
     }
 
-    throw new Error('expected loadProfile to reject an invalid port')
+    throw new Error('expected loadProfile to reject an invalid override value')
   })
 
   it('rejects a Configuration Profile that binds Harness Web outside loopback', () => {
     const temporaryConfigRoot = copyConfiguration('harness-comfyui-config-loopback-')
     try {
       const basePath = join(temporaryConfigRoot, 'base.json')
-      const base = JSON.parse(readFileSync(basePath, 'utf8')) as { server: { host: string } }
-      base.server.host = '0.0.0.0'
+      const base = JSON.parse(readFileSync(basePath, 'utf8')) as { cliServer: { host: string } }
+      base.cliServer.host = '0.0.0.0'
       writeFileSync(basePath, JSON.stringify(base), 'utf8')
 
       try {
@@ -137,7 +184,7 @@ describe('production Configuration Profile loader', () => {
       } catch (error) {
         expect(error).toMatchObject({
           profileName: 'production',
-          property: 'server.host',
+          property: 'cliServer.host',
         })
         return
       }
@@ -148,21 +195,31 @@ describe('production Configuration Profile loader', () => {
     }
   })
 
-  it('requires the runtime paths supplied by the production process manager', () => {
-    try {
-      loadProfile('production', {
-        configRoot: 'config',
-        environment: { HARNESS_COMFYUI_SERVER_PORT: '4199' },
-      })
-    } catch (error) {
-      expect(error).toMatchObject({
-        profileName: 'production',
-        property: 'paths.dataDir',
-      })
-      return
-    }
+  it('resolves installed plugin storage under the explicit Harness home', () => {
+    const profile = loadProfile('production', {
+      storageRoot: '/isolated Harness home',
+      environment: {},
+    })
+    expect(profile.paths.dataDir).toBe('/isolated Harness home/data/plugins/harness-comfyui')
+    expect(profile.paths.runRepositoryFile).toBe('/isolated Harness home/data/plugins/harness-comfyui/runs.sqlite')
+    expect(profile.paths.savedMediaDirectory).toBe('/isolated Harness home/data/plugins/harness-comfyui/media')
+  })
 
-    throw new Error('expected production runtime paths to be required')
+  it('retains an absolute user storage override in the installed plugin', () => {
+    const profile = loadProfile('production', {
+      storageRoot: '/isolated Harness home',
+      environment: {
+        HARNESS_COMFYUI_DATA_DIR: '/user data',
+        HARNESS_COMFYUI_API_WORKFLOW_CACHE_DIRECTORY: '/user data/api-workflow-cache',
+      },
+    })
+    expect(profile.paths.dataDir).toBe('/user data')
+    expect(profile.paths.apiWorkflowCacheDirectory).toBe('/user data/api-workflow-cache')
+  })
+
+  it.each(['', 'relative-home'])('requires an absolute nonempty Host storage root: %s', storageRoot => {
+    expect(() => loadProfile('production', { storageRoot, environment: {} }))
+      .toThrowError(expect.objectContaining({ property: 'storageRoot' }))
   })
 
   it('requires the official API Workflow cache directory to be inside paths.dataDir', () => {
@@ -204,7 +261,7 @@ describe('production Configuration Profile loader', () => {
     const temporaryConfigRoot = copyConfiguration('harness-comfyui-config-overrides-corrupt-')
     try {
       const overridesPath = join(temporaryConfigRoot, 'environment-overrides.json')
-      writeFileSync(overridesPath, '{"HARNESS_COMFYUI_SERVER_PORT":', 'utf8')
+      writeFileSync(overridesPath, '{"HARNESS_COMFYUI_CATALOG_PORT":', 'utf8')
 
       try {
         loadProfile('production', { configRoot: temporaryConfigRoot, environment: productionEnvironment })
@@ -228,7 +285,7 @@ describe('production Configuration Profile loader', () => {
     try {
       const overridesPath = join(temporaryConfigRoot, 'environment-overrides.json')
       const overrides = JSON.parse(readFileSync(overridesPath, 'utf8')) as Record<string, unknown>
-      overrides.HARNESS_COMFYUI_SERVER_PORT = 4199
+      overrides.HARNESS_COMFYUI_CATALOG_PORT = 4199
       writeFileSync(overridesPath, JSON.stringify(overrides), 'utf8')
 
       try {
@@ -237,7 +294,7 @@ describe('production Configuration Profile loader', () => {
         expect(error).toMatchObject({
           profileName: 'production',
           configPath: overridesPath,
-          property: 'HARNESS_COMFYUI_SERVER_PORT',
+          property: 'HARNESS_COMFYUI_CATALOG_PORT',
         })
         return
       }
@@ -337,8 +394,6 @@ describe('production Configuration Profile loader', () => {
       'media',
       'client',
       'cliServer',
-      'server',
-      'process',
     ])
     expect(Object.keys(schemaDict.paths.dict!)).toEqual([
       'dataDir',
@@ -366,8 +421,6 @@ describe('production Configuration Profile loader', () => {
     expect(Object.keys(schemaDict.source.dict!)).toEqual(['catalogPort'])
     expect(Object.keys(schemaDict.jobs.dict!)).toEqual(['pollIntervalMs', 'missingObservationMs'])
     expect(Object.keys(schemaDict.media.dict!)).toEqual(['maxFileBytes'])
-    expect(Object.keys(schemaDict.server.dict!)).toEqual(['host', 'port'])
     expect(Object.keys(schemaDict.client.dict!)).toEqual(['runRefreshIntervalMs'])
-    expect(Object.keys(schemaDict.process.dict!)).toEqual(['shutdownTimeoutMs'])
   })
 })

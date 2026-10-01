@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "browserEvidenceFiles": {
+    "saved": "official-business-browser-settings.json",
+    "screenshot": "official-business-browser-settings.png",
+    "restarted": "official-business-browser-settings-after-restart.json"
+  },
+  "provider": {
+    "id": "desktop-prompt-capture",
+    "displayName": "Desktop Prompt Capture",
+    "api": "openai-completions",
+    "apiKeyEnvironmentName": "OFFICIAL_DESKTOP_E2E_API_KEY",
+    "modelId": "desktop-prompt-capture-model",
+    "modelName": "Desktop Prompt Capture Model",
+    "contextWindow": 16384,
+    "maxTokens": 1024,
+    "models": {
+      "promptCapture": {
+        "input": ["text"]
+      },
+      "vision": {
+        "id": "desktop-prompt-capture-vision-model",
+        "name": "Desktop Prompt Capture Vision Model",
+        "contextWindow": 16384,
+        "maxTokens": 1024,
+        "input": ["text", "image"]
+      }
+    }
+  },
+  "imageReader": {
+    "defaultModel": {
+      "provider": "desktop-prompt-capture",
+      "model": "desktop-prompt-capture-vision-model"
+    },
+    "alternateProvider": {
+      "id": "desktop-image-reader-secondary",
+      "displayName": "Desktop Image Reader Secondary",
+      "api": "openai-completions",
+      "model": {
+        "id": "desktop-image-reader-secondary-model",
+        "name": "Desktop Image Reader Secondary Model",
+        "contextWindow": 16384,
+        "maxTokens": 1024,
+        "input": ["text", "image"]
+      }
+    }
+  },
+  "catalog": {
+    "baseModel": {
+      "id": "123",
+      "name": "Desktop catalog fixture"
+    },
+    "template": {
+      "baseModelId": 123,
+      "modelId": null,
+      "loraId": null,
+      "titlePrefix": "Catalog template ",
+      "templateType": "text_to_image",
+      "detailText": "Long detail text "
+    },
+    "images": {
+      "cover": { "width": 500, "height": 3000 },
+      "wide": { "width": 3000, "height": 500 },
+      "small": { "width": 32, "height": 32 }
+    },
+    "totalTemplates": 9
+  },
+  "skills": {
+    "workspaceName": "comfyui-generate",
+    "workspaceDescription": "official-business-workspace-comfyui-generate-description",
+    "uniqueWorkspaceName": "official-business-unique-workspace-skill",
+    "uniqueWorkspaceDescription": "official-business-unique-workspace-skill-description",
+    "workspaceMarker": "OFFICIAL_WORKSPACE_SKILL_MARKER_8B7C3A",
+    "userName": "official-business-unique-user-skill",
+    "userDescription": "official-business-unique-user-skill-description",
+    "userMarker": "OFFICIAL_USER_SKILL_MARKER_5D2E91",
+    "markerRequest": "Read the official-business-unique-workspace-skill Workspace Skill and the official-business-unique-user-skill user Skill. Repeat their two unique verification tokens exactly, one per line."
+  },
+  "sessions": {
+    "primaryTitle": "Desktop media session",
+    "switchTitle": "Desktop session switch target",
+    "skillMarkerTitle": "Desktop Skill marker session",
+    "promptRequestId": "official-desktop-prompt-capture-request"
+  },
+  "generation": {
+    "triggerPrompt": "Run the controlled official Desktop generation regression now.",
+    "sessionTitle": "Desktop controlled generation session",
+    "runTitle": "Controlled official Desktop generation",
+    "instanceId": "1",
+    "templateId": "1",
+    "templateTitle": "Controlled frontend workflow",
+    "positivePrompt": "official Desktop generation regression image",
+    "seed": 424242,
+    "filename": "official-desktop-controlled.png",
+    "subfolder": "automated-regression",
+    "outputNodeId": "3",
+    "workflow": {
+      "version": 0.4,
+      "nodes": [
+        {
+          "id": 1,
+          "type": "FixturePrompt",
+          "inputs": [{ "name": "prompt", "type": "STRING", "link": null, "widget": { "name": "prompt" } }],
+          "outputs": [{ "name": "CONDITIONING", "type": "CONDITIONING", "links": [10] }],
+          "widgets_values": ["controlled fixture prompt"]
+        },
+        {
+          "id": 2,
+          "type": "FixtureImage",
+          "inputs": [
+            { "name": "conditioning", "type": "CONDITIONING", "link": 10 },
+            { "name": "seed", "type": "INT", "link": null, "widget": { "name": "seed" } }
+          ],
+          "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [11] }],
+          "widgets_values": [424242]
+        },
+        {
+          "id": 3,
+          "type": "SaveImage",
+          "inputs": [
+            { "name": "images", "type": "IMAGE", "link": 11 },
+            { "name": "filename_prefix", "type": "STRING", "link": null, "widget": { "name": "filename_prefix" } }
+          ],
+          "outputs": [],
+          "widgets_values": ["official-desktop-controlled"]
+        }
+      ],
+      "links": [
+        [10, 1, 0, 2, 0, "CONDITIONING"],
+        [11, 2, 0, 3, 0, "IMAGE"]
+      ]
+    },
+    "objectInfo": {
+      "FixturePrompt": {
+        "input": { "required": { "prompt": ["STRING", { "multiline": true }] } },
+        "input_order": { "required": ["prompt"], "optional": [] },
+        "output": ["CONDITIONING"],
+        "output_node": false
+      },
+      "FixtureImage": {
+        "input": { "required": { "conditioning": ["CONDITIONING"], "seed": ["INT", { "min": 0, "max": 999999999999999 }] } },
+        "input_order": { "required": ["conditioning", "seed"], "optional": [] },
+        "output": ["IMAGE"],
+        "output_node": false
+      },
+      "SaveImage": {
+        "input": { "required": { "images": ["IMAGE"], "filename_prefix": ["STRING", {}] } },
+        "input_order": { "required": ["images", "filename_prefix"], "optional": [] },
+        "output": [],
+        "output_node": true
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "status": "已批准实施",
+  "version": "0.44.3候选",
+  "objects": [
+    {
+      "path": ".agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
+      "current": "const cli = () => `node '${process.argv[1].replaceAll(\"'\", \"'\\\\''\")}'`",
+      "proposed": "const cli = () => `ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals '${process.argv[1].replaceAll(\"'\", \"'\\\\''\")}'`",
+      "purpose": "CLI帮助输出使用当前Host提供的Node执行入口，支持没有系统Node的官方Desktop环境。"
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.mjs",
+      "current": "const cli = () => `node '${process.argv[1].replaceAll(\"'\", \"'\\\\''\")}'`",
+      "proposed": "const cli = () => `ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals '${process.argv[1].replaceAll(\"'\", \"'\\\\''\")}'`",
+      "purpose": "CLI帮助输出使用当前Host提供的Node执行入口，支持没有系统Node的官方Desktop环境。"
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.mjs",
+      "current": "const cli = () => `node '${process.argv[1].replaceAll(\"'\", \"'\\\\''\")}'`",
+      "proposed": "const cli = () => `ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals '${process.argv[1].replaceAll(\"'\", \"'\\\\''\")}'`",
+      "purpose": "CLI帮助输出使用当前Host提供的Node执行入口，支持没有系统Node的官方Desktop环境。"
+    }
+  ],
+  "audit": {
+    "scope": "仅修改三个帮助模块的命令模板，保留校验、模式与输出数据结构。",
+    "execution": "使用既有测试检查帮助命令、错误提示和带空格路径；完成独立语义审阅。",
+    "externalDependencyInstallation": "无"
+  },
+  "preparedDiffDirectory": ".local/desktop-e2e/skill-script-preparation",
+  "approval": {
+    "date": "2026-09-30",
+    "scope": "用户批准三个脚本的上述修改"
+  },
+  "reviewCorrection": {
+    "scope": "三个已批准帮助模板使用Skill目录相对路径，保持Host Node入口；帮助文字说明执行目录。",
+    "template": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals scripts/validate-output.mjs",
+    "tests": "三个相对路径边界先失败，修改后相关22项测试通过。"
+  }
+}

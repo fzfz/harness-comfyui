@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { EventEmitter } from 'node:events'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -61,6 +62,7 @@ describe('Generation media HTTP routes', () => {
         actualWorkflowPath: () => { throw new Error('Workflow path is not used by the viewer') },
       },
       workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
+      sessionPersistence: { stat: async () => undefined },
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -128,6 +130,7 @@ describe('Generation media HTTP routes', () => {
         mediaContentPath: () => mediaPath,
       } as never,
       workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
+      sessionPersistence: { stat: async () => undefined },
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -178,6 +181,7 @@ describe('Generation media HTTP routes', () => {
           { id: 'workspace_2', sessionIds: ['session_other_workspace'] },
         ],
       },
+      sessionPersistence: { stat: async () => undefined },
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -270,11 +274,16 @@ describe('Generation media HTTP routes', () => {
         mediaContentPath: () => mediaPath,
       } as never,
       workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
+      sessionPersistence: { stat: async () => undefined },
     })
     const response = new FailingResponse()
+    const request = Object.assign(new EventEmitter(), {
+      method: 'GET',
+      url: '/api/harness-comfyui/media/media_download/download?session_id=session_1',
+    })
 
     await handler!(
-      { method: 'GET', url: '/api/harness-comfyui/media/media_download/download?session_id=session_1' } as IncomingMessage,
+      request as IncomingMessage,
       response as unknown as ServerResponse,
     )
 
@@ -334,6 +343,7 @@ describe('Generation media HTTP routes', () => {
           { id: 'workspace_2', sessionIds: ['session_2'] },
         ],
       },
+      sessionPersistence: { stat: async () => undefined },
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -383,6 +393,149 @@ describe('Generation media HTTP routes', () => {
     expect(wrongWorkspace.status).toBe(404)
     expect(missingViewer.status).toBe(404)
     expect(wrongWorkspaceViewer.status).toBe(404)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('serves parent and descendant media while rejecting unrelated or cross-Workspace Sessions', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-descendant-media-'))
+    temporaryDirectories.push(root)
+    const paths = {
+      child: join(root, 'child.webp'),
+      grandchild: join(root, 'grandchild.webp'),
+      unrelated: join(root, 'unrelated.webp'),
+      foreign: join(root, 'foreign.webp'),
+      childWorkflow: join(root, 'child-workflow.json'),
+    }
+    writeFileSync(paths.child, 'child-media')
+    writeFileSync(paths.grandchild, 'grandchild-media')
+    writeFileSync(paths.unrelated, 'unrelated-media')
+    writeFileSync(paths.foreign, 'foreign-media')
+    writeFileSync(paths.childWorkflow, '{"source":"child"}\n')
+    const media = {
+      media_child: { mediaId: 'media_child', runId: 'run_child', workspaceId: 'workspace_1', sessionId: 'session_child', filename: 'child.webp', mediaType: 'image/webp' },
+      media_grandchild: { mediaId: 'media_grandchild', runId: 'run_grandchild', workspaceId: 'workspace_1', sessionId: 'session_grandchild', filename: 'grandchild.webp', mediaType: 'image/webp' },
+      media_unrelated: { mediaId: 'media_unrelated', runId: 'run_unrelated', workspaceId: 'workspace_1', sessionId: 'session_unrelated', filename: 'unrelated.webp', mediaType: 'image/webp' },
+      media_unpersisted: { mediaId: 'media_unpersisted', runId: 'run_unpersisted', workspaceId: 'workspace_1', sessionId: 'session_unpersisted', filename: 'unpersisted.webp', mediaType: 'image/webp' },
+      media_foreign: { mediaId: 'media_foreign', runId: 'run_foreign', workspaceId: 'workspace_2', sessionId: 'session_foreign', filename: 'foreign.webp', mediaType: 'image/webp' },
+    }
+    const mediaBySession = new Map([
+      ['session_child', [media.media_child]],
+      ['session_grandchild', [media.media_grandchild]],
+      ['session_unrelated', [media.media_unrelated]],
+      ['session_foreign', [media.media_foreign]],
+    ])
+    const sessionHeaders = new Map([
+      ['session_root', { header: { id: 'session_root' }, revision: 'rev_root' }],
+      ['session_child', { header: { id: 'session_child', parentSession: 'session_root' }, revision: 'rev_child' }],
+      ['session_grandchild', { header: { id: 'session_grandchild', parentSession: 'session_child' }, revision: 'rev_grandchild' }],
+      ['session_unrelated', { header: { id: 'session_unrelated' }, revision: 'rev_unrelated' }],
+      ['session_foreign', { header: { id: 'session_foreign', parentSession: 'session_root' }, revision: 'rev_foreign' }],
+    ])
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    registerGenerationMediaRoutes({
+      webServer: {
+        register(route) {
+          handler = route.handler
+          return () => undefined
+        },
+      },
+      runtime: {
+        getMedia: (mediaId: string) => media[mediaId as keyof typeof media] as never,
+        queryMedia: ({ sessionId }: { readonly sessionId: string }) => mediaBySession.get(sessionId) ?? [],
+        positivePromptForRun: (runId: string) => `${runId} prompt`,
+        mediaContentPath: (mediaId: string) => paths[mediaId === 'media_child' ? 'child' : mediaId === 'media_grandchild' ? 'grandchild' : mediaId === 'media_unrelated' ? 'unrelated' : 'foreign'],
+        mediaRunId: (mediaId: string) => media[mediaId as keyof typeof media].runId,
+        actualWorkflowPath: () => paths.childWorkflow,
+      } as never,
+      workspaceRegistry: {
+        list: () => [
+          { id: 'workspace_1', sessionIds: ['session_root', 'session_child', 'session_grandchild', 'session_unrelated', 'session_unpersisted'] },
+          { id: 'workspace_2', sessionIds: ['session_foreign'] },
+        ],
+      },
+      sessionPersistence: { stat: async (sessionId: string) => sessionHeaders.get(sessionId) } as never,
+    })
+    const server = createServer((request, response) => void handler!(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
+    const origin = `http://127.0.0.1:${address.port}/api/harness-comfyui/media`
+
+    const [childContent, grandchildDownload, childWorkflow, viewer, unrelatedContent, unpersistedContent, foreignContent] = await Promise.all([
+      fetch(`${origin}/media_child/content?session_id=session_root`),
+      fetch(`${origin}/media_grandchild/download?session_id=session_root`),
+      fetch(`${origin}/media_child/workflow?session_id=session_root`),
+      fetch(`${origin}/media_child/view?session_id=session_root`),
+      fetch(`${origin}/media_unrelated/content?session_id=session_root`),
+      fetch(`${origin}/media_unpersisted/content?session_id=session_root`),
+      fetch(`${origin}/media_foreign/content?session_id=session_root`),
+    ])
+
+    expect(await childContent.text()).toBe('child-media')
+    expect(Buffer.from(await grandchildDownload.arrayBuffer()).toString()).toBe('grandchild-media')
+    expect(await childWorkflow.json()).toEqual({ source: 'child' })
+    expect((viewerData(await viewer.text()) as { items: Array<{ mediaId: string; contentUrl: string }> }).items).toEqual([
+      expect.objectContaining({ mediaId: 'media_grandchild', contentUrl: '/api/harness-comfyui/media/media_grandchild/content?session_id=session_root' }),
+      expect.objectContaining({ mediaId: 'media_child', contentUrl: '/api/harness-comfyui/media/media_child/content?session_id=session_root' }),
+    ])
+    expect(unrelatedContent.status).toBe(404)
+    expect(unpersistedContent.status).toBe(404)
+    expect(foreignContent.status).toBe(404)
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  })
+
+  it('cancels a pending durable ancestry read when the media client disconnects', async () => {
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    let resolveStarted!: (signal: AbortSignal) => void
+    let resolveAborted!: () => void
+    let resolveStat!: (snapshot: { header: { id: string; parentSession: string }; revision: string }) => void
+    const statStarted = new Promise<AbortSignal>(resolve => { resolveStarted = resolve })
+    const statAborted = new Promise<void>(resolve => { resolveAborted = resolve })
+    const pendingStat = new Promise<{ header: { id: string; parentSession: string }; revision: string }>(resolve => {
+      resolveStat = resolve
+    })
+    let mediaLookups = 0
+    registerGenerationMediaRoutes({
+      webServer: {
+        register(route) {
+          handler = route.handler
+          return () => undefined
+        },
+      },
+      runtime: {
+        getMedia: () => {
+          mediaLookups += 1
+          return { mediaId: 'media_child', runId: 'run_child', workspaceId: 'workspace_1', sessionId: 'session_child' }
+        },
+      } as never,
+      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_root', 'session_child'] }] },
+      sessionPersistence: {
+        stat: (_sessionId: string, options?: { signal?: AbortSignal }) => {
+          const signal = options!.signal!
+          resolveStarted(signal)
+          signal.addEventListener('abort', resolveAborted, { once: true })
+          return pendingStat
+        },
+      } as never,
+    })
+    const server = createServer((request, response) => void handler!(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
+    const clientAbort = new AbortController()
+    const fetchRequest = fetch(
+      `http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_child/content?session_id=session_root`,
+      { signal: clientAbort.signal },
+    )
+
+    const lookupSignal = await statStarted
+    clientAbort.abort()
+    await expect(fetchRequest).rejects.toThrow()
+    await statAborted
+    resolveStat({ header: { id: 'session_child', parentSession: 'session_root' }, revision: 'rev_child' })
+
+    expect(lookupSignal.aborted).toBe(true)
+    expect(mediaLookups).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 })

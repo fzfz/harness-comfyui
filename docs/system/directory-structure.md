@@ -2,70 +2,74 @@
 
 | 路径 | 内容 |
 | --- | --- |
-| `src/host/catalog/` | Catalog CLI adapter、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
-| `src/host/core/` | Catalog/Generation 插件、共享服务与配置 schema |
-| `src/host/cli/` | CLI 插件、专用 HTTP listener、请求分发、shell capability 与根 Session Workspace 登记 |
-| `src/host/web/` | Remote 与媒体路由的 Web 插件装配 |
-| `src/cli/` | managed project CLI 的 argv、request、Generation Request、模板运行参数检查、随机 Seed、历史 Run 输入查询、Run 图片路径查询和单图读取结构化合同 |
-| `src/host/generation/` | Generation Runtime、Source、Workflow 参数检查与编译、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 输入查询 Tool、Remote、coordinator、媒体路由和 Session Media Viewer 页面生成器 |
-| `src/host/image-reader/` | 图片读取设置迁移与保存、视觉模型目录、模型上报前的 70% 同格式图片缩放、系统 Provider/OpenAI 兼容适配和单图读取 Tool |
-| `src/host/tools/` | Harness 项目 Tool 注册入口 |
-| `src/generation/` | Generation Host/Client、Tool 与 CLI 共享合同 |
-| `src/image-reader/` | 命名图片读取配置、凭据更新、视觉模型目录和 Remote 的 Host/Client 共享合同 |
-| `src/source-settings.ts` | 数据源服务 URL、端口、Settings schema、默认值和校验函数 |
-| `src/client/` | Harness 原生扩展位、上下文选择器、真实 Run/Media 结果列，以及包含图片读取和数据源服务页签的统一 ComfyUI 设置页 |
-| `src/config/` | Configuration Profile 加载器 |
-| `.agents/skills/anima-prompt-builder/` | ANIMA3 Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
-| `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill 的唯一源码目录 |
-| `.agents/skills/comfyui-generate/` | Prompt Builder 结果消费、模板实际参数检查、Seed 分配、ComfyUI 生成、兼容性检查与历史 Generation Run 查询 Skill 的唯一源码目录 |
-| `.agents/skills/comfyui-image-review/` | 多 Run 图片读取与 Prompt 对比 Skill 的唯一源码目录，包含独立 CLI 参考 |
-| `.agents/skills/comfyui-iterate-generation/` | 主 Agent 调度图片迭代的 Skill 目录；SKILL.md 定义调度，references/records.md 定义交接文件，references/composition-design.md、references/iteration-method.md 和 references/run-query-cli.md 分别提供构图、比较和查询参考 |
-| `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫展示图、动作迁移源图 Prompt、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
-| `.agents/skills/local-image-reader/` | 用户提供本地图片路径的逐图视觉读取 Skill 的唯一源码目录，包含独立 CLI 参考 |
-| `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill 的唯一源码目录 |
-| `cordis.patch.yml` | 装配项目插件，并通过 `agent-preset-registry` 和两个 `@deepseek-ai/dsh-agent-preset` 条目显式注册产品 Preset |
-| `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为 `ComfyUI工作台预设` 的产品 Preset 唯一源码目录；目录名是兼容性内部 ID，该 Preset 继续作为默认 Preset |
-| `agent-presets/harness-comfyui-iteration/` | 用户可见名称为 `ComfyUI迭代预设` 的附加受管产品 Preset 唯一源码目录；agent.cordis.yml 保存主 persona、四份子 Agent persona 及派发参数、任务模板与模型配置 |
-| `agent-presets/project-iteration-dispatch.mjs` | 按角色配置的参数与模板组装任务消息，调用 DSH 原生接口创建子 Agent 或向已有子 Agent 投递后续任务 |
-| `agent-presets/project-subagent-workspace.mjs` | 迭代预设在子 Agent 首个 step 中验证父子 cwd 并把真实子 Session 登记到父 Session 所属 Workspace 的 component |
-| `agent-presets/project-tool-visibility.mjs` | 产品 Preset composition 加载时建立会话级 Tool restriction，控制该产品 Preset 会话 Tool 可见性的模块 |
-| `agent-presets/project-system-prompt-visibility.mjs` | 每次 `system-prompt/assemble` 完成其他段落组装后，删除配置指定段落并控制产品 Preset 会话系统提示词段落可见性的模块 |
-| `config/product-agent.json` | 保存 `preset.id`、`preset.additionalManagedPresetIds`、`preset.sourceRootRelativePath`、`preset.installRootRelativePath`、`preset.retiredManagedPresetIds`、`preset.sharedFiles`、`skills.sourceRootRelativePath` 和 `skills.environmentVariable` |
-| `config/` | 生产配置、开发配置、schema 和质量阈值 |
-| `config/settings-entry-ids.json` | 保存 core 与图片读取插件的 Profile Settings 条目 ID |
-| `config/desktop-baseline.json` | 唯一 Desktop 来源、commit、Stable workspace、包版本和启动参数 |
-| `config/desktop-production.json` | 生产 runtime、`.env` 和默认 Workspace |
-| `config/desktop-worktree.json` | 主开发 checkout、开发 Desktop runtime、受管开发 Settings 配置和 main 私密 DSH 来源路径；开发启动器为每个 worktree 分配 Host 端口 |
-| `config/desktop-development-provider-settings.json` | `dev:start` 和 `dev:restart` 补齐开发 Profile patch 的 Provider、默认模型和 credential ref 名称；文件不保存凭据值 |
-| `config/image-reader-profiles.json` | `dev:start` 和 `dev:restart` 补齐开发 Profile patch 的图片读取配置；文件不保存凭据 |
-| `config/web-development.json` | 独立 Web Host 的 runtime、Profile、`.env` 和默认 Workspace |
-| `config/desktop-harness-development.json` | 开发与测试所需的宿主包和可执行入口声明 |
-| `scripts/development/` | Desktop 与独立 Web Host 共用的跨进程端口声明模块 |
-| `scripts/desktop/` | DSH Desktop 依赖准备、worktree 链接、当前插件包及其依赖的安装和 `prod:*`/`dev:*` 生命周期 |
-| `scripts/desktop/baseline.mjs` | 校验 Desktop 来源、commit 与安装包版本 |
-| `scripts/desktop/development-settings.mjs` | 合并当前 checkout 的受管开发配置和 main 的 Git 忽略凭据，在当前 worktree 的隔离 Profile patch 中补齐缺失值，并将缺失的凭据写入 `.credentials.yaml` |
-| `scripts/desktop/dependency-view.mjs` | 建立 worktree 自有 node_modules，分别解析业务依赖与宿主依赖 |
-| `scripts/production/` | Client 与 managed CLI 运行模块生成和 Web Host 的 `start`、`stop`、`restart`、`status`、`health` 和 `logs` 的共享实现 |
-| `scripts/worktree/` | `web:*` 的 linked-worktree 配置与共享 Web Host 生命周期适配 |
-| `scripts/profile/` | 当前源码 profile 的运行时准备逻辑 |
-| `scripts/profile/product-agent-config.mjs` | 公开 `loadProductAgentConfiguration(repositoryRoot)`；该函数校验产品 Agent 配置结构、Repository Skills 目录类型与 checkout 边界、环境变量名称及其 pass-through 声明，并返回 `preset`、`repositorySkillsRoot` 和 `repositorySkillsEnvironmentVariable` |
-| `scripts/cli/` | managed CLI 源码与纯 DSH 前台启动入口；构建产物位于 `.local/source-cli/` |
-| `scripts/source-client/` | 该目录保存插件发行包内置的语义查询客户端和数据源读取客户端；两个客户端通过 HTTP 或 HTTPS 请求数据源服务。 |
-| `scripts/security/` | 依赖、锁文件、构建脚本和 Harness 边界检查 |
-| `scripts/testing/` | 自动化测试使用的辅助模块 |
-| `profiles/` | DSH profile composition 模板 |
-| `tests/unit/` | 模块级分支测试 |
-| `tests/integration/` | Host 插件组合测试 |
-| `tests/contract/` | package、Git 跟踪、本地发布门禁和安全合同测试 |
-| `tests/security/` | 依赖与边界安全测试 |
-| `tests/production/` | `prod:test` 执行的 Desktop、Web Host、worktree 配置和进程生命周期测试 |
-| `tests/desktop/` | 真实 DSH Desktop 设置、媒体 Modal 和 Harness shell capability 验收 |
-| `tests/fixtures/agent-presets/` | Tool visibility 与系统提示词段落可见性回归测试使用的非产品 Preset composition 夹具 |
-| `prototype/` | 工作台和 Session Media Viewer 静态原型及原型测试；不是运行时数据来源 |
-| `docs/system/` | 当前系统规范 |
+| `src/host/catalog/` | 数据源 Catalog 查询、模板/LoRA/生成模型/ComfyUI 实例 ID 查询 Tool 与 Catalog Remote |
+| `src/host/core/` | Core 插件、Catalog/Generation 服务、Host 配置加载与数据目录初始化 |
+| `src/host/cli/` | managed CLI 插件、专用 HTTP listener、前台 Tool Call capability、请求分发和 Workspace 登记 |
+| `src/host/web/` | Host Remote 与媒体路由的 Web 插件装配 |
+| `src/host/generation/` | Generation Runtime、Source、Workflow 参数检查与编译、官方前端浏览器适配器、Official API Workflow Cache、Comfy transport、创建 Tool、历史 Run 查询、coordinator、Remote、媒体路由和 Session Media Viewer |
+| `src/host/image-reader/` | 图片读取配置、视觉模型目录、图片缩放、系统 Provider/OpenAI 兼容适配与单图读取 Tool |
+| `src/host/tools/` | Harness 项目 Tool 唯一注册入口 |
+| `src/host/resource-path.ts` | 使用模块 URL 解析已安装插件包内的资源路径 |
+| `src/host/node-script-environment.ts` | 为 Electron Node 子进程提供 `ELECTRON_RUN_AS_NODE=1` 环境 |
+| `src/source-settings.ts` | 数据源服务地址、端口、Settings schema、默认值和校验函数 |
+| `src/cli/` | argv、request、Generation Request、运行参数检查、随机 Seed、历史 Run 查询和图片读取的共享合同 |
+| `src/generation/` | Host、Tool、Client 与 CLI 共用的 Generation Remote、媒体 URL 和历史 Run 查询合同 |
+| `src/image-reader/` | 图片读取配置、凭据操作、视觉模型目录和 Remote 的 Host/Client 共享合同 |
+| `src/catalog/` | Catalog 的 Client 展示字段、详情 schema 与上下文类型 |
+| `src/config/` | Configuration Profile 载入器 |
+| `src/client/` | 官方 Harness 扩展位、上下文选择器、Generation Run/Media 投影及 ComfyUI 设置页 |
+| `.agents/skills/anima-prompt-builder/` | ANIMA3 Prompt、负向策略、模板无关生成目标与历史 Generation Run 查询 Skill 唯一源码目录 |
+| `.agents/skills/character-portrait-prompt-designer/` | 角色立绘 Prompt 与历史 Generation Run 查询 Skill 唯一源码目录 |
+| `.agents/skills/comfyui-generate/` | Prompt Builder 结果消费、模板参数检查、Seed 分配、ComfyUI 生成、兼容性检查与历史 Run 查询 Skill 唯一源码目录 |
+| `.agents/skills/comfyui-image-review/` | 多 Run 图片读取与 Prompt 对比 Skill 唯一源码目录，包含 CLI 参考 |
+| `.agents/skills/comfyui-iterate-generation/` | 图片迭代调度 Skill；`references/records.md` 定义文件交接，构图、比较和查询参考分别位于 composition-design、iteration-method 和 run-query-cli |
+| `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫展示图、动作迁移源图 Prompt、模板无关生成目标与历史 Run 查询 Skill 唯一源码目录 |
+| `.agents/skills/local-image-reader/` | 用户提供本地图片路径的逐图视觉读取 Skill 唯一源码目录，包含 CLI 参考 |
+| `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt、负向策略、模板无关生成目标与历史 Run 查询 Skill 唯一源码目录 |
+| `agent-presets/presets.cordis.yml` | 注册 `harness-comfyui-cli-candidate` 工作台预设和 `harness-comfyui-iteration` 迭代预设；保留官方应用的内置默认 Preset |
+| `agent-presets/harness-comfyui-cli-candidate/` | 用户可见名称为“ComfyUI工作台预设”的产品 Preset 唯一源码目录 |
+| `agent-presets/harness-comfyui-iteration/` | 用户可见名称为“ComfyUI迭代预设”的产品 Preset 唯一源码目录，保存主 Agent 与四个角色的 persona、派发参数和模型配置 |
+| `agent-presets/project-installed-presets.mjs` | 从插件包相对路径载入 Preset registry 声明 |
+| `agent-presets/project-installed-skills.mjs` | 从插件包相对路径为产品 Preset 注册八个项目 Skill，并关闭默认 roots |
+| `agent-presets/project-iteration-dispatch.mjs` | 按角色配置组装任务消息，并调用 DSH 原生子 Agent 创建或续派接口 |
+| `agent-presets/project-subagent-workspace.mjs` | 将迭代预设子 Agent 的真实 Session 关联到父 Session 所属 Workspace |
+| `agent-presets/project-tool-visibility.mjs`、`project-system-prompt-visibility.mjs` | 限定项目 Preset 会话的 Tool 与系统提示词段落 |
+| `cordis.patch.yml` | 装配插件 Host 入口、根 Client bundle 与已安装 Preset 注册组件 |
+| `config/base.json`、`config/profiles/production.json` | 插件配置默认值和生产 Configuration Profile |
+| `config/schema.ts` | 插件配置字段、约束和默认值 schema |
+| `config/environment-overrides.json` | 插件支持的环境覆盖映射 |
+| `config/product-agent.json`、`config/product-agent-schema.mjs` | 两个产品 Preset 身份、资源目录与共享配置约束 |
+| `config/settings-entry-ids.json` | Core 与图片读取插件使用的 Profile Settings 条目标识 |
+| `config/image-reader-profiles.json`、`config/image-reader-processing.json`、`config/image-reader-runtime.json` | 图片读取配置、处理参数和 Runtime 默认值 |
+| `config/error-catalog.json` | Host 稳定错误码与结构化错误消息目录 |
+| `config/plugin-package.json`、`config/plugin-package-schema.mjs` | 声明并校验进入发行 tarball 的源码资源和构建产物 |
+| `config/runtime-artifacts.json` | 声明 Host 插件、Client、managed CLI 与 Workflow worker 的源码和构建路径 |
+| `config/source-cli-guidance.json`、`config/managed-cli-help.json` | managed CLI 帮助与数据源客户端指引配置 |
+| `config/managed-cli-environment.json` | 定义 Host 向前台 Tool Call 提供的 managed CLI 环境变量名称 |
+| `config/node-script-runtime.json` | 定义由 Electron Node 执行脚本时使用的环境变量 |
+| `config/desktop-e2e.json`、`config/desktop-e2e-schema.mjs` | 定义官方 Desktop 测试夹具使用的目录、启动参数、端口和运行记录结构 |
+| `scripts/build/` | 通过 `pnpm build` 构建插件入口，通过 `pnpm pack:plugin` 生成官方插件管理器可安装的 tarball |
+| `scripts/cli/` | packaged managed CLI 入口、帮助和结构化参数解析代码 |
+| `scripts/source-client/` | 插件包内的数据源语义查询和读取客户端，通过 HTTP 或 HTTPS 请求已配置的数据源服务 |
+| `tests/desktop/fixtures/` | 隔离 Harness home、Electron user-data、Workspace、安装候选包、连接 CDP、记录证据和清理本轮进程的测试夹具 |
+| `tests/desktop/run-desktop-tests.mjs` | `pnpm test:desktop` 的构建、打包及官方应用验收总入口 |
+| `tests/desktop/official-desktop-lifecycle.test.mjs` | 双实例设置与 Session 隔离、启动成功、失败、取消、超时、端口冲突和显式调试清理 |
+| `tests/desktop/official-desktop-live.test.mjs` | 官方 Desktop 插件业务 E2E，覆盖安装、设置、受控生成、历史和媒体 |
+| `tests/production/` | 发行包、官方 Profile、Renderer CDP、隔离及安装生命周期的确定性测试，由 `test:production` 执行 |
+| `tests/unit/`、`tests/integration/`、`tests/contract/`、`tests/security/` | 模块、插件组合、发行合同和安全边界测试 |
+| `docs/verification/official-desktop-plugin/` | 官方应用能力、依赖和插件验收记录；只保存证据与完成状态 |
+| `docs/system/` | 当前插件架构、技术栈、目录和发布规范 |
 
-以下本地文件和目录不进入版本控制：`.local/desktop-production/`、`.local/desktop-development/`、`.local/web-development/`、`.local/source-cli/`、`.local/source-client/`、`coverage/`、`lib/` 和 `node_modules/`。linked worktree 的 `.env` 链接到主开发 checkout；`node_modules` 是 worktree 自有目录，分别链接主 checkout 的业务依赖和选定宿主包。依赖视图规则见 `configuration.md`。生产启动和独立 worktree 开发启动都不会生成 `lib/`。
+官方 Desktop、DeepSeek Harness Host 和 Harness ComfyUI 插件保持三个源码边界。插件通过 `package.json` 声明的官方 SDK peers 接入 Host 公共接口。Host、Client、CLI、Preset、八个 Skills、配置、schema 和客户端资源由 `config/plugin-package.json` 纳入插件 tarball；官方插件管理器从 tarball 安装并由官方应用管理运行生命周期。
 
-`src/host/generation/workflow-compiler.ts` 检查目标 Workflow 的实际运行参数、编译参数值、改写 Actual Workflow、筛选活动输出节点，并生成运行时 API Workflow 投影。`src/host/generation/comfy-frontend-browser.ts` 在 Official API Workflow Cache miss 时启动浏览器和 CDP session，通过目标 ComfyUI 官方前端的 `loadGraphData()` 与 `graphToPrompt()` 导出 Official Base API Workflow。`src/host/generation/official-api-workflow.ts` 计算缓存 identity、读取和保存缓存文件、把同一缓存键的并发 miss 合并为一次官方前端导出，并把本次运行参数的非连接输入值覆盖到 Official Base API Workflow 的副本。
+Preset 与 Skill 资源以其安装模块的 URL 为基准解析。两个项目 Preset 分别注册自己的文件系统 Skill provider；每个 provider 只读取插件包内 `.agents/skills/`，并设置 `includeDefaultRoots: false`。插件注册两个项目 Preset 时不设置为官方全局默认值；用户在官方会话界面选择项目 Preset，官方应用继续使用用户选择的内置默认 Preset。
 
-`profiles/comfyui-cli/` 保存纯 DSH Profile，`config/cli-runtime.json` 保存其运行目录配置。服务端入口与产物路径统一在 `config/runtime-artifacts.json.hostPlugins` 声明。
+Host 通过 DSH context 的 `dshHomePath()` 取得当前官方 Harness home，将 `config/base.json` 声明的 `data/plugins/harness-comfyui/` 作为本插件数据根。该目录下保存 SQLite Run Repository、Run 文件、Saved Media、API Workflow 缓存和日志。插件 Profile 设置与凭据使用 Host 的设置和凭据机制；插件安装目录只保存可替换的代码和资源。
+
+`scripts/build/` 的运行产物位于 `.local/source-host/`、`.local/source-client/` 和 `.local/source-cli/`。`pnpm pack:plugin` 将 `exports` 和 bundle 引用的构建结果与显式配置的包内文件一起放入 `harness-comfyui-<version>.tgz`。发行包不包含测试、验证证据、`.env`、`node_modules`、SDK 开发依赖视图或生产 checkout 内容。
+
+## 开发验收目录与产物
+
+`config/desktop-e2e.json` 定义每轮 `.local/desktop-e2e/<run-id>/` 的日志、证据和运行记录，以及 `.local/desktop-development/official-environment/` 中的持久开发 Harness home、user-data 和 Workspace。夹具保存每轮进程、端口与租约身份，停止时释放本轮资源，保留持久环境的初始化配置和业务数据。开发者按[worktree 规范](../agents/worktree-development.md)启动、核对和停止测试实例。
+
+旧 Desktop、独立 Web Host、Profile 写入器和独立 headless 产品入口已按升级方案退役。插件构建器位于 `scripts/build/`；预设资源校验使用官方公共 YAML/list schema。旧生产 checkout 和用户安装数据的处置继续遵守[发布规范](releasing.md)中的单独授权边界。
