@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-01",
+  "candidateVersion": "0.45.0",
+  "implementationCommit": "9542f8d4e578ff58f365154ab5c2a18d13da2307",
+  "authorization": "release-migration-authorization-20261001.json",
+  "actions": {
+    "pullRequest": {
+      "status": "已创建草稿",
+      "url": "https://github.com/fzfz/harness-comfyui/pull/2"
+    },
+    "merge": {
+      "status": "未完成",
+      "reason": "主方案候选验收条件尚未全部通过"
+    },
+    "release": {
+      "status": "未完成",
+      "reason": "与合并使用同一候选验收条件"
+    },
+    "dailyDesktopInstallation": {
+      "status": "未完成",
+      "reason": "先完成候选验收并发布固定版本发行包"
+    },
+    "migration": {
+      "status": "隔离试迁移文件检查及两个历史Workspace官方运行时验证通过；正式迁移未执行",
+      "plan": "../../plans/official-desktop-data-migration-20261001.md"
+    }
+  },
+  "migrationPreparation": {
+    "runRows": 1627,
+    "succeededRows": 1462,
+    "failedRows": 165,
+    "mediaFiles": 1462,
+    "runFileReferences": 4803,
+    "legacyWorkspaces": 2,
+    "conflicts": 0,
+    "sqliteIntegrity": "通过",
+    "credentialHandling": "旧凭据和当前官方凭据分别备份；当前官方凭据、Provider和默认模型保留",
+    "evidence": ".local/desktop-e2e/production-migration-20261001/validation-report.json",
+    "runtimeEvidence": ".local/desktop-e2e/production-migration-20261001/official-multi-workspace-runtime-validation-96645519-ea0e-4b32-bc0d-5f5bbdcdcdea.json"
+  },
+  "installationPolicy": {
+    "bundledPnpmVersion": "11.7.0",
+    "observedProblem": "多个同名包的准确版本年龄例外未被正确合并，原有允许版本仍被安装器拒绝",
+    "permittedVersionsBefore": [
+      "billion-context@0.1.174",
+      "billion-context@0.1.175"
+    ],
+    "permittedVersionsAfter": [
+      "billion-context@0.1.174 || 0.1.175"
+    ],
+    "correctionScope": "仅隔离trial Profile修改表达方式；日常Profile保持原状",
+    "officialCliInstallation": "退出码0，安装harness-comfyui@0.45.0",
+    "upstreamIssue": "https://github.com/pnpm/pnpm/issues/12463",
+    "evidence": ".local/desktop-e2e/production-migration-20261001/trial-policy-representation-correction.json"
+  },
+  "newRealRuns": [
+    {
+      "preset": "ComfyUI迭代",
+      "sessionId": "session-73b86f8b-1c71-4cf0-b9e6-64644597db31",
+      "runId": "run_81340140-f720-4fce-ae39-c5a2816a9b7c",
+      "promptId": "b751a9f4-0694-47ac-b159-23f8e32c9579",
+      "seed": 385784043,
+      "width": 448,
+      "height": 576,
+      "execution": "实际ComfyUI成功；SQLite succeeded；1媒体落盘",
+      "imageGoal": "独立图片审阅通过",
+      "workflowComparison": "保存提交API与ComfyUI history原文；存在5项节点输入差异，逐项记录",
+      "ui": "媒体查看、原图和Actual Workflow下载在冷重启前后均通过",
+      "skillContract": "首轮历史结论：未通过；当前第二轮及同轮关闭回复纠正结果见本列表 run_7927dbc2-b05a-4c64-986b-ee3ca37019b6。"
+    },
+    {
+      "preset": "ComfyUI工作台",
+      "sessionId": "session-f33d48b6-1a8b-413e-a845-43174e2fc10a",
+      "runId": "run_8926283d-1b42-4cc1-84ac-b61609d41b58",
+      "promptId": "90c94359-7029-4d06-aed7-f63a3d153732",
+      "seed": 385784043,
+      "width": 448,
+      "height": 576,
+      "execution": "实际ComfyUI成功；SQLite succeeded；1媒体落盘",
+      "imageGoal": "独立图片审阅通过",
+      "ui": "媒体查看、原图和Actual Workflow下载在冷重启前后均通过",
+      "seedReuse": "实际查询迭代Run后复用Seed"
+    },
+    {
+      "preset": "ComfyUI迭代",
+      "runId": "run_7927dbc2-b05a-4c64-986b-ee3ca37019b6",
+      "promptId": "ce79eecb-832d-4ae6-992d-a9809a1a221c",
+      "seed": 385784043,
+      "width": 448,
+      "height": 576,
+      "execution": "实际ComfyUI成功；SQLite succeeded；1媒体落盘",
+      "imageGoal": "独立图片审阅通过",
+      "ui": "父会话聚合两Run和媒体；冷重启后两张原图及两个Actual Workflow下载通过",
+      "skillContract": "第二轮必读合同与原始目标比较通过；同轮三角色关闭回复经实际受支持任务字段纠正，父Agent收到 settled 后读取文件。",
+      "evidence": ".local/desktop-e2e/release-preparation-20261001/round2-independent-contract-review.json",
+      "parentSessionId": "session-73b86f8b-1c71-4cf0-b9e6-64644597db31",
+      "sessionId": "ccbd5e6a-6ad4-425e-acec-7c80e7cb57f1"
+    }
+  ],
+  "realModel": {
+    "provider": "openrouter",
+    "model": "stealth/space-bunny-alpha",
+    "inputPrice": "0",
+    "outputPrice": "0",
+    "catalogEvidence": ".local/desktop-e2e/release-preparation-20261001/free-model-catalog.json",
+    "retainedFailures": [
+      "cohere/north-mini-code:free返回错误Run及无效Tool参数",
+      "HTTP429限流",
+      "Provider空响应",
+      "本地图片读取Tool首次60秒超时，后重试成功"
+    ],
+    "scope": "新请求属于候选真实验收；不代表全矩阵或正式发行包生产验收通过"
+  },
+  "historyQuery": {
+    "skill": "anima-prompt-builder",
+    "branch": "历史Run查询",
+    "sessionId": "session-d008916c-e442-4605-ad2c-8b04ae1f744f",
+    "status": "通过",
+    "checksPassed": 9,
+    "semanticChecksPassed": 9,
+    "originalFailuresRetained": true,
+    "evidence": ".local/desktop-e2e/release-preparation-20261001/anima-history-space-final-review.json"
+  },
+  "independentReviews": {
+    "authorizationDocuments": ".local/desktop-e2e/release-preparation-20261001/authorization-final-semantic-review.json",
+    "runtimeCoverage": ".local/desktop-e2e/release-preparation-20261001/final-runtime-coverage-audit.json",
+    "realSessions": ".local/desktop-e2e/release-preparation-20261001/new-real-sessions-independent-review.json",
+    "imageGoals": ".local/desktop-e2e/release-preparation-20261001/new-formal-images-independent-review.json",
+    "secondRound": ".local/desktop-e2e/release-preparation-20261001/round2-independent-contract-review.json"
+  },
+  "overall": "候选验收未完成；正式发布和生产切换均未完成。完整A1至A18状态以acceptance-status.json为准。",
+  "newRunHistory": {
+    "sessionId": "session-97cccdc6-b4de-4af7-b643-65daeccf1b7c",
+    "runIds": [
+      "run_7927dbc2-b05a-4c64-986b-ee3ca37019b6",
+      "run_8926283d-1b42-4cc1-84ac-b61609d41b58"
+    ],
+    "status": "通过",
+    "scope": "冷重启后一次前台CLI读取两个新Run；Seed、模型、LoRA、参数和完整Actual Workflow与存储一致",
+    "evidence": ".local/desktop-e2e/release-preparation-20261001/round2-independent-contract-review.json"
+  },
+  "finalRealSkillIndex": "final-real-skill-index-20261001.json",
+  "latestIndependentAggregateReview": ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json",
+  "remaining": [
+    "A1/A2/A9 新包独立运行验收",
+    "A4 新包升级、失败恢复验收",
+    "A8 完整连接诊断新分支独立审阅与界面证据",
+    "A11 实际活动卸载恢复与官方重复安装提示",
+    "八Skill最终执行分支独立汇总",
+    "新候选独立审查、完整质量门禁与提交",
+    "发布、正式迁移安装及生产真实验收"
+  ]
+}

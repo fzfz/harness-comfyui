@@ -955,8 +955,10 @@ describe('native Harness workbench surfaces', () => {
     })
     await openDialog(renderer!)
     const renderedFailure = JSON.stringify(renderer!.toJSON())
-    expect(renderedFailure).toContain(catalogFailureText(queryFailure))
-    expect(renderedFailure).toContain(catalogFailureText(baseFailure))
+    expect(renderedFailure).toContain(JSON.stringify(catalogFailureText(queryFailure)).slice(1, -1))
+    expect(renderedFailure).toContain(JSON.stringify(catalogFailureText(baseFailure)).slice(1, -1))
+    expect(renderedFailure).toContain(queryFailure.message)
+    expect(renderedFailure).toContain(baseFailure.message)
     expect(renderedFailure).not.toContain('目录加载失败。')
     act(() => renderer!.unmount())
 

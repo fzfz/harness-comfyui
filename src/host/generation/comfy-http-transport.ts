@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
 
 import type { GenerationMediaKind } from '../../generation/contract.ts'
 
@@ -347,7 +348,17 @@ export class ComfyHttpTransport implements GenerationTransport {
         const code = error instanceof DOMException && error.name === 'AbortError'
           ? callerSignal?.aborted === true ? 'COMFYUI_REQUEST_CANCELED' : 'COMFYUI_REQUEST_TIMEOUT'
           : 'COMFYUI_CONNECTION_FAILED'
-        throw new ComfyHttpError(code, `ComfyUI request failed for ${path}.`)
+        const cause = error instanceof Error && error.cause instanceof Error ? error.cause : null
+        const causeDiagnostic = cause instanceof AggregateError
+          ? [cause.toString(), ...cause.errors.map(String)].join('\n')
+          : cause?.toString()
+        const diagnostic = error instanceof Error
+          ? causeDiagnostic === undefined ? error.message : `${error.message}\n${causeDiagnostic}`
+          : String(error)
+        const message = ERROR_CATALOG.COMFYUI_CONNECTION_FAILED.diagnostic_template
+          .replaceAll('{origin}', new URL(instance.url).origin).replaceAll('{path}', path)
+          .replaceAll('{diagnostic}', diagnostic)
+        throw new ComfyHttpError(code, message)
       }
     } finally {
       clearTimeout(timeout)

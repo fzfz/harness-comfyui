@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "version": "0.45.0",
+  "userDirectedScope": [
+    "合入origin/main",
+    "发布0.45.0发行包",
+    "正式历史数据迁移",
+    "本机官方Desktop插件安装"
+  ],
+  "stoppedAcceptance": [
+    "安装异常补证",
+    "活动卸载恢复补证",
+    "脱离源码受限运行",
+    "其他预设真实免费模型作用域",
+    "生产完整真实模型矩阵"
+  ],
+  "completedEvidence": {
+    "fullQualityTestsPassed": 2116,
+    "eightSkillExecutedBranchesPassed": 8,
+    "actualFormalRunsPassed": 2,
+    "trialMigrationRuns": 1627,
+    "trialMigrationMedia": 1462
+  },
+  "statusRule": "此前未完成项目继续保留未通过状态，本轮交付按用户最新明确范围执行。",
+  "oldEnvironment": "执行者保留旧生产目录、原配置和运行数据。"
+}

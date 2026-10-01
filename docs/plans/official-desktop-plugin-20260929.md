@@ -32,6 +32,10 @@
 
 用户于 2026-09-30 单独批准修改 `anima-prompt-builder`、`krea2-anime-prompt-builder` 和 `wai-sdxl-prompt-builder` 的 `scripts/cli-help.mjs`。实施者按 `docs/verification/official-desktop-plugin/skill-script-authorization.json` 的对象与用途，使帮助命令使用 Host 提供的 Node 入口，并按项目规范完成相关测试和独立语义审阅。其余单独授权条件继续按上一段执行。
 
+用户于 2026-10-01 明确批准创建 PR、合入 `origin/main`、发布版本、迁移本机旧生产目录数据，并在本机官方 Desktop 中安装插件和验收。实施者按本方案已有完成条件执行这些动作；历史数据迁移先按“首次切换步骤”准备对象映射并完成隔离试迁移。旧生产目录与原数据继续保留；旧环境归档和物理删除继续遵守本章的单独授权条件。授权记录见 `docs/verification/official-desktop-plugin/release-migration-authorization-20261001.json`。
+
+用户随后明确要求执行者停止对安装异常、活动卸载恢复和脱离源码运行进行追加验收，并停止其他追加验收，仅完成合并、发布、正式数据迁移和插件安装。本轮执行者依据已有质量检查结果完成交付，并在验收记录中保留此前未完成项目的原状态。具体范围见 `docs/verification/official-desktop-plugin/delivery-scope-20261001.json`。旧环境归档和物理删除继续按本章取得单独授权。
+
 ## 官方依据与兼容风险
 
 官方源码依据固定在 tag `dsh-v0.2.0-rc.2`，提交 `639ed015397290b3745d163aafe02ffee4aa3f84`。官方 [Release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) 是预发布版本。实施者以本机版本号与该 tag 一致作为选定测试目标的依据，并按阶段 1 验证插件安装与业务能力。

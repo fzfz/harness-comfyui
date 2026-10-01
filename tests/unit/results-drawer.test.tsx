@@ -777,6 +777,31 @@ describe('native Generation result drawer', () => {
     act(() => renderer!.unmount())
   })
 
+  it('shows an unreachable ComfyUI address, connection cause and retry guidance together', () => {
+    const message = 'ComfyUI 实例 http://127.0.0.1:8188 的 /api/jobs/prompt-id 请求失败：fetch failed\nError: connect ECONNREFUSED 127.0.0.1:8188'
+    const snapshot = {
+      projection: {
+        ...projection,
+        runs: [{ ...projection.runs[1]!, errorCode: 'COMFYUI_CONNECTION_FAILED', errorMessage: message }],
+        media: [],
+        hasActiveRuns: false,
+      },
+      errorCode: null,
+    }
+    const getter = vi.spyOn(generationStore, 'getSnapshot').mockReturnValue(snapshot)
+    let renderer: ReturnType<typeof create> | undefined
+    try {
+      act(() => { renderer = renderDetails(new WorkbenchController({ openTab: vi.fn() })) })
+      act(() => { (buttonByText(renderer!, '错误详情').props.onClick as () => void)() })
+      renderer!.root.findByProps({ role: 'dialog', 'aria-label': '错误详情' })
+      expect(renderer!.root.findAllByType('pre').map(node => node.props.children)).toContain(message)
+      expect(renderer!.root.findAllByType('p').map(node => node.props.children).join('')).toContain('检查实例地址、端口和服务运行状态后重新生成。')
+    } finally {
+      if (renderer) act(() => renderer!.unmount())
+      getter.mockRestore()
+    }
+  })
+
   it('keeps a media card visible and shows catalog copy when its preview or Workflow is missing', async () => {
     const workbench = new WorkbenchController({ openTab: vi.fn() })
     let renderer: ReturnType<typeof create>

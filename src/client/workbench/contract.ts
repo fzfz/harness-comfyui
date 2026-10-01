@@ -1,4 +1,4 @@
-import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
+import { ERROR_CATALOG as errorCatalog } from '../../../config/error-catalog-schema.ts'
 import { parseCatalogContext, type CatalogContext } from '../../catalog/contract.ts'
 import resultsTab from './results-tab.json' with { type: 'json' }
 import { resultsTabSchema } from './results-tab-schema.ts'
@@ -46,7 +46,8 @@ function errorCode(value: unknown): string {
 }
 
 export function catalogFailureText(error: unknown): string {
-  return workbenchErrorText(errorCode(error))
+  const guidance = workbenchErrorText(errorCode(error))
+  return error instanceof Error ? `${guidance}\n${error.message}` : guidance
 }
 
 export function workbenchErrorText(code: string): string {

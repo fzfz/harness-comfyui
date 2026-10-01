@@ -3,10 +3,10 @@
   "phase": "实施中",
   "branch": "codex/official-desktop-plan",
   "sourceBaseCommit": "742570c4d7ab17272baac0eb3211536751002c9a",
-  "codeCompletion": "未完成",
-  "candidateAcceptance": "未完成",
-  "release": "待单独授权",
-  "productionSwitch": "待单独授权",
+  "codeCompletion": "实现与诊断修复完成；相同产品代码的完整pnpm quality共2,116项测试通过。",
+  "candidateAcceptance": "已有结果见逐项记录；本轮按用户最新要求交付，不宣称此前全部验收通过。",
+  "release": "用户已要求按现有结果立即合并发布；发布结果由本轮交付记录保存。",
+  "productionSwitch": "本轮执行正式迁移和官方插件安装；旧目录与原数据保留。",
   "items": [
     {
       "id": "A1",
@@ -39,9 +39,11 @@
     },
     {
       "id": "A3",
-      "status": "未通过",
-      "evidence": [],
-      "reason": "官方应用已启用候选并加载工作台；UI、Tool、Preset 和 CLI listener 的单份注册、重复加载及卸载清理尚未逐项核对。",
+      "status": "通过",
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "reason": "官方启用、停用、重复加载和重启的运行行为，以及对应源码与自动化组合证据通过。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -50,12 +52,13 @@
     },
     {
       "id": "A4",
-      "status": "未通过",
+      "status": "通过",
       "evidence": [
-        "update-recovery-acceptance.json",
-        "three-blockers-resolution-20261001.json"
+        ".local/desktop-e2e/release-update-20261001/evidence/a4-completion.json",
+        ".local/desktop-e2e/release-update-20261001/evidence/restored-predecessor-business-request/business-request.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-update-lifecycle-audit.json"
       ],
-      "reason": "官方凭据引用适配已完成；实际创建、替换、清除和非空引用的同版本候选重装及冷重启通过。上一版更新、失败恢复与非空引用回装的完整A4矩阵仍待核对。",
+      "reason": "官方兼容前驱更新、非空凭据引用与数据保留、失败恢复回装、冷重启及一次实际历史Run业务请求均通过。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -67,12 +70,13 @@
     },
     {
       "id": "A5",
-      "status": "未通过",
+      "status": "通过",
       "evidence": [
         "../../../tests/unit/installed-presets.test.mjs",
-        "business-e2e-migration.json"
+        "business-e2e-migration.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
       ],
-      "reason": "官方 App run 66214822-b6b1-4f3d-944e-77dc71a93b7e 的完整来源矩阵核对通过：两个项目 Preset 各有八个项目 Skill，其余 Preset 保留各自 Workspace/user/Office Skills且项目 Skill 数为零；最终候选重验仍待完成。",
+      "reason": "两个预设在仓库外Workspace工作，Skill作用域与隐式官方默认预设分别通过。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -95,9 +99,11 @@
     },
     {
       "id": "A7",
-      "status": "未通过",
-      "evidence": [],
-      "reason": "免费模型工作台子 Agent 首派及同会话续派已完成；迭代构图与生成已有成功续派，四角色、首步前 Workspace 关联、通知及中断权限仍待独立核对。",
+      "status": "通过",
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
+      ],
+      "reason": "实际首派、同会话续派、四角色、指定中断和权限约束通过；首步前附加由源码、单元测试和真实Workspace关联组合证据支持。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -106,11 +112,12 @@
     },
     {
       "id": "A8",
-      "status": "未通过",
+      "status": "通过",
       "evidence": [
-        "three-blockers-resolution-20261001.json"
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json",
+        ".local/desktop-e2e/release-preparation-20261001/a8-native-errors-result.json"
       ],
-      "reason": "当前候选迭代父会话在冷重启后显示两个子会话Run及媒体；查看、两张原图下载及两个Actual Workflow下载通过。完整业务与错误提示矩阵仍按原记录继续验收。",
+      "reason": "正式Run、媒体与Workflow下载、冷重启、上下文查询及官方界面的具体服务连接诊断通过。不可达服务界面属于受控回归，正式Run属于真实服务验收。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -136,16 +143,17 @@
     },
     {
       "id": "A10",
-      "status": "未通过",
+      "status": "通过",
       "evidence": [
         "../../../tests/unit/browser-settings-page.test.tsx",
         "../../../tests/unit/browser-settings.test.ts",
         "../../../tests/unit/plugin-storage.test.ts",
         "../../../tests/integration/host-plugin.test.ts",
         "business-e2e-migration.json",
-        "three-blockers-resolution-20261001.json"
+        "three-blockers-resolution-20261001.json",
+        ".local/desktop-e2e/release-preparation-20261001/final-runtime-aggregate-review.json"
       ],
-      "reason": "官方SDK凭据引用适配及实际保存、替换、清除、删除、重装和重启后读图通过；保存失败、取消、双重清理失败及持久化视图分离分支完成177项单测与独立复审。完整三个设置页的最终候选验收仍待核对。",
+      "reason": "三个设置的实际保存、失败草稿保留、重装冷重启及无效路径检查通过。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -168,17 +176,23 @@
     },
     {
       "id": "A12",
-      "status": "未通过",
+      "status": "产品代码门禁通过",
       "evidence": [
         "dependency-audit.json",
-        "current-desktop-regression.json"
+        "current-desktop-regression.json",
+        ".local/desktop-e2e/three-blockers-20261001/final-quality-result.json",
+        ".local/desktop-e2e/three-blockers-20261001/final-quality-os-cleanup.json"
       ],
-      "reason": "阶段性 pnpm quality:fast 的 1,741 项测试通过，函数覆盖率为100%；后续 CDP、资源身份和测试追踪环境问题已修复并完成定向独立审查。当前 pnpm test:desktop 的13个文件263项测试零跳过通过；最终候选完整审查、pnpm quality 和 git diff --check 尚未完成。",
+      "reason": "产品代码Standards、Spec与Simplify审阅通过，完整quality共2,116项测试通过；文档修订后按用户最新要求停止重新启动测试应用。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
         "id": "A12"
-      }
+      },
+      "previousReasons": [
+        "阶段性 pnpm quality:fast 的 1,741 项测试通过，函数覆盖率为100%；后续 CDP、资源身份和测试追踪环境问题已修复并完成定向独立审查。当前 pnpm test:desktop 的13个文件263项测试零跳过通过；最终候选完整审查、pnpm quality 和 git diff --check 尚未完成。",
+        "最终代码候选独立审查已完成；pnpm quality 的2,095项测试、类型检查、构建及安全检查通过，git diff --check通过。对应代码已提交9542f8d；后续验收记录变更按项目门禁复验。"
+      ]
     },
     {
       "id": "A13",
@@ -248,8 +262,10 @@
     {
       "id": "A16",
       "status": "未通过",
-      "evidence": [],
-      "reason": "生产切换尚待单独授权，正式发行包上的生产真实业务矩阵尚未执行。",
+      "evidence": [
+        "release-migration-authorization-20261001.json"
+      ],
+      "reason": "生产安装、数据迁移及验收已获本轮用户明确授权；正式发行包上的生产真实业务矩阵尚未执行。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -271,9 +287,10 @@
       "id": "A18",
       "status": "未通过",
       "evidence": [
-        "free-model-preflight.json"
+        "free-model-preflight.json",
+        "release-preparation-progress-20261001.json"
       ],
-      "reason": "免费模型执行与五次正式 ComfyUI Run 已落盘。最新三个真实媒体的独立复审仍有霓虹、取景或画面细节未通过；Nvidia观察有图像依据但有错认和遗漏。最终候选全矩阵及生产验收尚未完成。",
+      "reason": "八个Skill指定分支和两个正式ComfyUI Run通过；5/6真实矩阵通过，其他Preset真实免费模型作用域证据不足。生产完整真实矩阵未执行；按用户最新要求移出本轮交付条件，保持未通过。",
       "definition": {
         "file": "docs/plans/official-desktop-plugin-20260929.md",
         "section": "验收清单",
@@ -283,11 +300,25 @@
   ],
   "pendingAuthorization": [
     {
-      "action": "发布、合并、生产切换及旧环境处置",
-      "state": "本轮实施阶段尚未请求"
+      "action": "旧环境归档及物理删除",
+      "state": "按主方案保留独立授权边界；当前迁移保留原目录和数据"
     }
   ],
-  "externalBlockers": [],
+  "externalBlockers": [
+    {
+      "service": "OpenRouter免费模型",
+      "status": "此前真实服务失败记录保留；八个指定Skill分支已经独立验收通过。",
+      "observedErrors": [
+        "HTTP429限流",
+        "PI_AI_ERROR：Provider returned an empty response"
+      ],
+      "evidence": [
+        ".local/desktop-e2e/release-preparation-20261001/failed-cohere-attempt.json",
+        ".local/desktop-e2e/release-preparation-20261001/space-composition-delivery.json"
+      ],
+      "requiredAction": "执行者保留此前失败证据；本轮按用户最新交付范围发布，停止追加真实模型重试。"
+    }
+  ],
   "regressionEvidence": {
     "pluginPackage": {
       "result": "14 tests passed",
@@ -359,7 +390,8 @@
     "historyAndResultUsage": "未通过",
     "formalWorkbenchRun": "未通过",
     "formalIterationRun": "未通过",
-    "modelCatalog": "stealth/space-bunny-alpha 已核对输入和输出零价格、工具及图片输入能力；正式工作台请求实际成本为零。nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 已核对零价格和图片能力，实际图片读取 HTTP 200；此前限流与能力失败记录保留。"
+    "modelCatalog": "stealth/space-bunny-alpha 已核对输入和输出零价格、工具及图片输入能力；正式工作台请求实际成本为零。nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 已核对零价格和图片能力，实际图片读取 HTTP 200；此前限流与能力失败记录保留。",
+    "latestRealAttempt": "release-preparation-progress-20261001.json"
   },
   "production": "生产目录保持原状",
   "credentialReadiness": {
@@ -689,8 +721,56 @@
     "sessionDeletion": "按用户指示排除官方宿主会话删除选择器、删除恢复及相关测试。"
   },
   "currentQualityAttempt": {
+    "command": "pnpm quality",
+    "status": "产品代码完整门禁通过；后续仅修订验收记录，按用户最新要求停止重新启动测试应用。",
+    "testsPassed": 2116,
+    "failedTests": 0,
+    "evidence": ".local/desktop-e2e/release-preparation-20261001/a8-final-code-quality.log",
+    "coverage": {
+      "statements": 94.11,
+      "branches": 87.43,
+      "functions": 100,
+      "lines": 96.63
+    }
+  },
+  "currentCandidateProgress": "current-candidate-progress-20261001.json",
+  "resolvedExternalBlockers": [
+    {
+      "service": "实际数据源 styles 与 prompt-terms 搜索",
+      "status": "HTTP 200",
+      "resolution": "通过现有受管停止、启动命令重启数据源进程；同配置只读查询与运行服务复测通过。",
+      "evidence": "source-semantic-resolution-20261001.json",
+      "historicalEvidence": [
+        {
+          "service": "实际数据源 styles 与 prompt-terms 搜索",
+          "status": "HTTP 502",
+          "message": "Catalog dependency is unavailable.",
+          "evidence": ".local/desktop-e2e/service-preflight-20261001/",
+          "requiredAction": "数据源维护者必须恢复对应 Catalog dependency；验收执行者必须在服务恢复后重试语义搜索。",
+          "lastVerified": "2026-10-01",
+          "recheck": {
+            "observedAt": "2026-09-30T21:30:31Z",
+            "stylesStatus": 502,
+            "promptTermsStatus": 502,
+            "evidence": [
+              ".local/desktop-e2e/service-preflight-20261001/styles-recheck-2026-09-30T21-30-31.745Z.json",
+              ".local/desktop-e2e/service-preflight-20261001/prompt-terms-recheck-2026-09-30T21-30-31.798Z.json"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "threeRequestedFixes": "three-blockers-resolution-20261001.json",
+  "releaseAuthorization": "release-migration-authorization-20261001.json",
+  "implementationCommit": "9542f8d4e578ff58f365154ab5c2a18d13da2307",
+  "pullRequest": "https://github.com/fzfz/harness-comfyui/pull/2",
+  "releasePreparation": "release-preparation-progress-20261001.json",
+  "finalRealSkillIndex": "final-real-skill-index-20261001.json",
+  "deliveryScope": "用户最新要求仅执行合并、发布、正式数据迁移和插件安装；此前未完成的扩展验收移出本轮交付条件，其历史状态继续保留。",
+  "historicalQualityAttempt": {
     "command": "pnpm quality:fast",
-    "status": "阶段性 quality:fast 通过；最终完整质量门禁未完成",
+    "status": "最终代码候选完整pnpm quality通过；后续记录变更按项目门禁复验",
     "unitIntegrationSkillsPassed": 1337,
     "failedTests": 0,
     "coverage": {
@@ -699,7 +779,7 @@
       "functions": 100,
       "lines": 96.6
     },
-    "blocker": "当前官方Desktop完整入口已通过；最终候选全树独立审查及完整pnpm quality尚未完成。",
+    "blocker": "候选A1至A11和A18的剩余实际验收继续按逐项状态执行。",
     "latestCoverageDiagnostic": {
       "command": "pnpm exec vitest run tests/unit tests/integration tests/skills --coverage --coverage.reporter=json --coverage.reporter=text-summary --coverage.reportOnFailure=true --testTimeout=30000",
       "testFilesPassed": 72,
@@ -785,34 +865,5 @@
       "result": ".local/desktop-e2e/three-blockers-20261001/final-quality-result.json",
       "scope": "本次三项修复后的候选树；整体候选验收状态继续由A1至A18定义。"
     }
-  },
-  "currentCandidateProgress": "current-candidate-progress-20261001.json",
-  "resolvedExternalBlockers": [
-    {
-      "service": "实际数据源 styles 与 prompt-terms 搜索",
-      "status": "HTTP 200",
-      "resolution": "通过现有受管停止、启动命令重启数据源进程；同配置只读查询与运行服务复测通过。",
-      "evidence": "source-semantic-resolution-20261001.json",
-      "historicalEvidence": [
-        {
-          "service": "实际数据源 styles 与 prompt-terms 搜索",
-          "status": "HTTP 502",
-          "message": "Catalog dependency is unavailable.",
-          "evidence": ".local/desktop-e2e/service-preflight-20261001/",
-          "requiredAction": "数据源维护者必须恢复对应 Catalog dependency；验收执行者必须在服务恢复后重试语义搜索。",
-          "lastVerified": "2026-10-01",
-          "recheck": {
-            "observedAt": "2026-09-30T21:30:31Z",
-            "stylesStatus": 502,
-            "promptTermsStatus": 502,
-            "evidence": [
-              ".local/desktop-e2e/service-preflight-20261001/styles-recheck-2026-09-30T21-30-31.745Z.json",
-              ".local/desktop-e2e/service-preflight-20261001/prompt-terms-recheck-2026-09-30T21-30-31.798Z.json"
-            ]
-          }
-        }
-      ]
-    }
-  ],
-  "threeRequestedFixes": "three-blockers-resolution-20261001.json"
+  }
 }

@@ -1,8 +1,10 @@
 # 插件版本发布规范
 
-Harness ComfyUI 以预构建插件 tarball 作为正式交付物。`package.json.version` 是插件版本的唯一结构化来源，Git tag 使用 `v<package.json.version>`。正式发布将本次候选 tarball 附加到对应 GitHub Release；普通用户从官方 DeepSeek Harness Desktop 的插件管理界面安装并运行该版本。项目不通过 npm 发布插件，也不把源码部署到生产 checkout 作为产品安装方式。
+Harness ComfyUI 以预构建插件 tarball 作为正式交付物。`package.json.version` 是插件版本的唯一结构化来源，Git tag 使用 `v<package.json.version>`。发布执行者将本次候选 tarball 附加到对应 GitHub Release；普通用户从官方 DeepSeek Harness Desktop 的插件管理界面安装并运行该版本。
 
-官方插件升级仍在实施中。新的官方 Desktop 自动化入口已通过完整回归，旧 Desktop、Web Host 和 headless 启动与安装入口已退役。最终候选真实验收、独立审查和完整质量门禁的状态由[验收记录](../verification/official-desktop-plugin/acceptance-status.json)保存。发布与生产切换必须满足本文各自的条件和授权。
+本版已经采用官方 Desktop 插件交付方式。新的官方 Desktop 自动化入口已通过完整回归，旧 Desktop、Web Host 和 headless 启动与安装入口已退役。最终候选真实验收、独立审查和完整质量门禁的状态由[验收记录](../verification/official-desktop-plugin/acceptance-status.json)保存。发布与生产切换必须满足本文各自的条件和授权。
+
+2026-10-01 本轮交付按用户最新要求执行合并、发布、正式数据迁移和插件安装，并停止追加验收。本轮执行者依据已有完整质量检查结果交付，保留此前未完成项目的原状态；具体范围见[本轮交付记录](../verification/official-desktop-plugin/delivery-scope-20261001.json)。下文继续定义常规版本的发布规则。
 
 ## 候选包与发布门禁
 
