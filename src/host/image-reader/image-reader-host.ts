@@ -9,18 +9,31 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export class ImageReaderRemoteService extends TypertRemoteService {
+  private readonly logger: ReturnType<Context['logger']>
+
   constructor(ctx: Context, private readonly service: Pick<ImageReaderConfigurationService, 'models' | 'configuration' | 'saveProfile' | 'activateProfile' | 'deleteProfile'>) {
     super(ctx, IMAGE_READER_REMOTE_NAMESPACE)
+    this.logger = ctx.logger('harness-comfyui-image-reader')
     for (const initialize of imageReaderRemoteInitializers) initialize(this)
   }
   models(signal: AbortSignal) { return this.service.models(signal) }
   async configuration(signal: AbortSignal) {
     signal.throwIfAborted()
-    return this.service.configuration()
+    return this.mutation(this.service.configuration())
   }
   private async mutation<T>(operation: Promise<T>): Promise<T> {
     try { return await operation } catch (error) {
-      if (error instanceof ImageReaderError) throw new RemoteError(error.code, error.message, Object.freeze({}))
+      if (error instanceof ImageReaderError) {
+        if (
+          (error.code === 'IMAGE_READER_CREDENTIAL_STAGE_CLEANUP_FAILED'
+            || error.code === 'IMAGE_READER_CREDENTIAL_COMMITTED_CLEANUP_FAILED')
+          && error.credentialFailure !== undefined
+        ) {
+          const credentialFailure = Object.freeze({ code: error.code, credentialFailure: error.credentialFailure })
+          this.logger.error('Image reader credential cleanup failed: %s', JSON.stringify(credentialFailure))
+        }
+        throw new RemoteError(error.code, error.message, Object.freeze({}))
+      }
       throw error
     }
   }

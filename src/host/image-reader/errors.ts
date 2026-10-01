@@ -1,4 +1,5 @@
 import type { ImageReaderErrorCode } from '../../image-reader/contract.ts'
+import type { ImageReaderCredentialFailure } from '../../image-reader/credential-schema.ts'
 
 export const IMAGE_READER_FAILURE_DIAGNOSTIC_LIMITS = Object.freeze({
   fieldChars: 96,
@@ -24,6 +25,7 @@ export type RuntimeImageReaderFailureInput = RuntimeImageReaderFailureContext
 
 export interface ImageReaderErrorOptions extends ErrorOptions {
   readonly runtimeFailure?: RuntimeImageReaderFailureContext
+  readonly credentialFailure?: ImageReaderCredentialFailure
 }
 
 function replaceMalformedUtf16(value: string): string {
@@ -113,12 +115,14 @@ export function runtimeImageReaderFailureMessage(context: RuntimeImageReaderFail
 export class ImageReaderError extends Error {
   readonly code: ImageReaderErrorCode
   readonly runtimeFailure?: RuntimeImageReaderFailureContext
+  readonly credentialFailure?: ImageReaderCredentialFailure
 
   constructor(code: ImageReaderErrorCode, message: string, options?: ImageReaderErrorOptions) {
     super(message, options?.cause === undefined ? undefined : { cause: options.cause })
     this.name = 'ImageReaderError'
     this.code = code
     this.runtimeFailure = options?.runtimeFailure
+    this.credentialFailure = options?.credentialFailure
   }
 }
 

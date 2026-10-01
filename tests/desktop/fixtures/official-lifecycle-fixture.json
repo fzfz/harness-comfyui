@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceClaim": false,
+  "artifact": {
+    "sourcePathEnvironmentName": "OFFICIAL_DESKTOP_LIFECYCLE_TARBALL",
+    "sourceIdentityPathEnvironmentName": "OFFICIAL_DESKTOP_LIFECYCLE_SOURCE_IDENTITY",
+    "sourceIdentityFilename": "candidate-source-identity.json"
+  },
+  "credentials": {
+    "testKeyEnvironmentName": "OFFICIAL_DESKTOP_E2E_API_KEY",
+    "testKeyValue": "automated-regression-no-network"
+  },
+  "runGateEnvironmentName": "RUN_OFFICIAL_DESKTOP_LIFECYCLE_E2E",
+  "scenarios": [
+    "a13-parallel-instances",
+    "a15-successful-start-stop",
+    "a15-start-failure",
+    "a15-cancel-after-launch",
+    "a15-startup-timeout",
+    "a15-port-conflict",
+    "a15-debug-retention"
+  ],
+  "instanceLabels": ["left", "right"],
+  "scenarioLabels": {
+    "successfulStartStop": "success",
+    "startFailure": "failure",
+    "startupCancellation": "cancelled",
+    "startupTimeout": "timeout",
+    "portConflict": "conflict",
+    "debugRetention": "debug",
+    "savedSettingsRestart": "left-restart",
+    "rightSettingsRestart": "right-restart"
+  },
+  "profileEntries": {
+    "agentDefaultModel": "agent-default-model",
+    "providerSettings": "llm-pi-ai",
+    "pluginSettings": "harness-comfyui-core",
+    "configurationProfile": "production",
+    "sourceUrl": "http://127.0.0.1",
+    "sourcePort": 1
+  },
+  "operations": {
+    "sessionPresetId": "harness-comfyui-cli-candidate",
+    "workspaceNameTemplate": "{fixtureId}-{instance}-workspace",
+    "sessionTitleTemplate": "{fixtureId} {instance} lifecycle session",
+    "hostReadOnlyRequestOperation": "Host Remote session.list after stopping the left instance",
+    "defaultProviderId": "siliconflow",
+    "defaultModelId": "deepseek-ai/DeepSeek-V4-Flash",
+    "viewBundleButtonAriaLabelTemplate": "查看 {name}",
+    "newSessionButtonAriaLabel": "新建会话",
+    "pluginBrandText": "ComfyUI工作台",
+    "candidateClientScript": {
+      "scriptUrlPrefix": "dsh-app://app/plugins/??",
+      "sourceMapUrlPrefix": "??",
+      "sourceMapRequestPrefix": "dsh-app://app/plugins/",
+      "revisionQueryPrefix": "&rev=",
+      "revisionPattern": "^[a-f0-9]{12}$",
+      "moduleRoutePattern": "^(?:@deepseek-ai/[a-z0-9][a-z0-9-]*|harness-comfyui)/client\\.js$",
+      "candidateModuleMustBeLast": true,
+      "moduleMapSuffix": ".map",
+      "sourceUrlDirectivePrefix": "//# sourceURL=",
+      "sourceUrlDirectiveValuePattern": "+",
+      "sourceMapDirectiveValuePattern": "*",
+      "moduleSeparator": ";\n",
+      "sourceMapTrailerTemplate": "//# sourceMappingURL={sourceMapUrl}\n",
+      "evidenceFilenameTemplate": "official-client-source-{scriptId}-{kind}.js",
+      "sourceMapEvidenceFilenameTemplate": "official-client-source-{scriptId}-combo-map.json",
+      "evidenceRecordFilenameTemplate": "official-client-source-{scriptId}.json"
+    },
+    "unexpectedOnboardingButtonText": "开始设置",
+    "pluginNoticeText": "内测声明",
+    "pluginNoticeContinueButtonText": "继续"
+  },
+  "paths": {
+    "supportDirectoryName": "lifecycle-fixtures",
+    "environmentDirectoryName": "lifecycle-environments",
+    "artifactsDirectoryName": "artifacts",
+    "testEnvironmentFilename": "test.env",
+    "evidenceFilenames": {
+      "a13-parallel-instances": "official-desktop-lifecycle-a13.json",
+      "a15-successful-start-stop": "official-desktop-lifecycle-a15-success.json",
+      "a15-start-failure": "official-desktop-lifecycle-a15-failure.json",
+      "a15-cancel-after-launch": "official-desktop-lifecycle-a15-cancel.json",
+      "a15-startup-timeout": "official-desktop-lifecycle-a15-timeout.json",
+      "a15-port-conflict": "official-desktop-lifecycle-a15-port-conflict.json",
+      "a15-debug-retention": "official-desktop-lifecycle-a15-debug.json"
+    },
+    "debugRetentionFilename": "debug-retention.json",
+    "osHomeDirectoryName": "os-home",
+    "agentsHomeDirectoryName": "agents-home"
+  },
+  "timeouts": {
+    "a13CaseTimeoutMs": 600000,
+    "a15CaseTimeoutMs": 240000,
+    "operationTimeoutMs": 120000,
+    "cleanupTimeoutMs": 120000,
+    "installTimeoutMs": 120000,
+    "failureStartupTimeoutMs": 15000,
+    "timeoutStartupTimeoutMs": 10000,
+    "timeoutPortReadyMs": 5000,
+    "pollIntervalMs": 100
+  }
+}

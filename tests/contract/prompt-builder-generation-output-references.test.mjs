@@ -62,7 +62,7 @@ describe('Prompt Builder generation output references', () => {
     const executableDocuments = `${skill}\n${validatorReference}`
 
     expect(executableDocuments).not.toMatch(/\brun_skill_script\b|\bfinalize_skill_error\b/u)
-    expect(validatorReference).toContain('node scripts/validate-output.mjs --quiet --prompt-format')
+    expect(validatorReference).toContain('ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --quiet --prompt-format')
   })
 
   it('keeps every Skill-owned reference linked from its SKILL.md', () => {

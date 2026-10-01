@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-30T06:26:27.221Z",
+  "application": {
+    "path": "/Applications/DeepSeek Harness.app",
+    "version": "0.2.0-rc.2"
+  },
+  "category": "官方安装版能力探测",
+  "capabilities": {
+    "distinctHarnessHome": "通过目录与Host命令核对",
+    "distinctElectronUserData": "通过实际目录与Singleton文件核对",
+    "parallelHostAndRendererPorts": "两轮同时监听独立Host/CDP端口",
+    "sameUserDataSingleInstanceLock": "通过：同目录第二进程退出码0，原进程组和Renderer继续可用；独立证据保留。",
+    "hostInspector": "未监听，官方源码仅在开发模式启用",
+    "hostLogs": "本轮stdout/stderr保存Host诊断",
+    "defaultApplicationLogs": "macOS应用默认日志共享，尚未隔离",
+    "cleanup": "持久开发实例实际停止和端口释放通过；A15完整异常矩阵未完成。",
+    "persistentDevelopmentInitialization": "跨启动目录复用、官方YAML配置保存、免费模型显示及本轮清理已实测；标准依赖视图安装尚待授权。"
+  },
+  "runs": [
+    {
+      "runId": "aab3b286-e686-449f-8c31-34653c81ba0b",
+      "pid": 36192,
+      "ports": {
+        "host": 52367,
+        "rendererCdp": 52368,
+        "hostInspector": 52369
+      },
+      "currentGroupPresent": false,
+      "currentPortOwners": [
+        {
+          "port": 52367,
+          "pids": []
+        },
+        {
+          "port": 52368,
+          "pids": []
+        },
+        {
+          "port": 52369,
+          "pids": []
+        }
+      ],
+      "evidence": ".local/desktop-e2e/aab3b286-e686-449f-8c31-34653c81ba0b/evidence",
+      "reportedRunState": "failed"
+    },
+    {
+      "runId": "d3476a8e-59ca-41d5-b6aa-495184c80764",
+      "pid": 38874,
+      "ports": {
+        "host": 54108,
+        "rendererCdp": 54109,
+        "hostInspector": 54110
+      },
+      "currentGroupPresent": false,
+      "currentPortOwners": [
+        {
+          "port": 54108,
+          "pids": []
+        },
+        {
+          "port": 54109,
+          "pids": []
+        },
+        {
+          "port": 54110,
+          "pids": []
+        }
+      ],
+      "evidence": ".local/desktop-e2e/d3476a8e-59ca-41d5-b6aa-495184c80764/evidence",
+      "reportedRunState": "failed"
+    }
+  ],
+  "acceptance": {
+    "A13": "未通过：Session、设置与插件安装独立性尚待业务验证",
+    "A14": "未通过：候选包官方安装及业务断言尚未执行",
+    "A15": "未通过：定向清理回归与三轮真实停止通过；完整异常矩阵尚待完成。"
+  },
+  "next": [
+    "官方API与公共YAML依赖视图安装需用户授权",
+    "候选插件官方安装与业务矩阵"
+  ],
+  "developmentInitializationEvidence": "development-initialization.json",
+  "singleInstanceLockEvidence": ".local/desktop-e2e/089b77ec-ea4a-446c-ab53-dad1b8fc5926/evidence/single-instance-lock.json"
+}

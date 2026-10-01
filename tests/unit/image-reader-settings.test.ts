@@ -3,6 +3,8 @@ import { redactSecrets } from '@deepseek-ai/dsh-settings'
 import { describe, expect, it, vi } from 'vitest'
 
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
+import { IMAGE_READER_CREDENTIAL_REF_PREFIX } from '../../src/image-reader/credential-schema.ts'
+import type { ImageReaderCredentialRef } from '../../src/image-reader/credential-schema.ts'
 import {
   IMAGE_READER_DEFAULT_CONFIGURATION,
   IMAGE_READER_DEFAULT_PROMPT,
@@ -12,6 +14,7 @@ import {
   decodeImageReaderSettingsView,
   migrateLegacyImageReaderSettings,
   validateImageReaderConfiguration,
+  validateImageReaderSettingsSection,
   type ImageReaderConfiguration,
 } from '../../src/image-reader/settings.ts'
 import {
@@ -132,7 +135,7 @@ describe('image reader settings page behavior', () => {
         activeProfileId: 'default',
         profiles: [{ id: 'default', name: '原图片读取配置', provider: 'provider-a', model: 'vision-a', defaultPrompt: '旧提示词', temperature: 0.4, maxTokens: 128 }],
       },
-      credentials: {},
+      credentialRefs: {},
     })
   })
 
@@ -149,20 +152,59 @@ describe('image reader settings page behavior', () => {
       profiles: [runtimeProfile, custom],
     }
     expect(decodeImageReaderConfiguration(configuration)).toEqual(configuration)
-    expect(decodeImageReaderSettingsView({ configuration, credentials: {} })).toEqual({ configuration })
+    expect(decodeImageReaderSettingsView({ configuration, credentialRefs: {} })).toEqual({ configuration })
     expect(decodeImageReaderConfiguration({ activeProfileId: 'missing', profiles: [runtimeProfile] })).toBeUndefined()
     expect(decodeImageReaderConfiguration({ activeProfileId: 'runtime', profiles: [runtimeProfile, runtimeProfile] })).toBeUndefined()
   })
 
-  it('redacts every stored OpenAI-compatible API Key from the settings value sent to the browser', () => {
+  it('keeps plugin-owned credential references visible to Settings without exposing credential values', () => {
+    const profile = Object.freeze({
+      ...createImageReaderProfile('custom'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'https://vision.example/v1/chat/completions',
+      model: 'vision-model',
+      hasApiKey: true,
+    })
     const value = {
-      configuration: runtimeConfiguration,
-      credentials: { custom: 'must-not-cross-the-wire' },
+      configuration: { activeProfileId: profile.id, profiles: [profile] },
+      credentialRefs: { custom: `${IMAGE_READER_CREDENTIAL_REF_PREFIX}${'a'.repeat(32)}` },
     }
     expect(redactSecrets(IMAGE_READER_SETTINGS_SCHEMA as never, value)).toEqual({
-      value: { configuration: runtimeConfiguration, credentials: {} },
-      secrets: [{ path: ['credentials', 'custom'], set: true }],
+      value,
+      secrets: [],
     })
+  })
+
+  it('accepts only unique plugin-owned credential references for OpenAI-compatible profiles', () => {
+    const custom = {
+      ...createImageReaderProfile('custom'),
+      connectionType: 'openai-compatible' as const,
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      model: 'vision-model',
+      hasApiKey: true,
+    }
+    const reference = `${IMAGE_READER_CREDENTIAL_REF_PREFIX}${'a'.repeat(32)}` as ImageReaderCredentialRef
+    const section = {
+      configuration: { activeProfileId: 'custom', profiles: [custom] },
+      credentialRefs: { custom: reference },
+    }
+
+    expect(() => validateImageReaderSettingsSection(section)).not.toThrow()
+    expect(() => validateImageReaderSettingsSection({
+      ...section,
+      credentialRefs: { custom: 'sk-live-secret-value' as ImageReaderCredentialRef },
+    })).toThrow()
+    expect(() => validateImageReaderSettingsSection({
+      configuration: { activeProfileId: 'custom', profiles: [custom, { ...custom, id: 'another' }] },
+      credentialRefs: { custom: reference, another: reference },
+    })).toThrow()
+    expect(() => validateImageReaderSettingsSection({
+      configuration: {
+        activeProfileId: 'runtime',
+        profiles: [{ ...createImageReaderProfile('runtime'), provider: 'vision-provider', model: 'vision-model' }],
+      },
+      credentialRefs: { runtime: reference },
+    })).toThrow()
   })
 
   it('validates the two connection types without coupling custom endpoints to the runtime catalog', () => {

@@ -1,0 +1,5 @@
+{
+  "directoryFields": ["dataDir", "apiWorkflowCacheDirectory", "runDirectory", "savedMediaDirectory", "logDirectory"],
+  "repositoryField": "runRepositoryFile",
+  "failureDetailsTemplate": "路径：{path}。系统原因：{reason}"
+}

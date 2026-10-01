@@ -8,7 +8,7 @@ import entryIdSchema from '../../config/settings-entry-ids.schema.json' with { t
 import { SOURCE_PROFILE_ENTRY_ID } from '../../src/source-settings.ts'
 import { IMAGE_READER_PROFILE_ENTRY_ID } from '../../src/image-reader/settings.ts'
 
-const requireFromDsh = createRequire(createRequire(import.meta.url).resolve('@deepseek-ai/dsh/package.json'))
+const requireFromModule = createRequire(import.meta.url)
 
 describe('Settings Profile entry identities', () => {
   it('satisfies the shared entry ID schema', () => {
@@ -23,8 +23,8 @@ describe('Settings Profile entry identities', () => {
   })
 
   it('uses the shared IDs in Host and Client code and declares matching Loader rows', async () => {
-    const yaml = requireFromDsh('js-yaml')
-    const { entryListSchema } = requireFromDsh('@deepseek-ai/cordis-plugin-include')
+    const yaml = requireFromModule('js-yaml')
+    const { entryListSchema } = requireFromModule('@deepseek-ai/cordis-plugin-include')
     const rows = yaml.load(await readFile(resolve('cordis.patch.yml'), 'utf8'), { schema: entryListSchema }) as Array<{ insert?: Array<{ id: string }> }>
     const installed = new Set(rows.flatMap(row => row.insert?.map(entry => entry.id) ?? []))
     expect(SOURCE_PROFILE_ENTRY_ID).toBe(entryIds.core)

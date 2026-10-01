@@ -12,7 +12,7 @@ import {
 } from '../../src/host/generation/runtime-parameters.ts'
 import { GenerationSourceCli } from '../../src/host/generation/source-cli.ts'
 import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compiler.ts'
-import { loadSourceWorktreeContext } from '../worktree/runtime.mjs'
+import { loadProfile } from '../../src/config/load-profile.ts'
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const PARAMETER_SUPPORT_BASELINE_PATH = resolve(
@@ -359,14 +359,13 @@ async function verifyOfficialCache({
 }
 
 export async function runMatrix(options) {
-  const context = await loadSourceWorktreeContext({ repositoryRoot: REPOSITORY_ROOT })
-  process.env.DSH_HOME = context.dshHome
+  const profile = loadProfile('production', { storageRoot: tmpdir() })
   const signal = new AbortController().signal
   const settings = {
     get: () => ({
       configuration: {
         url: options.sourceUrl ?? 'http://127.0.0.1',
-        port: options.sourcePort ?? context.runtime.source.catalogPort,
+        port: options.sourcePort ?? profile.source.catalogPort,
       },
     }),
   }
@@ -394,9 +393,9 @@ export async function runMatrix(options) {
   const cacheDirectory = await mkdtemp(resolve(tmpdir(), 'harness-comfyui-real-matrix-'))
   let frontendExportCount = 0
   const frontend = new ChromeComfyFrontend({
-    browserExecutablePath: context.runtime.comfyui.frontendCompiler.browserExecutablePath,
-    timeoutMs: context.runtime.comfyui.frontendCompiler.timeoutMs,
-    preReadiness: context.runtime.comfyui.frontendCompiler.preReadiness,
+    browserExecutablePath: profile.comfyui.frontendCompiler.browserExecutablePath,
+    timeoutMs: profile.comfyui.frontendCompiler.timeoutMs,
+    preReadiness: profile.comfyui.frontendCompiler.preReadiness,
   })
   const results = []
   try {

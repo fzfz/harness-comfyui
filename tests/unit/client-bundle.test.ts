@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   materializeClientModule,
   CLIENT_MODULE_POLICY,
-} from '../../scripts/production/client-module.mjs'
+} from '../../scripts/build/client-module.mjs'
 
 const expectedExternals = [
   'react',
@@ -72,7 +72,7 @@ afterEach(async () => {
 describe('Client module materialization seam', () => {
   it('materializes the Client from source with its explicit public Remote contribution', async () => {
     const source = await readFile(join(repositoryRoot, 'src/client/index.tsx'), 'utf8')
-    const moduleMaterializer = await readFile(join(repositoryRoot, 'scripts/production/client-module.mjs'), 'utf8')
+    const moduleMaterializer = await readFile(join(repositoryRoot, 'scripts/build/client-module.mjs'), 'utf8')
 
     expect(source).not.toContain('harness-comfyui/remote')
     expect(source).toContain("import HARNESS_COMFYUI_REMOTE from '../remote.ts'")

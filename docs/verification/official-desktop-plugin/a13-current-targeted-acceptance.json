@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceItemNames": {
+    "A13": "两个测试环境独立运行并保持既有实例原状",
+    "A18": "免费真实模型矩阵与正式ComfyUI Run验收"
+  },
+  "scope": "当前0.45.0候选的A13双实例隔离、重启读回、跨实例请求及既有环境前后只读核对。",
+  "targetedPassed": true,
+  "finalCandidateAccepted": false,
+  "test": {
+    "file": "tests/desktop/official-desktop-lifecycle.test.mjs",
+    "passed": 1,
+    "skipped": 6,
+    "log": ".local/desktop-e2e/desktop-test-runner/a13-formal-cdp-20261001.log"
+  },
+  "candidate": {
+    "name": "harness-comfyui",
+    "version": "0.45.0",
+    "sourceCommit": "742570c4d7ab17272baac0eb3211536751002c9a",
+    "dirty": true
+  },
+  "environments": [
+    {
+      "label": "left",
+      "runId": "5a288372-d574-4536-8fef-e6417c57326d",
+      "sessionId": "session-ac3e5a3f-3d6a-4fcc-9501-46f86ccef832",
+      "workspaceId": "fa03864c-cfeb-4c06-b4c3-afe0cbb78806",
+      "observedTitle": "5a288372-d574-4536-8fef-e6417c57326d left lifecycle session",
+      "installedResourceComparisons": 204,
+      "clientSourceMatched": true,
+      "clientComboModuleCount": 1,
+      "clientCandidateModuleIndex": 0
+    },
+    {
+      "label": "right",
+      "runId": "51c182a3-96e0-42d6-854a-2609706eeb82",
+      "sessionId": "session-c7615ffe-9180-4768-b859-0c7ccb023b75",
+      "workspaceId": "e2126870-b198-4039-a741-86542fa00147",
+      "observedTitle": "51c182a3-96e0-42d6-854a-2609706eeb82 right lifecycle session",
+      "installedResourceComparisons": 204,
+      "clientSourceMatched": true,
+      "clientComboModuleCount": 1,
+      "clientCandidateModuleIndex": 0
+    },
+    {
+      "label": "left-restart",
+      "runId": "144b00fb-a544-48d5-b760-bbf1ebd2ff47",
+      "sessionId": "session-ac3e5a3f-3d6a-4fcc-9501-46f86ccef832",
+      "workspaceId": "fa03864c-cfeb-4c06-b4c3-afe0cbb78806",
+      "observedTitle": null,
+      "installedResourceComparisons": 204,
+      "clientSourceMatched": true,
+      "clientComboModuleCount": 58,
+      "clientCandidateModuleIndex": 57
+    },
+    {
+      "label": "right-restart",
+      "runId": "14389fce-7d51-4e52-ba01-3a413aadd3e4",
+      "sessionId": "session-c7615ffe-9180-4768-b859-0c7ccb023b75",
+      "workspaceId": "e2126870-b198-4039-a741-86542fa00147",
+      "observedTitle": "51c182a3-96e0-42d6-854a-2609706eeb82 right lifecycle session",
+      "installedResourceComparisons": 204,
+      "clientSourceMatched": true,
+      "clientComboModuleCount": 58,
+      "clientCandidateModuleIndex": 57
+    }
+  ],
+  "preservation": {
+    "entries": 522,
+    "files": 416,
+    "categories": [
+      "credentials",
+      "business-data",
+      "profile-settings-and-installation",
+      "installed-plugin-and-dependencies",
+      "workspace-session-metadata",
+      "electron-preferences",
+      "global-settings",
+      "plugin-manager-state",
+      "installed-plugin"
+    ],
+    "environments": [
+      "controlled",
+      "daily"
+    ],
+    "passed": true,
+    "before": ".local/desktop-e2e/a13-expanded-preservation-20261001-v2/before.json",
+    "after": ".local/desktop-e2e/a13-expanded-preservation-20261001-v2/after-targeted.json"
+  },
+  "lifecycleEvidence": ".local/desktop-e2e/lifecycle-fixtures/d57dff4e-54e2-4105-98cf-0ec889ca91b9/evidence/official-desktop-lifecycle-a13.json",
+  "osCleanupEvidence": ".local/desktop-e2e/desktop-test-runner/a13-formal-cdp-20261001-os-cleanup.json",
+  "codeReviews": [
+    ".local/desktop-e2e/reviews/cdp-transport-standards-final-review.json",
+    ".local/desktop-e2e/reviews/cdp-transport-spec-final-review.json"
+  ],
+  "limitations": [
+    "此记录只报告A13定向实机回归，完整Desktop门禁及最终候选验收继续单独记录。",
+    "既有环境核对结果仅适用于before与after快照所列的受控环境和日常实例路径，包括文件、目录、链接及缺失路径。",
+    "此记录使用受控回归服务，真实模型及正式ComfyUI Run仍按A18单独验收。"
+  ]
+}

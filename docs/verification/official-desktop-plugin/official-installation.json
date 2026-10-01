@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "安装及首次重启通过，完整候选验收未完成",
+  "appVersion": "0.2.0-rc.2",
+  "pluginVersion": "0.44.3",
+  "installationMechanism": "官方 Plugins 界面",
+  "profileRelativePath": ".local/desktop-development/official-environment/dsh-home/profiles/desktop/",
+  "installationRunId": "6ddd0220-f597-415e-94e5-af1cfd47369f",
+  "restartRunId": "b447134b-298e-411b-8a58-a275c6e5bbb3",
+  "bundleEnabled": true,
+  "workbenchVisibleAfterRestart": true,
+  "resolvedDependencyCount": 32,
+  "unapprovedDependencyCount": 0,
+  "dependencyScriptsEnabled": false,
+  "evidence": [
+    ".local/desktop-e2e/6ddd0220-f597-415e-94e5-af1cfd47369f/evidence/installation-result-ui.json",
+    ".local/desktop-e2e/b447134b-298e-411b-8a58-a275c6e5bbb3/evidence/installed-restart-ui.json"
+  ],
+  "cleanup": {
+    "installation": "stopped; ports released",
+    "restart": "stopped; ports released"
+  },
+  "remaining": [
+    "两个项目预设及 Skill 作用域的实际注册核对",
+    "真实模型业务矩阵及正式 ComfyUI Run",
+    "无系统 Node/pnpm 和移走源码的运行验收"
+  ]
+}

@@ -1,19 +1,17 @@
-import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it, vi } from 'vitest'
+import {
+  assertObjectJsonSchema,
+  assertSupportedJsonSchema,
+  validateJsonSchemaValue,
+} from '@deepseek-ai/dsh-tools'
 
 import { apply } from '../../agent-presets/project-iteration-dispatch.mjs'
-import { validateAgentPresetComposition } from '../../scripts/profile/agent-preset.mjs'
-import { loadTestDesktopContext } from '../support/desktop-context.mjs'
+import { readProjectAgentPresetResources } from '../../scripts/build/agent-preset-resources.mjs'
 
-const desktop = await loadTestDesktopContext()
-const requireFromDesktop = createRequire(resolve(desktop.desktopSource, 'package.json'))
-const nativeTools = requireFromDesktop('@deepseek-ai/dsh-tools')
-const controls = requireFromDesktop('@deepseek-ai/dsh-tool-subagent-control')
-const preset = await validateAgentPresetComposition(resolve(import.meta.dirname,
-  '../../agent-presets/harness-comfyui-iteration/agent.cordis.yml'))
+const repositoryRoot = resolve(import.meta.dirname, '../..')
+const { composition: preset } = await readProjectAgentPresetResources(repositoryRoot, 'harness-comfyui-iteration')
 const roles = preset.filter(entry => entry.name === '../project-iteration-dispatch.mjs')
 
 function registerTools() {
@@ -25,14 +23,13 @@ function registerTools() {
   }
   const ctx = {
     tools: { register: tool => {
-      nativeTools.assertObjectJsonSchema(tool.parameters)
-      nativeTools.assertSupportedJsonSchema(tool.output.schema)
+      assertObjectJsonSchema(tool.parameters)
+      assertSupportedJsonSchema(tool.output.schema)
       registered.set(tool.name, tool)
     } },
     subagents,
   }
   for (const role of roles) apply(ctx, role.config)
-  controls.apply(ctx)
   return { registered, subagents }
 }
 
@@ -74,20 +71,22 @@ function expectedMessage(index, args) {
 }
 
 async function call(tool, args, exec) {
-  expect(nativeTools.validateJsonSchemaValue(tool.parameters, args, '')).toEqual([])
+  expect(validateJsonSchemaValue(tool.parameters, args, '')).toEqual([])
   const result = await tool.execute(args, exec)
-  expect(nativeTools.validateJsonSchemaValue(tool.output.schema, result, '')).toEqual([])
+  expect(validateJsonSchemaValue(tool.output.schema, result, '')).toEqual([])
   expect(tool.output.render(args, result)).toEqual([{ type: 'text', text: JSON.stringify(result) }])
   return result
 }
 
-describe('iteration task templates using the target Desktop subagent service interface', () => {
-  it('registers the four configured role tools', () => {
+describe('iteration role dispatch components', () => {
+  it('registers the four project role tools and keeps host control components in the Preset resources', () => {
     expect(roles).toHaveLength(4)
     expect([...registerTools().registered.keys()]).toEqual([
       'subagent_composition', 'subagent_generation', 'subagent_observation', 'subagent_comparison',
-      'send_message', 'interrupt_agent',
     ])
+    expect(preset.find(entry => entry.name === '@deepseek-ai/dsh-tool-subagent-control')).toBeDefined()
+    expect(preset.find(entry => entry.name === '@deepseek-ai/dsh-tool-goal')).toBeDefined()
+    expect(preset.find(entry => entry.name === '@deepseek-ai/dsh-command-goal')).toBeDefined()
   })
 
   it.each(roles.map((role, index) => ({ role, index })))('creates $role.id with its template and persona', async ({ role, index }) => {
@@ -139,25 +138,19 @@ describe('iteration task templates using the target Desktop subagent service int
     for (const field of schema.required) {
       const args = task(index)
       delete args[field]
-      expect(nativeTools.validateJsonSchemaValue(schema, args, '')).not.toEqual([])
+      expect(validateJsonSchemaValue(schema, args, '')).not.toEqual([])
     }
-    expect(nativeTools.validateJsonSchemaValue(schema, { ...task(index), prompt: 'unstructured' }, ''))
+    expect(validateJsonSchemaValue(schema, { ...task(index), prompt: 'unstructured' }, ''))
       .not.toEqual([])
+    expect(role.config.toolFilter.deny).toEqual(expect.arrayContaining([
+      ...roles.map(item => item.config.toolName), 'interrupt_agent', 'get_goal', 'create_goal', 'update_goal',
+    ]))
   })
 
   it('gives observation only image, question and output parameters', () => {
     expect(Object.keys(roles[2].config.parameters.properties).sort()).toEqual([
       'agent_id', 'description', 'images', 'output_files', 'questions',
     ])
-  })
-
-  it('keeps the native message tool for reports to the parent', async () => {
-    const { registered, subagents } = registerTools()
-    const exec = execution()
-    expect(await registered.get('send_message').execute({ agent_id: 'parent-0', message: '需要补充材料' }, exec))
-      .toEqual({ messageId: 'message-1' })
-    expect(subagents.sendMessage).toHaveBeenCalledExactlyOnceWith(exec.agent, 'parent-0',
-      [{ type: 'text', text: '需要补充材料' }], { signal: exec.signal })
   })
 
   it.each([false, true])('propagates native errors without retry; continuation=%s', async continuation => {
@@ -177,124 +170,5 @@ describe('iteration task templates using the target Desktop subagent service int
     await expect(registered.get('subagent_composition').execute(args, exec)).rejects.toThrow()
     expect(subagents.startContinuable).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
-  })
-})
-
-describe('iteration components in the target Desktop Tool Registry', () => {
-  it('registers, executes and disposes role tools within their Cordis scope', async () => {
-    const load = name => requireFromDesktop(name)
-    const [{ Context, Service }, { SystemPrompt }, { createScope }] = await Promise.all([
-      load('@deepseek-ai/cordis'), load('@deepseek-ai/dsh-system-prompt'), load('@deepseek-ai/dsh-scope'),
-    ])
-    const recorded = registerTools().subagents
-    class RecordedSubagents extends Service {
-      constructor(ctx) {
-        super(ctx, 'subagents')
-        this.startContinuable = recorded.startContinuable
-        this.sendMessage = recorded.sendMessage
-      }
-    }
-    const ctx = new Context()
-    const services = [
-      await ctx.plugin(SystemPrompt, {}),
-      await ctx.plugin(nativeTools.ToolRuntime, { mode: 'native' }),
-      await ctx.plugin(RecordedSubagents),
-    ]
-    const parent = { id: 'parent-scope' }
-    const other = { id: 'other-scope' }
-    const scope = createScope(ctx, parent)
-    try {
-      const fibers = []
-      for (const role of roles) fibers.push(await scope.ctx.plugin({
-        name: role.id, inject: ['tools', 'subagents'], apply,
-      }, role.config))
-      expect(ctx.tools.schemas(parent).map(tool => tool.name)).toEqual(roles.map(role => role.config.toolName))
-      expect(ctx.tools.schemas(other)).toEqual([])
-      for (const [index, role] of roles.entries()) {
-        const args = task(index)
-        const run = extra => ctx.tools.execute({
-          callId: 'call-' + index, name: role.config.toolName,
-          arguments: { ...args, ...extra }, agent: parent,
-          signal: new AbortController().signal,
-        })
-        expect(await run({})).toMatchObject({ isError: false, value: { kind: 'continuable', subagentId: 'child-1' } })
-        expect(recorded.startContinuable.mock.lastCall[0].request.prompt)
-          .toEqual([{ type: 'text', text: expectedMessage(index, args) }])
-        expect(await run({ agent_id: 'child-1' })).toMatchObject({ isError: false, value: { messageId: 'message-1' } })
-        expect(recorded.sendMessage.mock.lastCall[2])
-          .toEqual([{ type: 'text', text: expectedMessage(index, args) }])
-      }
-      await fibers[0].dispose()
-      expect(ctx.tools.schemas(parent).map(tool => tool.name)).toEqual(roles.slice(1).map(role => role.config.toolName))
-      await scope.dispose()
-      expect(ctx.tools.schemas(parent)).toEqual([])
-      const replacement = createScope(ctx, parent)
-      try {
-        await replacement.ctx.plugin({ name: roles[0].id, inject: ['tools', 'subagents'], apply }, roles[0].config)
-        expect(ctx.tools.schemas(parent).map(tool => tool.name)).toEqual([roles[0].config.toolName])
-      } finally {
-        await replacement.dispose()
-      }
-      expect(ctx.tools.schemas(parent)).toEqual([])
-    } finally {
-      await scope.dispose()
-      for (const service of services.reverse()) await service.dispose()
-    }
-  })
-})
-
-
-describe('native child reasoning-effort inheritance', () => {
-  const parent = {
-    options: { provider: 'old-provider', model: 'old-model', reasoningEffort: 'low' },
-    session: { requestHeader: () => ({ config: {
-      provider: 'parent-provider', model: 'parent-model', reasoningEffort: 'max',
-    } }) },
-  }
-
-  it.each(roles)('lets $id use its own route default instead of a fixed effort', async role => {
-    const { resolveChildAgentOptions } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-subagent')).href)
-    const { registered, subagents } = registerTools()
-    await call(registered.get(role.config.toolName), task(roles.indexOf(role)), execution())
-    const requested = subagents.startContinuable.mock.calls[0][0].request.agentOptions
-    const resolved = resolveChildAgentOptions(parent, requested, 1)
-    expect(resolved).toMatchObject({ provider: requested.provider, model: requested.model })
-    expect(resolved).not.toHaveProperty('reasoningEffort')
-  })
-
-  it.each([
-    ['same route', {}, 'max'],
-    ['different provider', { provider: 'other-provider' }, undefined],
-    ['different model', { model: 'other-model' }, undefined],
-    ['explicit override', { provider: 'other-provider', reasoningEffort: 'high' }, 'high'],
-  ])('%s follows native inheritance', async (_label, requested, effort) => {
-    const { resolveChildAgentOptions } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-subagent')).href)
-    expect(resolveChildAgentOptions(parent, requested, 1).reasoningEffort).toBe(effort)
-  })
-
-  it('validates omitted and explicit effort against the installed OpenRouter model capabilities', async () => {
-    const { LlmRuntime } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-llm')).href)
-    const piRoot = resolve(desktop.desktopSource, 'node_modules/@earendil-works/pi-ai/dist')
-    const { getBuiltinModels } = await import(pathToFileURL(resolve(piRoot, 'providers/all.js')).href)
-    const { getSupportedThinkingLevels } = await import(pathToFileURL(resolve(piRoot, 'index.js')).href)
-    const model = getBuiltinModels('openrouter').find(model => model.id === roles[0].config.agentOptions.model)
-    expect(model).toBeDefined()
-    const info = { reasoning: { efforts: getSupportedThinkingLevels(model).map(id => ({ id })) } }
-    const validate = config => LlmRuntime.prototype.resolveCallWithInfo.call({}, config, info).config
-    const config = { provider: 'openrouter', model: model.id }
-    expect(validate(config)).not.toHaveProperty('reasoningEffort')
-    expect(() => validate({ ...config, reasoningEffort: 'max' }))
-      .toThrow(expect.objectContaining({ code: 'UNSUPPORTED_REASONING_EFFORT' }))
-  })
-
-  it.each([
-    ['provider default', { reasoning: { efforts: [{ id: 'high' }], defaultEffort: 'high' } }, 'high'],
-    ['model without reasoning', {}, undefined],
-  ])('preserves %s when effort is omitted', async (_label, info, effort) => {
-    const { LlmRuntime } = await import(pathToFileURL(requireFromDesktop.resolve('@deepseek-ai/dsh-llm')).href)
-    const config = { provider: 'other-provider', model: 'other-model' }
-    expect(LlmRuntime.prototype.resolveCallWithInfo.call({}, config, info).config.reasoningEffort).toBe(effort)
-    expect(() => LlmRuntime.prototype.resolveCallWithInfo.call({}, { ...config, reasoningEffort: 'max' }, info))
-      .toThrow(expect.objectContaining({ code: 'UNSUPPORTED_REASONING_EFFORT' }))
   })
 })

@@ -23,7 +23,7 @@ description: 使用 Harness 当前“图片读取”配置中的视觉模型读�
 
 ## 4. 逐图读取
 
-当前 Agent 必须按输入顺序为每张图片分别调用一次 `node "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。
+当前 Agent 必须按输入顺序为每张图片分别调用一次 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。
 
 某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。
 
@@ -35,4 +35,4 @@ description: 使用 Harness 当前“图片读取”配置中的视觉模型读�
 2. CLI 返回的 `provider` 与 `model`；
 3. CLI 返回的 `observation`，或本次读取的错误码与错误消息。
 
-当前 Agent 必须以成功返回的 `observation` 作为该图片的视觉观察来源。当前 Agent 可以根据用户的问题组织这些观察文本，但不得查询 Generation Run、读取 Generation Prompt 或编写下一次生成使用的改进 Prompt。
+当前 Agent 仅根据用户的问题组织成功返回的 `observation`，并使用这些观察结果回答该问题。

@@ -7,11 +7,11 @@ Harness ComfyUI 图片读取 CLI 为 `comfyui-image-review` Skill 提供两个�
 - `generation resolve-media --stdin` 只查询一个或多个 ComfyUI Generation Run 的原始 `parameters` 与本地图片路径；
 - `image inspect --stdin` 使用图片读取设置中的独立视觉模型观察一张本地图片。
 
-Skill 执行者必须在取得 `parameters` 与 `observation` 后完成语义对比，并编写改进 Prompt。
+输入来源、Run 批次、图片处理顺序、语义比较与改进 Prompt 步骤按 `SKILL.md` 第 2 至 6 节执行。本文件定义这两个命令的输入输出合同、错误和副作用。
 
 ## 调用环境与可执行入口
 
-Harness ComfyUI Host 必须处于运行状态。Skill 执行者必须在 Harness 提供的受管前台 shell 工具调用（shell Tool Call）中，通过 `node "$DSH_HARNESS_COMFYUI_CLI"` 执行本文件定义的命令。受管环境通过 `DSH_HARNESS_COMFYUI_CLI` 环境变量提供 CLI 脚本路径。
+Harness ComfyUI Host 必须处于运行状态。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者必须设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，并执行本文件定义的命令。
 
 Skill 执行者必须在当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。命令使用当前 Session 和 Workspace，Skill 执行者只需提供本文件定义的命令参数。
 
@@ -19,14 +19,7 @@ Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harnes
 
 ## 命令与调用时机
 
-Skill 执行者必须按以下顺序调用命令：
-
-1. Skill 执行者按照“Run ID 与图片路径的来源”章节取得 `run_id`，并按原顺序将这些 ID 分成每组一至二十个。
-2. Skill 执行者为每组调用一次 `generation resolve-media --stdin`。
-3. Skill 执行者按每个成功 Run 的 `images` 顺序处理图片。
-4. Skill 执行者为每张图片分别调用一次 `image inspect --stdin`。该命令一次只接受一个 `file_path`。
-
-Skill 执行者必须跳过返回逐 Run 错误或 `images` 为空数组的 Run，继续处理其他成功 Run 的图片。
+命令顺序、Run 批次、Run 与图片处理顺序、逐图调用和取消行为按 `SKILL.md` 第 2 至 3 节执行。`image inspect --stdin` 每次只接受一个 `file_path`；以下章节定义两条命令的输入输出字段。
 
 ## 参数与标准输入
 
@@ -35,7 +28,7 @@ Skill 执行者必须跳过返回逐 Run 错误或 `images` 为空数组的 Run�
 命令行固定为：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
 ```
 
 Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象：
@@ -55,7 +48,7 @@ Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象�
 命令行固定为：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin
 ```
 
 Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
@@ -66,7 +59,7 @@ Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 }
 ```
 
-用户为本次图片观察指定关注点、返回格式或读图提示词时，Skill 执行者必须增加可选的 `prompt`：
+stdin 可以包含可选的 `prompt` 字段：
 
 ```json
 {
@@ -79,15 +72,13 @@ Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：
 
 视觉模型接收的是每帧宽高约为原图 70% 的图片，最小边长为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。原图保持不变，成功输出的 `file_path` 指向输入原图。
 
-`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图 Prompt；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图 Prompt，并且不修改图片读取设置。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串，可以包含 JSON 转义后的换行符。
+`prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图 Prompt；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图 Prompt。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串，可以包含 JSON 转义后的换行符。
 
 缺失 `file_path`、`file_path` 或 `prompt` 的类型错误、路径违反字符限制或输入 JSON 包含其他属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。
 
 ## Run ID 与图片路径的来源
 
-Skill 执行者必须从当前用户消息中的明确 `run_id`，或当前会话中被用户明确指代的此前 Generation 提交结果中的 `run_id`，取得 `generation resolve-media --stdin` 的 `run_ids`。当前消息包含明确 `run_id` 时，Skill 执行者按这些 ID 的出现顺序传递；用户指代此前提交结果时，Skill 执行者按对应提交结果的返回顺序传递。
-
-Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image inspect --stdin` 的 `file_path`。
+`run_ids` 的来源与顺序，以及从成功 Run 的 `images[].file_path` 取得 `file_path` 的步骤，按 `SKILL.md` 第 2 至 3 节执行。
 
 ## 输出与完成语义
 
@@ -147,7 +138,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 }
 ```
 
-`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是本次视觉模型调用完成后返回的图片观察文本。Skill 执行者按“CLI 的用途与适用任务”章节完成后续语义对比。
+`provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是本次视觉模型调用完成后返回的图片观察文本。
 
 ## 错误、修正与重试
 
@@ -194,7 +185,7 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 | `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本，并继续处理其他图片。当前命名配置对应的模型服务恢复后，Skill 执行者可以重试当前图片。 |
 | `IMAGE_READER_EMPTY_RESPONSE` | Skill 执行者必须报告当前 `file_path` 没有观察文本，并继续处理其他图片。本次调用包含 `prompt` 时，Skill 执行者检查该 `prompt` 后可以重试；省略 `prompt` 时，用户检查当前配置的默认读图 Prompt 后可以重试。 |
 
-用户或宿主取消当前命令时，Skill 执行者必须将结果按取消处理，与 `IMAGE_READER_PROVIDER_FAILED` 分别报告，并立即结束本次 Skill 执行。
+用户或宿主取消当前命令时，结果处理与 Skill 执行结束步骤按 `SKILL.md` 第 3 节执行。
 
 ## 副作用与重复调用
 
@@ -204,30 +195,30 @@ Skill 执行者必须从成功 Run 元素的 `images[].file_path` 取得 `image 
 
 ## 完整调用示例
 
-以下 `run_01234567-89ab-4cde-8fab-0123456789ab` 来自用户消息中的 Generation Run ID：
+以下命令展示 `generation resolve-media --stdin` 的输入示例：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin <<'JSON'
 {"run_ids":["run_01234567-89ab-4cde-8fab-0123456789ab"]}
 JSON
 ```
 
-假设前一条命令返回 `runs[0].images[0].file_path` 为 `/absolute/local/path/result.png`，Skill 执行者调用：
+以下命令展示 `image inspect --stdin` 的 `file_path` 输入示例：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png"}
 JSON
 ```
 
-用户要求本次检查双手细节时，Skill 执行者调用：
+以下命令展示 `image inspect --stdin` 同时传入 `file_path` 与可选 `prompt` 的输入示例：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
 {"file_path":"/absolute/local/path/result.png","prompt":"逐项观察双手的手指数、遮挡关系和明显形变；只报告图片中可见的内容。"}
 JSON
 ```
 
 ## 帮助与操作提示
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

@@ -41,12 +41,7 @@
     mode: native
 
 - id: skill-filesystem
-  name: '@deepseek-ai/dsh-skill-filesystem'
-  config:
-    providerName: harness-comfyui
-    includeDefaultRoots: false
-    watch: false
-    customSkillDirs: [!!js process.env.HARNESS_COMFYUI_SKILL_DIR]
+  name: ../project-installed-skills.mjs
 
 - id: tool-skill
   name: '@deepseek-ai/dsh-tool-skill'

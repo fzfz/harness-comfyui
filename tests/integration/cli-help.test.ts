@@ -1,11 +1,12 @@
 import { spawn } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-function invoke(path: string, args: string[], input?: string) {
+function invoke(path: string, args: string[], input?: string, cwd?: string) {
   return new Promise<{ code: number | null; out: string; err: string }>((done, reject) => {
-    const child = spawn(process.execPath, [resolve(path), ...args], { env: { PATH: process.env.PATH }, stdio: 'pipe' })
+    const child = spawn(process.execPath, [resolve(path), ...args], { cwd, env: { PATH: process.env.PATH }, stdio: 'pipe' })
     let out = ''; let err = ''
     const timer = setTimeout(() => { child.kill(); reject(new Error(`Help waited for stdin or runtime: ${path} ${args.join(' ')}`)) }, 5000)
     child.stdout.on('data', chunk => { out += chunk })
@@ -24,6 +25,29 @@ describe('public CLI progressive help', () => {
     expect(result.out).toContain('下一步')
     expect(result.out).toContain('EOF')
     expect(result.out).toContain('positive_prompt')
+  })
+  it.each(['anima', 'krea2-anime', 'wai-sdxl'])('%s help and error hints use a Skill-relative path from a directory with spaces', async name => {
+    const source = resolve(`.agents/skills/${name}-prompt-builder`)
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'harness skill cli help '))
+    const copiedSkill = join(temporaryRoot, "copied skill's files")
+    try {
+      await cp(source, copiedSkill, { recursive: true })
+      const script = resolve(copiedSkill, 'scripts/validate-output.mjs')
+      const cli = `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals 'scripts/validate-output.mjs'`
+      const help = await invoke(script, ['--help'], undefined, copiedSkill)
+      expect(help.code).toBe(0)
+      expect(help.out).toContain(`用法: ${cli} [mode] [--quiet] < input.json`)
+      expect(help.out).toContain(`${cli} < input.json`)
+      expect(help.out).toContain('从本 Skill 目录')
+      expect(help.out).not.toContain(script)
+
+      const definition = JSON.parse(await readFile(join(copiedSkill, 'scripts/cli-help.json'), 'utf8'))
+      const invalid = await invoke(script, ['--quiet'], '{}', copiedSkill)
+      expect(invalid.code).toBe(2)
+      expect(invalid.err).toContain(`NEXT: ${definition.failure.replaceAll('{cli}', cli)}\n`)
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true })
+    }
   })
   it.each(['anima', 'krea2-anime', 'wai-sdxl'])('%s help examples pass the public validator', async name => {
     const root = `.agents/skills/${name}-prompt-builder/scripts/`
@@ -55,19 +79,4 @@ describe('public CLI progressive help', () => {
     expect(invalid.err).toContain('NEXT:')
   })
 
-  it('offers local DSH launcher help before preparing a runtime', async () => {
-    const result = await invoke('scripts/cli/run.mjs', ['--help'])
-    expect(result.code).toBe(0)
-    expect(result.out).toContain('下一步')
-    expect(result.out).toContain('cli:run')
-  })
-  it.each(['scripts/desktop/cli.mjs', 'scripts/desktop/production-cli.mjs', 'scripts/worktree/cli.mjs', 'scripts/production/cli.mjs'])('%s describes lifecycle commands without running them', async path => {
-    for (const args of [['--help'], ['start', '--help'], ['stop', '--help'], ['restart', '--help'], ['status', '--help'], ['logs', '--help'], ...(/worktree|production\/cli/.test(path) ? [['health', '--help']] : [])]) {
-      const result = await invoke(path, args)
-      expect(result.code).toBe(0)
-      expect(result.err).toBe('')
-      expect(result.out).toContain('下一步')
-      expect(result.out).toContain('status')
-    }
-  })
 })

@@ -1,12 +1,4 @@
 {
-  "paths": {
-    "dataDir": "",
-    "apiWorkflowCacheDirectory": "",
-    "runRepositoryFile": "",
-    "runDirectory": "",
-    "savedMediaDirectory": "",
-    "logDirectory": ""
-  },
   "comfyui": {
     "defaultInstanceId": "1",
     "frontendCompiler": {

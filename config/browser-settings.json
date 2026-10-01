@@ -1,0 +1,22 @@
+{
+  "remoteNamespace": "harnessComfyuiBrowserSettings",
+  "fieldName": "browserExecutablePath",
+  "ui": {
+    "tabId": "harness-comfyui-browser-tab",
+    "panelId": "harness-comfyui-browser-panel",
+    "tabLabel": "Workflow 浏览器",
+    "heading": "Workflow 编译浏览器",
+    "description": "插件使用本机 Chrome 或 Chromium 编译 ComfyUI Workflow。保存浏览器路径后，后续编译使用新路径。",
+    "pathLabel": "浏览器可执行文件绝对路径",
+    "inputName": "browser-executable-path",
+    "saveButton": "保存浏览器设置",
+    "savedMessage": "浏览器路径已保存。",
+    "retryButton": "重新读取浏览器设置",
+    "pathDetailsTemplate": "路径：{path}。原因：{reason}",
+    "settingsWriteLocationTemplate": "设置字段：{entryId}.{fieldName}",
+    "loadingMessage": "正在读取浏览器设置…",
+    "savingMessage": "正在保存浏览器设置…",
+    "readOnlyMessage": "官方 Profile 当前允许只读访问。请在官方应用中启用配置写入权限后修改浏览器路径。",
+    "unavailableMessage": "当前页面无法访问可保存的浏览器设置，路径无法编辑或保存。请关闭此页后重新打开插件设置；如果提示仍显示，请联系插件维护者。"
+  }
+}

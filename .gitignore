@@ -15,7 +15,7 @@ pnpm-debug.log*
 .pnpm-store/
 coverage/
 dist/
-build/
+/build/
 
 # Python tooling and caches
 __pycache__/

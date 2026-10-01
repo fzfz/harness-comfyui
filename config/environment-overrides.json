@@ -17,9 +17,6 @@
   "HARNESS_COMFYUI_FRONTEND_NAVIGATION_TIMEOUT_MS": { "target": "comfyui.frontendCompiler.preReadiness.navigationMs", "valueType": "number", "hostRuntimePath": "comfyui.frontendCompiler.preReadiness.navigationMs" },
   "HARNESS_COMFYUI_FRONTEND_INFRASTRUCTURE_ATTEMPTS": { "target": "comfyui.frontendCompiler.preReadiness.infrastructureAttempts", "valueType": "number", "hostRuntimePath": "comfyui.frontendCompiler.preReadiness.infrastructureAttempts" },
   "HARNESS_COMFYUI_CATALOG_PORT": { "target": "source.catalogPort", "valueType": "number", "hostRuntimePath": "source.catalogPort" },
-  "HARNESS_COMFYUI_SKILL_DIR": { "passThrough": true, "valueType": "string" },
   "HARNESS_COMFYUI_MEDIA_MAX_FILE_BYTES": { "target": "media.maxFileBytes", "valueType": "number" },
-  "HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS": { "target": "client.runRefreshIntervalMs", "valueType": "number", "hostRuntimePath": "client.runRefreshIntervalMs" },
-  "HARNESS_COMFYUI_SERVER_HOST": { "passThrough": true, "valueType": "string", "hostRuntimePath": "host" },
-  "HARNESS_COMFYUI_SERVER_PORT": { "target": "server.port", "valueType": "number", "hostRuntimePath": "port" }
+  "HARNESS_COMFYUI_CLIENT_RUN_REFRESH_INTERVAL_MS": { "target": "client.runRefreshIntervalMs", "valueType": "number", "hostRuntimePath": "client.runRefreshIntervalMs" }
 }

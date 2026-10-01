@@ -9,12 +9,17 @@ import {
   type ConfigurationProfile,
   type ConfigurationProfileName,
 } from '../../config/schema.ts'
+import { parsePluginDataDirectory } from '../plugin-storage-schema.ts'
+import { parseBrowserExecutablePathRequest } from '../browser-settings-schema.ts'
 
 type JsonObject = Record<string, unknown>
 
 export interface LoadProfileOptions {
   configRoot?: string
   environment?: NodeJS.ProcessEnv
+  storageRoot?: string
+  dataDirectory?: string
+  browserExecutablePath?: string
 }
 
 export class ConfigurationProfileError extends TypeError {
@@ -142,9 +147,12 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
     throw new ConfigurationProfileError(profileName, profilePath, 'profileName', `unknown profile; expected ${configurationProfileNames.join(', ')}`)
   }
 
+  let baseStoragePaths: unknown
   let merged: JsonObject
   try {
-    merged = mergeObjects(readJson(resolve(configRoot, 'base.json')), readJson(profilePath))
+    const base = readJson(resolve(configRoot, 'base.json'))
+    baseStoragePaths = structuredClone(base.paths)
+    merged = mergeObjects(base, readJson(profilePath))
   } catch (error) {
     if (error instanceof ConfigurationProfileError) throw error
     const message = error instanceof Error ? error.message : String(error)
@@ -177,6 +185,44 @@ export function loadProfile(profileName: string, options: LoadProfileOptions = {
     const override = environmentOverride(overrideMap[key])!
     if (override.passThrough === true) continue
     assignPath(merged, override.target!, parseEnvironmentValue(override, rawValue))
+  }
+
+  if (options.storageRoot !== undefined) {
+    if (!isAbsolute(options.storageRoot)) {
+      throw new ConfigurationProfileError(profileName, profilePath, 'storageRoot',
+        'Host storageRoot must be an absolute Harness home path; select the official Profile home before loading plugin configuration')
+    }
+    const paths = merged.paths
+    if (paths !== null && typeof paths === 'object' && !Array.isArray(paths)) {
+      for (const [field, value] of Object.entries(paths)) {
+        if (typeof value === 'string' && value.trim().length > 0) {
+          (paths as JsonObject)[field] = resolve(options.storageRoot, value)
+        }
+      }
+    }
+  }
+
+  if (options.dataDirectory !== undefined) {
+    try {
+      const dataDirectory = parsePluginDataDirectory(options.dataDirectory)
+      const basePaths = ConfigurationProfileSchema.dict!.paths!(baseStoragePaths) as ConfigurationProfile['paths']
+      merged.paths = Object.fromEntries(Object.entries(basePaths).map(([field, path]) => [
+        field, resolve(dataDirectory, relative(basePaths.dataDir, path)),
+      ]))
+    } catch (error) {
+      throw new ConfigurationProfileError(profileName, profilePath, 'dataDirectory',
+        `The saved plugin data directory is empty, relative, contains a null character or has an invalid type; set harness-comfyui-core.config.dataDirectory to an absolute writable directory in the official Profile. ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  if (options.browserExecutablePath !== undefined) {
+    try {
+      const browser = parseBrowserExecutablePathRequest({ browserExecutablePath: options.browserExecutablePath })
+      assignPath(merged, 'comfyui.frontendCompiler.browserExecutablePath', browser.browserExecutablePath)
+    } catch (error) {
+      throw new ConfigurationProfileError(profileName, profilePath, 'comfyui.frontendCompiler.browserExecutablePath',
+        `The saved browser path is empty, relative, contains a null character or has an invalid type; set harness-comfyui-core.config.browserExecutablePath to the absolute executable file path for Chrome or Chromium in the official Profile. ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   assertSchemaFields(merged, ConfigurationProfileSchema, '', profileName, profilePath)

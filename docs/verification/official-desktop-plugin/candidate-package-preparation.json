@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "classification": "candidate-preparation",
+  "createdAt": "2026-10-01",
+  "version": "0.45.0",
+  "sourceBaseCommit": "742570c4d7ab17272baac0eb3211536751002c9a",
+  "sourceTreeStatus": "uncommitted implementation in progress",
+  "archive": ".local/desktop-e2e/candidate-20261001-live-browser/artifacts/harness-comfyui-0.45.0.tgz",
+  "manifest": {
+    "name": "harness-comfyui",
+    "version": "0.45.0",
+    "exports": {
+      ".": {
+        "default": "./.local/source-host/index.js"
+      },
+      "./client": {
+        "default": "./.local/source-client/client.js"
+      },
+      "./package.json": "./package.json",
+      "./core": {
+        "default": "./.local/source-host/core.js"
+      },
+      "./image-reader": {
+        "default": "./.local/source-host/image-reader.js"
+      },
+      "./cli": {
+        "default": "./.local/source-host/cli.js"
+      },
+      "./web": {
+        "default": "./.local/source-host/web.js"
+      },
+      "./cli-runner": {
+        "default": "./.local/source-host/cli-runner.js"
+      },
+      "./cli-workspace": {
+        "default": "./.local/source-host/cli-workspace.js"
+      }
+    },
+    "dsh": {
+      "bundle": {
+        "patch": "./cordis.patch.yml"
+      },
+      "client": {
+        "platform": "web",
+        "inject": [
+          "@deepseek-ai/dsh-client-connection",
+          "@deepseek-ai/dsh-api-remotes",
+          "@deepseek-ai/dsh-client-locale",
+          "@deepseek-ai/dsh-client-ui-conversation",
+          "@deepseek-ai/dsh-client-ui-input-trigger",
+          "@deepseek-ai/dsh-client-ui-layout",
+          "@deepseek-ai/dsh-client-ui-settings",
+          "@deepseek-ai/dsh-client-ui-sidebar",
+          "@deepseek-ai/dsh-client-ui-sidebar-right"
+        ]
+      }
+    }
+  },
+  "assetChecks": {
+    "browserSettings": true,
+    "pluginStorage": true,
+    "browserSettingsClientTab": true,
+    "browserCoreVolatile": true
+  },
+  "candidateAcceptance": "未通过",
+  "release": "未发布",
+  "productionSwitch": "待单独授权",
+  "retiredArchive": {
+    "path": ".local/desktop-e2e/candidate-20260930-storage-browser/artifacts/harness-comfyui-0.45.0.tgz",
+    "reason": "Packed before rebuilding Host and Client; excluded from candidate acceptance."
+  },
+  "previousCandidateArchive": ".local/desktop-e2e/candidate-20261001-browser/artifacts/harness-comfyui-0.45.0.tgz"
+}

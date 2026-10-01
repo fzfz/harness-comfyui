@@ -1,3 +1,13 @@
+# Harness ComfyUI v0.45.0（实施候选，未发布）
+
+v0.45.0 的目标宿主是官方 DeepSeek Harness Desktop `0.2.0-rc.2`。仓库新增 `pnpm build` 和 `pnpm pack:plugin`，用于构建 Host、Client、managed CLI 和 Workflow worker，并将两个 ComfyUI Preset、八个项目 Skill 及其执行资源打入插件 tarball。`package.json` 将运行时 DSH peer 固定为 `0.2.0-rc.2`，安装包通过官方插件管理器加载。
+
+项目 Skill 的 CLI 参考使用 Host 提供的 Node 入口。三个 Prompt Builder 的帮助脚本采用同一入口。普通用户通过官方应用安装候选包，开发者通过仓库命令构建候选包。
+
+插件设置新增“Workflow 浏览器”页，用于校验和保存本地 Chrome 或 Chromium 可执行文件路径。插件配置支持独立的数据位置；启动时检查存储路径及 Run 数据库的访问条件。SQLite 初始化失败时，插件保留已有 Run 和媒体，报告目标路径、系统原因及修正操作，并关闭已打开的数据库句柄。
+
+官方 Desktop 测试夹具负责隔离目录、端口、官方插件安装、Renderer CDP 操作、证据保存及本轮进程清理。实施者正在执行并行实例隔离验收（A13）、自动化业务验收（A14）、异常与清理验收（A15）、旧业务断言迁移及真实模型验收。实施者在[官方插件验收记录](verification/official-desktop-plugin/acceptance-status.json)中记录各项状态、证据位置，以及完整质量门禁、最终候选审查、提交、发布和生产切换的结果。`/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env` 保留旧版本配置及其 `.local/desktop-production/` 运行数据。
+
 # Harness ComfyUI v0.44.3
 
 v0.44.3 将 Desktop 升至 2.0.15、DSH 升至 0.1.7-rc.2、Electron 升至 44.0.0，并将 Cordis 升至 4.0.4。插件 DSH peer 范围改为 `>=0.1.7-rc.2 <0.1.8`；纯 CLI Profile 将 DSH 包固定在 0.1.7-rc.2。`config/desktop-baseline.json` 固定自有 fork 提交 `b912b85411f5b06b748a7e9216323c1e1ea3b302`。

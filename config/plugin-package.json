@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "packageName": "harness-comfyui",
+  "files": [
+    "cordis.patch.yml",
+    "config/plugin-package.json",
+    "config/plugin-package-schema.mjs",
+    "config/base.json",
+    "config/browser-settings.json",
+    "config/plugin-storage.json",
+    "config/plugin-runtime-resources.json",
+    "config/plugin-runtime-resources-schema.ts",
+    "config/environment-overrides.json",
+    "config/error-catalog.json",
+    "config/image-reader-processing.json",
+    "config/image-reader-profiles.json",
+    "config/image-reader-runtime.json",
+    "config/managed-cli-environment.json",
+    "config/managed-cli-help.json",
+    "config/node-script-runtime.json",
+    "config/product-agent.json",
+    "config/product-agent-schema.mjs",
+    "config/profiles/production.json",
+    "config/runtime-artifacts.json",
+    "config/schema.ts",
+    "config/settings-entry-ids.json",
+    "config/source-cli-guidance.json",
+    "agent-presets",
+    ".agents/skills",
+    "scripts/source-client/imagegen-semantic-query.mjs",
+    "scripts/source-client/imagegen-comfyui-source-read.mjs",
+    "scripts/source-client/guidance.mjs",
+    "scripts/source-client/guidance-schema.mjs",
+    "scripts/cli/help.mjs",
+    "scripts/cli/help-schema.mjs"
+  ],
+  "artifacts": [
+    ".local/source-host",
+    ".local/source-client/client.js",
+    ".local/source-cli"
+  ]
+}

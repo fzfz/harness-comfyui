@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "runtimeId": "harness-comfyui-web-development",
-  "runtimeRelativeRoot": ".local/web-development",
-  "sourceProductionDefinitionRelativePath": "config/source-production.json",
-  "dshProfile": "comfyui-workbench-development",
-  "userEnvironmentFilePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
-  "startupWorkspacePath": "/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness"
-}

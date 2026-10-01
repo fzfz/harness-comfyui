@@ -1,6 +1,13 @@
 import bundledProfiles from '../../config/image-reader-profiles.json' with { type: 'json' }
 import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import Schema from '@deepseek-ai/schemastery'
+import {
+  imageReaderCredentialsSchema,
+  isImageReaderCredentialRef,
+  type ImageReaderCredentialRef,
+} from './credential-schema.ts'
+
+export { imageReaderCredentialsSchema } from './credential-schema.ts'
 
 export const IMAGE_READER_CONNECTION_TYPES = Object.freeze(['runtime', 'openai-compatible'] as const)
 export type ImageReaderConnectionType = typeof IMAGE_READER_CONNECTION_TYPES[number]
@@ -42,7 +49,7 @@ export interface ImageReaderConfiguration {
 
 export interface ImageReaderSettingsSection {
   readonly configuration: ImageReaderConfiguration
-  readonly credentials: Readonly<Record<string, string>>
+  readonly credentialRefs: Readonly<Record<string, ImageReaderCredentialRef>>
 }
 
 export interface ImageReaderSettingsView {
@@ -103,7 +110,7 @@ export const IMAGE_READER_DEFAULT_CONFIGURATION: ImageReaderConfiguration = Obje
 
 export const IMAGE_READER_SETTINGS_DEFAULTS: ImageReaderSettingsSection = Object.freeze({
   configuration: IMAGE_READER_DEFAULT_CONFIGURATION,
-  credentials: Object.freeze({}),
+  credentialRefs: Object.freeze({}),
 })
 
 export function createImageReaderSettingsDefaults(
@@ -120,7 +127,7 @@ export function createImageReaderSettingsDefaults(
       activeProfileId: IMAGE_READER_DEFAULT_PROFILE_ID,
       profiles: Object.freeze([profile]),
     }),
-    credentials: Object.freeze({}),
+    credentialRefs: Object.freeze({}),
   })
 }
 
@@ -153,11 +160,9 @@ export const IMAGE_READER_LEGACY_SETTINGS_SCHEMA = Schema.object({
   }).required(),
 })
 
-export const imageReaderCredentialsSchema = Schema.dict(Schema.string().max(IMAGE_READER_API_KEY_MAX_LENGTH).role('secret'))
-
 export const IMAGE_READER_SETTINGS_SCHEMA = Schema.object({
   configuration: imageReaderConfigurationSchema.required(),
-  credentials: imageReaderCredentialsSchema.required(),
+  credentialRefs: imageReaderCredentialsSchema.required(),
 })
 
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -266,7 +271,7 @@ export function migrateLegacyImageReaderSettings(
       activeProfileId: profile.id,
       profiles: Object.freeze([profile]),
     }),
-    credentials: Object.freeze({}),
+    credentialRefs: Object.freeze({}),
   })
 }
 
@@ -308,14 +313,24 @@ export function validateImageReaderSettingsSection(section: ImageReaderSettingsS
   const configuration = decodeImageReaderConfiguration(section.configuration)
   if (configuration === undefined) throw new TypeError('Image reader settings are invalid.')
   const profileById = new Map(configuration.profiles.map(profile => [profile.id, profile]))
-  for (const [profileId, apiKey] of Object.entries(section.credentials)) {
+  const references = new Set<string>()
+  for (const [profileId, reference] of Object.entries(section.credentialRefs)) {
     const profile = profileById.get(profileId)
-    if (profile === undefined || profile.connectionType !== 'openai-compatible' || apiKey.length === 0 || apiKey.length > IMAGE_READER_API_KEY_MAX_LENGTH) {
+    if (
+      profile === undefined
+      || profile.connectionType !== 'openai-compatible'
+      || !isImageReaderCredentialRef(reference)
+      || references.has(reference)
+    ) {
       throw new TypeError('Image reader credentials are invalid.')
     }
+    references.add(reference)
   }
   for (const profile of configuration.profiles) {
-    if (profile.hasApiKey !== (section.credentials[profile.id] !== undefined)) {
+    if (
+      profile.hasApiKey !== (section.credentialRefs[profile.id] !== undefined)
+      || (profile.connectionType === 'runtime' && section.credentialRefs[profile.id] !== undefined)
+    ) {
       throw new TypeError('Image reader credential state is inconsistent.')
     }
   }

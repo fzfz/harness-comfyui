@@ -3,10 +3,10 @@
   "modes": {
     "": "校验完整生成目标 JSON，返回原结构。"
   },
-  "input": "写入一个 JSON 对象后关闭 stdin（EOF）。默认模式输入字段与约束如下；model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ 1000000 - megapixels) ÷ megapixels 最多为 5%。",
+  "input": "从本 Skill 目录执行本校验器。写入一个 JSON 对象后关闭 stdin（EOF）。默认模式输入字段与约束如下；model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ 1000000 - megapixels) ÷ megapixels 最多为 5%。",
   "output": "成功 stdout 输出 JSON，退出 0；错误 stderr 输出字段位置与原因，退出非零。只校验输入，不生图、不修改文件。--quiet 省略成功 NEXT 提示。",
-  "failure": "按错误中的字段位置修正输入后再次校验。查看帮助: {cli} --help",
-  "next": "复制下方 JSON 示例并按用户要求修改，保存为 input.json 后执行: {cli} < input.json",
+  "failure": "按错误中的字段位置修正输入后再次校验。从本 Skill 目录查看帮助: {cli} --help",
+  "next": "复制下方 JSON 示例并按用户要求修改，保存为 input.json 后，从本 Skill 目录执行: {cli} < input.json",
   "format": "本校验器仅支持完整生成目标模式。",
   "formatReference": "references/03-output-protocol.md",
   "example": {

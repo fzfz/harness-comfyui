@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "scope": "开发专用官方Desktop E2E的Renderer CDP源码读取。",
+  "package": {
+    "name": "undici",
+    "version": "8.11.2",
+    "declaration": "package.json.devDependencies",
+    "lockfile": "pnpm-lock.yaml",
+    "authorization": "dependency-peer-supplement.json中的既有准确版本安装授权",
+    "installedSource": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/official-desktop-development-dependencies/node_modules/.pnpm/undici@8.11.2/node_modules/undici",
+    "dependencyInstallationExecuted": false
+  },
+  "problem": {
+    "initialScriptSourceBytes": 316216,
+    "restartScriptParsedLength": 10727664,
+    "restartNativeCloseCode": 1006,
+    "nativeCompression": "permessage-deflate; client_max_window_bits=15",
+    "assessment": "当前Node内置Undici的压缩消息解压限额为4MiB。重启后的官方组合脚本超过该限额，现有证据支持该限额触发断连；同场景8.11.2读取与候选片段核对通过。",
+    "officialSource": "https://raw.githubusercontent.com/nodejs/undici/v7.24.4/lib/web/websocket/permessage-deflate.js"
+  },
+  "causalDiagnostic": {
+    "classification": "automated-regression",
+    "preloader": ".local/desktop-e2e/cdp-approved-undici-diagnostic.mjs",
+    "log": ".local/desktop-e2e/desktop-test-runner/a13-approved-undici-diagnostic-20261001.log",
+    "requestEvidence": ".local/desktop-e2e/desktop-test-runner/cdp-source-request-diagnostic.jsonl",
+    "restartScriptSourceBytes": 10778093,
+    "restartResponseBytes": 11595029,
+    "candidateFragmentMatched": true,
+    "a13Completed": false,
+    "remainingFailure": "宿主Session标题读回与预期不一致。",
+    "cleanupEvidence": ".local/desktop-e2e/desktop-test-runner/a13-approved-undici-diagnostic-os-cleanup.json"
+  },
+  "implementation": {
+    "state": "定向纯测试和完整官方 Desktop 自动化联调已通过；最终候选完整质量门禁和真实验收待完成。",
+    "api": "开发E2E从undici包读取Agent与WebSocket，并把config/desktop-e2e.json的rendererCdp.maxPayloadSize传给Agent.webSocket.maxPayloadSize；maximumPayloadBytes记录该配置的字节数。",
+    "maximumPayloadBytes": 67108864,
+    "ownership": "每个CDP连接拥有一个Agent，连接结束时完成该Agent清理。",
+    "productionEffect": "此依赖用于开发E2E；插件业务浏览器的Node内置WebSocket保持原实现。",
+    "validation": {
+      "cdpAndLifecycleTestsPassed": 82,
+      "standardsReview": ".local/desktop-e2e/reviews/cdp-transport-standards-final-review.json",
+      "specReview": ".local/desktop-e2e/reviews/cdp-transport-spec-final-review.json",
+      "targetedOfficialApplication": "a13-current-targeted-acceptance.json",
+      "currentFullEntry": "current-desktop-regression.json"
+    }
+  }
+}

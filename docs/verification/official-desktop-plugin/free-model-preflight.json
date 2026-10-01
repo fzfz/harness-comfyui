@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "category": "真实OpenRouter免费模型入口预检",
+  "records": [
+    {
+      "requestedModel": "qwen/qwen3.8-27b:free",
+      "responseModel": null,
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "toolsSupported": true,
+      "receivedAt": "2026-09-30T06:55:59.747Z",
+      "httpStatus": 429,
+      "requestId": null,
+      "status": "预检未通过",
+      "blocker": "upstream_provider_shared_pool",
+      "privateEvidence": ".local/desktop-e2e/model-discovery-20260930/tool-preflight-response.json"
+    },
+    {
+      "requestedModel": "dots-studio/dots-3-note-preview:free",
+      "responseModel": "dots-studio/dots-3-note-preview:free",
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "toolsSupported": true,
+      "receivedAt": "2026-09-30T06:58:02.063Z",
+      "httpStatus": 200,
+      "requestId": "gen-1790751477-tHVU4S9vqrCasdmeCloM",
+      "status": "预检通过",
+      "blocker": null,
+      "privateEvidence": ".local/desktop-e2e/model-discovery-20260930/dots-studio-dots-3-note-preview-free-tool-preflight-response.json"
+    }
+  ],
+  "projectAcceptance": "八个Skill、两个预设、子Agent和正式ComfyUI Run尚未通过",
+  "visionPreflight": {
+    "model": "dots-studio/dots-3-note-preview:free",
+    "httpStatus": 200,
+    "responseModel": "dots-studio/dots-3-note-preview:free",
+    "cost": 0,
+    "verdict": "入口能力预检通过；项目图片读取验收仍未通过",
+    "semanticReview": "主Agent对照实际截图核对：中央标题、预览版标签、左侧菜单与输入区文字准确。",
+    "requestEvidence": ".local/desktop-e2e/model-discovery-20260930/dots-vision-preflight-request.json",
+    "responseEvidence": ".local/desktop-e2e/model-discovery-20260930/dots-vision-preflight-response.json",
+    "imageEvidence": ".local/desktop-e2e/8376511c-40e1-4701-a849-4f2b3229968a/evidence/renderer-fixture.png",
+    "earlierAttempt": {
+      "maxTokens": 512,
+      "finishReason": "length",
+      "content": null,
+      "result": "未通过",
+      "evidence": ".local/desktop-e2e/model-discovery-20260930/dots-vision-512-preflight-response.json"
+    }
+  },
+  "latestCatalogCheck": {
+    "source": "https://openrouter.ai/api/v1/models",
+    "observedAt": "2026-09-30T17:49:30.701411+00:00",
+    "models": [
+      {
+        "id": "stealth/space-bunny-alpha",
+        "available": true,
+        "pricing": {
+          "prompt": "0",
+          "completion": "0"
+        },
+        "inputModalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "supportedParameters": [
+          "include_reasoning",
+          "max_tokens",
+          "reasoning",
+          "reasoning_effort",
+          "response_format",
+          "temperature",
+          "tool_choice",
+          "tools",
+          "top_p"
+        ],
+        "contextLength": 1000000
+      },
+      {
+        "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "available": true,
+        "pricing": {
+          "prompt": "0",
+          "completion": "0"
+        },
+        "inputModalities": [
+          "text",
+          "audio",
+          "image",
+          "video"
+        ],
+        "supportedParameters": [
+          "include_reasoning",
+          "max_tokens",
+          "reasoning",
+          "seed",
+          "temperature",
+          "tool_choice",
+          "tools",
+          "top_p"
+        ],
+        "contextLength": 256000
+      },
+      {
+        "id": "qwen/qwen3.8-27b:free",
+        "available": true,
+        "pricing": {
+          "prompt": "0",
+          "completion": "0"
+        },
+        "inputModalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "supportedParameters": [
+          "frequency_penalty",
+          "include_reasoning",
+          "max_tokens",
+          "presence_penalty",
+          "reasoning",
+          "reasoning_effort",
+          "repetition_penalty",
+          "stop",
+          "structured_outputs",
+          "temperature",
+          "tool_choice",
+          "tools",
+          "top_p"
+        ],
+        "contextLength": 262144
+      }
+    ],
+    "classification": "capability-and-zero-price-declaration-preflight",
+    "actualRequestAcceptance": false,
+    "privateEvidence": ".local/desktop-e2e/service-preflight-20261001/free-model-catalog.json"
+  }
+}

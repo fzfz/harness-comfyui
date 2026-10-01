@@ -20,6 +20,8 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiImageReader/activateProfile',
       'harness-comfyui#harnessComfyuiImageReader/saveProfile',
       'harness-comfyui#harnessComfyuiImageReader/deleteProfile',
+      'harness-comfyui#harnessComfyuiBrowserSettings/configuration',
+      'harness-comfyui#harnessComfyuiBrowserSettings/validate',
     ])
   })
 

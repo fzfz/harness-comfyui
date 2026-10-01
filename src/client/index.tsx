@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
+import type { TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -6,9 +8,11 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 
+import pluginPackage from '../../config/plugin-package.json' with { type: 'json' }
 import HARNESS_COMFYUI_REMOTE from '../remote.ts'
 import { CATALOG_REMOTE_SERVICE } from '../catalog/contract.ts'
 import { GENERATION_REMOTE_SERVICE } from '../generation/contract.ts'
+import { BROWSER_SETTINGS_REMOTE_SERVICE, type BrowserSettingsView } from '../browser-settings-schema.ts'
 import { IMAGE_READER_REMOTE_SERVICE } from '../image-reader/contract.ts'
 import {
   IMAGE_READER_PROFILE_ENTRY_ID,
@@ -16,11 +20,14 @@ import {
 } from '../image-reader/settings.ts'
 import {
   SOURCE_PROFILE_ENTRY_ID,
-  SOURCE_SETTINGS_SECTION_ID,
   type SourceSettingsView,
 } from '../source-settings.ts'
 import { ImageReaderSettingsError } from './image-reader/image-reader-settings.tsx'
-import { HarnessComfyuiSettingsPage } from './settings/harness-comfyui-settings.tsx'
+import type { BrowserSettingsApi } from './settings/browser-settings.tsx'
+import {
+  HarnessComfyuiSettingsPage,
+  type HarnessComfyuiSettingsPageProps,
+} from './settings/harness-comfyui-settings.tsx'
 import { withImageReaderConfiguration } from './settings/image-reader-settings-form.ts'
 import { withSourceAddress } from './settings/source-settings-form.ts'
 import { SourcePresetTip } from './settings/source-preset-tip.tsx'
@@ -36,7 +43,7 @@ import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
 import { WorkbenchDetails } from './workbench/results-drawer.tsx'
 
-export const name = 'harness-comfyui'
+export const name = pluginPackage.packageName
 export const inject = [
   'slots',
   'sessions',
@@ -56,9 +63,51 @@ interface ClientSlotRegistry {
   readonly register: (...arguments_: any[]) => any
 }
 
+type PluginBundleConfigSettings = Omit<HarnessComfyuiSettingsPageProps, 'close'>
+
+interface PluginBundleConfigRegistration {
+  readonly name: 'plugins.bundle.config'
+  readonly key: string
+  readonly inject: () => PluginBundleConfigSettings
+}
+
+interface PluginBundleConfigProps extends PluginBundleConfigSettings {
+  readonly view: 'summary' | 'page'
+}
+
+interface PluginBundleConfigSlotBoundary {
+  readonly register: (
+    registration: PluginBundleConfigRegistration,
+    component: (props: PluginBundleConfigProps) => ReactNode,
+  ) => () => void
+}
+
 type ClientContext = Context & {
   readonly sessions: ClientSessions
   readonly slots: ClientSlotRegistry
+}
+
+function getRemoteNamespace<Namespace extends string>(
+  context: Context,
+  service: `remote.${Namespace}`,
+): TypertRemoteNamespace<Namespace> {
+  const namespace = context.get(service)
+  if (namespace === undefined) throw new Error(`Harness did not provide the Remote service ${service}.`)
+  return namespace as TypertRemoteNamespace<Namespace>
+}
+
+function registerPluginBundleConfig(
+  slots: ClientSlotRegistry,
+  settings: PluginBundleConfigSettings,
+): () => void {
+  const boundary = slots as unknown as PluginBundleConfigSlotBoundary
+  return boundary.register({
+    name: 'plugins.bundle.config',
+    key: pluginPackage.packageName,
+    inject: () => settings,
+  }, ({ view, ...pageSettings }) => view === 'page'
+    ? <HarnessComfyuiSettingsPage {...pageSettings} close={() => undefined} />
+    : null)
 }
 
 class CatalogRequestError extends Error {
@@ -83,10 +132,16 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       kind: WORKBENCH_RESULTS_TAB.kind,
       title: () => WORKBENCH_RESULTS_TAB.title,
     }))
-    const remoteFiber = ctx.inject([CATALOG_REMOTE_SERVICE, GENERATION_REMOTE_SERVICE, IMAGE_READER_REMOTE_SERVICE], (remoteContext) => {
-      const remoteCatalog = remoteContext.get(CATALOG_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiCatalog
-      const remoteGeneration = remoteContext.get(GENERATION_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiGeneration
-      const remoteImageReader = remoteContext.get(IMAGE_READER_REMOTE_SERVICE) as typeof ctx.remote.harnessComfyuiImageReader
+    const remoteFiber = ctx.inject([
+      CATALOG_REMOTE_SERVICE,
+      GENERATION_REMOTE_SERVICE,
+      IMAGE_READER_REMOTE_SERVICE,
+      BROWSER_SETTINGS_REMOTE_SERVICE,
+    ], (remoteContext) => {
+      const remoteCatalog = getRemoteNamespace(remoteContext, CATALOG_REMOTE_SERVICE)
+      const remoteGeneration = getRemoteNamespace(remoteContext, GENERATION_REMOTE_SERVICE)
+      const remoteImageReader = getRemoteNamespace(remoteContext, IMAGE_READER_REMOTE_SERVICE)
+      const remoteBrowserSettings = getRemoteNamespace(remoteContext, BROWSER_SETTINGS_REMOTE_SERVICE)
       const imageReaderForm = withImageReaderConfiguration(
         ctx.configForms.get<ImageReaderSettingsView>(IMAGE_READER_PROFILE_ENTRY_ID),
         async () => {
@@ -108,6 +163,23 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       const sourceSettingsScope = sourceForm.form
       const ensureActive = (signal: AbortSignal) => {
         if (signal.aborted) throw new DOMException('Catalog query was cancelled.', 'AbortError')
+      }
+      const browserSettingsScope = ctx.configForms.get<BrowserSettingsView>(SOURCE_PROFILE_ENTRY_ID)
+      const browserSettingsApi: BrowserSettingsApi = {
+        configuration: async signal => {
+          ensureActive(signal)
+          const result = await remoteBrowserSettings.configuration()
+          ensureActive(signal)
+          if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+          return result.value
+        },
+        validate: async (request, signal) => {
+          ensureActive(signal)
+          const result = await remoteBrowserSettings.validate(request)
+          ensureActive(signal)
+          if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
+          return result.value
+        },
       }
       const completeImageReaderSettingsWrite = async <T,>(
         signal: AbortSignal,
@@ -219,17 +291,13 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
           key: WORKBENCH_RESULTS_TAB.id,
           inject: () => ({ workbench, generationStore }),
         }, WorkbenchDetails)),
-        ctx.slots.inject('settings.section', () => ctx.slots.register({
-          name: 'settings.section',
-          id: SOURCE_SETTINGS_SECTION_ID,
-          order: 40,
-          label: 'ComfyUI',
-          inject: () => ({
-            imageReaderScope: imageReaderSettingsScope,
-            imageReaderApi: imageReaderSettingsApi,
-            sourceScope: sourceSettingsScope,
-          }),
-        }, HarnessComfyuiSettingsPage)),
+        ctx.slots.inject('plugins.bundle.config', () => registerPluginBundleConfig(ctx.slots, {
+          imageReaderScope: imageReaderSettingsScope,
+          imageReaderApi: imageReaderSettingsApi,
+          sourceScope: sourceSettingsScope,
+          browserScope: browserSettingsScope,
+          browserApi: browserSettingsApi,
+        })),
       ]
     })
     await remoteFiber

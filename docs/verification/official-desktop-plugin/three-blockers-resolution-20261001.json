@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "classification": "候选插件的三项定向修复与真实服务验收",
+  "branch": "codex/official-desktop-plan",
+  "packageVersion": "0.45.0",
+  "desktopVersion": "0.2.0-rc.2",
+  "sourceSemanticService": {
+    "status": "通过",
+    "resolution": "通过现有受管停止和启动命令重启数据源服务；部署源码和配置保持原值。",
+    "finalRecheck": {
+      "stylesHttpStatus": 200,
+      "stylesResultCount": 0,
+      "promptTermsHttpStatus": 200,
+      "promptTermsResultCount": 6
+    },
+    "causeBoundary": "同部署库、当前配置和只读数据库查询成功，旧运行进程返回502；进程内部的具体失效原因尚未确认。",
+    "evidence": [
+      "source-semantic-resolution-20261001.json",
+      ".local/desktop-e2e/three-blockers-20261001/source-final-recheck.json"
+    ]
+  },
+  "iterationParentResults": {
+    "status": "通过",
+    "implementation": "Generation模块从官方持久Session元数据核对同Workspace父子链，向迭代父会话投影子会话Run和媒体；媒体查看和下载采用同一授权范围。",
+    "coldRestart": {
+      "runs": 2,
+      "media": 2,
+      "viewersLoaded": 2,
+      "originalImagesDownloaded": 2,
+      "actualWorkflowsDownloaded": 2,
+      "downloadedBytesMatchStoredOriginals": true
+    },
+    "boundaryTests": [
+      "冷重启后的父子会话",
+      "无关会话与跨Workspace",
+      "缺失或错误Session元数据",
+      "循环父链",
+      "持久化查询失败",
+      "取消与客户端断开"
+    ],
+    "evidence": [
+      ".local/desktop-e2e/three-blockers-20261001/iteration-parent-projection-after-restart.json",
+      ".local/desktop-e2e/three-blockers-20261001/iteration-ui-downloads-after-restart.json",
+      ".local/desktop-e2e/three-blockers-20261001/iteration-ui-after-restart.png"
+    ]
+  },
+  "officialCredentialReferences": {
+    "status": "通过",
+    "dependency": {
+      "name": "@deepseek-ai/dsh-credentials",
+      "version": "0.2.0-rc.2",
+      "authorization": "credential-sdk-authorization.json",
+      "installationScriptsEnabled": false
+    },
+    "implementation": "图片读取Profile保存credentialRefs，官方credentials服务保存和解析API Key；Remote只投影hasApiKey。",
+    "actualOperations": [
+      "创建",
+      "保留",
+      "替换并清除旧引用",
+      "清除",
+      "重装和冷重启后保持非空引用",
+      "真实免费模型读图",
+      "删除验收Profile并恢复原活动配置"
+    ],
+    "actualStorage": {
+      "profileContainsNewPlaintextApiKey": false,
+      "officialVaultContainsNewApiKey": true,
+      "referenceSurvivesReinstallAndRestart": true,
+      "acceptanceReferenceRemovedAfterCleanup": true
+    },
+    "legacyState": "该隔离Profile中旧credentials空对象仍由官方Settings保留；本次没有迁移旧明文凭据。",
+    "realRead": {
+      "provider": "openai-compatible",
+      "model": "stealth/space-bunny-alpha",
+      "promptPrice": "0",
+      "completionPrice": "0",
+      "exitCode": 0,
+      "stderrBytes": 0,
+      "coreObservations": "通过",
+      "additionalObservation": "模型额外束发推断缺少明确图像依据，原始返回和独立审阅意见均保留。"
+    },
+    "evidence": [
+      ".local/desktop-e2e/three-blockers-20261001/credential-mutation-receipts.json",
+      ".local/desktop-e2e/three-blockers-20261001/credential-restart-storage.json",
+      ".local/desktop-e2e/three-blockers-20261001/credential-restart-read-request.json",
+      ".local/desktop-e2e/three-blockers-20261001/credential-restart-read-session.json",
+      ".local/desktop-e2e/three-blockers-20261001/credential-cleanup.json",
+      "openrouter-free-model-20261001.json",
+      ".local/desktop-e2e/reviews/restart-image-read-actual-review.json"
+    ]
+  },
+  "officialInstallation": {
+    "status": "通过",
+    "runId": "d53ab41d-434c-4be7-ba53-c98001f2302b",
+    "repeatPathFailure": "重复添加同一包路径时，官方管理器提示无法从依赖变更中确定安装的包；失败原始记录已保留。",
+    "resolution": "使用最终包的唯一不可变副本路径，通过官方管理器安装并启用后冷重启。",
+    "evidence": [
+      ".local/desktop-e2e/three-blockers-20261001/installation.json",
+      ".local/desktop-e2e/three-blockers-20261001/candidate-copy.json",
+      ".local/desktop-e2e/three-blockers-20261001/candidate-installation.json",
+      ".local/desktop-e2e/three-blockers-20261001/start.json"
+    ]
+  },
+  "verification": {
+    "imageReaderUnitTests": 177,
+    "hostIntegrationTests": 32,
+    "generationAndMediaTargetedTests": 53,
+    "typecheck": "通过",
+    "standardsAndSimplify": ".local/desktop-e2e/reviews/three-fixes-standards-final-review.json",
+    "spec": [
+      ".local/desktop-e2e/reviews/three-fixes-spec-final-review.json",
+      ".local/desktop-e2e/reviews/credential-gap-tests-final-review.json"
+    ],
+    "semantics": [
+      ".local/desktop-e2e/reviews/final-backup-and-read-report-semantics.json",
+      ".local/desktop-e2e/reviews/read-report-semantics-final-accepted.json"
+    ],
+    "finalGateCommand": "pnpm quality && git diff --check",
+    "finalGateLog": ".local/desktop-e2e/three-blockers-20261001/final-quality.log",
+    "finalGateResult": ".local/desktop-e2e/three-blockers-20261001/final-quality-result.json",
+    "publicSdkBoundary": {
+      "tests": 18,
+      "scope": "允许已安装SDK的credentials根入口、credential types类型入口及SessionPersistence类型入口，继续拒绝值导入限制和源码子路径。",
+      "reviews": [
+        ".local/desktop-e2e/reviews/sdk-boundary-standards-final-review.json",
+        ".local/desktop-e2e/reviews/sdk-boundary-and-resolution-spec-final-review.json"
+      ],
+      "redEvidence": [
+        ".local/desktop-e2e/three-blockers-20261001/sdk-boundary-red.log",
+        ".local/desktop-e2e/three-blockers-20261001/sdk-types-boundary-red.log"
+      ],
+      "greenEvidence": ".local/desktop-e2e/three-blockers-20261001/sdk-types-boundary-green.log"
+    }
+  },
+  "deliveryBoundary": {
+    "threeRequestedFixes": "已完成定向修复与上述验收",
+    "completeCandidateAcceptance": "未完成；完整A1至A18状态见acceptance-status.json，原始失败记录继续保留。",
+    "release": "未执行，须单独授权",
+    "productionSwitch": "未执行，须单独授权",
+    "productionHarnessCheckoutModified": false,
+    "sessionDeletionSelector": "按用户指示排除实现与测试"
+  }
+}

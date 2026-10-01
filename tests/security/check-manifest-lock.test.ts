@@ -60,4 +60,16 @@ describe('manifest and lockfile policy', () => {
     process.env.FAKE_PNPM_EXIT_CODE = '9'
     expect(() => checkManifestLock(value.root)).toThrow(/pnpm status 9/u)
   })
+
+  it('requires exact public Harness peer versions and rejects the old host range', async () => {
+    const value = await fixture()
+    const manifestPath = join(value.root, 'package.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, any>
+    manifest.peerDependencies['@deepseek-ai/dsh-agent'] = '0.2.0-rc.2'
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    expect(() => validateDependencyPolicy(value.root)).not.toThrow()
+    manifest.peerDependencies['@deepseek-ai/dsh-agent'] = '>=0.1.7-rc.2 <0.1.8'
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+    expect(() => validateDependencyPolicy(value.root)).toThrow(/exact version/u)
+  })
 })

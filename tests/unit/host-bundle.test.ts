@@ -5,10 +5,10 @@ import { dirname, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
-  materializeSourceHostModule,
-  sourceHostModulePath,
-  sourceHostWorkerModulePath,
-} from '../../scripts/production/host-module.mjs'
+  materializeHostModule,
+  hostModulePath,
+  hostWorkerModulePath,
+} from '../../scripts/build/host-module.mjs'
 
 describe('Host bundle', () => {
   it('keeps Harness package imports external in the packaged JavaScript entry', async () => {
@@ -38,17 +38,17 @@ describe('Host bundle', () => {
       await mkdir(dirname(staleOutput), { recursive: true })
       await writeFile(staleOutput, '--use-mock-keychain')
       const [output, concurrentOutput] = await Promise.all([
-        materializeSourceHostModule(repositoryRoot, { outputRoot }),
-        materializeSourceHostModule(repositoryRoot, { outputRoot: concurrentOutputRoot }),
+        materializeHostModule(repositoryRoot, { outputRoot }),
+        materializeHostModule(repositoryRoot, { outputRoot: concurrentOutputRoot }),
       ])
-      const workerOutput = sourceHostWorkerModulePath(outputRoot)
+      const workerOutput = hostWorkerModulePath(outputRoot)
       const [source, workerSource, concurrentSource] = await Promise.all([
         readChunks(output),
         readFile(workerOutput, 'utf8'),
         readChunks(concurrentOutput),
       ])
 
-      expect(output).toBe(sourceHostModulePath(outputRoot))
+      expect(output).toBe(hostModulePath(outputRoot))
       expect(source).toContain('from "@deepseek-ai/dsh-typert-protocol"')
       expect(source).not.toContain('class TypertRemoteService')
       expect(source).toContain('new NodeWorkerComfyFrontend')

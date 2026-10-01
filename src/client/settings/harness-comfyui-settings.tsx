@@ -6,6 +6,7 @@ import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-setti
 
 import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
 
+import { BROWSER_SETTINGS, type BrowserSettingsView } from '../../browser-settings-schema.ts'
 import {
   SourceSettingsValidationError,
   sourceOrigin,
@@ -16,28 +17,35 @@ import {
   ImageReaderSettingsPage,
   type ImageReaderSettingsPageProps,
 } from '../image-reader/image-reader-settings.tsx'
+import {
+  BrowserSettingsPage,
+  type BrowserSettingsApi,
+} from './browser-settings.tsx'
 
 export const SOURCE_SETTINGS_COPY = Object.freeze({
   urlFormatInvalid: '数据源服务 URL 格式不正确，必须包含 http:// 或 https:// 和主机名。',
   urlPortNotAllowed: '数据源服务 URL 中包含端口。请从 URL 中移除端口，并在“端口”字段中填写该端口。',
   urlComponentNotAllowed: '数据源服务 URL 仅接受协议、主机名和可选的根路径“/”。请移除 URL 中的用户名、密码、其他路径、查询参数和片段标识。',
   portInvalid: '端口必须是 1 至 65535 的整数。',
-  saveFailed: '数据源服务设置保存失败，请重试。',
+  saveFailed: errorCatalog.SOURCE_SETTINGS_SAVE_FAILED.reason + errorCatalog.SOURCE_SETTINGS_SAVE_FAILED.next_step,
   saved: '当前数据源服务设置已保存。Harness-ComfyUI 的下一次数据源请求将使用此 URL 和端口。',
 })
 
-type SettingsTab = 'image-reader' | 'source'
+type SettingsTab = 'image-reader' | 'source' | 'browser'
 
-const SETTINGS_TABS = Object.freeze<readonly SettingsTab[]>(['image-reader', 'source'])
+const SETTINGS_TABS = Object.freeze<readonly SettingsTab[]>(['image-reader', 'source', 'browser'])
 const SETTINGS_TAB_IDS: Readonly<Record<SettingsTab, string>> = Object.freeze({
   'image-reader': 'harness-comfyui-image-reader-tab',
   source: 'harness-comfyui-source-tab',
+  browser: BROWSER_SETTINGS.ui.tabId,
 })
 
 export interface HarnessComfyuiSettingsPageProps extends SettingsSectionOwnerProps {
   readonly imageReaderScope: ImageReaderSettingsPageProps['scope']
   readonly imageReaderApi: ImageReaderSettingsPageProps['api']
   readonly sourceScope: ConfigForm<SourceSettingsView>
+  readonly browserScope: ConfigForm<BrowserSettingsView>
+  readonly browserApi: BrowserSettingsApi
 }
 
 function sourceErrorMessage(error: SourceSettingsValidationError): string {
@@ -59,6 +67,8 @@ export function HarnessComfyuiSettingsPage({
   imageReaderScope,
   imageReaderApi,
   sourceScope,
+  browserScope,
+  browserApi,
 }: HarnessComfyuiSettingsPageProps) {
   const settings = useSyncExternalStore(
     listener => sourceScope.subscribe(listener),
@@ -183,6 +193,18 @@ export function HarnessComfyuiSettingsPage({
           onClick={() => setTab('source')}
           onKeyDown={event => moveTabFocus(event, 'source')}
         >数据源服务</Button>
+        <Button
+          type="button"
+          variant="toolbar"
+          size="sm"
+          role="tab"
+          aria-selected={tab === 'browser'}
+          aria-controls={BROWSER_SETTINGS.ui.panelId}
+          id={SETTINGS_TAB_IDS.browser}
+          tabIndex={tab === 'browser' ? 0 : -1}
+          onClick={() => setTab('browser')}
+          onKeyDown={event => moveTabFocus(event, 'browser')}
+        >{BROWSER_SETTINGS.ui.tabLabel}</Button>
       </div>
 
       <div
@@ -264,6 +286,15 @@ export function HarnessComfyuiSettingsPage({
             </footer>
           </form>
         </section>
+      </div>
+
+      <div
+        id={BROWSER_SETTINGS.ui.panelId}
+        role="tabpanel"
+        aria-labelledby={BROWSER_SETTINGS.ui.tabId}
+        hidden={tab !== 'browser'}
+      >
+        <BrowserSettingsPage scope={browserScope} api={browserApi} />
       </div>
     </section>
   )

@@ -57,7 +57,7 @@ function fixture() {
   const spawnImplementation = vi.fn(() => child)
   const reportDiagnostic = vi.fn()
   const frontend = new NodeWorkerComfyFrontend({
-    nodeExecutable: 'node',
+    nodeExecutable: process.execPath,
     workerModulePath: workerPath,
     browserExecutablePath,
     timeoutMs: 120_000,
@@ -82,13 +82,50 @@ async function waitForFile(path: string): Promise<string> {
 }
 
 describe('NodeWorkerComfyFrontend', () => {
+  it('starts the .js worker with the Host executable in Electron Node mode', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(process.versions, 'electron')
+    Object.defineProperty(process.versions, 'electron', { configurable: true, value: '0.2.0' })
+    const inheritedValue = process.env.ELECTRON_RUN_AS_NODE
+    process.env.ELECTRON_RUN_AS_NODE = 'inherited-value'
+    try {
+      const child = new FakeWorkerProcess()
+      const spawnImplementation = vi.fn(() => child)
+      const frontend = new NodeWorkerComfyFrontend({
+        nodeExecutable: process.execPath,
+        workerModulePath: workerPath,
+        browserExecutablePath,
+        timeoutMs: 120_000,
+        preReadiness,
+        spawnImplementation,
+      })
+      const promise = frontend.exportWorkflow(input())
+
+      expect(spawnImplementation).toHaveBeenCalledWith(process.execPath, [workerPath], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true,
+        env: expect.objectContaining({ ELECTRON_RUN_AS_NODE: '1' }),
+      })
+      expect(process.env.ELECTRON_RUN_AS_NODE).toBe('inherited-value')
+
+      child.stdout.emit('data', '{"type":"result","ok":true,"workflow":{"1":{"class_type":"PromptNode","inputs":{}}}}\n')
+      child.emit('close', 0, null)
+      await expect(promise).resolves.toEqual({ '1': { class_type: 'PromptNode', inputs: {} } })
+    } finally {
+      if (descriptor === undefined) Reflect.deleteProperty(process.versions, 'electron')
+      else Object.defineProperty(process.versions, 'electron', descriptor)
+      if (inheritedValue === undefined) delete process.env.ELECTRON_RUN_AS_NODE
+      else process.env.ELECTRON_RUN_AS_NODE = inheritedValue
+    }
+  })
+
   it('runs the compiler in the standard Node worker and returns its workflow', async () => {
     const { child, spawnImplementation, reportDiagnostic, frontend } = fixture()
     const promise = frontend.exportWorkflow(input())
 
-    expect(spawnImplementation).toHaveBeenCalledWith('node', [workerPath], {
+    expect(spawnImplementation).toHaveBeenCalledWith(process.execPath, [workerPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       detached: true,
+      env: process.env,
     })
     const request = JSON.parse(String(child.stdin.end.mock.calls[0]?.[0])) as Record<string, any>
     expect(request).toEqual({
@@ -110,6 +147,36 @@ describe('NodeWorkerComfyFrontend', () => {
 
     await expect(promise).resolves.toEqual({ '1': { class_type: 'PromptNode', inputs: {} } })
     expect(reportDiagnostic).toHaveBeenCalledWith({ attempt: 1, status: 'succeeded' })
+  })
+
+  it('reads the current Browser path for each later workflow compilation', async () => {
+    let currentPath = '/Applications/Original Browser/browser'
+    const children = [new FakeWorkerProcess(), new FakeWorkerProcess()]
+    const spawnImplementation = vi.fn(() => children.shift()!)
+    const frontend = new NodeWorkerComfyFrontend({
+      nodeExecutable: process.execPath,
+      workerModulePath: workerPath,
+      get browserExecutablePath() { return currentPath },
+      timeoutMs: 120_000,
+      preReadiness,
+      spawnImplementation,
+    })
+    const firstChild = children[0]!
+    const first = frontend.exportWorkflow(input())
+    expect(JSON.parse(String(firstChild.stdin.end.mock.calls[0]?.[0])).browser.browserExecutablePath)
+      .toBe('/Applications/Original Browser/browser')
+    firstChild.stdout.emit('data', '{"type":"result","ok":true,"workflow":{"1":{"class_type":"PromptNode","inputs":{}}}}\n')
+    firstChild.emit('close', 0, null)
+    await first
+
+    currentPath = '/Applications/Saved Browser/browser'
+    const secondChild = children[0]!
+    const second = frontend.exportWorkflow(input())
+    expect(JSON.parse(String(secondChild.stdin.end.mock.calls[0]?.[0])).browser.browserExecutablePath)
+      .toBe('/Applications/Saved Browser/browser')
+    secondChild.stdout.emit('data', '{"type":"result","ok":true,"workflow":{"1":{"class_type":"PromptNode","inputs":{}}}}\n')
+    secondChild.emit('close', 0, null)
+    await second
   })
 
   it('preserves a structured frontend error returned by the worker', async () => {
@@ -169,7 +236,7 @@ describe('NodeWorkerComfyFrontend', () => {
     const controller = new AbortController()
     const child = new FakeWorkerProcess()
     const frontend = new NodeWorkerComfyFrontend({
-      nodeExecutable: 'node',
+      nodeExecutable: process.execPath,
       workerModulePath: workerPath,
       browserExecutablePath,
       timeoutMs: 120_000,
@@ -193,7 +260,7 @@ describe('NodeWorkerComfyFrontend', () => {
       const controller = new AbortController()
       const child = new FakeWorkerProcess()
       const frontend = new NodeWorkerComfyFrontend({
-        nodeExecutable: 'node',
+        nodeExecutable: process.execPath,
         workerModulePath: workerPath,
         browserExecutablePath,
         timeoutMs: 120_000,
@@ -223,7 +290,7 @@ describe('NodeWorkerComfyFrontend', () => {
         throw new Error('stdin closed')
       })
       const frontend = new NodeWorkerComfyFrontend({
-        nodeExecutable: 'node',
+        nodeExecutable: process.execPath,
         workerModulePath: workerPath,
         browserExecutablePath,
         timeoutMs: 120_000,
@@ -250,7 +317,7 @@ describe('NodeWorkerComfyFrontend', () => {
   it('converts an asynchronous worker stdin error into a structured failure', async () => {
     const child = new FakeWorkerProcess()
     const frontend = new NodeWorkerComfyFrontend({
-      nodeExecutable: 'node',
+      nodeExecutable: process.execPath,
       workerModulePath: workerPath,
       browserExecutablePath,
       timeoutMs: 120_000,
@@ -342,7 +409,9 @@ describe('NodeWorkerComfyFrontend', () => {
       expect(await readFile(join(temporaryRoot, 'fake-chrome.closed'), 'utf8')).toBe('SIGTERM')
       expect(workerProcess?.signalCode).toBeNull()
       expect(workerProcess?.exitCode).toBe(0)
-      expect(() => process.kill(fakeBrowserPid, 0)).toThrow(expect.objectContaining({ code: 'ESRCH' }))
+      await vi.waitFor(() => {
+        expect(() => process.kill(fakeBrowserPid, 0)).toThrow(expect.objectContaining({ code: 'ESRCH' }))
+      }, { timeout: 5_000, interval: 25 })
       await expect(access(profilePath)).rejects.toMatchObject({ code: 'ENOENT' })
     } finally {
       controller.abort()

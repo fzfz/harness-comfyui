@@ -8,14 +8,14 @@
 
 用户要求读取、核对或复用已有 `run_id` 的 Workflow、模板 ID、生成模型、LoRA、Prompt 或其他生成参数时，Skill 执行者调用该命令。Run ID 支持完整 ID 和短 ID；短 ID 由 `run_` 和完整 UUID 的起始片段组成，该片段至少包含前八个 UUID 字符。
 
-Skill 执行者必须通过 Harness 提供的前台 shell Tool 调用，在当前会话的 Workspace 工作目录执行该命令。
+受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 CLI 入口脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者必须在当前会话的 Workspace 工作目录设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，并执行该命令。
 
 ## 用法
 
 把只包含 `run_ids` 的 JSON 对象传入标准输入：
 
 ```bash
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
 {
   "run_ids": ["run_3c0ad3ed", "run_d26923be"]
 }
@@ -74,4 +74,4 @@ CLI 返回非零退出码时，标准错误包含 `错误码: 错误消息`。�
 
 ## 帮助与操作提示
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

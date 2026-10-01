@@ -1,6 +1,7 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { load as loadYaml } from 'js-yaml'
 import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -18,8 +19,12 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-sidebar-right/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-settings/client', 'type-only'],
   ['@deepseek-ai/dsh-attachment', 'type-only'],
+  ['@deepseek-ai/dsh-home-paths', 'type-only'],
+  ['@deepseek-ai/dsh-credentials', 'value-or-type'],
+  ['@deepseek-ai/dsh-credentials/types', 'type-only'],
   ['@deepseek-ai/dsh-llm', 'value-or-type'],
   ['@deepseek-ai/dsh-session', 'value-or-type'],
+  ['@deepseek-ai/dsh-session-persistence', 'type-only'],
   ['@deepseek-ai/dsh-settings', 'value-or-type'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
@@ -46,46 +51,20 @@ const directDependencyFields = Object.freeze([
   'peerDependencies',
   'optionalDependencies',
 ])
-const expectedLoaderPatch = `- insert:
-    - id: harness-comfyui-core
-      name: harness-comfyui/core
-      config:
-        configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-        startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
-    - id: harness-comfyui-image-reader
-      name: harness-comfyui/image-reader
-      config:
-        imageReaderDefaultModel:
-          provider: opencode-go
-          model: qwen3.7-plus
-    - id: harness-comfyui-cli
-      name: harness-comfyui/cli
-
-- id: agent-default-model
-  config:
-    provider: opencode-go
-    model: deepseek-v4-flash
-
-- id: llm-pi-ai
-  config:
-    providers:
-      opencode-go:
-        apiKeyEnv: OPENCODE_GO_API_KEY
-
-- id: bash-sandbox
-  config:
-    timeoutMs: 180000
-
-- id: agent-preset-registry
-  config:
-    default: harness-comfyui-cli-candidate
-`
-const expectedProfilePatch = `- insert:
-    - id: harness-comfyui-web
-      name: harness-comfyui
-`
-const expectedDevelopmentProfilePatch = `[]
-`
+const expectedOfficialBundle = [{
+  insert: [
+    { id: 'harness-comfyui-core', name: 'harness-comfyui/core' },
+    { id: 'harness-comfyui-image-reader', name: 'harness-comfyui/image-reader' },
+    { id: 'harness-comfyui-cli', name: 'harness-comfyui/cli' },
+    { id: 'harness-comfyui', name: 'harness-comfyui' },
+    { id: 'harness-comfyui-presets', name: './agent-presets/project-installed-presets.mjs' },
+  ],
+}]
+const forbiddenGlobalDefaultEntries = new Set([
+  'agent-default-model',
+  'agent-preset-registry',
+  'bash-sandbox',
+])
 
 function parseArguments(argv) {
   const values = new Map()
@@ -347,33 +326,59 @@ function assertLockFile(path) {
   }
 }
 
-function assertPatchFile(path, expected) {
-  const actual = readFileSync(path, 'utf8').replaceAll('\r\n', '\n')
-  if (actual !== expected) throw new Error(`${path} must contain only the frozen public Harness Loader row and configuration seam`)
+function collectPatchIds(value, result = [], seen = new Set()) {
+  if (Array.isArray(value)) {
+    if (seen.has(value)) return result
+    seen.add(value)
+    for (const entry of value) collectPatchIds(entry, result, seen)
+  } else if (isPlainObject(value)) {
+    if (seen.has(value)) return result
+    seen.add(value)
+    if (typeof value.id === 'string') result.push(value.id)
+    for (const entry of Object.values(value)) collectPatchIds(entry, result, seen)
+  }
+  return result
 }
+
+function hasCyclicStructure(value, active = new Set(), visited = new Set()) {
+  if (!Array.isArray(value) && !isPlainObject(value)) return false
+  if (active.has(value)) return true
+  if (visited.has(value)) return false
+  visited.add(value)
+  active.add(value)
+  const entries = Array.isArray(value) ? value : Object.values(value)
+  for (const entry of entries) {
+    if (hasCyclicStructure(entry, active, visited)) return true
+  }
+  active.delete(value)
+  return false
+}
+
+function assertOfficialBundlePatch(path, root) {
+  const label = relative(root, path).replaceAll('\\', '/')
+  let actual
+  try {
+    actual = loadYaml(readFileSync(path, 'utf8'))
+  } catch (error) {
+    throw new Error(`could not parse ${label}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (hasCyclicStructure(actual)) throw new Error(`${label} must not contain cyclic YAML aliases`)
+  const globalOverrides = collectPatchIds(actual).filter(id => forbiddenGlobalDefaultEntries.has(id))
+  if (globalOverrides.length > 0) {
+    throw new Error(`${label} must not override global defaults (${[...new Set(globalOverrides)].join(', ')})`)
+  }
+  if (!sameStructuredValue(actual, expectedOfficialBundle)) {
+    throw new Error(`${label} must register the complete Host, Client, and Preset entries`)
+  }
+}
+
 
 function validateStructuredHarnessBoundary(root) {
   const rootManifestPath = resolve(root, 'package.json')
-  const profileManifestPath = resolve(root, 'profiles/comfyui-workbench/package.json')
-  const developmentProfileManifestPath = resolve(root, 'profiles/comfyui-workbench-development/package.json')
   const rootManifest = readJson(rootManifestPath, rootManifestPath)
   assertManifestDependencyFields(rootManifest, 'package.json')
-  if (statSync(profileManifestPath, { throwIfNoEntry: false })?.isFile()) {
-    assertManifestDependencyFields(readJson(profileManifestPath, profileManifestPath), 'profiles/comfyui-workbench/package.json')
-  }
-  if (statSync(developmentProfileManifestPath, { throwIfNoEntry: false })?.isFile()) {
-    assertManifestDependencyFields(
-      readJson(developmentProfileManifestPath, developmentProfileManifestPath),
-      'profiles/comfyui-workbench-development/package.json',
-    )
-  }
   assertPublicPackageMetadata(rootManifest, 'package.json')
-  assertPatchFile(resolve(root, 'cordis.patch.yml'), expectedLoaderPatch)
-  assertPatchFile(resolve(root, 'profiles/comfyui-workbench/cordis.patch.yml'), expectedProfilePatch)
-  const developmentProfilePatchPath = resolve(root, 'profiles/comfyui-workbench-development/cordis.patch.yml')
-  if (statSync(developmentProfilePatchPath, { throwIfNoEntry: false })?.isFile()) {
-    assertPatchFile(developmentProfilePatchPath, expectedDevelopmentProfilePatch)
-  }
+  assertOfficialBundlePatch(resolve(root, 'cordis.patch.yml'), root)
   assertWorkspaceFile(resolve(root, 'pnpm-workspace.yaml'))
   assertLockFile(resolve(root, 'pnpm-lock.yaml'))
 }

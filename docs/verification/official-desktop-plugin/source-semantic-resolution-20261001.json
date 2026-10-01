@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-01T02:42:34.127Z",
+  "passed": true,
+  "queries": [
+    {
+      "kind": "styles",
+      "httpStatus": 200,
+      "resultCount": 0,
+      "responseStatus": "ok"
+    },
+    {
+      "kind": "prompt-terms",
+      "httpStatus": 200,
+      "resultCount": 6,
+      "responseStatus": "ok"
+    }
+  ],
+  "models": [
+    {
+      "url": "http://192.168.110.16:8003/v1/embeddings",
+      "model": "Qwen3-Embedding-0.6B-4bit-DWQ",
+      "status": 200,
+      "inputCount": 1
+    },
+    {
+      "url": "http://192.168.110.16:8003/v1/rerank",
+      "model": "Qwen3-Reranker-0.6B-mlx-8Bit",
+      "status": 200,
+      "documentCount": 32
+    },
+    {
+      "url": "http://192.168.110.16:8003/v1/embeddings",
+      "model": "Qwen3-Embedding-0.6B-4bit-DWQ",
+      "status": 200,
+      "inputCount": 1
+    },
+    {
+      "url": "http://192.168.110.16:8003/v1/rerank",
+      "model": "Qwen3-Reranker-0.6B-mlx-8Bit",
+      "status": 200,
+      "documentCount": 32
+    }
+  ],
+  "managedRestart": {
+    "beforePid": 389,
+    "afterPid": 67162,
+    "configurationChanged": false,
+    "sourceCodeChanged": false,
+    "diagnosis": "Same deployed libraries with current configuration and read-only database succeeded while old running process returned 502; managed restart restored both endpoints. Exact internal stale process cause is unconfirmed."
+  },
+  "privateEvidence": ".local/desktop-e2e/three-blockers-20261001/source-semantic-resolution.json"
+}

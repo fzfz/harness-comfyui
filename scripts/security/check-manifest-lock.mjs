@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url'
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 export const dependencySecurityPolicyFile = 'config/dependency-security-policy.json'
 const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u
-const harnessPeerVersion = '>=0.1.7-rc.2 <0.1.8'
 
 function parseArguments(argv) {
   if (argv.length === 0) return repositoryRoot
@@ -101,9 +100,6 @@ function validateManifestVersions(manifest) {
     const dependencies = manifest[field]
     if (!isRecord(dependencies)) throw new Error(`package.json.${field} must be an object`)
     for (const [name, version] of Object.entries(dependencies)) {
-      if (field === 'peerDependencies' && name.startsWith('@deepseek-ai/dsh-') && version === harnessPeerVersion) {
-        continue
-      }
       if (typeof version !== 'string' || !exactVersion.test(version)) {
         throw new Error(`package.json.${field}.${name} must use an exact version`)
       }

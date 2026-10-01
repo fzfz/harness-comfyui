@@ -33,7 +33,7 @@ Skill 执行者必须根据主体、动作和镜头从 `references/generation-pr
 
 Skill 执行者使用 `references/generation-profiles.json` 中的 `anima-aesthetic-v1.1` 路线，并使用该路线的 `negative_mode` 和 `base_negative_items`。
 
-- Skill 执行者必须采用 `anima-aesthetic-v1.1` 的基础负向项；使用 `score_*` 时，必须将其限定在正向或负向其中一侧。
+- Skill 执行者使用 `score_*` 时，必须将其限定在正向或负向其中一侧。
 - Skill 执行者只在本轮画面确实包含对应风险时，追加少量人体、手部、足部、多人粘连或文字伪影项。
 - Skill 执行者删除重复负向项。原生负向模式把基础负向项和本轮追加项写入非空 `negative_prompt`，并把 `positive_avoidance` 设置为 `null`；正向规避模式把这些项目改写为正向规避要求并写入非空 `positive_avoidance`，同时把 `negative_prompt` 设置为 `null`。
 
@@ -41,14 +41,14 @@ Skill 执行者使用 `references/generation-profiles.json` 中的 `anima-aesthe
 
 Skill 执行者按照 `references/03-output-protocol.md` 完成 ANIMA 十二槽 Prompt 格式校验后，把校验器成功结果中的 `prompt_text` 写入 `positive_prompt`，再按照 `references/generation-output-schema.json` 构造一个结果对象。
 
-Skill 执行者必须在当前 `SKILL.md` 所在目录执行以下命令，并把完整结果 JSON 写入标准输入：
+`scripts/validate-output.mjs` 是相对于当前 `SKILL.md` 所在目录的文件路径。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE`。Skill 执行者从 Skill 目录设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，执行以下命令，并把完整结果 JSON 写入标准输入：
 
 ```sh
-node scripts/validate-output.mjs --quiet
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --quiet
 ```
 
 上述 `--quiet` 命令退出码 `0` 时，stderr 必须为空，stdout 必须是一行通过校验的完整结果 JSON；Skill 执行者把 stdout 中的对象作为最终结构化结果。退出码 `2` 时，stdout 必须为空，stderr 首行必须是包含非空 `violations` 数组的 JSON，后续行为 `NEXT:` 修正提示；Skill 执行者按照每项 `path` 和 `message` 修正完整结果并重试一次，重试仍返回退出码 `2` 时报告全部 `violations` 并停止。退出码 `1` 时，Skill 执行者报告 stderr 并停止。Skill 执行者仅在退出码为 `0` 且输出符合协议时采用 stdout。命令返回其他退出码，或者输出通道不符合对应规则时，Skill 执行者报告退出码和违反的输出协议并停止。
 
 ## 帮助与操作提示
 
-Skill 执行者运行 `node scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。
+Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。

@@ -1,4 +1,6 @@
 import help from '../../config/managed-cli-help.json' with { type: 'json' }
+import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
+import { parseManagedCliEnvironment } from '../../config/managed-cli-environment-schema.ts'
 import {
   parseCatalogPageNumber,
   parseCatalogQueryText,
@@ -10,14 +12,7 @@ import type { GenerationRequest, JsonValue } from '../host/generation/generation
 
 export const CLI_ROUTE_PATH = '/api/harness-comfyui/cli/v1'
 export const CLI_MAX_BODY_BYTES = 1_048_576
-export const CLI_ENVIRONMENT_NAMES = Object.freeze({
-  executable: 'DSH_HARNESS_COMFYUI_CLI',
-  api: 'DSH_HARNESS_COMFYUI_CLI_API',
-  capability: 'DSH_HARNESS_COMFYUI_CLI_CAPABILITY',
-  semanticQueryCli: 'DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI',
-  sourceUrl: 'DSH_HARNESS_COMFYUI_SOURCE_URL',
-  sourcePort: 'DSH_HARNESS_COMFYUI_SOURCE_PORT',
-} as const)
+export const CLI_ENVIRONMENT_NAMES = Object.freeze(parseManagedCliEnvironment(managedCliEnvironment).environmentNames)
 
 const CATALOG_KINDS = new Set<CatalogKind>([
   'model',

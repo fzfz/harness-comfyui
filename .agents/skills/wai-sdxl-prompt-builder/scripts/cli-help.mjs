@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import definition from './cli-help.json' with { type: 'json' }
 import { parseHelp } from './cli-help-schema.mjs'
 const help = parseHelp(definition)
-const cli = () => `node '${process.argv[1].replaceAll("'", "'\\''")}'`
+const cli = () => `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals 'scripts/validate-output.mjs'`
 export function errorGuide() {
   if (process.exitCode) process.stderr.write(`NEXT: ${help.failure.replaceAll('{cli}', cli())}\n`)
 }

@@ -27,10 +27,10 @@
     "cli-workspace": {
       "sourceEntryRelativePath": "src/host/cli/workspace.ts",
       "outputEntryRelativePath": ".local/source-host/cli-workspace.js"
-    },
-    "cli-runner": {
-      "sourceEntryRelativePath": "src/host/cli/runner.ts",
-      "outputEntryRelativePath": ".local/source-host/cli-runner.js"
     }
+  },
+  "client": {
+    "sourceEntryRelativePath": "src/client/index.tsx",
+    "outputEntryRelativePath": ".local/source-client/client.js"
   }
 }

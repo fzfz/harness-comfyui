@@ -2,10 +2,10 @@
 
 ## CLI 用途与可执行入口
 
-该 CLI 使用 Search 或 Resolve 查询作品、角色、WAI 画师和 Prompt 标签。Skill 执行者使用以下可执行入口运行本文件中的查询命令：
+该 CLI 使用 Search 或 Resolve 查询作品、角色、WAI 画师和 Prompt 标签。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和查询脚本路径 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`；Skill 执行者使用以下入口运行本文件中的查询命令：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI"
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI"
 ```
 
 ## 上下文记录
@@ -42,7 +42,7 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI"
 ## Search 命令
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
 ```
 
 `<operation-path>` 必须取自“查询路径与结果字段”表。`<query>` 必须是长度不超过 200 个字符且不含控制字符的字符串。Skill 执行者在每次 Search 前检查已经构造的完整 `<query>`；长度超过 200 个字符时，Skill 执行者报告实际字符数，请求用户提供不超过 200 个字符的查询文本，并在收到文本前停止当前查询目标。Skill 执行者使用单引号包裹包含空格或 shell 特殊字符的参数值；参数值中的每个单引号写成 `'\''`，使整个值作为一个命令行参数传入。
@@ -50,13 +50,13 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFY
 查询角色时，Skill 执行者可以使用已采用 Work 结果的 `id` 限定结果：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
 ```
 
 查询 Style 时，Skill 执行者必须使用当前 Skill 执行中通过 Base Model Search 取得的 WAI Base Model ID 限定结果：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<wai-base-model-id>'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<wai-base-model-id>'
 ```
 
 ## Resolve 命令
@@ -64,16 +64,16 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFY
 Character 上下文记录或 Style 上下文记录没有非空 `data.prompt_text`，但提供符合 `^[1-9][0-9]{0,19}$` 的 `data.id` 时，Skill 执行者使用以下命令查询该 ID：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode resolve --id '<stable-id>'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode resolve --id '<stable-id>'
 ```
 
 Character 上下文记录使用 `/internal/semantic/characters`，Style 上下文记录使用 `/internal/semantic/styles`。Skill 执行者把 `data.id` 作为 `<stable-id>`。
 
-Resolve 成功结果的 `results` 必须只包含一个对象。`results` 的对象数量不等于 1 时，Skill 执行者报告实际对象数量，并停止该上下文记录对应的查询目标。唯一结果对象缺少 `id` 时，Skill 执行者报告缺少 `id`，并停止该上下文记录对应的查询目标。唯一结果对象包含 `id` 时，Skill 执行者把该 `id` 转为十进制字符串后与 `<stable-id>` 比较；两者不相同时，Skill 执行者报告 `<stable-id>` 和转换后的实际 `id`，并停止该上下文记录对应的查询目标。
+Resolve 成功结果的 `results` 必须包含一个对象。返回对象数量为 0 或大于 1 时，Skill 执行者报告实际对象数量，该上下文记录对应的查询目标到此结束。唯一结果对象缺少 `id` 时，Skill 执行者报告缺少 `id`，该查询目标到此结束。唯一结果对象包含 `id` 时，Skill 执行者把该 `id` 转为十进制字符串后与 `<stable-id>` 比较；两者相同时，Skill 执行者继续处理该上下文记录。两者不同时，Skill 执行者报告 `<stable-id>` 和转换后的实际 `id`，该查询目标到此结束。
 
 ## 查询顺序与查询值
 
-1. Skill 执行者先采用 Character 上下文记录和 Style 上下文记录中的非空 `data.prompt_text`。已经取得 Prompt 的上下文记录不再查询。
+1. Skill 执行者先采用 Character 上下文记录和 Style 上下文记录中的非空 `data.prompt_text`，并在本次执行后续步骤中直接复用该结果。只有 `data.prompt_text` 为空时，Skill 执行者才查询该上下文记录。
 2. Character 上下文记录没有非空 `data.prompt_text` 时，Skill 执行者优先使用符合 `^[1-9][0-9]{0,19}$` 的 `data.id` 执行 Character Resolve。`data.id` 缺失或不符合该格式时，Skill 执行者使用非空 `data.character_name` 执行 Character Search；存在非空 `data.work_name` 时，Skill 执行者按照角色名称、一个半角空格、作品名称的顺序构造同一个 `<query>`。不存在非空 `data.character_name` 时，Skill 执行者报告缺少角色名称并停止该 Character 查询。
 3. 当前消息没有与用户指定角色对应的 Character 上下文记录，且用户同时提供作品名称和角色名称时，Skill 执行者先使用用户原文中的作品名称执行 Work Search。采用一项 Work 结果后，Skill 执行者使用该结果的 `id` 作为 Character Search 的 `<work-id>`，并使用用户原文中的角色名称作为 `<character-query>`。
 4. 当前消息没有与用户指定角色对应的 Character 上下文记录，且用户只提供角色名称时，Skill 执行者使用用户原文中的角色名称执行 Character Search。
@@ -87,7 +87,7 @@ Resolve 成功结果的 `results` 必须只包含一个对象。`results` 的对
 
 ## Search 与 Resolve 的参数规则
 
-Search 使用 `--mode search`、`--query`、`--page 1` 和 `--page_size 20`；Search 不使用 `--id`。Resolve 使用 `--mode resolve` 和 `--id`；Resolve 不使用 `--query`、`--page`、`--page_size`、`--work_id` 或 `--base_model_id`。
+Search 允许的参数集合为 `--url`、`--port`、`--path`、可选的 `--timeout-ms`、`--mode search`、`--query`、`--page 1`、`--page_size 20`、可按查询路径加入的 `--work_id` 或 `--base_model_id`，以及可选的 `--quiet`。Resolve 允许的参数集合为 `--url`、`--port`、`--path`、可选的 `--timeout-ms`、`--mode resolve`、`--id` 和可选的 `--quiet`。`--url`、`--port` 与 `--path` 的取值按“数据源连接参数与标准输入”一节提供。
 
 `--id`、`--work_id` 和 `--base_model_id` 只接受符合 `^[1-9][0-9]{0,19}$` 的十进制字符串。Skill 执行者把查询结果中的数值 `id` 转为十进制字符串后用于后续命令。
 
@@ -186,7 +186,7 @@ Style 查询没有可采用结果时，如果用户在当前消息中直接提�
 
 ## 调用次数与结果复用
 
-查询路径、`mode` 以及实际传入的 `query`、`id`、`work_id` 和 `base_model_id` 参数共同标识一次查询调用。Skill 执行者保存每次查询调用已经采用的成功结果；本次 Skill 执行的后续步骤再次需要相同查询调用时，Skill 执行者复用该结果，不再次调用 CLI。“查询次数与空结果”一节规定的 Work 第二次 Search 不复用第一次 Search 的结果，并计入该 Work 查询目标最多两次的调用总数。
+查询路径、`mode` 以及实际传入的 `query`、`id`、`work_id` 和 `base_model_id` 参数共同标识一次查询调用。Skill 执行者保存每次查询调用已经采用的成功结果；本次 Skill 执行的后续步骤再次需要相同查询调用时，Skill 执行者直接复用该结果。“查询次数与空结果”一节规定的 Work 第二次 Search 作为新调用执行该节构造的查询，并计入该 Work 查询目标最多两次的调用总数。
 
 用户更改要查询的作品、角色、画师或 Prompt 概念，或者更改对应的查询参数时，Skill 执行者按照“查询次数与空结果”一节为更改后的对象开始新的查询目标。退出码 `2` 触发的参数修正仍属于原查询目标的唯一一次自动重试。
 
@@ -194,4 +194,4 @@ Style 查询没有可采用结果时，如果用户在当前消息中直接提�
 
 ## 渐进式帮助与错误指引
 
-Skill 执行者运行 `node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --help` 查看离线总览，再按照“下一步”查询实时操作列表和指定路径帮助。省略 `--quiet` 的成功查询在 stderr 输出 `NEXT:` 后续操作。帮助调用成功时，Skill 执行者从 stdout 读取帮助文本。
+Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --help` 查看离线总览，再按照“下一步”查询实时操作列表和指定路径帮助。省略 `--quiet` 的成功查询在 stderr 输出 `NEXT:` 后续操作。帮助调用成功时，Skill 执行者从 stdout 读取帮助文本。

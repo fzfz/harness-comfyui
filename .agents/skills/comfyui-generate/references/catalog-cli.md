@@ -6,10 +6,10 @@ Skill 执行者使用 Catalog CLI 查询 Workflow 模板、生成模型、LoRA �
 
 ## 调用入口
 
-`DSH_HARNESS_COMFYUI_CLI` 保存 Catalog CLI 入口脚本路径。Skill 执行者使用以下格式调用 Catalog CLI；命令不接受参数时省略 `[options]`。
+受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Catalog CLI 入口脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下格式以 Node 模式调用 Catalog CLI；命令不接受参数时省略 `[options]`。
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet <command> [options]
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet <command> [options]
 ```
 
 ## 命令与调用条件
@@ -87,4 +87,4 @@ resolve 命令返回的 `id` 与输入 `--id` 不相同时，Skill 执行者按�
 
 ## 帮助与操作提示
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

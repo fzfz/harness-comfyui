@@ -2,8 +2,11 @@ import definition from '../../config/source-cli-guidance.json' with { type: 'jso
 import { shellQuote } from '../cli/help.mjs'
 import { parseSourceGuidance } from './guidance-schema.mjs'
 const guidance = parseSourceGuidance(definition)
+function invocation(kind) {
+  return guidance[kind].invocation.replaceAll('{script}', shellQuote(process.argv[1]))
+}
 function text(kind, key, options = {}) {
-  const values = { cli: kind === 'source' ? `node ${shellQuote(process.argv[1])}` : guidance[kind].invocation,
+  const values = { cli: invocation(kind),
     url: shellQuote(options.url), port: shellQuote(options.port), path: shellQuote(options.path), id: shellQuote(options.resultId) }
   return guidance[kind][key].replace(/\{(\w+)\}/g, (_, name) => values[name])
 }
@@ -31,6 +34,5 @@ export function sourceErrorNext(kind, error) {
 }
 
 export function renderedHelp(kind, name, body) {
-  const invocation = kind === 'source' ? `node ${shellQuote(process.argv[1])}` : guidance[kind].invocation
-  return body.replaceAll(name, invocation) + helpGuidance(kind)
+  return body.replaceAll(name, invocation(kind)) + helpGuidance(kind)
 }

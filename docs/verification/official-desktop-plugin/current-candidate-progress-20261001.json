@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "category": "当前候选阶段验收",
+  "branch": "codex/official-desktop-plan",
+  "sourceCommit": "742570c4d7ab17272baac0eb3211536751002c9a",
+  "packageVersion": "0.45.0",
+  "dirty": true,
+  "scope": "本记录描述已完成的自动化和独立审阅；真实模型验收继续单独执行。",
+  "sessionDeletion": "实施者已按用户要求排除官方宿主会话删除选择器、删除失败恢复及相关测试。插件所需Session、Workspace、Run和历史查询仍在验收范围内。",
+  "sourceCorrections": [
+    {
+      "files": [
+        "src/host/plugin-resources.ts",
+        "config/plugin-runtime-resources.json",
+        "config/plugin-runtime-resources-schema.ts",
+        "tests/unit/plugin-resources.test.ts",
+        "tests/integration/host-plugin.test.ts"
+      ],
+      "result": "插件激活入口统一检查151项必需Skill和Preset资源；资源缺失时，插件显示既有重装指引并保留业务数据。",
+      "tests": {
+        "unit": 60,
+        "hostIntegration": 23
+      },
+      "reviews": [
+        ".local/desktop-e2e/reviews/required-resource-browser-fixes-standards-review.json",
+        ".local/desktop-e2e/reviews/required-resource-browser-fixes-spec-review.json"
+      ]
+    },
+    {
+      "files": [
+        "src/client/settings/browser-settings.tsx",
+        "config/browser-settings.json",
+        "src/browser-settings-schema.ts",
+        "tests/unit/browser-settings-page.test.tsx",
+        "docs/user/install-update.md"
+      ],
+      "result": "浏览器设置表单在配置不可保存时显示具体情况和操作步骤；用户指南引用生产切换与旧环境退役流程。",
+      "tests": {
+        "browserSettings": 23
+      },
+      "reviews": [
+        ".local/desktop-e2e/reviews/required-resource-browser-fixes-standards-review.json",
+        ".local/desktop-e2e/reviews/required-resource-browser-fixes-spec-review.json",
+        ".local/desktop-e2e/reviews/guide-browser-unavailable-semantic-review.json"
+      ]
+    },
+    {
+      "files": [
+        "config/desktop-e2e.json",
+        "tests/production/official-desktop-probe.test.mjs"
+      ],
+      "result": "development初始化配置为首次创建的OpenRouter条目提供displayName、api和baseURL；重启测试核对用户已保存的Provider配置继续保留。",
+      "tests": {
+        "production": 65,
+        "tddRedFailed": 1,
+        "tddRedSkipped": 46,
+        "typecheck": "通过"
+      },
+      "logs": ".local/desktop-e2e/development-provider-initialization-fix/",
+      "reviews": [
+        ".local/desktop-e2e/reviews/development-provider-initialization-standards-review.json",
+        ".local/desktop-e2e/reviews/development-provider-initialization-spec-review.json"
+      ]
+    }
+  ],
+  "completeDesktop": {
+    "command": "pnpm test:desktop",
+    "exitCode": 0,
+    "files": 13,
+    "tests": 263,
+    "skipped": 0,
+    "durationSeconds": 171.06,
+    "invocationId": "71382253-93f8-4234-9850-c8e882a53344",
+    "lifecycleFixtureId": "6fe39255-c2f8-42a5-a40a-d8796396a3b6",
+    "log": ".local/desktop-e2e/desktop-test-runner/required-resource-browser-full-desktop-20261001.log",
+    "osCleanup": ".local/desktop-e2e/desktop-test-runner/required-resource-browser-full-desktop-20261001-os-cleanup.json",
+    "preservedArtifacts": ".local/desktop-e2e/desktop-test-runner/accepted-regression-artifacts/71382253-93f8-4234-9850-c8e882a53344",
+    "cleanup": {
+      "runs": 13,
+      "ports": 39,
+      "groupsAndPortsAbsent": true,
+      "leasesAbsent": true,
+      "dailyPid": 11329,
+      "actualProcessGroups": 12
+    },
+    "limit": "此轮完整回归包含资源与浏览器修正；其后补充的development Provider首次初始化字段尚须通过最终完整门禁。",
+    "independentReview": ".local/desktop-e2e/reviews/required-resource-browser-full-desktop-evidence-review.json"
+  },
+  "restrictedDesktop": {
+    "classification": "受控自动化回归",
+    "preparationId": "25bc8d31-3cdb-469a-8257-a87dab2c1a9e",
+    "fixtureId": "a2e58f2e-482e-452c-bf3c-9687c5a44fb4",
+    "evidence": ".local/desktop-e2e/standalone-acceptance-preparation/runs/25bc8d31-3cdb-469a-8257-a87dab2c1a9e/",
+    "independentReview": ".local/desktop-e2e/reviews/restricted-current-candidate-actual-evidence-review.json",
+    "tests": 1,
+    "failed": 0,
+    "cleanup": {
+      "runs": 3,
+      "ports": 9,
+      "groupsAndPortsAbsent": true,
+      "leasesAbsent": true,
+      "dailyPid": 11329
+    },
+    "supported": "官方UI安装0.45.0后，Host与Client在源码不可读、已识别系统Node/pnpm不可读不可执行、插件包只读的条件下完成受控生成和重启查询。",
+    "limits": [
+      "源码通过进程访问限制隔离，未物理移走。",
+      "App和临时Chrome使用测试专用--no-sandbox参数并继承外层Seatbelt；本轮未证明默认Chromium内层沙箱条件。",
+      "负向探针验证同一profile的限制机制，探针由独立进程执行。",
+      "Sharp实际处理、临时Chrome具体PID与退出状态仍需补证；此轮未调用managed CLI。",
+      "此轮使用受控服务，结果不计入A18真实服务验收。"
+    ],
+    "a1": "未通过",
+    "a2": "未通过",
+    "a9": "未通过"
+  },
+  "providerActual": {
+    "privateEnvironment": ".local/desktop-e2e/real-candidate-20261001/",
+    "initialRunId": "e0d074b0-f613-4b00-acc3-80044508219a",
+    "initialResult": "官方接口未列出OpenRouter模型，selectModel返回session/model-unavailable。",
+    "correctedRunId": "c34a9d1d-4c67-4df9-89e8-f8a2080c4977",
+    "correctedResult": "补齐Provider字段并重启后，官方接口列出并接纳OpenRouter stealth/space-bunny-alpha；真实请求、Session和模型响应保存在忽略目录。",
+    "limit": "Provider注册和请求接纳只证明对应步骤，A18各项最终结论依据实际执行产物。"
+  },
+  "outstanding": [
+    "A4/A10的宿主凭据SDK补充安装待用户授权；具体对象与审计见credential-sdk-authorization.json。",
+    "数据源styles和prompt-terms接口返回HTTP502；具体响应保存在.local/desktop-e2e/service-preflight-20261001-current-candidate/。",
+    "八Skill、两Preset及正式ComfyUI Run的当前真实验收尚未全部完成。",
+    "最终完整pnpm quality和git diff --check尚未完成。",
+    "发布、合并、生产切换、历史迁移和旧环境处置继续遵守方案的单独授权条件。"
+  ]
+}

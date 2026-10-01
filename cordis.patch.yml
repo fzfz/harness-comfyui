@@ -1,33 +1,11 @@
 - insert:
     - id: harness-comfyui-core
       name: harness-comfyui/core
-      config:
-        configurationProfile: !!js process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE
-        startupWorkspacePath: !!js process.env.HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH
     - id: harness-comfyui-image-reader
       name: harness-comfyui/image-reader
-      config:
-        imageReaderDefaultModel:
-          provider: opencode-go
-          model: qwen3.7-plus
     - id: harness-comfyui-cli
       name: harness-comfyui/cli
-
-- id: agent-default-model
-  config:
-    provider: opencode-go
-    model: deepseek-v4-flash
-
-- id: llm-pi-ai
-  config:
-    providers:
-      opencode-go:
-        apiKeyEnv: OPENCODE_GO_API_KEY
-
-- id: bash-sandbox
-  config:
-    timeoutMs: 180000
-
-- id: agent-preset-registry
-  config:
-    default: harness-comfyui-cli-candidate
+    - id: harness-comfyui
+      name: harness-comfyui
+    - id: harness-comfyui-presets
+      name: ./agent-presets/project-installed-presets.mjs

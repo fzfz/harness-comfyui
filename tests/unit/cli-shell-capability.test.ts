@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { CliShellCapabilityStore } from '../../src/host/cli/shell-capability.ts'
+import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
+import { parseManagedCliEnvironment } from '../../config/managed-cli-environment-schema.ts'
+import { CLI_ENVIRONMENT_NAMES } from '../../src/cli/contract.ts'
+import { CLI_ENVIRONMENT_VARIABLES, CliShellCapabilityStore } from '../../src/host/cli/shell-capability.ts'
 
 function execution(overrides: Record<string, unknown> = {}) {
   const token = Symbol('shell-call')
@@ -26,9 +29,31 @@ function execution(overrides: Record<string, unknown> = {}) {
 
 describe('CLI shell capability', () => {
   const sourceOptions = {
+    nodeExecutable: '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness',
     semanticQueryCliPath: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
     sourceAddress: () => ({ url: 'https://catalog.example.com', port: 18093 }),
   }
+
+  it('reads every managed CLI environment name from its exact structured configuration', () => {
+    expect(CLI_ENVIRONMENT_NAMES).toEqual(managedCliEnvironment.environmentNames)
+    expect(CLI_ENVIRONMENT_VARIABLES[CLI_ENVIRONMENT_NAMES.nodeExecutable]).toEqual({
+      description: 'This variable contains the path to the Host Electron executable. Set ELECTRON_RUN_AS_NODE=1 when invoking the managed Harness ComfyUI CLI with this executable.',
+    })
+    expect(() => parseManagedCliEnvironment({
+      ...managedCliEnvironment,
+      environmentNames: { ...managedCliEnvironment.environmentNames, unexpected: 'DSH_UNEXPECTED' },
+    })).toThrow('unexpected unexpected')
+  })
+
+  it('rejects colliding environment names before shell capability values can overwrite one another', () => {
+    expect(() => parseManagedCliEnvironment({
+      ...managedCliEnvironment,
+      environmentNames: {
+        ...managedCliEnvironment.environmentNames,
+        sourcePort: managedCliEnvironment.environmentNames.capability,
+      },
+    })).toThrow(/distinct/u)
+  })
 
   it('binds one opaque capability to the current foreground shell call and revokes it', () => {
     const store = new CliShellCapabilityStore({
@@ -43,6 +68,7 @@ describe('CLI shell capability', () => {
 
     expect(environment).toEqual({
       DSH_HARNESS_COMFYUI_CLI: '/repo/scripts/cli/harness-comfyui.mjs',
+      DSH_HARNESS_COMFYUI_NODE_EXECUTABLE: '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness',
       DSH_HARNESS_COMFYUI_CLI_API: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
       DSH_HARNESS_COMFYUI_CLI_CAPABILITY: 'capability-1',
       DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
@@ -110,6 +136,7 @@ describe('CLI shell capability', () => {
 
   it('rejects missing executable and endpoint configuration', () => {
     expect(() => new CliShellCapabilityStore({ cliPath: '', apiUrl: 'http://127.0.0.1', ...sourceOptions })).toThrow('CLI path')
+    expect(() => new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: 'http://127.0.0.1', ...sourceOptions, nodeExecutable: '' })).toThrow('Host Node executable path')
     expect(() => new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: '', ...sourceOptions })).toThrow('CLI API URL')
     expect(() => new CliShellCapabilityStore({
       cliPath: '/cli.mjs',
@@ -131,11 +158,32 @@ describe('CLI shell capability', () => {
     store.revoke({ token: Symbol('unknown') } as never)
   })
 
+  it('issues a new capability after the previous foreground capability is revoked', () => {
+    let serial = 0
+    const store = new CliShellCapabilityStore({
+      cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
+      apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      ...sourceOptions,
+      createCapability: () => `capability-${++serial}`,
+    })
+    const exec = execution()
+    const first = store.environment(exec).DSH_HARNESS_COMFYUI_CLI_CAPABILITY!
+
+    store.revoke(exec)
+
+    const next = store.environment(exec).DSH_HARNESS_COMFYUI_CLI_CAPABILITY!
+    expect(next).toBe('capability-2')
+    expect(next).not.toBe(first)
+    expect(store.authorize(first)).toBeUndefined()
+    expect(store.authorize(next)).toMatchObject({ callId: 'call_shell_1', sessionId: 'session-1' })
+  })
+
   it('reads the current Source address whenever it resolves a foreground environment', () => {
     let address = { url: 'http://127.0.0.1', port: 18093 }
     const store = new CliShellCapabilityStore({
       cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
       apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
+      ...sourceOptions,
       semanticQueryCliPath: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
       sourceAddress: () => address,
       createCapability: () => 'capability-1',

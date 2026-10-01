@@ -1,4 +1,5 @@
 {
   "shutdownTimeoutMs": 5000,
-  "diagnosticLogFormat": "Image inspection stage: %s"
+  "diagnosticLogFormat": "Image inspection stage: %s",
+  "credentialReferencePrefix": "DSH_HARNESS_COMFYUI_IMAGE_READER_"
 }

@@ -4,10 +4,10 @@
 
 `generation run-inputs --stdin` 查询一个或多个 Generation Run 保存的生成参数和 Actual Workflow。
 
-`DSH_HARNESS_COMFYUI_CLI` 保存 CLI 入口脚本路径。Skill 执行者使用以下命令：
+受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 CLI 入口脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下命令以 Node 模式运行该脚本：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
 ```
 
 ## 标准输入
@@ -125,4 +125,4 @@ Skill 执行者按照以下顺序处理当前完整 `run_ids` 数组：
 
 ## 帮助与操作提示
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `node "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。

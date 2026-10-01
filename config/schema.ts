@@ -53,13 +53,6 @@ export interface ConfigurationProfileValues {
     port: 0
     shutdownTimeoutMs: number
   }
-  server: {
-    host: string
-    port: number
-  }
-  process: {
-    shutdownTimeoutMs: number
-  }
 }
 
 export interface ConfigurationProfile extends ConfigurationProfileValues {
@@ -108,13 +101,6 @@ const ConfigurationProfileSchema = Schema.object({
     host: Schema.const('127.0.0.1').required(),
     port: Schema.const(0).required(),
     shutdownTimeoutMs: positiveInteger,
-  }).required(),
-  server: Schema.object({
-    host: Schema.const('127.0.0.1').required(),
-    port: Schema.natural().min(0).max(65535).required(),
-  }).required(),
-  process: Schema.object({
-    shutdownTimeoutMs: nonNegativeInteger,
   }).required(),
 })
 

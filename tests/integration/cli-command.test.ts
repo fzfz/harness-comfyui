@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
-import { materializeCliModule, sourceCliModulePath } from '../../scripts/production/cli-module.mjs'
+import { materializeManagedCliModule, managedCliModulePath } from '../../scripts/build/cli-module.mjs'
 import { CLI_MAX_BODY_BYTES } from '../../src/cli/contract.ts'
 import { createCliHandler } from '../../src/host/cli/route.ts'
 import {
@@ -29,7 +29,7 @@ beforeAll(async () => {
     'node_modules/harness-comfyui',
     runtimeArtifacts.managedCli.outputEntryRelativePath,
   )
-  await materializeCliModule({
+  await materializeManagedCliModule({
     entry: CLI_SOURCE_PATH,
     output: cliPath,
   })
@@ -176,7 +176,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
   })
 
   it('derives the source runtime output from the managed CLI artifact definition', () => {
-    expect(sourceCliModulePath(process.cwd()))
+    expect(managedCliModulePath(process.cwd()))
       .toBe(resolve(process.cwd(), runtimeArtifacts.managedCli.outputEntryRelativePath))
   })
 

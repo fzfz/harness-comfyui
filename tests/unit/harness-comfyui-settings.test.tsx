@@ -11,6 +11,8 @@ import {
   SOURCE_SETTINGS_COPY,
 } from '../../src/client/settings/harness-comfyui-settings.tsx'
 import { createImageReaderProfile } from '../../src/image-reader/settings.ts'
+import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
+import { BROWSER_SETTINGS } from '../../src/browser-settings-schema.ts'
 
 const { act, create } = await vi.importActual('react-test-renderer') as {
   act: (callback: () => void | Promise<void>) => void | Promise<void>
@@ -59,6 +61,25 @@ function sourceScope(mutate: (...args: any[]) => Promise<unknown> = vi.fn(async 
   }
 }
 
+function browserScope() {
+  const snapshot = Object.freeze({
+    status: 'ready' as const,
+    writable: true,
+    value: Object.freeze({ browserExecutablePath: '/profile/browser-executable' }),
+    base: Object.freeze({ browserExecutablePath: '' }),
+    user: undefined,
+    revision: 1,
+    mode: 'host' as const,
+  })
+  return {
+    subscribe: () => () => undefined,
+    getSnapshot: () => snapshot,
+    mutate: vi.fn(async () => true),
+    set: vi.fn(async () => true),
+    unset: vi.fn(async () => true),
+  }
+}
+
 function props(mutate?: (...args: any[]) => Promise<unknown>) {
   return {
     imageReaderScope: imageReaderScope(),
@@ -72,6 +93,11 @@ function props(mutate?: (...args: any[]) => Promise<unknown>) {
       deleteProfile: vi.fn(),
     },
     sourceScope: sourceScope(mutate),
+    browserScope: browserScope(),
+    browserApi: {
+      configuration: vi.fn(async () => ({ browserExecutablePath: '/host/browser-executable' })),
+      validate: vi.fn(async (request: { browserExecutablePath: string }) => ({ ok: true as const, value: request })),
+    },
   }
 }
 
@@ -94,22 +120,34 @@ describe('Harness-ComfyUI unified settings page', () => {
     expect(JSON.stringify(renderer.toJSON())).toContain('Harness-ComfyUI')
     expect(button(renderer, '图片读取').props['aria-selected']).toBe(true)
     expect(button(renderer, '数据源服务').props['aria-selected']).toBe(false)
+    expect(button(renderer, BROWSER_SETTINGS.ui.tabLabel).props['aria-selected']).toBe(false)
     expect(JSON.stringify(renderer.toJSON())).toContain('保存多份独立读图配置')
     expect(renderer.root.findAllByType('form')[0]!.props.noValidate).toBe(true)
 
     const profileName = renderer.root.findAllByType('input').find(candidate => candidate.props.type === 'text')!
     await act(async () => {
       profileName.props.onChange({ target: { value: '未保存的图片配置' } })
+      input(renderer, 'source-url').props.onChange({ target: { value: 'https://draft.example.com' } })
+      input(renderer, 'source-port').props.onChange({ target: { value: '9443' } })
     })
     await act(async () => {
       button(renderer, '数据源服务').props.onClick()
     })
     expect(button(renderer, '数据源服务').props['aria-selected']).toBe(true)
     await act(async () => {
-      button(renderer, '图片读取').props.onClick()
+      button(renderer, BROWSER_SETTINGS.ui.tabLabel).props.onClick()
     })
+    expect(button(renderer, BROWSER_SETTINGS.ui.tabLabel).props['aria-selected']).toBe(true)
+    expect(input(renderer, BROWSER_SETTINGS.ui.inputName).props.value).toBe('/profile/browser-executable')
+    await act(async () => { input(renderer, BROWSER_SETTINGS.ui.inputName).props.onChange({ target: { value: '/draft/browser' } }) })
+    await act(async () => { button(renderer, '图片读取').props.onClick() })
     expect(renderer.root.findAllByType('input').find(candidate => candidate.props.type === 'text')!.props.value)
       .toBe('未保存的图片配置')
+    await act(async () => { button(renderer, BROWSER_SETTINGS.ui.tabLabel).props.onClick() })
+    expect(input(renderer, BROWSER_SETTINGS.ui.inputName).props.value).toBe('/draft/browser')
+    await act(async () => { button(renderer, '数据源服务').props.onClick() })
+    expect(input(renderer, 'source-url').props.value).toBe('https://draft.example.com')
+    expect(input(renderer, 'source-port').props.value).toBe('9443')
     renderer.unmount()
   })
 
@@ -139,34 +177,40 @@ describe('Harness-ComfyUI unified settings page', () => {
 
     await act(async () => {
       button(renderer, '数据源服务').props.onKeyDown({
-        key: 'ArrowLeft',
+        key: 'ArrowRight',
         preventDefault,
         currentTarget,
       })
     })
     expect(preventDefault).toHaveBeenCalledTimes(2)
     expect(focus).toHaveBeenCalledTimes(2)
-    expect(getElementById).toHaveBeenNthCalledWith(2, 'harness-comfyui-image-reader-tab')
+    expect(getElementById).toHaveBeenNthCalledWith(2, BROWSER_SETTINGS.ui.tabId)
+    expect(button(renderer, BROWSER_SETTINGS.ui.tabLabel).props['aria-selected']).toBe(true)
+
+    await act(async () => {
+      button(renderer, BROWSER_SETTINGS.ui.tabLabel).props.onKeyDown({ key: 'ArrowRight', preventDefault, currentTarget })
+    })
+    expect(getElementById).toHaveBeenNthCalledWith(3, 'harness-comfyui-image-reader-tab')
     expect(button(renderer, '图片读取').props['aria-selected']).toBe(true)
 
     await act(async () => {
       button(renderer, '图片读取').props.onKeyDown({ key: 'End', preventDefault, currentTarget })
     })
-    expect(getElementById).toHaveBeenNthCalledWith(3, 'harness-comfyui-source-tab')
-    expect(button(renderer, '数据源服务').props['aria-selected']).toBe(true)
+    expect(getElementById).toHaveBeenNthCalledWith(4, BROWSER_SETTINGS.ui.tabId)
+    expect(button(renderer, BROWSER_SETTINGS.ui.tabLabel).props['aria-selected']).toBe(true)
 
     await act(async () => {
-      button(renderer, '数据源服务').props.onKeyDown({ key: 'Home', preventDefault, currentTarget })
+      button(renderer, BROWSER_SETTINGS.ui.tabLabel).props.onKeyDown({ key: 'Home', preventDefault, currentTarget })
     })
-    expect(getElementById).toHaveBeenNthCalledWith(4, 'harness-comfyui-image-reader-tab')
+    expect(getElementById).toHaveBeenNthCalledWith(5, 'harness-comfyui-image-reader-tab')
     expect(button(renderer, '图片读取').props['aria-selected']).toBe(true)
 
     await act(async () => {
       button(renderer, '图片读取').props.onKeyDown({ key: 'Enter', preventDefault, currentTarget })
     })
-    expect(preventDefault).toHaveBeenCalledTimes(4)
-    expect(focus).toHaveBeenCalledTimes(4)
-    expect(getElementById).toHaveBeenCalledTimes(4)
+    expect(preventDefault).toHaveBeenCalledTimes(5)
+    expect(focus).toHaveBeenCalledTimes(5)
+    expect(getElementById).toHaveBeenCalledTimes(5)
     expect(button(renderer, '图片读取').props['aria-selected']).toBe(true)
     renderer.unmount()
   })
@@ -259,7 +303,8 @@ describe('Harness-ComfyUI unified settings page', () => {
     })
     expect(input(renderer, 'source-url').props.value).toBe('https://catalog.example.com')
     expect(input(renderer, 'source-port').props.value).toBe('443')
-    expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_SETTINGS_COPY.saveFailed)
+    expect(JSON.stringify(renderer.toJSON())).toContain(errorCatalog.SOURCE_SETTINGS_SAVE_FAILED.reason)
+    expect(JSON.stringify(renderer.toJSON())).toContain(errorCatalog.SOURCE_SETTINGS_SAVE_FAILED.next_step)
     renderer.unmount()
   })
 
@@ -277,7 +322,8 @@ describe('Harness-ComfyUI unified settings page', () => {
       await Promise.resolve()
     })
     expect(input(renderer, 'source-url').props.value).toBe('https://catalog.example.com')
-    expect(JSON.stringify(renderer.toJSON())).toContain(SOURCE_SETTINGS_COPY.saveFailed)
+    expect(JSON.stringify(renderer.toJSON())).toContain(errorCatalog.SOURCE_SETTINGS_SAVE_FAILED.reason)
+    expect(JSON.stringify(renderer.toJSON())).toContain(errorCatalog.SOURCE_SETTINGS_SAVE_FAILED.next_step)
     renderer.unmount()
   })
 })

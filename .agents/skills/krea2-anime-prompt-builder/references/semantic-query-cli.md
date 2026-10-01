@@ -2,10 +2,10 @@
 
 ## CLI 用途与可执行入口
 
-该 CLI 使用 Search 或 Resolve 查询作品、角色、Krea2 画师和 Prompt 标签。Skill 执行者使用以下可执行入口运行本文件中的查询命令：
+该 CLI 使用 Search 或 Resolve 查询作品、角色、Krea2 画师和 Prompt 标签。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和查询脚本路径 `DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI`；Skill 执行者使用以下入口运行本文件中的查询命令：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI"
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI"
 ```
 
 ## Character 与 Style 上下文记录定义
@@ -42,7 +42,7 @@ Skill 执行者通过命令行参数向 CLI 传入查询输入。Search 和 Reso
 ## Search 命令
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode search --query '<query>' --page 1 --page_size 20
 ```
 
 `<query>` 必须是长度不超过 200 个字符且不含控制字符的字符串。Skill 执行者使用 shell 参数引用规则把 `<query>` 作为一个参数传入命令。
@@ -50,13 +50,13 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFY
 查询角色时，Skill 执行者可以使用已采用 Work 结果的 `id` 限定结果：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/characters --mode search --query '<character-query>' --page 1 --page_size 20 --work_id '<work-id>'
 ```
 
 查询 Style 时，Skill 执行者必须使用本次 Skill 执行中取得的 Krea2 Base Model ID 限定结果：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<krea2-base-model-id>'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path /internal/semantic/styles --mode search --query '<style-query>' --page 1 --page_size 20 --base_model_id '<krea2-base-model-id>'
 ```
 
 ## Resolve 命令
@@ -64,7 +64,7 @@ node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFY
 Character 上下文记录或 Style 上下文记录没有非空 `data.prompt_text`，但提供符合 `^[1-9][0-9]{0,19}$` 的 `data.id` 时，Skill 执行者使用以下命令查询该 ID：
 
 ```sh
-node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode resolve --id '<stable-id>'
+ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --quiet --url "$DSH_HARNESS_COMFYUI_SOURCE_URL" --port "$DSH_HARNESS_COMFYUI_SOURCE_PORT" --path '<operation-path>' --mode resolve --id '<stable-id>'
 ```
 
 Character 上下文记录使用 `/internal/semantic/characters`，Style 上下文记录使用 `/internal/semantic/styles`。Skill 执行者把 `data.id` 作为 `<stable-id>`。
@@ -146,4 +146,4 @@ Work 没有可采用结果时，Skill 执行者报告未找到用户所给作品
 
 ## 渐进式帮助与错误指引
 
-Skill 执行者运行 `node "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --help` 查看离线总览，再按照“下一步”查询实时操作列表和指定路径帮助。省略 `--quiet` 的成功查询在 stderr 输出 `NEXT:` 后续操作。帮助调用成功时，Skill 执行者从 stdout 读取帮助文本。
+Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI" --help` 查看离线总览，再按照“下一步”查询实时操作列表和指定路径帮助。省略 `--quiet` 的成功查询在 stderr 输出 `NEXT:` 后续操作。帮助调用成功时，Skill 执行者从 stdout 读取帮助文本。

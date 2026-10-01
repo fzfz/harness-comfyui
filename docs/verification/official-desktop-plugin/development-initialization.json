@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "status": "通过",
+  "category": "official-installed-desktop-development-initialization",
+  "verifiedAt": "2026-09-30T12:34:33.951Z",
+  "application": {
+    "version": "0.2.0-rc.2",
+    "bundleId": "com.deepseek.dsh",
+    "path": "/Applications/DeepSeek Harness.app"
+  },
+  "scope": {
+    "newIsolatedEnvironment": true,
+    "persistentRestart": true,
+    "providerCredentialEnvironmentNames": [
+      "OPENROUTER_API_KEY",
+      "OPENCODE_GO_API_KEY"
+    ],
+    "credentialValuesSavedInRecord": false,
+    "realModelRequestExecuted": false,
+    "pluginCandidateInstalled": false,
+    "officialDevCommandsMigrated": false
+  },
+  "officialBehaviorSource": "https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-settings-account/src/client/onboarding-state.ts",
+  "rounds": [
+    {
+      "round": 1,
+      "runId": "9330166e-e999-4590-918f-1ea48804d604",
+      "onboarding": {
+        "version": 1,
+        "step": "done",
+        "usage": "detailed",
+        "developerTools": true,
+        "purpose": null,
+        "process": "standard",
+        "completion": "api-key"
+      },
+      "model": {
+        "provider": "openrouter",
+        "model": "dots-studio/dots-3-note-preview:free"
+      },
+      "processVerified": true,
+      "cleanup": {
+        "state": "stopped",
+        "portsReleased": true
+      },
+      "evidenceDirectory": ".local/desktop-e2e/default-initialization-20260930/9330166e-e999-4590-918f-1ea48804d604"
+    },
+    {
+      "round": 2,
+      "runId": "875745ff-fd26-43ad-a8fd-568b74155fb0",
+      "onboarding": {
+        "version": 1,
+        "step": "done",
+        "usage": "detailed",
+        "developerTools": true,
+        "purpose": null,
+        "process": "standard",
+        "completion": "api-key"
+      },
+      "model": {
+        "provider": "openrouter",
+        "model": "dots-studio/dots-3-note-preview:free"
+      },
+      "processVerified": true,
+      "cleanup": {
+        "state": "stopped",
+        "portsReleased": true
+      },
+      "evidenceDirectory": ".local/desktop-e2e/default-initialization-20260930/875745ff-fd26-43ad-a8fd-568b74155fb0"
+    }
+  ],
+  "remaining": [
+    "新增自动化回归覆盖首次初始化和已保存配置保留。",
+    "旧业务迁移及 A13–A15 通过后，将 dev:* 接入官方夹具。"
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "scope": "该历史记录保存 CDP 与测试追踪环境变量修正后的完整 Desktop 回归；后续资源和浏览器修正的当前回归见 current-desktop-regression.json。",
+  "acceptanceItemNames": {
+    "A12": "最终独立审查、完整质量门禁与提交",
+    "A13": "双实例隔离与既有用户环境保留",
+    "A14": "官方安装、候选身份和界面业务自动化",
+    "A15": "生命周期结果、退出码与资源清理",
+    "A18": "最终候选及生产的真实模型与正式 ComfyUI Run 验收"
+  },
+  "candidate": {
+    "packageName": "harness-comfyui",
+    "packageVersion": "0.45.0",
+    "sourceCommit": "742570c4d7ab17272baac0eb3211536751002c9a",
+    "dirty": true,
+    "archive": ".local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.45.0.tgz",
+    "preservedArchive": ".local/desktop-e2e/desktop-test-runner/accepted-regression-artifacts/68d1e215-ab6c-46bd-8f19-d04e752bf39e/harness-comfyui-0.45.0.tgz",
+    "preservedSourceIdentity": ".local/desktop-e2e/desktop-test-runner/accepted-regression-artifacts/68d1e215-ab6c-46bd-8f19-d04e752bf39e/candidate-source-identity.json"
+  },
+  "fullEntry": {
+    "command": "pnpm test:desktop",
+    "result": "通过",
+    "exitCode": 0,
+    "testFilesPassed": 13,
+    "testFilesTotal": 13,
+    "testsPassed": 263,
+    "testsTotal": 263,
+    "testsSkipped": 0,
+    "durationSeconds": 166.92,
+    "invocationId": "68d1e215-ab6c-46bd-8f19-d04e752bf39e",
+    "log": ".local/desktop-e2e/desktop-test-runner/desktop-runner-environment-fixed-20261001.log"
+  },
+  "lifecycle": {
+    "fixtureId": "c7394be9-1378-4df5-a464-c8b63bc8e8d4",
+    "scenarioEvidence": [
+      {
+        "scenario": "a13-parallel-instances",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a13.json"
+      },
+      {
+        "scenario": "a15-cancel-after-launch",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a15-cancel.json"
+      },
+      {
+        "scenario": "a15-debug-retention",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a15-debug.json"
+      },
+      {
+        "scenario": "a15-start-failure",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a15-failure.json"
+      },
+      {
+        "scenario": "a15-port-conflict",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a15-port-conflict.json"
+      },
+      {
+        "scenario": "a15-successful-start-stop",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a15-success.json"
+      },
+      {
+        "scenario": "a15-startup-timeout",
+        "evidence": ".local/desktop-e2e/lifecycle-fixtures/c7394be9-1378-4df5-a464-c8b63bc8e8d4/evidence/official-desktop-lifecycle-a15-timeout.json"
+      }
+    ]
+  },
+  "cleanup": {
+    "evidence": ".local/desktop-e2e/desktop-test-runner/desktop-runner-environment-fixed-20261001-os-cleanup.json",
+    "runCount": 13,
+    "processGroupsAbsent": true,
+    "listeningPortsAbsent": 39,
+    "leasesAbsent": true,
+    "dailyInstancePreserved": true
+  },
+  "existingEnvironment": {
+    "checkedEntries": 522,
+    "checkedFiles": 416,
+    "unchangedPaths": true,
+    "unchangedBytes": true,
+    "before": ".local/desktop-e2e/a13-expanded-preservation-20261001-v2/before.json",
+    "after": ".local/desktop-e2e/a13-expanded-preservation-20261001-v2/after-runner-environment-fixed.json",
+    "scope": "受检对象为原隔离更新环境及既有用户实例的所列配置、安装资源、依赖和业务数据。",
+    "dailyInstanceIdentityEvidence": ".local/desktop-e2e/desktop-test-runner/current-daily-instance-identity-20261001.json",
+    "dailyIdentityLimit": "完整入口清理时保存 dailyPresent=true；PID/PGID 11329 的身份由测试前证据及测试后只读观测核对。"
+  },
+  "runnerEnvironmentFix": {
+    "file": "tests/desktop/fixtures/official-desktop-probe.mjs",
+    "action": "probe 从传给应用的环境副本移除 commandRunner.invocationDirectoryEnvironmentName 指定的测试追踪变量，父测试进程继续保留该变量。",
+    "pureRegressionTestsPassed": 47,
+    "standardsReview": ".local/desktop-e2e/reviews/probe-runner-environment-standards-review.json",
+    "specReview": ".local/desktop-e2e/reviews/probe-runner-environment-spec-review.json"
+  },
+  "independentEvidenceReview": {
+    "status": "通过",
+    "evidence": ".local/desktop-e2e/reviews/current-full-desktop-regression-evidence-review.json"
+  },
+  "limits": [
+    "本轮模型、数据源和 ComfyUI 请求使用受控测试服务，结果仅属于自动化回归。",
+    "A12 的最终完整审查和 pnpm quality 尚未完成；最终候选真实验收 A18 保持未通过。",
+    "官方宿主会话删除选择器、删除恢复和 Host 标题持久化回归均排除在本轮范围之外。",
+    "本条保留该次通过的固定候选包；后续审查修正的源码树须重新构建并完成对应门禁。"
+  ],
+  "historical": true
+}

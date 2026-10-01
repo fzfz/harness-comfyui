@@ -1,0 +1,39 @@
+- id: preset-harness-comfyui-cli-candidate
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: harness-comfyui-cli-candidate
+    name: ComfyUI工作台预设
+    order: 91
+    plugins:
+      - id: project-skill-scope
+        name: cordis:group
+        group: true
+        isolate:
+          skills: true
+        config:
+          - id: skills
+            name: '@deepseek-ai/dsh-skill'
+          - id: composition
+            name: cordis:include
+            config:
+              path: ./harness-comfyui-cli-candidate/agent.cordis.yml
+
+- id: preset-harness-comfyui-iteration
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: harness-comfyui-iteration
+    name: ComfyUI迭代预设
+    order: 92
+    plugins:
+      - id: project-skill-scope
+        name: cordis:group
+        group: true
+        isolate:
+          skills: true
+        config:
+          - id: skills
+            name: '@deepseek-ai/dsh-skill'
+          - id: composition
+            name: cordis:include
+            config:
+              path: ./harness-comfyui-iteration/agent.cordis.yml
