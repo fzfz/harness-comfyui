@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-14",
+  "scope": "计划补全；本轮未实施产品修复或运行模型验收",
+  "main_plan": "docs/plans/skills-mcp-migration-20261013.md",
+  "semantic_review": {
+    "reviewer": "/root/plan_final_semantics",
+    "result": "五份计划文档未发现剩余理解或执行阻碍",
+    "resolved": [
+      "停止条件引用生成Skill，避免遗漏用户已指定模型的前提",
+      "明确先独立审查诊断和方案，再实施",
+      "模型选择补充方案统一当前授权模型范围"
+    ]
+  },
+  "completeness_review": {
+    "reviewer": "/root/plan_final_completeness",
+    "result": "未发现阻塞实施的完整性或一致性问题",
+    "coverage": [
+      "目录CLI全部发现及执行路径",
+      "内部消费者迁移",
+      "实际模型输入与调用轨迹",
+      "因果验证",
+      "父子交接",
+      "夹具一致性",
+      "范围内自主修复及范围外限制"
+    ]
+  },
+  "checks": {
+    "document_link_targets": "5份文档正文引用文件均存在；代码块内替换样本文字单独归属目标Skill",
+    "git_diff_check": "passed"
+  },
+  "remaining": "产品结构修复、完整真实模型验收、质量门禁与提交仍未完成"
+}

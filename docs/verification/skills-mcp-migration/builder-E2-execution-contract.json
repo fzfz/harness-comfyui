@@ -1,0 +1,27 @@
+{
+  "purpose": "限定分页条件位置诊断的输入、调用预算与判定范围。",
+  "readWhen": "独立审查E2输入或实施单步模型诊断时。",
+  "status": "输入已准备，独立审查与模型执行待完成",
+  "basis": "current-builder-causal-design.json 的 E2；重复次数遵守 builder-causal-execution-scope.json",
+  "inputManifest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/manifest.json",
+  "question": "原缺页结果后的下一次模型输出是否受到分页条件呈现渠道与位置的影响？",
+  "fixed": [
+    "使用原失败请求的完整 messages、system（如有）、tools、toolHistory、toolChoice（如有）、maxTokens。",
+    "两臂使用同一官方SDK与同一获准Go Profile配置；保存实际provider/model及实际调用参数，未显式传递的参数标记为未记录。",
+    "原目录结果和此前消息逐字保留，除输入manifest指定变体路径外全部结构相同。"
+  ],
+  "variable": "在tools与toolHistory的同一工具声明中移出同一句分页条件，并将其原字追加为对应工具结果的独立文本块。",
+  "execution": [
+    "实施者先核对独立输入审查与官方 LlmRuntime.stream 公共调用合同，再创建自有诊断运行目录。",
+    "两个点各执行一对基线与变体，共最多4次模型调用；每次最多360秒，maxTokens沿用原32768。",
+    "诊断只收集单次模型输出；禁止执行模型返回的工具调用，禁止追加提示或将输出写回原会话。",
+    "实施者保存全部实际请求、输出、时间和失败，停止自有应用并核对进程与端口。"
+  ],
+  "judgment": "独立审查员比较下一动作是否继续原查询分页，区分查询内容变化和其他动作。单步结果只支持下一动作的观察差异；完整分页与业务验收另行执行。",
+  "limits": [
+    "本变体同时改变说明渠道与位置，结果不能区分两个因素。",
+    "每点每臂一个样本，不据此宣称稳定修复或修改外部MCP合同。",
+    "未显式保存的原采样参数保持证据缺口；配置匹配只能证明可见设置一致。"
+  ],
+  "modelCalls": 0
+}

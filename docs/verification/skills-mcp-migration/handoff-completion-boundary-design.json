@@ -1,0 +1,409 @@
+{
+  "purpose": "依据两组完整真实轨迹与当前官方应用源码，确定父子完成交接的修复层、最小合同和验收边界。",
+  "status": "调查与方案已完成；产品实现及复验尚未执行。",
+  "scope": {
+    "checkout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "productChanges": false,
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "sourceExtraction": "只读本机官方 app.asar，保存源码副本；未执行提取的代码。"
+  },
+  "decision": {
+    "layer": "两个项目预设共用的派发适配器及其工具暴露配置。SDK 继续拥有子 Session、Activation、消息接纳、恢复与结束通知。",
+    "minimum": "保持 startContinuable/sendMessage 和原 subagentId；派发工具在对应接纳消息所属的 Activation 发出 subagent/end 后返回。父模型随后读取官方结束通知与结果文件。",
+    "feasibility": "现有公开生命周期事件与 session/event 提供实现该等待适配的必要身份和排序信息。SDK 没有直接等待 continuable 完成的单个 API；通过现有事件连接派发工具可以实施，效果须用确定性竞争测试及官方应用复验确认。",
+    "sameMechanism": [
+      "四角色 subagent_composition/subagent_generation/subagent_observation/subagent_comparison",
+      "工作台 subagent_task",
+      "父模型直接调用原生 send_message 续派的旁路"
+    ],
+    "notSelected": [
+      "单独过滤子 send_message：过滤组已出现提前读取和交付。",
+      "改用原生 run_in_background=false：源码会转到 one-shot start，不能保留当前 continuable 恢复合同。",
+      "只增加 Skill 等待文字：现有输入已明确等待通知，父模型仍采用文件轮询。",
+      "文件存在、mtime 或内容长度作为完成条件：文件在延迟窗口内已经存在。",
+      "只等待 whenIdle 或 turn/end：Activation 还需要处理待办、持久化及释放；公开 subagent/end 更符合要求。"
+    ]
+  },
+  "traceVerdicts": [
+    {
+      "group": "baseline",
+      "handoff": "未通过",
+      "contamination": "资料污染",
+      "facts": [
+        "父 seq44 创建构图；seq50/55/60 已自行检查目标文件。seq49 的 reasoning 明确知道应等待自动完成通知。",
+        "子 seq24 从任务 Workspace 的已知绝对路径向上列出 runtime/environment 和 runtime，seq25 获得 active-probe.json、observer、runtime-events 等目录信息。",
+        "子 seq29 读取 active-probe.json 并列出 user-data；seq30 返回本轮探针 runId、processId、createdAt。随后 15 个实际模型请求含 active-probe.json。按主计划 5.13.1，该资料属于验收设施，当前任务未授权读取。",
+        "第一次 relay 于 07:13:11.902 入队，07:13:42.805 消费。子结束控制从 07:13:14.942 持续至 07:14:45.061，共 90119ms。",
+        "父 seq68 于 07:13:48.395 调用 cat composition/001.md，seq69 返回正文；此时子仍处于结束控制。",
+        "父 seq83 使用原生 send_message 续派修复；子 seq65 收到同一消息并在原 turn1 继续修改文件，最终 turn/end 为 07:15:41.019。",
+        "官方 settled 于 07:15:41.030 入队；父 seq103 的第一次交付文本为 07:15:50.655，父 seq107 于 07:15:50.669 消费该通知。第一次正文读取早于结束；最终交付已在子结束后，不能把基线写成结束前最终交付。"
+      ],
+      "evidence": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/baseline-message-trace.json"
+      }
+    },
+    {
+      "group": "send-message-denied",
+      "handoff": "未通过",
+      "contamination": "在完整父子事件及实际请求中未发现读取验收设施或历史验收资料；仅限本轮可见轨迹。",
+      "facts": [
+        "父 seq47 创建构图，seq48 返回 continuable 子 ID；父 seq58 通过 test -s 轮询目标文件。",
+        "子工具集合没有 send_message，初始消息也没有官方主动转达段。子读取当前任务材料、已安装 Skill 与当前 NoobAI MCP 资源和目录结果。",
+        "父 seq63 于 07:22:41.499 读取标题和长度，seq68 于 07:22:44.802 读取正文。子结束控制从 07:22:39.747 持续至 07:24:09.840，共 90093ms。",
+        "父 seq92 于 07:23:13.710 交付，seq94 于 07:23:13.711 结束 turn1；子 seq89 于 07:24:09.840 才结束，父首次交付早于子结束 56130ms。",
+        "官方 settled 于 07:24:09.851 入队，07:24:09.864 消费，父随后出现第二轮交付。"
+      ],
+      "evidence": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/send-message-denied-message-trace.json"
+      }
+    }
+  ],
+  "causalBoundary": {
+    "verified": "消息接纳即返回使父模型能在子任务执行期间继续调用工具；文件先写入、父轮询先读取、结束事件后到达的顺序由宿主事件与工具返回共同确认。去除 relay 后仍发生相同提前消费，说明 relay 不是该失败的必要条件。",
+    "counterfactualLimit": "两组仅各一次，基线污染；子实际任务文字、目录布局、目录查询与文件内容也不同。不能估计过滤 send_message 的独立因果效果或稳定通过率。",
+    "remaining": "阻塞派发调用预期消除父模型下一步的提前轮询机会；同一父响应中的多工具执行、取消和恢复需要真实运行验证。"
+  },
+  "officialSdk": {
+    "asar": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar",
+    "package": "@deepseek-ai/dsh-subagent 0.2.0-rc.2",
+    "entry": "/dsh/node_modules/@deepseek-ai/dsh-subagent/lib/index.js",
+    "snapshotByteEqual": true,
+    "comparison": "通过 ASAR 头与文件 offset 读取 entry 原始字节，与既有 sdk-subagent-index.js 直接比较。没有使用 hash 校验。",
+    "snapshot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-subagent__lib__index.js",
+    "contracts": [
+      {
+        "subject": "startContinuable",
+        "lines": [
+          1665,
+          1750
+        ],
+        "finding": "返回 childId 与初始 messageId；返回时只保证 inbox 已接纳。可选 childId 由 SDK 检查重复；创建前失败回滚。"
+      },
+      {
+        "subject": "sendMessage",
+        "lines": [
+          1753,
+          1778
+        ],
+        "finding": "校验 exact live sender，子到父为 relay；父到直接子为 steer，返回接纳 messageId。"
+      },
+      {
+        "subject": "send-versus-disposal",
+        "lines": [
+          1817,
+          1845
+        ],
+        "finding": "关闭中的旧 Activation 先完成释放；send 等待后重新尝试冷恢复，旧 subagent/end 可能在本次消息接纳前出现。"
+      },
+      {
+        "subject": "coldResume",
+        "lines": [
+          1897,
+          1948
+        ],
+        "finding": "读取持久 Session descriptor 并恢复相同 childId、provider/model/persona/toolFilter；不重派 provider、不创建替代 Session。"
+      },
+      {
+        "subject": "subagent/end",
+        "lines": [
+          292,
+          325
+        ],
+        "finding": "runId 标识 Activation 居留周期；end 提供 child id、stopReason 与 lastAssistantMessage。一次 Activation 可含多条消息和多轮，不能称为每条消息的独立结果。"
+      },
+      {
+        "subject": "settlement",
+        "lines": [
+          1148,
+          1267
+        ],
+        "finding": "先等待 idle、无待办和无子所有权，flush 后释放 handle；删除 resident 并发送原生 settled notice，然后发出 subagent/end。"
+      },
+      {
+        "subject": "cancellation",
+        "lines": [
+          2896,
+          2931
+        ],
+        "finding": "派发 signal 只控制接纳前工作；接纳后不自动取消子任务。interrupt 是发送取消信号，不保证目标已停止，且保留未认领 inbox。"
+      },
+      {
+        "subject": "failure",
+        "lines": [
+          331,
+          357
+        ],
+        "finding": "结束原因来源于子 Session：completed、aborted、error、max-tokens、refusal；不能根据文件存在或工具正常返回认定业务成功。"
+      },
+      {
+        "subject": "notice",
+        "lines": [
+          629,
+          655
+        ],
+        "finding": "原生通知携带 stopReason 对应摘要与子 closing text；没有 closing text 时明确给出空答复情况。"
+      },
+      {
+        "subject": "public-event-dispatch",
+        "lines": [
+          234,
+          255
+        ],
+        "finding": "生命周期事件按父 Agent scope 派发，监听错误被容纳；不能把监听 promise 当成 SDK 生命周期拦截器。工具只能等待观察结果。"
+      }
+    ]
+  },
+  "implementationContract": {
+    "dispatchOrder": [
+      "共用适配器在调用 SDK 前订阅 subagent/start、subagent/end 和 session/event；监听只收集本次调用的结构化事件，finally 解除订阅。",
+      "SDK 创建或投递成功后保留 childId 与 messageId。创建返回中的初始 messageId 当前被适配器丢弃，等待实现必须保留它用于内部关联。",
+      "以目标子 Session 的 agent/inbox/spliced.inserted[].id 匹配 SDK 返回的 messageId，记录该插入事件的观察顺序；允许事件先于 SDK promise 返回，按调用期缓存处理。",
+      "只接受该插入之后、目标 childId 的 subagent/end。事件 runId 与本轮已观察到的 subagent/start 对应时一起核对；已有活跃 epoch 续派可能没有新的 start，不能强制等待新的 start。",
+      "将旧 epoch 在本消息接纳前的 end 排除；同 child 后续 epoch、兄弟 child 的事件不能结束本次等待。仅保持本调用的短期事件数据，不增加持久任务表、重试调度、并发锁或轮询。",
+      "SDK 拒绝接纳时原样传播错误并释放监听，不等待结束。不重试派发、不创建替代 child。",
+      "对应结束到达后按当前输出 schema 返回首次 kind/subagentId 或续派 messageId。IDs 仍代表子身份和接纳消息；实际成功、缺项和错误依原生通知与业务产物判断。无需新增 Skill 输出 schema。"
+    ],
+    "exposure": "两个预设必须让下行续派统一经过现有 subagent_task 或四角色工具。原生 send_message 可在父模型中绕开等待，基线 seq83 已证实该入口被使用。建议在项目 Tool view 增加配置驱动的精确工具名拒绝，使两个预设的 send_message 不可见，同时保留 interrupt_agent；验证 native/PTC 与子角色实际 tools 均符合配置。SDK sendMessage 仍由适配器内部调用。对子 send_message 的同名限制会移除主动 relay 和官方初始转达段，最终结果继续由原生结束通知传回。",
+    "exposureCaveat": "现有 project-tool-visibility 使用 tools.restrict。新增同名本地 Tool 限制需确定性测试和官方 tools 实测，不能仅从 deny 配置推断已不可调用。",
+    "cancellation": "SDK 返回接纳身份后立即 deferContext，保存 childId/messageId/角色/accepted 状态；随后等待对应 subagent/end。取消退出等待并回收监听，不补发任务。两个预设加载现有官方 list-agents 子入口供恢复 childId，保留其状态只表示执行活跃性的原义。完整界限见 cancellationIdentityFollowup。",
+    "cancellationUncertainty": "普通一次取消到下一轮的源码链已闭合，见 cancellationIdentityFollowup。当前候选仍需真实 ToolRegistry/AgentLoop 验证；重复清空、claim 后失败、post-policy block 与未落盘崩溃不具备无条件 messageId 交付保证。",
+    "business": "子需要 Builder JSON、用户选择或其他材料时，在现有角色合同下报告所缺材料并结束本轮；原生 completed 仅表示本轮执行结束，父按语义转达缺项。父补齐后通过原角色工具和原 childId 续派。生成成功、查询失败与提交已接纳而结果未定分别沿用 Skill 合同。",
+    "parallelBoundary": "当前派发 Tool 未声明 isConcurrencySafe，官方 registry 将其作为 exclusive barrier；保留此属性可以阻止同一模型响应中位于派发之后的工具提前执行。跨 Agent 并发及同 child 多消息仍按 Activation 完成语义处理。",
+    "acceptanceIdentityEvidence": {
+      "sessionEventSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-session__lib__index.js",
+      "lines": [
+        1440,
+        1474
+      ],
+      "fact": "Session.append 在同步边界内先将事件写入日志，再调用 session/event 监听；agent/inbox/spliced 是实际父子持久事件类型。消息 ID 的插入记录和观察顺序可用于排除本次消息接纳前的旧 Activation 结束。",
+      "observed": [
+        "baseline child seq3 初始消息插入；seq65 同 child 续派消息插入。",
+        "send-message-denied child seq3 初始消息插入。"
+      ]
+    },
+    "cancellationIdentityCandidate": {
+      "status": "普通一次取消合同可实施；运行验收待执行",
+      "report": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/cancellation-identity-contract.json"
+    },
+    "eventListenerContract": {
+      "registration": "每次派发使用 component ctx.on(event, callback, {global:true})，在调用前安装，在 finally 解除。当前实际延迟控制器已经用这个公开选项收到真实子 Session 及 subagent/end 事件。",
+      "createIdentity": "首次创建可在适配器内用 node:crypto randomUUID 预先生成 childId，并传入 startContinuable({childId,...})；官方源码会校验重复。这样订阅从一开始即可只接收该 child。继续任务使用 args.agent_id。",
+      "sessionFilter": "session.id === childId，并核对 session.header.parentSession === exec.agent.id。只从该 Session 的 agent/inbox/spliced.inserted[] 收集 message.id。SDK 成功返回后选与 messageId 完全相等的插入记录。",
+      "lifecycleFilter": "subagent/end 的公开字段为 info.id、info.runId、info.provider、info.local、info.stopReason、info.lastAssistantMessage；没有 parentSessionId。按 info.id === childId 过滤，随后按目标 message 插入观察顺序筛选；SDK 接纳成功提供真实直接父子授权。",
+      "scopeReason": "subagent 生命周期由 SDK 使用父 scope carrier 派发，而 session/event 使用子 Session carrier。默认 component scope 跨父子可见性不作为实现前提，global 监听加精确身份过滤。",
+      "concurrency": "不同父调用的 childId 全局唯一，彼此事件不匹配。相同 child 的并发续派各自按 messageId 插入位置关联；它们可能等待同一 epoch end，这表示该 epoch 中全部接纳工作已结束，不是每条消息独立执行结果。",
+      "cleanup": "取消、接纳失败、正常结束及工具卸载均释放本次监听和缓存；监听回调只收集结构数据，不阻塞生命周期、修改 Session 或取消其他任务。"
+    }
+  },
+  "filesAndAuthorization": {
+    "implementation": [
+      "agent-presets/project-iteration-dispatch.mjs",
+      "agent-presets/project-tool-visibility.mjs",
+      "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml"
+    ],
+    "contractAlignment": [
+      ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "docs/system/architecture.md"
+    ],
+    "tests": [
+      "tests/production/native-workbench-subagent.test.mjs",
+      "tests/production/source-agent-preset.test.mjs",
+      "tests/production/official-agent-preset-resources.test.mjs",
+      "tests/production/plugin-build-presets.test.mjs",
+      "共用派发适配器的局部生命周期竞争测试"
+    ],
+    "basis": "主计划 5.11 要求实施前诊断和独立审查；5.12 保留身份、等待、缺项恢复和禁止重复生成；5.14 允许两个预设的工具作用域、输入交接与等待配置及对应测试。此方案在预设适配层使用现有 SDK；修改主计划对应步骤与独立方案审查仍须先完成。",
+    "excluded": "SDK 修改、依赖安装、Skill 脚本、Skill 输出 schema、业务模型选择、图像数量和兼容性规则。"
+  },
+  "acceptance": {
+    "deterministic": [
+      "文件和 relay 已出现但 end 延迟时，创建及续派调用都保持未完成；父下一步不能提前消费。",
+      "覆盖 end 先于 SDK promise 返回、兄弟 child 先结束、旧 epoch 先结束再冷恢复、活跃 epoch 无新 start、同 child 后续 epoch。",
+      "覆盖已接纳但未消费就取消、接纳前取消、等待中取消、end 与取消竞争、实例卸载；监听数量恢复，无残留 promise 和额外派发。",
+      "覆盖 completed、缺项 closing text、error、aborted、max-tokens、refusal、无 closing text；错误与缺项均不能被结构代码改判业务成功。",
+      "通过真实工具 registry 验证五个派发消费者与 send_message 下行旁路；native/PTC 共享可见性。",
+      "现有输出结构保持兼容；所有运行时可调字段放在唯一配置来源，未新增依赖。",
+      "真实 ToolRegistry+AgentLoop 覆盖一次取消后 deferredContexts 进入持久 inbox 并在下一轮成为 user/message；单独覆盖 block、二次clear、claim后失败的受阻行为，确认未误报 messageId 自动可见。"
+    ],
+    "officialLive": [
+      "按 5.13.1 重新准备未污染运行目录；保存实际父子 messages/tools、全部工具调用返回、session event 与生命周期回调。",
+      "迭代构图重复 90 秒文件已存在延迟场景，确认 parent 首次读正文及交付均在对应 subagent/end 后。工作台 subagent_task 单独重复同机制。",
+      "对原 child 进行一次普通续派和一次已释放后的冷恢复，验证 childId 相同、SDK epoch 变化、无替代创建。",
+      "验证父缺项转达、完整 Builder JSON 原样补齐、成功生成后通知延迟；核对真实提交次数、Run 身份、媒体与结果。",
+      "验证取消后父恢复与实际模型错误，确认身份可恢复、错误可见、无重复生成；保持每次失败证据。",
+      "覆盖四角色及两个预设，相关文字独立语义审计；最终候选按仓库要求执行质量门禁。",
+      "加载官方 list-agents 子入口，在取消后和父冷恢复后核对原 childId 可发现，工具实际模型声明完整；不得将 inactive 写成完成。"
+    ],
+    "notYetCovered": [
+      "新等待实现的官方运行效果",
+      "取消持久化竞争",
+      "同一父响应中的多工具执行顺序",
+      "新工具限制在实际 Scope 中的生效",
+      "重复稳定性"
+    ]
+  },
+  "evidence": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/execution-index.json"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/handoff-message-neutral-preparation.json"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/request-and-control-inventory.json"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/baseline-all-events.json"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/send-message-denied-all-events.json"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/asar-index.json"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-subagent__lib__index.js"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent__lib__index.js",
+      "lines": [
+        522,
+        558
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__index.js",
+      "lines": [
+        20,
+        91
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/agent-presets/project-iteration-dispatch.mjs",
+      "lines": [
+        24,
+        57
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md",
+      "lines": [
+        1261,
+        1315
+      ]
+    }
+  ],
+  "h3DirectDispatch": {
+    "finding": "官方 ToolRegistry 提供 execute(exec)，可以调用同一个已注册 subagent_generation，并经过作用域、工具可见性、参数、权限和最终结果处理。",
+    "callShape": {
+      "name": "subagent_generation",
+      "arguments": "冻结的结构化生成角色参数",
+      "agent": "当前官方宿主 registry 中的实际父 Agent 对象",
+      "callId": "本次测试调用唯一 ID",
+      "signal": "测试控制器 AbortSignal"
+    },
+    "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js",
+    "lines": [
+      3104,
+      3170
+    ],
+    "requirements": [
+      "测试调用使用 ctx.tools.execute(exec)，不直接取 Tool 对象并调用 execute 来绕过 registry。",
+      "父 Session 通过当前官方 session/create 和适用 Preset 创建；宿主内取得或恢复实际父 Agent，禁止伪造父对象。",
+      "冻结两组 arguments 并让项目适配器自行渲染 taskMessage 和选用 persona/options/filter，禁止测试驱动复制这些逻辑。",
+      "父 Agent 需在工具调用期间保持 live，但不启动父模型业务轮次。原生 settled 会唤醒 idle 父 Agent；测试须在不破坏 SDK 子结束链的情况下防止父模型生成影响子任务。",
+      "现有 desktop-driver 尚无直接 tools.execute 命令，需最小本地测试入口；无模型接口验证与实际工具/子首请求比较通过后才能执行 H3。"
+    ],
+    "status": "ToolRegistry 执行接口已源码确认；实际父 Agent 创建/恢复与模型零调用的宿主入口仍待烟测，当前未启动应用。"
+  },
+  "cancellationIdentityFollowup": {
+    "report": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/cancellation-identity-contract.json",
+    "normalCancellationFeasible": true,
+    "automaticMessageIdVisibilityUnconditional": false,
+    "existingRecoveryModule": "@deepseek-ai/dsh-tool-subagent-control/list-agents",
+    "decision": {
+      "normalCancellation": "可以实施：SDK 返回接纳身份后，适配器立即用 exec.deferContext 暂存含 subagentId、messageId、调用角色及接纳状态的标准 UserMessage，再开始可取消的完成等待。普通一次 caller abort 会保留该上下文，Agent 工具批次收尾将它写入父 Session 的 next-step inbox；下一次正常请求把它写成 user/message 并送入模型。",
+      "recoveryFallback": "两个预设加载当前已安装官方 @deepseek-ai/dsh-tool-subagent-control/list-agents。身份上下文未送达或恢复后不完整时，父 Agent 通过 list_agents 找回原 childId；不得用 inactive 判断成功、不得自动重派任务。",
+      "messageIdGuarantee": "messageId 的模型可见性只在下述普通取消合同中成立。官方 list_agents 与原生 settled 通知均不包含 messageId。多次清空 inbox、pre-step claim 后失败、post-policy block、宿主崩溃或存储失败时，当前接口不保证该 ID 自动送入下一次模型请求。",
+      "scope": "该方案复用 SDK context、inbox、catalog 和 SessionQuery；没有新增持久任务表、调度器、并发锁、轮询或依赖安装。"
+    },
+    "registration": {
+      "presetEntry": {
+        "id": "tool-subagent-list-agents",
+        "name": "@deepseek-ai/dsh-tool-subagent-control/list-agents"
+      },
+      "exportedPluginName": "tool-subagent-list-agents",
+      "modelToolName": "list_agents",
+      "inputs": {
+        "scope": "optional enum children | descendants; default children"
+      },
+      "outputBranches": [
+        {
+          "kind": "child",
+          "id": "string: durable child Session ID",
+          "label": "string",
+          "status": "running | inactive",
+          "parent": "optional string, descendants only",
+          "depth": "optional number, descendants only"
+        },
+        {
+          "kind": "diagnostic",
+          "id": "string",
+          "reason": "corrupt | unsupported | unavailable",
+          "parent": "optional string",
+          "depth": "optional number"
+        }
+      ],
+      "publicCalls": [
+        "ctx.subagents.listChildren(exec.agent.id, exec.signal)",
+        "ctx.subagents.listDescendants(exec.agent.id, exec.signal)",
+        "ctx.agents.get(entry.id)?.status"
+      ],
+      "visibility": "预设通过现有 cordis module loader 加载子入口；两预设都安装此项。父模型实际 schemas 必须出现 list_agents；角色 toolFilter 是否允许只读取自身 children 保持最小范围，子 maxDepth=1 因此通常为空。",
+      "wording": "官方 description 中的 send_message 续派建议与本项目等待入口有差异；项目 Skill 的恢复说明应明确将已恢复 id 填回原角色 agent_id。不要因此修改官方工具实现。"
+    },
+    "chosenContract": "两个预设加载已安装官方 list_agents 子入口；适配器在接纳后立即 deferContext，保留 childId/messageId，再等待完成。取消后优先使用身份上下文，缺失时用 list_agents 恢复原 childId。messageId 在后续明确清空或失败边界后不可取回时报告状态不明，不重复派发或生成。",
+    "acceptedContextShape": {
+      "construction": "仅使用 node:crypto 的 randomUUID 与新建的纯 JSON 对象，禁止新增 SDK 静态 import。",
+      "message": {
+        "id": "randomUUID()",
+        "role": "user",
+        "source": {
+          "kind": "harness-subagent-accepted"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "JSON.stringify({ subagentId, messageId, toolName: exec.name, callId: exec.callId, status: \"accepted\" })"
+          }
+        ]
+      },
+      "rules": [
+        "首次创建在内部保留 startContinuable 返回的 messageId；现有外部 outputSchema 保持不变。",
+        "source.kind 使用一个项目配置来源；它标记本组件产生的接纳上下文，不能使用 user、agent-message 或 subagent-settled 冒充用户或 SDK 通知。",
+        "构造 fresh JSON 对象并保持后续不变；需要冻结时冻结该对象及其 source/content 子对象。",
+        "接纳上下文仅声明已接纳，禁止写 completed/succeeded；父模型仍须以原生结束通知和业务结果决定下一步。"
+      ],
+      "sourceRequirement": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-session__lib__index.js",
+        "lines": [
+          1191,
+          1214
+        ],
+        "finding": "持久消息重放要求 id 非空字符串、role 对应事件、source.kind 非空字符串及 content 数组；user/message 的 source.kind 在此校验中没有封闭枚举。"
+      },
+      "constructorEvidence": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-llm__lib__index.js",
+        "lines": [
+          36,
+          64
+        ],
+        "finding": "createUserMessage 只补 role/id 并深复制冻结，不补 source；不能根据缺 source 对象构造成功推断它可安全持久恢复。"
+      }
+    }
+  }
+}

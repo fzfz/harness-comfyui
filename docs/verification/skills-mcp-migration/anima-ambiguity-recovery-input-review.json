@@ -1,0 +1,45 @@
+{
+  "purpose": "独立判断角色选择回复是否足以恢复原 ANIMA 会话。",
+  "readWhen": "发送 ANIMA 第二轮测试用户回复前。",
+  "reviewedAt": "2026-10-14T12:07:25.529785+00:00",
+  "readyForExecution": true,
+  "reply": "选择角色 ID 3334。",
+  "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/state.json",
+  "evidence": {
+    "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/collection-1791974616935/all-session-records.json",
+    "candidateSeq": 65,
+    "waitingSeq": 94,
+    "turnEndSeq": 96,
+    "selectedRecordExact": true,
+    "selectedId": 3334,
+    "selectedWorkId": 408,
+    "sessionStoragePresent": true,
+    "stateStatus": "stopped",
+    "candidateTarByteEqual": true,
+    "animaFilesCompared": 30,
+    "animaCurrentSourceDifferences": [],
+    "model": "deepseek-v4.1-flash",
+    "modelCallTimeoutMs": 360000,
+    "maxCalls": 3000,
+    "priorCleanup": {
+      "portsReleased": true,
+      "processGroupPresent": false
+    }
+  },
+  "reason": "seq 65 的真实候选以 ID 3334 唯一关联 work_id 408，回复已同时消除角色及作品歧义。seq 94 明确请求候选选择，seq 96 完成首轮。原 Session、Workspace、Profile 与安装候选仍保留，ANIMA 文件与当前候选逐字节一致。",
+  "executionBoundary": {
+    "taskTimeoutMs": 600000,
+    "modelCallTimeoutMs": 360000,
+    "replySubmissions": 1,
+    "additionalInstructions": 0,
+    "minimumTurn": 2,
+    "scope": "沿用原请求构建 Prompt，保留金色长双马尾、蓝眼、白色翻领衬衫与黑色蝴蝶结发饰。"
+  },
+  "limitations": [
+    "readyForExecution 判断输入充分性和恢复前置条件；恢复后仍须核对真实模型输入及完整输出合同。",
+    "首轮回答末尾预告生成与观察，超出原构建请求；第二轮若实际生成，应另判范围失败。",
+    "原候选来源及分页问题按 pending-anima-runtime-review.json 保留。"
+  ],
+  "findings": []
+}

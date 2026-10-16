@@ -1,0 +1,116 @@
+{
+  "purpose": "核对无目录默认模型时 model:null 的 Host 合同、证据与修复授权边界。",
+  "read_when": "决定是否调整 Generation 请求准入或评估无默认模型验收结果时。",
+  "status": "只读调查完成",
+  "conclusion": {
+    "host_behavior": "现有 Host 将 model:null 解释为不覆盖 Workflow 的模型加载输入。模板目录关联为空时仍执行节点中的模型，符合当前实现、入参合同与既有消费者路径。",
+    "skill_behavior": "comfyui-generate 要求用户未指定模型且 item.model=null 时请求 model_id 并停止创建图片。本次提交违反该 Skill 的选择与停止规则。",
+    "migration_regression": "已核对 HEAD 的 compiler 条件、ComfyTemplateBundle 与 source-cli.parseTemplate；同一行为在迁移前已存在。当前证据未显示 HTTP 客户端迁移引入该行为。",
+    "decision": "当前范围内保留 Host 行为，把 Agent 停止失败记为未通过。若要求 Host 拒绝 request.model=null 且模板目录 model_id=null 的请求，应先明确适用调用者，按 docs/plans/skills-mcp-migration-20261013.md 第 5.14 节第 5 项集中登记待决策项。"
+  },
+  "observed_run": {
+    "evidence_root": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control",
+    "run_id": "run_3ca4141b-d832-4bc7-962d-f64b85612983",
+    "catalog_evidence": "http-consumers/template.json 的 model_id=null；index.json 记录同轮 fixtureRunId 与消费者；bundle.json 的模型节点仍有文件名。",
+    "saved_request": "generation-store.json 的 request_json.model=null；status=succeeded；generation_media 有一项图片。",
+    "workflow_evidence": "http-consumers/bundle.json 与 generation/actual-workflow.json 的节点 1 均为 CheckpointLoaderSimple，widgets_values[0]=waiIllustriousSDXL_v170.safetensors。generation/api-workflow.json 的节点 1 inputs.ckpt_name 为同一文件名。",
+    "causal_chain": [
+      "CLI 接受 JSON null。",
+      "SourceGenerationPreparer 读取三字段模板及实例，把 request.model 原样传入 compiler。",
+      "ComfyWorkflowCompiler 克隆模板；仅对非 null、非 undefined 的 model 调用 applyModel。",
+      "官方导出与运行参数覆盖保留 checkpoint 输入；ComfyUI 执行并返回图片。"
+    ],
+    "scope": "本报告独立核对保存的 HTTP 消费者、Run、Actual Workflow 与 API Workflow；MCP 完整调用轨迹的逐事件记录见 docs/verification/skills-mcp-migration/mcp-0902-model-control-execution.json。"
+  },
+  "contracts": [
+    {
+      "reference": "src/cli/contract.ts:108-116; config/managed-cli-help.json:120",
+      "finding": "generationModel 显式接受 null，帮助同时公布 null 与 {id,file_name}。没有目录默认关联的准入条件。"
+    },
+    {
+      "reference": "src/host/generation/source-preparer.ts:25-34,173-196; src/host/generation/source-client.ts:128-135",
+      "finding": "ComfyTemplateBundle 仅包含 id、title、workflow；prepare 转发 model，parseTemplate 不读取 model_id。"
+    },
+    {
+      "reference": "src/host/generation/workflow-compiler.ts:2312-2340",
+      "finding": "null 与省略 model 都保留模板模型输入；显式模型才调用 applyModel。"
+    },
+    {
+      "reference": "src/host/generation/generation-tool.ts:24-35,82-85; src/host/generation/generation-runtime.ts:391-427",
+      "finding": "原生 Tool 省略模型映射为 null；持久请求读取允许缺省或 null；历史参数投影在 model=null 时省略显式覆盖字段。模板实际模型由 Actual Workflow 表达。"
+    },
+    {
+      "reference": ".agents/skills/comfyui-generate/SKILL.md:28-30; .agents/skills/comfyui-generate/references/generation-cli.md 输入值的来源第 5 项",
+      "finding": "Skill 约束默认模型来自 item.model，空关联要求停止；参考要求采用目录默认模型时提交 null。"
+    },
+    {
+      "reference": "docs/system/architecture.md Workflow 参数化与官方导出第 2 项；docs/adr/0015-independent-data-source-service.md 决策第 1、3 项",
+      "finding": "当前架构由 compiler 维护 Workflow 参数映射，Source adapter 转交输入；CatalogClient 与 GenerationSourceClient 分别读取目录和 bundle。"
+    },
+    {
+      "reference": "docs/adr/0014-source-contract-v0.86.1.md",
+      "finding": "历史 ADR 记载三字段 TemplateBundle 的来源；该 ADR 已被 0015 取代，本报告仅用其说明历史。"
+    },
+    {
+      "reference": "docs/plans/skills-mcp-migration-20261013.md:1634-1639; docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md 5.3",
+      "finding": "5.14 允许范围内结构修复并要求保持业务合同；边界验收要求 Agent 请求用户提供 model_id，并在 generation submit 前停止，任何提交事件均使验收失败。Host 拒绝提交仍无法使该场景自动通过。"
+    }
+  ],
+  "metadata_availability": {
+    "available_source": "CatalogClient.resolveTemplate 按 Settings 配置的目录服务地址查询模板；normalizeResolvedTemplate 提供 nullable model_id。保存的真实 CatalogClient 消费结果已经证明该字段可读。",
+    "unavailable_at_current_seam": "GenerationSource.readTemplate 返回值没有该字段，compiler 输入没有目录关联。不能把缺字段当作空关联。",
+    "ownership": "若批准准入收紧，应由 Generation 准备层组合现有 CatalogClient 与 GenerationSourceClient，compiler 继续处理 Workflow。"
+  },
+  "existing_tests": [
+    {
+      "file": "tests/unit/generation-source-client.test.ts:47-64",
+      "coverage": "明确接受三字段 TemplateBundle。"
+    },
+    {
+      "file": "tests/unit/generation-preparer.test.ts:97-141",
+      "coverage": "验证请求参数与 model 转发 compiler。"
+    },
+    {
+      "file": "tests/unit/generation-tool.test.ts:139-160",
+      "coverage": "Tool 省略选中模型时向 runtime 传 null；该测试没有断言目录默认关联存在。"
+    },
+    {
+      "file": "tests/integration/cli-command.test.ts:157",
+      "coverage": "generation submit 使用 model:null 的合法 CLI 请求。"
+    },
+    {
+      "file": "tests/unit/generation-workflow-compiler.test.ts:6553-6711",
+      "coverage": "显式 checkpoint 或 unet 覆盖、路径唯一性和可执行模型输入约束。"
+    },
+    {
+      "file": "tests/unit/generation-runtime.test.ts:244-296,675-731",
+      "coverage": "选中模型持久化恢复与历史缺省输入投影。"
+    }
+  ],
+  "repair_options": {
+    "preserve_business_contract": "实施者可在现有测试中补充 null 保留节点的合同覆盖，并继续定位 Agent 取得 item.model=null 后作出提交决定的调用轨迹。",
+    "conditional_minimum_design": "在明确批准请求 model=null 必须存在目录默认关联后，在 SourceGenerationPreparer.prepare 的编译前通过注入的现有目录解析能力读取 templateId 的 model_id；仅在 conclusion.decision 定义的空值条件成立时返回结构化业务错误。显式 model 路径继续使用 applyModel，目录默认非空时继续原有模板执行。",
+    "conditional_test_seam": [
+      "在 generation-preparer.test.ts 注入目录解析 spy，conclusion.decision 定义的空值条件成立时断言编译和 transport 未执行。",
+      "模板目录默认非空且 request.model=null 时保持实际模板 checkpoint；显式模型且目录默认为空时继续编译覆盖。",
+      "覆盖原生 Tool、CLI、持久请求恢复三个入口；确认错误在现有 Run 生命周期中的可见状态。",
+      "目录读取失败沿用现有错误渠道，验证不把读取失败或缺字段判为正常空值。",
+      "真实边界验收仍断言 Agent 请求 model_id 并在 submit 前停止；另行验证 Host 拒绝行为。"
+    ],
+    "legal_adjacent_paths": [
+      "request.model=null 且目录有默认关联的正常 Skill 默认模型路径。",
+      "request.model 指定合法模型且目录无默认关联的显式模型路径。",
+      "模型路线为 checkpoint 与 unet 的显式覆盖路径。",
+      "当前 Host 支持的仅靠 Workflow 节点决定模型、目录关联为空的直接请求路径；合同收紧会主动取消该路径。"
+    ],
+    "decisions_needed": [
+      "对于 request.model=null 的请求，哪些 Generation 调用入口需要模板目录 model_id 非空。",
+      "拒绝发生在 Run 接纳前还是准备阶段，及对应错误合同。",
+      "目录默认关联与 Workflow 节点不一致时继续使用节点还是按关联模型覆盖；后者会进一步改变生成行为，应单独定义。"
+    ]
+  },
+  "uncertainty": [
+    "当前代码表明 model=null 时使用 Workflow 节点模型；目录默认模型与节点模型不同的场景尚待运行验证。",
+    "existing_tests 记录测试源码声明的覆盖范围；本轮未运行应用、模型或测试。"
+  ]
+}

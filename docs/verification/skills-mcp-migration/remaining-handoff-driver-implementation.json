@@ -1,0 +1,679 @@
+{
+  "purpose": "记录剩余交接驱动、启动步骤和验证边界。",
+  "readWhen": "独立复核驱动或准备官方探针前。",
+  "status": "控制插件的 Profile 插入错误已修复；78 项本地测试通过，待独立复核和官方激活复验。",
+  "scope": {
+    "ownedDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime",
+    "ownedReport": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/remaining-handoff-driver-implementation.json",
+    "productChanges": 0,
+    "skillChanges": 0,
+    "sharedDriverChanges": 0,
+    "officialApplicationStarts": 0,
+    "remoteModelCalls": 0,
+    "controlledProviderStarts": 0,
+    "actor": "当前驱动修复队员；根线程执行的官方样本见 observedOfficialAttempt。"
+  },
+  "inputs": [
+    "docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+    "docs/verification/skills-mcp-migration/remaining-handoff-input-review.json",
+    "docs/verification/skills-mcp-migration/remaining-handoff-input-resolution.json"
+  ],
+  "authorization": "docs/plans/skills-mcp-migration-20261013.md 第 5.11、5.14 节；本次实施范围见 scope。",
+  "modules": [
+    {
+      "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/request-journal.mjs",
+      "entry": [
+        "archivePrompt",
+        "sendArchivedPrompt",
+        "promptAcceptance"
+      ],
+      "behavior": "先保存完整请求和 Remote 包装对象。重发沿用原 Session 和 requestId。归档冲突时拒绝发送。",
+      "consumer": "run.mjs archive/send/acceptance"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs",
+      "entry": [
+        "executeRegisteredTool",
+        "cancelTaskTree",
+        "apply"
+      ],
+      "behavior": "runtime-control.mjs 从 ctx.agents.get 获取父 Agent，通过 withInitiator 和 ToolRegistry 请求中断后代 Agent，并核对各后代 Agent 当前 activation 的结束事件。子 Agent 的通知唤醒父 Agent 后，驱动再次取消父 Agent。",
+      "consumer": "run.mjs host; globalThis.__remainingHandoffControl"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/relative-delay.mjs",
+      "entry": [
+        "armRelativeDelay",
+        "releaseRelativeDelay",
+        "assessDelayWindow",
+        "apply"
+      ],
+      "behavior": "relative-delay.mjs 在 delayContract.start 指定的钩子触发时生成包含 deadlineAt 的控制对象。handoff-delay.mjs 负责等待、释放和通知采集。",
+      "consumer": "run.mjs arm/release/delay-status; official Profile plugin"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+      "entry": [
+        "createHandoffProfile",
+        "createControlAttachment"
+      ],
+      "behavior": "H3 使用受控父模型。目标子角色可使用获准 Go 模型。业务场景只附加控制插件。",
+      "consumer": "run.mjs configure/attach"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/controlled-parent.mjs",
+      "entry": [
+        "createControlledResponder",
+        "startControlledParentService"
+      ],
+      "behavior": "每个固定任务仅派发一次。父后续唤醒返回空业务动作。控制子请求保持等待，供取消探针使用。",
+      "consumer": "run.mjs serve"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+      "entry": "help <command>",
+      "behavior": "复用既有准备、安装、Remote 和官方 inspector。标准输入接收 JSON，标准输出返回结果路径。",
+      "consumer": "execution controller"
+    }
+  ],
+  "reuse": [
+    {
+      "source": ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+      "symbols": [
+        "prepareControlledRuntime",
+        "installControlledCandidate",
+        "verifyInstalledCandidate",
+        "createControlledProfile"
+      ],
+      "purpose": "完整安装与候选字节检查。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "symbols": [
+        "startRuntime",
+        "configureRuntime",
+        "stopRuntime",
+        "statusRuntime"
+      ],
+      "purpose": "运行目录、真实业务配置和清理。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs",
+      "purpose": "复用其真实父 Agent、ToolRegistry 和 inspector 入口合同。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/handoff-delay.mjs",
+      "purpose": "relative-delay.mjs 为 handoff-delay.mjs 提供 deadlineAt。"
+    },
+    {
+      "source": "tests/desktop/fixtures/official-preset-overrides.mjs",
+      "purpose": "读取最终安装候选的预设、角色及配置。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs",
+      "purpose": "零远程探针复用 controlledDispatchArgs。"
+    }
+  ],
+  "requestContract": {
+    "archiveInput": {
+      "workspaceId": "<saved workspace ID>",
+      "inputReference": "<frozen materialized-input path>",
+      "request": {
+        "sessionId": "<saved original parent ID>",
+        "requestId": "<saved UUID>",
+        "mode": "queue",
+        "content": [
+          {
+            "type": "text",
+            "text": "<one complete predefined prompt>"
+          }
+        ],
+        "clientTimeZone": "Asia/Shanghai"
+      }
+    },
+    "order": [
+      "用官方 Remote 创建 Workspace 和父 Session，立即保存返回身份。",
+      "选择本轮模型后保存 requestId 和完整请求。",
+      "archive 保存请求和包装对象；send 只读取已保存对象。",
+      "响应不明时先收集原父记录。重发同一包装文件。",
+      "用 acceptance 关联原父 Session 的 user/rpcId；按 uniqueAcceptanceCount 核对接纳次数。"
+    ],
+    "creationLimit": "session.create 响应丢失时仍为身份未决。驱动不自动新建 Session。",
+    "probeLimit": "本地丢响应测试证明归档重用。SDK 去重和实际接纳仍须官方探针。",
+    "acceptanceOutput": {
+      "identity": "按原父 sessionId 和 requestId 过滤。采集包装对象提供 SDK page 记录的 Session 身份。",
+      "observations": "保留事件类型、事件序号、Session、messageId、source 和 content。",
+      "queued": "仅保存 agent/inbox/spliced 中匹配的入队观察。",
+      "consumed": "仅保存 user/message 中匹配的消费观察。",
+      "acceptances": "按 messageId 汇总同一父请求的观察。",
+      "uniqueAcceptanceCount": "独立 messageId 的数量。入队后消费同一消息计为 1 次。",
+      "duplicateMessages": "同一父请求有多个 messageId 时，保存各消息及全部观察。"
+    }
+  },
+  "cancellationContract": {
+    "entry": {
+      "operation": "cancel",
+      "parentSessionId": "<original parent ID>",
+      "databasePath": "<actual runs.sqlite path>",
+      "releaseSignalPath": "<this delay release path, omit if unarmed>"
+    },
+    "authority": "真实父 Agent 的 ToolRegistry interrupt_agent。父取消使用源码已核对的普通 Agent.cancel，keepInbox=true。",
+    "evidence": [
+      "取消前、请求后、收尾时的 Run 和媒体快照。",
+      "全部已知子身份、直接父身份、最新 activation runId。",
+      "完整 registry request/result，包括 additionalContexts。",
+      "同 activation 的 turn/end 和 subagent/end。",
+      "保留原始 turnEndReason 和 stopReason，并按 definitions 分类。",
+      "最终父状态和 inbox.hasPending；通知唤醒后再次取消父。"
+    ],
+    "confirmation": "收尾判定见 definitions.terminationConfirmed；取消验收判定见 definitions.cancellationPassed。",
+    "timeoutMs": 60000,
+    "generationLimit": "Agent 终止与已接纳生成的终态分别记录。Run 未结束时保留运行状态。",
+    "registryLimit": "直接探针返回 additionalContexts，属于控制侧调用。完整 AgentLoop 交接由受控父原生工具调用证明。",
+    "failureExit": "cancellationPassed=false 或 registry 返回 isError 时，保存结果并返回非零退出码。",
+    "definitions": {
+      "confirmed": "terminationConfirmed 的别名。",
+      "terminationConfirmed": "每个已知子 Agent 当前 activation 均有 turn/end 和同 runId 的 subagent/end，且子 Agent 未在运行。父 Agent 状态为 idle 且 inbox 为空；本轮控制观察器收集的 session/event、subagent/start、subagent/end 连续 250 毫秒没有新增记录。",
+      "cancellationPassed": "收尾观察已确认，且每个子均为已确认中断或请求前自然完成。",
+      "naturalCompletion": "未发中断请求，且 turn/end 与 subagent/end 均记录 completed。",
+      "interrupted": "当前 activation 的中断请求成功，且两类结束事件均记录 aborted。",
+      "failedTerminal": "结束事件齐全，且至少一个结束原因属于失败终态。",
+      "terminalClassification": "区分未确认、自然完成、中断确认、失败及其他已结束状态。"
+    }
+  },
+  "delayContract": {
+    "mode": "专用相对窗口；旧绝对模式保持原样。",
+    "scenarioDeadlineSource": "输入 taskDeadlineAt，取场景剩余绝对预算。",
+    "holdDurationSource": "本合同规定 30000 毫秒，写入冻结控制文件。",
+    "maximumWaitMs": 120000,
+    "legacyDeadlineFormula": "min(hookStartedAt + 120000, taskDeadlineAt)",
+    "start": "目标本地 activation 的 agent/turn-stopping 钩子，且约定产物已存在。",
+    "insufficientBudget": "剩余少于 30000 毫秒时记录 relative_window_not_covered。不得延长期限。",
+    "release": "读取实际 delay_started 后等待至少 30000 毫秒，再执行 release。",
+    "acceptance": "同 controlId 的 delay_finished.reason=released。delay_finished 与 delay_started 的 monotonicMs 差达到 holdDurationSource 指定的时长；delay_finished.at 未越过 taskDeadlineAt 和 legacyDeadlineFormula 得出的 deadlineAt。",
+    "limit": "本地测试验证迟到钩子的期限计算。完整真实 30 秒窗口、插件加载和父交付仍须官方证明。"
+  },
+  "h3Contract": {
+    "parent": {
+      "provider": "completion-local",
+      "model": "completion-local-model",
+      "service": "loopback HTTP only"
+    },
+    "goChild": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxOutputTokens": 32768,
+      "timeoutMs": 360000
+    },
+    "workbenchRole": "从已安装候选读取 task-agent.config，再设置 agentOptions。",
+    "iterationRole": "从已安装候选重建 generation-agent；不沿用旧 Profile 的角色。",
+    "otherRoles": "H3 其余角色使用受控本地模型；固定父仅派发目标角色。",
+    "sourceDomain": "真实 H3 使用同轮无默认模型夹具。configure --fixture-state 同时设置 MCP 与 Host HTTP。",
+    "businessAttachment": "业务场景先经 neutral-runtime configure 重建实际角色，再执行 attach。",
+    "gate": "官方零远程结构探针和输入独立复核通过后，才配置 go 并执行业务。",
+    "callsThisTurn": 0
+  },
+  "startup": {
+    "cwd": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "driver": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+    "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+    "sourceProfile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/source-profile.patch.yml",
+    "prerequisites": [
+      "独立功能、代码和文字复核通过。",
+      "按 candidateSelection 选择候选；安装后逐文件比较。",
+      "准备新运行目录和新控制文件，Workspace 仅放业务材料。",
+      "每次复验启动独立 serve 进程，使用新输出路径。固定派发状态按进程保存。"
+    ],
+    "commands": [
+      {
+        "step": 1,
+        "actor": "实施者",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "prepare",
+          "--candidate",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+          "--control-directory",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/runtimes"
+        ],
+        "result": "结果文件包含 stateFile。该步骤不启动应用。"
+      },
+      {
+        "step": 2,
+        "actor": "实施者",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "install",
+          "--state",
+          "<stateFile>",
+          "--candidate",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz"
+        ],
+        "environment": {
+          "pnpm_config_store_dir": "/Users/fzfz/Library/pnpm/store"
+        },
+        "result": "执行后，安装驱动完成候选包安装、安装文件比较和应用停止。"
+      },
+      {
+        "step": 3,
+        "actor": "控制器",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "serve",
+          "--input",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/zero-remote-fixed-plans.json",
+          "--output",
+          "<controlRoot>/local-service.json"
+        ],
+        "result": "保存本地 Provider 身份；该进程保持运行。"
+      },
+      {
+        "step": 4,
+        "actor": "实施者",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "configure",
+          "--state",
+          "<stateFile>",
+          "--service-state",
+          "<controlRoot>/local-service.json",
+          "--source-profile",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/source-profile.patch.yml",
+          "--child-mode",
+          "controlled"
+        ],
+        "result": "从已安装候选重建角色；观察器只允许本地模型。"
+      },
+      {
+        "step": 5,
+        "actor": "实施者",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime.mjs",
+          "start",
+          "--state",
+          "<stateFile>"
+        ],
+        "environment": {
+          "pnpm_config_store_dir": "/Users/fzfz/Library/pnpm/store"
+        },
+        "result": "从新的 state.json 读取 runId、configPath、probeRoot。"
+      },
+      {
+        "step": 6,
+        "actor": "控制器",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-driver.mjs",
+          "capture",
+          "<runId>",
+          "<capture-input.json>",
+          "<configPath>",
+          "<probeRoot>"
+        ],
+        "result": "捕获实际预设与设置。capture-input.json 内容为 {}。"
+      },
+      {
+        "step": 7,
+        "actor": "控制器",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "archive",
+          "--input",
+          "<archive-input.json>",
+          "--journal",
+          "<controlRoot>/prompt-request.json"
+        ],
+        "result": "发送前保存原父 ID、requestId、完整请求和包装对象。",
+        "precondition": "先按 requestContract.order 和 requestContract.archiveInput 准备归档输入。"
+      },
+      {
+        "step": 8,
+        "actor": "控制器",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "send",
+          "--state",
+          "<stateFile>",
+          "--journal",
+          "<controlRoot>/prompt-request.json"
+        ],
+        "result": "通过 desktop-driver remote 发送归档对象。"
+      },
+      {
+        "step": 9,
+        "actor": "控制器",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+          "host",
+          "--state",
+          "<stateFile>",
+          "--input",
+          "<host-input.json>"
+        ],
+        "result": "控制对象 operation 可为 execute、snapshot 或 cancel。"
+      },
+      {
+        "step": 10,
+        "actor": "实施者",
+        "argv": [
+          "node",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime.mjs",
+          "stop",
+          "--state",
+          "<stateFile>"
+        ],
+        "result": "取消收尾后停止应用，保存进程和端口释放证据。"
+      }
+    ],
+    "h3Route": [
+      "对每个 A/B 单元准备独立运行目录和固定派发计划。",
+      "serve 的 plans.arguments 采用已复核的物化参数。",
+      "configure 改为 --child-mode go，并传同轮 --fixture-state。",
+      "父请求文本仅包含 HANDOFF_FIXED:<planId>。子输入只来自冻结参数。",
+      "执行前核对 SDK 身份、实际模型路由及两协议夹具。"
+    ],
+    "businessRoute": [
+      "复用 neutral-runtime prepare/install/stop/configure。",
+      "configure 必须读取最终已安装候选。",
+      "停止状态下执行 run.mjs attach --state <stateFile>。",
+      "启动后使用 archive/send 与 host 采集和取消。"
+    ],
+    "delayInput": {
+      "controlPath": "<state.handoff.relativeDelay.controlPath>",
+      "childSessionId": "<actual child ID captured at subagent/start>",
+      "artifactPath": "<this task generation.md>",
+      "releaseSignalPath": "<new release path>",
+      "taskDeadlineAt": "<absolute scenario deadline ISO UTC>"
+    },
+    "cleanup": [
+      "先 release 延迟；再 host cancel 并读取最终记录。",
+      "保存各父子真实历史的全部分页及 Run、媒体快照。",
+      "停止本轮官方进程，核对端口释放。",
+      "用 serve 返回的 PID 停止本地控制服务。保留持久 Profile 和业务证据。"
+    ],
+    "placeholders": {
+      "stateFile": "prepare 结果中的 stateFile；后续身份读取该文件。",
+      "controlRoot": "stateFile 中的 controlRoot。",
+      "archive-input.json": "执行 requestContract.order 的身份创建与请求保存步骤，按 requestContract.archiveInput 写入的文件。",
+      "capture-input.json": "内容为 {} 的文件。",
+      "host-input.json": "按 cancellationContract.entry 或 run.mjs help host 准备的对象。",
+      "runId/configPath/probeRoot": "start 后 stateFile 中的对应字段。"
+    }
+  },
+  "officialZeroRemoteProbePlan": [
+    {
+      "id": "P-request",
+      "scope": "两个产品预设，各建 1 个父任务。",
+      "input": "zero-remote-fixed-plans.json；父消息 HANDOFF_FIXED:zero-workbench 或 HANDOFF_FIXED:zero-iteration。",
+      "steps": [
+        "保存真实 Workspace 和原父 Session。",
+        "archive 后 send；忽略首次客户端返回，再重发同一归档对象。",
+        "分页核对原父 Session 的 source.rpcId；uniqueAcceptanceCount 必须为 1。"
+      ],
+      "pass": "发送对象与归档对象一致；原父身份不变；无重复子任务。",
+      "limit": "客户端忽略返回用于验证 SDK 同 ID 去重；不宣称真实网络丢包。"
+    },
+    {
+      "id": "P-cancel",
+      "scope": "两个产品预设的实际 maxDepth=1。",
+      "steps": [
+        "等控制子请求进入本地 Provider 保持等待。",
+        "先通过 Remote session.cancel 取消父。",
+        "控制器通过 snapshot 记录原子 Agent 的运行状态。",
+        "host cancel 通过真实祖先 ToolRegistry 中断全部本轮子。",
+        "保存子 aborted 事件及结算通知。父唤醒时再次取消父。"
+      ],
+      "pass": "父取消后的 snapshot 显示原子 Agent 仍在运行；host cancel 后子当前 activation 的 turn/end 与 subagent/end 均为 aborted，父 idle 且 inbox 无待处理消息；Run 与媒体计数可关联。",
+      "limit": "更深树和取消期间新增后代只由本地边界测试覆盖。"
+    },
+    {
+      "id": "P-registry",
+      "scope": "真实父 ToolRegistry 及原生 AgentLoop。",
+      "steps": [
+        "host execute 调用 list_agents，保存完整结果和 additionalContexts。",
+        "受控父原生派发调用由固定 Provider 触发。",
+        "分别保存控制侧返回与真实 AgentLoop tool/result、接纳上下文。"
+      ],
+      "pass": "真实调用者身份、实际工具声明及 additionalContexts 可核对。"
+    },
+    {
+      "id": "P-delay",
+      "scope": "实际插件钩子与 30 秒窗口。",
+      "steps": [
+        "在该结构探针的子约定产物路径放固定结构文件。",
+        "捕获 subagent/start 后执行 arm。",
+        "单独使用固定完成子样本命中 turn-stopping。",
+        "从实际 delay_started 等待 30000 毫秒后 release。",
+        "关联真实子结束、入队通知、消费通知和父结束。"
+      ],
+      "pass": "delay-status covered=true；实际钩子与 activation 一致。完整窗口结束后核对原通知链。",
+      "limit": "该步骤只证明结构窗口。唯一真实生成 Run 和最终媒体交付由后续业务场景证明。",
+      "fixedChildInput": "控制器根据 controlledDispatchArgs 生成完成样本，将 INIT 标记改为 COMPLETE，并保存固定派发计划。COMPLETE 分支返回完成文字。"
+    }
+  ],
+  "tests": {
+    "command": "node --test .local/skills-mcp-migration-live/remaining-handoff-runtime/*.test.mjs .local/skills-mcp-migration-live/handoff-delay.test.mjs .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+    "exitCode": 0,
+    "total": 78,
+    "passed": 78,
+    "newDriverTests": 26,
+    "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/test-results.txt",
+    "syntax": "profile.mjs 的语法检查及 git diff --check 通过。",
+    "fullRepositorySuite": "未运行；父任务交付前执行完整门禁。",
+    "targetedReviewTests": 15,
+    "targetedEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-fix-targeted-results.txt",
+    "activationTests": 6,
+    "activationEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/activation-green.txt"
+  },
+  "tdd": [
+    {
+      "slice": "首次请求恢复",
+      "green": "发送前归档与同 ID 重发测试通过。"
+    },
+    {
+      "slice": "相对窗口",
+      "green": "迟到 100 秒的钩子仍得到新窗口。"
+    },
+    {
+      "slice": "后代中断",
+      "green": "真实祖先边界、孙辈、新出现后代和父唤醒测试通过。"
+    },
+    {
+      "slice": "角色路由",
+      "green": "安装候选角色重建与 Go 目标子路由测试通过。"
+    },
+    {
+      "slice": "固定派发",
+      "green": "父重复请求只派发 1 次。"
+    },
+    {
+      "slice": "标准输入",
+      "red": "readFile 收到数字 0，管道测试退出 1。",
+      "green": "按流读取标准输入，返回结果文件路径。"
+    },
+    {
+      "slice": "arm 幂等",
+      "red": "重复 arm 改变时间戳，产生冲突。",
+      "green": "相同请求保留首次 armedAt。"
+    },
+    {
+      "slice": "fork 归属",
+      "red": "仅凭 parentSession 错把 fork 纳入后代。",
+      "green": "只枚举已知 subagent 或 live subagent。"
+    },
+    {
+      "slice": "真实业务附加",
+      "red": "createControlAttachment 未导出，测试退出 1。",
+      "green": "附加插件保留真实父子路由。"
+    },
+    {
+      "slice": "R1 唯一接纳",
+      "evidenceReference": "review.resolutions"
+    },
+    {
+      "slice": "R2 错误终态",
+      "evidenceReference": "review.resolutions"
+    },
+    {
+      "slice": "Profile 控制插件激活",
+      "red": "真实 applyEntryPatches 重放跳过两个普通 patch；新增挂载测试退出 1。",
+      "green": "两个入口统一插入规则；6 项 Profile 回归和 78 项定向测试通过。"
+    }
+  ],
+  "provedLocally": {
+    "testSummary": "tests",
+    "behaviorResults": "tdd",
+    "reviewRepairs": "review.resolutions",
+    "activationRepair": "review.activationRepair"
+  },
+  "pendingOfficialProof": [
+    "最终候选的完整官方安装身份。",
+    "实际 SDK 接纳和同 requestId 去重。",
+    "真实产品父子中断、结算通知和父唤醒。",
+    "修复后的控制插件在官方进程中激活，以及真实 30 秒单调窗口。",
+    "H3 真实子模型与单变量输入合同。",
+    "业务恢复、生成提交次数和 Run、媒体归属。"
+  ],
+  "review": {
+    "independentFunctionalCode": "本次控制插件插入修复待独立复核。",
+    "independentSemantic": "remaining-handoff-driver-text-review.json 的 S1 至 S17 已修订，待独立审计 Agent 复核。",
+    "noSubagentsSpawned": true,
+    "codeReviewSource": "docs/verification/skills-mcp-migration/remaining-handoff-driver-code-review.json",
+    "resolutions": [
+      {
+        "id": "R1",
+        "status": "修复和相邻回归完成，待独立复核。",
+        "changedFiles": [
+          "request-journal.mjs",
+          "request-journal.test.mjs",
+          "run.mjs",
+          "cli.test.mjs"
+        ],
+        "reproduction": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-R1-reproduction.json",
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-R1-red.txt",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-R1-green.txt",
+        "coverage": [
+          "同一消息入队后消费计为 1 次。",
+          "同父 rpcId 的 2 个消息 ID 判为重复。",
+          "其他 Session 和其他 requestId 排除。",
+          "CLI 保留采集包装对象中的父 Session 身份。"
+        ]
+      },
+      {
+        "id": "R2",
+        "status": "修复和相邻回归完成，待独立复核。",
+        "changedFiles": [
+          "runtime-control.mjs",
+          "cancellation.test.mjs",
+          "run.mjs"
+        ],
+        "reproduction": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-R2-reproduction.json",
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-R2-red.txt",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/review-R2-green.txt",
+        "coverage": [
+          "completed、error、max-tokens、aborted 分别分类。",
+          "运行目标须有成功中断请求和两类 aborted 事件。",
+          "结束原因不一致或 registry 失败均不通过取消验收。",
+          "CLI 使用 cancellationPassed 判定失败退出。"
+        ]
+      }
+    ],
+    "activationRepair": {
+      "changedFiles": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.test.mjs"
+      ],
+      "source": [
+        {
+          "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+          "symbol": "insertPlugin",
+          "line": 12
+        },
+        {
+          "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+          "symbol": "createControlAttachment",
+          "line": 21
+        },
+        {
+          "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+          "symbol": "createHandoffProfile",
+          "line": 28
+        },
+        {
+          "file": "node_modules/@deepseek-ai/cordis-plugin-include/lib/index.js",
+          "symbol": "applyEntryPatches",
+          "line": 56
+        }
+      ],
+      "symptom": "根线程调用 host snapshot 返回 HOST_IDENTITY_UNVERIFIED；57136 无 listener，handoff-events.jsonl 未创建。",
+      "cause": "驱动将新增 runtime-control 与 relative-delay 模块写为普通 patch。两个模块的 ID 不在基础条目中，applyEntryPatches 跳过对应条目。",
+      "chain": [
+        "configure 写入普通 patch。",
+        "生产 patch 解析器返回 entry not found。",
+        "runtime-control 与 relative-delay 模块未进入有效配置，两个模块的 apply 函数未执行。",
+        "Inspector listener 和激活事件缺失，host 身份门禁拒绝执行。"
+      ],
+      "rootEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/activation-reproduction.json",
+      "counterfactual": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/activation-replay-after-fix.json",
+      "logEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/activation-host-log-evidence.json",
+      "moduleImport": "两份实际部署模块的只读导入成功；apply 均为 function。",
+      "repair": "createControlAttachment 使用 insertPlugin 声明插入。createHandoffProfile 复用同一附加入口。",
+      "replayResult": {
+        "beforeMountedModules": 0,
+        "afterMountedModules": 2,
+        "regeneratedMountedModules": 2,
+        "targetWarningsAfter": 0,
+        "otherEffectiveEntriesEqual": true,
+        "originalProfilePreserved": true
+      },
+      "replayLimit": "保存的 cordis.yml 不含 Host 全局默认条目；本次重放验证 runtime-control 与 relative-delay 模块的插入声明。",
+      "coverage": [
+        "H3 controlled 与 go 模式经生产 patch 解析器挂载两个控制插件。",
+        "业务附加入口经同一解析器挂载两个控制插件。",
+        "重复附加后，runtime-control 与 relative-delay 各只有 1 个已挂载实例。",
+        "已保存的普通 patch 转为插入声明。"
+      ],
+      "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/activation-red.txt",
+      "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/activation-green.txt",
+      "officialProof": "计划由根线程在独立复核后重新执行 configure 并启动应用，核对插件实际激活情况、进程组、Inspector 端口及控制事件。"
+    }
+  },
+  "textReview": {
+    "profile": "for-document",
+    "manual": "已核对解析证据、修复入口、原失败保留、队员与根线程行为以及官方待验证范围。",
+    "errors": 0,
+    "antiEchoPending": 0
+  },
+  "candidateSelection": {
+    "rule": "--candidate 指向本轮已冻结候选。prepare、install 及实际安装资源必须一致。",
+    "zeroRemoteProbe": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+    "subsequentBusinessCandidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-candidate.tgz",
+    "businessGate": "结果文件候选通过独立代码和文字复核后，主 Agent 选择并冻结本轮业务候选。"
+  },
+  "observedOfficialAttempt": {
+    "actor": "根线程",
+    "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/state.json",
+    "runId": "0a3f7adb-cd98-4fc5-b69c-90e4668fa4e9",
+    "profilePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-rd5vgv/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "requestAcceptance": {
+      "source": "根线程保存的 zero-*-acceptance.json",
+      "workbenchUniqueAcceptanceCount": 1,
+      "iterationUniqueAcceptanceCount": 1
+    },
+    "controlActivation": "未通过；控制插件未进入有效配置。",
+    "applicationCleanup": {
+      "portsReleased": true,
+      "processGroupPresent": false
+    },
+    "localProvider": "根线程已停止 PID 49392；复验使用新 serve 输出路径。",
+    "failurePreservation": "本队员未改写失败 Profile、请求、原始日志和既有采集文件。"
+  }
+}

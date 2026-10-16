@@ -1,3 +1,7 @@
+---
+文档用途: 介绍插件功能、安装入口和使用方法。
+读取时机: 初次了解或准备使用插件时。
+---
 # Harness ComfyUI
 
 Harness ComfyUI 通过预构建插件包安装到官方 DeepSeek Harness Desktop。宿主提供窗口、会话、模型设置和插件管理；插件提供 ComfyUI 工作台、两套项目预设及八个 Skills。
@@ -21,7 +25,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ## 当前候选验收
 
-v0.45.0 面向官方 macOS DeepSeek Harness Desktop `0.2.0-rc.2`。官方安装、双实例隔离、插件业务和生命周期自动化回归已通过；全部真实模型与正式 ComfyUI Run 验收、最终质量门禁和独立审查仍待完成。候选、正式发布和生产切换分别记录在[验收状态](docs/verification/official-desktop-plugin/acceptance-status.json)。
+1. v0.46.0 面向官方 macOS DeepSeek Harness Desktop `0.2.0-rc.2`。验收范围见[版本说明](docs/releasenotes.md)。
 
 ## CLI 帮助与图片读取
 
@@ -31,7 +35,7 @@ Agent 在前台 shell Tool Call 中使用 Host 提供的入口查看帮助：
 ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help
 ```
 
-将末尾参数依次替换为 `image --help` 和 `image inspect --help`，即可查看图片读取参数、stdin 示例和下一步操作。业务调用默认将 JSON 结果写入 stdout，将 NEXT 指引写入 stderr；`--quiet` 可省略成功指引。
+1. Agent 将末尾参数依次替换为 `image --help` 和 `image inspect --help`，即可查看图片读取参数、stdin 示例和下一步操作。业务调用将 JSON 结果保存为文件，stdout 返回文件路径，NEXT 指引写入 stderr；`--quiet` 可省略成功指引。
 
 
 仓库内置图片读取配置与新建配置默认使用事实观察提示词。已有命名配置保留已保存的提示词；需要采用新默认用途时，在插件详情页的“ComfyUI → 图片读取”中编辑该配置。输出达到模型 token 上限时，CLI 报告 `IMAGE_READER_OUTPUT_LIMIT` 并提示检查参数。观察结果仍须对照原图核实，当前视觉模型的遮挡姿态误判记录见 [v0.44.1 发布说明](docs/releasenotes.md#harness-comfyui-v0441)。
@@ -40,7 +44,9 @@ ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals
 
 用户准备官方 DeepSeek Harness Desktop `0.2.0-rc.2`、本机 Chrome 或 Chromium、可访问的数据源服务和已登记的 ComfyUI 实例。目标实例须具备所选 Workflow 使用的模型、LoRA 和自定义节点。对话模型及凭据通过官方应用设置配置；图片读取模型须支持图片输入，并在插件设置中单独选择。ComfyUI 的生成模型负责实际出图，模型设置中的对话模型负责理解需求和调用工具。
 
-从 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases) 下载目标版本的 `harness-comfyui-<版本>.tgz`。在官方 Desktop 的“插件”页面选择“添加插件”，填写本机包的绝对路径或 Release 附件下载地址，完成安装并启用。完全退出并重新打开应用后，核对实际插件版本和两个项目预设。v0.45.0 当前处于候选实施阶段，正式附件以对应 Release 的发布结果为准。
+1. 用户从 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases) 下载目标版本的 `harness-comfyui-<版本>.tgz`。
+2. 用户在官方 Desktop 的“插件”页面选择“添加插件”，填写本机包的绝对路径或 Release 附件下载地址，完成安装并启用。
+3. 用户完全退出并重新打开应用后，核对实际插件版本和两个项目预设。
 
 在插件详情页的 ComfyUI 设置中保存数据源 URL、端口、图片读取配置及 Workflow 浏览器可执行文件路径。安装、版本核对、备份、更新和失败恢复的完整步骤见[官方 Desktop 安装与更新](docs/user/install-update.md)。普通用户使用已发布插件包，无需准备项目 checkout 或另装系统 Node、pnpm、DSH。
 
@@ -50,7 +56,8 @@ ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals
 
 打开插件详情页的“ComfyUI → 数据源服务”，分别填写 URL 和端口并保存。例如，服务运行在本机 `18093` 端口时，URL 填写 `http://127.0.0.1`，端口填写 `18093`。URL 中不包含端口或接口路径。
 
-保存后，下一次目录查询使用新设置，无需重启应用。
+1. 保存后，工作台资源列表和 Host 的生成请求使用新设置。
+2. 使用两个 ComfyUI 预设前，维护者按[连接目录服务](docs/user/install-update.md#连接目录服务)完成配置。
 
 ### 2. 创建会话并选择生图资源
 

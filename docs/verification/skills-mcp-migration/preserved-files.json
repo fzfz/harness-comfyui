@@ -1,0 +1,170 @@
+{
+  "baseline": ".local/skills-mcp-migration-before/skills",
+  "method": "byte equality",
+  "files": [
+    {
+      "path": ".agents/skills/anima-prompt-builder/agents/openai.yaml",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/references/generation-output-schema.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/references/generation-profiles.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/references/prompt-weight-policy.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/scripts/cli-help-schema.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/scripts/cli-help.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/anima-prompt-builder/scripts/validate-output.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/character-portrait-prompt-designer/SKILL.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/character-portrait-prompt-designer/evals/evals.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/character-portrait-prompt-designer/evals/verification-report.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/character-portrait-prompt-designer/references/color-theory.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/character-portrait-prompt-designer/references/prompt-structure.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-generate/references/prompt-result-schema.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-image-review/SKILL.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-image-review/references/cli.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/references/composition-design.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/references/iteration-method.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/.gitignore",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/agents/openai.yaml",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/references/generation-output-schema.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/references/generation-profiles.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help-schema.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/scripts/validate-output.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/local-image-reader/SKILL.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/agents/openai.yaml",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weight-policy.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help-schema.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.json",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.mjs",
+      "identical": true
+    },
+    {
+      "path": ".agents/skills/wai-sdxl-prompt-builder/scripts/validate-output.mjs",
+      "identical": true
+    }
+  ]
+}

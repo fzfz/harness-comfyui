@@ -1,0 +1,62 @@
+{
+  "reviewedAt": "2026-10-14T05:57:43.106809+00:00",
+  "scope": [
+    ".local/skills-mcp-migration-live/session-turn.mjs",
+    ".local/skills-mcp-migration-live/session-turn.test.mjs",
+    ".local/skills-mcp-migration-live/desktop-driver.mjs:37-47"
+  ],
+  "verdict": "pass_with_explicit_minimum_turn",
+  "findings": [],
+  "conclusion": "调用方传入本次目标轮次 minimumTurn 后，上一轮 turn/end 无法满足轮次下限；本次审查范围未发现该路径的新增回归。",
+  "evidence": [
+    {
+      "source": ".local/skills-mcp-migration-live/session-turn.mjs:1-4",
+      "observation": "判定同时要求存在 turn/end、其位置晚于最近 turn/start，且结束事件 data.turn 达到 minimumTurn。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/desktop-driver.mjs:41-44",
+      "observation": "watch 使用 projection.asOfSeq 固定页面快照，将 records.event 与 input.minimumTurn 传给判定函数。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/alice-identity-choice-watch-input.json:1",
+      "observation": "已存在的续轮调用输入显式要求 minimumTurn=2。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/session-turn.test.mjs:6-22",
+      "observation": "五项测试分别验证旧轮结束拒绝、当前轮运行等待、目标轮结束接受、无开始事件分页接受、后续轮运行及空事件等待。"
+    }
+  ],
+  "testRun": {
+    "command": "node --test .local/skills-mcp-migration-live/session-turn.test.mjs",
+    "cwd": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "exitCode": 0,
+    "tests": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "usageBoundaries": [
+    {
+      "source": ".local/skills-mcp-migration-live/desktop-driver.mjs:44",
+      "condition": "续轮必须显式传入目标 minimumTurn。",
+      "observableBehavior": "省略 minimumTurn 会使用 0，旧轮结束记录仍可返回 finished=true。",
+      "classification": "调用合同限制；现有显式目标轮次路径已覆盖。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/session-turn.mjs:4",
+      "condition": "finished 表示轮次已结束。",
+      "observableBehavior": "判定未筛选结束原因；aborted 或 failed 轮次也可能结束，业务成功需读取 turn/end.reason 与产物。",
+      "classification": "既有等待语义；不是业务成功断言。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/desktop-driver.mjs:42",
+      "condition": "Host 按时间顺序返回目标会话事件，并在所取末页保留结束边界。",
+      "observableBehavior": "本次使用保存的真实 watch 记录核对 data.turn 形状；五项测试不覆盖 Host 在线分页和调度全过程。",
+      "classification": "验证范围限制。"
+    }
+  ],
+  "reviewActions": {
+    "modelCalls": 0,
+    "productFilesChanged": false,
+    "testFilesChanged": false
+  }
+}

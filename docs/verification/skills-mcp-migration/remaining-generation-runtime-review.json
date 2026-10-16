@@ -1,0 +1,2463 @@
+{
+  "purpose": "独立核对四轮生成业务的输入、工具来源、时序、模型身份与完整合同。",
+  "readWhen": "更新四轮业务验收状态及决定后续恢复前。",
+  "reviewedAt": "2026-10-14T12:09:01.268029+00:00",
+  "executionEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/remaining-generation-runtime-execution.json",
+  "contracts": [
+    "docs/plans/skills-mcp-migration-20261013.md#5.6",
+    "docs/plans/skills-mcp-migration-20261013.md#7",
+    ".agents/skills/comfyui-generate/SKILL.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md"
+  ],
+  "entries": [
+    {
+      "executionId": "5.6-2:harness-comfyui-iteration",
+      "caseId": "5.6-2",
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-bd102914-936a-43ec-afac-ec8f423c83c5",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/materialized-input.json",
+      "fullSubmittedPrompt": "工作目录：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace\n执行 Skill：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md\n任务参数：{\"template_id\":\"29\",\"instance_id\":\"2\",\"count\":1,\"seed\":20261013,\"request\":\"使用随本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片，随后查询实际 Run 和媒体。\"}\n将本任务产物保存到工作目录中的 5.6-2 目录。\n\n用于创建图片的完整 Prompt Builder 结果 JSON：\n```json\n{\n  \"model_route\": \"wai-illustrious-sdxl\",\n  \"positive_prompt\": \"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\",\n  \"negative_mode\": \"native_negative\",\n  \"negative_prompt\": \"bad quality, worst quality, worst detail, sketch, censor\",\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 1536,\n  \"height\": 1536,\n  \"megapixels\": 2.25\n}\n\n```",
+      "promptExactInRequest": true,
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/collection-1791979002308/all-session-records.json",
+      "eventCount": 137,
+      "sequenceContiguous": true,
+      "rawRequestIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/collection-1791979002308/model-request-index.json",
+      "models": {
+        "opencode-go/deepseek-v4.1-flash": 23,
+        "openrouter/thinkingmachines/inkling:free": 1
+      },
+      "toolResultsInNextRequest": [
+        {
+          "seq": 19,
+          "toolCallId": "call_00_7mrrn2nk06s5j7tgiksexo0f",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/b3ca927c-d6b7-47b5-9b9b-a44574815ec1.jsonl"
+        },
+        {
+          "seq": 24,
+          "toolCallId": "call_00_uske9yquh4b5mirwihhxs576",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/ec3c0b4e-0868-4cfd-bbe4-8da17b493de5.jsonl"
+        },
+        {
+          "seq": 26,
+          "toolCallId": "call_01_6bqwzjnxo8kszbioydrdqcxj",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/ec3c0b4e-0868-4cfd-bbe4-8da17b493de5.jsonl"
+        },
+        {
+          "seq": 31,
+          "toolCallId": "call_00_m7unjl833pilldoxamamzpbs",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/47c2c73c-7b27-4985-8633-b0b8ea201a7c.jsonl"
+        },
+        {
+          "seq": 36,
+          "toolCallId": "call_00_q2qboxqdra83s2pznc74ll0z",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/a7ff5bcd-614d-440c-84bb-1caed67d4094.jsonl"
+        },
+        {
+          "seq": 41,
+          "toolCallId": "call_00_qg7jpfd1zxmblhgh0duyxf7e",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/39b7f6b7-ef76-45cd-b67a-0972714e1535.jsonl"
+        },
+        {
+          "seq": 46,
+          "toolCallId": "call_00_vcr5ukxq52ap6n8o5x2mkhjr",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/fd2cdb7f-863a-4fab-9030-e70f2515b7a2.jsonl"
+        },
+        {
+          "seq": 51,
+          "toolCallId": "call_00_pwz135xmz4cnxe6dw96bl3z4",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/942895dd-9ed1-4b5b-88d6-1fba128fa951.jsonl"
+        },
+        {
+          "seq": 53,
+          "toolCallId": "call_01_ahyk3poi8b6l51redsqu9pry",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/942895dd-9ed1-4b5b-88d6-1fba128fa951.jsonl"
+        },
+        {
+          "seq": 58,
+          "toolCallId": "call_00_cs7nluowntjvl71sy2a9g844",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/eaa043a8-8810-4024-b650-d376c39b3bf0.jsonl"
+        },
+        {
+          "seq": 60,
+          "toolCallId": "call_01_bokxpghcxm7v2yb45xqpqri1",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/eaa043a8-8810-4024-b650-d376c39b3bf0.jsonl"
+        },
+        {
+          "seq": 65,
+          "toolCallId": "call_00_ezsnvmk378mrfy9kok62ft01",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/b1e6c762-af9c-4e3b-93eb-a1be4c59dc5d.jsonl"
+        },
+        {
+          "seq": 67,
+          "toolCallId": "call_01_7a9nhpwmr3nw64xcfmeb4id0",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/b1e6c762-af9c-4e3b-93eb-a1be4c59dc5d.jsonl"
+        },
+        {
+          "seq": 72,
+          "toolCallId": "call_00_dtgi0khuhc4ic0jtyn0xj38n",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/7d1ddbaf-8933-46a6-8eb0-65600b0393a1.jsonl"
+        },
+        {
+          "seq": 77,
+          "toolCallId": "call_00_rao9wdlw9mhux58dh70ajogv",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/b5468851-a11f-4e6f-b493-e360a29ed255.jsonl"
+        },
+        {
+          "seq": 79,
+          "toolCallId": "call_01_olgz1untyzooft0y1x8ukhgv",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/b5468851-a11f-4e6f-b493-e360a29ed255.jsonl"
+        },
+        {
+          "seq": 84,
+          "toolCallId": "call_00_ardtam6izu4samea1dv0ifc6",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/42c1918d-4c97-4c10-ba67-af72aae8741b.jsonl"
+        },
+        {
+          "seq": 89,
+          "toolCallId": "call_00_3sv6uw9ni91325r51pgvt5wc",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/29fd84de-136b-455f-8c9f-b23f4e89e236.jsonl"
+        },
+        {
+          "seq": 91,
+          "toolCallId": "call_01_395mo9aeeswayroawwqj6tse",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/29fd84de-136b-455f-8c9f-b23f4e89e236.jsonl"
+        },
+        {
+          "seq": 96,
+          "toolCallId": "call_00_f3yn90pksclssu9a8ivczoqg",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/082fada6-17e9-4e13-af9d-ca1887f55338.jsonl"
+        },
+        {
+          "seq": 101,
+          "toolCallId": "call_00_g9hno1rmsw1bcop5hzqtt1j8",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/0bfc7f30-42ff-4e78-8025-391f99d1b907.jsonl"
+        },
+        {
+          "seq": 106,
+          "toolCallId": "call_00_r6r6tn2triufv1o1atbf7mew",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/05b6f570-676d-43ae-aa99-9b00ec49a3d3.jsonl"
+        },
+        {
+          "seq": 111,
+          "toolCallId": "call_00_tanamxvec0ryw2s5nj6sfiph",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/72f73a30-3b87-4a73-9fe6-8ada26db8809.jsonl"
+        },
+        {
+          "seq": 116,
+          "toolCallId": "call_00_vdt3m37ve9pdhg55m1j3mdh9",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/cdd725d6-767a-487d-9c80-0eaacac7a727.jsonl"
+        },
+        {
+          "seq": 121,
+          "toolCallId": "call_00_fkabjwed25ndkgd03chvsftk",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/d8a423d4-60e1-4689-b047-d5062a2afd6c.jsonl"
+        },
+        {
+          "seq": 126,
+          "toolCallId": "call_00_jskvyb97dlpz9uuz1bco7ywe",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/77c1ccc9-f6bd-437f-89ce-1ec18809fe15.jsonl"
+        },
+        {
+          "seq": 131,
+          "toolCallId": "call_00_ctenqxdcmjdakono0hoi4vzv",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/observer/llm-calls/ee15ddb3-a2e5-4568-aa1d-b5573cd59133.jsonl"
+        }
+      ],
+      "fullReadReferences": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md",
+          "fullTextResultSeqs": [
+            19
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+          "fullTextResultSeqs": [
+            46
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md",
+          "fullTextResultSeqs": [
+            41
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json",
+          "fullTextResultSeqs": [
+            36
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md",
+          "fullTextResultSeqs": [
+            36
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
+          "fullTextResultSeqs": [
+            36
+          ]
+        }
+      ],
+      "installedCandidate": {
+        "filesCompared": 200,
+        "allByteEqual": true,
+        "candidate": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/harness-comfyui-candidate.tgz"
+      },
+      "calls": [
+        {
+          "seq": 18,
+          "name": "skill",
+          "arguments": "{\"name\":\"comfyui-generate\"}"
+        },
+        {
+          "seq": 23,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/\",\"description\":\"List skill directory contents\"}"
+        },
+        {
+          "seq": 25,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/ 2>&1; echo \\\"---\\\"; ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2 2>&1\",\"description\":\"Inspect workspace and target dir\"}"
+        },
+        {
+          "seq": 30,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/\",\"description\":\"List reference files\"}"
+        },
+        {
+          "seq": 35,
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/ && echo \\\"=== prompt-result-contract.md ===\\\" && cat prompt-result-contract.md && echo \\\"=== prompt-result-schema.json ===\\\" && cat prompt-result-schema.json && echo \\\"=== prompt-builder-model-routes.json ===\\\" && cat prompt-builder-model-routes.json\",\"description\":\"Read prompt result contract and schema\"}"
+        },
+        {
+          "seq": 40,
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/ && cat generation-cli.md\",\"description\":\"Read generation CLI reference\"}"
+        },
+        {
+          "seq": 45,
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/ && cat template-parameter-inspection-cli.md\",\"description\":\"Read template parameter inspection reference\"}"
+        },
+        {
+          "seq": 50,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+        },
+        {
+          "seq": 52,
+          "name": "mcp__noobai__search_instances",
+          "arguments": "{}"
+        },
+        {
+          "seq": 57,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"1\"}}"
+        },
+        {
+          "seq": 59,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"base_model\",\"id\":\"2\"}}"
+        },
+        {
+          "seq": 64,
+          "name": "bash",
+          "arguments": "{\"command\":\"echo \\\"NODE=$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\"; echo \\\"CLI=$DSH_HARNESS_COMFYUI_CLI\\\"; env | grep -i DSH_ | head -50\",\"description\":\"Check harness environment variables\"}"
+        },
+        {
+          "seq": 66,
+          "name": "bash",
+          "arguments": "{\"command\":\"mkdir -p /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2 && echo created && ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/\",\"description\":\"Create output directory 5.6-2\"}"
+        },
+        {
+          "seq": 71,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation inspect-template-parameters --stdin <<'JSON'\\n{\\\"template_id\\\":\\\"29\\\",\\\"instance_id\\\":\\\"2\\\"}\\nJSON\",\"description\":\"Inspect template 29 parameters on instance 2\"}"
+        },
+        {
+          "seq": 76,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation submit --stdin <<'JSON'\\n{\\n  \\\"title\\\": \\\"图片 1\\\",\\n  \\\"instance_id\\\": \\\"2\\\",\\n  \\\"template_id\\\": \\\"29\\\",\\n  \\\"model\\\": null,\\n  \\\"parameters\\\": {\\n    \\\"positive_prompt\\\": \\\"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\\\\\(Grok\\\\\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\\\",\\n    \\\"negative_prompt\\\": \\\"bad quality, worst quality, worst detail, sketch, censor\\\",\\n    \\\"seed\\\": 20261013,\\n    \\\"batch_size\\\": 1,\\n    \\\"width\\\": 1536,\\n    \\\"height\\\": 1536\\n  },\\n  \\\"loras\\\": []\\n}\\nJSON\\necho \\\"exit=$?\\\"\",\"description\":\"Submit generation request for image 1\"}"
+        },
+        {
+          "seq": 78,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --help 2>&1 | head -60\",\"description\":\"Read CLI top-level help\"}"
+        },
+        {
+          "seq": 83,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" generation --help 2>&1 | head -80\",\"description\":\"Read generation subcommand help\"}"
+        },
+        {
+          "seq": 88,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" generation resolve-media --help 2>&1 | head -60\",\"description\":\"Read resolve-media help\"}"
+        },
+        {
+          "seq": 90,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation run-inputs --stdin <<'JSON'\\n{\\\"run_ids\\\":[\\\"run_14a78f62-6c10-4a1c-a107-2964d5bd082c\\\"]}\\nJSON\\necho \\\"exit=$?\\\"\",\"description\":\"Query the actual run inputs\"}"
+        },
+        {
+          "seq": 95,
+          "name": "bash",
+          "arguments": "{\"command\":\"for i in 1 2 3 4 5 6 7 8 9 10; do\\n  out=$(ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation resolve-media --stdin <<'JSON'\\n{\\\"run_ids\\\":[\\\"run_14a78f62-6c10-4a1c-a107-2964d5bd082c\\\"]}\\nJSON\\n)\\n  echo \\\"attempt $i: $out\\\"\\n  case \\\"$out\\\" in *file_path*) break;; esac\\n  sleep 12\\ndone\",\"description\":\"Poll resolve-media for run images\",\"timeoutMs\":200000}"
+        },
+        {
+          "seq": 100,
+          "name": "bash",
+          "arguments": "{\"command\":\"set -e\\nSRC=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/data/plugins/harness-comfyui/media/aa/96/media_aa9601dc-24b4-4e94-8adb-7f03a66bd50a.png\\\"\\nOUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2\\\"\\nls -la \\\"$SRC\\\"\\ncp \\\"$SRC\\\" \\\"$OUT/run_14a78f62-6c10-4a1c-a107-2964d5bd082c.png\\\"\\nls -la \\\"$OUT\\\"\\nfile \\\"$OUT/run_14a78f62-6c10-4a1c-a107-2964d5bd082c.png\\\"\",\"description\":\"Copy generated image into 5.6-2 output dir\"}"
+        },
+        {
+          "seq": 105,
+          "name": "bash",
+          "arguments": "{\"command\":\"set -e\\nOUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2\\\"\\nELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation run-inputs --stdin > \\\"$OUT/run-inputs.json\\\" <<'JSON'\\n{\\\"run_ids\\\":[\\\"run_14a78f62-6c10-4a1c-a107-2964d5bd082c\\\"]}\\nJSON\\nELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation resolve-media --stdin > \\\"$OUT/resolve-media.json\\\" <<'JSON'\\n{\\\"run_ids\\\":[\\\"run_14a78f62-6c10-4a1c-a107-2964d5bd082c\\\"]}\\nJSON\\nELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation inspect-template-parameters --stdin > \\\"$OUT/template-parameters.json\\\" <<'JSON'\\n{\\\"template_id\\\":\\\"29\\\",\\\"instance_id\\\":\\\"2\\\"}\\nJSON\\nls -la \\\"$OUT\\\"\",\"description\":\"Save run records into output dir\"}"
+        },
+        {
+          "seq": 110,
+          "name": "bash",
+          "arguments": "{\"command\":\"OUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2\\\"\\ncat > \\\"$OUT/summary.md\\\" <<'MD'\\n# 生成任务记录：5.6-2\\n\\n## 1. 本次采用的资源（核对结论：一致）\\n\\n| 项目 | 值 | 关联底模 |\\n| --- | --- | --- |\\n| Workflow 模板 | `29` — wai_basic_txt2img（`text_to_image`） | `2` — wai |\\n| 生成模型 | 模板默认模型 `1` — `waiIllustriousSDXL_v170.safetensors`，`skill_name` = `wai-sdxl-prompt-builder` | `2` — wai |\\n| LoRA | 无 | — |\\n| ComfyUI 实例 | `2` — win3080（`http://192.168.110.122:8188/`，实例列表首项） | — |\\n\\n用户未显式指定模型，采用模板默认模型，因此 Generation Request 的 `model` 为 `null`。\\n\\n## 2. Prompt Builder 结果 JSON 校验：有效\\n\\n- 结构校验：10 个必填属性齐全、类型与枚举合规、无额外属性。\\n- 模型路线校验：`model_route` = `wai-illustrious-sdxl` → `skill_name` = `wai-sdxl-prompt-builder`，与模型 `1` 的 `skill_name` 相同。\\n- 负向模式校验：`native_negative`，`negative_prompt` 为非空字符串，`positive_avoidance` 为 `null`。\\n- 图片尺寸校验：gcd(1536,1536)=1536 → `1:1` 与 `aspect_ratio` 一致；|1536×1536/1,000,000 − 2.25| / 2.25 = 0.048576 ≤ 0.05。\\n\\n## 3. Generation Request（图片 1）\\n\\n```json\\n{\\n  \\\"title\\\": \\\"图片 1\\\",\\n  \\\"instance_id\\\": \\\"2\\\",\\n  \\\"template_id\\\": \\\"29\\\",\\n  \\\"model\\\": null,\\n  \\\"parameters\\\": {\\n    \\\"positive_prompt\\\": \\\"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\\\\\(Grok\\\\\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\\\",\\n    \\\"negative_prompt\\\": \\\"bad quality, worst quality, worst detail, sketch, censor\\\",\\n    \\\"seed\\\": 20261013,\\n    \\\"batch_size\\\": 1,\\n    \\\"width\\\": 1536,\\n    \\\"height\\\": 1536\\n  },\\n  \\\"loras\\\": []\\n}\\n```\\n\\n尺寸参数：模板 `size_candidates` 只有 `width_height:width:height`，`width`/`height` 各接受 16–16384 的整数，1536 与结果 JSON 直接匹配（直接匹配，无需偏差确认）。\\nSeed：`seed` 参数接受 0–18446744073709552000 的整数，用户给定整数 `20261013` 符合限制。\\n\\n## 4. 提交结果\\n\\n- `run_id`：`run_14a78f62-6c10-4a1c-a107-2964d5bd082c`\\n- 提交状态：已接受（退出码 0）\\n\\n## 5. 实际 Run 查询结果\\n\\n- `lookup_status`：`available`\\n- `arguments`：`title` = 图片 1，`instance_id` = 2，`template_id` = 29，`parameters` 与上表一致，`loras` = []\\n- `workflow_status`：`available`\\n- Actual Workflow 已落盘于 `run-inputs.json`，其中：\\n  - 节点 1 `CheckpointLoaderSimple` → `waiIllustriousSDXL_v170.safetensors`\\n  - 节点 2 正向 Prompt 文本与请求一致\\n  - 节点 3 负向 Prompt 文本与请求一致\\n  - 节点 4 `EmptyLatentImage` → 1536 × 1536，batch 1\\n  - 节点 5 `KSampler` → seed `20261013`、fixed、steps 25、cfg 7、`euler_ancestral`、`normal`、denoise 1\\n  - 节点 7 `SaveImage` 前缀 `WAI`\\n\\n## 6. 媒体查询结果\\n\\n- 图片路径：`{workspace}/5.6-2/run_14a78f62-6c10-4a1c-a107-2964d5bd082c.png`\\n- 原始媒体路径：`/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/data/plugins/harness-comfyui/media/aa/96/media_aa9601dc-24b4-4e94-8adb-7f03a66bd50a.png`\\n- `media_id`：`media_aa9601dc-24b4-4e94-8adb-7f03a66bd50a`\\n- 来源节点：`7`（`SaveImage`），`output_index` 0\\n- 文件名：`WAI_00047_.png`；`media_type`：`image/png`；尺寸 1536 × 1536\\n\\n## 7. 目录内容\\n\\n- `run_14a78f62-6c10-4a1c-a107-2964d5bd082c.png` — 生成图片\\n- `run-inputs.json` — 实际 Run 的 `arguments` 与 Actual Workflow 原始查询结果\\n- `resolve-media.json` — 媒体（本地图片路径）原始查询结果\\n- `template-parameters.json` — 模板 29 在实例 2 上的参数与尺寸候选原始查询结果\\nMD\\nls -la \\\"$OUT\\\"; echo \\\"---\\\"; head -5 \\\"$OUT/summary.md\\\"\",\"description\":\"Write summary record file\"}"
+        },
+        {
+          "seq": 115,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image --help 2>&1 | head -40\",\"description\":\"Read image command help\"}"
+        },
+        {
+          "seq": 120,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" image inspect --help 2>&1 | head -40\",\"description\":\"Read image inspect help\"}"
+        },
+        {
+          "seq": 125,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet image inspect --stdin <<'JSON'\\n{\\\"file_path\\\": \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2/run_14a78f62-6c10-4a1c-a107-2964d5bd082c.png\\\", \\\"prompt\\\": \\\"客观描述这张图片：可见的人物数量、发色与发型、眼睛颜色、服装、人物朝向与表情、是否微笑、取景范围（半身或全身）、画面内可见的室内与窗外元素及其位置、光线方向与整体氛围。只描述实际可见内容。\\\"}\\nJSON\\necho \\\"exit=$?\\\"\",\"description\":\"Sanity-check the delivered image content\",\"timeoutMs\":240000}"
+        },
+        {
+          "seq": 130,
+          "name": "bash",
+          "arguments": "{\"command\":\"OUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2\\\"\\ncat >> \\\"$OUT/summary.md\\\" <<'MD'\\n\\n## 8. 产物核对（视觉模型读取，非迭代流程）\\n\\n对落盘图片做了一次内容读取，结果：画面中可见 1 名金发双马尾女性，蓝色眼睛，白色上衣，半身取景，面朝前方，嘴角轻微微笑；背景为室内，有画框与带木框的拱形大窗，窗外可见绿树与阳光，整体温暖明亮。\\n\\n与 Prompt 的差异（仅作记录，未做迭代修复）：\\n\\n- 光线方向：Prompt 要求 `soft window light from the left` / `soft shadows to the right`，实际读取为阳光自右上方照入、光斑落在人物胸前。\\n- 窗户位置：Prompt 要求 `window on the left side`，实际读取为窗位于画面中央与右侧。\\nMD\\ntail -12 \\\"$OUT/summary.md\\\"\",\"description\":\"Append observation section to summary\"}"
+        }
+      ],
+      "databaseBefore": {
+        "generation_runs": [],
+        "generation_media": [],
+        "generation_run_outputs": []
+      },
+      "databaseAfter": {
+        "generation_runs": [
+          {
+            "run_id": "run_14a78f62-6c10-4a1c-a107-2964d5bd082c",
+            "workspace_id": "247c5511-7aa6-4e4b-a841-af6083affa31",
+            "session_id": "session-bd102914-936a-43ec-afac-ec8f423c83c5",
+            "turn": 1,
+            "call_id": "call_00_rao9wdlw9mhux58dh70ajogv",
+            "title": "图片 1",
+            "instance_id": "2",
+            "instance_title": "win3080",
+            "instance_origin": "http://192.168.110.122:8188",
+            "template_id": "29",
+            "template_title": "wai_basic_txt2img",
+            "status": "succeeded",
+            "revision": 180,
+            "prompt_id": "25502ec7-a691-47a0-aa06-bfa599be492a",
+            "request_json": "{\"instanceId\":\"2\",\"loras\":[],\"model\":null,\"parameters\":{\"batch_size\":1,\"height\":1536,\"negative_prompt\":\"bad quality, worst quality, worst detail, sketch, censor\",\"positive_prompt\":\"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\",\"seed\":20261013,\"width\":1536},\"templateId\":\"29\",\"title\":\"图片 1\"}",
+            "source_snapshot_path": "workspaces/247c5511-7aa6-4e4b-a841-af6083affa31/runs/run_14a78f62-6c10-4a1c-a107-2964d5bd082c/source-snapshot.json",
+            "actual_workflow_path": "workspaces/247c5511-7aa6-4e4b-a841-af6083affa31/runs/run_14a78f62-6c10-4a1c-a107-2964d5bd082c/actual-workflow.json",
+            "api_workflow_path": "workspaces/247c5511-7aa6-4e4b-a841-af6083affa31/runs/run_14a78f62-6c10-4a1c-a107-2964d5bd082c/api-workflow.json",
+            "expected_output_node_ids_json": "[\"7\"]",
+            "missing_observed_at": null,
+            "error_code": null,
+            "error_message": null,
+            "created_at": 1791978797899,
+            "updated_at": 1791978904698
+          }
+        ],
+        "generation_media": [
+          {
+            "media_id": "media_aa9601dc-24b4-4e94-8adb-7f03a66bd50a",
+            "run_id": "run_14a78f62-6c10-4a1c-a107-2964d5bd082c",
+            "workspace_id": "247c5511-7aa6-4e4b-a841-af6083affa31",
+            "session_id": "session-bd102914-936a-43ec-afac-ec8f423c83c5",
+            "turn": 1,
+            "node_id": "7",
+            "output_index": 0,
+            "media_kind": "image",
+            "filename": "WAI_00047_.png",
+            "relative_path": "aa/96/media_aa9601dc-24b4-4e94-8adb-7f03a66bd50a.png",
+            "media_type": "image/png",
+            "byte_size": 2812768,
+            "created_at": 1791978904695
+          }
+        ],
+        "generation_run_outputs": [
+          {
+            "run_id": "run_14a78f62-6c10-4a1c-a107-2964d5bd082c",
+            "node_id": "7",
+            "output_index": 0,
+            "media_kind": "image",
+            "filename": "WAI_00047_.png",
+            "subfolder": "",
+            "output_type": "output"
+          }
+        ]
+      },
+      "verifiedRunInputs": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2/run-inputs.json",
+          "runId": "run_14a78f62-6c10-4a1c-a107-2964d5bd082c",
+          "lookupStatus": "available",
+          "workflowStatus": "available",
+          "arguments": {
+            "title": "图片 1",
+            "instance_id": "2",
+            "template_id": "29",
+            "parameters": {
+              "batch_size": 1,
+              "height": 1536,
+              "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor",
+              "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast",
+              "seed": 20261013,
+              "width": 1536
+            },
+            "loras": []
+          },
+          "positiveExact": true,
+          "negativeExact": true,
+          "actualWorkflow": {
+            "last_node_id": 7,
+            "last_link_id": 9,
+            "nodes": [
+              {
+                "id": 1,
+                "type": "CheckpointLoaderSimple",
+                "pos": [
+                  40,
+                  180
+                ],
+                "size": [
+                  315,
+                  98
+                ],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "outputs": [
+                  {
+                    "name": "MODEL",
+                    "type": "MODEL",
+                    "links": [
+                      1
+                    ]
+                  },
+                  {
+                    "name": "CLIP",
+                    "type": "CLIP",
+                    "links": [
+                      2,
+                      3
+                    ]
+                  },
+                  {
+                    "name": "VAE",
+                    "type": "VAE",
+                    "links": [
+                      8
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_checkpoint"
+                },
+                "widgets_values": [
+                  "waiIllustriousSDXL_v170.safetensors"
+                ]
+              },
+              {
+                "id": 2,
+                "type": "CLIPTextEncode",
+                "pos": [
+                  400,
+                  50
+                ],
+                "size": [
+                  420,
+                  180
+                ],
+                "flags": {},
+                "order": 1,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "clip",
+                    "type": "CLIP",
+                    "link": 2
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [
+                      4
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_positive_prompt"
+                },
+                "widgets_values": [
+                  "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast"
+                ]
+              },
+              {
+                "id": 3,
+                "type": "CLIPTextEncode",
+                "pos": [
+                  400,
+                  270
+                ],
+                "size": [
+                  420,
+                  180
+                ],
+                "flags": {},
+                "order": 2,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "clip",
+                    "type": "CLIP",
+                    "link": 3
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [
+                      5
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_negative_prompt"
+                },
+                "widgets_values": [
+                  "bad quality, worst quality, worst detail, sketch, censor"
+                ]
+              },
+              {
+                "id": 4,
+                "type": "EmptyLatentImage",
+                "pos": [
+                  400,
+                  510
+                ],
+                "size": [
+                  315,
+                  106
+                ],
+                "flags": {},
+                "order": 3,
+                "mode": 0,
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": [
+                      6
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_latent"
+                },
+                "widgets_values": [
+                  1536,
+                  1536,
+                  1
+                ]
+              },
+              {
+                "id": 5,
+                "type": "KSampler",
+                "pos": [
+                  890,
+                  180
+                ],
+                "size": [
+                  315,
+                  274
+                ],
+                "flags": {},
+                "order": 4,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "model",
+                    "type": "MODEL",
+                    "link": 1
+                  },
+                  {
+                    "name": "positive",
+                    "type": "CONDITIONING",
+                    "link": 4
+                  },
+                  {
+                    "name": "negative",
+                    "type": "CONDITIONING",
+                    "link": 5
+                  },
+                  {
+                    "name": "latent_image",
+                    "type": "LATENT",
+                    "link": 6
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": [
+                      7
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_sampler"
+                },
+                "widgets_values": [
+                  20261013,
+                  "fixed",
+                  25,
+                  7,
+                  "euler_ancestral",
+                  "normal",
+                  1
+                ]
+              },
+              {
+                "id": 6,
+                "type": "VAEDecode",
+                "pos": [
+                  1250,
+                  190
+                ],
+                "size": [
+                  210,
+                  82
+                ],
+                "flags": {},
+                "order": 5,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "samples",
+                    "type": "LATENT",
+                    "link": 7
+                  },
+                  {
+                    "name": "vae",
+                    "type": "VAE",
+                    "link": 8
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": [
+                      9
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_decode"
+                }
+              },
+              {
+                "id": 7,
+                "type": "SaveImage",
+                "pos": [
+                  1500,
+                  190
+                ],
+                "size": [
+                  315,
+                  58
+                ],
+                "flags": {},
+                "order": 6,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "images",
+                    "type": "IMAGE",
+                    "link": 9
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_save"
+                },
+                "widgets_values": [
+                  "WAI"
+                ]
+              }
+            ],
+            "links": [
+              [
+                1,
+                1,
+                0,
+                5,
+                0,
+                "MODEL"
+              ],
+              [
+                2,
+                1,
+                1,
+                2,
+                0,
+                "CLIP"
+              ],
+              [
+                3,
+                1,
+                1,
+                3,
+                0,
+                "CLIP"
+              ],
+              [
+                4,
+                2,
+                0,
+                5,
+                1,
+                "CONDITIONING"
+              ],
+              [
+                5,
+                3,
+                0,
+                5,
+                2,
+                "CONDITIONING"
+              ],
+              [
+                6,
+                4,
+                0,
+                5,
+                3,
+                "LATENT"
+              ],
+              [
+                7,
+                5,
+                0,
+                6,
+                0,
+                "LATENT"
+              ],
+              [
+                8,
+                1,
+                2,
+                6,
+                1,
+                "VAE"
+              ],
+              [
+                9,
+                6,
+                0,
+                7,
+                0,
+                "IMAGE"
+              ]
+            ],
+            "groups": [],
+            "config": {},
+            "extra": {
+              "ds": {
+                "scale": 1,
+                "offset": [
+                  0,
+                  0
+                ]
+              }
+            },
+            "version": 0.4
+          }
+        }
+      ],
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/collection-1791979002308/artifact-index.json",
+      "cleanupEvidence": {
+        "status": "stopped",
+        "cleanup": {
+          "portsReleased": true,
+          "processGroupPresent": false
+        },
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/.local/desktop-e2e/72a7aa1b-1a79-4562-934d-1500775c8246/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 64604,
+              "pids": []
+            },
+            {
+              "port": 64605,
+              "pids": []
+            },
+            {
+              "port": 64606,
+              "pids": []
+            }
+          ]
+        },
+        "runId": "72a7aa1b-1a79-4562-934d-1500775c8246",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/.local/desktop-e2e/72a7aa1b-1a79-4562-934d-1500775c8246/run.json",
+        "ports": {
+          "host": 64604,
+          "rendererCdp": 64605,
+          "hostInspector": 64606
+        },
+        "evidenceArchives": [
+          {
+            "runId": "780516aa-a99f-49da-8fa2-d2c4c96bba2c",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/probe-runs/780516aa-a99f-49da-8fa2-d2c4c96bba2c",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/observer-calls/780516aa-a99f-49da-8fa2-d2c4c96bba2c",
+            "archivedAt": "2026-10-14T11:51:15.095Z"
+          },
+          {
+            "runId": "72a7aa1b-1a79-4562-934d-1500775c8246",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/probe-runs/72a7aa1b-1a79-4562-934d-1500775c8246",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/observer-calls/72a7aa1b-1a79-4562-934d-1500775c8246",
+            "archivedAt": "2026-10-14T11:56:48.318Z"
+          }
+        ]
+      },
+      "stoppedProcesses": {
+        "phase": "stopped",
+        "recordedAt": "2026-10-14T11:56:48.450Z",
+        "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV",
+        "processes": []
+      },
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      },
+      "userPromptSubmissions": 1,
+      "turnStarts": [
+        5
+      ],
+      "generationSubmitSeqs": [
+        76
+      ],
+      "runInputQuerySeqs": [
+        90,
+        105
+      ],
+      "catalogDiscovery": {
+        "origin": "首次模型请求已含 NoobAI MCP 工具声明；skill 工具返回安装 Skill 正文，随后完整读取引用。",
+        "catalogCalls": [
+          {
+            "seq": 50,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+          },
+          {
+            "seq": 52,
+            "tool": "mcp__noobai__search_instances",
+            "arguments": "{}"
+          },
+          {
+            "seq": 57,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"1\"}}"
+          },
+          {
+            "seq": 59,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"base_model\",\"id\":\"2\"}}"
+          }
+        ],
+        "retiredCatalogCliInvoked": false,
+        "firstRequestToolDeclarationNames": [
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows"
+        ]
+      },
+      "mediaVerification": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/workspace/5.6-2/run_14a78f62-6c10-4a1c-a107-2964d5bd082c.png",
+          "pngSignature": true,
+          "dimensions": [
+            1536,
+            1536
+          ],
+          "bytes": 2812768
+        }
+      ],
+      "targetBranchVerdict": "通过",
+      "fullContractVerdict": "未通过",
+      "expected": "采用模板29默认模型1，model=null，单张提交并查询Run、媒体，复用成功的同数组Run查询。",
+      "actual": "参数检查后只提交一次；Run与媒体各新增1条。正负Prompt原样，seed20261013，1536×1536，Actual Workflow可用，免费视觉模型实际读取生成媒体。seq90和seq105对同一run_ids重复查询。",
+      "findings": [
+        {
+          "id": "GEN-1",
+          "severity": "medium",
+          "title": "已成功的同数组 Run 查询重复执行",
+          "source": ".agents/skills/comfyui-generate/references/generation-cli.md:113",
+          "eventSeqs": [
+            90,
+            91,
+            105,
+            106
+          ],
+          "detail": "seq91 返回 available 和完整 workflow 且 exit=0；seq105 为落盘再次查询相同唯一 Run。中间没有用户重新查询要求，违反一次查询并复用结果合同。"
+        }
+      ],
+      "visualObservation": {
+        "actualProvider": "openrouter",
+        "actualModel": "thinkingmachines/inkling:free",
+        "toolCallSeq": 125,
+        "toolResultSeq": 126,
+        "visualInput": "生成媒体的工作目录副本",
+        "finding": "观察结果记录光线方向和窗户位置与Prompt的差异。此输入要求生成和查询，未要求迭代达标；无需凭此追加迭代或判默认模型分支失败。"
+      },
+      "sourceBuilderBoundary": "本轮完整Builder JSON通过结构校验，可用于默认模型生成分支。原5.5-2语义失败保持原结论，本轮生成不覆盖该失败。",
+      "timing": {
+        "turnDurationMs": 267304,
+        "taskWithin600000Ms": true,
+        "maxModelCallDurationMs": 21118.0
+      }
+    },
+    {
+      "executionId": "5.6-4:harness-comfyui-cli-candidate",
+      "caseId": "5.6-4",
+      "preset": "harness-comfyui-cli-candidate",
+      "sessionId": "session-ba6a1463-d085-42f8-91eb-1f8685530367",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/materialized-input.json",
+      "fullSubmittedPrompt": "工作目录：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/environment/workspace\n执行 Skill：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md\n任务参数：{\"template_id\":\"29\",\"instance_id\":\"2\",\"count\":1,\"seed\":20261013,\"request\":\"核对模板 29 与用户指定模型 3 的底模兼容性。\",\"model_id\":\"3\"}\n将本任务产物保存到工作目录中的 5.6-4 目录。\n",
+      "promptExactInRequest": true,
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/collection-1791979065290/all-session-records.json",
+      "eventCount": 47,
+      "sequenceContiguous": true,
+      "rawRequestIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/collection-1791979065290/model-request-index.json",
+      "models": {
+        "opencode-go/deepseek-v4.1-flash": 6
+      },
+      "toolResultsInNextRequest": [
+        {
+          "seq": 18,
+          "toolCallId": "call_00_dtpqkytl2ogrnvgmydqmow8a",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/43c6dfce-e696-4fac-be6c-05803f56baa0.jsonl"
+        },
+        {
+          "seq": 20,
+          "toolCallId": "call_01_45q63bhqpvm1zd3xy430ynsy",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/43c6dfce-e696-4fac-be6c-05803f56baa0.jsonl"
+        },
+        {
+          "seq": 25,
+          "toolCallId": "call_00_bzyxr91dz89n8yg2p9pv5sb2",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/93c28668-a127-4731-8730-d51cad067357.jsonl"
+        },
+        {
+          "seq": 27,
+          "toolCallId": "call_01_vg3akiy0qnmtt2sqa3m8ogbc",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/93c28668-a127-4731-8730-d51cad067357.jsonl"
+        },
+        {
+          "seq": 29,
+          "toolCallId": "call_02_o70wh1xn46xuekhicj0q77mp",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/93c28668-a127-4731-8730-d51cad067357.jsonl"
+        },
+        {
+          "seq": 34,
+          "toolCallId": "call_00_g8q6d00b6pcx7kalq37apgjh",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/7cd4c9ab-7529-4c5d-bffd-25be63596263.jsonl"
+        },
+        {
+          "seq": 36,
+          "toolCallId": "call_01_hfh5cgazs6ric0hdgq56m88u",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/7cd4c9ab-7529-4c5d-bffd-25be63596263.jsonl"
+        },
+        {
+          "seq": 41,
+          "toolCallId": "call_00_ve83bv58l0jr2yi24ffgnxso",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/observer/llm-calls/5b87537f-b2cc-4e87-9e0d-145de262e84d.jsonl"
+        }
+      ],
+      "fullReadReferences": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md",
+          "fullTextResultSeqs": [
+            18
+          ]
+        }
+      ],
+      "installedCandidate": {
+        "filesCompared": 200,
+        "allByteEqual": true,
+        "candidate": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/harness-comfyui-candidate.tgz"
+      },
+      "calls": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "arguments": "{\"name\":\"comfyui-generate\"}"
+        },
+        {
+          "seq": 19,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la; echo \\\"---\\\"; ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/environment/workspace\",\"description\":\"List workspace contents\"}"
+        },
+        {
+          "seq": 24,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+        },
+        {
+          "seq": 26,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"3\"}}"
+        },
+        {
+          "seq": 28,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -R /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate\",\"description\":\"List skill reference files\"}"
+        },
+        {
+          "seq": 33,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"id\":\"1\",\"kind\":\"base_model\"}}"
+        },
+        {
+          "seq": 35,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"id\":\"2\",\"kind\":\"base_model\"}}"
+        },
+        {
+          "seq": 40,
+          "name": "bash",
+          "arguments": "{\"command\":\"mkdir -p \\\"5.6-4\\\" && cat > \\\"5.6-4/compatibility-check-template29-model3.md\\\" <<'EOF'\\n# 底模兼容性核对报告\\n\\n- 任务：核对模板 29 与用户指定模型 3 的底模兼容性\\n- 实例：2（兼容性核对不依赖实例运行状态）\\n- 结论：**不兼容** — 模板与指定模型关联的底模不同，不能直接用于创建图片\\n\\n## 1. 查询结果\\n\\n### 1.1 Workflow 模板\\n| 字段 | 值 |\\n| --- | --- |\\n| ref | workflow/29 |\\n| name | wai_basic_txt2img |\\n| workflow_type | text_to_image |\\n| 关联底模 | base_model/2（wai） |\\n| 模板默认模型 | model/1（waiIllustriousSDXL_v170.safetensors），底模 wai |\\n\\n模板节点要点（Classic 格式）：\\n- CheckpointLoaderSimple `wai_checkpoint`：`waiIllustriousSDXL_v170.safetensors`\\n- CLIPTextEncode `wai_positive_prompt` / `wai_negative_prompt`：占位符 `__WAI_POSITIVE_PROMPT_PLACEHOLDER__` / `__WAI_NEGATIVE_PROMPT_PLACEHOLDER__`\\n- EmptyLatentImage `wai_latent`：1024 x 1344，batch 1\\n- KSampler `wai_sampler`：seed 0(fixed), steps 25, cfg 7, euler_ancestral/normal, denoise 1\\n- VAEDecode `wai_decode` → SaveImage `wai_save`（前缀 `WAI`）\\n- 无 LoRA 节点，模板未关联 LoRA\\n\\n### 1.2 用户指定生成模型\\n| 字段 | 值 |\\n| --- | --- |\\n| ref | model/3 |\\n| name | anima-aesthetic-v1.1.safetensors |\\n| file_name | anima-aesthetic-v1.1.safetensors |\\n| file_format / 精度 | safetensors / none |\\n| 关联底模 | base_model/1（anima） |\\n| skill_name | anima-prompt-builder |\\n\\n### 1.3 LoRA\\n本次请求未指定 LoRA，无需核对。\\n\\n### 1.4 底模记录\\n| ref | 名称 |\\n| --- | --- |\\n| base_model/1 | anima |\\n| base_model/2 | wai |\\n\\n## 2. 比较结论\\n\\n| 资源 | 标识 | 关联底模 | 是否一致 |\\n| --- | --- | --- | --- |\\n| Workflow 模板 | workflow/29（wai_basic_txt2img） | base_model/2（wai） | 基准 |\\n| 采用的生成模型 | model/3（anima-aesthetic-v1.1.safetensors） | base_model/1（anima） | **不一致** |\\n\\n- 模板 29 属于 WAI / Illustrious-SDXL 路线（底模 wai），并内嵌 `waiIllustriousSDXL_v170.safetensors` 检查点与 WAI 专用正/负向占位符。\\n- 模型 3 属于 anima 路线（底模 anima），其配套提示词 Skill 为 `anima-prompt-builder`。\\n- 两者底模不同，不满足“Workflow 模板、生成模型、LoRA 必须关联同一底模”的要求，因此该组合不可直接生成图片。\\n\\n## 3. 待用户确认\\n\\n请指定要更换的资源之一：\\n1. 更换 Workflow 模板为 anima 底模模板（保留模型 3）；或\\n2. 更换生成模型为 wai 底模模型（例如模板默认模型 model/1 waiIllustriousSDXL_v170.safetensors，保留模板 29）。\\n\\n在用户给出唯一选择前，不进行创建图片操作。\\nEOF\\necho \\\"[exit code: $?]\\\"; ls -la \\\"5.6-4\\\"\",\"description\":\"Write compatibility report to 5.6-4\"}"
+        }
+      ],
+      "databaseBefore": {
+        "generation_runs": [],
+        "generation_media": [],
+        "generation_run_outputs": []
+      },
+      "databaseAfter": {
+        "generation_runs": [],
+        "generation_media": [],
+        "generation_run_outputs": []
+      },
+      "verifiedRunInputs": [],
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/collection-1791979065290/artifact-index.json",
+      "cleanupEvidence": {
+        "status": "stopped",
+        "cleanup": {
+          "portsReleased": true,
+          "processGroupPresent": false
+        },
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/.local/desktop-e2e/a6bcde28-facf-4b20-8786-5fb13a952718/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 50053,
+              "pids": []
+            },
+            {
+              "port": 50054,
+              "pids": []
+            },
+            {
+              "port": 50055,
+              "pids": []
+            }
+          ]
+        },
+        "runId": "a6bcde28-facf-4b20-8786-5fb13a952718",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2/runtime/.local/desktop-e2e/a6bcde28-facf-4b20-8786-5fb13a952718/run.json",
+        "ports": {
+          "host": 50053,
+          "rendererCdp": 50054,
+          "hostInspector": 50055
+        },
+        "evidenceArchives": [
+          {
+            "runId": "2320edc9-3be2-4f84-bf4c-40ae057cc7e7",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/probe-runs/2320edc9-3be2-4f84-bf4c-40ae057cc7e7",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/observer-calls/2320edc9-3be2-4f84-bf4c-40ae057cc7e7",
+            "archivedAt": "2026-10-14T11:51:28.752Z"
+          },
+          {
+            "runId": "a6bcde28-facf-4b20-8786-5fb13a952718",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/probe-runs/a6bcde28-facf-4b20-8786-5fb13a952718",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-9tXRr2/observer-calls/a6bcde28-facf-4b20-8786-5fb13a952718",
+            "archivedAt": "2026-10-14T11:57:51.209Z"
+          }
+        ]
+      },
+      "stoppedProcesses": {
+        "phase": "stopped",
+        "recordedAt": "2026-10-14T11:57:51.337Z",
+        "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-9tXRr2",
+        "processes": []
+      },
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      },
+      "userPromptSubmissions": 1,
+      "turnStarts": [
+        5
+      ],
+      "generationSubmitSeqs": [],
+      "runInputQuerySeqs": [],
+      "catalogDiscovery": {
+        "origin": "首次模型请求已含 NoobAI MCP 工具声明；skill 工具返回安装 Skill 正文，随后完整读取引用。",
+        "catalogCalls": [
+          {
+            "seq": 24,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+          },
+          {
+            "seq": 26,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"3\"}}"
+          },
+          {
+            "seq": 33,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"id\":\"1\",\"kind\":\"base_model\"}}"
+          },
+          {
+            "seq": 35,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"id\":\"2\",\"kind\":\"base_model\"}}"
+          }
+        ],
+        "retiredCatalogCliInvoked": false,
+        "firstRequestToolDeclarationNames": [
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows"
+        ]
+      },
+      "mediaVerification": [],
+      "targetBranchVerdict": "通过",
+      "fullContractVerdict": "通过",
+      "expected": "只核对模板29和显式模型3的底模，返回资源标识及底模比较，在不一致处分支停止。",
+      "actual": "模板29底模2 wai、模型3底模1 anima；报告不兼容并要求更换。没有提交、Run或媒体新增。",
+      "findings": [],
+      "scopeBoundary": "该输入明确只核对兼容性，足以覆盖底模不一致及停止；未覆盖用户更换后恢复或成功生成。",
+      "timing": {
+        "turnDurationMs": 37446,
+        "taskWithin600000Ms": true,
+        "maxModelCallDurationMs": 9875.0
+      }
+    },
+    {
+      "executionId": "5.6-4:harness-comfyui-iteration",
+      "caseId": "5.6-4",
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-65572b68-32e3-4923-81a5-8153af97cb51",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/materialized-input.json",
+      "fullSubmittedPrompt": "工作目录：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/workspace\n执行 Skill：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md\n任务参数：{\"template_id\":\"29\",\"instance_id\":\"2\",\"count\":1,\"seed\":20261013,\"request\":\"核对模板 29 与用户指定模型 3 的底模兼容性。\",\"model_id\":\"3\"}\n将本任务产物保存到工作目录中的 5.6-4 目录。\n",
+      "promptExactInRequest": true,
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/collection-1791979127434/all-session-records.json",
+      "eventCount": 43,
+      "sequenceContiguous": true,
+      "rawRequestIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/collection-1791979127434/model-request-index.json",
+      "models": {
+        "opencode-go/deepseek-v4.1-flash": 6
+      },
+      "toolResultsInNextRequest": [
+        {
+          "seq": 18,
+          "toolCallId": "call_00_47aboy58sfzre5vfu9ckdnne",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/observer/llm-calls/950f25c3-b5e2-45f6-8a1b-d1246407b577.jsonl"
+        },
+        {
+          "seq": 23,
+          "toolCallId": "call_00_e2plnaahpow2071lkkb0bcv7",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/observer/llm-calls/c4f2b3ef-ed48-45ce-ba05-df2a832eb6b1.jsonl"
+        },
+        {
+          "seq": 25,
+          "toolCallId": "call_01_o5bs8esck8g9r023v9qtvm3j",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/observer/llm-calls/c4f2b3ef-ed48-45ce-ba05-df2a832eb6b1.jsonl"
+        },
+        {
+          "seq": 30,
+          "toolCallId": "call_00_bbpv2q9728cufho5iz7y9xu6",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/observer/llm-calls/bc28ccf8-7d81-43cf-85ec-cfe19dd5a649.jsonl"
+        },
+        {
+          "seq": 32,
+          "toolCallId": "call_01_ftje9mgqpckl4dxr03gv8xah",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/observer/llm-calls/bc28ccf8-7d81-43cf-85ec-cfe19dd5a649.jsonl"
+        },
+        {
+          "seq": 37,
+          "toolCallId": "call_00_ebszuul4uxf9j5neaw5uhg3w",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/observer/llm-calls/064877d7-077b-4423-ac49-b5d750515a95.jsonl"
+        }
+      ],
+      "fullReadReferences": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md",
+          "fullTextResultSeqs": [
+            18
+          ]
+        }
+      ],
+      "installedCandidate": {
+        "filesCompared": 200,
+        "allByteEqual": true,
+        "candidate": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/harness-comfyui-candidate.tgz"
+      },
+      "calls": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "arguments": "{\"name\":\"comfyui-generate\"}"
+        },
+        {
+          "seq": 22,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+        },
+        {
+          "seq": 24,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"3\"}}"
+        },
+        {
+          "seq": 29,
+          "name": "mcp__noobai__search_base_models",
+          "arguments": "{\"query\":\"wai anima\",\"limit\":10}"
+        },
+        {
+          "seq": 31,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/workspace\",\"description\":\"List workspace directory contents\"}"
+        },
+        {
+          "seq": 36,
+          "name": "bash",
+          "arguments": "{\"command\":\"mkdir -p \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/workspace/5.6-4\\\" && cat > \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/workspace/5.6-4/compatibility-check-template29-model3.md\\\" <<'EOF'\\n# 兼容性核对报告：模板 29 × 模型 3\\n\\n## 核对输入\\n- template_id: 29\\n- model_id: 3\\n- LoRA: 无\\n- instance_id: 2（本次仅核对兼容性，未做生成）\\n\\n## 查询结果\\n\\n### Workflow 模板 29\\n- 名称: wai_basic_txt2img\\n- workflow_type: text_to_image\\n- 关联底模: id=2, name=wai\\n- 模板默认模型: id=1, name=waiIllustriousSDXL_v170.safetensors\\n- 其他: 无关联 LoRA\\n\\n### 生成模型 3\\n- 名称: anima-aesthetic-v1.1.safetensors\\n- file_name: anima-aesthetic-v1.1.safetensors\\n- file_format: safetensors\\n- precision_or_quantization: none\\n- 关联底模: id=1, name=anima\\n- 关联 Skill: anima-prompt-builder\\n- 说明/用法: anima-prompt-builder\\n\\n## 底模比较结论\\n| 资源 | 标识 | 关联底模 |\\n| --- | --- | --- |\\n| Workflow 模板 | workflow 29 (wai_basic_txt2img) | base_model 2 (wai) |\\n| 生成模型 | model 3 (anima-aesthetic-v1.1.safetensors) | base_model 1 (anima) |\\n\\n结论：**不兼容**。模板 29 关联底模为 `wai`（id=2），用户指定模型 3 关联底模为 `anima`（id=1），两者不是同一底模。\\n\\n依据 Skill 规则：「Workflow 模板、采用的生成模型和每项 LoRA 必须关联同一底模。存在不同底模时，列出这些资源的标识及关联底模，并等待用户指定要更换的 Workflow 模板、生成模型或 LoRA。」\\n\\n## 需要用户决定\\n请指定以下之一：\\n1. 更换 Workflow 模板为关联 `anima` 底模的模板；或\\n2. 更换生成模型为关联 `wai` 底模的模型（例如模板默认模型 id=1: waiIllustriousSDXL_v170.safetensors）。\\n\\n本次未提交任何生成请求。\\nEOF\\necho written; ls -la \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/environment/workspace/5.6-4\\\"\",\"description\":\"Write compatibility report to 5.6-4\"}"
+        }
+      ],
+      "databaseBefore": {
+        "generation_runs": [],
+        "generation_media": [],
+        "generation_run_outputs": []
+      },
+      "databaseAfter": {
+        "generation_runs": [],
+        "generation_media": [],
+        "generation_run_outputs": []
+      },
+      "verifiedRunInputs": [],
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/collection-1791979127434/artifact-index.json",
+      "cleanupEvidence": {
+        "status": "stopped",
+        "cleanup": {
+          "portsReleased": true,
+          "processGroupPresent": false
+        },
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/.local/desktop-e2e/2d27f4bf-f43c-41a3-b853-d353083ca5b9/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 50714,
+              "pids": []
+            },
+            {
+              "port": 50715,
+              "pids": []
+            },
+            {
+              "port": 50716,
+              "pids": []
+            }
+          ]
+        },
+        "runId": "2d27f4bf-f43c-41a3-b853-d353083ca5b9",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY/runtime/.local/desktop-e2e/2d27f4bf-f43c-41a3-b853-d353083ca5b9/run.json",
+        "ports": {
+          "host": 50714,
+          "rendererCdp": 50715,
+          "hostInspector": 50716
+        },
+        "evidenceArchives": [
+          {
+            "runId": "42e0f3a9-f0b0-4e66-a4f7-77d70059a47a",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/probe-runs/42e0f3a9-f0b0-4e66-a4f7-77d70059a47a",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/observer-calls/42e0f3a9-f0b0-4e66-a4f7-77d70059a47a",
+            "archivedAt": "2026-10-14T11:51:43.598Z"
+          },
+          {
+            "runId": "2d27f4bf-f43c-41a3-b853-d353083ca5b9",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/probe-runs/2d27f4bf-f43c-41a3-b853-d353083ca5b9",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-OFRGHY/observer-calls/2d27f4bf-f43c-41a3-b853-d353083ca5b9",
+            "archivedAt": "2026-10-14T11:58:53.259Z"
+          }
+        ]
+      },
+      "stoppedProcesses": {
+        "phase": "stopped",
+        "recordedAt": "2026-10-14T11:58:53.387Z",
+        "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OFRGHY",
+        "processes": []
+      },
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      },
+      "userPromptSubmissions": 1,
+      "turnStarts": [
+        5
+      ],
+      "generationSubmitSeqs": [],
+      "runInputQuerySeqs": [],
+      "catalogDiscovery": {
+        "origin": "首次模型请求已含 NoobAI MCP 工具声明；skill 工具返回安装 Skill 正文，随后完整读取引用。",
+        "catalogCalls": [
+          {
+            "seq": 22,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+          },
+          {
+            "seq": 24,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"3\"}}"
+          },
+          {
+            "seq": 29,
+            "tool": "mcp__noobai__search_base_models",
+            "arguments": "{\"query\":\"wai anima\",\"limit\":10}"
+          }
+        ],
+        "retiredCatalogCliInvoked": false,
+        "firstRequestToolDeclarationNames": [
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows"
+        ]
+      },
+      "mediaVerification": [],
+      "targetBranchVerdict": "通过",
+      "fullContractVerdict": "通过",
+      "expected": "只核对模板29和显式模型3的底模，返回资源标识及底模比较，在不一致处分支停止。",
+      "actual": "模板29底模2 wai、模型3底模1 anima；报告不兼容并要求更换。没有提交、Run或媒体新增。",
+      "findings": [],
+      "scopeBoundary": "该输入明确只核对兼容性，足以覆盖底模不一致及停止；未覆盖用户更换后恢复或成功生成。",
+      "timing": {
+        "turnDurationMs": 40353,
+        "taskWithin600000Ms": true,
+        "maxModelCallDurationMs": 12460.0
+      }
+    },
+    {
+      "executionId": "5.6-7:harness-comfyui-iteration",
+      "caseId": "5.6-7",
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-d6d13d55-2592-4e5b-935f-7b412b43e16e",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/materialized-input.json",
+      "fullSubmittedPrompt": "工作目录：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace\n执行 Skill：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md\n任务参数：{\"request\":\"搜索 wai_basic_txt2img 模板并展示候选，供我选择后使用默认模型创建一张图片。\",\"instance_id\":\"2\",\"count\":1,\"seed\":20261013}\n将本任务产物保存到工作目录中的 5.6-7 目录。\n\n用于创建图片的完整 Prompt Builder 结果 JSON：\n```json\n{\n  \"model_route\": \"wai-illustrious-sdxl\",\n  \"positive_prompt\": \"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\",\n  \"negative_mode\": \"native_negative\",\n  \"negative_prompt\": \"bad quality, worst quality, worst detail, sketch, censor\",\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 1536,\n  \"height\": 1536,\n  \"megapixels\": 2.25\n}\n\n```",
+      "promptExactInRequest": true,
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/collection-1791979331568/all-session-records.json",
+      "eventCount": 118,
+      "sequenceContiguous": true,
+      "rawRequestIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/collection-1791979331568/model-request-index.json",
+      "models": {
+        "opencode-go/deepseek-v4.1-flash": 18
+      },
+      "toolResultsInNextRequest": [
+        {
+          "seq": 19,
+          "toolCallId": "call_00_ka49p1ft4zh30r6wp2l47mid",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/a260a1fc-bb0f-4063-b2f4-d89d12aae9a5.jsonl"
+        },
+        {
+          "seq": 24,
+          "toolCallId": "call_00_jlxypzz7z9kro2jw5fwpr4qo",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/84bc9ab4-c95d-433b-9e1f-053c4d9f9ae0.jsonl"
+        },
+        {
+          "seq": 26,
+          "toolCallId": "call_01_710goep969lo7cf3exyfgfib",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/84bc9ab4-c95d-433b-9e1f-053c4d9f9ae0.jsonl"
+        },
+        {
+          "seq": 31,
+          "toolCallId": "call_00_jlhbpkgs3cct3rihjh9neskn",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/70e41cd0-530f-44e6-9fcc-383b6c88d07d.jsonl"
+        },
+        {
+          "seq": 33,
+          "toolCallId": "call_01_52qg5x6ebpran8fi1fdsxdjm",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/70e41cd0-530f-44e6-9fcc-383b6c88d07d.jsonl"
+        },
+        {
+          "seq": 38,
+          "toolCallId": "call_00_bbowrr5flnh310van7sydyhi",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/42e878a8-8ddf-4db1-9e87-2e170e3d4774.jsonl"
+        },
+        {
+          "seq": 40,
+          "toolCallId": "call_01_ppzms8b3lsg3ze5ngcochgez",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/42e878a8-8ddf-4db1-9e87-2e170e3d4774.jsonl"
+        },
+        {
+          "seq": 45,
+          "toolCallId": "call_00_mztxlr6rss12ixcx7vr3gpyw",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/51e37582-1cda-4e2a-abf9-cc2766556b12.jsonl"
+        },
+        {
+          "seq": 47,
+          "toolCallId": "call_01_hzzzjivyxvsrp5x29x51vzc9",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/51e37582-1cda-4e2a-abf9-cc2766556b12.jsonl"
+        },
+        {
+          "seq": 52,
+          "toolCallId": "call_00_gcsy2pkqkq1ia008ei6n9gw9",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/6d5b7dec-a9b1-478b-9ce0-99d61635230d.jsonl"
+        },
+        {
+          "seq": 54,
+          "toolCallId": "call_01_s0sapxlrdb27h3cx2x705m3t",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/6d5b7dec-a9b1-478b-9ce0-99d61635230d.jsonl"
+        },
+        {
+          "seq": 56,
+          "toolCallId": "call_02_u4kz0h26nby7mac9tdxot06z",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/6d5b7dec-a9b1-478b-9ce0-99d61635230d.jsonl"
+        },
+        {
+          "seq": 61,
+          "toolCallId": "call_00_tqdy4c17rk9eilu2695xo84z",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/f6938447-0e1b-4fe3-9023-1f5d70d5567f.jsonl"
+        },
+        {
+          "seq": 63,
+          "toolCallId": "call_01_jk9k33ygpkb7uovl0mzrt6wa",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/f6938447-0e1b-4fe3-9023-1f5d70d5567f.jsonl"
+        },
+        {
+          "seq": 68,
+          "toolCallId": "call_00_hftm5zsgyhkh6ipmem5t7md9",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/576b46d2-20ce-4e97-9a23-1662e814b6ad.jsonl"
+        },
+        {
+          "seq": 70,
+          "toolCallId": "call_01_as9ygd0ydjpeetvxczpxxnh6",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/576b46d2-20ce-4e97-9a23-1662e814b6ad.jsonl"
+        },
+        {
+          "seq": 75,
+          "toolCallId": "call_00_ddg6dxomxxle0sg77zeyrera",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/b52e6229-09b0-452e-9cd8-e71b03d6b91b.jsonl"
+        },
+        {
+          "seq": 80,
+          "toolCallId": "call_00_wtoqtth4losoe2ra3515x3y7",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/6055816a-777d-4616-8cad-32a9476509e2.jsonl"
+        },
+        {
+          "seq": 82,
+          "toolCallId": "call_01_q3ynbi84o2hr370s3tz0rhe4",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/6055816a-777d-4616-8cad-32a9476509e2.jsonl"
+        },
+        {
+          "seq": 87,
+          "toolCallId": "call_00_lbjmyk7gr27ko53qb7skw71w",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/4d5873c4-296e-4238-9e6f-a23a1f662ffc.jsonl"
+        },
+        {
+          "seq": 92,
+          "toolCallId": "call_00_kx3bnd8qhcigtu6pbnh9eonh",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/9ffcfa50-2b82-4267-900d-85e059a9b6f9.jsonl"
+        },
+        {
+          "seq": 97,
+          "toolCallId": "call_00_a9w0g1ak97ppcgtov02huvpq",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/0d18644e-673d-4128-a97e-ce0522b7ea5f.jsonl"
+        },
+        {
+          "seq": 102,
+          "toolCallId": "call_00_gsfr1w02hj6ox0ztcl7egaf1",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/859f41c7-c6ab-442b-950d-bb789668f5d3.jsonl"
+        },
+        {
+          "seq": 107,
+          "toolCallId": "call_00_7gvi0q4f5uomftg698g25564",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/4170b03e-2300-46dc-a9ac-af126425a9a6.jsonl"
+        },
+        {
+          "seq": 112,
+          "toolCallId": "call_00_scmwdrxw9dovg048oyl0orv1",
+          "exactInNextRequest": true,
+          "firstExactRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/observer/llm-calls/636a3891-ed6a-4823-9c04-26b2760e5d9a.jsonl"
+        }
+      ],
+      "fullReadReferences": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md",
+          "fullTextResultSeqs": [
+            19
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+          "fullTextResultSeqs": [
+            45
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md",
+          "fullTextResultSeqs": [
+            40
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json",
+          "fullTextResultSeqs": [
+            38
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md",
+          "fullTextResultSeqs": [
+            38
+          ]
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
+          "fullTextResultSeqs": [
+            38
+          ]
+        }
+      ],
+      "installedCandidate": {
+        "filesCompared": 200,
+        "allByteEqual": true,
+        "candidate": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/harness-comfyui-candidate.tgz"
+      },
+      "calls": [
+        {
+          "seq": 18,
+          "name": "skill",
+          "arguments": "{\"name\":\"comfyui-generate\"}"
+        },
+        {
+          "seq": 23,
+          "name": "mcp__noobai__search_workflows",
+          "arguments": "{\"query\":\"wai_basic_txt2img\",\"limit\":10}"
+        },
+        {
+          "seq": 25,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "arguments": "{\"level\":\"roots\"}"
+        },
+        {
+          "seq": 30,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/\",\"description\":\"List skill reference files\"}"
+        },
+        {
+          "seq": 32,
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/\",\"description\":\"List workspace contents\"}"
+        },
+        {
+          "seq": 37,
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/ && cat prompt-result-contract.md && echo \\\"=====SCHEMA=====\\\" && cat prompt-result-schema.json && echo \\\"=====ROUTES=====\\\" && cat prompt-builder-model-routes.json\",\"description\":\"Read prompt result contract, schema, routes\"}"
+        },
+        {
+          "seq": 39,
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/ && cat generation-cli.md\",\"description\":\"Read generation CLI reference\"}"
+        },
+        {
+          "seq": 44,
+          "name": "bash",
+          "arguments": "{\"command\":\"cat /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md\",\"description\":\"Read template parameter inspection reference\"}"
+        },
+        {
+          "seq": 46,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+        },
+        {
+          "seq": 51,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"1\"}}"
+        },
+        {
+          "seq": 53,
+          "name": "mcp__noobai__search_instances",
+          "arguments": "{}"
+        },
+        {
+          "seq": 55,
+          "name": "bash",
+          "arguments": "{\"command\":\"env | grep -i '^DSH_' | sed 's/\\\\(TOKEN\\\\|KEY\\\\|SECRET\\\\)=.*/\\\\1=<redacted>/'\",\"description\":\"Inspect DSH environment variables\"}"
+        },
+        {
+          "seq": 60,
+          "name": "mcp__noobai__get_instance_status",
+          "arguments": "{\"instance_id\":\"2\"}"
+        },
+        {
+          "seq": 62,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation inspect-template-parameters --stdin <<'JSON'\\n{\\\"template_id\\\":\\\"29\\\",\\\"instance_id\\\":\\\"2\\\"}\\nJSON\\necho \\\"[exit code: $?]\\\"\",\"description\":\"Inspect wai_basic_txt2img template parameters\"}"
+        },
+        {
+          "seq": 67,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --help 2>&1 | head -60; echo \\\"[exit code: $?]\\\"\",\"description\":\"Show CLI top-level help\"}"
+        },
+        {
+          "seq": 69,
+          "name": "bash",
+          "arguments": "{\"command\":\"mkdir -p \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7\\\" && ls -la \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/\\\"\",\"description\":\"Create output directory 5.6-7\"}"
+        },
+        {
+          "seq": 74,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" generation --help 2>&1 | head -80; echo \\\"[exit code: $?]\\\"\",\"description\":\"Show generation subcommand help\"}"
+        },
+        {
+          "seq": 79,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" generation resolve-media --help 2>&1 | head -40\",\"description\":\"Show resolve-media help\"}"
+        },
+        {
+          "seq": 81,
+          "name": "bash",
+          "arguments": "{\"command\":\"OUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7\\\"\\ncat > \\\"$OUT/generation-request.json\\\" <<'JSON'\\n{\\n  \\\"title\\\": \\\"图片 1\\\",\\n  \\\"instance_id\\\": \\\"2\\\",\\n  \\\"template_id\\\": \\\"29\\\",\\n  \\\"model\\\": null,\\n  \\\"parameters\\\": {\\n    \\\"positive_prompt\\\": \\\"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\\\\\(Grok\\\\\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\\\",\\n    \\\"negative_prompt\\\": \\\"bad quality, worst quality, worst detail, sketch, censor\\\",\\n    \\\"seed\\\": 20261013,\\n    \\\"width\\\": 1536,\\n    \\\"height\\\": 1536,\\n    \\\"batch_size\\\": 1\\n  },\\n  \\\"loras\\\": []\\n}\\nJSON\\npython3 -c \\\"\\nimport json,sys\\nd=json.load(open('$OUT/generation-request.json'))\\nprint('props:',sorted(d.keys()))\\nprint('params keys:',sorted(d['parameters'].keys()))\\nprint('positive:',d['parameters']['positive_prompt'])\\nprint('seed:',d['parameters']['seed'],type(d['parameters']['seed']).__name__)\\n\\\"\",\"description\":\"Write and verify generation request JSON\"}"
+        },
+        {
+          "seq": 86,
+          "name": "bash",
+          "arguments": "{\"command\":\"OUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7\\\"\\nELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation submit --stdin < \\\"$OUT/generation-request.json\\\"\\necho \\\"[exit code: $?]\\\"\",\"description\":\"Submit generation request to instance\"}"
+        },
+        {
+          "seq": 91,
+          "name": "bash",
+          "arguments": "{\"command\":\"for i in $(seq 1 10); do\\n  sleep 15\\n  R=$(ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation resolve-media --stdin <<'JSON' 2>/dev/null\\n{\\\"run_ids\\\":[\\\"run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0\\\"]}\\nJSON\\n)\\n  echo \\\"attempt $i: $R\\\"\\n  if echo \\\"$R\\\" | grep -q 'file_path'; then echo \\\"IMAGE_READY\\\"; break; fi\\ndone\",\"description\":\"Poll resolve-media until image appears\",\"timeoutMs\":180000}"
+        },
+        {
+          "seq": 96,
+          "name": "bash",
+          "arguments": "{\"command\":\"SRC=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/dsh-home/data/plugins/harness-comfyui/media/4e/4e/media_4e4ed620-4791-4232-82b0-8777a8f96412.png\\\"\\nOUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7\\\"\\ncp \\\"$SRC\\\" \\\"$OUT/run_9039cd8f_WAI_00047_.png\\\" && echo \\\"copied\\\"\\nls -la \\\"$OUT\\\"\\npython3 - \\\"$OUT/run_9039cd8f_WAI_00047_.png\\\" <<'PY'\\nimport struct,sys\\np=sys.argv[1]\\nd=open(p,'rb').read(33)\\nassert d[:8]==b'\\\\x89PNG\\\\r\\\\n\\\\x1a\\\\n', 'not png'\\nw,h=struct.unpack('>II', d[16:24])\\nprint('PNG ok, size =', w, 'x', h)\\nPY\",\"description\":\"Copy image to output dir and verify\"}"
+        },
+        {
+          "seq": 101,
+          "name": "bash",
+          "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation run-inputs --stdin <<'JSON' > /tmp/runinputs.json 2>/tmp/runinputs.err\\n{\\\"run_ids\\\":[\\\"run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0\\\"]}\\nJSON\\necho \\\"[exit code: $?]\\\"; python3 -c \\\"\\nimport json\\nd=json.load(open('/tmp/runinputs.json'))\\nr=d['runs'][0]\\nprint('lookup_status:',r['lookup_status'])\\nprint('workflow_status:',r.get('workflow_status'))\\nprint('template_id:',r['arguments']['template_id'])\\nprint('instance_id:',r['arguments'].get('instance_id'))\\nprint('model:',r['arguments'].get('model'))\\nprint('loras:',r['arguments']['loras'])\\nprint('title:',r['arguments']['title'])\\n\\\"\",\"description\":\"Verify saved run inputs and actual workflow\"}"
+        },
+        {
+          "seq": 106,
+          "name": "bash",
+          "arguments": "{\"command\":\"OUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7\\\"\\ncp /tmp/runinputs.json \\\"$OUT/run-inputs.json\\\"\\ncat > \\\"$OUT/生成报告.md\\\" <<'MD'\\n# wai_basic_txt2img 生成报告\\n\\n## 1. Workflow 模板搜索结果（query: wai_basic_txt2img）\\n\\n| 顺序 | 模板 ID | 名称 | 底模 | 保存的默认模型 | 用途 |\\n| --- | --- | --- | --- | --- | --- |\\n| 1 | 29 | **wai_basic_txt2img** | wai (2) | waiIllustriousSDXL_v170.safetensors (1) | text_to_image |\\n| 2 | 37 | wai_txt2img_lora | wai (2) | waiIllustriousSDXL_v170.safetensors (1) | text_to_image_lora |\\n| 3 | 28 | wai_2pass_upscale | wai (2) | waiIllustriousSDXL_v170.safetensors (1) | text_to_image_second_pass |\\n| 4 | 40 | wai-rin模型_V37_年龄lora_8步加速lora_nsfw_face细化 | wai (2) | rinSoftsketch_v20.safetensors (15) | text_to_image_lora |\\n| 5 | 27 | krea2_txt2img_unet 1.2.0 | krea2 (3) | Krea2-MuseByStable_v15Turbo_fp8.safetensors (11) | text_to_image |\\n| 6 | 24 | krea2_txt2img_gguf 1.2.0 | krea2 (3) | Krea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf (13) | text_to_image |\\n| 7 | 23 | krea2_txt2img_gguf 1.1.0 | krea2 (3) | Krea2-红redcraft2KREA2Edition_GGUF_Q4.gguf (13) | text_to_image |\\n| 8 | 33 | Anima Preview3文生图 | anima (1) | anima-preview3-base.safetensors (9) | text_to_image |\\n| 9 | 18 | krea2_gguf_lora_txt2img 1.2.0 | krea2 (3) | Krea2-...GGUF_Q4.gguf (13) + LoRA 8 | text_to_image_lora |\\n| 10 | 42 | turboloar_4步加速_另加一个lora_krea2 | krea2 (3) | Krea2-MuseByStable_v15Turbo_fp8.safetensors (11) | text_to_image |\\n\\n结果共 10 项（首页）。用户指定名称 `wai_basic_txt2img` 与候选 1 名称完全一致，据此选中 **template_id = 29**。\\n\\n## 2. 选择核对\\n\\n- template_id：29（wai_basic_txt2img），底模 wai (id 2)\\n- 生成模型：用户未显式指定 → 采用模板默认模型 model id 1 `waiIllustriousSDXL_v170.safetensors`（file_name 一致，底模 wai (id 2)，skill_name = wai-sdxl-prompt-builder）\\n- LoRA：无（已选 LoRA ID 列表为空）\\n- 底模一致性：模板、模型、LoRA 均关联底模 wai (2) ✓\\n- 实例：NoobAI 实例列表首个 = instance_id 2（win3080, http://192.168.110.122:8188/，reachable，RTX 3080 20GB）\\n\\n## 3. Prompt Builder 结果校验（结论：有效）\\n\\n- 结构校验：10 个必填属性齐全，无额外属性，枚举值与类型符合 schema ✓\\n- 模型路线校验：`wai-illustrious-sdxl` → skill_name `wai-sdxl-prompt-builder`；模型 1 的 skill_name 相同 ✓\\n- 负向模式校验：`native_negative`，negative_prompt 非空，positive_avoidance 为 null ✓\\n- 图片尺寸校验：gcd(1536,1536)=1536 → \\\"1:1\\\" 与 aspect_ratio 一致；|1536×1536/1e6 − 2.25| ÷ 2.25 = 0.0486 ≤ 0.05 ✓\\n\\n## 4. Workflow 参数检查（template 29 @ instance 2）\\n\\n- positive_prompt / negative_prompt：string ✓（kind 唯一）\\n- seed：integer，0 ~ 18446744073709552000，用户给定 20261013 ✓\\n- batch_size：integer，1 ✓\\n- 尺寸候选：`width_height:width:height`，width/height 为 integer，16 ~ 16384 → 1536×1536 为直接匹配 ✓\\n\\n## 5. Generation Request\\n\\n见同目录 `generation-request.json`：title 图片 1，instance_id 2，template_id 29，model = null（采用模板默认模型），\\nparameters: positive_prompt / negative_prompt / seed 20261013 / width 1536 / height 1536 / batch_size 1，loras = []。\\n\\n## 6. 提交结果\\n\\n- run_id：`run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0`\\n- 回查（generation run-inputs）：lookup_status = available，workflow_status = available，template_id 29，instance_id 2，model 未显式覆盖（null），loras [] ✓\\n- 产物图片：`WAI_00047_.png`，1536×1536 PNG，节点 7（SaveImage）\\n- 本目录副本：`run_9039cd8f_WAI_00047_.png`\\nMD\\nls -la \\\"$OUT\\\"\",\"description\":\"Write generation report to output dir\"}"
+        },
+        {
+          "seq": 111,
+          "name": "bash",
+          "arguments": "{\"command\":\"OUT=\\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7\\\"\\npython3 - \\\"$OUT/生成报告.md\\\" <<'PY'\\nimport sys\\np=sys.argv[1]\\ns=open(p,encoding='utf-8').read()\\nbad=\\\"| 7 | 23 | krea2_txt2img_gguf 1.1.0 | krea2 (3) | Krea2-红redcraft2KREA2Edition_GGUF_Q4.gguf (13) | text_to_image |\\\"\\ngood=\\\"| 7 | 23 | krea2_txt2img_gguf 1.1.0 | krea2 (3) | Krea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf (13) | text_to_image |\\\"\\nassert bad in s\\nopen(p,'w',encoding='utf-8').write(s.replace(bad,good))\\nprint(\\\"fixed row 7\\\")\\nPY\\nsed -n '5,18p' \\\"$OUT/生成报告.md\\\"\",\"description\":\"Fix model name in report table\"}"
+        }
+      ],
+      "databaseBefore": {
+        "generation_runs": [],
+        "generation_media": [],
+        "generation_run_outputs": []
+      },
+      "databaseAfter": {
+        "generation_runs": [
+          {
+            "run_id": "run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0",
+            "workspace_id": "26893fe8-4869-40c8-81d0-ff64f5a392cb",
+            "session_id": "session-d6d13d55-2592-4e5b-935f-7b412b43e16e",
+            "turn": 1,
+            "call_id": "call_00_lbjmyk7gr27ko53qb7skw71w",
+            "title": "图片 1",
+            "instance_id": "2",
+            "instance_title": "win3080",
+            "instance_origin": "http://192.168.110.122:8188",
+            "template_id": "29",
+            "template_title": "wai_basic_txt2img",
+            "status": "succeeded",
+            "revision": 5,
+            "prompt_id": "3fb0ac5e-9b70-448b-8c08-9a53a8d0e194",
+            "request_json": "{\"instanceId\":\"2\",\"loras\":[],\"model\":null,\"parameters\":{\"batch_size\":1,\"height\":1536,\"negative_prompt\":\"bad quality, worst quality, worst detail, sketch, censor\",\"positive_prompt\":\"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\",\"seed\":20261013,\"width\":1536},\"templateId\":\"29\",\"title\":\"图片 1\"}",
+            "source_snapshot_path": "workspaces/26893fe8-4869-40c8-81d0-ff64f5a392cb/runs/run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0/source-snapshot.json",
+            "actual_workflow_path": "workspaces/26893fe8-4869-40c8-81d0-ff64f5a392cb/runs/run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0/actual-workflow.json",
+            "api_workflow_path": "workspaces/26893fe8-4869-40c8-81d0-ff64f5a392cb/runs/run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0/api-workflow.json",
+            "expected_output_node_ids_json": "[\"7\"]",
+            "missing_observed_at": null,
+            "error_code": null,
+            "error_message": null,
+            "created_at": 1791979232973,
+            "updated_at": 1791979251567
+          }
+        ],
+        "generation_media": [
+          {
+            "media_id": "media_4e4ed620-4791-4232-82b0-8777a8f96412",
+            "run_id": "run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0",
+            "workspace_id": "26893fe8-4869-40c8-81d0-ff64f5a392cb",
+            "session_id": "session-d6d13d55-2592-4e5b-935f-7b412b43e16e",
+            "turn": 1,
+            "node_id": "7",
+            "output_index": 0,
+            "media_kind": "image",
+            "filename": "WAI_00047_.png",
+            "relative_path": "4e/4e/media_4e4ed620-4791-4232-82b0-8777a8f96412.png",
+            "media_type": "image/png",
+            "byte_size": 2812768,
+            "created_at": 1791979251566
+          }
+        ],
+        "generation_run_outputs": [
+          {
+            "run_id": "run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0",
+            "node_id": "7",
+            "output_index": 0,
+            "media_kind": "image",
+            "filename": "WAI_00047_.png",
+            "subfolder": "",
+            "output_type": "output"
+          }
+        ]
+      },
+      "verifiedRunInputs": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7/run-inputs.json",
+          "runId": "run_9039cd8f-0cf5-4d30-9e57-9ab1b97ad6e0",
+          "lookupStatus": "available",
+          "workflowStatus": "available",
+          "arguments": {
+            "title": "图片 1",
+            "instance_id": "2",
+            "template_id": "29",
+            "parameters": {
+              "batch_size": 1,
+              "height": 1536,
+              "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor",
+              "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast",
+              "seed": 20261013,
+              "width": 1536
+            },
+            "loras": []
+          },
+          "positiveExact": true,
+          "negativeExact": true,
+          "actualWorkflow": {
+            "last_node_id": 7,
+            "last_link_id": 9,
+            "nodes": [
+              {
+                "id": 1,
+                "type": "CheckpointLoaderSimple",
+                "pos": [
+                  40,
+                  180
+                ],
+                "size": [
+                  315,
+                  98
+                ],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "outputs": [
+                  {
+                    "name": "MODEL",
+                    "type": "MODEL",
+                    "links": [
+                      1
+                    ]
+                  },
+                  {
+                    "name": "CLIP",
+                    "type": "CLIP",
+                    "links": [
+                      2,
+                      3
+                    ]
+                  },
+                  {
+                    "name": "VAE",
+                    "type": "VAE",
+                    "links": [
+                      8
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_checkpoint"
+                },
+                "widgets_values": [
+                  "waiIllustriousSDXL_v170.safetensors"
+                ]
+              },
+              {
+                "id": 2,
+                "type": "CLIPTextEncode",
+                "pos": [
+                  400,
+                  50
+                ],
+                "size": [
+                  420,
+                  180
+                ],
+                "flags": {},
+                "order": 1,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "clip",
+                    "type": "CLIP",
+                    "link": 2
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [
+                      4
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_positive_prompt"
+                },
+                "widgets_values": [
+                  "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast"
+                ]
+              },
+              {
+                "id": 3,
+                "type": "CLIPTextEncode",
+                "pos": [
+                  400,
+                  270
+                ],
+                "size": [
+                  420,
+                  180
+                ],
+                "flags": {},
+                "order": 2,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "clip",
+                    "type": "CLIP",
+                    "link": 3
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [
+                      5
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_negative_prompt"
+                },
+                "widgets_values": [
+                  "bad quality, worst quality, worst detail, sketch, censor"
+                ]
+              },
+              {
+                "id": 4,
+                "type": "EmptyLatentImage",
+                "pos": [
+                  400,
+                  510
+                ],
+                "size": [
+                  315,
+                  106
+                ],
+                "flags": {},
+                "order": 3,
+                "mode": 0,
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": [
+                      6
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_latent"
+                },
+                "widgets_values": [
+                  1536,
+                  1536,
+                  1
+                ]
+              },
+              {
+                "id": 5,
+                "type": "KSampler",
+                "pos": [
+                  890,
+                  180
+                ],
+                "size": [
+                  315,
+                  274
+                ],
+                "flags": {},
+                "order": 4,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "model",
+                    "type": "MODEL",
+                    "link": 1
+                  },
+                  {
+                    "name": "positive",
+                    "type": "CONDITIONING",
+                    "link": 4
+                  },
+                  {
+                    "name": "negative",
+                    "type": "CONDITIONING",
+                    "link": 5
+                  },
+                  {
+                    "name": "latent_image",
+                    "type": "LATENT",
+                    "link": 6
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": [
+                      7
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_sampler"
+                },
+                "widgets_values": [
+                  20261013,
+                  "fixed",
+                  25,
+                  7,
+                  "euler_ancestral",
+                  "normal",
+                  1
+                ]
+              },
+              {
+                "id": 6,
+                "type": "VAEDecode",
+                "pos": [
+                  1250,
+                  190
+                ],
+                "size": [
+                  210,
+                  82
+                ],
+                "flags": {},
+                "order": 5,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "samples",
+                    "type": "LATENT",
+                    "link": 7
+                  },
+                  {
+                    "name": "vae",
+                    "type": "VAE",
+                    "link": 8
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": [
+                      9
+                    ]
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_decode"
+                }
+              },
+              {
+                "id": 7,
+                "type": "SaveImage",
+                "pos": [
+                  1500,
+                  190
+                ],
+                "size": [
+                  315,
+                  58
+                ],
+                "flags": {},
+                "order": 6,
+                "mode": 0,
+                "inputs": [
+                  {
+                    "name": "images",
+                    "type": "IMAGE",
+                    "link": 9
+                  }
+                ],
+                "properties": {
+                  "Node name for S&R": "wai_save"
+                },
+                "widgets_values": [
+                  "WAI"
+                ]
+              }
+            ],
+            "links": [
+              [
+                1,
+                1,
+                0,
+                5,
+                0,
+                "MODEL"
+              ],
+              [
+                2,
+                1,
+                1,
+                2,
+                0,
+                "CLIP"
+              ],
+              [
+                3,
+                1,
+                1,
+                3,
+                0,
+                "CLIP"
+              ],
+              [
+                4,
+                2,
+                0,
+                5,
+                1,
+                "CONDITIONING"
+              ],
+              [
+                5,
+                3,
+                0,
+                5,
+                2,
+                "CONDITIONING"
+              ],
+              [
+                6,
+                4,
+                0,
+                5,
+                3,
+                "LATENT"
+              ],
+              [
+                7,
+                5,
+                0,
+                6,
+                0,
+                "LATENT"
+              ],
+              [
+                8,
+                1,
+                2,
+                6,
+                1,
+                "VAE"
+              ],
+              [
+                9,
+                6,
+                0,
+                7,
+                0,
+                "IMAGE"
+              ]
+            ],
+            "groups": [],
+            "config": {},
+            "extra": {
+              "ds": {
+                "scale": 1,
+                "offset": [
+                  0,
+                  0
+                ]
+              }
+            },
+            "version": 0.4
+          }
+        }
+      ],
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/collection-1791979331568/artifact-index.json",
+      "cleanupEvidence": {
+        "status": "stopped",
+        "cleanup": {
+          "portsReleased": true,
+          "processGroupPresent": false
+        },
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/.local/desktop-e2e/bbfb1106-ca15-4acf-9475-e3bb00b8c0c6/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 51187,
+              "pids": []
+            },
+            {
+              "port": 51188,
+              "pids": []
+            },
+            {
+              "port": 51189,
+              "pids": []
+            }
+          ]
+        },
+        "runId": "bbfb1106-ca15-4acf-9475-e3bb00b8c0c6",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/.local/desktop-e2e/bbfb1106-ca15-4acf-9475-e3bb00b8c0c6/run.json",
+        "ports": {
+          "host": 51187,
+          "rendererCdp": 51188,
+          "hostInspector": 51189
+        },
+        "evidenceArchives": [
+          {
+            "runId": "1a0d8114-f6a0-48b6-856a-617c8df64e79",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/probe-runs/1a0d8114-f6a0-48b6-856a-617c8df64e79",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/observer-calls/1a0d8114-f6a0-48b6-856a-617c8df64e79",
+            "archivedAt": "2026-10-14T11:51:57.083Z"
+          },
+          {
+            "runId": "bbfb1106-ca15-4acf-9475-e3bb00b8c0c6",
+            "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/probe-runs/bbfb1106-ca15-4acf-9475-e3bb00b8c0c6",
+            "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-bBcmZh/observer-calls/bbfb1106-ca15-4acf-9475-e3bb00b8c0c6",
+            "archivedAt": "2026-10-14T12:02:17.521Z"
+          }
+        ]
+      },
+      "stoppedProcesses": {
+        "phase": "stopped",
+        "recordedAt": "2026-10-14T12:02:17.650Z",
+        "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh",
+        "processes": []
+      },
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      },
+      "userPromptSubmissions": 1,
+      "turnStarts": [
+        5
+      ],
+      "generationSubmitSeqs": [
+        86
+      ],
+      "runInputQuerySeqs": [
+        101
+      ],
+      "catalogDiscovery": {
+        "origin": "首次模型请求已含 NoobAI MCP 工具声明；skill 工具返回安装 Skill 正文，随后完整读取引用。",
+        "catalogCalls": [
+          {
+            "seq": 23,
+            "tool": "mcp__noobai__search_workflows",
+            "arguments": "{\"query\":\"wai_basic_txt2img\",\"limit\":10}"
+          },
+          {
+            "seq": 25,
+            "tool": "mcp__noobai__list_prompt_term_categories",
+            "arguments": "{\"level\":\"roots\"}"
+          },
+          {
+            "seq": 46,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+          },
+          {
+            "seq": 51,
+            "tool": "mcp__noobai__get_catalog_resource",
+            "arguments": "{\"ref\":{\"kind\":\"model\",\"id\":\"1\"}}"
+          },
+          {
+            "seq": 53,
+            "tool": "mcp__noobai__search_instances",
+            "arguments": "{}"
+          },
+          {
+            "seq": 60,
+            "tool": "mcp__noobai__get_instance_status",
+            "arguments": "{\"instance_id\":\"2\"}"
+          }
+        ],
+        "retiredCatalogCliInvoked": false,
+        "firstRequestToolDeclarationNames": [
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows"
+        ]
+      },
+      "mediaVerification": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBcmZh/runtime/environment/workspace/5.6-7/run_9039cd8f_WAI_00047_.png",
+          "pngSignature": true,
+          "dimensions": [
+            1536,
+            1536
+          ],
+          "bytes": 2812768
+        }
+      ],
+      "targetBranchVerdict": "未通过",
+      "fullContractVerdict": "未通过",
+      "expected": "搜索并展示候选后等待用户选择；原请求明确“供我选择后”，名称精确匹配仍需等待。",
+      "actual": "seq23搜索，seq24返回候选与下一页；seq46自行取得模板29详情，seq86提交，Run与媒体各新增1条；seq115交付时才展示候选并解释直接选择。全程只有首轮用户请求。",
+      "findings": [
+        {
+          "id": "GEN-2",
+          "severity": "high",
+          "title": "搜索候选后跳过用户选择并提交生成",
+          "source": ".agents/skills/comfyui-generate/SKILL.md:16",
+          "eventSeqs": [
+            19,
+            23,
+            24,
+            46,
+            86,
+            115
+          ],
+          "detail": "原请求和Skill都要求等待选择。完整Prompt Builder JSON只提供生成材料，没有提供template_id或授权按名称自动选中。首次提交发生在候选选择回复之前。"
+        },
+        {
+          "id": "GEN-3",
+          "severity": "medium",
+          "title": "将有下一页的搜索结果称为全部候选",
+          "eventSeqs": [
+            24,
+            115
+          ],
+          "detail": "seq24 的 next 指定 search_workflows page2；seq115称候选“共10项”，未说明仅首页。应按真实返回保留分页范围。"
+        }
+      ],
+      "recoveryDecision": "首次等待未成立，不能按正常等待恢复分支登记通过。保留首轮失败，修复后重验搜索等待，再按真实候选执行选择恢复。",
+      "visualObservation": {
+        "actualCalls": 0,
+        "note": "本轮未调用视觉模型；已有生成与媒体解析不足以替代搜索等待验收。"
+      },
+      "timing": {
+        "turnDurationMs": 182803,
+        "taskWithin600000Ms": true,
+        "maxModelCallDurationMs": 17320.0
+      }
+    }
+  ],
+  "overallVerdict": "两轮底模不一致完整合同通过；默认模型生成目标分支通过但重复Run查询使完整合同未通过；搜索等待未通过。",
+  "method": "逐条读取主Session原始事件，逐字符核对所有tool/result进入下一实际模型请求，逐字节比较200个安装文件与各自候选tar成员，读取前后SQLite只读快照、原始Run查询、Actual Workflow及媒体文件头，核对实际模型request身份和最终cleanup记录。",
+  "historyPreserved": true,
+  "modelAndResourceVerdict": "四轮实际文本模型均为opencode-go/deepseek-v4.1-flash；仅5.6-2实际调用openrouter/thinkingmachines/inkling:free一次。四轮全部工具结果完整进入下一模型请求；各轮200个安装文件与候选相同，原始事件序列连续。清理记录显示自有进程0、端口释放。",
+  "limitations": [
+    "本报告判定四个具体输入；角色交接与其他未执行分支仍按各自证据验收。",
+    "清理结论依据本轮停止时记录；本审查未启动应用或模型。"
+  ]
+}

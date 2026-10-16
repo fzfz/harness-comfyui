@@ -11,7 +11,7 @@ import {
   type CatalogPage,
   type CatalogQueryRequest,
 } from '../../catalog/contract.ts'
-import { CatalogCliError, type CatalogCli } from './catalog-cli.ts'
+import { CatalogError, type CatalogClient } from './catalog-client.ts'
 import type { SourceAddress } from '../../source-settings.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -21,10 +21,10 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export class CatalogRemoteService extends TypertRemoteService {
-  private readonly catalog: CatalogCli
+  private readonly catalog: CatalogClient
   private readonly readSourceAddress: () => SourceAddress
 
-  constructor(ctx: Context, catalog: CatalogCli, readSourceAddress: () => SourceAddress) {
+  constructor(ctx: Context, catalog: CatalogClient, readSourceAddress: () => SourceAddress) {
     super(ctx, CATALOG_REMOTE_NAMESPACE)
     this.catalog = catalog
     this.readSourceAddress = readSourceAddress
@@ -35,7 +35,7 @@ export class CatalogRemoteService extends TypertRemoteService {
     try {
       return catalogOperationSuccess(await this.catalog.search(request, signal))
     } catch (error) {
-      if (error instanceof CatalogCliError) {
+      if (error instanceof CatalogError) {
         return catalogOperationFailure({ code: error.code, message: error.message })
       }
       throw error
@@ -46,7 +46,7 @@ export class CatalogRemoteService extends TypertRemoteService {
     try {
       return catalogOperationSuccess(await this.catalog.details(request, signal))
     } catch (error) {
-      if (error instanceof CatalogCliError) return catalogOperationFailure({ code: error.code, message: error.message })
+      if (error instanceof CatalogError) return catalogOperationFailure({ code: error.code, message: error.message })
       throw error
     }
   }
@@ -55,7 +55,7 @@ export class CatalogRemoteService extends TypertRemoteService {
     try {
       return catalogOperationSuccess(await this.catalog.baseModels(signal))
     } catch (error) {
-      if (error instanceof CatalogCliError) {
+      if (error instanceof CatalogError) {
         return catalogOperationFailure({ code: error.code, message: error.message })
       }
       throw error

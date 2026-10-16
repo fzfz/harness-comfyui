@@ -1,0 +1,243 @@
+{
+  "purpose": "记录隔离边界夹具 HTTP 数据一致性修复的实现与只读验收结果。",
+  "at": "2026-10-14T04:02:58.937347+00:00",
+  "status": "夹具实现、25 项确定性回归及独立复核已通过；BR-1、BR-2 已确认修复。",
+  "ownership": [
+    ".local/skills-mcp-migration-live/boundary-fixture.mjs",
+    ".local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+    ".local/skills-mcp-migration-live/boundary-fixture/*.json"
+  ],
+  "contract": {
+    "protocolPaths": "config/source-client.json",
+    "upstreamHttpRuntime": "boundary-fixture/runtime.json:upstreamHttpUrl",
+    "metadata": [
+      "stateFile",
+      "runId",
+      "scenario",
+      "mcpUrl",
+      "sourceAddress"
+    ],
+    "authentication": "MCP Bearer 与 Host HTTP 按协议分流。",
+    "emptyInstances": "MCP 与 HTTP 使用同场景 absentInstance；合法 ID 映射至启动时核对不存在的 ID，非法参数保留上游校验。",
+    "modelFields": "HTTP 模板 model_id 从场景 item.model 派生；Workflow 节点保留上游原文。",
+    "mcpReads": "每次 MCP 读取先经过真实上游参数校验，成功响应按场景字段派生。",
+    "mcpCancellation": "夹具按 MCP 会话和调用方请求 ID 定位在途读取，转发映射后的上游取消通知并取消本地请求。",
+    "mcpCancellationSource": "https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/cancellation"
+  },
+  "tdd": [
+    {
+      "slice": "空实例 HTTP 数据域",
+      "red": "启动结果缺少 mcpUrl 与 sourceAddress，失败用例记录 AssertionError。",
+      "green": "同场景搜索、resolve、源读取及 discovery 回归通过。"
+    },
+    {
+      "slice": "HTTP 只读路径边界",
+      "red": "GET /instances/2/write 被转发并返回 422，预期 405。",
+      "green": "仅 discovery 核对的参数化只读路径转发，未知路径回归通过。"
+    },
+    {
+      "slice": "无默认模型 HTTP 视图",
+      "red": "模板 29 的 model_id 仍为 1，预期 null。",
+      "green": "模板搜索和详情同步场景模型值；兄弟模板与节点回归通过。"
+    },
+    {
+      "slice": "畸形 HTTP JSON",
+      "red": "夹具返回 502，真实上游合同返回 422。",
+      "green": "夹具原样转发 JSON 请求字节并保留上游 422。"
+    },
+    {
+      "slice": "HTTP URL query 与实例存在性",
+      "red": "合法实例 ID 携带 query 时返回 200，空域预期 404。",
+      "green": "夹具保留 query 原值并映射合法实例 ID。"
+    },
+    {
+      "slice": "BR-1 无默认模型请求参数",
+      "red": "合法 Workflow 29 引用携带 fail:true 时，夹具返回成功，上游返回 isError=true。",
+      "green": "夹具始终读取真实上游；顶层和 ref 内额外字段的上游错误保持原值。"
+    },
+    {
+      "slice": "BR-2 MCP 取消通知",
+      "red": "取消调用方 requestId=17 后，上游取消通知的 requestId 缺失；预期映射至上游在途请求 ID。",
+      "green": "取消通知使用上游请求 ID；被取消读取保存证据并关闭响应连接；并发读取继续完成。"
+    }
+  ],
+  "verification": {
+    "fixtureCommand": "node --experimental-transform-types --test .local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+    "fixtureResults": {
+      "tests": 25,
+      "passed": 25,
+      "failed": 0
+    },
+    "consumers": [
+      "生产 CatalogClient",
+      "生产 GenerationSourceClient"
+    ],
+    "liveReadonly": [
+      {
+        "scenario": "empty-instances",
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/4f3de75b-3f08-4f0c-a4d2-dea0b04b21e2/state.json",
+        "mcpUrl": "http://127.0.0.1:49745/mcp",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 49745
+        },
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/4f3de75b-3f08-4f0c-a4d2-dea0b04b21e2",
+        "results": {
+          "1": {
+            "resolveStatus": 404,
+            "sourceStatus": 404
+          },
+          "2": {
+            "resolveStatus": 404,
+            "sourceStatus": 404
+          },
+          "catalogInstances": {
+            "status": "ok",
+            "message": null,
+            "results": [],
+            "page": 1,
+            "page_size": 100,
+            "total_count": 0
+          },
+          "sourceInstance": {
+            "code": "SOURCE_QUERY_FAILED",
+            "message": "Source service returned an HTTP error."
+          },
+          "template": {
+            "id": "29",
+            "title": "wai_basic_txt2img",
+            "base_model_id": "2",
+            "model_id": "1"
+          },
+          "bundle": {
+            "id": "29",
+            "title": "wai_basic_txt2img",
+            "nodes": 7
+          },
+          "workflowUnchanged": true,
+          "invalid": {
+            "resolveStatus": 422,
+            "sourceStatus": 422
+          }
+        },
+        "cleanup": {
+          "status": "stopped",
+          "portReleased": true
+        }
+      },
+      {
+        "scenario": "no-default-model",
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/be3367d8-d839-4388-8a03-7cfa141d1b46/state.json",
+        "mcpUrl": "http://127.0.0.1:49750/mcp",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 49750
+        },
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/be3367d8-d839-4388-8a03-7cfa141d1b46",
+        "results": {
+          "1": {
+            "resolveStatus": 404,
+            "sourceStatus": 404
+          },
+          "2": {
+            "resolveStatus": 200,
+            "sourceStatus": 200
+          },
+          "catalogInstances": {
+            "status": "ok",
+            "message": null,
+            "results": [
+              {
+                "id": "2"
+              }
+            ],
+            "page": 1,
+            "page_size": 100,
+            "total_count": 1
+          },
+          "sourceInstance": {
+            "id": "2",
+            "title": "win3080"
+          },
+          "template": {
+            "id": "29",
+            "title": "wai_basic_txt2img",
+            "base_model_id": "2",
+            "model_id": null
+          },
+          "bundle": {
+            "id": "29",
+            "title": "wai_basic_txt2img",
+            "nodes": 7
+          },
+          "workflowUnchanged": true,
+          "invalid": {
+            "resolveStatus": 422,
+            "sourceStatus": 422
+          }
+        },
+        "cleanup": {
+          "status": "stopped",
+          "portReleased": true
+        }
+      }
+    ],
+    "relatedRegression": {
+      "command": "pnpm exec vitest run tests/unit/catalog-client.test.ts tests/unit/generation-source-client.test.ts tests/unit/source-data-clients.test.mjs",
+      "files": 3,
+      "tests": 85,
+      "passed": 85,
+      "failed": 0
+    },
+    "readonlyProtocolFacts": [
+      {
+        "request": "POST /internal/semantic/comfyui-instances，正文为 {broken",
+        "observedStatus": 422,
+        "observedMessage": "Catalog request is invalid."
+      },
+      {
+        "request": "GET /internal/comfyui-source/instances/2?unknown=true",
+        "observedStatus": 200,
+        "observedIds": [
+          2
+        ]
+      },
+      {
+        "request": "POST /internal/semantic/comfyui-instances?unknown=true，正文为 mode=resolve、id=2",
+        "observedStatus": 200,
+        "observedIds": [
+          2
+        ]
+      }
+    ],
+    "checks": [
+      "node --check .local/skills-mcp-migration-live/boundary-fixture.mjs",
+      "node --check .local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+      "git diff --check"
+    ],
+    "reviewFindingRepairs": {
+      "reviewReport": "docs/verification/skills-mcp-migration/boundary-http-fixture-review.json",
+      "findings": [
+        "BR-1",
+        "BR-2"
+      ],
+      "status": "独立 Reviewer 已复核，BR-1、BR-2 已解决。",
+      "additionalCases": [
+        "MCP 会话中相同请求 ID 的取消隔离。",
+        "无效、未知及已完成请求的取消通知。",
+        "MCP 连接中止与并发其他读取。"
+      ]
+    },
+    "independentReview": {
+      "report": "docs/verification/skills-mcp-migration/boundary-http-fixture-review.json",
+      "fixtureTests": 25,
+      "fixturePassed": 25,
+      "unresolvedFindings": 0
+    }
+  },
+  "open": [
+    "主线程完成隔离 Profile 接入与两个预设的真实模型行为复验。",
+    "主线程通过原生生成 Tool 与受管 CLI 完成负向提交、远端零提交与失败 Run 归属验收。",
+    "主线程完成改动文字的独立语义审计。"
+  ]
+}

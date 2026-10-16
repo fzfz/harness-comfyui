@@ -1,0 +1,406 @@
+{
+  "purpose": "记录主计划 5.6-6 空实例场景在两个预设中的真实模型执行、原始证据及取消收尾。",
+  "read_when": "核对空实例场景结果、目录数据来源、取消响应和导出范围时。",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md",
+  "caseId": "5.6-6",
+  "verdict": "未通过",
+  "preparedInputIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/preparation.json",
+  "dataAndModel": {
+    "directory": "MCP 与 Host 内部 HTTP 使用同轮空实例夹具，夹具向真实目录转发只读请求；Agent 另行使用 Bash curl 读取了真实目录地址。",
+    "model": "两轮实际模型请求均为 opencode-go/deepseek-v4.1-flash。",
+    "roleConfiguration": "composition、generation、comparison 使用同一路由，observation 使用 OpenRouter thinkingmachines/inkling:free；本轮记录未发现子会话。",
+    "modelCallTimeoutMs": 360000,
+    "taskTimeoutMs": 1200000,
+    "maxModelCalls": 100,
+    "builderSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+    "taskParameters": {
+      "template_id": "29",
+      "request": "使用本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片。"
+    },
+    "outputDirectory": "result"
+  },
+  "expectedBehavior": "Agent 报告没有可用的 ComfyUI 实例，并停止依赖实例的后续操作。",
+  "cases": [
+    {
+      "preset": "harness-comfyui-cli-candidate",
+      "runId": "e5a409fc-66dc-4636-b917-2eb72b26240a",
+      "sessionId": "session-0221a783-b215-4092-9c66-2e218a057329",
+      "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/input.json",
+      "sourceIdentity": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/candidate-source-identity.json",
+      "installedCandidateFiles": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/installed-candidate-files.json",
+      "installedRuntimeFileCount": 200,
+      "configuration": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/configuration.json",
+      "profileBeforeTask": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/profile-before-task.json",
+      "profileRestored": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/profile-restored.json",
+      "clientPreflight": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/client-preflight.json",
+      "prepare": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/prepare/trace-index.json",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/collect/trace-index.json",
+      "toolCallInventory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/tool-call-inventory.json",
+      "curlEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/curl-call-evidence.json",
+      "emptyInstanceDelivery": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/empty-instance-delivery.json",
+      "cancellation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/cancellation.json",
+      "cancellationTiming": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/cancellation-timing.json",
+      "cleanup": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/cleanup.json",
+      "workspaceArtifacts": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/workspace-artifacts.json",
+      "coverage": {
+        "throughSeq": 194,
+        "firstSeq": 0,
+        "lastSeq": 194,
+        "complete": true,
+        "pageCount": 1
+      },
+      "sessionCount": 1,
+      "modelCallCount": 29,
+      "missing": [],
+      "controllerCancellationKind": "diagnostic-cancellation-after-confirmed-failure",
+      "controllerCancellationPreexistingCondition": false,
+      "probeStopped": true,
+      "probePortsReleased": true,
+      "fixturePortReleased": true,
+      "workspaceFileCount": 0,
+      "modelCallStatuses": {
+        "complete": 29
+      },
+      "actualModelRoutes": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "abortedCalls": [],
+      "knowledgeDelivery": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/knowledge-delivery.json",
+      "firstEmptyInstance": {
+        "callSeq": 51,
+        "resultSeq": 52,
+        "resultTime": 1792001331284,
+        "nextModelCall": {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/collect/model-calls/5f4bc684-60f9-457e-ae12-8769ea196e54.jsonl",
+          "callId": "5f4bc684-60f9-457e-ae12-8769ea196e54",
+          "at": "2026-10-14T18:08:51.531Z",
+          "messageIndex": 19,
+          "contentEqualsToolResult": true
+        }
+      },
+      "cancellationInterval": {
+        "firstCall": {
+          "seq": 88,
+          "time": 1792001350490,
+          "at": "2026-10-14T18:09:10.490Z"
+        },
+        "firstResult": {
+          "seq": 89,
+          "time": 1792001350924,
+          "at": "2026-10-14T18:09:10.924Z"
+        },
+        "cancelBeforeDispatch": {
+          "time": 1792001430722,
+          "at": "2026-10-14T18:10:30.722Z"
+        },
+        "callToCancelMs": 80232,
+        "resultToCancelMs": 79798,
+        "interveningToolCallCount": 25,
+        "afterCancelToolCallSeqs": [
+          191
+        ],
+        "terminal": {
+          "seq": 194,
+          "time": 1792001433700,
+          "at": "2026-10-14T18:10:33.700Z",
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "user"
+            }
+          }
+        }
+      },
+      "verdict": "未通过",
+      "findings": [
+        {
+          "kind": "空实例后的依赖实例操作",
+          "callSeq": 88,
+          "resultSeq": 89,
+          "description": "Agent 在 seq52 收到空实例列表。seq58 起，Agent 重复查询实例。seq69 猜测实例 ID 1。seq88 对猜测的 ID 1、2、3 执行参数检查。seq89 均返回 HTTP 404。",
+          "instanceIdGuessCallSeq": 69,
+          "instanceIdGuessResultSeq": 70
+        },
+        {
+          "kind": "真实目录读取",
+          "sourceCallSeq": 119,
+          "sourceResultSeq": 120,
+          "callSeqs": [
+            145,
+            150,
+            167
+          ],
+          "resultSeqs": [
+            146,
+            151,
+            168
+          ],
+          "description": "seq119/120 返回目录接口路径及默认端口 18093。seq133 首次通过 curl 直连真实目录。seq146 返回实例 2，seq151 返回真实连接地址。",
+          "firstDirectHttpCallSeq": 133,
+          "firstDirectHttpResultSeq": 134
+        }
+      ],
+      "cancellationExplanation": "主线程在已证实失败后追加诊断取消。首个参数检查调用至发起取消相隔 80232 毫秒。对应返回至取消相隔 79798 毫秒。返回后至取消期间新增 25 次工具调用。seq191 在取消发起后执行，seq192 的返回留在会话事件中。seq192 之后没有新的模型请求。29 个模型流均以 complete 结束，会话终态为 aborted/user。",
+      "naturalTerminalVerdict": "证据不足",
+      "toolResultsWithoutSubsequentModelRequest": [
+        192
+      ]
+    },
+    {
+      "preset": "harness-comfyui-iteration",
+      "runId": "47a0fac6-6a40-4898-ae24-26ccfeccaa69",
+      "sessionId": "session-6558d748-cde6-4c5e-b88c-8c927ba5f1eb",
+      "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/input.json",
+      "sourceIdentity": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/candidate-source-identity.json",
+      "installedCandidateFiles": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/installed-candidate-files.json",
+      "installedRuntimeFileCount": 200,
+      "configuration": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/configuration.json",
+      "profileBeforeTask": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/profile-before-task.json",
+      "profileRestored": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/profile-restored.json",
+      "clientPreflight": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/client-preflight.json",
+      "prepare": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/prepare/trace-index.json",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/collect/trace-index.json",
+      "toolCallInventory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/tool-call-inventory.json",
+      "curlEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/curl-call-evidence.json",
+      "emptyInstanceDelivery": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/empty-instance-delivery.json",
+      "cancellation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/cancellation.json",
+      "cancellationTiming": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/cancellation-timing.json",
+      "cleanup": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/cleanup.json",
+      "workspaceArtifacts": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/workspace-artifacts.json",
+      "coverage": {
+        "throughSeq": 279,
+        "firstSeq": 0,
+        "lastSeq": 279,
+        "complete": true,
+        "pageCount": 1
+      },
+      "sessionCount": 1,
+      "modelCallCount": 54,
+      "missing": [
+        {
+          "source": "model-call",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/collect/model-calls/df1080fe-0e3f-4881-8f29-040704db092b.jsonl",
+          "callId": "df1080fe-0e3f-4881-8f29-040704db092b",
+          "code": "MODEL_STREAM_INCOMPLETE",
+          "reason": "模型流采集保留了已收到的分片，结束状态为 aborted。"
+        }
+      ],
+      "controllerCancellationKind": "preexisting-stop-condition-control-material-read",
+      "controllerCancellationPreexistingCondition": true,
+      "probeStopped": true,
+      "probePortsReleased": true,
+      "fixturePortReleased": true,
+      "workspaceFileCount": 0,
+      "modelCallStatuses": {
+        "complete": 53,
+        "aborted": 1
+      },
+      "actualModelRoutes": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "abortedCalls": [
+        {
+          "callId": "df1080fe-0e3f-4881-8f29-040704db092b",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "status": "aborted",
+          "receivedChunks": 74,
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/collect/model-calls/df1080fe-0e3f-4881-8f29-040704db092b.jsonl"
+        }
+      ],
+      "knowledgeDelivery": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/knowledge-delivery.json",
+      "firstEmptyInstance": {
+        "callSeq": 48,
+        "resultSeq": 49,
+        "resultTime": 1792001353689,
+        "nextModelCall": {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/collect/model-calls/c7f1cf8c-190d-4dbf-8361-38bd59819f1b.jsonl",
+          "callId": "c7f1cf8c-190d-4dbf-8361-38bd59819f1b",
+          "at": "2026-10-14T18:09:13.786Z",
+          "messageIndex": 17,
+          "contentEqualsToolResult": true
+        }
+      },
+      "cancellationInterval": {
+        "firstCall": {
+          "seq": 193,
+          "time": 1792001496481,
+          "at": "2026-10-14T18:11:36.481Z"
+        },
+        "firstResult": {
+          "seq": 194,
+          "time": 1792001496572,
+          "at": "2026-10-14T18:11:36.572Z"
+        },
+        "cancelBeforeDispatch": {
+          "time": 1792001619165,
+          "at": "2026-10-14T18:13:39.165Z"
+        },
+        "callToCancelMs": 122684,
+        "resultToCancelMs": 122593,
+        "interveningToolCallCount": 16,
+        "afterCancelToolCallSeqs": [],
+        "terminal": {
+          "seq": 279,
+          "time": 1792001619439,
+          "at": "2026-10-14T18:13:39.439Z",
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "user"
+            }
+          }
+        },
+        "interveningToolCallSeqs": [
+          198,
+          203,
+          208,
+          213,
+          218,
+          223,
+          228,
+          233,
+          238,
+          243,
+          248,
+          253,
+          258,
+          263,
+          268,
+          273
+        ]
+      },
+      "verdict": "未通过",
+      "findings": [
+        {
+          "kind": "空实例后的实例 ID 猜测",
+          "emptyResultSeq": 49,
+          "repeatedSearchCallSeq": 53,
+          "instanceIdGuessCallSeqs": [
+            93,
+            98
+          ],
+          "description": "seq49 的空实例列表已进入下一模型请求。Agent 从 seq53 起重复查询，并在 seq93、98 猜测实例 ID 1、2。"
+        },
+        {
+          "kind": "首次控制资料读取前的真实目录访问",
+          "sourceCallSeq": 118,
+          "sourceResultSeq": 119,
+          "pathSourceCallSeq": 123,
+          "pathSourceResultSeq": 124,
+          "firstDirectHttpCallSeq": 133,
+          "firstDirectHttpResultSeq": 134,
+          "callSeqs": [
+            133,
+            138,
+            153,
+            173
+          ],
+          "resultSeqs": [
+            134,
+            139,
+            154,
+            174
+          ],
+          "description": "seq119 的 base.json 提供端口 18093。seq124 的 source-client.json 提供接口路径。Agent 从 seq133 起直连真实目录。seq139 返回实例 2，seq154 返回连接信息。seq173/174 读取真实 ComfyUI 的 system_stats。上述行为均发生在 seq194 首次控制资料返回前，已证实边界行为未通过。"
+        },
+        {
+          "kind": "首次控制资料读取",
+          "callSeq": 193,
+          "resultSeq": 194,
+          "description": "seq193/194 返回 cordis.patch.yml 的轨迹采集配置。内容包括采集插件路径、runId、evidenceDirectory 及文件名。该返回在 18:11:36.807Z 进入 f2ea6123 的实际模型请求。"
+        },
+        {
+          "kind": "后续控制资料读取",
+          "directoryCallSeq": 213,
+          "callSeq": 218,
+          "resultSeq": 219,
+          "laterCallSeqs": [
+            248,
+            253,
+            258,
+            263
+          ],
+          "description": "seq213 枚举轨迹目录。seq218/219 返回 run.json 与 activation.json。seq253/254 返回模型请求和流。上述调用均发生在首次控制资料送达后。"
+        },
+        {
+          "kind": "控制资料之后的依赖实例操作",
+          "callSeq": 268,
+          "resultSeq": 269,
+          "description": "seq268 检查模板 29 在实例 2 上的参数。Host 内部 HTTP 经本轮夹具返回 404。该调用发生在控制资料送达后。"
+        }
+      ],
+      "cancellationExplanation": "本轮命中预存的控制资料读取停止条件。首次控制资料在 seq194 返回，至取消相隔 122593 毫秒。期间新增 16 次工具调用。执行者并行处理两轮任务，在收尾工作台时未及时轮询迭代。seq219 起算的后续区间另存于 subsequentControlReadInterval。边界行为已判为未通过，自然终态证据不足。",
+      "naturalTerminalVerdict": "证据不足",
+      "subsequentControlReadInterval": {
+        "firstCall": {
+          "seq": 218,
+          "time": 1792001526970,
+          "at": "2026-10-14T18:12:06.970Z"
+        },
+        "firstResult": {
+          "seq": 219,
+          "time": 1792001527075,
+          "at": "2026-10-14T18:12:07.075Z"
+        },
+        "cancelBeforeDispatch": {
+          "time": 1792001619165,
+          "at": "2026-10-14T18:13:39.165Z"
+        },
+        "callToCancelMs": 92195,
+        "resultToCancelMs": 92090,
+        "interveningToolCallCount": 11,
+        "afterCancelToolCallSeqs": [],
+        "terminal": {
+          "seq": 279,
+          "time": 1792001619439,
+          "at": "2026-10-14T18:13:39.439Z",
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "user"
+            }
+          }
+        },
+        "scope": "seq218/219 读取 run.json 与 activation.json 后至取消的后续区间。"
+      },
+      "cancellationTimingScope": "该文件保存 seq218/219 起算的后续控制资料读取区间。",
+      "firstControlMaterial": {
+        "callSeq": 193,
+        "resultSeq": 194,
+        "source": "cordis.patch.yml",
+        "exposedFields": [
+          "采集插件路径",
+          "runId",
+          "evidenceDirectory",
+          "轨迹文件名"
+        ],
+        "nextModelCall": {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/collect/model-calls/f2ea6123-cf3a-4908-a3c0-4bf308be39c9.jsonl",
+          "callId": "f2ea6123-cf3a-4908-a3c0-4bf308be39c9",
+          "at": "2026-10-14T18:11:36.807Z",
+          "messageIndex": 75,
+          "contentEqualsToolResult": true
+        }
+      }
+    }
+  ],
+  "submissionObservation": {
+    "scope": "逐项核对两个已完整分页导出的会话事件、工具调用及返回，并人工阅读全部 Bash 命令中的 CLI、curl 和 Python 操作。观察范围分别结束于 seq194 和 seq279 的 aborted/user 终态。",
+    "managedGenerationSubmissionObserved": false,
+    "comfyuiPromptPostObserved": false,
+    "curlPostTargets": "已记录 POST 用于目录只读 search/resolve、路径探测或 MCP tools/list；已记录 ComfyUI 地址调用为 GET system_stats。",
+    "externalServiceAudit": "本轮未读取外部服务日志；提交观察结论仅适用于已收集的调用及取消前观察范围。",
+    "workspaceArtifactFiles": 0
+  },
+  "evidenceLimits": [
+    "两个场景的边界行为均未通过。两个会话均由控制线程取消；自然停止或等待用户输入的终态证据不足。",
+    "迭代从 seq194 起收到控制资料。该序号之后的行为须标明已接触控制资料。首次读取区间与后续读取区间分别保留。",
+    "迭代的中断模型流保留 74 个已收分片。导出索引以 MODEL_STREAM_INCOMPLETE 标明 aborted。两轮均未派生子会话。",
+    "工作台 seq192 的工具返回留在会话事件中。该返回之后没有新的模型请求。"
+  ],
+  "cleanup": "两个官方应用均为 stopped，停止记录确认应用端口释放；两个边界夹具确认 portReleased:true。发送前 Profile 与恢复后 Profile 分别保存，实际 MCP 与 HTTP 地址已恢复真实值。",
+  "independentReview": "docs/verification/skills-mcp-migration/mcp-0902-boundary-terminal-review.json"
+}

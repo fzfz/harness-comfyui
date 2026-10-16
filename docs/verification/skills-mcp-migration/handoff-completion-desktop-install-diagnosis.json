@@ -1,0 +1,50 @@
+{
+  "status": "installation-blocked-before-dispatch-validation",
+  "regression": {
+    "passed": 267,
+    "failed": 2,
+    "log": ".local/skills-mcp-migration-live/handoff-completion-desktop.log"
+  },
+  "firstFailure": {
+    "runId": "b6263f52-f0e4-4d0d-b123-a54d4c1ccbb7",
+    "stage": "official package manager installing candidate",
+    "dependency": "@img/sharp-libvips-darwin-arm64@1.3.3",
+    "observation": "resolved33, added6; dependency GET error23 retry; UI still installing at120s"
+  },
+  "secondFailure": {
+    "runId": "62087d4c-899b-435c-9b43-51b5879a1d4e",
+    "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-qg6AWk",
+    "observation": "resolved33, added6; another sharp tarball average39KiB/s; installation deadline reached"
+  },
+  "readOnlyProbe": {
+    "method": "curl GET to /dev/null; no archive installed or executed",
+    "httpStatus": 200,
+    "totalBytes": 8303731,
+    "receivedBytes": 2792458,
+    "durationSeconds": 45.003137,
+    "exitCode": 28,
+    "diskAvailableGiB": 94
+  },
+  "causalAssessment": "Observed slow or failed dependency transfers precede package installation completion. No candidate dispatch behavior was exercised. Specific transport cause remains unverified.",
+  "changes": {
+    "timeoutRelaxed": false,
+    "dependenciesChanged": false,
+    "sdkChanged": false
+  },
+  "directTransportProbe": {
+    "httpStatus": 200,
+    "totalBytes": 8303731,
+    "receivedBytes": 1117568,
+    "durationSeconds": 20.004748,
+    "exitCode": 28,
+    "method": "curl --noproxy * GET to /dev/null; no archive installed or executed"
+  },
+  "laterProbe": {
+    "httpStatus": 200,
+    "totalBytes": 8303731,
+    "receivedBytes": 2981870,
+    "durationSeconds": 30.003896,
+    "exitCode": 28,
+    "method": "same default curl GET to /dev/null"
+  }
+}

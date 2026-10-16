@@ -1,0 +1,39 @@
+{
+  "caseId": "5.5-2",
+  "preset": "harness-comfyui-cli-candidate",
+  "runId": "ab1a2d9b-d2b8-45d6-8ed9-0e78dc397488",
+  "sessionId": "session-4f06abbf-7f74-4bf1-8701-01aab10e8e1c",
+  "provider": "openrouter",
+  "model": "dots-studio/dots-3-note-preview:free",
+  "status": "未通过",
+  "events": ".local/skills-mcp-migration-live/desktop/ab1a2d9b-d2b8-45d6-8ed9-0e78dc397488/1791887740155-collect.json",
+  "findings": [
+    {
+      "expected": "使用已有角色 ID 完成角色查询",
+      "actual": "事件107先按名称search，112调用get_catalog_resource并使用不支持的character类型；113返回CATALOG_REQUEST_INVALID，后续没有成功的角色ID解析调用。",
+      "eventSeqs": [
+        107,
+        112,
+        113
+      ]
+    },
+    {
+      "expected": "保留角色来源中的标识，按语法转义圆括号",
+      "actual": "最终提示词将Ani_(Grok)改为Ani\\(Grok\\)，删除了下划线。",
+      "eventSeqs": [
+        143,
+        148,
+        161
+      ]
+    },
+    {
+      "expected": "执行格式和结果校验",
+      "actual": "两项校验退出码0，但语法校验不能证明来源语义保留。",
+      "eventSeqs": [
+        143,
+        148
+      ]
+    }
+  ],
+  "output": ".local/desktop-development/official-environment/workspace/nemotron-wai2-final-result-dots/5.5-2/wai-prompt-result.json"
+}

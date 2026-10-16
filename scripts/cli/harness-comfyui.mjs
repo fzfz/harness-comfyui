@@ -4,7 +4,7 @@ import { stdin, stdout, stderr } from 'node:process'
 import definition from '../../config/managed-cli-help.json' with { type: 'json' }
 import { parseManagedHelpDefinition } from './help-schema.mjs'
 const help = parseManagedHelpDefinition(definition)
-import { presentationArguments, renderHelp, helpHint, nextSteps, shellQuote } from './help.mjs'
+import { presentationArguments, renderHelp, helpHint, renderNextSteps, shellQuote } from './help.mjs'
 
 import {
   CLI_MAX_BODY_BYTES,
@@ -13,7 +13,13 @@ import {
   parseCliArguments,
 } from '../../src/cli/contract.ts'
 
+import { prepareResultFile, writeResultFile, discardUnpublishedResult } from './result-file.mjs'
+
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
+
+// Write callbacks report pipe failures; the listeners also consume Node's error events.
+stdout.on('error', () => { process.exitCode = 1 })
+stderr.on('error', () => { process.exitCode = 1 })
 
 function environment(name) {
   const value = process.env[name]
@@ -29,7 +35,7 @@ function apiUrl() {
   try {
     url = new URL(value)
   } catch {
-    throw new TypeError(`${CLI_ENVIRONMENT_NAMES.api} is invalid`)
+    throw new TypeError(message('invalidApiUrl', { name: CLI_ENVIRONMENT_NAMES.api, action: help.messages.environmentRecovery }))
   }
   if (
     url.protocol !== 'http:'
@@ -38,7 +44,7 @@ function apiUrl() {
     || url.search.length > 0
     || url.hash.length > 0
   ) {
-    throw new TypeError(`${CLI_ENVIRONMENT_NAMES.api} is not the managed loopback endpoint`)
+    throw new TypeError(message('nonLoopbackApi', { name: CLI_ENVIRONMENT_NAMES.api, action: help.messages.environmentRecovery }))
   }
   return url.href
 }
@@ -51,7 +57,7 @@ async function stdinText(required) {
     const bytes = Buffer.from(chunk)
     byteLength += bytes.length
     if (byteLength > CLI_MAX_BODY_BYTES) {
-      throw Object.assign(new TypeError('stdin exceeds the maximum request size'), { code: 'CLI_REQUEST_TOO_LARGE' })
+      throw Object.assign(new TypeError(message('requestTooLarge', { max_bytes: CLI_MAX_BODY_BYTES })), { code: 'CLI_REQUEST_TOO_LARGE' })
     }
     chunks.push(bytes)
   }
@@ -60,7 +66,7 @@ async function stdinText(required) {
 
 async function responseJson(response) {
   const bytes = new Uint8Array(await response.arrayBuffer())
-  if (bytes.byteLength > MAX_RESPONSE_BYTES) throw new Error('CLI_RESPONSE_TOO_LARGE: Host response exceeds the maximum size')
+  if (bytes.byteLength > MAX_RESPONSE_BYTES) throw new Error(message('responseTooLarge', { max_bytes: MAX_RESPONSE_BYTES }))
   let body
   try {
     body = JSON.parse(Buffer.from(bytes).toString('utf8'))
@@ -70,19 +76,52 @@ async function responseJson(response) {
   if (body === null || typeof body !== 'object' || Array.isArray(body) || typeof body.ok !== 'boolean') {
     throw new Error('CLI_PROTOCOL_ERROR: Host response envelope is invalid')
   }
+  if (body.ok && (body.data === null || typeof body.data !== 'object' || Array.isArray(body.data))) {
+    throw new Error('CLI_PROTOCOL_ERROR: Host response success data is invalid')
+  }
   return body
+}
+
+async function writeOutput(stream, text) {
+  await new Promise((resolve, reject) => {
+    stream.write(text, error => error ? reject(error) : resolve())
+  })
+}
+
+async function reportFailure(message, exitCode = 1) {
+  process.exitCode = exitCode
+  try { await writeOutput(stderr, `${message}\n`) }
+  catch { process.exitCode = 1 }
+}
+
+function message(key, values = {}) {
+  return help.messages[key].replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? values[name] : match)
+}
+
+function fileMessage(key, values, argv) {
+  return message(key, values) + ` ${helpHint(help, argv)}`
+}
+
+async function discardResult(handle, message) {
+  try { await discardUnpublishedResult(handle) }
+  catch (error) { return `${message}; cleanup ${handle.directory}: ${error.message}` }
+  return message
 }
 
 async function main() {
   let argv
   let quiet
+  let output
   try {
     ({ args: argv, quiet } = presentationArguments(process.argv.slice(2), help.valueOptions))
-    const output = renderHelp(help, argv)
-    if (output !== undefined) { stdout.write(output); return }
+    output = renderHelp(help, argv)
   } catch (error) {
-    stderr.write(`CLI_ARGUMENT_INVALID: ${error.message} ${helpHint(help, [])}\n`)
-    process.exitCode = 2
+    await reportFailure(`CLI_ARGUMENT_INVALID: ${error.message} ${helpHint(help, [])}`, 2)
+    return
+  }
+  if (output !== undefined) {
+    try { await writeOutput(stdout, output) }
+    catch (error) { await reportFailure(`CLI_OUTPUT_FAILED: Help could not be written: ${error.message}`) }
     return
   }
   const command = argv.join(' ')
@@ -96,7 +135,7 @@ async function main() {
   )
   let request
   try {
-    if (/^(image|generation|catalog) /.test(argv[0] ?? '')) {
+    if (/^(image|generation) /.test(argv[0] ?? '')) {
       const words = argv.flatMap((value, index) => index === 0 ? value.split(/\s+/) : [value])
       const example = "['node', CLI, " + words.map(shellQuote).join(', ') + ']'
       throw new TypeError(help.messages.splitCommand.replaceAll('{argv}', example).replaceAll('{help}', helpHint(help, words)))
@@ -106,11 +145,8 @@ async function main() {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
     const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'
       ? error.code
-      : needsStdin
-      ? 'CLI_REQUEST_INVALID'
-      : 'CLI_ARGUMENT_INVALID'
-    stderr.write(`${code}: ${message} ${helpHint(help, argv)}\n`)
-    process.exitCode = 2
+      : needsStdin ? 'CLI_REQUEST_INVALID' : 'CLI_ARGUMENT_INVALID'
+    await reportFailure(`${code}: ${message} ${helpHint(help, argv)}`, 2)
     return
   }
 
@@ -121,47 +157,67 @@ async function main() {
     capability = environment(CLI_ENVIRONMENT_NAMES.capability)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Managed CLI environment is invalid'
-    stderr.write(`CLI_ENVIRONMENT_INVALID: ${message} ${helpHint(help, argv)}\n`)
-    process.exitCode = 2
+    await reportFailure(`CLI_ENVIRONMENT_INVALID: ${message} ${helpHint(help, argv)}`, 2)
     return
   }
 
+  let handle
+  try { handle = await prepareResultFile() }
+  catch (error) {
+    await reportFailure(fileMessage('resultFilePrepareFailed', { path: error.path, system_error: error.message }, argv), 2)
+    return
+  }
+
+  let data
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        authorization: `Bearer ${capability}`,
-        'content-type': 'application/json',
-      },
+      headers: { authorization: `Bearer ${capability}`, 'content-type': 'application/json' },
       body: JSON.stringify(request),
     })
     const envelope = await responseJson(response)
     if (!response.ok || envelope.ok !== true) {
       const error = envelope.error
-      if (
-        error === null
-        || typeof error !== 'object'
-        || Array.isArray(error)
-        || typeof error.code !== 'string'
-        || typeof error.message !== 'string'
-      ) {
+      if (error === null || typeof error !== 'object' || Array.isArray(error)
+        || typeof error.code !== 'string' || typeof error.message !== 'string') {
         throw new Error(`CLI_PROTOCOL_ERROR: Host returned HTTP ${response.status} without a valid error`)
       }
-      stderr.write(`${error.code}: ${error.message} ${help.providerErrorCodes.includes(error.code) ? help.messages.providerFailure + ' ' : ''}${helpHint(help, argv)}\n`)
-      process.exitCode = 1
+      const message = `${error.code}: ${error.message} ${help.providerErrorCodes.includes(error.code) ? help.messages.providerFailure + ' ' : ''}${helpHint(help, argv)}`
+      await reportFailure(await discardResult(handle, message))
       return
     }
-    stdout.write(`${JSON.stringify(envelope.data)}\n`)
-    nextSteps(help, request.command.replaceAll('.', ' '), quiet, {
-      run_ids_json: request.command === 'generation.submit' ? shellQuote(JSON.stringify({ run_ids: [envelope.data.run_id] })) : '',
-      result_summary: request.command === 'catalog.search' && Array.isArray(envelope.data?.items) && envelope.data.items.length === 0
-        ? help.messages.emptyResults
-        : help.messages.availableResults,
-    })
+    if (request.command === 'generation.submit' && (typeof envelope.data.run_id !== 'string' || envelope.data.run_id.length === 0)) {
+      throw new Error('CLI_PROTOCOL_ERROR: Host submit response has no valid run_id')
+    }
+    data = envelope.data
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Host request failed'
-    stderr.write(`${message.includes(':') ? message : `CLI_REQUEST_FAILED: ${message}`}. ${helpHint(help, argv)}\n`)
-    process.exitCode = 1
+    await reportFailure(await discardResult(handle, `${message.includes(':') ? message : `CLI_REQUEST_FAILED: ${message}`}${/[.!?。！？]$/u.test(message) ? '' : '.'} ${helpHint(help, argv)}`))
+    return
+  }
+
+  try { await writeResultFile(handle, data) }
+  catch (error) {
+    const message = fileMessage('resultFileWriteFailed', {
+      command: request.command, path: handle.path, system_error: error.message,
+      accepted_run_id_if_submit: request.command === 'generation.submit' ? `Run was accepted: ${data.run_id}.` : '',
+    }, argv)
+    await reportFailure(await discardResult(handle, message))
+    return
+  }
+
+  try { await writeOutput(stdout, `${handle.path}\n`) }
+  catch (error) {
+    await reportFailure(fileMessage('resultPathWriteFailed', { path: handle.path, stream: 'stdout', system_error: error.message }, argv))
+    return
+  }
+  try {
+    const next = renderNextSteps(help, request.command.replaceAll('.', ' '), quiet, {
+      run_ids_json: request.command === 'generation.submit' ? shellQuote(JSON.stringify({ run_ids: [data.run_id] })) : '',
+    })
+    if (next) await writeOutput(stderr, next)
+  } catch (error) {
+    await reportFailure(fileMessage('resultPathWriteFailed', { path: handle.path, stream: 'stderr (NEXT)', system_error: error.message }, argv))
   }
 }
 

@@ -1,0 +1,447 @@
+{
+  "purpose": "记录5.12-H4纯构图真实父子执行、SDK结束延迟、通知与文件读取顺序。",
+  "recordedAt": "2026-10-14T05:33:28.485Z",
+  "scope": {
+    "execution": "官方Desktop中的一次迭代父Agent及其真实构图子Agent",
+    "writeOwnership": "自身中性隔离Profile、H4本地运行材料、本文JSON",
+    "profileId": "626f19d3-1467-4303-a79d-994b0a2d9f33",
+    "profileDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/environment/dsh-home/profiles/desktop",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE",
+    "desktopRunId": "c12234d8-668c-47a2-8e00-664380d8cc1c",
+    "parentSessionId": "session-eb66d9ae-0f38-422a-8d96-c145f09fb6e5",
+    "childSessionId": "18dfa7a5-725c-4bb0-a176-370ac1b8cf74",
+    "sdkActivationRunId": "8c1eec16-c88a-45a2-8bfc-3a4cfce8c78c"
+  },
+  "result": {
+    "observationStatus": "已覆盖真实子产物写入后的SDK结束延迟与释放路径。",
+    "actualOrdering": "父Agent先消费子Agent主动发送的完成消息，再于SDK结束等待窗口内读取文件并结束首轮。释放后父第二轮消费SDK subagent-settled通知并自然结束。",
+    "sdkSettlementGateObservation": "父首轮文件读取与完成发生在子turn/end及subagent-settled通知之前。",
+    "completedMessageContractVerdict": "待独立复核原规则对完成通知的定义及主动消息的适用范围。",
+    "repeatability": "本报告保存一次真实观察。"
+  },
+  "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/execution-index.json",
+  "input": {
+    "file": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/input.json",
+    "prompt": "工作目录：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/SKILL.md\n任务：请完成单主体女性白衬衫窗边肖像的构图阶段。画面中只有一名女性，她身穿白衬衫，位于窗边。本次完成构图设计，并交付构图设计文件及其路径。文件应说明画面目标、核心要素、主体位置、景别、视线方向、空间层次、照明和材料依据。",
+    "preset": "harness-comfyui-iteration",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "additionalModelPrompts": 0
+  },
+  "loadConfiguration": {
+    "officialCandidateTarball": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "officialInstallRunId": "3710a0de-7426-4ae0-844a-f45ed3b0944e",
+    "previousUnsubmittedProfile": ".local/skills-mcp-migration-live/isolated-profiles/handoff-delay-h4-8762aa61-e845-4b40-83f9-070155cf56d9/state.json",
+    "failedStartup": {
+      "runId": "29089b50-5473-407b-91ee-59c58bcb5d34",
+      "logPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/29089b50-5473-407b-91ee-59c58bcb5d34/logs/desktop.stderr.log",
+      "portsReleased": true,
+      "processGroupPresent": false
+    },
+    "failedLoadingCause": "原控制器与LLM观察器处于同一harness-comfyui包来源；官方client-modules报告多个active Loader sources。",
+    "independentPackage": {
+      "name": "local-runtime-events",
+      "version": "0.0.0",
+      "externalDependencies": 0
+    },
+    "sourceComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/module-source-comparison.json",
+    "controllerCopyByteIdentical": true,
+    "runtimeInventory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c12234d8-668c-47a2-8e00-664380d8cc1c/1791955420906-a05cff8f-ef38-43d0-8b12-28a46369f562-remote.json",
+    "actualInventoryEntry": {
+      "entryId": "include:skills-migration-handoff-delay",
+      "moduleName": "file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/runtime-events/controller.mjs",
+      "enabled": true,
+      "fiberPhase": "active"
+    },
+    "preSubmitControlState": {
+      "armed": false,
+      "controlFileExists": false,
+      "evidenceDirectoryExists": false
+    },
+    "profileDuringExecution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/profile-at-stop.yml"
+  },
+  "limits": {
+    "modelCallTimeoutMs": 360000,
+    "taskTimeoutMs": 600000,
+    "textMaxOutputTokens": 32768,
+    "capturedCalls": 21,
+    "parentCalls": 14,
+    "childCalls": 7,
+    "sessionTitleCall": {
+      "count": 1,
+      "maxTokens": 64
+    },
+    "otherCapturedCallsMaxTokens": 32768,
+    "actualProviders": [
+      {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      }
+    ],
+    "configuredRolesAndVision": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/models.json"
+  },
+  "control": {
+    "implementation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-delay.mjs",
+    "independentImplementationReview": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/handoff-delay-review.json",
+    "targetAssociation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/target-association.json",
+    "armedControlSnapshot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/control-final.json",
+    "armingRecordedAtMs": 1791955544974,
+    "armingClockMeaning": "执行者在arm命令成功后记录该时间；该值是arm完成时间的上界。",
+    "artifactObserved": {
+      "size": 21788,
+      "mtimeMs": 1791955589126.1782
+    },
+    "releaseOperator": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/release-operator.json",
+    "plannedHoldMs": 90000,
+    "observedHoldMs": 90116,
+    "trace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/events/a1959eb9-8c0b-4f1b-9494-db8e9dba713b.jsonl",
+    "clockMeaning": {
+      "controlAt": "控制器回调执行时由本机Date记录的UTC时间；start时间在原subagent/start回调内捕获，随后在命中时写入。",
+      "controlMonotonicMs": "同一Host进程的performance.now时间，start值亦在原回调内捕获。",
+      "sessionTimeMs": "官方持久会话事件的event.time。",
+      "sdkStartEmissionTime": "subagent/start负载未携带原生发射时间；本报告使用原回调观察时间。"
+    }
+  },
+  "timeline": [
+    {
+      "actor": "parent",
+      "type": "tool/call",
+      "seq": 41,
+      "timeMs": 1791955466987,
+      "at": "2026-10-14T05:24:26.987Z",
+      "meaning": "派发构图子会话并指定产物路径"
+    },
+    {
+      "actor": "controller",
+      "kind": "subagent_start",
+      "at": "2026-10-14T05:24:27.007Z",
+      "runId": "8c1eec16-c88a-45a2-8bfc-3a4cfce8c78c",
+      "meaning": "原始回调内捕获的开始时间；命中后写入"
+    },
+    {
+      "actor": "child",
+      "type": "tool/call",
+      "seq": 34,
+      "timeMs": 1791955589095,
+      "at": "2026-10-14T05:26:29.095Z",
+      "meaning": "工具写入构图文件"
+    },
+    {
+      "actor": "child",
+      "type": "tool/result",
+      "seq": 35,
+      "timeMs": 1791955589130,
+      "at": "2026-10-14T05:26:29.130Z",
+      "meaning": "工具返回文件写入成功与行数"
+    },
+    {
+      "actor": "child",
+      "type": "tool/call",
+      "seq": 44,
+      "timeMs": 1791955607707,
+      "at": "2026-10-14T05:26:47.707Z",
+      "meaning": "模型主动调用send_message，正文宣告构图阶段完成"
+    },
+    {
+      "actor": "parent",
+      "type": "agent/inbox/spliced",
+      "seq": 53,
+      "timeMs": 1791955607715,
+      "at": "2026-10-14T05:26:47.715Z",
+      "meaning": "子会话主动消息入队"
+    },
+    {
+      "actor": "child",
+      "type": "assistant/message",
+      "seq": 48,
+      "timeMs": 1791955610338,
+      "at": "2026-10-14T05:26:50.338Z",
+      "meaning": "子会话final仅交付文件路径"
+    },
+    {
+      "actor": "child",
+      "type": "step/end",
+      "seq": 49,
+      "timeMs": 1791955610339,
+      "at": "2026-10-14T05:26:50.339Z",
+      "meaning": "子会话最后step/end"
+    },
+    {
+      "actor": "controller",
+      "kind": "delay_started",
+      "at": "2026-10-14T05:26:50.341Z",
+      "meaning": "已验证普通产物文件后，在agent/turn-stopping回调中开始等待"
+    },
+    {
+      "actor": "parent",
+      "type": "user/message",
+      "seq": 58,
+      "timeMs": 1791955623577,
+      "at": "2026-10-14T05:27:03.577Z",
+      "meaning": "父模型上下文消费子会话主动消息"
+    },
+    {
+      "actor": "parent",
+      "type": "tool/call",
+      "seq": 60,
+      "timeMs": 1791955626868,
+      "at": "2026-10-14T05:27:06.868Z",
+      "meaning": "父工具读取构图文件头"
+    },
+    {
+      "actor": "parent",
+      "type": "tool/call",
+      "seq": 65,
+      "timeMs": 1791955629461,
+      "at": "2026-10-14T05:27:09.461Z",
+      "meaning": "父工具读取构图文件中段"
+    },
+    {
+      "actor": "parent",
+      "type": "tool/call",
+      "seq": 70,
+      "timeMs": 1791955631807,
+      "at": "2026-10-14T05:27:11.807Z",
+      "meaning": "父工具读取构图文件末段"
+    },
+    {
+      "actor": "parent",
+      "type": "turn/end",
+      "seq": 81,
+      "timeMs": 1791955645295,
+      "at": "2026-10-14T05:27:25.295Z",
+      "meaning": "父首轮自然completed"
+    },
+    {
+      "actor": "operator",
+      "kind": "release",
+      "beforeAt": "2026-10-14T05:28:20.345Z",
+      "afterAt": "2026-10-14T05:28:20.442Z",
+      "meaning": "本地CLI写入释放信号，不修改模型输入"
+    },
+    {
+      "actor": "controller",
+      "kind": "delay_finished",
+      "at": "2026-10-14T05:28:20.457Z",
+      "reason": "released"
+    },
+    {
+      "actor": "child",
+      "type": "turn/end",
+      "seq": 50,
+      "timeMs": 1791955700457,
+      "at": "2026-10-14T05:28:20.457Z",
+      "meaning": "子会话turn/end自然completed"
+    },
+    {
+      "actor": "parent",
+      "type": "agent/inbox/spliced",
+      "seq": 82,
+      "timeMs": 1791955700467,
+      "at": "2026-10-14T05:28:20.467Z",
+      "meaning": "SDK subagent-settled完成通知入队"
+    },
+    {
+      "actor": "controller",
+      "kind": "subagent_end",
+      "at": "2026-10-14T05:28:20.469Z",
+      "runId": "8c1eec16-c88a-45a2-8bfc-3a4cfce8c78c"
+    },
+    {
+      "actor": "parent",
+      "type": "user/message",
+      "seq": 86,
+      "timeMs": 1791955700476,
+      "at": "2026-10-14T05:28:20.476Z",
+      "meaning": "父第二轮消费同一SDK完成通知"
+    },
+    {
+      "actor": "parent",
+      "type": "turn/end",
+      "seq": 89,
+      "timeMs": 1791955706324,
+      "at": "2026-10-14T05:28:26.324Z",
+      "meaning": "父第二轮自然completed"
+    }
+  ],
+  "relay": {
+    "origin": "子模型主动调用send_message工具。",
+    "originEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/relay-origin-events.json",
+    "toolCallSeq": 44,
+    "toolCallId": "call_00_l1j4d5pvdtd3e6qndccqvr00",
+    "toolResultSeq": 45,
+    "parentInboxSeq": 53,
+    "parentConsumeSeq": 58,
+    "messageId": "f0e36a1a-aec5-4107-8169-59f02799ac0d",
+    "source": {
+      "kind": "agent-message",
+      "form": "relay",
+      "senderSessionId": "18dfa7a5-725c-4bb0-a176-370ac1b8cf74"
+    },
+    "declaredCompletion": "构图阶段完成。结果文件：/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE/composition/001.md（194 行，写入成功并已校验）。",
+    "childFinalSeq": 48,
+    "childTurnEndSeq": 50
+  },
+  "sdkSettlement": {
+    "parentInboxSeq": 82,
+    "parentConsumeSeq": 86,
+    "messageId": "a0c358ad-f804-493e-97d0-2e943f74eec8",
+    "source": {
+      "kind": "subagent-settled",
+      "form": "notice",
+      "summary": "Background subagent 18dfa7a5-725c-4bb0-a176-370ac1b8cf74 finished and will do no further work unless you send it more.",
+      "senderSessionId": "18dfa7a5-725c-4bb0-a176-370ac1b8cf74"
+    },
+    "controllerTraceIndexes": {
+      "enqueued": 10,
+      "subagentEnd": 11,
+      "consumed": 13
+    }
+  },
+  "parentFileReads": [
+    {
+      "callSeq": 60,
+      "resultSeq": 61,
+      "callId": "call_00_4f3wnxka3txjjj3by9z6qk00",
+      "calledAt": "2026-10-14T05:27:06.868Z",
+      "resultAt": "2026-10-14T05:27:06.905Z",
+      "arguments": {
+        "command": "cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE && wc -l composition/001.md && echo \"=== HEAD ===\" && sed -n '1,60p' composition/001.md",
+        "description": "Inspect composition file head"
+      },
+      "toolResultIsError": false,
+      "settledNoticeAlreadyConsumed": false,
+      "relayAlreadyConsumed": true
+    },
+    {
+      "callSeq": 65,
+      "resultSeq": 66,
+      "callId": "call_00_9kwdsss5cfdy5n6dnfqukznz",
+      "calledAt": "2026-10-14T05:27:09.461Z",
+      "resultAt": "2026-10-14T05:27:09.494Z",
+      "arguments": {
+        "command": "cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE && echo \"=== 60-140 ===\" && sed -n '60,140p' composition/001.md",
+        "description": "Read middle of composition file"
+      },
+      "toolResultIsError": false,
+      "settledNoticeAlreadyConsumed": false,
+      "relayAlreadyConsumed": true
+    },
+    {
+      "callSeq": 70,
+      "resultSeq": 71,
+      "callId": "call_00_bes9tf99q1hs4l6z0zbqwnjl",
+      "calledAt": "2026-10-14T05:27:11.807Z",
+      "resultAt": "2026-10-14T05:27:11.834Z",
+      "arguments": {
+        "command": "cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE && sed -n '140,194p' composition/001.md",
+        "description": "Read tail of composition file"
+      },
+      "toolResultIsError": false,
+      "settledNoticeAlreadyConsumed": false,
+      "relayAlreadyConsumed": true
+    }
+  ],
+  "checks": {
+    "controllerActiveBeforeSubmission": true,
+    "unarmedBeforeSubmission": true,
+    "exactChildAndArtifactAssociation": true,
+    "artifactOrdinaryFileObserved": true,
+    "originalStartRunMatchesEnd": true,
+    "delayBeforeNativeChildTurnEnd": true,
+    "releaseReason": "released",
+    "noticeMessageIdEnqueuedEqualsConsumed": true,
+    "settledOrderReleaseEndEnqueueConsume": true,
+    "parentReadsBeforeSDKSettlement": true,
+    "parentFirstTurnCompletesBeforeSDKSettlement": true,
+    "parentReadsAfterRelayConsumption": true,
+    "parentReadsAfterSDKSettlement": false,
+    "allCapturedModelCallsComplete": true,
+    "taskFinishedWithin600000Ms": true,
+    "portsReleased": true,
+    "processGroupPresent": false,
+    "profilePatchRestored": true
+  },
+  "evidence": {
+    "parentFullEvents": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c12234d8-668c-47a2-8e00-664380d8cc1c/1791955717432-4d215a09-8ffe-4e0e-a8dd-2091368066c0-collect.json",
+    "childFullEvents": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c12234d8-668c-47a2-8e00-664380d8cc1c/1791955717465-c660dbc6-de95-4c9d-8690-980e9fab4c19-collect.json",
+    "modelRequestAndChunkSnapshots": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/model-calls-index.json",
+    "modelCaptureIncludes": [
+      "完整实际system/messages",
+      "工具声明与toolHistory",
+      "逐块模型返回",
+      "调用开始及结束时间"
+    ],
+    "artifactFiles": [
+      {
+        "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE/task.md",
+        "snapshot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/artifacts/task.md",
+        "size": 1918,
+        "mtimeMs": 1791955637880.8718,
+        "byteEqual": true
+      },
+      {
+        "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE/composition/001.md",
+        "snapshot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/artifacts/composition/001.md",
+        "size": 21788,
+        "mtimeMs": 1791955589126.1782,
+        "byteEqual": true
+      }
+    ],
+    "officialRunRecord": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/c12234d8-668c-47a2-8e00-664380d8cc1c/run.json",
+    "state": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/state.json",
+    "cleanupOperator": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/cleanup-operator.json",
+    "startupObservedListeningPortsCleanup": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/observed-listening-ports-cleanup.json"
+  },
+  "cleanup": {
+    "desktopStopped": true,
+    "ports": [
+      {
+        "port": 64669,
+        "pids": []
+      },
+      {
+        "port": 64670,
+        "pids": []
+      },
+      {
+        "port": 64671,
+        "pids": []
+      }
+    ],
+    "portsReleased": true,
+    "processGroupPresent": false,
+    "profilePatchByteRestored": true,
+    "controlAndReleaseFilesRemoved": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/control.json",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/release.signal"
+    ],
+    "retainedEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33",
+    "startupObservedListeningPorts": [
+      {
+        "port": 64669,
+        "exitCode": 1,
+        "pids": [],
+        "stderr": ""
+      },
+      {
+        "port": 64670,
+        "exitCode": 1,
+        "pids": [],
+        "stderr": ""
+      },
+      {
+        "port": 64690,
+        "exitCode": 1,
+        "pids": [],
+        "stderr": ""
+      }
+    ]
+  },
+  "coverageLimits": [
+    "本轮只执行纯构图及文件交付，未覆盖生成、观察、比较、Generation Run关联或图片交付。",
+    "父Agent首轮读取发生在主动完成消息消费后；释放后只观察到SDK通知消费及第二轮完成，未出现释放后文件读取。",
+    "完成通知的实际合同与本次行为结论由独立审查确定。",
+    "未执行重复运行或稳定性验收。"
+  ]
+}

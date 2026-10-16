@@ -24,6 +24,7 @@ export async function materializeManagedCliModule(options) {
     sourcemap: false,
     clean: true,
     dts: false,
+    deps: { alwaysBundle: ['@deepseek-ai/schemastery'] },
     outExtensions: () => ({ js: outputExtension, dts: '.d.mts' }),
   })
   return output

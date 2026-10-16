@@ -1,0 +1,68 @@
+{
+  "recorded_at": "2026-10-14T02:27:49Z",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md#57-步骤六移除-agent-目录-cli-并迁移内部数据访问",
+  "scope": "Managed Catalog CLI request, dispatch, discovery and shell environment retirement",
+  "implementation": {
+    "request_boundaries": "Removed all five catalog request union members and JSON/argv parser branches; direct Host POST rejects them with CLI_REQUEST_INVALID and HTTP 400.",
+    "dispatch": "Removed Catalog dispatch, Catalog handler dependency and Catalog error mapping from managed CLI; ordinary preset native Catalog tools are outside this change.",
+    "help": "Removed all Catalog help nodes, root recommendations, Catalog NEXT summaries and command-word correction; removed unconsumed option parsers and help messages.",
+    "shell": "Preserved only managed executable, Host Node executable, loopback API and foreground capability environment fields.",
+    "activation": "Updated official plugin activation lifecycle scenario to successful Seed generation, rejected Catalog request, unused Catalog dependency, four exposed environment variables, result revocation and shutdown."
+  },
+  "tdd": [
+    {
+      "seam": "CLI argv and JSON request parser",
+      "red": "Retired Catalog request test failed because catalog template resolve was still accepted.",
+      "green": "tests/unit/cli-contract.test.ts passed all 9 tests after branch removal."
+    },
+    {
+      "seam": "Rendered root, category and command help",
+      "red": "Root help exposed Catalog category and catalog --help recommendation.",
+      "green": "tests/unit/cli-help-schema.test.mjs passed all 9 tests after Catalog nodes and recommendations were removed; subsequent unused invalidOption cleanup removes one obsolete schema test."
+    },
+    {
+      "seam": "Foreground shell environment",
+      "red": "Exact environment assertion failed because semantic CLI, Source URL and Source port were exposed.",
+      "green": "Shell environment test passed in combined 7-file run after field removal; obsolete source-address and source-script validation tests were removed."
+    }
+  ],
+  "verification": [
+    {
+      "command": "pnpm exec vitest run tests/unit/cli-contract.test.ts tests/unit/cli-shell-capability.test.ts tests/unit/cli-help-schema.test.mjs tests/integration/cli-route.test.ts tests/integration/cli-command.test.ts tests/integration/cli-help.test.ts tests/integration/cli-server.test.ts",
+      "completed_at_local": "2026-10-14 10:25:48 Asia/Shanghai",
+      "status": "passed",
+      "files": 7,
+      "tests": 85,
+      "limitation": "This run preceded removal of unused optionMap/requiredOption and invalidOption help schema requirement."
+    },
+    {
+      "command": "pnpm exec vitest run tests/integration/official-plugin-activation.test.ts -t 'binds the foreground'",
+      "status": "blocked_during_parallel_migration",
+      "reason": "catalog-service.ts imported catalog-cli.ts after another implementation worker renamed that module; no activation test executed."
+    },
+    {
+      "command": "pnpm typecheck",
+      "status": "blocked_during_parallel_migration",
+      "reason": "Internal Catalog/Generation source-client migration temporarily left imports of removed modules in consumers and tests; managed CLI field errors had been resolved."
+    },
+    {
+      "command": "Same combined 7-file Vitest command after unused option/helper cleanup",
+      "completed_at_local": "2026-10-14 10:27:34 Asia/Shanghai",
+      "status": "blocked_during_parallel_migration",
+      "passed_files": 3,
+      "passed_tests": 22,
+      "failed_suites": 4,
+      "reason": "Parallel error-catalog migration changed CATALOG_QUERY_FAILED diagnostic_template while error-catalog-schema still required exitCode; import-time validation failed."
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed",
+      "completed_at_local": "2026-10-14 10:27:49 Asia/Shanghai"
+    }
+  ],
+  "remaining": [
+    "Rerun the combined CLI tests and official activation test once internal consumer and error-catalog migration is consistent.",
+    "Independent review of changed CLI configuration text and final integrated candidate.",
+    "Official Desktop and real Agent acceptance remain the parent task's responsibility."
+  ]
+}

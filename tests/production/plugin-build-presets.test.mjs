@@ -1,10 +1,14 @@
-import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { execFile as execFileCallback } from 'node:child_process'
+import { promisify } from 'node:util'
+import { pathToFileURL } from 'node:url'
+import { createRequire } from 'node:module'
 
 import { expect, it } from 'vitest'
 
-import { buildPlugin } from '../../scripts/build/index.mjs'
+import { buildPlugin, packPlugin } from '../../scripts/build/index.mjs'
 
 it('rejects an invalid project Preset before writing plugin build outputs', async () => {
   const root = await mkdtemp(join(tmpdir(), 'plugin-build-preset-'))
@@ -31,3 +35,37 @@ it('rejects an invalid project Preset before writing plugin build outputs', asyn
     await rm(root, { recursive: true, force: true })
   }
 })
+
+it('packages the shared MCP configuration with both resolvable Preset includes', async () => {
+  const repositoryRoot = resolve(import.meta.dirname, '../..')
+  const root = await mkdtemp(join(tmpdir(), 'plugin-package-mcp-'))
+  const execFile = promisify(execFileCallback)
+  try {
+    await buildPlugin({ repositoryRoot, outputRoot: root })
+    const { archivePath } = await packPlugin({ repositoryRoot, artifactRoot: root, outputFile: join(root, 'plugin.tgz') })
+    await execFile('tar', ['-xzf', archivePath, '-C', root])
+    await symlink(join(repositoryRoot, 'node_modules'), join(root, 'package/node_modules'), 'dir')
+    const require = createRequire(import.meta.url)
+    const yaml = require('js-yaml')
+    const { entryListSchema } = await import('@deepseek-ai/cordis-plugin-include')
+    for (const presetId of ['harness-comfyui-cli-candidate', 'harness-comfyui-iteration']) {
+      const directory = join(root, 'package', 'agent-presets', presetId)
+      const composition = yaml.load(await readFile(join(directory, 'agent.cordis.yml'), 'utf8'), { schema: entryListSchema })
+      const includes = composition.filter(row => row.name === 'cordis:include' && row.config?.path === '../noobai-mcp.cordis.yml')
+      expect(includes).toHaveLength(1)
+      const source = await readFile(resolve(directory, includes[0].config.path), 'utf8')
+      expect(source).toBe(await readFile(join(repositoryRoot, 'agent-presets/noobai-mcp.cordis.yml'), 'utf8'))
+      const control = composition.filter(row => row.id === 'tool-subagent-control')
+      expect(control).toHaveLength(1)
+      expect(control[0].name).toBe('../project-subagent-control.mjs')
+      const module = await import(pathToFileURL(resolve(directory, control[0].name)).href)
+      const registered = []
+      module.apply({ tools: { register: tool => registered.push(tool) }, subagents: {} })
+      expect(registered.map(tool => tool.name)).toEqual(['interrupt_agent'])
+      expect(await readFile(resolve(directory, '../project-subagent-control.json'), 'utf8'))
+        .toBe(await readFile(join(repositoryRoot, 'agent-presets/project-subagent-control.json'), 'utf8'))
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+}, 60000)

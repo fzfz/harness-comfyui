@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, extname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
+import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
 import type { GenerationMediaKind } from '../../generation/contract.ts'
 import {
   MAX_RUN_INPUT_QUERY_IDS,
@@ -1062,7 +1063,12 @@ export class GenerationRuntime {
       const current = this.getRow(row.run_id)
       if (
         (row.status === 'remote_pending' || row.status === 'remote_running')
-        && (facts.code === 'COMFYUI_CONNECTION_FAILED' || facts.code === 'COMFYUI_REQUEST_TIMEOUT')
+        && [
+          ERROR_CATALOG.COMFYUI_CONNECTION_FAILED.code,
+          ERROR_CATALOG.COMFYUI_REQUEST_TIMEOUT.code,
+          ERROR_CATALOG.SOURCE_CONNECTION_FAILED.code,
+          ERROR_CATALOG.SOURCE_REQUEST_TIMEOUT.code,
+        ].includes(facts.code)
       ) {
         this.recordObservationGap(row, facts)
         return

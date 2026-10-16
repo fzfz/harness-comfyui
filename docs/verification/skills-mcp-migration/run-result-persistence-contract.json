@@ -1,0 +1,433 @@
+{
+  "purpose": "为 Run 查询结果保存提供证据、修复候选合同及复验边界。",
+  "readWhen": "实施主计划第 5.7.3 节“受管 CLI 的结果文件与复用”前。",
+  "sourceEvents": ".local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/collection-1791979002308/all-session-records.json",
+  "traceIndex": ".local/run-result-persistence/call-trace.json",
+  "trace": [
+    {
+      "seq": [
+        4
+      ],
+      "fact": "任务要求创建图片，随后查询实际 Run 和媒体，产物保存到 5.6-2。"
+    },
+    {
+      "seq": [
+        18,
+        19,
+        40,
+        41
+      ],
+      "fact": "模型先读取 comfyui-generate，再完整读取 generation-cli.md。seq 41 包含同数组成功结果复用规则，也包含直接输出 stdout 的完整示例。"
+    },
+    {
+      "seq": [
+        45,
+        50,
+        52,
+        57,
+        59,
+        64,
+        66,
+        71,
+        76
+      ],
+      "fact": "模型读取参数检查参考、查询目录资源和实例、检查环境、创建产物目录、检查参数并提交生成。"
+    },
+    {
+      "seq": [
+        78,
+        83,
+        88,
+        89
+      ],
+      "fact": "模型逐级读取 CLI、generation 和 resolve-media 帮助。媒体帮助示例直接输出 JSON，要求读取 stdout。"
+    },
+    {
+      "seq": [
+        90,
+        91
+      ],
+      "fact": "首次 run-inputs 返回 available 参数和 available Workflow。shell 追加 exit=0。完整工具文本为 3698 字节；去掉 exit=0 换行后 JSON 为 3691 字节。"
+    },
+    {
+      "seq": [
+        94,
+        95,
+        96
+      ],
+      "fact": "模型开始媒体查询，使用 shell 变量读取输出；该路径也没有直接保存结果文件。"
+    },
+    {
+      "seq": [
+        104
+      ],
+      "fact": "可见分析明确决定重新运行查询以保存文件。该分析只支持动机线索。"
+    },
+    {
+      "seq": [
+        105,
+        106
+      ],
+      "fact": "相同 run_ids 再次调用 run-inputs，同时重查 resolve-media 和 inspect-template-parameters。输出目录出现 3691 字节 run-inputs.json。"
+    },
+    {
+      "seq": [
+        110,
+        115,
+        120,
+        125,
+        130
+      ],
+      "fact": "后续交付操作见完整调用索引；索引按原始事件保留 27 次调用的名称和参数。"
+    }
+  ],
+  "verified": [
+    "首次成功结果已进入模型可见 Tool 返回。没有发现该结果截断的证据。",
+    "重复调用违反实际读到的生成 Skill 复用合同。",
+    "生成 Skill 的结果复用要求没有指定首次保存时点、文件路径和保存失败处理。",
+    "当前脚本在 main 中对 envelope.data 使用 JSON.stringify 后写 stdout，没有结果文件写入。",
+    "GenerationRuntime.readGenerationRunInputs 按输入顺序查询，返回 runs；逐项错误保留其他项。",
+    "原生 read_comfyui_run_inputs 也调用该 Runtime，并直接渲染 JSON。项目预设使用受管 CLI；普通预设仍有原生 Tool 消费者。",
+    "本次在本地从原始轨迹提取了首次结果 JSON，并通过 JSON 解析；这不等同于模型复验。"
+  ],
+  "hypotheses": [
+    {
+      "claim": "首次调用即保存完整 stdout，可以消除交付时为保存记录而重查的动机。",
+      "support": "首次结果完整；保存需求从任务输入就已存在；seq 104 明确说明重查保存。",
+      "missing": "尚无只改变保存时点的同条件模型对照。",
+      "counterexample": "即使已有文件，模型仍可能无视复用规则并重复调用。"
+    },
+    {
+      "claim": "CLI 自动生成文件比 shell 首次重定向更能减少重复调用。",
+      "support": "自动文件不依赖 Agent 记住重定向。",
+      "missing": "没有两方案模型对照；没有文件生命周期问题导致本次失败的证据。"
+    }
+  ],
+  "consumers": [
+    {
+      "skill": "anima-prompt-builder",
+      "reference": ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+      "command": "generation run-inputs --stdin",
+      "currentPersistence": "命令示例直接返回 stdout，未指定首次调用的结果文件。",
+      "reuse": "按内容和顺序相同的完整 run_ids 数组复用，保留原文重试和刷新条件。"
+    },
+    {
+      "skill": "krea2-anime-prompt-builder",
+      "reference": ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+      "command": "generation run-inputs --stdin",
+      "currentPersistence": "命令示例直接返回 stdout，未指定首次调用的结果文件。",
+      "reuse": "按内容和顺序相同的完整 run_ids 数组复用，保留原文重试和刷新条件。"
+    },
+    {
+      "skill": "wai-sdxl-prompt-builder",
+      "reference": ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+      "command": "generation run-inputs --stdin",
+      "currentPersistence": "命令示例直接返回 stdout，未指定首次调用的结果文件。",
+      "reuse": "按内容和顺序相同的完整 run_ids 数组复用，保留原文重试和刷新条件。"
+    },
+    {
+      "skill": "comfyui-generate",
+      "reference": ".agents/skills/comfyui-generate/references/generation-cli.md",
+      "command": "generation run-inputs --stdin",
+      "currentPersistence": "命令示例直接返回 stdout，未指定首次调用的结果文件。",
+      "reuse": "按内容和顺序相同的完整 run_ids 数组复用，保留原文重试和刷新条件。"
+    },
+    {
+      "skill": "character-portrait-prompt-designer",
+      "reference": ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+      "command": "generation run-inputs --stdin",
+      "currentPersistence": "命令示例直接返回 stdout，未指定首次调用的结果文件。",
+      "reuse": "按原文保留；人物立绘参考没有显式的同数组调用次数规则。"
+    },
+    {
+      "skill": "comfyui-iterate-generation",
+      "reference": ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+      "command": "generation run-inputs --stdin; generation resolve-media --stdin",
+      "currentPersistence": "要求把完整输出或错误写入生成结果文件，但入口与示例直接返回 stdout。records.md 允许生成参数写为记录路径。",
+      "reuse": "保留 Workflow 暂不可用、任务要求刷新及继续查询尚无图片 Run 的条件。"
+    },
+    {
+      "skill": "comfyui-image-review",
+      "reference": ".agents/skills/comfyui-image-review/references/cli.md",
+      "command": "generation resolve-media --stdin",
+      "currentPersistence": "入口与示例直接返回 stdout。",
+      "reuse": "保留每批 1 至 20 项及允许重复查询的现有合同。"
+    }
+  ],
+  "status": "cli-owned-file-output-contract-ready-for-review-not-implemented",
+  "supersedes": ".local/run-result-persistence/contract-before-cli-design.json",
+  "decision": "受管 CLI 统一保存每次成功业务响应，并在 stdout 返回结果文件的绝对路径。Agent 从该文件读取业务 JSON，按原 Skill 合同复用或刷新。",
+  "reason": "用户 AGENTS 第 6.4.2 项独立要求程序保存结果文件。统一保存属于 CLI 展示层的确定性职责。原始轨迹支持保存时点缺口，但尚未证明重复查询的充分原因。",
+  "architecture": {
+    "flow": [
+      "Agent -> managed CLI：argv 与 stdin 不变。",
+      "CLI：解析帮助、参数和环境；业务调用预先分配临时目录并打开独占结果文件。",
+      "CLI -> Host route -> dispatch -> Runtime 或 Image Reader：业务请求和身份保持原样。",
+      "Host -> CLI：保持现有响应 envelope 和业务数据。",
+      "CLI：序列化 envelope.data，完整写入并关闭结果文件。",
+      "CLI -> Agent：stdout 仅返回绝对路径和换行；非 quiet 的 NEXT 仍写 stderr。",
+      "Agent：读取路径中的 JSON；后续复用或复制文件，按既有条件刷新。"
+    ],
+    "responsibilities": {
+      "cli": "拥有结果文件创建、权限、序列化、写入完成、发布路径和失败清理。",
+      "runtime": "继续拥有 Workspace 归属、Run、历史查询和业务持久化。",
+      "agent": "判断业务结果、允许的刷新和复用，将需长期保留的结果文件复制到任务产物目录。",
+      "host": "不新增结果文件注册、缓存、锁或状态。",
+      "nativeTools": "保持原生结构化结果与 schema；命令行规则不改变原生 Tool。"
+    },
+    "singleSources": {
+      "implementation": "新增 scripts/cli/result-file.mjs，统一封装文件生命周期；scripts/cli/harness-comfyui.mjs 只调用其公开方法。",
+      "agentProtocol": "config/managed-cli-help.json 的 commonDetails 唯一定义通用路径协议和保存错误处理。各 Skill 首次使用前读取相应命令 --help。",
+      "businessContracts": "现有 Skill 参考继续定义输入来源、业务 JSON、复用与刷新。文件分配和保存错误流程不复制到各 Skill。"
+    },
+    "interfaceBreak": "CLI 成功 stdout 从 JSON 改为单行绝对路径。这是传输协议变更，没有旧 stdout JSON 兼容模式。结果文件的业务 JSON、Host envelope、原生 Tool schema 和 Builder 输出 schema 不变。"
+  },
+  "commandCoverage": [
+    {
+      "command": "generation submit --stdin",
+      "filePayload": "现有 {run_id}；接受语义和幂等规则不变。",
+      "postSuccessFailure": "错误明确 Run 已接纳，并给出该 run_id。不得因文件错误重新提交。"
+    },
+    {
+      "command": "generation inspect-template-parameters --stdin",
+      "filePayload": "现有 parameters、size_candidates。",
+      "postSuccessFailure": "报告 Host 查询已成功、文件保存失败；停止依赖结果，不自动重查。"
+    },
+    {
+      "command": "generation random-seeds --stdin",
+      "filePayload": "现有 seeds。",
+      "postSuccessFailure": "报告 Seed 已取得但文件未保存；不自动重新抽取 Seed。"
+    },
+    {
+      "command": "generation run-inputs --stdin",
+      "filePayload": "现有 runs；顺序、重复项、逐项错误和 Workflow 全文不变。",
+      "postSuccessFailure": "报告查询已成功但文件未保存；不自动重查。"
+    },
+    {
+      "command": "generation resolve-media --stdin",
+      "filePayload": "现有 runs、parameters、images。",
+      "postSuccessFailure": "报告查询已成功但文件未保存；不自动重查。"
+    },
+    {
+      "command": "image inspect --stdin",
+      "filePayload": "现有 provider、model、file_path、observation。",
+      "postSuccessFailure": "报告视觉模型调用已完成但文件未保存；不自动再次调用模型。"
+    }
+  ],
+  "fileLifecycle": {
+    "root": "使用 Node os.tmpdir()，在其下调用 mkdtemp 创建 harness-comfyui-cli- 前缀的独立目录。绝对路径经 path.resolve 生成。沿用操作系统临时目录选择，不新增插件配置或环境变量。",
+    "ownership": "目录和文件属于运行 CLI 的当前操作系统用户；目录权限 0700，结果文件权限 0600。文件与单次 CLI 调用绑定，不与 run_ids 建立缓存索引。",
+    "allocation": "帮助和参数、环境检查完成后，发 HTTP 请求前创建目录，并以 wx 打开 result.json。创建失败不调用 Host。",
+    "uniqueness": "每次调用独立 mkdtemp；使用 wx 拒绝覆盖。相同输入、同时调用、不同 Session 和刷新均产生独立文件，无并发锁。",
+    "content": "写入现有 JSON.stringify(envelope.data) 加一个换行的 UTF-8 字节；不添加 metadata、路径或状态字段，不截断 Workflow，不由模型重建。",
+    "publication": "写入与 close 均成功后才向 stdout 写路径。内部未完成文件不会作为成功结果发布。无需另建状态文件或文件哈希。",
+    "retention": "成功文件在 CLI 退出后保留，不随 Tool capability 撤销而删除。CLI 不定时清理、不扫描或删除其他调用目录；文件受操作系统临时目录清理周期约束。需要跨任务或长期保存时，Agent 复制到已指定的任务产物目录。",
+    "cleanup": "Host 错误、协议错误或写入失败时，关闭当前句柄并删除本次未发布目录；清理失败在同次 stderr 中附带目录和系统错误。不得删除任何已发布结果或其他调用文件。",
+    "stdoutFailure": "完整文件已保存但 stdout 写入失败时，保留文件；stderr 给出结果文件绝对路径，返回非零。若 stdout 已部分传输，消费者必须依赖非零退出码拒绝成功判定；不承诺操作系统管道失败时 stdout 恒为空。",
+    "pathBoundary": "空格和 Unicode 路径保留原样，消费者整体读取单行并移除最后一个换行。tmpdir 含换行或控制字符时，在请求前报路径错误，以保证单行协议。",
+    "limits": "不保证进程被 SIGKILL 或系统掉电时清理完成；未发布残留由临时目录生命周期处理。",
+    "diagnosticFailure": "错误消息或 NEXT 写入 stderr 也可能失败。CLI 保留已完成文件，返回非零，且不将已完成 Host 请求重新发出；无法写出诊断时不宣称用户已获知结果。"
+  },
+  "exitAndErrorContract": {
+    "help": "--help 按现有文本直接输出 stdout，退出 0，不分配文件、不访问 Host。",
+    "success": "退出 0；stdout 为 result_file_absolute_path 加换行。--quiet 成功 stderr 为空；普通调用保留 NEXT。文件内容采用原命令成功 JSON。",
+    "existingFailure": "现有 argv/stdin/environment 错误仍退出 2；Host/Provider/协议失败仍退出 1。已有错误码和业务重试规则保持不变。未发布文件清理后不返回成功路径。",
+    "prepareFailure": {
+      "code": "CLI_RESULT_FILE_PREPARE_FAILED",
+      "exit": 2,
+      "stderr": "CLI_RESULT_FILE_PREPARE_FAILED: Cannot prepare result file at {path}: {system_error}. Host request was not sent. Fix temporary-directory access or free disk space before retrying. {helpHint}"
+    },
+    "saveFailure": {
+      "code": "CLI_RESULT_FILE_WRITE_FAILED",
+      "exit": 1,
+      "stderr": "CLI_RESULT_FILE_WRITE_FAILED: Host command {command} succeeded, but result file {path} could not be saved: {system_error}. Do not repeat the command to save its result. {accepted_run_id_if_submit} Fix temporary-directory access or free disk space; report this completed command and stop dependent work. {helpHint}"
+    },
+    "publishFailure": {
+      "code": "CLI_RESULT_PATH_WRITE_FAILED",
+      "exit": 1,
+      "stderr": "CLI_RESULT_PATH_WRITE_FAILED: Result was saved at {path}, but output could not be written to {stream}: {system_error}. Read the saved file; do not repeat the command. {helpHint}"
+    },
+    "retry": "CLI 不新增任何 HTTP 重试、自动重新查询、缓存或恢复子命令。Agent 对新增保存错误遵守公共帮助的停止条件，不进入原 Skill 的通用业务重试分支。",
+    "serializationFailure": "Host 成功后序列化失败属于 CLI_RESULT_FILE_WRITE_FAILED，诊断标记 serialization 阶段；不得误报 Host 未执行。",
+    "diagnostics": "新错误为 CLI 本地传输错误，不写入 config/error-catalog.json 的 Host 业务错误合同。模板集中在 managed-cli-help.json.messages，由 CLI 复用。"
+  },
+  "implementationContract": [
+    {
+      "file": "scripts/cli/result-file.mjs",
+      "action": "新增唯一文件生命周期模块。公开 prepareResultFile()、writeResultFile(handle,data)、discardUnpublishedResult(handle)；prepare 返回私有目录、路径及文件句柄。用真实临时目录单测；通过模块依赖注入测试写入/关闭失败，不增加产品命令参数。"
+    },
+    {
+      "file": "scripts/cli/harness-comfyui.mjs",
+      "action": "在现有 main 的参数与环境检查后、fetch 前调用 prepare。用文件写入替换 stdout.write(JSON.stringify(...))。请求格式保持不变。responseJson 拒绝缺少对象型 data 的成功响应；submit 的成功数据必须有非空 run_id。协议错误清理本次未发布文件，不进入保存成功阶段。用独立阶段区分 Host 错误、保存错误和路径发布错误；成功写入路径后才输出 NEXT。await stdout write 回调并处理 error 事件，避免未捕获 EPIPE。 发布结果路径后，不再进入 Host 请求错误分支。NEXT 的写失败只属于输出失败，保留结果文件。"
+    },
+    {
+      "file": "config/managed-cli-help.json",
+      "action": "修改 commonDetails 的成功 stdout 合同。删除 6 个叶命令 next 中重复的“读取 stdout JSON”；各 next 只保留业务下一步，公共协议只定义一次。新增 3 个文件错误消息模板。submit NEXT 继续使用内存中的 run_id，不通过 stdout 再解析。"
+    },
+    {
+      "file": "scripts/cli/help-schema.mjs",
+      "action": "parseManagedHelpDefinition 当前只强制 4 个消息键。增加 3 个文件错误模板键的必填检查；parseHelpDefinition 的 messages 字符串约束保持。"
+    },
+    {
+      "file": "scripts/cli/help.mjs",
+      "action": "将没有其他消费者的 nextSteps 替换为纯 renderNextSteps。CLI 负责等待 stderr 写回调并处理写入错误；同步 help.d.mts 声明。"
+    },
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "action": "在 CLI 参考约定中把公共传输与文件生命周期明确归 managed CLI --help；Skill 参考只定义本命令的业务数据和业务处理。允许通过程序帮助取得唯一公共协议，避免复制 9 份保存流程。"
+    },
+    {
+      "file": "docs/system/architecture.md",
+      "action": "在受管 CLI 章节说明展示层文件所有权及业务接口不变，并引用 CLI 模块与公共帮助配置。"
+    },
+    {
+      "file": "docs/system/configuration.md",
+      "action": "受管 CLI 章节说明结果目录使用 os.tmpdir 的系统临时目录，不新增插件配置；协议细节引用公共帮助。"
+    },
+    {
+      "action": "首次受管 CLI 调用前读取该命令 --help；成功输出章节统一改为“结果文件中的 JSON”。保留业务结构检查，把“stdout 是 JSON”改为读取文件后的结构检查。公共保存错误转交 --help 规则；业务重试条件保持。删除首次重定向与模型复制 Workflow 的操作配方。",
+      "filesReference": "consumerInventory.skillReferences"
+    },
+    {
+      "action": "核对直接命令入口后的消费动词，将直接读取命令返回对象改为读取返回路径中的结果；不重复文件分配流程。",
+      "filesReference": "consumerInventory.skillEntrypoints"
+    },
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "action": "生成记录保留原字段和路径职责。需要交付完整查询结果时复制 CLI 已生成文件，并记录该副本路径，不重新查询。"
+    },
+    {
+      "file": "scripts/build/cli-module.mjs",
+      "action": "现有 tsdown 从 CLI entry 打包内部依赖，新增模块随导入打包；无需新增副本或专用构建路径。通过 production 包测试验证产物。"
+    },
+    {
+      "files": [
+        "config/runtime-artifacts.json",
+        "config/plugin-package.json"
+      ],
+      "action": "现有 .local/source-cli artifact 目录继续收录 bundle；不新增独立运行资源时不修改清单。验收实际 tarball 中入口可运行。"
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "action": "在 scripts/cli/ 目录索引中纳入单次调用的结果文件职责。"
+    },
+    {
+      "file": "docs/system/testing.md",
+      "action": "同步 CLI 进程、独立包和前台 shell 验收范围，分别核对结果文件、错误阶段和后续读取。"
+    }
+  ],
+  "exactSharedHelpText": [
+    "业务命令成功时，CLI 将原始业务 JSON 保存到独立临时文件。stdout 只返回该文件的绝对路径和换行。读取该文件后处理业务结果。",
+    "业务命令退出码为 0 时，结果文件已写入并关闭。--quiet 省略成功后的 NEXT 提示；普通调用的 NEXT 写入 stderr。--help 仍直接输出帮助文本。",
+    "CLI 退出后保留成功文件。需要长期保存时，将该文件复制到任务产物目录。复用和刷新条件按当前 Skill 的业务合同执行。",
+    "CLI_RESULT_FILE_PREPARE_FAILED 表示请求尚未发送。修复临时目录权限或磁盘空间后再调用。",
+    "CLI_RESULT_FILE_WRITE_FAILED 表示 Host 已执行成功，但结果文件保存失败。报告错误并停止依赖结果的操作，不自动重新执行业务命令。提交命令的错误同时报告已接纳的 run_id。",
+    "CLI_RESULT_PATH_WRITE_FAILED 表示文件已保存，但路径输出失败。读取错误中给出的文件路径，不重新执行业务命令。"
+  ],
+  "exactSkillLinkText": "首次调用受管 CLI 前，Skill 执行者读取该命令的 --help，按其中的公共输出与文件错误规则处理命令返回。本文件的成功 JSON 指返回路径中的文件内容。",
+  "consumerInventory": {
+    "managedBusinessCommands": "commandCoverage 列出的 6 条命令全部更新，不只修改 run-inputs。",
+    "skillReferences": [
+      ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+      ".agents/skills/comfyui-generate/references/generation-cli.md",
+      ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+      ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+      ".agents/skills/comfyui-image-review/references/cli.md",
+      ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+      ".agents/skills/local-image-reader/references/image-inspection-cli.md"
+    ],
+    "skillEntrypoints": [
+      ".agents/skills/comfyui-image-review/SKILL.md",
+      ".agents/skills/local-image-reader/SKILL.md"
+    ],
+    "directAutomatedConsumer": [
+      {
+        "file": "tests/integration/cli-command.test.ts",
+        "symbols": [
+          "runCli",
+          "expectCliResult"
+        ],
+        "changes": "保留原始 stdout 供路径协议断言；成功时另读文件校验原 JSON。原来 normal.stdout===quiet.stdout 改为文件内容相等、路径不同。逐一修改 submit、run-inputs、inspect-template-parameters、random-seeds、resolve-media、image inspect 的 JSON stdout 断言。每个测试使用隔离 TMPDIR 并清理。"
+      }
+    ],
+    "helpConsumers": [
+      {
+        "file": "tests/unit/cli-help-schema.test.mjs",
+        "changes": "断言公共路径协议、全部叶命令帮助和三个新错误规则。"
+      },
+      {
+        "file": "tests/production/plugin-package.test.mjs",
+        "changes": "保留现有帮助/环境失败测试，并增加打包 CLI 成功路径及文件内容验证。"
+      }
+    ],
+    "unchangedHostConsumers": [
+      "src/cli/contract.ts",
+      "src/host/cli/dispatch.ts",
+      "src/host/cli/route.ts",
+      "src/host/generation/generation-run-input-tool.ts",
+      "src/host/generation/generation-media-tool.ts",
+      "src/host/image-reader/image-reader-tool.ts",
+      "tests/integration/cli-route.test.ts",
+      "tests/unit/generation-run-input-tool.test.ts",
+      "tests/integration/host-plugin.test.ts",
+      "tests/integration/official-plugin-activation.test.ts",
+      "tests/unit/cli-shell-capability.test.ts"
+    ],
+    "builderCliExclusion": "tests/integration/cli-help.test.ts 和各 Builder scripts 的 JSON stdout 属于独立 Skill 校验程序。Builder 校验程序不消费 managed CLI stdout，本次不改 Builder 脚本或输出 schema。",
+    "desktopFinding": "当前 tests/desktop/official-desktop-live.test.mjs 中记录 cliCall: none；检索未找到该文件直接解析 managed CLI stdout 的代码。现有 Desktop 通过不能替代新路径协议的实际前台 shell 验收。",
+    "localEvidenceConsumers": "remaining-generation-runtime/runner.mjs 的 builderValidation.stdout 属于 Builder 输出，应保持。finalize/verify-final-evidence/run-snapshots 中 stdout 分别来自采集器、tar、ps，不按 managed CLI 修改。历史轨迹和旧报告保留。新采集器须同时保存 CLI 返回路径及文件字节，不能只留路径文本。",
+    "searchBoundary": "检查 tracked scripts、src、tests、config、agent-presets、.agents 和当前 remaining-generation/history-current 验证脚本。未把全部 .local 历史快照当作活动消费者。",
+    "installationOnlyConsumers": [
+      "tests/contract/runtime-git-isolation.test.ts",
+      "tests/contract/engineering-baseline.test.ts",
+      "config/managed-cli-environment.json",
+      "src/host/cli/plugin.ts",
+      "src/host/cli/shell-capability.ts"
+    ],
+    "installationOnlyMeaning": "这些消费者检查入口、资源或环境身份，不解析业务 stdout；保持身份合同并回归。"
+  },
+  "tests": {
+    "tdd": "实施前读取 tdd Skill。先写失败测试覆盖新协议和错误阶段，再实现。",
+    "unit": "新增 tests/unit/cli-result-file.test.mjs：权限、唯一性、Unicode/空格路径、写入字节、序列化失败、写入失败、close 失败、仅清理本次未发布目录、成功文件保留。",
+    "integration": "tests/integration/cli-command.test.ts 覆盖 6 条业务命令、quiet/普通、无文件帮助、原错误保持、Host 前准备失败 0 次请求、Host 成功后写失败 1 次请求、EPIPE 后文件保留。包含 submit 的 run_id 诊断与 image inspect 的 1 次 Provider 请求。",
+    "concurrency": "并发执行相同 run_ids，验证文件路径不同、内容一致且均可读。保留重复项、数组顺序和部分错误。无锁、无自动缓存。",
+    "packaging": "通过 scripts/build/cli-module.mjs 构建并执行独立包入口。检查所有 Skill 引用、帮助公共协议和安装路径。现有清单无需变化时保留原清单。",
+    "officialDesktop": "使用两个项目预设的真实前台 shell 调用安装包 CLI。证明 CLI 返回文件路径、下一 Tool Call 可读、capability 撤销后文件仍在、后续 Agent 可复制结果。采集字节后才结束验证环境。",
+    "originalFailure": "固定 5.6-2 原始业务输入、默认模型、预设和资源；记录候选变化。首次成功 run-inputs 文件在模型输入中可见，后续保存引用该文件，同数组成功查询仅 1 次。",
+    "causalControl": "原基线与修复臂使用同一输入、模型和数据。修复臂只改变 CLI 结果保存与读取传输的必要合同。若同时修改其他业务文字，则结果只能作为整体验收，不能声称证明单一原因。",
+    "neighbors": "6 个 run-inputs Skill 消费者、媒体暂空后合法刷新、Workflow 暂不可用、显式重新查询、短 ID/重复项/部分错误、参数查询保存、Seed 复用、提交保存失败与图片读取保存失败。",
+    "gates": "独立代码与语义审查通过后，最终候选树运行 pnpm quality 与 git diff --check。测试和真实模型均尚未运行。"
+  },
+  "authorization": {
+    "allowed": "当前用户 AGENTS 的程序开发规范要求 CLI 保存 JSON 并返回路径。主计划第 5.7.3 节定义本合同的实施步骤；第 5.11 节定义轨迹诊断方法；第 5.14 节定义范围内修复授权。实施范围按本合同 consumerInventory 和 implementationContract 执行。",
+    "unchangedSchemas": "不修改 Skill 输出 JSON schema、Host 请求/响应业务 schema、原生 Tool schema 或 Builder 校验脚本。",
+    "outside": "若实施需要修改 Skill-owned 脚本、安装依赖、升级宿主 SDK、修改外部服务或扩展 Builder CLI，单列范围外事项。当前设计不需要这些变更。",
+    "freeze": "本次只修改合同及私有取证文件。产品仍冻结；未启动应用、模型或测试。"
+  },
+  "limits": [
+    "文件自动保存符合明确的 CLI 要求；尚未证明自动保存足以消除模型重复查询。",
+    "尚未验证官方前台 shell 与后续读取工具对 os.tmpdir 的实际访问；该项是安装验收的必过条件。",
+    "SIGKILL、磁盘耗尽和管道错误无法保证结果交付；合同明确失败阶段并停止自动重复业务请求。"
+  ],
+  "textReview": {
+    "machine": "STC 检查结果见 .local/run-result-persistence/stc-cli-contract.txt。",
+    "manual": "JSON 语法引号保留；文件路径、代码标识和协议原文保留。独立语义与功能审查由主 Agent 安排。"
+  },
+  "semanticAuditResolution": {
+    "source": "docs/verification/skills-mcp-migration/managed-cli-result-files-text-review.json",
+    "scope": "实施者处理 T01 至 T13，保留业务字段、来源优先级、输入条件、取消和重试边界。",
+    "actions": [
+      "修正其他命令级错误的指代，并将结构验证引用到唯一协议定义。",
+      "查询结果交付规则只在 records.md 定义，CLI 参考引用该规则。",
+      "删除 testing.md 的迁移前历史统计；文档保留当前职责表述。",
+      "区分结果文件管理模块与临时结果存储位置；区分 1 个 provider 与 8 个 Skills。",
+      "修正有序列表层级及同层级规则格式，保持业务文字含义。",
+      "输入与响应大小错误引用已有上限常量并给出处理动作；环境错误指向 Host 和受管前台调用。",
+      "生成参数检查与 prompt 缺省语义各保留一处定义，其他位置引用。"
+    ],
+    "errorBoundary": "响应过大时保留命令可能已执行的状态，不新增 submit 或其他有副作用命令的重试授权。新公共错误模板仍归 managed-cli-help.json；数值从已有常量传入。",
+    "verification": "修改后独立复扫本报告条目和相邻文字；代码错误模板变化重跑相应 CLI 测试并复核。"
+  }
+}

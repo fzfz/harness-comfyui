@@ -1,0 +1,158 @@
+{
+  "purpose": "独立判定四角色原会话恢复执行的合同达成情况。",
+  "readWhen": "汇总恢复验收结果和确定后续修复范围时。",
+  "reviewedAt": "2026-10-14T11:48:01.922835+00:00",
+  "reviewMode": "只读持久轨迹、原始模型请求、文件与 SQLite；本审查未启动应用或调用模型。",
+  "overallStatus": "fail",
+  "originalFourRoleStatus": "保留 four-role-current-runtime-review.json 的首次执行失败。",
+  "modelCalls": 0,
+  "evidenceIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/independent-review-index.json",
+  "method": [
+    "读取恢复合同、输入审查、执行记录及索引；以持久会话中的用户消息、tool/call、tool/result、turn/end 和实际文件核对执行摘要。",
+    "直接比较五个既有会话的持久记录前缀、前后数据库 Run/媒体记录与原图片字节；逐份解析 37 个恢复轮模型调用原始 JSONL 的请求与终态。",
+    "只读查询当前 runs.sqlite，并核对原应用停止记录及三个原端口连接结果。"
+  ],
+  "contractResults": [
+    {
+      "contract": "原父子身份恢复",
+      "status": "fail",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=81,89,105,126",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/2854ee4e-5a01-4d60-b83a-b131f3100069-persisted.json#maxSeq=68"
+      ],
+      "conclusion": "原父会话进入 turn 2，三个既有子会话历史保持原值；原观察子会话没有新增记录。父会话创建了两个新观察子会话，并用新身份补写 task.md。恢复原观察子会话的目标未达成。"
+    },
+    {
+      "contract": "一轮一图及既有数据保留",
+      "status": "pass",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before/generation-database.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/generation-database.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before/original-image.png"
+      ],
+      "conclusion": "前后 Run 与媒体记录逐项相等，均只有一个成功 Run 和一张媒体；原图片与当前图片的 1331702 字节直接相等。恢复父会话只派发观察和比较。"
+    },
+    {
+      "contract": "观察输入中立性",
+      "status": "pass_with_limit",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=89,105",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/49225271-e00a-4fd0-b982-2f47b74e2043-persisted.json#seq=25",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5-persisted.json#seq=40"
+      ],
+      "conclusion": "两个观察任务只提供图片、Run ID、中性观察问题和输出位置；未传入构图、Prompt 或预期达成评价。补充问题聚焦首次观察提及的边框与信封，包含对象存在前提；它仍允许画框、窗框或其他结构的判断。该结论只覆盖已提供的恢复轮观察输入。"
+    },
+    {
+      "contract": "原始观察保存",
+      "status": "fail",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/49225271-e00a-4fd0-b982-2f47b74e2043-persisted.json#seq=26,35",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5-persisted.json#seq=41,50",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before-stop/workspace-artifacts/image-task/rounds/001/observation-002.md"
+      ],
+      "conclusion": "observation-001.md 保存了首次 image inspect 的原始 observation。observation-002.md 改写了八项原始 observation，另加“窗框结构更可能”和无法精确量化等说明，未单独保留完整原文。"
+    },
+    {
+      "contract": "比较与最终产物",
+      "status": "partial",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/9da768cd-279e-4c7d-9dc2-162fb2fa1cb1-persisted.json#seq=17,24,29,31,53",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=126,139,143",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before-stop/workspace-artifacts/image-task/task.md"
+      ],
+      "conclusion": "比较 Agent 读取构图、两份观察、生成记录、Builder 与方法，写出同图比较、偏差、原因假设和修改建议；主 Agent 交付图片和部分达成结论。task.md 漏记原观察身份，首次观察行缺少输出文件，补充观察行误指 observation-001.md。比较中的“窗与窗台在其身后”与补充观察第 4 项记录的前景窗台关系不一致。"
+    },
+    {
+      "contract": "产物来源与模型身份",
+      "status": "pass_with_limit",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/49225271-e00a-4fd0-b982-2f47b74e2043-persisted.json#seq=35",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5-persisted.json#seq=50",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/9da768cd-279e-4c7d-9dc2-162fb2fa1cb1-persisted.json#seq=53",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=126,139",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/model-calls/model-request-index.json"
+      ],
+      "conclusion": "观察文件来自各观察子会话 bash 写入，比较文件来自比较子会话，task.md 来自被测父会话。37 个新请求中 18 个使用 opencode-go/deepseek-v4.1-flash，19 个使用 openrouter/thinkingmachines/inkling:free，原始日志均记录 complete。来源成立；补充观察改写影响观察证据保真。"
+    },
+    {
+      "contract": "自然完成与清理",
+      "status": "pass",
+      "evidence": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=145",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/49225271-e00a-4fd0-b982-2f47b74e2043-persisted.json#seq=46",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5-persisted.json#seq=61",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/9da768cd-279e-4c7d-9dc2-162fb2fa1cb1-persisted.json#seq=64",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/final-cleanup.json"
+      ],
+      "conclusion": "父 turn 2 与三个新增子会话均以 completed 结束。清理记录为 stopped、进程组不存在、端口释放；审查时 56247/56248/56249 均拒绝连接。原观察子会话未自然完成的历史仍保留。"
+    }
+  ],
+  "findings": [
+    {
+      "id": "FRR-1",
+      "severity": "high",
+      "title": "恢复轮没有续用已接纳的原观察身份",
+      "locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=89,105,126",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/2854ee4e-5a01-4d60-b83a-b131f3100069-persisted.json#maxSeq=68"
+      ],
+      "impact": "恢复轮完成了重新观察后的交付，原观察任务恢复合同仍失败。"
+    },
+    {
+      "id": "FRR-2",
+      "severity": "medium",
+      "title": "补充观察文件未保留完整视觉模型原文",
+      "locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5-persisted.json#seq=41,50",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before-stop/workspace-artifacts/image-task/rounds/001/observation-002.md"
+      ],
+      "impact": "后续比较读到观察 Agent 的改写与追加判断，无法仅凭交付观察文件还原视觉模型原始回答。"
+    },
+    {
+      "id": "FRR-3",
+      "severity": "medium",
+      "title": "task.md 的观察身份与输出对应不完整",
+      "locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before-stop/workspace-artifacts/image-task/task.md#子 Agent 职责与接纳身份",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/post-stop/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json#seq=126"
+      ],
+      "impact": "首次观察输出位置缺失，补充观察输出指向首次文件，原观察身份遗漏，后续恢复无法仅从 task.md 准确追溯。"
+    },
+    {
+      "id": "FRR-4",
+      "severity": "medium",
+      "title": "比较文件将前景窗台描述为人物身后",
+      "locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before-stop/workspace-artifacts/image-task/rounds/001/comparison-001.md#2.3",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/before-stop/workspace-artifacts/image-task/rounds/001/observation-002.md#4"
+      ],
+      "impact": "窗户仅作背景这一要求的支持依据出现空间关系冲突；最终总判定仍是部分达成。"
+    }
+  ],
+  "coverageLimits": [
+    "本审查核对轨迹与交付合同，未另行调用视觉模型或独立评判图片美术质量。",
+    "原始压缩会话使用执行者保存的 persisted JSON 投影进行逐事件审查；未重新解压原始 zstd。",
+    "安装文件相等与 Profile 配置保留沿用索引中的采集证据；本审查未启动应用重验候选安装。",
+    "恢复完成只证明此次恢复轮产物和生命周期；首次 Builder 交接、身份遗漏及路径错误保持原失败。"
+  ],
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "31-43",
+    "use": "以原始调用轨迹核对执行摘要，并保持原因推断与观察事实分离。"
+  },
+  "identityContractApplicability": {
+    "sources": [
+      ".agents/skills/comfyui-iterate-generation/SKILL.md:29",
+      ".agents/skills/comfyui-iterate-generation/SKILL.md:43",
+      ".agents/skills/comfyui-iterate-generation/SKILL.md:45",
+      "docs/plans/skills-mcp-migration-20261013.md#5.12",
+      "docs/verification/skills-mcp-migration/four-role-recovery-contract.json#fixed,verification"
+    ],
+    "installedSkillMatchesCheckout": true,
+    "newObservationRule": "Skill 第 29 行要求每轮观察与比较创建新子 Agent，适用于首次派发该观察或比较任务。恢复轮首次创建比较 Agent，以及完成首次观察后的补充读图，可以按各自新任务判断。",
+    "interruptionRule": "Skill 第 45 行要求派发中断后找回接纳身份，并禁止重建同一任务。原观察已接纳且成功读图，落盘日志停在 seq68 step/start；恢复后官方 collect 返回 seq69 step/end、seq70 turn/end reason=interrupted。前态没有观察输出文件。该任务已中断且业务产物未完成。",
+    "application": "父会话恢复后 seq89 再次派发同一图片、同一 observation-001.md 输出任务，未指定原 agent_id，也未调用 list_agents 找回原观察身份。这一行为违反中断恢复要求及本次 recovery 的原身份续办目标。seq105 的补充观察和 seq121 的首次比较属于不同后续任务，不单独以创建新身份判失败。",
+    "completionLimit": "持久日志与官方 collect 对结束事件的表示不同：持久日志没有 seq69/70，collect 显示 interrupted。两者均未出现业务完成回复或观察输出。审查未启动宿主测试其续办能力。",
+    "interruptionEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/driver-results/1af626f5-9203-4dbc-af40-5a9df889170d/1791977866368-1dc1bd92-26cd-477c-8b5b-90805f5b2fb1-collect.json#seq=66,68,69,70"
+  }
+}

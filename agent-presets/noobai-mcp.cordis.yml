@@ -1,0 +1,10 @@
+- id: mcp-noobai
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: noobai
+    transport: streamable-http
+    url: http://127.0.0.1:18943/mcp
+    headers:
+      Authorization: !!js '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`'
+    toolCallTimeoutMs: 60000
+    failOnStartupError: true

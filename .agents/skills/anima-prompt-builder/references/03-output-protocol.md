@@ -1,3 +1,8 @@
+---
+文档用途: 约定 ANIMA Prompt 校验器的标准输入、输出与失败处理。
+读取时机: 调用 ANIMA Prompt 格式校验器前。
+---
+
 # ANIMA Prompt 格式校验器
 
 ## 用途与调用入口
@@ -29,7 +34,7 @@ Prompt 格式校验使用 `--prompt-format` 选择模式，使用 `--quiet` 省�
     "expression_reaction": ["smile"],
     "camera_shot": ["full body"],
     "scene_environment": ["flower garden"],
-    "detail_mood": ["soft lighting"],
+    "detail_mood": ["cinematic"],
     "natural_language": []
   },
   "display_text": "已构建花园人物画面的 ANIMA 提示词。"
@@ -55,7 +60,7 @@ Prompt 格式校验使用 `--prompt-format` 选择模式，使用 `--quiet` 省�
   "kind": "noobai_assistant_prompt",
   "result": "success",
   "contract_version": "1.0.0",
-  "prompt_text": "masterpiece, best quality, score_7, highres, safe, @say_hana, 1girl, long hair, white dress, standing, smile, full body, flower garden, soft lighting",
+  "prompt_text": "masterpiece, best quality, score_7, highres, safe, @say_hana, 1girl, long hair, white dress, standing, smile, full body, flower garden, cinematic",
   "display_text": "已构建花园人物画面的 ANIMA 提示词。"
 }
 ```
@@ -85,6 +90,6 @@ Skill 执行者从 stdout JSON 读取 `prompt_text` 和 `display_text`。
 
 退出码 `0` 对应的 stdout、stderr 或成功 JSON 不符合“成功结果”一节，或者退出码 `2` 对应的 stdout、stderr 或 `violations[]` 不符合“输入格式失败”一节时，Skill 执行者报告违反的协议条件并停止本次执行。
 
-## 帮助与操作提示
+## 命令帮助
 
 Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功结果的 stderr 包含 `NEXT:` 提示。输入格式失败时，stderr 首行 JSON 后附有 `NEXT:` 修正指引。Skill 执行者结合该指引，按照“输入格式失败”一节处理错误。

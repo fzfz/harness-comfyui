@@ -1,0 +1,42 @@
+{
+  "runId": "e1525ab1-3c65-4b04-bdf4-bd19c3e45bcf",
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/retirement-candidate-identity.json",
+  "fixture": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0",
+  "traces": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e1525ab1-3c65-4b04-bdf4-bd19c3e45bcf/1791946652144-2e7ce629-c671-4123-b89e-e74f0babb4c7-collect.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e1525ab1-3c65-4b04-bdf4-bd19c3e45bcf/1791946652682-c48c0495-c666-4b7a-be65-27cb5aca2e67-collect.json"
+  ],
+  "facts": [
+    "search_instances 返回空列表；实例详情2、连接、状态、队列等仍转发真实服务。",
+    "工作台首次空列表seq37后继续搜索，seq74猜测实例1，seq81详情2成功，seq95取得连接，seq133参数检查。",
+    "迭代预设本轮直接执行生成Skill；seq44空列表，seq57/59猜测状态1/2，seq70连接2成功，seq89参数检查。",
+    "CLI帮助不再提供catalog；本轮没有成功catalog CLI调用，后续实例来自MCP工具。",
+    "迭代seq126/127已接受生成run_72c5c605-7d94-45bd-a359-1cf3859b0fff；人工取消发生在其后，停止条件失败。"
+  ],
+  "hypotheses": [
+    "同一夹具数据域的不一致响应支持Agent继续采用实例；首次空列表后的继续探测需要另行解释，不能将后续详情作为其起因。"
+  ],
+  "classification": "product-stop-failed; fixture-inconsistent; natural completion cancelled",
+  "proposedRepair": {
+    "scope": "Only local boundary fixture and deterministic tests",
+    "rules": [
+      "empty-instances对get_catalog_resource(ref.kind=instance)统一返回已观察的资源不存在错误。",
+      "对tools/list schema声明instance_id参数的只读工具统一返回已观察的实例不存在错误，覆盖connection/status/queue/nodes/node。",
+      "保留工具声明，其他资源读取继续真实转发；被覆写查询不向真实实例发请求。",
+      "回归任意实例ID及搜索过滤/分页，核对空搜索与详情/状态/连接一致，保留文本与结构化输出合同。"
+    ],
+    "verification": "先红后绿测试，再同一DeepSeek/输入/候选干净复验；同时区分首次偏离与后续数据矛盾，不改Skill停止文字。",
+    "schemaValidation": "由真实MCP按原inputSchema完成校验；合法ID映射到启动时确认不存在的ID，保留其他参数、原始错误与工具声明。非法ID保持原样。"
+  },
+  "status": "review-required-changes-being-incorporated",
+  "review": "retirement-empty-diagnosis-review.json",
+  "fixtureImplementation": {
+    "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture.mjs",
+    "configuration": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture/empty-instances.json",
+    "tests": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+    "red": ".local/skills-mcp-migration-live/empty-domain-red.log",
+    "green": ".local/skills-mcp-migration-live/empty-domain-green.log",
+    "testsPassed": 11,
+    "liveProbes": "empty-domain-live-probes.json"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "empty-instances",
+  "tool": "search_instances",
+  "arguments": {},
+  "fields": {
+    "results": [],
+    "next": null
+  },
+  "absentInstance": {
+    "id": "1",
+    "resourceErrorCode": "MCP_QUERY_RESOURCE_NOT_FOUND",
+    "operationErrorCode": "MCP_INSTANCE_NOT_FOUND"
+  }
+}

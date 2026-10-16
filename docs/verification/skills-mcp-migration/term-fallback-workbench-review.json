@@ -1,0 +1,4315 @@
+{
+  "purpose": "独立核对5.3-5与5.5-6工作台真实执行的词条回退、来源、完整合同及最终交付。",
+  "reviewedAt": "2026-10-14T07:34:15.330207+00:00",
+  "scope": {
+    "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/term-fallback-workbench-execution.json",
+    "writtenFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/term-fallback-workbench-review.json",
+    "productChanges": 0,
+    "ledgerChanges": 0,
+    "modelCallsStarted": 0,
+    "applicationStarts": 0,
+    "subagentsStarted": 0
+  },
+  "verdict": {
+    "5.3-5": "未通过",
+    "5.5-6": "未通过",
+    "targetFallbackObservedBoth": true,
+    "targetConceptSemanticsBoth": "已观察到复合概念回退及各语义组成的实际保存；目录分页未完成，不能据此宣布完整目标分支验收通过。",
+    "acceptanceMatrixAction": "两项继续保持未完成，保存本次失败记录。"
+  },
+  "criteria": {
+    "plan": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md:1229-1306",
+    "requirements": [
+      "5.9逐项关联实际输入、读取、调用、返回及产物，结构校验不能替代语义和流程验收。",
+      "5.11先定位首次偏离和知识来源，模型分析仅提供假设线索；本审查没有执行因果对照。",
+      "5.13保留输入变体、真实数据、完整证据、来源边界和失败重试。"
+    ],
+    "fallbackBoundary": "以用户复合概念为单位核对；允许采用适用子概念，并对尚未覆盖的关系按各Skill合同回退。不要求所有子概念都无结果。",
+    "preparationReviews": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/term-fallback-input-review.json",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/term-zero-result-criteria-review.json"
+    ]
+  },
+  "cases": [
+    {
+      "case": "5.3-5",
+      "sessionId": "session-b164363a-2420-4840-8565-a0bb1d9e73db",
+      "runId": "1d3d1a38-03c9-437b-8609-b16f404c5699",
+      "preset": "harness-comfyui-cli-candidate",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv",
+      "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/environment/workspace",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+      "evidence": {
+        "collection": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/1d3d1a38-03c9-437b-8609-b16f404c5699/1791961277269-39d34500-e6ce-476b-8cbf-e74c5eb6798e-collect.json",
+        "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/materialized-input.json",
+        "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/workspace-artifacts/5.3-5/builder.json",
+        "finalRequest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/5342f56d-43b9-44a3-b3a0-aeffb434a815.jsonl:1",
+        "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699",
+        "requestFiles": [
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/d39371ce-229f-48dd-8075-d47fb7544029.jsonl",
+            "records": 360,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/52df6517-f074-4f2c-a0a8-3a76cb7874a2.jsonl",
+            "records": 174,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/965714e1-1c22-44cb-b871-12af39a8b1b1.jsonl",
+            "records": 1154,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/55752d92-673b-4c08-8297-c6abcadaabf3.jsonl",
+            "records": 3748,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/f67ae752-e4d8-4871-93cb-d6644c70121f.jsonl",
+            "records": 910,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/5342f56d-43b9-44a3-b3a0-aeffb434a815.jsonl",
+            "records": 551,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/f8a986de-3219-4e69-bd9b-df1e3046207b.jsonl",
+            "records": 823,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/65243f89-597c-4481-a59b-5b15c190a0a2.jsonl",
+            "records": 32,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/aba45a9f-c737-45cf-ab1b-8dfb6c21a7c4.jsonl",
+            "records": 343,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/588d2a7d-c431-4863-bbce-6baee74da6b8.jsonl",
+            "records": 750,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/fa138fe4-5ef7-4a3a-b224-7152c2dbf720.jsonl",
+            "records": 564,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/b2e67d18-9278-467e-90a8-98138f6a6ed1.jsonl",
+            "records": 225,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/ff5dda1a-d3ff-45b6-9e67-d455810b4af4.jsonl",
+            "records": 6024,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/455159c9-e3b7-4ecf-b608-1203d563424b.jsonl",
+            "records": 70,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/95718ef0-e39e-46e9-85eb-f1c61f943518.jsonl",
+            "records": 643,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/af8a2a89-c597-4d12-8821-2145bd3d3229.jsonl",
+            "records": 1749,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/eb659111-f6c1-41a3-9376-c5b284691635.jsonl",
+            "records": 523,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/b9977406-7fba-41fa-92ac-d0d8b5224dc7.jsonl",
+            "records": 202,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/44e70bb5-b87b-4f72-bda2-cf48e5b29bce.jsonl",
+            "records": 225,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/29c873f6-175c-4685-a3a9-9378dc51e713.jsonl",
+            "records": 2227,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/observer-calls/1d3d1a38-03c9-437b-8609-b16f404c5699/d879d013-ad02-43e9-9b65-7d840a6c0af8.jsonl",
+            "records": 283,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          }
+        ],
+        "structureValidation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/independent-structure-validation.json",
+        "cleanup": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/final-evidence-summary.json"
+      },
+      "eventCompleteness": {
+        "count": 152,
+        "range": [
+          0,
+          151
+        ],
+        "contiguous": true,
+        "toolCalls": 38,
+        "toolResults": 38,
+        "actualModelRequests": 21,
+        "childSessions": [],
+        "naturalEnd": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "firstDeviation": {
+        "scope": "完整语义与目录合同；排除仅shell工作目录写法差异",
+        "seq": 65,
+        "precedingEvidenceSeq": 60,
+        "fact": "seq60返回black bow hair ornament首屏10/21条。seq61与seq59由seq54同一条assistant消息预先发出，不能视为收到seq60后的决定。执行者在seq65收到整批结果后继续计划其他查询，并于seq66执行；完整余下轨迹没有补读该查询后续页。",
+        "knowledge": "seq12实际Tool声明page字段已要求继续分页；seq60提供触发条件。",
+        "branchFirst": "目标相关分页触发证据始于seq67的water drop droplet（10/23）；seq68是同批预先发出的查询。首次收到这批结果后继续其他查询的决策位于seq76，调用位于seq77；余下过程没有补读该查询后续页。",
+        "outputFirst": 149
+      },
+      "checks": [
+        {
+          "item": "输入及模型身份",
+          "verdict": "通过",
+          "expected": "固定输入变体，使用获准模型、独立Workspace和安装Skill。",
+          "actual": "seq9原始参数、Character及Style与准备变体一致；全部实际请求为opencode-go/deepseek-v4.1-flash，含宿主标题调用。",
+          "events": [
+            9,
+            12,
+            13
+          ],
+          "providerModel": [
+            "opencode-go/deepseek-v4.1-flash"
+          ]
+        },
+        {
+          "item": "资料来源与运行隔离",
+          "verdict": "通过（限已观察来源）",
+          "actual": "工具调用指向本轮安装Skill、参考文件、Workspace、真实MCP；没有读取C验收目录、其他场景资料或历史Run。读取generation-cli.md中的示例不构成查询历史Run。没有子任务、外部补充消息或生成提交。",
+          "events": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145,
+            146,
+            147,
+            148,
+            149,
+            150,
+            151
+          ]
+        },
+        {
+          "item": "实际工具返回送达",
+          "verdict": "通过",
+          "actual": "38项工具结果在后续模型请求中的全部回放与主事件content逐项相同；共核对407次回放。system与tools在全部业务请求内各只有一种声明，没有发现裁剪或摘要替换。"
+        },
+        {
+          "item": "安装候选身份",
+          "verdict": "通过",
+          "actual": "独立读取本轮tarball与安装目录，comparison索引的198项逐字比较均一致；Skill正文与本轮实际skill返回一致，skill工具仅去掉YAML元数据并添加资源包装。",
+          "comparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/installed-candidate-comparison.json",
+          "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/harness-comfyui-candidate.tgz"
+        },
+        {
+          "item": "目录入口",
+          "verdict": "通过",
+          "actual": "词条均使用mcp__noobai__query_semantic_prompt_terms；没有回退Catalog CLI。"
+        },
+        {
+          "item": "目录分页",
+          "verdict": "未通过",
+          "expected": "实际Tool声明要求page×page_size小于total_count时保留条件读取下一页。",
+          "actual": "下列查询均只读取第一页；后续请求改变查询或继续构建，没有任何page>1调用。",
+          "evidence": [
+            {
+              "callSeq": 59,
+              "resultSeq": 60,
+              "query": "black bow hair ornament",
+              "received": 10,
+              "total": 21,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 66,
+              "resultSeq": 67,
+              "query": "water drop droplet",
+              "received": 10,
+              "total": 23,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 68,
+              "resultSeq": 69,
+              "query": "long blonde twin tails hairstyle",
+              "received": 10,
+              "total": 17,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 72,
+              "resultSeq": 73,
+              "query": "elbow gloves accessory",
+              "received": 10,
+              "total": 17,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 77,
+              "resultSeq": 78,
+              "query": "twintails",
+              "received": 6,
+              "total": 28,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 79,
+              "resultSeq": 80,
+              "query": "long hair blonde hair blue eyes",
+              "received": 6,
+              "total": 14,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 81,
+              "resultSeq": 82,
+              "query": "standing pose upright",
+              "received": 6,
+              "total": 12,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 109,
+              "resultSeq": 110,
+              "query": "",
+              "received": 40,
+              "total": 623,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 116,
+              "resultSeq": 117,
+              "query": "swirl print",
+              "received": 10,
+              "total": 14,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 123,
+              "resultSeq": 124,
+              "query": "arms at sides standing idle",
+              "received": 6,
+              "total": 11,
+              "nextPageRequested": false
+            }
+          ]
+        },
+        {
+          "item": "已有来源与冲突处理",
+          "verdict": "通过",
+          "actual": "Character3334提供alice与sinoalice身份；用户金色长双马尾、蓝眼覆盖来源短发、蓝/黑发与红眼；medium breasts及elbow gloves保留。Style12415非空Prompt规范为@say_hana；没有补查角色或画师。",
+          "events": [
+            9,
+            40,
+            94,
+            122,
+            130
+          ]
+        },
+        {
+          "item": "目标复合概念回退",
+          "verdict": "回退动作与保存语义通过；完整查询流程未通过",
+          "actual": "seq56存在swirl9089、seq58存在refraction8080和水滴发饰19724、seq67存在water_drop1184。seq94/101/122比较裸标签会丢失衣服载体、装饰归属及数量关系，并排除发饰与水面反光；seq130将完整小写句写入natural_language。没有采用swirl/refraction作为独立槽位标签；最终句保留three、swirl-shaped、water-drop、light-refraction、ornaments、decorate the shirt。",
+          "fallbackText": "three swirl-shaped water-drop light-refraction ornaments decorate the shirt",
+          "events": [
+            55,
+            56,
+            57,
+            58,
+            66,
+            67,
+            94,
+            97,
+            98,
+            101,
+            104,
+            105,
+            109,
+            110,
+            111,
+            112,
+            116,
+            117,
+            118,
+            119,
+            122,
+            130,
+            131
+          ],
+          "qualification": "存在合适子概念不使回退失效；未读完water drop、clothes_pattern及swirl print的后续页限制了完整分支判定。"
+        },
+        {
+          "item": "槽位、顺序、权重、尺寸与保存文件",
+          "verdict": "通过（对应已核对结构与显式画面要求）",
+          "actual": "seq130十二槽顺序及quality固定前缀正确；内容槽23项，全部未加权；自然语言位于末尾，柔光另句保留。seq131及136格式成功，seq141完整结果成功；test、2:3、1024×1536、1.572864MP与输入一致。保存文件与seq141对象一致。",
+          "events": [
+            130,
+            131,
+            135,
+            136,
+            140,
+            141,
+            145,
+            146
+          ]
+        },
+        {
+          "item": "最终交付",
+          "verdict": "未通过",
+          "actual": "seq149在完整JSON之外加入解释、列表与Markdown围栏；02-role.md要求只返回结构化结果。",
+          "events": [
+            30,
+            149
+          ]
+        }
+      ],
+      "sourceBoundary": {
+        "sharedTmp": "seq130以heredoc先覆盖/tmp/builder-input.json；seq135写prompt-format-out和gen-result-input；seq140重定向覆盖gen-result-out与gen-result-err；seq145读取后保存本轮Workspace。快照与对应返回吻合，没有观察到读取既存其他任务内容。",
+        "snapshotIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/shared-temporary-file-snapshots.json",
+        "limitation": "公共临时文件名存在跨任务覆盖可能；本轮证据未显示发生覆盖，不能仅因/tmp路径把本轮判为污染。"
+      },
+      "termQueries": [
+        {
+          "callSeq": 55,
+          "resultSeq": 56,
+          "arguments": {
+            "mode": "search",
+            "query": "swirl shaped ornament decoration on clothing",
+            "page_size": 10
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 4,
+          "receivedCount": 4,
+          "receivedTerms": [
+            {
+              "id": 11328,
+              "canonicalTag": "pinwheel_hair_ornament",
+              "aliases": [
+                "风车发饰"
+              ]
+            },
+            {
+              "id": 20600,
+              "canonicalTag": "melon_hair_ornament",
+              "aliases": [
+                "瓜形发饰"
+              ]
+            },
+            {
+              "id": 9089,
+              "canonicalTag": "swirl",
+              "aliases": [
+                "漩涡"
+              ]
+            },
+            {
+              "id": 3710,
+              "canonicalTag": "shibari_over_clothes",
+              "aliases": [
+                "衣服上的绳缚"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 57,
+          "resultSeq": 58,
+          "arguments": {
+            "mode": "search",
+            "query": "water drop refraction light",
+            "page_size": 10
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 3,
+          "receivedCount": 3,
+          "receivedTerms": [
+            {
+              "id": 22927,
+              "canonicalTag": "light_reflection_(water)",
+              "aliases": [
+                "水面反光"
+              ]
+            },
+            {
+              "id": 8080,
+              "canonicalTag": "refraction",
+              "aliases": [
+                "折射"
+              ]
+            },
+            {
+              "id": 19724,
+              "canonicalTag": "water_drop_hair_ornament",
+              "aliases": [
+                "水滴发饰"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 59,
+          "resultSeq": 60,
+          "arguments": {
+            "mode": "search",
+            "query": "black bow hair ornament",
+            "page_size": 10
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 21,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 304,
+              "canonicalTag": "black_bow",
+              "aliases": [
+                "黑色蝴蝶结"
+              ]
+            },
+            {
+              "id": 16780,
+              "canonicalTag": "arrow_hair_ornament",
+              "aliases": [
+                "箭形发饰"
+              ]
+            },
+            {
+              "id": 2730,
+              "canonicalTag": "bow-shaped_hair",
+              "aliases": [
+                "bow_by_hair",
+                "bow_hair",
+                "弓形发型"
+              ]
+            },
+            {
+              "id": 13954,
+              "canonicalTag": "holding_bow_(ornament)",
+              "aliases": [
+                "拿着弓(装饰)"
+              ]
+            },
+            {
+              "id": 85,
+              "canonicalTag": "hair_bow",
+              "aliases": [
+                "hairbow",
+                "hair_bows",
+                "发带"
+              ]
+            },
+            {
+              "id": 2051,
+              "canonicalTag": "bow_hairband",
+              "aliases": [
+                "hairband_bow",
+                "蝴蝶结发带"
+              ]
+            },
+            {
+              "id": 3421,
+              "canonicalTag": "bone_hair_ornament",
+              "aliases": [
+                "骨制发饰"
+              ]
+            },
+            {
+              "id": 20355,
+              "canonicalTag": "unworn_hair_bow",
+              "aliases": [
+                "hair_bow_removed",
+                "未佩戴的发带"
+              ]
+            },
+            {
+              "id": 16286,
+              "canonicalTag": "horn_hair_ornament",
+              "aliases": [
+                "角发饰"
+              ]
+            },
+            {
+              "id": 20196,
+              "canonicalTag": "knife_hair_ornament",
+              "aliases": [
+                "刀发饰"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 61,
+          "resultSeq": 62,
+          "arguments": {
+            "mode": "search",
+            "query": "white collared shirt",
+            "page_size": 10
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 4,
+          "receivedCount": 4,
+          "receivedTerms": [
+            {
+              "id": 103,
+              "canonicalTag": "collared_shirt",
+              "aliases": [
+                "collared_blouse",
+                "有领衬衫"
+              ]
+            },
+            {
+              "id": 48,
+              "canonicalTag": "white_shirt",
+              "aliases": [
+                "white_blouse",
+                "白衬衫"
+              ]
+            },
+            {
+              "id": 935,
+              "canonicalTag": "white_coat",
+              "aliases": [
+                "白色外套"
+              ]
+            },
+            {
+              "id": 334,
+              "canonicalTag": "dress_shirt",
+              "aliases": [
+                "衬衫"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 66,
+          "resultSeq": 67,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "water drop droplet"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 23,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 1184,
+              "canonicalTag": "water_drop",
+              "aliases": [
+                "droplet",
+                "droplets",
+                "rain_drop",
+                "raindrop",
+                "rain_drops",
+                "raindrops",
+                "water_droplets",
+                "water_drops",
+                "水滴"
+              ]
+            },
+            {
+              "id": 19724,
+              "canonicalTag": "water_drop_hair_ornament",
+              "aliases": [
+                "水滴发饰"
+              ]
+            },
+            {
+              "id": 200,
+              "canonicalTag": "sweatdrop",
+              "aliases": [
+                "sweat_drop",
+                "sweat_drops",
+                "sweatdrops",
+                "汗滴"
+              ]
+            },
+            {
+              "id": 10601,
+              "canonicalTag": "dew_drop",
+              "aliases": [
+                "dew",
+                "dewdrop",
+                "dew_drops",
+                "dewdrops",
+                "露珠"
+              ]
+            },
+            {
+              "id": 2223,
+              "canonicalTag": "dripping",
+              "aliases": [
+                "滴落"
+              ]
+            },
+            {
+              "id": 7904,
+              "canonicalTag": "flying_teardrops",
+              "aliases": [
+                "飞溅的泪滴"
+              ]
+            },
+            {
+              "id": 467,
+              "canonicalTag": "flying_sweatdrops",
+              "aliases": [
+                "flying_sweatdrop",
+                "飞溅的汗滴"
+              ]
+            },
+            {
+              "id": 2660,
+              "canonicalTag": "teardrop",
+              "aliases": [
+                "泪滴"
+              ]
+            },
+            {
+              "id": 5939,
+              "canonicalTag": "dropping",
+              "aliases": [
+                "掉落"
+              ]
+            },
+            {
+              "id": 11217,
+              "canonicalTag": "spoken_flying_sweatdrops",
+              "aliases": [
+                "说话时飞溅的汗滴"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 68,
+          "resultSeq": 69,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "long blonde twin tails hairstyle"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 17,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 11268,
+              "canonicalTag": "braided_twintails",
+              "aliases": [
+                "编发双马尾"
+              ]
+            },
+            {
+              "id": 367,
+              "canonicalTag": "low_twintails",
+              "aliases": [
+                "低双马尾"
+              ]
+            },
+            {
+              "id": 20248,
+              "canonicalTag": "twintails_with_hair_base",
+              "aliases": [
+                "双马尾带发根"
+              ]
+            },
+            {
+              "id": 10908,
+              "canonicalTag": "folded_twintails",
+              "aliases": [
+                "折叠双马尾"
+              ]
+            },
+            {
+              "id": 24030,
+              "canonicalTag": "twintails_with_braided_base",
+              "aliases": [
+                "编辫双马尾"
+              ]
+            },
+            {
+              "id": 8567,
+              "canonicalTag": "twintails_day",
+              "aliases": [
+                "双马尾日"
+              ]
+            },
+            {
+              "id": 1958,
+              "canonicalTag": "two_tails",
+              "aliases": [
+                "双马尾"
+              ]
+            },
+            {
+              "id": 625,
+              "canonicalTag": "short_twintails",
+              "aliases": [
+                "pigtails",
+                "短双马尾"
+              ]
+            },
+            {
+              "id": 7103,
+              "canonicalTag": "uneven_twintails",
+              "aliases": [
+                "asymmetrical_twintails",
+                "不对称双马尾"
+              ]
+            },
+            {
+              "id": 48159,
+              "canonicalTag": "brown_twintails_girl_(mdf_an)",
+              "aliases": [
+                "棕色双马尾女孩-棕色双马尾女孩-brown_twintails_girl_(mdf_an)"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 70,
+          "resultSeq": 71,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "standing upper body portrait by the window soft light"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 1,
+          "receivedCount": 1,
+          "receivedTerms": [
+            {
+              "id": 11506,
+              "canonicalTag": "through_window",
+              "aliases": [
+                "透过窗户"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 72,
+          "resultSeq": 73,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "elbow gloves accessory"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 17,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 141,
+              "canonicalTag": "elbow_gloves",
+              "aliases": [
+                "/eg",
+                "long_gloves",
+                "opera_gloves",
+                "肘部手套"
+              ]
+            },
+            {
+              "id": 20931,
+              "canonicalTag": "elbow_gauntlets",
+              "aliases": [
+                "肘部护手"
+              ]
+            },
+            {
+              "id": 2887,
+              "canonicalTag": "single_elbow_glove",
+              "aliases": [
+                "one_elbow_glove",
+                "单肘手套"
+              ]
+            },
+            {
+              "id": 23242,
+              "canonicalTag": "elbow_cuffs",
+              "aliases": [
+                "肘部袖口"
+              ]
+            },
+            {
+              "id": 10259,
+              "canonicalTag": "elbow_sleeve",
+              "aliases": [
+                "肘部袖子"
+              ]
+            },
+            {
+              "id": 2907,
+              "canonicalTag": "elbow_pads",
+              "aliases": [
+                "elbow_pad",
+                "肘垫"
+              ]
+            },
+            {
+              "id": 9978,
+              "canonicalTag": "layered_gloves",
+              "aliases": [
+                "分层手套"
+              ]
+            },
+            {
+              "id": 16000,
+              "canonicalTag": "winter_gloves",
+              "aliases": [
+                "冬季手套"
+              ]
+            },
+            {
+              "id": 8284,
+              "canonicalTag": "glove_bow",
+              "aliases": [
+                "手套蝴蝶结"
+              ]
+            },
+            {
+              "id": 4679,
+              "canonicalTag": "elbow_carry",
+              "aliases": [
+                "肘部携带"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 77,
+          "resultSeq": 78,
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "twintails"
+          },
+          "page": 1,
+          "pageSize": 6,
+          "totalCount": 28,
+          "receivedCount": 6,
+          "receivedTerms": [
+            {
+              "id": 9425,
+              "canonicalTag": "intertwined_tails",
+              "aliases": [
+                "交织的尾巴"
+              ]
+            },
+            {
+              "id": 8567,
+              "canonicalTag": "twintails_day",
+              "aliases": [
+                "双马尾日"
+              ]
+            },
+            {
+              "id": 13057,
+              "canonicalTag": "sharp_tail",
+              "aliases": [
+                "尖尾巴"
+              ]
+            },
+            {
+              "id": 10923,
+              "canonicalTag": "two-tone_tail",
+              "aliases": [
+                "双色尾巴"
+              ]
+            },
+            {
+              "id": 13334,
+              "canonicalTag": "extra_tails",
+              "aliases": [
+                "额外尾巴"
+              ]
+            },
+            {
+              "id": 5833,
+              "canonicalTag": "short_tail",
+              "aliases": [
+                "短尾巴"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 79,
+          "resultSeq": 80,
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "long hair blonde hair blue eyes"
+          },
+          "page": 1,
+          "pageSize": 6,
+          "totalCount": 14,
+          "receivedCount": 6,
+          "receivedTerms": [
+            {
+              "id": 3746,
+              "canonicalTag": "long_hair_between_eyes",
+              "aliases": [
+                "眼睛间的长发"
+              ]
+            },
+            {
+              "id": 45,
+              "canonicalTag": "blue_hair",
+              "aliases": [
+                "/blueh",
+                "bluehair",
+                "蓝发"
+              ]
+            },
+            {
+              "id": 16,
+              "canonicalTag": "blonde_hair",
+              "aliases": [
+                "blond",
+                "blonde",
+                "/blondeh",
+                "blondehair",
+                "blond_hair",
+                "gold_hair",
+                "yellow_hair",
+                "金发"
+              ]
+            },
+            {
+              "id": 1037,
+              "canonicalTag": "light_blue_hair",
+              "aliases": [
+                "浅蓝色头发"
+              ]
+            },
+            {
+              "id": 20157,
+              "canonicalTag": "blue_facial_hair",
+              "aliases": [
+                "蓝色胡须"
+              ]
+            },
+            {
+              "id": 3335,
+              "canonicalTag": "blue_fur",
+              "aliases": [
+                "蓝色毛发"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 81,
+          "resultSeq": 82,
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "standing pose upright"
+          },
+          "page": 1,
+          "pageSize": 6,
+          "totalCount": 12,
+          "receivedCount": 6,
+          "receivedTerms": [
+            {
+              "id": 4304,
+              "canonicalTag": "sleeping_upright",
+              "aliases": [
+                "直立睡觉"
+              ]
+            },
+            {
+              "id": 6816,
+              "canonicalTag": "handstand",
+              "aliases": [
+                "standing_on_hands",
+                "倒立"
+              ]
+            },
+            {
+              "id": 43,
+              "canonicalTag": "standing",
+              "aliases": [
+                "站着"
+              ]
+            },
+            {
+              "id": 10583,
+              "canonicalTag": "posing",
+              "aliases": [
+                "摆姿势"
+              ]
+            },
+            {
+              "id": 22221,
+              "canonicalTag": "standing_at_attention",
+              "aliases": [
+                "立正"
+              ]
+            },
+            {
+              "id": 2509,
+              "canonicalTag": "the_pose",
+              "aliases": [
+                "姿势"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "upper body framing window indoors"
+          },
+          "page": 1,
+          "pageSize": 6,
+          "totalCount": 3,
+          "receivedCount": 3,
+          "receivedTerms": [
+            {
+              "id": 16567,
+              "canonicalTag": "arm_out_of_frame",
+              "aliases": [
+                "手臂出框"
+              ]
+            },
+            {
+              "id": 14960,
+              "canonicalTag": "barred_window",
+              "aliases": [
+                "有栏杆的窗户"
+              ]
+            },
+            {
+              "id": 9404,
+              "canonicalTag": "against_window",
+              "aliases": [
+                "靠窗"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 97,
+          "resultSeq": 98,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "swirl water drop light refraction decoration on clothes",
+            "category_ids": [
+              "clothes_decoration"
+            ]
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 5,
+          "receivedCount": 5,
+          "receivedTerms": [
+            {
+              "id": 14558,
+              "canonicalTag": "ribbon-trimmed_swimsuit",
+              "aliases": [
+                "丝带装饰泳衣"
+              ]
+            },
+            {
+              "id": 2303,
+              "canonicalTag": "fringe_trim",
+              "aliases": [
+                "fringe",
+                "流苏装饰"
+              ]
+            },
+            {
+              "id": 5357,
+              "canonicalTag": "ribbon-trimmed_clothes",
+              "aliases": [
+                "丝带装饰衣服"
+              ]
+            },
+            {
+              "id": 5650,
+              "canonicalTag": "embellished_costume",
+              "aliases": [
+                "装饰服装"
+              ]
+            },
+            {
+              "id": 8640,
+              "canonicalTag": "aqua_trim",
+              "aliases": [
+                "水色镶边"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 104,
+          "resultSeq": 105,
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "swirl pattern print design on fabric"
+          },
+          "page": 1,
+          "pageSize": 8,
+          "totalCount": 2,
+          "receivedCount": 2,
+          "receivedTerms": [
+            {
+              "id": 3988,
+              "canonicalTag": "patterned_clothing",
+              "aliases": [
+                "图案服装"
+              ]
+            },
+            {
+              "id": 4059,
+              "canonicalTag": "snowflake_print",
+              "aliases": [
+                "雪花印花"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 109,
+          "resultSeq": 110,
+          "arguments": {
+            "mode": "search",
+            "page_size": 40,
+            "query": "",
+            "category_ids": [
+              "clothes_pattern"
+            ]
+          },
+          "page": 1,
+          "pageSize": 40,
+          "totalCount": 623,
+          "receivedCount": 40,
+          "receivedTerms": [
+            {
+              "id": 14476,
+              "canonicalTag": "aardwolf_print",
+              "aliases": [
+                "土狼印花"
+              ]
+            },
+            {
+              "id": 11516,
+              "canonicalTag": "abbreviated_karakusa",
+              "aliases": [
+                "简化的唐草纹"
+              ]
+            },
+            {
+              "id": 12735,
+              "canonicalTag": "african_wild_dog_print",
+              "aliases": [
+                "非洲野狗印花"
+              ]
+            },
+            {
+              "id": 4070,
+              "canonicalTag": "american_flag_bikini",
+              "aliases": [
+                "美国国旗比基尼"
+              ]
+            },
+            {
+              "id": 3961,
+              "canonicalTag": "american_flag_dress",
+              "aliases": [
+                "美国国旗连衣裙"
+              ]
+            },
+            {
+              "id": 3797,
+              "canonicalTag": "american_flag_legwear",
+              "aliases": [
+                "美国国旗腿袜"
+              ]
+            },
+            {
+              "id": 16082,
+              "canonicalTag": "american_flag_neckwear",
+              "aliases": [
+                "美国国旗领饰"
+              ]
+            },
+            {
+              "id": 17752,
+              "canonicalTag": "american_flag_panties",
+              "aliases": [
+                "美国国旗内裤"
+              ]
+            },
+            {
+              "id": 15263,
+              "canonicalTag": "american_flag_pants",
+              "aliases": [
+                "美国国旗裤子"
+              ]
+            },
+            {
+              "id": 3226,
+              "canonicalTag": "american_flag_print",
+              "aliases": [
+                "美国国旗印花"
+              ]
+            },
+            {
+              "id": 9768,
+              "canonicalTag": "american_flag_shirt",
+              "aliases": [
+                "美国国旗衬衫"
+              ]
+            },
+            {
+              "id": 5914,
+              "canonicalTag": "anchor_print",
+              "aliases": [
+                "锚图案"
+              ]
+            },
+            {
+              "id": 23675,
+              "canonicalTag": "animal_band_panties",
+              "aliases": [
+                "动物乐队内裤"
+              ]
+            },
+            {
+              "id": 619,
+              "canonicalTag": "animal_print",
+              "aliases": [
+                "animalprint",
+                "动物花纹"
+              ]
+            },
+            {
+              "id": 14263,
+              "canonicalTag": "apple_print",
+              "aliases": [
+                "苹果印花"
+              ]
+            },
+            {
+              "id": 20907,
+              "canonicalTag": "argentinian_flag_print",
+              "aliases": [
+                "阿根廷国旗印花"
+              ]
+            },
+            {
+              "id": 21573,
+              "canonicalTag": "argyle_bikini",
+              "aliases": [
+                "菱形比基尼"
+              ]
+            },
+            {
+              "id": 16049,
+              "canonicalTag": "argyle_bow",
+              "aliases": [
+                "菱形蝴蝶结"
+              ]
+            },
+            {
+              "id": 2274,
+              "canonicalTag": "argyle_clothes",
+              "aliases": [
+                "argyle_clothing",
+                "菱形花纹服装"
+              ]
+            },
+            {
+              "id": 17794,
+              "canonicalTag": "argyle_coat",
+              "aliases": [
+                "菱形花纹外套"
+              ]
+            },
+            {
+              "id": 11319,
+              "canonicalTag": "argyle_dress",
+              "aliases": [
+                "菱形花纹连衣裙"
+              ]
+            },
+            {
+              "id": 16386,
+              "canonicalTag": "argyle_footwear",
+              "aliases": [
+                "菱形花纹鞋"
+              ]
+            },
+            {
+              "id": 23088,
+              "canonicalTag": "argyle_hat",
+              "aliases": [
+                "菱形帽"
+              ]
+            },
+            {
+              "id": 22099,
+              "canonicalTag": "argyle_jacket",
+              "aliases": [
+                "菱形花纹夹克"
+              ]
+            },
+            {
+              "id": 19052,
+              "canonicalTag": "argyle_kimono",
+              "aliases": [
+                "菱形和服"
+              ]
+            },
+            {
+              "id": 18988,
+              "canonicalTag": "argyle_necktie",
+              "aliases": [
+                "hit_box",
+                "菱形领带"
+              ]
+            },
+            {
+              "id": 22275,
+              "canonicalTag": "argyle_pants",
+              "aliases": [
+                "菱形花纹裤"
+              ]
+            },
+            {
+              "id": 5655,
+              "canonicalTag": "argyle_pantyhose",
+              "aliases": [
+                "菱形花纹连裤袜"
+              ]
+            },
+            {
+              "id": 14330,
+              "canonicalTag": "argyle_scarf",
+              "aliases": [
+                "菱形花纹围巾"
+              ]
+            },
+            {
+              "id": 14311,
+              "canonicalTag": "argyle_shirt",
+              "aliases": [
+                "菱形花纹衬衫"
+              ]
+            },
+            {
+              "id": 14714,
+              "canonicalTag": "argyle_skirt",
+              "aliases": [
+                "菱形格纹裙"
+              ]
+            },
+            {
+              "id": 17507,
+              "canonicalTag": "argyle_sleeves",
+              "aliases": [
+                "菱形格子袖"
+              ]
+            },
+            {
+              "id": 11307,
+              "canonicalTag": "argyle_socks",
+              "aliases": [
+                "菱形花纹袜子"
+              ]
+            },
+            {
+              "id": 7601,
+              "canonicalTag": "argyle_sweater",
+              "aliases": [
+                "菱形花纹毛衣"
+              ]
+            },
+            {
+              "id": 15662,
+              "canonicalTag": "argyle_sweater_vest",
+              "aliases": [
+                "菱形花纹毛衣背心"
+              ]
+            },
+            {
+              "id": 6166,
+              "canonicalTag": "argyle_thighhighs",
+              "aliases": [
+                "菱形花纹大腿袜"
+              ]
+            },
+            {
+              "id": 23178,
+              "canonicalTag": "argyle_vest",
+              "aliases": [
+                "菱形背心"
+              ]
+            },
+            {
+              "id": 10952,
+              "canonicalTag": "arrow_print",
+              "aliases": [
+                "箭头图案"
+              ]
+            },
+            {
+              "id": 5905,
+              "canonicalTag": "asa_no_ha_(pattern)",
+              "aliases": [
+                "麻叶纹样"
+              ]
+            },
+            {
+              "id": 7088,
+              "canonicalTag": "back-print_panties",
+              "aliases": [
+                "背面印花内裤"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "swirl water droplet patterned clothing",
+            "category_ids": [
+              "clothes_pattern",
+              "clothes_decoration"
+            ],
+            "category_match": "any"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 3,
+          "receivedCount": 3,
+          "receivedTerms": [
+            {
+              "id": 8402,
+              "canonicalTag": "print_swimsuit",
+              "aliases": [
+                "印花泳衣"
+              ]
+            },
+            {
+              "id": 3988,
+              "canonicalTag": "patterned_clothing",
+              "aliases": [
+                "图案服装"
+              ]
+            },
+            {
+              "id": 192,
+              "canonicalTag": "striped_clothes",
+              "aliases": [
+                "striped_clothing",
+                "条纹衣服"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 116,
+          "resultSeq": 117,
+          "arguments": {
+            "category_ids": [
+              "clothes_pattern"
+            ],
+            "mode": "search",
+            "page_size": 10,
+            "query": "swirl print"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 14,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 4059,
+              "canonicalTag": "snowflake_print",
+              "aliases": [
+                "雪花印花"
+              ]
+            },
+            {
+              "id": 11354,
+              "canonicalTag": "rainbow_print",
+              "aliases": [
+                "彩虹印花"
+              ]
+            },
+            {
+              "id": 18808,
+              "canonicalTag": "wisteria_print",
+              "aliases": [
+                "紫藤花纹"
+              ]
+            },
+            {
+              "id": 6080,
+              "canonicalTag": "sparkle_print",
+              "aliases": [
+                "闪亮印花"
+              ]
+            },
+            {
+              "id": 8685,
+              "canonicalTag": "snake_print",
+              "aliases": [
+                "snakeskin_print",
+                "蛇纹"
+              ]
+            },
+            {
+              "id": 16060,
+              "canonicalTag": "petal_print",
+              "aliases": [
+                "花瓣印花"
+              ]
+            },
+            {
+              "id": 16508,
+              "canonicalTag": "splatter_print",
+              "aliases": [
+                "溅墨印花"
+              ]
+            },
+            {
+              "id": 17924,
+              "canonicalTag": "fireworks_print",
+              "aliases": [
+                "烟花图案"
+              ]
+            },
+            {
+              "id": 11066,
+              "canonicalTag": "watermelon_print",
+              "aliases": [
+                "西瓜印花"
+              ]
+            },
+            {
+              "id": 3524,
+              "canonicalTag": "print_bow",
+              "aliases": [
+                "印花蝴蝶结"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "arguments": {
+            "category_ids": [
+              "clothes_pattern"
+            ],
+            "mode": "search",
+            "page_size": 10,
+            "query": "water drop print"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 4,
+          "receivedCount": 4,
+          "receivedTerms": [
+            {
+              "id": 16508,
+              "canonicalTag": "splatter_print",
+              "aliases": [
+                "溅墨印花"
+              ]
+            },
+            {
+              "id": 11066,
+              "canonicalTag": "watermelon_print",
+              "aliases": [
+                "西瓜印花"
+              ]
+            },
+            {
+              "id": 4573,
+              "canonicalTag": "cloud_print",
+              "aliases": [
+                "云朵图案"
+              ]
+            },
+            {
+              "id": 16060,
+              "canonicalTag": "petal_print",
+              "aliases": [
+                "花瓣印花"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 123,
+          "resultSeq": 124,
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "arms at sides standing idle"
+          },
+          "page": 1,
+          "pageSize": 6,
+          "totalCount": 11,
+          "receivedCount": 6,
+          "receivedTerms": [
+            {
+              "id": 830,
+              "canonicalTag": "arm_at_side",
+              "aliases": [
+                "手臂在身侧"
+              ]
+            },
+            {
+              "id": 1199,
+              "canonicalTag": "arms_at_sides",
+              "aliases": [
+                "手臂在两侧"
+              ]
+            },
+            {
+              "id": 43,
+              "canonicalTag": "standing",
+              "aliases": [
+                "站着"
+              ]
+            },
+            {
+              "id": 4582,
+              "canonicalTag": "sideways",
+              "aliases": [
+                "侧身"
+              ]
+            },
+            {
+              "id": 9094,
+              "canonicalTag": "waving_arm",
+              "aliases": [
+                "挥手"
+              ]
+            },
+            {
+              "id": 16077,
+              "canonicalTag": "arms_on_head",
+              "aliases": [
+                "手臂放在头上"
+              ]
+            }
+          ]
+        }
+      ],
+      "finalArtifact": {
+        "model_route": "anima-aesthetic-v1.1",
+        "positive_prompt": "masterpiece, best quality, score_7, highres, safe, @say_hana, 1girl, solo, alice \\(sinoalice\\), sinoalice, long hair, blonde hair, twin tails, blue eyes, medium breasts, white shirt, collared shirt, hair bow, black bow, elbow gloves, standing, arms at sides, expressionless, direct eye contact, upper body, facing viewer, indoors, window, cinematic, three swirl-shaped water-drop light-refraction ornaments decorate the shirt, soft window light falls on her",
+        "negative_mode": "native_negative",
+        "negative_prompt": "worst quality, low quality, artist name, blurry, jpeg artifacts, chromatic aberration, bad hands",
+        "positive_avoidance": null,
+        "generation_purpose": "test",
+        "aspect_ratio": "2:3",
+        "width": 1024,
+        "height": 1536,
+        "megapixels": 1.572864
+      }
+    },
+    {
+      "case": "5.5-6",
+      "sessionId": "session-e4c72a5a-f40d-434d-8d4c-b03b4e0a808b",
+      "runId": "44d339ea-241a-41d2-8f5a-db534f230c9d",
+      "preset": "harness-comfyui-cli-candidate",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1",
+      "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/environment/workspace",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+      "evidence": {
+        "collection": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/44d339ea-241a-41d2-8f5a-db534f230c9d/1791962225976-e250e9ae-4e23-4956-a6a7-54e4162c6008-collect.json",
+        "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/materialized-input.json",
+        "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/workspace-artifacts/5.5-6/wai-sdxl-builder.json",
+        "finalRequest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/949e25b6-b056-4a9c-b636-5a27a953ca37.jsonl:1",
+        "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d",
+        "requestFiles": [
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/2562183f-4315-4c90-8907-9e6e15636fe2.jsonl",
+            "records": 115,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/3d602a20-b44d-4e86-81e6-b380f5ca41b4.jsonl",
+            "records": 91,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/bba05317-0b34-4397-ae54-b4f8968d17e6.jsonl",
+            "records": 317,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/11f37022-a8f2-43f0-b53c-45debb3fccb0.jsonl",
+            "records": 223,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/a38dfaa6-3e46-4bdf-8f52-4079cbd3667d.jsonl",
+            "records": 156,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/0cad303e-6550-4bd2-8903-c17b54527d62.jsonl",
+            "records": 1525,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/f4c2be58-2c63-4d52-8c24-298a1c7c8b51.jsonl",
+            "records": 30,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/927da50f-b641-4174-9920-53469f532cc8.jsonl",
+            "records": 107,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/f4926b0f-229b-453a-b121-7d61d990d20a.jsonl",
+            "records": 385,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/ae26d03b-1bc3-47d3-9845-e775bffd458e.jsonl",
+            "records": 157,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/80e2e67a-094a-468b-8435-1fa55bdbbe80.jsonl",
+            "records": 631,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/c9d4bd9b-0334-46f0-b8bb-4d43516a665e.jsonl",
+            "records": 38,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/fbbfe63d-2e16-4479-9104-ea76c0b58425.jsonl",
+            "records": 100,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/276e62a0-d77b-4f36-856c-a91d0b47dc7e.jsonl",
+            "records": 253,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/42d07747-4a56-4808-926b-f36089915515.jsonl",
+            "records": 2656,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/949e25b6-b056-4a9c-b636-5a27a953ca37.jsonl",
+            "records": 268,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/9c8a7746-8ace-4858-b86e-2deae0f058f6.jsonl",
+            "records": 177,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/46ec1b7d-760d-4c8b-a470-bee71c9b59a8.jsonl",
+            "records": 207,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/080b5994-3af5-42b9-bbba-eb227f5693ce.jsonl",
+            "records": 218,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/6969e7af-9972-47a9-a98b-eb936c994639.jsonl",
+            "records": 97,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/4577b14a-7d2c-4e53-9112-f800e556643d.jsonl",
+            "records": 61,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/93308b24-542d-487b-9ca3-0645d30b3657.jsonl",
+            "records": 90,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/33a44b7e-a57a-4744-8c90-fed13322c525.jsonl",
+            "records": 159,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/b77c7f13-2708-4f16-b120-143eb2b7e8b9.jsonl",
+            "records": 163,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/d82c1eb4-b673-43e9-a046-03c6f8985904.jsonl",
+            "records": 1191,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/9235c536-7395-4956-904a-521bf693066f.jsonl",
+            "records": 237,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/d1a5dce5-e64a-4271-a0e2-d047a7114d37.jsonl",
+            "records": 82,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/58a6a680-701e-411b-8f9e-801edfe60ce5.jsonl",
+            "records": 143,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/d15dc73b-e902-41e6-bd02-62e51628e5a1.jsonl",
+            "records": 172,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/9c8e38bd-4e47-406f-a578-628af5e91968.jsonl",
+            "records": 219,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/observer-calls/44d339ea-241a-41d2-8f5a-db534f230c9d/467b4ed4-d8dc-44ca-97a6-2a3c976dbff9.jsonl",
+            "records": 583,
+            "requestCount": 1,
+            "terminalKinds": [
+              "complete"
+            ]
+          }
+        ],
+        "structureValidation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/independent-structure-validation.json",
+        "cleanup": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/final-evidence-summary.json"
+      },
+      "eventCompleteness": {
+        "count": 190,
+        "range": [
+          0,
+          189
+        ],
+        "contiguous": true,
+        "toolCalls": 42,
+        "toolResults": 42,
+        "actualModelRequests": 31,
+        "childSessions": [],
+        "naturalEnd": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "firstDeviation": {
+        "scope": "Skill素材查询合同",
+        "seq": 62,
+        "fact": "已有非空Style Prompt和完整用户画师说明时，仍执行get_catalog_resource(style12344)，且早于seq64确定wai底模。",
+        "knowledge": "seq9已有来源；seq33返回wai-prompt-position-order及artist-adoption原文；seq56分析以额外核对底模为理由。",
+        "paginationFirst": 83,
+        "precedingPaginationEvidenceSeq": 79,
+        "outputFirst": 187
+      },
+      "checks": [
+        {
+          "item": "输入及模型身份",
+          "verdict": "通过",
+          "expected": "固定输入变体，使用获准模型、独立Workspace和安装Skill。",
+          "actual": "seq9原始参数、Character及Style与准备变体一致；全部实际请求为opencode-go/deepseek-v4.1-flash，含宿主标题调用。",
+          "events": [
+            9,
+            12,
+            13
+          ],
+          "providerModel": [
+            "opencode-go/deepseek-v4.1-flash"
+          ]
+        },
+        {
+          "item": "资料来源与运行隔离",
+          "verdict": "通过（限已观察来源）",
+          "actual": "工具调用指向本轮安装Skill、参考文件、Workspace、真实MCP；没有读取C验收目录、其他场景资料或历史Run。读取generation-cli.md中的示例不构成查询历史Run。没有子任务、外部补充消息或生成提交。",
+          "events": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145,
+            146,
+            147,
+            148,
+            149,
+            150,
+            151,
+            152,
+            153,
+            154,
+            155,
+            156,
+            157,
+            158,
+            159,
+            160,
+            161,
+            162,
+            163,
+            164,
+            165,
+            166,
+            167,
+            168,
+            169,
+            170,
+            171,
+            172,
+            173,
+            174,
+            175,
+            176,
+            177,
+            178,
+            179,
+            180,
+            181,
+            182,
+            183,
+            184,
+            185,
+            186,
+            187,
+            188,
+            189
+          ]
+        },
+        {
+          "item": "实际工具返回送达",
+          "verdict": "通过",
+          "actual": "42项工具结果在后续模型请求中的全部回放与主事件content逐项相同；共核对615次回放。system与tools在全部业务请求内各只有一种声明，没有发现裁剪或摘要替换。"
+        },
+        {
+          "item": "安装候选身份",
+          "verdict": "通过",
+          "actual": "独立读取本轮tarball与安装目录，comparison索引的198项逐字比较均一致；Skill正文与本轮实际skill返回一致，skill工具仅去掉YAML元数据并添加资源包装。",
+          "comparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/installed-candidate-comparison.json",
+          "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/harness-comfyui-candidate.tgz"
+        },
+        {
+          "item": "目录入口",
+          "verdict": "通过",
+          "actual": "词条均使用mcp__noobai__query_semantic_prompt_terms；没有回退Catalog CLI。"
+        },
+        {
+          "item": "目录分页",
+          "verdict": "未通过",
+          "expected": "实际Tool声明要求page×page_size小于total_count时保留条件读取下一页。",
+          "actual": "下列查询均只读取第一页；后续请求改变查询或继续构建，没有任何page>1调用。",
+          "evidence": [
+            {
+              "callSeq": 78,
+              "resultSeq": 79,
+              "query": "decorative ornament sparkle floating",
+              "received": 15,
+              "total": 20,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 92,
+              "resultSeq": 93,
+              "query": "white shirt collared blouse",
+              "received": 12,
+              "total": 23,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 118,
+              "resultSeq": 119,
+              "query": "window",
+              "received": 10,
+              "total": 18,
+              "nextPageRequested": false
+            },
+            {
+              "callSeq": 120,
+              "resultSeq": 121,
+              "query": "curtain",
+              "received": 10,
+              "total": 17,
+              "nextPageRequested": false
+            }
+          ]
+        },
+        {
+          "item": "已有来源与画师查询条件",
+          "verdict": "未通过",
+          "actual": "Character39934内容保留到character并仅转义括号；Style12344已有非空Prompt且用户已有完整画师说明。seq56明确认为无需查询后又决定核对底模，seq62先读取Style，seq64才搜索wai底模；这违反只有缺少已有Prompt才查询及取得素材前先确定wai底模的顺序。查询返回内容没有替换上下文来源，最终say_hana保持。",
+          "events": [
+            9,
+            33,
+            56,
+            62,
+            63,
+            64,
+            65,
+            68
+          ]
+        },
+        {
+          "item": "目标复合概念回退",
+          "verdict": "回退动作与保存语义通过；完整查询流程未通过",
+          "actual": "seq70提供refraction8080；seq72提供swirl9089、swirling20516、vortex17067；seq77提供water_drop1184。最终没有单独采用swirl或water_drop；seq158把three swirl-shaped water drop ornaments写入detail_mood，与规范子概念refraction并列，relation_narrative补齐装饰折射窗光及around her空间关系。未采用水滴发饰、瞳孔、反射水面替代整个装饰。",
+          "fallbackText": "three swirl-shaped water drop ornaments",
+          "relation": "Three swirl-shaped water drop ornaments refract the window light around her.",
+          "events": [
+            69,
+            70,
+            71,
+            72,
+            76,
+            77,
+            78,
+            79,
+            82,
+            138,
+            157,
+            158,
+            174
+          ],
+          "qualification": "WAI输入没有衣服载体；around her属于执行者补充，不能据ANIMA载体规则判WAI丢失衣服关系。seq79装饰候选15/20页未读完。复合光学装饰按效果解释放入detail_mood具有解释基础；若按实际实体饰物解释应归environment，两种解释不能由结构校验决定。"
+        },
+        {
+          "item": "构图完整记录",
+          "verdict": "证据不足",
+          "actual": "seq138及157设计A并选择平视、中心、半身、浅景深；完整可见分析、工具产物与最终答复没有B/C或各候选十项记录。当前输入未指定相机角度、POV、焦点、景深与主体位置，触发SKILL.md:52-55。不能只凭最终A合理宣布构图流程通过。",
+          "events": [
+            28,
+            138,
+            157,
+            187
+          ]
+        },
+        {
+          "item": "规范词条采用及位置边界",
+          "verdict": "存在合同解释缺口",
+          "actual": "seq143引用示例空格写法，将MCP多词规范标签改为空格形式。实际Tool允许按模型提示词语法使用标签，因此不单凭下划线改空格判错。pale_color4815被写为pale colors，其含义保留但使用了别名复数形式；完整规范原文保持不能判通过。wai-prompt-position-order将整体调色分配detail_mood，而detail-mood.md禁止色彩进入该位置，seq138/157选择pale colors到detail_mood符合前者；这是已送达引用间的职责冲突，尚未验证其因果影响。",
+          "events": [
+            33,
+            38,
+            107,
+            138,
+            143,
+            157,
+            158
+          ]
+        },
+        {
+          "item": "格式失败与重试",
+          "verdict": "结构恢复通过；重试前完整自检证据不足",
+          "actual": "seq158构造Ani_(Grok)未转义；seq163/164格式退出2，positions.character[0]明确报圆括号未转义。seq167/168转义，seq173/174第二次返回成功。只观察到该一项修正，未记录prompt-format-validator要求的重做冲突、权重和自检全流程。不得删去首次失败。",
+          "events": [
+            158,
+            163,
+            164,
+            167,
+            168,
+            169,
+            173,
+            174
+          ],
+          "rawAttempts": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/format-validation-attempts.json"
+        },
+        {
+          "item": "顺序、权重、负向、尺寸及保存文件",
+          "verdict": "通过（对应已核对结构与显式画面要求）",
+          "actual": "quality、artist、subject、character及各实际位置固定顺序正确，关系句位于末尾；既有角色外观没有重复写入appearance；全部未加权。final、1:1、1536×1536、2.25MP来自WAI档位，原负向顺序保持。seq179校验结果、seq184保存文件对象与磁盘归档一致。",
+          "events": [
+            158,
+            174,
+            178,
+            179,
+            183,
+            184
+          ]
+        },
+        {
+          "item": "最终交付",
+          "verdict": "未通过",
+          "actual": "seq187返回JSON中的positive_prompt为…（见上）…，该值与seq179校验结果和seq184文件不同；上方独立Prompt文本完整，但不能替代完整结构化结果。",
+          "events": [
+            48,
+            179,
+            184,
+            187
+          ]
+        }
+      ],
+      "sourceBoundary": {
+        "workspace": "seq58只读取本轮Workspace和DSH运行变量；后续临时JSON均写于本轮Workspace，最终删除两个临时输入。没有C目录或历史Run读取。",
+        "credentialObservation": "seq57的env筛选使DSH_HARNESS_COMFYUI_CLI_CAPABILITY值进入seq58及后续原始模型请求。本报告只记录变量名；原始证据包含该运行期能力值，交付归档脱敏要求仍未满足。",
+        "publicTmpReadsObserved": false
+      },
+      "termQueries": [
+        {
+          "callSeq": 69,
+          "resultSeq": 70,
+          "arguments": {
+            "mode": "search",
+            "query": "water drop refraction decoration",
+            "page_size": 15
+          },
+          "page": 1,
+          "pageSize": 15,
+          "totalCount": 6,
+          "receivedCount": 6,
+          "receivedTerms": [
+            {
+              "id": 19724,
+              "canonicalTag": "water_drop_hair_ornament",
+              "aliases": [
+                "水滴发饰"
+              ]
+            },
+            {
+              "id": 8080,
+              "canonicalTag": "refraction",
+              "aliases": [
+                "折射"
+              ]
+            },
+            {
+              "id": 5030,
+              "canonicalTag": "drop-shaped_pupils",
+              "aliases": [
+                "水滴形瞳孔"
+              ]
+            },
+            {
+              "id": 22927,
+              "canonicalTag": "light_reflection_(water)",
+              "aliases": [
+                "水面反光"
+              ]
+            },
+            {
+              "id": 3709,
+              "canonicalTag": "reflective_water",
+              "aliases": [
+                "反射水面"
+              ]
+            },
+            {
+              "id": 10601,
+              "canonicalTag": "dew_drop",
+              "aliases": [
+                "dew",
+                "dewdrop",
+                "dew_drops",
+                "dewdrops",
+                "露珠"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 71,
+          "resultSeq": 72,
+          "arguments": {
+            "mode": "search",
+            "query": "swirl shape decorative pattern",
+            "page_size": 15
+          },
+          "page": 1,
+          "pageSize": 15,
+          "totalCount": 3,
+          "receivedCount": 3,
+          "receivedTerms": [
+            {
+              "id": 9089,
+              "canonicalTag": "swirl",
+              "aliases": [
+                "漩涡"
+              ]
+            },
+            {
+              "id": 20516,
+              "canonicalTag": "swirling",
+              "aliases": [
+                "旋转"
+              ]
+            },
+            {
+              "id": 17067,
+              "canonicalTag": "vortex",
+              "aliases": [
+                "漩涡"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 76,
+          "resultSeq": 77,
+          "arguments": {
+            "mode": "search",
+            "page_size": 15,
+            "query": "water droplet on surface"
+          },
+          "page": 1,
+          "pageSize": 15,
+          "totalCount": 15,
+          "receivedCount": 15,
+          "receivedTerms": [
+            {
+              "id": 1184,
+              "canonicalTag": "water_drop",
+              "aliases": [
+                "droplet",
+                "droplets",
+                "rain_drop",
+                "raindrop",
+                "rain_drops",
+                "raindrops",
+                "water_droplets",
+                "water_drops",
+                "水滴"
+              ]
+            },
+            {
+              "id": 19724,
+              "canonicalTag": "water_drop_hair_ornament",
+              "aliases": [
+                "水滴发饰"
+              ]
+            },
+            {
+              "id": 10601,
+              "canonicalTag": "dew_drop",
+              "aliases": [
+                "dew",
+                "dewdrop",
+                "dew_drops",
+                "dewdrops",
+                "露珠"
+              ]
+            },
+            {
+              "id": 2660,
+              "canonicalTag": "teardrop",
+              "aliases": [
+                "泪滴"
+              ]
+            },
+            {
+              "id": 2223,
+              "canonicalTag": "dripping",
+              "aliases": [
+                "滴落"
+              ]
+            },
+            {
+              "id": 10550,
+              "canonicalTag": "water_balloon",
+              "aliases": [
+                "水球"
+              ]
+            },
+            {
+              "id": 7904,
+              "canonicalTag": "flying_teardrops",
+              "aliases": [
+                "飞溅的泪滴"
+              ]
+            },
+            {
+              "id": 4637,
+              "canonicalTag": "standing_on_liquid",
+              "aliases": [
+                "standing_on_water",
+                "站在液体上"
+              ]
+            },
+            {
+              "id": 467,
+              "canonicalTag": "flying_sweatdrops",
+              "aliases": [
+                "flying_sweatdrop",
+                "飞溅的汗滴"
+              ]
+            },
+            {
+              "id": 3709,
+              "canonicalTag": "reflective_water",
+              "aliases": [
+                "反射水面"
+              ]
+            },
+            {
+              "id": 22927,
+              "canonicalTag": "light_reflection_(water)",
+              "aliases": [
+                "水面反光"
+              ]
+            },
+            {
+              "id": 8391,
+              "canonicalTag": "flower_on_liquid",
+              "aliases": [
+                "液体上的花"
+              ]
+            },
+            {
+              "id": 17244,
+              "canonicalTag": "kneeling_on_liquid",
+              "aliases": [
+                "跪在液体上"
+              ]
+            },
+            {
+              "id": 17894,
+              "canonicalTag": "on_liquid",
+              "aliases": [
+                "在液体上"
+              ]
+            },
+            {
+              "id": 11217,
+              "canonicalTag": "spoken_flying_sweatdrops",
+              "aliases": [
+                "说话时飞溅的汗滴"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 78,
+          "resultSeq": 79,
+          "arguments": {
+            "mode": "search",
+            "page_size": 15,
+            "query": "decorative ornament sparkle floating"
+          },
+          "page": 1,
+          "pageSize": 15,
+          "totalCount": 20,
+          "receivedCount": 15,
+          "receivedTerms": [
+            {
+              "id": 10244,
+              "canonicalTag": "floating_hair_ornament",
+              "aliases": [
+                "漂浮发饰"
+              ]
+            },
+            {
+              "id": 7848,
+              "canonicalTag": "sparkle_hair_ornament",
+              "aliases": [
+                "闪亮发饰"
+              ]
+            },
+            {
+              "id": 17262,
+              "canonicalTag": "tinsel",
+              "aliases": [
+                "闪亮装饰"
+              ]
+            },
+            {
+              "id": 8063,
+              "canonicalTag": "floating_headgear",
+              "aliases": [
+                "漂浮的头饰"
+              ]
+            },
+            {
+              "id": 21270,
+              "canonicalTag": "bling",
+              "aliases": [
+                "闪亮饰品"
+              ]
+            },
+            {
+              "id": 278,
+              "canonicalTag": "sparkle",
+              "aliases": [
+                "sparkles",
+                "sparkling",
+                "闪光"
+              ]
+            },
+            {
+              "id": 6080,
+              "canonicalTag": "sparkle_print",
+              "aliases": [
+                "闪亮印花"
+              ]
+            },
+            {
+              "id": 19743,
+              "canonicalTag": "sparkle_earrings",
+              "aliases": [
+                "闪亮耳环"
+              ]
+            },
+            {
+              "id": 11987,
+              "canonicalTag": "crystal_hair_ornament",
+              "aliases": [
+                "水晶发饰"
+              ]
+            },
+            {
+              "id": 15258,
+              "canonicalTag": "flare",
+              "aliases": [
+                "闪光"
+              ]
+            },
+            {
+              "id": 2417,
+              "canonicalTag": "floating_object",
+              "aliases": [
+                "漂浮物"
+              ]
+            },
+            {
+              "id": 849,
+              "canonicalTag": "floating",
+              "aliases": [
+                "漂浮"
+              ]
+            },
+            {
+              "id": 19724,
+              "canonicalTag": "water_drop_hair_ornament",
+              "aliases": [
+                "水滴发饰"
+              ]
+            },
+            {
+              "id": 21752,
+              "canonicalTag": "glowing_jewelry",
+              "aliases": [
+                "发光的珠宝"
+              ]
+            },
+            {
+              "id": 13060,
+              "canonicalTag": "snowflake_ornament",
+              "aliases": [
+                "雪花装饰"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "prism caustics rainbow light dispersion effect"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 5,
+          "receivedCount": 5,
+          "receivedTerms": [
+            {
+              "id": 4515,
+              "canonicalTag": "caustics",
+              "aliases": [
+                "caustic_lighting",
+                "焦散线"
+              ]
+            },
+            {
+              "id": 20914,
+              "canonicalTag": "prism",
+              "aliases": [
+                "棱镜"
+              ]
+            },
+            {
+              "id": 22340,
+              "canonicalTag": "dispersion_(optics)",
+              "aliases": [
+                "色散（光学）"
+              ]
+            },
+            {
+              "id": 2299,
+              "canonicalTag": "rainbow",
+              "aliases": [
+                "rainbows",
+                "彩虹"
+              ]
+            },
+            {
+              "id": 8663,
+              "canonicalTag": "iridescent",
+              "aliases": [
+                "彩虹色"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 85,
+          "resultSeq": 86,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "upper body portrait framing shot"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 1,
+          "receivedCount": 1,
+          "receivedTerms": [
+            {
+              "id": 56,
+              "canonicalTag": "upper_body",
+              "aliases": [
+                "bust",
+                "上半身"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 90,
+          "resultSeq": 91,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "window light indoors soft daylight curtain"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 1,
+          "receivedCount": 1,
+          "receivedTerms": [
+            {
+              "id": 12618,
+              "canonicalTag": "lambent_light",
+              "aliases": [
+                "柔和光"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 92,
+          "resultSeq": 93,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "white shirt collared blouse"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 23,
+          "receivedCount": 12,
+          "receivedTerms": [
+            {
+              "id": 103,
+              "canonicalTag": "collared_shirt",
+              "aliases": [
+                "collared_blouse",
+                "有领衬衫"
+              ]
+            },
+            {
+              "id": 48,
+              "canonicalTag": "white_shirt",
+              "aliases": [
+                "white_blouse",
+                "白衬衫"
+              ]
+            },
+            {
+              "id": 1795,
+              "canonicalTag": "white_collar",
+              "aliases": [
+                "白色领子"
+              ]
+            },
+            {
+              "id": 6336,
+              "canonicalTag": "loose_shirt",
+              "aliases": [
+                "loose_blouse",
+                "宽松衬衫"
+              ]
+            },
+            {
+              "id": 6852,
+              "canonicalTag": "white_corset",
+              "aliases": [
+                "白色束腰"
+              ]
+            },
+            {
+              "id": 788,
+              "canonicalTag": "blouse",
+              "aliases": [
+                "衬衫"
+              ]
+            },
+            {
+              "id": 275,
+              "canonicalTag": "sleeveless_shirt",
+              "aliases": [
+                "sleeveless_blouse",
+                "无袖衬衫"
+              ]
+            },
+            {
+              "id": 1582,
+              "canonicalTag": "print_shirt",
+              "aliases": [
+                "graphic_shirt",
+                "print_blouse",
+                "印花衬衫"
+              ]
+            },
+            {
+              "id": 4568,
+              "canonicalTag": "multicolored_shirt",
+              "aliases": [
+                "multicolored_blouse",
+                "多彩衬衫"
+              ]
+            },
+            {
+              "id": 366,
+              "canonicalTag": "white_jacket",
+              "aliases": [
+                "白色夹克"
+              ]
+            },
+            {
+              "id": 2049,
+              "canonicalTag": "white_bodysuit",
+              "aliases": [
+                "白色紧身衣"
+              ]
+            },
+            {
+              "id": 14197,
+              "canonicalTag": "white_chemise",
+              "aliases": [
+                "白色衬裙"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 97,
+          "resultSeq": 98,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "indoors window curtain sunlight through window"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 2,
+          "receivedCount": 2,
+          "receivedTerms": [
+            {
+              "id": 11506,
+              "canonicalTag": "through_window",
+              "aliases": [
+                "透过窗户"
+              ]
+            },
+            {
+              "id": 10557,
+              "canonicalTag": "see-through_curtains",
+              "aliases": [
+                "transparent_curtains",
+                "透明窗帘"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 99,
+          "resultSeq": 100,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "standing pose looking at viewer gentle smile"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 9,
+          "receivedCount": 9,
+          "receivedTerms": [
+            {
+              "id": 539,
+              "canonicalTag": "light_smile",
+              "aliases": [
+                "faint_smile",
+                "slight_smile",
+                "微笑"
+              ]
+            },
+            {
+              "id": 2155,
+              "canonicalTag": "seductive_smile",
+              "aliases": [
+                "诱人微笑"
+              ]
+            },
+            {
+              "id": 620,
+              "canonicalTag": "facing_viewer",
+              "aliases": [
+                "面向观众"
+              ]
+            },
+            {
+              "id": 2813,
+              "canonicalTag": "nervous_smile",
+              "aliases": [
+                "紧张的笑容"
+              ]
+            },
+            {
+              "id": 5,
+              "canonicalTag": "looking_at_viewer",
+              "aliases": [
+                "/lav",
+                "/pec",
+                "pov_eye_contact",
+                "看着观众"
+              ]
+            },
+            {
+              "id": 4266,
+              "canonicalTag": "smiley_face",
+              "aliases": [
+                "笑脸"
+              ]
+            },
+            {
+              "id": 2509,
+              "canonicalTag": "the_pose",
+              "aliases": [
+                "姿势"
+              ]
+            },
+            {
+              "id": 7980,
+              "canonicalTag": "forced_smile",
+              "aliases": [
+                "强颜欢笑"
+              ]
+            },
+            {
+              "id": 14114,
+              "canonicalTag": "looking_past_viewer",
+              "aliases": [
+                "看向观众之外"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 104,
+          "resultSeq": 105,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "standing full body pose"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 8,
+          "receivedCount": 8,
+          "receivedTerms": [
+            {
+              "id": 51,
+              "canonicalTag": "full_body",
+              "aliases": [
+                "全身"
+              ]
+            },
+            {
+              "id": 43,
+              "canonicalTag": "standing",
+              "aliases": [
+                "站着"
+              ]
+            },
+            {
+              "id": 16079,
+              "canonicalTag": "body_bridge",
+              "aliases": [
+                "back_bridge",
+                "bridge_pose",
+                "身体桥"
+              ]
+            },
+            {
+              "id": 21858,
+              "canonicalTag": "hips_in_air",
+              "aliases": [
+                "臀部悬空"
+              ]
+            },
+            {
+              "id": 11598,
+              "canonicalTag": "t-pose",
+              "aliases": [
+                "T型姿势"
+              ]
+            },
+            {
+              "id": 10583,
+              "canonicalTag": "posing",
+              "aliases": [
+                "摆姿势"
+              ]
+            },
+            {
+              "id": 22801,
+              "canonicalTag": "shoulderstand",
+              "aliases": [
+                "肩倒立"
+              ]
+            },
+            {
+              "id": 18037,
+              "canonicalTag": "poses",
+              "aliases": [
+                "姿势"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 106,
+          "resultSeq": 107,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "soft lighting gentle shadows pastel colors"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 8,
+          "receivedCount": 8,
+          "receivedTerms": [
+            {
+              "id": 4744,
+              "canonicalTag": "pastel_colors",
+              "aliases": [
+                "柔和色彩"
+              ]
+            },
+            {
+              "id": 5564,
+              "canonicalTag": "colored_shadow",
+              "aliases": [
+                "彩色阴影"
+              ]
+            },
+            {
+              "id": 12618,
+              "canonicalTag": "lambent_light",
+              "aliases": [
+                "柔和光"
+              ]
+            },
+            {
+              "id": 2946,
+              "canonicalTag": "muted_color",
+              "aliases": [
+                "muted_colors",
+                "柔和色彩"
+              ]
+            },
+            {
+              "id": 24293,
+              "canonicalTag": "pastels",
+              "aliases": [
+                "粉彩"
+              ]
+            },
+            {
+              "id": 13083,
+              "canonicalTag": "dim_lighting",
+              "aliases": [
+                "昏暗灯光"
+              ]
+            },
+            {
+              "id": 4815,
+              "canonicalTag": "pale_color",
+              "aliases": [
+                "pale_colors",
+                "苍白色彩"
+              ]
+            },
+            {
+              "id": 20232,
+              "canonicalTag": "pastel_palettes_(bang_dream!)",
+              "aliases": [
+                "Pastel Palettes（BanG Dream!）"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "window indoors room furniture"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 2,
+          "receivedCount": 2,
+          "receivedTerms": [
+            {
+              "id": 130,
+              "canonicalTag": "indoors",
+              "aliases": [
+                "室内"
+              ]
+            },
+            {
+              "id": 8122,
+              "canonicalTag": "interior",
+              "aliases": [
+                "室内"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "flower petals blooming flowers decoration"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 9,
+          "receivedCount": 9,
+          "receivedTerms": [
+            {
+              "id": 10193,
+              "canonicalTag": "flower_trim",
+              "aliases": [
+                "花朵装饰"
+              ]
+            },
+            {
+              "id": 4763,
+              "canonicalTag": "flower_ornament",
+              "aliases": [
+                "花朵装饰"
+              ]
+            },
+            {
+              "id": 19174,
+              "canonicalTag": "sunflower_petals",
+              "aliases": [
+                "向日葵花瓣"
+              ]
+            },
+            {
+              "id": 322,
+              "canonicalTag": "petals",
+              "aliases": [
+                "flower_petals",
+                "petal",
+                "花瓣"
+              ]
+            },
+            {
+              "id": 23580,
+              "canonicalTag": "blooming",
+              "aliases": [
+                "盛开"
+              ]
+            },
+            {
+              "id": 2811,
+              "canonicalTag": "rose_petals",
+              "aliases": [
+                "玫瑰花瓣"
+              ]
+            },
+            {
+              "id": 10072,
+              "canonicalTag": "glowing_petals",
+              "aliases": [
+                "发光的花瓣"
+              ]
+            },
+            {
+              "id": 3855,
+              "canonicalTag": "bloom",
+              "aliases": [
+                "盛开"
+              ]
+            },
+            {
+              "id": 8039,
+              "canonicalTag": "glowing_flower",
+              "aliases": [
+                "发光的花朵"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "window"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 18,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 6371,
+              "canonicalTag": "window_(computing)",
+              "aliases": [
+                "pop-up_window",
+                "窗口(计算机)"
+              ]
+            },
+            {
+              "id": 319,
+              "canonicalTag": "window",
+              "aliases": [
+                "窗户"
+              ]
+            },
+            {
+              "id": 5149,
+              "canonicalTag": "open_window",
+              "aliases": [
+                "开窗"
+              ]
+            },
+            {
+              "id": 7233,
+              "canonicalTag": "broken_window",
+              "aliases": [
+                "破碎的窗户"
+              ]
+            },
+            {
+              "id": 11506,
+              "canonicalTag": "through_window",
+              "aliases": [
+                "透过窗户"
+              ]
+            },
+            {
+              "id": 5941,
+              "canonicalTag": "round_window",
+              "aliases": [
+                "圆窗"
+              ]
+            },
+            {
+              "id": 14960,
+              "canonicalTag": "barred_window",
+              "aliases": [
+                "有栏杆的窗户"
+              ]
+            },
+            {
+              "id": 20579,
+              "canonicalTag": "boarded_windows",
+              "aliases": [
+                "封住的窗户"
+              ]
+            },
+            {
+              "id": 21159,
+              "canonicalTag": "windows_logo",
+              "aliases": [
+                "Windows标志"
+              ]
+            },
+            {
+              "id": 13030,
+              "canonicalTag": "window_fog",
+              "aliases": [
+                "窗雾"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 120,
+          "resultSeq": 121,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "curtain"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 17,
+          "receivedCount": 10,
+          "receivedTerms": [
+            {
+              "id": 24258,
+              "canonicalTag": "closed_curtains",
+              "aliases": [
+                "drawn_curtains",
+                "关闭的窗帘"
+              ]
+            },
+            {
+              "id": 589,
+              "canonicalTag": "curtains",
+              "aliases": [
+                "curtain",
+                "drapes",
+                "窗帘"
+              ]
+            },
+            {
+              "id": 10557,
+              "canonicalTag": "see-through_curtains",
+              "aliases": [
+                "transparent_curtains",
+                "透明窗帘"
+              ]
+            },
+            {
+              "id": 19903,
+              "canonicalTag": "behind_curtains",
+              "aliases": [
+                "窗帘后"
+              ]
+            },
+            {
+              "id": 11111,
+              "canonicalTag": "stage_curtains",
+              "aliases": [
+                "舞台幕布"
+              ]
+            },
+            {
+              "id": 4759,
+              "canonicalTag": "curtain_grab",
+              "aliases": [
+                "抓窗帘"
+              ]
+            },
+            {
+              "id": 21078,
+              "canonicalTag": "long_breast_curtain",
+              "aliases": [
+                "长胸帘"
+              ]
+            },
+            {
+              "id": 11207,
+              "canonicalTag": "shower_curtain",
+              "aliases": [
+                "浴帘"
+              ]
+            },
+            {
+              "id": 3275,
+              "canonicalTag": "breast_curtains",
+              "aliases": [
+                "乳房窗帘"
+              ]
+            },
+            {
+              "id": 20168,
+              "canonicalTag": "torn_curtains",
+              "aliases": [
+                "撕裂的窗帘"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 125,
+          "resultSeq": 126,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "portrait square image"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 5,
+          "receivedCount": 5,
+          "receivedTerms": [
+            {
+              "id": 14436,
+              "canonicalTag": "oval_image",
+              "aliases": [
+                "椭圆形图像"
+              ]
+            },
+            {
+              "id": 492,
+              "canonicalTag": "portrait",
+              "aliases": [
+                "肖像"
+              ]
+            },
+            {
+              "id": 5721,
+              "canonicalTag": "portrait_(object)",
+              "aliases": [
+                "肖像（物品）"
+              ]
+            },
+            {
+              "id": 11246,
+              "canonicalTag": "square_print",
+              "aliases": [
+                "方形印花"
+              ]
+            },
+            {
+              "id": 5138,
+              "canonicalTag": "round_image",
+              "aliases": [
+                "circular_image",
+                "tondo",
+                "圆形图像"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 127,
+          "resultSeq": 128,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "soft light diffused light backlighting daylight through window"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 4,
+          "receivedCount": 4,
+          "receivedTerms": [
+            {
+              "id": 992,
+              "canonicalTag": "backlighting",
+              "aliases": [
+                "backlit",
+                "bright_background",
+                "背光"
+              ]
+            },
+            {
+              "id": 11506,
+              "canonicalTag": "through_window",
+              "aliases": [
+                "透过窗户"
+              ]
+            },
+            {
+              "id": 12618,
+              "canonicalTag": "lambent_light",
+              "aliases": [
+                "柔和光"
+              ]
+            },
+            {
+              "id": 20161,
+              "canonicalTag": "glowing_windows",
+              "aliases": [
+                "发光的窗户"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 132,
+          "resultSeq": 133,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "soft lighting gentle shadows light rays",
+            "root_id": "nav_21"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 8,
+          "receivedCount": 8,
+          "receivedTerms": [
+            {
+              "id": 1208,
+              "canonicalTag": "light_rays",
+              "aliases": [
+                "光线"
+              ]
+            },
+            {
+              "id": 13083,
+              "canonicalTag": "dim_lighting",
+              "aliases": [
+                "昏暗灯光"
+              ]
+            },
+            {
+              "id": 23122,
+              "canonicalTag": "illumination",
+              "aliases": [
+                "照明"
+              ]
+            },
+            {
+              "id": 345,
+              "canonicalTag": "shadow",
+              "aliases": [
+                "shadows",
+                "影子"
+              ]
+            },
+            {
+              "id": 8419,
+              "canonicalTag": "different_shadow",
+              "aliases": [
+                "不同阴影"
+              ]
+            },
+            {
+              "id": 3276,
+              "canonicalTag": "spotlight",
+              "aliases": [
+                "聚光灯"
+              ]
+            },
+            {
+              "id": 5564,
+              "canonicalTag": "colored_shadow",
+              "aliases": [
+                "彩色阴影"
+              ]
+            },
+            {
+              "id": 18630,
+              "canonicalTag": "floodlights",
+              "aliases": [
+                "泛光灯"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 134,
+          "resultSeq": 135,
+          "arguments": {
+            "mode": "search",
+            "page_size": 12,
+            "query": "calm expression serene closed mouth"
+          },
+          "page": 1,
+          "pageSize": 12,
+          "totalCount": 4,
+          "receivedCount": 4,
+          "receivedTerms": [
+            {
+              "id": 31,
+              "canonicalTag": "closed_mouth",
+              "aliases": [
+                "闭着嘴"
+              ]
+            },
+            {
+              "id": 1399,
+              "canonicalTag": "covered_mouth",
+              "aliases": [
+                "hidden_mouth",
+                "mouth_covered",
+                "捂住嘴"
+              ]
+            },
+            {
+              "id": 346,
+              "canonicalTag": "expressionless",
+              "aliases": [
+                "emotionless",
+                "neutral_expression",
+                "unexpressive",
+                "无表情"
+              ]
+            },
+            {
+              "id": 1916,
+              "canonicalTag": "no_mouth",
+              "aliases": [
+                "无口"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 144,
+          "resultSeq": 145,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "medium shot close-up framing half body"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 1,
+          "receivedCount": 1,
+          "receivedTerms": [
+            {
+              "id": 780,
+              "canonicalTag": "close-up",
+              "aliases": [
+                "close_up",
+                "closeup",
+                "特写"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 146,
+          "resultSeq": 147,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "front view from front"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 6,
+          "receivedCount": 6,
+          "receivedTerms": [
+            {
+              "id": 195,
+              "canonicalTag": "from_behind",
+              "aliases": [
+                "viewed_from_behind",
+                "从后面"
+              ]
+            },
+            {
+              "id": 1101,
+              "canonicalTag": "looking_ahead",
+              "aliases": [
+                "向前看"
+              ]
+            },
+            {
+              "id": 10243,
+              "canonicalTag": "front-to-back",
+              "aliases": [
+                "前后"
+              ]
+            },
+            {
+              "id": 7668,
+              "canonicalTag": "facing_ahead",
+              "aliases": [
+                "正面"
+              ]
+            },
+            {
+              "id": 23457,
+              "canonicalTag": "front_and_back",
+              "aliases": [
+                "前后"
+              ]
+            },
+            {
+              "id": 416,
+              "canonicalTag": "from_above",
+              "aliases": [
+                "aerial_view",
+                "viewed_from_above",
+                "view_from_above",
+                "俯视"
+              ]
+            }
+          ]
+        },
+        {
+          "callSeq": 151,
+          "resultSeq": 152,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "square image aspect ratio layout",
+            "category_ids": [
+              "layout"
+            ]
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 0,
+          "receivedCount": 0,
+          "receivedTerms": []
+        },
+        {
+          "callSeq": 153,
+          "resultSeq": 154,
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "long sleeves shirt sleeve length"
+          },
+          "page": 1,
+          "pageSize": 10,
+          "totalCount": 7,
+          "receivedCount": 7,
+          "receivedTerms": [
+            {
+              "id": 1839,
+              "canonicalTag": "short_over_long_sleeves",
+              "aliases": [
+                "long_sleeves_under_short_sleeves",
+                "long_under_short_sleeves",
+                "short_sleeves_over_long_sleeves",
+                "/sols",
+                "短袖外长袖"
+              ]
+            },
+            {
+              "id": 14,
+              "canonicalTag": "long_sleeves",
+              "aliases": [
+                "long_sleeve",
+                "/lsleeves",
+                "长袖"
+              ]
+            },
+            {
+              "id": 3996,
+              "canonicalTag": "very_long_sleeves",
+              "aliases": [
+                "超长袖子"
+              ]
+            },
+            {
+              "id": 649,
+              "canonicalTag": "puffy_long_sleeves",
+              "aliases": [
+                "bishop_sleeves",
+                "long_puffy_sleeves",
+                "蓬松长袖"
+              ]
+            },
+            {
+              "id": 5669,
+              "canonicalTag": "long_shirt",
+              "aliases": [
+                "t-shirt_dress",
+                "长衬衫"
+              ]
+            },
+            {
+              "id": 13734,
+              "canonicalTag": "alternate_sleeve_length",
+              "aliases": [
+                "交替袖长"
+              ]
+            },
+            {
+              "id": 275,
+              "canonicalTag": "sleeveless_shirt",
+              "aliases": [
+                "sleeveless_blouse",
+                "无袖衬衫"
+              ]
+            }
+          ]
+        }
+      ],
+      "finalArtifact": {
+        "model_route": "wai-illustrious-sdxl",
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, delicate facial features, white shirt, collared shirt, long sleeves, standing, facing viewer, arms at sides, light smile, looking at viewer, closed mouth, upper body, eye level, centered composition, shallow depth of field, indoors, window, white curtains, flowers, three swirl-shaped water drop ornaments, refraction, pale colors, poetic atmosphere, delicate soft rendering, soft window light, gentle facial shadows, low contrast, The girl stands beside the window. Three swirl-shaped water drop ornaments refract the window light around her.",
+        "negative_mode": "native_negative",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor",
+        "positive_avoidance": null,
+        "generation_purpose": "final",
+        "aspect_ratio": "1:1",
+        "width": 1536,
+        "height": 1536,
+        "megapixels": 2.25
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "priority": "P1",
+      "cases": [
+        "5.3-5"
+      ],
+      "title": "ANIMA最终回答加入合同禁止的解释与Markdown",
+      "contract": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/02-role.md:3",
+      "events": [
+        29,
+        30,
+        141,
+        146,
+        149
+      ],
+      "chain": "seq30规则全文送达；seq141及146包含已校验完整JSON；最终请求仍携带这些消息；seq149加构建要点与围栏。",
+      "impact": "整轮最终交付不符合纯结构化输出合同。",
+      "hypothesis": "执行者在最后一步转向常规总结回答。没有该步reasoning文本，不能断言它为何放弃纯JSON；记录未支持展示提示或父任务要求覆盖Skill。"
+    },
+    {
+      "id": "F2",
+      "priority": "P1",
+      "cases": [
+        "5.5-6"
+      ],
+      "title": "WAI最终结构化结果丢失实际positive_prompt",
+      "contract": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:70",
+      "events": [
+        47,
+        48,
+        179,
+        184,
+        187
+      ],
+      "chain": "seq48要求返回stdout结果；seq179、184提供完整内容；最终请求保留；seq187分析说要用中文总结main scene、positions、prompt、generation result与保存路径，随后JSON使用占位值。",
+      "impact": "复制最终JSON将取得占位Prompt；磁盘正确不能补齐最终消息合同。",
+      "hypothesis": "执行者为了避免与上方Prompt重复而摘要化结构化字段；可见分析未明确陈述省略原因，此因果解释待验证。"
+    },
+    {
+      "id": "F3",
+      "priority": "P1",
+      "cases": [
+        "5.3-5",
+        "5.5-6"
+      ],
+      "title": "目录查询存在后续页时结束读取",
+      "contract": "两例seq12 request/header中的query_semantic_prompt_terms.description返回字段第7项与page参数说明；实际模型tools持续保持该声明。",
+      "events": {
+        "5.3-5": [
+          60,
+          65,
+          66,
+          67,
+          76,
+          77,
+          110,
+          117,
+          130
+        ],
+        "5.5-6": [
+          79,
+          83,
+          93,
+          97,
+          119,
+          120,
+          121,
+          125,
+          158
+        ]
+      },
+      "impact": "完整候选集合与同义选择比较未完成，不能宣布严格目录查询流程通过。",
+      "hypothesis": "执行者把首屏候选足够判断当成可停止条件；其分析直接在首屏基础上继续选词。须单变量复验分页处理，不能凭本记录证明模型或服务是唯一原因。"
+    },
+    {
+      "id": "F4",
+      "priority": "P2",
+      "cases": [
+        "5.3-5",
+        "5.5-6"
+      ],
+      "title": "分类筛选ID未按声明先经分类发现取得",
+      "contract": "实际query_semantic_prompt_terms声明root_id及category_ids来源于list_prompt_term_categories；两例完整轨迹无该工具调用。",
+      "events": {
+        "5.3-5": [
+          56,
+          60,
+          94,
+          97,
+          109,
+          111,
+          116,
+          118
+        ],
+        "5.5-6": [
+          70,
+          107,
+          131,
+          132,
+          150,
+          151
+        ]
+      },
+      "impact": "执行者直接复用词条classification中的ID或自行选择layout；运行时接受这些真实ID，但调用过程未满足声明的来源要求。",
+      "hypothesis": "结果中的classification提供可用ID与工具声明要求专用发现之间存在重复来源；是否应允许直接复用属于合同决策，尚未执行因果验证。"
+    },
+    {
+      "id": "F5",
+      "priority": "P2",
+      "cases": [
+        "5.5-6"
+      ],
+      "title": "已有完整Style来源仍发起画师素材查询且顺序倒置",
+      "contract": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/wai-prompt-position-order.md:45；/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md:11-12",
+      "events": [
+        9,
+        33,
+        56,
+        62,
+        63,
+        64,
+        65
+      ],
+      "impact": "已有Prompt直接采用分支被额外目录查询替代部分流程，增加不需要的服务依赖；本次最终画师内容没有变化。",
+      "hypothesis": "seq56把补充查询底模合理性当作处理上下文来源的必要核对；规则已送达，不能先认定缺少教程或工具知识。"
+    },
+    {
+      "id": "F6",
+      "priority": "P2",
+      "cases": [
+        "5.5-6"
+      ],
+      "title": "原始证据包含运行期能力凭据",
+      "contract": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md:1264、1297",
+      "events": [
+        57,
+        58
+      ],
+      "impact": "DSH_HARNESS_COMFYUI_CLI_CAPABILITY值进入主事件及后续模型请求；该凭据值未在本报告复制。交付前需要按原始证据脱敏合同处理，同时保留变量名、来源及引用位置。",
+      "hypothesis": "广泛env筛选直接输出变量值是已观察到的数据进入路径；未推断存在凭据外用或C资料污染。"
+    }
+  ],
+  "causalBoundary": {
+    "verified": "偏离动作、收到的合同与声明、工具实际返回、后续模型输入和最终文件均有原始位置。",
+    "notVerified": "没有运行同条件复现、单变量或反事实模型实验；不能把这些偏离统一归因为Skill措辞、模型能力或展示过滤。"
+  },
+  "reviewLimitations": [
+    "本审查核对本轮已保存的模型可见记录；没有查询未读取的目录后续页，未见候选的实际内容仍未知。",
+    "没有执行图片生成或UI点击，文件可打开性及视觉成图效果不在这两项仅保存Builder任务的验收证据内。",
+    "构图B/C及错误修正后的完整自检缺少可见完成记录，分别标为证据不足，不能凭分析未提及就推断隐藏推理必然没有执行。"
+  ],
+  "actualPresentationAndFinalContext": {
+    "candidate": "presentation-visibility-candidate.tgz",
+    "installedConfig": "两例安装的agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml声明隐藏harness:identity、harness:source、app:web-surface、ui:deliverable-file-references。",
+    "observedSystem": "全部20/30条业务模型请求system文本相同：工作台persona、遵循Skill、目录走MCP、生成及读图走受管CLI、用户语言、bash退出码检查和MCP资源服务器名称。没有ui:deliverable-file-references展示段、图片Markdown/文件卡片交付教程或要求摘要JSON的额外system内容。",
+    "observedTools": "25个声明工具保持一致；含bash、skill、MCP、subagent_task及控制工具；无present_file。没有调用展示工具。",
+    "finalUserRequirement": "原始用户输入要求只构建并保存Builder JSON到本轮目录，没有请求解释性总结、省略字段或用链接替代JSON。",
+    "parentChildBoundary": "两项都是主Session单独执行；没有子任务派发、父消息或职责交接可以解释最终格式变化。",
+    "conclusion": "展示段已实际隐藏，但两例最终格式仍各有偏离。只得出本轮条件下的观察，不声称与其他输入/模型不同的旧运行构成单变量因果对照。"
+  },
+  "nextEvidenceActions": [
+    "保留两例原始失败；整轮和完整目标分支继续保持未完成。",
+    "针对最终格式偏离固定同一输入、模型、安装候选与数据，先独立审核拟检验的原因假设，再执行受控验证；本审查没有提出未经验证的措辞补丁。",
+    "核对工具分页与分类发现合同是否就是预期产品规则，补全读取或经批准统一其唯一来源后，用相同目标复合概念复验。",
+    "WAI构图候选、自检重跑及色彩位置职责需要补足可观察证据或先解决引用冲突，不能由结构成功推断通过。"
+  ]
+}

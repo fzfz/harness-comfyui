@@ -1,0 +1,351 @@
+diff --git a/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md b/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md
+index a9ea5f6..246b286 100644
+--- a/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md
++++ b/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md
+@@ -1,79 +1,85 @@
++---
++文档用途: 提供 Workflow 参数检查 CLI 的调用条件、输入输出与错误处理规则。
++读取时机: Skill 执行者首次调用本文件所列命令前。
++---
+ # Workflow 参数检查 CLI
+
+ ## CLI 用途
+
+-Skill 执行者使用 `generation inspect-template-parameters --stdin` 查询指定 Workflow 模板在指定 ComfyUI 实例上接受的生成参数。
++1. Skill 执行者使用 `generation inspect-template-parameters --stdin` 查询指定 Workflow 模板在指定 ComfyUI 实例上接受的生成参数。
+
+ ## 调用入口
+
+-受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Workflow 参数检查 CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下入口以 Node 模式调用本命令：
++1. 受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Workflow 参数检查 CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下入口以 Node 模式调用本命令：
+
+-```sh
+-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation inspect-template-parameters --stdin
+-```
++   ```sh
++   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation inspect-template-parameters --stdin
++   ```
+
+ ## 调用条件
+
+-Skill 执行者取得 `template_id` 和 `instance_id` 后调用本命令。
++1. Skill 执行者按 [SKILL.md](../SKILL.md)“创建图片”的步骤顺序进入“检查 Workflow 参数”，并满足该步骤的前置条件后调用本命令。
+
+ ## 参数与标准输入
+
+-标准输入是只包含 `template_id` 和 `instance_id` 的 JSON 对象：
++1. 标准输入是只包含 `template_id` 和 `instance_id` 的 JSON 对象：
+
+-```json
+-{"template_id":"36","instance_id":"2"}
+-```
++   ```json
++   {"template_id":"36","instance_id":"2"}
++   ```
+
+-`template_id` 和 `instance_id` 都是去除首尾空白后仍非空的字符串。
++2. `template_id` 和 `instance_id` 都是去除首尾空白后仍非空的字符串。
+
+ ## 输入值的来源
+
+-`template_id` 使用 `catalog template resolve` 返回 JSON 中的 `id`。
+-
+-`instance_id` 使用 `catalog instance list` 返回 JSON 中的 `results[0].id`。
++1. `template_id` 使用 [SKILL.md](../SKILL.md)“核对当前选择”确定的模板 ID。
++2. `instance_id` 使用 [SKILL.md](../SKILL.md)“检查 Workflow 参数”确定的实例 ID。
+
+ ## 成功输出与失败输出
+
+-命令成功时输出一个包含 `parameters` 和 `size_candidates` 的 JSON 对象。
++1. 命令成功时退出码为 `0`。使用 `--quiet` 时，stderr 为空，stdout 包含一行完整 JSON；该 JSON 对象包含 `parameters` 和 `size_candidates`。
++2. 命令失败时退出码非零，stderr 使用 `错误码: 错误消息` 格式。
+
+ ### `parameters`
+
+ `parameters` 数组中的每一项描述一个生成参数：
+
+-- `parameter_id`：Generation Request 的 `parameters` 对象使用的属性名。
+-- `kind`：参数用途，例如 `positive_prompt`、`negative_prompt`、`seed` 或 `batch_size`。
+-- `value_type`：参数值的数据类型。`integer` 表示 JSON 整数，`number` 表示 JSON 数字，`string` 表示 JSON 字符串，`boolean` 表示 JSON 布尔值，`choice` 表示参数值必须与 `allowed_values` 数组中的一个元素相等；`value_type` 为 `choice` 但参数对象未包含 `allowed_values` 时，该参数对象不接受任何值。
+-- `current_value`：Workflow 模板当前保存的参数值。
+-- `minimum`：参数接受的最小数值；没有数值下限时不返回该属性。
+-- `maximum`：参数接受的最大数值；没有数值上限时不返回该属性。
+-- `allowed_values`：由参数允许值组成的数组；参数没有固定值列表时不返回该属性。
++1. `parameter_id`：Generation Request 的 `parameters` 对象使用的属性名。
++2. `kind`：参数用途，例如 `positive_prompt`、`negative_prompt`、`seed` 或 `batch_size`。
++3. `value_type`：参数值的数据类型。`integer` 表示 JSON 整数，`number` 表示 JSON 数字，`string` 表示 JSON 字符串，`boolean` 表示 JSON 布尔值，`choice` 表示参数值必须与 `allowed_values` 数组中的一个元素相等；`value_type` 为 `choice` 但参数对象未包含 `allowed_values` 时，该参数对象不接受任何值。
++4. `current_value`：Workflow 模板当前保存的参数值。
++5. `minimum`：参数接受的最小数值；没有数值下限时不返回该属性。
++6. `maximum`：参数接受的最大数值；没有数值上限时不返回该属性。
++7. `allowed_values`：由参数允许值组成的数组；参数没有固定值列表时不返回该属性。
++
++### 参数值的接受条件
++
++1. 参数值必须符合“`parameters`”小节对 `value_type` 的定义。参数对象包含 `minimum` 时，数值必须大于或等于 `minimum`；参数对象包含 `maximum` 时，数值必须小于或等于 `maximum`；参数对象包含 `allowed_values` 时，参数值还必须与 `allowed_values` 数组中的一个元素相等。本文件将满足 `value_type`、`minimum`、`maximum` 和 `allowed_values` 全部适用要求的情况称为“参数对象接受该值”。
+
+ ### `size_candidates`
+
+ `size_candidates` 数组中的每一项描述一组可供选择的图片尺寸参数。每项的 `candidate_id` 标识该尺寸候选项；每项还使用以下一种结构：
+
+-- `representation: "width_height"`：`width` 和 `height` 都是与 `parameters[]` 使用相同字段结构的参数对象。
+-- `representation: "aspect_ratio_megapixels"`：`aspect_ratio` 和 `megapixels` 都是与 `parameters[]` 使用相同字段结构的参数对象。
+-- `representation: "resolution_preset"`：`parameter` 是与 `parameters[]` 使用相同字段结构的参数对象。`mapped_options` 是预设映射数组；每个数组元素的 `value` 是满足 `parameter` 取值限制的参数值，`width` 和 `height` 是该预设对应的、以像素为单位的正整数图片宽度和高度。`unmapped_values` 是由无法映射到 `width` 和 `height` 的预设参数值组成的数组。
+-
+-使用 `--quiet` 的命令成功时退出码为 `0`，stderr 为空，stdout 包含一行完整 JSON。命令失败时退出码非零，stderr 使用 `错误码: 错误消息` 格式。
++1. `representation: "width_height"`：`width` 和 `height` 都是与 `parameters[]` 使用相同字段结构的参数对象。
++2. `representation: "aspect_ratio_megapixels"`：`aspect_ratio` 和 `megapixels` 都是与 `parameters[]` 使用相同字段结构的参数对象。
++3. `representation: "resolution_preset"`：`parameter` 是与 `parameters[]` 使用相同字段结构的参数对象。`mapped_options` 是预设映射数组；每个数组元素的 `value` 是满足 `parameter` 取值限制的参数值，`width` 和 `height` 是该预设对应的、以像素为单位的正整数图片宽度和高度。`unmapped_values` 是由无法映射到 `width` 和 `height` 的预设参数值组成的数组。
+
+ ## Generation Request 参数检查
+
+ 1. `parameters` 中 `kind` 分别为 `positive_prompt`、`seed` 和 `batch_size` 的元素必须各有且只有一个。
+ 2. 当 Skill 执行者准备在 Generation Request 中写入负向 Prompt 时，`parameters` 中必须存在且只存在一个 `kind` 为 `negative_prompt` 的项目。
+-3. `batch_size` 项的 `value_type` 必须是 `integer`，并且该项的取值限制必须接受整数 `1`。Skill 执行者把该项的 `parameter_id` 写入 Generation Request 的 `parameters` 对象，并将值设为 `1`。
++3. `batch_size` 项的 `value_type` 必须是 `integer`，并且该参数对象必须接受整数 `1`。Skill 执行者把该项的 `parameter_id` 写入 Generation Request 的 `parameters` 对象，并将值设为 `1`。
+ 4. 检查结果不符合第 1 至 3 项中任一适用要求时，Skill 执行者停止构造 Generation Request，并报告 `template_id` 和 `instance_id`。对于每个不符合要求的 `kind`，Skill 执行者报告所有具有该 `kind` 的元素的 `parameter_id`；缺少该 `kind` 时，Skill 执行者报告空的 `parameter_id` 列表。
+
+ ## 图片尺寸选择
+
+-`size_candidates` 为空时，Skill 执行者报告该 Workflow 模板没有返回可用的图片尺寸参数，并停止构造 Generation Request。
++### 选择前提
+
+-已经通过 `references/prompt-result-contract.md` 检查的结果 JSON 提供 `width`、`height`、`aspect_ratio` 和 `megapixels`。`width` 和 `height` 是以像素为单位的正整数，分别表示期望图片宽度和高度；`aspect_ratio` 是由两个正整数组成的 `A:B` 字符串，并且 `A / B` 必须等于 `width / height`；`megapixels` 是表示期望图片百万像素数的正数。
++1. `size_candidates` 为空时，Skill 执行者报告该 Workflow 模板没有返回可用的图片尺寸参数，并停止构造 Generation Request。
+
+-参数值必须符合“`parameters`”小节对 `value_type` 的定义。参数对象包含 `minimum` 时，数值必须大于或等于 `minimum`；参数对象包含 `maximum` 时，数值必须小于或等于 `maximum`；参数对象包含 `allowed_values` 时，参数值还必须与 `allowed_values` 数组中的一个元素相等。以下规则将满足 `value_type`、`minimum`、`maximum` 和 `allowed_values` 全部适用要求的情况称为“参数对象接受该值”。
++2. 已经通过 [Prompt Builder 结果合同](prompt-result-contract.md) 检查的结果 JSON 提供 `width`、`height`、`aspect_ratio` 和 `megapixels`。`width` 和 `height` 是以像素为单位的正整数，分别表示期望图片宽度和高度；`aspect_ratio` 是由两个正整数组成的 `A:B` 字符串，并且 `A / B` 必须等于 `width / height`；`megapixels` 是表示期望图片百万像素数的正数。
+
+-Skill 执行者按照以下顺序选择图片尺寸参数和值：
++### 选择步骤
+
+ 1. Skill 执行者先查找直接匹配。对一个 `width_height` 项，`width` 参数对象接受结果 JSON 的 `width` 且 `height` 参数对象接受结果 JSON 的 `height` 时，该项产生一个直接匹配。对一个 `aspect_ratio_megapixels` 项，`aspect_ratio` 参数对象包含 `allowed_values` 时，Skill 执行者只检查 `allowed_values` 数组中被该参数对象接受且符合 `A:B` 格式的值；`aspect_ratio` 参数对象未包含 `allowed_values` 时，Skill 执行者只检查结果 JSON 的 `aspect_ratio`。被检查的宽高比值和结果 JSON 的 `aspect_ratio` 分别约分后相同，并且 `aspect_ratio` 参数对象接受该宽高比值、`megapixels` 参数对象接受结果 JSON 的 `megapixels` 时，该宽高比值与结果 JSON 的 `megapixels` 组成一个直接匹配。对一个 `resolution_preset` 项，`mapped_options[]` 中 `width` 和 `height` 分别等于结果 JSON `width` 和 `height` 的每个元素分别产生一个直接匹配。
+ 2. 多种 `representation` 都有直接匹配时，Skill 执行者按照 `width_height`、`aspect_ratio_megapixels`、`resolution_preset` 的顺序选择。最先匹配的 `representation` 中仍有多项直接匹配时，Skill 执行者列出这些匹配的 `candidate_id` 和参数值，并等待用户选择。
+@@ -88,42 +94,44 @@ Skill 执行者按照以下顺序选择图片尺寸参数和值：
+
+ ## 错误处理与重试
+
+-- `CLI_REQUEST_INVALID`：Skill 执行者先按照“参数与标准输入”一节检查本次标准输入。Skill 执行者发现自己构造的 JSON 不符合该节要求时，修正 JSON 并重试一次；重试后仍返回 `CLI_REQUEST_INVALID`，或者本次标准输入已经符合该节要求时，Skill 执行者报告完整错误消息并停止构造 Generation Request。用户提供的 `template_id` 或 `instance_id` 不是去除首尾空白后仍非空的字符串时，Skill 执行者报告不符合要求的属性名、属性值和“必须是去除首尾空白后仍非空的字符串”这一要求，并等待用户提供新值。
+-- `GENERATION_PARAMETER_TARGET_AMBIGUOUS`、`GENERATION_PARAMETER_TARGET_NOT_FOUND`、`GENERATION_PARAMETER_CONTRACT_UNSUPPORTED` 或 `GENERATION_PARAMETER_INVALID`：Skill 执行者报告 stderr 中对应错误码的完整错误消息，并停止构造 Generation Request。
+-- 其他错误码：Skill 执行者报告错误码、错误消息和本次使用的 `template_id`、`instance_id`，并停止构造 Generation Request。
++1. `CLI_REQUEST_INVALID`：Skill 执行者按照“参数与标准输入”一节检查本次标准输入。用户提供的 `template_id` 或 `instance_id` 不符合字符串要求时，Skill 执行者报告属性名、属性值和“必须是去除首尾空白后仍非空的字符串”这一要求，并等待用户提供新值。用户提供的 ID 符合要求，但 Skill 执行者构造的 JSON 不符合输入要求时，Skill 执行者修正 JSON 并重试一次；重试失败时按照本节对应错误码处理，再次收到 `CLI_REQUEST_INVALID` 时报告完整错误消息并停止构造 Generation Request。本次标准输入已经符合要求时，Skill 执行者报告完整错误消息并停止构造 Generation Request。
++2. `GENERATION_PARAMETER_TARGET_AMBIGUOUS`、`GENERATION_PARAMETER_TARGET_NOT_FOUND`、`GENERATION_PARAMETER_CONTRACT_UNSUPPORTED` 或 `GENERATION_PARAMETER_INVALID`：Skill 执行者报告 stderr 中对应错误码的完整错误消息，并停止构造 Generation Request。
++3. 其他错误码：Skill 执行者报告错误码、错误消息和本次使用的 `template_id`、`instance_id`，并停止构造 Generation Request。
+
+ ## 查询结果复用
+
+-处理当前用户请求期间，Skill 执行者复用同一组 `template_id` 和 `instance_id` 对应的完整检查结果；`template_id` 或 `instance_id` 改变时，Skill 执行者重新调用本命令。
++1. 处理当前用户请求期间，Skill 执行者复用同一组 `template_id` 和 `instance_id` 对应的完整检查结果；`template_id` 或 `instance_id` 改变时，Skill 执行者重新调用本命令。
+
+ ## 完整调用示例
+
+-```sh
+-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation inspect-template-parameters --stdin <<'JSON'
+-{"template_id":"36","instance_id":"2"}
+-JSON
+-```
+-
+-成功输出内容示例（文档为便于阅读而换行展示）：
+-
+-```json
+-{
+-  "parameters": [
+-    {"parameter_id":"positive_prompt","kind":"positive_prompt","value_type":"string","current_value":""},
+-    {"parameter_id":"seed","kind":"seed","value_type":"integer","current_value":0,"minimum":0,"maximum":2147483647},
+-    {"parameter_id":"batch_size","kind":"batch_size","value_type":"integer","current_value":1,"minimum":1,"maximum":8}
+-  ],
+-  "size_candidates": [
+-    {
+-      "candidate_id":"aspect_ratio_megapixels:aspect_ratio:megapixels",
+-      "representation":"aspect_ratio_megapixels",
+-      "aspect_ratio":{"parameter_id":"aspect_ratio","kind":"aspect_ratio","value_type":"choice","current_value":"1:1","allowed_values":["1:1","9:16","16:9"]},
+-      "megapixels":{"parameter_id":"megapixels","kind":"megapixels","value_type":"number","current_value":1,"minimum":0.5,"maximum":2}
+-    }
+-  ]
+-}
+-```
+-
+-## 帮助与操作提示
+-
+-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
++1. Skill 执行者使用以下命令通过标准输入提交查询：
++
++   ```sh
++   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation inspect-template-parameters --stdin <<'JSON'
++   {"template_id":"36","instance_id":"2"}
++   JSON
++   ```
++
++2. 以下示例展示成功输出的 JSON，内容按多行排版：
++
++   ```json
++   {
++     "parameters": [
++       {"parameter_id":"positive_prompt","kind":"positive_prompt","value_type":"string","current_value":""},
++       {"parameter_id":"seed","kind":"seed","value_type":"integer","current_value":0,"minimum":0,"maximum":2147483647},
++       {"parameter_id":"batch_size","kind":"batch_size","value_type":"integer","current_value":1,"minimum":1,"maximum":8}
++     ],
++     "size_candidates": [
++       {
++         "candidate_id":"aspect_ratio_megapixels:aspect_ratio:megapixels",
++         "representation":"aspect_ratio_megapixels",
++         "aspect_ratio":{"parameter_id":"aspect_ratio","kind":"aspect_ratio","value_type":"choice","current_value":"1:1","allowed_values":["1:1","9:16","16:9"]},
++         "megapixels":{"parameter_id":"megapixels","kind":"megapixels","value_type":"number","current_value":1,"minimum":0.5,"maximum":2}
++       }
++     ]
++   }
++   ```
++
++## 命令帮助
++
++1. Skill 执行者需要核对命令参数或输入示例时，在本文件对应命令的调用入口中，将 `--stdin` 替换为 `--help`，读取该命令帮助。
+diff --git a/.agents/skills/comfyui-iterate-generation/SKILL.md b/.agents/skills/comfyui-iterate-generation/SKILL.md
+index 22f08c3..7abdd7e 100644
+--- a/.agents/skills/comfyui-iterate-generation/SKILL.md
++++ b/.agents/skills/comfyui-iterate-generation/SKILL.md
+@@ -7,40 +7,40 @@ description: 主 Agent 在用户要求根据故事和人物构思画面，并通
+
+ ## 定义任务目标和 Agent 职责
+
+-主 Agent 接收用户请求，派发子任务并交付图片。
++1. 主 Agent 接收用户请求，派发子任务并交付图片。
+
+-画面目标指希望观者通过图片理解的人物处境、关系或情绪。核心要素指使目标成立的必要人物、动作、关系和可见线索。构图 Agent 从故事、人物性格和片段经历推导目标与核心要素，并设计主体、空间、视觉主次和照明。
++2. 画面目标指希望观者通过图片理解的人物处境、关系或情绪。核心要素指使目标成立的必要人物、动作、关系和可见线索。构图 Agent 从故事、人物性格和片段经历推导目标与核心要素，并设计主体、空间、视觉主次和照明。
+
+-| 子 Agent | 创建工具 | 所属结果 |
+-|---|---|---|
+-| 构图 Agent | subagent_composition | 对人物和片段的理解、画面目标、核心要素、构图和材料依据 |
+-| 生成 Agent | subagent_generation | 完整 Builder JSON、实际生成参数、Run ID、图片路径和修改内容 |
+-| 观察 Agent | subagent_observation | 每张图片的原始观察、图片对应关系和视觉模型信息 |
+-| 比较 Agent | subagent_comparison | 逐图达成依据、偏差、原因假设、修改建议和应保留的表现 |
++   | 子 Agent | 创建工具 | 输出结果 |
++   |---|---|---|
++   | 构图 Agent | subagent_composition | 对人物和片段的理解、画面目标、核心要素、构图和材料依据 |
++   | 生成 Agent | subagent_generation | 完整 Builder JSON、实际生成参数、Run ID、图片路径和修改内容 |
++   | 观察 Agent | subagent_observation | 每张图片的原始观察、图片对应关系和视觉模型信息 |
++   | 比较 Agent | subagent_comparison | 逐图达成依据、偏差、原因假设、修改建议和应保留的表现 |
+
+-Prompt Builder 是生成 Agent 按实际模型选择的 anima-prompt-builder、krea2-anime-prompt-builder 或 wai-sdxl-prompt-builder。生成 Agent 使用对应 Builder 的 test 尺寸，按构图选择宽高比，再使用 comfyui-generate 提交图片。Run ID 标识实际图片生成记录。观察 Agent 使用 local-image-reader 取得独立视觉观察。
++3. Prompt Builder 是生成 Agent 按实际模型选择的 anima-prompt-builder、krea2-anime-prompt-builder 或 wai-sdxl-prompt-builder。生成 Agent 使用对应 Builder 的 test 尺寸，按构图选择宽高比，再使用 comfyui-generate 提交图片。Run ID 标识实际图片生成记录。观察 Agent 使用 local-image-reader 取得独立视觉观察。
+
+ ## 派发任务并接收结果文件
+
+-首次派发前，主 Agent 完整读取[交接目录与文件规范](references/records.md)，据此创建本次输出目录并分配具体文件路径。
++1. 首次派发前，主 Agent 完整读取[交接目录与文件规范](references/records.md)，据此创建本次输出目录并分配具体文件路径。
+
+-主 Agent 调用对应角色工具，并填写以下参数。首次任务省略 agent_id，工具返回 kind=continuable 和 subagentId。构图和生成的后续任务仍调用原角色工具，agent_id 填原 subagentId；返回的 messageId 只表示消息已投递。每轮观察与比较分别创建新子 Agent。
++2. 主 Agent 使用原生 skill 工具返回的 resourceBase.path（本 Skill 的实际目录）定位参考文件：构图任务提供 references/composition-design.md；生成任务提供 references/run-query-cli.md；比较任务提供 references/iteration-method.md。子 Agent 直接读取对应参考。
+
+-| 参数 | 主 Agent 提供的内容 |
+-|---|---|
+-| description | 本次任务的简短名称 |
+-| agent_id | 接收后续任务的已有子 Agent 的 subagentId；首次创建时省略 |
+-| requirements | 用户要求及本次新增要求的字符串数组；构图、生成和比较使用 |
+-| input_files | 本次材料列表；每项 path 为需要读取的完整文件或目录路径，purpose 说明材料是什么；构图、生成和比较使用 |
+-| reference_files | 对应角色参考文档完整路径的字符串数组；构图、生成和比较使用 |
+-| supplied_data | 生成任务所需的已选 Workflow、模型、LoRA 信息，或生成 Agent 请求的完整 Builder JSON 原文；仅生成使用，无需补充数据时省略 |
+-| images | 实际图片列表；每项 path 为完整图片路径，run_id 为所属生成记录；仅观察使用 |
+-| questions | 中性观察问题的字符串数组；仅观察使用 |
+-| output_files | 本次输出列表；每项 path 为父 Agent 指定的完整文件路径，purpose 说明应保存的结果内容 |
++3. 主 Agent 调用对应角色工具，并填写以下参数。首次任务省略 agent_id，工具返回 kind=continuable 和 subagentId。构图和生成的后续任务仍调用原角色工具，agent_id 填原 subagentId；返回的 messageId 只表示消息已投递。每轮观察与比较分别创建新子 Agent。
+
+-主 Agent 提供本次要求和材料，并保存工具返回的 subagentId，等待完成通知，读取通知返回的结果文件，再派发依赖该结果的任务。子 Agent 报告错误或缺少输入时，主 Agent 根据具体问题处理；需要补充材料时，通过原角色工具向原 agent_id 发送补充后的任务参数。
++   | 参数 | 主 Agent 提供的内容 |
++   |---|---|
++   | description | 本次任务的简短名称 |
++   | agent_id | 接收后续任务的已有子 Agent 的 subagentId；首次创建时省略 |
++   | requirements | 用户要求及本次新增要求的字符串数组；构图、生成和比较使用 |
++   | input_files | 本次材料列表；每项 path 为需要读取的完整文件或目录路径，purpose 说明材料是什么；构图、生成和比较使用 |
++   | reference_files | 对应角色参考文档完整路径的字符串数组；构图、生成和比较使用 |
++   | supplied_data | 生成任务所需的已选 Workflow、模型、LoRA 信息，或生成 Agent 请求的完整 Builder JSON 原文；仅生成使用，无需补充数据时省略 |
++   | images | 实际图片列表；每项 path 为完整图片路径，run_id 为所属生成记录；仅观察使用 |
++   | questions | 中性观察问题的字符串数组；仅观察使用 |
++   | output_files | 本次输出列表；每项 path 为父 Agent 指定的完整文件路径，purpose 说明应保存的结果内容 |
+
+-主 Agent 使用原生 skill 工具返回的 resourceBase.path（本 Skill 的实际目录）定位参考文件：构图任务提供 references/composition-design.md；生成任务提供 references/run-query-cli.md；比较任务提供 references/iteration-method.md。子 Agent 直接读取对应参考。
++4. 主 Agent 提供本次要求和材料，并保存工具返回的 subagentId，等待完成通知，读取通知返回的结果文件，再派发依赖该结果的任务。子 Agent 报告错误、缺少输入或需要用户选择时，主 Agent 保留报告中的缺项和候选来源，按该子任务所用 Skill 的条件转达问题；禁止把候选改写成用户选择或派发依赖已知缺项的任务。取得所需答复或材料后，主 Agent 通过原角色工具向原 agent_id 发送补充后的任务参数。
+
+ ## 根据画面目标和观察反馈继续迭代
+
+@@ -50,10 +50,10 @@ Prompt Builder 是生成 Agent 按实际模型选择的 anima-prompt-builder、k
+ 4. 主 Agent 向比较 Agent 提供本轮构图文件、用户要求和原始观察文件；分析偏差时补充生成参数、Prompt 和此前结果。比较 Agent 分别判断每张图片是否满足画面目标、全部核心要素和用户明确要求。
+ 5. 目标未达成时，主 Agent 将比较文件交给原生成 Agent，要求原生成 Agent 针对比较指出的具体偏差修改 Prompt，再继续生成、观察和比较。材料理解或构图问题交给原构图 Agent，新的构图文件用于后续生成。缺少关键观察时，先针对实际图片补充中性读图，再比较。
+
+-构图和 Prompt 修改保留画面目标、核心要素及用户明确要求。同一幅图片同时满足全部目标和要求时，主 Agent 展示图片、实际配置及达成依据。
++6. 构图 Agent 和生成 Agent 修改构图或 Prompt 时，保留画面目标、核心要素及用户明确要求。同一幅图片同时满足全部目标和要求时，主 Agent 展示图片、实际配置及达成依据。
+
+-用户停止、达到用户明确限制或实际错误使任务无法继续时，主 Agent 展示已有结果，说明具体原因和未达成内容；需要停止仍在工作的子 Agent 时，使用 interrupt_agent 并传入其 agent_id。
++7. 用户停止、达到用户明确限制或实际错误使任务无法继续时，主 Agent 展示已有结果，说明具体原因和未达成内容；需要停止仍在工作的子 Agent 时，使用 interrupt_agent 并传入其 agent_id。
+
+ ## 记录后续任务需要的结果
+
+-主 Agent 按[交接目录与文件规范](references/records.md)更新任务记录，保存各子会话身份和结果文件路径。后续派发引用所需文件，完整生成参数和原始观察保存在所属结果文件中。
++1. 主 Agent 按[交接目录与文件规范](references/records.md)更新任务记录，保存各子会话身份和结果文件路径。后续派发引用所需文件，完整生成参数和原始观察保存在所属结果文件中。
+diff --git a/agent-presets/harness-comfyui-iteration/agent.cordis.yml b/agent-presets/harness-comfyui-iteration/agent.cordis.yml
+index 109c498..1a4fe6f 100644
+--- a/agent-presets/harness-comfyui-iteration/agent.cordis.yml
++++ b/agent-presets/harness-comfyui-iteration/agent.cordis.yml
+@@ -1,4 +1,9 @@
+ # Configure each image role and its task message template.
++- id: noobai-mcp
++  name: cordis:include
++  config:
++    path: ../noobai-mcp.cordis.yml
++
+ - id: project-tool-visibility
+   name: ../project-tool-visibility.mjs
+   config:
+@@ -16,7 +21,7 @@
+   name: '@deepseek-ai/dsh-persona'
+   config:
+     prefix: >-
+-      You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison. Assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Ask the user only for consequential decisions the material cannot reasonably resolve. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language.
++      You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison. Assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language.
+
+ - id: agent-instructions
+   name: '@deepseek-ai/dsh-agent-instructions'
+@@ -95,7 +100,7 @@
+           type: array
+           items:
+             type: string
+-          description: 对应角色参考文档的完整路径。
++          description: 构图 Agent 参考文档的完整路径。
+         output_files:
+           type: array
+           items:
+@@ -217,7 +222,7 @@
+           type: array
+           items:
+             type: string
+-          description: 对应角色参考文档的完整路径。
++          description: 生成 Agent 参考文档的完整路径。
+         output_files:
+           type: array
+           items:
+@@ -304,7 +309,7 @@
+       2. Use comfyui-generate to inspect the selected Workflow, actual model and LoRA configuration. Read the actual model's Prompt Builder and construct the complete Builder JSON. Use its test image size and an aspect ratio suited to the composition. For a revision, make small prompt changes addressing the observed failures while preserving the image goal, essential elements and user requirements.
+       3. Save the complete Builder JSON to the file specified in the task. Use comfyui-generate to submit the image with that JSON according to its input instructions. If comfyui-generate requires the saved Builder JSON as input in a new task message, report its file path and request that JSON content from the parent Agent; use the received JSON for submission.
+       4. Use the returned Run IDs to query the actual generation parameters and image paths with the supplied Run query reference. Run IDs identify actual image-generation records.
+-      5. Write the actual prompt, generation parameters or saved record paths, Run IDs, actual image paths and changes made to the result file specified in the task. Return only the specified Builder JSON and result file paths. If generation or querying fails, report the actual error.
++      5. Write the actual prompt, generation parameters or saved record paths, Run IDs, actual image paths and changes made to the result file specified in the task. After generation and querying succeed, return only the specified Builder JSON and result file paths. If generation or querying fails, report the actual error.
+
+ - id: observation-agent
+   name: ../project-iteration-dispatch.mjs
+@@ -412,7 +417,7 @@
+         - create_goal
+         - update_goal
+     persona: |-
+-      You are the observation Agent. Use the Skills named below and the references supplied with the task.
++      You are the observation Agent. Use the Skills named below.
+
+       1. Read the supplied image paths, their Run ID correspondence and neutral observation questions. Run IDs associate images with their generation records.
+       2. Use local-image-reader to observe the supplied images. Phrase questions about visible content without suggesting expected answers.
+@@ -458,7 +463,7 @@
+           type: array
+           items:
+             type: string
+-          description: 对应角色参考文档的完整路径。
++          description: 比较 Agent 参考文档的完整路径。
+         output_files:
+           type: array
+           items:

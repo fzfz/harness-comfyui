@@ -1,0 +1,197 @@
+{
+  "status": "已完成只读取证；因果效果待对照验证",
+  "scope": {
+    "plan": "docs/plans/skills-mcp-migration-20261013.md §5.11–5.12",
+    "reviewedCases": [
+      {
+        "review": "deepseek-no-default-model-review.json",
+        "sessionId": "session-1ff8033f-57a5-429e-91df-f80f480910b6",
+        "collect": ".local/skills-mcp-migration-live/desktop/a0dd6c1d-37a4-4bd0-a84a-fe973a386386/1791903798228-fc5c24dc-877f-4cb1-bc9f-aa14aeddc1bf-collect.json",
+        "children": [
+          "0c7411f9-08b3-4519-b2d3-d7e66814e96c",
+          "624602a2-f440-45d5-ab87-d0fbab55b5b5"
+        ]
+      },
+      {
+        "review": "deepseek-empty-instances-review.json",
+        "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+        "collect": ".local/skills-mcp-migration-live/desktop/8afcd59e-0da4-462f-9331-4a56122b2f4c/1791904327573-4a0e6a6d-c315-4cc4-b642-72a171186810-collect.json",
+        "children": [
+          "fc1e0177-87fd-4546-9a44-e3af0a72c1c1"
+        ]
+      }
+    ],
+    "writeScope": "仅本诊断 JSON",
+    "model": "opencode-go/deepseek-v4.1-flash"
+  },
+  "evidenceConventions": {
+    "messageIndex": "messages 数组下标从 0 开始；JSONL 的 request 位于第 1 行。",
+    "eventSeq": "原始 collect.records 中 event.seq。",
+    "analysis": "仅引用宿主保存并送达的 reasoning 块；这些块用于提出原因假设。",
+    "sourceState": "产品文件为本次读取时状态；历史执行规则以 LLM request 内的实际文本为准。"
+  },
+  "findings": [
+    {
+      "id": "H1",
+      "title": "缺少模型后父 Agent 继续查询并派发生图任务",
+      "classification": "已证实的执行偏离；尚未证明单一原因",
+      "expected": "生成 Skill 已要求空默认模型且用户未选模型时请求 model_id；进入创建图片步骤前取得采用模型的查询结果。计划 §5.12.3 要求父 Agent 不派发依赖已知缺项的任务。",
+      "firstDeviation": {
+        "sessionId": "session-1ff8033f-57a5-429e-91df-f80f480910b6",
+        "knownMissingSeq": 51,
+        "firstPostMissingActionSeq": 57,
+        "firstCandidateSearchSeq": 64,
+        "firstDependentDispatchSeq": 94,
+        "note": "seq57 读取路线与结果合同；seq64 search_models(base_model.id=2,limit=10)；seq94 subagent_generation。seq57 是否单独算违规取决于停止范围；seq94 是确定的依赖任务派发。"
+      },
+      "chain": [
+        "父 seq19 收到迭代 Skill；seq26 收到 records.md；seq28 收到生成 Skill。",
+        "父 seq51 收到 Workflow item.model=null。下一请求 90eeda… 的 messages[19] 保留响应；messages[10] 已含生成停止及禁止推选规则。",
+        "父 seq61 reasoning 明确认识需 model_id，仍决定让生成 Agent 判断内置 checkpoint 是否足够；seq64 搜索同底模模型，seq68 reasoning 将 id1 视为应采用模型。",
+        "seq94 requirements 明确写入 item.model=null、用户未指定 model_id、候选模型列表及不要推选规则；子首请求 41ef… messages[1] 收到这些原文。"
+      ],
+      "actualRulesRead": [
+        ".local/skills-mcp-migration-live/llm-calls/90eeda01-5658-4dee-a1bd-e77782f57670.jsonl:1 messages[10,19]",
+        ".local/skills-mcp-migration-live/llm-calls/41ef88a9-5a86-48a8-a55f-b7d457013af8.jsonl:1 messages[1]"
+      ],
+      "sourceLocations": [
+        ".agents/skills/comfyui-generate/SKILL.md:28",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:41",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:48"
+      ],
+      "sourceIdentityConclusion": "派发保留候选和缺项身份。本例没有把 model_id=1 改写成用户选择。",
+      "hypothesis": {
+        "statement": "父 persona 的通用自主决定原则及迭代 Skill 对缺项的宽泛处理可能使父 Agent 把必须用户选择的资源决定交给生成 Agent 再判断。",
+        "support": "父 seq61 及 seq119 显式权衡是否由材料解决；实际 system 含 Ask the user only for consequential decisions the material cannot reasonably resolve。",
+        "counterEvidence": "父已读生成 Skill 并在派发中复述缺项规则；通用原则本身没有要求忽略特定资源规则。",
+        "test": "固定原模型、用户输入、目录夹具与其他文字，仅将父 persona 的决策职责引用到生成 Skill 的选择与恢复合同，复验 seq51 后动作。"
+      },
+      "repairLayer": "父子交接职责：迭代 Skill 的唯一交接规则及 persona 的引用范围；具体模型条件保留在生成 Skill。修复效果尚待验证。"
+    },
+    {
+      "id": "H2",
+      "title": "父 Agent 最终按路线和节点线索建议模型 1",
+      "classification": "已证实的来源规则偏离",
+      "firstDeviation": {
+        "seq": 119,
+        "action": "最终表格把 id1 标为建议，并要求回复 model_id=1。",
+        "earlierSignal": "seq68 的 reasoning 已将节点文件名和路线对应视为使用 id1 的理由；该 reasoning 不是执行选择。"
+      },
+      "chain": [
+        "父 seq64/65 获得同底模候选。",
+        "生成子请求 fa3… messages[38] 向父报告缺 model_id，明确要求向用户索取并提供候选校验事实。",
+        "父 seq111/112 收到子报告；seq119 reasoning 以路线名、checkpoint 文件名、节点内容认为 id1 明显匹配，最终给出推荐。"
+      ],
+      "actualInput": ".local/skills-mcp-migration-live/llm-calls/f312baef-1347-433e-8525-dfc8e3ffab54.jsonl:1 messages[0]",
+      "sourceLocations": [
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:24",
+        ".agents/skills/comfyui-generate/SKILL.md:28"
+      ],
+      "assessment": "规则与行为冲突已证实；父 system 的自主决策原则对该推荐的因果影响仍是假设。子消息未宣称用户已选，也未要求推荐 id1。",
+      "repairLayer": "父 Agent 转达用户选择请求和候选来源的职责；通过引用生成 Skill 的来源合同收束通用 persona，避免在各 persona 重复模型条件。"
+    },
+    {
+      "id": "H3",
+      "title": "子 Agent 在确认缺模型后执行两次参数查询",
+      "classification": "已证实的步骤偏离；存在实际读过的入口条件不一致",
+      "firstDeviation": {
+        "request": ".local/skills-mcp-migration-live/llm-calls/fa3a4b9b-8eee-45a1-bd2a-036324cf0a24.jsonl:1",
+        "confirmedMissingMessage": 18,
+        "firstPostConfirmationCallMessage": 20,
+        "secondInspectionCallMessage": 32
+      },
+      "chain": [
+        "子 messages[7] 已收到生成 Skill；messages[15] 收到参数检查参考。",
+        "messages[17] 再查 Workflow 与实例状态；messages[18] 返回 model=null。",
+        "messages[20] 准确引用停止与禁止推选规则，随后将参数检查解释为只读、可预先收集，并引用参考中的取得 template_id 和 instance_id 后调用本命令。",
+        "messages[20] 执行 Builder 校验及参数检查；messages[32] 为保存原始输出再次执行参数检查；messages[33] 返回成功。"
+      ],
+      "sourceLocations": [
+        ".agents/skills/comfyui-generate/SKILL.md:28",
+        ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md:21",
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:309"
+      ],
+      "ruleConflict": "主 Skill 对进入创建图片步骤规定采用模型前置条件；参数参考入口仅列 template_id 和 instance_id，子 Agent 实际把后者作为独立充分条件。",
+      "limits": "模型分析提供了可检验的解释链。尚未通过单变量重跑证明收束参考入口即可阻止继续查询。",
+      "minimalRepair": "在参数参考入口引用主 Skill 的前置条件，消除两处入口条件分叉；停止范围由主 Skill 唯一定义。不要从本例直接推出增加泛化结束本轮禁令。",
+      "test": "固定父派发全文、模型和夹具，仅修改参考入口引用，验证缺模型后的第一动作与查询次数；同时测试已选模型时参数检查正常执行。"
+    },
+    {
+      "id": "H4",
+      "title": "父 Agent 在构图完成通知前读取文件并派发生成",
+      "classification": "已证实的交接顺序偏离",
+      "firstDeviation": {
+        "seq": 94,
+        "action": "依据 seq89/90 的文件轮询结果创建生成子任务；构图完成消息在 seq101，完成通知在 seq102。"
+      },
+      "actualRulesRead": "父 seq19 的迭代 Skill 与 seq26 的 records.md 均要求等待完成通知、读取结果文件、再派发依赖任务。",
+      "sourceLocations": [
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:41",
+        ".agents/skills/comfyui-iterate-generation/references/records.md:46"
+      ],
+      "sourceKnowledge": "subagent_composition 创建结果提供子身份；父保存该身份，并通过 bash sleep/ls/cat 轮询结果。",
+      "impact": "构图子任务尚可继续修改文件时，生成子任务已开始消费结果，存在结果版本不稳定窗口。当前轨迹未证明消费到了半写文件。",
+      "repairLayer": "宿主等待生命周期及父 Agent 交接规则；现有等待规则已经送达，不足以据此证明重复该规则能够修复。",
+      "test": "保留当前规则，构造写完文件后延迟完成通知的单变量场景，验证父是否在通知前派发；核对宿主提供的等待入口与最终消息恢复机制，再决定是否需要宿主能力修复。"
+    },
+    {
+      "id": "H5",
+      "title": "空实例后父 Agent 继续探测并采用 CLI 返回的实例",
+      "classification": "已证实的执行偏离与多入口数据不一致",
+      "firstDeviation": {
+        "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+        "unfilteredEmptySeq": 52,
+        "ruleDeliveredSeq": 57,
+        "firstAfterKnownRuleCalls": [
+          61,
+          63
+        ],
+        "firstGuessedIdentityCalls": [
+          68,
+          70
+        ]
+      },
+      "chain": [
+        "父 seq43 已派发构图；seq47 筛选搜索为空，seq52 不带筛选搜索为空。",
+        "seq57 完整生成 Skill 送达；下一请求 3c058… messages[21] 含空实例停止规则。",
+        "seq60 reasoning 把空结果解释为可能筛选问题，seq61/63 继续搜索；seq68/70 猜测 instance_id=1 查询。",
+        "seq124 调用 catalog instance list；seq125 返回实例 2。",
+        "seq128/135 reasoning 承认 MCP 空列表和 CLI 结果冲突，仍认为只读可行性检查有价值；seq136 在实例 2 上检查模板参数。seq141 把据此采用实例 2 写入 task.md。"
+      ],
+      "actualInput": ".local/skills-mcp-migration-live/llm-calls/3c058998-141f-4f40-ab04-416bba131bfa.jsonl:1 messages[19,21]",
+      "sourceLocations": [
+        ".agents/skills/comfyui-generate/SKILL.md:58"
+      ],
+      "capability": "历史受管 CLI 接受 catalog instance list 且能返回与 MCP 夹具不同的实例；父调用成功证明历史运行时确有该能力。",
+      "repairLayer": "目录命令发现与调用边界、夹具覆盖的一致性；与负责该链路的诊断合并后决定。父交接规则须保留 MCP 空列表这一事实。",
+      "limits": "空结果之后首次继续搜索发生在 CLI 不一致出现之前，因此 CLI 不一致只能解释后续采用实例的线索，不能单独解释首次继续。未派发生成子 Agent；人工取消前观察到零提交，自然停止尚未验证。",
+      "test": "先固定并统一同一对象各目录入口的夹具响应，再以同模型同输入重跑；另以退役 CLI 不可发现且不可调用为独立变量核对后续链。"
+    }
+  ],
+  "repeatCallAssessment": {
+    "noDefault": {
+      "compositionDispatches": 1,
+      "generationDispatches": 1,
+      "continuationDispatches": 0,
+      "generationSubmissions": 0,
+      "templateParameterInspectionsInGenerationChild": 2,
+      "reasonForSecondInspection": "子 messages[32] 为保存原始查询原文执行；不是提交重试。"
+    },
+    "emptyInstances": {
+      "compositionDispatches": 1,
+      "generationDispatches": 0,
+      "continuationDispatches": 0,
+      "observedGenerationSubmissions": 0,
+      "end": "人工取消；构图子任务收到 ran out of room 通知。"
+    },
+    "conclusion": "两条轨迹支持文件轮询、重复目录查询和重复参数查询的事实。两条轨迹未出现替代生成子任务、原 Agent 续派或重复 Generation Request。"
+  },
+  "remainingControls": [
+    "复验缺模型时固定同模型与同一完整 Builder JSON；保留候选来源，分别观察父首次动作和子首次动作。",
+    "补齐子独立 DSH 事件；当前子事件依据实际模型 request 中工具消息与父完成通知。",
+    "核对历史候选提交、安装包身份、覆盖配置和夹具启动清单；本诊断使用现存历史轨迹，未重新安装或运行实例。",
+    "对 Builder JSON 原样补齐、用户选择后原 Agent 恢复、提交后通知延迟分别建验收场景；当前两条轨迹未覆盖。",
+    "宿主实际 system 同时出现 persona 的仅用户 /goal 与通用 create_goal 推断意图规则；当前仅见 get_goal，尚无证据把此冲突认定为模型推选的原因。"
+  ],
+  "overallConclusion": "已定位父 Agent 资源推选、已知缺项后的继续派发、提前文件交接，以及参数参考入口与主 Skill 前置条件的分叉。父子交接保留了缺项与候选身份；重复生成提交尚无实例证据。修复应分别落在规则入口、交接职责和目录能力边界，效果须经固定条件对照后确认。"
+}

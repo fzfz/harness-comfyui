@@ -1,16 +1,10 @@
 import Schema from '@deepseek-ai/schemastery'
 
 const nonEmptyString = Schema.string().pattern(/\S+/u).required()
-const safeRelativePath = Schema.string().pattern(/^[^/\\\0][^\\\0]*$/u).required()
 const runtimeArtifactKey = Schema.union([
   Schema.const('frontendCompilerWorker'),
   Schema.const('managedCli'),
 ]).required()
-
-const sourceClientSchema = Schema.object({
-  label: nonEmptyString,
-  relativePath: safeRelativePath,
-})
 
 const runtimeArtifactSchema = Schema.object({
   label: nonEmptyString,
@@ -21,10 +15,6 @@ const requiredFilePath = Schema.string().pattern(/\S+/u).required()
 
 export const PluginRuntimeResourcesSchema = Schema.object({
   schemaVersion: Schema.const(1).required(),
-  sourceClients: Schema.object({
-    semanticQueryClient: sourceClientSchema.required(),
-    sourceReadClient: sourceClientSchema.required(),
-  }).required(),
   runtimeArtifacts: Schema.object({
     frontendCompilerWorker: runtimeArtifactSchema.required(),
     managedCli: runtimeArtifactSchema.required(),
@@ -35,10 +25,6 @@ export const PluginRuntimeResourcesSchema = Schema.object({
 
 export interface PluginRuntimeResourcesConfiguration {
   readonly schemaVersion: 1
-  readonly sourceClients: {
-    readonly semanticQueryClient: { readonly label: string; readonly relativePath: string }
-    readonly sourceReadClient: { readonly label: string; readonly relativePath: string }
-  }
   readonly runtimeArtifacts: {
     readonly frontendCompilerWorker: { readonly label: string; readonly artifactKey: 'frontendCompilerWorker' }
     readonly managedCli: { readonly label: string; readonly artifactKey: 'managedCli' }
@@ -76,14 +62,8 @@ function validateRelativePath(value: string, label: string): void {
 export function parsePluginRuntimeResources(value: unknown): PluginRuntimeResourcesConfiguration {
   try {
     const root = exactRecord(value, [
-      'schemaVersion', 'sourceClients', 'runtimeArtifacts', 'requiredFiles', 'failureDetailsTemplate',
+      'schemaVersion', 'runtimeArtifacts', 'requiredFiles', 'failureDetailsTemplate',
     ], 'Plugin runtime resources config')
-    const sourceClients = exactRecord(root.sourceClients, ['semanticQueryClient', 'sourceReadClient'],
-      'Plugin runtime resources config.sourceClients')
-    const semanticQueryClient = exactRecord(sourceClients.semanticQueryClient, ['label', 'relativePath'],
-      'Plugin runtime resources config.sourceClients.semanticQueryClient')
-    const sourceReadClient = exactRecord(sourceClients.sourceReadClient, ['label', 'relativePath'],
-      'Plugin runtime resources config.sourceClients.sourceReadClient')
     const runtimeArtifacts = exactRecord(root.runtimeArtifacts, ['frontendCompilerWorker', 'managedCli'],
       'Plugin runtime resources config.runtimeArtifacts')
     const frontendCompilerWorker = exactRecord(runtimeArtifacts.frontendCompilerWorker, ['label', 'artifactKey'],
@@ -92,14 +72,9 @@ export function parsePluginRuntimeResources(value: unknown): PluginRuntimeResour
       'Plugin runtime resources config.runtimeArtifacts.managedCli')
     const parsed = Schema.resolve({
       ...root,
-      sourceClients: { semanticQueryClient, sourceReadClient },
       runtimeArtifacts: { frontendCompilerWorker, managedCli },
     }, PluginRuntimeResourcesSchema, {}, true)[0] as PluginRuntimeResourcesConfiguration
 
-    validateRelativePath(parsed.sourceClients.semanticQueryClient.relativePath,
-      'Plugin runtime resources config.sourceClients.semanticQueryClient.relativePath')
-    validateRelativePath(parsed.sourceClients.sourceReadClient.relativePath,
-      'Plugin runtime resources config.sourceClients.sourceReadClient.relativePath')
     const seenRequiredFiles = new Set<string>()
     for (const [index, path] of parsed.requiredFiles.entries()) {
       validateRelativePath(path, `Plugin runtime resources config.requiredFiles[${index}]`)
@@ -111,15 +86,6 @@ export function parsePluginRuntimeResources(value: unknown): PluginRuntimeResour
         throw new TypeError(`Plugin runtime required file paths must be distinct: ${path}`)
       }
       seenRequiredFiles.add(path)
-    }
-    if (!parsed.sourceClients.semanticQueryClient.relativePath.startsWith('scripts/source-client/')) {
-      throw new TypeError('Plugin runtime semantic query client must be inside scripts/source-client/.')
-    }
-    if (!parsed.sourceClients.sourceReadClient.relativePath.startsWith('scripts/source-client/')) {
-      throw new TypeError('Plugin runtime Source reader client must be inside scripts/source-client/.')
-    }
-    if (parsed.sourceClients.semanticQueryClient.relativePath === parsed.sourceClients.sourceReadClient.relativePath) {
-      throw new TypeError('Plugin runtime Source client paths must be distinct.')
     }
     if (parsed.runtimeArtifacts.frontendCompilerWorker.artifactKey !== 'frontendCompilerWorker'
       || parsed.runtimeArtifacts.managedCli.artifactKey !== 'managedCli') {

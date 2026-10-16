@@ -1,0 +1,85 @@
+{
+  "purpose": "独立核对边界夹具的 MCP、HTTP 协议与目录数据域方案的符合性。",
+  "status": "当前审查范围内未发现未解决的实质问题；25 项确定性回归通过。",
+  "scope": [
+    ".local/skills-mcp-migration-live/boundary-fixture.mjs",
+    ".local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+    ".local/skills-mcp-migration-live/boundary-fixture/*.json"
+  ],
+  "contracts": [
+    "docs/verification/skills-mcp-migration/boundary-data-domain-design.json",
+    "docs/plans/skills-mcp-migration-20261013.md:1267"
+  ],
+  "validation": {
+    "command": "node --experimental-transform-types --test .local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+    "result": {
+      "tests": 25,
+      "passed": 25,
+      "failed": 0
+    },
+    "runner_note": "strip-types 运行方式因生产 TypeScript 参数属性语法失败；transform-types 运行方式完整通过。",
+    "candidate_note": "本轮独立复核在实施者声明候选稳定后执行。"
+  },
+  "passed_scope": [
+    "MCP 与 HTTP 的空实例搜索、合法 ID 不存在映射、404 envelope 和 HTTP 422 错误保持。",
+    "两个 discovery 原值、MCP Bearer 与 Host HTTP 鉴权分流、未知写入与未知路径拒绝。",
+    "无默认模型场景的 HTTP 模板 model_id=null；Workflow 节点与其他模板模型保持测试上游原值。",
+    "生产 CatalogClient 与 GenerationSourceClient 共用 sourceSettings，空实例错误映射和有效实例正向读取通过。",
+    "HTTP 原请求、转发请求、响应、覆盖字段与脱敏证据断言通过。",
+    "HTTP 调用方取消、并发隔离、全局停止、请求证据完成、进程退出与端口释放通过。",
+    "无默认模型 MCP 请求保留上游参数错误；MCP 取消按 session/requestId 作用于对应上游请求，连接中止同步取消，其他请求继续完成。"
+  ],
+  "remaining_acceptance": [
+    "官方隔离 Profile 实际生效地址与父子会话继承尚未在本审查执行。",
+    "原生生成入口和受管 CLI 的负向消费者链、远端提交零计数及失败 Run 状态尚未在本审查执行。",
+    "上游超时、响应大小限制与 discovery 失败的生产消费者回归尚未覆盖。",
+    "真实模型停止行为需要另行基于完整轨迹判定。"
+  ],
+  "review_boundary": "本审查仅运行本地受控 HTTP/MCP 服务和生产客户端确定性测试；未启动 Desktop、真实模型或真实生成。夹具与测试文件保持由实施者维护。",
+  "resolved_findings": [
+    {
+      "id": "BR-1",
+      "severity": "P2",
+      "title": "无默认模型快照跳过请求参数校验",
+      "location": ".local/skills-mcp-migration-live/boundary-fixture.mjs:260-274",
+      "evidence": [
+        "matches 只比较场景指定的 ref.kind 与 ref.id；matches && snapshot 直接返回保存的结果，未向上游提交本次请求。",
+        "目录 tools-list 中 get_catalog_resource.inputSchema 声明 additionalProperties=false。",
+        "受控请求 get_catalog_resource({ref:{kind:workflow,id:29},fail:true})：同一测试上游直接返回 isError=true，经过夹具返回成功且 item.model=null。"
+      ],
+      "raw_evidence": [
+        ".local/skills-mcp-migration-live/boundary-fixture-evidence/selftest/b19982e1-ebdf-4f5a-9bb3-42e86cf9b85c/exchange-cc6f1d6f-56fd-49b0-817c-c30ea37505a9.json",
+        ".local/skills-mcp-migration-live/catalog/1791947656078-056e2796-5da1-4de7-90eb-50bbfa5fa4db-tools-list.json"
+      ],
+      "impact": "无默认模型场景将非法输入判为成功，验收无法识别 Agent 的参数错误，也无法验证该请求对应的上游错误。",
+      "required_fix": "先保留本次请求的真实参数校验与错误，再对成功结果应用场景覆盖；增加合法 ref 携带顶层和 ref 内额外字段的回归。",
+      "status": "已修复并独立复核",
+      "current_evidence": [
+        ".local/skills-mcp-migration-live/boundary-fixture.mjs:313 当前统一调用真实上游；成功响应再应用覆盖。",
+        ".local/skills-mcp-migration-live/boundary-fixture.test.mjs:582 顶层及 ref 内额外字段的错误与直接上游逐值相等。"
+      ]
+    },
+    {
+      "id": "BR-2",
+      "severity": "P2",
+      "title": "MCP 取消通知没有取消对应的上游读取",
+      "location": ".local/skills-mcp-migration-live/boundary-fixture.mjs:251-252",
+      "evidence": [
+        "notifications/cancelled 直接返回 202；MCP upstream 的 AbortSignal 只包含全局停止和超时，未绑定调用方请求。",
+        "受控延迟 search_instances 请求 id=17 后发送 notifications/cancelled(requestId=17)，夹具返回 202，上游未收到取消；解除延迟后原请求返回 HTTP 200 和成功 result。"
+      ],
+      "raw_evidence": [
+        ".local/skills-mcp-migration-live/boundary-fixture-evidence/selftest/ac4e7d11-5dcb-4ad1-a0ab-73c40f73be8c/exchange-29550eee-2f6c-45d1-bf03-1d2ca276d5fc.json",
+        ".local/skills-mcp-migration-live/boundary-fixture-evidence/selftest/ac4e7d11-5dcb-4ad1-a0ab-73c40f73be8c/exchange-b0826114-66e8-4bad-94f1-29c717b1cd3b.json"
+      ],
+      "impact": "MCP 消费者取消后目录请求继续运行，夹具仍记录成功结果；当前通过的全局停止和 HTTP 取消测试未覆盖此路径。",
+      "required_fix": "为 MCP 在途请求维护调用方身份与上游请求的对应关系，收到取消或连接中止时取消对应读取，并验证并发其他请求继续完成。",
+      "status": "已修复并独立复核",
+      "current_evidence": [
+        ".local/skills-mcp-migration-live/boundary-fixture.mjs:99 实现独立取消信号及上游 ID 通知映射。",
+        ".local/skills-mcp-migration-live/boundary-fixture.test.mjs:606、642、681 验证通知取消、跨会话相同 ID 隔离、无效及已完成取消、连接中止和兄弟请求继续成功。"
+      ]
+    }
+  ],
+  "findings": []
+}

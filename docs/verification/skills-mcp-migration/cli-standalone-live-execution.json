@@ -1,0 +1,16 @@
+{
+  "purpose": "记录独立CLI打包修复的官方安装及原显式模型任务复验。",
+  "candidate": ".local/skills-mcp-migration-live/standalone-cli-candidate.tgz",
+  "candidateComparison": ".local/skills-mcp-migration-live/standalone-cli-candidate-comparison.json",
+  "previousFailure": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-MzU1lT/execution-index.json",
+  "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/execution-index.json",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/state.json",
+  "businessVerdict": "pending-independent-review",
+  "observed": {
+    "turnEnd": "completed",
+    "runId": "run_1ded4e53-abbf-4dc3-bde0-45a70ea1c76e",
+    "runStatus": "succeeded",
+    "mediaCount": 1,
+    "hasActiveRuns": false
+  }
+}

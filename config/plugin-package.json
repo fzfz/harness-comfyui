@@ -24,15 +24,11 @@
     "config/runtime-artifacts.json",
     "config/schema.ts",
     "config/settings-entry-ids.json",
-    "config/source-cli-guidance.json",
     "agent-presets",
     ".agents/skills",
-    "scripts/source-client/imagegen-semantic-query.mjs",
-    "scripts/source-client/imagegen-comfyui-source-read.mjs",
-    "scripts/source-client/guidance.mjs",
-    "scripts/source-client/guidance-schema.mjs",
     "scripts/cli/help.mjs",
-    "scripts/cli/help-schema.mjs"
+    "scripts/cli/help-schema.mjs",
+    "config/source-client.json"
   ],
   "artifacts": [
     ".local/source-host",

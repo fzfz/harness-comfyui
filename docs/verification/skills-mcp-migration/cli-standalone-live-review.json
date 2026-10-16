@@ -1,0 +1,434 @@
+{
+  "reviewer": "cli_standalone_review",
+  "reviewedAt": "2026-10-14T07:43:57.220469+00:00",
+  "caseId": "5.6-1",
+  "preset": "harness-comfyui-iteration",
+  "status": "CLI_PASS_EXPLICIT_MODEL_BRANCH_PASS_ITERATION_OVERALL_FAIL",
+  "evidence": {
+    "executionIndex": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/execution-index.json",
+    "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/input.json",
+    "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/6f84e928-1a01-4018-81ff-e830f0992328/1791963006200-9bb8f97b-d5d9-4b20-a972-624b50b30708-collect.json",
+    "runRemote": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/6f84e928-1a01-4018-81ff-e830f0992328/1791963020857-b5dbcb74-8c5f-4aec-b72f-cd45dd2b9b7d-remote.json",
+    "state": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/state.json",
+    "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+    "modelCallsIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/model-calls-index.json"
+  },
+  "verdicts": {
+    "cliStandaloneRepair": {
+      "status": "PASS",
+      "basis": "官方插件界面安装并启用候选。独立字节比较确认实际安装的 CLI 与 standalone-cli-candidate.tgz 内 CLI 相同。seq 52/53、62/63、67/68、84/85 经受管注入变量依次完成参数检查、提交、Run 查询和媒体解析，退出码均为 0。根帮助及分类帮助在 seq 69/70、74/75、79/80 成功。全轨迹未调用缓存 shim、创建依赖链接或修改受管 CLI。"
+    },
+    "explicitModelGenerationBranch": {
+      "status": "PASS",
+      "basis": "seq 33–38 通过 NoobAI MCP 获取模板 29、显式模型 14 与实例列表；模板默认模型为 1，提交仍使用显式模型 14。模板与模型同属 wai/2。seq 57 的请求保留原正负 Prompt、Seed 20261013、1536×1536、batch_size 1；独立 JSON 对比确认原 Prompt 与 request.json 完全一致。seq 68 的 Actual Workflow 使用 hassakuXLIllustrious_v13StyleA.safetensors；seq 85 返回实际媒体，seq 89/90 复制到用户指定输出目录。Remote 确认 Run succeeded、一个媒体、无活动 Run。"
+    },
+    "iterationOverall": {
+      "status": "FAIL",
+      "basis": "seq 8 的实际 system prompt 要求主 Agent 调度构图、生成、独立观察与比较，比较确认达成后才交付。18 次工具调用中只有 comfyui-generate 的 skill 调用、三个 MCP 查询及 Bash；没有迭代 Skill 加载、角色派发、独立读图或比较。seq 98 直接交付生成和查询结果，seq 100 以 completed 结束。"
+    }
+  },
+  "findings": [
+    {
+      "priority": "P1",
+      "title": "迭代预设主 Agent 直接完成生成后结束，缺少独立观察与比较",
+      "contractLocations": [
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:25",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:47",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:49",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:50",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:53",
+        ".agents/skills/comfyui-iterate-generation/references/records.md:9"
+      ],
+      "eventSeqs": [
+        8,
+        9,
+        18,
+        52,
+        62,
+        84,
+        94,
+        98,
+        100
+      ],
+      "observed": "当前用户输入要求执行 comfyui-generate 并提供完整 Builder JSON；实际 system prompt 同时指定迭代预设主 Agent 职责。第一次 task action 为 seq 18 加载 comfyui-generate；随后主会话自行查询目录、执行 CLI、保存结果。全部模型请求均属于同一主 Session，角色工具已出现在首次实际模型请求的 tools 列表中。输出目录仅有请求、CLI 返回、媒体副本和 summary.md，缺少 task.md、构图、生成角色交接、原始观察及比较文件。",
+      "impact": "本轮可确认 CLI 修复及显式模型生成分支，完整迭代预设验收尚未通过，视觉达成情况缺少合同要求的独立证据。",
+      "causalBoundary": "已确认实际注入合同、工具可见性与执行偏离；本审查没有通过控制实验定位任务措辞、模型选择或派发实现的因果贡献。"
+    }
+  ],
+  "modelVerification": {
+    "configuredTextModel": "opencode-go/deepseek-v4.1-flash",
+    "configuredObservationModel": "openrouter/thinkingmachines/inkling:free",
+    "actualCalls": 17,
+    "mainConversationCalls": 16,
+    "sessionTitleCalls": 1,
+    "distinctSessions": 1,
+    "actualObservationCalls": 0,
+    "allCallsCompleted": true,
+    "source": "逐份读取 model-calls-index 指向的原始 JSONL，核对 request 与 complete；首次主请求确认四个 subagent 角色工具及迭代 persona 已提供。",
+    "calls": [
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/a48d3f24-8bf5-4c2b-bf3c-7ca520b5ba67.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/6c32bb43-be0c-4537-a769-fd2c9c8bc2b9.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/83df8865-56e3-446a-8608-377403cc4b66.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/7d9eb9c6-1b98-4c84-bcbd-96f50a5048cf.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/647e5585-3d48-4b40-af83-f8ee7b29e62f.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/ddd68e8e-093b-4b9f-96ea-613fb743c0d2.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/4a2a7154-e775-4935-8467-c64b4236cf86.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/40881c3d-58ee-4d0f-b149-d836d7e0afdc.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/1f069722-b424-4a51-a968-ad7c056ba69b.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": "session-title",
+        "maxTokens": 64,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/0624f9a4-eeb7-4746-925f-40306b0c7db6.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/c86dc282-c35e-4a6d-bff7-fef00cb110a1.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/eb2753a3-b5a0-47cc-9509-fc2c2b5a4346.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/5502946f-1a02-493a-9d37-705820a534c0.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/4bda939b-84cb-4c8e-a0fa-a505ada227cc.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/a9359c83-1e21-496f-add2-dfeb7ddde412.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/8dcd3f4b-cc47-48ac-960a-882b823a0580.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls/51943fa2-9ce6-4f19-a092-fb67c0834b69.jsonl",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "sessionId": "session-b90925c3-24ef-4a63-a653-f4bbec361fad",
+        "purpose": null,
+        "maxTokens": 32768,
+        "completed": true
+      }
+    ]
+  },
+  "callInventory": [
+    {
+      "seq": 18,
+      "name": "skill",
+      "callId": "call_00_jfa3d4r04wlmn35ry4jw67hi"
+    },
+    {
+      "seq": 23,
+      "name": "bash",
+      "callId": "call_00_0aprrjsjzrj9dm51oigaadfg"
+    },
+    {
+      "seq": 28,
+      "name": "bash",
+      "callId": "call_00_zazzyaok1njkoxiso2w85zsc"
+    },
+    {
+      "seq": 33,
+      "name": "mcp__noobai__get_catalog_resource",
+      "callId": "call_00_b61v9nado46s9uysmwi4wcfn"
+    },
+    {
+      "seq": 35,
+      "name": "mcp__noobai__get_catalog_resource",
+      "callId": "call_01_d6p5p279a93hga1hrfec8hjb"
+    },
+    {
+      "seq": 37,
+      "name": "mcp__noobai__search_instances",
+      "callId": "call_02_fe3a90mrmh8hdqat03d8a4nm"
+    },
+    {
+      "seq": 42,
+      "name": "bash",
+      "callId": "call_00_5752lghtp1ghusfkrjlx7kxr"
+    },
+    {
+      "seq": 47,
+      "name": "bash",
+      "callId": "call_00_n0oatsgj3tzuia7omjs73ea3"
+    },
+    {
+      "seq": 52,
+      "name": "bash",
+      "callId": "call_00_2oz3wyoaks28vmiteafjxw0j"
+    },
+    {
+      "seq": 57,
+      "name": "bash",
+      "callId": "call_00_za81ch1jnfb85ewpdt99cnsq"
+    },
+    {
+      "seq": 62,
+      "name": "bash",
+      "callId": "call_00_g9r0aqylkzbitsvq67zrk6he"
+    },
+    {
+      "seq": 67,
+      "name": "bash",
+      "callId": "call_00_i6b7lo6snuntcbpzqxpjm92p"
+    },
+    {
+      "seq": 69,
+      "name": "bash",
+      "callId": "call_01_jnndpp7l4sg61x06bsr4snvf"
+    },
+    {
+      "seq": 74,
+      "name": "bash",
+      "callId": "call_00_mdk5lotsfuwe9kw3was7cb9t"
+    },
+    {
+      "seq": 79,
+      "name": "bash",
+      "callId": "call_00_7i32fohsu5p40piinyb05pux"
+    },
+    {
+      "seq": 84,
+      "name": "bash",
+      "callId": "call_00_lrltosy18sxoi32u5fg0ppc7"
+    },
+    {
+      "seq": 89,
+      "name": "bash",
+      "callId": "call_00_7nmxztljntcahiwg6yy1v5xa"
+    },
+    {
+      "seq": 94,
+      "name": "bash",
+      "callId": "call_00_brs42hm2xesvlo5q231r3v0h"
+    }
+  ],
+  "deliverables": {
+    "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/environment/workspace/5.6-1",
+    "files": [
+      {
+        "name": "media_a74e31d4-b635-4287-8793-f16dc6c81295.png",
+        "bytes": 2999598
+      },
+      {
+        "name": "request.json",
+        "bytes": 771
+      },
+      {
+        "name": "resolve-media.json",
+        "bytes": 1030
+      },
+      {
+        "name": "run-inputs.json",
+        "bytes": 3775
+      },
+      {
+        "name": "submit-result.json",
+        "bytes": 54
+      },
+      {
+        "name": "summary.md",
+        "bytes": 718
+      }
+    ],
+    "checks": [
+      "request.json 与 run-inputs.json 的模型、尺寸、Seed、正负 Prompt 一致。",
+      "resolve-media.json 的媒体源文件与 Workspace 图片副本逐字节相同，均为 2999598 字节。",
+      "summary.md 与最终答复均给出实际 Run 与媒体；最终答复没有独立视觉观察和比较达成依据。"
+    ],
+    "runId": "run_1ded4e53-abbf-4dc3-bde0-45a70ea1c76e",
+    "mediaId": "media_a74e31d4-b635-4287-8793-f16dc6c81295",
+    "status": "succeeded",
+    "hasActiveRuns": false,
+    "visualGoalVerdict": "NOT_VERIFIED"
+  },
+  "previousFailure": {
+    "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-MzU1lT/execution-index.json",
+    "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/18bc033e-8e63-4f34-9bf4-323d0ffed37b/1791961563932-d6cf34f7-9a89-4044-b5e4-a7847fecd00a-collect.json",
+    "finalRuns": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/18bc033e-8e63-4f34-9bf4-323d0ffed37b/1791961723033-37090150-0c52-473e-92ee-48fee113649a-remote.json",
+    "eventSeqs": {
+      "originalCommand": 53,
+      "dependencyError": 54,
+      "cacheShimCreated": 141,
+      "shimInspectionReturned": 142,
+      "shimSubmit": 146,
+      "toolAborted": 147,
+      "userAbortedTurn": 149
+    },
+    "result": "原安装 CLI 在 seq 54 因 ERR_MODULE_NOT_FOUND @deepseek-ai/schemastery 退出 1。随后执行者创建 Workspace/.comfyui-cli-shim 并链接全局 npm 缓存；seq 146 经 shim 提交，seq 147 返回 aborted，seq 149 由用户取消。Host 最终记录确认该提交已接受并完成。",
+    "acceptedRunId": "run_69fdd546-7b76-409f-a44f-57b28a51ee2e",
+    "runStatus": "succeeded",
+    "mediaCount": 1,
+    "hasActiveRuns": false,
+    "verdict": "原安装失败及随后取消记录继续保留；缓存 shim 的成功结果单列。"
+  },
+  "cleanupVerification": {
+    "method": "独立读取四份归档 run.json，再以 ps 核对进程组、lsof 核对全部声明的监听端口。",
+    "checks": [
+      {
+        "scene": "spj2aM",
+        "runId": "cc84f420-871d-4aac-8bdf-c8ae8586d740",
+        "processGroupId": 98750,
+        "ports": [
+          61367,
+          61368,
+          61369
+        ],
+        "state": "stopped",
+        "processGroupPresent": false,
+        "portsReleased": true
+      },
+      {
+        "scene": "spj2aM",
+        "runId": "6f84e928-1a01-4018-81ff-e830f0992328",
+        "processGroupId": 24752,
+        "ports": [
+          63035,
+          63036,
+          63037
+        ],
+        "state": "stopped",
+        "processGroupPresent": false,
+        "portsReleased": true
+      },
+      {
+        "scene": "MzU1lT",
+        "runId": "039228db-af98-4b21-a45e-e491968ed79b",
+        "processGroupId": 9027,
+        "ports": [
+          52629,
+          52630,
+          52631
+        ],
+        "state": "stopped",
+        "processGroupPresent": false,
+        "portsReleased": true
+      },
+      {
+        "scene": "MzU1lT",
+        "runId": "18bc033e-8e63-4f34-9bf4-323d0ffed37b",
+        "processGroupId": 26978,
+        "ports": [
+          53935,
+          53936,
+          53937
+        ],
+        "state": "stopped",
+        "processGroupPresent": false,
+        "portsReleased": true
+      }
+    ],
+    "persistentArtifacts": "Profile、Workspace、生成媒体与观测归档当前仍可读取。"
+  },
+  "reviewBoundary": "本次只读检查已有证据和产物，唯一写入本 JSON；没有启动模型、应用或生成任务。"
+}

@@ -1,0 +1,111 @@
+{
+  "fixture": "e7bd47d3-4ba1-41b5-acad-4b81f977fd73",
+  "checks": [
+    {
+      "name": "get_catalog_resource",
+      "args": {
+        "ref": {
+          "kind": "instance",
+          "id": "2"
+        }
+      },
+      "httpStatus": 200,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"code\":\"MCP_QUERY_RESOURCE_NOT_FOUND\",\"message\":\"未找到指定资源。请使用对应搜索工具核对名称与 ID。\",\"field\":\"ref.id\",\"suggested_call\":{\"tool\":\"search_instances\",\"arguments\":{\"query\":\"\"}},\"request_id\":\"6cd3ae01-383f-4450-b394-c4ba8b863351\"}"
+          }
+        ],
+        "isError": true
+      },
+      "code": "MCP_QUERY_RESOURCE_NOT_FOUND"
+    },
+    {
+      "name": "get_instance_connection",
+      "args": {
+        "instance_id": "2"
+      },
+      "httpStatus": 200,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"code\":\"MCP_INSTANCE_NOT_FOUND\",\"message\":\"未找到登记实例。请调用 search_instances 选择实例。\",\"field\":\"instance_id\",\"suggested_call\":{\"tool\":\"search_instances\",\"arguments\":{}},\"request_id\":\"9656e528-baab-466e-86d3-f2709594373a\"}"
+          }
+        ],
+        "isError": true
+      },
+      "code": "MCP_INSTANCE_NOT_FOUND"
+    },
+    {
+      "name": "get_instance_status",
+      "args": {
+        "instance_id": "2"
+      },
+      "httpStatus": 200,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"code\":\"MCP_INSTANCE_NOT_FOUND\",\"message\":\"未找到登记实例。请调用 search_instances 选择实例。\",\"field\":\"instance_id\",\"suggested_call\":{\"tool\":\"search_instances\",\"arguments\":{}},\"request_id\":\"c5017567-146e-4b79-9db2-caaf9c25a354\"}"
+          }
+        ],
+        "isError": true
+      },
+      "code": "MCP_INSTANCE_NOT_FOUND"
+    },
+    {
+      "name": "get_instance_queue",
+      "args": {
+        "instance_id": "2"
+      },
+      "httpStatus": 200,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"code\":\"MCP_INSTANCE_NOT_FOUND\",\"message\":\"未找到登记实例。请调用 search_instances 选择实例。\",\"field\":\"instance_id\",\"suggested_call\":{\"tool\":\"search_instances\",\"arguments\":{}},\"request_id\":\"d50eb366-8efe-4a5d-a24d-07de00dc4357\"}"
+          }
+        ],
+        "isError": true
+      },
+      "code": "MCP_INSTANCE_NOT_FOUND"
+    },
+    {
+      "name": "search_instance_nodes",
+      "args": {
+        "instance_id": "2"
+      },
+      "httpStatus": 200,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"code\":\"MCP_INSTANCE_NOT_FOUND\",\"message\":\"未找到登记实例。请调用 search_instances 选择实例。\",\"field\":\"instance_id\",\"suggested_call\":{\"tool\":\"search_instances\",\"arguments\":{}},\"request_id\":\"39295259-2a6e-4c86-b3ca-140a29ecb7ba\"}"
+          }
+        ],
+        "isError": true
+      },
+      "code": "MCP_INSTANCE_NOT_FOUND"
+    },
+    {
+      "name": "get_instance_node",
+      "args": {
+        "instance_id": "2",
+        "class_name": "CheckpointLoaderSimple"
+      },
+      "httpStatus": 200,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"code\":\"MCP_INSTANCE_NOT_FOUND\",\"message\":\"未找到登记实例。请调用 search_instances 选择实例。\",\"field\":\"instance_id\",\"suggested_call\":{\"tool\":\"search_instances\",\"arguments\":{}},\"request_id\":\"cb9c0e89-68c8-4947-a5d2-69d7fc205a43\"}"
+          }
+        ],
+        "isError": true
+      },
+      "code": "MCP_INSTANCE_NOT_FOUND"
+    }
+  ]
+}

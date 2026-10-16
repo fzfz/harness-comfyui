@@ -1,0 +1,185 @@
+{
+  "purpose": "独立审查父子任务完成等待实现、官方接口边界和复验条件。",
+  "status": "确定性测试通过；发现两项合同或验收缺口，真实取消链和官方应用复验尚待完成。",
+  "scope": {
+    "productFiles": [
+      "agent-presets/project-iteration-dispatch.mjs",
+      "agent-presets/project-tool-visibility.mjs",
+      "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+      "agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+    ],
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "productEdits": false
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "kind": "acceptance-gap",
+      "title": "普通取消的真实身份交付合同尚未执行验证",
+      "source": "tests/production/native-subagent-completion.test.mjs:98-115",
+      "fact": "当前取消测试直接调用 tool.execute，deferContext 为 vi.fn；测试仅证明回调收到对象。setup 使用自建事件Map、effect与SDK mock，未经过真实 ToolRegistry、AgentLoop、Session 持久化和下一请求。source-agent-preset 的 deny 测试同样只观察 mock restrict。",
+      "impact": "无法据此认定取消后原 childId/messageId 对下一轮模型可见，或 native/PTC 及子角色的 send_message 已被实际封闭。取消合同 implementationGate 明确要求先通过实际官方组件验证。",
+      "required": "补齐真实官方组件的普通取消链、持久inbox及下一轮user/message验证；验证post-policy block、二次clear、claim后失败的受阻边界，并核对native/PTC可见性和list_agents注册。",
+      "blocks": "阻止宣告取消恢复验收通过；按当前方案阻止跳过官方组件烟测直接进入真实业务模型复验。"
+    },
+    {
+      "id": "R2",
+      "severity": "P2",
+      "kind": "contract-mismatch",
+      "title": "接纳上下文没有保存明确接纳状态",
+      "source": "agent-presets/project-iteration-dispatch.mjs:120-124",
+      "fact": "deferContext JSON仅保存toolName、callId、subagentId、messageId，缺少已批准acceptedContextShape中的status:\"accepted\"。source.kind存在于消息元数据，但文本JSON没有声明当前状态。",
+      "impact": "取消后模型收到的身份文本未完整表达已批准的“仅已接纳”合同，不能由该文本直接区分接纳身份与完成结果。",
+      "required": "按批准合同在唯一结构化来源定义接纳上下文标记与状态，并将status:\"accepted\"写入文本JSON；更新针对该合同的断言。",
+      "blocks": "合同对齐；未观察到因此重复派发的真实运行。"
+    }
+  ],
+  "verified": [
+    {
+      "topic": "监听作用域与接纳身份",
+      "result": "两个监听使用global:true，session事件校验直接父Session；SDK返回后按childId和精确messageId筛选。监听早于SDK调用，快速结束事件能够缓存。当前官方Session.append同步写日志后调用观察者。"
+    },
+    {
+      "topic": "旧epoch与续派",
+      "result": "当前官方finishDisposal同步执行resident.delete、notice和observer.settle；deliverFollowup等待旧disposal结束后才冷恢复。该路径中旧end早于新message插入，当前顺序过滤与源码一致。普通活跃续派无需新start。"
+    },
+    {
+      "topic": "取消与卸载",
+      "result": "等待signal融合调用者和component释放信号；finally解除监听。SDK返回后无额外await即deferContext。SDK拒绝接纳不保存身份，也没有重派路径。mock覆盖等待中取消和卸载；其余取消竞争仍需验证。"
+    },
+    {
+      "topic": "来源合法性",
+      "result": "fresh JSON具有非空id、role:user、source.kind和content数组，符合当前官方Session replay结构校验；不是user或SDK通知来源。适配器后续没有修改对象。"
+    },
+    {
+      "topic": "输出和执行所有权",
+      "result": "首次输出仍为kind/subagentId，续派仍为messageId；复用startContinuable/sendMessage及原子会话身份，未引入持久调度或轮询。未声明isConcurrencySafe，官方registry默认exclusive。"
+    },
+    {
+      "topic": "工具配置",
+      "result": "两预设配置deny:send_message并加载官方list-agents子入口，保留interrupt_agent。官方list_agents输出running/inactive及childId，不能恢复messageId或证明业务成功。"
+    }
+  ],
+  "designDeviations": [
+    {
+      "source": "agent-presets/project-iteration-dispatch.mjs:18-52",
+      "fact": "实现未监听subagent/start或保存runId；SDK返回前收集同父所有子Session事件，返回后再精确筛选，而方案约定从预分配childId开始限制并在可用时校验runId。",
+      "assessment": "当前官方同步结束及冷恢复顺序未给出可达的错误完成反例，因此未将其写成已证实运行缺陷。应明确记录采用顺序合同的依据，并补同child并发续派、后续epoch、end与abort竞争测试。"
+    }
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/production/native-subagent-completion.test.mjs tests/production/native-workbench-subagent.test.mjs tests/production/native-iteration-roles.test.mjs tests/production/source-agent-preset.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "exitCode": 0,
+    "filesPassed": 4,
+    "testsPassed": 84,
+    "durationMs": 842,
+    "invocationCorrection": "首次误用node --test，Vitest未初始化，未执行测试；改用仓库Vitest入口后84项通过。"
+  },
+  "pendingOfficialEvidence": [
+    "实际ToolRegistry和AgentLoop的取消上下文落盘、下一轮请求及受阻分支。",
+    "两预设五类子任务的真实父子工具声明与native/PTC拒绝旁路。",
+    "90秒结束延迟中首次正文读取和交付晚于目标subagent/end；普通续派、冷恢复、并发续派及取消。",
+    "官方list_agents取消后和父冷恢复后找回原childId；实际输出含义保持活跃性。",
+    "实际模型错误、缺项及Builder补齐、成功生成后通知延迟；核对原Run及提交次数。"
+  ],
+  "desktopTestReview": {
+    "source": "tests/desktop/official-desktop-live.test.mjs:970-1005",
+    "execution": "未执行",
+    "result": "新增五类任务断言核对父结果请求晚于子含workflow_json的请求、父含原生finished文本及身份JSON、父子没有send_message、父有list_agents/interrupt_agent。此覆盖有助于官方基础装配验收，尚未覆盖取消、冷恢复、PTC及90秒结束延迟。"
+  },
+  "officialSourceEvidence": [
+    {
+      "file": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-subagent__lib__index.js",
+      "lines": [
+        "234-255",
+        "292-325",
+        "1154-1267",
+        "1817-1845"
+      ],
+      "usedFor": "事件作用域、同步派发、Activation结束和冷恢复排序。"
+    },
+    {
+      "file": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-session__lib__index.js",
+      "lines": [
+        "1191-1214",
+        "1440-1474"
+      ],
+      "usedFor": "接纳上下文来源合法性与插入事件观察顺序。"
+    },
+    {
+      "file": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js",
+      "lines": [
+        "3131-3170",
+        "3292-3350"
+      ],
+      "usedFor": "deferContext缓存和执行取消后的上下文收集。"
+    },
+    {
+      "file": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__types__list-agents.js",
+      "usedFor": "官方子入口注册、返回字段与running/inactive语义。"
+    }
+  ],
+  "followupReview": {
+    "purpose": "复核接纳状态与Activation关联修正，确定进入官方受控验证阶段的条件。",
+    "conclusion": "未发现阻止进入无外部模型调用的官方Desktop或受控驱动验证阶段的代码问题；真实模型验收尚未完成。",
+    "productEdits": false,
+    "applicationStarts": 0,
+    "modelCalls": 0,
+    "findingsDisposition": [
+      {
+        "id": "R1",
+        "status": "待官方受控验证补证",
+        "assessment": "普通取消身份持久化、下一请求可见性、native/PTC工具限制及list_agents作用域仍需实际官方组件证据。此项允许进入取得上述证据的受控验证阶段，尚不支持宣告真实模型验收通过。"
+      },
+      {
+        "id": "R2",
+        "status": "已复核修复",
+        "source": "agent-presets/project-iteration-dispatch.mjs:132-136",
+        "assessment": "接纳上下文文本JSON已包含status:accepted，明确记录接纳状态。"
+      }
+    ],
+    "activationReview": {
+      "source": "agent-presets/project-iteration-dispatch.mjs:18-84",
+      "assessment": "实现已订阅subagent/start；消息插入前记录与清除已观测epoch，插入后按已观测runId匹配end。活跃epoch未观察到start时沿用已核实的官方事件排序。未发现当前官方事件合同下的错误完成路径。"
+    },
+    "validation": {
+      "command": "pnpm exec vitest run tests/production/native-subagent-completion.test.mjs tests/production/native-workbench-subagent.test.mjs tests/production/native-iteration-roles.test.mjs tests/production/source-agent-preset.test.mjs --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 0,
+      "filesPassed": 4,
+      "testsPassed": 85,
+      "durationMs": 904,
+      "diffCheck": {
+        "command": "git diff --check -- agent-presets/project-iteration-dispatch.mjs tests/production/native-subagent-completion.test.mjs",
+        "exitCode": 0
+      }
+    },
+    "supplementalCompetitionEvidence": [
+      {
+        "name": "同child并发续派",
+        "method": "通过node --input-type=module载入当前apply，在内存事件夹具中并发调用两次agent_id:child续派；分别插入m1和m2，共享已有Activation结束事件。",
+        "assertions": [
+          "end到达前两个调用均未完成。",
+          "end到达后分别返回messageId:m1与messageId:m2。",
+          "完成后所有事件监听均已释放。"
+        ],
+        "result": "通过",
+        "exitCode": 0
+      },
+      {
+        "name": "已观测旧epoch清除及新epoch匹配",
+        "method": "在同一续派调用中依次发出old start、old end、new start和m3插入；随后分别发出old end与new end。",
+        "assertions": [
+          "迟到的old end不能完成m3等待。",
+          "new end完成等待并返回messageId:m3。",
+          "完成后所有事件监听均已释放。"
+        ],
+        "result": "通过",
+        "exitCode": 0
+      }
+    ],
+    "evidenceLimit": "补充竞争验证使用当前产品适配器及内存事件夹具，未执行官方宿主。85项测试及补充竞争验证支持适配器确定性行为；官方作用域、取消持久化和真实模型行为仍需独立运行证据。",
+    "nextStage": "允许进入无外部模型调用的官方Desktop或受控驱动验证，取得普通取消、恢复及工具作用域证据。"
+  }
+}

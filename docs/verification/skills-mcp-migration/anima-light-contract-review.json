@@ -1,0 +1,300 @@
+{
+  "purpose": "核对 ANIMA 窗边柔光要求的执行合同、原始失败与现有授权，供主任务选择诊断和修复步骤。",
+  "scope": {
+    "case": "5.3-2 / IB53",
+    "repository": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "baseline": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+    "mode": "只读功能与合同诊断；唯一写入为本报告。",
+    "applicationStarts": 0,
+    "modelCalls": 0,
+    "productChanges": 0,
+    "skillScriptChanges": 0
+  },
+  "conclusion": {
+    "execution": "本次执行把柔光替换为 soft focus，且没有调用已提供的词条查询工具。该结果违反用户意图及 13.1 的直接对应条件。",
+    "contract": "存在可独立复核的合同冲突与分支缺口。零结果回退与 4.4 的全称限制交叉；输出协议示例与 13.8 冲突；精确光线词条命中后没有明确且符合详细规则的槽位承接。",
+    "causality": "原始分析显示执行者考虑了光线限制与自然语言边界，随后选择柔焦。合同内容参与了可见决策；当前证据尚不能证明消除任一冲突就能消除执行错误。",
+    "authorization": "可以在 5.11 取证和审查程序内澄清既有零结果例外及修正冲突示例；一般光线标签的归属、命中后转自然语言或忽略光线，均涉及既有业务边界，需集中记录决定。"
+  },
+  "evidence": {
+    "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/materialized-input.json",
+    "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/b097ca61-2d68-4e4a-a554-868269876313/1791963666875-c6741a94-282b-4da3-bb0e-98f4384b3aa3-collect.json",
+    "observerBeforeFirstDraft": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/c9475e7e-f5a2-4566-836b-f425a9278c5c.jsonl",
+    "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/workspace-artifacts/5.3-2/builder.json",
+    "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+    "identityCheck": {
+      "method": "逐字节比较安装文件与当前候选文件，未生成 hash。",
+      "equalFiles": [
+        "SKILL.md",
+        "references/06-slot-order.md",
+        "references/15-detail-mood.md",
+        "references/03-output-protocol.md"
+      ]
+    },
+    "history": {
+      "method": "git show HEAD:<path>",
+      "findings": [
+        "HEAD 的 06-slot-order 第 4.4 节和 15-detail-mood 第 13.8 节与当前相关文字一致。",
+        "HEAD 的 semantic-query-interfaces.md:119 已规定 Prompt-term 没有可采用结果时，将该视觉概念的英文自然语言写入 slots.natural_language。",
+        "HEAD 的 03-output-protocol 输入与成功示例已经包含 soft lighting；当前迁移没有首次引入这项示例冲突。"
+      ],
+      "limit": "已核对迁移基线与当前候选；未追溯更早用户批准光线边界时的会话或决定。"
+    }
+  },
+  "contractChain": [
+    {
+      "order": 1,
+      "source": ".agents/skills/anima-prompt-builder/SKILL.md:18-22",
+      "rule": "当前用户普通文字提供画面意图；本次请求包含窗边柔光。"
+    },
+    {
+      "order": 2,
+      "source": ".agents/skills/anima-prompt-builder/SKILL.md:30-55",
+      "rule": "先读十项固定参考，再按待填槽位读详细规则；03-output-protocol 在 06-slot-order 之前，15-detail-mood 属于后读详细规则。"
+    },
+    {
+      "order": 3,
+      "source": ".agents/skills/anima-prompt-builder/references/03-output-protocol.md:32,58",
+      "rule": "格式示例把 soft lighting 放入 detail_mood，输入与拼接输出均如此。该文件定义格式，不提供覆盖详细业务规则的优先级。"
+    },
+    {
+      "order": 4,
+      "source": ".agents/skills/anima-prompt-builder/references/06-slot-order.md:52-67",
+      "rule": "标签优先；只有标签不能准确表达画面关系时使用自然语言；每句表达一个具体关系或解决一个歧义。例表包含空间关系，并未限定必须多人。"
+    },
+    {
+      "order": 5,
+      "source": ".agents/skills/anima-prompt-builder/references/14-scene-environment.md:3-14,74-96",
+      "rule": "场景承接主场所、构件、天气、时段和可见现象。window 可保留窗构件；天气时段规则不能凭柔光新增 day、morning 或 sunset。表格没有一般柔和照明标签。"
+    },
+    {
+      "order": 6,
+      "source": ".agents/skills/anima-prompt-builder/references/15-detail-mood.md:7-17,51-60,100-102",
+      "rule": "只处理与六类表格行直接对应的要求，没有匹配时用 cinematic；soft focus 的用户要求是整体柔焦；13.8 不允许增加其他光线、光影、色调标签。"
+    },
+    {
+      "order": 7,
+      "source": ".agents/skills/anima-prompt-builder/SKILL.md，查询缺少的 Prompt 素材第 5 项及选择词条第 3、4 项",
+      "rule": "详细规则没有精确标签或存在含义不同候选时查询词条；按语义选择；无可采用结果才转英文自然语言。光线没有单独列名，本次属于场景视觉概念；既有说明没有把照明查询规定为禁止项。"
+    },
+    {
+      "order": 8,
+      "source": ".agents/skills/anima-prompt-builder/SKILL.md，构建并校验提示词",
+      "rule": "已采用规范标签进入语义对应槽位，详细资料决定数组元素；没有规定 MCP 结果能覆盖槽位范围。"
+    },
+    {
+      "order": 9,
+      "source": ".agents/skills/anima-prompt-builder/references/04-final-self-check.md:13,18；references/03-output-protocol.md:17,43,47",
+      "rule": "自检引用 13.8；格式输入只包含 slots/display_text，编排自然语言至全部标签之后。用户原始请求未作为校验输入，格式通过不能证实保留照明意图。"
+    }
+  ],
+  "legalRoutes": [
+    {
+      "route": "具体光源物件、天气与时段",
+      "conditions": "用户确实要求相应物件、天气、时段或已列环境现象。",
+      "destination": "scene_environment，按第 12 章数量与顺序。",
+      "caseResult": "window 可用；它只保留窗户，不能单独表达柔和照明。凭空增加日光、清晨、蜡烛会增加用户未指定内容。"
+    },
+    {
+      "route": "表内成像效果与色彩范围",
+      "conditions": "用户要求与 13.2 至 13.7 表格直接对应。",
+      "destination": "detail_mood。",
+      "caseResult": "整体柔焦可用 soft focus；本次柔光不满足该条件。没有表内要求时 cinematic 为既有默认值，默认值不能代替柔光要求。"
+    },
+    {
+      "route": "标签无法表达的照明空间关系",
+      "conditions": "表达用户已给出的光源、对象与空间关系，标签不能准确表达该关系；查询条件适用时仍需完成查询。",
+      "destination": "natural_language，第 4.4 节。",
+      "caseResult": "窗与人物之间的照明关系可能通过短句承接；单人本身不排除自然语言。当前未执行词条查询，因此不能宣称该轮已经完成这条路径的前提核对。",
+      "limit": "不得为了绕过限制编造日光、光源方向、时段或额外对象；该关系路径不能直接证明纯照明属性普遍获得自然语言授权。"
+    },
+    {
+      "route": "词条没有可采用结果",
+      "conditions": "实际查询后没有符合目标概念的候选；歧义待选择和查询错误不等同零结果。",
+      "destination": "natural_language，入口明确规定，迁移前已有。",
+      "caseResult": "可以精确保留柔和照明概念；当前 4.4 的全称限制使非关系概念同时受限，需要把既有例外引用清楚。"
+    },
+    {
+      "route": "词条命中精确照明标签",
+      "conditions": "查询存在与柔光精确对应的规范标签。",
+      "destination": "当前合同未明确一般照明所属槽位。",
+      "caseResult": "detail_mood 被 13.8 排除；scene_environment 和 camera_shot 的详细规则没有照明类别；入口也未授权命中后舍弃标签改用自然语言。",
+      "status": "业务承接缺口；当前没有真实响应可以判定该输入会进入此分支。"
+    },
+    {
+      "route": "历史 Prompt 或角色、画师来源",
+      "conditions": "按入口规定提供可采用来源与目标槽位。",
+      "destination": "受各来源与槽位规则约束。",
+      "caseResult": "本次没有历史来源；角色 Prompt 限身份及外观，Style 记录作为画师提示词处理。它们不能自动成为照明出口。"
+    },
+    {
+      "route": "输出协议示例中的 soft lighting",
+      "conditions": "格式示例存在该文本。",
+      "destination": "示例中为 detail_mood。",
+      "caseResult": "与具体限制冲突；示例不是已声明的例外或优先级。不能据此认定允许照明标签。"
+    }
+  ],
+  "observedTrace": [
+    {
+      "seq": 5,
+      "event": "请求窗边柔光、指定人物外观与 test 尺寸，只构建并保存 Builder。"
+    },
+    {
+      "seq": [
+        18,
+        19
+      ],
+      "modelMessage": 5,
+      "event": "加载入口，收到查询条件、词条选择与零结果自然语言规则。"
+    },
+    {
+      "seq": [
+        30,
+        31
+      ],
+      "modelMessage": 10,
+      "event": "读取 00 至 03，收到 soft lighting 格式示例。"
+    },
+    {
+      "seq": [
+        32,
+        33
+      ],
+      "event": "读取自检、冲突表和权重资料。"
+    },
+    {
+      "seq": [
+        37,
+        38
+      ],
+      "modelMessage": 13,
+      "event": "读取 06、07，收到自然语言关系限制。"
+    },
+    {
+      "seq": [
+        70,
+        72,
+        73,
+        77,
+        79,
+        84
+      ],
+      "event": "继续读取人物、服装、姿势、表情与镜头资料，并通过 MCP resolve 取得角色 Prompt。"
+    },
+    {
+      "seq": [
+        86,
+        87
+      ],
+      "modelMessage": 34,
+      "event": "读取 14、15，收到环境范围、soft focus 对应整体柔焦、13.8 照明限制。"
+    },
+    {
+      "modelMessage": 35,
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/c9475e7e-f5a2-4566-836b-f425a9278c5c.jsonl",
+      "event": "可见分析明确区分软光与柔焦，考虑默认 cinematic 和照明自然语言句子，引用 4.4 后仍选 soft focus、natural_language=[]。",
+      "interpretation": "实际考虑过的理由可核对；分析记录不足以证明唯一原因。"
+    },
+    {
+      "seq": 98,
+      "event": "首次可观察产物写入 detail_mood=[soft focus]、natural_language=[]；此前无 query_semantic_prompt_terms 调用。"
+    },
+    {
+      "seq": [
+        125,
+        130,
+        140
+      ],
+      "event": "后续草稿与保存调用继续保留 soft focus。"
+    },
+    {
+      "seq": 147,
+      "event": "最终说明把柔光解释为按第 13 节取柔焦，并把自然语言为空解释为单人无谁对谁关系；最终 Builder 保留 soft focus。"
+    }
+  ],
+  "causalAssessment": {
+    "proven": [
+      "相关入口、示例、槽位限制已进入同一实际模型请求。",
+      "词条工具声明存在，完整事件中没有对应调用。",
+      "soft focus 首次进入草稿并传播到最终文件，柔光描述未被其他句子保留。",
+      "执行者已看到柔焦的精确含义，实际选择仍违反直接对应规则。",
+      "4.4 与零结果回退、示例与详细规则之间的冲突存在于迁移基线。"
+    ],
+    "hypotheses": [
+      {
+        "claim": "关系限定与光线槽位缺口促使执行者选择最接近的表内标签。",
+        "support": "可见分析在 13.8 与 4.4 之间讨论后采用 soft focus。",
+        "uncertainty": "缺少仅澄清既有例外的同条件对照；执行者同时跳过词条查询。"
+      },
+      {
+        "claim": "格式示例的 soft lighting 影响照明处理。",
+        "support": "示例在详细规则之前进入上下文。",
+        "uncertainty": "实际产物没有照抄 soft lighting；当前没有证明示例是柔焦替换的必要原因。"
+      }
+    ],
+    "layer": "资料中的语义分类与引用由 Skill 文档负责；具体映射与来源选择由 Agent 负责；格式程序承担确定性结构检查。现有证据未发现光线字段在宿主或消息传递中丢失。"
+  },
+  "missingEvidence": [
+    "精确柔光查询在原目录数据下返回哪些候选，以及候选能否完整表达窗、光、人物的关系。",
+    "更早批准 13.8 限制时是否已决定其他槽位或自然语言承担一般照明；迁移基线本身没有给出该决定。",
+    "仅修改冲突引用或仅修改格式示例时的同条件反事实与重复结果。",
+    "同机制相邻输入在两个预设下的完整验收记录。"
+  ],
+  "authorizedNextSteps": [
+    {
+      "step": 1,
+      "action": "保留原失败，先使用已有只读目录能力或已保存响应核对精确照明词条的实际候选；记录身份、规范标签、别名、数据时间和查询参数。",
+      "boundary": "本诊断没有调用目录服务；后续由主任务按原计划执行。"
+    },
+    {
+      "step": 2,
+      "action": "将 06-slot-order 第 4.4 节的适用范围与入口既有词条零结果分支建立单向引用，保留关系表达规则与既有零结果例外；入口继续作为零结果规则的唯一来源。",
+      "basis": "迁移前 semantic-query-interfaces:119 与计划 5.3 已明确零结果回退；5.14.3 允许消除冲突引用。",
+      "boundary": "不把非零结果、查询错误或所有光线改成无条件自然语言。"
+    },
+    {
+      "step": 3,
+      "action": "将 03-output-protocol 输入与输出示例中的 detail_mood 替换为现有表内合法示例值，并保持示例输入与拼接输出一致。",
+      "basis": "13.8 具体规则已存在，格式示例没有业务覆盖权；属于消除冲突示例。",
+      "boundary": "只修正示例，不修改光线标签允许范围、schema 或校验脚本；修正示例本身不证明 IB53 已修复。"
+    },
+    {
+      "step": 4,
+      "action": "按 5.11.9 将范围内文字差异写入主计划，并完成独立诊断审查、文字审计后实施。按同一模型、输入、目录数据、预设分别运行单变量对照；最终按 5.11.10 复验原失败及相邻分支。",
+      "boundary": "本次只提交诊断报告，未实施上述修改。"
+    }
+  ],
+  "businessDecisions": [
+    {
+      "id": "LIGHT-DESTINATION",
+      "question": "当精确光线词条可采用时，ANIMA 将该照明标签放入哪个既有槽位，或者是否允许将其改写为自然语言？",
+      "whyNeeded": "当前入口要求采用规范标签且详细槽位排除一般照明。仅改引用不能选择目标槽位。",
+      "options": [
+        "为已有槽位明确照明类别并同步相关边界。",
+        "明确光线概念由 natural_language 承接，并定义与词条命中分支的关系。"
+      ],
+      "authorization": "按 5.14.5 集中报告；不得在现有授权内默选。"
+    },
+    {
+      "id": "GENERAL-LIGHT-SCOPE",
+      "question": "是否要求完整保留不含空间关系的纯照明、光影和色调属性？",
+      "whyNeeded": "零结果回退已有依据，精确命中且不构成关系的要求仍没有完整承接规则。",
+      "authorization": "先查询更早已批准决定；存在决定则按该决定澄清，缺失时与 LIGHT-DESTINATION 合并为一次业务决定。"
+    }
+  ],
+  "acceptance": {
+    "structure": [
+      "示例 slots 与成功 prompt_text 保持一致；文件引用可解析；输出 schema 与 Skill 脚本保持原状。"
+    ],
+    "semantic": [
+      "原始窗边柔光保留照明含义，未请求柔焦时不引入 soft focus。",
+      "用户明确整体柔焦时仍正确采用 soft focus。",
+      "照明与柔焦同时指定时分别保留各自含义。",
+      "词条无可采用结果时依入口使用自然语言；歧义和工具错误按相应合同处理。",
+      "单人空间或光源关系依 4.4 正常表达；不额外添加时段和光源。",
+      "词条命中分支按明确后的业务归属处理；未决定前保持受阻。"
+    ],
+    "causalControl": "一次只改变一个引用或示例因素；混合修改的通过只能证明该候选组合的验收结果。连续两次同条件失败且没有新证据时停止重复，重新调查。",
+    "status": "本报告完成静态合同核对与原始轨迹复核；修复与真实复验尚未执行。"
+  }
+}

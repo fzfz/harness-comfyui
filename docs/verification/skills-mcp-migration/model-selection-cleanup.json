@@ -1,0 +1,19 @@
+{
+  "desktop": {
+    "runId": "a32a4b77-0bdf-4a7d-9de9-5856780bd2cf",
+    "state": "stopped",
+    "portsReleased": true
+  },
+  "fixture": {
+    "runId": "2f28edcf-b2f9-455e-85e5-0e9252bda5d7",
+    "status": "stopped",
+    "processExited": true,
+    "portReleased": true
+  },
+  "profile": {
+    "fixtureUrlAbsent": true,
+    "mcpOverrideAbsent": true,
+    "installedDefaultUrlPresent": true,
+    "restartedAfterRestore": false
+  }
+}

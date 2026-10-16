@@ -1,0 +1,110 @@
+{
+  "documentPurpose": "保存原 5.6-2 同业务输入复验准备的独立只读核对结果。",
+  "readWhen": "父线程决定是否提交本次模型任务时。",
+  "reviewedAt": "2026-10-14T14:45:35.537986+00:00",
+  "verdict": "preparation-verified-execution-blocked-by-pending-gates",
+  "canSubmitModelNow": false,
+  "scope": {
+    "applicationStarted": false,
+    "modelCalled": false,
+    "reviewedWorkChanged": false,
+    "comparison": "同业务输入复验；候选累计改动与期限调整共同存在。"
+  },
+  "verified": [
+    {
+      "item": "原执行来源",
+      "result": "execution-state.json 的 5.6-2:harness-comfyui-iteration 指向 harness-run-4dz3WV，原记录为一次用户提交、一个成功 Run 和一个媒体。",
+      "sources": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/execution-state.json#/entries/0"
+      ]
+    },
+    {
+      "item": "实际输入",
+      "result": "直接读取原、新 materialized-input.json；按 input-materialization.json 的两处路径映射后，Prompt 完全一致。原 Builder、准备副本与两次 Prompt 内嵌内容均为同一份 720 字节内容。template_id=29、instance_id=2、count=1、seed=20261013、request 和产物目录 5.6-2 保持一致。",
+      "sources": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/materialized-input.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/materialized-input.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/input-materialization.json"
+      ]
+    },
+    {
+      "item": "安装候选",
+      "result": "运行目录候选包与 result-files-candidate.tgz 字节一致；直接读取压缩包逐个比对安装目录，201 个文件全部一致。与原候选直接比较得到新增 1 个、变更 40 个、删除 0 个文件。",
+      "sources": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/harness-comfyui-candidate.tgz",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-candidate.tgz",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/candidate-vs-original-files.json"
+      ]
+    },
+    {
+      "item": "角色与模型",
+      "result": "直接解析原、当前 Profile 与已安装候选的角色配置。当前四个角色的 config 在去除 agentOptions 后与候选一致；Profile 补丁通过 id 覆盖配置，模块 name 由候选保留。四个角色与原 Profile 的模型身份相同：构图、生成、比较使用 opencode-go/deepseek-v4.1-flash，观察使用 openrouter/thinkingmachines/inkling:free。当前角色配置无 images_path。",
+      "sources": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+      ]
+    },
+    {
+      "item": "期限",
+      "result": "实际 Profile 的 observer timeoutMs 为 600000；原执行记录为 360000。1200000 毫秒模型阶段总期限目前为 cancellationPlan 中的待执行约束。",
+      "sources": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/execution-state.json#/entries/0/requestControl",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/result-files-generation-replay-input.json#/cancellationPlan"
+      ]
+    },
+    {
+      "item": "隔离初始状态",
+      "result": "直接列举 Workspace，当前为空；以 SQLite 只读连接核对当前数据库，generation_runs、generation_media、generation_run_outputs、generation_media_staging 均为 0；observer 证据目录为空。state.json 记录应用已停止。",
+      "sources": [
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/workspace",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/observer/llm-calls",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/state.json"
+      ]
+    },
+    {
+      "item": "观察器来源",
+      "result": "直接逐字节比对 llm-observer.mjs 和 redact-evidence.mjs，运行副本与 observer-identity.json 指向的源文件一致。源观察器注入 agents，并注册全局 llm/stream；超时错误路径调用当前 session cancel，迭代器 return 的 Promise 未等待。取消效果须由专门门禁验证。",
+      "sources": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/observer-identity.json",
+        "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/observer/llm-observer.mjs"
+      ]
+    }
+  ],
+  "blockingGates": [
+    {
+      "id": "host-cancellation",
+      "status": "pending",
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/result-files-generation-replay-input.json#/cancellationPlan",
+      "requirement": "父线程完成 Host 取消门禁，保存主会话、子会话及 Provider 请求结束的实测证据，并明确使用哪个已验证接口执行取消。"
+    },
+    {
+      "id": "observer-independent-review",
+      "status": "pending",
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/observer-identity.json#/parentIndependentReview",
+      "requirement": "父线程取得与本次运行副本一致的 observer 和 redactor 独立审查结果。若审查导致源文件变化，应同步运行副本并重新核对身份。"
+    },
+    {
+      "id": "total-deadline-enforcement",
+      "status": "pending",
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/result-files-generation-replay-input.json#/cancellationPlan/steps/1",
+      "requirement": "模型提交前落实 1200000 毫秒总期限的实际执行者、起算时间与取消动作，并保存对应控制证据；当前 Profile 的 600000 毫秒仅约束单次调用。"
+    },
+    {
+      "id": "model-submission-authorization",
+      "status": "pending",
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/result-files-generation-replay-input.json#/modelBoundary/modelExecutionAuthorized",
+      "requirement": "父线程在上述门禁通过后授权本次一次模型提交。准备材料中的 activeGoSubscription=true、useBalance=false 是既有来源声明；本独立审查未取得原始用户授权消息，不能独立核实该声明。"
+    }
+  ],
+  "materialFindings": [],
+  "limitations": [
+    "本轮验证的是磁盘准备结果，当前 Profile 在配置后尚无业务启动的有效配置采集；执行时仍需核对实际加载的模型、角色、目录来源与取消控制。",
+    "本轮没有调用官方 probe 或检查实时进程、端口；应用停止结论依据已有 state/probeStatus 记录。",
+    "本轮未调用模型、目录服务或 ComfyUI；模板、实例可用性和结果文件消费须在获准的真实执行中验收。"
+  ],
+  "conclusion": "已核对范围内未发现阻止复验准备交付的输入或候选身份缺口。当前禁止提交模型；父线程需完成列出的执行门禁。"
+}

@@ -1,0 +1,142 @@
+{
+  "status": "根因调查与最小验证设计完成；未确定已验证有效的产品修复",
+  "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+  "runId": "dd77f5d7-293b-4dbd-8437-88a45325e1b5",
+  "sourceReview": "retirement-no-default-review.json",
+  "scope": "路线推荐及完整校验结论失真；只读取证，不修改产品文字。",
+  "facts": [
+    {
+      "id": "F1",
+      "source": ".local/skills-mcp-migration-live/llm-calls/e2ca4140-15d4-4cc9-b96a-74ed36597229.jsonl:1 messages[0,1]",
+      "fact": "首请求 system 要求主 Agent 使用迭代 Skill 派发四类角色；用户消息明确指定执行生成 Skill，给出模板29、实例2、数量1、Seed及完整 Builder JSON，没有 model_id。消息中的 model_route=wai-illustrious-sdxl 是路线的首次来源。"
+    },
+    {
+      "id": "F2",
+      "source": "collect seq18/19；.local/skills-mcp-migration-live/llm-calls/8527e28b-3bfd-42d4-afa9-ccb5e3986c7f.jsonl:1 messages[6]",
+      "fact": "生成 Skill 完整送达，包含先取得采用模型、空默认模型时请求 model_id、禁止从节点或路线推选规则。"
+    },
+    {
+      "id": "F3",
+      "source": "collect seq32/33；.local/skills-mcp-migration-live/llm-calls/0faa197e-02da-442e-80ae-8c58f6496b10.jsonl:1 messages[12]",
+      "fact": "同一次工具结果包含结果合同、schema与路线映射。合同规定四项顺序通过才记录有效；路线映射给出 wai-illustrious-sdxl→wai-sdxl-prompt-builder。模型在推荐前已读取这两条规则。"
+    },
+    {
+      "id": "F4",
+      "source": ".local/skills-mcp-migration-live/llm-calls/0575e367-e58d-49ba-9254-02b3449e515a.jsonl 的 reasoning 输出；collect seq43",
+      "fact": "查询 Workflow 前模型分析分别做结构、负向、尺寸预检查，并承认路线校验尚需实际模型。此时没有工具执行完整校验，也没有用户可见的完整通过结论。"
+    },
+    {
+      "id": "F5",
+      "source": "collect seq43–47；.local/skills-mcp-migration-live/llm-calls/66ba7cfe-5b3f-446b-b97a-e3746dc4e749.jsonl:1 messages[17]",
+      "fact": "Workflow与实例查询来自同一决策批次；Workflow响应 item.model=null、base_model.id=2，同时 workflow_json 中存在 checkpoint 文件名。响应完整到达模型。"
+    },
+    {
+      "id": "F6",
+      "source": ".local/skills-mcp-migration-live/llm-calls/66ba7cfe-5b3f-446b-b97a-e3746dc4e749.jsonl 的 reasoning 输出；collect seq50",
+      "fact": "模型准确复述缺项与禁止推选规则；主动决定通过同底模搜索提供候选。该分析末尾仍称已手工验证且有效，是完整结论失真的最早可见分析线索。分析同时讨论 system 迭代职责与用户直接执行指令，选择后者；全程没有子任务。"
+    },
+    {
+      "id": "F7",
+      "source": "collect seq51/52；.local/skills-mcp-migration-live/llm-calls/3560460d-50df-492f-8107-edfee5db98eb.jsonl:1 messages[20]",
+      "fact": "search_models 使用模板返回的底模 id=2、name=wai；返回顺序17、15、14、1。模型17 skill_name=test、15为null、14与1均为wai-sdxl-prompt-builder。候选身份和这些字段来自目录，不是由模型编造。"
+    },
+    {
+      "id": "F8",
+      "source": "collect seq57/58；.local/skills-mcp-migration-live/llm-calls/3560460d-50df-492f-8107-edfee5db98eb.jsonl 的输出",
+      "fact": "模型分析决定保存含校验结果的阻塞记录。seq58 写入文件，称四项全部通过，同时逐项写路线待定。这是校验结论失真的首次实际产物动作。"
+    },
+    {
+      "id": "F9",
+      "source": "collect seq62；.local/skills-mcp-migration-live/llm-calls/8527e28b-3bfd-42d4-afa9-ccb5e3986c7f.jsonl 的输出",
+      "fact": "最终称JSON校验有效，并写“建议1或14，否则模型路线校验会失败”。这是路线推荐的首次明确用户可见动作。模型仍请求用户选择，没有把候选写成用户已选择，也没有提交图片。"
+    }
+  ],
+  "distinctions": {
+    "neutralCandidates": "按模板底模查目录并展示候选、说明各候选的路线匹配事实，仍然保留用户选择身份。seq51 的查询条件没有使用 model_route，不能单凭该查询判为从路线选模型。",
+    "routeRecommendation": "seq62 使用路线校验结果建议具体ID，越过了事实展示进入建议选择；禁止推选合同适用于此动作，即使最终仍等待用户确认。",
+    "structuralPreview": "读取 schema、目视检查必填字段和计算尺寸只能支持对应部分属性判断。seq43 的分析预检查不支持声称四项完整有效。",
+    "fullValidation": "结果合同要求采用模型查询结果参与路线校验，四项按顺序通过才能记录有效。缺少采用模型时，生成流程应停在选择前置条件；不应把该前置缺项直接改判成已执行完整校验后的无效，也不应增加新的输出 schema 状态。"
+  },
+  "ruleConsistency": {
+    "sources": [
+      ".agents/skills/comfyui-generate/SKILL.md:28",
+      ".agents/skills/comfyui-generate/references/prompt-result-contract.md:9",
+      ".agents/skills/comfyui-generate/references/prompt-result-contract.md:11",
+      ".agents/skills/comfyui-generate/references/prompt-result-contract.md:31",
+      "agent-presets/harness-comfyui-iteration/agent.cordis.yml:24"
+    ],
+    "conclusion": "模型选择与完整校验合同的前置关系明确；未发现要求缺模型时推荐候选或标记有效的另一条规则。路线映射原用于验证采用模型，后被模型反向用于推荐。",
+    "roleConflict": "实际 system 分配主调度角色，用户测试输入直接指定生成执行。模型分析明确选择直接执行且未加载迭代 Skill；这是本轮没有父子交接的来源解释，仍未证明其造成路线推荐或校验概括错误。"
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "模型将候选的路线匹配筛选误用为可向用户推荐的选择依据。",
+      "support": [
+        "F3的映射与F7的skill_name足以得到候选1/14，F9的建议理由直接是路线校验。"
+      ],
+      "counterEvidence": [
+        "模型准确读到禁止推选，且在F6主动区分列候选与替用户选择。",
+        "同轮工作台读取相同规则与候选，仅展示兼容事实而未推荐；信息暴露本身不是充分原因。"
+      ],
+      "missingEvidence": "没有固定输入前缀的对照，尚不知影响来自角色、随机输出或候选信息组织。",
+      "minimumControl": "固定候选身份与其他字段，只在实验夹具中交换两条候选的 skill_name 值，观察建议是否跟随匹配关系变化；不得把该实验变体作为生产数据或修复。该对照验证推荐的资料依赖，不验证怎样可靠纠正行为。"
+    },
+    {
+      "id": "H2",
+      "statement": "模型将结构、负向与尺寸预检查的局部通过概括成整体有效，后续产物沿用该概括。",
+      "support": [
+        "F4保留路线未知，F6末尾却称有效；F8与F9同时保留路线待定与整体有效。"
+      ],
+      "counterEvidence": [
+        "结果合同已明确四项通过条件；没有缺字段或错误工具结果要求整体通过。",
+        "工作台同样预看部分字段，但未把完整校验称为有效。"
+      ],
+      "missingEvidence": "尚无证据证明这是独立参考入口问题、二元结论文案问题或产物格式诱导。",
+      "minimumControl": "先重放seq50前相同实际输入，记录是否再次产生局部到整体概括；随后仅改变测试消息的产物保存要求，比较是否仍在写文件之前声称有效。原轨迹中错误分析先于写文件，故写文件不是首次错误的充分解释。"
+    },
+    {
+      "id": "H3",
+      "statement": "主调度persona与直接执行生成Skill的输入冲突可能改变模型对职责和交付的理解。",
+      "support": [
+        "F1存在角色错位，F6显式权衡优先级，实际未派发角色。"
+      ],
+      "counterEvidence": [
+        "两项失败的具体规则均被准确理解并复述；角色不一致并不必然导出推荐或有效结论。",
+        "工作台对照同时改变persona及会话其他轨迹，不能充当单变量因果证明。"
+      ],
+      "missingEvidence": "同模型、同用户输入、同目录响应下仅替换persona的控制。",
+      "minimumControl": "使用同一冻结工具响应和相同用户消息，仅对比迭代主persona与工作台persona；另外以符合迭代职责的父任务另建真正父子场景。两种实验分别记录，不把后者多因素改动当作前者对照。"
+    },
+    {
+      "id": "H4",
+      "statement": "场景目录名泄露验收意图，可能影响模型对规则的解释。",
+      "support": [
+        "F6分析多次使用retirement-no-default-iteration名称推测评测意图。"
+      ],
+      "counterEvidence": [
+        "模型从名称推测出的目标是停止，不是推荐或完整校验通过。"
+      ],
+      "missingEvidence": "中性路径名的同条件对照。",
+      "minimumControl": "仅替换工作目录名称为中性名称并保持目录可见性和内容一致；属于测试输入控制，不能预设它能修复产品。"
+    }
+  ],
+  "minimumVerificationPlan": [
+    "固定模型、候选、工具声明、完整用户消息与目录响应；保存实际persona、角色输入、所有文本及工具结果。先对原失败做一次有完整证据的基线重放；同条件连续两次失败且无新证据时停止重复。",
+    "优先执行单变量persona对照，以确定直接执行入口与真正父子入口应如何分别验收；比较最早的有效概括、候选表述和最终推荐，不只统计提交。",
+    "若需验证推荐的资料来源，再做H1候选skill_name关系实验；若需定位产物影响，再做H2保存要求实验。各实验分开编号并保留失败，不同时修改规则或模型。",
+    "由独立审查员区分事实候选、条件校验说明与推荐；程序仅核对输入身份、调用次数与消息对应，不做语义关键词判分。",
+    "通过标准：缺项保持为未选模型；未执行完整校验时不声明整体有效；候选事实不转成路线推荐；参数检查和提交保持零次。真正父子场景还需缺项原样转达、等待用户选择及原Agent恢复。"
+  ],
+  "repairDecision": {
+    "evidenceBackedProductRepair": null,
+    "reason": "当前证据已证明执行与产物错误，未证明唯一规则冲突、响应丢失或特定宿主缺陷。新增禁止句、改变schema或隐藏必要skill_name字段均缺少已验证的因果依据。",
+    "nextStep": "先完成最小控制实验。若确认角色契约导致偏离，修复职责/输入入口；若确认模型在明确一致规则下仍偏离，记录执行可靠性问题，再设计受控方案，不能宣布本轮文字修复已经成立。"
+  },
+  "fixtureProbeUpdate": {
+    "source": "empty-domain-live-probes.json",
+    "fixture": "e7bd47d3-4ba1-41b5-acad-4b81f977fd73",
+    "result": "六个真实查询均核对exchange与upstream：原ID2映射到1，其他参数保留，返回result与上游相同；五操作MCP_INSTANCE_NOT_FOUND，详情MCP_QUERY_RESOURCE_NOT_FOUND。",
+    "remaining": "真实非法参数与搜索依赖错误探针、产品停止复验仍pending。"
+  }
+}

@@ -1,14 +1,20 @@
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
 import { validateSourceSettingsSection, type SourceAddress } from '../source-settings.ts'
 import { ERROR_CATALOG } from '../../config/error-catalog-schema.ts'
+import sourceClientConfiguration from '../../config/source-client.json' with { type: 'json' }
+function sourceCatalogPath(toolName: string): string {
+  const operation = Object.entries(sourceClientConfiguration.catalog.operations).find(([, entry]) => entry.toolName === toolName)
+  if (operation === undefined) throw new TypeError(`Catalog operation is not configured: ${toolName}`)
+  return operation[0]
+}
 export const CATALOG_PAGE_SIZE = presentation.pageSize
-export const CATALOG_BASE_MODEL_PAGE_SIZE = 20
-export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = 100
-export const CATALOG_QUERY_TIMEOUT_MS = 15_000
+export const CATALOG_BASE_MODEL_PAGE_SIZE = sourceClientConfiguration.catalog.baseModelPageSize
+export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = sourceClientConfiguration.catalog.instancePageSize
+export const CATALOG_QUERY_TIMEOUT_MS = sourceClientConfiguration.catalog.queryTimeoutMs
 export const CATALOG_REMOTE_NAMESPACE = 'harnessComfyuiCatalog'
 export const CATALOG_REMOTE_SERVICE = `remote.${CATALOG_REMOTE_NAMESPACE}`
-export const CATALOG_BASE_MODEL_PATH = '/internal/semantic/base-models'
-export const CATALOG_COMFYUI_INSTANCE_PATH = '/internal/semantic/comfyui-instances'
+export const CATALOG_BASE_MODEL_PATH = sourceCatalogPath('query_semantic_base_models')
+export const CATALOG_COMFYUI_INSTANCE_PATH = sourceCatalogPath('query_semantic_comfyui_instances')
 export const CATALOG_COMFYUI_INSTANCE_QUERY = Object.freeze({
   mode: 'search',
   query: '',
@@ -24,7 +30,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'model',
     label: '生成模型',
-    path: '/internal/semantic/generation-models',
+    path: sourceCatalogPath('query_semantic_generation_models'),
     labelField: 'file_name',
     subtitleFields: Object.freeze(presentation.kinds['model'].summary),
     baseModelScoped: true,
@@ -32,7 +38,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'lora',
     label: 'LoRA',
-    path: '/internal/semantic/loras',
+    path: sourceCatalogPath('query_semantic_loras'),
     labelField: 'file_name',
     subtitleFields: Object.freeze(presentation.kinds['lora'].summary),
     baseModelScoped: true,
@@ -40,7 +46,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'work',
     label: '作品',
-    path: '/internal/semantic/works',
+    path: sourceCatalogPath('query_semantic_works'),
     labelField: 'name',
     subtitleFields: Object.freeze(presentation.kinds['work'].summary),
     baseModelScoped: false,
@@ -48,7 +54,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'character',
     label: '角色',
-    path: '/internal/semantic/characters',
+    path: sourceCatalogPath('query_semantic_characters'),
     labelField: 'name',
     subtitleFields: Object.freeze(presentation.kinds['character'].summary),
     baseModelScoped: false,
@@ -56,7 +62,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'style',
     label: '画师或画风',
-    path: '/internal/semantic/styles',
+    path: sourceCatalogPath('query_semantic_styles'),
     labelField: 'name',
     subtitleFields: Object.freeze(presentation.kinds['style'].summary),
     baseModelScoped: true,
@@ -64,7 +70,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'prompt-term',
     label: '提示词条目',
-    path: '/internal/semantic/prompt-terms',
+    path: sourceCatalogPath('query_semantic_prompt_terms'),
     labelField: 'canonical_tag',
     subtitleFields: Object.freeze(presentation.kinds['prompt-term'].summary),
     baseModelScoped: false,
@@ -72,7 +78,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'artist-string',
     label: '画师串',
-    path: '/internal/semantic/artist-prompt-strings',
+    path: sourceCatalogPath('query_semantic_artist_prompt_strings'),
     labelField: 'title',
     subtitleFields: Object.freeze(presentation.kinds['artist-string'].summary),
     baseModelScoped: true,
@@ -80,7 +86,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
   Object.freeze({
     kind: 'comfyui-template',
     label: 'Workflow 模板',
-    path: '/internal/semantic/comfyui-templates',
+    path: sourceCatalogPath('query_semantic_comfyui_templates'),
     labelField: 'title',
     subtitleFields: Object.freeze(presentation.kinds['comfyui-template'].summary),
     baseModelScoped: true,

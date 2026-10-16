@@ -1,0 +1,28 @@
+{
+  "caseId": "5.6-4",
+  "preset": "harness-comfyui-cli-candidate",
+  "sessionId": "session-e5c0f9ce-4005-42b1-9744-cf7141592797",
+  "workspaceId": "b806f760-2f97-4b4f-8630-105c30a354ba",
+  "probeRunId": "9dff81f1-56f2-4c64-ac2c-eb22402e24e1",
+  "status": "通过",
+  "expected": "通过MCP读取模板和用户模型，底模不一致时停止生成。",
+  "actual": "事件44/49读取模板29及模型3，最终事件68报告wai与anima不兼容；没有Generation提交。",
+  "eventsPath": ".local/skills-mcp-migration-live/desktop/9dff81f1-56f2-4c64-ac2c-eb22402e24e1/1791885570942-collect.json",
+  "model": {
+    "provider": "openrouter",
+    "model": "thinkingmachines/inkling:free"
+  },
+  "workflowResponse": {
+    "callId": "call_2fb1b911e9464164aadc8c70",
+    "eventSeq": 45,
+    "rawPath": ".local/skills-mcp-migration-live/catalog/1791885570445-get_catalog_resource.json",
+    "llmPath": ".local/skills-mcp-migration-live/llm-calls/56b639b6-303f-4971-a40e-64fa10bfdb09.jsonl",
+    "lengths": {
+      "raw": 2812,
+      "dsh": 2812,
+      "llm": 2812
+    },
+    "rawDshEqual": true,
+    "dshLlmEqual": true
+  }
+}

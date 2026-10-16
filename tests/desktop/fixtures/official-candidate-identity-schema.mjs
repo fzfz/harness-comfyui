@@ -141,9 +141,8 @@ export function parseOfficialCandidateClientComboRoute(scriptUrl, packageName) {
   const clientFilename = runtimeArtifacts.client.outputEntryRelativePath.split('/').at(-1)
   const candidateRoute = `${packageName}/${clientFilename}`
   const candidateIndexes = moduleRoutes.flatMap((route, index) => route === candidateRoute ? [index] : [])
-  if (candidateIndexes.length !== 1
-    || (config.candidateModuleMustBeLast && candidateIndexes[0] !== moduleRoutes.length - 1)) {
-    throw new TypeError('loaded candidate Client combo route must contain its unique candidate module last')
+  if (candidateIndexes.length !== 1) {
+    throw new TypeError('loaded candidate Client combo route must contain one candidate module')
   }
   return {
     revision,

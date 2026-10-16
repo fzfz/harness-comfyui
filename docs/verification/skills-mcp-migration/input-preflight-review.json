@@ -1,0 +1,802 @@
+{
+  "schema_version": 1,
+  "purpose": "独立核对 23 类验收输入的目录证据、语义适用性与剩余前置条件。",
+  "read_when": "主线程固定真实验收输入及刷新准备状态前。",
+  "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+  "source_preflight": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/input-preflight-current.json",
+  "source_checked_at": "2026-10-14T03:29:31.597908+00:00",
+  "scope": {
+    "review_kind": "测试材料独立语义审查",
+    "model_tasks_executed": 0,
+    "catalog_writes": 0,
+    "input_changes": 0,
+    "evidence_basis": "已保存的真实响应快照与当前采用规则；未重新调用目录服务。",
+    "path_existence": "源记录引用的本地绝对路径均存在。"
+  },
+  "status_definition": "ready 表示目标分支材料可用；remaining_conditions 中保留执行时核对项。blocked 表示仍缺完成本项目所需材料或目标分支证据。目录数据充足与完整 Builder 可交付分别表述。",
+  "summary": {
+    "total_cases": 23,
+    "reported_ready": 14,
+    "reported_blocked": 9,
+    "reviewed_ready": 14,
+    "reviewed_blocked": 9,
+    "acceptance_passes_awarded": 0
+  },
+  "rules": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md:1204",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md:1263",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md:79",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md:75",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md:67"
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "case_ids": [
+        "5.3-1",
+        "5.3-2",
+        "5.3-3",
+        "5.3-4",
+        "5.3-5",
+        "5.5-3"
+      ],
+      "title": "仅提供 2:3 的输入未满足完整 Builder 尺寸前置条件",
+      "source_locations": [
+        "docs/verification/skills-mcp-migration/input-preflight-current.json#/cases/*/parameters/request",
+        ".agents/skills/anima-prompt-builder/references/generation-output-contract.md:26",
+        ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:23"
+      ],
+      "evidence": "两份 generation-profiles.json 均无 2:3；当前记录未预存尺寸补充回复规则。目录目标分支可以验证，但完整生成结果交付仍需补齐尺寸。",
+      "resolution": {
+        "status": "resolved_for_current_execution_variants",
+        "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "statement": "当前执行变体提供合法四项尺寸；原始输入发现及三属性变体失败记录继续保留。"
+      }
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "case_ids": [
+        "5.5-5"
+      ],
+      "title": "漩涡变体未证明跨记录同义关系",
+      "source_locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+      ],
+      "evidence": "9089 swirl 分类为 graphic_symbols；17067 vortex 标记 evidence_gap 并注明水体、能量或图形载体待定。共同中文别名与使用数量不能建立同义排序前提。"
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "case_ids": [
+        "5.3-5",
+        "5.5-6"
+      ],
+      "title": "复合概念无完整匹配仍含可采用子概念",
+      "source_locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+      ],
+      "evidence": "全部 7 项均未表达完整复合概念，但 swirl 符合旋涡形图形。完整概念自然语言回退可检验；完全零词条采用需另有证据。"
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "case_ids": [
+        "5.6-5"
+      ],
+      "title": "LoRA 资源齐备尚未确定两项实际参数",
+      "source_locations": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710999-deb5c93e-ec9a-4244-a517-3616158a02da-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822202-05ff1ac7-99ef-4c09-8917-9114bd6f2712-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710750-acd70923-8ffa-4fd1-9e21-e5c97a102c07-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json"
+      ],
+      "evidence": "目录提供单值 weight=1/0.8；69 的 usage 保存 strength_clip=null，当前 LoraLoader 的 strength_clip 要求 FLOAT，模板 37 仅一个 LoraLoader。执行前仍需确认参数与实际双 LoRA 应用。"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "5.3-1",
+      "task": "已有 Prompt 的上下文",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "当前四项尺寸变体有效；已有角色 Prompt 与 anima/12415 的 Prompt 均有真实详情支撑，已有 Prompt 上下文分支材料可采用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710360-0941fd77-6f9e-4acd-81d4-a22ac43c7991-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-profiles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+      ],
+      "remaining_conditions": [],
+      "size_variant_review": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    },
+    {
+      "case_id": "5.3-2",
+      "task": "缺少 Prompt 但有资源 ID",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "当前四项尺寸变体有效；角色上下文 Prompt 为空，resolve 39934 返回非空 Prompt，按既有 ID 补全分支材料可采用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-profiles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+      ],
+      "remaining_conditions": [],
+      "size_variant_review": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    },
+    {
+      "case_id": "5.3-3",
+      "task": "重名角色",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "当前四项尺寸变体有效；Alice 查询有真实重名候选，第一轮等待选择材料与预存 3334 选择规则可采用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322207-a27fbfdc-9b95-4650-87cb-7099dba70019-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793145-282123b1-1f64-47d7-b0aa-ccdceb845f9e-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793143-b2f3de48-0f34-4299-9c21-abb5ee99c531-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-profiles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+      ],
+      "remaining_conditions": [
+        "按预存规则在本轮实际候选中选择 3334。"
+      ],
+      "size_variant_review": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    },
+    {
+      "case_id": "5.3-4",
+      "task": "自动画师无结果",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "当前四项尺寸变体有效；指定 ANIMA 画风查询返回真实空结果，自动画师无结果分支材料可采用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322206-02f99b76-7e86-4328-beca-1ad6060865ca-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-profiles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+      ],
+      "remaining_conditions": [
+        "正式轨迹核对执行者实际形成的画风查询及其全部响应；单条预检响应只证明该查询。"
+      ],
+      "size_variant_review": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    },
+    {
+      "case_id": "5.3-5",
+      "task": "词条无结果",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "当前四项尺寸变体有效；复合装饰仍缺少完全零词条采用的证据，swirl 可表达旋涡形子概念，材料阻塞继续保留。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-profiles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+      ],
+      "remaining_conditions": [
+        "以正式执行的目标概念和实际查询范围确认无可采用分支；保留旋涡形子概念可采用 swirl 的可能性。"
+      ],
+      "size_variant_review": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    },
+    {
+      "case_id": "5.4-1",
+      "task": "历史 Prompt 与上下文同时存在",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "history_run_id 为 null，缺少用户明确选定的真实历史正向 Prompt。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+      ],
+      "remaining_conditions": [
+        "完成真实 Builder 与生成，保存同一隔离 Profile 可读的成功 Run ID、原始参数与用户选定的历史正向 Prompt。"
+      ]
+    },
+    {
+      "case_id": "5.4-2",
+      "task": "角色 ID 补全",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "resolve 39934 返回非空角色 Prompt，足以验收按既有 ID 补全。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+      ],
+      "remaining_conditions": []
+    },
+    {
+      "case_id": "5.4-3",
+      "task": "多个画师候选",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "krea2 的 Style 无 query 浏览、指定水彩搜索和画师串无 query 浏览均为空且 next=null；缺少多个可采用候选。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710557-64d4727d-b1f4-4980-b593-a4316bd62d56-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710512-7f2c98d1-a08d-45da-bc54-0db75b625d8d-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793314-245242ce-a3c5-4505-8abd-02399b4649da-search_artist_prompt_strings.json"
+      ],
+      "remaining_conditions": [
+        "取得至少两个既有真实 krea2 画师候选，具有非空 Prompt 且画风说明符合请求。"
+      ]
+    },
+    {
+      "case_id": "5.4-4",
+      "task": "自动画师无结果",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "指定画风搜索及两个目录浏览均返回空结果，可采用为真实自动画师无结果材料。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710400-1afb5e65-e6f8-4d9d-93bf-7ac467a71974-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710557-64d4727d-b1f4-4980-b593-a4316bd62d56-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793314-245242ce-a3c5-4505-8abd-02399b4649da-search_artist_prompt_strings.json"
+      ],
+      "remaining_conditions": []
+    },
+    {
+      "case_id": "5.4-5",
+      "task": "必需主体信息不足",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "指定角色 ID 返回 CATALOG_REF_NOT_FOUND，输入要求准确身份外观且没有可定义该主体的 Prompt；停止并补充主体分支成立。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710204-b066b17a-1f84-4dfc-b0f9-fa13be624ded-query_semantic_characters.json"
+      ],
+      "remaining_conditions": []
+    },
+    {
+      "case_id": "5.5-1",
+      "task": "作品同名",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "Fate 查询返回 ID 65、3241，两者名称和类别同为 Fate；第一轮作品消歧材料成立。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322204-4dc240dc-3fab-44c8-9f07-ef503ffbeb36-query_semantic_works.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793157-cb55fa6f-7553-4b7b-b58c-b2e4f6d51831-query_semantic_works.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793151-74c9de47-8f57-4426-80d2-01d6c0929639-query_semantic_works.json"
+      ],
+      "remaining_conditions": [
+        "第一轮确认等待，再按预存规则选择本轮候选 65；若继续交付 Builder，需预存具体角色选择和其他所缺输入的回复规则。"
+      ]
+    },
+    {
+      "case_id": "5.5-2",
+      "task": "角色缺少 Prompt",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "角色上下文 Prompt 为空，39934 的实际详情具有非空 Prompt；目标补全分支成立。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+      ],
+      "remaining_conditions": [
+        "正式执行如要求补充尺寸等非目标材料，先验证等待，再按执行前保存的回复规则补齐。"
+      ]
+    },
+    {
+      "case_id": "5.5-3",
+      "task": "画师 Prompt 已有但说明缺失",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "当前四项尺寸变体有效；上下文已含 say_hana，详情 12344 提供缺失的画风说明，说明补全分支材料可采用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710399-3110ed82-04bd-46c7-a209-df9b1d098368-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+      ],
+      "remaining_conditions": [],
+      "size_variant_review": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    },
+    {
+      "case_id": "5.5-4",
+      "task": "多个画风方向",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "水彩结果中的 12343 明确含柔和色彩与水彩质感；赛璐璐结果中的 12314 明确含进阶赛璐璐，均有 wai 底模与非空 Prompt，足以保留两方向候选。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322216-f66b6dc1-ef83-4cb0-829c-099128adce32-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327104-ea1f8e76-5202-4a2e-847e-01b18f979699-search_styles.json"
+      ],
+      "remaining_conditions": [
+        "画师说明未单独证实“硬边”；正式执行应保留用户明确的硬边要求并比较候选。",
+        "若本项要求选定候选后交付完整 Builder，先保存本轮候选选择与尺寸补充回复规则。"
+      ]
+    },
+    {
+      "case_id": "5.5-5",
+      "task": "同义词条",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "蓝眼返回仅 12 表达所需蓝色眼睛；aqua_eyes 表达青绿色，blue_pupils 与 blue_sclera 指不同部位。swirl/vortex 共享别名仍缺少相同含义证据。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327111-37e0a8f0-02ab-480d-a0df-eefc7a8be2f2-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+      ],
+      "remaining_conditions": [
+        "取得至少两个不同 ID 且在同一请求语境中确实同义的真实记录，再固定输入。",
+        "现有上下文已含 blue eyes，原输入也可能无需查询词条；新材料需能触发待验收的目录查询与排序。"
+      ]
+    },
+    {
+      "case_id": "5.5-6",
+      "task": "词条无结果",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "7 项候选均不能完整表达复合装饰；swirl 可覆盖旋涡形子概念，当前材料不能保证全部词条零采用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+      ],
+      "remaining_conditions": [
+        "正式轨迹确认复合概念按原意完整保留，并对实际目标概念判断无可采用结果；若要求完全零采用，另找真实输入并独立审查。"
+      ]
+    },
+    {
+      "case_id": "5.6-1",
+      "task": "用户指定模型",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "模板 29 默认模型 1，显式模型 14 与其不同且同属 wai；当前实例枚举同时含两文件。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710879-21ec7586-a837-4dc9-bde7-44836fef3f02-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json"
+      ],
+      "remaining_conditions": [
+        "补入真实执行且独立验收通过的 WAI Builder 结果。"
+      ]
+    },
+    {
+      "case_id": "5.6-2",
+      "task": "模板默认模型",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "模板 29 明确默认模型 1，当前实例枚举含该模型文件。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json"
+      ],
+      "remaining_conditions": [
+        "补入真实执行且独立验收通过的 WAI Builder 结果。"
+      ]
+    },
+    {
+      "case_id": "5.6-3",
+      "task": "无默认模型",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "批准边界方案与固定 wai-result.json 存在；真实模板 29 有默认模型，因此本项准备材料属于夹具。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md"
+      ],
+      "remaining_conditions": [
+        "执行前启用 no-default-model 夹具，并核对同对象搜索、详情及文本/结构化返回一致；保留节点原文。"
+      ]
+    },
+    {
+      "case_id": "5.6-4",
+      "task": "底模不一致",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "模板 29 关联 wai/2，模型 3 关联 anima/1；请求仅核对兼容性，可在生成前停止。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710877-b69855f8-5a11-4691-8df4-824aa530ff91-get_catalog_resource.json"
+      ],
+      "remaining_conditions": []
+    },
+    {
+      "case_id": "5.6-5",
+      "task": "多个 LoRA",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "89 与 69 的实际目录权重、触发词和实例文件均有证据，原 102 文件未出现在当前枚举。模板 37 当前只有一个 LoraLoader，双 LoRA 参数路径还待确认。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710750-acd70923-8ffa-4fd1-9e21-e5c97a102c07-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710907-5d69b50f-da5c-4222-bf91-2fa8d44a7324-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710999-deb5c93e-ec9a-4244-a517-3616158a02da-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822202-05ff1ac7-99ef-4c09-8917-9114bd6f2712-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json"
+      ],
+      "remaining_conditions": [
+        "固定替代列表顺序 89、69，并保存真实 Builder 结果。",
+        "取得模板参数响应并确认两项 LoRA 在实际请求及 Actual Workflow 中分别应用。",
+        "明确目标参数中的 strength_model/strength_clip；目录单值 weight 未直接规定 CLIP 权重，69 的 usage 样例为 strength_clip=null，而当前 LoraLoader 要求 FLOAT。"
+      ]
+    },
+    {
+      "case_id": "5.6-6",
+      "task": "空实例列表",
+      "reported_status": "ready",
+      "reviewed_preparation_status": "ready",
+      "adoption_conclusion": "批准边界方案与固定 WAI 输入存在；真实实例搜索含实例 2，因此空列表需要批准夹具。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711209-5c120140-09e8-4a55-aedb-d9aa684b50e8-search_instances.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md"
+      ],
+      "remaining_conditions": [
+        "执行前启用 empty-instances 夹具，并核对搜索、详情及受影响只读实例操作一致。"
+      ]
+    },
+    {
+      "case_id": "5.6-7",
+      "task": "目录搜索后选择资源",
+      "reported_status": "blocked",
+      "reviewed_preparation_status": "blocked",
+      "adoption_conclusion": "恢复后的工作流搜索返回 29、37、28、40，目标 29 在实际候选中，默认模型文件可用。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327327-85ef21d3-e1d9-4228-bb37-48d9f883efba-search_workflows.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json"
+      ],
+      "remaining_conditions": [
+        "先验收候选展示与等待，再按预存规则选择 29。",
+        "补入真实执行且独立验收通过的 WAI Builder 结果。"
+      ]
+    }
+  ],
+  "compound_term_review": {
+    "case_ids": [
+      "5.3-5",
+      "5.5-6"
+    ],
+    "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json",
+    "complete_concept_matches": 0,
+    "all_subconcepts_unadoptable": false,
+    "candidates": [
+      {
+        "id": 19724,
+        "canonical_tag": "water_drop_hair_ornament",
+        "adopt_for_complete_concept": false,
+        "reason": "词条指定发饰；5.3-5 要求衣服装饰，5.5-6 未指定发饰；两请求均要求三重旋涡与折光，词条没有这些含义。"
+      },
+      {
+        "id": 1184,
+        "canonical_tag": "water_drop",
+        "adopt_for_complete_concept": false,
+        "reason": "词条表达液态水滴，缺少三重旋涡结构、装饰载体和折光关系；若补画液滴会额外决定装饰材质。"
+      },
+      {
+        "id": 5030,
+        "canonical_tag": "drop-shaped_pupils",
+        "adopt_for_complete_concept": false,
+        "reason": "词条表达瞳孔形状，目标概念是装饰。"
+      },
+      {
+        "id": 9089,
+        "canonical_tag": "swirl",
+        "adopt_for_complete_concept": false,
+        "adopt_for_subconcept": "可表达旋涡形图形；须另以自然语言保留三重、水滴、折光与装饰关系。",
+        "reason": "规范标签及 graphic_symbols 分类支持旋涡形，未表达完整复合概念；这一部分匹配使“任何词条均不可采用”的断言缺乏依据。"
+      },
+      {
+        "id": 17067,
+        "canonical_tag": "vortex",
+        "adopt_for_complete_concept": false,
+        "reason": "规范标签只指涡旋，实际 classification=evidence_gap；响应明确尚未区分水体、能量或图形载体。"
+      },
+      {
+        "id": 24025,
+        "canonical_tag": "teardrop-shaped_gem",
+        "adopt_for_complete_concept": false,
+        "reason": "词条额外要求宝石材质，仅覆盖泪滴形，缺少三重旋涡结构与折光装饰关系。"
+      },
+      {
+        "id": 19537,
+        "canonical_tag": "triple_vertical_stripe",
+        "adopt_for_complete_concept": false,
+        "reason": "三条垂直条纹与三重旋涡形状不同。"
+      }
+    ]
+  },
+  "synonym_review": {
+    "original_blue_eyes": {
+      "adoptable_id": 12,
+      "cross_record_synonym_evidence": false,
+      "reason": "aqua_eyes 为青绿色，blue_pupils 为瞳孔，blue_sclera 为巩膜；同记录别名不会触发不同 ID 间排序。"
+    },
+    "swirl_variant": {
+      "approved_for_synonym_sort": false,
+      "records": [
+        {
+          "id": 9089,
+          "canonical_tag": "swirl",
+          "post_count": 669,
+          "classification": "graphic_symbols"
+        },
+        {
+          "id": 17067,
+          "canonical_tag": "vortex",
+          "post_count": 136,
+          "classification": "evidence_gap"
+        }
+      ],
+      "reason": "服装上的旋涡形装饰可支持 swirl；当前证据未确定 vortex 同属图形装饰。实际查询还返回 whirlpool、spiral 等不同概念，执行者应核对整个候选集合。"
+    }
+  },
+  "lora_variant_review": {
+    "resource_adoption": "可采用为候选替代资源，当前原输入未改。",
+    "base_model": {
+      "id": "2",
+      "name": "wai"
+    },
+    "ordered_resources": [
+      {
+        "id": "89",
+        "catalog_file_name": "GBF_Illustrious.safetensors",
+        "instance_file_name": "wai\\GBF_Illustrious.safetensors",
+        "trigger_words": [
+          "gbf_style"
+        ],
+        "catalog_weight": 1
+      },
+      {
+        "id": "69",
+        "catalog_file_name": "GTHAN-EQ.safetensors",
+        "instance_file_name": "wai\\GTHAN-EQ.safetensors",
+        "trigger_words": [
+          "gthan"
+        ],
+        "catalog_weight": 0.8,
+        "usage_sample_strength_model": 0.8,
+        "usage_sample_strength_clip": null
+      }
+    ],
+    "actual_request_parameters_verified": false,
+    "remaining_conditions": [
+      "固定替代列表顺序 89、69，并保存真实 Builder 结果。",
+      "取得模板参数响应并确认两项 LoRA 在实际请求及 Actual Workflow 中分别应用。",
+      "明确目标参数中的 strength_model/strength_clip；目录单值 weight 未直接规定 CLIP 权重，69 的 usage 样例为 strength_clip=null，而当前 LoraLoader 要求 FLOAT。"
+    ]
+  },
+  "execution_input_variant_review": {
+    "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+    "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+    "variants": [
+      {
+        "case_id": "5.3-1",
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      },
+      {
+        "case_id": "5.3-2",
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      },
+      {
+        "case_id": "5.3-3",
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      },
+      {
+        "case_id": "5.3-4",
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      },
+      {
+        "case_id": "5.3-5",
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      },
+      {
+        "case_id": "5.5-3",
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:26"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00"
+      }
+    ],
+    "conclusion": "六项四属性尺寸变体均通过材料审查；5.3-1、5.3-2、5.3-3、5.3-4、5.5-3 准备状态为 ready，5.3-5 保留词条语义材料阻塞。"
+  },
+  "execution_input_variant_review_history": [
+    {
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+      "reviewed_at": "2026-10-14T03:43:00.726282+00:00",
+      "variants": [
+        {
+          "case_id": "5.3-1",
+          "verdict": "未通过",
+          "target_branch_preserved": true,
+          "non_target_size_gap_resolved": false,
+          "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+          "source_locations": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+          ],
+          "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+          "reviewed_at": "2026-10-14T03:43:00.726073+00:00"
+        },
+        {
+          "case_id": "5.3-2",
+          "verdict": "未通过",
+          "target_branch_preserved": true,
+          "non_target_size_gap_resolved": false,
+          "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+          "source_locations": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+          ],
+          "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+          "reviewed_at": "2026-10-14T03:43:00.726246+00:00"
+        },
+        {
+          "case_id": "5.3-3",
+          "verdict": "未通过",
+          "target_branch_preserved": true,
+          "non_target_size_gap_resolved": false,
+          "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+          "source_locations": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+          ],
+          "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+          "reviewed_at": "2026-10-14T03:43:00.726256+00:00"
+        },
+        {
+          "case_id": "5.3-4",
+          "verdict": "未通过",
+          "target_branch_preserved": true,
+          "non_target_size_gap_resolved": false,
+          "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+          "source_locations": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+          ],
+          "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+          "reviewed_at": "2026-10-14T03:43:00.726264+00:00"
+        },
+        {
+          "case_id": "5.3-5",
+          "verdict": "未通过",
+          "target_branch_preserved": true,
+          "non_target_size_gap_resolved": false,
+          "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+          "source_locations": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+          ],
+          "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+          "reviewed_at": "2026-10-14T03:43:00.726270+00:00"
+        },
+        {
+          "case_id": "5.5-3",
+          "verdict": "未通过",
+          "target_branch_preserved": true,
+          "non_target_size_gap_resolved": false,
+          "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+          "source_locations": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:28"
+          ],
+          "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+          "reviewed_at": "2026-10-14T03:43:00.726277+00:00"
+        }
+      ],
+      "conclusion": "六项变体均保留目标分支；尺寸三属性组合仍需调整，原准备状态及其他材料阻塞保持。"
+    }
+  ]
+}

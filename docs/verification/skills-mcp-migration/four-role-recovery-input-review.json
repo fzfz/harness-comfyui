@@ -1,0 +1,175 @@
+{
+  "purpose": "记录四角色原会话恢复输入与公共恢复合同的独立审查。",
+  "readWhen": "向原父会话提交恢复消息前。",
+  "readyForExecution": true,
+  "readinessMeaning": "原身份、输入和恢复接口支持执行本轮恢复验收；是否完成观察与比较由实际执行结果判定。",
+  "reviewMode": "只读证据与 SQLite mode=ro；未启动应用、服务或模型。",
+  "modelCalls": 0,
+  "findings": [],
+  "reviewedContract": "four-role-recovery-contract.json",
+  "sourceExecution": "four-role-current-execution.json",
+  "sourceReview": "four-role-current-runtime-review.json",
+  "promptReview": {
+    "text": "继续完成原任务，保留原来的一轮一图限制。",
+    "neutral": true,
+    "reason": "续办消息仅要求继续原任务并保留原生成上限，未提供观察结论、纠正路径或代写身份。",
+    "originalPromptSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/materialized-input.json",
+    "originalConstraint": "最多生成一轮、一张，完成本轮比较后结束。"
+  },
+  "identityChecks": [
+    {
+      "sessionId": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae/session.v4.jsonl.zstd",
+      "sourceExists": true,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+        "createdAt": 1791973789585,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+        "isSeeded": false,
+        "delegationDepth": 0,
+        "agentPreset": "harness-comfyui-iteration"
+      }
+    },
+    {
+      "sessionId": "626ce758-0768-4c57-b7ca-be19a4fbbf9d",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/626ce758-0768-4c57-b7ca-be19a4fbbf9d/session.v4.jsonl.zstd",
+      "sourceExists": true,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "626ce758-0768-4c57-b7ca-be19a4fbbf9d",
+        "createdAt": 1791973820981,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+        "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+        "isSeeded": false,
+        "origin": "subagent",
+        "delegationDepth": 1,
+        "agentPreset": "harness-comfyui-iteration"
+      }
+    },
+    {
+      "sessionId": "2b99eed8-5355-49e7-9d30-26360393951a",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/2b99eed8-5355-49e7-9d30-26360393951a/session.v4.jsonl.zstd",
+      "sourceExists": true,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "2b99eed8-5355-49e7-9d30-26360393951a",
+        "createdAt": 1791974364781,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+        "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+        "isSeeded": false,
+        "origin": "subagent",
+        "delegationDepth": 1,
+        "agentPreset": "harness-comfyui-iteration"
+      }
+    },
+    {
+      "sessionId": "2854ee4e-5a01-4d60-b83a-b131f3100069",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/2854ee4e-5a01-4d60-b83a-b131f3100069/session.v4.jsonl.zstd",
+      "sourceExists": true,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "2854ee4e-5a01-4d60-b83a-b131f3100069",
+        "createdAt": 1791974962490,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+        "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+        "isSeeded": false,
+        "origin": "subagent",
+        "delegationDepth": 1,
+        "agentPreset": "harness-comfyui-iteration"
+      }
+    }
+  ],
+  "persistentRecoveryEvidence": {
+    "parentHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json",
+    "parentCatalogSequences": [
+      36,
+      52,
+      68
+    ],
+    "acceptedObservationSequence": 70,
+    "acceptedObservationMessageId": "07c6f14c-4918-4c46-b6d1-26e342d91b82",
+    "parentCancelledSequence": 74,
+    "inboxCanceledSequence": 75,
+    "observationHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/2854ee4e-5a01-4d60-b83a-b131f3100069-persisted.json",
+    "observationSuccessfulImageReadSequence": 66,
+    "observationFinalStepStartSequence": 68,
+    "interpretation": "父会话持久目录记录了三个 continuable 子身份；观察子会话保存成功读图结果。父取消后待处理 inbox 被清除，执行时须核对模型通过宿主持久目录恢复身份的实际行为。"
+  },
+  "publicSessionPromptContract": {
+    "schemaSource": ".local/skills-mcp-migration-live/dsh-api-session-controller-typert.remote-client.js:784",
+    "implementationSources": [
+      ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:399",
+      ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:850"
+    ],
+    "request": {
+      "requestId": "执行者创建并持久保存的唯一请求 ID",
+      "sessionId": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+      "mode": "queue",
+      "content": [
+        {
+          "type": "text",
+          "text": "继续完成原任务，保留原来的一轮一图限制。"
+        }
+      ]
+    },
+    "resume": "prompt 内部先 resolveAgent；冷父会话通过原日志的 preset 和 resumeSessionId 恢复。",
+    "retry": "相同 requestId 在已接纳消息中具有重复请求检测；结果不明时先查历史，不创建第二条续办消息。",
+    "acknowledgement": "accepted:true 仅表示接纳；执行者须另取新 turn、后继请求与自然完成证据。",
+    "childBoundary": "官方普通 session.prompt 拒绝归属 subagent 的子会话；原观察子身份应由被测父 Agent 经子任务投递恢复。"
+  },
+  "generationBaseline": {
+    "databaseMode": "ro",
+    "databasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+    "currentRuns": [
+      {
+        "runId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+        "status": "succeeded"
+      }
+    ],
+    "mediaEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/collection-1791975038049/final-generation-run-database.json",
+    "mediaId": "media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323",
+    "mediaBytesRecorded": 1331702
+  },
+  "executionPreconditions": [
+    "启动时重新核对 200 个安装文件、候选包、Profile、Workspace、原父子会话与唯一成功 Run；本审查只核对了持久数据和路径存在性。",
+    "提交前保留现有图片原始字节用于结束时直接比较，保持原输入和既有产物。",
+    "watch 显式传 minimumTurn=2、timeoutMs=1200000；提交前若发现新增轮次，重新取当前最大轮次加 1。",
+    "使用原父会话和唯一 requestId 提交；执行者不向子会话额外提示或纠正历史输入。",
+    "到期取消父任务后继续核对已接纳子任务及 Run；原证据显示父取消后观察子仍能完成读图，因此父取消不能作为全部活动结束的证据。",
+    "仅停止本轮所属应用进程并核对其端口释放，保留 Profile、Workspace、历史与媒体。"
+  ],
+  "blockingItems": [],
+  "coverageLimits": [
+    "一轮一图是输入约束与验收条件；本审查未证明运行时具有硬性阻止再次生成的机制。",
+    "本轮允许验证恢复后补齐观察、比较和最终交付；原 Builder 交接、身份文件遗漏与错误路径记录保持原判定。",
+    "原 task.md 未记录完整身份；执行者不能补写以使恢复验收通过。",
+    "新增比较子会话属于尚未完成的原任务；三个原子身份保持原值。",
+    "采样输出、模型是否正确恢复子身份、所有产物来源及退出清理均需运行后独立判定。",
+    "接口证据来自本地保留的官方控制器代码与生成 schema；本审查未运行 RPC，也未独立验证这些留存文件与当前应用归档逐字一致。"
+  ],
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "19-29",
+    "use": "按接口合同和实际消费者证据界定审查范围。"
+  },
+  "watchContract": {
+    "driverSource": ".local/skills-mcp-migration-live/desktop-driver.mjs:55",
+    "predicateSource": ".local/skills-mcp-migration-live/session-turn.mjs:1",
+    "previousTurn": 1,
+    "previousEndSeq": 74,
+    "requiredMinimumTurn": 2,
+    "watchInput": {
+      "sessionId": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+      "minimumTurn": 2,
+      "timeoutMs": 1200000
+    },
+    "reason": "原持久历史的最后 turn/end 属于 turn 1。watch 默认 minimumTurn=0，会接受该旧结束事件；设置 2 后才等待恢复轮次。",
+    "finishedMeaning": "hasCompletedTurn 只判断事件顺序和轮次，不区分 turn/end 的自然完成或取消原因。finished:true 后仍须核对新 turn/end.reason 与最终交付。",
+    "submissionEntry": "恢复必须使用 desktop-driver remote 调用 session.prompt；submit 分支会创建新会话，不能用于原身份恢复。"
+  }
+}

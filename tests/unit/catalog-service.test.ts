@@ -3,7 +3,7 @@ import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CatalogRemoteService } from '../../src/host/catalog/catalog-service.ts'
-import { CatalogCliError } from '../../src/host/catalog/catalog-cli.ts'
+import { CatalogError } from '../../src/host/catalog/catalog-client.ts'
 
 describe('Catalog Remote service', () => {
   it('registers its public Remote marker and delegates the cancellable query', async () => {
@@ -41,7 +41,7 @@ describe('Catalog Remote service', () => {
 
   it('returns Catalog CLI failures with their stable code and message', async () => {
     const context = new Context()
-    const failure = new CatalogCliError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
+    const failure = new CatalogError('CATALOG_PROTOCOL_ERROR', 'Catalog template parameter is invalid.')
     const service = new CatalogRemoteService(context, {
       details: vi.fn(async () => { throw failure }),
       search: vi.fn(async () => { throw failure }),

@@ -1,0 +1,444 @@
+{
+  "purpose": "独立核对5.6-5多个LoRA输入前置、编译能力与真实应用待验收项。",
+  "reviewedAt": "2026-10-14T06:05:01.089811+00:00",
+  "scope": "只读源码、合同、既有证据及本轮NoobAI目录刷新；未运行模型、未提交生成、未修改目录或编译器。仅报告及获准只读catalog驱动的证据归档写入。",
+  "verdict": {
+    "singleWeightBlocker": false,
+    "template37SingleStandardSlotBlocker": true,
+    "lora69And89ResourcesReady": true,
+    "approvedBuilderAvailable": true,
+    "replace102With69AloneMakesOriginal37Ready": false,
+    "existingWaiCapacityAlternative": "40 has active Power LoRA Loader",
+    "template40DirectExecutionReady": "not_yet_verified_full_template_parameters_and_compile",
+    "realMultipleLoraApplication": "pending"
+  },
+  "originalParameters": {
+    "template_id": "37",
+    "instance_id": "2",
+    "count": 1,
+    "seed": 20261013,
+    "request": "单人白衬衫半身像，窗边柔光。",
+    "model_id": "1",
+    "lora_ids": [
+      "102",
+      "89"
+    ]
+  },
+  "findings": [
+    {
+      "id": "ML1",
+      "title": "单值weight的CLIP含义已有确定实现，旧阻塞理由不成立",
+      "source": [
+        "src/cli/contract.ts:121",
+        "src/host/generation/workflow-compiler.ts:2026",
+        ".agents/skills/comfyui-generate/references/generation-cli.md 参数与标准输入"
+      ],
+      "detail": "GenerationRequest每项仅有id/file_name/weight/trigger_words。applyLoras对标准槽写strength_model=selection.weight，存在strength_clip时同样写selection.weight。69使用0.8时两者均为0.8，89均为1。目录usage中的样例strength_clip=null是样例观察，不是必须传入的请求字段，不能要求用户另补不存在的CLIP字段。"
+    },
+    {
+      "id": "ML2",
+      "title": "模板37容量为一个标准槽，两个选择必然超容量",
+      "source": [
+        "src/host/generation/workflow-compiler.ts:1923",
+        "src/host/generation/workflow-compiler.ts:2014",
+        "tests/unit/generation-workflow-compiler.test.ts:6330"
+      ],
+      "detail": "新鲜目录返回37仅有mode0的LoraLoader节点2。applyLoras逐标准槽映射选择，selection数量大于槽数直接COMFYUI_LORA_CAPACITY_EXCEEDED，没有动态克隆或串接节点。现有一标准槽两项测试断言同一错误。仅改102为69仍受此容量限制。"
+    },
+    {
+      "id": "ML3",
+      "title": "原输入位置替换产生69、89，旧候选89、69另改了顺序",
+      "detail": "原lora_ids是102、89。最小资源替换应为69、89，对应触发词gthan、gbf_style与权重0.8、1。不得把旧候选original_parameters_retained声明当作顺序保持的证据。"
+    },
+    {
+      "id": "ML4",
+      "title": "已发现具备多LoRA容量的WAI模板40，但尚未证明整图可执行",
+      "detail": "目录wai查询返回28、40、29、37且next=null；其中40单个mode0 Power节点27，实例2有对应节点定义。applyLoras的Power分支可按选择顺序替换动态LoRA列表，容量不受原两个项目的数量限制。40还有细化、检测器、SAM及其他节点，未完成整个模板参数检查和确定性编译，不能将容量通过写成真实生成前置全部通过。"
+    }
+  ],
+  "loraResources": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957765394-7245955c-1ec9-422c-ba11-3998a84f432d-get_catalog_resource.json",
+      "item": {
+        "ref": {
+          "kind": "lora",
+          "id": "69"
+        },
+        "name": "GTHAN-EQ.safetensors",
+        "base_model": {
+          "id": "2",
+          "name": "wai"
+        },
+        "file_name": "GTHAN-EQ.safetensors",
+        "file_format": "safetensors",
+        "precision_or_quantization": "none",
+        "author": "llikswonskcalb",
+        "version": "Gothic anime 💜",
+        "description": "多个样例共同显示：该 LoRA 将角色渲染为黑发或深色发型、哥特氛围、精细妆容与饰品、黑色或低饱和服装，并适用于近景头像、上半身、三分之二侧身、环境肖像和膝上构图。样例覆盖黑背景、室内、楼梯、植物和森林场景。",
+        "usage": "触发词：gthan。已查看的 6 张图片样例均使用 strength_model=0.8、strength_clip=null，来源样例权重范围为 0.8；建议默认权重为 0.8。直接调用时使用触发词 gthan，并将 LoRA 文件 GTHAN-EQ.safetensors 的模型权重设为 0.8。将权重调低会减弱黑发、深色服装和暗色哥特氛围效果，将权重调高会加强这些共同效果；0.8 以外的变化属于基于样例的调节建议。",
+        "model": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "trigger_words": [
+          "gthan"
+        ],
+        "weight": 0.8,
+        "cover_url": "http://127.0.0.1:18943/media/images/civitai-lora/1963101/2225335/100887430.png",
+        "sample_image_urls": [
+          "http://127.0.0.1:18943/media/images/civitai-lora/1963101/2225335/100887434.png",
+          "http://127.0.0.1:18943/media/images/civitai-lora/1963101/2225335/100887445.png",
+          "http://127.0.0.1:18943/media/images/civitai-lora/1963101/2225335/100887458.png",
+          "http://127.0.0.1:18943/media/images/civitai-lora/1963101/2225335/100887475.png"
+        ]
+      }
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957765403-d5e2fe90-f887-418a-8457-e187182edcc9-get_catalog_resource.json",
+      "item": {
+        "ref": {
+          "kind": "lora",
+          "id": "89"
+        },
+        "name": "GBF_Illustrious.safetensors",
+        "base_model": {
+          "id": "2",
+          "name": "wai"
+        },
+        "file_name": "GBF_Illustrious.safetensors",
+        "file_format": "safetensors",
+        "precision_or_quantization": "none",
+        "author": "kuritsutian197",
+        "version": "Illustrious",
+        "description": "该 LoRA 适合以高细节幻想游戏角色插画的清晰线稿、柔和体积渐变和局部高光塑造成年女性角色、飘动长发与华丽服装，画面同时保留彩色辉光和奇幻环境的叙事感。LoRA 以清晰轮廓线配合连续明暗渐变塑造人物轮廓、身体体块和服装褶皱，并以彩色环境光和局部边缘高光把深色主体从高亮背景中分离，形成清楚的深浅分离和发光边缘。该 LoRA 主要用于带有 Granblue Fantasy 式华丽角色造型的幻想女性角色插画，呈现成年女性的长发、发饰、华服和清楚的半身至全身轮廓。该 LoRA 适合表现具有圆大眼睛、明显长睫、腮红和微笑表情的成年女性半身肖像，适合表现侧身回望的长发全身幻想角色，也适合表现强色环境光中的奇幻生物全身画面；暖金、深蓝、紫红和青绿的对比光线形成华丽、神秘而带有舞台感的观感。",
+        "usage": "使用 <lora:GBF_Illustrious:1> 和 gbf_style 调用幻想游戏角色的高光彩色画风，该调用值呈现清晰线稿、柔和体积渐变、飘动长发、华丽服装、强色环境光和半身至全身的奇幻场景。",
+        "model": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "trigger_words": [
+          "gbf_style"
+        ],
+        "weight": 1,
+        "cover_url": "http://127.0.0.1:18943/media/images/civitai-lora/478058/1032397/38594854.png",
+        "sample_image_urls": [
+          "http://127.0.0.1:18943/media/images/civitai-lora/478058/1032397/38594591.png",
+          "http://127.0.0.1:18943/media/images/civitai-lora/478058/1032397/38594780.png",
+          "http://127.0.0.1:18943/media/images/civitai-lora/478058/1032397/38594781.png",
+          "http://127.0.0.1:18943/media/images/civitai-lora/478058/1032397/38594849.png"
+        ]
+      }
+    }
+  ],
+  "freshInstanceEvidence": {
+    "standardNode": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957791050-a71cc4da-a7f0-44fe-a864-bb493518e626-get_instance_node.json",
+    "checked_at": "2026-10-14T06:03:11.048Z",
+    "powerNode": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957790427-852afddd-26f2-4a29-8bbb-61bad2897190-get_instance_node.json",
+    "powerChecked_at": "2026-10-14T06:03:10.426Z",
+    "files": {
+      "69": [
+        "wai\\GTHAN-EQ.safetensors"
+      ],
+      "89": [
+        "wai\\GBF_Illustrious.safetensors"
+      ],
+      "102": []
+    },
+    "weightsWithinNodeRange": {
+      "69": true,
+      "89": true
+    },
+    "baseModel": "69/89均关联wai id2与生成模型id1；37/40亦关联wai id2。40默认模型15不覆盖本例明确的model_id1。"
+  },
+  "templateInventory": {
+    "searchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957750031-283d2a46-c2d2-4ec9-ba60-562a9283a655-search_workflows.json",
+    "next": null,
+    "templates": [
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957765396-5745676c-6569-4e15-b5ed-7b04a8a7fb82-get_catalog_resource.json",
+        "id": "37",
+        "name": "wai_txt2img_lora",
+        "base_model": {
+          "id": "2",
+          "name": "wai"
+        },
+        "model": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "activeLoraNodes": [
+          {
+            "id": 2,
+            "type": "LoraLoader",
+            "mode": 0,
+            "widgets_values": [
+              "wai\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors",
+              0.8,
+              0.8
+            ]
+          }
+        ],
+        "nodeTypes": [
+          "CLIPTextEncode",
+          "CheckpointLoaderSimple",
+          "EmptyLatentImage",
+          "KSampler",
+          "LoraLoader",
+          "SaveImage",
+          "VAEDecode"
+        ]
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957765397-8f90b2a6-04f0-4fc9-be35-c461e69eef24-get_catalog_resource.json",
+        "id": "28",
+        "name": "wai_2pass_upscale",
+        "base_model": {
+          "id": "2",
+          "name": "wai"
+        },
+        "model": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "activeLoraNodes": [],
+        "nodeTypes": [
+          "CLIPTextEncode",
+          "CheckpointLoaderSimple",
+          "EmptyLatentImage",
+          "KSampler",
+          "LatentUpscale",
+          "SaveImage",
+          "VAEDecode"
+        ]
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957765400-9ba5bc45-169b-4cfd-8230-b61e8bc726ed-get_catalog_resource.json",
+        "id": "40",
+        "name": "wai-rin模型_V37_年龄lora_8步加速lora_nsfw_face细化",
+        "base_model": {
+          "id": "2",
+          "name": "wai"
+        },
+        "model": {
+          "id": "15",
+          "name": "rinSoftsketch_v20.safetensors"
+        },
+        "activeLoraNodes": [
+          {
+            "id": 27,
+            "type": "Power Lora Loader (rgthree)",
+            "mode": 0,
+            "widgets_values": [
+              {},
+              {
+                "type": "PowerLoraLoaderHeaderWidget"
+              },
+              {
+                "on": true,
+                "lora": "wai\\StS_Age_Slider_Illustrious_v1.safetensors",
+                "strength": 1.5,
+                "strengthTwo": null
+              },
+              {
+                "on": true,
+                "lora": "wai\\dmd2_sdxl_4step_lora_fp16.safetensors",
+                "strength": 0.7,
+                "strengthTwo": null
+              },
+              {},
+              ""
+            ]
+          }
+        ],
+        "nodeTypes": [
+          "CFGZeroStar",
+          "CLIPSetLastLayer",
+          "CLIPTextEncode",
+          "Canny",
+          "CheckpointLoaderSimple",
+          "ControlNetApplyAdvanced",
+          "ControlNetLoader",
+          "DetailerForEach",
+          "DifferentialDiffusion",
+          "EditDetailerPipe",
+          "EmptyLatentImage",
+          "Epsilon Scaling",
+          "FaceDetailerPipe",
+          "Fast Groups Bypasser (rgthree)",
+          "Image Comparer (rgthree)",
+          "ImageResizeKJv2",
+          "ImpactSwitch",
+          "ImpactWildcardProcessor",
+          "KSampler",
+          "LoadImage",
+          "Mahiro",
+          "MaskToSEGS",
+          "MathExpression|pysssss",
+          "ModelSamplingDiscrete",
+          "Note",
+          "Power Lora Loader (rgthree)",
+          "PrimitiveBoolean",
+          "PrimitiveFloat",
+          "PrimitiveInt",
+          "RegexReplace",
+          "SAMLoader",
+          "SaveImage",
+          "Seed (rgthree)",
+          "SolidMask",
+          "ToDetailerPipe",
+          "UltimateSDUpscale",
+          "UltralyticsDetectorProvider",
+          "UpscaleModelLoader",
+          "VAEDecode",
+          "VAEEncode",
+          "VAELoader",
+          "easy float",
+          "easy hiresFix",
+          "easy int"
+        ]
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791957765401-3ef6c284-7893-49a2-bdc7-5b3c46969030-get_catalog_resource.json",
+        "id": "29",
+        "name": "wai_basic_txt2img",
+        "base_model": {
+          "id": "2",
+          "name": "wai"
+        },
+        "model": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "activeLoraNodes": [],
+        "nodeTypes": [
+          "CLIPTextEncode",
+          "CheckpointLoaderSimple",
+          "EmptyLatentImage",
+          "KSampler",
+          "SaveImage",
+          "VAEDecode"
+        ]
+      }
+    ],
+    "exhaustiveness": "覆盖本轮wai搜索返回的四个模板，不把语义搜索结果外资源推断为不存在。"
+  },
+  "builder": {
+    "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+    "review": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/wai-remaining-builder-review.json",
+    "preparationIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/index.json",
+    "status": "5.5-2保存JSON语义可用，生成准备中的原校验器exit0；其整轮最终返回格式问题与保存JSON用途分开判断。",
+    "dimensions": [
+      1536,
+      1536
+    ],
+    "modelRoute": "wai-illustrious-sdxl"
+  },
+  "minimalVariants": {
+    "resourceOnly": {
+      "parameters": {
+        "template_id": "37",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "单人白衬衫半身像，窗边柔光。",
+        "model_id": "1",
+        "lora_ids": [
+          "69",
+          "89"
+        ]
+      },
+      "status": "blocked_by_standard_slot_capacity"
+    },
+    "existingCapacityAlternative": {
+      "parameters": {
+        "template_id": "40",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "单人白衬衫半身像，窗边柔光。",
+        "model_id": "1",
+        "lora_ids": [
+          "69",
+          "89"
+        ]
+      },
+      "builderPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+      "status": "candidate_pending_template_inspection_and_compile",
+      "changesFromOriginal": [
+        "102按原位置替换为69",
+        "template_id37替换为40以采用现有Power输入"
+      ],
+      "caveat": "模板40原含年龄与加速LoRA；Power分支将其整体替换为选择列表，不是追加到原列表。其原步数/采样及细化路径是否适合替换后模型需按实际模板检查，不能沿用模板37参数假设。"
+    }
+  },
+  "expectedRequestContract": {
+    "loras": [
+      {
+        "id": "69",
+        "file_name": "GTHAN-EQ.safetensors",
+        "weight": 0.8,
+        "trigger_words": [
+          "gthan"
+        ]
+      },
+      {
+        "id": "89",
+        "file_name": "GBF_Illustrious.safetensors",
+        "weight": 1,
+        "trigger_words": [
+          "gbf_style"
+        ]
+      }
+    ],
+    "triggerOrder": [
+      "gthan",
+      "gbf_style"
+    ],
+    "positivePromptAfterRequiredAppend": "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast, gthan, gbf_style",
+    "negativePrompt": "bad quality, worst quality, worst detail, sketch, censor",
+    "ruleSource": ".agents/skills/comfyui-generate/SKILL.md 创建图片第2节",
+    "rule": "按去重后LoRA ID顺序及每记录触发词顺序建立字符串列表；已有完整字符串不重复追加，否则追加逗号空格及该字符串。权重为加载器权重，不写为Prompt权重。",
+    "explicitModel": {
+      "id": "1",
+      "file_name": "waiIllustriousSDXL_v170.safetensors"
+    },
+    "requestNotSubmitted": true
+  },
+  "deterministicCompilerEvidence": {
+    "sourceReview": "applyLoras标准/Manager/Power分支已逐项阅读；文件名经实例枚举解析，Power列表按输入顺序构造；标准槽采用workflow.nodes中的有效槽顺序。",
+    "testsReviewed": [
+      {
+        "path": "tests/unit/generation-workflow-compiler.test.ts:5798",
+        "covers": "标准/ModelOnly文件解析与单值权重写入"
+      },
+      {
+        "path": "tests/unit/generation-workflow-compiler.test.ts:6124",
+        "covers": "Power动态列表按选择顺序替换"
+      },
+      {
+        "path": "tests/unit/generation-workflow-compiler.test.ts:6330",
+        "covers": "一标准槽两项容量错误"
+      },
+      {
+        "path": "tests/unit/generation-workflow-compiler.test.ts:6485",
+        "covers": "有效槽容量，bypass槽不增加容量"
+      }
+    ],
+    "testsExecutedThisReview": false,
+    "actualTemplateCompileExecutedThisReview": false,
+    "nextDeterministicChecks": [
+      "对模板40先执行真实inspect-template-parameters，核对唯一正/负Prompt、Seed、batch_size以及能采用1536×1536的一组尺寸参数。",
+      "使用实例实际node definitions及模型文件进行不提交ComfyUI的编译验证，确认全图依赖与活动支路通过。",
+      "核对编译后节点27只保留GTHAN-EQ=0.8与GBF_Illustrious=1，顺序69、89，MODEL/CLIP连接保持。",
+      "确认显式模型1覆盖默认15，排除模板节点遗留模型或LoRA未被替换。"
+    ]
+  },
+  "realAcceptancePending": [
+    "最终输入消息含完整已认可Builder，实际模型查询到69/89/目标模板/显式模型，完成兼容性与参数检查。",
+    "核对生成请求两项LoRA顺序、真实文件名、权重、触发词及正向Prompt追加结果。",
+    "核对实际Run保存arguments与Actual Workflow两项均应用，模型1、Seed20261013、尺寸与batch_size正确。",
+    "真实服务运行成功并产生归属本Run的媒体后，才能判多LoRA应用通过；图像效果另由独立观察判断。"
+  ],
+  "queryNotes": "首次search_workflows limit50返回CATALOG_REQUEST_INVALID，已按limit20重试成功；本轮所有调用均为只读查询。",
+  "finalDecision": "可解除单值权重和Builder缺失阻塞，69/89资源已刷新确认；原模板37仍有真实容量阻塞。模板40提供现有容量候选，需进一步整图参数与编译验收后再决定执行，不修改真实目录模板或编译器。"
+}

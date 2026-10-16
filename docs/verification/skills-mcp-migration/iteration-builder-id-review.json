@@ -1,0 +1,1220 @@
+{
+  "purpose": "独立复核迭代预设中的两次角色 ID Builder 执行，分别判断目标分支、完整合同、资料来源、角色职责与原错误重试。",
+  "reviewedAt": "2026-10-14T08:19:32.931949+00:00",
+  "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/iteration-builder-id-execution.json",
+  "method": {
+    "newModelCalls": 0,
+    "applicationStarts": 0,
+    "sourceChanges": 0,
+    "ledgerChanges": 0,
+    "evidenceBasis": "实际输入、安装 Skill、最终 collection 的完整事件、全部 observer 请求中的 messages/tools/toolHistory、调用返回、最终答复与保存的 Builder。",
+    "reasoningBoundary": "可见 reasoning 仅用于定位可能的知识路径；以下结论以输入、已送达合同、实际调用和产物交叉确认。",
+    "redaction": "并行队员负责证据脱敏。本报告仅引用原文件路径、事件序号和非凭据内容；脱敏后的同路径证据保留引用。未复制凭据或图片编码内容。"
+  },
+  "executions": [
+    {
+      "caseId": "5.3-2",
+      "runId": "b097ca61-2d68-4e4a-a554-868269876313",
+      "sessionId": "session-50306be8-cfb1-4d08-a661-25fa6b6eecfd",
+      "C": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/b097ca61-2d68-4e4a-a554-868269876313/1791963666875-c6741a94-282b-4da3-bb0e-98f4384b3aa3-collect.json",
+      "R": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/fdb46de8-ce72-4933-a50e-d193a8ccee25.jsonl",
+          "at": "2026-10-14T07:31:58.218Z",
+          "callId": "fdb46de8-ce72-4933-a50e-d193a8ccee25",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 4,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/b77169e6-c48f-4503-80ed-1c429357cf2d.jsonl",
+          "at": "2026-10-14T07:31:58.220Z",
+          "callId": "b77169e6-c48f-4503-80ed-1c429357cf2d",
+          "model": "deepseek-v4.1-flash",
+          "purpose": "session-title",
+          "messageCount": 1,
+          "toolCount": 0
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/1f408d50-80fd-4b30-85e9-57d9cdb3fe1a.jsonl",
+          "at": "2026-10-14T07:32:02.780Z",
+          "callId": "1f408d50-80fd-4b30-85e9-57d9cdb3fe1a",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 6,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/ded0b532-dc24-4515-b385-10af1402de82.jsonl",
+          "at": "2026-10-14T07:32:08.899Z",
+          "callId": "ded0b532-dc24-4515-b385-10af1402de82",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 9,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/addc99e7-dc96-4ef5-8375-1b433c659f37.jsonl",
+          "at": "2026-10-14T07:32:15.701Z",
+          "callId": "addc99e7-dc96-4ef5-8375-1b433c659f37",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 12,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/4fdea6c2-fd06-462e-890f-ce29f41ba718.jsonl",
+          "at": "2026-10-14T07:32:21.503Z",
+          "callId": "4fdea6c2-fd06-462e-890f-ce29f41ba718",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 15,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/db9079d6-14de-4f50-bfcf-3bfc154ed3a4.jsonl",
+          "at": "2026-10-14T07:32:34.642Z",
+          "callId": "db9079d6-14de-4f50-bfcf-3bfc154ed3a4",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 18,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/4d9f94bd-abb6-496a-bc82-f1a6cacfecff.jsonl",
+          "at": "2026-10-14T07:32:43.640Z",
+          "callId": "4d9f94bd-abb6-496a-bc82-f1a6cacfecff",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 21,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/28c1afa5-432b-4317-bd37-e5fe42d0ffe3.jsonl",
+          "at": "2026-10-14T07:32:53.617Z",
+          "callId": "28c1afa5-432b-4317-bd37-e5fe42d0ffe3",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 24,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/06713bf4-a447-42b2-90f0-e108353624e3.jsonl",
+          "at": "2026-10-14T07:33:03.852Z",
+          "callId": "06713bf4-a447-42b2-90f0-e108353624e3",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 26,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/db064bfa-ff65-4495-9e5f-3b3187654d82.jsonl",
+          "at": "2026-10-14T07:33:22.111Z",
+          "callId": "db064bfa-ff65-4495-9e5f-3b3187654d82",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 29,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/471ed179-9e63-448b-b667-4ae9feade508.jsonl",
+          "at": "2026-10-14T07:33:37.398Z",
+          "callId": "471ed179-9e63-448b-b667-4ae9feade508",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 32,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/4cab9750-33fa-46c7-8ade-a5966ed08833.jsonl",
+          "at": "2026-10-14T07:33:46.024Z",
+          "callId": "4cab9750-33fa-46c7-8ade-a5966ed08833",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 35,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/c9475e7e-f5a2-4566-836b-f425a9278c5c.jsonl",
+          "at": "2026-10-14T07:34:41.798Z",
+          "callId": "c9475e7e-f5a2-4566-836b-f425a9278c5c",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 38,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/dfdaffeb-2ba1-45db-8d7a-0f577d95e789.jsonl",
+          "at": "2026-10-14T07:34:54.368Z",
+          "callId": "dfdaffeb-2ba1-45db-8d7a-0f577d95e789",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 40,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/fab3874a-80e3-467a-9d2e-7b6179bbb05f.jsonl",
+          "at": "2026-10-14T07:35:05.805Z",
+          "callId": "fab3874a-80e3-467a-9d2e-7b6179bbb05f",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 42,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/7aff872e-e5ed-4aeb-88e8-534e60017c9a.jsonl",
+          "at": "2026-10-14T07:35:30.767Z",
+          "callId": "7aff872e-e5ed-4aeb-88e8-534e60017c9a",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 44,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/56ef2673-1a4f-4d68-8944-93f7fc46097a.jsonl",
+          "at": "2026-10-14T07:35:44.552Z",
+          "callId": "56ef2673-1a4f-4d68-8944-93f7fc46097a",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 46,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/992b8baa-9df9-45c9-aa48-899207860487.jsonl",
+          "at": "2026-10-14T07:36:12.534Z",
+          "callId": "992b8baa-9df9-45c9-aa48-899207860487",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 49,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/f8647183-c36a-4f90-890b-8866ff4ff20a.jsonl",
+          "at": "2026-10-14T07:36:29.800Z",
+          "callId": "f8647183-c36a-4f90-890b-8866ff4ff20a",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 51,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/21574bed-2e09-4569-b8d0-7c05da544adc.jsonl",
+          "at": "2026-10-14T07:36:48.706Z",
+          "callId": "21574bed-2e09-4569-b8d0-7c05da544adc",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 53,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/5b63e269-9971-4d16-8fb6-52f4902d09df.jsonl",
+          "at": "2026-10-14T07:37:04.350Z",
+          "callId": "5b63e269-9971-4d16-8fb6-52f4902d09df",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 55,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/1e6efdf0-3d55-4762-951d-99012bc0b019.jsonl",
+          "at": "2026-10-14T07:37:24.760Z",
+          "callId": "1e6efdf0-3d55-4762-951d-99012bc0b019",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 57,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/5e5e9293-1e64-433c-a91c-33615008e9eb.jsonl",
+          "at": "2026-10-14T07:37:41.965Z",
+          "callId": "5e5e9293-1e64-433c-a91c-33615008e9eb",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 57,
+          "toolCount": 31
+        }
+      ],
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/materialized-input.json",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+      "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/workspace-artifacts/5.3-2/builder.json",
+      "originalBuilder": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/workspace/5.3-2/builder.json",
+      "structureEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/independent-structure-validation.json",
+      "callResultTimeline": [
+        {
+          "callSeq": 18,
+          "name": "skill",
+          "callId": "call_00_3tc0l7fbfgedbheixliw1x0r",
+          "resultSeqs": [
+            19
+          ]
+        },
+        {
+          "callSeq": 23,
+          "name": "bash",
+          "callId": "call_00_w2j2x54gs37bvur6cat919pj",
+          "resultSeqs": [
+            24
+          ]
+        },
+        {
+          "callSeq": 25,
+          "name": "bash",
+          "callId": "call_01_tgexaksbtj84pyzx4i755rnd",
+          "resultSeqs": [
+            26
+          ]
+        },
+        {
+          "callSeq": 30,
+          "name": "bash",
+          "callId": "call_00_dja6864d8q2tyssnhup83gbv",
+          "resultSeqs": [
+            31
+          ]
+        },
+        {
+          "callSeq": 32,
+          "name": "bash",
+          "callId": "call_01_mbolht5x2uznv44r6dolkwf1",
+          "resultSeqs": [
+            33
+          ]
+        },
+        {
+          "callSeq": 37,
+          "name": "bash",
+          "callId": "call_00_b9wqbv7a3k73wi5kelfeb4w5",
+          "resultSeqs": [
+            38
+          ]
+        },
+        {
+          "callSeq": 39,
+          "name": "bash",
+          "callId": "call_01_2q0i82owy2vjdpwaxeaxzcga",
+          "resultSeqs": [
+            40
+          ]
+        },
+        {
+          "callSeq": 44,
+          "name": "bash",
+          "callId": "call_00_v85oo3ptg726ky7y38fs7eq6",
+          "resultSeqs": [
+            45
+          ]
+        },
+        {
+          "callSeq": 46,
+          "name": "bash",
+          "callId": "call_01_ob45cp45dj5prgfizxzp0d8a",
+          "resultSeqs": [
+            47
+          ]
+        },
+        {
+          "callSeq": 51,
+          "name": "bash",
+          "callId": "call_00_kap9e7rm770o1gdpf976iipu",
+          "resultSeqs": [
+            52
+          ]
+        },
+        {
+          "callSeq": 53,
+          "name": "bash",
+          "callId": "call_01_f75ndevuh8zlc0shhtbnwv0u",
+          "resultSeqs": [
+            54
+          ]
+        },
+        {
+          "callSeq": 58,
+          "name": "bash",
+          "callId": "call_00_769y7jyk6r4xaigj1ijjqeoz",
+          "resultSeqs": [
+            59
+          ]
+        },
+        {
+          "callSeq": 60,
+          "name": "bash",
+          "callId": "call_01_1n0vadg281lq41pnm03qmsua",
+          "resultSeqs": [
+            61
+          ]
+        },
+        {
+          "callSeq": 65,
+          "name": "bash",
+          "callId": "call_00_204hfoqc444ga9ygzgl7sm9f",
+          "resultSeqs": [
+            66
+          ]
+        },
+        {
+          "callSeq": 70,
+          "name": "bash",
+          "callId": "call_00_ajmvdnr9n0avmj3w4flzdi0i",
+          "resultSeqs": [
+            71
+          ]
+        },
+        {
+          "callSeq": 72,
+          "name": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_c2mijls80n873n5y44ujsiec",
+          "resultSeqs": [
+            73
+          ]
+        },
+        {
+          "callSeq": 77,
+          "name": "bash",
+          "callId": "call_00_7nx56kyxezr5gqqkuol4e22h",
+          "resultSeqs": [
+            78
+          ]
+        },
+        {
+          "callSeq": 79,
+          "name": "bash",
+          "callId": "call_01_464jpwc5l7q6ggn0dd2qy3w1",
+          "resultSeqs": [
+            80
+          ]
+        },
+        {
+          "callSeq": 84,
+          "name": "bash",
+          "callId": "call_00_yoelpmuama8yxt9n6gheaew4",
+          "resultSeqs": [
+            85
+          ]
+        },
+        {
+          "callSeq": 86,
+          "name": "bash",
+          "callId": "call_01_u00rtau75pi2e1uxgmjzyewm",
+          "resultSeqs": [
+            87
+          ]
+        },
+        {
+          "callSeq": 91,
+          "name": "bash",
+          "callId": "call_00_qv26rab6xavdl34ojh6nbdrw",
+          "resultSeqs": [
+            92
+          ]
+        },
+        {
+          "callSeq": 93,
+          "name": "bash",
+          "callId": "call_01_znvcszw1ovd8n5gvfrjr0hbk",
+          "resultSeqs": [
+            94
+          ]
+        },
+        {
+          "callSeq": 98,
+          "name": "bash",
+          "callId": "call_00_ktsdxxsg02i27vw7zu1cu4oy",
+          "resultSeqs": [
+            99
+          ]
+        },
+        {
+          "callSeq": 103,
+          "name": "bash",
+          "callId": "call_00_wcm8nohwdtfkh2btqbon5hm6",
+          "resultSeqs": [
+            104
+          ]
+        },
+        {
+          "callSeq": 108,
+          "name": "bash",
+          "callId": "call_00_ux29bubk5wig17p0qaxuwuup",
+          "resultSeqs": [
+            109
+          ]
+        },
+        {
+          "callSeq": 113,
+          "name": "bash",
+          "callId": "call_00_pi2057rpntjmy5hcek87sr31",
+          "resultSeqs": [
+            114
+          ]
+        },
+        {
+          "callSeq": 118,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_00_y9hx403dwyiz105j75ytlb5x",
+          "resultSeqs": [
+            119
+          ]
+        },
+        {
+          "callSeq": 120,
+          "name": "bash",
+          "callId": "call_01_qfcxd9ynh5dmo5103u67rsig",
+          "resultSeqs": [
+            121
+          ]
+        },
+        {
+          "callSeq": 125,
+          "name": "bash",
+          "callId": "call_00_0yc7kbehcwimbwi3e6nn1kpq",
+          "resultSeqs": [
+            126
+          ]
+        },
+        {
+          "callSeq": 130,
+          "name": "bash",
+          "callId": "call_00_ooa87n992rnebv77iij24lrw",
+          "resultSeqs": [
+            131
+          ]
+        },
+        {
+          "callSeq": 135,
+          "name": "bash",
+          "callId": "call_00_a5fj4f5hmuwmxt1e8titibyp",
+          "resultSeqs": [
+            136
+          ]
+        },
+        {
+          "callSeq": 140,
+          "name": "bash",
+          "callId": "call_00_d0vo70t4rvebfva8t9qubfrq",
+          "resultSeqs": [
+            141
+          ]
+        }
+      ],
+      "traceCoverage": {
+        "eventCount": 150,
+        "sequenceContiguous": true,
+        "toolCallCount": 32,
+        "allCallsHaveResults": true,
+        "requestCount": 24,
+        "childSessions": []
+      },
+      "targetBranch": {
+        "verdict": "pass",
+        "description": "当前 Character 的 prompt_text 为空，执行者使用已给 ID 39934 调用 query_semantic_characters(mode=resolve)，返回唯一且身份一致的非空角色 Prompt，最终采用金发、长双马尾、蓝眼内容。",
+        "evidenceSeqs": [
+          72,
+          73,
+          130,
+          140,
+          147
+        ]
+      },
+      "wholeContract": {
+        "verdict": "fail",
+        "structuralValidation": "既有独立校验记录 exitCode=0、stderr 为空；本次审查没有重跑校验器。",
+        "findings": [
+          {
+            "id": "IB53-F1",
+            "severity": "material",
+            "title": "最终 Prompt 把窗边柔光替换为整体柔焦",
+            "firstDeviation": {
+              "callSeq": 98,
+              "field": "slots.detail_mood[0]",
+              "actual": "soft focus"
+            },
+            "contractSource": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/15-detail-mood.md:56,96-98",
+            "contract": "soft focus 的对应要求为整体柔焦；13.8 限制 detail_mood 的标签范围。当前用户仍明确要求窗边柔光。",
+            "evidenceSeqs": [
+              9,
+              86,
+              87,
+              98,
+              125,
+              130,
+              140,
+              147
+            ],
+            "knowledgePath": [
+              "seq9 用户提供窗边柔光。",
+              "seq86/87 读取 15-detail-mood.md，得到整体柔焦 → soft focus 的词条及 13.8 光线边界。",
+              "seq98 首次实际槽位输入只填 soft focus，natural_language 为空，也未调用语义词条查询补充柔光概念。",
+              "seq125、130、140 将同一表达保存为最终 Prompt；seq147 的构建依据明确把柔光解释为柔焦。"
+            ],
+            "impact": "最终 positive_prompt 没有描述柔和照明或窗光关系，成像柔焦替代了用户要求的光线。",
+            "scope": "人数、站姿、半身、白色翻领衬衫、黑色发饰、外貌、画师与四项显式尺寸均已进入产物；整体合同仍因该光线语义缺项失败。"
+          }
+        ]
+      },
+      "sourceIntegrity": {
+        "verdict": "no_observed_control_or_prior_result_content_contamination",
+        "evidenceSeqs": [
+          23,
+          25,
+          44,
+          45,
+          46,
+          47,
+          51,
+          52,
+          53,
+          54,
+          58,
+          60,
+          65,
+          108,
+          109,
+          113,
+          114
+        ],
+        "assessment": "可见文件读取指向本轮安装包、工作目录与本轮创建的临时产物。seq44 枚举 environment 并搜索类似任务目录，返回目录名，未读 active-probe.json 或会话历史内容；未发现控制仓库、计划、旧运行答案被送入模型。",
+        "crossSkillRead": "seq46 从安装包搜索 Builder JSON，seq47 得到迭代资料路径，再经 seq51、53、58、60、65 读取交接及消费者合同。seq108 在安装 Skills 搜索转义，seq109 首次返回 WAI 指针，seq113/114 读取 WAI 格式参考。",
+        "causalBoundary": "ANIMA 圆括号修正已在 seq103/104 成功，发生在 WAI 搜索前；不能把 WAI 文档认定为首次修正知识来源。跨 Skill 合同阅读属于额外来源，当前证据没有证明其改变目标语义或引入旧答案。",
+        "temporaryFiles": "test-slots、test-slots-esc、final-slots、prompt-format、result、result-validated 均有本轮先写后读调用。"
+      },
+      "roleResponsibilities": {
+        "verdict": "builder_only_completed_iteration_roles_not_exercised",
+        "userScope": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。",
+        "systemInstruction": "You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison.",
+        "systemSeq": 8,
+        "availableRoleTools": [
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "subagent_comparison"
+        ],
+        "skillApplicability": "安装版 comfyui-iterate-generation/SKILL.md:3 将使用条件限定为根据故事和人物构思画面，并通过生图、独立观察、比较反馈和小步 Prompt 修复迭代达成画面目标。当前输入指定 Builder，未要求执行图片迭代。",
+        "actualBehavior": "主会话直接执行 Builder；没有角色工具调用、子会话或生图提交。",
+        "priorityAssessment": "system/persona 的调度要求层级高于用户；当前 persona 没有明确规定 Builder-only 任务必须额外生成图片，也没有描述 Builder-only 的角色路由。当前任务明确限定交付范围，因此本审查不把缺少四角色一概判为缺陷；该执行只能证明主会话直接完成 Builder，未验证迭代角色分工。",
+        "firstDeviation": "职责验收的适用范围存在上述边界，未将首次 skill 调用单独认定为职责违规。",
+        "observedContractReads": {
+          "seqs": [
+            51,
+            52,
+            53,
+            54
+          ],
+          "description": "主会话从安装版迭代资料读取 Builder 的文件含义与生成角色职责。seq147 明确说明按 Builder-only 范围结束。"
+        }
+      },
+      "originalErrorsAndRetries": [
+        {
+          "id": "IB53-E1",
+          "kind": "prompt-format",
+          "firstCallSeq": 98,
+          "failureSeq": 99,
+          "exitCode": 2,
+          "field": "character_series[0]",
+          "rawError": "must use a complete payload, (payload), or (payload:weight) form",
+          "knowledgePath": "角色原文 ani_(grok) 来自 seq73；权重 policy 已在 seq32/33 读取，校验器用法来自 seq30/31 和 seq93/94；seq99 提供字段定位，seq103 添加转义后重试。",
+          "retryCallSeq": 103,
+          "retryResultSeq": 104,
+          "retryExitCode": 0,
+          "verdict": "recovered_in_one_retry",
+          "laterChecks": [
+            125,
+            130,
+            135
+          ],
+          "note": "后续再次验证成功结果，不构成第二次失败后的继续重试。"
+        },
+        {
+          "id": "IB53-E2",
+          "kind": "provider-transport",
+          "evidenceSeqs": [
+            145,
+            146,
+            147,
+            149
+          ],
+          "rawError": "Connection error. / TRANSPORT",
+          "verdict": "host_retry_recovered",
+          "knowledgePath": "宿主在最终回答步骤记录 llm/retry 和 llm/retry-started；随后出现最终答复与 completed 结束。该重试未增加用户 Prompt。"
+        }
+      ]
+    },
+    {
+      "caseId": "5.4-2",
+      "runId": "d1030133-b50b-4191-82c6-0dba2d4ba73e",
+      "sessionId": "session-4553fd58-6c3d-4daf-8bc3-b7505c2fb067",
+      "C": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/d1030133-b50b-4191-82c6-0dba2d4ba73e/1791964811562-107ef16f-aaa0-4a2a-af37-e9f2b6398361-collect.json",
+      "R": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/0d2bb49d-86b1-46e3-8390-c0de52c8ff54.jsonl",
+          "at": "2026-10-14T07:53:25.991Z",
+          "callId": "0d2bb49d-86b1-46e3-8390-c0de52c8ff54",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 4,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/efa7d889-3521-4d8b-8533-152593c40d0a.jsonl",
+          "at": "2026-10-14T07:53:25.994Z",
+          "callId": "efa7d889-3521-4d8b-8533-152593c40d0a",
+          "model": "deepseek-v4.1-flash",
+          "purpose": "session-title",
+          "messageCount": 1,
+          "toolCount": 0
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/1a0284fc-90d2-4c52-8037-8aaa7265d081.jsonl",
+          "at": "2026-10-14T07:53:35.898Z",
+          "callId": "1a0284fc-90d2-4c52-8037-8aaa7265d081",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 6,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/ebf9dbf2-28b3-427b-ab53-8b07ace6f8b9.jsonl",
+          "at": "2026-10-14T07:53:47.696Z",
+          "callId": "ebf9dbf2-28b3-427b-ab53-8b07ace6f8b9",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 9,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/1e9be141-7b01-477a-ae95-8c2311a9a374.jsonl",
+          "at": "2026-10-14T07:53:57.161Z",
+          "callId": "1e9be141-7b01-477a-ae95-8c2311a9a374",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 12,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/7f46b04d-e4e9-494c-a5b8-05dc951f1f0b.jsonl",
+          "at": "2026-10-14T07:54:09.733Z",
+          "callId": "7f46b04d-e4e9-494c-a5b8-05dc951f1f0b",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 15,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/a555caa8-7cd8-4ecc-ba10-20a70c13a24b.jsonl",
+          "at": "2026-10-14T07:54:18.973Z",
+          "callId": "a555caa8-7cd8-4ecc-ba10-20a70c13a24b",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 18,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/62e22c7f-3b2e-4f7b-9b55-d34b75854f6c.jsonl",
+          "at": "2026-10-14T07:54:28.386Z",
+          "callId": "62e22c7f-3b2e-4f7b-9b55-d34b75854f6c",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 21,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/412786e0-b79d-4b55-8d26-c46a0a6308c6.jsonl",
+          "at": "2026-10-14T07:54:36.972Z",
+          "callId": "412786e0-b79d-4b55-8d26-c46a0a6308c6",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 24,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/c52b66c2-de6e-4dd1-a705-192401439ee0.jsonl",
+          "at": "2026-10-14T07:54:43.743Z",
+          "callId": "c52b66c2-de6e-4dd1-a705-192401439ee0",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 27,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/372ad45e-06df-4386-a23d-9d6580e9e5f7.jsonl",
+          "at": "2026-10-14T07:54:53.635Z",
+          "callId": "372ad45e-06df-4386-a23d-9d6580e9e5f7",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 29,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/401bbb26-a876-4179-bca5-f0e759951a92.jsonl",
+          "at": "2026-10-14T07:55:00.385Z",
+          "callId": "401bbb26-a876-4179-bca5-f0e759951a92",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 31,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/2bcb6f3c-7303-4675-ad6d-fca696bbdf34.jsonl",
+          "at": "2026-10-14T07:55:08.472Z",
+          "callId": "2bcb6f3c-7303-4675-ad6d-fca696bbdf34",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 33,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/00a23c6f-e327-4109-a4ff-e2191a378fa1.jsonl",
+          "at": "2026-10-14T07:55:15.781Z",
+          "callId": "00a23c6f-e327-4109-a4ff-e2191a378fa1",
+          "model": "thinkingmachines/inkling:free",
+          "purpose": null,
+          "messageCount": 1,
+          "toolCount": 0
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/06beeb64-d15d-442e-acd4-7edc29e664b4.jsonl",
+          "at": "2026-10-14T07:55:27.296Z",
+          "callId": "06beeb64-d15d-442e-acd4-7edc29e664b4",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 35,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/3dbbf761-6aeb-47ec-8b79-cf961cf3997a.jsonl",
+          "at": "2026-10-14T07:56:09.521Z",
+          "callId": "3dbbf761-6aeb-47ec-8b79-cf961cf3997a",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 37,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/65f8bb14-11a2-4aca-8e6b-b17b072a5b46.jsonl",
+          "at": "2026-10-14T07:57:16.222Z",
+          "callId": "65f8bb14-11a2-4aca-8e6b-b17b072a5b46",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 39,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/181cc9a6-4b37-4b0a-bcf2-6c0be7fb416e.jsonl",
+          "at": "2026-10-14T07:58:06.782Z",
+          "callId": "181cc9a6-4b37-4b0a-bcf2-6c0be7fb416e",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 41,
+          "toolCount": 31
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/53103643-f7d2-40af-9aec-a1e96504fb63.jsonl",
+          "at": "2026-10-14T07:59:12.898Z",
+          "callId": "53103643-f7d2-40af-9aec-a1e96504fb63",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null,
+          "messageCount": 43,
+          "toolCount": 31
+        }
+      ],
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/materialized-input.json",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/workspace-artifacts/5.4-2/ani-grok-companion-builder.json",
+      "originalBuilder": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/workspace/5.4-2/ani-grok-companion-builder.json",
+      "structureEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/independent-structure-validation.json",
+      "callResultTimeline": [
+        {
+          "callSeq": 17,
+          "name": "skill",
+          "callId": "call_00_ezx9gc1df30ry5cc3r7mcdbi",
+          "resultSeqs": [
+            18
+          ]
+        },
+        {
+          "callSeq": 22,
+          "name": "bash",
+          "callId": "call_00_v2fpee998begmevlhu16xayw",
+          "resultSeqs": [
+            23
+          ]
+        },
+        {
+          "callSeq": 24,
+          "name": "bash",
+          "callId": "call_01_jot1hlf03xufp86r1ve9x5en",
+          "resultSeqs": [
+            25
+          ]
+        },
+        {
+          "callSeq": 29,
+          "name": "bash",
+          "callId": "call_00_8cdjomk0e1qbw31zb4vpwxdi",
+          "resultSeqs": [
+            30
+          ]
+        },
+        {
+          "callSeq": 31,
+          "name": "bash",
+          "callId": "call_01_lwsldm75d3n60tbqo29es9xo",
+          "resultSeqs": [
+            32
+          ]
+        },
+        {
+          "callSeq": 36,
+          "name": "bash",
+          "callId": "call_00_5uqrig2ya53vpf3exwhq89rq",
+          "resultSeqs": [
+            37
+          ]
+        },
+        {
+          "callSeq": 38,
+          "name": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_cl330ehhjh4nbtlvwpeszo4k",
+          "resultSeqs": [
+            39
+          ]
+        },
+        {
+          "callSeq": 43,
+          "name": "bash",
+          "callId": "call_00_pur7nrvmz253bn0tbkkdg73r",
+          "resultSeqs": [
+            44
+          ]
+        },
+        {
+          "callSeq": 45,
+          "name": "mcp__noobai__search_base_models",
+          "callId": "call_01_w0qokjqwpznwl77jn3ixipxv",
+          "resultSeqs": [
+            46
+          ]
+        },
+        {
+          "callSeq": 50,
+          "name": "bash",
+          "callId": "call_00_h4c21w5sd9r4p4jbckdjydl3",
+          "resultSeqs": [
+            51
+          ]
+        },
+        {
+          "callSeq": 52,
+          "name": "mcp__noobai__search_styles",
+          "callId": "call_01_8hsdvg4sf3eg770e4xnsd9e3",
+          "resultSeqs": [
+            53
+          ]
+        },
+        {
+          "callSeq": 57,
+          "name": "mcp__noobai__search_artist_prompt_strings",
+          "callId": "call_00_ax8t49znvf1kydxhjznd9lky",
+          "resultSeqs": [
+            58
+          ]
+        },
+        {
+          "callSeq": 59,
+          "name": "bash",
+          "callId": "call_01_1dgvf7bfe04v6q3y5deriixq",
+          "resultSeqs": [
+            60
+          ]
+        },
+        {
+          "callSeq": 64,
+          "name": "mcp__noobai__search_artist_prompt_strings",
+          "callId": "call_00_0viok5o5ppukx1u82kgk5ssf",
+          "resultSeqs": [
+            65
+          ]
+        },
+        {
+          "callSeq": 66,
+          "name": "mcp__noobai__search_styles",
+          "callId": "call_01_2fkfnjnjcwumdptp2hk7o6iv",
+          "resultSeqs": [
+            67
+          ]
+        },
+        {
+          "callSeq": 71,
+          "name": "bash",
+          "callId": "call_00_mbxoq1311rli7vhqjyhvkw70",
+          "resultSeqs": [
+            72
+          ]
+        },
+        {
+          "callSeq": 76,
+          "name": "skill",
+          "callId": "call_00_m8peofpk4w9cavujh8bz8ks5",
+          "resultSeqs": [
+            77
+          ]
+        },
+        {
+          "callSeq": 81,
+          "name": "bash",
+          "callId": "call_00_b5ma929mfzkg3frzyrix81i1",
+          "resultSeqs": [
+            82
+          ]
+        },
+        {
+          "callSeq": 86,
+          "name": "bash",
+          "callId": "call_00_ET_BVPjfu9p3n1nLljnSebf3000",
+          "resultSeqs": [
+            87
+          ]
+        },
+        {
+          "callSeq": 91,
+          "name": "bash",
+          "callId": "call_00_f4d8szv5lruk86a01klxif2m",
+          "resultSeqs": [
+            92
+          ]
+        },
+        {
+          "callSeq": 96,
+          "name": "bash",
+          "callId": "call_00_zrh1fx5pck55sy2ktjfd84h4",
+          "resultSeqs": [
+            97
+          ]
+        },
+        {
+          "callSeq": 101,
+          "name": "bash",
+          "callId": "call_00_leind2b4yalztgkocuvuoirk",
+          "resultSeqs": [
+            102
+          ]
+        },
+        {
+          "callSeq": 106,
+          "name": "bash",
+          "callId": "call_00_fhdprosdi44bu4oydyrl31cp",
+          "resultSeqs": [
+            107
+          ]
+        }
+      ],
+      "traceCoverage": {
+        "eventCount": 113,
+        "sequenceContiguous": true,
+        "toolCallCount": 23,
+        "allCallsHaveResults": true,
+        "requestCount": 19,
+        "childSessions": []
+      },
+      "targetBranch": {
+        "verdict": "pass",
+        "description": "当前 Character 的 prompt_text 为空，执行者使用已给 ID 39934 调用 query_semantic_characters(mode=resolve)，返回唯一且身份一致的非空角色 Prompt，最终采用金发、长双马尾、蓝眼内容。",
+        "evidenceSeqs": [
+          38,
+          39,
+          96,
+          106,
+          110
+        ]
+      },
+      "wholeContract": {
+        "verdict": "fail",
+        "structuralValidation": "既有独立校验记录 exitCode=0、stderr 为空；本次审查没有重跑校验器。",
+        "findings": [
+          {
+            "id": "IB54-F1",
+            "severity": "material",
+            "title": "独立新画面被选择为 test 而未按 Builder 合同选择 final",
+            "firstDeviation": {
+              "callSeq": 101,
+              "field": "generation_purpose",
+              "actual": "test"
+            },
+            "contractSource": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md:生成目的第4条",
+            "contract": "用户提出独立于旧任务的新画面，且没有测试、比较或迭代表述时选择 final。",
+            "evidenceSeqs": [
+              8,
+              9,
+              31,
+              32,
+              101,
+              106,
+              110
+            ],
+            "knowledgePath": [
+              "seq9 当前请求仅要求构建保存，没有历史基线或测试、比较、迭代要求。",
+              "seq8 persona 要求图片任务的角色调度，没有规定 generation_purpose=test。",
+              "seq31/32 完整读取 Krea2 生成结果合同及 profiles。",
+              "seq101 首次补齐目的与尺寸时选择 test、832×1248、1MP；seq106 保存；seq110 用新画面测试解释 test。"
+            ],
+            "personaBoundary": "安装版迭代 Skill 的 test 尺寸规则针对生成 Agent 的图片迭代。本次 Krea2 没有调用或读取该 Skill、没有生成子会话；该文本并未作为本轮选择 test 的已读合同进入消息。初始 persona 的画像调度要求不能自动把 Builder-only 新请求归为旧测试链。",
+            "impact": "所选 2:3 profile 的 final 档为 1152×1728、2MP，最终结果使用了 test 档。"
+          },
+          {
+            "id": "IB54-F2",
+            "severity": "material",
+            "title": "正向规避字段中的手指数与自然连接没有进入实际 Prompt",
+            "firstDeviation": {
+              "callSeq": 101,
+              "field": "positive_avoidance versus positive_prompt"
+            },
+            "contractSource": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md:Krea2正向规避策略",
+            "contract": "完整约束实际并入 positive_prompt；positive_avoidance 记录已经并入的内容。",
+            "evidenceSeqs": [
+              31,
+              32,
+              101,
+              102,
+              106,
+              107,
+              110
+            ],
+            "knowledgePath": [
+              "seq31/32 向执行者提供完整正向规避合同和每手五指示例。",
+              "seq101 positive_avoidance 写两手各五根手指自然连接，正文只写双手交握、没有裁掉双手。",
+              "seq106/107 最终保存时仍缺少手指数及自然连接约束；seq110 却声称规避内容已经并入正文。"
+            ],
+            "impact": "实际生成所消费的正向 Prompt 缺少结果字段承诺的约束，结构校验无法确认两字段语义一致。"
+          },
+          {
+            "id": "IB54-F3",
+            "severity": "material",
+            "title": "将目录封面观察作为人物来源，超出已读 Builder 来源合同",
+            "firstDeviation": {
+              "callSeq": 43,
+              "description": "取得非空角色 Prompt 后下载 cover_url 作为额外外观材料；首次确认写入为 seq96。"
+            },
+            "contractSource": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md:构建单条Krea2动漫Prompt及完成前自检第4项；/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/input-contract.md:Character上下文记录",
+            "contract": "角色内容来自指定的六类来源；MCP 采用完成候选比较后选中的角色 Prompt。目录封面观察没有被列为本次来源。",
+            "evidenceSeqs": [
+              18,
+              29,
+              30,
+              38,
+              39,
+              43,
+              44,
+              76,
+              77,
+              81,
+              82,
+              86,
+              87,
+              96,
+              106,
+              110
+            ],
+            "knowledgePath": [
+              "seq38/39 返回唯一匹配角色的非空 Prompt 以及 cover_url。",
+              "初始 Skill catalog 已暴露 local-image-reader 名称；seq43 下载目录 cover_url。",
+              "seq76/77 加载 local-image-reader，seq81/82 读取其 CLI 合同，seq86/87 取得独立视觉观察。",
+              "观察文本包含黑色蕾丝颈饰；seq96 正文加入该配饰，seq106 保留，seq110 将封面归为身份与配饰一致性的依据。"
+            ],
+            "impact": "可追溯到新增图像来源的外观内容进入 Builder。目录 ID 分支本身已完成；额外来源使用使完整来源合同验收失败。",
+            "limit": "本结论不判定封面视觉内容真假，不把每一项自由服装设计都归因于封面。"
+          }
+        ]
+      },
+      "sourceIntegrity": {
+        "verdict": "no_observed_control_or_prior_result_content_contamination",
+        "evidenceSeqs": [
+          22,
+          24,
+          29,
+          31,
+          36,
+          39,
+          43,
+          44,
+          76,
+          81,
+          86,
+          87,
+          96,
+          101,
+          106
+        ],
+        "assessment": "可见读取来自安装包、MCP、当前目录返回的封面，以及本轮临时产物。未观察到控制仓库、计划、历史模型记录或旧答案进入本次请求。",
+        "additionalPromptSourceFinding": "IB54-F3 单独判定封面观察越出 Builder 来源合同；封面来自本轮角色查询，不归为控制资料或旧答案污染。",
+        "temporaryFiles": "封面经 seq43 下载，seq71 成功转换，seq86 读取；Builder 输入、输出均有本轮写入和验证记录。",
+        "imageClaimLimit": "最终答复还称封面确认肩前/肩后各一条马尾；seq87 可见观察没有这项描述。本次未调用视觉模型复验，报告不补造视觉观察。"
+      },
+      "roleResponsibilities": {
+        "verdict": "builder_only_completed_iteration_roles_not_exercised",
+        "userScope": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。",
+        "systemInstruction": "You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison.",
+        "systemSeq": 8,
+        "availableRoleTools": [
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "subagent_comparison"
+        ],
+        "skillApplicability": "安装版 comfyui-iterate-generation/SKILL.md:3 将使用条件限定为根据故事和人物构思画面，并通过生图、独立观察、比较反馈和小步 Prompt 修复迭代达成画面目标。当前输入指定 Builder，未要求执行图片迭代。",
+        "actualBehavior": "主会话直接执行 Builder；没有角色工具调用、子会话或生图提交。",
+        "priorityAssessment": "system/persona 的调度要求层级高于用户；当前 persona 没有明确规定 Builder-only 任务必须额外生成图片，也没有描述 Builder-only 的角色路由。当前任务明确限定交付范围，因此本审查不把缺少四角色一概判为缺陷；该执行只能证明主会话直接完成 Builder，未验证迭代角色分工。",
+        "firstDeviation": "职责验收的适用范围存在上述边界，未将首次 skill 调用单独认定为职责违规。"
+      },
+      "originalErrorsAndRetries": [
+        {
+          "id": "IB54-E1",
+          "kind": "image-conversion",
+          "firstCallSeq": 50,
+          "failureSeq": 51,
+          "exitCode": 1,
+          "rawError": "ModuleNotFoundError: No module named PIL",
+          "discoverySeqs": [
+            59,
+            60
+          ],
+          "retryCallSeq": 71,
+          "retryResultSeq": 72,
+          "verdict": "recovered_with_existing_magick",
+          "knowledgePath": "seq51 缺 PIL；seq59/60 用 which 与 sips 发现已有 magick 和实际图片尺寸；seq71/72 使用 magick 成功转换。未见安装依赖。该 exitCode=1 来自自行转换命令，不是 Builder 校验器的 exitCode=1。"
+        },
+        {
+          "id": "IB54-E2",
+          "kind": "output-structure",
+          "firstCallSeq": 96,
+          "failureSeq": 97,
+          "exitCode": 2,
+          "field": "negative_mode",
+          "rawError": "negative_mode is required",
+          "retryCallSeq": 101,
+          "retryResultSeq": 102,
+          "retryExitCode": 0,
+          "finalCheckSeqs": [
+            106,
+            107
+          ],
+          "verdict": "structure_recovered_semantics_failed",
+          "knowledgePath": "输出合同在 seq31/32 已读取；seq96 初稿只包含 model_route 和 positive_prompt。seq97 返回缺字段，seq101 补齐结构后一次重试通过；seq106 修正色调再验证成功。语义问题见 IB54-F1、IB54-F2。"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "targetBranch": "两项均通过 Character ID resolve 分支。",
+    "wholeContract": "两项均未通过完整语义合同。",
+    "materialFindings": [
+      "IB53-F1",
+      "IB54-F1",
+      "IB54-F2",
+      "IB54-F3"
+    ],
+    "sourceContamination": "未观察到控制资料或历史答案内容污染；Krea2 存在额外封面来源越出 Builder 合同。",
+    "roles": "两项均由主会话直接完成 Builder；图片迭代角色路径未被本次 Builder-only 输入验收。",
+    "retry": "原始失败与后续恢复分别列出，格式成功未覆盖语义失败。"
+  }
+}

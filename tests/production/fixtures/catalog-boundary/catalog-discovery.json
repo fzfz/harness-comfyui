@@ -1,0 +1,290 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/internal/semantic/comfyui-instances": {
+      "post": {
+        "summary": "Search or resolve ComfyUI instance records",
+        "description": "Search or resolve ComfyUI instance records by title without exposing connection details or credentials.",
+        "operationId": "querySemanticComfyuiInstancesForSkill",
+        "x-harness-tool-name": "query_semantic_comfyui_instances",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogComfyuiInstanceRequest"
+              },
+              "examples": {
+                "search": {
+                  "summary": "Search ComfyUI instance records",
+                  "value": {
+                    "mode": "search",
+                    "query": "studio",
+                    "page": 1,
+                    "page_size": 20
+                  }
+                },
+                "resolve": {
+                  "summary": "Resolve one ComfyUI instance record",
+                  "value": {
+                    "mode": "resolve",
+                    "id": "123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/CatalogComfyuiInstancePage"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404CatalogRef"
+          },
+          "422": {
+            "$ref": "#/components/responses/E422CatalogRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/E500CatalogInternal"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503CatalogDatabaseBusy"
+          }
+        }
+      }
+    },
+    "/internal/semantic/comfyui-templates": {
+      "post": {
+        "summary": "Search or resolve ComfyUI template summaries",
+        "description": "Search or resolve ComfyUI template summaries by title with current Workflow JSON.",
+        "operationId": "querySemanticComfyuiTemplatesForSkill",
+        "x-harness-tool-name": "query_semantic_comfyui_templates",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogComfyuiTemplateRequest"
+              },
+              "examples": {
+                "search": {
+                  "summary": "Search ComfyUI template summaries",
+                  "value": {
+                    "mode": "search",
+                    "query": "portrait",
+                    "page": 1,
+                    "page_size": 20,
+                    "base_model_id": "123"
+                  }
+                },
+                "resolve": {
+                  "summary": "Resolve one ComfyUI template summary",
+                  "value": {
+                    "mode": "resolve",
+                    "id": "123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/CatalogComfyuiTemplatePage"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404CatalogRef"
+          },
+          "409": {
+            "$ref": "#/components/responses/E409CatalogResourceUnavailable"
+          },
+          "422": {
+            "$ref": "#/components/responses/E422CatalogRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/E500CatalogInternal"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503CatalogDatabaseBusy"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CatalogComfyuiTemplateRequest": {
+        "type": "object",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CatalogComfyuiTemplateSearchRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogComfyuiTemplateResolveRequest"
+          }
+        ],
+        "description": "Closed search-or-resolve request for the ComfyUI template Catalog operation.",
+        "example": {
+          "mode": "search",
+          "query": "portrait",
+          "page": 1,
+          "page_size": 20,
+          "base_model_id": "123"
+        }
+      },
+      "CatalogComfyuiTemplateResolveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "id"
+        ],
+        "description": "Resolve branch for one ComfyUI template Catalog record.",
+        "properties": {
+          "mode": {
+            "const": "resolve",
+            "description": "Catalog request branch discriminator for stable-ID resolution",
+            "example": "resolve"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "Decimal ComfyUI template record identifier",
+            "example": "123"
+          }
+        }
+      },
+      "CatalogComfyuiTemplateSearchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode"
+        ],
+        "description": "Search branch for the ComfyUI template Catalog operation.",
+        "properties": {
+          "mode": {
+            "const": "search",
+            "description": "Catalog request branch discriminator for text search",
+            "example": "search"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200,
+            "default": "",
+            "description": "ComfyUI template title text normalized before a literal LIKE search",
+            "example": "portrait"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000,
+            "default": 1,
+            "description": "One-based result page number",
+            "example": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "Maximum number of ComfyUI template items returned on one page",
+            "example": 20
+          },
+          "base_model_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "Optional stable string identifier for the exact generation_base_models parent record",
+            "example": "123"
+          }
+        }
+      },
+      "CatalogComfyuiInstanceRequest": {
+        "type": "object",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CatalogComfyuiInstanceSearchRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogComfyuiInstanceResolveRequest"
+          }
+        ],
+        "description": "Closed search-or-resolve request for the ComfyUI instance Catalog operation.",
+        "example": {
+          "mode": "search",
+          "query": "studio",
+          "page": 1,
+          "page_size": 20
+        }
+      },
+      "CatalogComfyuiInstanceResolveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "id"
+        ],
+        "description": "Resolve branch for one ComfyUI instance Catalog record.",
+        "properties": {
+          "mode": {
+            "const": "resolve",
+            "description": "Catalog request branch discriminator for stable-ID resolution",
+            "example": "resolve"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "Decimal ComfyUI instance record identifier",
+            "example": "123"
+          }
+        }
+      },
+      "CatalogComfyuiInstanceSearchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode"
+        ],
+        "description": "Search branch for the ComfyUI instance Catalog operation.",
+        "properties": {
+          "mode": {
+            "const": "search",
+            "description": "Catalog request branch discriminator for text search",
+            "example": "search"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200,
+            "default": "",
+            "description": "ComfyUI instance title text normalized before a literal LIKE search",
+            "example": "studio"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000,
+            "default": 1,
+            "description": "One-based result page number",
+            "example": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "Maximum number of ComfyUI instance items returned on one page",
+            "example": 20
+          }
+        }
+      }
+    }
+  }
+}

@@ -43,14 +43,15 @@ export function helpHint(definition, argv) {
   return `Next: ${help.invocation}${key ? ` ${key}` : ''} --help`
 }
 
-export function nextSteps(definition, key, quiet = false, values = {}) {
-  if (quiet) return
+export function renderNextSteps(definition, key, quiet = false, values = {}) {
+  if (quiet) return ''
   const help = parseHelpDefinition(definition)
   const node = help.nodes[key]
   if (!node) throw new TypeError(`CLI result guidance is missing for ${key}`)
   const lines = node.after.map(line => line.replaceAll('{cli}', help.invocation).replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? values[name] : match))
-  process.stderr.write(`NEXT: ${lines.join('\nNEXT: ')}\n`)
+  return `NEXT: ${lines.join('\nNEXT: ')}\n`
 }
+
 
 export function shellQuote(value) {
   return `'${String(value).replaceAll("'", "'\\''")}'`

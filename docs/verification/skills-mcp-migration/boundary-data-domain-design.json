@@ -1,0 +1,150 @@
+{
+  "purpose": "为 Skills MCP 迁移的空实例边界验收确定目录数据一致性、Profile 状态和 Agent 能力的责任边界。",
+  "status": "已完成只读诊断与方案；未修改代码、启动应用或调用目录服务。",
+  "decision": {
+    "recommendation": "扩展现有只读夹具，使 MCP 与 Host 内部 HTTP 客户端读取同一场景数据；通过官方隔离 Profile 的数据源设置接入。使用每场景独立的 fresh Profile 和 Workspace 作为状态基线。",
+    "why": "docs/system/configuration.md 已要求 NoobAI MCP 与 Host 内部数据源连接同一目录数据。当前夹具只改变 MCP；Core 的 CatalogClient 与 GenerationSourceClient 继续读取真实目录，形成同一实例的矛盾视图。",
+    "fresh_alone": "fresh 创建独立 Harness home、user-data 和 Workspace；默认数据源仍由配置选择。实施者还须配置 HTTP 夹具地址。",
+    "causal_limit": "本方案修复测试前提和后续执行来源。首次空列表后的继续探测早于 HTTP 返回和历史读取，其原因仍需独立对照。"
+  },
+  "evidence": [
+    {
+      "source": "docs/verification/skills-mcp-migration/retirement-empty-consistent-diagnosis.json",
+      "fact": "完整发现链及两预设结果已记录；工作台预设中的 Agent 完成生成，迭代预设会话被取消。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/desktop/fb023456-606b-4299-a74f-814cdf910c53/1791948126224-088b2ea4-fb13-4063-ae70-418975fb02c6-collect.json",
+      "verified_events": [
+        44,
+        48,
+        179,
+        199,
+        228,
+        229,
+        265
+      ],
+      "fact": "本次只读诊断重新核对原始事件：Agent 收到空实例列表后再次查询实例；HTTP 返回实例 2 和实例连接 URL；Agent 经受管 CLI 提交成功，随后完成本轮会话。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/desktop/fb023456-606b-4299-a74f-814cdf910c53/1791948126213-05ef4ec5-4611-493b-af25-b349f9b1fbfa-collect.json",
+      "verified_events": [
+        49,
+        50,
+        52,
+        53,
+        109
+      ],
+      "fact": "本次只读诊断重新核对原始事件：Agent 收到空实例列表后立即检查环境并再次查询实例；随后读取 runs.sqlite 中实例 2 的历史记录。"
+    },
+    {
+      "source": "src/host/core/plugin.ts:102",
+      "fact": "Core 从 config.configuration 和默认端口构建 sourceSettings，同时传给 CatalogClient、GenerationSourceClient；受管生成准备与传输使用该 GenerationSourceClient。"
+    },
+    {
+      "source": "src/source-settings.ts:115",
+      "fact": "configuredSourceAddress 优先使用已保存配置，缺省时采用默认地址和 Profile 端口，并执行字段校验。"
+    },
+    {
+      "source": "src/host/generation/source-client.ts:140",
+      "fact": "GenerationSourceClient 每次请求读取 sourceSettings，并保留 SourceClientError 到 GenerationRuntimeError 的映射。"
+    },
+    {
+      "source": "src/host/source-client/http-client.ts:57",
+      "fact": "HTTP 客户端按请求内容选择 GET 或 POST，只在有 body 时附加 JSON 头；当前未发送 MCP Bearer。非成功 HTTP 状态经 SOURCE_HTTP_ERROR 转换。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs",
+      "fact": "当前服务在路由前统一校验 MCP Bearer，业务路由仅支持 POST /mcp。现有空实例场景将合法实例 ID 映射至已核对不存在的 ID，以保留 MCP 错误合同。"
+    },
+    {
+      "source": "config/desktop-e2e.json",
+      "fact": "fresh 为非持久模式；development 共享 worktree 的 Harness home、user-data、Workspace；端口和目录布局由该配置定义。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-sandbox-local-index.js:42",
+      "fact": "本次只读诊断核对已保存的 SDK 代码：Linux 读取授权包含根目录，macOS allow default 后只限制文件写入。该证据为安装版本快照，尚未进行运行时隔离验证。"
+    }
+  ],
+  "product_contract": {
+    "behavior": "当前计划要求 Agent 在空实例结果后报告并停止依赖实例的步骤，且目录查询使用 MCP。验收必须检查实际后续动作；Host 拒绝提交只证明执行结果，不能替代 Agent 停止行为。",
+    "capability": "计划第 5.7 节第 10 项明确：删除产品目录 CLI 不构成通用 shell 全部网络访问隔离声明。当前产品同时保留文件读取、shell 与受管生成 CLI。",
+    "stronger_goal": "若要求 Agent 即使无视文字规则也无法读取其他目录或直连服务，应由宿主提供文件与网络能力边界，并覆盖原生工具、shell、主子会话和内部消费者。当前 SDK 配置证据未显示这类开关；不能通过隐藏源码或命令字符串黑名单宣称实现。",
+    "within_scope": "工具注册与作用域可按第 5.14 节测试，验收须同时确认保留 CLI、文件产物和角色交接可用。移除整个 shell 会影响既有合同，不能作为空实例测试通过的默认手段。"
+  },
+  "ssot_design": {
+    "scenario": "沿用 .local/skills-mcp-migration-live/boundary-fixture/ 下的场景 JSON。以同一场景的实例集合或存在性定义派生 MCP 搜索、实例详情、状态、连接，以及 HTTP 实例搜索和源读取；不分别维护两套 ID 列表。",
+    "paths": "HTTP 入口从 config/source-client.json 的 discoveryPath 和 operations 读取；正式请求和响应合同仍由现有内部客户端及实时 discovery 校验。夹具只维护场景覆盖字段及运行参数。",
+    "runtime": "单次夹具启动返回本轮 MCP URL、HTTP sourceAddress、场景身份和证据目录；Profile 注入从此记录派生端口。客户端端口不复制到独立常量。",
+    "profile": "通过已有官方 Profile patch 适配器或官方数据源设置接口，把 harness-comfyui-core 条目的 config.configuration 保存为 {url: http://127.0.0.1, port: 本轮HTTP端口}；两个预设 MCP 覆盖使用同轮 MCP URL。SOURCE_SETTINGS_NAMESPACE 是界面服务命名，Profile 目标以 SOURCE_PROFILE_ENTRY_ID 为准。",
+    "merge": "Profile config 为整体替换；注入时读取并保留有效 core 配置其他字段，经官方 schema 校验后保存。使用隔离 Profile，不改生产 Profile 或共享 development 状态。",
+    "authentication": "MCP 路由沿用原 Bearer 合同；HTTP 路由沿用当前 Host 内部 HTTP 合同。可使用同一进程的独立 loopback listener，或在同一 listener 按协议分支校验。禁止要求 Host 临时增加 MCP Bearer 来迎合夹具。",
+    "state": "夹具验收执行时，每个边界场景使用独立 Harness home 和 Workspace，不复制 runs.sqlite、历史源快照或兄弟场景产物。候选包、模型设置及必要凭据按已有官方流程准备。"
+  },
+  "http_contract": [
+    "发现入口保留真实 discovery 的字段、operationId、schema 与错误状态。若使用响应快照，记录快照来源和时间，并单列为夹具数据。",
+    "空实例场景中的有效语义实例搜索返回该协议的空 results、零 total_count 及对应分页字段；按 discovery 区分搜索、详情及其他只读模式，逐项覆盖同一实例存在性。",
+    "空实例场景中的 GET 实例源请求，对所有合法 ID 返回该协议的不存在响应。先对真实目录只读核对一个不存在 ID 的 HTTP 状态、JSON envelope 和客户端错误映射，再按该合同实现；不得把 MCP_INSTANCE_NOT_FOUND 文本塞进 HTTP 成功 envelope。",
+    "无效 ID、无效参数、超时、取消、响应大小限制与 discovery 失败继续由现有真实合同处理；有效 ID 的不存在映射不得吞掉输入校验错误。",
+    "空实例场景保留 Workflow 和模型原值。无默认模型场景若扩展 HTTP 视图，应同步同一 Workflow 的模型字段，并保留 Workflow 节点原文及其他资源。",
+    "HTTP 转发只允许 discovery 中已核对的只读操作；POST 仅用于已声明的查询。未知路径、写入方法和真实生成提交不转发。",
+    "日志保存原请求、转发请求、真实响应、覆盖字段、最终响应及来源，统一脱敏；协议与字段转换由确定性测试验证。"
+  ],
+  "verification": [
+    {
+      "scope": "夹具单元与协议",
+      "steps": [
+        "先增加失败测试，证明相同实例在 MCP 与 HTTP 视图中存在性矛盾。",
+        "覆盖实例搜索分页、实例详情、状态、连接和源读取；合法 ID、未知 ID、无效 ID 均有断言。",
+        "验证 discovery 原值、文本与结构化 MCP 内容一致、HTTP 不存在合同、凭据分流、只读操作、并发独立请求、取消、停止和端口释放。"
+      ]
+    },
+    {
+      "scope": "实际消费者",
+      "steps": [
+        "用生产 CatalogClient 和 GenerationSourceClient 访问本轮夹具，确认共享 sourceSettings。",
+        "经隔离 Profile 读取实际生效 sourceAddress，核对与夹具启动记录一致。",
+        "用原生生成入口和受管 CLI 做确定性负向探针，验证不存在实例按既有错误合同终止，远端提交计数为零；同时单独记录是否建立失败 Run。",
+        "保留一个有效实例的正向消费者测试，确认错误合同与来源接入未破坏正常读取；使用既有测试服务完成，不向真实生成服务提交控制请求。"
+      ]
+    },
+    {
+      "scope": "真实 Agent",
+      "steps": [
+        "冻结安装候选、Skill 文件及其引用文件、模型参数、任务输入和工具声明；每个预设使用独立干净会话。",
+        "记录首次空列表、其后所有工具调用和最终状态；独立判断是否按规定报告并停止。",
+        "任何 Generation Request 提交调用仍使行为验收失败，即使 Host 拒绝该请求。",
+        "保存两预设的模型输入及完整事件；父子会话验收使用符合各角色职责的独立任务，并核对子会话工具、Profile 继承和实际数据源。",
+        "验收者必须记录 Agent 对其他服务的实际访问，并按停止规则判定行为验收结果。"
+      ]
+    }
+  ],
+  "causal_controls": [
+    {
+      "name": "目录数据一致性",
+      "change": "只把 Host sourceAddress 从真实目录改为同场景 HTTP 夹具。",
+      "freeze": "其他输入、候选、Profile 历史快照、工具声明、模型参数保持一致；记录上游服务恢复及任何漂移。",
+      "measure": "首次空列表后继续探测的行为是否仍发生、HTTP 响应中是否仍出现实例身份，以及参数检查与生成提交的结果。",
+      "interpretation": "如果 Agent 仍探测而 Host 拒绝，支持数据域修复阻断受管执行链；首次空列表后继续探测的行为仍然存在。若不准备复现真实提交，可用已保存链做确定性消费者对照，并将真实模型因果结论保留为待验证。"
+    },
+    {
+      "name": "Profile 历史",
+      "change": "在目录视图一致条件下，仅切换至没有历史 Run 的隔离 Profile。",
+      "freeze": "模型、任务、候选、工具及目录响应一致，明确记录必然变化的 DSH_HOME 和 Workspace 路径。",
+      "measure": "是否通过当前 DSH_HOME 获得历史实例、是否转向其他绝对路径、首次继续探测与最终停止点。",
+      "interpretation": "若切换后历史实例发现行为发生变化，可支持 Profile 历史影响实例发现路径。"
+    },
+    {
+      "name": "角色输入",
+      "change": "独立比较直接生成任务和符合迭代主角色的任务。",
+      "freeze": "场景与候选保持一致。",
+      "measure": "主会话是否派发子任务、子任务的完整输入、子会话首次停止的位置，以及父子会话实际使用的数据源。",
+      "interpretation": "两种任务是不同消费者覆盖；不得把角色修正与数据源、模型切换混为单变量因果证明。"
+    }
+  ],
+  "remaining_questions": [
+    "HTTP 实例不存在的实时响应及语义实例查询各模式尚未在本次只读诊断中读取；实施前需要只读采证并通过现有协议校验。",
+    "现有 fresh 安装流程和 Profile 补丁函数可复用；本次只读诊断未运行应用，具体注入后生效及子会话继承需实际消费者验收。",
+    "当前证据没有确立首次空列表后继续探测的行为的可修复原因，不能预先承诺加强文字会使模型停止。"
+  ],
+  "delivery": "仅保存本 JSON。后续实施者先把 HTTP 同对象覆盖及隔离 Profile 接入补入计划对应步骤，再进行独立方案审查、TDD 修复与复验；授权依据为主计划第 5.14 节。"
+}

@@ -1,0 +1,136 @@
+{
+  "reviewer": "cli_standalone_review",
+  "status": "PASS_WITH_DESKTOP_ACCEPTANCE_PENDING",
+  "scope": [
+    "scripts/build/cli-module.mjs",
+    "tests/integration/cli-command.test.ts",
+    "tests/production/plugin-package.test.mjs"
+  ],
+  "plan": "docs/plans/skills-mcp-migration-20261013.md:1154 (5.7.1)",
+  "findings": [],
+  "conclusion": "本轮独立打包改动未发现实质功能或规格问题。CLI 已在无可解析 schemastery 的仓库外目录启动，共享解析器与 Host peer 合同保持。",
+  "sourceEvidence": [
+    {
+      "location": "scripts/build/cli-module.mjs:27",
+      "result": "alwaysBundle 仅作用于受管 CLI 构建，依赖名与计划一致。"
+    },
+    {
+      "location": "src/cli/contract.ts:3",
+      "result": "CLI 继续导入共享 parseManagedCliEnvironment，并在第 10 行解析环境配置。"
+    },
+    {
+      "location": "scripts/build/host-module.mjs:16",
+      "result": "Host 继续使用 hostImportPolicy；该文件与 package.json 本轮均无 diff。"
+    },
+    {
+      "location": "tests/integration/cli-command.test.ts:25",
+      "result": "外置 CLI 构建保留，schemastery 的目录与 symlink 补齐已删除。"
+    },
+    {
+      "location": "tests/production/plugin-package.test.mjs:203",
+      "result": "测试先 buildPlugin，再 pack 实际产物，解包至仓库外含空格路径并设为只读，随后运行解包后的 CLI。"
+    },
+    {
+      "location": "tests/production/plugin-package.test.mjs:278",
+      "result": "子进程清理 NODE_PATH、NODE_OPTIONS 和全部已声明受管 CLI 环境字段；验证帮助、目录命令拒绝及缺环境错误。"
+    }
+  ],
+  "verification": {
+    "command": "pnpm exec vitest run tests/integration/cli-command.test.ts tests/production/plugin-package.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "result": {
+      "files": 2,
+      "passed": 52,
+      "exitCode": 0,
+      "durationSeconds": 6.92
+    },
+    "redEvidence": ".local/skills-mcp-migration-live/cli-package-red.log:14 明确记录解包后 CLI 的 ERR_MODULE_NOT_FOUND @deepseek-ai/schemastery。",
+    "independentTarComparison": {
+      "runtime": "Node v25.8.2",
+      "before": ".local/skills-mcp-migration-live/presentation-visibility-candidate.tgz",
+      "after": ".local/skills-mcp-migration-live/standalone-cli-candidate.tgz",
+      "filesBefore": 198,
+      "filesAfter": 198,
+      "changedFiles": [
+        "package/.local/source-cli/harness-comfyui.mjs"
+      ],
+      "candidateCliBytes": 126846,
+      "candidateStaticImports": [
+        "node:process"
+      ],
+      "schemasteryResolutionForBoth": "MODULE_NOT_FOUND (createRequire from each extracted CLI)",
+      "environment": "两个 tar 包均解包至独立 tmpdir；使用同一外部 cwd 和已清理环境；未复制依赖或建立链接。",
+      "cases": [
+        {
+          "args": [
+            "--help"
+          ],
+          "before": {
+            "exitCode": 1,
+            "error": "ERR_MODULE_NOT_FOUND"
+          },
+          "after": {
+            "exitCode": 0,
+            "stderr": ""
+          }
+        },
+        {
+          "args": [
+            "generation",
+            "inspect-template-parameters",
+            "--stdin"
+          ],
+          "stdin": "{}",
+          "before": {
+            "exitCode": 1,
+            "error": "ERR_MODULE_NOT_FOUND"
+          },
+          "after": {
+            "exitCode": 2,
+            "error": "CLI_REQUEST_INVALID",
+            "stdout": ""
+          }
+        },
+        {
+          "args": [
+            "generation",
+            "inspect-template-parameters",
+            "--stdin"
+          ],
+          "stdin": "{\"template_id\":\"29\",\"instance_id\":\"2\"}",
+          "before": {
+            "exitCode": 1,
+            "error": "ERR_MODULE_NOT_FOUND"
+          },
+          "after": {
+            "exitCode": 2,
+            "error": "CLI_ENVIRONMENT_INVALID",
+            "stdout": ""
+          }
+        },
+        {
+          "args": [
+            "catalog",
+            "instance",
+            "list"
+          ],
+          "before": {
+            "exitCode": 1,
+            "error": "ERR_MODULE_NOT_FOUND"
+          },
+          "after": {
+            "exitCode": 2,
+            "error": "CLI_ARGUMENT_INVALID",
+            "stdout": ""
+          }
+        }
+      ],
+      "hostPeer": "两个 tar 包的 package.json 字节相同，schemastery peer 为 3.18.4，optional 为 true；全部 Host 产物字节相同。",
+      "cleanup": "独立临时解包目录已删除。"
+    }
+  },
+  "coverageLimits": [
+    "production 回归当前以目录命令覆盖无效请求；本次独立 tar 复验另行验证了原诊断中的空 inspect JSON 分支。",
+    "production 回归未显式断言祖先目录无法解析 peer；本次独立复验已确认两个解包入口均无法解析 schemastery。",
+    "官方 Desktop 安装后通过真实注入路径执行参数检查、生成、Run 和媒体的 5.7.1 第 4 项，由主线程继续验收。本审查未启动应用或模型。"
+  ]
+}

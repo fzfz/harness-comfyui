@@ -1,0 +1,63 @@
+{
+  "reviewedAt": "2026-10-14T05:47:26.654526+00:00",
+  "scope": "5.4-1 真实历史来源候选输入独立预检；未提交模型，未更新台账。",
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-input-preparation/candidate.json",
+  "semanticTargetStatus": "pass",
+  "executionReadiness": "ready_with_existing_run_workspace",
+  "variantSuitable": true,
+  "contextSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791956587270-9a3f0e64-a999-4f96-b6f3-c32daf6084ad-query_semantic_characters.json",
+  "sourceEquality": {
+    "id": true,
+    "work_name": true,
+    "character_name": true,
+    "prompt_text": true
+  },
+  "preserved": {
+    "requestExact": true,
+    "historyRunExact": true,
+    "onlySemanticInputChange": "Character上下文从39934替换为此次真实resolve返回的3334，其他任务要求保持。"
+  },
+  "historicalEvidence": {
+    "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Pg12Pc/5.6-2/run-inputs.json",
+    "runId": "run_b7457c0a-5a98-4354-a59a-5b6461fd34ec",
+    "lookup_status": "available",
+    "workflow_status": "available",
+    "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast",
+    "successReview": "docs/verification/skills-mcp-migration/generation-default-review.json"
+  },
+  "contract": {
+    "skill": ".agents/skills/krea2-anime-prompt-builder/SKILL.md",
+    "sections": [
+      "查询或复用历史 Generation Run",
+      "构建单条 Krea2 动漫 Prompt",
+      "确认主体并组装 Prompt",
+      "完成前自检"
+    ],
+    "sourcePriority": "当前明确文字 > 用户选定历史正向Prompt > 不冲突的当前Character/Style Prompt > 目录素材 > 条件参考 > 默认设计",
+    "crossModelHistory": "合同要求读取实际保存的positive_prompt作为输入，未限制历史Run必须由Krea2模型生成；最终结果仍按Krea2规则构造并校验。"
+  },
+  "expectedSemanticAdoption": {
+    "currentOverride": "银发替换历史金发，同时保持单人站立半身、白衬衫、窗边柔光。",
+    "historyPriority": "历史Ani身份、蓝眼、长发及双马尾应保留；低优先级Alice/Sinoalice身份、红眼、短发及蓝黑发不能覆盖。",
+    "nonconflictingContext": "medium breasts、elbow gloves等须结合服装与画面判断兼容性；不能因身份冲突而把全部上下文机械丢弃。",
+    "route": "展示路线，历史修改同一画面且没有明确正式交付要求时按生成合同选择test。"
+  },
+  "missingInputs": [],
+  "runtimeCondition": {
+    "requirement": "应在历史Run所属官方Workspace范围内执行。复用隔离Profile本身不是Workspace权限证据；任务shell工作目录可以另设。",
+    "evidence": [
+      "src/host/cli/dispatch.ts:53",
+      "src/host/generation/generation-runtime.ts:775",
+      "comfyui-generate/references/generation-cli.md 成功输出与失败输出"
+    ],
+    "existingEvidence": "候选登记的run-inputs.json已取得该Run完整available结果；本预检不新调模型或查询CLI。",
+    "onFailure": "若正式执行返回GENERATION_RUN_NOT_FOUND，按实际CLI错误处理并保留为查询前置失败，不将其计为历史优先级失败。"
+  },
+  "nonTargetGaps": "角色Prompt非空且来源真实，画面要求明确；未指定尺寸、具体画师或模型ID均可由Krea2合同/default分支处理。实时画师目录多候选仍可能触发真实等待，不能预先保证一次完成。",
+  "acceptanceRequirements": [
+    "执行者必须真实调用run-inputs并读取该Run的arguments.parameters.positive_prompt，不能仅凭准备文件代替查询。",
+    "首次采用来源时核对实际模型请求保留历史Prompt与上下文全文。",
+    "分别核对银发覆盖、历史身份/蓝眼/长发保留、无冲突上下文采用、Krea2正向规避、尺寸和最终结构化输出。"
+  ],
+  "conclusion": "候选保持5.4-1历史来源优先级目标，真实冲突比原同身份上下文更可判定；可在已有Run的官方Workspace执行，运行成功和完整Builder合规仍待真实验收。"
+}

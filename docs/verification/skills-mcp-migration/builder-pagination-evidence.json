@@ -1,0 +1,35 @@
+{
+  "purpose": "定位 ANIMA 未读取分页的完整候选与目录漂移核对。",
+  "readWhen": "独立判断当前候选选择是否受遗漏页影响时。",
+  "experiment": "current-builder-causal-design.json#E1",
+  "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-pagination-E1/evidence.json",
+  "modelCalls": 0,
+  "directoryWrites": 0,
+  "queries": [
+    {
+      "query": "black bow hair ornament",
+      "pageSize": 10,
+      "pages": 3,
+      "count": 21,
+      "uniqueCount": 21,
+      "originalPageOneEqual": true
+    },
+    {
+      "query": "twintails",
+      "pageSize": 6,
+      "pages": 5,
+      "count": 28,
+      "uniqueCount": 28,
+      "originalPageOneEqual": true
+    }
+  ],
+  "status": "captured-awaiting-independent-semantic-review",
+  "scope": "原失败保留；补取结果用于核对候选影响，未证明模型遗漏分页的原因。",
+  "mainReview": {
+    "status": "awaiting-independent-review",
+    "selectedAdornment": "hair_bow 与 black_bow 分别表达蝴蝶结发饰及其黑色，均来自第一页。",
+    "remainingAdornmentPages": "后续页涉及其他材质/形状/颜色、持有/调整动作或未佩戴状态；没有与当前黑色蝴蝶结发饰同义的新增候选。",
+    "twintails": "完整28项没有可采用的双马尾发型词条；当前 twintails 已有角色 Prompt 来源。",
+    "acceptanceEffect": "当前选择仍有来源和语义依据；原执行未完成分页的合同失败保留。"
+  }
+}

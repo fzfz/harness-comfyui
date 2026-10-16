@@ -1,0 +1,85 @@
+{
+  "purpose": "记录剩余交接合同审查项的修订和验证缺口。",
+  "readWhen": "复核修订合同或准备运行探针前。",
+  "contract": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+  "changedFiles": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json"
+  ],
+  "scope": {
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "productChanges": 0
+  },
+  "resolutions": [
+    {
+      "id": "T2",
+      "status": "合同已修订",
+      "change": "通用步骤按 H3、恢复场景及通知延迟分别限定。"
+    },
+    {
+      "id": "T3",
+      "status": "合同已修订",
+      "change": "候选补问固定原文、单元最多 1 次、两预设合计最多 2 次。候选不足门禁与完整等待门禁分开。"
+    },
+    {
+      "id": "T4",
+      "status": "合同已修订",
+      "change": "Builder 原文统一为 builderJson。H3 arm B 和 historical originalArguments 保持相同。"
+    },
+    {
+      "id": "INPUT-R1",
+      "status": "接口已核对，控制器与终态探针待完成",
+      "change": "列出普通父取消、官方子 interrupt 和真实父 ToolRegistry 入口。补齐后代、父唤醒、终态及 Run 复查。",
+      "evidence": [
+        {
+          "entry": "remote.session.cancel({sessionId:parentSessionId})",
+          "scope": "普通父 Session。",
+          "evidence": ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:990-1000",
+          "limit": "返回 accepted 只表示请求已接纳；keepInbox=true。普通接口拒绝子会话。"
+        },
+        {
+          "entry": "ctx.subagents.interrupt(childSessionId,{kind:\"user\",parentSessionId:directParentSessionId})",
+          "scope": "官方 Host SDK 的直接父会话授权地址。",
+          "evidence": ".local/skills-mcp-migration-live/dsh-subagent-index.js:843-860",
+          "limit": "尚未核对对应 Remote 方法，不能虚构 remote.subagent.cancel。"
+        },
+        {
+          "entry": "ctx.tools.execute({callId,name:\"interrupt_agent\",arguments:{agent_id:childSessionId},agent:realParentAgent,signal})",
+          "scope": "经已注册 ToolRegistry，以真实祖先 Agent 中断后代。",
+          "evidence": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__index.js:60-91",
+          "limit": "控制器须从本轮 ctx.agents.get(parentSessionId) 取真实对象。不得伪造 Agent。"
+        }
+      ]
+    },
+    {
+      "id": "INPUT-R2",
+      "status": "计时合同已修订，迟到钩子探针待完成",
+      "change": "保留现有 arm 后绝对期限。钩子起点单独计时，剩余不足判未覆盖。只接受 released 且完整 30000 毫秒窗口。",
+      "evidence": ".local/skills-mcp-migration-live/handoff-delay.mjs:134-155,186-220,297-307"
+    },
+    {
+      "id": "INPUT-R3",
+      "status": "既有接口可复用，发送探针待完成",
+      "change": "改用先归档、后 remote session.prompt。重发沿用原 Session、requestId 和完整对象。",
+      "evidence": ".local/skills-mcp-migration-live/desktop-driver.mjs:26-29,36；dsh-api-session-controller-index.js:850-858,1063-1074"
+    }
+  ],
+  "preservation": {
+    "historicalArgumentsEqual": true,
+    "h3ArmsEqual": true,
+    "method": "修订前后解析对象直接比较。"
+  },
+  "remaining": [
+    "H3 受控父与真实子组合驱动仍未具备。",
+    "子中断入口适配和最终事件探针待完成。",
+    "迟到钩子探针与运行窗口证据待完成。",
+    "首次请求归档与 SDK 接纳关联探针待完成。",
+    "候选、当前资源及独立复核仍按合同门禁。"
+  ],
+  "textReview": {
+    "profile": "for-document",
+    "errors": 0,
+    "antiEchoPending": 0,
+    "manual": "已复核原始参数保留、场景条件和未决执行能力。JSON 引号、原始参数和完整任务模板按语法或证据保留。"
+  }
+}

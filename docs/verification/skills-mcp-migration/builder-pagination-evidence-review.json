@@ -1,0 +1,82 @@
+{
+  "reviewer": "diagnostic_evidence_review",
+  "reviewedAt": "2026-10-14T11:43:21.557356+00:00",
+  "method": "独立读取原始请求、响应、安装文件、源代码合同和产物；本轮只读取本机进程与端口。",
+  "reviewModelCalls": 0,
+  "reviewServicesStarted": 0,
+  "purpose": "独立判断 ANIMA 遗漏分页对当前候选采用的影响。",
+  "readWhen": "区分分页执行失败与当前提示词语义有效性时。",
+  "status": "semantic-impact-reviewed-original-pagination-failure-retained",
+  "findings": [],
+  "conclusion": "完整候选支持继续采用 hair_bow、black_bow 和角色 Prompt 提供的 twintails；原模型未继续分页的合同失败保留。",
+  "evidence": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-pagination-E1/evidence.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/all-session-records.json#seq9,64,68,69,97,98",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/workspace-artifacts/5.3-2/prompt-slots.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/workspace-artifacts/5.3-2/builder.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/observer-calls/c528c8a0-e374-4d08-894e-bdc37adc1022/e06f2ef5-b7f0-40df-b1a8-986a7b0cc3dc.jsonl:1"
+  ],
+  "structuralChecks": [
+    {
+      "query": "black bow hair ornament",
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "counts": [
+        10,
+        10,
+        1
+      ],
+      "uniqueCount": 21,
+      "totalCount": 21,
+      "originalFirstPageDeepEqual": true
+    },
+    {
+      "query": "twintails",
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "counts": [
+        6,
+        6,
+        6,
+        6,
+        4
+      ],
+      "uniqueCount": 28,
+      "totalCount": 28,
+      "originalFirstPageDeepEqual": true
+    }
+  ],
+  "semanticAssessment": [
+    {
+      "concept": "黑色蝴蝶结发饰",
+      "judgment": "输入明确要求黑色蝴蝶结发饰。hair_bow 指明发饰类型，black_bow 补充颜色。后页炸弹、蛇、翅膀、宝石、骰子及乐器造型改变形状或材质；brown_bow 改变颜色；adjusting 和 holding 增加动作；unworn_hair_ornament 与 no_hair_bow 改变佩戴状态。后页没有需要替换当前两个词的同义候选。"
+    },
+    {
+      "concept": "双马尾",
+      "judgment": "角色 resolve 在 seq64 提供 Ani_(Grok), blonde hair, twintails, long hair, blue eyes，与输入要求一致。全部 28 项搜索候选涉及动物尾巴、尾部颜色、动作、饰物、双马尾纪念日及 quad_tails。quad_tails 指四束发型，无法表达两束双马尾。现有 twintails 可按安装 Skill 的角色 Prompt 来源顺序进入 appearance。"
+    },
+    {
+      "concept": "候选合同",
+      "judgment": "独立按规范标签、别名及上下文含义阅读全部 49 项。后页不存在目标概念的新增同义候选，因此无需触发同义候选的使用数量和 ID 排序，也无需用户选择。"
+    }
+  ],
+  "paginationContract": {
+    "result": "fail-retained",
+    "source": "实际模型请求 tools 中 query_semantic_prompt_terms 的返回字段第 7 项",
+    "rule": "page × page_size 小于 total_count 时，保持条件并继续下一页。",
+    "observed": "原 seq69 返回 10/21，seq98 返回 6/28；原会话未继续这两项查询。E1 的控制端补页仅用于影响复核。"
+  },
+  "scopeLimits": [
+    "原失败时刻的后页没有保存；第一页深比较一致支持本轮比较，后页跨时刻漂移仍无法独立排除。",
+    "语义结论只覆盖黑色蝴蝶结和双马尾采用，其他 Builder 验收项与模型停止分页的原因保持原判断范围。"
+  ]
+}

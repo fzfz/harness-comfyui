@@ -1,0 +1,337 @@
+{
+  "purpose": "独立核对运行观察器副本与应用后的证据。",
+  "status": "completed",
+  "runtimeCopyReview": {
+    "derivedControlReferences": 36,
+    "derivedDirectories": 15,
+    "inventoryDirectories": 15,
+    "activationDirectoriesIncludingSource": 15,
+    "updatedDirectories": 14,
+    "missingFromInventory": [],
+    "missingFromActivation": [],
+    "profileReferences": [
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/empty-instances-4591b808-48c2-4872-b84b-0d24d1cfed05/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/empty-instances-cee75443-bb9f-4665-bf45-2fd6b0ebb6f2/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/handoff-delay-h4-8762aa61-e845-4b40-83f9-070155cf56d9/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live"
+      },
+      {
+        "profile": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-hRnrbX/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-hRnrbX/runtime/observer"
+      },
+      {
+        "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "directory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer"
+      }
+    ],
+    "profileDirectoriesMissingFromActivation": [],
+    "byteChecks": [
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-hRnrbX/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-hRnrbX/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-observer.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 3660
+      },
+      {
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/redact-evidence.mjs",
+        "equalToReviewedSource": true,
+        "bytes": 13647
+      }
+    ],
+    "allBytesEqual": true,
+    "reviewedImplementationReport": "docs/verification/skills-mcp-migration/evidence-redaction-code-review.json:revisions[0]",
+    "profilesParsed": 22
+  },
+  "historicalEvidenceReview": {
+    "status": "completed",
+    "fixedFileList": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/evidence-redaction-applied.json",
+    "fileCount": 2537,
+    "dryRunFileCount": 2537,
+    "addedPaths": [],
+    "removedPaths": [],
+    "perFileReportDifferences": [],
+    "parsedFiles": 2537,
+    "missingFiles": [],
+    "parseErrors": [],
+    "recordCountDifferences": [],
+    "terminalDifferences": [],
+    "nonregularFiles": [],
+    "filesChangedDuringRead": [],
+    "rawObserverFiles": 202,
+    "rawObserverDirectories": [
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/observer/llm-calls",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls"
+    ],
+    "knownSourceFiles": [
+      "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/empty-instances-4591b808-48c2-4872-b84b-0d24d1cfed05/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/empty-instances-cee75443-bb9f-4665-bf45-2fd6b0ebb6f2/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/handoff-delay-h4-8762aa61-e845-4b40-83f9-070155cf56d9/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/tmp/harness-read-boundary-JNMlQ4/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-hRnrbX/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml"
+    ],
+    "independentlyAvailableValueCount": 3,
+    "knownSourceResidualFiles": [],
+    "runtimeSensitiveStringCandidates": [],
+    "newRuntimeRecordsIncluded": false,
+    "totalBytesRead": 1052937054,
+    "duplicateCallGroups": 252,
+    "duplicateCallComparisons": 252,
+    "duplicateCallDifferences": [],
+    "limitations": [
+      "未保存应用前原始文件副本和32个凭据值全集；本次无法独立重建全部临时capability值。",
+      "dry-run与apply报告的逐文件脱敏位置和结构结果已独立比较；任意非凭据字段与应用前原文完全相同的结论依赖应用时的内存比较，不能由应用后文件单独重建。",
+      "独立残留扫描仅针对本报告列出的已授权Profile及项目.env中可复核的值；本次未读取新受控运行或用户进程环境。"
+    ],
+    "environmentAssignments": {
+      "maskedOccurrencesIncludingDecodedAndLaneViews": 27,
+      "unmaskedCandidates": []
+    },
+    "historicalFilesWithoutTerminalRecord": 6,
+    "scanDefinitions": {
+      "knownValues": "只在内存使用获准来源的非空凭据字符串；检查解析后的全部字符串、嵌套JSON字符串及按callId/index/type/tool id拼接的delta。",
+      "sensitiveStringFields": "匹配已审脱敏器声明的敏感字段名；只把非空且非[redacted]的字符串值计为候选。",
+      "environmentAssignments": "检查解析字符串及拼接delta中的行首环境赋值；变量名以KEY、TOKEN、SECRET、PASSWORD、PASSWD、CAPABILITY或CREDENTIAL结尾，非空值应为[redacted]。",
+      "duplicateCalls": "按JSONL文件名分组，逐组解析并比较全部JSON记录；比较保留数组顺序，忽略JSON空白和对象键顺序。"
+    }
+  },
+  "findings": [],
+  "verdict": "passed-with-original-value-reconstruction-limit",
+  "conclusion": "固定清单中的2537份文件通过应用后独立读取核对。可复核的3个凭据值、所列敏感字符串字段及环境赋值均未检出明文；252组重复调用文件的解析内容一致。32值全集及应用前任意字段原文的独立重建受原始材料留存范围限制。"
+}

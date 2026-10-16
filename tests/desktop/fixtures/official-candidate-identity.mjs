@@ -133,7 +133,14 @@ export async function assertOfficialCandidateClientSource({
       const hasTrailer = actualComboScript.length >= expectedTrailer.length
         && actualComboScript.subarray(actualComboScript.length - expectedTrailer.length).equals(expectedTrailer)
       if (hasTrailer) {
-        actualCandidateFragment = actualComboScript.subarray(candidateStart, actualComboScript.length - expectedTrailer.length)
+        const nextPosition = modulePositions[route.candidateModuleIndex + 1]
+        const candidateEnd = nextPosition === undefined
+          ? actualComboScript.length - expectedTrailer.length
+          : byteOffsetForLine(actualComboScript, nextPosition.offsetLine)
+        if (candidateEnd > actualComboScript.length - expectedTrailer.length) {
+          throw new Error('Candidate source-map section end falls outside the loaded combo script')
+        }
+        actualCandidateFragment = actualComboScript.subarray(candidateStart, candidateEnd)
       } else {
         actualCandidateFragment = actualComboScript.subarray(candidateStart)
         validationError = new Error('Loaded official combo script does not end with its exact source-map trailer')

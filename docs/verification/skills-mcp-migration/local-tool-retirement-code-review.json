@@ -1,0 +1,53 @@
+{
+  "purpose": "记录项目子 Agent 控制工具注册退役的独立功能与维护性审查。",
+  "reviewedBase": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+  "result": "本轮冻结范围内未发现需要修复的功能或维护性缺陷；官方应用验收仍待执行。",
+  "findings": [],
+  "verified": [
+    {
+      "source": "agent-presets/project-subagent-control.mjs:8-24; agent-presets/project-subagent-control.json:2-26",
+      "fact": "适配器仅注册 interrupt_agent；参数、输出、描述与错误集中在 JSON。defineTool 校验必填字符串；缺少调用 Agent 时拒绝；调用服务一次并保留 exec.agent 对象身份；同步服务异常通过 defineTool 返回拒绝。"
+    },
+    {
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-tool-subagent-control/package.json; lib/index.js:61-94",
+      "fact": "只读核对当前安装的 0.2.0-rc.2。公开运行入口为根入口及 list-agents；根入口同时注册两个工具。项目适配器的 interrupt 调用与官方相同。dsh-brand 的 brandString 原样返回字符串，JS 适配器直接传字符串保持运行时合同。"
+    },
+    {
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-subagent/lib/index.js:843-859",
+      "fact": "已阅读当前安装服务实现：exact live ancestor、自中断及驻留目标 ancestry 由官方服务验证；无驻留目标和 closing inbox 返回；cancel 保留 inbox。项目适配器沿用服务边界，未复制授权或生命周期逻辑。"
+    },
+    {
+      "source": "tests/production/fixtures/tool-registry-runtime.mjs:1-48; tests/production/fixtures/project-subagent-control-runtime.mjs:14-137",
+      "fact": "实际运行官方 ToolRuntime、Cordis 与 scope。未知和 exact-own 名称的 restrict 被拒绝，祖先工具可被子 scope 限制。两个父 scope 及五类子 scope 的 native/PTC schema、SDK 声明、直接和嵌套 resolveExecution/execute 均拒绝 send_message；子 scope 拒绝 interrupt_agent。"
+    },
+    {
+      "source": "tests/production/fixtures/project-subagent-control-runtime.mjs:86-110; tests/production/native-subagent-control.test.mjs:15-67",
+      "fact": "参数缺失、null、数字被拒绝且服务未被调用；合法参数保持 Agent 身份并返回 accepted；服务错误保持原对象。"
+    },
+    {
+      "source": "tests/production/fixtures/project-subagent-control-runtime.mjs:116-135",
+      "fact": "实际 Cordis 插件卸载移除 interrupt_agent，保留兄弟 list_agents 定义；重载恢复 interrupt_agent；平级对照 scope 的 send_message 定义与解析保持不变。"
+    },
+    {
+      "source": "tests/production/plugin-build-presets.test.mjs:39-70; config/plugin-runtime-resources.json:22-23",
+      "fact": "实际构建 tarball 并解包，从包内两个相对引用 import 共享模块；JSON 被打包且可读取；注册仅产生 interrupt_agent。测试通过 node_modules 链接提供宿主 peer 依赖。"
+    },
+    {
+      "source": "agent-presets/project-tool-visibility.mjs:25-34; agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:119-123; agent-presets/harness-comfyui-iteration/agent.cordis.yml:550-554",
+      "fact": "visibility 仅枚举 Host-global 名称，保留 run_code；两个预设各加载一次共享适配器和官方 list-agents 子入口。中断能力、过滤能力与官方生命周期职责分开，未新增调度器或冗余控制路径。"
+    }
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/production/project-subagent-control.test.mjs tests/production/native-subagent-control.test.mjs tests/production/source-agent-preset.test.mjs tests/production/native-workbench-subagent.test.mjs tests/production/native-iteration-roles.test.mjs tests/production/official-agent-preset-resources.test.mjs tests/production/plugin-build-presets.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "result": "7 个文件、104 项测试通过；退出码 0。",
+    "diffCheck": "本轮适配器、visibility 和新增测试文件的 git diff --check 通过。"
+  },
+  "officialRuntimePending": [
+    "两个完整官方 Preset 的 Session 创建和真实主子会话工具表；当前 fixture 只加载控制组件与 visibility，并按 YAML 应用子过滤。",
+    "官方 PTC runtime 实际执行 run_code 内的 SDK 调用；当前 fixture 通过 execute 的 parent 标记验证嵌套分派边界，PTC runtime 仅提供 language。",
+    "真实子 Session 的 accepted、中断事件、inbox 保留、后代持续运行、原 childId 续派和原生完成通知；当前 subagents 是调用记录或抛错替身。",
+    "完整官方 standard/minimal/cordis 预设及真实 list_agents 的卸载重载隔离；当前对照为平级 scope 与占位工具。",
+    "真实子请求中自动父返回指引的缺席，以及官方安装候选包后的完整生命周期与模型验收。"
+  ],
+  "scopeLimits": "本轮只审查派发控制注册冻结范围。其他 persona、派发等待实现和目录 MCP 改动未纳入本报告结论。未安装依赖、启动 Desktop 或调用模型；未修改产品文件。"
+}

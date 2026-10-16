@@ -1,0 +1,618 @@
+{
+  "purpose": "记录 HTTP 诊断候选的官方 Desktop 回归与资源清理。",
+  "readWhen": "核对本轮候选安装、生命周期及退出结果时。",
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-candidate.tgz",
+  "testedCandidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.45.0.tgz",
+  "candidateComparison": {
+    "sourceFiles": 200,
+    "testedFiles": 200,
+    "differences": []
+  },
+  "command": "env pnpm_config_store_dir=/Users/fzfz/Library/pnpm/store pnpm test:desktop",
+  "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-desktop.log",
+  "result": {
+    "files": 13,
+    "tests": 269,
+    "passed": 269,
+    "failed": 0,
+    "durationSeconds": 263.51
+  },
+  "cleanup": {
+    "observedAt": "2026-10-14T11:27:19.360460+00:00",
+    "records": [
+      {
+        "runId": "8251bf85-b9cf-4f64-a5dd-3abe554d85f8",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/8251bf85-b9cf-4f64-a5dd-3abe554d85f8/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53216,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53217,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53218,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "29311350-6436-457c-8c67-13720b3f1c08",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/29311350-6436-457c-8c67-13720b3f1c08/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53478,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53479,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53480,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "3b08ab85-9e93-4c81-87ce-09bd1b05657f",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/3b08ab85-9e93-4c81-87ce-09bd1b05657f/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53168,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53169,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53170,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "cf6a875f-31e9-4173-b079-e67c02670510",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/cf6a875f-31e9-4173-b079-e67c02670510/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53868,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53869,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53870,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "58074105-1ddb-45f5-bded-43cbf8f52720",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/58074105-1ddb-45f5-bded-43cbf8f52720/run.json",
+        "state": "cancelled",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53739,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53740,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53741,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "88df647b-fc78-4757-8f21-230982a96ef7",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/88df647b-fc78-4757-8f21-230982a96ef7/run.json",
+        "state": "failed",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53771,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53772,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53773,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "739522f5-7f69-4a2e-b4eb-145daa0765ac",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/739522f5-7f69-4a2e-b4eb-145daa0765ac/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53307,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53308,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53309,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "3d021527-0bb2-452e-90f3-e46781b82bb6",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/3d021527-0bb2-452e-90f3-e46781b82bb6/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52355,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52356,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52357,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "7e43f04b-7c1c-459e-aebf-0bb636e425ea",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/7e43f04b-7c1c-459e-aebf-0bb636e425ea/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53367,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53368,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53369,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "ba87d874-1b48-4d17-aa69-4ce5328be2fd",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/ba87d874-1b48-4d17-aa69-4ce5328be2fd/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52352,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52353,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52354,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "28a5ec12-f985-4ac6-82b3-e9fa2893e02a",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/28a5ec12-f985-4ac6-82b3-e9fa2893e02a/run.json",
+        "state": "failed",
+        "processGroupPresent": false,
+        "recordedPortsReleased": false,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53863,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53864,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53865,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "b944c5c4-7f0a-4b22-b618-d407340931e9",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/b944c5c4-7f0a-4b22-b618-d407340931e9/run.json",
+        "state": "failed",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53643,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53644,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53645,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "fa2e5654-708c-4460-9f9c-f6e900ad1ce9",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/fa2e5654-708c-4460-9f9c-f6e900ad1ce9/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 53950,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 53951,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 53952,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "37f84ed3-faf8-4893-beef-06215d83d358",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/37f84ed3-faf8-4893-beef-06215d83d358/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54391,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54392,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54393,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "98d9ae5a-9f90-47ef-9b4d-9230c992843e",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/98d9ae5a-9f90-47ef-9b4d-9230c992843e/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54590,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54591,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54592,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "4fab235b-607d-4bdf-8bed-958af9d630e7",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/4fab235b-607d-4bdf-8bed-958af9d630e7/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54810,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54811,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54812,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "2e285f86-4e97-4bd8-aaad-ad9c16f80ad0",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/2e285f86-4e97-4bd8-aaad-ad9c16f80ad0/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54744,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54745,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54746,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "64b54657-eefc-4aa0-95d4-64e843422085",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/64b54657-eefc-4aa0-95d4-64e843422085/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54945,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54946,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54947,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "8eceb00b-3f31-4a4e-9bbc-89f2b39c86b2",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/8eceb00b-3f31-4a4e-9bbc-89f2b39c86b2/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54468,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54469,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54470,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "efff3acb-71f4-407a-b66c-ee50700177c4",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/efff3acb-71f4-407a-b66c-ee50700177c4/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54289,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54290,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54291,
+            "listening": false
+          }
+        ]
+      },
+      {
+        "runId": "ca3598be-8a77-4b31-9008-c0ac4828e153",
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/4a45b4ec-d6e4-469c-bd2a-9a2aa3e4d620/ca3598be-8a77-4b31-9008-c0ac4828e153/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 54529,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 54530,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 54531,
+            "listening": false
+          }
+        ]
+      }
+    ],
+    "allReleased": true,
+    "recordCount": 21,
+    "uniqueRunCount": 21,
+    "uniqueRuns": [
+      {
+        "runId": "8251bf85-b9cf-4f64-a5dd-3abe554d85f8",
+        "recordCopies": 1
+      },
+      {
+        "runId": "29311350-6436-457c-8c67-13720b3f1c08",
+        "recordCopies": 1
+      },
+      {
+        "runId": "3b08ab85-9e93-4c81-87ce-09bd1b05657f",
+        "recordCopies": 1
+      },
+      {
+        "runId": "cf6a875f-31e9-4173-b079-e67c02670510",
+        "recordCopies": 1
+      },
+      {
+        "runId": "58074105-1ddb-45f5-bded-43cbf8f52720",
+        "recordCopies": 1
+      },
+      {
+        "runId": "88df647b-fc78-4757-8f21-230982a96ef7",
+        "recordCopies": 1
+      },
+      {
+        "runId": "739522f5-7f69-4a2e-b4eb-145daa0765ac",
+        "recordCopies": 1
+      },
+      {
+        "runId": "3d021527-0bb2-452e-90f3-e46781b82bb6",
+        "recordCopies": 1
+      },
+      {
+        "runId": "7e43f04b-7c1c-459e-aebf-0bb636e425ea",
+        "recordCopies": 1
+      },
+      {
+        "runId": "ba87d874-1b48-4d17-aa69-4ce5328be2fd",
+        "recordCopies": 1
+      },
+      {
+        "runId": "28a5ec12-f985-4ac6-82b3-e9fa2893e02a",
+        "recordCopies": 1
+      },
+      {
+        "runId": "b944c5c4-7f0a-4b22-b618-d407340931e9",
+        "recordCopies": 1
+      },
+      {
+        "runId": "fa2e5654-708c-4460-9f9c-f6e900ad1ce9",
+        "recordCopies": 1
+      },
+      {
+        "runId": "37f84ed3-faf8-4893-beef-06215d83d358",
+        "recordCopies": 1
+      },
+      {
+        "runId": "98d9ae5a-9f90-47ef-9b4d-9230c992843e",
+        "recordCopies": 1
+      },
+      {
+        "runId": "4fab235b-607d-4bdf-8bed-958af9d630e7",
+        "recordCopies": 1
+      },
+      {
+        "runId": "2e285f86-4e97-4bd8-aaad-ad9c16f80ad0",
+        "recordCopies": 1
+      },
+      {
+        "runId": "64b54657-eefc-4aa0-95d4-64e843422085",
+        "recordCopies": 1
+      },
+      {
+        "runId": "8eceb00b-3f31-4a4e-9bbc-89f2b39c86b2",
+        "recordCopies": 1
+      },
+      {
+        "runId": "efff3acb-71f4-407a-b66c-ee50700177c4",
+        "recordCopies": 1
+      },
+      {
+        "runId": "ca3598be-8a77-4b31-9008-c0ac4828e153",
+        "recordCopies": 1
+      }
+    ]
+  }
+}

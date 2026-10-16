@@ -1,0 +1,127 @@
+{
+  "purpose": "独立核对 GenerationSourceClient HTTP 诊断修复合同与实际错误传递路径。",
+  "readWhen": "实施诊断信息修复及验收该修复时。",
+  "reviewType": "代码与修复合同审查",
+  "verdict": "pass",
+  "materialFindings": [],
+  "conclusion": "当前限定合同能够修复已定位的 SOURCE_HTTP_ERROR 诊断信息损失；未发现阻止实施的架构、SSOT 或消费者合同问题。",
+  "scope": {
+    "input": "docs/verification/skills-mcp-migration/current-boundary-causal-design.json#diagnosticInformationLoss",
+    "authorization": "docs/plans/skills-mcp-migration-20261013.md:1333-1339",
+    "method": "只读核对当前工作树源码、配置、测试与授权；仅写本审查文件。",
+    "execution": "本次未启动应用、模型、服务或测试；结论属于方案审查，实施结果与运行验收仍待验证。",
+    "plan": "已核对 docs/plans/skills-mcp-migration-20261013.md 第 5.7.2 节；该节与限定修复合同及当前消费者一致。"
+  },
+  "verifiedContracts": [
+    {
+      "subject": "信息损失位置",
+      "evidence": [
+        "src/host/source-client/http-client.ts:6-18",
+        "src/host/source-client/http-client.ts:100",
+        "src/host/generation/source-client.ts:140-148"
+      ],
+      "result": "HTTP 非成功 JSON 响应在 SourceClientError 保存 status 和 responseBody；GenerationSourceClient 当前最后一条映射只保留 message。限定在 SOURCE_HTTP_ERROR 分支生成含操作、资源 ID 和 HTTP 状态的诊断，直接覆盖已证实缺陷。"
+    },
+    {
+      "subject": "输入与错误分类",
+      "evidence": [
+        "src/host/generation/source-client.ts:140-147",
+        "src/host/source-client/source-client.ts:15-27",
+        "src/host/source-client/http-client.ts:91-100"
+      ],
+      "result": "操作属于 instance 或 template-bundle，资源 ID 在发起请求前验证。发现端点 HTTP 失败使用 DISCOVERY_HTTP_ERROR；非 JSON 响应使用协议错误。限定修复 SOURCE_HTTP_ERROR 可以保持这些现有分类。"
+    },
+    {
+      "subject": "SSOT",
+      "evidence": [
+        "config/error-catalog.json:107",
+        "config/error-catalog-schema.ts:41-49"
+      ],
+      "result": "既有错误目录支持 diagnostic_template，schema 已对其他诊断模板校验必需占位符。增加 SOURCE_QUERY_FAILED 模板及其占位符校验符合现有配置职责，无需新增配置体系。"
+    },
+    {
+      "subject": "直接消费者",
+      "evidence": [
+        "src/host/generation/source-preparer.ts:155-179",
+        "src/host/generation/comfy-http-transport.ts:283"
+      ],
+      "result": "参数检查、生成准备及传输连接恢复读取共用 GenerationSourceClient。修改唯一映射入口可覆盖这些消费者。"
+    },
+    {
+      "subject": "消息交付",
+      "evidence": [
+        "src/host/cli/route.ts:89-104",
+        "scripts/cli/harness-comfyui.mjs:140-150",
+        "src/host/generation/generation-runtime.ts:319-322",
+        "src/host/generation/generation-runtime.ts:490",
+        "src/client/workbench/results-drawer.tsx:172"
+      ],
+      "result": "CLI 路由返回原 code/message，CLI 输出到 stderr；Run 使用 errorCode/errorMessage，结果抽屉直接展示 errorMessage。改进现有 message 足以进入这些消费者。"
+    },
+    {
+      "subject": "错误含义",
+      "evidence": [
+        "src/host/source-client/http-client.ts:100",
+        "docs/verification/skills-mcp-migration/current-boundary-causal-design.json#diagnosticInformationLoss"
+      ],
+      "result": "状态码可准确报告 HTTP 结果。当前合同使用已验证的本地操作和 ID，避免把任意正文解释成资源不存在；无需将远端正文直接回显。"
+    }
+  ],
+  "requiredVerification": [
+    {
+      "case": "HTTP 状态及资源身份",
+      "expected": "同一通用原始 message，分别组合 instance/2、template-bundle/29 与 404/503；最终 code 均为 SOURCE_QUERY_FAILED，message 明确表达各自资源、ID、状态和核对动作。",
+      "files": [
+        "tests/unit/generation-source-client.test.ts"
+      ]
+    },
+    {
+      "case": "错误正文与已有分支",
+      "expected": "额外响应字段不出现在 message；取消、既有 GenerationRuntimeError、协议错误、过大响应、连接错误和发现端点错误保留现有行为。",
+      "files": [
+        "tests/unit/generation-source-client.test.ts",
+        "tests/unit/internal-source-client.test.ts"
+      ]
+    },
+    {
+      "case": "缺失 status 的现有注入合同",
+      "expected": "SourceClientError.details 当前可选，现有测试构造了不带 status 的 SOURCE_HTTP_ERROR。实施时明确这类输入的输出并增加断言；保持原 message 是最小处理，禁止输出 HTTP undefined 或虚构状态。",
+      "files": [
+        "src/host/source-client/http-client.ts:11",
+        "tests/unit/generation-source-client.test.ts:110-116"
+      ]
+    },
+    {
+      "case": "配置模板验证",
+      "expected": "每个必需占位符缺失均使 parseErrorCatalog 拒绝配置，真实模板通过；预期模板只在错误目录定义。",
+      "files": [
+        "tests/unit/error-catalog-schema.test.ts"
+      ]
+    },
+    {
+      "case": "CLI 实际交付",
+      "expected": "经 GenerationSourceClient 与参数检查到路由的错误保持 code/message；CLI 返回非零退出码且 stderr 包含诊断。测试避免仅手工构造最终字符串后证明其能打印。",
+      "files": [
+        "tests/integration/cli-route.test.ts",
+        "tests/integration/cli-command.test.ts"
+      ]
+    },
+    {
+      "case": "Run 持久化与 UI",
+      "expected": "生成准备失败后查询 Run 得到相同 code/message；已有结果抽屉错误展示测试保持通过。",
+      "files": [
+        "tests/unit/generation-runtime.test.ts",
+        "tests/unit/results-drawer.test.tsx"
+      ]
+    },
+    {
+      "case": "真实参数检查",
+      "expected": "另建候选后保存实际实例读取 HTTP 失败及 CLI 返回，核对操作、ID、状态和 stderr；模型后续动作单独记录。",
+      "files": [
+        "docs/verification/skills-mcp-migration/current-boundary-causal-design.json#diagnosticInformationLoss"
+      ]
+    }
+  ],
+  "causalLimit": "本审查确认错误转换的信息损失与修复入口。模型首次继续检索、重复检查和停止行为的原因及修复效果仍须独立验证。",
+  "implementationStatus": "尚未审查实施代码；本次 pass 只表示限定修复合同可实施。"
+}

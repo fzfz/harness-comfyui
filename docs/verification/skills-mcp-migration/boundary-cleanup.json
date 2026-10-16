@@ -1,0 +1,40 @@
+{
+  "desktop": [
+    {
+      "runId": "97f3d7ce-e89b-4c48-aed4-1febbd32a58d",
+      "state": "stopped",
+      "portsReleased": true,
+      "evidence": ".local/skills-mcp-migration-live/boundary-no-default-stop.json"
+    },
+    {
+      "runId": "d483cb80-e9ce-4d28-92b5-413e1a423ddd",
+      "state": "stopped",
+      "portsReleased": true,
+      "evidence": ".local/skills-mcp-migration-live/boundary-empty-stop.json"
+    }
+  ],
+  "fixtures": [
+    {
+      "runId": "6703784d-b936-4496-be08-51b2f2338338",
+      "status": "stopped",
+      "processExited": true,
+      "portReleased": true,
+      "evidence": ".local/skills-mcp-migration-live/boundary-fixture-evidence/6703784d-b936-4496-be08-51b2f2338338/state.json"
+    },
+    {
+      "runId": "de10e782-2ce6-4e25-93cc-161a229069ad",
+      "status": "stopped",
+      "processExited": true,
+      "portReleased": true,
+      "evidence": ".local/skills-mcp-migration-live/boundary-fixture-evidence/de10e782-2ce6-4e25-93cc-161a229069ad/state.json"
+    }
+  ],
+  "profileRestoredBy": "configure-boundary.mjs restore",
+  "pendingProductChange": "docs/plans/skills-mcp-model-selection-clarification-20261013.md",
+  "profileVerification": {
+    "fixtureUrlsAbsent": true,
+    "mcpOverrideAbsent": true,
+    "installedDefaultUrlPresent": true,
+    "applicationRestartedAfterRestore": false
+  }
+}

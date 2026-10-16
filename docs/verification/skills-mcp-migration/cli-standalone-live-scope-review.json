@@ -1,0 +1,190 @@
+{
+  "reviewer": "cli_standalone_review",
+  "reviewedAt": "2026-10-14T08:30:38.241732+00:00",
+  "purpose": "补充区分本轮 5.6-1 业务任务、5.9.8 四角色交接验收与实际迭代 persona 的遵循情况。",
+  "priorRecord": "docs/verification/skills-mcp-migration/cli-standalone-live-review.json",
+  "priorRecordPreserved": true,
+  "scopeConclusion": {
+    "case_5_6_1_business": "PASS",
+    "cli_standalone_live": "PASS",
+    "plan_5_9_8_four_role_handoff": "NOT_COVERED_BY_THIS_RUN",
+    "delivered_iteration_persona": "NOT_FOLLOWED",
+    "overallLabel": "本轮显式模型生成与查询验收通过；四角色专项在本轮未覆盖；实际 persona 的派发要求仍存在执行偏离。",
+    "priorConclusionQualification": "既有记录中的 ITERATION_OVERALL_FAIL 仅能用于实际 persona 指定的迭代流程遵循情况。将该标签解释为 5.6-1 显式模型生成任务失败，或解释为本轮已执行且失败了 5.9.8 四角色专项，均超出证据适用范围。"
+  },
+  "applicability": [
+    {
+      "source": "docs/plans/skills-mcp-migration-20261013.md:1235",
+      "clause": "5.9.3",
+      "object": "5.3 至 5.6 各项 Skill 任务分别在两个预设中执行。",
+      "judgment": "该条规定任务与预设的覆盖矩阵，并要求明确 Skill 路径、目录和参数。条文本身没有要求每一个单项任务都执行四角色交接。本轮 5.6-1 的对象是显式模型生成分支。"
+    },
+    {
+      "source": "docs/plans/skills-mcp-migration-20261013.md:1245",
+      "clause": "5.9.8",
+      "object": "同组目录记录的 MCP/Host 一致性、一次生成及媒体、再完成一轮四角色依次交接。",
+      "judgment": "该条另行要求一轮四角色交接。本轮无角色调用、子 Session、观察或比较产物，不能计为该项完成；仅依据此条不能推导本轮 5.6-1 业务失败。"
+    },
+    {
+      "source": "安装包 .agents/skills/comfyui-iterate-generation/SKILL.md:3；collect seq 11 Skill catalog",
+      "object": "迭代 Skill 的任务匹配条件。",
+      "judgment": "描述要求用户根据故事与人物构思画面，并通过生成、观察、比较与 Prompt 修复迭代达成目标。本轮用户给出完整 final Builder JSON，仅要求生成一张图后查询 Run 和媒体，没有提供构图、观察比较或迭代任务。因此用户请求本身匹配 comfyui-generate，不能仅以迭代 Skill 的正文要求判其业务失败。"
+    },
+    {
+      "source": "安装包 agent-presets/harness-comfyui-iteration/agent.cordis.yml:25；collect seq 8；首次模型 request 83df8865-56e3-446a-8608-377403cc4b66.jsonl",
+      "object": "实际送达主 Agent 的 system persona。",
+      "quote": "Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison.",
+      "judgment": "该指令直接要求主 Agent 使用迭代 Skill 派发四角色，后文还要求比较确认后交付。当前 persona 没有写入“仅在用户请求符合 Skill description 时”或“直接生成查询任务例外”。用户点名 comfyui-generate 没有要求跳过派发，也没有授权忽略 system persona。因而缺四角色同时构成可独立记录的 persona 执行偏离。该结论来自实际送达指令，而不是把 5.9.8 的专项要求扩到 5.9.3。"
+    }
+  ],
+  "actualInput": {
+    "eventSeq": 9,
+    "skill": "comfyui-generate",
+    "template_id": "29",
+    "model_id": "14",
+    "instance_id": "2",
+    "count": 1,
+    "seed": 20261013,
+    "builderPurpose": "final",
+    "dimensions": [
+      1536,
+      1536
+    ],
+    "requestedActions": [
+      "按完整 Builder JSON 生成一张图片",
+      "查询实际 Run 和媒体",
+      "保存产物到 Workspace/5.6-1"
+    ],
+    "additionalUserMessages": 0
+  },
+  "businessEvidence": [
+    {
+      "seqs": [
+        18,
+        19,
+        28,
+        29
+      ],
+      "result": "读取指定生成 Skill、Prompt 合同、schema 与模型路线配置；用户已经提供完整 Builder JSON。"
+    },
+    {
+      "seqs": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "result": "通过 MCP 读取模板 29、显式模型 14 和实例列表。模板默认模型为 1，显式模型 14 与模板同属 wai/2，实例首项为 2。"
+    },
+    {
+      "seqs": [
+        42,
+        43,
+        47,
+        48,
+        52,
+        53
+      ],
+      "result": "完整读取 CLI 参考，通过受管注入入口取得参数与尺寸候选，退出 0。"
+    },
+    {
+      "seqs": [
+        57,
+        58,
+        62,
+        63
+      ],
+      "result": "创建并提交 model.id=14 的请求，保留原 Prompt、Seed 20261013、1536×1536、batch_size=1，返回实际 Run ID。"
+    },
+    {
+      "seqs": [
+        67,
+        68,
+        69,
+        70,
+        74,
+        75,
+        79,
+        80,
+        84,
+        85
+      ],
+      "result": "查询 Actual Workflow 并通过渐进式帮助发现媒体命令，返回一项实际图片。"
+    },
+    {
+      "seqs": [
+        89,
+        90,
+        94,
+        95,
+        98,
+        100
+      ],
+      "result": "确认媒体文件存在并保存副本，保存请求及 CLI 结果，最终回复给出 Run、参数和媒体路径，随后正常结束。"
+    }
+  ],
+  "artifactChecks": {
+    "requestEqualsSavedRunArguments": true,
+    "runId": "run_1ded4e53-abbf-4dc3-bde0-45a70ea1c76e",
+    "runStatus": "succeeded",
+    "mediaCount": 1,
+    "hasActiveRuns": false,
+    "files": [
+      "media_a74e31d4-b635-4287-8793-f16dc6c81295.png",
+      "request.json",
+      "resolve-media.json",
+      "run-inputs.json",
+      "submit-result.json",
+      "summary.md"
+    ],
+    "visualAssessment": "本轮未执行独立视觉观察；直接生成/查询业务完成不包含视觉目标达成判定。"
+  },
+  "remainingContractDeviation": {
+    "status": "CONFIRMED_PERSONA_DEVIATION",
+    "sourceEvent": 8,
+    "firstRelevantAction": 18,
+    "executionEvents": [
+      18,
+      23,
+      28,
+      33,
+      35,
+      37,
+      42,
+      47,
+      52,
+      57,
+      62,
+      67,
+      69,
+      74,
+      79,
+      84,
+      89,
+      94
+    ],
+    "completionEvents": [
+      98,
+      100
+    ],
+    "facts": "主 Session 直接完成全部操作，四角色 Tool 已提供但没有调用，subagentCatalog 为空，未读取迭代 Skill 或生成其交接文件。",
+    "causalLimit": "当前证据确认指令适用表述与执行行为的差异。没有单变量控制证据支持把原因归结为模型、任务措辞或派发实现。"
+  },
+  "otherFindings": {
+    "materialGenerationQueryFailures": [],
+    "minorArtifactInaccuracy": {
+      "source": "5.6-1/summary.md 第 9 行；seq 94",
+      "observed": "摘要把 negative_prompt 写成 native_negative。实际 request.json 与 Run 保存的是完整负向 Prompt，native_negative 是输入 Builder 的 negative_mode。",
+      "impact": "摘要字段标注不准确；实际请求、生成、查询及最终回复中的负向模式说明正确，未构成本轮生成查询业务失败。"
+    }
+  },
+  "recordHandling": "本补充记录保留原失败、取消、已接受 Run 和 CLI 修复证据。原报告保持不变。清理结果引用同一审查员已独立核验的既有记录，本补充未重新启动应用或调用模型。",
+  "evidence": {
+    "executionIndex": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/execution-index.json",
+    "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/6f84e928-1a01-4018-81ff-e830f0992328/1791963006200-9bb8f97b-d5d9-4b20-a972-624b50b30708-collect.json",
+    "modelCallsIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/model-calls-index.json",
+    "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui"
+  }
+}

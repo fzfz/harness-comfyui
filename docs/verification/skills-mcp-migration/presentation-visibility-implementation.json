@@ -1,0 +1,89 @@
+{
+  "purpose": "记录计划第 5.14 节的预设交付提示可见性修复及针对性验证结果。",
+  "implementedAt": "2026-10-14T06:09:07.495Z",
+  "status": "implementation_complete_targeted_checks_passed",
+  "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "design": "docs/verification/skills-mcp-migration/unavailable-presentation-tool-design.json",
+  "implementation": {
+    "hiddenSectionName": "ui:deliverable-file-references",
+    "configFiles": [
+      {
+        "path": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "onlyAppendedTargetSection": true,
+        "addedSectionCount": 1
+      },
+      {
+        "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+        "onlyAppendedTargetSection": true,
+        "addedSectionCount": 1
+      }
+    ],
+    "behavior": "两个产品预设使用各自实际 YAML 的配置，在 system-prompt/assemble 完成后移除目标交付段。",
+    "component": "agent-presets/project-system-prompt-visibility.mjs",
+    "componentChanged": false,
+    "preservedExistingMigrationEdits": true,
+    "scopeEvidence": {
+      "componentLoadSites": [
+        "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+      ],
+      "hostPatchChanged": false,
+      "presetRegistryChanged": false,
+      "dependencyManifestChanged": false,
+      "dependencyLockChanged": false,
+      "verifiedBoundary": "组件加载位置仍为两个产品 composition。既有组件、Host patch 和预设注册文件的 git diff 为空。"
+    }
+  },
+  "regression": {
+    "file": "tests/production/source-agent-preset.test.mjs",
+    "seam": "system-prompt/assemble",
+    "cases": [
+      "两个产品预设分别读取实际 composition，并通过既有组件的公开 apply 入口注册 assembly listener。",
+      "移除目标交付段和既有三个隐藏段。",
+      "保留 deployment:persona、tool:bash 和名称为 ui:deliverable-file-references:custom 的自定义段。",
+      "保留 contexts、tools、variables 的对象引用。",
+      "保留输入 assembly 中的七个段及原始交付段。",
+      "沿用 assembly 错误透传与非法配置拒绝的回归测试。"
+    ]
+  },
+  "tdd": {
+    "red": {
+      "command": "pnpm exec vitest run tests/production/source-agent-preset.test.mjs --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 1,
+      "total": 34,
+      "passed": 32,
+      "failed": 2,
+      "failure": "工作台和迭代预设都保留了 ui:deliverable-file-references，两个 assembly 结果断言失败。"
+    },
+    "green": {
+      "command": "pnpm exec vitest run tests/production/source-agent-preset.test.mjs --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 0,
+      "filesPassed": 1,
+      "testsPassed": 34
+    }
+  },
+  "resourceValidation": {
+    "command": "pnpm exec vitest run tests/production/official-agent-preset-resources.test.mjs tests/production/official-preset-overrides.test.mjs tests/production/plugin-build-presets.test.mjs tests/unit/installed-presets.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "exitCode": 0,
+    "filesPassed": 4,
+    "testsPassed": 40,
+    "coverage": "实际预设资源校验、Profile patch、构建和包内引用、官方 Loader 与已安装预设的注册作用域。"
+  },
+  "whitespaceValidation": {
+    "command": "git diff --check -- agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml agent-presets/harness-comfyui-iteration/agent.cordis.yml tests/production/source-agent-preset.test.mjs",
+    "exitCode": 0
+  },
+  "outcomeBoundary": {
+    "deterministicChecksPassed": true,
+    "realModelAcceptancePerformed": false,
+    "animaPureJsonSolved": false,
+    "deliveryGuidanceImpact": "隐藏整段会同时移除该段中的图片 Markdown、文件链接和文件卡片写法提示。真实文件与图片交付需要继续验收。"
+  },
+  "openAcceptance": [
+    "父线程完成改动文件的独立审查及计划和规范文档同步。",
+    "父线程从最终候选读取工作台、迭代主 Agent 与子 Agent 的真实模型请求，核对目标段移除、persona 和工具声明保持。",
+    "父线程复验已有文件与图片的最终链接、图片引用和官方 UI 打开结果。",
+    "父线程完成最终候选的打包、质量门禁和交付要求。"
+  ],
+  "commitCreated": false
+}

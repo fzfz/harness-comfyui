@@ -1,0 +1,10 @@
+{
+  "purpose": "限定当前 Builder 因果实验的选择顺序与重复边界。",
+  "readWhen": "决定下一次取证或模型诊断调用时。",
+  "diagnosis": "current-builder-causal-design.json",
+  "completed": "E1完整候选已独立审查，原采用保持；E2四次单步调用已完成独立复核，全部未保持原条件翻页。",
+  "repetitionRule": "执行者遵循主计划5.11第10项；同条件连续两次失败且无新证据时停止重复，重新检查假设。顾问提出的每臂最低三次不作为自动执行要求。",
+  "nextAction": "按已独立审查的builder-model-comparison-contract.json完成两次获准免费模型单步比较；在相应证据支持前保持产品分页规则及原失败状态。",
+  "productDecision": "当前尚无已验证的产品修复合同。",
+  "modelCallsInThisDecision": 0
+}

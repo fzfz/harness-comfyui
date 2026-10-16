@@ -11,7 +11,7 @@ function execution(overrides: Record<string, unknown> = {}) {
     token,
     callId: 'call_shell_1',
     name: 'bash',
-    arguments: { command: 'node cli.mjs catalog instance list', description: 'List instances' },
+    arguments: { command: 'node cli.mjs generation random-seeds --stdin', description: 'Generate a Seed' },
     signal: new AbortController().signal,
     agent: {
       session: {
@@ -30,8 +30,6 @@ function execution(overrides: Record<string, unknown> = {}) {
 describe('CLI shell capability', () => {
   const sourceOptions = {
     nodeExecutable: '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness',
-    semanticQueryCliPath: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
-    sourceAddress: () => ({ url: 'https://catalog.example.com', port: 18093 }),
   }
 
   it('reads every managed CLI environment name from its exact structured configuration', () => {
@@ -50,7 +48,7 @@ describe('CLI shell capability', () => {
       ...managedCliEnvironment,
       environmentNames: {
         ...managedCliEnvironment.environmentNames,
-        sourcePort: managedCliEnvironment.environmentNames.capability,
+        api: managedCliEnvironment.environmentNames.capability,
       },
     })).toThrow(/distinct/u)
   })
@@ -71,9 +69,6 @@ describe('CLI shell capability', () => {
       DSH_HARNESS_COMFYUI_NODE_EXECUTABLE: '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness',
       DSH_HARNESS_COMFYUI_CLI_API: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
       DSH_HARNESS_COMFYUI_CLI_CAPABILITY: 'capability-1',
-      DSH_HARNESS_COMFYUI_SEMANTIC_QUERY_CLI: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
-      DSH_HARNESS_COMFYUI_SOURCE_URL: 'https://catalog.example.com',
-      DSH_HARNESS_COMFYUI_SOURCE_PORT: '18093',
     })
     expect(store.environment(exec)).toEqual(environment)
     expect(store.authorize('capability-1')).toEqual({
@@ -138,12 +133,6 @@ describe('CLI shell capability', () => {
     expect(() => new CliShellCapabilityStore({ cliPath: '', apiUrl: 'http://127.0.0.1', ...sourceOptions })).toThrow('CLI path')
     expect(() => new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: 'http://127.0.0.1', ...sourceOptions, nodeExecutable: '' })).toThrow('Host Node executable path')
     expect(() => new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: '', ...sourceOptions })).toThrow('CLI API URL')
-    expect(() => new CliShellCapabilityStore({
-      cliPath: '/cli.mjs',
-      apiUrl: 'http://127.0.0.1',
-      ...sourceOptions,
-      semanticQueryCliPath: '',
-    })).toThrow('Semantic query CLI path')
   })
 
   it('creates a random capability when no generator is provided', () => {
@@ -178,28 +167,6 @@ describe('CLI shell capability', () => {
     expect(store.authorize(next)).toMatchObject({ callId: 'call_shell_1', sessionId: 'session-1' })
   })
 
-  it('reads the current Source address whenever it resolves a foreground environment', () => {
-    let address = { url: 'http://127.0.0.1', port: 18093 }
-    const store = new CliShellCapabilityStore({
-      cliPath: '/repo/scripts/cli/harness-comfyui.mjs',
-      apiUrl: 'http://127.0.0.1:4173/api/harness-comfyui/cli/v1',
-      ...sourceOptions,
-      semanticQueryCliPath: '/repo/scripts/source-client/imagegen-semantic-query.mjs',
-      sourceAddress: () => address,
-      createCapability: () => 'capability-1',
-    })
-    const exec = execution()
-
-    expect(store.environment(exec)).toMatchObject({
-      DSH_HARNESS_COMFYUI_SOURCE_URL: 'http://127.0.0.1',
-      DSH_HARNESS_COMFYUI_SOURCE_PORT: '18093',
-    })
-    address = { url: 'https://catalog.example.com', port: 443 }
-    expect(store.environment(exec)).toMatchObject({
-      DSH_HARNESS_COMFYUI_SOURCE_URL: 'https://catalog.example.com',
-      DSH_HARNESS_COMFYUI_SOURCE_PORT: '443',
-    })
-  })
   it('clears all capabilities and execution mappings on plugin shutdown', () => {
     let serial = 0
     const store = new CliShellCapabilityStore({ cliPath: '/cli.mjs', apiUrl: 'http://127.0.0.1', ...sourceOptions, createCapability: () => `capability-${++serial}` })

@@ -1,0 +1,59 @@
+{
+  "purpose": "记录模型流观察器的依赖声明缺陷与回归验证。",
+  "readWhen": "启动使用 llm-observer.mjs 的隔离验收前。",
+  "observedEvidence": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-2-zero-workbench-child-history-result.json",
+  "observedError": "cannot get property \"agents\" without inject",
+  "cause": {
+    "source": ".local/skills-mcp-migration-live/llm-observer.mjs",
+    "access": "流错误处理分支访问 ctx.agents，模块此前没有声明 agents 注入依赖。",
+    "effect": "访问异常覆盖了该分支原计划继续抛出的模型流错误。"
+  },
+  "change": "观察器声明 inject = [agents]，保留现有取消、错误记录、脱敏与原错误抛出流程。",
+  "tests": {
+    "source": ".local/skills-mcp-migration-live/llm-observer.test.mjs",
+    "scope": "真实 Cordis 中，agents 由同级插件提供；观察器通过自身插件作用域访问服务。",
+    "red": ".local/skills-mcp-migration-live/observer-cordis-scope-red.txt",
+    "green": ".local/skills-mcp-migration-live/observer-cordis-scope-green.txt",
+    "assertions": [
+      "原始流错误对象继续抛出",
+      "当前 Session 收到一次原合同取消请求",
+      "证据文件保存原始流错误消息"
+    ],
+    "adjacent": "llm-observer 与 redact-evidence 全部定向测试"
+  },
+  "status": "independently-reviewed",
+  "runtimeVerification": "CLI 官方复验已部署当前副本，模型请求为零；模型流错误与取消分支的官方复验仍待完成。",
+  "consumerChanges": [
+    {
+      "path": ".local/skills-mcp-migration-live/builder-model-comparison-runtime/runner.mjs",
+      "before": ".replace(\"export const name = 'skills-migration-live-observer';\",\"export const inject = ['llm','agents','harnessComfyuiCore','workspaceRegistry'];\\nexport const name = 'skills-migration-live-observer';\")",
+      "after": ".replace(\"export const inject = ['agents'];\",\"export const inject = ['llm','agents','harnessComfyuiCore','workspaceRegistry'];\")"
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/builder-E2-runtime/runner.mjs",
+      "before": ".replace(\"export const name = 'skills-migration-live-observer';\",\"export const inject = ['llm','agents','harnessComfyuiCore','workspaceRegistry'];\\nexport const name = 'skills-migration-live-observer';\")",
+      "after": ".replace(\"export const inject = ['agents'];\",\"export const inject = ['llm','agents','harnessComfyuiCore','workspaceRegistry'];\")"
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs",
+      "before": ".replace(\"export const name = 'skills-migration-live-observer';\",\"export const inject = ['llm','agents','tools','shellEnv'];\\nexport const name = 'skills-migration-live-observer';\")",
+      "after": ".replace(\"export const inject = ['agents'];\",\"export const inject = ['llm','agents','tools','shellEnv'];\")"
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/history-current-runtime/runner.mjs",
+      "before": ".replace(\"export const name = 'skills-migration-live-observer';\",\"export const inject = ['agents'];\\nexport const name = 'skills-migration-live-observer';\")",
+      "after": ""
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/runner.mjs",
+      "before": ".replace(\"export const name = 'skills-migration-live-observer';\",\"export const inject = ['agents'];\\nexport const name = 'skills-migration-live-observer';\")",
+      "after": ""
+    }
+  ],
+  "consumerValidation": {
+    "red": ".local/skills-mcp-migration-live/observer-derived-red.json",
+    "green": ".local/skills-mcp-migration-live/observer-derived-green.json",
+    "scope": "五个生成器的依赖声明变换及生成模块语法"
+  },
+  "review": "docs/verification/skills-mcp-migration/observer-injection-code-review.json"
+}

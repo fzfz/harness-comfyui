@@ -1,0 +1,123 @@
+{
+  "runId": "dd77f5d7-293b-4dbd-8437-88a45325e1b5",
+  "fixture": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/0331f4fb-3a5a-45f6-94f2-3a454674a6c1",
+  "traces": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/dd77f5d7-293b-4dbd-8437-88a45325e1b5/1791946911335-bb448c90-2ad2-4eca-b20c-bd88bd039845-collect.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/dd77f5d7-293b-4dbd-8437-88a45325e1b5/1791946910663-ca68369c-8cf9-4a4b-a135-75cdcfa8971f-collect.json"
+  ],
+  "modelRequests": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/79338988-018a-4dc0-862c-210c1bba554f.jsonl",
+      "at": "2026-10-14T03:00:37.424Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/07dc73f8-dee6-4ce4-9236-3a56d38797ea.jsonl",
+      "at": "2026-10-14T03:00:53.326Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/862e9efa-e9d8-40b8-b2c3-ae1041374a27.jsonl",
+      "at": "2026-10-14T03:00:44.461Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/0575e367-e58d-49ba-9254-02b3449e515a.jsonl",
+      "at": "2026-10-14T03:00:52.732Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/0faa197e-02da-442e-80ae-8c58f6496b10.jsonl",
+      "at": "2026-10-14T03:00:48.899Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/04f664ca-f28d-4f32-81ba-9aa3ad1cfce8.jsonl",
+      "at": "2026-10-14T03:00:40.841Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/e2ca4140-15d4-4cc9-b96a-74ed36597229.jsonl",
+      "at": "2026-10-14T03:00:38.171Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/83916b1b-620f-4e10-b6e5-e45f0cb4d5af.jsonl",
+      "at": "2026-10-14T03:00:37.421Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/66ba7cfe-5b3f-446b-b97a-e3746dc4e749.jsonl",
+      "at": "2026-10-14T03:00:58.674Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b12c94de-605f-44df-9c5d-8288e10295da.jsonl",
+      "at": "2026-10-14T03:00:40.846Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5327ba1f-c18f-42b6-a810-08ebd39aa0ec.jsonl",
+      "at": "2026-10-14T03:00:49.038Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8527e28b-3bfd-42d4-afa9-ccb5e3986c7f.jsonl",
+      "at": "2026-10-14T03:01:26.364Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d4422a7b-e205-4fd6-acca-1b80848b5fb9.jsonl",
+      "at": "2026-10-14T03:00:38.173Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c287ab47-ebbe-4e8d-b7df-82194d7006b0.jsonl",
+      "at": "2026-10-14T03:00:59.817Z",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/1ab489e9-7593-4fbe-ae41-113671d29963.jsonl",
+      "at": "2026-10-14T03:00:44.700Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3560460d-50df-492f-8107-edfee5db98eb.jsonl",
+      "at": "2026-10-14T03:01:11.752Z",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    }
+  ],
+  "status": "awaiting-independent-review"
+}

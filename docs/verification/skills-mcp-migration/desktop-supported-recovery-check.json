@@ -1,0 +1,8 @@
+{
+  "command": "pnpm test:desktop",
+  "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-supported-recovery-check.log",
+  "filesPassed": 13,
+  "testsPassed": 269,
+  "recoveryContract": "应用重启后重新激活两个项目预设，分别完成MCP查询；普通预设在失败阶段保持可用。",
+  "remaining": "普通预设四项Host目录工具无条件正向断言已随后补齐，最终复跑正在进行。"
+}

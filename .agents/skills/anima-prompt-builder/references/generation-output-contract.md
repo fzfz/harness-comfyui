@@ -1,3 +1,7 @@
+---
+文档用途: 规定 ANIMA 生成结果的构造与校验。
+读取时机: 按 SKILL.md 构造生成结果时。
+---
 # ANIMA 生成结果合同
 
 ## 结果来源
@@ -49,6 +53,6 @@ ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals
 
 上述 `--quiet` 命令退出码 `0` 时，stderr 必须为空，stdout 必须是一行通过校验的完整结果 JSON；Skill 执行者把 stdout 中的对象作为最终结构化结果。退出码 `2` 时，stdout 必须为空，stderr 首行必须是包含非空 `violations` 数组的 JSON，后续行为 `NEXT:` 修正提示；Skill 执行者按照每项 `path` 和 `message` 修正完整结果并重试一次，重试仍返回退出码 `2` 时报告全部 `violations` 并停止。退出码 `1` 时，Skill 执行者报告 stderr 并停止。Skill 执行者仅在退出码为 `0` 且输出符合协议时采用 stdout。命令返回其他退出码，或者输出通道不符合对应规则时，Skill 执行者报告退出码和违反的输出协议并停止。
 
-## 帮助与操作提示
+## 命令帮助
 
 Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。

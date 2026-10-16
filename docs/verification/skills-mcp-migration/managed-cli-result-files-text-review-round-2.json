@@ -1,0 +1,127 @@
+{
+  "round": 2,
+  "status": "passed",
+  "scope": "与首轮相同的 19 个文件；仅审阅当前文本的语义、结构及关联规则。",
+  "reviewed_files": [
+    "config/managed-cli-help.json",
+    "scripts/cli/harness-comfyui.mjs",
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    ".agents/skills/comfyui-image-review/SKILL.md",
+    ".agents/skills/comfyui-image-review/references/cli.md",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    ".agents/skills/local-image-reader/SKILL.md",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+    "docs/system/architecture.md",
+    "docs/system/configuration.md",
+    "docs/system/directory-structure.md",
+    "docs/system/testing.md"
+  ],
+  "findings": [],
+  "first_round_resolution": [
+    {
+      "id": "T01",
+      "status": "resolved",
+      "evidence": "相关参考文档现已使用“发生其他命令级错误时”。"
+    },
+    {
+      "id": "T02",
+      "status": "resolved",
+      "evidence": "ANIMA 与 Krea2 的协议错误处理现已引用结果结构章节。"
+    },
+    {
+      "id": "T03",
+      "status": "resolved",
+      "evidence": "run-query-cli.md 现已引用 records.md 的交付规则，错误章节保留取消与失败处理。"
+    },
+    {
+      "id": "T04",
+      "status": "resolved",
+      "evidence": "testing.md 已删除历史验证记录章节。"
+    },
+    {
+      "id": "T05",
+      "status": "resolved",
+      "evidence": "架构与配置章节已直接描述当前职责和目录来源。"
+    },
+    {
+      "id": "T06",
+      "status": "resolved",
+      "evidence": "directory-structure.md 将 scripts/cli/ 描述为包含结果文件管理模块。"
+    },
+    {
+      "id": "T07",
+      "status": "resolved",
+      "evidence": "三个 Prompt Builder 的结果字段已改为引导项下的有序子列表。"
+    },
+    {
+      "id": "T08",
+      "status": "resolved",
+      "evidence": "首轮指出的六份文档已使用有序列表组织同层级规则。"
+    },
+    {
+      "id": "T09",
+      "status": "resolved",
+      "evidence": "请求和响应超限消息现已包含字节上限占位符及处理动作；响应错误保留命令重试条件。"
+    },
+    {
+      "id": "T10",
+      "status": "resolved",
+      "evidence": "两个 API 环境错误消息现已引用确认 Host 并重新发起受管调用的恢复指引。"
+    },
+    {
+      "id": "T11",
+      "status": "resolved",
+      "evidence": "generation-cli.md 现已引用模板参数检查章节中的数量与 batch_size 要求。"
+    },
+    {
+      "id": "T12",
+      "status": "resolved",
+      "evidence": "architecture.md 现已区分项目 Skill provider 与其提供的八个项目 Skill。"
+    },
+    {
+      "id": "T13",
+      "status": "resolved",
+      "evidence": "两个图片读取 SKILL.md 现已引用各自 CLI 参考中的 prompt 缺省与覆盖定义。"
+    }
+  ],
+  "checks": [
+    {
+      "item": "用途、读取时机与 YAML 头",
+      "status": "passed",
+      "evidence": "指定的非 SKILL.md Markdown 均有文档用途和读取时机字段；章节内容能够对应文件用途。"
+    },
+    {
+      "item": "标题层级、有序列表与阅读顺序",
+      "status": "passed",
+      "evidence": "规则与步骤按标题组织，字段表格、代码示例与其引导文本关系清楚。"
+    },
+    {
+      "item": "主体、动作、条件与时态",
+      "status": "passed",
+      "evidence": "执行步骤指明 Agent 或 Host；成功、失败、取消和重试的条件可以区分。"
+    },
+    {
+      "item": "关联文档的定义与引用",
+      "status": "passed",
+      "evidence": "首轮发现的重复规则已改为引用；未发现新增的实质性冲突。"
+    },
+    {
+      "item": "CLI 报错行动指引",
+      "status": "passed",
+      "evidence": "文件错误区分请求发送前、业务完成后与路径发布阶段，并给出读取、报告或重试条件。"
+    },
+    {
+      "item": "必要业务边界",
+      "status": "passed",
+      "evidence": "异步接纳、单项错误、取消、数据来源及失败后重试边界保留。"
+    }
+  ],
+  "limitations": "本轮未核验程序实现、模型调用或应用运行行为。"
+}

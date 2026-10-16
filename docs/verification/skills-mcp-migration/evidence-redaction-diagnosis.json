@@ -1,0 +1,52 @@
+{
+  "purpose": "定位真实验收证据中运行期CLI能力凭据未脱敏的原因并定义采集修复。",
+  "status": "independent-supplemental-contract-adopted-ready-for-implementation",
+  "evidence": [
+    "term-fallback-workbench-review.json:F6",
+    ".local/skills-mcp-migration-live/redact-evidence.mjs",
+    ".local/skills-mcp-migration-live/llm-observer.mjs",
+    ".local/skills-mcp-migration-live/desktop-driver.mjs",
+    "config/managed-cli-environment.json"
+  ],
+  "facts": [
+    "WAI 5.5-6 seq57请求env筛选，seq58的返回含运行期CLI能力凭据，后续模型请求携带原值；报告仅记录变量名。",
+    "redactEvidence处理已声明敏感JSON字段及外传secrets数组，普通env文本未结构化识别；敏感字段名单未包含capability。",
+    "llm-observer从启动时环境选取KEY/TOKEN/SECRET/PASSWORD值，受管CLI能力凭据由每次工具调用注入，无法由该启动时环境穷举。",
+    "desktop-driver将collect结果直接JSON.stringify落盘，没有调用现有脱敏器。",
+    "toolHistory的当前结构是tools与updates工具声明，须保留声明结构与字段说明。"
+  ],
+  "causalChain": [
+    "工具环境注入每次调用的能力凭据",
+    "Agent显式请求env值并收到工具输出",
+    "宿主后续模型输入按实际消息携带此值",
+    "两类采集路径未识别该字段与env赋值形式",
+    "本机证据保留了该值"
+  ],
+  "repairScope": {
+    "files": [
+      ".local/skills-mcp-migration-live/redact-evidence.mjs",
+      ".local/skills-mcp-migration-live/redact-evidence.test.mjs",
+      ".local/skills-mcp-migration-live/desktop-driver.mjs",
+      ".local/skills-mcp-migration-live/llm-observer.mjs"
+    ],
+    "contract": [
+      "仅处理落盘副本，传给模型的messages和工具返回保持实际运行内容。",
+      "统一识别敏感JSON字段、环境赋值和值的后续重复位置；从完整记录收集已发现值再替换，完整工具声明保持原文。",
+      "desktop-driver与observer共用既有脱敏器；已保存证据通过同一规则清除值，逐文件记录修改计数和结构解析检查，不将值写入报告。",
+      "保留变量名、事件序号、调用参数的非凭据部分、消息顺序、路径与状态；注明脱敏，不声称修改后的副本与未经脱敏响应逐字相同。"
+    ],
+    "excluded": [
+      "不改变Host能力注入、被测Agent权限或业务语义",
+      "不上传或打印凭据",
+      "不清除失败证据或模型分析记录"
+    ]
+  },
+  "verification": [
+    "合成env赋值、嵌套JSON、跨字段重复值、工具schema保留、普通文本不变的红绿测试。",
+    "对WAI受影响采集副本在内存脱敏并仅输出值残留数量、事件/消息结构计数和差异位置。",
+    "扫描所有本轮已归档采集证据，统一清除同机制值并保留脱敏位置清单。",
+    "新一轮实际采集确认保存副本不含匹配凭据，原始执行不因采集过滤变化。"
+  ],
+  "supplementalContract": "evidence-redaction-review.json:supplementalContract",
+  "streamingBoundary": "逐调用缓冲采集副本，在finally中保存；完成、失败、超时、消费者中止覆盖。进程强制终止前尚未保存的流片段标为证据缺失，相关验收保持未通过。"
+}

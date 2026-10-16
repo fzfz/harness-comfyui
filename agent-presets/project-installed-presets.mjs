@@ -1,23 +1,23 @@
+import Include from '@deepseek-ai/cordis-plugin-include'
+import z from '@deepseek-ai/schemastery'
 import { fileURLToPath } from 'node:url'
 
-export const name = 'harness-comfyui-installed-presets'
-export const inject = ['loader', 'agentPresets']
+const installedPath = fileURLToPath(new URL('./presets.cordis.yml', import.meta.url))
 
-export function createInstalledPresetsComponent({
-  moduleUrl = import.meta.url,
-  loadIncludePlugin = () => import('@deepseek-ai/cordis-plugin-include'),
-} = {}) {
-  return {
-    name,
-    inject,
-    async apply(ctx) {
-      const { default: Include } = await loadIncludePlugin()
-      await ctx.plugin(Include, {
-        path: fileURLToPath(new URL('./presets.cordis.yml', moduleUrl)),
-      })
-    },
+/** @typedef {{ patches?: import('@deepseek-ai/cordis-plugin-include').PatchOptions[] }} InstalledPresetsConfig */
+
+export default class InstalledPresets extends Include {
+  static Config = z.transform(z.object({ patches: z.array(z.any()).default([]) }), config => ({
+    ...config,
+    path: installedPath,
+  }))
+
+  /** @param {import('@deepseek-ai/cordis').Context} ctx
+   * @param {InstalledPresetsConfig} config */
+  constructor(ctx, config = {}) {
+    super(ctx, {
+      path: installedPath,
+      patches: config.patches,
+    })
   }
 }
-
-const component = createInstalledPresetsComponent()
-export const apply = component.apply

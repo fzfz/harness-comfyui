@@ -1,0 +1,252 @@
+{
+  "purpose": "独立判断5.6-5是否可采用现有Krea2模板42作为多个LoRA样本变体。",
+  "reviewedAt": "2026-10-14T06:48:22.657570+00:00",
+  "verdict": {
+    "sampleReplacementPermitted": true,
+    "multipleLoraBranchPreservedInPrinciple": true,
+    "routeInvestigated": "仅Krea2模板42",
+    "ready": false,
+    "status": "blocked",
+    "primaryBlocker": "Krea2可查询模型的skill_name全部为空；模板42默认模型11详情确认空值，违反生成结果模型路线合同。",
+    "additionalBlocker": "核对的现存Krea2 Builder均存在正向规避语义缺项，尚无可直接采用的有效结果。"
+  },
+  "authorization": "只读目录查询、已有产物与代码；catalog.mjs原样复制至获准目录以将其输出限制在该目录。未更改目录、模板、产品、台账、依赖，未运行模型、生成Run、浏览器或全矩阵。",
+  "planInterpretation": {
+    "sources": [
+      "docs/plans/skills-mcp-migration-20261013.md:1133",
+      "docs/plans/skills-mcp-migration-20261013.md:1284",
+      "docs/plans/skills-mcp-migration-20261013.md:1287"
+    ],
+    "judgment": "5.6目标是多个LoRA请求构造、兼容性、触发词、参数检查、实际应用及Run/媒体。5.13允许失效样本改选现有资源并固定非目标输入；未将wai底模、模板37或原ID规定为目标不变量。因此跨底模替换本身可接受，须清晰登记变体并保留原失败。",
+    "invariants": [
+      "至少两项真实LoRA，同一底模的模板/采用模型/每项LoRA。",
+      "固定ID有序列表及真实权重、触发词，按合同追加触发词。",
+      "真实Skill生成且有效的完整Builder JSON，模型skill_name匹配。",
+      "完整参数检查和编译保留实际连线，真实运行后逐项核对两LoRA应用、Run和媒体。"
+    ],
+    "limits": "不能用两个模板原生LoRA节点的存在代替用户选择的两项LoRA实际写入，不能省略模型路线校验或自行填写目录空skill_name。此调查不把模板默认模型当作显式模型分支验收。"
+  },
+  "route": {
+    "workflowSource": ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960316172-eb4bd822-ed67-4072-a4b9-745d7e9fb351-get_catalog_resource.json",
+    "workflowId": "42",
+    "baseModel": {
+      "id": "3",
+      "name": "krea2"
+    },
+    "defaultModel": {
+      "id": "11",
+      "name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors"
+    },
+    "modelDetailSource": ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960339821-1e66cbbd-3c28-4321-af80-3e2359c2d167-get_catalog_resource.json",
+    "model": {
+      "ref": {
+        "kind": "model",
+        "id": "11"
+      },
+      "name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "file_name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors",
+      "file_format": "safetensors",
+      "precision_or_quantization": "none",
+      "author": null,
+      "version": null,
+      "description": "ComfyUI 内置模板登记的 krea2 主模型。",
+      "usage": "用于对应的内置 ComfyUI Workflow。",
+      "skill_name": null,
+      "cover_url": null,
+      "sample_image_urls": []
+    },
+    "provisionalParameters": {
+      "template_id": "42",
+      "instance_id": "2",
+      "model_id": "11",
+      "lora_ids": [
+        "37",
+        "31"
+      ],
+      "count": 1,
+      "seed": 20261013,
+      "request": "单人白衬衫半身像，窗边柔光。"
+    },
+    "parameterStatus": "仅记录候选，未生成可提交输入。尺寸必须原样来自有效Krea2 Builder；不得把WAI 1536²直接拼接到其他Builder。",
+    "loras": [
+      {
+        "source": ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960412465-dab27001-a981-43cf-843d-7f53426be991-get_catalog_resource.json",
+        "item": {
+          "ref": {
+            "kind": "lora",
+            "id": "37"
+          },
+          "name": "Krea2-gpt anime render.safetensors",
+          "base_model": {
+            "id": "3",
+            "name": "krea2"
+          },
+          "file_name": "Krea2-gpt anime render.safetensors",
+          "file_format": "safetensors",
+          "precision_or_quantization": "none",
+          "author": null,
+          "version": null,
+          "description": "LoRA 特点：\n- GPT 动漫渲染风格。",
+          "usage": "触发词：gpt anime render style\n权重资料：\n- 模型权重范围：0.8～1；推荐权重：未记录；资料状态：用户推荐；权重变化：未记录\n其他用法：未记录",
+          "model": {
+            "id": "6",
+            "name": "Krea2-MuseByStable_v15Turbo_GGUF_Q4.gguf"
+          },
+          "trigger_words": [
+            "gpt anime render style"
+          ],
+          "weight": 1,
+          "cover_url": null,
+          "sample_image_urls": []
+        },
+        "instancePaths": [
+          "Krea2-风格\\Krea2-gpt anime render.safetensors"
+        ]
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960412679-b6d9c617-65e8-45cf-b8f4-3511a4b26eaa-get_catalog_resource.json",
+        "item": {
+          "ref": {
+            "kind": "lora",
+            "id": "31"
+          },
+          "name": "Krea2-动漫yukan-style.safetensors",
+          "base_model": {
+            "id": "3",
+            "name": "krea2"
+          },
+          "file_name": "Krea2-动漫yukan-style.safetensors",
+          "file_format": "safetensors",
+          "precision_or_quantization": "none",
+          "author": null,
+          "version": null,
+          "description": "LoRA 特点：\n- yukan 动漫风格。",
+          "usage": "触发词：yukan style\n权重资料：\n- 模型权重：推荐 1；资料状态：用户推荐；权重变化：未记录\n其他用法：未记录",
+          "model": {
+            "id": "6",
+            "name": "Krea2-MuseByStable_v15Turbo_GGUF_Q4.gguf"
+          },
+          "trigger_words": [
+            "yukan style"
+          ],
+          "weight": 1,
+          "cover_url": null,
+          "sample_image_urls": []
+        },
+        "instancePaths": [
+          "Krea2-风格\\Krea2-动漫yukan-style.safetensors"
+        ]
+      }
+    ],
+    "instanceNodeSource": ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960412892-a0d3db85-b8da-424e-bea9-0770c7934140-get_instance_node.json",
+    "fileCheck": "两项file_name均在实例2 LoraLoaderModelOnly枚举中有唯一同名实际路径；这是实例已公布的可用文件证据，未执行权重加载。",
+    "semanticChoice": "37为GPT动漫渲染、31为yukan动漫风格，均可用于动漫半身肖像，目录没有显示互斥要求；组合实际视觉效果尚未观察。二者有不同非空触发词，能够覆盖多个资源的触发词顺序。",
+    "catalogAssociatedModel": "两LoRA记录关联模型6，模板默认模型11；Skill业务兼容性按共同底模3判断，不要求LoRA关联model.id与采用model.id相等。"
+  },
+  "capacityAndGraph": {
+    "nodes": [
+      {
+        "id": 29,
+        "type": "LoraLoaderModelOnly",
+        "mode": 0,
+        "widgets": {
+          "lora_name": "Krea2-N\\Krea2-KREA2turboNSW.safetensors",
+          "strength_model": 1
+        }
+      },
+      {
+        "id": 27,
+        "type": "LoraLoaderModelOnly",
+        "mode": 0,
+        "widgets": {
+          "lora_name": "Krea2-风格\\Krea2-更好的动漫BetterAnimeStyle_Krea2_v1.safetensors",
+          "strength_model": 2
+        }
+      }
+    ],
+    "modelChain": "UNETLoader3 → LoraLoaderModelOnly27 → LoraLoaderModelOnly29 → SamplerCustom9和BasicScheduler18；CLIPLoader4独立进入CLIPTextEncode10。",
+    "source": "src/host/generation/workflow-compiler.ts:1923-2031",
+    "capacity": "两个mode0标准model-only槽提供2容量；modelWeight存在，clipWeight不必存在。未调用compiler，静态容量结论尚非完整参数/映射通过。",
+    "orderCaution": "模板nodes数组先列29后列27，业务选择列表顺序与模型连线拓扑顺序不同；后续应依据实际applyLoras槽位顺序检查ID到节点映射，不凭视觉位置预判。",
+    "remaining": [
+      "通过模型路线前置后再使用现有inspect确认正向入口经StringConstant34/StringConcatenate33到CLIPTextEncode10的参数归属。",
+      "核对ResolutionMaster19尺寸/batch与SamplerCustom9 seed，确认positive_rewrite没有误写负向ConditioningZeroOut11。",
+      "检查全图节点及UNET、CLIP、VAE等资源；官方导出与compile保持完整图和两LoRA映射。"
+    ],
+    "notRun": "因已确认业务前置失败，本轮没有参数inspect、compile或全图资源通过结论。"
+  },
+  "modelRouteFailure": {
+    "source": ".agents/skills/comfyui-generate/references/prompt-result-contract.md §模型路线校验",
+    "rule": "采用模型skill_name为null时结果JSON无效，必须停止后续校验。",
+    "searchSource": ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960363480-12d20585-9cdf-4902-8723-25e77f26fb20-search_models.json",
+    "modelsReturned": [
+      {
+        "id": "13",
+        "file_name": "Krea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf",
+        "skill_name": null
+      },
+      {
+        "id": "12",
+        "file_name": "Krea2-TurboNSWAIO_v10_fp8.safetensors",
+        "skill_name": null
+      },
+      {
+        "id": "11",
+        "file_name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors",
+        "skill_name": null
+      },
+      {
+        "id": "10",
+        "file_name": "krea2_turbo_bf16.safetensors",
+        "skill_name": null
+      },
+      {
+        "id": "6",
+        "file_name": "Krea2-MuseByStable_v15Turbo_GGUF_Q4.gguf",
+        "skill_name": null
+      }
+    ],
+    "next": null,
+    "coverage": "本次krea2限定查询返回5项、next=null，均skill_name=null；默认11已另外详情确认。未扩展调查第二条模板路线。"
+  },
+  "builderReview": [
+    {
+      "case": "5.4-2",
+      "source": "docs/verification/skills-mcp-migration/builder-success-review.json",
+      "copy": ".local/skills-mcp-migration-live/multiple-lora-alternative/5.4-2-builder.json",
+      "reusable": false,
+      "reason": "原结果positive_avoidance状态未完整并入positive_prompt，已有独立语义失败；尾部英文数量/重复亦偏离Builder合同。"
+    },
+    {
+      "case": "5.4-4",
+      "source": "docs/verification/skills-mcp-migration/ready-builder-batch-review.json",
+      "copy": ".local/skills-mcp-migration-live/multiple-lora-alternative/5.4-4-builder.json",
+      "reusable": false,
+      "reason": "亲读完整保存JSON：positive_avoidance含“不融合不缺失”，positive_prompt仅条件式若双手入镜，未完整表达规避状态；此外缺无词条概念英文回退。"
+    },
+    {
+      "case": "5.4-1",
+      "source": "docs/verification/skills-mcp-migration/history-workbench-review.json",
+      "copy": ".local/skills-mcp-migration-live/multiple-lora-alternative/5.4-1-builder.json",
+      "reusable": false,
+      "reason": "已有历史工作台语义验收失败；不能以结构校验成功直接声明完整结果有效。"
+    }
+  ],
+  "evidenceIndex": [
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960316172-eb4bd822-ed67-4072-a4b9-745d7e9fb351-get_catalog_resource.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960339821-1e66cbbd-3c28-4321-af80-3e2359c2d167-get_catalog_resource.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960340025-46eb2129-ca1d-45c7-9fc0-8ea022ec7964-search_loras.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960363280-612af3d6-efc7-4634-b94e-d6cc28200f51-search_loras.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960363480-12d20585-9cdf-4902-8723-25e77f26fb20-search_models.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960363682-673d5e3b-23c1-43c2-9355-687eb7155b94-get_instance_node.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960412465-dab27001-a981-43cf-843d-7f53426be991-get_catalog_resource.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960412679-b6d9c617-65e8-45cf-b8f4-3511a4b26eaa-get_catalog_resource.json",
+    ".local/skills-mcp-migration-live/multiple-lora-alternative/catalog/1791960412892-a0d3db85-b8da-424e-bea9-0770c7934140-get_instance_node.json"
+  ],
+  "queryCorrection": "首次get_instance_node误传node_type，服务返回class_name required/node_type not allowed；已保留错误并按现有接口更正class_name，成功读取。",
+  "nextAction": "5.6-5继续blocked。若后续有授权变更或发现现有有效模型映射及真实有效Krea2 Builder，再核对模板42全图参数、资源与确定性compile；本报告没有提出写真实目录凑条件，也没有生成替代Builder。"
+}

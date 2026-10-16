@@ -6,7 +6,6 @@ import {
   CLI_ROUTE_PATH,
   parseCliRequest
 } from '../../cli/contract.ts'
-import { CatalogCliError } from '../catalog/catalog-cli.ts'
 import {
   GenerationRuntimeError
 } from '../generation/generation-runtime.ts'
@@ -93,9 +92,6 @@ function reportedError(error: unknown): { readonly status: number; readonly erro
   }
   if (error instanceof TypeError) {
     return { status: 400, error: { code: 'CLI_REQUEST_INVALID', message: error.message } }
-  }
-  if (error instanceof CatalogCliError) {
-    return { status: 502, error: { code: error.code, message: error.message } }
   }
   if (error instanceof GenerationRuntimeError) {
     return { status: 409, error: { code: error.code, message: error.message } }

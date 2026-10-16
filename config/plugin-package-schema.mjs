@@ -59,7 +59,6 @@ export function validatePluginPackagePath(value, label = 'package path') {
     || value.startsWith('agent-presets/')
     || value === '.agents/skills'
     || value.startsWith('.agents/skills/')
-    || value.startsWith('scripts/source-client/')
     || ['scripts/cli/help.mjs', 'scripts/cli/help-schema.mjs'].includes(value)
     || value === 'src/config/schema.ts'
     || value.startsWith('src/config/data/')

@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "catalog": {
+    "discoveryPath": "/internal/semantic",
+    "queryTimeoutMs": 15000,
+    "baseModelPageSize": 20,
+    "instancePageSize": 100,
+    "operations": {
+      "/internal/semantic/base-models": {
+        "operationId": "querySemanticBaseModelsForSkill",
+        "toolName": "query_semantic_base_models",
+        "searchFields": []
+      },
+      "/internal/semantic/generation-models": {
+        "operationId": "querySemanticGenerationModelsForSkill",
+        "toolName": "query_semantic_generation_models",
+        "searchFields": [
+          "base_model_id"
+        ]
+      },
+      "/internal/semantic/loras": {
+        "operationId": "querySemanticLorasForSkill",
+        "toolName": "query_semantic_loras",
+        "searchFields": [
+          "base_model_id"
+        ]
+      },
+      "/internal/semantic/works": {
+        "operationId": "querySemanticWorksForSkill",
+        "toolName": "query_semantic_works",
+        "searchFields": []
+      },
+      "/internal/semantic/characters": {
+        "operationId": "querySemanticCharactersForSkill",
+        "toolName": "query_semantic_characters",
+        "searchFields": [
+          "work_id"
+        ]
+      },
+      "/internal/semantic/styles": {
+        "operationId": "querySemanticStylesForSkill",
+        "toolName": "query_semantic_styles",
+        "searchFields": [
+          "base_model_id"
+        ]
+      },
+      "/internal/semantic/prompt-terms": {
+        "operationId": "querySemanticPromptTermsForSkill",
+        "toolName": "query_semantic_prompt_terms",
+        "searchFields": [
+          "root_id",
+          "category_ids",
+          "category_match",
+          "classification_status"
+        ]
+      },
+      "/internal/semantic/artist-prompt-strings": {
+        "operationId": "querySemanticArtistPromptStringsForSkill",
+        "toolName": "query_semantic_artist_prompt_strings",
+        "searchFields": [
+          "base_model_id"
+        ]
+      },
+      "/internal/semantic/comfyui-instances": {
+        "operationId": "querySemanticComfyuiInstancesForSkill",
+        "toolName": "query_semantic_comfyui_instances",
+        "searchFields": []
+      },
+      "/internal/semantic/comfyui-templates": {
+        "operationId": "querySemanticComfyuiTemplatesForSkill",
+        "toolName": "query_semantic_comfyui_templates",
+        "searchFields": [
+          "base_model_id"
+        ]
+      }
+    }
+  },
+  "source": {
+    "discoveryPath": "/internal/comfyui-source",
+    "queryTimeoutMs": 120000,
+    "maxResponseBytes": 33554432,
+    "operations": {
+      "instance": "/internal/comfyui-source/instances/{id}",
+      "template-bundle": "/internal/comfyui-source/templates/{id}/bundle"
+    }
+  }
+}

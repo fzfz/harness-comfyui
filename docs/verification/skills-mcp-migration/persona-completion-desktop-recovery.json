@@ -1,0 +1,150 @@
+{
+  "attempts": [
+    {
+      "log": ".local/skills-mcp-migration-live/persona-completion-desktop-cached.log",
+      "environmentOverride": "npm_config_store_dir=/Users/fzfz/Library/pnpm/store",
+      "passed": 267,
+      "failed": 2,
+      "failure": "installation timed out; override not interpreted by official pnpm"
+    },
+    {
+      "log": ".local/skills-mcp-migration-live/persona-completion-desktop-pnpm-cache.log",
+      "environmentOverride": "pnpm_config_store_dir=/Users/fzfz/Library/pnpm/store",
+      "passed": 267,
+      "failed": 2,
+      "installation": "passed",
+      "failure": "workbench preset activation failed at same-scope send_message restriction; iteration has matching source configuration"
+    }
+  ],
+  "networkDiagnosis": "desktop-download-root-cause.json",
+  "productDiagnosis": "local-tool-retirement-contract.json",
+  "recentRootProbeCleanup": [
+    {
+      "runId": "b720245f-60c1-4b7c-b8ff-ff43f1bc8e2c",
+      "state": "stopped",
+      "pid": 71294,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "5f7bdfa2-c5fd-4eb8-af4a-d45dabf9a071",
+      "state": "failed",
+      "pid": 15737,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "c50b4bcd-43fd-40a7-a71f-ee0b97e11bdb",
+      "state": "stopped",
+      "pid": 52916,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "08698c79-1274-4938-96e4-1cb23a0112ac",
+      "state": "failed",
+      "pid": 40524,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "7fcfcb00-9e55-4e7d-92aa-ba7583416ff8",
+      "state": "stopped",
+      "pid": 5253,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "02ee60fe-2175-47dd-b8b5-108e41d21200",
+      "state": "stopped",
+      "pid": 22342,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "0bb48d1e-b6ff-4fee-9b5e-58aa5e7242b9",
+      "state": "cancelled",
+      "pid": 35224,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "8015cec3-d6af-4eb4-9fee-71135e7c7f77",
+      "state": "stopped",
+      "pid": 96020,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "b8125112-2cbc-420e-bc2d-0599f16baaad",
+      "state": "stopped",
+      "pid": 37261,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "c16cc1b0-c2bd-42ea-8429-51d0a126a810",
+      "state": "stopped",
+      "pid": 71231,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "63cf377c-ee87-4f6f-ab76-2567c3dd8346",
+      "state": "failed",
+      "pid": null,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "5b5e1b6b-be50-4f8e-95d1-f8cd5f2eaa49",
+      "state": "failed",
+      "pid": 29806,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "9b896a00-118f-4e2c-9aa3-25e56ea7bea1",
+      "state": "cancelled",
+      "pid": 20929,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "4ca9e7f7-4ea3-4a43-afb9-e60858ddac00",
+      "state": "stopped",
+      "pid": 5254,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "3a09ef80-d15b-4300-bb63-53f2a4381d84",
+      "state": "stopped",
+      "pid": 88403,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "739db2b5-a0eb-40de-baad-aff62133d58f",
+      "state": "failed",
+      "pid": null,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "1a263064-2601-4e63-9108-b106a5ab847c",
+      "state": "stopped",
+      "pid": 8592,
+      "pidAlive": false,
+      "listeningPorts": []
+    },
+    {
+      "runId": "8e835789-52d0-4eba-94d0-2439b1a958e6",
+      "state": "failed",
+      "pid": 25705,
+      "pidAlive": false,
+      "listeningPorts": []
+    }
+  ],
+  "status": "product-repair-in-progress"
+}

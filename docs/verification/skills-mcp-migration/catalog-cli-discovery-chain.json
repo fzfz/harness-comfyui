@@ -1,0 +1,768 @@
+{
+  "sessionId": "session-97e91fee-f6c4-404b-b030-99031686a4be",
+  "source": ".local/skills-mcp-migration-live/desktop/8afcd59e-0da4-462f-9331-4a56122b2f4c/1791904056305-2a2fe95f-9482-48d7-ab63-cdf35cca6479-collect.json",
+  "finding": "CLI 根帮助及 catalog 分类帮助向模型直接提供了实例查询命令。",
+  "sourceFiles": [
+    {
+      "path": ".agents/skills/comfyui-generate/references/generation-cli.md",
+      "line": 158
+    },
+    {
+      "path": ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+      "line": 126
+    },
+    {
+      "path": "config/managed-cli-help.json",
+      "line": 8
+    },
+    {
+      "path": "config/managed-cli-help.json",
+      "line": 23
+    }
+  ],
+  "events": [
+    {
+      "type": "tool/call",
+      "seq": 36,
+      "time": 1791903930891,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "callId": "call_00_mjouvilonk7l7bo2ialkrqov",
+        "name": "bash",
+        "arguments": "{\"command\":\"cd /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/; cat generation-cli.md\",\"description\":\"Read generation CLI reference\"}"
+      }
+    },
+    {
+      "seq": 37,
+      "type": "tool/result",
+      "excerpt": "## 帮助与操作提示\n\n需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。\n"
+    },
+    {
+      "type": "tool/call",
+      "seq": 38,
+      "time": 1791903930920,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "callId": "call_01_pawwq1rmmx1egjtiztvyi97l",
+        "name": "bash",
+        "arguments": "{\"command\":\"cd /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/; cat template-parameter-inspection-cli.md\",\"description\":\"Read template parameter inspection reference\"}"
+      }
+    },
+    {
+      "seq": 39,
+      "type": "tool/result",
+      "excerpt": "## 帮助与操作提示\n\n需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。\n"
+    },
+    {
+      "type": "tool/call",
+      "seq": 59,
+      "time": 1791903940408,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "callId": "call_01_aex66k9cesnexzq9wwnhb034",
+        "name": "bash",
+        "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --help 2>&1 | head -60\",\"description\":\"Show ComfyUI CLI help\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 60,
+      "time": 1791903940541,
+      "data": {
+        "turn": 1,
+        "step": 7,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_01_aex66k9cesnexzq9wwnhb034"
+          },
+          "toolCallId": "call_01_aex66k9cesnexzq9wwnhb034",
+          "content": [
+            {
+              "type": "text",
+              "text": "查询目录、创建生成任务、读取历史结果或观察本地图片。\n\n用法: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --help\n执行命令通过受管前台 shell 调用。--help 离线可用。--quiet 只省略成功后的 NEXT 提示。\n输出: 业务成功 stdout 为 JSON、退出 0；失败 stdout 为空、stderr 为错误码和修正指引，本地输入或环境错误退出 2，Host 或 Provider 错误退出 1。帮助输出到 stdout，退出 0。\n使用退出码判断成功；stderr 的 NEXT: 是操作提示。示例路径与 ID 须替换为用户输入或查询结果。\n术语: Run 是生成记录，run_id 是其标识；Workspace 是会话所属工作目录；Actual Workflow 是该 Run 实际执行的工作流。\n\ncatalog: 查找及解析模型、LoRA、模板和 ComfyUI 实例。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog --help\n\ngeneration: 检查模板输入、提交生成、读取 Run 参数与媒体。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" generation --help\n\nimage: 使用当前图片读取配置的视觉模型观察本地图片。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" image --help\n\n下一步:\n查看目录查询帮助: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog --help\n查看生成任务帮助: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" generation --help\n查看本地读图帮助: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" image --help\n"
+            }
+          ],
+          "isError": false,
+          "id": "0869cc11-a7b9-484e-9b75-c9c930fe154a"
+        }
+      },
+      "sourceEventSeqs": [
+        59
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "assistant/message",
+      "seq": 63,
+      "time": 1791903943148,
+      "data": {
+        "turn": 1,
+        "step": 8,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "reasoning",
+              "text": "We need to check the catalog instances through the CLI and see what the instance list command returns."
+            },
+            {
+              "type": "tool-call",
+              "id": "call_00_82vyh1v65kf0f21u03vclaua",
+              "name": "bash",
+              "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" catalog --help 2>&1 | head -60\",\"description\":\"Show catalog CLI help\"}"
+            },
+            {
+              "type": "tool-call",
+              "id": "call_01_cs4jzay248qklpr40goti3rz",
+              "name": "bash",
+              "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" generation --help 2>&1 | head -80\",\"description\":\"Show generation CLI help\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "opencode-go",
+                "model": "deepseek-v4.1-flash",
+                "responseId": "0217919039411654e5823ec317b6ea9d3f5e181cf6332a5e2046e",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "reasoning",
+                  "thinkingSignature": "reasoning_content"
+                },
+                {
+                  "type": "tool-call"
+                },
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "7e2e9a07-f5e2-4549-95dd-633bc2829805"
+        },
+        "usage": {
+          "inputTokens": 916,
+          "outputTokens": 233,
+          "totalTokens": 40061,
+          "cacheReadTokens": 38912
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1791903942027,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "reasoning"
+            }
+          },
+          {
+            "type": "reasoning-chunks",
+            "time0": 1791903942027,
+            "index": 0,
+            "dt": [
+              23,
+              18,
+              27,
+              24,
+              31,
+              86
+            ],
+            "texts": [
+              "We",
+              " need to check",
+              " the catalog instances",
+              " through",
+              " the CLI and see what",
+              " the instance",
+              " list command returns."
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943089,
+            "chunk": {
+              "type": "block-start",
+              "index": 1,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1791903943090,
+            "index": 1,
+            "dt": [
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              8,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              7,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              3,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "id": "call_00_82vyh1v65kf0f21u03vclaua",
+            "name": "bash",
+            "args": [
+              "",
+              "{",
+              "\"",
+              "command",
+              "\"",
+              ": ",
+              "\"",
+              "ELECT",
+              "RON",
+              "_R",
+              "UN",
+              "_",
+              "AS",
+              "_N",
+              "ODE",
+              "=",
+              "1",
+              " \\\"$",
+              "DS",
+              "H",
+              "_H",
+              "ARN",
+              "ESS",
+              "_CO",
+              "MF",
+              "Y",
+              "UI",
+              "_N",
+              "ODE",
+              "_EX",
+              "EC",
+              "UT",
+              "ABLE",
+              "\\\"",
+              " --",
+              "ex",
+              "pose",
+              "-in",
+              "tern",
+              "als",
+              " \\\"$",
+              "DS",
+              "H",
+              "_H",
+              "ARN",
+              "ESS",
+              "_CO",
+              "MF",
+              "Y",
+              "UI",
+              "_CL",
+              "I",
+              "\\\"",
+              " catalog",
+              " --",
+              "help",
+              " ",
+              "2",
+              ">&",
+              "1",
+              " |",
+              " head",
+              " -",
+              "60",
+              "\"",
+              ", ",
+              "\"",
+              "description",
+              "\"",
+              ": ",
+              "\"",
+              "Show",
+              " catalog",
+              " CLI",
+              " help",
+              "\"",
+              "}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943127,
+            "chunk": {
+              "type": "block-start",
+              "index": 2,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1791903943127,
+            "index": 2,
+            "dt": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              2,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0
+            ],
+            "id": "call_01_cs4jzay248qklpr40goti3rz",
+            "name": "bash",
+            "args": [
+              "",
+              "{",
+              "\"",
+              "command",
+              "\"",
+              ": ",
+              "\"",
+              "ELECT",
+              "RON",
+              "_R",
+              "UN",
+              "_",
+              "AS",
+              "_N",
+              "ODE",
+              "=",
+              "1",
+              " \\\"$",
+              "DS",
+              "H",
+              "_H",
+              "ARN",
+              "ESS",
+              "_CO",
+              "MF",
+              "Y",
+              "UI",
+              "_N",
+              "ODE",
+              "_EX",
+              "EC",
+              "UT",
+              "ABLE",
+              "\\\"",
+              " --",
+              "ex",
+              "pose",
+              "-in",
+              "tern",
+              "als",
+              " \\\"$",
+              "DS",
+              "H",
+              "_H",
+              "ARN",
+              "ESS",
+              "_CO",
+              "MF",
+              "Y",
+              "UI",
+              "_CL",
+              "I",
+              "\\\"",
+              " generation",
+              " --",
+              "help",
+              " ",
+              "2",
+              ">&",
+              "1",
+              " |",
+              " head",
+              " -",
+              "80",
+              "\"",
+              ", ",
+              "\"",
+              "description",
+              "\"",
+              ": ",
+              "\"",
+              "Show",
+              " generation",
+              " CLI",
+              " help",
+              "\"",
+              "}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943146,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "reasoning",
+                "text": "We need to check the catalog instances through the CLI and see what the instance list command returns."
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943146,
+            "chunk": {
+              "type": "block-end",
+              "index": 1,
+              "block": {
+                "type": "tool-call",
+                "id": "call_00_82vyh1v65kf0f21u03vclaua",
+                "name": "bash",
+                "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" catalog --help 2>&1 | head -60\",\"description\":\"Show catalog CLI help\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943147,
+            "chunk": {
+              "type": "block-end",
+              "index": 2,
+              "block": {
+                "type": "tool-call",
+                "id": "call_01_cs4jzay248qklpr40goti3rz",
+                "name": "bash",
+                "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" generation --help 2>&1 | head -80\",\"description\":\"Show generation CLI help\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943147,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 916,
+                "outputTokens": 233,
+                "totalTokens": 40061,
+                "cacheReadTokens": 38912
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1791903943147,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "opencode-go",
+                  "model": "deepseek-v4.1-flash",
+                  "responseId": "0217919039411654e5823ec317b6ea9d3f5e181cf6332a5e2046e",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "reasoning",
+                    "thinkingSignature": "reasoning_content"
+                  },
+                  {
+                    "type": "tool-call"
+                  },
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 64,
+      "time": 1791903943149,
+      "data": {
+        "turn": 1,
+        "step": 8,
+        "callId": "call_00_82vyh1v65kf0f21u03vclaua",
+        "name": "bash",
+        "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" catalog --help 2>&1 | head -60\",\"description\":\"Show catalog CLI help\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 65,
+      "time": 1791903943271,
+      "data": {
+        "turn": 1,
+        "step": 8,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_00_82vyh1v65kf0f21u03vclaua"
+          },
+          "toolCallId": "call_00_82vyh1v65kf0f21u03vclaua",
+          "content": [
+            {
+              "type": "text",
+              "text": "查找及解析模型、LoRA、模板和 ComfyUI 实例。\n\n用法: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog --help\n执行命令通过受管前台 shell 调用。--help 离线可用。--quiet 只省略成功后的 NEXT 提示。\n输出: 业务成功 stdout 为 JSON、退出 0；失败 stdout 为空、stderr 为错误码和修正指引，本地输入或环境错误退出 2，Host 或 Provider 错误退出 1。帮助输出到 stdout，退出 0。\n使用退出码判断成功；stderr 的 NEXT: 是操作提示。示例路径与 ID 须替换为用户输入或查询结果。\n术语: Run 是生成记录，run_id 是其标识；Workspace 是会话所属工作目录；Actual Workflow 是该 Run 实际执行的工作流。\n\ncatalog template: 查询Workflow 模板。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog template --help\n\ncatalog generation-model: 查询生成模型。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog generation-model --help\n\ncatalog lora: 查询LoRA。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog lora --help\n\ncatalog instance: 查询ComfyUI 实例。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog instance --help\n\ncatalog search: 按类别和关键词搜索目录。\n  ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog search --help\n\n下一步:\n先搜索目录: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog search --help\n选择执行实例: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog instance list --help\n"
+            }
+          ],
+          "isError": false,
+          "id": "201effcc-c3ec-4f14-9b8b-d5476f0842e1"
+        }
+      },
+      "sourceEventSeqs": [
+        64
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 71,
+      "time": 1791903945904,
+      "data": {
+        "turn": 1,
+        "step": 9,
+        "callId": "call_00_dw4f91piw4hobrs5yjlwjr6j",
+        "name": "bash",
+        "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" catalog instance list --help 2>&1 | head -40; echo \\\"-----\\\"; ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" catalog instance list --stdin <<'JSON' 2>&1\\n{}\\nJSON\",\"description\":\"List ComfyUI instances via CLI\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 72,
+      "time": 1791903946098,
+      "data": {
+        "turn": 1,
+        "step": 9,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_00_dw4f91piw4hobrs5yjlwjr6j"
+          },
+          "toolCallId": "call_00_dw4f91piw4hobrs5yjlwjr6j",
+          "content": [
+            {
+              "type": "text",
+              "text": "列出可用 ComfyUI 实例。\n\n用法: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog instance list --help\n执行命令通过受管前台 shell 调用。--help 离线可用。--quiet 只省略成功后的 NEXT 提示。\n输出: 业务成功 stdout 为 JSON、退出 0；失败 stdout 为空、stderr 为错误码和修正指引，本地输入或环境错误退出 2，Host 或 Provider 错误退出 1。帮助输出到 stdout，退出 0。\n使用退出码判断成功；stderr 的 NEXT: 是操作提示。示例路径与 ID 须替换为用户输入或查询结果。\n术语: Run 是生成记录，run_id 是其标识；Workspace 是会话所属工作目录；Actual Workflow 是该 Run 实际执行的工作流。\n参数: 无；没有 stdin。结果: results 数组中的实例 ID 与目录信息；只读。\n执行: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog instance list\n\n下一步:\n执行 ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog instance list，并读取 stdout JSON 中的 results。\n-----\nCLI_ARGUMENT_INVALID: CLI command is invalid; received argv: [\"catalog\",\"instance\",\"list\",\"--stdin\"]. Pass the command words and options shown by --help Next: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" catalog instance list --help\n[exit code: 2]"
+            }
+          ],
+          "isError": false,
+          "id": "54c45c28-6a80-4b29-9871-fbff04b04013"
+        }
+      },
+      "sourceEventSeqs": [
+        71
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 76,
+      "time": 1791903948749,
+      "data": {
+        "turn": 1,
+        "step": 10,
+        "callId": "call_00_yhrg6687b97r84eylvz9dxna",
+        "name": "bash",
+        "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet catalog instance list 2>&1; echo \\\"[exit code: $?]\\\"\",\"description\":\"List instances without stdin\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 77,
+      "time": 1791903948987,
+      "data": {
+        "turn": 1,
+        "step": 10,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_00_yhrg6687b97r84eylvz9dxna"
+          },
+          "toolCallId": "call_00_yhrg6687b97r84eylvz9dxna",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"status\":\"ok\",\"message\":null,\"results\":[{\"id\":\"2\"}],\"page\":1,\"page_size\":100,\"total_count\":1}\n[exit code: 0]\n"
+            }
+          ],
+          "isError": false,
+          "id": "f712ffe6-44e8-442a-9a49-423412a05154"
+        }
+      },
+      "sourceEventSeqs": [
+        76
+      ],
+      "surfaceOp": "append"
+    }
+  ],
+  "causalLimit": "该轨迹确认了命令发现和调用链；移除帮助及目录CLI通道后的行为仍需复验。",
+  "modelInputVerification": {
+    "firstRequestLog": ".local/skills-mcp-migration-live/llm-calls/45e62d89-aa6c-4ff1-b810-3d118f5eff61.jsonl",
+    "initialCatalogCliToolPresent": false,
+    "catalogHelpFirstSeen": {
+      "file": ".local/skills-mcp-migration-live/llm-calls/e11756bf-f657-4497-ba26-e3e01ab9b21c.jsonl",
+      "field": "messages"
+    },
+    "instanceListFirstSeen": {
+      "file": ".local/skills-mcp-migration-live/llm-calls/22fa1976-b9d6-4a99-af90-d0759b31e095.jsonl",
+      "field": "messages"
+    },
+    "semanticScriptEnvironmentSeen": ".local/skills-mcp-migration-live/llm-calls/54983f14-81f4-405a-a747-df95affcb2f1.jsonl"
+  }
+}

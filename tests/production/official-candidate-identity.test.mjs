@@ -17,6 +17,7 @@ import {
 } from '../desktop/fixtures/official-candidate-identity.mjs'
 import {
   OFFICIAL_CANDIDATE_RUNTIME_PATHS,
+  parseOfficialCandidateClientComboRoute,
   parseOfficialCandidateClientSourceEvidence,
   parseOfficialCandidateClientSourceResult,
   parseOfficialCandidateSourceIdentity,
@@ -31,6 +32,41 @@ afterEach(async () => {
 })
 
 describe('official Desktop candidate source identity', () => {
+  it.each([0, 1, 2])('extracts only the candidate source-map section at position %i', async candidateIndex => {
+    const root = await mkdtemp(join(tmpdir(), 'official-candidate-section-'))
+    temporaryRoots.add(root)
+    const archivePath = join(root, 'candidate.tgz')
+    await createCandidateArchive(root, archivePath, OFFICIAL_CANDIDATE_RUNTIME_PATHS)
+    const sourceIdentity = { schemaVersion: 1, packageName: 'harness-comfyui', packageVersion: '0.45.0',
+      archivePath, sourceCommit: '0'.repeat(40), dirty: false, runtimeFiles: [...OFFICIAL_CANDIDATE_RUNTIME_PATHS] }
+    const routes = ['@deepseek-ai/dsh-api-remotes/client.js', '@deepseek-ai/dsh-client-connection/client.js']
+    routes.splice(candidateIndex, 0, 'harness-comfyui/client.js')
+    const scriptUrl = `dsh-app://app/plugins/??${routes.join(',')}&rev=abcdef123456`
+    const expected = await buildOfficialCandidateClientFragment({ sourceIdentity, scriptUrl })
+    const fragments = routes.map((route, index) => index === candidateIndex ? expected.fragment.toString('utf8') : `globalThis.official${index} = true;\n;\n`)
+    let offsetLine = 0
+    const sections = fragments.map(fragment => {
+      const section = { offset: { line: offsetLine, column: 0 }, map: { version: 3, sources: ['fixture.js'], names: [], mappings: '' } }
+      offsetLine += fragment.split('\n').length - 1
+      return section
+    })
+    const result = await assertOfficialCandidateClientSource({
+      sourceIdentity, scriptId: 'candidate', scriptUrl, sourceMapUrl: expected.sourceMapUrl,
+      scriptSource: fragments.join('') + `//# sourceMappingURL=${expected.sourceMapUrl}\n`,
+      sourceMapText: JSON.stringify({ version: 3, sections }), evidenceDirectory: root,
+    })
+    expect(result).toMatchObject({ candidateModuleIndex: candidateIndex, matchesCandidate: true })
+  })
+
+  it.each([
+    ['harness-comfyui/client.js', '@deepseek-ai/dsh-api-remotes/client.js', '@deepseek-ai/dsh-client-connection/client.js'],
+    ['@deepseek-ai/dsh-api-remotes/client.js', 'harness-comfyui/client.js', '@deepseek-ai/dsh-client-connection/client.js'],
+    ['@deepseek-ai/dsh-api-remotes/client.js', '@deepseek-ai/dsh-client-connection/client.js', 'harness-comfyui/client.js'],
+  ])('accepts the unique candidate at every combo position: %j', (...moduleRoutes) => {
+    expect(parseOfficialCandidateClientComboRoute(`dsh-app://app/plugins/??${moduleRoutes.join(',')}&rev=abcdef123456`, 'harness-comfyui'))
+      .toEqual({ revision: 'abcdef123456', moduleRoutes, candidateModuleIndex: moduleRoutes.indexOf('harness-comfyui/client.js') })
+  })
+
   it('validates the complete candidate Client result returned to lifecycle evidence', () => {
     const sourceIdentity = {
       schemaVersion: 1,
@@ -111,7 +147,7 @@ describe('official Desktop candidate source identity', () => {
       '.local/source-host/review-runtime-chunk.js',
       'agent-presets/project-installed-presets.mjs',
       '.agents/skills/comfyui-generate/SKILL.md',
-      'scripts/source-client/imagegen-semantic-query.mjs',
+      'config/source-client.json',
       'scripts/cli/help.mjs',
     ].sort()
     for (const [index, relativePath] of paths.entries()) {
@@ -178,7 +214,7 @@ describe('official Desktop candidate source identity', () => {
     expect(isOfficialCandidateClientScriptUrl(scriptUrl, sourceIdentity)).toBe(true)
     expect(isOfficialCandidateClientScriptUrl('dsh-app://app/plugins/??other-plugin/client.js&rev=66fdfd55bb7d', sourceIdentity)).toBe(false)
     expect(isOfficialCandidateClientScriptUrl('dsh-app://app/plugins/??@deepseek-ai/dsh-client-ui-layout/client.js,harness-comfyui/client.js,@deepseek-ai/dsh-client-ui-layout/client.js&rev=66fdfd55bb7d', sourceIdentity)).toBe(false)
-    expect(isOfficialCandidateClientScriptUrl('dsh-app://app/plugins/??harness-comfyui/client.js,@deepseek-ai/dsh-client-ui-layout/client.js&rev=66fdfd55bb7d', sourceIdentity)).toBe(false)
+    expect(isOfficialCandidateClientScriptUrl('dsh-app://app/plugins/??harness-comfyui/client.js,@deepseek-ai/dsh-client-ui-layout/client.js&rev=66fdfd55bb7d', sourceIdentity)).toBe(true)
     expect(isOfficialCandidateClientScriptUrl('file:///candidate/client.js', sourceIdentity)).toBe(false)
 
     const page = { evaluate: async expression => {
@@ -380,7 +416,7 @@ describe('official Desktop candidate source identity', () => {
     expect(parseOfficialCandidateClientSourceEvidence(record)).toEqual(record)
   })
 
-  it('rejects unobserved candidate module orders, duplicate modules, and mismatched source-map revisions', async () => {
+  it('rejects missing or duplicate candidate modules and mismatched source-map revisions', async () => {
     const root = await mkdtemp(join(tmpdir(), 'official-candidate-combo-route-'))
     temporaryRoots.add(root)
     const archivePath = join(root, 'candidate.tgz')
@@ -397,7 +433,7 @@ describe('official Desktop candidate source identity', () => {
     const prefix = 'dsh-app://app/plugins/??'
     const suffix = '&rev=66fdfd55bb7d'
 
-    expect(isOfficialCandidateClientScriptUrl(`${prefix}harness-comfyui/client.js,@deepseek-ai/dsh-client-ui-layout/client.js${suffix}`, sourceIdentity)).toBe(false)
+    expect(isOfficialCandidateClientScriptUrl(`${prefix}@deepseek-ai/dsh-client-ui-layout/client.js${suffix}`, sourceIdentity)).toBe(false)
     expect(isOfficialCandidateClientScriptUrl(`${prefix}@deepseek-ai/dsh-client-ui-layout/client.js,harness-comfyui/client.js,harness-comfyui/client.js${suffix}`, sourceIdentity)).toBe(false)
     expect(isOfficialCandidateClientScriptUrl(`${prefix}@deepseek-ai/dsh-client-ui-layout/client.js,harness-comfyui/client.js&rev=wrong`, sourceIdentity)).toBe(false)
     expect(isOfficialCandidateClientScriptUrl(`${prefix}@deepseek-ai/dsh-client-ui-layout/client.js,harness-comfyui/client.js${suffix}`, sourceIdentity)).toBe(true)

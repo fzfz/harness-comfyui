@@ -1,0 +1,64 @@
+{
+  "reviews": [
+    {
+      "file": "CONTEXT.md",
+      "reviewer": "context_final_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/architecture.md",
+      "reviewer": "architecture_final_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/configuration.md",
+      "reviewer": "configuration_final_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "reviewer": "directory_final_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "reviewer": "iteration_persona_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "config/error-catalog.json (five source client entries)",
+      "reviewer": "source_error_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/adr/0015-independent-data-source-service.md",
+      "reviewer": "adr15_final_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/plans/skills-mcp-migration-20261013.md: 5.2.1, 5.13, 6 and affected references",
+      "reviewer": "plan_recovery_text_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/plans/skills-mcp-e2e-injection-20261013.md: 7.3 reference",
+      "reviewer": "plan_recovery_text_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "docs/verification/skills-mcp-migration/boundary-data-domain-design.json",
+      "reviewer": "boundary_design_text_audit",
+      "status": "passed"
+    },
+    {
+      "file": "docs/plans/skills-mcp-migration-20261013.md: 5.13.3 data domain",
+      "reviewer": "plan_recovery_text_semantics",
+      "status": "passed"
+    }
+  ],
+  "related": [
+    "cli-reference-revision.json",
+    "cli-handoff-final-spec-review.json"
+  ],
+  "pending": []
+}

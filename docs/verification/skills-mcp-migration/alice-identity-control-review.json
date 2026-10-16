@@ -1,0 +1,1881 @@
+{
+  "purpose": "独立审查 Alice 两组身份对照的等待有效性、完整适用合同和下一轮选择条件。",
+  "executionIndex": ".local/skills-mcp-migration-live/alice-identity-control-execution.json",
+  "runId": "346fd665-717f-4b12-ba52-b07f88d30581",
+  "scope": "只读证据及已安装合同，仅写本报告；未修改产品、共享台账或向执行模型发送消息。",
+  "comparison": {
+    "controlledDifference": "为 Alice → 为所属作品尚待确认的已有角色 Alice；外观、测试目的、尺寸、产物目录名、指定 Skill 及预设保持相同。",
+    "actualInputDelivery": "两组输入 prompt 均完整进入各自第一条实际业务模型请求。",
+    "model": "46 次实际请求均为 opencode-go/deepseek-v4.1-flash。43 次业务响应以 responseId 对应 assistant/message，2 次标题请求，1 次 stream idle timeout。",
+    "declarations": "两组第一请求的25项工具声明完全相同。系统正文按Workspace/Session替换后完全相同，系统消息ID不同。persona要求Follow the selected project Skill。",
+    "skill": "两组均在seq17调用anima-prompt-builder，seq18返回相同9573字符完整Skill文本；无父子派发。",
+    "otherDifferences": "独立Workspace、Session、消息ID、时间及模型执行不同；后续查询文本、页大小、资料批次和重试不同。本次只构成任务身份语义局部对照。",
+    "timeout": "变体74ed36a5-0aac-447b-8761-e20d657a3fcb.jsonl仅request、TIMEOUT finish（idle120000ms）、complete；后续重试产生响应。无缺失成功responseId。",
+    "delivery": "全部60个工具返回content与后续请求逐项精确相等；关键判断时此前全部返回仍完整。未观察到tool-result-pruner截掉规则或候选。"
+  },
+  "contractSources": {
+    "installedSkillRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder",
+    "ambiguity": "SKILL.md:77按作品、角色名称和别名核对，多项符合报告候选并等待；:80无可采用角色也须请求补充。",
+    "originalException": "references/08-count-identity.md:26要求用户提出原创角色；本幅外观完整不提供该授权。",
+    "artist": "SKILL.md:78对自动画师也要求多项符合时报告并等待。",
+    "output": "references/02-role.md:3要求成功交付只返回结构化结果。等待分支按SKILL.md:77提问，尚不适用成功JSON交付要求。",
+    "plan": "docs/plans/skills-mcp-migration-20261013.md:1226核对等待轨迹；:1280先验第一轮等待，再按预存规则提供本轮实际候选。"
+  },
+  "findings": [
+    {
+      "id": "A1",
+      "variant": "original",
+      "severity": "high",
+      "verdict": "未通过",
+      "finding": "角色身份尚有歧义时，以外观完整和需要交付测试产物为由转入原创分支，character_series置空并交付成功Prompt。",
+      "firstObservedInterpretation": "seq73看到候选后首次提出original/generic character推断，同时知道多项匹配须等待；seq80、87继续承认字面规则要求提问；seq94决定不采用身份标签并继续构建。",
+      "firstKnowledgeSources": [
+        "用户输入包含Alice、完整外观和测试目的，不含原创授权；首请求653e769d-40d2-4c05-9739-4bcc6ce511ec.jsonl完整收到。",
+        "seq18提供等待规则；seq43提供08-count-identity.md原创例外；seq70提供3334、23363等角色候选。"
+      ],
+      "evidence": [
+        "seq73：being blocked would produce no deliverable；reasonable interpretation: ... original/generic character。",
+        "seq94：I will not adopt an IP identity tag；build ... no identity tag。",
+        "seq119构建character_series=[]，seq120格式成功，seq129/130生成校验成功，seq143承认多个Alice后交付。"
+      ],
+      "reasoning": "按名字存在不同作品的Alice；即使把当前外观当筛选条件而无可用项，SKILL.md:80仍要求补充。两条路径均未允许自行确认原创。"
+    },
+    {
+      "id": "A2",
+      "variant": "original",
+      "severity": "medium",
+      "verdict": "未通过",
+      "finding": "自动画师查询有多项被执行者判断符合的候选，执行者用首位结果替代用户选择。",
+      "firstDeviation": "seq94预先决定采用排名首位；seq96返回id48、id60等；seq99承认多项符合后采用id48。",
+      "evidence": "seq99明确表示Multiple candidates fit、strict rule says report and ask，随后选择first-ranked。两项说明均含清晰线条、平涂/赛璐璐、冷暖对比、主体近景，完整响应仍在a9719fc7-b007-4e5f-851a-871a879e7c14.jsonl。",
+      "rule": "SKILL.md:78；seq18为第一知识来源。"
+    },
+    {
+      "id": "A3",
+      "variant": "original",
+      "severity": "medium",
+      "verdict": "未通过",
+      "finding": "成功交付在结构化JSON外附加Markdown标题、解释及决策列表。",
+      "evidence": "seq143；references/02-role.md:3完整来自seq28并仍在最终请求中。系统Prefer ... alongside a brief explanation是偏好，具体成功交付格式由已选Skill规定。"
+    }
+  ],
+  "variantAssessment": {
+    "existingCharacterWaiting": "seq78识别已有角色及作品待确认；seq87/89返回多组Alice。seq92区分本幅外观与作品身份；seq99明确用户未要求原创。seq113整理候选；seq121/126/131保存并修整材料；seq135请求选择，seq137自然结束。无生成Prompt或生成调用。",
+    "candidateFidelity": "保存JSON含14组28个ID；每个ID均在本轮返回中，名称及aliases逐项一致，作品名称对应目录。3334和23363虽同名同Prompt，仍为不同记录ID及work_id。",
+    "completeContractScope": "变体第一轮适用的资料读取、检索、候选报告、等待、保存及自然结束通过。画师查询、Prompt构造及成功交付留待用户选择后验证；5.3-3等待后恢复全项尚未完成。",
+    "extraWork": "变体seq106讨论寻找测试资料，seq107/109只列profile/package/docs目录，seq108/110未获得测试答案正文。两组可见分析都有测试评分推测，审查不将推测当事实依据。",
+    "referenceReadingLimit": "原组11-pose-action-sex.md主动只读取前120行(seq52/53)，其他适用参考完整；变体该文件完整进入seq46。两组未匹配特殊主题，16-special-theme.md读取条件未触发。原组部分读取未影响身份等待规则送达。"
+  },
+  "causality": {
+    "verified": "同一模型、相同声明与完整Skill、相同外观尺寸下，原输入沿外观完整→原创解释→跳过身份等待路径交付；加入已有角色且作品待确认后，变体明确原创条件不成立并等待。本次支持该身份语义影响了分支选择。",
+    "limits": [
+      "每组一次执行不证明稳定成功率或唯一根因。",
+      "两组均推测测试评分意图；未独立控制这些推测、随机执行、超时或查询差异。",
+      "规则和候选完整保留，当前证据不支持上下文裁剪解释本次身份偏离。"
+    ],
+    "minimalFurtherControl": "如需验证稳定性，保持模型、预设、合同、外观尺寸不变，分别重复原输入和变体的新会话，核对首个候选响应及首个分支判断；不要同时改Skill、删测试目的或更换模型。"
+  },
+  "nextTestUserReply": {
+    "eligible": true,
+    "eligibleSession": "session-2268e1ee-f593-4f5c-ad81-66c24b4f00bf",
+    "eligibleVariant": "existing-character",
+    "preSavedRule": "docs/verification/skills-mcp-migration/input-preflight-current.json:1017-1022，先验等待，再选择本轮实际候选3334。",
+    "actualCandidate": {
+      "id": "3334",
+      "work_id": "408",
+      "work": "Sinoalice",
+      "name": "爱丽丝",
+      "aliases": [],
+      "nonemptyPrompt": true,
+      "source": "变体seq86 query_semantic_characters(Alice,page_size30)→seq87；完整进入seq92并保留到seq135，最终表及保存JSON均列出。"
+    },
+    "conditions": [
+      "只在变体已结束等待的同一Session开下一用户轮；原输入失败交付不满足正确等待条件。",
+      "明确选择角色记录ID3334；只给Sinoalice仍无法区分同名同Prompt的23363。",
+      "保持本幅金色长双马尾、蓝眼、白色翻领衬衫、黑色蝴蝶结、尺寸及测试目的；选择身份不授权目录外观覆盖当前要求。",
+      "仅提供选择，不附工具教程、参数提示或修复指示。其他后续阻塞须按实际问题另行验收。"
+    ],
+    "suggestedReply": "选择角色记录 ID 3334。",
+    "executed": false,
+    "coverageLimit": "恢复验收仅属于已有角色变体；其成功不能倒算原输入通过，也不能替代另一预设。"
+  },
+  "cases": [
+    {
+      "variant": "original",
+      "sessionId": "session-2b9a72ce-bf10-4fda-a524-3937a03333e7",
+      "input": ".local/skills-mcp-migration-live/alice-identity-control-original-input.json",
+      "actualPrompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-y8ov5z_p\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md\n任务参数：{\"request\":\"为 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。\"}\n将本任务产物保存到工作目录中的 5.3-3 目录。\n",
+      "collect": ".local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791954631918-0cd49695-2554-4f0d-ab74-a4d4b4092e6b-collect.json",
+      "targetBranchVerdict": "未通过",
+      "fullApplicableContractVerdict": "未通过",
+      "end": {
+        "type": "turn/end",
+        "seq": 145,
+        "time": 1791954631297,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "finalAssistantSeq": 143,
+      "modelRequests": [
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/653e769d-40d2-4c05-9739-4bcc6ce511ec.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            16
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/b9eb1056-a138-4430-82f5-d4c435e93a68.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": "session-title",
+          "maxTokens": 64,
+          "assistantSeq": [],
+          "finish": [
+            {
+              "kind": "max-tokens"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/b7235aff-33fb-4b53-869d-27d2af202ccb.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            21
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/bf770c49-5fa2-4a38-a28c-1311633f4ab9.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            26
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/66103611-c9b7-489c-94b8-de0155d781fa.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            31
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/9afc199e-3e54-4e18-82de-bf92ea77fc17.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            36
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/f39254dd-ce70-429e-98d7-e27aed6617e7.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            41
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/ca1c0fdc-ed60-46ab-b2ba-c0bbb8173f0d.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            46
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/bba7589a-ee66-4d49-8953-877d8c825501.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            51
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/af7b97a1-d0d3-4dd6-bef4-2acb8b1fef2a.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            56
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/764d1e6d-6478-47fe-b6e0-f9cb88c97d46.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            61
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/24670abe-3513-405d-b85e-f2e26b3e7e5c.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            66
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/021a12c1-34ad-483e-b62c-e24584812a39.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            73
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/8c9d9a5b-f374-4950-97c9-a3aae5c5c979.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            80
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/cb07dc6a-b94b-402e-91c6-0b97b9479654.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            87
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/57856ca0-833b-43cd-aa2d-a54729b235af.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            94
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/a9719fc7-b007-4e5f-851a-871a879e7c14.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            99
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/b872bf46-5853-4297-8fa9-4879df7b4099.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            106
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/d7af607e-50ed-4775-b632-aefb105938dc.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            111
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/21dedee6-3f2a-487a-b0d7-57135415fa4b.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            118
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/1ac960ef-ea31-4199-bc74-6bd1a39d890e.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            123
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/b4cb3223-67ff-4c56-ba3e-18d4c204b3f0.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            128
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/123eeedd-282f-4e75-9476-d03e240d510b.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            133
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/732657d6-3f7f-4873-879f-10d3aadb8b0c.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            138
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/9525ee19-612b-4827-911b-6192aca3cdd5.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            143
+          ],
+          "finish": [
+            {
+              "kind": "stop"
+            }
+          ]
+        }
+      ],
+      "toolResultDelivery": [
+        {
+          "callSeq": 17,
+          "resultSeq": 18,
+          "tool": "skill",
+          "callId": "call_00_ET_69S0XTJADGzJZRKppZmr6173",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/b7235aff-33fb-4b53-869d-27d2af202ccb.jsonl",
+          "textCharacters": 9573
+        },
+        {
+          "callSeq": 22,
+          "resultSeq": 23,
+          "tool": "bash",
+          "callId": "call_00_ET_wFA7MCcNIhUxm4anm4k77131",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/bf770c49-5fa2-4a38-a28c-1311633f4ab9.jsonl",
+          "textCharacters": 1769
+        },
+        {
+          "callSeq": 27,
+          "resultSeq": 28,
+          "tool": "bash",
+          "callId": "call_00_ET_BzSDNnJaOSqFZNRwn49z8434",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/66103611-c9b7-489c-94b8-de0155d781fa.jsonl",
+          "textCharacters": 6923
+        },
+        {
+          "callSeq": 32,
+          "resultSeq": 33,
+          "tool": "bash",
+          "callId": "call_00_ET_e3Tw7otaiKAsv9OZcHwt7074",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/9afc199e-3e54-4e18-82de-bf92ea77fc17.jsonl",
+          "textCharacters": 10957
+        },
+        {
+          "callSeq": 37,
+          "resultSeq": 38,
+          "tool": "bash",
+          "callId": "call_00_1De98TzPhOVmqPvqs1GV5617",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/f39254dd-ce70-429e-98d7-e27aed6617e7.jsonl",
+          "textCharacters": 7908
+        },
+        {
+          "callSeq": 42,
+          "resultSeq": 43,
+          "tool": "bash",
+          "callId": "call_00_Lj1xJwWZhT790H3YS8bw7691",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/ca1c0fdc-ed60-46ab-b2ba-c0bbb8173f0d.jsonl",
+          "textCharacters": 12220
+        },
+        {
+          "callSeq": 47,
+          "resultSeq": 48,
+          "tool": "bash",
+          "callId": "call_00_DYOvPPy9J3L2Ej20Bwxl3811",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/bba7589a-ee66-4d49-8953-877d8c825501.jsonl",
+          "textCharacters": 18146
+        },
+        {
+          "callSeq": 52,
+          "resultSeq": 53,
+          "tool": "bash",
+          "callId": "call_00_mAGqIPjSxpFRMPoI6K3G9643",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/af7b97a1-d0d3-4dd6-bef4-2acb8b1fef2a.jsonl",
+          "textCharacters": 11660
+        },
+        {
+          "callSeq": 57,
+          "resultSeq": 58,
+          "tool": "bash",
+          "callId": "call_00_bgzqhjiqYYVMWdXb69fU5994",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/764d1e6d-6478-47fe-b6e0-f9cb88c97d46.jsonl",
+          "textCharacters": 7383
+        },
+        {
+          "callSeq": 62,
+          "resultSeq": 63,
+          "tool": "bash",
+          "callId": "call_00_XL0ZiZ30cTT7siTuH3vl7620",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/24670abe-3513-405d-b85e-f2e26b3e7e5c.jsonl",
+          "textCharacters": 6217
+        },
+        {
+          "callSeq": 67,
+          "resultSeq": 68,
+          "tool": "mcp__noobai__search_base_models",
+          "callId": "call_00_PU0po43m4bU4ZDaBq1gZ2923",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/021a12c1-34ad-483e-b62c-e24584812a39.jsonl",
+          "textCharacters": 79
+        },
+        {
+          "callSeq": 69,
+          "resultSeq": 70,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_UIcLsmjOybAIGeHsfJbo9432",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/021a12c1-34ad-483e-b62c-e24584812a39.jsonl",
+          "textCharacters": 5967
+        },
+        {
+          "callSeq": 74,
+          "resultSeq": 75,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_00_OOKLAbKa2Y5jfqCqC4A10916",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/8c9d9a5b-f374-4950-97c9-a3aae5c5c979.jsonl",
+          "textCharacters": 7107
+        },
+        {
+          "callSeq": 76,
+          "resultSeq": 77,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_01_7UaZ7h5nOqnqS9J2qUkj2166",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/8c9d9a5b-f374-4950-97c9-a3aae5c5c979.jsonl",
+          "textCharacters": 5476
+        },
+        {
+          "callSeq": 81,
+          "resultSeq": 82,
+          "tool": "mcp__noobai__query_semantic_works",
+          "callId": "call_00_Zsvs1DOtQclHw6jJfsvW3952",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/cb07dc6a-b94b-402e-91c6-0b97b9479654.jsonl",
+          "textCharacters": 1190
+        },
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_01_E01y5GW3aUWc1ZFpjinV1253",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/cb07dc6a-b94b-402e-91c6-0b97b9479654.jsonl",
+          "textCharacters": 83
+        },
+        {
+          "callSeq": 88,
+          "resultSeq": 89,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_00_64iiktYgU7jcVLkpHEZi9142",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/57856ca0-833b-43cd-aa2d-a54729b235af.jsonl",
+          "textCharacters": 7021
+        },
+        {
+          "callSeq": 90,
+          "resultSeq": 91,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_01_zUkL4JF2CHQjMytZqGCV7687",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/57856ca0-833b-43cd-aa2d-a54729b235af.jsonl",
+          "textCharacters": 9389
+        },
+        {
+          "callSeq": 95,
+          "resultSeq": 96,
+          "tool": "mcp__noobai__search_artist_prompt_strings",
+          "callId": "call_00_G4ehC2yEESHEDZljq0Lw8771",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/a9719fc7-b007-4e5f-851a-871a879e7c14.jsonl",
+          "textCharacters": 5077
+        },
+        {
+          "callSeq": 100,
+          "resultSeq": 101,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_00_gQAOKOEBa34fNq38OapP4803",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/b872bf46-5853-4297-8fa9-4879df7b4099.jsonl",
+          "textCharacters": 1118
+        },
+        {
+          "callSeq": 102,
+          "resultSeq": 103,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_01_rhL2MuocanMAwpcxk5442244",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/b872bf46-5853-4297-8fa9-4879df7b4099.jsonl",
+          "textCharacters": 5817
+        },
+        {
+          "callSeq": 107,
+          "resultSeq": 108,
+          "tool": "bash",
+          "callId": "call_00_akO52KCKDYhZvjmiliqI2447",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/d7af607e-50ed-4775-b632-aefb105938dc.jsonl",
+          "textCharacters": 1712
+        },
+        {
+          "callSeq": 112,
+          "resultSeq": 113,
+          "tool": "bash",
+          "callId": "call_00_NSFKi7DLk5zUpxpjJqFC6292",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/21dedee6-3f2a-487a-b0d7-57135415fa4b.jsonl",
+          "textCharacters": 2454
+        },
+        {
+          "callSeq": 114,
+          "resultSeq": 115,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_01_ETCoPNRpbGgC4fWCvC0G6264",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/21dedee6-3f2a-487a-b0d7-57135415fa4b.jsonl",
+          "textCharacters": 4300
+        },
+        {
+          "callSeq": 119,
+          "resultSeq": 120,
+          "tool": "bash",
+          "callId": "call_00_JFVN3nMG2g9vnFbwHzsl6181",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/1ac960ef-ea31-4199-bc74-6bd1a39d890e.jsonl",
+          "textCharacters": 621
+        },
+        {
+          "callSeq": 124,
+          "resultSeq": 125,
+          "tool": "bash",
+          "callId": "call_00_vFOQViSy9XN5CZBet7sR1366",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/b4cb3223-67ff-4c56-ba3e-18d4c204b3f0.jsonl",
+          "textCharacters": 816
+        },
+        {
+          "callSeq": 129,
+          "resultSeq": 130,
+          "tool": "bash",
+          "callId": "call_00_ET_u0M1HRuM4YICtXl7LvCo3038",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/123eeedd-282f-4e75-9476-d03e240d510b.jsonl",
+          "textCharacters": 775
+        },
+        {
+          "callSeq": 134,
+          "resultSeq": 135,
+          "tool": "bash",
+          "callId": "call_00_Wy743JHhydDpcKfxc0l55512",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/732657d6-3f7f-4873-879f-10d3aadb8b0c.jsonl",
+          "textCharacters": 822
+        },
+        {
+          "callSeq": 139,
+          "resultSeq": 140,
+          "tool": "bash",
+          "callId": "call_00_TI181NRBPw7YEgP1ok965509",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/9525ee19-612b-4827-911b-6192aca3cdd5.jsonl",
+          "textCharacters": 458
+        }
+      ],
+      "decisionContextChecks": [
+        {
+          "assistantSeq": 73,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/021a12c1-34ad-483e-b62c-e24584812a39.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            70
+          ]
+        },
+        {
+          "assistantSeq": 94,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/57856ca0-833b-43cd-aa2d-a54729b235af.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            70,
+            75,
+            77,
+            82,
+            84,
+            89,
+            91
+          ]
+        },
+        {
+          "assistantSeq": 99,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/a9719fc7-b007-4e5f-851a-871a879e7c14.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            70,
+            75,
+            77,
+            82,
+            84,
+            89,
+            91,
+            96
+          ]
+        },
+        {
+          "assistantSeq": 143,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/9525ee19-612b-4827-911b-6192aca3cdd5.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            70,
+            75,
+            77,
+            82,
+            84,
+            89,
+            91,
+            96,
+            101,
+            103,
+            108,
+            113,
+            115,
+            120,
+            125,
+            130,
+            135,
+            140
+          ]
+        }
+      ],
+      "installedReferenceCoverage": [
+        {
+          "file": "references/00-template-header.md",
+          "completeInstalledTextInResultSeqs": [
+            28
+          ]
+        },
+        {
+          "file": "references/01-quick-start.md",
+          "completeInstalledTextInResultSeqs": [
+            28
+          ]
+        },
+        {
+          "file": "references/02-role.md",
+          "completeInstalledTextInResultSeqs": [
+            28
+          ]
+        },
+        {
+          "file": "references/03-output-protocol.md",
+          "completeInstalledTextInResultSeqs": [
+            28
+          ]
+        },
+        {
+          "file": "references/04-final-self-check.md",
+          "completeInstalledTextInResultSeqs": [
+            28
+          ]
+        },
+        {
+          "file": "references/05-conflict-table.md",
+          "completeInstalledTextInResultSeqs": [
+            33
+          ]
+        },
+        {
+          "file": "references/06-slot-order.md",
+          "completeInstalledTextInResultSeqs": [
+            33
+          ]
+        },
+        {
+          "file": "references/07-assembly-decision-tree.md",
+          "completeInstalledTextInResultSeqs": [
+            38
+          ]
+        },
+        {
+          "file": "references/08-count-identity.md",
+          "completeInstalledTextInResultSeqs": [
+            43
+          ]
+        },
+        {
+          "file": "references/09-appearance.md",
+          "completeInstalledTextInResultSeqs": [
+            43
+          ]
+        },
+        {
+          "file": "references/10-clothing-state.md",
+          "completeInstalledTextInResultSeqs": [
+            48
+          ]
+        },
+        {
+          "file": "references/11-pose-action-sex.md",
+          "completeInstalledTextInResultSeqs": []
+        },
+        {
+          "file": "references/12-expression-reaction.md",
+          "completeInstalledTextInResultSeqs": [
+            53
+          ]
+        },
+        {
+          "file": "references/13-camera-shot.md",
+          "completeInstalledTextInResultSeqs": [
+            48
+          ]
+        },
+        {
+          "file": "references/14-scene-environment.md",
+          "completeInstalledTextInResultSeqs": [
+            58
+          ]
+        },
+        {
+          "file": "references/15-detail-mood.md",
+          "completeInstalledTextInResultSeqs": [
+            58
+          ]
+        },
+        {
+          "file": "references/16-special-theme.md",
+          "completeInstalledTextInResultSeqs": []
+        },
+        {
+          "file": "references/artist-style-query-vocabulary.md",
+          "completeInstalledTextInResultSeqs": [
+            43
+          ]
+        },
+        {
+          "file": "references/generation-cli.md",
+          "completeInstalledTextInResultSeqs": []
+        },
+        {
+          "file": "references/generation-output-contract.md",
+          "completeInstalledTextInResultSeqs": [
+            63
+          ]
+        },
+        {
+          "file": "references/generation-output-schema.json",
+          "completeInstalledTextInResultSeqs": [
+            63
+          ]
+        },
+        {
+          "file": "references/generation-profiles.json",
+          "completeInstalledTextInResultSeqs": [
+            63
+          ]
+        },
+        {
+          "file": "references/prompt-weight-policy.json",
+          "completeInstalledTextInResultSeqs": [
+            33
+          ]
+        },
+        {
+          "file": "references/prompt-weighting.md",
+          "completeInstalledTextInResultSeqs": [
+            33
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-y8ov5z_p/5.3-3/README.md",
+          "preservedPath": ".local/skills-mcp-migration-live/alice-identity-control-artifacts/original/5.3-3/README.md",
+          "bytes": 4823,
+          "liveAndPreservedEqual": true
+        },
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-y8ov5z_p/5.3-3/positive-prompt.txt",
+          "preservedPath": ".local/skills-mcp-migration-live/alice-identity-control-artifacts/original/5.3-3/positive-prompt.txt",
+          "bytes": 409,
+          "liveAndPreservedEqual": true
+        },
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-y8ov5z_p/5.3-3/negative-prompt.txt",
+          "preservedPath": ".local/skills-mcp-migration-live/alice-identity-control-artifacts/original/5.3-3/negative-prompt.txt",
+          "bytes": 112,
+          "liveAndPreservedEqual": true
+        },
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-y8ov5z_p/5.3-3/generation-result.json",
+          "preservedPath": ".local/skills-mcp-migration-live/alice-identity-control-artifacts/original/5.3-3/generation-result.json",
+          "bytes": 760,
+          "liveAndPreservedEqual": true
+        }
+      ]
+    },
+    {
+      "variant": "existing-character",
+      "sessionId": "session-2268e1ee-f593-4f5c-ad81-66c24b4f00bf",
+      "input": ".local/skills-mcp-migration-live/alice-identity-control-existing-character-input.json",
+      "actualPrompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md\n任务参数：{\"request\":\"为所属作品尚待确认的已有角色 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。\"}\n将本任务产物保存到工作目录中的 5.3-3 目录。\n",
+      "collect": ".local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791954795039-bec58eac-bc79-46b1-8b7e-0f8e0a531c35-collect.json",
+      "targetBranchVerdict": "通过",
+      "fullApplicableContractVerdict": "通过（第一轮等待合同）",
+      "end": {
+        "type": "turn/end",
+        "seq": 137,
+        "time": 1791954793858,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "finalAssistantSeq": 135,
+      "modelRequests": [
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/0eb33358-6e58-486f-b0dd-7307b0d11b22.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            16
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/4b6983ef-5aed-459f-9ad2-229b8a9caf10.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": "session-title",
+          "maxTokens": 64,
+          "assistantSeq": [],
+          "finish": [
+            {
+              "kind": "max-tokens"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/0f014e56-3407-48a6-84a0-2476f976668e.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            21
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/dd1adc21-6479-4619-a994-ec76aab7eaf2.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            28
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/34adc1a1-5a9c-4917-a2f1-bc1b6cceef25.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            35
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/fd702033-1a54-4342-b1bc-f1f0b3f665af.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            42
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/47d46986-8187-48d0-a1e4-328b88b121d3.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            49
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/a6ad24eb-8135-4f73-ac80-5a423c9db398.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            56
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/3d757d12-6843-4490-92e5-f70340fbccca.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            63
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/934f449d-4403-4e81-803d-3ad2cc24ec7c.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            70
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/74ed36a5-0aac-447b-8761-e20d657a3fcb.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [],
+          "finish": [
+            {
+              "kind": "error",
+              "failure": {
+                "message": "pi-ai stream idle timeout after 120000ms",
+                "code": "TIMEOUT"
+              }
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/c0a85f7b-66ac-4a22-80c6-e035d964fd16.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            78
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/9dfe3464-798c-42b9-9952-66258ad9cbb6.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            85
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/0d76c90d-2662-4b2b-b73a-cdc3111e0590.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            92
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/88368b39-3223-4b81-8407-7290e994553f.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            99
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/d9e51718-ff0e-4d22-a5f6-a7d20e20a2b3.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            106
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/27de6962-a7e9-4ca7-9b96-ae2636a3466a.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            113
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/bc7b56df-0cf7-4720-aea5-607f26ad1456.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            120
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/cd3cebce-b684-4cee-b96f-8881e309a886.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            125
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/05e19bb2-f6fa-427b-810e-4382c9d316c4.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            130
+          ],
+          "finish": [
+            {
+              "kind": "tool-calls"
+            }
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-calls/6de8c6c9-3358-4e1e-93e5-ff8ead67e11f.jsonl",
+          "model": "deepseek-v4.1-flash",
+          "provider": "opencode-go",
+          "purpose": null,
+          "maxTokens": 32768,
+          "assistantSeq": [
+            135
+          ],
+          "finish": [
+            {
+              "kind": "stop"
+            }
+          ]
+        }
+      ],
+      "toolResultDelivery": [
+        {
+          "callSeq": 17,
+          "resultSeq": 18,
+          "tool": "skill",
+          "callId": "call_00_g2lesby93nq5ex4afxnjteui",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/0f014e56-3407-48a6-84a0-2476f976668e.jsonl",
+          "textCharacters": 9573
+        },
+        {
+          "callSeq": 22,
+          "resultSeq": 23,
+          "tool": "bash",
+          "callId": "call_00_h9h94gcdvam28raipu31ozky",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/dd1adc21-6479-4619-a994-ec76aab7eaf2.jsonl",
+          "textCharacters": 1494
+        },
+        {
+          "callSeq": 24,
+          "resultSeq": 25,
+          "tool": "bash",
+          "callId": "call_01_qi8a2uwik4mgcuuzrsc3pwpy",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/dd1adc21-6479-4619-a994-ec76aab7eaf2.jsonl",
+          "textCharacters": 306
+        },
+        {
+          "callSeq": 29,
+          "resultSeq": 30,
+          "tool": "bash",
+          "callId": "call_00_m85xs6bokqofvqi1bufi7ymm",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/34adc1a1-5a9c-4917-a2f1-bc1b6cceef25.jsonl",
+          "textCharacters": 2114
+        },
+        {
+          "callSeq": 31,
+          "resultSeq": 32,
+          "tool": "bash",
+          "callId": "call_01_8rmpnupn2r3kefvbwoqwy30r",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/34adc1a1-5a9c-4917-a2f1-bc1b6cceef25.jsonl",
+          "textCharacters": 7064
+        },
+        {
+          "callSeq": 36,
+          "resultSeq": 37,
+          "tool": "bash",
+          "callId": "call_00_a2yudxmrxvtvjogq6dhkjspp",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/fd702033-1a54-4342-b1bc-f1f0b3f665af.jsonl",
+          "textCharacters": 8522
+        },
+        {
+          "callSeq": 38,
+          "resultSeq": 39,
+          "tool": "bash",
+          "callId": "call_01_l07vzvsazk7i86alcfya5b20",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/fd702033-1a54-4342-b1bc-f1f0b3f665af.jsonl",
+          "textCharacters": 7949
+        },
+        {
+          "callSeq": 43,
+          "resultSeq": 44,
+          "tool": "bash",
+          "callId": "call_00_9sm7jsqx1a6qvbwnuabhirt4",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/47d46986-8187-48d0-a1e4-328b88b121d3.jsonl",
+          "textCharacters": 7848
+        },
+        {
+          "callSeq": 45,
+          "resultSeq": 46,
+          "tool": "bash",
+          "callId": "call_01_6owe9zr28ni7pctuff5wxkw1",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/47d46986-8187-48d0-a1e4-328b88b121d3.jsonl",
+          "textCharacters": 35884
+        },
+        {
+          "callSeq": 50,
+          "resultSeq": 51,
+          "tool": "bash",
+          "callId": "call_00_lx4rwidj289d3dcvorkev0ee",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/a6ad24eb-8135-4f73-ac80-5a423c9db398.jsonl",
+          "textCharacters": 11891
+        },
+        {
+          "callSeq": 52,
+          "resultSeq": 53,
+          "tool": "bash",
+          "callId": "call_01_kut47j4fb56jjaowbahgcxxm",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/a6ad24eb-8135-4f73-ac80-5a423c9db398.jsonl",
+          "textCharacters": 7343
+        },
+        {
+          "callSeq": 57,
+          "resultSeq": 58,
+          "tool": "bash",
+          "callId": "call_00_6jy8up9onmp0e1nbwrfgrf68",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/3d757d12-6843-4490-92e5-f70340fbccca.jsonl",
+          "textCharacters": 4312
+        },
+        {
+          "callSeq": 59,
+          "resultSeq": 60,
+          "tool": "bash",
+          "callId": "call_01_ujxja4owqkr7uei8z8g85avr",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/3d757d12-6843-4490-92e5-f70340fbccca.jsonl",
+          "textCharacters": 6157
+        },
+        {
+          "callSeq": 64,
+          "resultSeq": 65,
+          "tool": "bash",
+          "callId": "call_00_l8i6ko42180d090ck55abtbi",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/934f449d-4403-4e81-803d-3ad2cc24ec7c.jsonl",
+          "textCharacters": 7875
+        },
+        {
+          "callSeq": 66,
+          "resultSeq": 67,
+          "tool": "bash",
+          "callId": "call_01_s3jivgts82pfcxtd6m0o440z",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/934f449d-4403-4e81-803d-3ad2cc24ec7c.jsonl",
+          "textCharacters": 1210
+        },
+        {
+          "callSeq": 71,
+          "resultSeq": 72,
+          "tool": "bash",
+          "callId": "call_00_njuucw4n7feolt21wkbq8qhe",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/74ed36a5-0aac-447b-8761-e20d657a3fcb.jsonl",
+          "textCharacters": 7128
+        },
+        {
+          "callSeq": 79,
+          "resultSeq": 80,
+          "tool": "mcp__noobai__search_base_models",
+          "callId": "call_00_1ebhgicioe4mp8ww1ia155w9",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/9dfe3464-798c-42b9-9952-66258ad9cbb6.jsonl",
+          "textCharacters": 79
+        },
+        {
+          "callSeq": 81,
+          "resultSeq": 82,
+          "tool": "mcp__noobai__query_semantic_works",
+          "callId": "call_01_pme797vmkmb3x8cptyibesuu",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/9dfe3464-798c-42b9-9952-66258ad9cbb6.jsonl",
+          "textCharacters": 1190
+        },
+        {
+          "callSeq": 86,
+          "resultSeq": 87,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_00_5pwgipv2td0arswdm7jxrsln",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/0d76c90d-2662-4b2b-b73a-cdc3111e0590.jsonl",
+          "textCharacters": 6935
+        },
+        {
+          "callSeq": 88,
+          "resultSeq": 89,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_bnolqef8b01guhm852wtjp2s",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/0d76c90d-2662-4b2b-b73a-cdc3111e0590.jsonl",
+          "textCharacters": 9185
+        },
+        {
+          "callSeq": 93,
+          "resultSeq": 94,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_00_lwzv2yz1wcdcn5qdiwn1ljzb",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/88368b39-3223-4b81-8407-7290e994553f.jsonl",
+          "textCharacters": 6673
+        },
+        {
+          "callSeq": 95,
+          "resultSeq": 96,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_rwkgqamxkcynvwp5erjv5cqw",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/88368b39-3223-4b81-8407-7290e994553f.jsonl",
+          "textCharacters": 8302
+        },
+        {
+          "callSeq": 100,
+          "resultSeq": 101,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_00_fabw99sfhxwxjf28abxjizeb",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/d9e51718-ff0e-4d22-a5f6-a7d20e20a2b3.jsonl",
+          "textCharacters": 1051
+        },
+        {
+          "callSeq": 102,
+          "resultSeq": 103,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_1yc1o6phayv0h7guhkxoigmb",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/d9e51718-ff0e-4d22-a5f6-a7d20e20a2b3.jsonl",
+          "textCharacters": 2478
+        },
+        {
+          "callSeq": 107,
+          "resultSeq": 108,
+          "tool": "bash",
+          "callId": "call_00_qe5lwc64bmrpv3t901ouxyo6",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/27de6962-a7e9-4ca7-9b96-ae2636a3466a.jsonl",
+          "textCharacters": 1064
+        },
+        {
+          "callSeq": 109,
+          "resultSeq": 110,
+          "tool": "bash",
+          "callId": "call_01_crcb48mrdcv4ui36tb6ek773",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/27de6962-a7e9-4ca7-9b96-ae2636a3466a.jsonl",
+          "textCharacters": 279
+        },
+        {
+          "callSeq": 114,
+          "resultSeq": 115,
+          "tool": "bash",
+          "callId": "call_00_rc6ch4whwjoa1an3fsfdcf1w",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/bc7b56df-0cf7-4720-aea5-607f26ad1456.jsonl",
+          "textCharacters": 99
+        },
+        {
+          "callSeq": 116,
+          "resultSeq": 117,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "callId": "call_01_o9x3y4kos84brkh8sue816co",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/bc7b56df-0cf7-4720-aea5-607f26ad1456.jsonl",
+          "textCharacters": 1705
+        },
+        {
+          "callSeq": 121,
+          "resultSeq": 122,
+          "tool": "bash",
+          "callId": "call_00_vxn5yqbobvn2e45ipz2kz8f8",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/cd3cebce-b684-4cee-b96f-8881e309a886.jsonl",
+          "textCharacters": 179
+        },
+        {
+          "callSeq": 126,
+          "resultSeq": 127,
+          "tool": "bash",
+          "callId": "call_00_1w3yqr3n5s8nraog8vx2kt8u",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/05e19bb2-f6fa-427b-810e-4382c9d316c4.jsonl",
+          "textCharacters": 279
+        },
+        {
+          "callSeq": 131,
+          "resultSeq": 132,
+          "tool": "bash",
+          "callId": "call_00_noqg9t5ys3hxe42nn1hwdbel",
+          "completeContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/6de8c6c9-3358-4e1e-93e5-ff8ead67e11f.jsonl",
+          "textCharacters": 185
+        }
+      ],
+      "decisionContextChecks": [
+        {
+          "assistantSeq": 92,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/0d76c90d-2662-4b2b-b73a-cdc3111e0590.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            25,
+            30,
+            32,
+            37,
+            39,
+            44,
+            46,
+            51,
+            53,
+            58,
+            60,
+            65,
+            67,
+            72,
+            80,
+            82,
+            87,
+            89
+          ]
+        },
+        {
+          "assistantSeq": 99,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/88368b39-3223-4b81-8407-7290e994553f.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            25,
+            30,
+            32,
+            37,
+            39,
+            44,
+            46,
+            51,
+            53,
+            58,
+            60,
+            65,
+            67,
+            72,
+            80,
+            82,
+            87,
+            89,
+            94,
+            96
+          ]
+        },
+        {
+          "assistantSeq": 113,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/27de6962-a7e9-4ca7-9b96-ae2636a3466a.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            25,
+            30,
+            32,
+            37,
+            39,
+            44,
+            46,
+            51,
+            53,
+            58,
+            60,
+            65,
+            67,
+            72,
+            80,
+            82,
+            87,
+            89,
+            94,
+            96,
+            101,
+            103,
+            108,
+            110
+          ]
+        },
+        {
+          "assistantSeq": 135,
+          "actualRequest": ".local/skills-mcp-migration-live/llm-calls/6de8c6c9-3358-4e1e-93e5-ff8ead67e11f.jsonl",
+          "allEarlierToolResultsExact": true,
+          "retainedResultSeqs": [
+            18,
+            23,
+            25,
+            30,
+            32,
+            37,
+            39,
+            44,
+            46,
+            51,
+            53,
+            58,
+            60,
+            65,
+            67,
+            72,
+            80,
+            82,
+            87,
+            89,
+            94,
+            96,
+            101,
+            103,
+            108,
+            110,
+            115,
+            117,
+            122,
+            127,
+            132
+          ]
+        }
+      ],
+      "installedReferenceCoverage": [
+        {
+          "file": "references/00-template-header.md",
+          "completeInstalledTextInResultSeqs": [
+            30
+          ]
+        },
+        {
+          "file": "references/01-quick-start.md",
+          "completeInstalledTextInResultSeqs": [
+            30
+          ]
+        },
+        {
+          "file": "references/02-role.md",
+          "completeInstalledTextInResultSeqs": [
+            30
+          ]
+        },
+        {
+          "file": "references/03-output-protocol.md",
+          "completeInstalledTextInResultSeqs": [
+            32
+          ]
+        },
+        {
+          "file": "references/04-final-self-check.md",
+          "completeInstalledTextInResultSeqs": [
+            32
+          ]
+        },
+        {
+          "file": "references/05-conflict-table.md",
+          "completeInstalledTextInResultSeqs": [
+            32
+          ]
+        },
+        {
+          "file": "references/06-slot-order.md",
+          "completeInstalledTextInResultSeqs": [
+            37
+          ]
+        },
+        {
+          "file": "references/07-assembly-decision-tree.md",
+          "completeInstalledTextInResultSeqs": [
+            39
+          ]
+        },
+        {
+          "file": "references/08-count-identity.md",
+          "completeInstalledTextInResultSeqs": [
+            44
+          ]
+        },
+        {
+          "file": "references/09-appearance.md",
+          "completeInstalledTextInResultSeqs": [
+            44
+          ]
+        },
+        {
+          "file": "references/10-clothing-state.md",
+          "completeInstalledTextInResultSeqs": [
+            46
+          ]
+        },
+        {
+          "file": "references/11-pose-action-sex.md",
+          "completeInstalledTextInResultSeqs": [
+            46
+          ]
+        },
+        {
+          "file": "references/12-expression-reaction.md",
+          "completeInstalledTextInResultSeqs": [
+            51
+          ]
+        },
+        {
+          "file": "references/13-camera-shot.md",
+          "completeInstalledTextInResultSeqs": [
+            51
+          ]
+        },
+        {
+          "file": "references/14-scene-environment.md",
+          "completeInstalledTextInResultSeqs": [
+            53
+          ]
+        },
+        {
+          "file": "references/15-detail-mood.md",
+          "completeInstalledTextInResultSeqs": [
+            53
+          ]
+        },
+        {
+          "file": "references/16-special-theme.md",
+          "completeInstalledTextInResultSeqs": []
+        },
+        {
+          "file": "references/artist-style-query-vocabulary.md",
+          "completeInstalledTextInResultSeqs": [
+            58
+          ]
+        },
+        {
+          "file": "references/generation-cli.md",
+          "completeInstalledTextInResultSeqs": []
+        },
+        {
+          "file": "references/generation-output-contract.md",
+          "completeInstalledTextInResultSeqs": [
+            60
+          ]
+        },
+        {
+          "file": "references/generation-output-schema.json",
+          "completeInstalledTextInResultSeqs": [
+            60
+          ]
+        },
+        {
+          "file": "references/generation-profiles.json",
+          "completeInstalledTextInResultSeqs": [
+            60
+          ]
+        },
+        {
+          "file": "references/prompt-weight-policy.json",
+          "completeInstalledTextInResultSeqs": [
+            37
+          ]
+        },
+        {
+          "file": "references/prompt-weighting.md",
+          "completeInstalledTextInResultSeqs": [
+            37
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/alice-candidates.json",
+          "preservedPath": ".local/skills-mcp-migration-live/alice-identity-control-artifacts/existing-character/5.3-3/alice-candidates.json",
+          "bytes": 6608,
+          "liveAndPreservedEqual": true
+        },
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/alice-work-confirmation.md",
+          "preservedPath": ".local/skills-mcp-migration-live/alice-identity-control-artifacts/existing-character/5.3-3/alice-work-confirmation.md",
+          "bytes": 7616,
+          "liveAndPreservedEqual": true
+        }
+      ]
+    }
+  ]
+}

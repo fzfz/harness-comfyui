@@ -1,0 +1,120 @@
+{
+  "purpose": "记录本轮官方 Desktop 运行资料驱动的接口、结构验证与准备产物，供独立审查和后续无模型验收使用。",
+  "status": "结构验证、独立审查和官方 Desktop 无模型烟测均已完成。",
+  "authorization": "父任务确认主计划第 5.13.1、5.14 节覆盖本地验收设施修改；当前阶段只执行结构测试和 prepare。",
+  "writeOwnership": [
+    ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+    ".local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+    ".local/skills-mcp-migration-live/desktop-driver.mjs",
+    ".local/skills-mcp-migration-live/neutral-runtime/",
+    "docs/verification/skills-mcp-migration/neutral-runtime-implementation.json"
+  ],
+  "implementation": {
+    "module": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+    "profileCompatibility": "state.json 保留 isolated-profile 的配置、模型、observer、图片读取配置、状态和生命周期字段；configure、start、status、stop 继续调用 isolated-profile 的公开 API。",
+    "rootContract": {
+      "root": "每个场景独立创建的外部中性根 R。",
+      "repositoryRoot": "R/runtime，供官方 probe 与官方安装器使用。",
+      "probeRoot": "与 repositoryRoot 相同，供 desktop-driver 的第五个位置参数使用。",
+      "sourceRepositoryRoot": "控制 checkout 的真实路径，保存在控制侧 state。",
+      "controlRoot": "控制目录 C，保存原 layout 与配置、neutral-desktop-e2e.json、state、来源、安装结果和环境审计。",
+      "probeRecordRoot": "R/runtime/.local/desktop-e2e，沿用官方安装器的默认证据路径。"
+    },
+    "reusedApis": [
+      "prepareNeutralLayout",
+      "configureScenario",
+      "startScenario",
+      "statusScenario",
+      "stopScenario",
+      "installOfficialPluginCandidate",
+      "getProbeStatus",
+      "connectDesktopPage"
+    ],
+    "publicApis": {
+      "prepareRuntime": "接收 scenario、repositoryRoot、sourceProfilePatchPath 或 sourceStateFile、sourceCandidatePath、sourceObserverDirectory、modelSelectionPath、baseDirectory、controlDirectory；返回兼容 state。",
+      "createRuntimeSpawn": "接收 runtimeRoot、controlRoots、auditDirectory 和可选 spawnProcess；返回官方 probe 的同步 spawn 包装器。",
+      "startRuntime": "接收 stateFile、可选 signal 与 probeOptions；使用官方 probe 启动，并在实际 spawn 前处理环境和写入控制侧审计。",
+      "installRuntime": "接收 stateFile；核对运行状态，经官方界面安装 R 内候选，并把安装结果保存到 C。",
+      "configureRuntime": "接收 stateFile、可选 fixtureStateFile 和 modelSelectionPath；在官方安装完成且 Desktop 停止后同步预设、模型和图片读取配置。",
+      "statusRuntime": "接收 stateFile；读取本轮官方 probe 的进程、端口和运行状态。",
+      "stopRuntime": "接收 stateFile；通过官方 probe 停止并核对进程与端口释放，把 probe 和 observer 证据复制到 C，保留 R。"
+    },
+    "environmentHandling": [
+      "Desktop cwd 和 PWD 使用本轮 Workspace；移除 OLDPWD、INIT_CWD、NODE_OPTIONS。",
+      "PATH 与 NODE_PATH 按原路径和真实路径剔除控制材料目录；其余变量出现控制材料路径时移除该变量。",
+      "保留官方 probe 提供的运行目录、业务 endpoint 与凭据变量；审计保存变量名、处理动作、必要路径和脱敏值。",
+      "spawn 包装器保留官方 executable、参数、detached 和 stdio，环境处理在同一次 spawn 调用中完成。"
+    ],
+    "desktopDriver": {
+      "signature": "node .local/skills-mcp-migration-live/desktop-driver.mjs <capture|remote|submit|collect|watch> <probe-run-id> [input.json] [probe-config.json] [probe-root]",
+      "default": "省略 probe-root 时沿用控制 checkout 的原路径。",
+      "externalRun": "提供 probe-root 时，从该目录读取 run.json，并以该目录连接 Renderer CDP；输出继续保存到控制 checkout 的 .local/skills-mcp-migration-live/desktop/<run-id>/。"
+    }
+  },
+  "commands": {
+    "prepare": "node .local/skills-mcp-migration-live/neutral-runtime.mjs prepare --scenario <场景名称> [--candidate <获准候选tgz>]",
+    "lifecycle": "node .local/skills-mcp-migration-live/neutral-runtime.mjs <start|install|stop|configure|status> --state <控制侧state.json>",
+    "configureFixture": "node .local/skills-mcp-migration-live/neutral-runtime.mjs configure --state <控制侧state.json> --fixture-state <同场景夹具state.json> [--models <获准模型文件>]",
+    "sequence": [
+      "prepare",
+      "start",
+      "install",
+      "stop",
+      "configure",
+      "start",
+      "status",
+      "stop"
+    ],
+    "details": "node .local/skills-mcp-migration-live/neutral-runtime.mjs --help"
+  },
+  "validation": {
+    "command": "node --test .local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+    "passedTests": 4,
+    "finalLog": ".local/skills-mcp-migration-live/neutral-runtime/final-structure.log",
+    "redLogs": [
+      ".local/skills-mcp-migration-live/neutral-runtime/prepare-red.log",
+      ".local/skills-mcp-migration-live/neutral-runtime/environment-red.log",
+      ".local/skills-mcp-migration-live/neutral-runtime/lifecycle-red.log",
+      ".local/skills-mcp-migration-live/neutral-runtime/driver-red.log",
+      ".local/skills-mcp-migration-live/neutral-runtime/retry-boundary-red.log",
+      ".local/skills-mcp-migration-live/neutral-runtime/layout-record-red.log"
+    ],
+    "verified": [
+      "C/R 分离、root/repositoryRoot 区分、Profile、Workspace、user-data 与官方 probe 路径解析一致；prepare-layout 原配置与 neutral 配置分别解析到同一本轮环境目录。",
+      "候选和两份 observer 依赖逐字节一致；Workspace、user-data 与本轮 observer 日志初始为空。",
+      "来源 Profile 的其他场景条目未进入运行 Profile；图片读取配置保留在控制侧兼容 state，供安装后的 configure 同步。",
+      "环境处理剔除控制路径和符号链接别名，保留真实 endpoint 与凭据，审计内容已脱敏。",
+      "官方准备阶段的可控应用身份拒绝产生失败记录；未调用 spawn，官方清理释放了预留端口，stop 保存了控制侧证据副本。",
+      "desktop-driver 的外部 probeRoot 参数生效；原有位置参数仍使用原 probe 根。",
+      "未启动的 Desktop 和未安装的候选在 install/configure 入口收到可执行的后续命令提示。"
+    ],
+    "syntaxChecks": "neutral-runtime.mjs 与 desktop-driver.mjs 的 node --check 通过。",
+    "whitespaceChecks": "三个改动脚本的 git diff --no-index --check 未报告空白错误。",
+    "infrastructureFixtureBoundary": "结构测试以应用身份核对回调提前拒绝真实启动；环境预检使用内存回调，没有创建操作系统应用进程。"
+  },
+  "preparedRuntime": {
+    "command": "node .local/skills-mcp-migration-live/neutral-runtime.mjs prepare --scenario preparation-smoke",
+    "stateFile": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/state.json",
+    "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk",
+    "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime",
+    "sourceProfile": ".local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "candidate": ".local/skills-mcp-migration-live/presentation-visibility-candidate.tgz",
+    "modelSelection": ".local/skills-mcp-migration-live/model-switch.json",
+    "inventoryPath": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/preparation-inventory.json",
+    "environmentPreflightPath": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/environment-preflight.json",
+    "runtimeFiles": 4,
+    "symbolicLinks": 0,
+    "candidateBytesEqual": true,
+    "observerFilesBytesEqual": true,
+    "historyCopied": false,
+    "desktopProcessesStarted": 0,
+    "modelRequests": 0,
+    "preservation": "已准备的 R 与 C 保留原路径；read-boundary 原型及其失败证据保留原位。"
+  },
+  "pending": [
+    "真实业务验收为每个场景重新 prepare，并按 acceptance-read-boundary-review.json 的 followupAssessment 审查完整执行轨迹。"
+  ],
+  "evidenceBoundary": "当前结果覆盖运行资料准备与结构接口。中性运行目录降低就近发现验收材料的机会；同一操作系统用户的读取能力继续存在，业务证据按每次完整轨迹判定。",
+  "recordedAt": "2026-10-14T06:36:01.829Z",
+  "officialSmokeReport": "docs/verification/skills-mcp-migration/neutral-runtime-smoke.json"
+}

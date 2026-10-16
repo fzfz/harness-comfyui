@@ -2,7 +2,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 
 const CONFIG_KEYS = [
   'schemaVersion', 'modes', 'application', 'paths', 'ports', 'startup', 'rendererCdp', 'readiness', 'invocation', 'profilePortPatch', 'capabilities',
-  'commandRunner',
+  'commandRunner', 'sessionTrace',
 ]
 const MODES_KEYS = ['defaultMode', 'fresh', 'development']
 const EPHEMERAL_MODE_KEYS = ['persistent']
@@ -314,6 +314,8 @@ export function parseDesktopE2EConfig(value) {
     if (typeof value !== 'boolean') throw new TypeError(`desktop E2E config.capabilities.${key} must be boolean`)
   }
 
+  parseSessionTraceConfig(config.sessionTrace)
+
   const commandRunner = exactKeys(config.commandRunner, COMMAND_RUNNER_KEYS, 'desktop E2E config.commandRunner')
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(nonEmptyString(
     commandRunner.invocationDirectoryEnvironmentName,
@@ -335,6 +337,38 @@ export function parseDesktopE2EConfig(value) {
     throw new TypeError('desktop E2E config.commandRunner.pendingStartDrainTimeoutMs must cover startup, stop and kill timeouts')
   }
   return config
+}
+
+export function parseSessionTraceFilenames(value) {
+  const filenames = exactKeys(value, [
+    'sessionsDirectory', 'session', 'index',
+  ], 'desktop E2E config.sessionTrace.filenames')
+  for (const [key, filename] of Object.entries(filenames)) {
+    safeRelativePath(filename, 'desktop E2E config.sessionTrace.filenames.' + key)
+    if (filename.includes('/') || filename.includes('\\')) {
+      throw new TypeError('desktop E2E config.sessionTrace.filenames.' + key + ' must be a path component')
+    }
+  }
+  if (new Set(Object.values(filenames)).size !== Object.keys(filenames).length) {
+    throw new TypeError('desktop E2E config.sessionTrace.filenames must contain distinct path components')
+  }
+  return filenames
+}
+
+export function parseSessionTraceConfig(value) {
+  const trace = exactKeys(value, ['directoryName', 'filenames', 'export'], 'desktop E2E config.sessionTrace')
+  safeRelativePath(trace.directoryName, 'desktop E2E config.sessionTrace.directoryName')
+  if (trace.directoryName.includes('/') || trace.directoryName.includes('\\')) {
+    throw new TypeError('desktop E2E config.sessionTrace.directoryName must be a path component')
+  }
+  parseSessionTraceFilenames(trace.filenames)
+  const exported = exactKeys(trace.export, ['route', 'sessionLogFilename'], 'desktop E2E config.sessionTrace.export')
+  safeRelativePath(exported.route, 'desktop E2E config.sessionTrace.export.route')
+  safeRelativePath(exported.sessionLogFilename, 'desktop E2E config.sessionTrace.export.sessionLogFilename')
+  if (exported.sessionLogFilename.includes('/') || exported.sessionLogFilename.includes('\\')) {
+    throw new TypeError('desktop E2E config.sessionTrace.export.sessionLogFilename must be a path component')
+  }
+  return trace
 }
 
 export function parseDesktopE2ECommandInvocationContext(value) {

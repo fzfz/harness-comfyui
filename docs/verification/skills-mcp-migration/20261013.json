@@ -1,0 +1,635 @@
+{
+  "observedOn": "2026-10-13",
+  "timezone": "Asia/Shanghai",
+  "endpoint": "http://127.0.0.1:18943/mcp",
+  "server": {
+    "protocolVersion": "2025-03-26",
+    "capabilities": {
+      "tools": {},
+      "resources": {},
+      "extensions": {
+        "io.modelcontextprotocol/skills": {}
+      }
+    },
+    "serverInfo": {
+      "name": "noobai-catalog",
+      "version": "0.1.0"
+    }
+  },
+  "client": {
+    "package": "@deepseek-ai/dsh-mcp-client",
+    "version": "0.2.0-rc.2"
+  },
+  "tools": [
+    {
+      "name": "query_semantic_works",
+      "required": null
+    },
+    {
+      "name": "query_semantic_characters",
+      "required": null
+    },
+    {
+      "name": "query_semantic_prompt_terms",
+      "required": null
+    },
+    {
+      "name": "list_prompt_term_categories",
+      "required": null
+    },
+    {
+      "name": "search_base_models",
+      "required": []
+    },
+    {
+      "name": "search_models",
+      "required": []
+    },
+    {
+      "name": "search_loras",
+      "required": []
+    },
+    {
+      "name": "search_styles",
+      "required": []
+    },
+    {
+      "name": "search_artist_prompt_strings",
+      "required": []
+    },
+    {
+      "name": "search_workflows",
+      "required": []
+    },
+    {
+      "name": "search_instances",
+      "required": []
+    },
+    {
+      "name": "get_catalog_resource",
+      "required": [
+        "ref"
+      ]
+    },
+    {
+      "name": "get_instance_connection",
+      "required": [
+        "instance_id"
+      ]
+    },
+    {
+      "name": "get_instance_status",
+      "required": [
+        "instance_id"
+      ]
+    },
+    {
+      "name": "get_instance_queue",
+      "required": [
+        "instance_id"
+      ]
+    },
+    {
+      "name": "search_instance_nodes",
+      "required": [
+        "instance_id"
+      ]
+    },
+    {
+      "name": "get_instance_node",
+      "required": [
+        "instance_id",
+        "class_name"
+      ]
+    }
+  ],
+  "modelVisibleSchemaUtf8Bytes": 77984,
+  "dshCalls": [
+    {
+      "label": "query_semantic_works",
+      "tool": "query_semantic_works",
+      "arguments": {
+        "mode": "search",
+        "query": "",
+        "page_size": 1
+      },
+      "isError": false,
+      "elapsedMs": 26,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "query_semantic_works-resolve",
+      "tool": "query_semantic_works",
+      "arguments": {
+        "mode": "resolve",
+        "id": "3761"
+      },
+      "isError": false,
+      "elapsedMs": 4,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "query_semantic_characters",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "search",
+        "query": "",
+        "page_size": 1
+      },
+      "isError": false,
+      "elapsedMs": 282,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "query_semantic_characters-resolve",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "resolve",
+        "id": "39938"
+      },
+      "isError": false,
+      "elapsedMs": 15,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "query_semantic_prompt_terms",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "query": "",
+        "page_size": 1
+      },
+      "isError": false,
+      "elapsedMs": 46,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "query_semantic_prompt_terms-resolve",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "resolve",
+        "id": "914"
+      },
+      "isError": false,
+      "elapsedMs": 5,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "list_prompt_term_categories",
+      "tool": "list_prompt_term_categories",
+      "arguments": {
+        "level": "roots",
+        "page_size": 1
+      },
+      "isError": false,
+      "elapsedMs": 11,
+      "errorCode": null,
+      "resultKeys": [
+        "status",
+        "message",
+        "results",
+        "page",
+        "page_size",
+        "total_count"
+      ]
+    },
+    {
+      "label": "search_base_models",
+      "tool": "search_base_models",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 6,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-base_model",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "base_model",
+          "id": "3"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 15,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "search_models",
+      "tool": "search_models",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 7,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-model",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "model",
+          "id": "17"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 4,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "models-next",
+      "tool": "search_models",
+      "arguments": {
+        "limit": 1,
+        "query": "",
+        "page": 2
+      },
+      "isError": false,
+      "elapsedMs": 4,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "search_loras",
+      "tool": "search_loras",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 6,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-lora",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "lora",
+          "id": "103"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 3,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "search_styles",
+      "tool": "search_styles",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 10,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-style",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "style",
+          "id": "12415"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 4,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "search_artist_prompt_strings",
+      "tool": "search_artist_prompt_strings",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 6,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-artist_prompt_string",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "artist_prompt_string",
+          "id": "958"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 4,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "search_workflows",
+      "tool": "search_workflows",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 8,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-workflow",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "workflow",
+          "id": "44"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 17,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "search_instances",
+      "tool": "search_instances",
+      "arguments": {
+        "limit": 1
+      },
+      "isError": false,
+      "elapsedMs": 6,
+      "errorCode": null,
+      "resultKeys": [
+        "results",
+        "next"
+      ]
+    },
+    {
+      "label": "detail-instance",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "instance",
+          "id": "2"
+        }
+      },
+      "isError": false,
+      "elapsedMs": 4,
+      "errorCode": null,
+      "resultKeys": [
+        "item"
+      ]
+    },
+    {
+      "label": "get_instance_connection",
+      "tool": "get_instance_connection",
+      "arguments": {
+        "instance_id": "2"
+      },
+      "isError": false,
+      "elapsedMs": 6,
+      "errorCode": null,
+      "resultKeys": [
+        "instance_id",
+        "name",
+        "url",
+        "credential_type",
+        "authorization"
+      ]
+    },
+    {
+      "label": "get_instance_status",
+      "tool": "get_instance_status",
+      "arguments": {
+        "instance_id": "2"
+      },
+      "isError": false,
+      "elapsedMs": 7815,
+      "errorCode": null,
+      "resultKeys": [
+        "instance_id",
+        "checked_at",
+        "reachable",
+        "http_status",
+        "latency_ms",
+        "system",
+        "devices",
+        "error"
+      ],
+      "reachable": false
+    },
+    {
+      "label": "get_instance_queue",
+      "tool": "get_instance_queue",
+      "arguments": {
+        "instance_id": "2",
+        "limit": 1
+      },
+      "isError": true,
+      "elapsedMs": 7784,
+      "errorCode": "MCP_INSTANCE_REMOTE_UNAVAILABLE",
+      "resultKeys": []
+    },
+    {
+      "label": "search_instance_nodes",
+      "tool": "search_instance_nodes",
+      "arguments": {
+        "instance_id": "2",
+        "limit": 1
+      },
+      "isError": true,
+      "elapsedMs": 7844,
+      "errorCode": "MCP_INSTANCE_REMOTE_UNAVAILABLE",
+      "resultKeys": []
+    },
+    {
+      "label": "invalid-limit",
+      "tool": "search_models",
+      "arguments": {
+        "limit": 21
+      },
+      "isError": true,
+      "elapsedMs": 3,
+      "errorCode": "CATALOG_REQUEST_INVALID",
+      "resultKeys": []
+    },
+    {
+      "label": "missing-record",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "model",
+          "id": "9999999999999999999"
+        }
+      },
+      "isError": true,
+      "elapsedMs": 3,
+      "errorCode": "MCP_QUERY_INVALID",
+      "resultKeys": []
+    }
+  ],
+  "additionalCalls": [
+    {
+      "tool": "search_models",
+      "arguments": {
+        "base_model": {
+          "name": "anima"
+        },
+        "limit": 1
+      },
+      "isError": false,
+      "errorCode": null
+    },
+    {
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "anima"
+        },
+        "query": "水彩",
+        "limit": 1
+      },
+      "isError": false,
+      "errorCode": null
+    },
+    {
+      "tool": "search_artist_prompt_strings",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "limit": 1
+      },
+      "isError": false,
+      "errorCode": null
+    },
+    {
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "model",
+          "id": "999999"
+        }
+      },
+      "isError": true,
+      "errorCode": "MCP_QUERY_RESOURCE_NOT_FOUND"
+    },
+    {
+      "tool": "get_instance_node",
+      "arguments": {
+        "instance_id": "2",
+        "class_name": "KSampler"
+      },
+      "isError": true,
+      "errorCode": "MCP_INSTANCE_REMOTE_UNAVAILABLE"
+    }
+  ],
+  "comparisonSamples": [
+    {
+      "kind": "model",
+      "id": "17",
+      "idMatches": true,
+      "nameMatches": true,
+      "baseModelMatches": true
+    },
+    {
+      "kind": "workflow",
+      "id": "44",
+      "idMatches": true,
+      "nameMatches": true,
+      "baseModelMatches": true
+    }
+  ],
+  "workflowDetailSample": {
+    "id": "44",
+    "itemUtf8Bytes": 148809,
+    "workflowJsonPresent": true
+  }
+}

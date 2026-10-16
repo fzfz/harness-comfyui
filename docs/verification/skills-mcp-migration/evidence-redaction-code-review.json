@@ -1,0 +1,171 @@
+{
+  "purpose": "独立审查采集证据脱敏实现的功能、凭据遮蔽和数据完整性。",
+  "verdict": "passed-after-revision-1",
+  "reviewedAt": "2026-10-14",
+  "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "scope": {
+    "implementation": [
+      ".local/skills-mcp-migration-live/redact-evidence.mjs",
+      ".local/skills-mcp-migration-live/llm-observer.mjs",
+      ".local/skills-mcp-migration-live/desktop-driver.mjs",
+      ".local/skills-mcp-migration-live/cleanup-evidence.mjs"
+    ],
+    "desktopEvidenceEntry": ".local/skills-mcp-migration-live/desktop-driver.mjs:9 writeDesktopEvidence；当前目录没有desktop-evidence.mjs，desktop-evidence.test.mjs直接测试该入口。",
+    "specification": "docs/verification/skills-mcp-migration/evidence-redaction-review.json:supplementalContract",
+    "applicationsStarted": 0,
+    "externalModelCalls": 0,
+    "realEvidenceCleanupApplied": false,
+    "implementationFilesChanged": false
+  },
+  "tests": {
+    "command": "node --test .local/skills-mcp-migration-live/redact-evidence.test.mjs .local/skills-mcp-migration-live/llm-observer.test.mjs .local/skills-mcp-migration-live/desktop-evidence.test.mjs .local/skills-mcp-migration-live/cleanup-evidence.test.mjs",
+    "passed": 25,
+    "failed": 0,
+    "verified": [
+      "现有测试验证实际options与yield对象身份和内容保持。",
+      "现有测试验证complete、error、timeout、消费者return和写盘失败路径。",
+      "现有测试验证三类delta拼接、完整副本、事件顺序、序列化文本保留及合成清理幂等。"
+    ]
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "title": "普通运行时properties字段使凭据跳过发现和替换",
+      "sources": [
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:4-7",
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:126-130",
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:140-143",
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:176-184"
+      ],
+      "trigger": "tool/result.data同时含properties对象和capability实际值。该对象不是工具参数声明。",
+      "observed": "isSchema仅凭properties对象设置schema=true，discover没有发现capability实际值，replace保留该字段。合成fixture-credential原样出现在结果，replacements为0。",
+      "impact": "observer、desktop与历史清理共用该判断，均可能保存运行时凭据原值；residualCount也无法报告未进入known集合的值。",
+      "repairAcceptance": "使用实际声明位置和结构识别schema。普通tool/result含properties时遮蔽实际capability，真实tools及toolHistory参数schema仍逐字段保持；同时覆盖对象与序列化JSON。"
+    },
+    {
+      "id": "R2",
+      "priority": "P1",
+      "title": "清理目录排除规则阻止读取隔离Profile的活跃状态",
+      "sources": [
+        ".local/skills-mcp-migration-live/cleanup-evidence.mjs:36-43",
+        ".local/skills-mcp-migration-live/cleanup-evidence.mjs:50-57",
+        ".local/skills-mcp-migration-live/cleanup-evidence.mjs:97-101",
+        ".local/skills-mcp-migration-live/cleanup-evidence.mjs:128"
+      ],
+      "trigger": "isolated-profiles/<profile>/state.json记录status=running和runId，同时execution-index.json引用desktop/<runId>中的采集文件。",
+      "observed": "inventoryEvidence跳过isolated-profiles及其state.json，执行索引仍将对应desktop目录加入白名单。合成活跃文件进入included，excluded为空；dry-run报告该文件可脱敏。",
+      "impact": "已关闭文件句柄但所属采集仍在运行的文件可以进入--apply写入分支；lsof瞬时查询不能替代所属Profile的采集生命周期判断。该目录布局实际用于isolated-profile.mjs。",
+      "repairAcceptance": "将只读控制文件发现与可写证据枚举分开，读取isolated-profiles中的state来排除对应活跃run证据，同时保持Profile、配置和业务文件不进入可写名单。加入合成running状态及关闭句柄的回归。"
+    },
+    {
+      "id": "R3",
+      "priority": "P1",
+      "title": "并发调用在delta凭据发现前保存重复值明文",
+      "sources": [
+        ".local/skills-mcp-migration-live/llm-observer.mjs:42-44",
+        ".local/skills-mcp-migration-live/llm-observer.mjs:51-53",
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:128",
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:195-200"
+      ],
+      "trigger": "同一次apply创建的同一observer中，A先yield带换行的完整CLI_CAPABILITY赋值并暂停；B随后yield同值裸文本并先正常完成；A最后正常完成。",
+      "observed": "redactor.collect跳过所有delta文本，A的已接收完整赋值直到finally的redactRecords才被发现。B提前落盘时known集合没有该值，B文件含原值；A完成后B文件仍含原值。",
+      "impact": "同一observer生命周期内，并行模型调用的证据可能泄露已接收到的运行时凭据；顺序调用通过不能覆盖此并发顺序。",
+      "repairAcceptance": "保证同一observer内已确定完整的流式凭据在其他调用保存前进入共享集合，或采用保证该顺序安全的保存协调。保留分片拼接、未完成前缀避免误伤及原始yield身份。回归必须使用同一observer、A先接收完整赋值、B先结束、A后结束。"
+    }
+  ],
+  "counterexampleCommand": "node --input-type=module <<'JS'\nimport assert from 'node:assert/strict';\nimport {mkdtemp,mkdir,writeFile,readFile,readdir,rm} from 'node:fs/promises';\nimport {tmpdir} from 'node:os';\nimport {join} from 'node:path';\nimport {createEvidenceRedactor} from './.local/skills-mcp-migration-live/redact-evidence.mjs';\nimport {inventoryEvidence,cleanupEvidence} from './.local/skills-mcp-migration-live/cleanup-evidence.mjs';\nimport {apply} from './.local/skills-mcp-migration-live/llm-observer.mjs';\nconst payload={type:'tool/result',data:{properties:{name:'fixture'},capability:'fixture-credential'}};\nconst tool={name:'test',parameters:{type:'object',properties:{token:{type:'string'},capability:{type:'string'}},required:['token']}};\nconst redactor=createEvidenceRedactor();\nconst safe=redactor.redact(payload);\nassert.equal(safe.data.capability,'fixture-credential');\nassert.deepEqual(redactor.redact({tools:[tool]}),{tools:[tool]});\nconsole.log('R1 reproduced: runtime credential survives; real tool schema control is preserved');\nconst root=await mkdtemp(join(tmpdir(),'independent-redaction-review-'));\ntry {\n const controller=join(root,'controller'),isolated=join(controller,'isolated-profiles','fixture'),desktop=join(controller,'desktop','fixture-run');\n await mkdir(isolated,{recursive:true});await mkdir(desktop,{recursive:true});\n const file=join(desktop,'100-id-collect.json');\n await writeFile(file,JSON.stringify({token:'fixture-active-secret'}));\n await writeFile(join(isolated,'state.json'),JSON.stringify({status:'running',runId:'fixture-run'}));\n await writeFile(join(controller,'execution-index.json'),JSON.stringify({collect:file}));\n const inv=await inventoryEvidence(controller);\n assert.equal(inv.files.includes(file),true);\n assert.equal(inv.controlFiles.includes(join(isolated,'state.json')),false);\n const preview=await cleanupEvidence({controller});\n assert.equal(preview.files.some(entry=>entry.path===file&&entry.replacements>0),true);\n assert.equal(preview.excluded.length,0);\n console.log('R2 reproduced: evidence belonging to running isolated state remains eligible for cleanup');\n const directory=join(root,'observer');let hook;\n apply({on(_e,h){hook=h;}},{evidenceDirectory:directory,allowed:[{provider:'fixture',model:'fixture'}]});\n const opts={provider:'fixture',model:'fixture',messages:[]};\n const a=hook(opts,()=> (async function*(){yield {type:'text-delta',index:0,text:'CLI_CAPABILITY=fixture-interleaved-secret\\n'};})());\n await a.next();\n for await(const x of hook(opts,()=> (async function*(){yield {type:'text-delta',index:0,text:'repeat fixture-interleaved-secret'};})())){}\n const bFile=(await readdir(directory))[0];\n assert.equal((await readFile(join(directory,bFile),'utf8')).includes('fixture-interleaved-secret'),true);\n await a.next();\n assert.equal((await readdir(directory)).length,2);\n assert.equal((await readFile(join(directory,bFile),'utf8')).includes('fixture-interleaved-secret'),true);\n console.log('R3 reproduced: same observer, A emits complete env assignment, B completes, A completes, B evidence retains secret');\n} finally {await rm(root,{recursive:true,force:true});}\nJS",
+  "counterexampleAssertions": "命令中的断言确认当前缺陷存在；修复回归需将泄露断言改为遮蔽断言，将活跃文件断言改为排除断言。命令只创建并删除合成临时目录；cleanupEvidence使用默认dry-run。",
+  "limitations": [
+    "尚未启动应用验证运行副本。",
+    "强制终止造成内存chunk证据缺失的边界与补充合同一致；本审查没有执行真实强杀。",
+    "本审查没有清理真实历史证据。"
+  ],
+  "counterexampleExecution": {
+    "exitCode": 0,
+    "output": [
+      "R1 reproduced: runtime credential survives; real tool schema control is preserved",
+      "R2 reproduced: evidence belonging to running isolated state remains eligible for cleanup",
+      "R3 reproduced: same observer, A emits complete env assignment, B completes, A completes, B evidence retains secret"
+    ]
+  },
+  "revisions": [
+    {
+      "revision": 1,
+      "status": "completed",
+      "originalCounterexamples": {
+        "command": "node --input-type=module <<'JS'\nimport assert from 'node:assert/strict';\nimport {mkdtemp,mkdir,writeFile,readFile,readdir,rm} from 'node:fs/promises';\nimport {tmpdir} from 'node:os';\nimport {join} from 'node:path';\nimport {createEvidenceRedactor} from './.local/skills-mcp-migration-live/redact-evidence.mjs';\nimport {inventoryEvidence,cleanupEvidence} from './.local/skills-mcp-migration-live/cleanup-evidence.mjs';\nimport {apply} from './.local/skills-mcp-migration-live/llm-observer.mjs';\nconst payload={type:'tool/result',data:{properties:{name:'fixture'},capability:'fixture-credential'}};\nconst tool={name:'test',parameters:{type:'object',properties:{token:{type:'string'},capability:{type:'string'}},required:['token']}};\nconst redactor=createEvidenceRedactor();\nconst safe=redactor.redact(payload);\nassert.equal(safe.data.capability,'[redacted]');\nassert.deepEqual(redactor.redact({tools:[tool]}),{tools:[tool]});\nconsole.log('R1 fixed: runtime credential redacted; real tool schema preserved');\nconst root=await mkdtemp(join(tmpdir(),'independent-redaction-review-'));\ntry {\n const controller=join(root,'controller'),isolated=join(controller,'isolated-profiles','fixture'),desktop=join(controller,'desktop','fixture-run');\n await mkdir(isolated,{recursive:true});await mkdir(desktop,{recursive:true});\n const file=join(desktop,'100-id-collect.json');\n await writeFile(file,JSON.stringify({token:'fixture-active-secret'}));\n await writeFile(join(isolated,'state.json'),JSON.stringify({status:'running',runId:'fixture-run'}));\n await writeFile(join(controller,'execution-index.json'),JSON.stringify({collect:file}));\n const inv=await inventoryEvidence(controller);\n assert.equal(inv.files.includes(file),false);\n assert.equal(inv.controlFiles.includes(join(isolated,'state.json')),true);\n const preview=await cleanupEvidence({controller});\n assert.equal(preview.files.some(entry=>entry.path===file&&entry.replacements>0),false);\n assert.equal(preview.excluded.length,1);\n console.log('R2 fixed: running isolated state read; active evidence excluded');\n const directory=join(root,'observer');let hook;\n apply({on(_e,h){hook=h;}},{evidenceDirectory:directory,allowed:[{provider:'fixture',model:'fixture'}]});\n const opts={provider:'fixture',model:'fixture',messages:[]};\n const a=hook(opts,()=> (async function*(){yield {type:'text-delta',index:0,text:'CLI_CAPABILITY=fixture-interleaved-secret\\n'};})());\n await a.next();\n for await(const x of hook(opts,()=> (async function*(){yield {type:'text-delta',index:0,text:'repeat fixture-interleaved-secret'};})())){}\n const bFile=(await readdir(directory))[0];\n assert.equal((await readFile(join(directory,bFile),'utf8')).includes('fixture-interleaved-secret'),false);\n await a.next();\n assert.equal((await readdir(directory)).length,2);\n assert.equal((await readFile(join(directory,bFile),'utf8')).includes('fixture-interleaved-secret'),false);\n console.log('R3 fixed: same observer, A emits complete env assignment, B completes, A completes, B evidence remains redacted');\n} finally {await rm(root,{recursive:true,force:true});}\nJS",
+        "exitCode": 0,
+        "output": [
+          "R1 fixed: runtime credential redacted; real tool schema preserved",
+          "R2 fixed: running isolated state read; active evidence excluded",
+          "R3 fixed: same observer, A emits complete env assignment, B completes, A completes, B evidence remains redacted"
+        ]
+      },
+      "verdict": "passed",
+      "newFindings": [],
+      "tests": {
+        "command": "node --test .local/skills-mcp-migration-live/redact-evidence.test.mjs .local/skills-mcp-migration-live/llm-observer.test.mjs .local/skills-mcp-migration-live/desktop-evidence.test.mjs .local/skills-mcp-migration-live/cleanup-evidence.test.mjs",
+        "passed": 32,
+        "failed": 0
+      },
+      "resolutions": [
+        {
+          "finding": "R1",
+          "status": "resolved",
+          "sources": [
+            ".local/skills-mcp-migration-live/redact-evidence.mjs:4-30"
+          ],
+          "evidence": "原properties反例已遮蔽capability；真实工具参数schema保持。补充验证records/pages、嵌套序列化request/header、非空toolHistory更新及tool/result中的request/header形状运行时对象均符合预期。"
+        },
+        {
+          "finding": "R2",
+          "status": "resolved",
+          "sources": [
+            ".local/skills-mcp-migration-live/cleanup-evidence.mjs:38-59",
+            ".local/skills-mcp-migration-live/cleanup-evidence.mjs:66-76"
+          ],
+          "evidence": "原isolated-profiles运行状态已被读取，对应关闭句柄desktop文件已排除。补充验证configured状态加活跃PID、observer.config.evidenceDirectory及observer.name推导的默认llm-calls目录均被排除。"
+        },
+        {
+          "finding": "R3",
+          "status": "resolved",
+          "sources": [
+            ".local/skills-mcp-migration-live/redact-evidence.mjs:244-256",
+            ".local/skills-mcp-migration-live/llm-observer.mjs:30-32",
+            ".local/skills-mcp-migration-live/llm-observer.mjs:43-45"
+          ],
+          "evidence": "同一observer中，A先yield完整env赋值、B先完成、A后完成的原顺序已通过；B文件在A结束前已经遮蔽。完整JSON共享发现测试通过。补充验证跨分片CRLF赋值、嵌套JSON字符串及tool-call JSON在完整边界后共享值，未完成前缀没有提前加入known集合。"
+        }
+      ],
+      "additionalSyntheticExecution": {
+        "exitCode": 0,
+        "output": [
+          "schema wrappers and runtime header-shaped value passed",
+          "split CRLF env, nested JSON string, tool JSON shared discovery passed",
+          "isolated configured/live PID and observer default evidence path exclusion passed"
+        ],
+        "fixtures": [
+          "声明：request/header.data.header含tools、toolHistory.tools和updates.additions；以records/pages、JSON字符串和wrapper内JSON字符串三种形式逐对象比较。",
+          "运行时对象：tool/result.data内部放置request/header形状对象及实际capability值，确认仍遮蔽。",
+          "增量值：按fixture-shared前缀中间拆分CRLF环境赋值、二次JSON序列化字符串、tool-call JSON；第一片后knownValueCount为0，第二片后独立文本值变为[redacted]。",
+          "活跃目录：隔离Profile的configured状态引用当前测试进程PID，另一个running状态从observer.name推导目录；两份合成JSONL均进入active-collection排除项。"
+        ]
+      },
+      "acceptedBoundaries": [
+        "增量收集在完整环境赋值行或可完整解析的JSON到达时、yield前共享新值。尚未完整到达或首次在后续调用得知的值，按照已确认合同在停止采集后执行全证据清理。",
+        "宿主强制终止仍会丢失尚未保存的内存chunk；本次复审没有将强杀完整前缀列为通过项。"
+      ],
+      "waiVerification": "已读取实施报告中的32文件、23替换、0残留、0非凭据差异记录；本次复审没有独立重跑真实WAI证据扫描。",
+      "actions": {
+        "applicationsStarted": 0,
+        "externalModelCalls": 0,
+        "realEvidenceCleanupApplied": false,
+        "implementationFilesChanged": false
+      },
+      "conclusion": "原三项P1已关闭；本次原反例与同机制边界复审未发现新的实质性缺陷。运行副本启用和停止后的真实证据清理属于后续验收。"
+    }
+  ],
+  "initialVerdict": "changes-required",
+  "currentRevision": 1
+}

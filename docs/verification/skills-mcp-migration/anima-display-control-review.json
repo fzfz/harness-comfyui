@@ -1,0 +1,1552 @@
+{
+  "purpose": "独立核对 ANIMA 展示段对照运行的输入合同、实际请求、完整调用链、最终回复与保存产物。",
+  "reviewedAt": "2026-10-14T05:47:15.289136+00:00",
+  "scope": {
+    "caseId": "5.3-1",
+    "groups": [
+      "baseline",
+      "experimental"
+    ],
+    "samplesPerGroup": 1,
+    "method": "只读归档证据；审查员仅写本报告；未执行真实模型、未修改产品或 Skill。",
+    "navigation": [
+      "docs/verification/skills-mcp-migration/anima-display-control-execution.json",
+      ".local/skills-mcp-migration-live/anima-display-control/index.json"
+    ]
+  },
+  "verdict": {
+    "configurationIntervention": "目标展示段在实验组全部 23 个业务请求中缺席，基线组全部 42 个业务请求中保留。两组工具声明相同，各组请求中的 system 与工具声明保持稳定。",
+    "savedResultContract": "两组均保存可解析的十字段 Builder JSON；保存对象等于最终回复代码块内对象，并与本组成功校验器输出一致。",
+    "finalResponseContract": "两组均失败：模型直接生成解释与 Markdown 代码块，违反已读取的 02-role.md 仅返回结构化结果要求。",
+    "displaySectionExplanation": "基线展示段明确偏好说明和文件链接，其内容与基线最终回复相符。实验组在该段缺席时仍输出说明，且可见分析主动放宽纯结构化返回要求；展示段可以解释基线的部分展示选择，无法作为两组共同偏离的充分根因。",
+    "displaySectionRepair": "本轮隐藏展示段没有修复最终回复格式。",
+    "causalBoundary": "首个请求的受控文本差异成立；基线随后读取测试配置、历史产物和本轮对照信息，完整轨迹已受到额外材料影响。每组仅一例，无法估计展示段对偏离概率的效应。"
+  },
+  "contracts": [
+    {
+      "name": "用户交付要求",
+      "definition": "在指定工作目录的 5.3-1 目录保存 Builder JSON；单人站立半身像、金色长双马尾、蓝眼、白色翻领衬衫、黑色蝴蝶结发饰、窗边柔光、2:3、1024×1536、1.572864 MP；使用给定 Character 与 Style 上下文；只构建。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/input.json"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/input.json"
+        }
+      ]
+    },
+    {
+      "name": "Prompt 与生成结果合同",
+      "definition": "十二槽输入通过 Prompt 格式校验，positive_prompt 采用其 prompt_text；十字段生成结果通过生成结果校验器后采用 stdout 对象。结构校验与语义符合性分别判断。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": [
+            19,
+            29,
+            84,
+            216,
+            226
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json",
+          "eventSeq": [
+            18,
+            38,
+            71,
+            136,
+            146,
+            156
+          ]
+        }
+      ]
+    },
+    {
+      "name": "最终回复合同",
+      "definition": "02-role.md 要求只返回通过生成结果校验器的结构化结果，不另外输出解释、寒暄或 Markdown；SKILL.md 的“必须包含”条款要求包含校验结果。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": 29
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json",
+          "eventSeq": 36
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "title": "两组最终回复均违反纯结构化返回合同",
+      "observed": "基线 seq 234 返回产物链接、JSON 代码块和构建依据；实验组 seq 159 返回文件路径、两点情况报告和 JSON 代码块。原始模型流的 text-delta 拼接结果等于归档最终回复，偏离已经存在于模型输出。",
+      "firstDeviation": {
+        "baseline": "seq 87 可见分析首次提出保存文件并在回复中提及两项产物的暂定计划；seq 128 决定报告作品标签缺失；seq 234 明确选择链接、JSON 代码块与解释并实际交付。",
+        "experimental": "seq 117 可见分析首次提出在最终回复提及作品标签缺失；seq 124 决定继续构建并报告缺口；seq 159 明确复述纯结构化要求后，将“不另外解释”解释为限制闲聊，随后实际输出额外说明。",
+        "boundary": "早期分析是暂定输出计划；确定的最终格式违约分别发生于 seq 234 与 seq 159。"
+      },
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "eventSeq": [
+            87,
+            128,
+            234
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/session-collect.json",
+          "eventSeq": [
+            117,
+            124,
+            159
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/93738886-f9ab-4edb-a9f6-6e47f562c3f8.jsonl"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/b46326ca-62d0-49be-aff6-f1532ad98f75.jsonl"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "title": "基线模型读取测试材料，限制完整运行的单变量归因",
+      "observed": "基线从安装 Skill 的绝对路径向上发现隔离 Profile 与测试目录，读取任务矩阵、历史输入及 Builder 产物、本轮 index.json 与 plan.json、其他历史产物及运行器。可见分析明确用历史产物解释 Builder JSON 的形状、镜头、权重、光线表达和只保存一个文件的选择。",
+      "trace": [
+        {
+          "seq": [
+            77,
+            78,
+            79
+          ],
+          "event": "模型因镜头规则歧义开始寻找示例和预期，首次查看空工作目录。"
+        },
+        {
+          "seq": [
+            138,
+            143,
+            144,
+            147
+          ],
+          "event": "模型查看 Profile 目录及桌面测试配置，并识别测试编号。"
+        },
+        {
+          "seq": [
+            148,
+            149,
+            152,
+            153,
+            154,
+            158,
+            159
+          ],
+          "event": "模型列出共享测试目录并读取任务矩阵。"
+        },
+        {
+          "seq": [
+            162,
+            163,
+            164,
+            167,
+            168,
+            169,
+            172
+          ],
+          "event": "模型读取历史输入、观察结果及历史 builder.json，并把历史输出用于确认结果形状。"
+        },
+        {
+          "seq": [
+            173,
+            174
+          ],
+          "event": "模型读取当前两组 index.json、plan.json 和目录列表。"
+        },
+        {
+          "seq": [
+            178,
+            179,
+            182,
+            183,
+            184,
+            187,
+            192,
+            229
+          ],
+          "event": "模型读取其他案例的 Builder JSON，后续分析引用这些产物决定镜头、光线和保存文件数。"
+        },
+        {
+          "seq": [
+            193,
+            194,
+            197,
+            198,
+            199
+          ],
+          "event": "模型查阅运行器和汇总记录以寻找评分标准。"
+        }
+      ],
+      "impact": "中性空工作目录只隔离初始文件与产物位置；共享宿主文件系统仍向模型暴露了评估材料。基线的额外阅读由本轮模型选择触发，当前证据不能把它与展示段建立确定因果联系，也不能把后续全部输出差异归于展示段。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": [
+            138,
+            143,
+            148,
+            153,
+            158,
+            163,
+            168,
+            173,
+            178,
+            183,
+            193,
+            198
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "eventSeq": [
+            77,
+            147,
+            152,
+            162,
+            167,
+            172,
+            177,
+            182,
+            187,
+            192,
+            229
+          ]
+        }
+      ],
+      "pathDiscoveryChain": {
+        "firstPathExposure": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/input.json",
+          "location": "prompt 的执行 Skill 绝对路径",
+          "observation": "用户输入中的已安装 SKILL.md 路径直接包含 checkout/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47 前缀。模型首请求已经可以得知共享验收目录的路径字符串。"
+        },
+        "secondPathExposure": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "seq": 19,
+          "observation": "skill 工具的 skill_resources 包装再次给出相同绝对 Base directory；模型无需读取环境变量即可向上定位隔离 Profile 和共享验收目录。"
+        },
+        "searchMotive": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "seq": [
+            77,
+            137
+          ],
+          "observation": "模型在镜头规则存在歧义时主动寻找测试示例和预期输出。seq 137 明确计划到 Profile/environment 目录搜索 test fixtures。"
+        },
+        "firstReadOutsideSkillAndWorkspace": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "callSeq": 138,
+          "resultSeq": 139,
+          "command": "cd <本组 run-7040f70b-2a8e-4eee-8297-c579c738ad47 目录>; ls -la; ls environment | head -30",
+          "observation": "此次命令首次越出 Skill 包和指定中性 Workspace，结果列出 desktop-e2e.json、state.json 和 environment/active-probe.json。"
+        },
+        "firstResultLeadingToConfigRead": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "seq": [
+            139,
+            143,
+            144
+          ],
+          "observation": "seq 139 暴露具体配置文件名，紧接着 seq 143 读取这三个文件；seq 144 返回真实测试配置和运行状态。"
+        },
+        "firstAcceptanceDirectoryListing": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "seq": [
+            148,
+            149
+          ],
+          "command": "cd <checkout>/.local/skills-mcp-migration-live; ls -la; ls -la anima-display-control 2>/dev/null | head",
+          "observation": "seq 144 之后的 seq 147 将当前任务识别为迁移 E2E 用例。seq 149 首次返回共享验收目录的文件清单，seq 152 随即点名 task-matrix.json 并计划查看评分预期。"
+        },
+        "firstHistoricalArtifactRead": {
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "callSeq": 168,
+          "resultSeq": 169,
+          "observation": "模型读取 batch-ready-builder-96ded335-6cf0-409c-9aa3-6fe8626af9d0-artifacts/5.3-1/5.3-1/builder.json；seq 172 明确把它用于确认结果形状并讨论镜头和权重。"
+        },
+        "boundary": "路径知识首先来自业务输入及 skill 工具包装，目录实际可读性随后由 bash 响应确认；可见分析支持以上连续发现链，是否受展示段触发仍未验证。"
+      }
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "title": "两组已知缺少作品英文标签，仍交付完整成功结果",
+      "observed": "08-count-identity.md 第 6.2 节要求已有 IP 角色包含英文角色标签和作品英文标签；两组均只有 ani_\\(grok\\) 角色标签。基线 seq 128 和实验组 seq 124 明确知道缺少作品英文标签，选择继续并在最终回复解释，未请求用户补充。",
+      "impact": "结构校验成功没有覆盖作品身份语义合同。该缺口同时成为模型额外输出说明的可见理由，应与展示规则一并调查。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": [
+            19,
+            44,
+            125
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json",
+          "eventSeq": [
+            18,
+            55,
+            114,
+            119
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "eventSeq": 128
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/session-collect.json",
+          "eventSeq": 124
+        }
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "low",
+      "title": "基线最终说明将三项加权误写为两项",
+      "observed": "基线实际对角色身份、twintails 和 white shirt 三个不同 payload 使用 1.5，最终“权重”段却称本轮使用两项策略加权。三项没有超过 maximum_boosted_decisions=3，错误发生在附加说明的计数。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/final-response.txt"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/artifacts/5.3-1/builder.json"
+        }
+      ]
+    }
+  ],
+  "additionalProcessObservations": [
+    {
+      "observation": "两组均提前读取生成结果合同、schema 与 profiles：基线 seq 83，实验组 seq 70；Skill 将完整读取安排在 Prompt 格式校验成功后。最终校验仍按 Prompt、生成结果顺序执行。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": [
+            19,
+            83,
+            215,
+            225
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json",
+          "eventSeq": [
+            18,
+            70,
+            135,
+            145
+          ]
+        }
+      ]
+    },
+    {
+      "observation": "基线先读取 Style 资源 seq 120，再查唯一 anima 底模 seq 122；Skill 将底模确定放在画师素材查询之前。本例最终画师来源仍是用户提供的非空 say_hana，未观察到跨底模素材混入。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": [
+            19,
+            120,
+            121,
+            122,
+            123
+          ]
+        }
+      ]
+    },
+    {
+      "observation": "基线第一次生成结果校验收到无效 JSON，前序 Python 向 /dev/stdout 写入失败；模型重新写 JSON 文件并重试成功。该已恢复的 I/O 错误不解释最终额外说明。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "eventSeq": [
+            220,
+            221,
+            225,
+            226
+          ]
+        }
+      ]
+    },
+    {
+      "observation": "实验组额外保存 prompt-slots.json。用户“只构建并保存 Builder JSON”可以用于限制生成行为，也可以用于限制产物集合；本审查把额外文件记录为范围差异，不将其单独判为确定缺陷。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/input.json"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json",
+          "eventSeq": [
+            150,
+            151
+          ]
+        }
+      ]
+    },
+    {
+      "observation": "两组对 standing 的镜头默认规则与单人 facing viewer 规则进行语义取舍，最终均使用 upper body、facing viewer。有关 standing 是否指普通站姿还是性交体位的解释需要规范责任人决定，本轮不根据历史产物判定正确镜头。",
+      "evidence": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "eventSeq": [
+            77,
+            187
+          ]
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/artifacts/5.3-1/prompt-slots.json"
+        }
+      ]
+    }
+  ],
+  "evidenceLimits": [
+    "每组仅一次独立模型采样；后续工具选择、自然结束时间、Prompt 权重和文本各不相同。",
+    "分析证据来自宿主保存的可见 reasoning 块；报告只描述其中明确出现的判断，不能据此推断模型内部未记录的因果机制。",
+    "原始请求证明宿主提供的 system、消息与工具内容；模型服务内部处理不可见。",
+    "本审查核对历史校验调用和对象一致性，未重新执行候选包脚本、模型或 Desktop。",
+    "报告仅判断 Prompt 文本覆盖与结构合同；本任务未生成图片，无法验收真实画面效果。",
+    "index.json 的 modelSubmitted=false 属于准备时快照；实际执行以请求归档和 session-collect 记录为准。",
+    "本报告保留所有调用的定位索引；较长参考资料与可见分析按本次合同相关段落审读，结构完整性由全量 JSON 与事件对应核对。"
+  ],
+  "nextActions": [
+    {
+      "order": 1,
+      "action": "保留本轮作为“隐藏展示段后仍存在格式偏离”的观察；对照结论同时标注基线读取评估材料。",
+      "acceptance": "结论分别陈述首请求配置差异、最终格式结果和后续材料暴露，避免把完整轨迹称为唯一输入差异。"
+    },
+    {
+      "order": 2,
+      "action": "下一轮获授权运行前，将 Skill 包和所需资源放入模型可读的独立目录，把历史产物、计划、任务矩阵、评估记录置于该模型进程不可读的目录；先验证真实 bash 读取边界。",
+      "acceptance": "运行中每次文件读取均可追溯到当前用户输入、当前 Skill 包或本轮产物；尝试读取评估目录时由运行环境阻断。"
+    },
+    {
+      "order": 3,
+      "action": "由合同责任人明确已有角色缺少作品英文标签时的处理，以及“必须包含结构化结果”“只返回结构化结果”和缺失信息报告之间的交付规则，再形成单一结果合同的修复方案。",
+      "acceptance": "完整成功结果、缺失信息请求与保存路径展示各有明确责任和数据出口；不靠重复追加禁令协调冲突。"
+    },
+    {
+      "order": 4,
+      "action": "保留本轮输入用于复验共同偏离；另设作品身份信息完整的独立案例，分别进行展示段开关重复对照。两类输入单独统计，禁止混作同一单变量比较。",
+      "acceptance": "每例检查模型原始最终文本能否整体解析为目标 JSON、解析对象是否等于校验器 stdout 与保存对象，并记录所有额外信息来源。"
+    }
+  ],
+  "groups": {
+    "baseline": {
+      "businessRequestCount": 42,
+      "allRequestsComplete": true,
+      "allBusinessModelAndLimitMatch": true,
+      "systemStableAcrossBusinessRequests": true,
+      "toolsStableAcrossBusinessRequests": true,
+      "toolCount": 25,
+      "targetDisplayTextPresentAll": true,
+      "targetDisplayTextAbsentAll": false,
+      "roleFileCompleteInToolResult": true,
+      "roleResultSeq": 29,
+      "firstSubsequentRequestContainingRole": "169f66bf-13cc-49f5-82b1-fcea8844661c.jsonl",
+      "rawFinalTextEqualsArchivedFinal": true,
+      "finalEmbeddedObjectEqualsSavedObject": true,
+      "finalPureJson": false,
+      "dimensionsMatchUser": true,
+      "savedFiles": [
+        "5.3-1/builder.json"
+      ],
+      "userVisualRequirements": "文本包含单人、站立、半身、金发、长双马尾、蓝眼、白衬衫、翻领、黑色蝴蝶结发饰、窗边柔光；用户给定角色和画师已进入 Prompt。",
+      "weightObservation": "角色身份、双马尾和白衬衫各使用 1.5，共三项；固定质量和画师未加权。",
+      "terminalEvents": [
+        {
+          "type": "turn/end",
+          "seq": 236,
+          "time": 1791956122333,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "subagentCalls": 0,
+      "tracePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+      "callResponseInventory": [
+        {
+          "callSeq": 18,
+          "resultSeq": 19,
+          "tool": "skill",
+          "purpose": {
+            "name": "anima-prompt-builder"
+          },
+          "callId": "call_00_ogw9vfwb3z71kdert7302266"
+        },
+        {
+          "callSeq": 23,
+          "resultSeq": 24,
+          "tool": "bash",
+          "purpose": "List skill directory and references",
+          "callId": "call_00_o9ceof509vqb4ne85oa4t6ni"
+        },
+        {
+          "callSeq": 28,
+          "resultSeq": 29,
+          "tool": "bash",
+          "purpose": "Read reference files 00-04",
+          "callId": "call_00_hfuxudqwg1o74zg3knqxt5pu"
+        },
+        {
+          "callSeq": 33,
+          "resultSeq": 34,
+          "tool": "bash",
+          "purpose": "Read conflict table and weight policy",
+          "callId": "call_00_af14n2qys9apwir0ajxxjxur"
+        },
+        {
+          "callSeq": 38,
+          "resultSeq": 39,
+          "tool": "bash",
+          "purpose": "Read slot order and assembly decision tree",
+          "callId": "call_00_s0nllxqbq582uxvp5hb3be91"
+        },
+        {
+          "callSeq": 43,
+          "resultSeq": 44,
+          "tool": "bash",
+          "purpose": "Read count/identity reference",
+          "callId": "call_00_ycrju9d94w22dy5h4akcke78"
+        },
+        {
+          "callSeq": 48,
+          "resultSeq": 49,
+          "tool": "bash",
+          "purpose": "Read appearance reference",
+          "callId": "call_00_95dxgvw3msq9fh5zxbt75uby"
+        },
+        {
+          "callSeq": 53,
+          "resultSeq": 54,
+          "tool": "bash",
+          "purpose": "Read clothing/state reference",
+          "callId": "call_00_lir46nb7uxrpp5sfkl3lqy6k"
+        },
+        {
+          "callSeq": 58,
+          "resultSeq": 59,
+          "tool": "bash",
+          "purpose": "Read pose reference header and section list",
+          "callId": "call_00_e05onbsn2ttyj95x2ewror0x"
+        },
+        {
+          "callSeq": 63,
+          "resultSeq": 64,
+          "tool": "bash",
+          "purpose": "Read pose section 9.1.4",
+          "callId": "call_00_ofp7ba28fk3fjek3tg9tbqgp"
+        },
+        {
+          "callSeq": 68,
+          "resultSeq": 69,
+          "tool": "bash",
+          "purpose": "Read expression reference",
+          "callId": "call_00_wdz0ayzwbw0kyav4bwtrlphl"
+        },
+        {
+          "callSeq": 73,
+          "resultSeq": 74,
+          "tool": "bash",
+          "purpose": "Read camera/shot reference",
+          "callId": "call_00_eg709cw4qdai8swvbipqsea9"
+        },
+        {
+          "callSeq": 78,
+          "resultSeq": 79,
+          "tool": "bash",
+          "purpose": "Inspect workspace contents",
+          "callId": "call_00_gu7szjng4b2td2rbjstxlj52"
+        },
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "tool": "bash",
+          "purpose": "Read generation output contract and schema",
+          "callId": "call_00_ssmiqecklg6u3t4s9wmlwj9m"
+        },
+        {
+          "callSeq": 88,
+          "resultSeq": 89,
+          "tool": "bash",
+          "purpose": "Inspect harness package and skill scripts",
+          "callId": "call_00_smxvaapzgp4i42e0afkmjtc6"
+        },
+        {
+          "callSeq": 93,
+          "resultSeq": 94,
+          "tool": "bash",
+          "purpose": "Inspect package.json and search for builder references",
+          "callId": "call_00_oxhpo69kztdliweb0op5fd0v"
+        },
+        {
+          "callSeq": 98,
+          "resultSeq": 99,
+          "tool": "bash",
+          "purpose": "Read generation CLI reference",
+          "callId": "call_00_zbhbi1v74x755vfip4tu32us"
+        },
+        {
+          "callSeq": 103,
+          "resultSeq": 104,
+          "tool": "bash",
+          "purpose": "Inspect comfyui-generate skill references",
+          "callId": "call_00_27odxh5yldpv1xd8alj203s7"
+        },
+        {
+          "callSeq": 108,
+          "resultSeq": 109,
+          "tool": "bash",
+          "purpose": "Read prompt result contract",
+          "callId": "call_00_68k6chvk1lrgg3w8xfma5g08"
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "tool": "bash",
+          "purpose": "Search skills for Builder JSON conventions",
+          "callId": "call_00_ec1gx1z5vasfymm99w2xyob7"
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "purpose": {
+            "mode": "resolve",
+            "id": "39934"
+          },
+          "callId": "call_00_caxebn5aovvihgjicd89ixpf"
+        },
+        {
+          "callSeq": 120,
+          "resultSeq": 121,
+          "tool": "mcp__noobai__get_catalog_resource",
+          "purpose": {
+            "ref": {
+              "kind": "style",
+              "id": "12415"
+            }
+          },
+          "callId": "call_01_cd7vym58j2cjlj2vux4via0m"
+        },
+        {
+          "callSeq": 122,
+          "resultSeq": 123,
+          "tool": "mcp__noobai__search_base_models",
+          "purpose": {
+            "query": "anima"
+          },
+          "callId": "call_02_611g6fb4y7i50ycrsr0a9ie6"
+        },
+        {
+          "callSeq": 124,
+          "resultSeq": 125,
+          "tool": "mcp__noobai__query_semantic_works",
+          "purpose": {
+            "mode": "search",
+            "query": "Ani Grok Companion"
+          },
+          "callId": "call_03_0xy700zaxahg00zyroy81kpq"
+        },
+        {
+          "callSeq": 129,
+          "resultSeq": 130,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "query": "white collared shirt button-up shirt",
+            "page_size": 10
+          },
+          "callId": "call_00_f64v1esxdq599dd8kesh9oh4"
+        },
+        {
+          "callSeq": 131,
+          "resultSeq": 132,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "query": "hair bow black bow hair ornament",
+            "page_size": 10
+          },
+          "callId": "call_01_qt79u0xc8dssrd6c2xyfhbcd"
+        },
+        {
+          "callSeq": 133,
+          "resultSeq": 134,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "query": "soft window light by the window",
+            "page_size": 10
+          },
+          "callId": "call_02_zhshpzay680q0jtxtp6x3kp4"
+        },
+        {
+          "callSeq": 138,
+          "resultSeq": 139,
+          "tool": "bash",
+          "purpose": "Inspect isolated profile environment layout",
+          "callId": "call_00_257i6mgxycx3xeywjujxqff4"
+        },
+        {
+          "callSeq": 143,
+          "resultSeq": 144,
+          "tool": "bash",
+          "purpose": "Inspect e2e config and state",
+          "callId": "call_00_1v7tsuqwepan20t32817hk9w"
+        },
+        {
+          "callSeq": 148,
+          "resultSeq": 149,
+          "tool": "bash",
+          "purpose": "List migration-live directory",
+          "callId": "call_00_tkfr75ty8p3ke4tg1vjpypw0"
+        },
+        {
+          "callSeq": 153,
+          "resultSeq": 154,
+          "tool": "bash",
+          "purpose": "Inspect task matrix for scenario 5.3-1",
+          "callId": "call_00_tbuk8vav1mtuobop82asvfha"
+        },
+        {
+          "callSeq": 158,
+          "resultSeq": 159,
+          "tool": "bash",
+          "purpose": "Print scenario 5.3-1 case definition",
+          "callId": "call_00_q7qjjrozfty9muw4djpthvxl"
+        },
+        {
+          "callSeq": 163,
+          "resultSeq": 164,
+          "tool": "bash",
+          "purpose": "Read prior 5.3-1 input and artifacts",
+          "callId": "call_00_hmmtwt6ypzijpaagrnvi7xpu"
+        },
+        {
+          "callSeq": 168,
+          "resultSeq": 169,
+          "tool": "bash",
+          "purpose": "Read prior builder.json artifact",
+          "callId": "call_00_2nlcmzvjevu67wuugpu2hiuw"
+        },
+        {
+          "callSeq": 173,
+          "resultSeq": 174,
+          "tool": "bash",
+          "purpose": "Inspect anima display control comparison setup",
+          "callId": "call_00_hyiri70joigq2g7f60i1aqa6"
+        },
+        {
+          "callSeq": 178,
+          "resultSeq": 179,
+          "tool": "bash",
+          "purpose": "Find prior builder.json artifacts",
+          "callId": "call_00_zug840pqxwffd32t6qv7hrmb"
+        },
+        {
+          "callSeq": 183,
+          "resultSeq": 184,
+          "tool": "bash",
+          "purpose": "Read other builder.json outputs",
+          "callId": "call_00_xjqz0mg3hsinewdkaoxq26t5"
+        },
+        {
+          "callSeq": 188,
+          "resultSeq": 189,
+          "tool": "bash",
+          "purpose": "Read detail/mood and scene references",
+          "callId": "call_00_epn8hupjmnx6t1zr48p9z5oc"
+        },
+        {
+          "callSeq": 193,
+          "resultSeq": 194,
+          "tool": "bash",
+          "purpose": "Check runner for assertions",
+          "callId": "call_00_wz893f5ms495keqwgzm20b5c"
+        },
+        {
+          "callSeq": 198,
+          "resultSeq": 199,
+          "tool": "bash",
+          "purpose": "Inspect batch summary for review criteria",
+          "callId": "call_00_ygade6ewetk5k6dc0eypzf45"
+        },
+        {
+          "callSeq": 203,
+          "resultSeq": 204,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "twintails twin tails hairstyle"
+          },
+          "callId": "call_00_erj52lrcpinzk1i4rbmi1y46"
+        },
+        {
+          "callSeq": 205,
+          "resultSeq": 206,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "standing upright neutral pose arms at sides"
+          },
+          "callId": "call_01_1bcjjcdxzve3eqw47qqgsd1m"
+        },
+        {
+          "callSeq": 210,
+          "resultSeq": 211,
+          "tool": "bash",
+          "purpose": "List DSH environment variables",
+          "callId": "call_00_qs8gvl97pzdrfsent22alerj"
+        },
+        {
+          "callSeq": 215,
+          "resultSeq": 216,
+          "tool": "bash",
+          "purpose": "Run ANIMA prompt format validator",
+          "callId": "call_00_82pjhyy2l5zpk00yx4ec7w45"
+        },
+        {
+          "callSeq": 220,
+          "resultSeq": 221,
+          "tool": "bash",
+          "purpose": "Validate full generation result JSON",
+          "callId": "call_00_0hekmqp8qyll9vngy2uym8b3"
+        },
+        {
+          "callSeq": 225,
+          "resultSeq": 226,
+          "tool": "bash",
+          "purpose": "Rebuild and validate result JSON",
+          "callId": "call_00_f5olhjpjqus4xpy6ercdre4k"
+        },
+        {
+          "callSeq": 230,
+          "resultSeq": 231,
+          "tool": "bash",
+          "purpose": "Write and verify builder.json artifact",
+          "callId": "call_00_3zwq4kqt3uaakts8p3hj0xma"
+        }
+      ],
+      "modelRequestInventory": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/3b4fb6fc-a0ff-468a-b678-fadf40b1702b.jsonl",
+          "at": "2026-10-14T05:29:35.702Z",
+          "messageCount": 4
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/6a97648a-d7e9-4cf8-b39d-e6b6657b18fb.jsonl",
+          "at": "2026-10-14T05:29:38.086Z",
+          "messageCount": 6
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/16e2f906-cd0c-4156-a93a-c280a1b7d7a7.jsonl",
+          "at": "2026-10-14T05:29:40.897Z",
+          "messageCount": 8
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/169f66bf-13cc-49f5-82b1-fcea8844661c.jsonl",
+          "at": "2026-10-14T05:29:43.244Z",
+          "messageCount": 10
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/4d6f4b73-5743-4a92-b873-7799ed869351.jsonl",
+          "at": "2026-10-14T05:29:45.924Z",
+          "messageCount": 12
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/0314628b-0436-47d0-a09f-9e867fbf451b.jsonl",
+          "at": "2026-10-14T05:29:49.522Z",
+          "messageCount": 14
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/84e6cfe2-4fbe-41b6-b53c-eac6934a4813.jsonl",
+          "at": "2026-10-14T05:30:01.655Z",
+          "messageCount": 16
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/3f967957-f1e2-482f-8500-ed5e0a4c783f.jsonl",
+          "at": "2026-10-14T05:30:05.514Z",
+          "messageCount": 18
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/4beeaf47-7378-41bd-842e-471fa71d5fa5.jsonl",
+          "at": "2026-10-14T05:30:08.119Z",
+          "messageCount": 20
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/d8e486a5-6de9-47b9-bc9c-7f5e36fd71c1.jsonl",
+          "at": "2026-10-14T05:30:12.008Z",
+          "messageCount": 22
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/43a28c6c-a398-474a-8549-9109e755fff1.jsonl",
+          "at": "2026-10-14T05:30:15.262Z",
+          "messageCount": 24
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/8fe2687c-e1aa-4185-8660-98357b704917.jsonl",
+          "at": "2026-10-14T05:30:18.034Z",
+          "messageCount": 26
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/d41e1b7c-dd73-4eb7-937e-bdff5e839292.jsonl",
+          "at": "2026-10-14T05:30:21.290Z",
+          "messageCount": 28
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/65d1cbe3-bec8-4935-b45f-b9e7285275ac.jsonl",
+          "at": "2026-10-14T05:30:46.272Z",
+          "messageCount": 30
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/081ef532-d16c-4a8f-b7f9-7e9d2d721e06.jsonl",
+          "at": "2026-10-14T05:30:48.890Z",
+          "messageCount": 32
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/54f232a2-de03-4507-b865-bd9b3bfc2b9e.jsonl",
+          "at": "2026-10-14T05:30:58.166Z",
+          "messageCount": 34
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/62c87f77-daef-473f-a363-a857bb9d7b73.jsonl",
+          "at": "2026-10-14T05:31:01.085Z",
+          "messageCount": 36
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/c21543c2-e1c6-4902-9114-b976fadafbed.jsonl",
+          "at": "2026-10-14T05:31:05.525Z",
+          "messageCount": 38
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/660b4892-117a-490d-b9aa-b4403ea65b38.jsonl",
+          "at": "2026-10-14T05:31:09.185Z",
+          "messageCount": 40
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/de9c49c0-70db-48ef-aed5-993b6b1b9fc6.jsonl",
+          "at": "2026-10-14T05:31:11.759Z",
+          "messageCount": 42
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/f1ed3a13-7645-4d26-95e7-387824d14714.jsonl",
+          "at": "2026-10-14T05:31:15.968Z",
+          "messageCount": 44
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/54bc5461-dce7-472c-8706-81d397681d52.jsonl",
+          "at": "2026-10-14T05:31:25.718Z",
+          "messageCount": 49
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/c4d8f01d-7e72-42ac-8ef3-5b27ef0a58ff.jsonl",
+          "at": "2026-10-14T05:31:38.314Z",
+          "messageCount": 53
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/a6d363a8-fe5c-4794-b628-f6982dfacfa5.jsonl",
+          "at": "2026-10-14T05:32:03.212Z",
+          "messageCount": 55
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/bbc33473-e8fe-4f64-83cf-03a45720ea54.jsonl",
+          "at": "2026-10-14T05:32:06.168Z",
+          "messageCount": 57
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/93d4e38b-5ad0-4c73-9b76-e9481e413bbd.jsonl",
+          "at": "2026-10-14T05:32:11.634Z",
+          "messageCount": 59
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/2c21cd9d-2ada-4ab7-b59b-7f493e914f75.jsonl",
+          "at": "2026-10-14T05:32:14.872Z",
+          "messageCount": 61
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/9fd8f4a8-4cdf-4f83-a863-2b29d5863acb.jsonl",
+          "at": "2026-10-14T05:32:17.460Z",
+          "messageCount": 63
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/54f5d30d-856b-4a23-96a8-b452a67cd88c.jsonl",
+          "at": "2026-10-14T05:32:21.887Z",
+          "messageCount": 65
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/788823a1-7ef5-4054-84ff-d50abbcc1aed.jsonl",
+          "at": "2026-10-14T05:32:26.549Z",
+          "messageCount": 67
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/2b6cfc2d-76d2-4d0d-93c8-b05515afdb70.jsonl",
+          "at": "2026-10-14T05:32:31.998Z",
+          "messageCount": 69
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/b5fbc33e-6251-4527-b36b-cfb5d33ba385.jsonl",
+          "at": "2026-10-14T05:32:36.603Z",
+          "messageCount": 71
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/7eb57fa6-05c8-444a-9aed-ad9b97bb1cc6.jsonl",
+          "at": "2026-10-14T05:32:40.957Z",
+          "messageCount": 73
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/3b715cdf-607b-47fc-ae4d-55dd9cc79d40.jsonl",
+          "at": "2026-10-14T05:32:54.870Z",
+          "messageCount": 75
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/52eaef3f-60e8-460a-ab2a-0ade0997e0bc.jsonl",
+          "at": "2026-10-14T05:33:24.524Z",
+          "messageCount": 77
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/f63b61f1-7a25-4241-b153-46bf6651dcf7.jsonl",
+          "at": "2026-10-14T05:33:28.823Z",
+          "messageCount": 79
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/4090837c-66c7-4003-8c40-168ab1a8fc22.jsonl",
+          "at": "2026-10-14T05:34:31.116Z",
+          "messageCount": 82
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/7a1cb540-74b0-4e3e-bcd0-bd75c69a6614.jsonl",
+          "at": "2026-10-14T05:34:34.678Z",
+          "messageCount": 84
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/9e5fceef-8f0f-418c-a513-b8adc6fcf7b7.jsonl",
+          "at": "2026-10-14T05:34:41.908Z",
+          "messageCount": 86
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/66163312-3b47-46eb-9766-16b9c3c01b25.jsonl",
+          "at": "2026-10-14T05:34:50.247Z",
+          "messageCount": 88
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/549d64a1-7839-42ec-b3b6-22272559d6e3.jsonl",
+          "at": "2026-10-14T05:34:56.811Z",
+          "messageCount": 90
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/93738886-f9ab-4edb-a9f6-6e47f562c3f8.jsonl",
+          "at": "2026-10-14T05:35:08.786Z",
+          "messageCount": 92
+        }
+      ]
+    },
+    "experimental": {
+      "businessRequestCount": 23,
+      "allRequestsComplete": true,
+      "allBusinessModelAndLimitMatch": true,
+      "systemStableAcrossBusinessRequests": true,
+      "toolsStableAcrossBusinessRequests": true,
+      "toolCount": 25,
+      "targetDisplayTextPresentAll": false,
+      "targetDisplayTextAbsentAll": true,
+      "roleFileCompleteInToolResult": true,
+      "roleResultSeq": 36,
+      "firstSubsequentRequestContainingRole": "9b18c13b-3773-4063-988d-8e417d4523df.jsonl",
+      "rawFinalTextEqualsArchivedFinal": true,
+      "finalEmbeddedObjectEqualsSavedObject": true,
+      "finalPureJson": false,
+      "dimensionsMatchUser": true,
+      "savedFiles": [
+        "5.3-1/prompt-slots.json",
+        "5.3-1/builder.json"
+      ],
+      "userVisualRequirements": "文本包含单人、站立、半身、金发、长双马尾、蓝眼、白衬衫、翻领、黑色蝴蝶结发饰、窗边柔光；用户给定角色和画师已进入 Prompt。",
+      "weightObservation": "所有标签未加权；Style 上下文 say_hana 规范化为 @say_hana。",
+      "terminalEvents": [
+        {
+          "type": "turn/end",
+          "seq": 161,
+          "time": 1791955962712,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "subagentCalls": 0,
+      "tracePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json",
+      "callResponseInventory": [
+        {
+          "callSeq": 17,
+          "resultSeq": 18,
+          "tool": "skill",
+          "purpose": {
+            "name": "anima-prompt-builder"
+          },
+          "callId": "call_00_ET_vtqAOoTscNk6jHVU7IeF8228"
+        },
+        {
+          "callSeq": 23,
+          "resultSeq": 24,
+          "tool": "bash",
+          "purpose": "List skill directory contents",
+          "callId": "call_00_WLRmKAUq3swOi9TAxVv44651"
+        },
+        {
+          "callSeq": 25,
+          "resultSeq": 26,
+          "tool": "bash",
+          "purpose": "List workspace directory",
+          "callId": "call_01_rcd1e3sQPin7ER8djHAa7143"
+        },
+        {
+          "callSeq": 30,
+          "resultSeq": 31,
+          "tool": "bash",
+          "purpose": "List references, scripts, agents dirs",
+          "callId": "call_00_ET_lZqJpCX7ygAJd7LsF9Ma6838"
+        },
+        {
+          "callSeq": 35,
+          "resultSeq": 36,
+          "tool": "bash",
+          "purpose": "Read first three reference files",
+          "callId": "call_00_3Bzxo6k5h8ZjSNUMvFoM0976"
+        },
+        {
+          "callSeq": 37,
+          "resultSeq": 38,
+          "tool": "bash",
+          "purpose": "Read output protocol and self-check references",
+          "callId": "call_01_9cEVOpDnqU27LY0otFQe7193"
+        },
+        {
+          "callSeq": 42,
+          "resultSeq": 43,
+          "tool": "bash",
+          "purpose": "Read conflict table and weight policy files",
+          "callId": "call_00_ET_C73vqQRKAritYKYNYmue9370"
+        },
+        {
+          "callSeq": 44,
+          "resultSeq": 45,
+          "tool": "bash",
+          "purpose": "Read slot order reference",
+          "callId": "call_01_ET_Dc8ySDoqXoE4pVmo4ifu4946"
+        },
+        {
+          "callSeq": 49,
+          "resultSeq": 50,
+          "tool": "bash",
+          "purpose": "Read assembly decision tree",
+          "callId": "call_00_SotwlMWav54Vu8mAuYrO0655"
+        },
+        {
+          "callSeq": 54,
+          "resultSeq": 55,
+          "tool": "bash",
+          "purpose": "Read count-identity and appearance references",
+          "callId": "call_00_GQAKnxjUoTtFhBc7UaN94917"
+        },
+        {
+          "callSeq": 56,
+          "resultSeq": 57,
+          "tool": "bash",
+          "purpose": "Read clothing-state reference",
+          "callId": "call_01_JUZZyXDw9Obg99C5lOR70238"
+        },
+        {
+          "callSeq": 61,
+          "resultSeq": 62,
+          "tool": "bash",
+          "purpose": "Read expression and camera references",
+          "callId": "call_00_WD9Vzs8MtHeV465SQjYm0498"
+        },
+        {
+          "callSeq": 63,
+          "resultSeq": 64,
+          "tool": "bash",
+          "purpose": "Read scene and detail-mood references",
+          "callId": "call_01_itKwDvit5INMvtO2lS1Y8572"
+        },
+        {
+          "callSeq": 68,
+          "resultSeq": 69,
+          "tool": "bash",
+          "purpose": "Read pose-action-sex reference head",
+          "callId": "call_00_Fy1GaNV1hh1E7C1wXTXs9981"
+        },
+        {
+          "callSeq": 70,
+          "resultSeq": 71,
+          "tool": "bash",
+          "purpose": "Read generation output contract, schema, profiles",
+          "callId": "call_01_vQWIRhSJGTehABav9Jjs9187"
+        },
+        {
+          "callSeq": 75,
+          "resultSeq": 76,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "purpose": {
+            "mode": "search",
+            "query": "Ani Grok Companion",
+            "page_size": 10
+          },
+          "callId": "call_00_XbBl1l3PKdIyxkWPN8mA2343"
+        },
+        {
+          "callSeq": 77,
+          "resultSeq": 78,
+          "tool": "mcp__noobai__query_semantic_works",
+          "purpose": {
+            "mode": "search",
+            "query": "Grok Companion",
+            "page_size": 10
+          },
+          "callId": "call_01_wmz5VuNLSXI3zHvlcQDG6448"
+        },
+        {
+          "callSeq": 79,
+          "resultSeq": 80,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "query": "black bow hair ornament on head",
+            "page_size": 10
+          },
+          "callId": "call_02_LNqLbJEFvWABFzwK1OQ02298"
+        },
+        {
+          "callSeq": 81,
+          "resultSeq": 82,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "query": "white collared button-up shirt",
+            "page_size": 10
+          },
+          "callId": "call_03_VE2SmwBQMs3xduTdJUbk6614"
+        },
+        {
+          "callSeq": 86,
+          "resultSeq": 87,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "soft window light, soft lighting from window"
+          },
+          "callId": "call_00_lxmBlDFufZYP9H6P4YuO7464"
+        },
+        {
+          "callSeq": 88,
+          "resultSeq": 89,
+          "tool": "mcp__noobai__search_base_models",
+          "purpose": {
+            "query": "anima",
+            "limit": 10
+          },
+          "callId": "call_01_aHosdFQb8QwbgYv2ezjK3504"
+        },
+        {
+          "callSeq": 90,
+          "resultSeq": 91,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "upper body bust shot portrait framing"
+          },
+          "callId": "call_02_NuFmZBsE0VJ5AQsVG5AV8713"
+        },
+        {
+          "callSeq": 95,
+          "resultSeq": 96,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "facing viewer looking straight at the camera"
+          },
+          "callId": "call_00_sWe8NvcP7PgzbSZkXTE28737"
+        },
+        {
+          "callSeq": 97,
+          "resultSeq": 98,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "twintails two tails hairstyle blonde"
+          },
+          "callId": "call_01_4vrRvJWVolDgg5YIwhHZ4883"
+        },
+        {
+          "callSeq": 99,
+          "resultSeq": 100,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "arms at sides standing pose"
+          },
+          "callId": "call_02_hO4fXpQ81jdqUWa8wFvr7517"
+        },
+        {
+          "callSeq": 101,
+          "resultSeq": 102,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "expressionless blank face no emotion"
+          },
+          "callId": "call_03_L8pQ27F2xkYSLfJ62ymW3743"
+        },
+        {
+          "callSeq": 106,
+          "resultSeq": 107,
+          "tool": "bash",
+          "purpose": "Read validator script part 1",
+          "callId": "call_00_VRazqqc1ewDRbS2Gy44x2492"
+        },
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "tool": "bash",
+          "purpose": "Read validator script part 2",
+          "callId": "call_00_KBzXwpzJLhvq2MnhMmZn7060"
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "tool": "mcp__noobai__query_semantic_works",
+          "purpose": {
+            "mode": "resolve",
+            "id": "2019"
+          },
+          "callId": "call_01_A085flwkhJxYfPby0s6d2704"
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "Grok AI chatbot companion character copyright series"
+          },
+          "callId": "call_00_f7VXTyXIxsJH81rLuk6N4465"
+        },
+        {
+          "callSeq": 120,
+          "resultSeq": 121,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "purpose": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "direct eye contact looking into the camera eyes"
+          },
+          "callId": "call_01_flv0wWFT9dFfFgmUJxEn1978"
+        },
+        {
+          "callSeq": 125,
+          "resultSeq": 126,
+          "tool": "bash",
+          "purpose": "Check harness environment variables",
+          "callId": "call_00_G5atM3OjLQ83WTjoBJq58925"
+        },
+        {
+          "callSeq": 130,
+          "resultSeq": 131,
+          "tool": "bash",
+          "purpose": "Create output directory 5.3-1",
+          "callId": "call_00_bPizOb5khBHdal3OW2uB9727"
+        },
+        {
+          "callSeq": 135,
+          "resultSeq": 136,
+          "tool": "bash",
+          "purpose": "Validate prompt format via validator",
+          "callId": "call_00_DWdLDmp6I7qCPaJXtjiH8677"
+        },
+        {
+          "callSeq": 140,
+          "resultSeq": 141,
+          "tool": "bash",
+          "purpose": "Build generation result JSON",
+          "callId": "call_00_Y3UowDPNLhyszYt9aZGq5230"
+        },
+        {
+          "callSeq": 145,
+          "resultSeq": 146,
+          "tool": "bash",
+          "purpose": "Validate generation result JSON",
+          "callId": "call_00_ET_mGfZDpfnNVsHmgwhwU6g2018"
+        },
+        {
+          "callSeq": 150,
+          "resultSeq": 151,
+          "tool": "bash",
+          "purpose": "Finalize builder.json and prompt-slots.json",
+          "callId": "call_00_G4F7dE9x2tXsSHN8PyWm1585"
+        },
+        {
+          "callSeq": 155,
+          "resultSeq": 156,
+          "tool": "bash",
+          "purpose": "Re-validate saved artifacts",
+          "callId": "call_00_V8RtvSJ53h62IbSIk7Jy4964"
+        }
+      ],
+      "modelRequestInventory": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/834428af-ae06-4a7d-97b9-cd0beeeaee24.jsonl",
+          "at": "2026-10-14T05:29:35.737Z",
+          "messageCount": 4
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/0e1e0760-82bf-45e3-957e-102e8fe11ebe.jsonl",
+          "at": "2026-10-14T05:29:38.588Z",
+          "messageCount": 6
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/fe6763fd-fa44-40d8-87e2-7dc289e6a5e2.jsonl",
+          "at": "2026-10-14T05:29:42.259Z",
+          "messageCount": 9
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/d38479a8-e879-484a-b4f5-79d89392c6e6.jsonl",
+          "at": "2026-10-14T05:29:44.664Z",
+          "messageCount": 11
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/9b18c13b-3773-4063-988d-8e417d4523df.jsonl",
+          "at": "2026-10-14T05:29:47.651Z",
+          "messageCount": 14
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/eb447afd-c954-4f90-a860-d6e0eb3afb3f.jsonl",
+          "at": "2026-10-14T05:29:50.886Z",
+          "messageCount": 17
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/8da1152b-56e3-4ea6-853f-31c9eb56cb51.jsonl",
+          "at": "2026-10-14T05:29:54.140Z",
+          "messageCount": 19
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/00b4f194-708a-458a-b548-bab6cdb58b82.jsonl",
+          "at": "2026-10-14T05:30:02.410Z",
+          "messageCount": 22
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/48537f54-2834-4fd9-9490-2e71121032d8.jsonl",
+          "at": "2026-10-14T05:30:06.519Z",
+          "messageCount": 25
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/21eadffc-6e01-40a0-9421-f70ad6565b9b.jsonl",
+          "at": "2026-10-14T05:30:11.204Z",
+          "messageCount": 28
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/84f03a51-b6e4-491d-a972-9508cb2be46a.jsonl",
+          "at": "2026-10-14T05:31:00.405Z",
+          "messageCount": 33
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/4111c358-45a8-4cdc-8a6c-dffaaf73b285.jsonl",
+          "at": "2026-10-14T05:31:21.277Z",
+          "messageCount": 37
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/3a085f7b-dd48-47d2-b93a-87179b84c692.jsonl",
+          "at": "2026-10-14T05:31:35.212Z",
+          "messageCount": 42
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/26cc2a51-9af6-4339-95d0-715246ced9f8.jsonl",
+          "at": "2026-10-14T05:31:39.374Z",
+          "messageCount": 44
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/9e13ed45-34f4-452e-86c7-a2bb8c14f9c6.jsonl",
+          "at": "2026-10-14T05:31:46.822Z",
+          "messageCount": 47
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/5b2e714e-b4b3-4449-a0e5-49837bb249a0.jsonl",
+          "at": "2026-10-14T05:31:54.704Z",
+          "messageCount": 50
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/b2d79376-c861-45bc-8984-47e8c3649c3a.jsonl",
+          "at": "2026-10-14T05:32:07.450Z",
+          "messageCount": 52
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/6f761b75-c208-4ad0-a33c-56d51603c4c1.jsonl",
+          "at": "2026-10-14T05:32:11.009Z",
+          "messageCount": 54
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/d5b75e39-48c9-481d-94c4-6d4b18de643c.jsonl",
+          "at": "2026-10-14T05:32:16.609Z",
+          "messageCount": 56
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/76486e13-a967-4acd-b47c-77fba7abce04.jsonl",
+          "at": "2026-10-14T05:32:20.953Z",
+          "messageCount": 58
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/973b3531-aa4d-4321-925d-5edc040a9344.jsonl",
+          "at": "2026-10-14T05:32:24.503Z",
+          "messageCount": 60
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/269fa127-d8a3-498c-a6aa-0ec0ed687fb6.jsonl",
+          "at": "2026-10-14T05:32:32.216Z",
+          "messageCount": 62
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/b46326ca-62d0-49be-aff6-f1532ad98f75.jsonl",
+          "at": "2026-10-14T05:32:36.546Z",
+          "messageCount": 64
+        }
+      ]
+    }
+  },
+  "firstRequestIndependentComparison": {
+    "toolDeclarationsEqual": true,
+    "systemDifferenceIsTrailingDisplayParagraph": true,
+    "normalizations": [
+      "仅替换本组实际 Profile 路径、Workspace 路径、sessionId。",
+      "删除首消息中目标展示段，并删除消息 id 和 source.rpcId。"
+    ],
+    "messagesEqualAfterNormalization": true
+  }
+}

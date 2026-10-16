@@ -1,10 +1,15 @@
+---
+文档用途: 规定 ANIMA 槽位内容的组织规则。
+读取时机: 填写 ANIMA 十二槽内容前。
+---
+
 ## 4. 槽位填充与内容组织规则
 
 Skill 执行者必须按照 `SKILL.md`“构建并校验提示词”定义的十二槽顺序填充槽位。槽位顺序只决定内容分类和最终排列，不决定标签权重。Skill 执行者必须按照 `prompt-weighting.md` 设置显式权重。
 
 ### 4.1 风格一致性强调
 
-Skill 执行者必须使 `clothing_state`、`scene_environment` 和 `detail_mood` 符合用户要求的时代、地点和材质设定。用户明确要求跨时代或跨类型混搭时，Skill 执行者必须保留该组合；用户未要求混搭时，Skill 执行者应选择时代与场景相符的服装、环境和氛围。古风组合可以使用 `hanfu`、`ancient shrine`、`ink wash` 和 `ethereal`；赛博组合可以使用 `latex bodysuit`、`cyberpunk city` 和 `digital glitch effects`；日常组合可以使用 `school uniform`、`classroom` 和 `cinematic`。
+Skill 执行者必须使 `clothing_state`、`scene_environment` 和 `detail_mood` 符合用户要求的时代、地点和材质设定。用户明确要求跨时代或跨类型混搭时，Skill 执行者必须保留该组合；用户未要求混搭时，Skill 执行者必须选择时代与场景相符的服装、环境和氛围。古风组合可以使用 `hanfu`、`ancient shrine`、`ink wash` 和 `ethereal`；赛博组合可以使用 `latex bodysuit`、`cyberpunk city` 和 `digital glitch effects`；日常组合可以使用 `school uniform`、`classroom` 和 `cinematic`。
 
 当用户明确选择或描述 NTR、束缚与 BDSM、RBQ 与物化、男娘与 Futa、异种、调教与宠物化、胁迫、偷窥与展示、事后、另类日常、大车小孩或隐奸主题时，Skill 执行者必须读取 `16-special-theme.md` 中对应主题的标签、英文短句及槽位规则。
 
@@ -49,20 +54,23 @@ Skill 执行者必须遵守上表规定的各槽位标签上限，并按照 `05-
 
 ### 4.4 自然语言使用场景及具体写法
 
-Skill 执行者必须优先使用标签；只有标签不能准确表达画面关系时，Skill 执行者才使用英文自然语言短句。Skill 执行者必须把每个 `natural_language` 英文短句放入 `natural_language` 槽位；校验器把该槽位内容连接在全部标签之后。
+#### 4.4.1 使用条件
 
-**必须使用自然语言的场景**：
+1. Skill 执行者描述画面关系时必须优先使用标签。标签不能准确表达该关系时，Skill 执行者必须将对应英文自然语言短句写入 `natural_language`；标签能够准确表达时，Skill 执行者不得为同一关系追加自然语言短句。
+2. 词条查询没有可采用结果时，Skill 执行者按 [目录词条采用规则](../SKILL.md#选择作品角色画师与词条)第 4 项处理。
 
-| 场景 | 原因 | 示例（放在末尾） |
+#### 4.4.2 关系表达示例
+
+| 场景 | 需要明确的关系 | 示例 |
 |---|---|---|
-| 角色间动作关系 | 标签无法描述"谁对谁做什么" | `one reaches toward the viewer while the other watches in silence` |
-| 复杂构图/空间关系 | 标签无法描述"谁在哪、面向谁" | `girl sitting on boy's lap facing him` |
-| 特殊姿势组合 | 多个动作标签堆叠时主次不清 | `girl pinning wolf boy down while riding him` |
-| 分镜/对比关系 | 标签无法表达时间或状态对比 | `left panel: dressed, right panel: nude` |
+| 角色间动作关系 | 谁对谁做什么 | `one reaches toward the viewer while the other watches in silence` |
+| 复杂构图或空间关系 | 谁在哪、面向谁 | `girl sitting on boy's lap facing him` |
+| 特殊姿势组合 | 多个动作的主次 | `girl pinning wolf boy down while riding him` |
+| 分镜或对比关系 | 时间或状态的对比 | `left panel: dressed, right panel: nude` |
 
-**格式规则**：
+#### 4.4.3 关系表达的格式
 
-- Skill 执行者必须让一个英文自然语言短句只表达一个具体关系或解决一个具体歧义。
+1. Skill 执行者必须让用于描述画面关系的每个英文短句只表达一个具体关系或解决一个具体歧义。
 
 ### 4.5 观众关系（叙事性互动）
 
@@ -86,7 +94,7 @@ Skill 执行者必须优先使用标签；只有标签不能准确表达画面�
 - Skill 执行者必须先在 `count_gender` 中写入人数，再按十二槽顺序填写其余槽位。在 `character_series` 中，Skill 执行者只写适用的 IP 角色身份，并按角色在用户描述中的出现顺序排列；在 `appearance` 中，Skill 执行者必须按相同顺序写入各角色的关键外貌短语，并使用角色名或可区分称谓标明归属。共享标签必须写入其所属槽位。属于特定角色的服装状态、动作或表情，以及角色之间的关系和剧情事件，如果标签不能明确表示归属，必须写入 `natural_language`。
 - Skill 执行者必须使用简短词组区分每个角色的外貌，不得把动作或表情混入角色外貌短语。
 
-**多人角色归属片段示例（不展示完整十二槽提示词）**：
+**多人角色归属片段示例**：
 
 - ❌ 错误：`raiden shogun, long purple hair, playful, yae miko, pink hair, embarrassed, skirt lift`（模型无法判断属性归属）
 - ✅ 正确：`2girls, raiden shogun with long purple hair and purple eyes, yae miko with long pink hair and fox ears, skirt lift, shrine, one playfully lifting the other's skirt with a mischievous smirk while the other looks shy and embarrassed`

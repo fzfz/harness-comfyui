@@ -1,0 +1,111 @@
+{
+  "purpose": "记录 GenerationSourceClient HTTP 诊断修复的独立代码审查结果。",
+  "readWhen": "构建诊断候选包及执行主计划第 5.7.2 节官方应用验收前。",
+  "reviewType": "限定源码、配置及测试审查",
+  "verdict": "pass",
+  "materialFindings": [],
+  "conclusion": "已审查的 HTTP 诊断分支符合第 5.7.2 节及错误合同，未发现实质正确性、SSOT 或退化问题。",
+  "scope": {
+    "productionFiles": [
+      "src/host/generation/source-client.ts",
+      "config/error-catalog.json",
+      "config/error-catalog-schema.ts"
+    ],
+    "changedTests": [
+      "tests/unit/generation-source-client.test.ts",
+      "tests/unit/error-catalog-schema.test.ts",
+      "tests/integration/cli-route.test.ts",
+      "tests/integration/cli-command.test.ts",
+      "tests/unit/generation-runtime.test.ts"
+    ],
+    "changeBoundary": "审查范围为 SOURCE_HTTP_ERROR 的转换分支、SOURCE_QUERY_FAILED.diagnostic_template、必需占位符校验和对应测试。分支中既有 Catalog 迁移与 CLI 退役修改属于其他工作。",
+    "authority": [
+      "docs/plans/skills-mcp-migration-20261013.md:1162",
+      "docs/verification/skills-mcp-migration/source-diagnostic-contract-review.json"
+    ],
+    "method": "审查员独立读取实际源码与测试，复跑八个定向测试文件；仅写入本审查记录。"
+  },
+  "verifiedContracts": [
+    {
+      "subject": "错误来源与转换入口",
+      "evidence": [
+        "src/host/source-client/http-client.ts:6",
+        "src/host/source-client/http-client.ts:91",
+        "src/host/source-client/source-client.ts:15",
+        "src/host/generation/source-client.ts:140"
+      ],
+      "result": "HTTP 客户端在有效 JSON 的非成功业务响应中保存 status 和 responseBody；生成客户端从当前已校验的 operation、id 与错误对象的 status 生成诊断，继续使用 SOURCE_QUERY_FAILED。"
+    },
+    {
+      "subject": "错误分支与正文隔离",
+      "evidence": [
+        "src/host/generation/source-client.ts:145",
+        "tests/unit/generation-source-client.test.ts:119",
+        "tests/unit/generation-source-client.test.ts:144"
+      ],
+      "result": "取消、既有 GenerationRuntimeError、协议错误、响应过大、连接失败、总超时和 discovery HTTP 错误保留既有转换。缺失 status 的输入保留原 message；新增 HTTP 消息未读取 responseBody。四种操作与状态组合的完整消息断言排除了任意响应正文。"
+    },
+    {
+      "subject": "诊断模板单一来源",
+      "evidence": [
+        "config/error-catalog.json:107",
+        "config/error-catalog-schema.ts:41",
+        "config/error-catalog-schema.ts:57",
+        "src/host/generation/source-client.ts:150",
+        "tests/unit/error-catalog-schema.test.ts:34"
+      ],
+      "result": "生产文案仅由错误目录定义；生成客户端消费已解析目录。schema 要求 operation、id、status 三个占位符；测试分别验证每个占位符和整个模板缺失时配置被拒绝。"
+    },
+    {
+      "subject": "参数检查与受管 CLI",
+      "evidence": [
+        "src/host/generation/source-preparer.ts:155",
+        "src/host/generation/generation-runtime.ts:653",
+        "src/host/cli/route.ts:89",
+        "scripts/cli/harness-comfyui.mjs:140",
+        "tests/integration/cli-route.test.ts:200",
+        "tests/integration/cli-command.test.ts:569"
+      ],
+      "result": "参数检查从 SourceGenerationPreparer 经 GenerationRuntime 到 Host route 传递同一错误。测试从 SourceRead 注入 SourceClientError，实际执行生成客户端、准备器、HTTP 路由和临时构建的 CLI 子进程；实例 404 与模板 503 均得到退出码 1、空 stdout 和完整诊断。CLI 既有帮助提示继续附加在 stderr。"
+    },
+    {
+      "subject": "Run 持久化与重放",
+      "evidence": [
+        "src/host/generation/generation-runtime.ts:662",
+        "tests/unit/generation-runtime.test.ts:347"
+      ],
+      "result": "测试使用实际生成客户端与准备器产生实例 HTTP 404，关闭并重建 Runtime 后读取相同错误码和消息，同一请求重放未重新读取源记录。"
+    },
+    {
+      "subject": "验证可信度",
+      "evidence": [
+        "tests/unit/generation-source-client.test.ts:119",
+        "tests/integration/cli-command.test.ts:102",
+        "tests/integration/cli-command.test.ts:572",
+        "tests/unit/internal-source-client.test.ts:30"
+      ],
+      "result": "单元测试精确断言完整诊断；CLI 辅助断言检查诊断子串及帮助提示，未将 stderr 误认成仅含诊断的一行。内部 HTTP 客户端回归覆盖真实成功读取链，HTTP 失败消费者测试在约定的 SourceRead 边界注入。"
+    }
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/unit/generation-source-client.test.ts tests/unit/error-catalog-schema.test.ts tests/integration/cli-route.test.ts tests/integration/cli-command.test.ts tests/unit/generation-runtime.test.ts tests/unit/internal-source-client.test.ts tests/unit/catalog-client.test.ts tests/unit/results-drawer.test.tsx",
+    "result": {
+      "exitCode": 0,
+      "filesPassed": 8,
+      "testsPassed": 177,
+      "durationSeconds": 4.49
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  },
+  "acceptanceBoundary": {
+    "confirmed": "本次结论覆盖限定实现、确定性错误转换、CLI 交付与 Run 持久化。",
+    "remaining": [
+      "主线程按第 5.7.2 节在官方 Desktop 中验收另建候选的实际参数检查 stderr。",
+      "主线程按第 5.11 节记录模型停止行为与参数检查次数。"
+    ],
+    "execution": "本次审查未启动 Desktop 或模型；产品文件和测试文件保持原内容。"
+  }
+}

@@ -1,0 +1,362 @@
+{
+  "purpose": "核对验收 Agent 读取验收材料的发现路径、官方读取边界与最小隔离实施范围。",
+  "status": "只读调查完成；进程隔离候选尚未实施或运行验收。",
+  "scope": {
+    "writeOwnership": "docs/verification/skills-mcp-migration/acceptance-read-boundary-review.json",
+    "modelRuns": 0,
+    "processChanges": 0,
+    "productChanges": 0,
+    "externalSdkChanges": 0
+  },
+  "findings": [
+    {
+      "severity": "high",
+      "title": "baseline 已读取验收材料并将历史输出用于判断",
+      "evidence": [
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/input.json",
+          "location": "prompt",
+          "fact": "任务直接给出仓库内部 Profile 的完整 Skill 路径。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "location": "seq 19",
+          "fact": "skill 返回同一个安装根目录。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "location": "event seq 137",
+          "fact": "模型记录表示准备寻找测试样例及预期输出，以解决相机方向选择。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "location": "seq 138/139, 143/144, 148/149",
+          "fact": "Agent 沿安装路径上行，成功列出 Profile 根目录、读取 desktop-e2e.json/state.json，并列出验收材料根目录。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "location": "seq 158/159, 163/164, 168/169",
+          "fact": "成功读取任务矩阵、历史输入和历史 builder.json。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+          "location": "event seq 167, 172",
+          "fact": "模型明确用历史文件判断 builder.json 应包含十字段生成结果，并将该结果作为已确认的结构。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json",
+          "location": "seq 173/174, 178/179, 183/184, 193/194, 198/199",
+          "fact": "继续读取当前对照计划、检索历史产物、读取其他 Builder、检索 runner 断言并读取历史摘要。"
+        }
+      ],
+      "impact": "baseline 的结果受业务输入以外的验收资料影响。首请求的展示段单变量对照仍可核实，但本轮无法单独归因展示段对最终输出格式或内容选择的影响。"
+    },
+    {
+      "severity": "high",
+      "title": "官方已安装沙箱的模式约束写入，未提供验收材料的读取拒绝字段",
+      "evidence": [
+        {
+          "path": ".local/skills-mcp-migration-live/runtime-file-policy/dsh-sandbox-policy-index.js",
+          "location": "97-104",
+          "fact": "公开配置字段为 mode、workspaceRoot；模式为 read-only、workspace-write、danger-full-access。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/runtime-file-policy/dsh-sandbox-local-index.js",
+          "location": "65-75",
+          "fact": "macOS Seatbelt profile 使用 allow default 与 deny file-write*，追加可写根目录。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/runtime-file-policy/dsh-fs-sandbox-index.js",
+          "location": "SandboxedFileSystem，继承 LocalFileSystem；writeText/editText/checkedTarget",
+          "fact": "文件提供方只对变更加围栏；读取继承本地文件系统。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/runtime-file-policy/dsh-sandbox-local-index.js",
+          "location": "253-256, 311-321",
+          "fact": "runnerCommand 是 argv 扩展点，追加 bwrapProfileArgs、-- 和原命令；full 是配置方断言，不执行内建探测。"
+        }
+      ],
+      "impact": "中性目录与新的 Workspace 只能减少发现线索。把 sandbox-exec 直接填入 runnerCommand 会接收不兼容的 bwrap 参数；自定义适配器也只管辖受该执行器启动的命令，无法同时约束 Host 内的文件工具。"
+    },
+    {
+      "severity": "medium",
+      "title": "当前 Profile 与观察器使运行材料和验收材料共享可读取路径",
+      "evidence": [
+        {
+          "path": ".local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/state.json",
+          "location": "environmentRoot, profileDirectory, observer.name, historyCopied",
+          "fact": "Profile 位于验收根目录内，historyCopied=false；观察器模块也从同一验收根目录加载。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/llm-observer.mjs",
+          "location": "7-15",
+          "fact": "观察器把 llm-calls 写到模块所在目录旁；0700/0600 对同一用户运行的 Desktop/shell 不构成读取隔离。"
+        },
+        {
+          "path": "tests/desktop/fixtures/official-desktop-probe.mjs",
+          "location": "348-354, 399-413",
+          "fact": "startProbe 提供 spawnProcess 注入点，默认直接启动官方应用，使用独立进程组、Workspace cwd 和继承日志描述符。"
+        }
+      ],
+      "impact": "直接拒绝当前仓库的全部读取会同时破坏 Profile、插件和观察器的正常加载；实施前需先分离运行必需材料。"
+    }
+  ],
+  "recommendedCandidate": {
+    "name": "在本地验收启动层为完整 Desktop 进程树增加操作系统读取边界",
+    "feasibility": "本机 /usr/bin/sandbox-exec 存在。候选使用现有官方 probe 的 spawnProcess 注入点，原样保留应用 argv、环境、stdio 和 detached 属性；外层以 sandbox-exec 启动官方 executable。此方案尚未验证 Electron、嵌套 sandbox、PID 识别和端口清理的兼容性。",
+    "implementationScope": [
+      "只新增本地验收启动适配器、声明式 Seatbelt profile 和确定性读取探针；保持官方 app.asar、仓库产品代码与真实 Profile 不变。适配器只包装 argv，不解析或拦截 Agent 命令字符串。",
+      "在仓库之外准备本轮专用运行目录，存放新 Profile、安装后的候选插件、Workspace，以及观察器和其本地依赖的副本；核对符号链接与解析后的路径，避免运行依赖重新指回被拒绝目录。现有验收材料保留原位。",
+      "通过外层进程策略拒绝读取已确认的验收材料根目录、相关 checkout 的计划/报告与历史材料位置，并覆盖当前轮证据文件。保护路径采用规范化绝对路径；策略必须覆盖全部已发现副本。运行目录位置只负责消除依赖冲突，实际读取限制由内核策略提供。",
+      "观察器副本继续写入本轮专用 llm-calls；为该输出目录拒绝 file-read-data，同时允许观察器所需的创建、追加与必要元数据操作。验收控制进程留在外层策略之外读取证据。策略语法与 mkdir/append 的实际兼容性需要无模型探针先证实。",
+      "将策略加在官方应用启动前，使 Host 文件工具、shell 子进程、validator 和可由调试接口触发的同进程文件读取一并受约束。避免只给 Bash 加围栏。"
+    ],
+    "authorizationBoundary": {
+      "coveredByAssignment": "只读调查与指定 JSON 报告。",
+      "implementationNeeds": "父任务需确认已有本地测试授权是否覆盖新增验收启动适配器、隔离目录副本及无模型进程探针。本任务没有执行这些动作。",
+      "expectedPermissions": "预计使用当前用户即可创建隔离目录并运行 sandbox-exec，不需要安装依赖、修改 ACL 或获取管理员权限；实际运行能力尚未测试。",
+      "stopConditions": [
+        "sandbox-exec 被宿主限制或不支持所需规则。",
+        "官方 Desktop 无法在外层 Seatbelt 下正常启动或内部沙箱失败。",
+        "probe 无法验证被包装后的真实 PID、进程组或清理所有端口。",
+        "正常业务消费者依赖被保护材料，且无法仅通过本轮运行副本解除。"
+      ],
+      "ifBlocked": "报告具体失败；转为独立 OS 用户/虚拟机等方案需要新增授权与环境准备，超出当前最小验收改动范围。"
+    },
+    "verificationGates": [
+      "不调用模型：外层普通控制进程可以读取哨兵文件；受限 Host 内直接 fs 读取、实际文件工具读取、bash cat 与 Python/Node 读取均被拒绝。",
+      "已知绝对路径、相对路径上行、符号链接别名及 /tmp 与 /private/tmp 等规范化路径均不能读取同一哨兵或真实受保护文件；新建硬链接是否可能绕过需通过探针验证并按实际能力关闭入口。",
+      "Host 可读取本轮 Profile、候选插件和 Skill 参考文件；shell 可运行既有 validator 并写入 Workspace；观察器可追加请求证据，控制进程可读而受限 Host 与 shell 不能读。",
+      "核实文件读取代理：暴露给 Agent 的 MCP、HTTP、文件预览与调试端口若由外部非受限进程提供，应确认它们不会代理读取受保护根目录。仅本地内核文件规则不能证明此类代理不可用。",
+      "官方 probe 的应用身份、真实 PID/进程组、Host/Renderer readiness、退出清理均通过。保持两组隔离策略、目录结构与工具集合一致，然后才重新运行获准模型对照。"
+    ]
+  },
+  "confidenceBoundary": {
+    "confirmed": "本轮 baseline 的越界发现链、成功读回、历史结果影响模型判断以及官方本地模式仅约束写入，均有现有记录或本机代码证据。",
+    "notEstablished": "尚无受限 Desktop 进程或读取拒绝探针结果；尚未证明所有外部服务代理和历史副本都被覆盖。",
+    "priorEvidence": "保留原始实际请求、工具返回、最终回复和校验器结果作为该受污染环境中的行为记录。展示段存在/缺失可继续核实；结果不构成隔离条件下的单变量因果结论。",
+    "sourceBoundary": "官方能力结论依据任务指定的本机只读 runtime-file-policy 快照；未再次从 app.asar 独立核对快照与已安装归档逐字一致。"
+  },
+  "followupAssessment": {
+    "purpose": "判定外层 Seatbelt 启动失败后，中性运行目录与完整轨迹审查的验收适用范围。",
+    "verdict": "有条件可行：用于按计划逐场景验证实际业务行为；依靠运行材料分离减少污染机会，依靠独立轨迹审查决定该次证据是否可用。",
+    "planBasis": [
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md",
+        "lines": [
+          1228,
+          1240
+        ],
+        "interpretation": "第 5.9 节要求官方应用中的干净上下文、独立执行、明确任务参数、执行中无额外提示和完整逐项轨迹判定。该节未要求操作系统强制拒绝读取其他文件。干净初始上下文仍须在运行中保持任务证据来源独立。"
+      },
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md",
+        "lines": [
+          1285,
+          1288
+        ],
+        "interpretation": "第 5.13 节要求独立 Profile、实际访问路径记录及预先验证取证能力；这些要求继续适用。"
+      }
+    ],
+    "outerSandboxEvidence": {
+      "status": "外层 Seatbelt 候选未通过官方 Desktop 启动门槛；停止沿此候选进行模型验收。",
+      "sources": [
+        {
+          "path": ".local/skills-mcp-migration-live/read-boundary/desktop-launch-failure.json",
+          "location": "code, run.record",
+          "fact": "受限策略启动记录为 SIGABRT 提前退出，Host/Renderer 未就绪。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/read-boundary/desktop-allow-default-control.json",
+          "location": "status, error, finalStatus",
+          "fact": "allow-default 控制同样未达到就绪条件，记录已释放端口和进程。"
+        },
+        {
+          "path": "/private/tmp/harness-read-boundary-JNMlQ4/allow-default-only.sb",
+          "location": "1-2",
+          "fact": "控制策略只有 version 1 与 allow default。"
+        },
+        {
+          "path": "/private/tmp/harness-read-boundary-JNMlQ4/.local/desktop-e2e/f268e24e-683f-4f57-bc56-861fc3e8afad/logs/desktop.stderr.log",
+          "location": "3-6,11",
+          "fact": "日志出现 sandbox initialization failed: Operation not permitted 和 Failed to initialize sandbox。"
+        }
+      ],
+      "limit": "这些证据足以否决当前外层启动方案。该结论只覆盖本机应用及本次启动组合；未据此证明所有操作系统隔离机制均不可行。",
+      "constraints": "保持官方 Chromium 内层沙箱和现有权限；不使用禁用沙箱参数，不修改 SDK。"
+    },
+    "minimumLayout": [
+      "每个场景创建独立且初始无会话历史的中性运行根 R；R 位于 checkout、验收证据树及历史 Workspace 之外。运行根只包含该场景所需官方 Profile、user-data、候选已安装包、Workspace、观察器及其本地依赖、本轮运行日志。",
+      "Profile、Workspace 与观察器可在 R 内分目录；R 的直接父目录不放任务矩阵、方案、对照索引或历史产物，也不使用带 baseline/experimental 等含义的共同场景父目录。操作系统公共临时父目录仍然可枚举，因此此布局只降低就近发现机会。",
+      "控制根 C 保留计划、模型选择来源记录、caseId 映射、输入构造、预期结果、state.json、批次 runner、报告及其他轮证据。C 与 R 分开；控制进程可知道 R，R 内文件只保存运行必需字段。需要官方 active-probe 等生命周期记录时，仅保留本轮必要记录，核对其内容不指向验收控制材料。",
+      "Profile 从所需配置字段准备，候选通过官方安装机制安装到 R；观察器和 redact-evidence 等依赖复制到 R。完整路径与 realpath 均落在运行材料范围，避免符号链接、模块导入或 source map 把运行文件重新指回 C 或 checkout。",
+      "本轮观察器只写本轮日志，日志初始为空，内容只来自实际运行及必要诊断。控制进程结束后把证据归档到 C；后续场景使用另一空白 R。每轮日志仍可被本轮 Agent 读取，故日志实际内容和读取行为也须审查。"
+    ],
+    "pathLeakageReview": [
+      "任务输入与 Skill 工具返回仅引用实际 R 下的 Skill、Workspace 和任务所需资源；控制层在 C 保存 caseId 到 R 的映射，不把计划路径、预期判定、分组标签或历史 Run 结果加入派发文本。保留用户要求的输出文件名与业务参数。",
+      "Profile 的 observer.name、模块 import、include/patch 路径、插件加载入口和已安装包符号链接必须解析到 R 或已批准的官方应用资源。不能仅移动 DSH_HOME 而继续从 checkout 加载 observer。",
+      "独立核对实际应用启动 cwd、shell workdir 与继承环境中的 PWD、OLDPWD、INIT_CWD、NODE_PATH、NODE_OPTIONS、PATH、DSH_HOME、诊断日志位置及其他值。移除由测试控制层注入且指向验收控制材料的非必要路径；官方 executable 与必要业务 endpoint 保持真实。无需把全机 PATH 或产品元数据重写为虚构值。",
+      "核对本轮 probe run.json、active-probe、Profile 补丁、安装管理记录、错误栈、诊断文件和观察器源码。必要生命周期记录可以保留，但其中不得携带方案、预期答案、批次控制索引或其他场景历史内容；安装候选的来源路径优先使用 R 内副本。",
+      "核对实际 system、runtime context、工具声明、自动发现的 AGENTS/Skill 文件和父子任务消息。只改磁盘布局而初始请求仍含仓库验收路径时，准备工作尚未完成。产品必需路径无法剥离时，应记录其暴露和对应运行审查要求，不通过修改产品语义掩盖它。"
+    ],
+    "perRunEvidenceGate": [
+      "执行前记录候选包身份、官方应用身份、全新 Session/子 Session/Workspace、实际生效配置、模型和数据来源；禁止复制其他场景会话、记忆、Workspace 或模型日志。业务历史复用场景只提供计划授权的历史输入及真实 Run 来源。",
+      "独立审查实际全部模型请求、主子消息、工具调用参数和完整返回、文件工具、shell 程序及其输入输出、网络响应、分页记录和长输出保存文件。审查员按代码和内容判定读取了什么，不以简单路径关键字扫描代替语义判断。",
+      "出现通用解释器、管道、复合命令或动态路径时，审查员追踪实际读取来源及其被使用方式；被读取文件即使没有原文回显，也可能参与生成最终输出。无法还原关键来源时，判为证据不足。",
+      "确认读取未授权的验收计划、评价标准、其他场景或历史答案，或确认这些内容经工具、日志、网络响应进入模型上下文时，标记污染，关联首次事件及后续依赖，对该次独立任务判为未通过。仅出现路径线索而未读取相关内容时，记录暴露事实并继续逐项审查。",
+      "同一 Session 被污染后，后续 turn 和其接收污染消息的子 Session 保持污染状态；需要重验的独立任务使用全新场景。其他已完整取证且确实不受影响的场景可以继续；单次污染任务中已发生的提交次数、Run、媒体等事实可保留为诊断证据。",
+      "记录全部尝试和污染率，不只保留通过样本。任何关键事件缺失、输出截断未补齐或读取来源不明，均保持证据不足；不得据此标记全计划完成。"
+    ],
+    "supportedClaims": [
+      "对某次完整、未发现验收材料摄入的独立轨迹，可以按原合同判定 MCP 查询与参数、Prompt 来源和校验、缺失/歧义等待、零结果分支、生成提交次数、Run/媒体一致性及角色交接是否通过。所有原计划的业务和语义条件仍须满足。",
+      "可以核对实际请求的展示段差异、工具集合、输入和运行参数。两组各自满足来源独立门槛时，可以报告这些特定样本在相同已核对条件下的行为差异或相同行为，并作为进一步因果验证的证据。",
+      "两组均出现相同格式失败，可报告移除该展示段在本次干净样本中未消除失败；该观察不能排除展示段在其他情形的影响。布局调整前后的差异只能作为不同运行条件下的观察。"
+    ],
+    "unsupportedClaims": [
+      "禁止声称 R 是强制读取隔离、验收材料不可访问、全部文件或网络路径已被技术阻断；同一用户对其他目录的读取能力仍存在。",
+      "禁止把完整工具轨迹等同于操作系统级全部文件访问审计。只能按已核对的模型可调用路径及证据完整度作本次行为判定，不能保证未来 Agent 不会读取其他材料。",
+      "禁止从一对随机模型输出、结果相同或结果不同直接得出稳定因果效应；必须保留随机性、环境时间差和后续工具调用差异。只挑选未污染样本可能引入选择偏差，污染尝试须作为比较的组成部分公开。",
+      "禁止把初始空白 Session 自动判为全过程独立；也禁止用目录改名后未观察到越界读取，代替缺失的模型请求、子会话或工具返回。"
+    ],
+    "currentStatus": "仅补充本报告 followupAssessment；未创建运行目录、启动进程、调用模型或修改其他文件。"
+  },
+  "implementationReview": {
+    "scope": [
+      ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+      ".local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs",
+      ".local/skills-mcp-migration-live/read-boundary/layout-config.json",
+      "docs/verification/skills-mcp-migration/read-boundary-probe.json"
+    ],
+    "verdict": "PASS_WITH_LIMITATIONS：默认参数与报告所列批准来源的准备布局符合 followupAssessment；自定义目录入口有一项 P2 缺口。此结论仅覆盖准备步骤。",
+    "findings": [
+      {
+        "severity": "P2",
+        "title": "自定义目录参数允许控制资料重新出现在运行根的上层或相邻目录",
+        "path": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+        "lines": [
+          11,
+          12,
+          17,
+          23,
+          24
+        ],
+        "evidence": "程序仅将 baseDirectory 的 realpath 与 repositoryRoot 比较；controlDirectory 只做 resolve 后直接写入 controlRoot。调用者把 controlDirectory 设为 baseDirectory 时，controlRoot 与 root 相同，desktop-e2e.json 与 layout.json 会直接写入 R；调用者使用 baseDirectory/control 时，控制树位于 R 的直接父目录下。prepare-layout.test.mjs 第 17-19 行采用后一布局，现有断言仅检查 R 内部文件。",
+        "impact": "该公开参数组合会重新暴露来源路径、probe 配置及控制入口，违反本报告 minimumLayout 的 R/C 分离条件。默认调用的 C 位于 checkout、R 位于系统临时目录，不受这一参数组合影响。",
+        "requiredBeforeCustomLayout": "调用前或准备器内规范化并核对控制根、运行根及其父目录关系，拒绝重合、祖先包含及控制材料与 R 近邻的配置；至少覆盖 controlDirectory=baseDirectory 的确定性回归。此检查只约束布局，不构成读取权限隔离。"
+      }
+    ],
+    "verified": [
+      {
+        "subject": "默认 R/C 与来源记录",
+        "source": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs:17-24",
+        "result": "R 使用独立 mkdtemp；默认 C 位于脚本旁 layouts；probe 配置、sourceProfilePath、sourceCandidatePath 和状态文件在 C；R 初始只含 runtime。"
+      },
+      {
+        "subject": "Profile 来源范围",
+        "source": ".local/skills-mcp-migration-live/read-boundary/layout-config.json:7-11；prepare-layout.mjs:14-22",
+        "result": "复制四类种子条目和观察器条目；必需项缺失或重复会拒绝。未复制整个 Profile 目录、历史数据库或其他任务条目。只读核对当前批准来源，除会被重写的 observer.name 外，选定条目未含 Users/Volumes/checkout 路径。该结果只覆盖本次来源，不能推广到未来任意同 ID 条目内容。"
+      },
+      {
+        "subject": "观察器依赖",
+        "source": ".local/skills-mcp-migration-live/llm-observer.mjs:1-7；read-boundary/prepare-layout.mjs:20-21",
+        "result": "观察器唯一的本地模块依赖为 redact-evidence.mjs，两文件均复制；observer.name 指向 R 内副本，llm-calls 解析到该副本旁的本轮目录。观察器名称与诊断仍会显示验收用途，但没有引入其他场景答案或控制路径。"
+      },
+      {
+        "subject": "Workspace 与副本",
+        "source": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs:17-23；prepare-layout.test.mjs:19-30",
+        "result": "每轮新建空 Workspace/user-data/llm-calls；候选和观察器使用 copyFile 后字节核对；测试证明历史 hook 与 runs.sqlite 未被复制。候选 tarball 后续安装内容及解包符号链接不属于此准备器的已验证范围。"
+      },
+      {
+        "subject": "原型报告的证据分层",
+        "source": "docs/verification/skills-mcp-migration/read-boundary-probe.json:runtimeLayout,desktopLifecycle,uncoveredGates,cleanup",
+        "result": "报告明确旧原型路径保留、更新中性布局只通过结构测试且尚未启动 Desktop；OS/独立 Electron-Node 成功未写成真实 Host 通过；Desktop 失败、未覆盖读取代理及清理记录均有显式边界。"
+      },
+      {
+        "subject": "原型失败与清理",
+        "source": ".local/skills-mcp-migration-live/read-boundary/desktop-allow-default-control.json；desktop-launch-failure.json；cleanup-verification.json",
+        "result": "已核对两轮失败记录与保存的进程/端口清理证据；allow-default 原始 stderr 的 sandbox 初始化失败已在 followupAssessment 独立核实。本次没有重启原型或重新探测进程。"
+      },
+      {
+        "subject": "官方源码来源",
+        "source": ".local/skills-mcp-migration-live/read-boundary/official-source-comparison.json",
+        "result": "记录逐一列出八份快照对应的 app.asar 路径、字节数及 Buffer.equals=true；此处核对记录结构和对应关系，未再次执行归档内容比较。"
+      }
+    ],
+    "tests": {
+      "command": "node --test .local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs",
+      "exitCode": 0,
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "scope": "只执行现有确定性准备测试；测试临时目录由其 finally 清理。"
+    },
+    "remainingGates": [
+      "neutral-runtime 驱动尚未纳入本轮审查；实际应用启动环境、cwd、诊断路径、active-probe、安装记录、renderer 与主子会话请求仍须核对。",
+      "准备器按条目 ID 复制全部配置，未验证未来批准来源中的嵌套路径或额外元数据；执行前必须按实际源和产出做语义审查。",
+      "本次准备单测使用假的 observer 文本和候选字节，只验证复制及布局；真实 observer 依赖通过源码只读核对，正式插件安装与业务校验需由后续官方流程验证。",
+      "本轮日志可被同一 Agent 读取，全机读取能力继续存在；每个真实执行仍按 followupAssessment 的完整轨迹与污染判定门槛验收。"
+    ],
+    "changes": "仅追加本报告 implementationReview；未改程序、配置或原型证据，未调用模型。"
+  },
+  "implementationReReview": {
+    "verdict": "PASS：上次 P2 自定义目录关系缺口已修复；本轮范围内未发现新增实质问题。",
+    "scope": [
+      ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+      ".local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs",
+      "docs/verification/skills-mcp-migration/read-boundary-probe.json#layoutPlacementValidation"
+    ],
+    "previousFindingStatus": {
+      "title": "自定义目录参数允许控制资料重新出现在运行根的上层或相邻目录",
+      "severity": "P2",
+      "status": "resolved",
+      "evidence": [
+        {
+          "path": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+          "lines": [
+            9,
+            20
+          ],
+          "fact": "包含关系采用 path.relative；控制目录解析现有祖先 realpath 后拼接未创建部分，覆盖给定路径中的符号链接别名。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+          "lines": [
+            28,
+            38
+          ],
+          "fact": "运行 base 规范化并保持 checkout 外；控制目录与自定义 base 双向包含或相同时拒绝，实际 R 创建后再次拒绝控制目录与 R 双向包含。失败早于运行材料复制。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+          "lines": [
+            31,
+            32
+          ],
+          "fact": "公共 tmpdir 与 /tmp 规范化后作为分配父目录；允许其中独立 C，但拒绝 C 等于或覆盖整个公共父目录。实际 R 的包含检查仍执行。"
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs",
+          "lines": [
+            10,
+            80
+          ],
+          "fact": "正常用例改为仓库控制目录与外部 R；五类拒绝用例包含 C=base、共同自定义父目录、C包含base、符号链接别名和公共base自身，另验证公共tmp下独立C可用。"
+        }
+      ]
+    },
+    "minimumLayoutConsistency": "自定义场景父目录中控制材料与运行根混置的入口已关闭。公共临时目录作为操作系统分配父目录的例外与 followupAssessment 中公共目录仍可枚举的边界一致；实际 C/R 相互分离。该例外不表示公共父目录内容不可发现或不可读取。",
+    "independentTests": {
+      "command": "node --test .local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs",
+      "exitCode": 0,
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "prototypeReportReview": "layoutPlacementValidation 的路径规则与当前代码一致；独立复跑确认所列 8 项布局测试通过。12 项 focused 结果作为执行者提供的记录保留，本轮未重复运行不受本次修改影响的 policy/spawn 测试。",
+    "unchangedLimits": [
+      "此结论覆盖准备器的路径布局校验与既有复制行为；尚未审查 neutral-runtime 驱动。",
+      "运行权限仍允许读取全机可访问文件，后续真实验收仍需要完整独立轨迹审查。",
+      "本次未启动 Desktop、Seatbelt 或模型；未修改程序、测试或原型报告。"
+    ]
+  }
+}

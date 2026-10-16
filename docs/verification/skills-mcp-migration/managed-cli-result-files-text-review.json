@@ -1,0 +1,332 @@
+{
+  "status": "needs_changes",
+  "scope": "指定 19 个文件的文字语义审计；未评审程序行为。",
+  "reviewed_files": [
+    "config/managed-cli-help.json",
+    "scripts/cli/harness-comfyui.mjs",
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    ".agents/skills/comfyui-image-review/SKILL.md",
+    ".agents/skills/comfyui-image-review/references/cli.md",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    ".agents/skills/local-image-reader/SKILL.md",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+    "docs/system/architecture.md",
+    "docs/system/configuration.md",
+    "docs/system/directory-structure.md",
+    "docs/system/testing.md"
+  ],
+  "findings": [
+    {
+      "id": "T01",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          "line": 107,
+          "original": "1. 公共文件错误按“命令帮助”处理。其他命令返回非零退出码时，Skill 执行者检查 stderr 是否为一行 `错误码: 错误消息`。格式不符时，报告实际 stderr 并停止查询；格式符合时，按照以下规则处理："
+        },
+        {
+          "file": ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+          "line": 107,
+          "original": "1. 公共文件错误按“命令帮助”处理。其他命令返回非零退出码时，Skill 执行者检查 stderr 是否为一行 `错误码: 错误消息`。格式不符时，报告实际 stderr 并停止查询；格式符合时，按照以下规则处理："
+        },
+        {
+          "file": ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+          "line": 107,
+          "original": "1. 公共文件错误按“命令帮助”处理。其他命令返回非零退出码时，Skill 执行者检查 stderr 是否为一行 `错误码: 错误消息`。格式不符时，报告实际 stderr 并停止查询；格式符合时，按照以下规则处理："
+        },
+        {
+          "file": ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+          "line": 78,
+          "original": "1. 公共文件错误按“命令帮助”处理。其他命令返回非零退出码时，标准错误包含 `错误码: 错误消息`。命令级错误表示标准输入、受管 CLI 环境、当前 Workspace 身份或服务请求存在问题。Skill 执行者必须报告标准错误，并按错误类型处理：输入错误由 Skill 执行者修正后重试；环境或身份错误由用户修复受管会话环境后，Skill 执行者重新调用；服务请求错误由用户按照错误消息检查服务并决定是否重新查询。Skill 执行者必须依据单项查询结果判断对应 `run_id` 是否存在。"
+        }
+      ],
+      "issue": "“其他命令”把文件错误与命令种类相比较，读者无法判断当前命令发生普通错误时是否适用后续规则。",
+      "minimal_change": "将“其他命令返回非零退出码时”改为“发生其他命令级错误时”。"
+    },
+    {
+      "id": "T02",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          "line": 112,
+          "original": "4. 按命令帮助确认调用成功后，如果 结果文件内容不是 JSON 对象、该对象包含 `runs` 之外的属性、`runs` 不是数组、`runs` 的元素数量与输入 `run_ids` 的元素数量不同、`runs` 的元素不能按输入 `run_ids` 的顺序一一对应，或者任一结果项不符合“结果文件中的 JSON”一节定义的对应结构，Skill 执行者逐条报告 结果文件内容违反的返回协议条件，并停止本次历史查询。"
+        },
+        {
+          "file": ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+          "line": 112,
+          "original": "4. 按命令帮助确认调用成功后，如果 结果文件内容不是 JSON 对象、该对象包含 `runs` 之外的属性、`runs` 不是数组、`runs` 的元素数量与输入 `run_ids` 的元素数量不同、`runs` 的元素不能按输入 `run_ids` 的顺序一一对应，或者任一结果项不符合“结果文件中的 JSON”一节定义的对应结构，Skill 执行者逐条报告 结果文件内容违反的返回协议条件，并停止本次历史查询。"
+        }
+      ],
+      "issue": "该句重新枚举“结果文件中的 JSON”章节已定义的结构条件，形成两份需同步维护的协议定义；“如果 结果”“报告 结果”还有多余空格。",
+      "minimal_change": "替换为：4. 命令返回退出码 `0` 时，Skill 执行者按命令帮助验证输出通道，再按“结果文件中的 JSON”一节验证文件内容和结果项结构。任一条件不满足时，Skill 执行者报告实际返回内容及其违反的协议条件，并停止本次历史查询。"
+    },
+    {
+      "id": "T03",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+          "line": 65,
+          "original": "2. 调用取消时，生成 Agent 结束本次查询并保留已取得的结果。需要交付完整查询结果时，生成 Agent 复制 CLI 已保存的文件，并在生成结果文件中记录副本路径。查询错误保留真实退出码和 stderr。"
+        },
+        {
+          "file": ".agents/skills/comfyui-iterate-generation/references/records.md",
+          "line": 22,
+          "original": "3. 生成 Agent 需要交付完整查询结果时，将 CLI 已保存的文件复制到本轮目录，并在 generation.md 中记录副本路径。后续保存和交接复用该副本。"
+        }
+      ],
+      "issue": "复制查询结果并记录副本路径的交接规则在关联文档重复定义；run-query-cli.md 将保存交付规则放在错误章节，且第 16 行将结果保存要求指向错误章节。",
+      "minimal_change": "在 records.md“确定任务目录和文件写入者”第 3 项保留定义；run-query-cli.md 第 65 行保留取消和错误处理句，保存交付句改为引用 records.md 对应节第 3 项；第 16 行同步指向该引用。"
+    },
+    {
+      "id": "T04",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": "docs/system/testing.md",
+          "line": 48,
+          "original": "## 历史验证记录"
+        },
+        {
+          "file": "docs/system/testing.md",
+          "line": 50,
+          "original": "以下数据描述插件化迁移前的 v0.44.3 候选，不构成本版的应用基线或测试步骤。该候选的 `pnpm quality` 有 1207 项 unit/integration/Skills、58 项 contract/security、346 项 production、32 项 prototype 和 4 项真实 Desktop 测试通过；覆盖率为 statements 94.07%、branches 87.52%、functions 100%、lines 96.5%，完整依赖与生产依赖审计均报告 critical、high、moderate、low 为 0。相关旧 Desktop 实例验收、开发运行目录和第三方基线属于历史记录。"
+        }
+      ],
+      "issue": "本节保存插件化迁移前的测试数量与覆盖率，且明确不用于当前基线或步骤。删除后不妨碍读者选择当前测试或判断验收，与本文件的当前用途无关。",
+      "minimal_change": "删除“历史验证记录”整节且不替换。"
+    },
+    {
+      "id": "T05",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": "docs/system/architecture.md",
+          "line": 51,
+          "original": "5. [受管 CLI 入口](../../scripts/cli/harness-comfyui.mjs) 在展示层保存业务响应。[result-file.mjs](../../scripts/cli/result-file.mjs) 管理单次调用的结果文件创建、写入、关闭与未完成文件清理。文件完成后，入口发布文件路径；Run 和业务持久化仍归 Runtime。公共输出与文件错误由 [CLI 帮助配置](../../config/managed-cli-help.json) 定义，Host envelope、原生 Tool 和 Builder 的数据合同保持不变。"
+        },
+        {
+          "file": "docs/system/configuration.md",
+          "line": 170,
+          "original": "3. 受管 CLI 的结果文件使用 `os.tmpdir()` 选择的系统临时目录。该目录由 [result-file.mjs](../../scripts/cli/result-file.mjs) 读取，不增加插件配置字段。公共输出与文件错误见 [CLI 帮助配置](../../config/managed-cli-help.json)。"
+        }
+      ],
+      "issue": "“仍归”“保持不变”“不增加插件配置字段”使用变更对照或开发过程措辞，未提供当前职责与配置之外的必要信息。",
+      "minimal_change": "architecture.md 将“Run 和业务持久化仍归 Runtime”改为“Run 和业务持久化由 Runtime 管理”，删除末句的“Host envelope、原生 Tool 和 Builder 的数据合同保持不变”；configuration.md 删除“不增加插件配置字段”。"
+    },
+    {
+      "id": "T06",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": "docs/system/directory-structure.md",
+          "line": 85,
+          "original": "   | `scripts/cli/` | 受管 CLI 入口、帮助、参数解析与单次调用的结果文件。 |"
+        }
+      ],
+      "issue": "“scripts/cli/”的目录内容写为“单次调用的结果文件”，会使读者把该目录当作运行结果的存储位置；configuration.md 第 170 行将结果文件定位到系统临时目录。",
+      "minimal_change": "将该表格行改为：| `scripts/cli/` | 受管 CLI 入口、帮助、参数解析与结果文件管理模块。 |"
+    },
+    {
+      "id": "T07",
+      "priority": "low",
+      "locations": [
+        {
+          "file": ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          "line": 60,
+          "original": "1. 当 `lookup_status` 和 `workflow_status` 均为 `\"available\"` 时，Skill 执行者按照以下属性定义读取结果项："
+        },
+        {
+          "file": ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+          "line": 60,
+          "original": "1. 当 `lookup_status` 和 `workflow_status` 均为 `\"available\"` 时，Skill 执行者按照以下属性定义读取结果项："
+        },
+        {
+          "file": ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+          "line": 60,
+          "original": "1. 当 `lookup_status` 和 `workflow_status` 均为 `\"available\"` 时，Skill 执行者按照以下属性定义读取结果项："
+        },
+        {
+          "file": ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          "line": 75,
+          "original": "1. 当 `lookup_status` 为 `\"available\"` 且 Actual Workflow 无法返回时，结果项保留 `run_id`、`lookup_status` 和 `arguments`，并使用以下两个属性说明 Actual Workflow 查询结果："
+        },
+        {
+          "file": ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+          "line": 75,
+          "original": "1. 当 `lookup_status` 为 `\"available\"` 且 Actual Workflow 无法返回时，结果项保留 `run_id`、`lookup_status` 和 `arguments`，并使用以下两个属性说明 Actual Workflow 查询结果："
+        },
+        {
+          "file": ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+          "line": 75,
+          "original": "1. 当 `lookup_status` 为 `\"available\"` 且 Actual Workflow 无法返回时，结果项保留 `run_id`、`lookup_status` 和 `arguments`，并使用以下两个属性说明 Actual Workflow 查询结果："
+        }
+      ],
+      "issue": "引导句与其“以下属性”使用同一层级编号，属性被排成与说明步骤并列的动作，破坏说明与字段之间的层次。",
+      "minimal_change": "保留引导项；将第 62—71 行字段改为该项下的有序子列表，将第 77—78 行字段改为第 75 行下的有序子列表。"
+    },
+    {
+      "id": "T08",
+      "priority": "low",
+      "locations": [
+        {
+          "file": ".agents/skills/comfyui-image-review/SKILL.md",
+          "line": 14,
+          "original": "当前 Agent 必须优先从用户消息中按出现顺序收集一个或多个明确的 `run_id`。用户指代当前会话此前的 Generation 提交结果时，当前 Agent 必须从该提交结果中按返回顺序取得对应 `run_id`。当前用户消息和被指代的此前 Generation 提交结果都没有可用 `run_id` 时，当前 Agent 必须请用户提供至少一个 `run_id`，并结束本次 Skill 执行。"
+        },
+        {
+          "file": ".agents/skills/comfyui-image-review/SKILL.md",
+          "line": 38,
+          "original": "- 已实现：图片观察明确支持的生成意图；"
+        },
+        {
+          "file": ".agents/skills/local-image-reader/SKILL.md",
+          "line": 14,
+          "original": "当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。"
+        },
+        {
+          "file": ".agents/skills/comfyui-generate/references/generation-cli.md",
+          "line": 27,
+          "original": "`generation run-inputs --stdin` 的标准输入是只包含 `run_ids` 的 JSON 对象。`run_ids` 是包含 1 至 20 个字符串的数组。每个字符串可以是完整 Run ID，也可以是 `run_` 加 canonical UUID 起始片段的短 Run ID；UUID 起始片段至少包含八个字符。命令按照数组顺序查询每一项，并保留重复项。"
+        },
+        {
+          "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+          "line": 24,
+          "original": "- `preset.id` 为 `harness-comfyui-cli-candidate`，`preset.additionalManagedPresetIds` 包含 `harness-comfyui-iteration`；"
+        },
+        {
+          "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+          "line": 116,
+          "original": "- 句子使用通顺、可朗读的表达，并写明执行主体、动作、对象和结果；常用词与专业术语采用现有名称，任务专用名称先定义再使用；"
+        },
+        {
+          "file": "docs/system/testing.md",
+          "line": 29,
+          "original": "- 当前官方应用版本和 bundle identity 与配置一致；"
+        }
+      ],
+      "issue": "这些文件在标题下以多个无编号段落或无序列表组织同层级规则，不符合用户要求的有序列表结构。",
+      "minimal_change": "按每节的同层级动作或条件组织为有序列表；字段与分类采用有序子列表。保留现有标题与业务内容。适用文件为本条列出的六份 Markdown，逐节处理同类结构。"
+    },
+    {
+      "id": "T09",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": "scripts/cli/harness-comfyui.mjs",
+          "line": 60,
+          "original": "      throw Object.assign(new TypeError('stdin exceeds the maximum request size'), { code: 'CLI_REQUEST_TOO_LARGE' })"
+        },
+        {
+          "file": "scripts/cli/harness-comfyui.mjs",
+          "line": 69,
+          "original": "  if (bytes.byteLength > MAX_RESPONSE_BYTES) throw new Error('CLI_RESPONSE_TOO_LARGE: Host response exceeds the maximum size')"
+        }
+      ],
+      "issue": "“maximum request size”和“maximum size”没有给出上限或可采取的动作；命令帮助也未给出这两个大小值，消费者无法据此修正。",
+      "minimal_change": "错误文本通过现有常量插入字节上限。请求超限说明缩短 stdin JSON 或减少同批 Run 数量；响应超限说明查询时减少同批 Run 数量，单项仍超限则报告并停止该项。不要在文本另行硬编码数值。"
+    },
+    {
+      "id": "T10",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": "scripts/cli/harness-comfyui.mjs",
+          "line": 38,
+          "original": "    throw new TypeError(`${CLI_ENVIRONMENT_NAMES.api} is invalid`)"
+        },
+        {
+          "file": "scripts/cli/harness-comfyui.mjs",
+          "line": 47,
+          "original": "    throw new TypeError(`${CLI_ENVIRONMENT_NAMES.api} is not the managed loopback endpoint`)"
+        }
+      ],
+      "issue": "环境错误只给出 invalid 或不是受管回环入口，缺少恢复路径；通用帮助只说明通过受管 shell 调用，未明确如何处理当前无效环境。",
+      "minimal_change": "在两条错误后增加同一行动指引：请确认 Harness Host 正在运行，并从当前会话重新发起受管前台 shell 调用。保留环境变量名和具体失败原因。"
+    },
+    {
+      "id": "T11",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": ".agents/skills/comfyui-generate/references/generation-cli.md",
+          "line": 44,
+          "original": "`parameters` 使用 Workflow 参数检查结果中 `kind` 分别为 `positive_prompt`、`seed` 和 `batch_size` 的唯一项目的 `parameter_id` 作为属性名。结果 JSON 的 `negative_mode` 为 `native_negative` 时，负向 Prompt 写入 `kind` 为 `negative_prompt` 的唯一项目的 `parameter_id` 对应属性；`negative_mode` 为 `positive_rewrite` 时，`parameters` 中省略负向 Prompt 属性。`batch_size` 对应属性的值是整数 `1`。图片尺寸使用 Workflow 参数检查后选定的一种尺寸参数组合。"
+        },
+        {
+          "file": ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+          "line": 68,
+          "original": "1. `parameters` 中 `kind` 分别为 `positive_prompt`、`seed` 和 `batch_size` 的元素必须各有且只有一个。"
+        },
+        {
+          "file": ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+          "line": 70,
+          "original": "3. `batch_size` 项的 `value_type` 必须是 `integer`，并且该参数对象必须接受整数 `1`。Skill 执行者把该项的 `parameter_id` 写入 Generation Request 的 `parameters` 对象，并将值设为 `1`。"
+        }
+      ],
+      "issue": "同一 Skill 的两份参考文档分别定义 positive_prompt、seed、batch_size 的唯一项要求和 batch_size=1，形成重复规范。",
+      "minimal_change": "保留 template-parameter-inspection-cli.md“Generation Request 参数检查”的定义；generation-cli.md 第 44 行引用该节，将本处限于请求字段映射和 negative_mode 对应的负向字段选择。"
+    },
+    {
+      "id": "T12",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+          "line": 33,
+          "original": "`config/product-agent.json.skills.sourceRootRelativePath` 定义 checkout 中项目 Skill 源码根目录；该字段当前为 `.agents/skills`。插件包内的 `agent-presets/project-installed-skills.mjs` 按自身安装模块位置解析包内 `.agents/skills/`，并以 `providerName: harness-comfyui`、`includeDefaultRoots: false`、`watch: false` 注册官方 filesystem Skill provider。两个项目 Preset 各自加载该组件，因此两个 Preset 都能读取插件包内的八个 Repository Skills，其他 Preset 不加载该项目 Skill provider。"
+        },
+        {
+          "file": "docs/system/architecture.md",
+          "line": 33,
+          "original": "2. [project-installed-skills.mjs](../../agent-presets/project-installed-skills.mjs) 为每个项目 Preset 注册八个项目 Skill provider。provider 使用官方 filesystem Skill provider，设置 `includeDefaultRoots: false`，并读取插件包内 `.agents/skills/`。Preset、Skill 与共享资源以各自模块 URL 定位；provider 的可见范围为所属项目 Preset。"
+        }
+      ],
+      "issue": "前者写每个 Preset 注册一个 filesystem Skill provider 并提供八个 Skills，后者写“为每个项目 Preset 注册八个项目 Skill provider”。两处对 provider 与 Skill 的数量关系表述冲突。",
+      "minimal_change": "architecture.md 第 33 行改为“为每个项目 Preset 注册项目 Skill provider，提供八个项目 Skill”。保持 provider 与 Skill 两个概念分开。"
+    },
+    {
+      "id": "T13",
+      "priority": "medium",
+      "locations": [
+        {
+          "file": ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+          "line": 52,
+          "original": "5. `prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。"
+        },
+        {
+          "file": ".agents/skills/local-image-reader/SKILL.md",
+          "line": 20,
+          "original": "用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。该 `prompt` 覆盖本次调用的默认读图提示词，不修改 Harness“图片读取”设置。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`，让 Host 使用当前命名配置保存的默认读图提示词。"
+        },
+        {
+          "file": ".agents/skills/comfyui-image-review/references/cli.md",
+          "line": 73,
+          "original": "6. `prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图 Prompt；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图 Prompt。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串，可以包含 JSON 转义后的换行符。"
+        },
+        {
+          "file": ".agents/skills/comfyui-image-review/SKILL.md",
+          "line": 24,
+          "original": "用户明确指定本次图片观察的关注点、返回格式或读图提示词时，当前 Agent 必须把该要求组织成脱离默认提示词也能独立理解的完整 `prompt`，并在每次相关的 `image inspect --stdin` 调用中与 `file_path` 一起传递。用户没有指定本次观察要求时，当前 Agent 必须省略 `prompt`，让 Host 使用“图片读取”设置中当前命名配置保存的默认读图提示词。本次 `prompt` 只覆盖对应视觉模型调用，不修改图片读取设置。"
+        }
+      ],
+      "issue": "每个 Skill 的入口与 CLI 参考重复解释省略 prompt 使用默认值、提供 prompt 覆盖本次调用，未满足关联文档只定义一次的要求。",
+      "minimal_change": "各 Skill 在 SKILL.md 保留如何根据用户要求选择或构造 prompt；CLI 参考保留字段类型、长度和缺省语义定义；SKILL.md 用对应参考章节引用替换默认值和覆盖行为的重复说明。"
+    }
+  ],
+  "retained_boundaries": [
+    "结果写入失败后的停止与重试限制用于防止重复创建 Run，保留。",
+    "异步接纳与图片生成完成的区别影响执行判断，保留。",
+    "单项失败、用户取消、配置凭据与输入来源限制属于必要业务边界，保留。"
+  ],
+  "frontmatter_result": "指定范围内所有非 SKILL.md 的 Markdown 均具有文档用途与读取时机 YAML 字段。"
+}

@@ -1,0 +1,175 @@
+{
+  "purpose": "记录项目预设 send_message 注册退役的独立诊断、实施合同与验收条件。",
+  "status": "诊断完成；建议方案待主线程补入主计划并完成独立审查后实施；本次未修改产品、执行测试或启动应用。",
+  "evidence": [
+    {
+      "source": ".local/skills-mcp-migration-live/persona-completion-desktop-pnpm-cache.log:17-54",
+      "fact": "Desktop Live 与 lifecycle 两项测试均在创建 harness-comfyui-cli-candidate Session 时因 unknown global tool send_message 失败，known global tools 仅 inspect_image。该日志直接证明工作台失败；迭代预设具有同一配置和注册顺序，其失败属于同机制源码推断，日志没有单独列出迭代预设失败。"
+    },
+    {
+      "source": "agent-presets/project-tool-visibility.mjs:11-39",
+      "fact": "组件先读配置 deny，再在 effect 的首次 sync 中把配置名称直接传给 tools.restrict；send_message 此时尚未成为可限制的继承工具。异常直接终止预设构建。"
+    },
+    {
+      "source": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:7-12,121-125; agent-presets/harness-comfyui-iteration/agent.cordis.yml:7-12,551-555",
+      "fact": "两个预设先加载配置 deny:send_message 的 visibility 组件，后加载官方根 control 组件及独立 list-agents 组件。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__index.js:16-94",
+      "fact": "官方 apply(ctx) 无配置参数且无条件注册 send_message 与 interrupt_agent；根入口只导出 apply、inject、name。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__package.json",
+      "fact": "已采集官方包版本为 0.2.0-rc.2，公开运行入口仅根入口和 list-agents；没有 interrupt-only 入口。src 通配导出不构成独立已发布中断适配器。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js:2884-2909,2940-2985",
+      "fact": "restrict 的旧注释称只处理 global；实际 view(scope) 将 global 和 ancestor 注册纳入 inherited/restrictableNames，exact own scope 注册直接合并且豁免限制。应以实现和真实组件验证为依据。预设本层的 send_message 即使调整注册顺序，也不能由本层 restrict 隐藏。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js:2831-2848,2995-3036",
+      "fact": "native wire schemas、get/resolveExecution 和 PTC sdkSchemas 都来自相同 scope 的 visible 集合；注册源消除能同时关闭声明与执行入口。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-subagent__lib__index.js:522,1738",
+      "fact": "子会话在继承预设后应用 toolFilter；父返回指引仅在子 scope 可解析到带官方标记的 send_message 定义时注入。移除注册预计同时消除该自动 send_message 指引。"
+    }
+  ],
+  "causalChain": [
+    "两个项目预设声明 deny:send_message。",
+    "visibility 组件初始化时对尚未存在于 inherited/restrictableNames 的名称调用 restrict。",
+    "官方 registry 抛异常，Preset 创建中断，业务 Agent 尚未运行。",
+    "现有根 control 组件还会在相同预设 scope 无条件注册 send_message；跳过未知名称或延后调用均未解决 exact-own 注册豁免。"
+  ],
+  "options": [
+    {
+      "choice": "官方配置或独立 interrupt 导出",
+      "assessment": "当前采集版本不提供；升级 SDK 或新增官方导出属于本轮授权范围外。"
+    },
+    {
+      "choice": "项目薄适配器仅注册 interrupt_agent",
+      "assessment": "推荐。一个共享模块及一份结构化工具配置，两个预设各加载一次；中断生命周期和权限判断继续由既有 subagents.interrupt 执行。无需依赖安装。"
+    },
+    {
+      "choice": "包装官方 apply 并代理 tools.register 筛出 interrupt_agent",
+      "assessment": "不推荐。依赖官方 apply 的注册序列和上下文代理语义，仍运行 send_message 构造路径，增加注册拦截职责与维护成本。"
+    },
+    {
+      "choice": "加载整包后使用 guard、pre-execute 或字符串拦截",
+      "assessment": "不满足声明及注册源退役目标；guard 只阻止调用，不消除模型/PTC schema。"
+    },
+    {
+      "choice": "把 control 移入其他 scope 再 restrict",
+      "assessment": "增加作用域结构和继承复杂度，仍保留 send_message 注册来源；全局注册还会改变其他预设。"
+    },
+    {
+      "choice": "删除整包且不保留中断适配器",
+      "assessment": "丢失父级 interrupt_agent，违反保留能力目标。"
+    },
+    {
+      "choice": "适配器直接调用 agent.cancel 或 Remote 用户中断接口",
+      "assessment": "前者绕过官方祖先身份授权和取消语义，后者使用不同的 user authority 合同；均不适合作为原工具替换。"
+    }
+  ],
+  "implementation": {
+    "flow": [
+      "两个项目 agent.cordis.yml → 项目 interrupt-only 组件 → ctx.tools.register(interrupt_agent)。",
+      "interrupt_agent.execute → ctx.subagents.interrupt(agent_id, {kind:ancestor, agent:exec.agent}) → 官方权限与 Activation 取消。",
+      "两个项目预设 → 官方 list-agents 子入口 → 官方 listChildren/listDescendants。",
+      "项目 visibility 组件仅限制 Host-global 注册；子 toolFilter 继续限制其继承的 interrupt_agent。"
+    ],
+    "files": [
+      {
+        "path": "agent-presets/project-subagent-interrupt.mjs",
+        "action": "新增共享薄适配器，inject tools/subagents，仅注册 interrupt_agent；使用 Cordis 注册生命周期，不引入监听、轮询、调度器或全局状态。"
+      },
+      {
+        "path": "agent-presets/project-subagent-interrupt.json",
+        "action": "集中保存唯一工具名称、参数与输出 schema、描述、渲染模板和缺少调用 Agent 的错误文案；模块读取本配置，测试以合同校验而非复制实现。工具说明指向项目派发工具续派，不推荐 send_message。"
+      },
+      {
+        "path": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml; agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+        "action": "删除 visibility.config.deny；将根 control 组件替换为共享 interrupt-only 组件；保留官方 list-agents 及五类子任务的现有 toolFilter。"
+      },
+      {
+        "path": "agent-presets/project-tool-visibility.mjs",
+        "action": "删除仅为退役 send_message 新增的 configuredDeny 读取、校验和合并路径，保留 local-only 的 Host 工具动态限制与清理合同。"
+      },
+      {
+        "path": "config/plugin-runtime-resources.json",
+        "action": "登记共享模块和结构化配置；核对现有插件打包路径实际包含文件及两个预设相对引用。"
+      },
+      {
+        "path": "tests/production/source-agent-preset.test.mjs; tests/production/official-agent-preset-resources.test.mjs; tests/production/plugin-build-presets.test.mjs",
+        "action": "删除假设本层工具可被 restrict 的测试；增加注册入口、父子过滤、打包资源与官方注册合同的回归。"
+      },
+      {
+        "path": "tests/production/native-subagent-interrupt.test.mjs",
+        "action": "增加中断适配器的参数传递、身份授权、返回值、错误传播及卸载注册清理测试。"
+      },
+      {
+        "path": "tests/desktop/official-desktop-live.test.mjs; tests/desktop/official-desktop-lifecycle.test.mjs",
+        "action": "复用官方应用夹具，补齐两个项目父 scope、五类子 scope、native/PTC 声明及执行断言，与 standard 对照。"
+      },
+      {
+        "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md; docs/plans/skills-mcp-migration-20261013.md",
+        "action": "将 send_message 的退役依据改为注册源组合，指向唯一实现；在主计划对应步骤补入已核实原因、完整文件范围和验收合同，再进行独立语义与实施方案审查。"
+      }
+    ],
+    "interruptContract": {
+      "input": "agent_id 为必填字符串；exec.agent 必须存在。",
+      "authority": "调用 ctx.subagents.interrupt(agent_id, {kind:ancestor, agent:exec.agent})，保留真实调用 Agent 对象身份。JS 适配器传字符串与官方 brandString 的运行时合同应由现有类型/实现及组件测试确认；不得新增依赖。",
+      "output": "沿用 {accepted:true}，表示已发出中断请求；工具不等待目标停止。",
+      "serviceOwnership": "官方服务检查 exact live ancestor、自中断与后代关系；不存在、非 continuable 或已关闭目标沿用官方 accepted no-op；异常原样交给工具执行框架。",
+      "lifecycle": "保留未认领 inbox、Activation 与已发布后代；具体取消和恢复全部由官方服务负责。",
+      "scope": "父级保留 interrupt_agent；工作台子任务及迭代四角色现有过滤继续隐藏 interrupt_agent。官方 standard/minimal/cordis 的配置与注册入口保持现状。"
+    }
+  },
+  "redGreen": [
+    {
+      "red": "官方 registry 中 global 仅有 inspect_image，按当前配置加载项目 visibility；必须复现 unknown global tool send_message。再验证 exact-own send_message 即使先注册也不能被本层 restrict。",
+      "green": "替换注册来源后两个预设均可创建，父 scope 只有 interrupt_agent/list_agents，没有 send_message 定义；检查真实 registry 而非仅观察 restrict 调用次数。"
+    },
+    {
+      "red": "补一条真实或忠实 registry 合同测试：未知/本层名称在 restrict 被拒绝，ancestor 名称可限制；当前接受任意字符串的 mock 应失败。",
+      "green": "source-agent-preset 测试只测试 Host-global visibility；本地退役由组合注册与官方实例测试独立验证。"
+    },
+    {
+      "red": "当前包根 control 入口必然同时产生两个工具；资源测试要求只注册 interrupt_agent 时失败。",
+      "green": "共享适配器注册恰好一个 interrupt_agent，官方 list-agents 独立保留；打包后相对引用可解析。"
+    },
+    {
+      "red": "工具调用身份缺失、调用非后代以及 SDK 抛错时，若适配器返回 accepted 或绕过服务则失败。",
+      "green": "精确对象传给官方服务一次，合法父级调用返回 accepted:true；错误保持官方语义；卸载取消仅本组件注册。"
+    },
+    {
+      "red": "当前官方 Desktop Session 创建失败；任何 native/PTC 视图或子返回指引仍提供可调用 send_message 时失败。",
+      "green": "native schemas、PTC sdkSchemas/声明及运行时解析均无 send_message；直接调用/嵌套调用得到 UNKNOWN_TOOL；standard 对照维持基线能力。"
+    }
+  ],
+  "officialAcceptance": [
+    "实施者先读取 startup/configuration/testing/worktree-development 文档，再按 pnpm test:desktop 构建并安装本候选包。记录应用身份、插件包、两个 Preset ID、Workspace 和 Session。",
+    "官方真实 registry 验证两个父 scope 及工作台子任务、迭代四角色；分别采集 native 和 PTC 声明、工具解析与执行结果。未调用 send_message 仅是行为观察，不能代替声明缺席及不可执行证据。",
+    "官方 standard 同一实例作为对照；比较替换前后其工具定义与可执行性，验证项目卸载和重载不影响其注册。",
+    "父级对真实 continuable 子会话执行 interrupt_agent，记录 accepted、子取消事件、原 childId 和 list_agents 状态；通过原项目派发工具续派同 childId，验证既有完成等待和恢复合同。",
+    "读取真实子请求，确认自动父返回指引不再要求 send_message；验证官方原生完成通知仍送达父级。",
+    "官方 list_agents 当前描述仍提到 send_message；保留该官方入口意味着可能有文字提及，但没有对应能力。若目标扩大为任何文字均不得出现该名称，须另立明确合同，不能宣称现方案已经满足。",
+    "完成主计划既定真实模型验收；本报告不新增模型调用。本轮进程与端口释放后保存证据，最终候选按既定门禁完成质量检查。"
+  ],
+  "missedDetection": {
+    "unit": "visibilityContext 的 restrict mock 无 knownNames、scope 或注册层校验；测试 denies configured local tools before and after their registration 只验证 Set 包含 send_message，没有创建本地工具或检查实际可见性。测试因此固化了错误 API 假设。",
+    "review": "handoff-completion-implementation-review.json 已明确记录 mock 无法证明 native/PTC 退役并要求官方组件补证，随后仅允许进入受控官方验证；它没有宣告作用域验收通过。但审查未读取 restrict/view 的实现，也未把当前代码无法初始化列为确定缺陷。其 verified 工具配置一项只核对配置存在，未证明配置可执行。",
+    "gate": "本次 pnpm test:desktop 正是在此前标记的真实组件证据缺口处捕获故障。应把 API 合同复现作为修改前红测，避免继续使用假设相同的 mock 充当独立证据。"
+  },
+  "authorization": {
+    "basis": "迁移主计划第 5.14 节第 1-4 项覆盖两个预设工具作用域、配置、相关测试、打包和记录；第 5.11 节要求先补证并审查方案。",
+    "allowedNext": "主线程补计划并完成独立审查后，可在既有范围实施共享中断适配器与注册来源替换、测试和官方隔离验收。",
+    "excluded": "宿主 SDK 修改或升级、依赖安装、外部服务修改、生产部署、推送和发布；本独立任务仅获准写入本 JSON。"
+  },
+  "uncertainty": [
+    "未启动本轮官方应用，尚未实测推荐方案。",
+    "官方快照 restrict 注释与 view 实现存在差异；验收须核对候选官方应用实际包来源与行为。",
+    "原始失败日志只直接记录工作台 Preset 的失败，迭代 Preset 仍需真实创建证据。"
+  ],
+  "memoryBasis": "调查顺序参考本机 MEMORY.md:47-52；所有具体 API 与故障判断均以本轮读取源码和日志为依据。"
+}

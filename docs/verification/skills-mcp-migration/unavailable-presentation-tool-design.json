@@ -1,0 +1,239 @@
+{
+  "purpose": "提出两个ComfyUI预设提示词与工具声明一致性的最小修复方案。",
+  "reviewedAt": "2026-10-14T06:00:30.267952+00:00",
+  "status": "design_only_product_unchanged",
+  "scope": "现有项目预设配置与官方systemPrompt assembly能力；未修改SDK、添加依赖或调用模型。",
+  "conclusion": {
+    "confirmedDefect": "两个实际预设工具集合均没有present，仍向模型注入调用present的官方交付说明；工作台已发生UNKNOWN_TOOL。",
+    "recommendedChange": "在两个预设现有project-system-prompt-visibility.config.hiddenSectionNames中加入ui:deliverable-file-references。",
+    "animaPureJsonSolved": false,
+    "causeBoundary": "已定位不可调用工具指令的注入来源与作用域不一致。关于模型为何选择调用、以及ANIMA额外说明的全部因果机制，证据只支持相应观察，不支持共同根因结论。"
+  },
+  "evidence": {
+    "officialSource": {
+      "path": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-client-ui-deliverables/lib/index.js",
+      "inspection": "本轮使用本机官方Electron的只读fs读取原文，核对FILE_REFERENCE_PROMPT及apply/registerPresentOpen。未启动Desktop或模型。",
+      "section": "ui:deliverable-file-references",
+      "instruction": "Use present when a separate file card helps the user open the complete deliverable, including images, Office documents, spreadsheets, and slide decks.",
+      "registration": "apply分别调用registerPresentOpen(ctx)和ctx.systemPrompt.section；registerPresentOpen注册connection.fetch文件/变更打开路由，不提供本预设present工具声明。",
+      "navigation": "docs/verification/skills-mcp-migration/host-deliverable-section-source.json"
+    },
+    "actualDeclarations": [
+      {
+        "preset": "harness-comfyui-cli-candidate",
+        "request": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/9d28f1e7-4876-4a04-9b8b-d1200f667868.jsonl",
+        "sessionId": "session-ea9d677d-2fdc-4a9d-bd63-d83b63ccbbdf",
+        "at": "2026-10-14T05:41:27.755Z",
+        "toolNames": [
+          "bash",
+          "interrupt_agent",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill",
+          "subagent_task"
+        ],
+        "presentDeclared": false,
+        "systemContainsUsePresent": true
+      },
+      {
+        "preset": "harness-comfyui-iteration",
+        "request": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/eb5a9026-1502-44b0-9c34-723906f93191.jsonl",
+        "sessionId": "session-3f1a4967-cbe6-4f44-8047-f7b656345914",
+        "at": "2026-10-13T11:18:31.685Z",
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "presentDeclared": false,
+        "systemContainsUsePresent": true
+      }
+    ],
+    "realFailure": {
+      "report": "docs/verification/skills-mcp-migration/generation-template-choice-first-review.json",
+      "finding": "GTC2",
+      "seqs": [
+        94,
+        95,
+        96,
+        99
+      ],
+      "observation": "seq95调用present(file=5.6-7/run_ef27e825.png)，seq96返回UNKNOWN_TOOL；最终采用Markdown链接。"
+    },
+    "presetSource": {
+      "paths": [
+        "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+      ],
+      "toolVisibility": "均使用project-tool-visibility local-only，仅提供局部加载工具；组件按root工具名施加scope deny并跟踪后续注册。",
+      "systemVisibility": "目前隐藏harness:identity、harness:source、app:web-surface；未隐藏官方交付段。",
+      "presentationRow": "两者的@deepseek-ai/dsh-agent-tool-presentation mode=native只选择工具schema呈现方式，不注册名为present的工具。该事实已读取本机官方该模块lib/index.js确认。"
+    }
+  },
+  "responsibility": {
+    "host": "提供UI打开路由、文件呈现能力和默认交付说明。",
+    "preset": "决定本预设可调用工具及system段可见性，须让二者一致。",
+    "skill": "定义当前任务的产物与最终回复合同。",
+    "defectLevel": "项目预设组合配置层；无需改动模型、Skill内容或官方SDK。"
+  },
+  "minimalImplementation": {
+    "files": [
+      {
+        "path": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "change": "给既有hiddenSectionNames追加ui:deliverable-file-references。"
+      },
+      {
+        "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+        "change": "给既有hiddenSectionNames追加同一段名。"
+      }
+    ],
+    "supportingUpdates": [
+      {
+        "path": "tests/production/source-agent-preset.test.mjs",
+        "change": "在现有按段过滤测试中覆盖两个产品预设及交付段，并保留上下文/工具/变量不变断言。"
+      },
+      {
+        "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+        "change": "将系统提示词作用域规范中的三段清单同步为四段，继续引用现有组件职责。"
+      }
+    ],
+    "noNewMechanism": "复用project-system-prompt-visibility.mjs原有精确section.name过滤；组件实现和project-tool-visibility.mjs均无须变化。",
+    "noReplacementPromptNeededInitially": "本范围先消除不可用工具指令。Skill和迭代persona已经定义产物交付职责，先通过真实文件/图片交付复验评估缺少通用Markdown提示的影响；本方案不额外创建重复交付规则。",
+    "rejectedAlternatives": [
+      {
+        "option": "移除或修改tool-presentation native行",
+        "reason": "该行与present工具不同，修改会改变全部工具呈现方式，不能修复这项不一致。"
+      },
+      {
+        "option": "继承全部Host全局工具或放宽local-only",
+        "reason": "扩大调用面且破坏预设既有作用域，远超消除无效指令所需。"
+      },
+      {
+        "option": "为present增加新的SDK注册或依赖",
+        "reason": "超出本任务边界，亦没有已验证的当前预设本地工具注册方案。"
+      },
+      {
+        "option": "在system文本中字符串替换present句子",
+        "reason": "现有能力按段过滤足以处理；字符串补丁会耦合官方英文内容，增加维护分叉。"
+      }
+    ]
+  },
+  "deliveryImpact": {
+    "preservedMechanically": [
+      "过滤只改变PromptAssembly.sections，contexts、tools、variables保留。",
+      "官方UI插件和connection.fetch文件打开路由保持加载。",
+      "实际文件写入、生成Run、媒体保存及Markdown渲染实现均未变更。",
+      "两个产品预设之外的官方standard/minimal/cordis和其他预设保持原作用域。"
+    ],
+    "lostGuidance": "整段隐藏同时移除简短解释、图片Markdown、文件链接、尖括号路径与文件卡片的通用写法提示。现有精确段过滤不能只删除其中present句子。",
+    "practicalLimit": "UI能力保留不代表模型一定继续生成可点击链接/图片嵌入；需要真实交付复验。纯JSON成功分支按Skill返回对象，其保存路径是否展示应由任务合同另行裁定。"
+  },
+  "deterministicValidation": {
+    "performedNow": {
+      "method": "只读导入既有visibility组件，内存传入四段隐藏配置及模拟assembly。",
+      "result": {
+        "remainingSections": [
+          "deployment:persona",
+          "tool:bash"
+        ],
+        "contextsSameReference": true,
+        "toolsSameReference": true,
+        "variablesSameReference": true,
+        "inputAssemblyUnmodified": true
+      },
+      "limit": "验证原组件具备所需能力；当前产品YAML尚未修改。"
+    },
+    "implementationChecks": [
+      "解析两个实际产品预设的composition，hiddenSectionNames仅新增目标段，其他注册与模型/权限配置保持。",
+      "给assembly同时放入目标段、既有三段和普通persona/tool段，确认仅配置段被移除；保留异常透传及配置校验。",
+      "使用既有官方预设资源测试验证scope内过滤、主/子Agent适用关系及非产品预设不受影响。",
+      "最终候选官方请求中，确认present仍不在工具声明中，目标段全文已消失，其他工具和persona与基线一致。",
+      "构建包资源验证及改动文件独立审查通过后，按仓库门禁执行最终检查。"
+    ],
+    "testEntryPoints": [
+      "tests/production/source-agent-preset.test.mjs",
+      "tests/production/official-agent-preset-resources.test.mjs",
+      "tests/production/official-preset-overrides.test.mjs",
+      "tests/production/plugin-build-presets.test.mjs"
+    ]
+  },
+  "realRevalidation": {
+    "required": [
+      {
+        "scope": "工作台",
+        "case": "使用已存在合法图片或文件完成交付，检查最终链接/图片可访问，工具调用和实际结果无present错误。避免为此额外提交无关生成。"
+      },
+      {
+        "scope": "迭代主Agent",
+        "case": "有合法完成依据时交付已有图片及比较结果，检查完整媒体路径、结果引用和UI打开；读取主Agent实际请求验证段过滤。"
+      },
+      {
+        "scope": "子Agent",
+        "case": "核对至少一条真实子Agent请求继承同一过滤作用域且persona/工具拒绝列表保持；按原角色合同返回文件路径。"
+      }
+    ],
+    "modelOutcomeBoundary": "单次无present调用只证明本次行为；确定性通过项是输入提示词与声明一致，模型还可能独立产生不存在工具调用。",
+    "isolation": "复验避免向执行者暴露历史测试产物、评估报告及本方案；仅提供当前任务必要材料。"
+  },
+  "animaCounterevidence": {
+    "navigation": [
+      "docs/verification/skills-mcp-migration/anima-display-control-execution.json",
+      "docs/verification/skills-mcp-migration/anima-display-control-review.json"
+    ],
+    "independentlyReadFinalRequests": {
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/93738886-f9ab-4edb-a9f6-6e47f562c3f8.jsonl",
+      "experimental": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/b46326ca-62d0-49be-aff6-f1532ad98f75.jsonl"
+    },
+    "independentlyObserved": "基线最终请求含Use present提示，实验组最终请求缺席；两组都无present工具声明；两组归档最终文本均有解释及Markdown，未满足纯JSON。",
+    "existingReviewBoundary": "全程42/23个业务请求的段开关与工具稳定性见原独立审查；每组一次，基线读取测试材料，不能把整轮行为差异全部归因于段开关。",
+    "separateAcceptance": "本方案不以ANIMA纯JSON成功为修复承诺，也不把隐藏后的同类偏离视为新回归；纯JSON职责与引用关系问题另行调查。"
+  },
+  "authorization": "本轮仅提交设计与证据。产品配置、测试和文档实施需要主线程在已有授权范围内安排；本审查未改动这些文件。"
+}

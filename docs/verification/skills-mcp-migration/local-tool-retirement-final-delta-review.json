@@ -1,0 +1,21 @@
+{
+  "scope": "missingAgentError 文案及对应消费者、测试断言",
+  "result": "pass",
+  "findings": [],
+  "evidence": [
+    {
+      "location": "agent-presets/project-subagent-control.json:20",
+      "observation": "missingAgentError 当前值与指定文案完全一致。"
+    },
+    {
+      "location": "agent-presets/project-subagent-control.mjs:20",
+      "observation": "执行函数在缺少 exec.agent 时直接用 missingAgentError 创建错误；文案内容不参与条件判断或中断服务调用。"
+    },
+    {
+      "location": "tests/production/native-subagent-control.test.mjs:54",
+      "observation": "测试断言与 missingAgentError 完全一致；下一行继续断言中断服务未被调用。"
+    }
+  ],
+  "validation": "已通过静态字符串一致性断言及消费者路径复核。指定字符串替换仅改变错误消息，不改变执行条件、服务参数或返回值。",
+  "limits": "相关文件当前未被 Git 跟踪，无法通过 Git 差异独立证明此前文件的全部内容。此次未运行测试或启动应用。"
+}

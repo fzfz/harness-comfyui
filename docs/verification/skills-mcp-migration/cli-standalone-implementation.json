@@ -1,0 +1,50 @@
+{
+  "diagnosis": "cli-standalone-packaging-diagnosis.json",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md#571-受管-cli-的独立运行依赖",
+  "files": [
+    "scripts/build/cli-module.mjs",
+    "tests/integration/cli-command.test.ts",
+    "tests/production/plugin-package.test.mjs"
+  ],
+  "red": [
+    {
+      "log": ".local/skills-mcp-migration-live/cli-standalone-red.log",
+      "failed": 6
+    },
+    {
+      "log": ".local/skills-mcp-migration-live/cli-package-red.log",
+      "failed": 1
+    }
+  ],
+  "green": {
+    "log": ".local/skills-mcp-migration-live/cli-standalone-green.log",
+    "files": 2,
+    "passed": 52
+  },
+  "typecheck": {
+    "log": ".local/skills-mcp-migration-live/cli-standalone-typecheck.log",
+    "exitCode": 0
+  },
+  "candidate": ".local/skills-mcp-migration-live/standalone-cli-candidate.tgz",
+  "comparison": {
+    "before": "presentation-visibility-candidate.tgz",
+    "after": "standalone-cli-candidate.tgz",
+    "beforeFiles": 198,
+    "afterFiles": 198,
+    "changes": [
+      {
+        "path": "package/.local/source-cli/harness-comfyui.mjs",
+        "beforeBytes": 92583,
+        "afterBytes": 126846
+      }
+    ]
+  },
+  "independentCodeReview": "cli-standalone-review.json",
+  "officialInstalledRetest": "cli-standalone-live-execution.json;业务独立审查待完成",
+  "packagingAttempt": {
+    "failedArchive": ".local/skills-mcp-migration-live/standalone-cli-unrebuilt-candidate.tgz",
+    "observed": "首次仅运行pack，字节比较发现CLI仍为原产物；未安装或调用模型。",
+    "correction": "先buildPlugin到standalone-cli-artifacts，再将该artifactRoot传入packPlugin。"
+  },
+  "semanticReview": "cli-plan-semantic-review.json"
+}

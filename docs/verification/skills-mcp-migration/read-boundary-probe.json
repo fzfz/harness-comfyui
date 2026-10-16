@@ -1,0 +1,384 @@
+{
+  "purpose": "记录本地验收读取边界原型的无模型可行性、独立消费者与官方Desktop生命周期门禁。",
+  "observedAt": "2026-10-14T06:30:36.375Z",
+  "status": "原型门禁未通过，已按停止条件归档并清理。",
+  "sourceReviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/acceptance-read-boundary-review.json",
+  "authorization": "主计划5.14的本地采集脚本、隔离Profile与测试授权；仅本地试验目录与指定报告。",
+  "scope": {
+    "productChanges": 0,
+    "officialSdkChanges": 0,
+    "existingProfileChanges": 0,
+    "dependencyInstalls": 0,
+    "systemAclChanges": 0,
+    "modelRequests": 0,
+    "desktopStartAttempts": 2,
+    "preparationAttemptsBeforeProcess": 1
+  },
+  "implementation": {
+    "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary",
+    "spawnWrapperPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/sandbox-spawn.mjs",
+    "policyCompilerPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/policy.mjs",
+    "policyConfigurationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/policy-config.json",
+    "layoutPreparationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+    "layoutConfigurationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/layout-config.json",
+    "focusedTestsPassed": 12,
+    "behavior": "spawnProcess包装器保留官方应用executable、argv与spawn选项，只在外层增加sandbox-exec -f policy；策略以规范化绝对路径生成。",
+    "layoutPreparationCommand": [
+      "node",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+      "--source-profile",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "--candidate",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+      "--observer-directory",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live",
+      "--control-directory",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/layouts"
+    ],
+    "layoutPreparationResult": "CLI返回控制侧layout.json绝对路径；probe配置、sourceProfilePath与sourceCandidatePath保留在控制侧。新root内仅保留runtime/，后续目录使用harness-run-中性前缀。",
+    "publicApis": {
+      "prepareNeutralLayout": {
+        "module": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+        "arguments": {
+          "baseDirectory": "可选，外部父目录；默认系统临时目录。",
+          "controlDirectory": "可选，控制资料目录；默认脚本旁layouts/。按realpath解析并校验与运行父目录和实际R的分离关系。",
+          "repositoryRoot": "可选，控制checkout，用于校验运行目录位于该checkout外。",
+          "sourceProfilePath": "批准的来源Profile patch文件。",
+          "sourceCandidatePath": "调用者选择的候选tgz文件。",
+          "sourceObserverDirectory": "批准观察器与本地依赖目录。",
+          "desktopConfiguration": "官方probe配置对象。"
+        },
+        "result": "返回状态对象，并将layout.json及desktop-e2e.json保存在controlRoot；root内仅创建runtime/运行材料。",
+        "nextStep": "调用者读取控制侧configPath，以probeRepositoryRoot和显式官方Profile adapter调用现有probe；生命周期与UI驱动适配由下一任务完成。"
+      },
+      "createSandboxSpawn": {
+        "module": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/sandbox-spawn.mjs",
+        "arguments": [
+          "policyPath",
+          "sandboxExecutable",
+          "可选spawnProcess"
+        ],
+        "result": "返回官方probe可接受的spawnProcess函数。",
+        "availability": "本轮OS进程读写探针通过；Desktop生命周期门禁失败。"
+      },
+      "compileReadBoundaryPolicy": {
+        "module": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/policy.mjs",
+        "arguments": [
+          "configuration",
+          "protectedReadRoots",
+          "allowedReadRoots",
+          "writeOnlyEvidenceRoots"
+        ],
+        "result": "返回规范化路径与Seatbelt profile文本；调用者保存文本后传给包装器。"
+      }
+    },
+    "layoutBoundaryTest": {
+      "neutralPrefixAsserted": true,
+      "rootContainsOnlyRuntimeDirectory": true,
+      "stateAndProbeConfigurationStoredControlSide": true,
+      "sourcePathsStoredControlSide": true,
+      "emptyWorkspaceAndNoHistoryCopyAsserted": true,
+      "controlRootAndCustomRuntimeBaseDisjoint": true,
+      "controlRootAndActualRuntimeRootDisjoint": true,
+      "symbolicLinkControlAliasChecked": true,
+      "publicTemporaryBaseHandledSeparately": true
+    },
+    "initialFocusedTestsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/focused-tests.json",
+    "initialFocusedTestsPassed": 5,
+    "focusedTestEvidence": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/read-boundary-probe.json",
+      "field": "layoutPlacementValidation.focusedTestResult"
+    }
+  },
+  "officialSourceVerification": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/official-source-comparison.json",
+    "comparison": "对本机app.asar内容与八份指定快照逐字节Buffer.equals。",
+    "verifiedFiles": 8,
+    "allIdentical": true
+  },
+  "runtimeLayout": {
+    "root": "/private/tmp/harness-read-boundary-JNMlQ4",
+    "profileDirectory": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/environment/dsh-home/profiles/desktop",
+    "profilePatchPath": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "candidateArchivePath": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/harness-comfyui-candidate.tgz",
+    "candidateArchiveSourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "candidateArchiveCopyBytesEqual": true,
+    "observerDirectory": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/observer",
+    "observerFilesCopyBytesEqual": true,
+    "observerEvidenceDirectory": "/private/tmp/harness-read-boundary-JNMlQ4/runtime/observer/llm-calls",
+    "historyCopied": false,
+    "profileSeedEntryIds": [
+      "agent-default-model",
+      "llm-pi-ai",
+      "webserver",
+      "ui-settings-account",
+      "skills-migration-live-observer"
+    ],
+    "runtimeCopySymlinks": [],
+    "candidateInstallation": "候选归档已复制并解包供独立validator使用；官方UI安装门禁未执行。",
+    "originalPrototypePreserved": "已运行的harness-read-boundary-JNMlQ4及其原始失败记录保留原路径；更新后的中性布局脚本已按结构红绿验证，尚未再次启动Desktop。"
+  },
+  "policy": {
+    "path": "/private/tmp/harness-read-boundary-JNMlQ4/policy.sb",
+    "structurePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/policy.json",
+    "protectedReadOperation": "file-read*",
+    "writeOnlyReadOperation": "file-read-data",
+    "protectedCheckoutRoots": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+      "/Volumes/4Tdisk/work/AI2/harness-comfyui",
+      "/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env"
+    ],
+    "protectedHistoricalWorkspaceCount": 31,
+    "protectedHistoricalWorkspaceRoots": [
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-730d9X",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-fttuz3",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-lO01rP",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-cdNks1",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-dGNB8l",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-xjRZfE",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-DkpM8Y",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-AgqW3u",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Wdwsj5",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-2L7uJG",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Ak2XYU",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Nk8s8g",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Pg12Pc",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-QRTssU",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Sy2NL9",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-aS6Xcn",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-ankUmH",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-dC1X9j",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-gb4jt6_u",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-sZWTvc",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-t3kFpH",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-u0vR5W",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-wHnR0O",
+      "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-y8ov5z_p"
+    ],
+    "allowedReadRoots": [
+      "/private/tmp/harness-read-boundary-JNMlQ4/protected/authorized-history"
+    ],
+    "allowedReadRootsMeaning": "本轮仅以专用authorized-history哨兵验证显式允许规则；真实历史Run的授权目录由后续任务明确传入。",
+    "writeOnlyEvidenceRoots": [
+      "/private/tmp/harness-read-boundary-JNMlQ4/observer",
+      "/private/tmp/harness-read-boundary-JNMlQ4/runtime/observer/llm-calls"
+    ],
+    "knownHardlinkAliasProtected": true,
+    "unidentifiedCopyBoundary": "保护清单按已确认路径生效；尚未枚举的历史副本与预先存在的外部硬链接仍需逐项识别。"
+  },
+  "osProbe": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/os-probe.json",
+    "controllerReadSucceeded": true,
+    "absoluteNodeReadDenied": true,
+    "relativeBashReadDenied": true,
+    "pythonReadDenied": true,
+    "symbolicLinkAliasReadDenied": true,
+    "tmpPrivateTmpAliasReadDenied": true,
+    "newHardlinkCreationDenied": true,
+    "authorizedHistoryReadSucceeded": true,
+    "observerMkdirAndAppendSucceeded": true,
+    "observerRestrictedReadDenied": true,
+    "observerControllerReadSucceeded": true,
+    "preexistingHardlinkObservation": {
+      "initialReadSucceeded": true,
+      "initialEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/os-probe.json",
+      "explicitAliasProtectionReadDenied": true,
+      "recheckEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/known-hardlink-alias-probe.json"
+    }
+  },
+  "independentConsumers": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/independent-consumer-probes.json",
+    "consumerBoundary": "外层Seatbelt下的独立进程消费者；官方Desktop Host尚未就绪。",
+    "realCheckoutPlanReadDenied": true,
+    "realCheckoutReportReadDenied": true,
+    "savedHistoricalWorkspaceBuilderReadDenied": true,
+    "runtimeProfileSkillObserverReadSucceeded": true,
+    "workspaceWriteReadSucceeded": true,
+    "candidateValidatorExitCode": 0,
+    "candidateValidatorOutputJsonParsed": true,
+    "electronNodeBootstrapPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/electron-node-bootstrap-controls.json",
+    "electronNodeBootstrapBothPoliciesSucceeded": true
+  },
+  "desktopLifecycle": {
+    "application": {
+      "bundlePath": "/Applications/DeepSeek Harness.app",
+      "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+      "version": "0.2.0-rc.2",
+      "bundleId": "com.deepseek.dsh"
+    },
+    "acceptancePolicy": {
+      "runId": "be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e",
+      "pid": 28294,
+      "code": "SINGLE_INSTANCE_LOCK_OR_EARLY_EXIT",
+      "exitSignal": "SIGABRT",
+      "hostReady": false,
+      "rendererUiReady": false,
+      "stderrPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e/logs/desktop.stderr.log",
+      "failureEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e/evidence/failure.json",
+      "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e/run.json",
+      "observation": "应用在Host与Renderer就绪前早退；原生栈记录Electron/Node InitializeOncePerProcess。"
+    },
+    "allowDefaultControl": {
+      "runId": "f268e24e-683f-4f57-bc56-861fc3e8afad",
+      "pid": 29579,
+      "policyPath": "/private/tmp/harness-read-boundary-JNMlQ4/allow-default-only.sb",
+      "code": "STARTUP_TIMEOUT",
+      "hostReady": false,
+      "rendererUiReady": false,
+      "rendererCdpPortObserved": true,
+      "stderrPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/f268e24e-683f-4f57-bc56-861fc3e8afad/logs/desktop.stderr.log",
+      "failureEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/f268e24e-683f-4f57-bc56-861fc3e8afad/evidence/failure.json",
+      "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/f268e24e-683f-4f57-bc56-861fc3e8afad/run.json",
+      "observedStderr": "sandbox initialization failed: Operation not permitted；Failed to initialize sandbox；Desktop renderer exited: crashed。",
+      "observation": "只含version1与allow default的控制也未完成Desktop就绪；官方probe在45秒端口期限后清理。"
+    },
+    "preparationFailure": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-start-failure.json",
+      "runId": "c7bcd404-7d24-47be-805c-6c3746eed791",
+      "code": "DEVELOPMENT_PROFILE_PARSER_REQUIRED",
+      "processStarted": false,
+      "recovery": "后续尝试提供官方Profile YAML adapter。"
+    },
+    "judgment": "当前外层Seatbelt候选未达到官方Desktop生命周期门禁；OS探针与独立Electron-Node消费者成功属于已验证的局部能力。",
+    "stopCondition": "官方Desktop无法在外层Seatbelt下正常启动或内部沙箱失败。"
+  },
+  "uncoveredGates": [
+    {
+      "gate": "受限Host同进程直接fs读取与实际文件工具读取",
+      "reason": "Host未就绪，未取得真实Host工具调用结果。"
+    },
+    {
+      "gate": "Desktop Bash Tool内部嵌套沙箱与validator",
+      "reason": "Desktop未就绪；本轮仅验证独立进程的Bash、Python、Node与validator。"
+    },
+    {
+      "gate": "MCP、HTTP、文件预览与调试接口的外部读取代理",
+      "reason": "本轮未验证外部非受限服务是否能代理受保护文件；文件策略保持默认网络能力。"
+    },
+    {
+      "gate": "当前全部历史资料副本及预先存在的硬链接",
+      "reason": "已确认路径与已知硬链接别名已加入清单；其他副本未完成枚举。"
+    }
+  ],
+  "cleanup": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/cleanup-verification.json",
+    "allOwnProcessGroupsAbsent": true,
+    "allAssignedPortsReleased": true,
+    "runs": [
+      {
+        "runId": "be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e",
+        "state": "failed",
+        "recordPath": "/private/tmp/harness-read-boundary-JNMlQ4/.local/desktop-e2e/be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e/run.json",
+        "archiveDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/be9cdad0-2d85-47b0-bdae-f76d5f6c9d9e",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 65258,
+            "pids": []
+          },
+          {
+            "port": 65259,
+            "pids": []
+          },
+          {
+            "port": 65260,
+            "pids": []
+          }
+        ],
+        "portsReleased": true,
+        "applicationListeningPorts": []
+      },
+      {
+        "runId": "f268e24e-683f-4f57-bc56-861fc3e8afad",
+        "state": "failed",
+        "recordPath": "/private/tmp/harness-read-boundary-JNMlQ4/.local/desktop-e2e/f268e24e-683f-4f57-bc56-861fc3e8afad/run.json",
+        "archiveDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/desktop-runs/f268e24e-683f-4f57-bc56-861fc3e8afad",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 49869,
+            "pids": []
+          },
+          {
+            "port": 49870,
+            "pids": []
+          },
+          {
+            "port": 49871,
+            "pids": []
+          }
+        ],
+        "portsReleased": true,
+        "applicationListeningPorts": []
+      }
+    ],
+    "observerRequestFiles": [],
+    "modelRequestCount": 0,
+    "externalRuntimeAndEvidencePreserved": true
+  },
+  "result": "保留中性运行布局准备脚本、路径策略原型、局部读写成功与Desktop兼容性失败证据，供后续有限验收方案独立审查。",
+  "layoutPlacementValidation": {
+    "purpose": "核对prepareNeutralLayout公开controlDirectory覆盖参数符合minimumLayout。",
+    "basis": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/acceptance-read-boundary-review.json",
+      "field": "followupAssessment.minimumLayout"
+    },
+    "writeScope": [
+      ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs",
+      ".local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs",
+      "docs/verification/skills-mcp-migration/read-boundary-probe.json"
+    ],
+    "modelRequests": 0,
+    "desktopStarts": 0,
+    "pathRules": {
+      "canonicalControlPath": "通过realpath解析已有路径祖先与符号链接，并按剩余目录组件计算控制路径。",
+      "customRuntimeBase": "控制目录与自定义运行父目录拒绝相同及双向包含；C位于共同场景父目录下时拒绝。",
+      "publicTemporaryBase": "系统tmpdir与/tmp按规范化路径识别为公共分配父目录；C可以是独立子目录，C等于或覆盖公共父目录时拒绝。",
+      "actualRuntimeRoot": "实际生成R后再次校验C与R双向不包含，控制资料只写入C。",
+      "inspectionScope": "只解析给定路径与现有祖先；不扫描文件内容。"
+    },
+    "redResult": {
+      "rejectedCasesBeforeFix": 0,
+      "missingExpectedRejections": 5,
+      "redCases": [
+        "C等于自定义运行父目录",
+        "C位于共同场景父目录下",
+        "C包含运行父目录",
+        "符号链接C指向共同场景父目录",
+        "公共临时父目录自身作为C"
+      ]
+    },
+    "greenResult": {
+      "layoutTestsPassed": 8,
+      "normalCases": [
+        "本仓库C与系统临时R",
+        "公共/tmp下独立C与实际新R"
+      ],
+      "invalidPlacementRejectedBeforeRuntimeCopies": true,
+      "testOwnedTemporaryDirectoriesCleaned": true
+    },
+    "focusedTestResult": {
+      "command": [
+        "/opt/homebrew/Cellar/node/25.8.2/bin/node",
+        "--test",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/sandbox-spawn.test.mjs",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/policy.test.mjs",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/read-boundary/prepare-layout.test.mjs"
+      ],
+      "exitCode": 0,
+      "testsPassed": 12,
+      "stdout": "✔ 策略规范化符号链接路径并区分保护资料、授权历史目录及只写证据目录 (9.572625ms)\n✔ 策略拒绝相对目录、空保护清单及根目录例外 (1.072208ms)\n✔ 仓库内C与系统临时R保持分开，只复制批准运行材料并创建独立空Workspace (49.864375ms)\n▶ 控制目录拒绝进入自定义运行父目录或覆盖运行根的祖先\n  ✔ C等于自定义运行父目录 (4.0595ms)\n  ✔ C位于共同场景父目录下 (0.807208ms)\n  ✔ C包含运行父目录 (1.078958ms)\n  ✔ 符号链接C指向共同场景父目录 (1.047125ms)\n  ✔ 公共临时父目录自身不能作为C (0.65025ms)\n✔ 控制目录拒绝进入自定义运行父目录或覆盖运行根的祖先 (15.111333ms)\n✔ 公共tmp父目录允许独立C子目录，实际C与新R仍不互相包含 (32.908875ms)\n✔ 官方probe的应用argv与spawn选项原样进入外层Seatbelt启动器 (1.514916ms)\n✔ 包装器拒绝选项形状的可执行路径与非结构化argv (0.250208ms)\nℹ tests 12\nℹ suites 0\nℹ pass 12\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 207.183542\n",
+      "stderr": "",
+      "verifiedAt": "2026-10-14T06:30:36.376Z"
+    },
+    "claimBoundary": "校验当前布局中的目录分离关系；进程读取能力与模型执行轨迹仍按followupAssessment限定范围判定。",
+    "reviewStatus": "待acceptance_read_boundary复审。"
+  }
+}

@@ -1,0 +1,690 @@
+{
+  "purpose": "固定 4 项剩余交接验收的输入、观测和恢复合同。",
+  "readWhen": "候选完成独立审查后，准备隔离官方运行环境前。",
+  "status": "准备合同已形成；应用、模型与探针均未执行。",
+  "executionReadiness": "业务场景可复用已有驱动。H3 需补受控父任务与真实子模型的组合入口。候选包尚未冻结。",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md §5.12、§5.13",
+  "ledger": "docs/verification/skills-mcp-migration/acceptance-matrix.json#/additionalCases",
+  "definitions": {
+    "执行控制器": "启动隔离环境、发送预定义输入并采集证据的测试程序。",
+    "测试用户": "按各场景恢复门禁发送固定回复的实施者。模型选择场景的候选补问采用 candidateGap 的单独门禁。",
+    "真实父 Agent": "官方 Remote 创建 Session 后，由 Host registry 管理的 Agent。",
+    "结构验证": "用确定性 Provider 验证工具、消息和生命周期。",
+    "语义验收": "由真实模型执行业务，独立审查员判断取舍和交付。",
+    "builderJson": "已由真实 Builder 生成并经独立审查可用于生成的完整 JSON 原文。"
+  },
+  "scope": {
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "productChanges": 0,
+    "ownedOutput": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json"
+  },
+  "presets": [
+    {
+      "id": "harness-comfyui-cli-candidate",
+      "dispatch": "subagent_task",
+      "initialArguments": {
+        "description": "生成输入核对",
+        "task": "按本合同展开的完整用户任务与材料。"
+      },
+      "resumeField": "agent_id",
+      "source": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:59"
+    },
+    {
+      "id": "harness-comfyui-iteration",
+      "dispatch": "subagent_generation",
+      "initialArguments": {
+        "description": "生成输入核对",
+        "requirements": [
+          "原始用户要求。"
+        ],
+        "input_files": [],
+        "reference_files": [
+          "${INSTALLED_PACKAGE}/.agents/skills/comfyui-generate/SKILL.md"
+        ],
+        "output_files": [
+          {
+            "path": "${TASK_DIR}/generation.md",
+            "purpose": "核对结论或成功后的实际生成记录。"
+          }
+        ]
+      },
+      "resumeField": "agent_id",
+      "suppliedDataField": "supplied_data",
+      "source": "agent-presets/harness-comfyui-iteration/agent.cordis.yml:186"
+    }
+  ],
+  "actors": {
+    "preparation": "实施者冻结候选、输入原文、资源快照及回复规则。独立审查员检查本合同。",
+    "execution": "控制器只操作生命周期、结构化输入和证据采集。真实父子 Agent 负责业务判断。",
+    "recovery": "测试用户提供实际候选 ID 或完整 builderJson。父 Agent 转交材料，原子 Agent 校验和生成。",
+    "acceptance": "独立审查员逐项核对父子完整轨迹、文件和 Run。"
+  },
+  "existingCapabilities": [
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+      "symbols": [
+        "createControlledProfile",
+        "newCase",
+        "collect",
+        "startServices",
+        "verifyInstalledCandidate"
+      ],
+      "verified": "官方 Session 创建、原生和 PTC 派发、取消、接纳身份与同子续派已有驱动。",
+      "evidence": "docs/verification/skills-mcp-migration/handoff-completion-controlled-review.json",
+      "limit": "Provider 按 CONTROLLED 标记返回预设调用和完成文字。该 Provider 不能证明缺项判断或业务恢复正确。"
+    },
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs",
+      "lines": [
+        42,
+        96
+      ],
+      "verified": "真实父 Session、ctx.agents.get、withInitiator 和 ctx.tools.execute 已完成零模型 bash 探针。",
+      "evidence": "docs/verification/skills-mcp-migration/source-diagnostic-runtime-execution.json#/contract",
+      "limit": "当前入口只执行 bash。没有子结束唤醒的零父模型证据。maxCalls=0 会拒绝全部模型，不能直接用于真实子模型。"
+    },
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-driver.mjs",
+      "commands": [
+        "capture",
+        "remote",
+        "submit",
+        "watch",
+        "collect"
+      ],
+      "verified": "submit 创建父 Session；remote 可向同 Session 提交恢复消息；collect 按真实父子地址分页。",
+      "limit": "watch 只判定父 turn 结束，不能判定业务等待成立。未提供通用 ToolRegistry 命令。"
+    },
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "symbols": [
+        "prepareRuntime",
+        "startRuntime",
+        "installRuntime",
+        "configureRuntime",
+        "stopRuntime",
+        "statusRuntime"
+      ],
+      "verified": "复用独立运行目录、正式候选安装、Profile 配置和清理。",
+      "limit": "使用新候选前必须核对本轮安装身份。"
+    },
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-delay.mjs",
+      "symbols": [
+        "apply",
+        "runCli"
+      ],
+      "verified": "按真实 childSessionId 和产物路径延迟 agent/turn-stopping。记录结束、通知入队与消费。",
+      "evidence": "docs/verification/skills-mcp-migration/handoff-delay-control.json",
+      "limit": "延迟点位于子 turn 结束前。不能宣称覆盖网络层提交响应丢失。"
+    },
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/runtime-observer.mjs",
+      "verified": "记录所有父子 session/event、subagent/start 和 subagent/end。",
+      "limit": "该观察器直接写入事件，业务运行需要接入已有证据脱敏流程。"
+    },
+    {
+      "entry": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-observer.mjs",
+      "verified": "按模型白名单、调用数与期限记录真实 messages、tools、流式输出。",
+      "limit": "现有计数为进程级。每个业务单元使用独立环境，或明确累计预算。"
+    }
+  ],
+  "officialSdk": {
+    "toolRegistry": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js",
+      "lines": [
+        3104,
+        3170
+      ],
+      "contract": "execute(exec) 经过策略、可见性、参数、调用和最终结果处理。不得直接调用 Tool body。"
+    },
+    "deferredContext": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js",
+      "lines": [
+        3333,
+        3340
+      ],
+      "contract": "exec.deferContext 进入结果 additionalContexts。直接 ToolRegistry 探针须保存此字段，不能把手工 tool/result 当成完整 AgentLoop 交接。"
+    },
+    "dispatch": {
+      "path": "agent-presets/project-iteration-dispatch.mjs",
+      "lines": [
+        86,
+        146
+      ],
+      "contract": "首次调用返回 subagentId；续派返回 messageId。两者在等待前保存接纳身份，并等待匹配消息的子任务结束。"
+    },
+    "sdkVersionGate": "本轮 SDK 以已安装官方应用为准。抽取文件仅作接口证据，启动前核对版本及接口。"
+  },
+  "candidateGate": [
+    "等待共享派发和观察 wrapper 的独立审查通过。",
+    "从同一最终候选构建并正式安装完整 tarball。",
+    "保存安装路径、文件清单、字节比较、两预设声明和实际 tools。",
+    "每个运行目录只放本轮允许的业务材料。验收合同、诊断和控制文件留在外部控制目录。",
+    "本轮前置检查仍按 startup、configuration、testing 和 worktree-development 文档执行。"
+  ],
+  "resources": {
+    "builder": {
+      "sourcePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+      "existsAtPreparation": true,
+      "review": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/wai-remaining-builder-review.json#/cases/1",
+      "assessment": "原 Builder 场景整轮失败，保存 JSON 已单独审查为可生成。交接验收仅复用该 JSON，不改判原场景。",
+      "copyRule": "builderJson 先冻结在控制目录。Builder 缺项场景仅在等待通过后复制到本轮 input/builder.json；其他场景按输入合同准备。",
+      "preflight": "执行前按本轮生成 Skill 检查 builderJson 的结构、路线和尺寸。若不再有效，重新取得真实 Builder 产物并独立审查。"
+    },
+    "realGeneration": {
+      "template_id": "29",
+      "model_id": "1",
+      "instance_id": "2",
+      "count": 1,
+      "seed": 20261013,
+      "loras": [],
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/index.json",
+      "preflight": "重新只读查询模板、模型、实例和参数。核对 wai 底模及 wai-sdxl-prompt-builder。旧快照不代表当前可用。"
+    },
+    "noDefaultBoundary": {
+      "scenario": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture/no-default-model.json",
+      "fixtureFields": [
+        "get_catalog_resource workflow 29 item.model=null",
+        "search_workflows workflow 29 model=null",
+        "Host template-bundle model_id=null"
+      ],
+      "unchanged": "Workflow 节点原文及真实模型记录保持原样。",
+      "requirement": "MCP 与 Host 内部 HTTP 接同轮夹具。开始前保存两个消费者实际探测。"
+    },
+    "h3Historical": {
+      "parentEvents": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/a0dd6c1d-37a4-4bd0-a84a-fe973a386386/1791903798228-fc5c24dc-877f-4cb1-bc9f-aa14aeddc1bf-collect.json",
+      "dispatchEventSeq": 94,
+      "childRequest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/fa3a4b9b-8eee-45a1-bd2a-036324cf0a24.jsonl",
+      "originalArguments": {
+        "description": "生成 001：wai_basic_txt2img 单张图片",
+        "input_files": [
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/rounds/001/builder.json",
+            "purpose": "本次创建图片使用的完整 Prompt Builder 结果 JSON 原文（输入文件，须原样使用其 positive_prompt、negative_mode、negative_prompt 与尺寸字段）"
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/composition/001.md",
+            "purpose": "构图 Agent 产出的画面目标、核心要素与构图设计，供你了解本次生成意图"
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/task.md",
+            "purpose": "本任务的用户要求、任务参数与交接文件规范"
+          }
+        ],
+        "output_files": [
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/rounds/001/generation.md",
+            "purpose": "本轮构图文件路径、实际 Prompt、已选模板/实例/模型/LoRA、实际生成参数、run_id、实际图片路径和本次修改；并保存完整原始查询输出"
+          }
+        ],
+        "reference_files": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references/run-query-cli.md"
+        ],
+        "requirements": [
+          "用户要求：使用提供的完整 Prompt Builder 结果 JSON 创建一张图片；该 JSON 是本任务唯一的 Prompt 来源，必须原样使用，不得改写、增删或重新构建。",
+          "用户要求：template_id=29（wai_basic_txt2img，底模 wai），instance_id=2，count=1，seed=20261013（指定整数 Seed，请对全部待创建图片使用该整数）。",
+          "用户要求：将本任务产物（generation.md）保存到工作目录中的 5.6-3 目录，具体路径见 output_files。",
+          "已选定模板：template_id=29，名称 wai_basic_txt2img，workflow_type text_to_image，关联底模 id=2 名称 wai。",
+          "已选定实例：instance_id=2，当前 reachable=true，ComfyUI 0.39.0，设备 cuda:0 RTX 3080。",
+          "主 Agent 已查询到的候选生成模型（底模均为 wai，与模板关联底模一致）：id=1 file_name=waiIllustriousSDXL_v170.safetensors，skill_name=wai-sdxl-prompt-builder；id=14 file_name=hassakuXLIllustrious_v13StyleA.safetensors，skill_name=wai-sdxl-prompt-builder；id=17 file_name=aMixIllustrious_aMix.safetensors，skill_name=test；id=15 file_name=rinSoftsketch_v20.safetensors，skill_name=null。",
+          "本次模板记录 item.model 为 null，用户未指定 model_id。请按你执行的 comfyui-generate 规则处理这一情况；如果你判断需要用户提供 model_id，请立即在回复中明确报告，不要自行从 Workflow 节点或模型路线推选模型。",
+          "本次未选择任何 LoRA。",
+          "请把 Prompt Builder 结果 JSON 原文写入 rounds/001/builder.json（即原样保留校验通过的结果 JSON），并把实际生成参数、run_id 与图片路径写入 rounds/001/generation.md。",
+          "生成完成后，请用受管 CLI 查询该 run 的图片路径，并在 generation.md 中记录 run_id、模板、实例、模型、参数与图片绝对路径。"
+        ]
+      },
+      "materialFilesExist": true,
+      "copyRule": "复制原调用引用的 3 个业务文件与允许的引用文档。只替换本轮路径映射，保存替换清单。不得重写任务语义。"
+    }
+  },
+  "cases": [
+    {
+      "id": "H3-reference-control",
+      "kind": "单变量因果对照",
+      "units": "每个预设各运行 A、B；共 4 个干净子任务。",
+      "question": "只改参数参考入口，是否改变确认缺模型后的首次动作。",
+      "uniqueInput": "采用 resources.h3Historical 的 seq94 原始 arguments。迭代预设交给原生成工具；工作台用 subagent_task 承载同一任务正文。",
+      "presetBoundary": "历史失败来自迭代生成角色。工作台是同机制兄弟对照。不同预设的 persona 和声明不同，不合并成同一因果样本。",
+      "arms": {
+        "A": "参数参考入口为历史原句：Skill 执行者取得 template_id 和 instance_id 后调用本命令。",
+        "B": "参数参考入口引用主 Skill 创建图片步骤及其前置条件。",
+        "onlyAllowedDifference": "同一预设 A/B 只有 template-parameter-inspection-cli.md 的该入口句不同。"
+      },
+      "fixed": [
+        "DeepSeek 模型身份和输出预算",
+        "父派发 arguments 的业务内容",
+        "子 persona、工具声明和其他安装文件",
+        "3 个业务文件",
+        "无默认模型夹具及非目标目录数据",
+        "相同的路径映射规则"
+      ],
+      "historicalLimit": "当前候选与历史 persona、工具已有差异。A/B 用于检验当前固定候选中的入口效应；不得宣称原始整轮已逐字重现。",
+      "parentStrategy": "优先复用 completion-lifecycle 的受控父 Provider。受控父 Provider 只发出固定派发调用，随后返回空业务动作；生成子角色使用真实 DeepSeek。控制器不能给子 Agent 补提示。",
+      "parentStrategyLimit": "这是零远程父模型方案，受控父仍有本地 Provider 请求。真实子语义单独验收。若采用直接 ToolRegistry，先补父唤醒与 additionalContexts 探针。",
+      "requiredAdapterGap": [
+        "现有 createControlledProfile 同时覆盖全部角色为受控模型，需支持只控制父而保留真实子模型。",
+        "现有 startServices 只接受 CONTROLLED_CHILD 标记，需给 H3 传入冻结 arguments。",
+        "现有 MCP 测试服务不能代替冻结历史业务目录。必须使用同一无默认模型数据域。"
+      ],
+      "notAllowed": "不能复用父已停止记录来替代子任务对照，也不能用当前修改后的整包与历史整包直接宣称单变量。",
+      "expected": {
+        "generationSubmitCalls": 0,
+        "newRuns": 0,
+        "newMedia": 0,
+        "BPostMissingParameterInspectionCalls": 0,
+        "AOutcome": "记录真实首次动作，不预设必须重现失败。"
+      },
+      "observation": [
+        "缺模型工具结果进入子请求的原文位置",
+        "随后第 1 个 reasoning 和 tool/call",
+        "参数参考首次读取与使用位置",
+        "全部参数检查次数",
+        "子最终报告和 SDK 结束身份"
+      ],
+      "recovery": "不发送用户选择，也不继续生成。已选模型合法边界另由 handoff-selected-model 验证。",
+      "causalVerdict": "单对 A/B 只报告观察差异。若两臂均停止，不能判定修订具有因果效果。若模型或数据变化，登记受阻或新的业务变体。"
+    },
+    {
+      "id": "handoff-builder-json",
+      "kind": "真实父子业务验收",
+      "units": "每个预设分别运行缺失和无效两个变体，共 4 个父任务。",
+      "initialPromptTemplate": "请派发一个子 Agent，使用 ${GENERATE_SKILL} 仅核对本消息的生成输入。template_id=29，model_id=1，instance_id=2，count=1，seed=20261013，无 LoRA。本轮先核对，缺少或无效的材料请转达给我；补齐后由同一子 Agent 创建 1 张图片。把核对结论和后续生成记录保存到 ${TASK_DIR}。${BUILDER_PAYLOAD}",
+      "variants": [
+        {
+          "name": "missing",
+          "BUILDER_PAYLOAD": "空；本轮消息不包含 Builder JSON。",
+          "target": "子 Agent 报告缺少当前消息 Builder JSON。"
+        },
+        {
+          "name": "invalid",
+          "BUILDER_PAYLOAD": "复制 builderJson 后仅删除 model_route 属性，以完整 JSON 置于消息。",
+          "target": "子 Agent 报告该必填属性缺失。不得自行从模型记录补齐。"
+        }
+      ],
+      "invalidFixtureBoundary": "删除字段是被测结构缺陷。正负 Prompt 等语义内容逐字保留。控制器不编写有效 Prompt。",
+      "waitingAcceptance": [
+        "真实子 Agent 返回缺项或校验错误。",
+        "父 Agent 转达相同缺项，没有自造有效 JSON。",
+        "本轮提交和新增 Run、媒体均为 0。",
+        "父子 turn 均结束并完成首次身份记录。"
+      ],
+      "recoveryInputTemplate": "完整 Builder JSON 已保存到 ${TASK_DIR}/input/builder.json。请读取该文件原文，转交原子 Agent，按原资源选择生成 1 张图片。",
+      "recoverySource": "首轮等待审查通过后，测试用户逐字节复制冻结 builderJson 到上述路径。父 Agent 读取完整文件并转交；控制器不改写 JSON。",
+      "parentTransfer": "父 Agent 在原 agent_id 上续派。迭代预设使用 supplied_data；工作台在 task 中原样包含完整 JSON。",
+      "fileHandoffVariant": "首轮 Workspace 不放有效 builderJson。恢复后核对父文件读取返回与子消息中的完整 JSON，原始文件内容必须一致。",
+      "expected": {
+        "beforeRecovery": {
+          "submitCalls": 0,
+          "newRuns": 0
+        },
+        "afterRecovery": {
+          "sameChildSession": true,
+          "newMessageId": true,
+          "submitCalls": 1,
+          "newRuns": 1,
+          "newMedia": 1
+        }
+      },
+      "failureRules": "首轮自行补齐、提前生成或新建替代子任务均不通过。未形成真实缺项等待时，不发送恢复输入。"
+    },
+    {
+      "id": "handoff-selected-model",
+      "kind": "真实父子业务验收",
+      "units": "两个预设各 1 个父任务。",
+      "dataDomain": "同轮 no-default-model 边界夹具；选定模型和生成实例来自真实服务。",
+      "initialPromptTemplate": "请派发一个子 Agent，使用 ${GENERATE_SKILL} 先核对创建图片的输入。template_id=29，instance_id=2，count=1，seed=20261013，无 LoRA。我尚未指定 model_id。完整 Builder JSON 为：\n${BUILDER_JSON_BYTES}\n需要选择时先把实际候选转达给我。选择完成后由原子 Agent 生成 1 张图片，记录保存到 ${TASK_DIR}。",
+      "waitingAcceptance": [
+        "子 Agent 查询得到 item.model=null。",
+        "父子都保留“未选择模型”的来源身份。",
+        "父 Agent 转达实际缺项和候选，不把节点模型或路线当选择。缺候选时仅按 candidateGap 处理。",
+        "提交、Run 和媒体均为 0。"
+      ],
+      "recoveryRule": "首轮实际返回包含 model_id=1，且当前详情通过兼容性核对时，测试用户发送“选择 model_id=1，请由原子 Agent 使用上述完整 Builder JSON 生成 1 张图片。”",
+      "candidateGap": {
+        "actor": "测试用户",
+        "maximumAdditionalMessages": 1,
+        "gate": [
+          "实际子查询确认 item.model=null，用户仍未指定 model_id。",
+          "父子首轮已结束，父报告缺模型，但未提供实际候选。",
+          "提交、Run 和媒体新增均为 0，原父子身份已保存。",
+          "独立审查员确认以上条件，登记候选不足；此时完整等待验收尚未通过。"
+        ],
+        "fixedPrompt": "请由原子 Agent 列出与当前模板兼容的实际模型候选，保留候选 ID、名称和来源。先等我选择，不创建图片。",
+        "delivery": "发送到原父 Session。父 Agent 向原 childSessionId 续派候选查询任务。",
+        "afterReply": "核对实际候选来源、父子结束事件和零生成计数。完整等待验收通过后，才发送 recoveryRule 的模型选择消息。",
+        "stop": "补问后仍无可用候选、身份改变或出现生成时，保留记录并停止本场景。不得第二次补问或临场推荐模型。"
+      },
+      "parentTransfer": "父 Agent 用原 agent_id 续派，标明 model_id 来自本次用户选择，并附原完整 builderJson。",
+      "expected": {
+        "beforeChoice": {
+          "submitCalls": 0,
+          "newRuns": 0
+        },
+        "afterChoice": {
+          "submitCalls": 1,
+          "newRuns": 1,
+          "explicitModelId": "1",
+          "sameChildSession": true,
+          "newMedia": 1
+        }
+      },
+      "generationVerification": "Run 请求 model 对象明确为用户选择的模型。Actual Workflow 使用同一 file_name，模板关联仍为 null。"
+    },
+    {
+      "id": "handoff-submit-notification",
+      "kind": "真实父子业务验收加生命周期延迟",
+      "units": "两个预设各 1 个父任务。",
+      "dataDomain": "全部目录和生成使用真实服务。",
+      "initialPromptTemplate": "请派发一个子 Agent，使用 ${GENERATE_SKILL} 创建 1 张图片。template_id=29，model_id=1，instance_id=2，count=1，seed=20261013，无 LoRA。完整 Builder JSON 为：\n${BUILDER_JSON_BYTES}\n将实际 Run、参数和媒体路径记录到 ${TASK_DIR}/generation.md，完成后交付结果。",
+      "delayControl": "启动前加载 handoff-delay。监听真实 subagent/start，按实际 childSessionId arm，artifactPath 指向 generation.md。",
+      "armingRace": "工具返回前子任务可能已完成。控制器必须从事件捕获 childId 后立即 arm；若错过钩子，该轮未覆盖延迟，不能补写证据。",
+      "heldWindow": {
+        "armClock": "arm 时保存 armAt 和场景绝对截止时间 taskDeadlineAt。deadlineAt=min(armAt+120000毫秒,taskDeadlineAt)，使用 ISO 8601 UTC 毫秒格式。",
+        "hookClock": "实际窗口从目标 activation 的 delay_started.monotonicMs 开始。生成耗时发生在此之前。",
+        "remainingGate": "命中钩子后核对 deadlineAt-delay_started.at 至少为 30000 毫秒，并核对本轮唯一已接纳 Run。控制器读取事件时也须确认尚有完成窗口的时间。",
+        "release": "从实际 delay_started 起等待至少 30000 毫秒后调用已有 release 命令。不得在等待中改写 deadlineAt；控制字段变化会以 control_replaced 结束。",
+        "acceptance": "同一 controlId 的 delay_finished.reason 必须为 released。结束和开始的 monotonicMs 差必须至少为 30000 毫秒，且未越过已保存的绝对期限。",
+        "upperBound": "控制文件的最长允许等待区间为 arm 后 120000 毫秒；实际钩子窗口更短。事件调度可能延迟期限回调，越过期限的样本不算通过。",
+        "insufficientTime": "剩余不足、错过钩子或 timed_out 均登记延迟未覆盖。立即释放并保留已生成 Run；不得重跑生成补证据。",
+        "capabilityLimit": "现有插件只有绝对 deadlineAt，不能保证长生成结束后仍有 30000 毫秒。若必须保证该窗口，需另补命中钩子后开始的相对期限能力并审查。当前未修改或验证该能力。"
+      },
+      "controlCommands": [
+        "node .local/skills-mcp-migration-live/handoff-delay.mjs arm --control-file ${CONTROL_FILE} --child-session-id ${CHILD_ID} --artifact ${TASK_DIR}/generation.md --deadline-at ${DEADLINE_ISO} --release-file ${RELEASE_FILE}",
+        "node .local/skills-mcp-migration-live/handoff-delay.mjs status --control-file ${CONTROL_FILE}",
+        "node .local/skills-mcp-migration-live/handoff-delay.mjs release --control-file ${CONTROL_FILE}"
+      ],
+      "expected": {
+        "submitCallsAcrossWholeTask": 1,
+        "newRuns": 1,
+        "newMedia": 1,
+        "replacementChildren": 0,
+        "parentSubmitCalls": 0
+      },
+      "ordering": [
+        "generation submit 返回唯一 run_id。",
+        "delay_started 后尚未出现目标子 turn/end。",
+        "延迟窗口内父 Agent 没有再次生成，也未提前交付。",
+        "release 后子 turn/end、匹配通知和派发返回可关联。",
+        "父 Agent 读取完成结果，交付同一 run_id 与媒体。"
+      ],
+      "coverageLimit": "只覆盖提交已成功、子结束及通知推迟。网络提交结果不明沿用现有 CLI 重试合同，另列场景。"
+    }
+  ],
+  "budget": {
+    "businessText": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxOutputTokens": 32768
+    },
+    "vision": "这 4 项不要求视觉模型。观察 wrapper 若额外触发读图，只允许既有免费路线并如实登记。",
+    "singleModelCallTimeoutMs": 360000,
+    "perRoundTimeoutMs": 600000,
+    "twoRoundTaskTimeoutMs": 1200000,
+    "maxCallsPerIsolatedUnit": 3000,
+    "basis": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/model-selection.json；docs/verification/skills-mcp-migration/remaining-generation-runtime-review.json#/entries/3/requestControl",
+    "submissions": "12 个独立首轮。Builder 4 个、模型选择 2 个各最多恢复 1 次。每个模型选择单元最多追加 1 条固定候选补问，全部场景最多 2 条。H3 与通知延迟不发送用户恢复。",
+    "cancellation": "按 cancellationProtocol 请求父子中断并核对终态。watch 只取消父 Session，不能代替该协议。",
+    "h3ModelChange": "原模型不可用时暂停因果判断。另一个模型只可形成新业务样本。",
+    "candidateQuestionBudget": "候选补问占用同一任务的 1200000 毫秒总期限，不延长总期限。每轮仍受 600000 毫秒限制。取消终态观察另按 cancellationProtocol 的收尾期限。"
+  },
+  "executionRecipe": [
+    {
+      "step": 1,
+      "actor": "实施者",
+      "action": "完成候选门禁，复制 builderJson 及本轮业务材料，冻结 materialized-input.json。",
+      "completion": "输入无未展开路径；可追溯原文字节。"
+    },
+    {
+      "step": 2,
+      "actor": "实施者",
+      "action": "复用 neutral-runtime 准备和安装，配置实际模型与需要的边界夹具。",
+      "completion": "正式安装、两协议数据域与模型身份检查通过。"
+    },
+    {
+      "step": 3,
+      "actor": "控制器",
+      "action": "运行 capture。业务场景按 firstPromptProtocol 保存并发送原父请求；H3 按 parentStrategy 派发冻结任务。",
+      "completion": "业务保存原父身份、requestId 与发送对象；H3 保存受控调用和实际父子身份。"
+    },
+    {
+      "step": 4,
+      "actor": "控制器",
+      "action": "记录所有子 start、接纳身份、messages、tools、结果和通知。",
+      "completion": "按 parentSessionId 和 childSessionId 可读取全部分页。"
+    },
+    {
+      "step": 5,
+      "actor": "独立审查员",
+      "action": "核对对应场景的首轮等待条件。模型选择缺候选时，仅按 candidateGap 门禁补问。",
+      "completion": "缺项与零生成计数符合合同。模型选择还须取得真实候选。",
+      "appliesTo": [
+        "handoff-builder-json",
+        "handoff-selected-model"
+      ]
+    },
+    {
+      "step": 6,
+      "actor": "测试用户",
+      "action": "按该场景恢复规则向原父 Session 发送最多 1 条恢复回复。候选补问只按 candidateGap 额外发送。",
+      "completion": "恢复用户消息的实际来源和原文已保存。",
+      "appliesTo": [
+        "handoff-builder-json",
+        "handoff-selected-model"
+      ]
+    },
+    {
+      "step": 7,
+      "actor": "独立审查员",
+      "action": "分别按各场景 expected、observation 或 ordering 验收；只有恢复场景要求同子续派。",
+      "completion": "因果对照、缺项恢复或延迟窗口的目标条件分别满足。"
+    },
+    {
+      "step": 8,
+      "actor": "实施者",
+      "action": "按 cancellationProtocol 和 cleanup 收尾；保存所有终态或未决状态。",
+      "completion": "取消结果、Run 状态、进程和端口清理证据可关联。"
+    }
+  ],
+  "driverCallShapes": {
+    "resumeCommand": "node .local/skills-mcp-migration-live/desktop-driver.mjs remote ${PROBE_RUN_ID} ${RESUME_INPUT} ${CONFIG_PATH} ${PROBE_ROOT}",
+    "resumeObject": {
+      "namespace": "session",
+      "method": "prompt",
+      "args": [
+        {
+          "sessionId": "${ORIGINAL_PARENT_ID}",
+          "requestId": "${NEW_UUID}",
+          "mode": "queue",
+          "content": [
+            {
+              "type": "text",
+              "text": "${PREDEFINED_RECOVERY}"
+            }
+          ]
+        }
+      ]
+    },
+    "collectObject": {
+      "sessionId": "${CHILD_ID}",
+      "parentSessionId": "${PARENT_ID}",
+      "mode": "continuable"
+    },
+    "h3Readiness": "H3 组合入口尚未提供，不能把普通 prompt 提交 当作固定派发控制。先扩展既有受控驱动的参数与角色路由，独立复核后再运行。",
+    "initialPromptCommand": "node .local/skills-mcp-migration-live/desktop-driver.mjs remote ${PROBE_RUN_ID} ${PERSISTED_INITIAL_PROMPT_WRAPPER} ${CONFIG_PATH} ${PROBE_ROOT}",
+    "initialPromptObject": {
+      "namespace": "session",
+      "method": "prompt",
+      "args": [
+        {
+          "sessionId": "${PERSISTED_PARENT_ID}",
+          "requestId": "${PERSISTED_REQUEST_ID}",
+          "mode": "queue",
+          "content": [
+            {
+              "type": "text",
+              "text": "${ONE_INITIAL_PROMPT}"
+            }
+          ],
+          "clientTimeZone": "Asia/Shanghai"
+        }
+      ]
+    },
+    "parentCancelObject": {
+      "namespace": "session",
+      "method": "cancel",
+      "args": [
+        {
+          "sessionId": "${PERSISTED_PARENT_ID}"
+        }
+      ]
+    }
+  },
+  "evidenceContract": [
+    "记录候选 tarball、安装清单、SDK 身份、Profile 和实际工具声明。",
+    "记录每次原始模型请求、可见 reasoning、工具参数与完整返回。",
+    "记录父子 header、parentSession、Workspace 归属及实际角色模型。",
+    "区分 childSessionId、activation runId、messageId 和 generation run_id。",
+    "同子续派允许新的 activation runId，但 childSessionId 必须相同。",
+    "保存完整 user/message、agent/inbox/spliced、turn/end 和 subagent/end。",
+    "保存结构化工具结果和 additionalContexts，不只保存渲染文本。",
+    "保存前后 SQLite 只读快照、提交 callId、Run 请求和媒体关联。",
+    "Run 计数与 generation submit 调用数分别核对，失败 Run 也计入新增。",
+    "对 builderJson 的文件原文、用户消息和子任务消息做确定性比较。语义正确性另由审查员判断。",
+    "按现有 redactor 脱敏凭据，保留脱敏位置与所有非凭据内容。"
+  ],
+  "cleanup": [
+    "延迟控制先 release，再卸载本轮控制插件。",
+    "按 cancellationProtocol 请求并确认父子终态，再停止官方 Desktop、夹具与观察 listener。",
+    "取消未确认或 Run 仍在运行时，记录未决状态，不以停止应用代替业务终态。",
+    "保存 probe status，确认本轮进程组消失且端口无占用。",
+    "恢复本轮 Profile 的真实 MCP 与 Host 数据源地址。",
+    "保留 worktree 持久 Profile、Workspace、Run、媒体和原失败记录。",
+    "不停止用户的真实目录或 ComfyUI 服务。"
+  ],
+  "gaps": [
+    {
+      "id": "G1",
+      "owner": "实施者",
+      "gap": "新共享派发和观察 wrapper 候选尚未冻结。",
+      "finish": "独立审查通过并构建正式候选。"
+    },
+    {
+      "id": "G2",
+      "owner": "本地验收驱动维护者",
+      "gap": "H3 受控父与真实子模型的组合路由尚未具备。",
+      "finish": "扩展现有 completion-lifecycle，先用零外部模型探针验证真实父子身份与路径。"
+    },
+    {
+      "id": "G3",
+      "owner": "独立审查员",
+      "gap": "历史资源、原文件复制和 A/B 单一差异尚未物化。",
+      "finish": "比较两个安装集合，核对允许路径替换及非目标数据。"
+    },
+    {
+      "id": "G4",
+      "owner": "实施者",
+      "gap": "业务资源只核对了既有证据，没有查询当前服务。",
+      "finish": "执行前只读核对模型文件、模板和实例。"
+    },
+    {
+      "id": "G5",
+      "owner": "独立审查员",
+      "gap": "当前合同尚未完成独立语义审计。",
+      "finish": "只按文字标准审查本文件并处理发现。"
+    },
+    {
+      "id": "G6",
+      "owner": "本地验收驱动维护者",
+      "gap": "已核对子中断 SDK，但本地控制器尚无通用入口及终态探针。",
+      "finish": "复用真实父 ToolRegistry 探针完成 cancellationProtocol；结构验证不调用外部模型。"
+    },
+    {
+      "id": "G7",
+      "owner": "实施者",
+      "gap": "绝对期限不能保证长生成后的完整延迟窗口。",
+      "finish": "先用本地确定性探针覆盖迟到钩子。真实运行仅按 heldWindow 判定，窗口不足记未覆盖。"
+    },
+    {
+      "id": "G8",
+      "owner": "实施者",
+      "gap": "首次请求持久化协议已指定，尚未验证实际发送对象。",
+      "finish": "按 firstPromptProtocol 执行确定性归档比较，并关联 source.rpcId。"
+    }
+  ],
+  "nonGoals": [
+    "不修改产品、Skill 或现有驱动。",
+    "不执行任何模型、应用或生成。",
+    "不把结构验证改记为业务通过。"
+  ],
+  "authorization": "本次只读研究和编写本合同。执行与驱动调整由主 Agent 按已批准计划另行安排。",
+  "textReview": {
+    "profile": "for-document",
+    "manual": "已处理 T2、T3、T4 和 INPUT-R1 至 INPUT-R3。取消、窗口和请求身份均区分源码证据与待执行验证。",
+    "stcErrors": 0,
+    "antiEchoPending": 0,
+    "warningHandling": "JSON 引号属于语法。历史 arguments 保留原始引语、路径和拼写。长任务模板保持完整输入。",
+    "independentAudit": "修订稿待独立复核。"
+  },
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "35-50",
+    "use": "沿首次偏离回查原任务和知识来源，保留因果限制。"
+  },
+  "firstPromptProtocol": {
+    "scope": "所有真实业务首轮及后续测试用户消息。H3 的受控父调用单独记录。",
+    "existingEntry": "desktop-driver remote 接受已保存的 namespace、method、args，并原样传给官方 Remote。",
+    "steps": [
+      "用 remote workspace.create 创建 Workspace，立即归档返回身份。",
+      "用 remote session.create 创建本轮父 Session，立即归档返回身份。",
+      "用 remote session.selectModel 选择获准模型，归档结果。",
+      "在发送前创建并持久化 prompt-request.json。保存 sessionId、requestId、mode、content 和 clientTimeZone；另存 workspaceId 与原输入引用。",
+      "从该文件读取完整对象，包装为 remote session.prompt 的唯一参数并先保存包装文件。",
+      "调用 desktop-driver remote 发送包装文件。保存返回路径和 accepted 确认。",
+      "关联 agent/inbox/spliced 或 user/message 中 source.kind=user、source.rpcId=requestId。只读比较发送对象与归档对象。"
+    ],
+    "retry": "响应不明时先收集原父记录。需要重发时仅向原 Session 重发同一对象和 requestId，不再执行 session.create。",
+    "sdkEvidence": ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:850-858,1063-1074；hasPromptRequest 检查 inbox 和已有 user/message。",
+    "creationFailure": "若 session.create 返回丢失，尚未取得父身份，登记创建身份未决。现有合同未证明创建接口幂等，不自动再次创建。",
+    "status": "接口已源码核对；归档发送对象与 SDK 接纳的确定性探针待执行。"
+  },
+  "cancellationProtocol": {
+    "existingInterfaces": [
+      {
+        "entry": "remote.session.cancel({sessionId:parentSessionId})",
+        "scope": "普通父 Session。",
+        "evidence": ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:990-1000",
+        "limit": "返回 accepted 只表示请求已接纳；keepInbox=true。普通接口拒绝子会话。"
+      },
+      {
+        "entry": "ctx.subagents.interrupt(childSessionId,{kind:\"user\",parentSessionId:directParentSessionId})",
+        "scope": "官方 Host SDK 的直接父会话授权地址。",
+        "evidence": ".local/skills-mcp-migration-live/dsh-subagent-index.js:843-860",
+        "limit": "尚未核对对应 Remote 方法，不能虚构 remote.subagent.cancel。"
+      },
+      {
+        "entry": "ctx.tools.execute({callId,name:\"interrupt_agent\",arguments:{agent_id:childSessionId},agent:realParentAgent,signal})",
+        "scope": "经已注册 ToolRegistry，以真实祖先 Agent 中断后代。",
+        "evidence": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__index.js:60-91",
+        "limit": "控制器须从本轮 ctx.agents.get(parentSessionId) 取真实对象。不得伪造 Agent。"
+      }
+    ],
+    "driverGap": "desktop-driver 尚无 Host ToolRegistry 通用命令。source-diagnostic 仅证明 bash 调用入口。需扩展该本地探针以调用已注册 interrupt_agent，保存参数、结果和 additionalContexts。",
+    "sequence": [
+      "取消前保存父、全部子和后代的 sessionId、直接父 ID、activation runId 与最近事件序号。",
+      "先 release 当前延迟，再请求父取消并逐个请求子中断。后代不会随父或子中断自动停止。",
+      "持续收集事件并补入取消期间新出现的本轮后代；不投递任何新业务任务。",
+      "对子保存最终 turn/end 的 reason 和对应 subagent/end 的 stopReason、activation runId。",
+      "若目标在请求前已经完成，保存该完成事件，标为自然完成；不能写成中断成功。",
+      "子结束通知可能唤醒 idle 父。继续观察并取消新启动的父 turn，直到全部已知子终止且父无活动 turn。",
+      "只读重查 Run 与媒体，分别保存取消前、请求后及收尾时计数。",
+      "已接纳 Run 由 Host coordinator 继续管理。记录真实终态或仍在运行；停止 Desktop 不等于取消远端生成。"
+    ],
+    "terminalAcceptance": "正在运行的子被中断时，要求 turn/end.reason.kind=aborted，并关联同 activation 的 subagent/end.stopReason=aborted。SDK epochStopReason 将 aborted 或 interrupted 映射为 aborted。其他终态按实际事件报告；accepted、inactive 和端口释放均不能代替终态。",
+    "observationTimeoutMs": 60000,
+    "timeoutResult": "期限内没有最终事件则标为取消未确认。保留记录后可清理应用，但该清理不能改判取消成功。",
+    "probeGate": "真实业务前，用现有受控 Provider 验证父取消后子仍运行、逐子 interrupt、后代枚举和父唤醒。外部模型调用数为 0。该探针尚未执行。",
+    "terminalEvidence": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js:1009-1030；dsh-subagent-index.js:318-323,343-357。"
+  }
+}

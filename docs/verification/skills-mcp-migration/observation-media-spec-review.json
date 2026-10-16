@@ -1,0 +1,146 @@
+{
+  "purpose": "记录观察媒体解析增量的独立合同审查结论。",
+  "readWhen": "核对合同覆盖及安排官方运行验收时。",
+  "status": "未发现需修改的合同缺陷；官方运行验收仍待完成。",
+  "findings": [],
+  "scope": {
+    "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "files": [
+      "src/host/generation/observation-media.ts",
+      "src/host/core/schema.ts",
+      "src/host/core/plugin.ts",
+      "agent-presets/project-iteration-dispatch.mjs",
+      "agent-presets/project-observation-dispatch.mjs",
+      "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "config/plugin-runtime-resources.json",
+      ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "tests/unit/observation-media.test.ts",
+      "tests/unit/fixtures/observation-media-runtime.ts",
+      "tests/integration/host-plugin.test.ts",
+      "tests/production/native-iteration-roles.test.mjs",
+      "tests/production/official-mcp-acceptance.test.mjs",
+      "tests/production/source-agent-preset.test.mjs",
+      "tests/production/fixtures/project-subagent-control-runtime.mjs",
+      "docs/verification/skills-mcp-migration/observation-media-implementation.json"
+    ],
+    "contract": "docs/verification/skills-mcp-migration/observation-media-handoff-contract.json",
+    "plan": "docs/plans/skills-mcp-migration-20261013.md:1314",
+    "baseline": ".local/skills-mcp-migration-live/source-diagnostic-candidate.tgz",
+    "baselineLimit": "基准包包含 Preset、Skill、配置和编译后的 Core，未包含 src 与 tests 源文件。",
+    "comparison": "逐项比较包内原文件；源文件按当前合同审查。包内 Core 已使用 CatalogClient 与 GenerationSourceClient，本次未将该迁移计入观察媒体增量。"
+  },
+  "checks": [
+    {
+      "item": "Core 注入与真实调用身份",
+      "result": "观察适配器显式注入 Core，闭包绑定当前 Runtime 和 WorkspaceRegistry。身份函数校验实际 Tool Call、工具名、会话目录与 Workspace 会话归属。",
+      "evidence": [
+        "agent-presets/project-observation-dispatch.mjs:4",
+        "src/host/core/plugin.ts:151",
+        "src/host/core/schema.ts:16",
+        "src/host/generation/observation-media.ts:41",
+        "src/host/generation/tool-execution-identity.ts:16",
+        "tests/integration/host-plugin.test.ts:184"
+      ]
+    },
+    {
+      "item": "实际媒体查询与字段投影",
+      "result": "解析函数读取持久媒体记录，仅返回查询所得 run_id、media_id 和 path。Runtime 的 title 与 parameters 未进入观察图片参数。",
+      "evidence": [
+        "src/host/generation/observation-media.ts:47",
+        "src/host/generation/observation-media.ts:62",
+        "src/host/generation/generation-runtime.ts:812",
+        "tests/production/native-iteration-roles.test.mjs:152"
+      ]
+    },
+    {
+      "item": "分批、子集、顺序与重复",
+      "result": "Run 引用按首次出现顺序去重并按共享上限分批。查询结果按请求位置关联，最终按原引用映射，保留重复项。唯一 Run 前缀返回完整 ID。",
+      "evidence": [
+        "src/host/generation/observation-media.ts:42",
+        "tests/unit/observation-media.test.ts:24",
+        "tests/unit/observation-media.test.ts:47",
+        "tests/production/native-iteration-roles.test.mjs:139"
+      ]
+    },
+    {
+      "item": "派发前失败",
+      "result": "无效结构在 Workspace 查询前失败。身份、查询、媒体缺失及后续批次失败均阻止创建或续派子会话。逐 Run 查询错误保留原错误码与消息。",
+      "evidence": [
+        "src/host/generation/observation-media.ts:27",
+        "src/host/generation/observation-media.ts:49",
+        "src/host/generation/observation-media.ts:58",
+        "agent-presets/project-iteration-dispatch.mjs:102",
+        "tests/production/native-iteration-roles.test.mjs:176",
+        "tests/production/native-iteration-roles.test.mjs:191"
+      ]
+    },
+    {
+      "item": "取消与接纳恢复",
+      "result": "参数准备前后均检查取消；准备完成前不创建完成观察器。接纳身份先保存，再等待完成。取消后续派使用原子会话。",
+      "evidence": [
+        "agent-presets/project-iteration-dispatch.mjs:97",
+        "agent-presets/project-iteration-dispatch.mjs:103",
+        "agent-presets/project-iteration-dispatch.mjs:134",
+        "tests/production/native-iteration-roles.test.mjs:114",
+        "tests/production/native-iteration-roles.test.mjs:215",
+        "tests/production/native-iteration-roles.test.mjs:232"
+      ]
+    },
+    {
+      "item": "仅转换 images",
+      "result": "适配器保留其余参数。questions、output_files 和 description 沿用调用值。其他角色保留原派发入口和输出合同。",
+      "evidence": [
+        "agent-presets/project-observation-dispatch.mjs:6",
+        "agent-presets/project-iteration-dispatch.mjs:102",
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:315",
+        "tests/production/native-iteration-roles.test.mjs:152",
+        "tests/production/native-iteration-roles.test.mjs:258"
+      ]
+    },
+    {
+      "item": "打包与角色发现",
+      "result": "运行资源清单包含新适配器。角色发现消费者均枚举共享派发与观察适配器，观察参数要求 run_id 与 media_id。",
+      "evidence": [
+        "config/plugin-runtime-resources.json:19",
+        "tests/production/official-mcp-acceptance.test.mjs:17",
+        "tests/production/source-agent-preset.test.mjs:130",
+        "tests/production/fixtures/project-subagent-control-runtime.mjs:50"
+      ]
+    },
+    {
+      "item": "交接文字",
+      "result": "生成记录增加媒体 ID；主 Agent 选择媒体引用，观察 Agent 接收实际路径。观察记录继续保存路径与 Run 对应关系。",
+      "evidence": [
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:313",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md:39",
+        ".agents/skills/comfyui-iterate-generation/references/records.md:17"
+      ]
+    }
+  ],
+  "verification": {
+    "command": "pnpm exec vitest run tests/unit/observation-media.test.ts tests/production/native-iteration-roles.test.mjs tests/integration/host-plugin.test.ts --maxWorkers=1 --no-file-parallelism",
+    "exitCode": 0,
+    "testFiles": 3,
+    "testsPassed": 81,
+    "durationSeconds": 4.2,
+    "method": "真实 GenerationRuntime 与 SQLite 媒体记录；会话事件、WorkspaceRegistry 和子会话服务使用测试夹具。"
+  },
+  "remaining": [
+    "使用最终候选包完成官方安装和真实 ToolRuntime 探针。",
+    "对原 Run 已保存媒体执行无模型回放，核对实际子任务路径。",
+    "按合同使用原模型和业务输入复验四角色任务，并独立核对完整轨迹。"
+  ],
+  "reviewLimits": [
+    "本次未启动模型或官方应用。",
+    "本次未执行全量 quality，也未将测试夹具结果视为官方运行验收。"
+  ],
+  "stc": {
+    "profile": "for-document",
+    "manualReview": "逐句核对术语、限定条件和证据位置。JSON 引号属于结构语法。",
+    "errors": 0,
+    "warnings": 28,
+    "antiEchoPending": 0,
+    "exitCode": 0
+  }
+}

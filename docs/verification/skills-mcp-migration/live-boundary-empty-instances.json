@@ -1,0 +1,307 @@
+{
+  "purpose": "核对两个预设在空实例列表场景中的停止行为与实际提交证据。",
+  "read_when": "验收 Skills MCP 迁移空实例边界场景时。",
+  "verdict": "未通过",
+  "scope": {
+    "data": "目录读取使用本机边界夹具；search_instances 的文本与结构化结果均为空。",
+    "model_calls": "两个决策 Agent 均调用 OpenRouter 免费模型，生成与媒体解析记录来自实际工具执行。",
+    "product_changes": "审查期间保持产品文件不变。",
+    "child_session_limit": "迭代预设派生观察子会话的完整事件不在本次验收范围内。"
+  },
+  "requirements": [
+    {
+      "path": ".agents/skills/comfyui-generate/SKILL.md",
+      "line": 58,
+      "text": "Skill 执行者通过 NoobAI MCP 获取实例列表，采用返回的第一个实例作为本次目标；实例列表为空时，Skill 执行者报告没有可用的 ComfyUI 实例，并停止创建图片。确定实例 ID 后，Skill 执行者完整读取 `references/template-parameter-inspection-cli.md`。"
+    },
+    {
+      "path": "docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md",
+      "section": "5.3",
+      "criterion": "实例列表为空时报告并停止依赖实例的操作；任一 Generation Request 提交使任务验收不通过。"
+    }
+  ],
+  "cases": [
+    {
+      "preset": "工作台",
+      "verdict": "未通过",
+      "collect": ".local/skills-mcp-migration-live/desktop/d483cb80-e9ce-4d28-92b5-413e1a423ddd/1791890814030-b917fde3-8df1-4296-8f42-8330df6ac6d4-collect.json",
+      "session_id": "session-cbbea599-c3ea-411b-b217-8c334776bd49",
+      "actual_decision_model": {
+        "provider": "openrouter",
+        "model": "apodex/apodex-1.1-mini:free",
+        "evidence": "下一轮 llm-calls request 与 DSH assistant/message source"
+      },
+      "empty_result_chains": [
+        {
+          "raw_path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/de10e782-2ce6-4e25-93cc-161a229069ad/exchange-f30af6d3-3355-4867-8655-cfedfc8f1313.json",
+          "raw_result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"results\":[],\"next\":null}"
+              }
+            ],
+            "structuredContent": {
+              "results": [],
+              "next": null
+            }
+          },
+          "dsh_result_seq": 52,
+          "dsh_call_id": "call_9d66e4b0b393400ca3aa3b5f",
+          "dsh_content": [
+            {
+              "type": "text",
+              "text": "{\"results\":[],\"next\":null}"
+            }
+          ],
+          "raw_text_equals_dsh": true,
+          "next_llm_request": {
+            "path": ".local/skills-mcp-migration-live/llm-calls/3d07ea02-077b-489b-95df-5cfd02a3be3d.jsonl",
+            "line": 1,
+            "at": "2026-10-13T11:24:48.516Z",
+            "message_index": 20,
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"results\":[],\"next\":null}"
+              }
+            ],
+            "provider": "openrouter",
+            "model": "apodex/apodex-1.1-mini:free",
+            "same_as_dsh": true
+          }
+        }
+      ],
+      "cli_fallback": {
+        "call_seq": 75,
+        "result_seq": 76,
+        "command": "catalog instance list",
+        "result": [
+          {
+            "type": "text",
+            "text": "{\"status\":\"ok\",\"message\":null,\"results\":[{\"id\":\"2\"}],\"page\":1,\"page_size\":100,\"total_count\":1}\nEXIT=0\n"
+          }
+        ]
+      },
+      "parameter_inspection_call_seq": 97,
+      "submission": {
+        "call_seq": 107,
+        "result_seq": 108,
+        "run_id": "run_80b47e5f-6fdb-4e58-aed7-2a4ed0eb69af",
+        "instance_id": "2",
+        "model_id": "1"
+      },
+      "media": {
+        "result_seq": 120,
+        "media_id": "media_8e32d054-40c1-453b-81bf-40578aaa2fe5",
+        "node_id": "7",
+        "output_index": 0,
+        "filename": "WAI_00036_.png",
+        "media_type": "image/png",
+        "file_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/data/plugins/harness-comfyui/media/8e/32/media_8e32d054-40c1-453b-81bf-40578aaa2fe5.png",
+        "file_exists": true,
+        "bytes": 1858011,
+        "png_header_valid": true,
+        "width": 1024,
+        "height": 1536
+      },
+      "turn_end_events": [
+        {
+          "seq": 146,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ]
+    },
+    {
+      "preset": "迭代",
+      "verdict": "未通过",
+      "collect": ".local/skills-mcp-migration-live/desktop/d483cb80-e9ce-4d28-92b5-413e1a423ddd/1791891004785-28dc6ae2-20f3-4b9f-ab62-98ef12d75044-collect.json",
+      "session_id": "session-721e4f1b-6089-4d90-913e-1366a1aa0544",
+      "actual_decision_model": {
+        "provider": "openrouter",
+        "model": "apodex/apodex-1.1-mini:free",
+        "evidence": "下一轮 llm-calls request 与 DSH assistant/message source"
+      },
+      "empty_result_chains": [
+        {
+          "raw_path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/de10e782-2ce6-4e25-93cc-161a229069ad/exchange-816d768f-cf59-4aa7-bdd9-7f41f5dde912.json",
+          "raw_result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"results\":[],\"next\":null}"
+              }
+            ],
+            "structuredContent": {
+              "results": [],
+              "next": null
+            }
+          },
+          "dsh_result_seq": 47,
+          "dsh_call_id": "call_08c331d4eaee4012b198df15",
+          "dsh_content": [
+            {
+              "type": "text",
+              "text": "{\"results\":[],\"next\":null}"
+            }
+          ],
+          "raw_text_equals_dsh": true,
+          "next_llm_request": {
+            "path": ".local/skills-mcp-migration-live/llm-calls/511c3c9c-7c28-4cbf-b7ba-c2dbbf2ebb84.jsonl",
+            "line": 1,
+            "at": "2026-10-13T11:25:58.927Z",
+            "message_index": 18,
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"results\":[],\"next\":null}"
+              }
+            ],
+            "provider": "openrouter",
+            "model": "apodex/apodex-1.1-mini:free",
+            "same_as_dsh": true
+          }
+        },
+        {
+          "raw_path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/de10e782-2ce6-4e25-93cc-161a229069ad/exchange-acaed8b1-262e-4c73-842e-e88c5b4ca80d.json",
+          "raw_result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"results\":[],\"next\":null}"
+              }
+            ],
+            "structuredContent": {
+              "results": [],
+              "next": null
+            }
+          },
+          "dsh_result_seq": 54,
+          "dsh_call_id": "call_5fff41ed8bc04d4f9ba5ed82",
+          "dsh_content": [
+            {
+              "type": "text",
+              "text": "{\"results\":[],\"next\":null}"
+            }
+          ],
+          "raw_text_equals_dsh": true,
+          "next_llm_request": {
+            "path": ".local/skills-mcp-migration-live/llm-calls/8570cf71-e8fb-4bea-b4a3-fc56ca6ac906.jsonl",
+            "line": 1,
+            "at": "2026-10-13T11:26:03.813Z",
+            "message_index": 21,
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"results\":[],\"next\":null}"
+              }
+            ],
+            "provider": "openrouter",
+            "model": "apodex/apodex-1.1-mini:free",
+            "same_as_dsh": true
+          }
+        }
+      ],
+      "cli_fallback": {
+        "call_seq": 75,
+        "result_seq": 76,
+        "command": "catalog instance list",
+        "result": [
+          {
+            "type": "text",
+            "text": "{\"status\":\"ok\",\"message\":null,\"results\":[{\"id\":\"2\"}],\"page\":1,\"page_size\":100,\"total_count\":1}\nEXIT:0\n"
+          }
+        ]
+      },
+      "parameter_inspection_call_seq": 82,
+      "submission": {
+        "call_seq": 92,
+        "result_seq": 93,
+        "run_id": "run_b3255fad-27b2-4777-be94-0ea5aeaf8880",
+        "instance_id": "2",
+        "model_id": "1"
+      },
+      "media": {
+        "result_seq": 118,
+        "media_id": "media_1c5b849e-7fc6-4a06-bdff-8cd5a4e423fb",
+        "node_id": "7",
+        "output_index": 0,
+        "filename": "WAI_00037_.png",
+        "media_type": "image/png",
+        "file_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/data/plugins/harness-comfyui/media/1c/5b/media_1c5b849e-7fc6-4a06-bdff-8cd5a4e423fb.png",
+        "file_exists": true,
+        "bytes": 1971173,
+        "png_header_valid": true,
+        "width": 1024,
+        "height": 1536
+      },
+      "turn_end_events": [
+        {
+          "seq": 175,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        },
+        {
+          "seq": 193,
+          "turn": 2,
+          "reason": {
+            "kind": "completed"
+          }
+        },
+        {
+          "seq": 201,
+          "turn": 3,
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "user"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "severity": "high",
+      "classification": "规则执行缺陷",
+      "summary": "两个决策 Agent 收到空实例列表后继续查询 CLI 目录并提交 Generation Request。",
+      "evidence": "工作台 seq 52→75/76→97→107/108；迭代 seq 47、54→75/76→82→92/93。",
+      "impact": "两个任务均创建了真实 Generation Run 和 PNG 文件，违反空实例停止规则。"
+    },
+    {
+      "severity": "medium",
+      "classification": "运行时目录入口并存",
+      "summary": "两个任务中的 CLI catalog instance list 仍可返回实例 2；MCP 边界夹具只覆盖 MCP 请求。",
+      "evidence": "两个会话 seq 75/76；工作台 seq 66、71 的 CLI 帮助公开 catalog 与 instance list。",
+      "judgment": "该入口使模型可以取得与夹具不同的实例列表。已核实规则偏离发生在空结果成功送达之后；当前证据未确定保留 CLI 目录能力本身是否违反批准的产品合同。"
+    },
+    {
+      "severity": "medium",
+      "classification": "规则执行缺陷",
+      "summary": "用户仅指定 template_id，两项提交均将默认模型写为 model 对象。",
+      "evidence": "工作台 seq 9、50、107；迭代 seq 9、52、92；references/generation-cli.md 的“输入值的来源”要求采用模板默认模型时 model 为 null。",
+      "impact": "提交内容偏离默认模型来源规则；该问题在空实例停止规则失效后出现。"
+    }
+  ],
+  "contract_and_host_assessment": {
+    "result_contract": "通过。三次空列表响应的 content 文本与 structuredContent 一致。",
+    "dsh_delivery": "通过。原始空列表文本、DSH tool/result 和紧接其后的模型请求内容一致。",
+    "host_loss_or_truncation": "本次关键空结果链未发现丢失或截断。",
+    "causal_limit": "现有记录证明模型选择了 CLI 后续路径；缺少单变量对照，无法量化 CLI 帮助对该选择的因果影响。"
+  },
+  "iteration_additional_model": {
+    "provider": "openrouter",
+    "model": "thinkingmachines/inkling:free",
+    "role": "违规生成后的图片观察请求",
+    "evidence": ".local/skills-mcp-migration-live/llm-calls/e2f7baf2-2251-4823-83a8-673f43f215cd.jsonl",
+    "line": 1
+  },
+  "final_status": "工作台 turn 1 在 seq 146 completed；迭代 turn 1、2 在 seq 175、193 completed，turn 3 在 seq 201 aborted/user。空实例违例均发生在 turn 1。",
+  "cleanup_evidence": "docs/verification/skills-mcp-migration/boundary-cleanup.json"
+}

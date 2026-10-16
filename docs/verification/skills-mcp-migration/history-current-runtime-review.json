@@ -1,0 +1,107 @@
+{
+  "purpose": "独立审查历史来源查询与 Krea2 构建。",
+  "readWhen": "核对执行结果、合同缺口与验收范围时。",
+  "reviewMode": "独立功能审查；只读既有输入、安装文件、原始轨迹与产物。",
+  "reviewModelCalls": 0,
+  "reviewApplicationStarts": 0,
+  "summary": "历史查询和银发覆盖成立，人物身份优先级失败。",
+  "caseId": "5.4-1",
+  "targetVerdict": "partial",
+  "fullContractVerdict": "fail",
+  "evidence": {
+    "materializedInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/before/materialized-input.json",
+    "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/before-stop/all-session-records.json",
+    "toolEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/before-stop/tool-events.json",
+    "firstActualModelRequestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/post-stop/model-calls/cbd2652a-2bd6-4665-a9a7-0833eb2b770f.jsonl",
+    "finalModelRequestIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/post-stop/model-calls/model-request-index.json",
+    "independentReviewIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/post-stop/independent-review-index.json",
+    "historyInvocationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/actual-history-cli-query.json",
+    "builderValidatorEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/actual-builder-validator.json",
+    "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/final-cleanup.json"
+  },
+  "requestAudit": {
+    "count": 16,
+    "complete": 16,
+    "identities": [
+      [
+        "opencode-go",
+        "deepseek-v4.1-flash"
+      ]
+    ],
+    "firstRequestContainsHistoricalPrompt": false,
+    "userPromptSubmissions": 1
+  },
+  "historyRead": {
+    "verdict": "pass",
+    "callSeq": 36,
+    "resultSeq": 37,
+    "command": "generation run-inputs --stdin --quiet",
+    "runId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+    "assessment": "成功返回真实保存参数及 Actual Workflow。历史 Prompt 由查询进入上下文，随后 seq 40 开始采用。",
+    "sourceProperty": "runs[0].arguments.parameters.positive_prompt",
+    "exitCode": 0
+  },
+  "semanticChecks": {
+    "currentSilverHair": "银色长发替换历史金发；没有采用当前上下文的蓝黑发。",
+    "historyAppearance": "保留蓝眼、长发和双马尾，没有采用 Alice 的红眼和短发。",
+    "scene": "保留白衬衫、站立半身、窗边柔光、窗台信封、白墙和边缘浅花。",
+    "identity": "最终 Prompt 省略历史 Ani 身份。seq 98 明确宣称改为 Alice。",
+    "style": "查询唯一 krea2 底模后，3 次 Style 查询均无结果。使用条件资料的动漫画风；未把其他底模目录记录当成 Krea2 结果。",
+    "generationPurpose": "复用旧 Run 修改同一画面，test 符合本次任务。",
+    "artifact": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace/history-current-5.4-1-28b0f54d-4293-4b84-b767-152672bb6c96/builder.json",
+    "validation": "seq 84/85 和 89/90 均返回退出码 0；最终文件为第二次校验版本。"
+  },
+  "findings": [
+    {
+      "id": "HISTORY-IDENTITY-PRIORITY",
+      "severity": "material",
+      "fact": "Agent 把当前 Alice 上下文用于覆盖历史 Ani 身份。",
+      "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/before-stop/all-session-records.json#seq=35,40,98",
+      "contract": ".agents/skills/krea2-anime-prompt-builder/SKILL.md:35",
+      "evidence": "seq 98 称主体身份按 Character 记录为爱丽丝，并称丢弃 Ani_(Grok)。最终 positive_prompt 没有 Ani 身份表达。",
+      "impact": "查询通路和银发覆盖通过，完整历史优先级目标失败。",
+      "causalLimit": "可见分析展示了错误取舍；未通过单变量实验确定其内部原因。"
+    },
+    {
+      "id": "HISTORY-AVOIDANCE-COVERAGE",
+      "severity": "material",
+      "fact": "positive_avoidance 要求两只手各有 5 根自然手指。positive_prompt 仅要求两手清晰可见。",
+      "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace/history-current-5.4-1-28b0f54d-4293-4b84-b767-152672bb6c96/builder.json#/positive_avoidance",
+      "contract": ".agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md#正向规避",
+      "impact": "seq 98 声称规避内容均已并入正文，实际缺少手指数量要求。"
+    }
+  ],
+  "preservation": {
+    "databaseRunsEqual": true,
+    "databaseMediaEqual": true,
+    "runCount": 1,
+    "mediaCount": 1,
+    "mediaDirectBytesEqual": true,
+    "oldWorkspaceFilesUnchanged": true,
+    "newWorkspaceFiles": [
+      "history-current-5.4-1-28b0f54d-4293-4b84-b767-152672bb6c96/builder.json"
+    ],
+    "oldSessionPrefixesPreserved": true,
+    "persistedRawFilesExist": true,
+    "oldModelRequestComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/post-stop/old-model-request-comparison.json",
+    "candidateComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/post-stop/package/installed-candidate-comparison.json",
+    "assessment": "数据库、媒体和产物已独立比较。原请求、Profile、安装候选和源 state 的保留另有采集比对记录。"
+  },
+  "cleanup": {
+    "portsReleased": true,
+    "processGroupPresent": false
+  },
+  "limits": [
+    "旧工作台失败和原四角色失败保持原判定。",
+    "本次候选 Skill 与预设和 source-diagnostic 相同，Host HTTP 诊断仍是 local-control。",
+    "未执行图片生成，不能判断图片中身份或手指的实际效果。",
+    "保留的原始压缩会话未重新解码；审查使用已有完整解码记录和边界比较。",
+    "尺寸选择为 2:3；本报告不把数值校验当作全部构图语义通过。"
+  ],
+  "textReview": {
+    "profile": "for-document",
+    "manualReview": "已逐项复核中文结论、证据位置和限制。JSON 引号属于语法；引用的原始工具参数保持原文。",
+    "stcErrors": 0,
+    "antiEchoPending": 0
+  }
+}

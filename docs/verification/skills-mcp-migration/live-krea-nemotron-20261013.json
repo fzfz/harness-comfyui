@@ -1,0 +1,578 @@
+{
+  "schemaVersion": 1,
+  "verificationDate": "2026-10-13",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md",
+  "planSections": [
+    "5.4",
+    "5.9",
+    "7"
+  ],
+  "runId": "dbe25b8b-552c-4d72-a698-d9e0119be27f",
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
+    "bundleId": "com.deepseek.dsh",
+    "version": "0.2.0-rc.2"
+  },
+  "plugin": {
+    "name": "harness-comfyui",
+    "version": "0.45.0"
+  },
+  "allowedModel": {
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free"
+  },
+  "batchState": "已停止",
+  "batchReason": "首项第5次Agent模型调用返回Nvidia上游暂时过载错误。主线程已要求保持停止。",
+  "reviewedBy": "独立Krea2执行队员",
+  "reviewMethod": "队员逐条阅读DSH事件及对应观察器请求与返回，并人工判定预期动作、实际动作和证据位置；字符相等比较只核对确定性的文本传递。",
+  "cases": [
+    {
+      "caseId": "5.4-2",
+      "preset": "harness-comfyui-cli-candidate",
+      "executionState": "会话已因上游错误结束",
+      "verdict": "证据不足",
+      "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+      "workspaceId": "be612149-8520-4c41-b218-3795973ae552",
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-5.4-2-workbench",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "subSessionIds": [],
+      "eventRange": {
+        "first": 0,
+        "last": 40
+      },
+      "eventCount": 41,
+      "timeout": false,
+      "evidence": {
+        "input": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/task.json",
+        "submit": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/session.json",
+        "watch": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/watch.json",
+        "allDshEvents": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/collect.json",
+        "traceIndex": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/trace-index.json",
+        "deliveredToolComparison": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/delivered-tool-comparison.json",
+        "observerCalls": [
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/6dfbadd3-a09e-49d1-8eeb-ebea14ff4db9.jsonl",
+            "requestAt": "2026-10-13T10:18:26.456Z",
+            "provider": "openrouter",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+            "purpose": null,
+            "recordCount": 11,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:18:34.163Z",
+                "callId": "6dfbadd3-a09e-49d1-8eeb-ebea14ff4db9",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                      "responseId": "gen-1791886707-TnemObtj32jOG0ggP24A",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messages": 5,
+            "tools": 25
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/84a74f0c-42a8-4df7-99cc-9b6707fe015f.jsonl",
+            "requestAt": "2026-10-13T10:18:26.458Z",
+            "provider": "openrouter",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+            "purpose": "session-title",
+            "recordCount": 12,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:18:28.492Z",
+                "callId": "84a74f0c-42a8-4df7-99cc-9b6707fe015f",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "stop"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                      "responseId": "gen-1791886707-ZQ01ItLfYnb4oLro91c8",
+                      "stopReason": "stop"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messages": 1
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/4bcc0fcc-7f75-4d83-b304-9ab16b54de7b.jsonl",
+            "requestAt": "2026-10-13T10:18:34.186Z",
+            "provider": "openrouter",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+            "purpose": null,
+            "recordCount": 11,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:18:40.089Z",
+                "callId": "4bcc0fcc-7f75-4d83-b304-9ab16b54de7b",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                      "responseId": "gen-1791886714-5dEqV3G16JazBSCYWzo9",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messages": 7,
+            "tools": 25
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/c2d7b27f-250c-4f52-8fb5-1ba0cea11bb6.jsonl",
+            "requestAt": "2026-10-13T10:18:40.122Z",
+            "provider": "openrouter",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+            "purpose": null,
+            "recordCount": 11,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:18:43.761Z",
+                "callId": "c2d7b27f-250c-4f52-8fb5-1ba0cea11bb6",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                      "responseId": "gen-1791886720-Wd3VR5uwJjTbV54EPPBj",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messages": 9,
+            "tools": 25
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/464d41e3-cbbd-4f22-b527-fd4da62baa1f.jsonl",
+            "requestAt": "2026-10-13T10:18:43.798Z",
+            "provider": "openrouter",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+            "purpose": null,
+            "recordCount": 11,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:18:46.551Z",
+                "callId": "464d41e3-cbbd-4f22-b527-fd4da62baa1f",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+                      "responseId": "gen-1791886724-7iuCqqMjfpxIkiUOB5Fr",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messages": 11,
+            "tools": 25
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/a766161a-9bde-4030-8e23-7d5359cef3e8.jsonl",
+            "requestAt": "2026-10-13T10:18:46.585Z",
+            "provider": "openrouter",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+            "sessionId": "session-63f4024b-9550-481d-9641-959ad10f66b2",
+            "purpose": null,
+            "recordCount": 4,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:18:47.383Z",
+                "callId": "a766161a-9bde-4030-8e23-7d5359cef3e8",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "Upstream error from Nvidia: Service temporarily overloaded",
+                      "code": "PI_AI_ERROR"
+                    }
+                  }
+                }
+              }
+            ],
+            "messages": 13,
+            "tools": 25
+          }
+        ]
+      },
+      "checks": [
+        {
+          "expected": "官方Desktop创建全新Session并选择工作台预设和指定模型。",
+          "actual": "submit返回新Session和Workspace；seq 3保存openrouter/Nemotron模型，projection保存harness-comfyui-cli-candidate。",
+          "eventSeqs": [
+            0,
+            3,
+            5,
+            9,
+            40
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员完整读取指定Krea2 Skill、当前输入合同和Krea2 Prompt规则。",
+          "actual": "seq 19调用skill；seq 24、29调用bash读取input-contract.md和krea2-prompt-rules.md。工具返回完整正文，紧接着的模型输入与DSH工具文本逐字相同。",
+          "eventSeqs": [
+            19,
+            20,
+            24,
+            25,
+            29,
+            30
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "Character的prompt_text为空时，执行队员通过NoobAI MCP优先按ID 39934取得角色Prompt。",
+          "actual": "seq 0至40只包含一次skill调用和三次参考文件读取；会话在MCP角色查询前以错误结束。",
+          "eventSeqs": [
+            19,
+            24,
+            29,
+            34,
+            38,
+            40
+          ],
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "执行队员采用查询得到的非空角色Prompt，并保持白衬衫、单人站立半身像和窗边柔光的明确要求。",
+          "actual": "会话没有角色查询结果、Prompt正文或最终结构化结果。",
+          "eventSeqs": [
+            38,
+            40
+          ],
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "执行队员按Krea2底模查询与候选规则处理未指定画师的情况。",
+          "actual": "会话没有底模或画师查询；上游错误发生时尚在参考资料读取阶段。",
+          "eventSeqs": [
+            19,
+            24,
+            29,
+            34,
+            38,
+            40
+          ],
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "执行队员读取生成结果合同、schema及profiles，调用现有validate-output.mjs，并保存通过校验的最终结构化结果。",
+          "actual": "seq 34、35读取generation-output-contract.md；会话没有schema/profiles读取、校验器调用或产物写入。实际Workspace目录为空。",
+          "eventSeqs": [
+            34,
+            35,
+            38,
+            40
+          ],
+          "artifactPaths": [],
+          "validatorCall": null,
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "每条实际模型调用均使用获准Provider和模型。",
+          "actual": "观察器记录5次Agent调用和1次session-title调用；6次请求均为openrouter/nvidia/nemotron-3-ultra-550b-a55b:free。seq 18、23、28、33的成功模型消息保存相同身份。第5次Agent调用的模型身份来自观察器请求。",
+          "eventSeqs": [
+            3,
+            18,
+            23,
+            28,
+            33,
+            38
+          ],
+          "verdict": "通过"
+        }
+      ],
+      "failure": {
+        "code": "PI_AI_ERROR",
+        "message": "Upstream error from Nvidia: Service temporarily overloaded",
+        "assistantAttemptEventSeq": 38,
+        "turnEndEventSeq": 40,
+        "observerFile": ".local/skills-mcp-migration-live/krea-evidence/5.4-2-workbench/llm-calls/a766161a-9bde-4030-8e23-7d5359cef3e8.jsonl",
+        "observerRequestAt": "2026-10-13T10:18:46.585Z",
+        "observerFailureAt": "2026-10-13T10:18:47.383Z",
+        "classification": "模型上游服务不可用；响应没有明确提供HTTP 429或RATE_LIMIT标识。"
+      },
+      "artifacts": [],
+      "workflowTruncation": {
+        "state": "未执行模板查询",
+        "verdict": "证据不足",
+        "comparisonOfCompletedReads": [
+          {
+            "resultEventSeq": 20,
+            "callId": "call-999abf01-34d3-4782-bf7f-8fc37f5ad200",
+            "nextRequestFile": "4bcc0fcc-7f75-4d83-b304-9ab16b54de7b.jsonl",
+            "nextRequestAt": "2026-10-13T10:18:34.186Z",
+            "durableTextCharacters": 5657,
+            "llmInputTextCharacters": 5657,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "resultEventSeq": 25,
+            "callId": "call-824bd5a5-18e8-4fd2-b9b8-e76493d987f0",
+            "nextRequestFile": "c2d7b27f-250c-4f52-8fb5-1ba0cea11bb6.jsonl",
+            "nextRequestAt": "2026-10-13T10:18:40.122Z",
+            "durableTextCharacters": 2688,
+            "llmInputTextCharacters": 2688,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "resultEventSeq": 30,
+            "callId": "call-721465c6-91df-4337-a1a1-ad5fdcaac448",
+            "nextRequestFile": "464d41e3-cbbd-4f22-b527-fd4da62baa1f.jsonl",
+            "nextRequestAt": "2026-10-13T10:18:43.798Z",
+            "durableTextCharacters": 2404,
+            "llmInputTextCharacters": 2404,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "resultEventSeq": 35,
+            "callId": "call-fb3585dc-eb6d-40ef-a784-4e413da5d872",
+            "nextRequestFile": "a766161a-9bde-4030-8e23-7d5359cef3e8.jsonl",
+            "nextRequestAt": "2026-10-13T10:18:46.585Z",
+            "durableTextCharacters": 3703,
+            "llmInputTextCharacters": 3703,
+            "textEqual": true,
+            "firstDifference": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "5.4-2",
+      "preset": "harness-comfyui-iteration",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-5.4-2-iteration",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/5.4-2-iteration/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项模型上游错误后，主线程要求保持停止。"
+    },
+    {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-cli-candidate",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-5.4-5-workbench",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/5.4-5-workbench/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项模型上游错误后，主线程要求保持停止。"
+    },
+    {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-iteration",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-5.4-5-iteration",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/5.4-5-iteration/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项模型上游错误后，主线程要求保持停止。"
+    }
+  ],
+  "openItems": [
+    "5.4-2工作台：使用全新会话完成MCP角色ID读取、来源采用、画师查询、最终结果和校验器验收。",
+    "5.4-2迭代：完成首次独立Session验收。",
+    "5.4-5工作台：完成首次独立Session验收。",
+    "5.4-5迭代：完成首次独立Session验收。"
+  ],
+  "modelCallSummary": {
+    "agentCalls": 5,
+    "titleCalls": 1,
+    "totalCalls": 6,
+    "completedToolCallResponses": 4,
+    "upstreamErrorResponses": 1,
+    "unapprovedModelCalls": 0
+  },
+  "changes": {
+    "productEdited": false,
+    "skillEdited": false,
+    "profileEdited": false,
+    "desktopStartedByThisWorker": false,
+    "desktopStoppedByThisWorker": false,
+    "additionalDshMessagesSent": 0
+  }
+}

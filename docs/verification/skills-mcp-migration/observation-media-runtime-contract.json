@@ -1,0 +1,450 @@
+{
+  "purpose": "规定官方观察媒体回放的输入、执行门禁、证据和恢复动作。",
+  "readWhen": "独立审查运行输入、编写本轮驱动和执行探针前读取。",
+  "status": "driver-ready-for-independent-code-review",
+  "readyForExecution": false,
+  "preparation": {
+    "applicationStarts": 0,
+    "remoteModelCalls": 0,
+    "driverImplemented": true,
+    "candidateProfilePreviewOnly": true
+  },
+  "definitions": {
+    "originalEnvironment": "read-only-baseline.json 所列 TpyZol 隔离环境。",
+    "originalMedia": "原环境已有成功 Run 保存的唯一媒体。",
+    "controlledProvider": "仅在 127.0.0.1 提供固定响应的本轮 HTTP 服务。",
+    "dispatch": "官方 subagents 服务接纳子会话或接纳续派消息。",
+    "officialProbe": "官方 Desktop、真实 Session 与 ToolRuntime 中的控制侧工具调用。",
+    "mappedFixture": "另建隔离数据库、Workspace 和媒体副本；身份明确映射到原始来源。"
+  },
+  "totalGoal": {
+    "executor": "本轮运行队员。",
+    "action": "经独立输入审查后，通过真实 ToolRuntime 调用最终候选的 subagent_observation。",
+    "result": "完整记录媒体解析、子首请求、派发失败和生命周期。",
+    "completion": "官方身份、安装、调用、数据保护和清理证据均可独立复核。",
+    "claimBoundary": "固定本地响应只验证结构与生命周期；观察语义由后续真实模型业务审查判定。"
+  },
+  "currentResearch": {
+    "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/read-only-baseline.json",
+    "candidateProfilePreview": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/candidate-profile-preview.json",
+    "sources": [
+      "docs/verification/skills-mcp-migration/observation-media-handoff-contract.json",
+      "docs/system/startup.md",
+      "docs/system/configuration.md",
+      "docs/system/testing.md",
+      "docs/agents/worktree-development.md",
+      ".local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs",
+      ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+      "tests/desktop/fixtures/official-preset-overrides.mjs",
+      "agent-presets/project-observation-dispatch.mjs",
+      "src/host/generation/observation-media.ts",
+      "src/host/generation/tool-execution-identity.ts",
+      "src/host/core/plugin.ts",
+      "src/host/core/schema.ts"
+    ],
+    "verified": [
+      "原环境记录为 stopped；数据库含 1 个成功 Run 和 1 个媒体。",
+      "原媒体有 1331702 字节，与恢复前留存副本逐字节相同。",
+      "最终候选包含 201 个资源；新增观察适配器在包内。",
+      "原 Profile patch 保存旧 images.path 参数；最终包生成的 patch 使用 media_id。",
+      "Profile patch 未保存角色模块名；目前没有旧模块名覆盖的证据。",
+      "候选 Core 文件含解析服务定义；实际服务绑定仍待官方探针。"
+    ],
+    "sourceIdentity": {
+      "statePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/state.json",
+      "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol",
+      "profileId": "47ec7de7-ec83-4982-a3ac-2fd1988973bf",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+      "workspaceId": "a25cfcb7-2580-4213-a381-391f07094571",
+      "databasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+      "runId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+      "mediaId": "media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323",
+      "mediaPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/media/a4/12/media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+      "originalCandidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/harness-comfyui-candidate.tgz",
+      "candidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+      "candidateResourceCount": 201
+    }
+  },
+  "problems": [
+    "安装和恢复同版本包的官方操作尚未在本轮核对。",
+    "必须清除旧角色参数覆盖，才能验证最终候选。",
+    "原数据只有 1 张图，无法覆盖多图子集和 21 个独立 Run。",
+    "接纳后取消与续派的控制驱动尚未编写。"
+  ],
+  "solution": {
+    "flow": "flowchart LR\n C[控制侧登记真实 tool/call] --> T[官方 ToolRuntime.execute]\n T --> W[已安装观察适配器]\n W --> R[Core 解析真实 Workspace 的 Run 媒体]\n R --> S[官方 subagents 接纳]\n S --> L[本地受控 Provider]\n L --> E[请求与持久事件证据]",
+    "writeOwnership": {
+      "controlRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime",
+      "contractPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+      "temporaryChangesAfterReview": [
+        "原隔离 Profile 的候选安装和运行 patch。",
+        "新测试 Session 及其子会话。",
+        "本轮官方 probe 的进程、端口和租约。"
+      ],
+      "protected": [
+        "原 state.json。",
+        "原会话及其既有事件。",
+        "原 Run 和媒体。",
+        "原 Workspace 文件。",
+        "其他队员文件。",
+        "源码、SDK、依赖和旧执行报告。"
+      ]
+    },
+    "driverReuse": [
+      {
+        "source": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+        "use": "复用 startRuntime、installRuntime、statusRuntime、stopRuntime。传入本轮 state 副本，归档写本轮目录。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+        "use": "复用 loadCandidateManifest、verifyInstalledCandidate、createControlledProfile。读取最终包的全部资源。"
+      },
+      {
+        "source": "tests/desktop/fixtures/official-preset-overrides.mjs",
+        "use": "createOfficialPresetProfilePatch 只从已核对的最终安装包生成角色 patch。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs",
+        "use": "参考 Host inspector 身份核对、真实 tool/call、withInitiator 和 ToolRuntime.execute。不得运行该文件的主入口。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/history-current-runtime/common.mjs",
+        "use": "参考只读数据库、完整持久事件帧采集和原文件前后比对。所有输出改为本轮目录。"
+      }
+    ],
+    "minimalOwnedDriver": {
+      "functions": [
+        "prepareControl",
+        "inspectControl",
+        "runControl",
+        "cleanupControl"
+      ],
+      "implementationRule": "仅编排既有控制模块和官方 API。不得复制产品媒体解析、替换 Core 或直接调用适配器 apply。",
+      "codingGate": "驱动若增加程序逻辑，先读取 tdd 技能并测试数据结构和清理路径。",
+      "commandStatus": "4 个入口已编写并通过本地定向测试。官方调用须在独立代码复核后执行。",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/runner.mjs",
+      "commands": [
+        "runner.mjs inspect：只读门禁检查。",
+        "runner.mjs run：仅在独立审查通过后启动。",
+        "runner.mjs collect：采集本轮已有证据。",
+        "runner.mjs cleanup：幂等停止和恢复。"
+      ],
+      "testReport": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/driver-test-report.json"
+    },
+    "steps": [
+      {
+        "order": 1,
+        "executor": "运行队员",
+        "action": "核对输入审查 readyForExecution、候选路径和本轮写入范围。保存原 state、Profile 全目录和 patch 的不可变副本。",
+        "artifact": "source-snapshot/、preflight.json；原文件清单、逐字节副本和来源。",
+        "completeWhen": "原环境独占可用；原应用已停止；选定端口无监听者。"
+      },
+      {
+        "order": 2,
+        "executor": "运行队员",
+        "action": "复制原 state 到本轮目录。改用本轮 observer、控制目录和端口。原 state 保持不变。",
+        "artifact": "runtime-state.json、独立 probe 配置。",
+        "completeWhen": "所有归档路径属于本轮；原 Profile、Workspace 与用户数据身份可追溯。"
+      },
+      {
+        "order": 3,
+        "executor": "运行队员",
+        "action": "启动本地固定响应 Provider 和必要的本地 MCP 服务。生成只含本地模型的 patch。",
+        "artifact": "controlled-profile.yml、service-addresses.json、环境变量名称记录。",
+        "completeWhen": "默认模型、各角色和 imageReader 均指向本地模型；旧远程 Provider 配置已移除。"
+      },
+      {
+        "order": 4,
+        "executor": "运行队员",
+        "action": "通过官方 Desktop 安装最终包。逐项比较全部安装资源。停止安装轮，再从最终安装包生成预设 patch。",
+        "artifact": "official-install.json、installed-resource-comparison.json、profile-change-record.json。",
+        "completeWhen": "201 个资源均与包内字节相同；路径均在原隔离根目录内。"
+      },
+      {
+        "order": 5,
+        "executor": "运行队员",
+        "action": "按既有方法启动本轮应用。核对进程组、端口、Profile、插件、Workspace、Core 服务和工具 schema。",
+        "artifact": "official-runtime-identity.json、observer-activation.json。",
+        "completeWhen": "已安装 Core 的 resolveObservationMedia 可见。观察工具 images 每项仅接受 run_id 和 media_id；其余参数保留。"
+      },
+      {
+        "order": 6,
+        "executor": "运行队员",
+        "action": "通过官方 workspace/session API 在原 Workspace 创建新父 Session。选择本地模型，不提交父模型提示。",
+        "artifact": "new-session-identity.json、原会话事件边界。",
+        "completeWhen": "新父 Agent 与 Session 身份一致，cwd 与原 Workspace 相同。"
+      },
+      {
+        "order": 7,
+        "executor": "运行队员",
+        "action": "为每个用例预存 callId 和参数。登记真实 tool/call，再执行官方 ToolRuntime。",
+        "artifact": "cases/ 下完整输入、工具结果、接纳身份、子首请求和持久事件。",
+        "completeWhen": "每项请求可关联到唯一父工具调用。参数失败和派发前取消项没有新增子任务；接纳后取消项保留子会话身份。"
+      },
+      {
+        "order": 8,
+        "executor": "运行队员",
+        "action": "采集取消与恢复结果。等待已接纳子会话终态；超时按官方 API 中断，再停止本轮应用。",
+        "artifact": "lifecycle.json、停止前后请求和全部 zstd 帧。",
+        "completeWhen": "接纳、完成、取消原因分别记录；父取消后子会话状态有独立证据。"
+      },
+      {
+        "order": 9,
+        "executor": "运行队员",
+        "action": "运行队员按 solution.restoreStrategy 恢复原 Profile，再核对原资源和模型配置。",
+        "artifact": "restore.json、cleanup.json、原数据前后比对。",
+        "completeWhen": "原 Profile 与备份字节一致；原 Run、媒体和会话事件前缀不变；本轮 PID 和端口释放。"
+      },
+      {
+        "order": 10,
+        "executor": "运行队员",
+        "action": "冻结证据索引和事实报告。执行 STC 检查并人工复核，交父线程独立审查。",
+        "artifact": "evidence-index.json、execution.json、stc-check.json、manual-review.json。",
+        "completeWhen": "所有通过项有原始证据入口；未执行项和失败项明确列出。"
+      }
+    ],
+    "controlledEnvironment": {
+      "provider": "completion-local",
+      "model": "completion-local-model",
+      "baseUrl": "本轮服务实际分配的 http://127.0.0.1:<port>/v1。",
+      "response": "固定英文文本 Controlled structural observation.；正常 finish_reason 为 stop，不返回工具调用。",
+      "cancelResponse": "专用用例接收并留存首请求后暂停响应；取消完成后结束连接。续派使用正常固定响应。",
+      "observation": "LLM stream 入口只允许上述 provider/model；发现其他组合立即中断并保存。",
+      "secrets": "只传本地测试 key 和本地 MCP token；不传 Go 或 OpenRouter 凭据。记录名称，不公开值。",
+      "coreConfig": "保留原 Core 配置；删除 createControlledProfile 额外加入的 startupWorkspacePath。Workspace 由实际 Session 确定。",
+      "zeroRemoteModelCondition": "Profile、observer 白名单、请求记录三者均只含本地受控 Provider。",
+      "limits": "运行记录不证明固定模型看懂图片；本轮不执行生成或语义评价。"
+    },
+    "officialInvocation": {
+      "parentPromptSubmissions": 0,
+      "toolName": "subagent_observation",
+      "event": "newParentAgent.session.append(\"tool/call\", {turn:0, step:caseIndex, callId, name, arguments:JSON.stringify(args)})",
+      "api": "ctx.agents.withInitiator(agent, () => ctx.tools.execute({callId, name, arguments:args, agent, signal}))",
+      "result": "按实际结果登记 tool/result，sourceEventSeqs 指向本项 tool/call。",
+      "injection": [
+        "agents",
+        "tools",
+        "subagents",
+        "harnessComfyuiCore"
+      ],
+      "binding": "本轮自有 observer 在 127.0.0.1 Host inspector 暴露 context，dispose 时移除。",
+      "identityChecks": [
+        "当前 probe 进程组与 runId 一致。",
+        "Host inspector 只有本轮 Node 目标。",
+        "Agent、Session、cwd 与当前官方 Remote 返回值一致。",
+        "真实 ToolRegistry 含候选观察工具；Core 服务来自已安装插件。"
+      ],
+      "cancelApi": "官方 remote.subagents.interruptByParent(childSessionId, parentSessionId, \"continuable\")。",
+      "cancelRule": "接纳身份先保存。工具 signal 取消、子任务中断和应用停止分别记录。",
+      "timeouts": {
+        "wholeProbeSeconds": 600,
+        "toolCallSeconds": 120,
+        "cleanupReserveSeconds": 60,
+        "localRequestLimit": 20
+      },
+      "cancelApiSource": ".local/skills-mcp-migration-live/dsh-subagent-index.js:3052；已见 Remote 装饰声明和方法定义。实际调用仍待官方探针。"
+    },
+    "neutralArguments": {
+      "description": "已保存媒体回放。",
+      "images": [
+        {
+          "run_id": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+          "media_id": "media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323"
+        }
+      ],
+      "questions": [
+        "请描述图片中可见的人物和物件。"
+      ],
+      "output_files": [
+        {
+          "path": "observation-media-replay/observations.md",
+          "purpose": "记录所选图片的可见内容。"
+        }
+      ],
+      "outputFilePolicy": "该路径只进入任务参数。本地固定响应不执行文件工具，不改原 Workspace。",
+      "inputBoundary": "只提交上述中性内容和媒体身份。原 Prompt、目标、参数和 title 不进入工具参数。"
+    },
+    "casesOriginal": [
+      {
+        "id": "original-selected-media",
+        "input": "neutralArguments 原值。",
+        "expected": "仅 1 个子任务；首请求含原媒体精确路径和中性问题。"
+      },
+      {
+        "id": "duplicate-reference",
+        "input": "images 使用同一媒体身份 2 次。",
+        "expected": "子任务收到 2 项相同路径，输入顺序保留。"
+      },
+      {
+        "id": "unknown-media",
+        "input": "原 run_id；media_id 为 media_00000000-0000-4000-8000-000000000042。",
+        "expected": "工具报告媒体未找到；新增子任务和模型请求均为 0。"
+      },
+      {
+        "id": "unknown-run",
+        "input": "run_id 为 run_00000000-0000-4000-8000-000000000042；原 media_id。",
+        "expected": "合法 ID 的 Run 查询未找到；新增子任务和模型请求均为 0。保留实际错误码。"
+      },
+      {
+        "id": "invalid-run-id",
+        "input": "run_id 为 run_observation_probe_missing；原 media_id。",
+        "expected": "Run ID 格式校验失败；新增子任务和模型请求均为 0。保留实际错误码。"
+      },
+      {
+        "id": "invalid-image-structure",
+        "input": "images 每项在合法身份外添加 path 字段。",
+        "expected": "工具参数失败；新增子任务和模型请求均为 0。"
+      },
+      {
+        "id": "cross-workspace",
+        "input": "另建空 Workspace 的真实 Session 调用原媒体身份。",
+        "expected": "Workspace 归属失败；新增子任务和模型请求均为 0。"
+      },
+      {
+        "id": "cancel-before-dispatch",
+        "input": "合法媒体身份；调用前 signal 已取消。",
+        "expected": "新增子任务和模型请求均为 0；保存取消原文。"
+      },
+      {
+        "id": "cancel-after-acceptance-and-resume",
+        "input": "本地 Provider 暂停首响应；接纳后取消，再以 agent_id 续派原子会话。",
+        "expected": "保存原接纳身份；续派保持 childSessionId，取消和续派分别有结果。",
+        "gate": "G4"
+      }
+    ],
+    "mappedFixtureCases": {
+      "executionPolicy": "独立核对夹具映射后在全新官方隔离环境运行；原数据库保持只读。",
+      "fixtureRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/mapped-fixture",
+      "source": "只复制原媒体字节；保留副本来源、原身份和新身份映射。",
+      "schema": "从已安装最终候选的数据层读取表结构；夹具仅插入测试数据，不改产品或原 Run。",
+      "cases": [
+        {
+          "id": "selected-subset",
+          "fixture": "1 个夹具 Run、3 个不同 media_id 和 3 个不同本地路径。副本字节均来自原媒体。",
+          "selection": "只选择第 3 项和第 1 项。",
+          "expected": "只有 2 个选定路径进入子首请求，顺序为 3、1。"
+        },
+        {
+          "id": "over-query-batch",
+          "fixture": "21 个不同夹具 Run；每个 Run 有 1 个媒体副本。",
+          "selection": "21 个独立 Run 的媒体。",
+          "expected": "Core 跨越单批 20 个 Run 的边界；完整子请求含 21 项有序路径。"
+        },
+        {
+          "id": "run-without-media",
+          "fixture": "1 个有效夹具 Run，媒体表无对应行。",
+          "selection": "该 Run 和未存在的媒体身份。",
+          "expected": "媒体未找到；新增子任务和模型请求均为 0。"
+        }
+      ],
+      "limits": "这些记录属于映射夹具，不能记为原 Run 的多图或跨批运行结果。",
+      "gate": "G5"
+    },
+    "restoreStrategy": {
+      "beforeMutation": "应用停止且独占后复制整个原 Profile，包括 node_modules、包管理文件和 patch。保留原包和逐文件备份。",
+      "preferred": "停止探针后通过官方界面回装原包；核对旧资源，再停止恢复原 patch。",
+      "fallback": "官方同版本回装失败时，应用停止后恢复完整 Profile 快照。仅恢复 Profile，不替换原业务数据库或 Workspace。",
+      "gate": "启动前核对快照完整且可读取。安装资源的真实路径必须在 Profile 备份范围内。恢复能力无法保证时改用全新隔离夹具。",
+      "originalData": "数据异常写入报告并保留现场；不得回写原 Run 或恢复数据库以掩盖变化。",
+      "state": "原 state.json 逐字不变；本轮状态、租约和归档只写本轮目录。",
+      "final": "原 observer、模型配置、角色 patch 和包资源恢复；本轮服务、PID 和端口均释放。"
+    },
+    "evidence": {
+      "index": "本轮 evidence-index.json 逐项记录相对路径、身份、事件起止和采集时间。",
+      "before": [
+        "完整只读 Run/媒体表。",
+        "全部原 Session 与事件边界。",
+        "原模型调用边界。",
+        "原 Workspace 文件副本。",
+        "原媒体直接字节副本。",
+        "原 Profile 和安装资源来源。"
+      ],
+      "during": [
+        "官方安装和 201 项逐字节核对。",
+        "当前 ToolRegistry schema 和 Core 绑定身份。",
+        "每项真实 tool/call、tool/result 和子接纳身份。",
+        "全部父子可见事件、模型参数及本地 HTTP 原始请求。",
+        "子首请求的完整 messages 与媒体数组。",
+        "取消请求、返回值和持久 reason。"
+      ],
+      "after": [
+        "停止前后请求；全部 zstd 帧和解码记录。",
+        "Run 总数、完整旧行和媒体直接字节比较。",
+        "全部旧 Session 的事件前缀和旧调用原值。",
+        "原 Workspace 前后文件差异。",
+        "Profile 恢复记录；PID、端口和租约释放。"
+      ],
+      "firstRequestCheck": "结构比对限定媒体身份、精确路径、重复数和顺序。人工读取完整首请求，核对原 Prompt、目标和参数未进入观察消息。",
+      "dispatchFailureCheck": "同时核对 subagent 接纳事件、官方子会话集合、持久事件与本地 Provider 请求数。",
+      "reporting": "自然完成、取消、应用停止中断和未执行分别列出。每个结论引用原始证据。"
+    }
+  },
+  "decisionItems": [
+    {
+      "id": "G1",
+      "status": "pending-independent-input-review",
+      "requirement": "主线程安排独立输入审查。审查通过只授权进入执行前核对，不能预记运行断言通过。"
+    },
+    {
+      "id": "G2",
+      "status": "pending-preflight",
+      "requirement": "原环境独占、端口和完整 Profile 恢复能力可核对；失败则改用全新映射夹具。"
+    },
+    {
+      "id": "G3",
+      "status": "pending-official-runtime",
+      "requirement": "启动后核对官方安装、真实工具和 Core 绑定。该项是运行断言，失败即停止并恢复。"
+    },
+    {
+      "id": "G4",
+      "status": "pending-driver-api-check",
+      "requirement": "已见官方 interruptByParent 远程入口。实际中断与续派仍须探针；失败时记录未覆盖项并清理。"
+    },
+    {
+      "id": "G5",
+      "status": "pending-fixture-mapping-review",
+      "requirement": "单列隔离夹具来源与新身份，核对无原目录写入后才运行多图、跨批和无媒体项。"
+    }
+  ],
+  "acceptance": [
+    "原成功 Run、媒体字节、旧会话事件、旧调用和原 Workspace 文件均保留。",
+    "原媒体案例经真实官方 ToolRuntime 和当前 Core 解析。",
+    "子首请求含选定精确路径；问题和输出参数保持原值。",
+    "参数失败和派发前取消均有零接纳、零请求证据。",
+    "接纳后取消保存身份；恢复子会话的结果按实际记录。",
+    "本地受控请求与原 Run、映射夹具的覆盖范围分开记录。",
+    "远程模型请求为 0；固定响应的语义结果不列为通过。",
+    "原 Profile 恢复；本轮 PID、端口和租约释放。",
+    "STC check --profile for-document --anti-echo 与人工复核完成。"
+  ],
+  "nonGoals": [
+    "真实模型观察语义评价。",
+    "原四角色业务重跑。",
+    "生成新图片或修改 Builder 产物。",
+    "修复其他交接或整体超时。",
+    "安装依赖、修改源码、SDK 或 Skill 脚本。"
+  ],
+  "authorization": {
+    "current": "仅只读准备、编写本合同和驱动复用方案。",
+    "execution": "须先取得本合同的独立输入审查结果。",
+    "futureRealModel": "相同模型原四角色业务由主线程另行安排。",
+    "authority": "主线程 2026-10-14 的观察媒体官方无远程模型回放任务。"
+  },
+  "gatePhases": {
+    "permissionToPrepareLaunch": [
+      "G1 独立输入审查。"
+    ],
+    "beforeApplicationStart": [
+      "G2 原环境独占、端口和恢复条件。",
+      "Profile 只含本地模型；observer 白名单和无远程凭据的启动环境可核对。"
+    ],
+    "afterApplicationStart": [
+      "G3 安装字节、真实工具和 Core 绑定断言。"
+    ],
+    "beforeConditionalCases": [
+      "G4 实际取消与续派能力。",
+      "G5 隔离夹具映射审查。"
+    ],
+    "readyForExecutionMeaning": "独立输入审查通过后可开始执行前核对。G3 的通过结果只能在应用启动后写入。"
+  }
+}

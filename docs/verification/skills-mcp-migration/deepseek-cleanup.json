@@ -1,0 +1,56 @@
+{
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "desktop": [
+    {
+      "source": ".local/skills-mcp-migration-live/lightning-stop.json",
+      "runId": "bd83e9ad-51ba-4d8f-871e-c28080ecd9bf",
+      "status": null,
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-13T14:55:45.666Z",
+        "portsReleased": true
+      }
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/deepseek-no-default-stop.json",
+      "runId": "a0dd6c1d-37a4-4bd0-a84a-fe973a386386",
+      "status": null,
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-13T15:03:51.698Z",
+        "portsReleased": true
+      }
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/deepseek-empty-stop.json",
+      "runId": "8afcd59e-0da4-462f-9331-4a56122b2f4c",
+      "status": null,
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-13T15:12:58.409Z",
+        "portsReleased": true
+      }
+    }
+  ],
+  "fixtures": [
+    {
+      "runId": "3f44f665-bd79-4021-8420-4f4e54664a64",
+      "status": "stopped",
+      "processExited": true,
+      "portReleased": true,
+      "stoppedAt": "2026-10-13T15:03:51.813Z"
+    },
+    {
+      "runId": "c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b",
+      "status": "stopped",
+      "processExited": true,
+      "portReleased": true,
+      "stoppedAt": "2026-10-13T15:12:58.524Z"
+    }
+  ],
+  "realMcpRestored": true,
+  "textRolesRetainAuthorizedGo": true
+}

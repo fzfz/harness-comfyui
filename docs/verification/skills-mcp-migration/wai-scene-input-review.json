@@ -1,0 +1,83 @@
+{
+  "reviewedAt": "2026-10-14T04:46:38.874854+00:00",
+  "status": "通过",
+  "scope": "仅复验前输入符合性与矩阵分支预检；未发模型消息、未更改任务或产品。",
+  "index": ".local/skills-mcp-migration-live/wai-scene-reference-execution.json",
+  "baseline": ".local/skills-mcp-migration-live/isolated-profiles/builder-6761885f-c5dc-4a50-a75f-f77af6eef86f-5.5-3.json",
+  "findings": [],
+  "comparisons": {
+    "original": "原任务参数 JSON、保存目录句和 comfyui-context 逐字保持；仅外层 workspacePath、prompt 工作目录行及已安装 Skill 路径变化。",
+    "explicitPrimary": "相对 original 仅替换独立 Workspace，并在 request 末尾追加一个空格和“本轮主要场景明确选择单主体肖像。”；其他文字与上下文一致。",
+    "routing": "caseId、preset、provider、model 均保持原值；底模与画师查询仍由 Skill 执行者按合同完成。"
+  },
+  "inputs": [
+    {
+      "variant": "original",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-original-input.json",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-2L7uJG",
+      "workspaceExists": true,
+      "workspaceEntries": []
+    },
+    {
+      "variant": "explicit-primary",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-explicit-primary-input.json",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x",
+      "workspaceExists": true,
+      "workspaceEntries": []
+    }
+  ],
+  "contract": {
+    "installedSkill": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+    "matrix": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+    "installedSkillMatchesCandidateSource": true,
+    "originalBranch": {
+      "matchedScenes": [
+        "单主体肖像",
+        "遮挡与深度",
+        "环境叙事"
+      ],
+      "expected": "矩阵第 16 行：未指定主要场景且多个内容匹配条件成立，应列出全部匹配候选并等待用户选择；这项等待属于目标行为。"
+    },
+    "explicitPrimaryBranch": {
+      "selected": "单主体肖像",
+      "expected": "矩阵第 15 行：用户明确指定一个主要场景且单幅单主体条件成立，可直接选定；第 18 行把另外匹配的遮挡与深度、环境叙事登记为次要约束。其他场景同时匹配不要求再次选择。"
+    }
+  },
+  "preservedRequirements": {
+    "purpose": "test",
+    "aspectRatio": "2:3",
+    "width": 1024,
+    "height": 1536,
+    "megapixels": 1.572864,
+    "dimensionConsistency": "1024:1536 约分为 2:3，1024×1536÷1000000=1.572864。",
+    "context": {
+      "type": "comfyui-context",
+      "data": {
+        "kind": "style",
+        "id": "12344",
+        "name": "say_hana",
+        "prompt_text": "say_hana"
+      }
+    },
+    "styleBranch": "Style 12344 已给非空 say_hana Prompt，未给 style_description；保留已审 5.5-3 目标说明补齐分支。",
+    "camera": [
+      "头到腰中景",
+      "平视",
+      "第三人称外部视点",
+      "面部焦点",
+      "全部清晰景深"
+    ],
+    "spatial": [
+      "主体居中",
+      "空前景",
+      "人物位于中景",
+      "窗与花卉位于背景",
+      "无遮挡",
+      "腰部以下裁剪",
+      "头部肩部双臂完整可见"
+    ],
+    "subject": "原创女性单人站立，金色长双马尾、蓝眼、白色翻领衬衫、窗边柔光、花卉背景。"
+  },
+  "missingInputAssessment": "未发现目标等待与画师说明补齐之外的已知非目标缺项。两输入均已给尺寸、用途、全部镜头及空间属性；explicit-primary 的主场景条件成立。Style 说明属于预期 MCP 查询材料，预检不把未来目录返回成功视为既成事实；实际底模缺失、重名或素材不匹配仍按真实返回验收。",
+  "boundaries": "预检只确认输入适合指定分支。执行时仍须核对实际请求正文、查询顺序、校验器运行、最终 JSON 与保存文件，以及未授权生成是否发生。"
+}

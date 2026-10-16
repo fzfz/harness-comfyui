@@ -6,6 +6,9 @@ import { DatabaseSync } from 'node:sqlite'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { GenerationSourceClient } from '../../src/host/generation/source-client.ts'
+import { SourceGenerationPreparer } from '../../src/host/generation/source-preparer.ts'
+import { SourceClientError } from '../../src/host/source-client/http-client.ts'
 import { MIN_RUN_INPUT_ID_PREFIX_LENGTH } from '../../src/generation/run-input-contract.ts'
 import {
   GenerationRuntime,
@@ -339,6 +342,55 @@ describe('GenerationRuntime acceptance', () => {
       message: 'template is invalid',
     })
     runtime.close()
+  })
+
+  it('persists and replays the source HTTP diagnostic produced during generation preparation', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-source-diagnostic-'))
+    temporaryDirectories.push(root)
+    const reads: string[] = []
+    const preparer = new SourceGenerationPreparer({
+      source: new GenerationSourceClient({
+        settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) },
+        read: async ({ operation, id }) => {
+          reads.push(`${operation}/${id}`)
+          if (operation === 'instance') {
+            throw new SourceClientError('SOURCE_HTTP_ERROR', 'Source service returned an HTTP error.', {
+              status: 404, responseBody: { message: 'Unverified server explanation', extra: 'private-body-value' },
+            })
+          }
+          return { status: 'ok', message: null, results: [{ id: 29, title: 'Test template', workflow_json: { nodes: [] } }], page: 1, page_size: 1, total_count: 1 }
+        },
+      }),
+      defaultInstanceId: '2',
+      compiler: {
+        compile: async () => { throw new Error('unreachable') },
+        inspectRuntimeParameters: async () => { throw new Error('unreachable') },
+      },
+    })
+    const adapter = { prepare: preparer.prepare.bind(preparer) }
+    const identity = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_source_http_failed' }
+    const input = { ...request('prompt'), templateId: '29' }
+    const expected = {
+      code: 'SOURCE_QUERY_FAILED',
+      message: '数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。',
+    }
+    let runtime = createRuntimeAt(root, adapter)
+    try {
+      await expect(runtime.acceptGeneration(identity, input)).rejects.toMatchObject(expected)
+      expect(reads).toEqual(['template-bundle/29', 'instance/2'])
+      runtime.close()
+      runtime = createRuntimeAt(root, adapter)
+
+      expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
+        status: 'failed',
+        errorCode: expected.code,
+        errorMessage: expected.message,
+      })
+      await expect(runtime.acceptGeneration(identity, input)).rejects.toMatchObject(expected)
+      expect(reads).toEqual(['template-bundle/29', 'instance/2'])
+    } finally {
+      runtime.close()
+    }
   })
 
   it('preserves created when the Tool caller cancels preparation', async () => {

@@ -1,0 +1,179 @@
+{
+  "case": "5.5-3-apodex-workbench-complete-scene",
+  "review_type": "独立只读真实执行验收",
+  "verdict": "失败",
+  "session_id": "session-2489dc99-d856-485f-938b-1246bd0a4237",
+  "model": "apodex/apodex-1.1-mini:free",
+  "sources": {
+    "trace": ".local/skills-mcp-migration-live/desktop/64ca19cf-15fa-421e-8400-de2c4aef89f6/1791889585892-2e1911fc-5171-4f7f-94aa-289af17a0780-collect.json",
+    "submit": ".local/skills-mcp-migration-live/desktop/64ca19cf-15fa-421e-8400-de2c4aef89f6/1791889360236-submit.json",
+    "artifact": ".local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json",
+    "plan": "docs/plans/skills-mcp-migration-20261013.md:890",
+    "acceptance_rule": "docs/plans/skills-mcp-migration-20261013.md:1190"
+  },
+  "scope": {
+    "trace_sequence": [
+      0,
+      122
+    ],
+    "model_steps": 18,
+    "observer_requests": 18,
+    "installed_skill_matches_current_source": true,
+    "models_invoked_by_reviewer": 0,
+    "product_files_changed_by_reviewer": 0
+  },
+  "summary": "画师说明已按 ID 成功查询并完整进入模型输入，两次校验命令均成功，生成结果已经保存。模型未执行查询前的唯一底模确认，并违反尺寸输入停止规则；Prompt 还存在必填位置遗漏及位置归属错误，因此本案例验收失败。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "title": "模型在缺少尺寸档位时自行决定宽高并继续交付",
+      "rule": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:23",
+      "events": [
+        9,
+        66,
+        73,
+        95,
+        101,
+        102,
+        106,
+        120
+      ],
+      "artifact_location": ".local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json:38",
+      "expected": "用户只给 2:3，而 size_profiles 没有该比例时，请求用户以 width 和 height 替换当前尺寸输入，并停止构造结果。",
+      "actual": "模型读取合同和全部尺寸档位后，仍采用 1024×1536、1.572864 MP，完成校验并保存。最终回答明确承认没有 2:3 档位，却继续提供自定尺寸。",
+      "impact": "尺寸由模型补定，绕过了 Skill 要求的用户选择；结构校验成功不足以满足该输入分支。"
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "title": "画师说明查询前未确认名称精确为 wai 的唯一底模",
+      "rule": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md:11",
+      "events": [
+        25,
+        26,
+        79,
+        80
+      ],
+      "expected": "获取 Style 素材前先确定唯一 wai 底模，再按已有 ID 获取记录并核对关联底模。",
+      "actual": "完整轨迹只有一次目录调用：seq25 get_catalog_resource(style,12344)。调用发生在读取 artist-adoption.md 之前；轨迹没有底模查询。返回项的 base_model 为 id=2、name=wai。",
+      "impact": "返回关联名称与要求一致，但本次执行没有建立底模唯一性，也未执行规定的查询顺序。"
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "title": "单主体肖像缺少必须完成的 expression_reaction 位置",
+      "rule": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md:24",
+      "events": [
+        38,
+        95,
+        96,
+        106,
+        111
+      ],
+      "artifact_location": ".local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json:24",
+      "expected": "单主体肖像完成矩阵指定的各位置，包括 expression_reaction。",
+      "actual": "模型以用户未指定表情为由跳过 expression_reaction，最终 positions 和正向 Prompt 均未提供表情、视线或反应内容。",
+      "impact": "生成结果未完成所选主场景的必填内容。"
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "title": "配色内容写入 detail_mood",
+      "rule": ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/detail-mood.md:27",
+      "events": [
+        82,
+        95,
+        96,
+        106
+      ],
+      "artifact_location": ".local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json:27",
+      "expected": "色彩内容进入 lighting。",
+      "actual": "模型将 delicate color palette 写入 detail_mood，并在最终正向 Prompt 保留该内容。",
+      "impact": "实际产物违反位置职责；格式校验没有执行该语义归属判断。"
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "title": "模型遗漏适用的动作结构和 artist 位置规则读取",
+      "rule": [
+        ".agents/skills/wai-sdxl-prompt-builder/SKILL.md:63",
+        ".agents/skills/wai-sdxl-prompt-builder/SKILL.md:65",
+        ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md:24"
+      ],
+      "events": [
+        18,
+        23,
+        81,
+        96
+      ],
+      "expected": "站立姿态触发 action-structure.md 读取；使用 artist 位置触发对应位置规则读取。",
+      "actual": "目录列表出现这些文件名，但全轨迹没有读取 action-structure.md 的调用；seq81 批量读取位置规则时遗漏 artist。",
+      "impact": "本次执行没有完成 Skill 明确要求的渐进读取流程。"
+    }
+  ],
+  "passed_checks": [
+    {
+      "name": "真实提交与完成",
+      "events": [
+        3,
+        9,
+        122
+      ],
+      "result": "submit 的 Session 与 collect 一致；选定模型执行 18 步，turn/end 为 completed。"
+    },
+    {
+      "name": "按现有 Style ID 补全说明",
+      "events": [
+        25,
+        26
+      ],
+      "result": "get_catalog_resource 使用 style/12344；返回非空完整说明，产物 style_context.style_description 与返回值相同。"
+    },
+    {
+      "name": "目录工具结果进入下一轮模型输入",
+      "events": [
+        26,
+        29
+      ],
+      "observer": ".local/skills-mcp-migration-live/llm-calls/3a909c8b-f92b-4644-ace2-c9e6f1b656a8.jsonl:1",
+      "request_time": "2026-10-13T11:02:48.347Z",
+      "tool_call_id": "call_e4b55b0831f546adbe00bdf6",
+      "result": "观察器下一轮 request.messages 中该工具消息与 seq26 的 message 整体相等。content 文本为 227 个字符、277 个 UTF-8 字节，ref、name、base_model、aliases、style_description、prompt_text、cover_url、sample_image_urls 全部保留。"
+    },
+    {
+      "name": "Prompt 格式校验",
+      "events": [
+        96,
+        97
+      ],
+      "result": "实际调用 validate-output.mjs --quiet --prompt-format；返回 success、EXIT=0。"
+    },
+    {
+      "name": "生成结果校验和保存",
+      "events": [
+        101,
+        102,
+        106,
+        117
+      ],
+      "result": "实际调用 validate-output.mjs --quiet；返回 EXIT=0。保存的 generation_result 与 seq102 返回的生成结果对象完全相等。"
+    },
+    {
+      "name": "已采用画师 Prompt 的可见内容",
+      "events": [
+        9,
+        26,
+        96,
+        106
+      ],
+      "result": "用户和目录返回的 Prompt 均为 say_hana；最终 artist 为 (say_hana)，payload 保留。"
+    }
+  ],
+  "evidence_limits": [
+    "用户 Prompt 与目录 Prompt 完全相同，本案例只能确认最终 payload 一致，无法单独区分采用了用户来源还是目录来源。",
+    "目录完整性结论覆盖本 Session 唯一一次目录工具调用及其下一轮观察器输入。",
+    "本次只读审查没有重新运行模型、校验器或生成图片；校验成功依据实际轨迹中的调用与退出结果。",
+    "上述发现定位到本次模型执行和产物；本报告未据此判定 Skill 迁移代码存在实现缺陷。"
+  ]
+}

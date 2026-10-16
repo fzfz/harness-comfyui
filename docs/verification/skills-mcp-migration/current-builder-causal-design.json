@@ -1,0 +1,381 @@
+{
+  "purpose": "调查当前 Builder 偏离的责任边界、实际送达和可验证原因，定义后续因果实验。",
+  "readWhen": "决定 ANIMA 与 Krea2 失败的修复归属、实验条件及业务复验范围时。",
+  "createdAt": "2026-10-14T10:21:18.200796+00:00",
+  "status": "调查完成；因果实验待执行；当前证据未确立必须修改产品的原因。",
+  "scope": {
+    "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "writtenFiles": [
+      "docs/verification/skills-mcp-migration/current-builder-causal-design.json"
+    ],
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "catalogWrites": 0,
+    "productChanges": 0,
+    "liveCatalogQueries": 0,
+    "basis": "入口报告用于定位。以下事实重新核对原始输入、会话事件、实际模型请求、安装文件和保存产物。模型分析文本只用于建立假设。",
+    "limits": [
+      "当前顾问未读取剩余目录页；完整候选及选择变化仍待取证。",
+      "未采集原始 MCP HTTP 响应，已逐项比较宿主 Tool 结果与后续模型 messages。",
+      "观察器记录证明宿主准备发送的内容，不能证明服务端内部是否再次处理上下文。"
+    ]
+  },
+  "evidence": [
+    {
+      "caseId": "5.3-2",
+      "sessionId": "session-0b967a5b-bb25-4cf0-a62e-894de3c15c47",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/materialized-input.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/all-session-records.json",
+      "artifact": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/workspace-artifacts/5.3-2/builder.json",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+      "candidateComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/installed-candidate-comparison.json",
+      "effectiveConfiguration": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/effective-configuration.json",
+      "modelIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/model-request-index.json",
+      "firstRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/41281b01-32cc-4dbd-b504-519f7924db98.jsonl",
+      "lastRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9410021a-3e69-46fd-8bd4-08766fedee74.jsonl",
+      "businessRequestCount": 24,
+      "toolCount": 31,
+      "allFinalToolResultsEqual": true,
+      "delivery": [
+        {
+          "seq": 19,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/6770451d-3806-4a7d-95d5-08a1f8511971.jsonl",
+          "subsequentRequestCount": 23,
+          "allContentEqual": true
+        },
+        {
+          "seq": 64,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/98b67312-3f10-4f8e-aa00-8a6785f1e38a.jsonl",
+          "subsequentRequestCount": 14,
+          "allContentEqual": true
+        },
+        {
+          "seq": 69,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9d405a42-181d-4714-a04f-b1982e62b410.jsonl",
+          "subsequentRequestCount": 13,
+          "allContentEqual": true
+        },
+        {
+          "seq": 98,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/86d1c0f6-659a-4f44-a6c5-777fafb27a4d.jsonl",
+          "subsequentRequestCount": 8,
+          "allContentEqual": true
+        }
+      ]
+    },
+    {
+      "caseId": "5.4-2",
+      "sessionId": "session-4189c52b-f284-4fab-8454-07aba2582cb0",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/materialized-input.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+      "artifact": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/workspace-artifacts/5.4-2/builder.json",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "candidateComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/installed-candidate-comparison.json",
+      "effectiveConfiguration": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/effective-configuration.json",
+      "modelIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/model-request-index.json",
+      "firstRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7d7b2c30-4a26-4823-8b5d-0dfab8a35a4e.jsonl",
+      "lastRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7525af97-095e-40ec-a9fc-e39429394d94.jsonl",
+      "businessRequestCount": 11,
+      "toolCount": 31,
+      "allFinalToolResultsEqual": true,
+      "delivery": [
+        {
+          "seq": 18,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/3e44895f-c23b-4301-aaec-bb36625d7bfb.jsonl",
+          "subsequentRequestCount": 10,
+          "allContentEqual": true
+        },
+        {
+          "seq": 25,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/f2147a1e-c9af-4849-99bd-eb3bacedb8d4.jsonl",
+          "subsequentRequestCount": 9,
+          "allContentEqual": true
+        },
+        {
+          "seq": 30,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/eecd04cd-5a12-4034-88a4-956d8e6af79f.jsonl",
+          "subsequentRequestCount": 8,
+          "allContentEqual": true
+        },
+        {
+          "seq": 32,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/eecd04cd-5a12-4034-88a4-956d8e6af79f.jsonl",
+          "subsequentRequestCount": 8,
+          "allContentEqual": true
+        },
+        {
+          "seq": 37,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7da374ba-60fc-46a4-ab6d-219814b9f570.jsonl",
+          "subsequentRequestCount": 7,
+          "allContentEqual": true
+        },
+        {
+          "seq": 39,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7da374ba-60fc-46a4-ab6d-219814b9f570.jsonl",
+          "subsequentRequestCount": 7,
+          "allContentEqual": true
+        },
+        {
+          "seq": 58,
+          "firstReceivingRequest": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/2b633bbf-1e99-43c0-8c7b-273a750b74dd.jsonl",
+          "subsequentRequestCount": 4,
+          "allContentEqual": true
+        }
+      ]
+    }
+  ],
+  "architecture": {
+    "flow": [
+      "测试驱动把本轮普通文字和空 Prompt 的 Character ID 放入独立 Workspace 的首次用户消息。",
+      "预设 persona 要求按 Skill description 选择任务范围；skill 工具返回安装版指令，bash 读取参考文件。",
+      "DSH 原生 MCP 客户端把目录查询注册为 Tool；模型选择参数；宿主执行调用并把结果放入下一轮 messages。",
+      "Builder 执行者负责条件判断、素材采用、镜头一致性和规避内容并入。",
+      "执行者通过 bash 写 JSON 并调用既有 validate-output.mjs；校验器返回结构有效的对象，执行者保存并交付。"
+    ],
+    "ownership": {
+      "host": "工具发现、请求和结果传递、文件读取、角色交接、生命周期。",
+      "catalog": "查询结果、分页元数据与服务端排序。",
+      "agent": "是否继续分页、用途和题材条件、身份素材转换、可成像一致性。",
+      "validator": "结构合同；未承担识别自然语言中的角色身份、题材或镜头矛盾的职责。"
+    },
+    "currentRuntime": "两个会话均为主 Agent 直接完成 Builder；没有子会话、图片生成、封面读取或跨任务资料调用。实际模型为 opencode-go/deepseek-v4.1-flash，观察器 request.maxTokens=32768。当前 persona 已包含按 Skill description 路由的条件，旧报告中的无条件图片迭代 persona 不适用于本候选。",
+    "knowledgeSources": [
+      "第一轮 system persona 与同请求的31项 Tool 声明；其中存在 bash、skill、MCP目录工具、MCP资源读取及四角色工具。",
+      "首次 Skill 索引提供项目 Skill 的名字和用途；实际读取的文件路径来自安装 Skill 的相对引用。",
+      "角色ID与输出目录来自用户输入；Ani_(Grok) 等素材首次由角色 resolve 返回。",
+      "分页条件来自 query_semantic_prompt_terms Tool description；page/page_size/total_count 来自各次返回。",
+      "Krea用途、尺寸和规避来自 generation-output-contract.md 与 generation-profiles.json；校园词串来自 anime-style-presets.md 第8项。",
+      "shell执行能力来自 bash；校验命令来自生成结果合同，Electron路径来自 DSH_HARNESS_COMFYUI_NODE_EXECUTABLE。当前轨迹没有通过全局命令、help、错误建议或历史文件取得上述语义规则。"
+    ],
+    "configurationEvidence": [
+      "docs/system/configuration.md:82-86",
+      "agent-presets/noobai-mcp.cordis.yml",
+      "各场景 effectiveConfiguration、firstRequest 与安装路径见 evidence。"
+    ],
+    "configurationContract": "noobai 使用 @deepseek-ai/dsh-mcp-client，streamable-http 指向 http://127.0.0.1:18943/mcp；NOOBAI_MCP_TOKEN 由应用环境提供。报告仅记录变量名。",
+    "informationIntegrity": "两轮全部 Tool 结果 content 与末次请求对应 tool 消息逐字一致。关键结果自首次接收起在所有后续请求逐字保留。Krea input-contract、prompt-rules、generation-output-contract、anime-style-presets 与 profiles 全文可在最后模型请求找到。未发现这些规则被宿主截断、摘要替换或传递丢失。"
+  },
+  "findings": [
+    {
+      "id": "A-PAGINATION",
+      "expected": "page × page_size < total_count 时继续调用当前查询的下一页。",
+      "observed": "black bow hair ornament 返回21条中的前10条；twintails 返回28条中的前6条。两项均在未补页时进入最终构造。",
+      "firstDeviation": {
+        "batchCorrection": "seq68与70已一起出现在seq67 assistant/message；seq97与99已一起出现在seq96。宿主顺序执行并列调用，不能把seq70或99解释为接收前一个结果后的模型决策。",
+        "firstPostResultDecision": [
+          74,
+          75,
+          103,
+          104
+        ],
+        "materialCommit": 109,
+        "certainty": "seq74开始选择发饰，seq75读取输出合同；仍可能稍后补页。seq109写入最终素材且会话结束未补页，确认遗漏。"
+      },
+      "delivered": "Tool description 在24个业务请求中逐字一致，包含分页继续公式；seq69在后续13个请求、seq98在后续8个请求逐字保留。",
+      "actualCandidateData": {
+        "blackBowFirstPage": [
+          "black_bow",
+          "arrow_hair_ornament",
+          "bow-shaped_hair",
+          "holding_bow_(ornament)",
+          "hair_bow",
+          "bow_hairband",
+          "bone_hair_ornament",
+          "unworn_hair_bow",
+          "horn_hair_ornament",
+          "knife_hair_ornament"
+        ],
+        "twintailsFirstPage": [
+          "intertwined_tails",
+          "twintails_day",
+          "sharp_tail",
+          "two-tone_tail",
+          "extra_tails",
+          "short_tail"
+        ],
+        "note": "完整第一页与分页元数据已核对；当前选用twintails的有效来源为角色resolve。"
+      },
+      "causeAssessment": "已确认目录遍历决策遗漏。没有分页API调用失败、权限拒绝、提示缺失或结果裁剪证据。第一页已含可用发饰，可能促成提前停止，但未验证；twintails第一页未直接命中且仍停止，显示不能只用“找到即停”解释全部遗漏。",
+      "repairOwnership": "当前归属是 Agent 的查询完成判断。若后续证明分页描述的送达阶段影响，可研究现有 Tool 描述或返回合同的呈现；目录自动遍历、增加检索层或改 Skill 脚本均没有当前证据支持。",
+      "experiments": [
+        "E0",
+        "E1",
+        "E2"
+      ]
+    },
+    {
+      "id": "K-PURPOSE",
+      "expected": "独立新画面且无测试、比较、迭代表述，选择 final。",
+      "observed": "seq67首次实际写入test、832×1248；seq76以“未要求正式交付成图”解释test。",
+      "firstDeviation": 67,
+      "delivered": "seq32完整送达生成目的6项规则；seq37送达profiles；两者均在构造前和后续消息保留。",
+      "causeAssessment": "最终说明把第1条的“没有正式交付要求”当作充分条件；第1条实际还要求测试等情形，第4条明确覆盖当前新任务。该说明确认了错误判定方式，不能证明形成此方式的内部原因。当前persona已改为有条件路由后仍失败；旧persona不是该失败发生的必要条件。候选还有其他差异，不能据两轮归因某一项改动。",
+      "conflictCheck": "已读条款可同时满足；没有一条更高优先级规则要求本任务为test。预设名称或只构建JSON均未获得业务上覆盖第4条的权力。",
+      "repairOwnership": "语义决策；目前无已证实的宿主、资料冲突或校验缺陷。禁止把final写成schema默认或自动改写结果来掩盖判断。",
+      "experiments": [
+        "E0",
+        "E3"
+      ]
+    },
+    {
+      "id": "K-STYLE",
+      "expected": "题材或风格名称匹配预设标题时采用对应预设，无匹配则使用默认动漫画风。",
+      "observed": "seq58送达预设全文；seq67采用第8项完整school-anime词串；seq76承认学院校园来源。当前输入只要求白衬衫窗边半身像。",
+      "firstDeviation": 67,
+      "causeAssessment": "条件资料被选用但匹配前提未满足。已取得真实来源；不存在目录空结果导致必须选校园预设的合同。模型分析提出借用gentle daylight，只能支持“局部光线相似影响整组风格选择”的实验假设。",
+      "conflictCheck": "Skill允许读取资料补齐画风；资料自身负责标题匹配条件，两者可以依次满足。读取许可没有自动变成采用所有预设的许可。Skill表格称“画风推荐”，资料字段为“画风”，是引用名称不一致线索，但当前执行明确读到了条件和第8项，未证实该命名差异造成误采用。",
+      "repairOwnership": "Agent的采用条件判断；只有实验确认信息阶段或引用理解问题，才考虑范围内澄清读取与采用的衔接，保持标题匹配业务条件。",
+      "experiments": [
+        "E0",
+        "E4"
+      ]
+    },
+    {
+      "id": "K-IDENTITY",
+      "expected": "采用角色Prompt的身份及非冲突外观，按目标模型语法转换。",
+      "observed": "seq39返回Ani_(Grok)及4项外观；seq67仅写一般少女与4项外观；最终Prompt没有该角色身份。",
+      "firstDeviation": 67,
+      "earlierLead": "seq42分析只概括外观，是可能发生有损概括的位置；没有中间结构化角色对象可证明此时已经永久丢弃身份。",
+      "delivered": "input-contract说明prompt_text提供身份来源；query_semantic_characters description要求保留素材内容；两者均在构造请求内。",
+      "causeAssessment": "身份在Agent自然语言构建阶段丢失，宿主传递的完整素材未丢失。Krea允许中文叙述和英文视觉短语，没有发现禁止角色身份写入的规则。无法据现有证据判断是标签转换、默认主体覆盖还是一般性遗漏。",
+      "repairOwnership": "Agent素材转换；暂无充分证据修改合同或引入身份关键词检查。",
+      "experiments": [
+        "E0",
+        "E5"
+      ]
+    },
+    {
+      "id": "K-FRAMING",
+      "expected": "唯一可见范围，动作服从范围；positive_avoidance记录已实际并入正文的约束。",
+      "observed": "seq67正文要求从胸前到头顶，又要求腰侧右手完整可见；positive_avoidance要求头顶至腰部。seq68校验接受，seq73保存。",
+      "firstDeviation": 67,
+      "causeAssessment": "Agent在一次结果构造中生成了不同取景下边界，并未完成既有一致性自检。模型分析在胸上、中躯干、腰部范围之间移动，提供草拟漂移线索。没有输入互斥；用户只要求半身，完全可以形成一致画面。",
+      "conflictCheck": "prompt-rules默认全身被用户半身覆盖；合同中的双手、完整全身规避示例按当前风险选取，并没有要求胸上镜头同时露腰。",
+      "repairOwnership": "Agent跨句与跨字段一致性。结构校验正常接受合法字符串，不应新增语义程序或修改schema。",
+      "experiments": [
+        "E0",
+        "E6"
+      ]
+    }
+  ],
+  "adjacentEvidence": [
+    {
+      "scope": "同一当前ANIMA会话",
+      "evidence": "seq70/71的white collared shirt返回4/10；无需分页。seq90/91和92/93另有光线查询，可作为零结果或完整页边界，执行E1时必须保存实际完整结果。",
+      "interpretation": "目前发现两项需分页查询都未继续，覆盖已有匹配项与未直接命中项。不能从两个样本推断全部目录查询都会失败。"
+    },
+    {
+      "scope": "此前Krea ID会话",
+      "artifact": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/workspace-artifacts/5.4-2/ani-grok-companion-builder.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/d1030133-b50b-4191-82c6-0dba2d4ba73e/1791964811562-107ef16f-aaa0-4a2a-af37-e9f2b6398361-collect.json",
+      "confirmed": "重新读取原始产物确认：同样generation_purpose=test、采用school-anime词串，且没有Ani身份；seq39原始返回包含Ani_(Grok)，seq96实际构建已采用校园词串。先前报告只列用途、规避遗漏与封面来源，本报告补记已有产物中的题材和身份相邻问题。",
+      "interpretation": "相同类型偏离在两轮出现，当前移除了封面来源并改过persona后仍出现；两轮不是单变量实验，无法证明某项修改有效或无效。"
+    },
+    {
+      "scope": "此前Krea规避与当前冲突",
+      "confirmed": "此前产物positive_avoidance有每手五指自然连接，正文没有对应完整约束；当前产物则出现胸部与腰部边界冲突。",
+      "interpretation": "两例均涉及正文和规避字段的一致性，但未证明相同内部成因。"
+    },
+    {
+      "scope": "ANIMA身份对照",
+      "confirmed": "当前和此前ANIMA保存产物包含ani身份；Krea保存产物缺失身份。",
+      "interpretation": "同角色目录能提供身份；不同Skill和上下文不能当作单变量对照。"
+    }
+  ],
+  "experimentProtocol": {
+    "status": "设计，尚未执行。",
+    "fixedInput": "优先复用evidence中的materialized-input.json全文；只按隔离目录映射更换路径。单变量实验明确指定例外字段。",
+    "fixedCandidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-candidate.tgz",
+    "candidateGate": "运行前逐字节比较候选tarball与本次installed-candidate-comparison记录中的对应安装文件；若主线程已重建同名tarball，先恢复被测安装树对应的候选，禁止只凭路径当成同一候选。",
+    "fixedModel": "opencode-go/deepseek-v4.1-flash；maxTokens=32768；保留原调用配置。现有observer未单独记载temperature、seed或推理档位时，记录为未显式传递，并锁定同一有效配置；不可把默认值编造为0。",
+    "fixedCatalog": "保存每个实际查询参数及完整响应，真实目录补页先比对本轮第一页内容、顺序、total_count。不同则记录目录漂移，不能声称是原失败的剩余页。诊断回放使用一致的只读响应快照，覆盖同对象所有查询；合成响应只作机制对照，不能替代真实业务验收。",
+    "fixedDirectory": "两臂使用等价随机独立runtime/Profile/Workspace，只安装同一候选及本轮输入，不放入本报告或其他场景资料；原始失败目录只读保留。",
+    "comparison": "每项先运行无改动基线；最低每臂3次交错执行，记录全部失败和实际模型身份。差异仅作当前样本因果支持，不宣称普遍稳定。若基线无法重现，先报告复现分布，不叠加修复。",
+    "judge": "独立审查员只看规则、输入、实际请求/响应和产物；人工判断用途、题材、身份和镜头。程序只比较字节、结构、分页覆盖、文件、调用和生命周期。",
+    "separation": "可在已记录模型请求的诊断分叉中回放唯一变体，必须保持前缀消息一致，禁止夹带实验结论或追加临场提示。回放验证机制；官方应用完整业务流程另行验收。"
+  },
+  "experiments": [
+    {
+      "id": "E0",
+      "question": "当前失败能否在固定候选、输入与目录下再次出现？",
+      "variable": "无；重复基线。",
+      "action": "两项分别执行3次完整Builder-only任务，保存每轮首次偏离及全部请求。",
+      "criterion": "分别统计分页、purpose、题材、身份、镜头；某项基线不再出现时，保留偶发性结论，不以另一项失败代替。"
+    },
+    {
+      "id": "E1",
+      "question": "剩余目录候选会不会改变当前发饰选择？",
+      "variable": "只补全原查询未取得的页；不调用模型。",
+      "action": "现有本机MCP客户端连接同一noobai服务，black bow hair ornament保持page_size=10读取page1至3；twintails保持page_size=6读取page1至5。先核对page1与原seq69/98；保存完整结构结果和查询时间。",
+      "criterion": "ID覆盖21和28条且无重复缺页；独立审查员按既有候选选择规则重评发饰，标记已选标签是否仍适用。即使选择相同，原分页合同仍未通过。",
+      "limit": "当前未执行；仅证明候选影响，不证明模型为何停页。"
+    },
+    {
+      "id": "E2",
+      "question": "分页条件的呈现渠道与接近查询结果的位置是否影响继续查询？",
+      "variable": "仅改变原分页条件的呈现渠道：从Tool description移到本次结果旁的工具说明；条文、结果字段、候选保持不变。",
+      "action": "在seq69/71送达后的请求9d405a42和seq98/100送达后的请求86d1c0f6建立独立诊断分叉，基线保持原请求；变体仅调整上述呈现位置。移除原位置避免规则重复，响应真实性单独标记。",
+      "criterion": "是否逐页读完再选候选；全部候选、顺序与查询参数必须相同。若只第一例改善，继续调查“已有可用项”条件；若两例无差异，不据此强化提示词。",
+      "repairGate": "呈现位置产生可重复差异后，先确认该Tool合同属于外部目录还是本仓库映射。外部服务改动需另行授权；本报告不创建返回包装层。",
+      "limit": "该变量同时改变呈现渠道与位置，结果只能支持该组合的影响；要区分渠道和距离，需要随后分别固定其中一个因素。当前不提出产品修改。"
+    },
+    {
+      "id": "E3",
+      "question": "用途规则的条目顺序是否促成提前采用第1条？",
+      "variable": "仅把generation-output-contract的独立新任务第4条移至目的小节首项；所有业务条文和适用条件原字保留。",
+      "action": "在Krea首次收到seq32的请求eecd04cd分叉，以工具返回夹具提供顺序变体，其他材料与原请求相同；同时检查当前persona已经是条件路由版本。",
+      "criterion": "新任务purpose=final，尺寸使用所选profile的final档；已有测试输入必须仍为test。变体改善仅支持信息顺序影响，不自动证明需要产品改文案。",
+      "repairGate": "结果可重复且相邻测试链不退化，才考虑范围内顺序澄清；不可改生成目的业务。"
+    },
+    {
+      "id": "E4",
+      "question": "用户要求的柔光与校园预设的gentle daylight相似，是否影响预设误选？",
+      "variable": "仅在独立新输入变体中把“窗边柔光”替换为“窗边硬光”；所有安装资料、预设词串、模型和目录保持不变。",
+      "action": "完整执行原输入与光线变体，均保留无明确题材的前提；不修改anime-style-presets.md或其工具返回。",
+      "criterion": "独立审查员比较两臂是否误用校园预设，并判断光线是否满足各自要求。若两臂都选校园，柔光相似性不足以解释；若只有柔光臂选校园，仅支持光线语义关联影响，不能推断预设规则错误。",
+      "repairGate": "当前不修改预设业务词串；输入变体不能替代原半身窗边柔光任务验收。"
+    },
+    {
+      "id": "E5",
+      "question": "角色身份丢失是否与目录标签到自然语言的转换有关？",
+      "variable": "诊断夹具只把返回prompt_text中的Ani_(Grok)表达为“角色身份为Ani（Grok）”，保留四项外观、ID及所有其他字段。",
+      "action": "在seq39首次送达请求7da374ba分叉；两臂仍走角色ID resolve，同对象其他返回必须一致。",
+      "criterion": "独立审查员判断最终Prompt是否表达该角色身份和四项外观；不可用简单字符串命中充当身份语义验收。若两臂都遗漏，不能继续归因标签语法。",
+      "repairGate": "合成素材不写入真实目录；若差异稳定，只定位转换敏感性，后续需用真实另一角色记录验证同机制，再决定是否有范围内来源澄清。"
+    },
+    {
+      "id": "E6",
+      "question": "镜头矛盾是否来自用户半身范围未具体化后的一次草拟？",
+      "variable": "仅在新输入变体中把“半身像”替换成“从头顶到腰部完整入镜的半身像”；其他要求保持不变。",
+      "action": "保留原输入基线，分别执行完整Builder；两臂使用同一角色、Style空结果和合同。",
+      "criterion": "判定正文、动作、规避是否采用唯一边界；如果明确范围仍矛盾，范围歧义不足以解释。明确范围通过也不能把原缺省场景标为通过。",
+      "repairGate": "用户半身要求本来可满足；该实验只缩小生成漂移的位置，不授权要求所有用户补齐镜头，也不授权模板化追加全身/双手规则。"
+    }
+  ],
+  "recommendation": {
+    "immediate": "先纠正分页首次偏离的事件解释，完成E1只读取证与E0基线，再按稳定复现的项目选择一个实验。",
+    "necessaryProductRepairNow": false,
+    "reason": "已证实的是Agent在完整收到规则和数据后作出的不符合同的语义或遍历决策。当前没有证实数据丢失、能力缺失或互斥规则；现有校验器职责与实际结构结果一致。",
+    "forbiddenInThisScope": [
+      "改业务规则、输出schema或Skill脚本。",
+      "用身份或题材关键词程序替代语义审查。",
+      "把模型分析当成内部因果证明。",
+      "更换模型后宣称原模型单变量因果已验证。",
+      "不断叠加禁止语句，或者修改测试输入后把原目标验收标为通过。"
+    ],
+    "nextReviewableDecision": "实验有稳定证据后，报告唯一责任层、候选文件、完整目标合同、相邻场景和复验方法。仍只有不遵循时，维持失败记录并如实报告，不强行生成修复。"
+  },
+  "authorization": {
+    "plan": "docs/plans/skills-mcp-migration-20261013.md:5.11—5.14",
+    "thisAssignment": "只读调查；仅写本JSON；允许现有MCP客户端只读补页；不启应用、不调用外部模型、不改产品。",
+    "futureParentWork": "主任务可按现有计划执行隔离复验和范围内修复；修复前需补计划、独立诊断审查及相关Skill回扫。顾问提出的模型实验本轮均未执行。",
+    "boundaries": "外部服务、真实目录、依赖安装、Skill脚本、输出schema和业务规则不在5.14额外授权内。",
+    "semanticAudit": "本报告尚待主线程按项目规则派发独立干净上下文的文字审计；当前顾问未派发子代理。"
+  },
+  "informationVolumeLead": {
+    "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/current-builder-context-measurement.json",
+    "status": "主线程另行完成结构测量；本顾问只读取测量记录，不把体量当作截断或Token证据。",
+    "interpretation": "31工具紧凑JSON的UTF-8字节数及messages字节数只能用于设计上下文负载对照。缺少同输入CLI基准和固定其他变量的负载对照，尚不支持上下文过载导致遗漏的因果结论。",
+    "next": "先验证原请求完整保留与无改动复现；若研究体量，单独固定业务相关工具、内容和顺序，只移除本任务未使用且无依赖的工具声明，记录工具能力集合同时改变的限制，不把成功自动归因Token减少。"
+  }
+}

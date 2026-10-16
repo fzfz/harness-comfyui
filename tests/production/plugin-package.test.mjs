@@ -1,5 +1,6 @@
 import { chmod, copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises'
-import { execFile as execFileCallback } from 'node:child_process'
+import { execFile as execFileCallback, spawnSync } from 'node:child_process'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -7,6 +8,7 @@ import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
+import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
 import { parsePluginPackageConfig } from '../../config/plugin-package-schema.mjs'
 import { buildPlugin, packPlugin } from '../../scripts/build/index.mjs'
 
@@ -268,8 +270,79 @@ describe('plugin build and package entry points', () => {
         expect((await listFiles(artifactRootPath)).filter(path => path.endsWith('.map'))).toEqual([])
       }
     }
+    const installedFiles = await listFiles(packageRoot)
+    expect(installedFiles.filter(path => path.startsWith('tests/') || path.startsWith('scripts/verification/'))).toEqual([])
+    expect(installedFiles.some(path => /official-session-trace|official-trace-evidence|desktop-e2e/.test(path))).toBe(false)
+    expect(installedFiles.some(path => path.startsWith('scripts/source-client/'))).toBe(false)
+    expect(installedFiles).not.toContain('config/source-cli-guidance.json')
+    expect(installedFiles).toContain('config/source-client.json')
     expect(await readdir(packageRoot)).not.toContain('src')
     expect(await readdir(packageRoot)).not.toContain('.env')
+    const cliEnvironment = { ...process.env }
+    for (const name of ['NODE_PATH', 'NODE_OPTIONS', ...Object.values(managedCliEnvironment.environmentNames)]) {
+      delete cliEnvironment[name]
+    }
+    const resultRoot = await temporaryDirectory()
+    const accepted = { run_id: 'run_packaged_cli' }
+    let requests = 0
+    const server = createServer(async (request, response) => {
+      requests += 1
+      const chunks = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      expect(JSON.parse(Buffer.concat(chunks).toString('utf8'))).toEqual({
+        command: 'generation.submit',
+        request: { title: 'package', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] },
+      })
+      response.end(JSON.stringify({ ok: true, data: accepted }))
+    })
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    try {
+      const execution = execFile(process.execPath, [resolve(packageRoot, runtimeArtifacts.managedCli.outputEntryRelativePath), '--quiet', 'generation', 'submit', '--stdin'], {
+        cwd: outsideWorkspace,
+        env: {
+          ...cliEnvironment,
+          TMPDIR: resultRoot,
+          DSH_HARNESS_COMFYUI_CLI_API: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
+          DSH_HARNESS_COMFYUI_CLI_CAPABILITY: 'package-capability',
+        },
+        timeout: 10000,
+      })
+      execution.child.stdin.end(JSON.stringify({ title: 'package', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] }))
+      const { stdout, stderr } = await execution
+      expect(stdout).toMatch(/^\/[^\r\n]+\n$/u)
+      expect(stdout.startsWith(`${resultRoot}/`)).toBe(true)
+      expect(await readFile(stdout.slice(0, -1), 'utf8')).toBe('{"run_id":"run_packaged_cli"}\n')
+      expect(stderr).toBe('')
+      expect(requests).toBe(1)
+    } finally { await new Promise(resolve => server.close(resolve)) }
+    for (const { args, input, status, error } of [
+      { args: ['generation', 'inspect-template-parameters', '--help'], status: 0 },
+      { args: ['catalog', 'instance', 'list'], status: 2, error: 'CLI_ARGUMENT_INVALID:' },
+      {
+        args: ['generation', 'inspect-template-parameters', '--stdin'],
+        input: JSON.stringify({ template_id: '29', instance_id: '2' }),
+        status: 2,
+        error: 'CLI_ENVIRONMENT_INVALID:',
+      },
+    ]) {
+      const result = spawnSync(process.execPath, [resolve(packageRoot, runtimeArtifacts.managedCli.outputEntryRelativePath), ...args], {
+        cwd: outsideWorkspace,
+        env: cliEnvironment,
+        input,
+        encoding: 'utf8',
+        timeout: 10000,
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.status, result.stderr).toBe(status)
+      if (error) {
+        expect(result.stderr).toContain(error)
+        expect(result.stdout).toBe('')
+      } else {
+        expect(result.stderr).toBe('')
+        expect(result.stdout).toContain('template_id')
+      }
+    }
   })
 })
 
@@ -283,7 +356,7 @@ async function writePackageFixture(root, packageConfig) {
   await writeFile(join(root, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
     version: '1.0.0',
-    dependencies: { sharp: '0.35.4' },
+    dependencies: { sharp: '0.35.5' },
   }, null, 2)}\n`)
 }
 

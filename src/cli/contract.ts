@@ -1,42 +1,13 @@
 import help from '../../config/managed-cli-help.json' with { type: 'json' }
 import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
 import { parseManagedCliEnvironment } from '../../config/managed-cli-environment-schema.ts'
-import {
-  parseCatalogPageNumber,
-  parseCatalogQueryText,
-  parseCatalogStableId,
-  type CatalogKind,
-} from '../catalog/contract.ts'
+import { parseCatalogStableId } from '../catalog/contract.ts'
 import { MAX_RUN_INPUT_QUERY_IDS } from '../generation/run-input-contract.ts'
 import type { GenerationRequest, JsonValue } from '../host/generation/generation-runtime.ts'
 
 export const CLI_ROUTE_PATH = '/api/harness-comfyui/cli/v1'
 export const CLI_MAX_BODY_BYTES = 1_048_576
 export const CLI_ENVIRONMENT_NAMES = Object.freeze(parseManagedCliEnvironment(managedCliEnvironment).environmentNames)
-
-const CATALOG_KINDS = new Set<CatalogKind>([
-  'model',
-  'lora',
-  'work',
-  'character',
-  'style',
-  'prompt-term',
-  'artist-string',
-  'comfyui-template',
-])
-
-type CatalogResolveCommand =
-  | { readonly command: 'catalog.template.resolve'; readonly id: string }
-  | { readonly command: 'catalog.generation-model.resolve'; readonly id: string }
-  | { readonly command: 'catalog.lora.resolve'; readonly id: string }
-
-export interface CliCatalogSearchRequest {
-  readonly command: 'catalog.search'
-  readonly kind: CatalogKind
-  readonly query: string
-  readonly page: number
-  readonly base_model_id: string | null
-}
 
 export interface CliGenerationModel {
   readonly id: string
@@ -60,9 +31,6 @@ export interface CliGenerationRequest {
 }
 
 export type CliRequest =
-  | CatalogResolveCommand
-  | CliCatalogSearchRequest
-  | { readonly command: 'catalog.instance.list' }
   | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
   | {
     readonly command: 'generation.inspect-template-parameters'
@@ -192,38 +160,9 @@ export function parseCliGenerationRequest(value: unknown): CliGenerationRequest 
   })
 }
 
-function catalogKind(value: unknown): CatalogKind {
-  if (typeof value !== 'string' || !CATALOG_KINDS.has(value as CatalogKind)) {
-    throw new TypeError('Catalog search kind is invalid')
-  }
-  return value as CatalogKind
-}
-
 export function parseCliRequest(value: unknown): CliRequest {
   const source = record(value, 'CLI request')
   if (typeof source.command !== 'string') throw new TypeError('CLI request command is invalid')
-  if (source.command === 'catalog.instance.list') {
-    exactKeys(source, ['command'], 'CLI request')
-    return Object.freeze({ command: source.command })
-  }
-  if (
-    source.command === 'catalog.template.resolve'
-    || source.command === 'catalog.generation-model.resolve'
-    || source.command === 'catalog.lora.resolve'
-  ) {
-    exactKeys(source, ['command', 'id'], 'CLI request')
-    return Object.freeze({ command: source.command, id: parseCatalogStableId(source.id) })
-  }
-  if (source.command === 'catalog.search') {
-    exactKeys(source, ['command', 'kind', 'query', 'page', 'base_model_id'], 'CLI request')
-    return Object.freeze({
-      command: source.command,
-      kind: catalogKind(source.kind),
-      query: parseCatalogQueryText(source.query),
-      page: parseCatalogPageNumber(source.page),
-      base_model_id: source.base_model_id === null ? null : parseCatalogStableId(source.base_model_id),
-    })
-  }
   if (source.command === 'generation.submit') {
     exactKeys(source, ['command', 'request'], 'CLI request')
     return Object.freeze({ command: source.command, request: parseCliGenerationRequest(source.request) })
@@ -257,52 +196,8 @@ export function parseCliRequest(value: unknown): CliRequest {
   throw new TypeError('CLI request command is invalid')
 }
 
-function optionMap(argv: readonly string[], allowed: readonly string[]): Map<string, string> {
-  if (argv.length % 2 !== 0) throw new TypeError('CLI command options are invalid')
-  const options = new Map<string, string>()
-  for (let index = 0; index < argv.length; index += 2) {
-    const name = argv[index]!
-    const value = argv[index + 1]!
-    if (!allowed.includes(name) || options.has(name)) throw new TypeError(help.messages.invalidOption.replaceAll('{option}', name).replaceAll('{allowed}', allowed.join(', ')))
-    options.set(name, value)
-  }
-  return options
-}
-
-function requiredOption(options: ReadonlyMap<string, string>, name: string): string {
-  const value = options.get(name)
-  if (value === undefined) throw new TypeError(`CLI command requires ${name}`)
-  return value
-}
-
 export function parseCliArguments(argv: readonly string[], stdin: string): CliRequest {
   const prefix = argv.slice(0, 3).join(' ')
-  if (
-    prefix === 'catalog template resolve'
-    || prefix === 'catalog generation-model resolve'
-    || prefix === 'catalog lora resolve'
-  ) {
-    const options = optionMap(argv.slice(3), ['--id'])
-    const command = {
-      'catalog template resolve': 'catalog.template.resolve',
-      'catalog generation-model resolve': 'catalog.generation-model.resolve',
-      'catalog lora resolve': 'catalog.lora.resolve',
-    }[prefix]!
-    return parseCliRequest({ command, id: requiredOption(options, '--id') })
-  }
-  if (prefix === 'catalog instance list' && argv.length === 3) {
-    return Object.freeze({ command: 'catalog.instance.list' })
-  }
-  if (argv[0] === 'catalog' && argv[1] === 'search') {
-    const options = optionMap(argv.slice(2), ['--kind', '--query', '--page', '--base-model-id'])
-    return parseCliRequest({
-      command: 'catalog.search',
-      kind: requiredOption(options, '--kind'),
-      query: requiredOption(options, '--query'),
-      page: Number(requiredOption(options, '--page')),
-      base_model_id: options.get('--base-model-id') ?? null,
-    })
-  }
   if (argv.length === 3 && prefix === 'generation submit --stdin') {
     let request: unknown
     try {

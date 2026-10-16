@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.45.0",
+  "version": "0.46.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.11.0",
@@ -28,7 +28,7 @@
     "test:production": "vitest run tests/production --maxWorkers=1 --no-file-parallelism"
   },
   "dependencies": {
-    "sharp": "0.35.4"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@types/node": "22.20.0",

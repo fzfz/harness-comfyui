@@ -1,0 +1,317 @@
+{
+  "reviewedAt": "2026-10-14T06:19:37.678140+00:00",
+  "purpose": "对真实模板40、实例2执行参数inspect及不提交生成的官方前端compile，核对多个LoRA输入准备。",
+  "status": "blocked_not_ready",
+  "caseId": "5.6-5",
+  "scope": {
+    "modelsInvoked": 0,
+    "generationSubmissions": 0,
+    "runsCreated": 0,
+    "catalogMutations": 0,
+    "productChanges": 0,
+    "browser": "仅由现有ChromeComfyFrontend启动一次隔离Chrome，完成官方ComfyUI前端graphToPrompt导出，已清理。"
+  },
+  "sources": {
+    "template": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/template40.json",
+    "instance": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/instance2.json",
+    "objectInfo": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/object-info.json",
+    "readMethod": "现有GenerationSourceClient从本机已部署Source http://127.0.0.1:18093重新读取模板40及实例2，再GET目标实例/object_info。",
+    "compiler": "src/host/generation/workflow-compiler.ts ComfyWorkflowCompiler",
+    "officialCompiler": "src/host/generation/official-api-workflow.ts OfficialApiWorkflowCompiler",
+    "frontend": "src/host/generation/comfy-frontend-browser.ts ChromeComfyFrontend",
+    "configuration": "config/profiles/production.json frontendCompiler字段",
+    "entrypoints": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/inspect.mjs",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/compile.mjs"
+    ],
+    "runtimeNote": "首次Node strip-only因既有TypeScript parameter property返回ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX；改用同一Node v25.8.2的--experimental-transform-types后成功加载现有类，无依赖安装和源码修改。"
+  },
+  "input": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/compile-input.json",
+    "templateId": "40",
+    "instanceId": "2",
+    "explicitModel": {
+      "id": "1",
+      "fileName": "waiIllustriousSDXL_v170.safetensors"
+    },
+    "loras": [
+      {
+        "id": "69",
+        "fileName": "GTHAN-EQ.safetensors",
+        "weight": 0.8,
+        "triggerWords": [
+          "gthan"
+        ]
+      },
+      {
+        "id": "89",
+        "fileName": "GBF_Illustrious.safetensors",
+        "weight": 1,
+        "triggerWords": [
+          "gbf_style"
+        ]
+      }
+    ],
+    "seed": 20261013,
+    "width": 1536,
+    "height": 1536,
+    "batch_size": 1,
+    "positiveSource": "认可的5.5-2 Builder正向Prompt，按顺序追加gthan、gbf_style，负向保持原文。"
+  },
+  "inspection": {
+    "status": "inspected",
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/inspect-result.json",
+    "selectedParameterIds": {
+      "positive": "positive_prompt",
+      "negative": "negative_prompt",
+      "seed": "seed",
+      "batch": "batch_size",
+      "width": "width",
+      "height": "height"
+    },
+    "sizeCandidate": "width_height:width:height",
+    "dimensionsWithinLimits": true,
+    "ambiguity": "本次所需Prompt/Seed/batch参数及尺寸组合均可唯一选择。"
+  },
+  "runtimeProjection": {
+    "status": "produced_before_official_overlay",
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/pre-export-projection.json",
+    "activeApiNodeCount": 40,
+    "verifiedMappings": {
+      "1": {
+        "class_type": "easy int",
+        "inputs": {
+          "value": 1536
+        },
+        "_meta": {
+          "title": "Width"
+        }
+      },
+      "11": {
+        "class_type": "easy int",
+        "inputs": {
+          "value": 1536
+        },
+        "_meta": {
+          "title": "Height"
+        }
+      },
+      "23": {
+        "class_type": "easy int",
+        "inputs": {
+          "value": 1
+        },
+        "_meta": {
+          "title": "Batch Size"
+        }
+      },
+      "25": {
+        "class_type": "EmptyLatentImage",
+        "inputs": {
+          "width": [
+            "1",
+            0
+          ],
+          "height": [
+            "11",
+            0
+          ],
+          "batch_size": [
+            "23",
+            0
+          ]
+        }
+      },
+      "40": {
+        "class_type": "Seed (rgthree)",
+        "inputs": {
+          "seed": 20261013
+        }
+      },
+      "45": {
+        "class_type": "CheckpointLoaderSimple",
+        "inputs": {
+          "ckpt_name": "waiIllustriousSDXL_v170.safetensors"
+        }
+      },
+      "27": {
+        "class_type": "Power Lora Loader (rgthree)",
+        "inputs": {
+          "lora_1": {
+            "on": true,
+            "lora": "wai\\GTHAN-EQ.safetensors",
+            "strength": 0.8
+          },
+          "lora_2": {
+            "on": true,
+            "lora": "wai\\GBF_Illustrious.safetensors",
+            "strength": 1
+          },
+          "model": [
+            "45",
+            0
+          ],
+          "clip": [
+            "51",
+            0
+          ]
+        }
+      }
+    },
+    "loraApplication": "节点27动态列表已整体替换为69=0.8、89=1，实例路径正确；原年龄/加速LoRA未保留。",
+    "modelApplication": "节点45的ckpt_name被显式模型1替换；节点27 MODEL来自45，CLIP来自51。",
+    "sizeAndSeed": "width节点1和height节点11均1536；batch节点23为1；EmptyLatentImage节点25连到这三个节点；Seed节点40为20261013。",
+    "positiveApplication": "节点3的wildcard_text为完整请求Prompt，含按序追加触发词。",
+    "limitation": "这是编译器runtime projection及actual UI workflow中间结果，尚未成为可提交的最终官方API Workflow。"
+  },
+  "resourceChecks": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/resource-and-mapping-check.json",
+    "missingActiveDefinitions": [],
+    "enumeratedValueChecks": 28,
+    "unlistedValues": [],
+    "method": "对40个runtime projection活动节点读取实时/object_info；确定性核对已写入的非连接combo值是否在相应choices内。动态LoRA路径由编译器resolveInstanceLoraPath处理。",
+    "boundary": "节点定义和枚举存在证明参数资源可解析；不证明模型权重能加载、显存够用、检测器实际推理或图像结果成功。"
+  },
+  "officialFrontend": {
+    "reached": true,
+    "diagnostics": [
+      {
+        "attempt": 1,
+        "status": "succeeded"
+      }
+    ],
+    "cacheEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/official-cache/8536747db6f126d4d71f99620b73bde029e6f0e6602707944e6fa14715e8e3db.json",
+    "status": "export_succeeded_overlay_failed",
+    "error": {
+      "code": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED",
+      "message": "Official API Workflow node \"3\" input \"wildcard_text\" connection structure does not match the runtime projection."
+    },
+    "firstFailingMapping": {
+      "nodeId": "3",
+      "class": "ImpactWildcardProcessor",
+      "input": "wildcard_text",
+      "runtimeValueKind": "string",
+      "officialValue": [
+        "40",
+        0
+      ],
+      "source": "官方缓存apiWorkflow[3].inputs.wildcard_text 与 pre-export-projection.runtimeProjection[3].inputs.wildcard_text",
+      "overlayGuard": "src/host/generation/official-api-workflow.ts:273",
+      "observation": "官方导出把该输入作为来自节点40的连接，运行时投影把该输入作为Prompt字符串；现有合并保护拒绝连接结构变化。"
+    },
+    "additionalEvidence": "中间Actual Workflow节点3原seed连接仍指向节点40；序列化widgets包含wildcard_text/populated_text等值。前端序列化与运行时映射差异需另行诊断，当前不指定修复层。",
+    "causeBoundary": "已定位直接阻塞条件，未证明完整根因；未修改节点连接、删除保护或跳过官方导出。此次失败不能归为LoRA容量不足。"
+  },
+  "cleanup": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/cleanup-verification.json",
+    "browserLifecycle": [
+      {
+        "event": "profile-created",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/browser-profile-aLyzv4"
+      },
+      {
+        "event": "spawn",
+        "pid": 53696,
+        "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "args": [
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--use-mock-keychain",
+          "--disable-features=DialMediaRouteProvider",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/browser-profile-aLyzv4",
+          "about:blank"
+        ]
+      },
+      {
+        "event": "exit",
+        "pid": 53696,
+        "code": 0,
+        "signal": null
+      },
+      {
+        "event": "profile-removed",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/browser-profile-aLyzv4"
+      }
+    ],
+    "postcheck": {
+      "processes": [
+        {
+          "pid": 53696,
+          "alive": false,
+          "listening": ""
+        }
+      ],
+      "remainingBrowserProfiles": []
+    },
+    "desktopStarted": false
+  },
+  "matrixRunnerBoundary": "未运行全矩阵，也未修改runMatrix第409行context.runtime未定义问题；本次直接复用所引用现有类进行单模板预检。",
+  "remainingAcceptance": [
+    "先独立解决或找到真实现有模板绕开官方导出与runtime projection映射冲突；保持保护规则。",
+    "参数inspect及完整官方compile通过后，核对最终API Workflow全部Prompt/Seed/尺寸/模型/两项LoRA映射。",
+    "仅在后续获准真实生成中验证两项LoRA真实加载、Run/媒体归属和图像效果。"
+  ],
+  "conclusion": "模板40容量、实时节点/枚举和中间参数映射已验证；最终官方API Workflow合并失败，5.6-5保持未ready。当前不应提交生成。",
+  "originalTemplateControlReview": {
+    "reviewedAt": "2026-10-14T06:30:57.034615+00:00",
+    "entrypoint": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-export.mjs",
+    "directOutput": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-api-workflow.json",
+    "result": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-export-result.json",
+    "comparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-export-comparison.json",
+    "verifiedMethod": "脚本直接把template40.json的template.workflow交给ChromeComfyFrontend.exportWorkflow，没有调用applyModel、applyLoras或runtimeParameters，也没有submit入口。",
+    "verifiedObservation": {
+      "originalWildcardInput": [
+        "40",
+        0
+      ],
+      "originalSeedInput": 0,
+      "runtimeWildcardType": "str",
+      "runtimeSeedInput": [
+        "40",
+        0
+      ]
+    },
+    "supportedExclusions": [
+      "本次69/89选择、权重和顺序不是节点3错位出现的必要条件。",
+      "本次模型1替换和1536²/Seed/Prompt替换不是节点3错位出现的必要条件。",
+      "原模板直接经过当前官方前端加载导出即出现该连接位置；问题不只发生于参数替换后Workflow。"
+    ],
+    "notProven": [
+      "尚未区分原模板序列化、当前节点版本、前端加载/动态输入转换或官方导出哪个环节违反对应合同。",
+      "未证明所有节点或其他模板存在相同问题，也未证明删除overlay保护可正确生成。",
+      "未复验最终图，因此原模板导出成功仍不意味着本用例compile成功。"
+    ],
+    "cleanup": {
+      "recordedExitCode": 0,
+      "recordedProfilesRemoved": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-browser-PRo4Xy"
+      ],
+      "processRecheck": [
+        {
+          "pid": 61174,
+          "aliveAtReview": false
+        }
+      ],
+      "remainingProfiles": []
+    },
+    "workflowInventory": {
+      "rawSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791958884585-01edd26e-826a-4eb9-80f0-a061afb43960-search_workflows.json",
+      "request": {
+        "limit": 20
+      },
+      "returned": 20,
+      "next": null,
+      "compatibleWaiIds": [
+        "40",
+        "37",
+        "29",
+        "28"
+      ],
+      "conclusion": "本次无query浏览20项且next=null，覆盖该目录响应的全部模板；同wai底模只有40/37/29/28。结合已查完整图，37容量1、29/28无LoRA、40多LoRA容量可用但官方映射失败，当前目录没有已验证可直接承载本输入的另一同底模模板。",
+      "boundary": "快照限定在本次可见目录；不把其它底模模板或未登记图推定为兼容候选。"
+    },
+    "status": "5.6-5 remains blocked"
+  }
+}

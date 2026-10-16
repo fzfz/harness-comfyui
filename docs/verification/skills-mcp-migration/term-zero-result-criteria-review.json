@@ -1,0 +1,132 @@
+{
+  "purpose": "独立复核5.3-5/5.5-6词条无可采用结果分支的验收判据。",
+  "reviewedAt": "2026-10-14T06:30:57.036378+00:00",
+  "scope": "只读计划、两Skill、预检结论及实际七项完整返回；未调用模型、查询或写目录，未更新计划或台账。",
+  "verdict": {
+    "allSubconceptsMustBeUnadoptableRequiredByContract": false,
+    "swirlPartialMatchNecessarilyDisqualifiesFallback": false,
+    "previousBlanketInputBlockJustified": false,
+    "existingInputCanExerciseConceptFallback": true,
+    "actualBranchAcceptance": "pending_real_trace",
+    "wholeCaseReady": "not_assessed_other_prerequisites"
+  },
+  "contracts": [
+    {
+      "source": "docs/plans/skills-mcp-migration-20261013.md:225",
+      "rule": "按目标概念比较规范标签与别名。"
+    },
+    {
+      "source": "docs/plans/skills-mcp-migration-20261013.md:226",
+      "rule": "词条没有可采用结果时，将该概念的英文自然语言描述写入slots.natural_language。"
+    },
+    {
+      "source": "docs/plans/skills-mcp-migration-20261013.md:419",
+      "rule": "ANIMA真实验收包含词条无结果，逐项检查执行轨迹确认保留规则。"
+    },
+    {
+      "source": "docs/plans/skills-mcp-migration-20261013.md:917",
+      "rule": "WAI真实验收包含同义词条及词条无结果，核对实际查询和规则采用。"
+    },
+    {
+      "source": ".agents/skills/anima-prompt-builder/SKILL.md:79",
+      "rule": "候选比较以目标概念为单位；不同意义且无法确定唯一候选时等待。"
+    },
+    {
+      "source": ".agents/skills/anima-prompt-builder/SKILL.md:80",
+      "rule": "该概念没有可采用结果时采用英文自然语言；第94行要求natural_language为英文小写句子且无tag权重外层。"
+    },
+    {
+      "source": ".agents/skills/wai-sdxl-prompt-builder/SKILL.md:75",
+      "rule": "按目标概念比较；无可采用词条时将用户描述该概念的文字改写为不含逗号的英文小写短语。"
+    }
+  ],
+  "interpretation": {
+    "unit": "所查询和拟表达的目标视觉概念，以及未被已采用词条覆盖的结构/关系。",
+    "notRequired": "合同未要求整个返回列表为空、整个Prompt零词条采用，或所有可分解子概念均没有可采用词条。",
+    "partialAdoption": "采用swirl表达旋涡图形，可以与自然语言保留三重、水滴形态、折光及装饰位置关系并存。判断必须基于实际目标概念和实际返回，而非只看零计数。",
+    "caution": "没有单个完整复合标签也不能自动宣告分支已验收。若真实查询取得可精确组合覆盖所有目标关系的标签，或执行者未实际进入无可采用概念的处理，则该轮不覆盖目标分支。"
+  },
+  "evidence": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json",
+    "query": {
+      "mode": "search",
+      "query": "三重旋涡形水滴折光装饰",
+      "page_size": 20
+    },
+    "page": 1,
+    "page_size": 20,
+    "total_count": 7,
+    "returned": 7,
+    "allReturnedCandidatesReviewed": true,
+    "candidateJudgments": [
+      {
+        "id": 19724,
+        "tag": "water_drop_hair_ornament",
+        "decision": "不是完整目标匹配；ANIMA指定衣服装饰而该词指发饰；WAI没有给出发饰载体，直接采用将新增位置。"
+      },
+      {
+        "id": 1184,
+        "tag": "water_drop",
+        "decision": "可与水滴子概念相关，但分类为液体；不能凭它表达三重旋涡、装饰载体及折光关系，亦不能未经判断将装饰确定为实际液滴。"
+      },
+      {
+        "id": 5030,
+        "tag": "drop-shaped_pupils",
+        "decision": "目标是装饰，瞳孔形状不适用。"
+      },
+      {
+        "id": 9089,
+        "tag": "swirl",
+        "decision": "graphic_symbols支持旋涡形子概念，可保留用于适合的位置；没有表达三重水滴折光装饰的完整关系。"
+      },
+      {
+        "id": 17067,
+        "tag": "vortex",
+        "decision": "实际返回evidence_gap，未确定图形/水体/能量载体，不能据同一中文别名当作swirl同义项。"
+      },
+      {
+        "id": 24025,
+        "tag": "teardrop-shaped_gem",
+        "decision": "表达泪滴形宝石，但用户没有指定宝石材质；即使执行者有依据采用此子概念，仍未覆盖三重旋涡结构和折光关系。"
+      },
+      {
+        "id": 19537,
+        "tag": "triple_vertical_stripe",
+        "decision": "三条垂直条纹与三重旋涡装饰的结构不同。"
+      }
+    ],
+    "combinedCoverage": "七项没有准确表达折光关系的规范标签，也没有把三重旋涡、水滴形态及装饰载体组合关系完整表达的候选；swirl的部分采用并不能补齐这些意义。"
+  },
+  "preflightAudit": {
+    "source": "docs/verification/skills-mcp-migration/input-preflight-review.json#compound_term_review",
+    "correctFacts": [
+      "complete_concept_matches=0符合候选意义。",
+      "all_subconcepts_unadoptable=false及swirl可表达部分概念的记录合理。",
+      "不能说任何返回词条都不可采用，这一提醒合理。"
+    ],
+    "unsupportedInference": "把上述部分匹配进一步作为5.3-5/5.5-6不能覆盖原合同分支的充分理由，并要求另找所有词条零采用样本，添加了原计划和Skill没有要求的全称条件。",
+    "internalNuance": "原报告remaining_conditions还保留按真实目标概念判断、若要求完全零采用才另找输入的条件式措辞；这比blocked结论更接近原合同。",
+    "ledgerBoundary": "本报告纠正判据解释，不直接修改既有blocked台账，也不追认未执行案例通过。"
+  },
+  "caseSpecific": {
+    "5.3-5": {
+      "concept": "衣服上的三重旋涡形水滴折光装饰",
+      "potentialCoverage": "可以在衣服装饰标签保留可采用图形子概念，同时把目录不能覆盖的完整关系写入natural_language。",
+      "additionalBoundary": "尺寸变体、人物身份和作品资料等非目标前置按各自合同核对，本报告不替代这些审查。"
+    },
+    "5.5-6": {
+      "concept": "三重旋涡形水滴折光装饰",
+      "potentialCoverage": "可以用不含逗号的英文小写短语表达无可采用词条的装饰关系。",
+      "additionalBoundary": "用户没有指定装饰位置；执行者应按输入/场景合同安排或在实际歧义必须选择时等待，不能借词条强加发饰或宝石材质。"
+    }
+  },
+  "realTraceAcceptance": [
+    "实际执行者按当前输入识别目标概念，并通过MCP取得完整实际候选；核对真实模型请求中候选全文送达。",
+    "独立判定被采用候选究竟表达什么，哪些目标意义确实没有可采用词条；不能以partial match存在与否替代逐概念判断。",
+    "ANIMA未覆盖概念进入slots.natural_language，WAI未覆盖概念成为不含逗号的英文小写短语，并进入最终Prompt。",
+    "核对三重结构、水滴形态、旋涡、折光及装饰关系完整保留，无替换为垂直条纹/瞳孔/额外材质等漂移。",
+    "实际含义分歧无法依据用户要求消解时执行等待；不能为命中无结果分支而强行忽略适用候选。",
+    "分别核对结构校验、完整语义、最终交付；即使自然语言分支覆盖成功，其他合同失败仍保留。"
+  ],
+  "conclusion": "当前复合概念输入具备检验原合同自然语言回退分支的材料基础。仅因swirl子概念可采用而要求所有子概念均无结果，属于预检增加条件。是否真实覆盖分支仍须依据执行者实际查询、采用和产物轨迹判定。"
+}

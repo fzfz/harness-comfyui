@@ -1,0 +1,4313 @@
+{
+  "purpose": "四项边界真实执行的准备、轨迹与清理记录",
+  "readWhen": "核对本轮无默认模型及空实例执行证据时",
+  "recordedAt": "2026-10-14T09:53:08.721Z",
+  "phase": "execution-complete-handoff",
+  "modelSubmitted": true,
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-candidate.tgz",
+  "modelSelectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/model-selection.json",
+  "authorization": {
+    "useBalance": false,
+    "activeGoSubscription": true
+  },
+  "preparationCorrection": "准备消息曾将 Use balance 误述为 true；主线程纠正发生在写配置及启动前，实际快照保持 false。",
+  "inputSources": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/input-preflight-current.json"
+  ],
+  "entries": [
+    {
+      "caseId": "5.6-3",
+      "scenario": "no-default-model",
+      "preset": "harness-comfyui-cli-candidate",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/environment/workspace",
+      "status": "model-turn-completed-collected-and-cleaned",
+      "candidateVerification": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/installed-candidate-comparison.json"
+      },
+      "preparationFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/preparation-fixture/state.json",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791971883098-ec9767bd-50d5-47d4-8614-61a7ea826d8f-capture.json",
+      "configurationEvidence": {
+        "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791971883098-ec9767bd-50d5-47d4-8614-61a7ea826d8f-capture.json",
+        "sourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791971883602-4b9928d2-eaf7-49b4-afe3-e1bf3dea59db-remote.json",
+        "imageReaderPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791971884082-8479dae9-64b7-43d9-a511-5ad179d39bc3-remote.json"
+      },
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/task-input.json",
+      "fixtureCleanup": {
+        "runId": "5c895d9e-247c-48a6-a2c0-5ca325e866a6",
+        "pid": 43257,
+        "scenario": "no-default-model",
+        "status": "stopped",
+        "url": "http://127.0.0.1:56974/mcp",
+        "mcpUrl": "http://127.0.0.1:56974/mcp",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 56974
+        },
+        "port": 56974,
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/model-fixture",
+        "startedAt": "2026-10-14T09:57:58.568Z",
+        "stoppedAt": "2026-10-14T10:07:53.026Z",
+        "portReleased": true
+      },
+      "preparedAt": "2026-10-14T09:53:35.460Z",
+      "modelFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/model-fixture/state.json",
+      "fixtureConsumerProbePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/model-fixture-consumer-probe.json",
+      "modelRunId": "72d2a726-1ee7-49c9-9d36-f93126c876fc",
+      "modelProbeRecordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/.local/desktop-e2e/72d2a726-1ee7-49c9-9d36-f93126c876fc/run.json",
+      "preSubmitInstalledComparison": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/installed-candidate-comparison.json"
+      },
+      "submissionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791971885604-271e3075-aaa6-4cf8-9dc8-8d451d41bafd-submit.json",
+      "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+      "workspaceId": "6ca50855-920d-4e48-af18-4abaa94b046f",
+      "submittedAt": "2026-10-14T09:58:05.611Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791972465610-85c283ee-552d-439e-98f4-dd4dabe96462-watch.json",
+      "naturalTurnCompleted": true,
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791972466156-acac12ed-4d34-40ac-946b-c1e4e6f16acc-collect.json",
+      "mainEventCount": 236,
+      "childEvents": [],
+      "generationProjections": [
+        {
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791972467274-4e071dfc-3f2e-4a1a-a562-c87c2c917516-remote.json",
+          "hasActiveRuns": false,
+          "runCount": 0
+        }
+      ],
+      "workspaceArtifacts": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/environment/workspace/5.6-3/任务记录.md",
+          "size": 4089
+        }
+      ],
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls",
+      "modelEvidenceCollectedAt": "2026-10-14T10:07:47.282Z",
+      "cleanup": {
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/.local/desktop-e2e/72d2a726-1ee7-49c9-9d36-f93126c876fc/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 56977,
+              "pids": []
+            },
+            {
+              "port": 56978,
+              "pids": []
+            },
+            {
+              "port": 56979,
+              "pids": []
+            }
+          ]
+        },
+        "fixture": {
+          "runId": "5c895d9e-247c-48a6-a2c0-5ca325e866a6",
+          "pid": 43257,
+          "scenario": "no-default-model",
+          "status": "stopped",
+          "url": "http://127.0.0.1:56974/mcp",
+          "mcpUrl": "http://127.0.0.1:56974/mcp",
+          "sourceAddress": {
+            "url": "http://127.0.0.1",
+            "port": 56974
+          },
+          "port": 56974,
+          "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/model-fixture",
+          "startedAt": "2026-10-14T09:57:58.568Z",
+          "stoppedAt": "2026-10-14T10:07:53.026Z",
+          "portReleased": true
+        },
+        "restoredConfiguration": {
+          "configuredAt": "2026-10-14T10:07:53.130Z",
+          "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+          "fixtureStateFile": null,
+          "fixtureRunId": null,
+          "mcpUrl": null,
+          "sourceAddress": null,
+          "roleAgentOptions": {
+            "composition-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "generation-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "observation-agent": {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            },
+            "comparison-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            }
+          },
+          "allowedModels": [
+            {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            }
+          ],
+          "textMaxOutputTokens": 32768,
+          "modelCallTimeoutMs": 360000,
+          "maxCalls": 3000
+        }
+      },
+      "runDatabaseEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/final-generation-run-database.json",
+      "finalRunCount": 0,
+      "finalRunStatuses": [],
+      "restoredAddressEvidence": {
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "sourceConfigurationPresent": false,
+        "sourceBaseline": {
+          "present": false,
+          "value": null
+        },
+        "mcpOverrideCount": 0,
+        "installedMcpDeclarationPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/agent-presets/noobai-mcp.cordis.yml",
+        "mcpUrl": "http://127.0.0.1:18943/mcp",
+        "hostDefaultAddress": {
+          "url": "http://127.0.0.1",
+          "port": 18093
+        }
+      },
+      "fixtureStructuralFacts": {
+        "runId": "5c895d9e-247c-48a6-a2c0-5ca325e866a6",
+        "mcpWorkflowModel": null,
+        "mcpInstanceCount": 1,
+        "httpInstanceCount": 1,
+        "httpInstanceDetailStatus": 200,
+        "httpWorkflowBundleFields": [
+          "id",
+          "title",
+          "workflow_json"
+        ],
+        "httpTemplateCatalogProbe": {
+          "path": "/internal/semantic/comfyui-templates",
+          "called": false,
+          "evidenceScope": "同轮HTTP记录包含Workflow bundle与实例入口。"
+        }
+      },
+      "modelRequests": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/082b6fb5-e16d-4fe9-9951-5202b3102fee.jsonl",
+          "size": 596554,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:05:58.175Z",
+          "terminalKind": "complete",
+          "recordCount": 376,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/0c777ade-5d8b-4ad8-8b36-5004a41015cc.jsonl",
+          "size": 325239,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:59:30.944Z",
+          "terminalKind": "complete",
+          "recordCount": 243,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/107f7b8b-11a3-4958-a97e-ffe5e1a21758.jsonl",
+          "size": 296812,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:25.853Z",
+          "terminalKind": "complete",
+          "recordCount": 356,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/1c9b82a4-d783-4fd9-a967-878eebe84324.jsonl",
+          "size": 432333,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:02:55.862Z",
+          "terminalKind": "complete",
+          "recordCount": 265,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/21c80e6d-d5cd-41a4-9070-7d748a735a77.jsonl",
+          "size": 8151,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": "session-title",
+          "start": "2026-10-14T09:58:05.670Z",
+          "terminalKind": "complete",
+          "recordCount": 32,
+          "hasToolDeclarations": false
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/2a2519cf-25bf-4158-90ba-db2fc8b55fdd.jsonl",
+          "size": 310771,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:00:20.567Z",
+          "terminalKind": "complete",
+          "recordCount": 37,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/2d1da443-6a75-43c9-b934-0b951078b12b.jsonl",
+          "size": 627648,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:06:17.352Z",
+          "terminalKind": "complete",
+          "recordCount": 477,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/2f666bdc-6594-4c1d-8527-8cde7aa9d414.jsonl",
+          "size": 419645,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:04:03.815Z",
+          "terminalKind": "complete",
+          "recordCount": 33,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/31b5be85-f2ce-479a-9af8-a4f2ae82f7a8.jsonl",
+          "size": 355695,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:02:00.978Z",
+          "terminalKind": "complete",
+          "recordCount": 40,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/3629af07-2388-4e0b-8119-2a387347f536.jsonl",
+          "size": 233329,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:08.960Z",
+          "terminalKind": "complete",
+          "recordCount": 238,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/3c8f6005-93bb-4377-a33b-da754bf0d173.jsonl",
+          "size": 330203,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:00:31.527Z",
+          "terminalKind": "complete",
+          "recordCount": 120,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/4888ccd3-fe5b-471b-8c0f-0a7b0e99bfd0.jsonl",
+          "size": 444483,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:02:36.009Z",
+          "terminalKind": "complete",
+          "recordCount": 404,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/50418d0f-6eec-4c95-9fa8-79c3fcf8a5e9.jsonl",
+          "size": 242142,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:21.147Z",
+          "terminalKind": "complete",
+          "recordCount": 154,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/5a93673b-e221-4b49-bdf1-6a9218864d9f.jsonl",
+          "size": 256893,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:57.306Z",
+          "terminalKind": "complete",
+          "recordCount": 48,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/5c9a852b-f2f6-41a4-ba6d-aea96c34c20b.jsonl",
+          "size": 412727,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:02:10.531Z",
+          "terminalKind": "complete",
+          "recordCount": 289,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/6323b7fd-f5a7-4ac3-be87-be047030380f.jsonl",
+          "size": 418840,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:00:58.494Z",
+          "terminalKind": "complete",
+          "recordCount": 536,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/6da40c85-2b8c-4488-a4de-f29ea33fa5ee.jsonl",
+          "size": 363481,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:00:43.038Z",
+          "terminalKind": "complete",
+          "recordCount": 284,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/70e271f6-36dc-4bd2-aee9-f27d806f4577.jsonl",
+          "size": 546981,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:05:44.304Z",
+          "terminalKind": "complete",
+          "recordCount": 125,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/73dd12f7-f254-4ae8-b7d6-935774e86bf9.jsonl",
+          "size": 485558,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:05:32.487Z",
+          "terminalKind": "complete",
+          "recordCount": 180,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/85542794-aa60-4a7e-8e3e-b8ae7b8597c4.jsonl",
+          "size": 453168,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:05:05.798Z",
+          "terminalKind": "complete",
+          "recordCount": 43,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/8d77a69f-4bd5-4cfd-940d-9cad454f9c7d.jsonl",
+          "size": 338255,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:59:52.905Z",
+          "terminalKind": "complete",
+          "recordCount": 272,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/9799963f-f1ea-43e5-9649-3fe534060f1f.jsonl",
+          "size": 450650,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:03:36.963Z",
+          "terminalKind": "complete",
+          "recordCount": 249,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/999bd08e-411f-43c6-b0e8-a35ef48b2fa5.jsonl",
+          "size": 177569,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:05.666Z",
+          "terminalKind": "complete",
+          "recordCount": 26,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/a07e9527-97bb-42f9-89b4-6e8540ed9415.jsonl",
+          "size": 457776,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:04:42.705Z",
+          "terminalKind": "complete",
+          "recordCount": 128,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/a738c588-1ba5-446f-a2eb-85d2897a61f9.jsonl",
+          "size": 486906,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:03:08.835Z",
+          "terminalKind": "complete",
+          "recordCount": 525,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/b03c8f66-e5a0-451a-9425-7e7f0c6df02c.jsonl",
+          "size": 439830,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:04:13.923Z",
+          "terminalKind": "complete",
+          "recordCount": 116,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/b307a268-2858-47d3-a448-e7df6511944c.jsonl",
+          "size": 424705,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:03:54.426Z",
+          "terminalKind": "complete",
+          "recordCount": 71,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/b5812769-d82e-44c0-842a-8f6924b189ec.jsonl",
+          "size": 426877,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:04:27.034Z",
+          "terminalKind": "complete",
+          "recordCount": 32,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/b6ae56f2-7be1-4da6-a560-e3425ee56893.jsonl",
+          "size": 602321,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:07:30.198Z",
+          "terminalKind": "complete",
+          "recordCount": 215,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/b82aea0c-6679-4175-bb34-b6b195b44359.jsonl",
+          "size": 261577,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:59:03.772Z",
+          "terminalKind": "complete",
+          "recordCount": 54,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/ca8fc1f1-90f3-4e53-a6b7-5d617d4482d0.jsonl",
+          "size": 244471,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:14.290Z",
+          "terminalKind": "complete",
+          "recordCount": 245,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/d4ad100b-ed83-4597-a7dc-7cf055907dd9.jsonl",
+          "size": 430469,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:04:35.438Z",
+          "terminalKind": "complete",
+          "recordCount": 38,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/e0c24467-dbf8-468e-b7bd-313c09caff7b.jsonl",
+          "size": 295858,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:00:06.767Z",
+          "terminalKind": "complete",
+          "recordCount": 9,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/e13b8ce0-fa83-4c9a-a1ef-c370ef94437f.jsonl",
+          "size": 302333,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:48.300Z",
+          "terminalKind": "complete",
+          "recordCount": 317,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/e5356bad-b6e9-415c-bb38-b45dc5c686b9.jsonl",
+          "size": 310906,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:58:36.195Z",
+          "terminalKind": "complete",
+          "recordCount": 395,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/f0e2b82e-710a-4305-bbb2-aa5182a5b02f.jsonl",
+          "size": 311996,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:00:14.379Z",
+          "terminalKind": "complete",
+          "recordCount": 77,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/f387b5b8-b9db-479c-b4c9-eafb07cb846b.jsonl",
+          "size": 686324,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:06:43.227Z",
+          "terminalKind": "complete",
+          "recordCount": 707,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/f3a63b8d-2f70-41fb-b891-c7c1fd7ad9f2.jsonl",
+          "size": 369463,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:01:30.296Z",
+          "terminalKind": "complete",
+          "recordCount": 200,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/fac43f5e-e6ea-48bb-baf7-c3a592127c16.jsonl",
+          "size": 451260,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:04:56.210Z",
+          "terminalKind": "complete",
+          "recordCount": 70,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/ff99ddcf-e310-4e42-96d2-da456e58414c.jsonl",
+          "size": 295186,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T09:59:46.811Z",
+          "terminalKind": "complete",
+          "recordCount": 48,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/ffcc2b4f-5a92-477d-aec8-a54c62e79ec5.jsonl",
+          "size": 349467,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-5a7c551f-1f0c-41aa-8341-8c7af6e51a17",
+          "purpose": null,
+          "start": "2026-10-14T10:01:47.942Z",
+          "terminalKind": "complete",
+          "recordCount": 61,
+          "hasToolDeclarations": true
+        }
+      ],
+      "observedToolCalls": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "callId": "call_00_kx6x8wnjf9brhklgzsjik2em"
+        },
+        {
+          "seq": 22,
+          "name": "bash",
+          "callId": "call_00_e8w4ju7rhb9qx56mooiimzy1"
+        },
+        {
+          "seq": 24,
+          "name": "bash",
+          "callId": "call_01_pd0ceyzio71047gtuzmv6jvu"
+        },
+        {
+          "seq": 29,
+          "name": "bash",
+          "callId": "call_00_sclth47gf9mynrzrwiwgtwpk"
+        },
+        {
+          "seq": 31,
+          "name": "bash",
+          "callId": "call_01_74uujpp7hi33gq3o3hmo2zk3"
+        },
+        {
+          "seq": 36,
+          "name": "bash",
+          "callId": "call_00_fp0y4dupix4g79do7imji5d8"
+        },
+        {
+          "seq": 38,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_01_7xmc9ew9z07riaqzw707z3o3"
+        },
+        {
+          "seq": 43,
+          "name": "bash",
+          "callId": "call_00_r5idoxv9mqjc368ehgtkii74"
+        },
+        {
+          "seq": 45,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_qzl2ncnthxy9klf5gpo10hs9"
+        },
+        {
+          "seq": 50,
+          "name": "bash",
+          "callId": "call_00_zb0oytx3e0ibz1h1yln0wbee"
+        },
+        {
+          "seq": 52,
+          "name": "mcp__noobai__search_workflows",
+          "callId": "call_01_8p5rrj2m5o346uj9ylgj2ym4"
+        },
+        {
+          "seq": 57,
+          "name": "bash",
+          "callId": "call_00_oao7lp5sizr5os8s8txunwev"
+        },
+        {
+          "seq": 62,
+          "name": "bash",
+          "callId": "chatcmpl-tool-afbfa1314208d88e"
+        },
+        {
+          "seq": 67,
+          "name": "bash",
+          "callId": "chatcmpl-tool-bccf595b8038baf5"
+        },
+        {
+          "seq": 72,
+          "name": "bash",
+          "callId": "chatcmpl-tool-8fbdec6aca3b0ad7"
+        },
+        {
+          "seq": 77,
+          "name": "bash",
+          "callId": "chatcmpl-tool-bfc3541e4de1e26a"
+        },
+        {
+          "seq": 82,
+          "name": "bash",
+          "callId": "chatcmpl-tool-9a7980c18ffb0d37"
+        },
+        {
+          "seq": 87,
+          "name": "bash",
+          "callId": "chatcmpl-tool-99abb4c9c87ba932"
+        },
+        {
+          "seq": 92,
+          "name": "bash",
+          "callId": "chatcmpl-tool-bd9b785853150abb"
+        },
+        {
+          "seq": 94,
+          "name": "bash",
+          "callId": "chatcmpl-tool-98140c93cb340ba7"
+        },
+        {
+          "seq": 99,
+          "name": "bash",
+          "callId": "chatcmpl-tool-90b84ff181cca090"
+        },
+        {
+          "seq": 104,
+          "name": "bash",
+          "callId": "chatcmpl-tool-8a5d11bed8e4590f"
+        },
+        {
+          "seq": 109,
+          "name": "list_mcp_resources",
+          "callId": "chatcmpl-tool-801e912ffa726dbd"
+        },
+        {
+          "seq": 111,
+          "name": "list_mcp_resource_templates",
+          "callId": "chatcmpl-tool-9ed25e9cab987f6c"
+        },
+        {
+          "seq": 116,
+          "name": "mcp__noobai__search_models",
+          "callId": "chatcmpl-tool-b3d61e7d478aa6f2"
+        },
+        {
+          "seq": 118,
+          "name": "mcp__noobai__get_instance_status",
+          "callId": "chatcmpl-tool-bee5bfdd7dc5f1e8"
+        },
+        {
+          "seq": 123,
+          "name": "bash",
+          "callId": "chatcmpl-tool-b37244829dee9160"
+        },
+        {
+          "seq": 128,
+          "name": "bash",
+          "callId": "chatcmpl-tool-baf91377fd4c5266"
+        },
+        {
+          "seq": 130,
+          "name": "bash",
+          "callId": "chatcmpl-tool-b1f0a6fc218058ee"
+        },
+        {
+          "seq": 135,
+          "name": "bash",
+          "callId": "chatcmpl-tool-bdfb5f524fe31f0c"
+        },
+        {
+          "seq": 137,
+          "name": "bash",
+          "callId": "chatcmpl-tool-bed8c81f5ec393c7"
+        },
+        {
+          "seq": 142,
+          "name": "bash",
+          "callId": "chatcmpl-tool-aa7387dc3b9ad2d5"
+        },
+        {
+          "seq": 144,
+          "name": "bash",
+          "callId": "chatcmpl-tool-a3494d021119069f"
+        },
+        {
+          "seq": 149,
+          "name": "bash",
+          "callId": "chatcmpl-tool-b026feff3993ebd4"
+        },
+        {
+          "seq": 154,
+          "name": "bash",
+          "callId": "chatcmpl-tool-a27025cb353a68ea"
+        },
+        {
+          "seq": 159,
+          "name": "bash",
+          "callId": "chatcmpl-tool-8770e35fbf2a44a0"
+        },
+        {
+          "seq": 164,
+          "name": "bash",
+          "callId": "chatcmpl-tool-9db1b6ca7c91baa0"
+        },
+        {
+          "seq": 169,
+          "name": "bash",
+          "callId": "chatcmpl-tool-9c8c9b1b507c5a07"
+        },
+        {
+          "seq": 174,
+          "name": "bash",
+          "callId": "chatcmpl-tool-a5ef26d4b7c8858e"
+        },
+        {
+          "seq": 179,
+          "name": "bash",
+          "callId": "chatcmpl-tool-af2177a5bb3dc1a9"
+        },
+        {
+          "seq": 184,
+          "name": "bash",
+          "callId": "chatcmpl-tool-836f2f511ec198c5"
+        },
+        {
+          "seq": 189,
+          "name": "bash",
+          "callId": "chatcmpl-tool-a766f1808425ab6e"
+        },
+        {
+          "seq": 194,
+          "name": "bash",
+          "callId": "chatcmpl-tool-919cf69c12e79558"
+        },
+        {
+          "seq": 199,
+          "name": "bash",
+          "callId": "chatcmpl-tool-b708f0109b24db19"
+        },
+        {
+          "seq": 204,
+          "name": "bash",
+          "callId": "chatcmpl-tool-9e778d11411d0816"
+        },
+        {
+          "seq": 209,
+          "name": "bash",
+          "callId": "chatcmpl-tool-90858b7de972081e"
+        },
+        {
+          "seq": 214,
+          "name": "bash",
+          "callId": "chatcmpl-tool-964120738d0e1d4b"
+        },
+        {
+          "seq": 219,
+          "name": "bash",
+          "callId": "chatcmpl-tool-ae603758e6f15393"
+        },
+        {
+          "seq": 224,
+          "name": "bash",
+          "callId": "chatcmpl-tool-91fd01bb9f993c6d"
+        },
+        {
+          "seq": 229,
+          "name": "bash",
+          "callId": "chatcmpl-tool-955b6fab1de23183"
+        }
+      ],
+      "eventSequence": {
+        "throughSeq": 235,
+        "recordCount": 236,
+        "firstSeq": 0,
+        "lastSeq": 235
+      }
+    },
+    {
+      "caseId": "5.6-3",
+      "scenario": "no-default-model",
+      "preset": "harness-comfyui-iteration",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/environment/workspace",
+      "status": "model-turn-completed-collected-and-cleaned",
+      "candidateVerification": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/installed-candidate-comparison.json"
+      },
+      "preparationFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/preparation-fixture/state.json",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791972477658-4f2fdf56-69fe-4fa3-a6b1-9837c8217f32-capture.json",
+      "configurationEvidence": {
+        "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791972477658-4f2fdf56-69fe-4fa3-a6b1-9837c8217f32-capture.json",
+        "sourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791972478197-e3ad9a78-b624-4d0c-8a1d-dcc1db8388d4-remote.json",
+        "imageReaderPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791972478694-b81cc590-0ff6-43ff-adc5-a1ec9557cdac-remote.json"
+      },
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/task-input.json",
+      "fixtureCleanup": {
+        "runId": "46b73fc1-736a-411c-8e54-9214140d0118",
+        "pid": 43257,
+        "scenario": "no-default-model",
+        "status": "stopped",
+        "url": "http://127.0.0.1:59328/mcp",
+        "mcpUrl": "http://127.0.0.1:59328/mcp",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 59328
+        },
+        "port": 59328,
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/model-fixture",
+        "startedAt": "2026-10-14T10:07:53.258Z",
+        "stoppedAt": "2026-10-14T10:17:12.647Z",
+        "portReleased": true
+      },
+      "preparedAt": "2026-10-14T09:54:01.368Z",
+      "modelFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/model-fixture/state.json",
+      "fixtureConsumerProbePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/model-fixture-consumer-probe.json",
+      "modelRunId": "024c1b14-0d5b-43e1-a312-3304ffbe35e2",
+      "modelProbeRecordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/.local/desktop-e2e/024c1b14-0d5b-43e1-a312-3304ffbe35e2/run.json",
+      "preSubmitInstalledComparison": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/installed-candidate-comparison.json"
+      },
+      "submissionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791972480214-5016e2fb-ee6b-47b2-bc10-a65ef945254e-submit.json",
+      "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+      "workspaceId": "c5001e56-28ec-412f-8b8c-48edae742815",
+      "submittedAt": "2026-10-14T10:08:00.222Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791973024965-3d002936-0a8e-4620-856d-78ae2ed9cc86-watch.json",
+      "naturalTurnCompleted": true,
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791973025553-e085a73c-7567-4678-84ad-a63b5b09070a-collect.json",
+      "mainEventCount": 206,
+      "childEvents": [],
+      "generationProjections": [
+        {
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791973026863-da6bd7a2-0428-485c-9d5e-1b0190ff4d41-remote.json",
+          "hasActiveRuns": false,
+          "runCount": 0
+        }
+      ],
+      "workspaceArtifacts": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/environment/workspace/5.6-3/builder-result.json",
+          "size": 779
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/environment/workspace/5.6-3/任务记录.md",
+          "size": 5332
+        }
+      ],
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls",
+      "modelEvidenceCollectedAt": "2026-10-14T10:17:06.869Z",
+      "cleanup": {
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/.local/desktop-e2e/024c1b14-0d5b-43e1-a312-3304ffbe35e2/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 59331,
+              "pids": []
+            },
+            {
+              "port": 59332,
+              "pids": []
+            },
+            {
+              "port": 59333,
+              "pids": []
+            }
+          ]
+        },
+        "fixture": {
+          "runId": "46b73fc1-736a-411c-8e54-9214140d0118",
+          "pid": 43257,
+          "scenario": "no-default-model",
+          "status": "stopped",
+          "url": "http://127.0.0.1:59328/mcp",
+          "mcpUrl": "http://127.0.0.1:59328/mcp",
+          "sourceAddress": {
+            "url": "http://127.0.0.1",
+            "port": 59328
+          },
+          "port": 59328,
+          "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/model-fixture",
+          "startedAt": "2026-10-14T10:07:53.258Z",
+          "stoppedAt": "2026-10-14T10:17:12.647Z",
+          "portReleased": true
+        },
+        "restoredConfiguration": {
+          "configuredAt": "2026-10-14T10:17:12.749Z",
+          "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+          "fixtureStateFile": null,
+          "fixtureRunId": null,
+          "mcpUrl": null,
+          "sourceAddress": null,
+          "roleAgentOptions": {
+            "composition-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "generation-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "observation-agent": {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            },
+            "comparison-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            }
+          },
+          "allowedModels": [
+            {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            }
+          ],
+          "textMaxOutputTokens": 32768,
+          "modelCallTimeoutMs": 360000,
+          "maxCalls": 3000
+        }
+      },
+      "runDatabaseEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/final-generation-run-database.json",
+      "finalRunCount": 0,
+      "finalRunStatuses": [],
+      "restoredAddressEvidence": {
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "sourceConfigurationPresent": false,
+        "sourceBaseline": {
+          "present": false,
+          "value": null
+        },
+        "mcpOverrideCount": 0,
+        "installedMcpDeclarationPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/agent-presets/noobai-mcp.cordis.yml",
+        "mcpUrl": "http://127.0.0.1:18943/mcp",
+        "hostDefaultAddress": {
+          "url": "http://127.0.0.1",
+          "port": 18093
+        }
+      },
+      "fixtureStructuralFacts": {
+        "runId": "46b73fc1-736a-411c-8e54-9214140d0118",
+        "mcpWorkflowModel": null,
+        "mcpInstanceCount": 1,
+        "httpInstanceCount": 1,
+        "httpInstanceDetailStatus": 200,
+        "httpWorkflowBundleFields": [
+          "id",
+          "title",
+          "workflow_json"
+        ],
+        "httpTemplateCatalogProbe": {
+          "path": "/internal/semantic/comfyui-templates",
+          "called": false,
+          "evidenceScope": "同轮HTTP记录包含Workflow bundle与实例入口。"
+        }
+      },
+      "modelRequests": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/00cf4254-7572-477a-beb7-e6d5536bb21c.jsonl",
+          "size": 237442,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:04.209Z",
+          "terminalKind": "complete",
+          "recordCount": 178,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/0689979b-0e8c-4335-b30a-d3b3f9d023b9.jsonl",
+          "size": 438543,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:10:51.762Z",
+          "terminalKind": "complete",
+          "recordCount": 355,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/0e65931c-c41b-42ca-a22d-067a63ab324c.jsonl",
+          "size": 484517,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:15:21.867Z",
+          "terminalKind": "complete",
+          "recordCount": 287,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/0f0d2edc-04b7-4ab4-882d-1b29cb6fe0dd.jsonl",
+          "size": 730623,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:15:57.335Z",
+          "terminalKind": "complete",
+          "recordCount": 1321,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/164533da-ea47-4fb5-985a-6200e8d7d081.jsonl",
+          "size": 523755,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:11:04.854Z",
+          "terminalKind": "complete",
+          "recordCount": 723,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/232dbb96-ee2f-40d0-909f-e09e0b848adf.jsonl",
+          "size": 550299,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:15:39.117Z",
+          "terminalKind": "complete",
+          "recordCount": 616,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/3294714a-a66d-480a-b3ca-41101b070836.jsonl",
+          "size": 457581,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:15:29.006Z",
+          "terminalKind": "complete",
+          "recordCount": 148,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/4e707b68-0e8e-4c47-b321-45c6649841c6.jsonl",
+          "size": 453676,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:15:05.186Z",
+          "terminalKind": "complete",
+          "recordCount": 202,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/5274ed08-5781-454b-91be-ca2d92ab7f4a.jsonl",
+          "size": 449434,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:15:14.651Z",
+          "terminalKind": "complete",
+          "recordCount": 159,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/52b20d05-4188-46bc-b8d8-40208f4ffb3f.jsonl",
+          "size": 236954,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:09.237Z",
+          "terminalKind": "complete",
+          "recordCount": 164,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/5f7a510d-a969-47a0-a2a7-31d6c3b065f8.jsonl",
+          "size": 318479,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:21.825Z",
+          "terminalKind": "complete",
+          "recordCount": 560,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/62057b78-0cac-44c9-834c-32e8dba5ac7b.jsonl",
+          "size": 472610,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:11:52.967Z",
+          "terminalKind": "complete",
+          "recordCount": 340,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/69d46676-075f-4e30-97c0-952384c0d3c7.jsonl",
+          "size": 329287,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:29.650Z",
+          "terminalKind": "complete",
+          "recordCount": 363,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/69e5910a-133c-4ca0-9363-aaf266f7cfa3.jsonl",
+          "size": 544824,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:16:18.231Z",
+          "terminalKind": "complete",
+          "recordCount": 407,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/6eae45aa-8ef7-489b-897c-33f7d971da36.jsonl",
+          "size": 386408,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:10:35.881Z",
+          "terminalKind": "complete",
+          "recordCount": 226,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/7b7421f0-33e9-49f9-bd64-70c05a94d5f1.jsonl",
+          "size": 290593,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:42.983Z",
+          "terminalKind": "complete",
+          "recordCount": 128,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/85d13604-0914-43c4-958e-72847d2a5cbd.jsonl",
+          "size": 361894,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:59.082Z",
+          "terminalKind": "complete",
+          "recordCount": 396,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/8a3c7166-d910-42ba-9013-4f485bfeff51.jsonl",
+          "size": 308229,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:40.236Z",
+          "terminalKind": "complete",
+          "recordCount": 401,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/8e96d237-c8a7-4a02-a845-5c53ea5e99d1.jsonl",
+          "size": 289580,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:47.160Z",
+          "terminalKind": "complete",
+          "recordCount": 112,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/95569d31-7bac-4c1c-b5f0-36ed64466c7e.jsonl",
+          "size": 345088,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:58.168Z",
+          "terminalKind": "complete",
+          "recordCount": 510,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/9c742017-e535-4bfa-a1bb-3e61fd2045d9.jsonl",
+          "size": 324063,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:10:13.044Z",
+          "terminalKind": "complete",
+          "recordCount": 165,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/9e3b71c9-f6a1-45b2-85dd-b85eeb077617.jsonl",
+          "size": 342057,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:10:19.409Z",
+          "terminalKind": "complete",
+          "recordCount": 4,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/a255e9ca-e997-4d52-9a6f-1d1cd72ee88d.jsonl",
+          "size": 281050,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:16.913Z",
+          "terminalKind": "complete",
+          "recordCount": 116,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/a54da36a-3006-40d9-8cff-21d90fc8265f.jsonl",
+          "size": 299651,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:52.275Z",
+          "terminalKind": "complete",
+          "recordCount": 145,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/a96e0aec-9f02-459c-9bc5-0a276494e11d.jsonl",
+          "size": 845772,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:16:28.495Z",
+          "terminalKind": "complete",
+          "recordCount": 1741,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/b1430b47-8531-44d5-aa96-7ee9c837706f.jsonl",
+          "size": 278061,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:25.062Z",
+          "terminalKind": "complete",
+          "recordCount": 97,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/b6f53ea9-17ba-4fb5-a7b6-dc0eec1cc218.jsonl",
+          "size": 509269,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:16:53.021Z",
+          "terminalKind": "complete",
+          "recordCount": 240,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/bc2278cb-4c06-46a1-870b-5cffe407dd45.jsonl",
+          "size": 434369,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:11:28.321Z",
+          "terminalKind": "complete",
+          "recordCount": 189,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/c6f4abcd-27a2-42a3-9934-4601c72070aa.jsonl",
+          "size": 287695,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:09:11.703Z",
+          "terminalKind": "complete",
+          "recordCount": 161,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/d1ce565c-4d74-418f-97d9-5876fb999882.jsonl",
+          "size": 442367,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:11:44.220Z",
+          "terminalKind": "complete",
+          "recordCount": 196,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/d4ab5f51-1be3-4528-b217-b5803839889e.jsonl",
+          "size": 228431,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:14.732Z",
+          "terminalKind": "complete",
+          "recordCount": 98,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/e02f8122-b476-4cf9-acbd-9f452c1b695a.jsonl",
+          "size": 446124,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:11:36.533Z",
+          "terminalKind": "complete",
+          "recordCount": 215,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/e4d3ed1c-0bac-4a46-9b0d-1859027dd30b.jsonl",
+          "size": 266296,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:52.391Z",
+          "terminalKind": "complete",
+          "recordCount": 112,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/f30e35ee-12ee-46ec-804d-05edd818951a.jsonl",
+          "size": 4399,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": "session-title",
+          "start": "2026-10-14T10:08:00.278Z",
+          "terminalKind": "complete",
+          "recordCount": 11,
+          "hasToolDeclarations": false
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/f909f592-3c04-4785-831f-f303f19ed79b.jsonl",
+          "size": 383010,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:10:45.922Z",
+          "terminalKind": "complete",
+          "recordCount": 172,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/fb1c5cad-7c69-4a9d-81ba-418ebd0073a5.jsonl",
+          "size": 193441,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-ea42a1dd-5671-4fa0-b11a-5721227ec498",
+          "purpose": null,
+          "start": "2026-10-14T10:08:00.274Z",
+          "terminalKind": "complete",
+          "recordCount": 24,
+          "hasToolDeclarations": true
+        }
+      ],
+      "observedToolCalls": [
+        {
+          "seq": 18,
+          "name": "skill",
+          "callId": "call_00_sacpc4pjjvyn8ihn38hzvq9p"
+        },
+        {
+          "seq": 23,
+          "name": "bash",
+          "callId": "call_00_no5wdt5bi5k9lzcif897sut6"
+        },
+        {
+          "seq": 25,
+          "name": "bash",
+          "callId": "call_01_g27u4vs5hv9xhtz6bzm0vf5r"
+        },
+        {
+          "seq": 30,
+          "name": "bash",
+          "callId": "call_00_kbv54g25wswuu0mnm35flnrk"
+        },
+        {
+          "seq": 35,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_00_8r2awor15rqnijz8cl5funz8"
+        },
+        {
+          "seq": 37,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_m3c6mmkdbo3z5lifqgfzxrsm"
+        },
+        {
+          "seq": 42,
+          "name": "mcp__noobai__search_workflows",
+          "callId": "call_00_yfl92647efgecgr9k77sa1s3"
+        },
+        {
+          "seq": 44,
+          "name": "mcp__noobai__search_models",
+          "callId": "call_01_dh3vhi08nku8c40lcnd6a6p9"
+        },
+        {
+          "seq": 49,
+          "name": "bash",
+          "callId": "call_00_xpdc37ojxsuy4t46nsyz6cqd"
+        },
+        {
+          "seq": 51,
+          "name": "bash",
+          "callId": "call_01_nq89vpr4vup4obuhc7ut7ahp"
+        },
+        {
+          "seq": 56,
+          "name": "bash",
+          "callId": "call_00_qcsivgwxgg00u3p1jbm5d9ze"
+        },
+        {
+          "seq": 61,
+          "name": "bash",
+          "callId": "call_00_p6sgeoq45zqhciwtpkx649hz"
+        },
+        {
+          "seq": 63,
+          "name": "bash",
+          "callId": "call_01_jrbkrs85qkeuvxl46evfw19g"
+        },
+        {
+          "seq": 68,
+          "name": "bash",
+          "callId": "call_00_4kp8ma2nr1mgd5hhjw5ucgg0"
+        },
+        {
+          "seq": 73,
+          "name": "bash",
+          "callId": "call_00_9t661rg2jm4ydptka60idatl"
+        },
+        {
+          "seq": 78,
+          "name": "bash",
+          "callId": "call_00_75szk2roi24qkbwh8x23ashv"
+        },
+        {
+          "seq": 83,
+          "name": "bash",
+          "callId": "call_00_v6497z3mb0s71wkr6xdxhu92"
+        },
+        {
+          "seq": 88,
+          "name": "bash",
+          "callId": "call_00_1wbvend6lz2r0iegb1g7q82m"
+        },
+        {
+          "seq": 93,
+          "name": "bash",
+          "callId": "call_00_62bcmul3ypz9f5hon5afi643"
+        },
+        {
+          "seq": 98,
+          "name": "bash",
+          "callId": "call_00_i3l7mpzkwl2u8s1rd7jiyync"
+        },
+        {
+          "seq": 103,
+          "name": "bash",
+          "callId": "call_00_h3jbehhwdylzp8335lv0uqqb"
+        },
+        {
+          "seq": 108,
+          "name": "bash",
+          "callId": "call_00_9lt6wiopfh675njsxou99mj4"
+        },
+        {
+          "seq": 116,
+          "name": "bash",
+          "callId": "call_00_iubjsmmlmjbzqzgjevnjald3"
+        },
+        {
+          "seq": 121,
+          "name": "bash",
+          "callId": "call_00_u76nfp6sthgoe69hi3hpvvjt"
+        },
+        {
+          "seq": 126,
+          "name": "mcp__noobai__search_workflows",
+          "callId": "call_00_piq9aagiuhqniq99i2hdovuk"
+        },
+        {
+          "seq": 128,
+          "name": "mcp__noobai__search_workflows",
+          "callId": "call_01_qqm2vhcmqfrild7slvh30hn2"
+        },
+        {
+          "seq": 133,
+          "name": "bash",
+          "callId": "call_00_yngy4aq9fct7l4ut2qa9znr1"
+        },
+        {
+          "seq": 135,
+          "name": "bash",
+          "callId": "call_01_l0obbofny3d0guhzwyhm47cs"
+        },
+        {
+          "seq": 140,
+          "name": "bash",
+          "callId": "call_00_bnd46dwgsm191u76m7m4q36w"
+        },
+        {
+          "seq": 145,
+          "name": "bash",
+          "callId": "call_00_17dhc2of3m7ttz43m99enqoc"
+        },
+        {
+          "seq": 150,
+          "name": "bash",
+          "callId": "call_00_517ss8jcmuv1lvdkl7citvcl"
+        },
+        {
+          "seq": 155,
+          "name": "bash",
+          "callId": "call_00_p788l3o0tlmw9giilcawp0zn"
+        },
+        {
+          "seq": 160,
+          "name": "bash",
+          "callId": "call_00_jkdfoujxblw5vf636g1vxjs7"
+        },
+        {
+          "seq": 165,
+          "name": "bash",
+          "callId": "call_00_so2ej0772zwrjzk3svphazjc"
+        },
+        {
+          "seq": 170,
+          "name": "bash",
+          "callId": "call_00_p04m6reyyxrca6oasjua2ean"
+        },
+        {
+          "seq": 175,
+          "name": "bash",
+          "callId": "call_00_0di26s1cbokttw4wi99zwc9i"
+        },
+        {
+          "seq": 180,
+          "name": "bash",
+          "callId": "call_00_ufczpfdjddjykpyq2ga5djat"
+        },
+        {
+          "seq": 182,
+          "name": "mcp__noobai__search_models",
+          "callId": "call_01_nqh96to291n4kfyx5o9b9nxi"
+        },
+        {
+          "seq": 184,
+          "name": "mcp__noobai__get_instance_status",
+          "callId": "call_02_iwbv7cp6qgi5v65m30jh1ink"
+        },
+        {
+          "seq": 189,
+          "name": "bash",
+          "callId": "call_00_61jlpvbxoq2fjr6n1bucojyi"
+        },
+        {
+          "seq": 194,
+          "name": "bash",
+          "callId": "call_00_nlj9spakj2swo40uvpsttd2v"
+        },
+        {
+          "seq": 199,
+          "name": "bash",
+          "callId": "call_00_9b5xpdorsvb82wzu4ee4fbta"
+        }
+      ],
+      "eventSequence": {
+        "throughSeq": 205,
+        "recordCount": 206,
+        "firstSeq": 0,
+        "lastSeq": 205
+      }
+    },
+    {
+      "caseId": "5.6-6",
+      "scenario": "empty-instances",
+      "preset": "harness-comfyui-cli-candidate",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/environment/workspace",
+      "status": "model-turn-completed-collected-and-cleaned",
+      "candidateVerification": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/installed-candidate-comparison.json"
+      },
+      "preparationFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/preparation-resumed-fixture/state.json",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973037993-51c6c534-1f97-40fc-bea6-bbe80aadd2aa-capture.json",
+      "configurationEvidence": {
+        "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973037993-51c6c534-1f97-40fc-bea6-bbe80aadd2aa-capture.json",
+        "sourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973038476-834eaa97-737a-45a4-b029-77648884f9ac-remote.json",
+        "imageReaderPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973038941-3aaf8d99-0400-4459-bed1-2be5f81a2d6e-remote.json"
+      },
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/task-input.json",
+      "fixtureCleanup": {
+        "runId": "7112dc69-551d-4524-a458-1bed2fc7c62c",
+        "pid": 43257,
+        "scenario": "empty-instances",
+        "status": "stopped",
+        "url": "http://127.0.0.1:62337/mcp",
+        "mcpUrl": "http://127.0.0.1:62337/mcp",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 62337
+        },
+        "port": 62337,
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/model-fixture",
+        "startedAt": "2026-10-14T10:17:12.904Z",
+        "stoppedAt": "2026-10-14T10:18:55.470Z",
+        "portReleased": true
+      },
+      "preparedAt": "2026-10-14T09:55:22.949Z",
+      "modelFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/model-fixture/state.json",
+      "fixtureConsumerProbePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/model-fixture-consumer-probe.json",
+      "modelRunId": "8a610556-e048-4e6a-98f4-53c5f03ee558",
+      "modelProbeRecordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/.local/desktop-e2e/8a610556-e048-4e6a-98f4-53c5f03ee558/run.json",
+      "preSubmitInstalledComparison": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/installed-candidate-comparison.json"
+      },
+      "submissionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973040455-67b96b69-0ec6-4d4e-8009-a81b06b4a54f-submit.json",
+      "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+      "workspaceId": "225350fc-f615-48c8-9f35-5081bc998c08",
+      "submittedAt": "2026-10-14T10:17:20.462Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973128448-2d1ed4b0-d3e9-4f06-88f8-68d6d9ceb1ed-watch.json",
+      "naturalTurnCompleted": true,
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973128969-d7a44c36-5f4b-4a1f-b9c8-8b10d2d70eb1-collect.json",
+      "mainEventCount": 103,
+      "childEvents": [],
+      "generationProjections": [
+        {
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973129674-1470a587-0f00-4391-a258-de80c5e94fbe-remote.json",
+          "hasActiveRuns": false,
+          "runCount": 0
+        }
+      ],
+      "workspaceArtifacts": [],
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls",
+      "modelEvidenceCollectedAt": "2026-10-14T10:18:49.680Z",
+      "cleanup": {
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/.local/desktop-e2e/8a610556-e048-4e6a-98f4-53c5f03ee558/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 62343,
+              "pids": []
+            },
+            {
+              "port": 62344,
+              "pids": []
+            },
+            {
+              "port": 62345,
+              "pids": []
+            }
+          ]
+        },
+        "fixture": {
+          "runId": "7112dc69-551d-4524-a458-1bed2fc7c62c",
+          "pid": 43257,
+          "scenario": "empty-instances",
+          "status": "stopped",
+          "url": "http://127.0.0.1:62337/mcp",
+          "mcpUrl": "http://127.0.0.1:62337/mcp",
+          "sourceAddress": {
+            "url": "http://127.0.0.1",
+            "port": 62337
+          },
+          "port": 62337,
+          "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/model-fixture",
+          "startedAt": "2026-10-14T10:17:12.904Z",
+          "stoppedAt": "2026-10-14T10:18:55.470Z",
+          "portReleased": true
+        },
+        "restoredConfiguration": {
+          "configuredAt": "2026-10-14T10:18:55.566Z",
+          "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+          "fixtureStateFile": null,
+          "fixtureRunId": null,
+          "mcpUrl": null,
+          "sourceAddress": null,
+          "roleAgentOptions": {
+            "composition-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "generation-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "observation-agent": {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            },
+            "comparison-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            }
+          },
+          "allowedModels": [
+            {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            }
+          ],
+          "textMaxOutputTokens": 32768,
+          "modelCallTimeoutMs": 360000,
+          "maxCalls": 3000
+        }
+      },
+      "runDatabaseEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/final-generation-run-database.json",
+      "finalRunCount": 0,
+      "finalRunStatuses": [],
+      "restoredAddressEvidence": {
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "sourceConfigurationPresent": false,
+        "sourceBaseline": {
+          "present": false,
+          "value": null
+        },
+        "mcpOverrideCount": 0,
+        "installedMcpDeclarationPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/agent-presets/noobai-mcp.cordis.yml",
+        "mcpUrl": "http://127.0.0.1:18943/mcp",
+        "hostDefaultAddress": {
+          "url": "http://127.0.0.1",
+          "port": 18093
+        }
+      },
+      "fixtureStructuralFacts": {
+        "runId": "7112dc69-551d-4524-a458-1bed2fc7c62c",
+        "mcpWorkflowModel": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "mcpInstanceCount": 0,
+        "httpInstanceCount": 0,
+        "httpInstanceDetailStatus": 404,
+        "httpWorkflowBundleFields": [
+          "id",
+          "title",
+          "workflow_json"
+        ],
+        "httpTemplateCatalogProbe": {
+          "path": "/internal/semantic/comfyui-templates",
+          "called": false,
+          "evidenceScope": "同轮HTTP记录包含Workflow bundle与实例入口。"
+        }
+      },
+      "modelRequests": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/05a4a534-0721-4f29-925b-eed57f67f31d.jsonl",
+          "size": 177344,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:20.526Z",
+          "terminalKind": "complete",
+          "recordCount": 25,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/089a7edb-c77e-4bb3-b5b4-ce37396348a5.jsonl",
+          "size": 263565,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:10.547Z",
+          "terminalKind": "complete",
+          "recordCount": 118,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/113f500f-b083-4786-9226-08c1f019cfdb.jsonl",
+          "size": 288330,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:38.709Z",
+          "terminalKind": "complete",
+          "recordCount": 218,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/124ce40b-a03a-421a-81d5-fe969e3aad0b.jsonl",
+          "size": 255190,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:05.051Z",
+          "terminalKind": "complete",
+          "recordCount": 88,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/27abb3ec-be21-405e-9048-af2ae0577369.jsonl",
+          "size": 4148,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": "session-title",
+          "start": "2026-10-14T10:17:20.530Z",
+          "terminalKind": "complete",
+          "recordCount": 10,
+          "hasToolDeclarations": false
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/29bc4b25-2cb5-450d-861f-5842022282a6.jsonl",
+          "size": 247713,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:00.701Z",
+          "terminalKind": "complete",
+          "recordCount": 62,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/29ccd9bd-7444-44b9-95fc-ad3fc8b4d295.jsonl",
+          "size": 292348,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:30.012Z",
+          "terminalKind": "complete",
+          "recordCount": 217,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/2bee9f0c-c247-46ad-9328-fc55d36af008.jsonl",
+          "size": 236877,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:25.491Z",
+          "terminalKind": "complete",
+          "recordCount": 249,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/62fb320f-03b3-4e4d-9c80-17f872b95c08.jsonl",
+          "size": 240821,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:30.183Z",
+          "terminalKind": "complete",
+          "recordCount": 253,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/6751c369-8d92-457e-b3da-f98df57407db.jsonl",
+          "size": 243388,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:54.515Z",
+          "terminalKind": "complete",
+          "recordCount": 53,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/8a7921b8-4a93-4a16-b74e-4ff40529e02a.jsonl",
+          "size": 252788,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:39.778Z",
+          "terminalKind": "complete",
+          "recordCount": 132,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/95707cf3-b7f8-48e6-9ad3-4cb14aab2d6d.jsonl",
+          "size": 241856,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:35.177Z",
+          "terminalKind": "complete",
+          "recordCount": 157,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/a4bb40d6-222c-4d1e-9ce9-00f5fbb791ea.jsonl",
+          "size": 244335,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:17:47.558Z",
+          "terminalKind": "complete",
+          "recordCount": 64,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/ca726176-28cf-4230-9074-fded6edf69c1.jsonl",
+          "size": 277029,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:15.290Z",
+          "terminalKind": "complete",
+          "recordCount": 183,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/ea9ca1f1-2a45-46e9-995c-ba6c708d264e.jsonl",
+          "size": 262463,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-1bce0bdf-3101-47fb-b360-90fdf35c9f0d",
+          "purpose": null,
+          "start": "2026-10-14T10:18:23.689Z",
+          "terminalKind": "complete",
+          "recordCount": 83,
+          "hasToolDeclarations": true
+        }
+      ],
+      "observedToolCalls": [
+        {
+          "seq": 18,
+          "name": "skill",
+          "callId": "call_00_vxtuyi19ejqbjaw9cwv0gvvp"
+        },
+        {
+          "seq": 23,
+          "name": "bash",
+          "callId": "call_00_g9t2mq09aupjztmjsyunj4h3"
+        },
+        {
+          "seq": 25,
+          "name": "bash",
+          "callId": "call_01_yicclqdjz97noekjg4vys3rl"
+        },
+        {
+          "seq": 30,
+          "name": "bash",
+          "callId": "call_00_5ga7pc7c4rlne1tvkh0kajot"
+        },
+        {
+          "seq": 32,
+          "name": "bash",
+          "callId": "call_01_jiz8u8gq4ncoqnzc0w6j7lir"
+        },
+        {
+          "seq": 37,
+          "name": "bash",
+          "callId": "call_00_jrh7my88l33jpfzvp9iph6u3"
+        },
+        {
+          "seq": 39,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_01_hyw70uyvxqloouwykjd123qo"
+        },
+        {
+          "seq": 44,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_00_onuqgotuhxqdlyn6eezw1tlm"
+        },
+        {
+          "seq": 46,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_01fxejq9elixjbd7hhhk1hii"
+        },
+        {
+          "seq": 51,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_00_dwoq0fulsllat2dog72cugoc"
+        },
+        {
+          "seq": 53,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_98n2ph5kk08hi38gbumy3jpi"
+        },
+        {
+          "seq": 58,
+          "name": "list_mcp_resources",
+          "callId": "call_00_8ot9uckgf5x2hz3lq1vn3l14"
+        },
+        {
+          "seq": 60,
+          "name": "list_mcp_resource_templates",
+          "callId": "call_01_q3tz9vnnqdhyfnon2nrcgwkw"
+        },
+        {
+          "seq": 65,
+          "name": "bash",
+          "callId": "call_00_4o03rpv4qpns30nvm3zk4zm3"
+        },
+        {
+          "seq": 70,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_00_skqq2xij4gggow4try8o6dq2"
+        },
+        {
+          "seq": 72,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_k51nbb7iz078gkxu3udr1mnu"
+        },
+        {
+          "seq": 77,
+          "name": "bash",
+          "callId": "call_00_yis3eb0ptoasg7uzop5nsun8"
+        },
+        {
+          "seq": 82,
+          "name": "mcp__noobai__search_base_models",
+          "callId": "call_00_hp9599jkyi4i4zhykm5nxoh0"
+        },
+        {
+          "seq": 84,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_hnykkbrrj9fa5g7j5u5g3ssd"
+        },
+        {
+          "seq": 89,
+          "name": "mcp__noobai__search_instance_nodes",
+          "callId": "call_00_cra5kqhnzkd5ddr68z0tua9m"
+        },
+        {
+          "seq": 91,
+          "name": "mcp__noobai__get_instance_status",
+          "callId": "call_01_kflz2tmobvq4x4fs6dxxophn"
+        },
+        {
+          "seq": 96,
+          "name": "bash",
+          "callId": "call_00_7r96nvlhq61thb3sgvwad1pp"
+        }
+      ],
+      "eventSequence": {
+        "throughSeq": 102,
+        "recordCount": 103,
+        "firstSeq": 0,
+        "lastSeq": 102
+      }
+    },
+    {
+      "caseId": "5.6-6",
+      "scenario": "empty-instances",
+      "preset": "harness-comfyui-iteration",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/environment/workspace",
+      "status": "model-timeout-cancelled-collected-and-cleaned",
+      "candidateVerification": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/installed-candidate-comparison.json"
+      },
+      "preparationFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/preparation-resumed-fixture/state.json",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973140035-ca5ab25b-e89e-4c9e-9c4d-34ad6dcc9717-capture.json",
+      "configurationEvidence": {
+        "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973140035-ca5ab25b-e89e-4c9e-9c4d-34ad6dcc9717-capture.json",
+        "sourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973140519-8d49f543-df88-4a63-8ef1-6102da10638a-remote.json",
+        "imageReaderPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973140983-6c7162c1-a42f-4392-be37-69fd9acaca75-remote.json"
+      },
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/task-input.json",
+      "fixtureCleanup": {
+        "runId": "3b6a84f4-84e2-4763-afd7-03ab11b2ced5",
+        "pid": 43257,
+        "scenario": "empty-instances",
+        "status": "stopped",
+        "url": "http://127.0.0.1:63205/mcp",
+        "mcpUrl": "http://127.0.0.1:63205/mcp",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 63205
+        },
+        "port": 63205,
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture",
+        "startedAt": "2026-10-14T10:18:55.697Z",
+        "stoppedAt": "2026-10-14T10:29:11.639Z",
+        "portReleased": true
+      },
+      "preparedAt": "2026-10-14T09:55:48.141Z",
+      "modelFixtureState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture/state.json",
+      "fixtureConsumerProbePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture-consumer-probe.json",
+      "modelRunId": "2f340616-f309-4eb4-9024-63d103b07f0c",
+      "modelProbeRecordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/.local/desktop-e2e/2f340616-f309-4eb4-9024-63d103b07f0c/run.json",
+      "preSubmitInstalledComparison": {
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true,
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/installed-candidate-comparison.json"
+      },
+      "submissionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973142537-c628e3ee-f56d-4908-a64e-1f725a18d921-submit.json",
+      "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+      "workspaceId": "cfc96433-47d5-41dc-ba29-3035715c0be8",
+      "submittedAt": "2026-10-14T10:19:02.543Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973743762-6cd689e3-4d5a-4234-9cae-352385fe1e95-watch.json",
+      "naturalTurnCompleted": false,
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973744299-9f6d98fc-b0d7-4ccc-9872-2445ff20ab66-collect.json",
+      "mainEventCount": 402,
+      "childEvents": [],
+      "generationProjections": [
+        {
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973745832-fd9e8fa4-6f00-4950-9ed6-a061a7ab5382-remote.json",
+          "hasActiveRuns": false,
+          "runCount": 0
+        }
+      ],
+      "workspaceArtifacts": [],
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls",
+      "modelEvidenceCollectedAt": "2026-10-14T10:29:05.838Z",
+      "cleanup": {
+        "probeStatus": {
+          "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/.local/desktop-e2e/2f340616-f309-4eb4-9024-63d103b07f0c/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 63209,
+              "pids": []
+            },
+            {
+              "port": 63210,
+              "pids": []
+            },
+            {
+              "port": 63211,
+              "pids": []
+            }
+          ]
+        },
+        "fixture": {
+          "runId": "3b6a84f4-84e2-4763-afd7-03ab11b2ced5",
+          "pid": 43257,
+          "scenario": "empty-instances",
+          "status": "stopped",
+          "url": "http://127.0.0.1:63205/mcp",
+          "mcpUrl": "http://127.0.0.1:63205/mcp",
+          "sourceAddress": {
+            "url": "http://127.0.0.1",
+            "port": 63205
+          },
+          "port": 63205,
+          "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture",
+          "startedAt": "2026-10-14T10:18:55.697Z",
+          "stoppedAt": "2026-10-14T10:29:11.639Z",
+          "portReleased": true
+        },
+        "restoredConfiguration": {
+          "configuredAt": "2026-10-14T10:29:11.731Z",
+          "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+          "fixtureStateFile": null,
+          "fixtureRunId": null,
+          "mcpUrl": null,
+          "sourceAddress": null,
+          "roleAgentOptions": {
+            "composition-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "generation-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            "observation-agent": {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            },
+            "comparison-agent": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            }
+          },
+          "allowedModels": [
+            {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            }
+          ],
+          "textMaxOutputTokens": 32768,
+          "modelCallTimeoutMs": 360000,
+          "maxCalls": 3000
+        }
+      },
+      "runDatabaseEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/final-generation-run-database.json",
+      "finalRunCount": 0,
+      "finalRunStatuses": [],
+      "restoredAddressEvidence": {
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "sourceConfigurationPresent": false,
+        "sourceBaseline": {
+          "present": false,
+          "value": null
+        },
+        "mcpOverrideCount": 0,
+        "installedMcpDeclarationPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/agent-presets/noobai-mcp.cordis.yml",
+        "mcpUrl": "http://127.0.0.1:18943/mcp",
+        "hostDefaultAddress": {
+          "url": "http://127.0.0.1",
+          "port": 18093
+        }
+      },
+      "fixtureStructuralFacts": {
+        "runId": "3b6a84f4-84e2-4763-afd7-03ab11b2ced5",
+        "mcpWorkflowModel": {
+          "id": "1",
+          "name": "waiIllustriousSDXL_v170.safetensors"
+        },
+        "mcpInstanceCount": 0,
+        "httpInstanceCount": 0,
+        "httpInstanceDetailStatus": 404,
+        "httpWorkflowBundleFields": [
+          "id",
+          "title",
+          "workflow_json"
+        ],
+        "httpTemplateCatalogProbe": {
+          "path": "/internal/semantic/comfyui-templates",
+          "called": false,
+          "evidenceScope": "同轮HTTP记录包含Workflow bundle与实例入口。"
+        }
+      },
+      "modelRequests": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/03ae9b76-f4fb-4d57-978f-d9b18642fb14.jsonl",
+          "size": 474310,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:26:26.212Z",
+          "terminalKind": "complete",
+          "recordCount": 295,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/08c82a4c-48d3-4e45-b7d1-78d81179cf92.jsonl",
+          "size": 435204,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:26:09.892Z",
+          "terminalKind": "complete",
+          "recordCount": 136,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/09ec89db-5c62-4b85-9cf2-4dcf8191459c.jsonl",
+          "size": 519818,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:27:26.573Z",
+          "terminalKind": "complete",
+          "recordCount": 414,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/1092cee6-e48d-4ac7-a3aa-28b9adbcde83.jsonl",
+          "size": 236473,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:06.742Z",
+          "terminalKind": "complete",
+          "recordCount": 177,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/12f4b1f0-b9fa-4978-938e-8d3e57badc35.jsonl",
+          "size": 269897,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:48.642Z",
+          "terminalKind": "complete",
+          "recordCount": 76,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/136d03f1-3a99-4061-949c-23dd716f8ed6.jsonl",
+          "size": 434938,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:24:54.252Z",
+          "terminalKind": "complete",
+          "recordCount": 251,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/172030d6-7943-4137-b7ff-f2b950b0214f.jsonl",
+          "size": 467771,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:28:17.477Z",
+          "terminalKind": "complete",
+          "recordCount": 85,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/1b2e3afb-e311-4e50-aeb8-1d9adc28ff78.jsonl",
+          "size": 440915,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:26:19.331Z",
+          "terminalKind": "complete",
+          "recordCount": 148,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/28c0f2ab-b0e1-405f-823c-39c0dc9809a3.jsonl",
+          "size": 395813,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:58.629Z",
+          "terminalKind": "complete",
+          "recordCount": 186,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/2b3dfaec-c02e-40b7-aab8-141b029ef15c.jsonl",
+          "size": 411797,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:50.526Z",
+          "terminalKind": "complete",
+          "recordCount": 269,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/2cae1329-cd6d-4851-a49f-900280399140.jsonl",
+          "size": 353380,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:05.692Z",
+          "terminalKind": "complete",
+          "recordCount": 141,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/2d283d18-7377-4caf-afcb-71b2d2168211.jsonl",
+          "size": 258358,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:17.333Z",
+          "terminalKind": "complete",
+          "recordCount": 244,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/3c8ca271-75da-41de-b83b-dc98ebd4c552.jsonl",
+          "size": 367790,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:01.939Z",
+          "terminalKind": "complete",
+          "recordCount": 139,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/4486da7b-728f-402c-bf2e-11c94ceee8a1.jsonl",
+          "size": 333622,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:11.255Z",
+          "terminalKind": "complete",
+          "recordCount": 357,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/47a81959-936e-4a5e-8cc4-26ce8603194b.jsonl",
+          "size": 338273,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:43.222Z",
+          "terminalKind": "complete",
+          "recordCount": 143,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/4aa50653-ede2-4866-9404-e925af472232.jsonl",
+          "size": 401347,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:41.398Z",
+          "terminalKind": "complete",
+          "recordCount": 256,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/4be74512-9f01-4510-b7c2-96ecfaca7e79.jsonl",
+          "size": 460007,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:29:01.049Z",
+          "terminalKind": "aborted",
+          "recordCount": 3,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/576d8cbd-ee80-4793-ba6a-2f8d110025a0.jsonl",
+          "size": 359271,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:36.811Z",
+          "terminalKind": "complete",
+          "recordCount": 152,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/5c0984a2-1124-422c-b830-c79fd6649e65.jsonl",
+          "size": 323328,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:26.465Z",
+          "terminalKind": "complete",
+          "recordCount": 125,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/5eace867-87cc-4bfa-b4c4-0093b458afc6.jsonl",
+          "size": 304372,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:36.457Z",
+          "terminalKind": "complete",
+          "recordCount": 133,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/65e67bc2-ebf7-49ac-942c-2c5da06b1390.jsonl",
+          "size": 336324,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:37.798Z",
+          "terminalKind": "complete",
+          "recordCount": 154,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/66c30f8a-fe64-48d0-be1a-443ade225546.jsonl",
+          "size": 500916,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:26:37.365Z",
+          "terminalKind": "complete",
+          "recordCount": 418,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/67d7a5b8-ad9e-489b-819e-cd2fb3655a97.jsonl",
+          "size": 380091,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:54.707Z",
+          "terminalKind": "complete",
+          "recordCount": 228,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/685bffaa-89a2-4587-9f74-e36d95549e47.jsonl",
+          "size": 306002,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:46.221Z",
+          "terminalKind": "complete",
+          "recordCount": 119,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/69b8deea-f181-4311-ac54-ab3562ecb457.jsonl",
+          "size": 424327,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:25:04.310Z",
+          "terminalKind": "complete",
+          "recordCount": 180,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/6c97629e-9eb6-4fb0-8e59-908b849c5fd0.jsonl",
+          "size": 401450,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:24:16.212Z",
+          "terminalKind": "complete",
+          "recordCount": 167,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/6dd82c9d-74cc-4db5-a525-fb63c2ff04db.jsonl",
+          "size": 335101,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:50.745Z",
+          "terminalKind": "complete",
+          "recordCount": 115,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/6eaa69d9-239c-4b32-b18c-9d4f68dadf57.jsonl",
+          "size": 490050,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:27:12.287Z",
+          "terminalKind": "complete",
+          "recordCount": 304,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/721d0e15-650e-49bc-bb1f-008ef9e4d87f.jsonl",
+          "size": 498573,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:28:48.242Z",
+          "terminalKind": "complete",
+          "recordCount": 207,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/72820c1f-f1b8-43c2-b6bc-cba3fc5ce1b3.jsonl",
+          "size": 422108,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:25:12.320Z",
+          "terminalKind": "complete",
+          "recordCount": 158,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/759c5010-bb7d-443f-afc3-bdb47e47787d.jsonl",
+          "size": 369722,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:09.343Z",
+          "terminalKind": "complete",
+          "recordCount": 136,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/796c5688-fedb-455c-8465-0b72bc51a411.jsonl",
+          "size": 280757,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:05.265Z",
+          "terminalKind": "complete",
+          "recordCount": 90,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/7c136ac6-ffd6-449f-82aa-7ed6345a94b5.jsonl",
+          "size": 412205,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:24:35.095Z",
+          "terminalKind": "complete",
+          "recordCount": 164,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/898d544c-2e7a-4afa-b673-019720a45b13.jsonl",
+          "size": 306330,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:51.437Z",
+          "terminalKind": "complete",
+          "recordCount": 113,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/8be81c13-131e-477c-af78-8e3f4cbcbfb6.jsonl",
+          "size": 337540,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:32.493Z",
+          "terminalKind": "complete",
+          "recordCount": 174,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/94b9edaa-ba3b-45e2-b922-1c26df32d52d.jsonl",
+          "size": 481510,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:27:00.285Z",
+          "terminalKind": "complete",
+          "recordCount": 309,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/96c7ac15-61b3-4595-8882-7444411d2c87.jsonl",
+          "size": 5569,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": "session-title",
+          "start": "2026-10-14T10:19:02.601Z",
+          "terminalKind": "complete",
+          "recordCount": 18,
+          "hasToolDeclarations": false
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/990881a0-d6c4-4846-bcaa-6fb491c3c8c8.jsonl",
+          "size": 437369,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:25:41.641Z",
+          "terminalKind": "complete",
+          "recordCount": 184,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/995b3526-3077-49dc-b043-a60d27917e6a.jsonl",
+          "size": 333504,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:20.070Z",
+          "terminalKind": "complete",
+          "recordCount": 197,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/9cefa06c-a3fa-4afe-b77a-092cd920d880.jsonl",
+          "size": 447004,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:25:30.857Z",
+          "terminalKind": "complete",
+          "recordCount": 247,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/9f57dd5a-6542-492b-b97c-3c4d28af3fb5.jsonl",
+          "size": 375575,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:28.203Z",
+          "terminalKind": "complete",
+          "recordCount": 139,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/a2bc7e70-1f3b-4d04-b8f0-a09b702d2cf2.jsonl",
+          "size": 404726,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:24:24.009Z",
+          "terminalKind": "complete",
+          "recordCount": 159,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/a812707f-9c9e-4408-adf8-b23c499fd7f8.jsonl",
+          "size": 299395,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:32.125Z",
+          "terminalKind": "complete",
+          "recordCount": 120,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/a9a2a31f-0183-47e5-8107-ea4ec27955e9.jsonl",
+          "size": 456238,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:27:21.789Z",
+          "terminalKind": "complete",
+          "recordCount": 103,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/af26b497-f770-497d-ac99-9fb11e3ad3b5.jsonl",
+          "size": 287105,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:52.766Z",
+          "terminalKind": "complete",
+          "recordCount": 154,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/b24bdd4e-b269-489d-b1d3-0b54b56b18f9.jsonl",
+          "size": 265621,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:31.525Z",
+          "terminalKind": "complete",
+          "recordCount": 103,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/b671990c-1462-4217-99cc-32a8cad012b2.jsonl",
+          "size": 455078,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:25:52.890Z",
+          "terminalKind": "complete",
+          "recordCount": 274,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/bab0e7a6-d471-4971-a861-91a1566ae384.jsonl",
+          "size": 366001,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:58.061Z",
+          "terminalKind": "complete",
+          "recordCount": 223,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/bc255cd5-ee66-432b-be70-4e852a6df096.jsonl",
+          "size": 389992,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:24:08.702Z",
+          "terminalKind": "complete",
+          "recordCount": 135,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/bc3b6624-e2ff-415e-aad8-0bee71a2190a.jsonl",
+          "size": 236159,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:11.207Z",
+          "terminalKind": "complete",
+          "recordCount": 161,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/bd416718-297c-4777-9e5d-20ddb08275a6.jsonl",
+          "size": 370722,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:15.375Z",
+          "terminalKind": "complete",
+          "recordCount": 130,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/c1ded7c2-06a2-4c88-bc33-03e828a8a95d.jsonl",
+          "size": 443027,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:24:43.080Z",
+          "terminalKind": "complete",
+          "recordCount": 322,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/c314ddc2-9ceb-4af6-9b9e-3bffc89556c7.jsonl",
+          "size": 272080,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:36.365Z",
+          "terminalKind": "complete",
+          "recordCount": 124,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/caa0f7b3-25d3-4f22-98d3-4bb9bd12b4ce.jsonl",
+          "size": 282588,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:43.327Z",
+          "terminalKind": "complete",
+          "recordCount": 158,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/cce1860a-0c1d-45b7-b52e-ce78520605a2.jsonl",
+          "size": 372736,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:21.865Z",
+          "terminalKind": "complete",
+          "recordCount": 134,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/cecb5564-8d1f-44a3-88fe-2bc8cd398fcb.jsonl",
+          "size": 541657,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:28:28.118Z",
+          "terminalKind": "complete",
+          "recordCount": 439,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/d3d21901-3105-43e2-b073-e91cd140f423.jsonl",
+          "size": 313410,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:03.153Z",
+          "terminalKind": "complete",
+          "recordCount": 132,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/d559136e-acef-4394-b9a4-c980891cc536.jsonl",
+          "size": 193538,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:02.596Z",
+          "terminalKind": "complete",
+          "recordCount": 25,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/d5e538bf-3062-48a3-8aa5-d73d67b2136b.jsonl",
+          "size": 354813,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:45.834Z",
+          "terminalKind": "complete",
+          "recordCount": 114,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/dcfe83be-ba15-4062-9999-07d071a1e939.jsonl",
+          "size": 354260,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:19.659Z",
+          "terminalKind": "complete",
+          "recordCount": 129,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/dfa2aaf0-87a7-4486-bb5f-882d543006b8.jsonl",
+          "size": 296122,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:20.883Z",
+          "terminalKind": "complete",
+          "recordCount": 118,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/e334bf9c-83a7-4fdf-8f6e-31ae24fc54ca.jsonl",
+          "size": 364964,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:11.479Z",
+          "terminalKind": "complete",
+          "recordCount": 196,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/e42519a0-6cf5-437e-9300-ef16232f656a.jsonl",
+          "size": 303206,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:41.303Z",
+          "terminalKind": "complete",
+          "recordCount": 114,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/e5691815-bf20-49e0-ba9d-51e0bb614d35.jsonl",
+          "size": 251540,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:25.435Z",
+          "terminalKind": "complete",
+          "recordCount": 55,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/e5bc3e58-b197-4056-8d5d-98f292411d0b.jsonl",
+          "size": 501735,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:28:05.052Z",
+          "terminalKind": "complete",
+          "recordCount": 274,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/e794fb39-2eb0-4dce-8a1a-addd2d93dbc9.jsonl",
+          "size": 278363,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:19:58.800Z",
+          "terminalKind": "complete",
+          "recordCount": 86,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/eaa39ebc-fcb6-4e28-a6d0-82abb37b2f2d.jsonl",
+          "size": 414631,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:25:22.312Z",
+          "terminalKind": "complete",
+          "recordCount": 110,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/eb30a3cb-92ac-4434-84e0-cc93e97fbcab.jsonl",
+          "size": 351227,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:22:29.086Z",
+          "terminalKind": "complete",
+          "recordCount": 118,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/f0463a01-b86f-44db-b04d-39558c82906f.jsonl",
+          "size": 303009,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:25.814Z",
+          "terminalKind": "complete",
+          "recordCount": 148,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/f15c3f20-2fd9-409c-9c52-4bce711434d9.jsonl",
+          "size": 490617,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:27:49.901Z",
+          "terminalKind": "complete",
+          "recordCount": 266,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/f39af242-a931-40c3-a1de-ca4001d7e06c.jsonl",
+          "size": 328502,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:20:56.692Z",
+          "terminalKind": "complete",
+          "recordCount": 217,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/f85f2209-6f64-4fa6-9c1f-2db02a92917b.jsonl",
+          "size": 379448,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:23:33.204Z",
+          "terminalKind": "complete",
+          "recordCount": 141,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/fdcda2ef-12d8-4af0-a826-06e549f05ffc.jsonl",
+          "size": 367779,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:21:10.378Z",
+          "terminalKind": "complete",
+          "recordCount": 386,
+          "hasToolDeclarations": true
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/ff56e16e-0512-4c14-ab5a-ec1ad945b585.jsonl",
+          "size": 457723,
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "sessionId": "session-374a1930-aa20-4ff1-9ebd-5867c314dfdc",
+          "purpose": null,
+          "start": "2026-10-14T10:27:08.973Z",
+          "terminalKind": "complete",
+          "recordCount": 135,
+          "hasToolDeclarations": true
+        }
+      ],
+      "observedToolCalls": [
+        {
+          "seq": 18,
+          "name": "skill",
+          "callId": "call_00_qrshjyiz2pmi8d72k6w6wwdb"
+        },
+        {
+          "seq": 23,
+          "name": "bash",
+          "callId": "call_00_cn4h3pm7wfa4sxw8civldo32"
+        },
+        {
+          "seq": 28,
+          "name": "bash",
+          "callId": "call_00_5h2tj0xwporgwyk955fer33i"
+        },
+        {
+          "seq": 33,
+          "name": "bash",
+          "callId": "call_00_9rbvg2umorbwyuadh89mewep"
+        },
+        {
+          "seq": 38,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_00_nqly6o8ghgi3el2b9owju3ud"
+        },
+        {
+          "seq": 40,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_z1r4zrnqgxywpmqnuqi9vk74"
+        },
+        {
+          "seq": 45,
+          "name": "mcp__noobai__get_catalog_resource",
+          "callId": "call_00_igpwrtb3rnxc2of2wvausvx5"
+        },
+        {
+          "seq": 47,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_5lt8079wv6adyesbp80yqpds"
+        },
+        {
+          "seq": 52,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_00_h1olupim2gvsp9o5fzchozgg"
+        },
+        {
+          "seq": 54,
+          "name": "list_mcp_resources",
+          "callId": "call_01_twp8cmgnzj523oygtlochdog"
+        },
+        {
+          "seq": 59,
+          "name": "bash",
+          "callId": "call_00_0vqxbz2qre7oz2xglmf8jlgv"
+        },
+        {
+          "seq": 61,
+          "name": "mcp__noobai__get_instance_status",
+          "callId": "call_01_mcugm4ru96pvmemo2181hzk1"
+        },
+        {
+          "seq": 66,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_00_0kj5u0im27hentbtpvsugogq"
+        },
+        {
+          "seq": 68,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_aluv0kd3m00j99lyov4rwlxm"
+        },
+        {
+          "seq": 73,
+          "name": "bash",
+          "callId": "call_00_js78tqha85e66hdvlyo104zh"
+        },
+        {
+          "seq": 78,
+          "name": "bash",
+          "callId": "call_00_dsbvmh3ajjp417cepo04mt0t"
+        },
+        {
+          "seq": 83,
+          "name": "mcp__noobai__get_instance_connection",
+          "callId": "call_00_qcrkxzztavt6bektdefy0mk6"
+        },
+        {
+          "seq": 85,
+          "name": "mcp__noobai__get_instance_connection",
+          "callId": "call_01_ha7iv34kw46vf5w7rvyb40f0"
+        },
+        {
+          "seq": 90,
+          "name": "bash",
+          "callId": "call_00_fdvhobmr7p5f81txnqwx3n3k"
+        },
+        {
+          "seq": 95,
+          "name": "bash",
+          "callId": "call_00_c8gsvrc9s87vd1cqt6418590"
+        },
+        {
+          "seq": 100,
+          "name": "bash",
+          "callId": "call_00_9uv5j0p1e1b37nfeeoiuvr18"
+        },
+        {
+          "seq": 105,
+          "name": "bash",
+          "callId": "call_00_t5iuv53ch0lx0gxlfyzzw21k"
+        },
+        {
+          "seq": 110,
+          "name": "bash",
+          "callId": "call_00_xg1j98506l2qvwa1w7b1tyap"
+        },
+        {
+          "seq": 115,
+          "name": "bash",
+          "callId": "call_00_xlf0263xf4h56hv8ze9aitkn"
+        },
+        {
+          "seq": 120,
+          "name": "bash",
+          "callId": "call_00_o2meob2yom8qz8zeiopo9bbn"
+        },
+        {
+          "seq": 125,
+          "name": "bash",
+          "callId": "call_00_iz7hnhguew20l1331t5laypd"
+        },
+        {
+          "seq": 130,
+          "name": "bash",
+          "callId": "call_00_6yhyjbqputdh87w5tehtdbk9"
+        },
+        {
+          "seq": 135,
+          "name": "bash",
+          "callId": "call_00_sm62fq3q4r0ry9s7uhmurcep"
+        },
+        {
+          "seq": 140,
+          "name": "bash",
+          "callId": "call_00_sqgf3c7bdyt9vr9t7cqzuuzy"
+        },
+        {
+          "seq": 145,
+          "name": "bash",
+          "callId": "call_00_9v24bdrdk6hbtwx0lmvzcp9d"
+        },
+        {
+          "seq": 150,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_00_tshm55gbvqrhhicxhm62kmvw"
+        },
+        {
+          "seq": 152,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_1pxf3sjfzeefomj6pju77uy7"
+        },
+        {
+          "seq": 157,
+          "name": "bash",
+          "callId": "call_00_rb3e4elbptcypzrlqdvpl77h"
+        },
+        {
+          "seq": 162,
+          "name": "bash",
+          "callId": "call_00_pjbwk8vfh1r1xb6cwq1cce63"
+        },
+        {
+          "seq": 167,
+          "name": "bash",
+          "callId": "call_00_b9zguvo7k7xhsjop2thcm1ga"
+        },
+        {
+          "seq": 172,
+          "name": "mcp__noobai__search_workflows",
+          "callId": "call_00_vjv8a2cgt6w0sukttbu0mb6i"
+        },
+        {
+          "seq": 174,
+          "name": "mcp__noobai__search_models",
+          "callId": "call_01_wmmtivkwyply6jpxngllwtxu"
+        },
+        {
+          "seq": 179,
+          "name": "bash",
+          "callId": "call_00_gs498ijdpzs6zro4zj50jkcb"
+        },
+        {
+          "seq": 184,
+          "name": "bash",
+          "callId": "call_00_h9vwm5helb9zz1406zmlje7o"
+        },
+        {
+          "seq": 189,
+          "name": "bash",
+          "callId": "call_00_h5bdgxrro6j8xrz64gpbdlpo"
+        },
+        {
+          "seq": 194,
+          "name": "bash",
+          "callId": "call_00_xrbiy0him53ul5vhoj2erzwy"
+        },
+        {
+          "seq": 199,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_00_nz4khgouhrey9mw94mrvcf80"
+        },
+        {
+          "seq": 201,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_9bm6wdlezlzlzcvc8jm3ugv2"
+        },
+        {
+          "seq": 206,
+          "name": "bash",
+          "callId": "call_00_doluhssiqysfw4r163t2oocb"
+        },
+        {
+          "seq": 211,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_00_b4dw59jp0vc79rrknx8jtyrm"
+        },
+        {
+          "seq": 213,
+          "name": "mcp__noobai__search_instances",
+          "callId": "call_01_q02r8g0vn4den217ibuhfyzz"
+        },
+        {
+          "seq": 218,
+          "name": "bash",
+          "callId": "call_00_ld77t77gi0gl7v0ogw3ykz6t"
+        },
+        {
+          "seq": 223,
+          "name": "bash",
+          "callId": "call_00_iq32gvl2rhzm5o716ojwzo0u"
+        },
+        {
+          "seq": 228,
+          "name": "bash",
+          "callId": "call_00_j0wpeszbq6mi3l0nvkjwl69c"
+        },
+        {
+          "seq": 233,
+          "name": "bash",
+          "callId": "call_00_0pblbk9glapwx8u08a8ngjvq"
+        },
+        {
+          "seq": 238,
+          "name": "bash",
+          "callId": "call_00_nndbxvhnm4iu80rjeoptf0nk"
+        },
+        {
+          "seq": 243,
+          "name": "bash",
+          "callId": "call_00_fqfusa81zubbvncmhulaf6n4"
+        },
+        {
+          "seq": 248,
+          "name": "bash",
+          "callId": "call_00_twxc4ua6f92qscdskjwftgcf"
+        },
+        {
+          "seq": 253,
+          "name": "bash",
+          "callId": "call_00_dniecac6ee77dgjaxtrydg9s"
+        },
+        {
+          "seq": 258,
+          "name": "bash",
+          "callId": "call_00_ebrgxzars6mkd0bgzvxwiw83"
+        },
+        {
+          "seq": 260,
+          "name": "bash",
+          "callId": "call_01_g6ybdvpdv0s0p64ndzqkec2b"
+        },
+        {
+          "seq": 265,
+          "name": "bash",
+          "callId": "call_00_mf4lxgmb3gsblldx8rzcq379"
+        },
+        {
+          "seq": 270,
+          "name": "bash",
+          "callId": "call_00_464774hcialu9e2t1ba65f74"
+        },
+        {
+          "seq": 275,
+          "name": "bash",
+          "callId": "call_00_teb2jgxk63tpk0y6vr875dwh"
+        },
+        {
+          "seq": 280,
+          "name": "bash",
+          "callId": "call_00_jtjr1uvu3ypvphro5kpbm6dp"
+        },
+        {
+          "seq": 285,
+          "name": "bash",
+          "callId": "call_00_7nc3x8f05rtyn125lptyxxmd"
+        },
+        {
+          "seq": 290,
+          "name": "bash",
+          "callId": "call_00_5nogpjm60aswi3vbh62p6vgg"
+        },
+        {
+          "seq": 295,
+          "name": "bash",
+          "callId": "call_00_cd1rzhad1dmkpy1uqnhbtcb2"
+        },
+        {
+          "seq": 300,
+          "name": "bash",
+          "callId": "call_00_3qpfraagx4986uiabjqe44n1"
+        },
+        {
+          "seq": 305,
+          "name": "bash",
+          "callId": "call_00_welmmrphp60ef4oz1lc4dszi"
+        },
+        {
+          "seq": 310,
+          "name": "bash",
+          "callId": "call_00_c3p8r85t407v0fgxtxr7ult1"
+        },
+        {
+          "seq": 315,
+          "name": "bash",
+          "callId": "call_00_31i5ff99l4910j12m0m6ktv6"
+        },
+        {
+          "seq": 320,
+          "name": "bash",
+          "callId": "call_00_sevkqweca86qvpma1zqwmi2f"
+        },
+        {
+          "seq": 325,
+          "name": "bash",
+          "callId": "call_00_e43guy9pla6e3i739qothu5e"
+        },
+        {
+          "seq": 330,
+          "name": "bash",
+          "callId": "call_00_5k36nswobndocqo7a8kpf7d1"
+        },
+        {
+          "seq": 335,
+          "name": "bash",
+          "callId": "call_00_qdn1bawjrt9koetrlo650y4n"
+        },
+        {
+          "seq": 340,
+          "name": "bash",
+          "callId": "call_00_ld7zki65fv92h8inkowa29vy"
+        },
+        {
+          "seq": 345,
+          "name": "bash",
+          "callId": "call_00_ii8viow4ey6rxxytxr44gbci"
+        },
+        {
+          "seq": 350,
+          "name": "bash",
+          "callId": "call_00_pbqy69d4efk7am9olxe31zmw"
+        },
+        {
+          "seq": 355,
+          "name": "bash",
+          "callId": "call_00_uhxdqxlft12mt11g4mbgg2ry"
+        },
+        {
+          "seq": 360,
+          "name": "bash",
+          "callId": "call_00_ms3jtx3gf3ez2rym1mvkptpt"
+        },
+        {
+          "seq": 365,
+          "name": "bash",
+          "callId": "call_00_0kp6w0up4376ak710pt9guih"
+        },
+        {
+          "seq": 370,
+          "name": "bash",
+          "callId": "call_00_s0kdyn4hqsfm2a3eu37lf4yh"
+        },
+        {
+          "seq": 375,
+          "name": "bash",
+          "callId": "call_00_lubt5wt4rwjjhw78d232f5kf"
+        },
+        {
+          "seq": 380,
+          "name": "bash",
+          "callId": "call_00_k2trtl9fg9p3ghqny8ejpmiq"
+        },
+        {
+          "seq": 385,
+          "name": "bash",
+          "callId": "call_00_x14lmfbrps08xyq61700w602"
+        },
+        {
+          "seq": 390,
+          "name": "bash",
+          "callId": "call_00_g5skedq18ypkf00rdrm5810q"
+        },
+        {
+          "seq": 395,
+          "name": "bash",
+          "callId": "call_00_32r3copx2crkit97j7st9bek"
+        }
+      ],
+      "eventSequence": {
+        "throughSeq": 401,
+        "recordCount": 402,
+        "firstSeq": 0,
+        "lastSeq": 401
+      }
+    }
+  ],
+  "fixtureCleanupAfterFailure": {
+    "runId": "09763cb4-946b-4515-addf-1dd8962bfa97",
+    "pid": 57639,
+    "scenario": "empty-instances",
+    "status": "stopped",
+    "url": "http://127.0.0.1:55635/mcp",
+    "mcpUrl": "http://127.0.0.1:55635/mcp",
+    "sourceAddress": {
+      "url": "http://127.0.0.1",
+      "port": 55635
+    },
+    "port": 55635,
+    "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/preparation-fixture",
+    "startedAt": "2026-10-14T09:54:14.808Z",
+    "stoppedAt": "2026-10-14T09:54:24.067Z",
+    "portReleased": true
+  },
+  "previousPreparationAttempts": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/preparation-attempt-1.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/preparation-attempt-2.json"
+  ],
+  "preparationDriverHistory": {
+    "firstTwoCaptures": "自有导入路径副本，仅准备取证，零模型提交。",
+    "currentDriver": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-driver.mjs"
+  },
+  "mainConfirmation": {
+    "source": "主线程官方烟测确认",
+    "desktopTestFiles": 13,
+    "desktopTestCount": 269,
+    "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-desktop.log",
+    "useBalance": false
+  },
+  "completedAt": "2026-10-14T10:29:11.816Z",
+  "finalEvidence": {
+    "recordedAt": "2026-10-14T10:31:05.437Z",
+    "processChecks": [
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/state.json",
+        "runId": "72d2a726-1ee7-49c9-9d36-f93126c876fc",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/.local/desktop-e2e/72d2a726-1ee7-49c9-9d36-f93126c876fc/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 56977,
+            "pids": []
+          },
+          {
+            "port": 56978,
+            "pids": []
+          },
+          {
+            "port": 56979,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/state.json",
+        "runId": "29b04c48-a5ff-4997-af3a-2047902dee95",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/.local/desktop-e2e/29b04c48-a5ff-4997-af3a-2047902dee95/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 54706,
+            "pids": []
+          },
+          {
+            "port": 54707,
+            "pids": []
+          },
+          {
+            "port": 54708,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/state.json",
+        "runId": "199569f5-0a4a-42b8-8bec-2b0f7884d66a",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/.local/desktop-e2e/199569f5-0a4a-42b8-8bec-2b0f7884d66a/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 54975,
+            "pids": []
+          },
+          {
+            "port": 54976,
+            "pids": []
+          },
+          {
+            "port": 54977,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/state.json",
+        "runId": "024c1b14-0d5b-43e1-a312-3304ffbe35e2",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/.local/desktop-e2e/024c1b14-0d5b-43e1-a312-3304ffbe35e2/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 59331,
+            "pids": []
+          },
+          {
+            "port": 59332,
+            "pids": []
+          },
+          {
+            "port": 59333,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/state.json",
+        "runId": "ef5b1924-becc-4524-ae24-50b9676d1e2c",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/.local/desktop-e2e/ef5b1924-becc-4524-ae24-50b9676d1e2c/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 55174,
+            "pids": []
+          },
+          {
+            "port": 55175,
+            "pids": []
+          },
+          {
+            "port": 55176,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/state.json",
+        "runId": "dffc2446-afb0-407d-a0ff-1d0b701cb6cd",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/.local/desktop-e2e/dffc2446-afb0-407d-a0ff-1d0b701cb6cd/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 55467,
+            "pids": []
+          },
+          {
+            "port": 55468,
+            "pids": []
+          },
+          {
+            "port": 55469,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/state.json",
+        "runId": "8a610556-e048-4e6a-98f4-53c5f03ee558",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/.local/desktop-e2e/8a610556-e048-4e6a-98f4-53c5f03ee558/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 62343,
+            "pids": []
+          },
+          {
+            "port": 62344,
+            "pids": []
+          },
+          {
+            "port": 62345,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/state.json",
+        "runId": "e3ed9c4e-d943-4a5d-8551-ca3a44eb907d",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/.local/desktop-e2e/e3ed9c4e-d943-4a5d-8551-ca3a44eb907d/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 55559,
+            "pids": []
+          },
+          {
+            "port": 55560,
+            "pids": []
+          },
+          {
+            "port": 55561,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/state.json",
+        "runId": "d906e631-e963-45f1-9b20-479027431e78",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/.local/desktop-e2e/d906e631-e963-45f1-9b20-479027431e78/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 55636,
+            "pids": []
+          },
+          {
+            "port": 55637,
+            "pids": []
+          },
+          {
+            "port": 55638,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/state.json",
+        "runId": "a3fa8a70-1211-4277-81f1-a04122323597",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/.local/desktop-e2e/a3fa8a70-1211-4277-81f1-a04122323597/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 55989,
+            "pids": []
+          },
+          {
+            "port": 55990,
+            "pids": []
+          },
+          {
+            "port": 55991,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/state.json",
+        "runId": "2f340616-f309-4eb4-9024-63d103b07f0c",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/.local/desktop-e2e/2f340616-f309-4eb4-9024-63d103b07f0c/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 63209,
+            "pids": []
+          },
+          {
+            "port": 63210,
+            "pids": []
+          },
+          {
+            "port": 63211,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/state.json",
+        "runId": "309fcb2f-b129-4b3a-8329-ba05a104094e",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/.local/desktop-e2e/309fcb2f-b129-4b3a-8329-ba05a104094e/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 56058,
+            "pids": []
+          },
+          {
+            "port": 56059,
+            "pids": []
+          },
+          {
+            "port": 56060,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/state.json",
+        "runId": "75147034-41a3-4357-8c6a-bbf2baba0235",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/.local/desktop-e2e/75147034-41a3-4357-8c6a-bbf2baba0235/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 56141,
+            "pids": []
+          },
+          {
+            "port": 56142,
+            "pids": []
+          },
+          {
+            "port": 56143,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-SzAjdG/state.json",
+        "runId": "9c3b2817-18d3-4b34-a54b-b03876da81f8",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-SzAjdG/runtime/.local/desktop-e2e/9c3b2817-18d3-4b34-a54b-b03876da81f8/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 54159,
+            "pids": []
+          },
+          {
+            "port": 54160,
+            "pids": []
+          },
+          {
+            "port": 54161,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-SzAjdG/state.json",
+        "runId": "89217d0d-72aa-4b5c-9009-325fb804feb7",
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-SzAjdG/runtime/.local/desktop-e2e/89217d0d-72aa-4b5c-9009-325fb804feb7/run.json",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 54058,
+            "pids": []
+          },
+          {
+            "port": 54059,
+            "pids": []
+          },
+          {
+            "port": 54060,
+            "pids": []
+          }
+        ],
+        "portsReleased": true
+      }
+    ],
+    "allOwnDesktopProcessGroupsAbsent": true,
+    "allOwnDesktopPortsReleased": true,
+    "fixturePidChecks": [
+      {
+        "runId": "5c895d9e-247c-48a6-a2c0-5ca325e866a6",
+        "pid": 43257,
+        "processPresent": false,
+        "port": 56974,
+        "portReleased": true,
+        "status": "stopped"
+      },
+      {
+        "runId": "46b73fc1-736a-411c-8e54-9214140d0118",
+        "pid": 43257,
+        "processPresent": false,
+        "port": 59328,
+        "portReleased": true,
+        "status": "stopped"
+      },
+      {
+        "runId": "7112dc69-551d-4524-a458-1bed2fc7c62c",
+        "pid": 43257,
+        "processPresent": false,
+        "port": 62337,
+        "portReleased": true,
+        "status": "stopped"
+      },
+      {
+        "runId": "3b6a84f4-84e2-4763-afd7-03ab11b2ced5",
+        "pid": 43257,
+        "processPresent": false,
+        "port": 63205,
+        "portReleased": true,
+        "status": "stopped"
+      }
+    ],
+    "redactionReportPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/final-redaction-report.json",
+    "rawEvidenceIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/raw-evidence-index.json",
+    "allRunsRecorded": true,
+    "semanticReview": "主线程已确认独立审查完成，并负责记录审查结论及后续调查。",
+    "openEvidenceQuestions": [
+      {
+        "caseIds": [
+          "5.6-3/harness-comfyui-cli-candidate",
+          "5.6-3/harness-comfyui-iteration"
+        ],
+        "question": "本轮HTTP模板目录详情未调用，独立审查员决定该接口的默认模型字段是否需要补取证。",
+        "evidenceRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime"
+      }
+    ],
+    "allFixtureLifecycles": [
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/model-fixture/state.json",
+        "runId": "7112dc69-551d-4524-a458-1bed2fc7c62c",
+        "pid": 43257,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 62337,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/preparation-fixture/state.json",
+        "runId": "09763cb4-946b-4515-addf-1dd8962bfa97",
+        "pid": 57639,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 55635,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/preparation-resumed-fixture/state.json",
+        "runId": "ad3e0211-a8b7-4498-88e6-fcc815795e41",
+        "pid": 5321,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 55988,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/model-fixture/state.json",
+        "runId": "46b73fc1-736a-411c-8e54-9214140d0118",
+        "pid": 43257,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 59328,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/preparation-fixture/state.json",
+        "runId": "1406fca7-921b-4293-af05-f232d0dadbc3",
+        "pid": 57639,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 55465,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-SzAjdG/preparation-fixture/state.json",
+        "runId": "4f9c7db1-cf09-4427-ab56-7d8074d677fe",
+        "pid": 44617,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 54156,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/model-fixture/state.json",
+        "runId": "5c895d9e-247c-48a6-a2c0-5ca325e866a6",
+        "pid": 43257,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 56974,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/preparation-fixture/state.json",
+        "runId": "e5f1fc9d-c500-466c-84a4-fba2748f7258",
+        "pid": 57639,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 54972,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture/state.json",
+        "runId": "3b6a84f4-84e2-4763-afd7-03ab11b2ced5",
+        "pid": 43257,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 63205,
+        "portReleased": true
+      },
+      {
+        "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/preparation-resumed-fixture/state.json",
+        "runId": "9a030a32-3b36-4c12-8daa-034b355b2a29",
+        "pid": 5321,
+        "processPresent": false,
+        "status": "stopped",
+        "port": 56139,
+        "portReleased": true
+      }
+    ]
+  },
+  "parentHandoff": {
+    "independentReviewStatus": "parent-confirmed-completed",
+    "followupOwner": "主线程",
+    "preservedBoundaries": [
+      "四项真实0 Run",
+      "第四项600秒超时后取消",
+      "本轮HTTP模板目录详情未调用"
+    ]
+  }
+}

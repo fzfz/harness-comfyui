@@ -1,0 +1,201 @@
+{
+  "purpose": "审查剩余交接输入合同的可执行性与证据边界。",
+  "readWhen": "物化 12 个首轮单元及条件恢复输入前。",
+  "verdict": "需修正 3 项执行缺口。输入设计覆盖目标，但尚未具备完整执行条件。",
+  "scope": {
+    "contract": "docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+    "applicationStarts": 0,
+    "modelCalls": 0,
+    "generationSubmissions": 0,
+    "reviewedFilesChanged": false,
+    "executionPassed": false
+  },
+  "findings": [
+    {
+      "id": "INPUT-R1",
+      "severity": "high",
+      "location": "remaining-handoff-input-contract.json:405; driverCallShapes; cleanup",
+      "original": "取消本轮父子任务并收集现有记录。",
+      "problem": "合同未给出子任务取消入口。现有 watch 超时只取消父 Session。官方普通 Session 取消接口拒绝子会话身份。",
+      "evidence": [
+        ".local/skills-mcp-migration-live/desktop-driver.mjs:58",
+        ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:990-1000",
+        ".local/skills-mcp-migration-live/dsh-subagent-index.js:843-855",
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:160-165"
+      ],
+      "impact": "父取消后，受控驱动仍可释放并完成原子任务。真实业务中，子任务可能继续提交生成。取消确认和最终 Run 计数因此缺少可靠边界。",
+      "minimalCorrection": [
+        "补入官方子任务 interrupt 入口及父会话授权地址。",
+        "取消前保存本轮全部子任务身份。",
+        "先释放延迟，再请求父子取消，并保存最终结束事件。",
+        "取消后重新读取 Run 与媒体计数。已接纳的生成另行记录终态或仍在运行。",
+        "若取消入口尚未适配，登记驱动缺口；停止应用不能代替子任务取消证据。"
+      ],
+      "acceptance": "零外部模型探针覆盖父取消后子仍运行，以及显式子取消后的结束记录。"
+    },
+    {
+      "id": "INPUT-R2",
+      "severity": "medium",
+      "location": "remaining-handoff-input-contract.json:367-369",
+      "original": "保持 30000 毫秒观察窗口，再 release。绝对期限为场景剩余预算以内，最长 120000 毫秒。",
+      "problem": "arm 在子任务启动时执行，期限从此刻计算。实际延迟钩子在生成及文件交付后触发。生成耗时会先消耗这段期限。",
+      "evidence": [
+        ".local/skills-mcp-migration-live/handoff-delay.mjs:134-155",
+        ".local/skills-mcp-migration-live/handoff-delay.mjs:186-220",
+        "remaining-handoff-input-contract.json:399-401"
+      ],
+      "impact": "子任务在 arm 后超过 90 秒才结束时，最长 120 秒期限无法保证 30 秒窗口。即使记录 delay_started，也可能立即 timed_out。",
+      "minimalCorrection": [
+        "明确绝对场景期限与实际等待窗口的计算起点。",
+        "命中钩子时核对剩余期限至少为 30000 毫秒。",
+        "验收要求 delay_finished.reason 为 released，且单调时间差至少为 30000 毫秒。",
+        "剩余时间不足时记录未覆盖，保留已生成 Run；不得直接重跑生成补证据。",
+        "若要保证窗口，补充能在命中钩子时开始计时的本地控制能力。"
+      ],
+      "acceptance": "本地确定性探针覆盖启动后长时间才命中钩子的情况。"
+    },
+    {
+      "id": "INPUT-R3",
+      "severity": "medium",
+      "location": "remaining-handoff-input-contract.json:425; driverCallShapes.submit",
+      "original": "保存 parentSessionId、workspaceId、requestId 和原输入。",
+      "problem": "submit 在调用参数内生成随机 requestId。输出未保存该值，也未保存本次提交对象。SDK 返回的确认仅含 accepted。",
+      "evidence": [
+        ".local/skills-mcp-migration-live/desktop-driver.mjs:38-47",
+        ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:850-858"
+      ],
+      "impact": "提交响应或后续采集失败时，控制器缺少预先保存的请求身份。重跑 submit 会创建另一个父任务，无法作为同一请求恢复。",
+      "minimalCorrection": [
+        "发送前持久化完整提交对象、requestId、父 Session 和 Workspace 身份。",
+        "复用 remote session.prompt 发送该已保存对象，或扩展 submit 保存同等信息。",
+        "收到确认后关联 user/message 的 source.rpcId。",
+        "不得把重新创建 Session 当作首次请求重试。"
+      ],
+      "acceptance": "确定性检查确认发送对象与归档对象一致，并能关联 SDK 接纳记录。"
+    }
+  ],
+  "coverageAssessment": [
+    {
+      "case": "H3-reference-control",
+      "units": 4,
+      "assessment": "可以物化历史输入；仍缺组合驱动与候选门禁。",
+      "verified": [
+        "合同 originalArguments 与原父轨迹 seq94 解析结果完全相同。",
+        "原 builder.json、composition/001.md、task.md 均存在。",
+        "无默认模型夹具同时声明详情、搜索和 Host template-bundle 覆盖。",
+        "ToolRegistry 的 execute 经过调度，deferContext 合并入 additionalContexts。"
+      ],
+      "conditions": [
+        "A/B 从同一最终候选派生，仅改变指定入口句。",
+        "逐文件比较安装集合；路径差异单独保存映射。",
+        "冻结共同目录快照及实际模型参数，避免两臂之间服务变化。",
+        "保存入口首次进入模型请求的位置；未接触入口时不能归因于入口修订。",
+        "保留原任务已有缺模型提示，不添加审查结论或新行为提示。",
+        "两个预设分别报告结果；单对 A/B 仅报告观察差异。"
+      ],
+      "driverGap": "现有受控 Profile 将所有角色改为受控模型，并替换目录服务。需支持受控父与真实子，以及冻结业务数据域。"
+    },
+    {
+      "case": "handoff-builder-json",
+      "units": 4,
+      "assessment": "缺失与删除 model_route 的输入可物化。条件恢复设计符合当前消息合同。",
+      "verified": [
+        "B 文件存在。独立原审查将该保存 JSON 判为可生成候选。",
+        "生成 Skill 第 40 行要求当前消息包含完整 JSON。",
+        "结果合同要求报告缺失字段路径、当前值和约束。"
+      ],
+      "conditions": [
+        "首轮只放该变体材料。有效 B 留在外部控制目录。",
+        "首轮检查必须确认具体缺项，泛称等待补充不能通过。",
+        "恢复时父读取文件并把完整 JSON 放入子任务当前消息。",
+        "比较文件原文与消息中的 JSON 字节，区分 JSON 传输转义。",
+        "同父同子恢复并关联新 messageId；生成调用、Run、媒体分别计数。",
+        "原 Builder 整轮失败状态保持原结论。"
+      ]
+    },
+    {
+      "case": "handoff-selected-model",
+      "units": 2,
+      "assessment": "无选择首轮可物化。选择恢复依赖实际候选与当前资源。",
+      "conditions": [
+        "实际查询须返回 item.model=null。",
+        "用户选择只能来自真实返回的候选。",
+        "首轮未返回候选时，冻结额外询问原文后才能发送。",
+        "额外询问仍要求零提交，并继续使用原父子身份。",
+        "恢复消息附完整 B 与本次用户选择来源。",
+        "恢复验收补入 newMedia=1，并核对实际媒体归属。",
+        "模板关联保持 null，Run model 与 Actual Workflow 使用所选模型。"
+      ],
+      "unresolved": "candidateGap 提到预定义回复，但未给出回复原文。物化时必须补齐，不能临场暗示模型选项。"
+    },
+    {
+      "case": "handoff-submit-notification",
+      "units": 2,
+      "assessment": "业务首轮可物化。延迟覆盖仍受 INPUT-R2 和官方加载验证限制。",
+      "conditions": [
+        "运行前加载插件并订阅真实 subagent/start。",
+        "使用本轮新控制文件和释放文件。",
+        "捕获实际 childSessionId 后 arm，不能等待派发工具完成。",
+        "核对唯一已接纳 Run 后维持完整窗口。",
+        "release 后关联同一 activation、通知和父交付。",
+        "全部目录与生成使用真实服务。"
+      ],
+      "boundary": "只验证成功提交后的子结束与通知延迟。网络提交结果不明需要独立场景。"
+    }
+  ],
+  "readiness": {
+    "materializableNow": [
+      "12 个首轮输入模板及 6 个条件恢复模板。",
+      "历史原任务、3 个业务文件和已审查 B 的冻结副本。",
+      "无默认模型夹具与允许路径替换清单。"
+    ],
+    "blockedOnDriver": [
+      "H3 受控父与真实子模型路由。",
+      "INPUT-R1 的子任务取消与结束证据。",
+      "INPUT-R2 的完整延迟窗口。",
+      "INPUT-R3 的首次请求持久化。"
+    ],
+    "blockedOnCandidate": [
+      "共享派发与观察 wrapper 的独立审查。",
+      "最终候选构建、正式安装与安装内容核对。",
+      "本轮官方 SDK 身份及延迟插件加载证据。"
+    ],
+    "blockedOnCurrentResources": [
+      "真实模型文件、模板、实例和参数的当前只读核对。",
+      "B 对当前生成 Skill 的结构、路线和尺寸复核。",
+      "模型选择首轮实际返回的兼容候选。"
+    ],
+    "budget": "12 个首轮；Builder 与模型选择共 6 个恢复轮。缺候选额外轮单独登记。H3 不发送引导恢复。",
+    "noRuntimeVerdict": "本次未启动应用、模型或探针。已有受控 Provider 证据只支持结构与生命周期。"
+  },
+  "evidenceSources": {
+    "historical": "remaining-handoff-input-contract.json#/resources/h3Historical/parentEvents 的 records 中 seq94。",
+    "builder": "wai-remaining-builder-review.json#/cases/1/savedJsonSemanticUsability",
+    "skill": [
+      ".agents/skills/comfyui-generate/SKILL.md:28-40",
+      ".agents/skills/comfyui-generate/references/prompt-result-contract.md:17-21"
+    ],
+    "driver": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:91-143",
+      ".local/skills-mcp-migration-live/desktop-driver.mjs:38-76"
+    ],
+    "sdk": [
+      ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js:3104-3117",
+      ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js:3327-3343"
+    ]
+  },
+  "authorization": "主计划第 5.14 节已有修复和验收准备授权。本报告仅写入指定审查文件。",
+  "textReview": {
+    "profile": "for-document",
+    "machine": "已执行 STC for-document 与 anti-echo 检查。",
+    "manual": "已逐句核对来源、条件、计数和完成状态。保留执行边界，避免将准备完成写成验收通过。",
+    "antiEchoReason": "任务要求审查取消、恢复和未执行边界；删除这些限定会扩大验证结论。",
+    "errors": 0,
+    "antiEchoPending": 0,
+    "warningHandling": "全部警告均指向 JSON 字符串边界引号。已人工逐项核对，保留 JSON 语法。"
+  },
+  "memoryUse": {
+    "source": "MEMORY.md:49-50",
+    "use": "按原任务与首次工具暴露回查证据，并区分准备和验收。"
+  }
+}

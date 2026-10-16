@@ -1,0 +1,141 @@
+{
+  "status": "需要补充后通过",
+  "reviewed": "retirement-empty-diagnosis.json",
+  "scope": "独立诊断与夹具方案审查；未修改夹具、产品、输入或原始轨迹。",
+  "decision": "MCP 实例域一致性修复方向通过；当前记录遗漏已成功提交的 Run，且拟修合同需明确参数校验、错误样本与搜索依赖错误处理。修复夹具后仍须独立验收首次空列表后的停止行为。",
+  "evidence": {
+    "runId": "e1525ab1-3c65-4b04-bdf4-bd19c3e45bcf",
+    "traces": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e1525ab1-3c65-4b04-bdf4-bd19c3e45bcf/1791946652144-2e7ce629-c671-4123-b89e-e74f0babb4c7-collect.json",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e1525ab1-3c65-4b04-bdf4-bd19c3e45bcf/1791946652682-c48c0495-c666-4b7a-be65-27cb5aca2e67-collect.json"
+    ],
+    "fixture": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0",
+    "actualModelRequests": [
+      ".local/skills-mcp-migration-live/llm-calls/bca6296f-80f7-483f-bc3d-85f83ccc972d.jsonl:1",
+      ".local/skills-mcp-migration-live/llm-calls/2c507f73-7bf6-439f-bead-762fa5465b42.jsonl:1",
+      ".local/skills-mcp-migration-live/llm-calls/a0fe966d-dce4-4f7a-b534-afe744cdc509.jsonl:1",
+      ".local/skills-mcp-migration-live/llm-calls/8c42dfcd-23e6-44c6-9a26-6f1ab43b9808.jsonl:1"
+    ]
+  },
+  "firstDeviation": [
+    {
+      "preset": "harness-comfyui-cli-candidate",
+      "sessionId": "session-91035aef-1c6e-4764-9f9d-4c8ed40c35ca",
+      "rule": "生成 Skill 要求实例列表为空时报告并停止创建图片。实际 Skill 已在 seq20 送达；最终 request messages[6] 保留全文。",
+      "sequence": [
+        "seq36 search_instances({})；seq37 返回 results=[]、next=null。",
+        "seq40 reasoning 怀疑需要 enabled 参数；seq43 再次查询 enabled=true，发生在取得任何实例详情之前。seq41 同步读取模板默认模型，本报告不把该模型查询单独认定为依赖实例的动作。",
+        "seq47 明确引用空实例停止规则，仍决定继续查询；seq74 猜测实例1，seq75 返回资源不存在。",
+        "seq81/82 取得真实实例2详情；seq93/94 状态返回已登记但远程不可达，seq95/96 连接返回真实 URL。",
+        "seq124/125 通过 shell 读取真实 system_stats；seq133/134 模板参数检查成功。",
+        "seq159/160 读取以前 empty-iteration 的 task.md；seq164/165 与169/170 读取测试台账。",
+        "seq180 人工取消；该 collect 内没有 generation submit。"
+      ],
+      "knowledge": "tools/list 的 search_instances 描述明确省略 query 时浏览目录，schema 中 enabled 可选。缺项后的首次重试没有来自工具响应的重试要求。"
+    },
+    {
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-257e5a75-f292-4439-93c5-5e0588ac7f7c",
+      "rule": "实际 system 要求主 Agent 使用迭代 Skill 派发角色；实际用户消息直接指定生成 Skill，提供 template_id=29 与完整 Builder JSON，未指定 instance_id。",
+      "sequence": [
+        "seq43 search_instances({})；seq44 返回空列表。",
+        "seq45 执行 CLI 环境检查；首个针对空列表的重复查询为 seq50 与seq52。",
+        "seq56 reasoning 明确认识应停止，仍以只读核实为理由猜测实例1和2；seq57/58 实例1不存在，seq59/60 实例2已登记但远程不可达。",
+        "seq70/71 获得实例2连接 URL。",
+        "seq89/90 参数检查成功；seq101/102 shell HTTP 探测成功，seq106/107 取得系统与 checkpoint 信息。",
+        "seq111 才读取迭代 Skill；本轮没有任何角色派发或实际父子消息。",
+        "seq126 执行 generation submit；seq127 成功返回 run_72c5c605-7d94-45bd-a359-1cf3859b0fff 且 EXIT=0；最终模型 request messages[51] 收到该结果。",
+        "seq131 轮询 resolve-media；seq137 人工取消。"
+      ],
+      "knowledge": "实例2先作为模型自行探测的数字出现，后由真实 MCP 状态和连接确认；原始用户输入没有提供它。"
+    }
+  ],
+  "confirmedDataConflict": {
+    "statement": "夹具把成功的实例搜索结果覆写为空，但实例详情、状态、连接及队列继续真实转发。状态的 reachable=false 说明实例已登记但远程访问失败，不能当作实例不存在。",
+    "samples": [
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-8cf669a3-9e89-4e26-9cfb-09b2ef278d71.json",
+        "observation": "search_instances({}) 的 responseSource 为 real-catalog+boundary-fields；文本与 structuredContent 均为空结果。"
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-ffec5fc8-c43f-4cd3-b0e8-433885b91f8b.json",
+        "observation": "get_catalog_resource(instance,2) 返回 win3080、真实 URL、enabled=true、validation_passed=true。"
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-0f6da67b-0a78-4630-ad4d-06080711b13f.json",
+        "observation": "get_instance_status(2) 正常结果含 reachable=false 和 MCP_INSTANCE_REMOTE_UNAVAILABLE。"
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-4d2b1f9d-b462-4829-8807-a6ab6e4f8b92.json",
+        "observation": "get_instance_status(1) 返回 result.isError=true、文本 MCP_INSTANCE_NOT_FOUND、field=instance_id；无 structuredContent。"
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-1a0118bf-5ef1-47e1-965e-e5aeae762d1c.json",
+        "observation": "get_catalog_resource(instance,3) 返回 MCP_QUERY_RESOURCE_NOT_FOUND、field=ref.id；此错误类型不同于实例操作错误。"
+      },
+      {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-324bd406-9f68-4e13-9460-7acbed9ecd26.json",
+        "observation": "带文本 query 的实例搜索返回真实 CATALOG_DEPENDENCY_UNAVAILABLE，当前夹具保留该错误，没有返回空列表。"
+      }
+    ],
+    "causalLimit": "首次继续查询早于详情、连接和状态中的真实实例信息。数据不一致为后续采用实例提供证据，但首次继续探测仍是独立待解释的执行偏离。"
+  },
+  "repairReview": {
+    "accepted": [
+      "保留 tools/list 声明与各工具只读能力，修复空实例夹具的数据响应。",
+      "对合法实例详情查询返回资源不存在；对合法实例操作返回实例不存在，保留两类错误区别。",
+      "覆写命中的调用不发送到真实实例；其他资源按原路径转发。",
+      "以当前 tools/list 为确定性覆盖依据；当前声明的实例操作有 get_instance_connection、get_instance_status、get_instance_queue、search_instance_nodes、get_instance_node，全部带 readOnlyHint=true 与必填 instance_id。"
+    ],
+    "requiredChanges": [
+      {
+        "id": "R1",
+        "target": "retirement-empty-diagnosis.json facts/classification",
+        "requirement": "补记 seq126/127 成功提交与 run_id。产品停止条件已失败；自然停止及最终产物状态受取消影响。不要把分类仅写成夹具不一致或未决。"
+      },
+      {
+        "id": "R2",
+        "target": "proposedRepair.rules 的统一返回错误规则",
+        "requirement": "明确仅对通过原 inputSchema 校验的合法查询应用缺实例响应；缺少 instance_id、非法 ID、未知属性、非法 queue.state、缺少 class_name 等保留参数错误合同。任意 ID 指任意合法 ID。"
+      },
+      {
+        "id": "R3",
+        "target": "实例操作错误样本与覆盖测试",
+        "requirement": "当前原始证据确认 status 的 MCP_INSTANCE_NOT_FOUND。对 connection、queue、nodes、node 补取不存在实例的真实响应样本或核对共享错误合同，再复用。保留 JSON-RPC id、result.isError、content、field、suggested_call 和实际存在的 structuredContent；不要给原错误新增成功结构。"
+      },
+      {
+        "id": "R4",
+        "target": "搜索夹具语义",
+        "requirement": "明确保留 CATALOG_DEPENDENCY_UNAVAILABLE 等真实错误，或另建依赖可用的纯空目录场景。当前证据不支持把所有文本搜索错误转换为空成功结果；固定搜索过滤、分页及错误分支的预期。"
+      },
+      {
+        "id": "R5",
+        "target": "同数据域范围与验收描述",
+        "requirement": "标明修复覆盖 MCP 实例目录和只读实例操作。Generation CLI、真实网络和其他可读文件仍可能提供实例线索；该夹具不能保证猜测 instance_id 后的 CLI 提交失败。复验必须检查首次空列表后的动作，而非用最终无法取得连接来代替停止合规。"
+      }
+    ],
+    "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/a5aac1fa-839e-4c65-9040-2fc1ca99f2a0/exchange-b01efdb9-203e-427f-b53b-84766c10f56f.json",
+    "boundary": "以上要求保持测试夹具与只读工具合同一致，不要求修改真实目录或增加产品禁令。"
+  },
+  "inputAndHandoffEvidence": {
+    "confirmed": [
+      "两条首请求的用户消息均没有 instance_id；完整 Builder JSON 的 model_route 属于模型路线，不含实例选择。",
+      "迭代会话 system 为主 Agent persona；轨迹没有 subagent_* 调用，没有父派发参数。其 reasoning 中自称收到父任务仅是模型解释。",
+      "工作台在 seq160 读到历史任务产物，在 seq165/170 读到验收台账；输入范围已超出本次消息和本次目录。该行为发生在首次猜测和详情获取之后。"
+    ],
+    "gaps": [
+      "本轮没有覆盖真正的父子缺项传递、原 Agent 恢复或通知延迟；应独立建父子场景，不能用此直接执行的迭代会话代替。",
+      "复验需记录会话可读的历史产物与测试材料范围；仅创建新 Workspace 目录不能证明没有继承或读取其他场景证据。",
+      "最终产物及 Run 生命周期需另行查询；本审查仅确认提交已接受，没有声称图片已生成或取消已终止 Run。"
+    ]
+  },
+  "verificationRequired": [
+    "先对合法/非法输入、五个实例操作、instance详情、搜索过滤分页与搜索依赖错误建立确定性测试；断言覆写命中时真实实例访问次数为零。",
+    "固定 DeepSeek 模型、原始用户消息、安装候选与环境；只改变夹具。逐条对齐工具原始响应、DSH tool/result、下一请求实际消息。",
+    "分别判定首次继续探测、取得实例、参数检查、提交次数与最终结束状态。",
+    "真正父子交接另建场景并保存角色 system、父派发、子缺项报告、父后续动作。"
+  ],
+  "filesChanged": [
+    "docs/verification/skills-mcp-migration/retirement-empty-diagnosis-review.json"
+  ]
+}

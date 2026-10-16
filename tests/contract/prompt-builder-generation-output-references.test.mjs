@@ -85,7 +85,6 @@ describe('Prompt Builder generation output references', () => {
       'comfyui-generate': [
         'references/prompt-result-contract.md',
         'references/prompt-result-schema.json',
-        'references/catalog-cli.md',
         'references/template-parameter-inspection-cli.md',
         'references/generation-cli.md',
       ],

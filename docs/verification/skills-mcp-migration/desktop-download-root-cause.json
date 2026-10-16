@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "investigatedAt": "2026-10-14T09:07:33.205498+00:00",
+  "status": "incorrect-environment-prefix-confirmed-corrected-recovery-unexecuted",
+  "scope": {
+    "repository": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "desktopStarted": false,
+    "dependenciesInstalled": false,
+    "configurationChanged": false,
+    "productionChanged": false
+  },
+  "conclusion": {
+    "confirmed": "隔离验收替换 HOME，官方 pnpm 使用隔离缓存与 registry.npmjs.org。失败安装在 7 个包已添加 6 个时等待 sharp-libvips-darwin-arm64@1.3.3 下载；同期只读下载持续缓慢。",
+    "transportUncertainty": "当前证据未定位到具体代理节点、隧道规则、上游链路或服务端限速。curl --noproxy 仍经 utun1024，不能视作绕过系统隧道的对照。",
+    "recoveryCandidate": "仅为本次验收进程设置 pnpm_config_store_dir，复用本机既有 pnpm store；官方安装器继续完成候选安装、缓存校验及完整验收。"
+  },
+  "callPath": [
+    {
+      "source": "tests/desktop/fixtures/official-lifecycle-services.mjs:244",
+      "symbol": "createIsolatedDesktopSpawn",
+      "fact": "HOME 设为本轮 dshHome/os-home。"
+    },
+    {
+      "source": "tests/desktop/official-desktop-live.test.mjs:558",
+      "symbol": "startOfficialBusinessDesktop",
+      "fact": "HOME 设为本轮 environmentRoot。"
+    },
+    {
+      "source": "tests/desktop/fixtures/official-desktop-probe.mjs:393",
+      "symbol": "startProbe",
+      "fact": "childEnvironment 继承 process.env，再应用明确的运行字段和凭据字段。"
+    },
+    {
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar:dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/index.js",
+      "symbol": "runProfilePnpm",
+      "fact": "在 Profile 目录调用官方 pnpm，environment 使用 scrubbedParentEnv 和 options.env。"
+    },
+    {
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar:dsh/node_modules/@deepseek-ai/dsh-subprocess/lib/index.js",
+      "symbol": "scrubbedParentEnv",
+      "fact": "过滤名称匹配 KEY|PASSWORD|SECRET|TOKEN 或以 DSH_ 开头的环境变量；npm_config_store_dir 和 pnpm_config_store_dir 均保留。"
+    }
+  ],
+  "installationEvidence": {
+    "firstRunId": "b6263f52-f0e4-4d0d-b123-a54d4c1ccbb7",
+    "firstLog": ".local/desktop-e2e/lifecycle-environments/25ae61f7-3e08-4f86-a9fe-269e35771cdf/b6263f52-f0e4-4d0d-b123-a54d4c1ccbb7/dsh-home/profiles/desktop/.plugin-manager/logs/operation-IO7D7I/pnpm.log",
+    "firstLogFacts": [
+      "Packages +7",
+      "resolved 33, downloaded 6, added 6",
+      "GET https://registry.npmjs.org/@img/sharp-libvips-darwin-arm64/-/sharp-libvips-darwin-arm64-1.3.3.tgz error (23), retry in 10 seconds"
+    ],
+    "secondLog": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-qg6AWk/.local/desktop-e2e/5a146ca5-4233-4c5b-9fb9-5ebf9c370302/official-environment/dsh-home/profiles/desktop/.plugin-manager/logs/operation-R4vXIr/pnpm.log",
+    "secondLogFacts": [
+      "registry.npmjs.org/pnpm request 10021ms",
+      "sharp-darwin-arm64@0.35.4 tarball average 39 KiB/s",
+      "resolved 33, downloaded 6, added 6"
+    ],
+    "error23Meaning": "未独立证明该数字在当前 pnpm 下载实现中的具体含义。"
+  },
+  "cacheEvidence": {
+    "bundledPnpmVersion": "11.7.0",
+    "userRegistry": "https://registry.npmmirror.com",
+    "userStore": "/Users/fzfz/Library/pnpm/store/v11",
+    "userStoreReadOnlySqliteIndexContains": [
+      "sharp@0.35.4",
+      "@img/sharp-darwin-arm64@0.35.4",
+      "@img/sharp-libvips-darwin-arm64@1.3.3"
+    ],
+    "firstFailedRunIsolatedStoreMissing": "@img/sharp-libvips-darwin-arm64@1.3.3",
+    "existingInstalledPackage": ".local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/@img/sharp-libvips-darwin-arm64/package.json",
+    "existingInstalledVersion": "1.3.3",
+    "limitation": "SQLite index 存在与已安装包存在尚未证明共享 store 中全部文件均完整；实际复用由官方 pnpm 校验。"
+  },
+  "networkEvidence": {
+    "method": "curl GET 至 /dev/null，未保存或执行归档",
+    "archiveBytes": 8303731,
+    "probes": [
+      {
+        "route": "explicit-proxy npm",
+        "seconds": 20.010566,
+        "bytes": 2080884,
+        "bytesPerSecond": 103989,
+        "httpStatus": 200,
+        "exitCode": 28,
+        "remoteIp": "192.168.110.31"
+      },
+      {
+        "route": "explicit-proxy npmmirror",
+        "seconds": 20.023317,
+        "bytes": 966638,
+        "bytesPerSecond": 48275,
+        "httpStatus": 200,
+        "exitCode": 28,
+        "remoteIp": "192.168.110.31"
+      },
+      {
+        "route": "noproxy npm",
+        "seconds": 20.006259,
+        "bytes": 632568,
+        "bytesPerSecond": 31618,
+        "httpStatus": 200,
+        "exitCode": 28,
+        "remoteIp": "198.18.0.94"
+      },
+      {
+        "route": "explicit-proxy npm, single transfer",
+        "seconds": 50.001966,
+        "bytes": 1924802,
+        "bytesPerSecond": 38494,
+        "httpStatus": 200,
+        "exitCode": 28,
+        "remoteIp": "192.168.110.31"
+      }
+    ],
+    "dns": "dscacheutil 解析 registry.npmjs.org 为 198.18.0.94",
+    "route": "route -n get 198.18.0.94: gateway 198.18.0.1, interface utun1024",
+    "mirrorConclusion": "当前样本中镜像也超时，未证明切换镜像可恢复。"
+  },
+  "recoveryProcedure": [
+    {
+      "step": 1,
+      "action": "使用原候选树与现有测试入口，仅为本次命令添加 store 环境变量。",
+      "command": "env pnpm_config_store_dir=/Users/fzfz/Library/pnpm/store pnpm test:desktop",
+      "purpose": "使本轮隔离 HOME 下的官方 pnpm 读取既有包缓存，同时保留 Profile、Workspace 和业务数据隔离。",
+      "authorization": "由主线程按现有完整官方安装验收授权执行；本调查未执行。"
+    },
+    {
+      "step": 2,
+      "action": "核对两轮实际 pnpm.log 中 reused 和下载记录，确认 libvips 复用成功，再检查官方 UI 安装、启用、业务断言与清理证据。",
+      "acceptance": "完整 pnpm test:desktop 通过，且当前候选包身份一致。"
+    },
+    {
+      "step": 3,
+      "action": "若仍从网络下载该 libvips 包，保存该轮 pnpm 日志并检查实际 store 配置与缓存校验结果。",
+      "limitation": "该情况需要进一步定位；当前调查不保证缓存恢复成功。"
+    }
+  ],
+  "configurationSupport": {
+    "bundledVersion": "11.7.0",
+    "source": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/pnpm/dist/pnpm.mjs:144272",
+    "sourceFact": "常规配置 reader 的 PREFIX 为 pnpm_config_，getEnvKeySuffix 接受该前缀及大写形式。",
+    "readOnlyCommand": "env pnpm_config_store_dir=/Users/fzfz/Library/pnpm/store node \"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/pnpm/dist/pnpm.mjs\" config get store-dir",
+    "observedStoreDirectory": "/Users/fzfz/Library/pnpm/store",
+    "cwd": ".local/desktop-development/official-environment/dsh-home/profiles/desktop",
+    "officialRegistrySupport": "官方 plugin-manager 的 registry 配置及 registryArguments 可产生 --registry；本次未修改，当前镜像测速未支持该方案。"
+  },
+  "remainingUncertainty": [
+    "共享 store 文件完整性及官方 Desktop 实际复用尚待验收。",
+    "透明隧道和上游线路之间的具体故障位置尚待独立网络对照。",
+    "新候选安装后的业务行为仍须通过完整验收。"
+  ],
+  "recoveryAttemptHistory": [
+    {
+      "command": "env npm_config_store_dir=/Users/fzfz/Library/pnpm/store pnpm test:desktop",
+      "initiator": "parent-agent",
+      "runId": "7fcfcb00-9e55-4e7d-92aa-ba7583416ff8",
+      "log": ".local/desktop-e2e/lifecycle-environments/6f79b5d8-7487-4f18-8be1-d5cd11006682/7fcfcb00-9e55-4e7d-92aa-ba7583416ff8/dsh-home/profiles/desktop/.plugin-manager/logs/operation-YUjSIu/pnpm.log",
+      "observation": [
+        "reused 0, downloaded 6, added 6",
+        "libvips 1.3.3 GET error (23), retry in 10 seconds",
+        "本轮 dsh-home/os-home/Library/pnpm/store/v11/index.db 已创建"
+      ],
+      "outcome": "该环境变量未恢复缓存复用；完整测试最终结果由主线程记录。",
+      "cause": "pnpm 常规配置 reader 未采用 npm_config_store_dir。",
+      "previousInvestigationError": "此前 store path 的输入等于当前用户默认 store；输出该默认路径未区分变量生效和默认行为，原先认为变量被接受的结论已撤回。"
+    }
+  ],
+  "followupInvestigation": {
+    "investigatedAt": "2026-10-14T09:14:32.050222+00:00",
+    "processEnvironmentEvidence": [
+      {
+        "layer": "outer pnpm",
+        "pids": [
+          5052,
+          5060
+        ],
+        "npm_config_store_dir": "/Users/fzfz/Library/pnpm/store"
+      },
+      {
+        "layer": "test runner",
+        "pid": 5076,
+        "npm_config_store_dir": "/Users/fzfz/Library/pnpm/store"
+      },
+      {
+        "layer": "vitest launcher and worker",
+        "pids": [
+          5143,
+          5150
+        ],
+        "npm_config_store_dir": "/Users/fzfz/Library/pnpm/store"
+      },
+      {
+        "layer": "same command later live Desktop and Host",
+        "pids": [
+          59783,
+          60033
+        ],
+        "npm_config_store_dir": "/Users/fzfz/Library/pnpm/store",
+        "HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-SgASzQ/.local/desktop-e2e/fe510a55-55f0-4ac2-a7b0-5bcaa252cab5/official-environment"
+      }
+    ],
+    "processEvidenceLimit": "首次失败生命周期安装进程已结束；Desktop 与 Host 的实际变量样本来自同一测试命令随后运行的 live 测试。",
+    "readOnlyCounterfactuals": [
+      {
+        "variable": "npm_config_store_dir",
+        "value": "/tmp/desktop-readonly-store-sentinel",
+        "command": "config get store-dir",
+        "result": "undefined"
+      },
+      {
+        "variable": "pnpm_config_store_dir",
+        "value": "/tmp/desktop-readonly-store-sentinel",
+        "command": "config get store-dir",
+        "result": "/tmp/desktop-readonly-store-sentinel"
+      },
+      {
+        "variable": "pnpm_config_store_dir",
+        "value": "/Users/fzfz/Library/pnpm/store",
+        "command": "config get store-dir",
+        "result": "/Users/fzfz/Library/pnpm/store"
+      }
+    ],
+    "counterfactualWorkingDirectory": ".local/desktop-development/official-environment/dsh-home/profiles/desktop",
+    "counterfactualExecutable": "node /Applications/DeepSeek Harness.app/Contents/Resources/runtime/pnpm/dist/pnpm.mjs",
+    "writes": "只修改本报告；config get 未安装包，未创建 sentinel store。",
+    "assessment": {
+      "variableLost": "实际进程样本显示变量完整传递。",
+      "precedence": "未发现其他 store 配置覆盖；pnpm 的配置 reader 未采用 npm_config_store_dir。",
+      "cacheCorruption": "此次失败没有验证共享 store，不能据此判断共享 store 完整或损坏。"
+    }
+  }
+}

@@ -1,0 +1,231 @@
+{
+  "purpose": "确认 WAI Builder 的 Go DeepSeek 调用输出预算来源，并记录隔离验收 Profile 的限额配置方法。",
+  "status": "源码、调用记录、供应商声明与本地回归已核对；主线程已将限额配置应用到隔离 Profile 并启动真实模型复验，当前 patch 的预期字段已完成只读核对。",
+  "observedCall": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c1482797-0bb8-4000-b177-95f31ac69748.jsonl",
+    "callId": "c1482797-0bb8-4000-b177-95f31ac69748",
+    "sessionId": "session-b6497619-2e30-413d-862c-3263cd72be66",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "requestLine": 1,
+    "requestedMaxTokens": 8192,
+    "usageLine": 2692,
+    "outputTokens": 8192,
+    "finishLine": 2693,
+    "finishReason": "max-tokens",
+    "providerStopReason": "length",
+    "blockTypes": [
+      "reasoning"
+    ],
+    "reasoningDeltaEvents": 2688,
+    "durationMs": 69721,
+    "hostHeader": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e0ce0cf3-d110-414f-a0f3-56788c2952dc/1791951276592-9384ebf0-d357-4af3-8360-389c5790b3a3-collect.json",
+      "eventSeq": 12,
+      "eventType": "request/header",
+      "config": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "maxTokens": 8192
+      },
+      "adapterDefaults": {
+        "maxTokens": true
+      }
+    }
+  },
+  "cause": {
+    "conclusion": "本次调用达到验收 Profile 声明的 8192 输出预算时结束；该轮输出只有 reasoning block，文本与 Tool Call 产物尚未出现。",
+    "source": ".local/skills-mcp-migration-live/model-go-readiness.json 的 providerConfigFragment.providers.opencode-go.models 条目明确声明 maxTokens=8192。",
+    "chain": [
+      {
+        "source": ".local/skills-mcp-migration-live/model-go-readiness.json:27-30",
+        "fact": "该准备记录将 8192 作为本轮建议输出预算；同一记录的 capabilities.nativeMaxTokens 为 384000。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/configure-go.mjs:11-12",
+        "fact": "configure-go 将 providerConfigFragment 合并到已批准 development Profile 的 llm-pi-ai.providers。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/isolated-profile.mjs 的 prepareScenario()",
+        "fact": "prepareScenario 从已批准 development patch 抽取 llm-pi-ai 配置；normal Builder Profile 中 Go 模型条目保持 maxTokens=8192。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-llm-pi-ai-index.js:677-679",
+        "fact": "resolveRouteModels 优先采用模型条目的 maxTokens，并记录 configuredMaxTokens。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-llm-pi-ai-index.js:1820-1827",
+        "fact": "modelInfo 将 configuredMaxTokens 作为该模型的 defaultMaxTokens 返回。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-llm-index.js:2170-2173",
+        "fact": "resolveCallWithInfo 在调用者未提供 maxTokens 时注入 defaultMaxTokens。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-llm-pi-ai-index.js:1881-1885",
+        "fact": "适配器将 options.maxTokens 传给 Pi streamSimple。"
+      },
+      {
+        "source": "app.asar/dsh/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js:587-593",
+        "fact": "OpenAI completions 序列化器按 maxTokensField 将该值写入请求的 max_tokens。"
+      }
+    ],
+    "scope": "调用头、观察器请求和完成事件共同确认预算来源与结束原因；提高预算后的任务产物仍须复验。"
+  },
+  "installedSdk": {
+    "archive": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar",
+    "versions": {
+      "dsh-llm-pi-ai": "0.2.0-rc.2",
+      "dsh-llm": "0.2.0-rc.2",
+      "dsh-agent": "0.2.0-rc.2",
+      "pi-ai": "0.87.1"
+    },
+    "snapshotVerification": {
+      "method": "直接读取已安装 archive 中的源码，与本地已保存源码逐字节比较。",
+      "byteEqual": [
+        "dsh-llm-pi-ai-index.js",
+        "dsh-llm-index.js",
+        "dsh-agent-index.js",
+        "dsh-agent-loop-index.js",
+        "dsh-subagent-index.js"
+      ]
+    },
+    "nativeCatalog": {
+      "entry": "dsh/node_modules/@earendil-works/pi-ai/dist/providers/data/opencode-go.json",
+      "jsonPath": [
+        "openai-completions",
+        "deepseek-v4.1-flash"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 384000,
+      "maxTokensField": "max_tokens"
+    }
+  },
+  "supportedConfiguration": {
+    "profileEntry": "llm-pi-ai",
+    "field": "config.providers.opencode-go.models 中 id=deepseek-v4.1-flash 的 maxTokens",
+    "validationSource": ".local/skills-mcp-migration-live/dsh-llm-pi-ai-index.js:1003-1015 的 modelFields/modelProfile",
+    "meaning": "该字段覆盖当前 Provider 路由的模型描述，并成为 Agent 调用的默认输出预算。",
+    "priority": "显式 AgentOptions.maxTokens 优先于适配器默认值；当前主模型与四角色覆盖仅声明 Provider/model。",
+    "agentOptionsEvidence": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js:1475-1478、1533-1543；dsh-subagent-index.js:414-449。",
+    "defaultSelectionFields": "已安装 dsh-agent-default-model 的 Config 和 selection() 接口提供 provider、model、reasoningEffort。输出预算通过 llm-pi-ai 的模型项配置。",
+    "currentRouteForm": "当前 Go 路由已列出 models；输出预算写入该列表中现有模型项。resolveRouteModels 拒绝同一路由同时声明 models 和 modelOverrides。"
+  },
+  "supplierDeclarations": [
+    {
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "fact": "DeepSeek-V4.1-Flash 的官方最大输出声明为 384K。"
+    },
+    {
+      "url": "https://pi.dev/models/opencode-go/deepseek-v4-1-flash",
+      "fact": "Pi 的 opencode-go/deepseek-v4.1-flash 目录声明最大输出 384000，与已安装 SDK 目录一致。"
+    },
+    {
+      "url": "https://opencode.ai/v2/docs/console/go/",
+      "fact": "OpenCode Go 官方列出 deepseek-v4.1-flash，Chat Completions 路由为 https://opencode.ai/inference/go/v1/chat/completions。"
+    }
+  ],
+  "capacityVerification": "384000 是供应商与已安装 SDK 一致声明的模型上限；本次调查未向 Go 接口提交最大预算探针。",
+  "localAcceptanceConfiguration": {
+    "source": ".local/skills-mcp-migration-live/model-switch.json",
+    "textMaxOutputTokens": 32768,
+    "modelCallTimeoutMs": 360000,
+    "taskTimeoutMs": 600000,
+    "maxCalls": 3000,
+    "validation": "两个可选字段必须为正安全整数；省略字段时 configure 保留 Profile 中原值。textMaxOutputTokens 只更新已批准 Go 路由中唯一匹配的模型项。",
+    "scopeByConsumer": [
+      {
+        "consumer": "主 Agent",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "defaultOutputTokens": 32768
+      },
+      {
+        "consumer": "工作台子 Agent",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "defaultOutputTokens": 32768
+      },
+      {
+        "consumer": "构图角色",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "defaultOutputTokens": 32768
+      },
+      {
+        "consumer": "生成角色",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "defaultOutputTokens": 32768
+      },
+      {
+        "consumer": "比较角色",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "defaultOutputTokens": 32768
+      },
+      {
+        "consumer": "观察角色",
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "defaultOutputTokens": 16384
+      },
+      {
+        "consumer": "图片读取",
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "configuredOutputTokens": 8192
+      }
+    ],
+    "stateSynchronization": "configure 显式传入 --models 时读取该模型选择文件，并在保存 Profile 后同步 state.modelSelection 和 state.modelSelectionPath；后续 configure 复用更新后的快照。",
+    "applicationCommand": "node .local/skills-mcp-migration-live/isolated-profile.mjs configure --state .local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/state.json --models .local/skills-mcp-migration-live/model-switch.json",
+    "applicationSequence": [
+      "主线程停止本轮 Desktop，并确认进程及端口释放。",
+      "主线程执行 applicationCommand，同步本轮模型快照并保存 Profile。",
+      "主线程重新 start 同一 state，以获准模型创建独立 WAI 复验会话。",
+      "主线程保存新的 request/header、观察器请求、完成原因及 Builder 文件，核对实际 maxTokens=32768 和结果。"
+    ],
+    "experimentClassification": "本次同时调整文本输出预算和观察器单次调用期限，按联合限额修复记录与复验。"
+  },
+  "focusedVerification": {
+    "commands": [
+      "node --test .local/skills-mcp-migration-live/isolated-profile.test.mjs",
+      "node --experimental-vm-modules --test .local/skills-mcp-migration-live/isolated-profile-cli.test.mjs",
+      "node --check .local/skills-mcp-migration-live/isolated-profile.mjs"
+    ],
+    "passed": 8,
+    "covered": [
+      "显式模型文件同步旧 state 快照，并应用 Go 预算与观察器期限。",
+      "免费视觉 Provider、图片读取配置、四角色路由、允许模型列表与调用上限保留原值。",
+      "零值、负值、小数、字符串和非安全整数在 Profile/state 保存前被拒绝。",
+      "省略可选限额字段时原预算和期限保持有效。",
+      "场景准备、双协议配置、默认来源恢复及 probe/CDP 配置传递回归继续通过。"
+    ]
+  },
+  "remainingAcceptance": [
+    "独立审查本地限额配置与报告。",
+    "主线程将本轮 Profile 应用新配置后复验 WAI Builder，确认实际请求预算及有效 Builder 产物。"
+  ],
+  "appliedProfileReadback": {
+    "checkedAt": "2026-10-14T04:28:47.832Z",
+    "runId": "f4f2133f-890d-4106-a95b-499c9515aac7",
+    "profilePatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "textMaxOutputTokens": 32768,
+    "visionDefaultMaxOutputTokens": 16384,
+    "imageReaderMaxOutputTokens": 8192,
+    "modelCallTimeoutMs": 360000,
+    "maxCalls": 3000,
+    "checks": {
+      "llmRoutingExceptGoOutputMatchesApprovedSeed": true,
+      "observerExceptTimeoutMatchesApprovedSeed": true,
+      "defaultModelMatchesApprovedSeed": true,
+      "imageReaderMatchesApprovedSeed": true,
+      "presetMatchesOriginalSourcesAndRoleRoutes": true,
+      "coreMatchesNormalWorkspaceConfiguration": true,
+      "coreHasFixtureSourceOverride": false,
+      "webserverMatchesCurrentProbe": true,
+      "stateSnapshotTextLimit": true,
+      "stateSnapshotTimeout": true
+    }
+  }
+}

@@ -158,7 +158,6 @@ describe('official Host plugin activation', () => {
         catalog: { queryComfyuiInstances },
         runtime: {},
         sourceAddress,
-        semanticQueryClientPath: '/plugin/source-query.mjs',
       },
     }
     const unregisterEnvironment = vi.fn()
@@ -197,20 +196,27 @@ describe('official Host plugin activation', () => {
     const variables = contributor.resolve(execution)
     const capability = variables[CLI_ENVIRONMENT_NAMES.capability]!
     expect(contributor.resolve(execution)[CLI_ENVIRONMENT_NAMES.capability]).toBe(capability)
-    expect(variables[CLI_ENVIRONMENT_NAMES.sourceUrl]).toBe('http://127.0.0.1')
-    expect(variables[CLI_ENVIRONMENT_NAMES.sourcePort]).toBe('18093')
+    expect(Object.keys(variables).sort()).toEqual([
+      'DSH_HARNESS_COMFYUI_CLI',
+      'DSH_HARNESS_COMFYUI_CLI_API',
+      'DSH_HARNESS_COMFYUI_CLI_CAPABILITY',
+      'DSH_HARNESS_COMFYUI_NODE_EXECUTABLE',
+    ])
     expect(variables[CLI_ENVIRONMENT_NAMES.api]).toContain(CLI_ROUTE_PATH)
 
     const origin = context.harnessComfyuiCli.origin
-    const request = () => fetch(`${origin}${CLI_ROUTE_PATH}`, {
+    const request = (body = { command: 'generation.random-seeds', count: 1 }) => fetch(`${origin}${CLI_ROUTE_PATH}`, {
       method: 'POST',
       headers: { authorization: `Bearer ${capability}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ command: 'catalog.instance.list' }),
+      body: JSON.stringify(body),
     })
     const success = await request()
     expect(success.status).toBe(200)
-    expect(await success.json()).toEqual({ ok: true, data: { items: [{ id: 'instance-1' }], totalCount: 1 } })
-    expect(queryComfyuiInstances).toHaveBeenCalledOnce()
+    expect(await success.json()).toEqual({ ok: true, data: { seeds: [expect.any(Number)] } })
+    const retired = await request({ command: 'catalog.instance.list' } as never)
+    expect(retired.status).toBe(400)
+    expect(await retired.json()).toMatchObject({ ok: false, error: { code: 'CLI_REQUEST_INVALID' } })
+    expect(queryComfyuiInstances).not.toHaveBeenCalled()
 
     context.emit('tools/result', execution, { status: 'success', value: null } as never)
     const revoked = await request()
@@ -241,8 +247,8 @@ describe('official Host plugin activation', () => {
       links: [],
     }
 
-    vi.doMock('../../src/host/generation/source-cli.ts', () => ({
-      GenerationSourceCli: class {
+    vi.doMock('../../src/host/generation/source-client.ts', () => ({
+      GenerationSourceClient: class {
         constructor(private readonly options: { settings: { get(): { url: string; port: number } } }) {}
 
         async readInstance(instanceId: string) {
@@ -339,7 +345,7 @@ describe('official Host plugin activation', () => {
       await disposeFiber(overriddenCore.fiber)
       expect(overriddenCore.context.reflect.get('harnessComfyuiCore')).toBeUndefined()
     } finally {
-      vi.doUnmock('../../src/host/generation/source-cli.ts')
+      vi.doUnmock('../../src/host/generation/source-client.ts')
       vi.doUnmock('../../src/host/generation/comfy-frontend-worker-client.ts')
     }
   })

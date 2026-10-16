@@ -15,6 +15,8 @@ import {
 } from './official-lifecycle-schema.mjs'
 
 const FIXTURE_CONFIG_PATH = fileURLToPath(new URL('./official-lifecycle-fixture.json', import.meta.url))
+import { OFFICIAL_MCP_FIXTURE } from './official-mcp-services.mjs'
+
 const execFileAsync = promisify(execFile)
 const lifecycleRunRegistries = new WeakMap()
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
@@ -194,6 +196,7 @@ export function createLifecycleDesktopConfig(baseConfigValue, options) {
   config.modes.development.credentialEnvironmentNames = [...new Set([
     ...baseConfig.modes.development.credentialEnvironmentNames,
     fixture.credentials.testKeyEnvironmentName,
+    OFFICIAL_MCP_FIXTURE.credentialEnvironmentName,
   ])]
   config.modes.development.requiredEnvironmentNames = [fixture.credentials.testKeyEnvironmentName]
   config.modes.development.initialProfilePatches = [
@@ -220,13 +223,17 @@ export function createLifecycleDesktopConfig(baseConfigValue, options) {
   return parseDesktopE2EConfig(config)
 }
 
-export async function writeLifecycleTestEnvironmentFile(path, fixtureValue) {
+export async function writeLifecycleTestEnvironmentFile(path, fixtureValue, mcp = undefined) {
   const fixture = parseOfficialLifecycleFixture(fixtureValue)
   const target = requireAbsolutePath(path, 'test environment file path')
   await mkdir(dirname(target), { recursive: true, mode: 0o700 })
   const handle = await open(target, 'wx', 0o600)
   try {
-    await handle.writeFile(`${fixture.credentials.testKeyEnvironmentName}=${fixture.credentials.testKeyValue}\n`, 'utf8')
+    const credentials = [
+      `${fixture.credentials.testKeyEnvironmentName}=${fixture.credentials.testKeyValue}`,
+      ...(mcp === undefined ? [] : [`${OFFICIAL_MCP_FIXTURE.credentialEnvironmentName}=${mcp.token}`]),
+    ]
+    await handle.writeFile(`${credentials.join('\n')}\n`, 'utf8')
     await handle.sync()
   } finally {
     await handle.close()

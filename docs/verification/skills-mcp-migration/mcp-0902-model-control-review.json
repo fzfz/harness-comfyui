@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "文档用途": "独立比较无默认模型场景的两次工作台执行及其模型路由差异。",
+  "读取时机": "判断本次模型路由对照结果及其适用范围时。",
+  "status": "终态审查完成",
+  "baselineDirectory": ".local/skills-mcp-migration-live/mcp-0902-no-default-workbench",
+  "controlDirectory": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control",
+  "preflightVerdict": "通过",
+  "experimentalVariable": {
+    "kind": "Provider 与 model 联合路由",
+    "baseline": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768
+    },
+    "control": {
+      "provider": "openrouter",
+      "model": "thinkingmachines/inkling:free",
+      "maxTokens": 8192
+    },
+    "actualRequestConfirmed": true,
+    "scope": "主会话及会话标题请求均使用对应路由；maxTokens 随已有 Provider 配置变化。"
+  },
+  "verifiedConstants": [
+    {
+      "item": "任务输入",
+      "evidence": "两份 input.json",
+      "result": "仅将随机 runtimeRoot 替换为同一占位符后，taskText 完全相同；业务参数、Prompt Builder JSON、preset、limits 及 stopConditions 相同。"
+    },
+    {
+      "item": "候选文件",
+      "evidence": "两份 source-identity.json 与 installed-files.json",
+      "result": "两轮记录同一 sourceCommit 和 200 个文件；审查员逐文件读取两安装目录并比较字节，全部相同。"
+    },
+    {
+      "item": "场景",
+      "evidence": "两份 scenario.json",
+      "result": "MCP、HTTP 及 Workflow 列表的无默认模型覆盖相同。"
+    },
+    {
+      "item": "启动配置",
+      "evidence": "两份 configuration.json 与 profile-effective.json",
+      "result": "configuration.json 仅 startupWorkspacePath 和夹具端口不同。有效 Profile 在替换运行路径及 runId 后，仅夹具端口和 Webserver 端口不同；全局默认模型及角色配置保持一致。"
+    },
+    {
+      "item": "发送前状态",
+      "evidence": "两份 prepare/trace-index.json",
+      "result": "两轮发送任务前保存的模型调用数均为 0。"
+    }
+  ],
+  "isolationDifferences": [
+    {
+      "item": "运行路径与标识",
+      "baseline": "harness-run-tmJFjY / a52b2714-0d9e-4dc2-ac33-0eabe1771489",
+      "control": "harness-run-vBW8HF / 12ed41d0-0127-4b13-a074-731abfc1379c",
+      "effect": "模型可见的绝对路径、会话标识及运行资料具有不同值。"
+    },
+    {
+      "item": "端口",
+      "baseline": {
+        "fixture": 51013,
+        "webserver": 53850
+      },
+      "control": {
+        "fixture": 59039,
+        "webserver": 59277
+      },
+      "effect": "网络入口及环境变量中的运行地址具有不同值。"
+    },
+    {
+      "item": "请求时间与远端服务",
+      "effect": "两轮在不同时间向不同 Provider 发起请求；远端路由、采样及目录转发结果仍属于本次观察条件。"
+    }
+  ],
+  "interpretationLimit": "本次对照只能比较两个 Provider/model 路由在该任务中的单次执行。输出上限随路由变化，运行路径、端口和时间不同；稳定性及模型权重的独立影响需要另行证据。",
+  "verdict": "未通过",
+  "executionReport": "docs/verification/skills-mcp-migration/mcp-0902-model-control-execution.json",
+  "executionReportFactVerdict": "主要事实与原始证据一致",
+  "evidenceDirectory": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control",
+  "behaviorReview": [
+    {
+      "id": "C1",
+      "seqs": [
+        18,
+        19,
+        58,
+        59,
+        73,
+        74
+      ],
+      "finding": "停止规则与空默认模型结果均已进入实际请求。",
+      "evidence": "seq19 规则首次进入 e4c9f427-d89c-4830-8b29-080a557d7f14；seq59 Generation CLI 参考首次进入 091a9f8b-33da-40a5-b0bd-9bc1b573dbf5；seq74 的 item.model=null 首次进入 0e01fbf1-e1bc-4e75-b6eb-71e3161f5a06。请求中的工具返回与会话事件逐项相同。",
+      "qualification": "Generation CLI 参考允许采用模板默认模型时传 model:null，其输入来源规则仍引用 Skill 的模型选择步骤。当前轨迹只能证明模型收到两份文字及其后行为。"
+    },
+    {
+      "id": "C2",
+      "seqs": [
+        78,
+        83,
+        84,
+        88,
+        89,
+        93,
+        94,
+        112
+      ],
+      "finding": "seq78 是收到 null 后的首次动作；seq83 是已确认的创建流程越界。",
+      "evidence": "seq78 搜索模型；seq83 实际调用 random-seeds 并在 seq89 读到 641531996；seq93 随后检查模板参数。用户已给出 Seed 20261013，Agent 仍请求随机 Seed，且首次业务 CLI 调用前没有读取 --help。seq112 将空默认模型解释为可采用的默认模型，并宣称 Prompt 有效。",
+      "qualification": "搜索候选本身可以用于向用户提问；本次未出现 model_id 提问，随后执行创建准备，故判定失败以 seq83、93 及实际提交为直接证据。最终请求保留用户 Seed 20261013。"
+    },
+    {
+      "id": "C3",
+      "seqs": [
+        23,
+        28,
+        38,
+        113,
+        114,
+        118,
+        119
+      ],
+      "finding": "早期工具错误与实际提交应分开记录。",
+      "evidence": "seq23 尝试不存在的 skill_content.md；seq28 使用错误的相对目录；seq38 将本地文件 URI 发送给 MCP 并收到资源未发布错误。seq113 提交命令因 shell 转义错误退出 127；seq118 修正入口后实际提交 model:null。seq119 的 tool call aborted 来自后续人工取消。"
+    },
+    {
+      "id": "C4",
+      "seqs": [
+        19,
+        74,
+        112,
+        118,
+        121
+      ],
+      "finding": "本轮保存轨迹未出现控制资料读取或真实目录 HTTP 旁路。",
+      "evidence": "21 次工具调用均已逐项核对，资料来源为已安装 Skill、其参考文件、MCP 返回和 CLI 结果文件；会话没有派生子会话。模型未选择非空 model_id，提交时 model=null。",
+      "qualification": "ComfyUI checkpoint 由保存的 Workflow 节点带入；当前证据不足以认定 Agent 从节点推选了某个非空模型 ID。"
+    }
+  ],
+  "submissionReview": {
+    "status": "已确认实际提交并完成",
+    "runId": "run_3ca4141b-d832-4bc7-962d-f64b85612983",
+    "promptId": "434fcce6-fc0e-4dcd-b11b-8ad64ff323ee",
+    "callId": "call_2ea80835657e4a2daae1a6d1",
+    "requestModel": null,
+    "seed": 20261013,
+    "checkpoint": "waiIllustriousSDXL_v170.safetensors",
+    "evidence": [
+      "trace/session-events.jsonl: seq118",
+      "generation-store.json: generation_runs、generation_run_outputs、generation_media",
+      "generation/api-workflow.json",
+      "generation/comfyui-history.json"
+    ],
+    "verification": "generation_runs 的 session_id、call_id 与 seq118 相同。数据库 request_json 保存 model:null 与用户 Seed。ComfyUI 同 prompt_id 的 history 为 success/completed，API Workflow 与 history.prompt[2] 完全相同。保存的媒体文件为 2000855 字节，共一张图片。",
+    "wireBodyCaptured": false,
+    "workspaceResultFiles": 0
+  },
+  "cancellationTimeline": [
+    {
+      "event": "seq118 提交工具调用",
+      "time": 1792002633003
+    },
+    {
+      "event": "Host Run 创建",
+      "time": 1792002633135
+    },
+    {
+      "event": "ComfyUI execution_start",
+      "time": 1792002643736
+    },
+    {
+      "event": "控制线程请求取消",
+      "time": 1792002644093
+    },
+    {
+      "event": "seq119 tool call aborted",
+      "time": 1792002644100
+    },
+    {
+      "event": "seq121 turn/end aborted/user",
+      "time": 1792002644182
+    },
+    {
+      "event": "ComfyUI execution_success",
+      "time": 1792002658402
+    },
+    {
+      "event": "Host succeeded 记录更新时间",
+      "time": 1792002661469
+    }
+  ],
+  "terminalReview": {
+    "session": "人工取消，aborted/user",
+    "generation": "取消前已接纳，取消后完成",
+    "naturalTerminalVerdict": "证据不足",
+    "interpretation": "取消请求晚于 Host Run 创建及 ComfyUI execution_start。工具取消返回表示等待中的工具调用被中断；持久化 Run 和 ComfyUI history 确认生成继续完成。"
+  },
+  "streamReview": {
+    "sessionSeqRange": [
+      0,
+      121
+    ],
+    "sessionEvents": 122,
+    "toolCalls": 21,
+    "toolResults": 21,
+    "allStreamsComplete": true,
+    "missing": [],
+    "modelCalls": 22,
+    "businessCalls": 21,
+    "titleCalls": 1,
+    "businessFinishReason": {
+      "tool-calls/toolUse": 21
+    },
+    "titleFinishReason": {
+      "stop": 1
+    },
+    "maximumBusinessOutputTokens": 473,
+    "titleOutputTokens": 10,
+    "businessMaxTokens": 8192,
+    "outputLimitTruncationObserved": false,
+    "toolResultWithoutSubsequentModelRequest": [
+      119
+    ],
+    "baseline": {
+      "maximumCompletedBusinessOutputTokens": 1623,
+      "businessMaxTokens": 32768,
+      "completeBusinessFinishReason": {
+        "tool-calls/toolUse": 13
+      },
+      "abortedBusinessStreams": 1,
+      "outputLimitTruncationObserved": false
+    },
+    "interpretation": "两轮已结束的模型流均未出现 length 或 max-token 终止原因。输出上限确实不同，当前证据未显示上限截断直接引发行为差异。"
+  },
+  "cleanupReview": {
+    "applicationStopped": true,
+    "applicationPortsReleased": true,
+    "fixtureStopped": true,
+    "fixturePortReleased": true,
+    "controllerProcessExited": true,
+    "profileRestoredMcp": "http://127.0.0.1:18943/mcp",
+    "profileRestoredHttp": "http://127.0.0.1:18093",
+    "evidence": [
+      "cleanup.json",
+      "profile-restored.json",
+      "control-process-exit.json"
+    ]
+  },
+  "comparisonVerdict": {
+    "baseline": "收到 null 后继续查找额外上下文，随后读取控制资料；人工取消前未执行参数检查或提交。",
+    "control": "收到 null 后执行创建准备并提交 model:null；轨迹未见控制资料读取，人工取消前 Host 已接纳真实 Run。",
+    "commonOutcome": "两轮均未完成缺少 model_id 时询问用户并停止创建图片的要求。",
+    "causalScope": "单次联合路由对照证实两轮具体行为不同。Provider、model、输出上限及隔离运行值同时存在差异；两轮停止干预的触发行为和时间也不同。当前证据支持行为描述，不能据此确认模型权重的独立因果作用或任一路由稳定性。"
+  },
+  "executionReportMinimalChanges": [
+    {
+      "location": "model 或 trace",
+      "action": "补充 21 个业务流均为 toolUse、最大实际业务输出 473 token、标题输出 10 token，明确本轮没有输出上限截断证据。"
+    },
+    {
+      "location": "observations.firstPostNullAction",
+      "action": "保留 seq78 为首次后续动作，并增加 seq83 为首次已确认的创建流程越界；搜索候选与实际创建准备分别表述。"
+    },
+    {
+      "location": "comparison.limitsOfInference",
+      "action": "补充两轮人工取消触发行为及干预时点不同，作为自然终态比较的限制。"
+    }
+  ],
+  "correctionsVerified": {
+    "status": "通过",
+    "scope": "执行报告修订字段",
+    "verified": [
+      "observations.firstConfirmedCreationPreparation 已将 seq83 标为首次已确认的创建准备越界，并与 seq78 搜索区分。",
+      "comparison.actualOutputLimitReview 已记录对照 473/8192、基线已完成流 1623/32768，以及未观察到 length 终止。",
+      "comparison.cancellationDifference 已记录两轮取消触发行为及时点不同，并将比较范围限定于已观察行为。",
+      "acceptanceStatus 与 independentReview 已登记独立审查完成及行为未通过。"
+    ],
+    "remainingReportCorrections": []
+  }
+}

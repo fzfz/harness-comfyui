@@ -1,0 +1,153 @@
+{
+  "reviewedAt": "2026-10-14T04:31:41.378148+00:00",
+  "reviewKind": "独立 Spec 审查",
+  "scope": [
+    ".local/skills-mcp-migration-live/isolated-profile.mjs",
+    ".local/skills-mcp-migration-live/isolated-profile.test.mjs",
+    ".local/skills-mcp-migration-live/model-switch.json",
+    "docs/verification/skills-mcp-migration/deepseek-output-limit-diagnosis.json"
+  ],
+  "verdict": "通过",
+  "findings": [],
+  "summary": "在本轮实际模型选择与已批准 Profile 下，Go DeepSeek 默认输出预算由 8192 更新为 32768，观察器单次调用期限由 180000 更新为 360000；视觉模型路由、视觉输出预算、图片读取配置、模型允许列表和调用次数上限保持。未发现本次限定范围内的材料性 Spec 问题。",
+  "specBoundary": {
+    "requested": "只调整已批准 Go 文本模型的输出预算与观察器期限；保留视觉与授权边界。",
+    "experimentClassification": "同时改变输出预算与观察器期限，属于联合限额调整及后续复验，不是单变量因果实验。",
+    "businessAcceptance": "本报告不认定新 WAI 会话已成功，不将配置回读代替实际请求预算、Prompt 产物和结束状态验收。"
+  },
+  "codeChecks": [
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:94",
+      "result": "configure 先载入场景专属配置并确认实例停止；显式 --models 重新读取指定文件，省略时复用 state.modelSelection。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:101",
+      "result": "两个可选限额字段均要求正安全整数；零值、负值、小数、字符串及不安全整数在 Profile/state 保存前拒绝。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:104",
+      "result": "主模型、四角色和图片读取的 Provider/model 身份仍须属于当前观察器允许列表。该列表不因传入 model-switch.json 扩大。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:107",
+      "result": "textMaxOutputTokens 仅接受 opencode-go；在该 Provider 的 models 中按 selected 精确定位，要求唯一项，只赋值该模型的 maxTokens。当前 selected 及三个文本角色均为 deepseek-v4.1-flash。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:114",
+      "result": "modelCallTimeoutMs 只更新 observer.config.timeoutMs。该期限对观察器覆盖的调用生效，并非仅 Go 文本调用；视觉 Token 预算和模型身份不受此赋值影响。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:130",
+      "result": "图片读取使用准备时的已批准快照；活动配置须仍为 openrouter runtime 及指定免费视觉模型，否则在保存前拒绝。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:147",
+      "result": "更新 Profile 后同步 state.modelSelection、modelSelectionPath、observer 与 configuration 中的预算、期限；后续不带 --models 的 configure 使用更新后的快照。"
+    }
+  ],
+  "liveReadOnlyVerification": {
+    "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/state.json",
+    "profilePatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "comparisonSeedPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "runId": "f4f2133f-890d-4106-a95b-499c9515aac7",
+    "method": "只读解析现有 YAML；未知 YAML tag 仅保留为文本，不执行其内容。比较结构化对象并只记录差异路径。",
+    "differences": [
+      {
+        "entry": "llm-pi-ai",
+        "paths": [
+          "/config/providers/opencode-go/models/0/maxTokens"
+        ],
+        "before": 8192,
+        "after": 32768
+      },
+      {
+        "entry": "skills-migration-live-observer",
+        "paths": [
+          "/config/timeoutMs"
+        ],
+        "before": 180000,
+        "after": 360000
+      },
+      {
+        "entry": "agent-default-model",
+        "paths": []
+      },
+      {
+        "entry": "harness-comfyui-image-reader",
+        "paths": []
+      }
+    ],
+    "preserved": {
+      "openrouterProviderObject": "与准备来源 Profile 完全相同，包括全部模型项及相关 Provider 配置。",
+      "visionModel": "openrouter/thinkingmachines/inkling:free",
+      "visionDefaultMaxTokens": 16384,
+      "imageReaderMaxTokens": 8192,
+      "allowedModels": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      ],
+      "maxCalls": 3000,
+      "goConnectionAndCredentialReference": "llm-pi-ai 除上述 maxTokens 路径外结构一致，Provider 路径与凭据引用未变化。"
+    },
+    "snapshotChecks": {
+      "modelSelectionMatchesCurrentFile": true,
+      "observerMatchesActualPatch": true,
+      "imageReaderMatchesApprovedSnapshot": true
+    }
+  },
+  "authorizationReview": {
+    "source": ".local/skills-mcp-migration-live/model-switch.json 的 authorization",
+    "observed": {
+      "activeGoSubscription": true,
+      "useBalance": false
+    },
+    "implementationBoundary": "代码继续路由到已批准 opencode-go 与免费 OpenRouter 视觉模型；未增加余额路由、未扩大 observer.allowed、未改 Provider endpoint 或凭据来源。authorization 元数据记录授权，实际身份约束来自现有允许列表；不把该元数据描述为新的计费执法机制。"
+  },
+  "testReview": {
+    "mode": "只读审查测试；没有执行会创建 Profile 或调用 probe 的测试套件。",
+    "independentlyExecuted": [
+      {
+        "command": "node --check .local/skills-mcp-migration-live/isolated-profile.mjs",
+        "exitCode": 0
+      }
+    ],
+    "assertionsReviewed": [
+      {
+        "source": ".local/skills-mcp-migration-live/isolated-profile.test.mjs:53",
+        "coverage": "显式文件覆盖旧 state、Go 预算、observer 期限、免费视觉 Provider 不变、image reader 不变、observation 角色不变、再次 configure 保留新快照。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/isolated-profile.test.mjs:85",
+        "coverage": "两字段的非法输入逐一拒绝，并比较 Profile 与 state 原始文本未变化。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/isolated-profile.test.mjs:158",
+        "coverage": "省略限额时原 Go 预算和 observer 期限保留，四角色路由符合当前模型选择，夹具地址与恢复继续使用原流程。"
+      }
+    ],
+    "reportedExecution": "诊断报告声明两个测试文件共 8 项通过；独立审查确认当前声明数量为 6+2，本轮未重新执行，也未将该声明当独立运行结果。",
+    "coverageLimits": [
+      "当前限额测试使用单个 Go 模型项；唯一模型匹配与非 Go 拒绝的代码分支已静态检查，测试文件未单独覆盖这些拒绝案例。",
+      "实际新会话中的 maxTokens、结束原因与业务产物仍需后续真实采集。"
+    ]
+  },
+  "diagnosisDocumentReview": {
+    "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/deepseek-output-limit-diagnosis.json",
+    "consistentItems": [
+      "旧调用 8192 输出结束与已审原始记录一致。",
+      "当前字段、正整数验证、状态快照同步及视觉预算与代码和实际 Profile 回读一致。",
+      "联合限额调整的实验分类准确，报告保留真实模型复验待完成状态。"
+    ],
+    "scopeLimits": [
+      "本次未重新核验该报告引用的供应商网页与已安装 SDK 全部源码链；本审查聚焦配置修改作用域及授权保留。",
+      "不依据供应商上限声明推定 32768 复验必定成功。"
+    ]
+  },
+  "actionsPerformed": "只读文件、只读 YAML 比较、语法检查，并写入本报告；未操作 Profile、Desktop、模型或被审查源码。"
+}

@@ -1,0 +1,524 @@
+{
+  "purpose": "记录ANIMA最终回复格式的宿主展示段首轮隔离对照与实际请求证据。",
+  "observedAt": "2026-10-14T05:41:02.137Z",
+  "status": "首轮已完成，等待独立审查。",
+  "preparationReportPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/anima-display-control-preparation.json",
+  "preparationReviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/anima-display-control-preparation-review.json",
+  "planPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/plan.json",
+  "scope": {
+    "caseId": "5.3-1",
+    "samplesPerGroup": 1,
+    "presetId": "harness-comfyui-cli-candidate",
+    "candidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "modelSelectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/models.json",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "textMaxOutputTokens": 32768,
+    "observerTimeoutMs": 360000,
+    "taskTimeoutMs": 600000,
+    "imageModel": "thinkingmachines/inkling:free",
+    "controlField": "Workbench composition include patches -> project-system-prompt-visibility.config.hiddenSectionNames",
+    "targetSection": "ui:deliverable-file-references",
+    "baselineHiddenSectionNames": [
+      "harness:identity",
+      "harness:source",
+      "app:web-surface"
+    ],
+    "experimentalHiddenSectionNames": [
+      "harness:identity",
+      "harness:source",
+      "app:web-surface",
+      "ui:deliverable-file-references"
+    ]
+  },
+  "actualRequestComparison": {
+    "firstRequestFiles": {
+      "baseline": "3b4fb6fc-a0ff-468a-b678-fadf40b1702b.jsonl",
+      "experimental": "834428af-ae06-4a7d-97b9-cd0beeeaee24.jsonl"
+    },
+    "sectionName": "ui:deliverable-file-references",
+    "baselineTargetSectionPresent": true,
+    "experimentalTargetSectionPresent": false,
+    "remainingSystemTextIdentical": true,
+    "toolDeclarationsIdentical": true,
+    "toolCount": 25,
+    "maxTokens": 32768,
+    "normalizations": [
+      "profileDirectory -> <PROFILE_DIRECTORY>",
+      "workspacePath -> <WORKSPACE_DIRECTORY>",
+      "sessionId -> <SESSION_ID>",
+      "message.id -> <MESSAGE_ID>",
+      "message.source.rpcId -> <RPC_ID>",
+      "remove exact target section from baseline system then trim"
+    ],
+    "initialMessagesEqualAfterDocumentedNormalization": true,
+    "rawMetadataDifferencesPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/actual-first-message-differences.json",
+    "comparisonBoundary": "比较首个业务请求的实际文本与工具声明；独立会话的路径、UUID、时间、端口和请求历史分别保留。",
+    "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/actual-first-request-comparison.json",
+    "baselineSystemPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/actual-first-system.txt",
+    "experimentalSystemPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/actual-first-system.txt",
+    "baselineToolsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/actual-first-tools.json",
+    "experimentalToolsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/actual-first-tools.json",
+    "basis": "实际observer记录的首个业务模型请求；两组后续所有业务请求也保持各自system与工具集合。"
+  },
+  "groups": {
+    "baseline": {
+      "profileId": "7040f70b-2a8e-4eee-8297-c579c738ad47",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/state.json",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-DkpM8Y",
+      "desktopRunId": "43120d80-8597-49eb-90b3-94593e3f5af4",
+      "applicationPid": 89141,
+      "sessionId": "session-746cb845-5def-447f-bdf6-f24ab196e4b1",
+      "workspaceId": "dd81f108-46aa-400a-bd0e-be7ad1d6b5ec",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/input.json",
+      "sourceAddress": {
+        "value": {
+          "url": "http://127.0.0.1",
+          "port": 18093
+        },
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-remote.json",
+        "businessValuePath": "value.value"
+      },
+      "modelSubmissions": 1,
+      "submissionStartedAt": "2026-10-14T05:29:35.015Z",
+      "finishedAt": "2026-10-14T05:35:22.333Z",
+      "elapsedMs": 347318,
+      "terminalEvents": [
+        {
+          "seq": 236,
+          "time": 1791956122333,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "taskTimeout": false,
+      "throughSeq": 236,
+      "recordCount": 237,
+      "modelRequests": {
+        "count": 43,
+        "businessCount": 42,
+        "titleCount": 1,
+        "indexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-request-index.json",
+        "archiveDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests",
+        "allBusinessGoDeepSeek": true,
+        "allBusinessMaxTokens32768": true,
+        "allBusinessExpectedSectionVisibility": true,
+        "allBusinessSystemSameAsFirst": true,
+        "allBusinessToolsSameAsFirst": true,
+        "allCallLogsComplete": true,
+        "errorRecordCount": 0,
+        "finishReasonKinds": [
+          "tool-calls",
+          "stop"
+        ]
+      },
+      "roleFileDelivery": {
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/role-delivery-evidence.json",
+        "observations": [
+          {
+            "seq": 29,
+            "step": 3,
+            "callId": "call_00_hfuxudqwg1o74zg3knqxt5pu",
+            "isError": false,
+            "containsCompleteFile": true,
+            "followingActualRequest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/model-requests/169f66bf-13cc-49f5-82b1-fcea8844661c.jsonl",
+            "followingActualRequestAt": "2026-10-14T05:29:43.244Z"
+          }
+        ]
+      },
+      "toolTrace": {
+        "callCount": 47,
+        "resultCount": 47,
+        "subagentCallCount": 0,
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/tool-trace.json"
+      },
+      "validatorEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/validator-evidence.json",
+      "finalResponse": {
+        "seq": 234,
+        "step": 42,
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/final-response.txt",
+        "pureJson": false,
+        "containsMarkdownJsonFence": true,
+        "characters": 2219,
+        "verdict": "最终回复包含说明与Markdown代码块，未遵守02-role的结构化结果单独返回要求。"
+      },
+      "artifacts": [
+        {
+          "relativePath": "5.3-1/builder.json",
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-DkpM8Y/5.3-1/builder.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/artifacts/5.3-1/builder.json",
+          "bytes": 754,
+          "jsonParsed": true,
+          "parseError": null,
+          "topLevelKeys": [
+            "model_route",
+            "positive_prompt",
+            "negative_mode",
+            "negative_prompt",
+            "positive_avoidance",
+            "generation_purpose",
+            "aspect_ratio",
+            "width",
+            "height",
+            "megapixels"
+          ]
+        }
+      ],
+      "configurationAfterExecution": {
+        "variant": "baseline",
+        "verifiedAt": "2026-10-14T05:38:25.513Z",
+        "sameAsReviewedProfile": false,
+        "differentPaths": [
+          "/2/config/port"
+        ],
+        "officialProbePort": {
+          "entryId": "webserver",
+          "prepared": 61534,
+          "runtime": 54192,
+          "expected": 54192,
+          "matchesRun": true
+        },
+        "sameAfterDocumentedProbePortNormalization": true
+      },
+      "cleanup": {
+        "variant": "baseline",
+        "verifiedAt": "2026-10-14T05:37:52.741Z",
+        "runId": "43120d80-8597-49eb-90b3-94593e3f5af4",
+        "state": "stopped",
+        "probeStatus": {
+          "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/43120d80-8597-49eb-90b3-94593e3f5af4/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 54192,
+              "pids": []
+            },
+            {
+              "port": 54195,
+              "pids": []
+            },
+            {
+              "port": 54196,
+              "pids": []
+            }
+          ]
+        },
+        "observedApplicationPorts": [
+          {
+            "port": 54192,
+            "listening": false
+          },
+          {
+            "port": 54195,
+            "listening": false
+          },
+          {
+            "port": 54227,
+            "listening": false
+          }
+        ],
+        "allObservedApplicationPortsReleased": true,
+        "applicationPid": 89141,
+        "officialDesktopArchive": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/official-desktop"
+      },
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline",
+      "fullSessionCollectPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/session-collect.json",
+      "executionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/execution.json",
+      "setupAttemptBeforeSubmission": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/setup-attempt-1.json",
+        "modelSubmissions": 0
+      }
+    },
+    "experimental": {
+      "profileId": "74a04801-a560-4c8e-b207-18bf51a129e7",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/state.json",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-AgqW3u",
+      "desktopRunId": "3fb1488c-1409-4614-8dfa-9b384734e38c",
+      "applicationPid": 89142,
+      "sessionId": "session-75a2917e-0fb1-426a-82ff-a19b0d8af3b8",
+      "workspaceId": "58a6c165-2594-4611-a254-bca13698c800",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/input.json",
+      "sourceAddress": {
+        "value": {
+          "url": "http://127.0.0.1",
+          "port": 18093
+        },
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/session-remote.json",
+        "businessValuePath": "value.value"
+      },
+      "modelSubmissions": 1,
+      "submissionStartedAt": "2026-10-14T05:29:35.027Z",
+      "finishedAt": "2026-10-14T05:32:42.712Z",
+      "elapsedMs": 187685,
+      "terminalEvents": [
+        {
+          "seq": 161,
+          "time": 1791955962712,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "taskTimeout": false,
+      "throughSeq": 161,
+      "recordCount": 162,
+      "modelRequests": {
+        "count": 24,
+        "businessCount": 23,
+        "titleCount": 1,
+        "indexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-request-index.json",
+        "archiveDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests",
+        "allBusinessGoDeepSeek": true,
+        "allBusinessMaxTokens32768": true,
+        "allBusinessExpectedSectionVisibility": true,
+        "allBusinessSystemSameAsFirst": true,
+        "allBusinessToolsSameAsFirst": true,
+        "allCallLogsComplete": true,
+        "errorRecordCount": 0,
+        "finishReasonKinds": [
+          "tool-calls",
+          "stop"
+        ]
+      },
+      "roleFileDelivery": {
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/role-delivery-evidence.json",
+        "observations": [
+          {
+            "seq": 36,
+            "step": 4,
+            "callId": "call_00_3Bzxo6k5h8ZjSNUMvFoM0976",
+            "isError": false,
+            "containsCompleteFile": true,
+            "followingActualRequest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/model-requests/9b18c13b-3773-4063-988d-8e417d4523df.jsonl",
+            "followingActualRequestAt": "2026-10-14T05:29:47.651Z"
+          }
+        ]
+      },
+      "toolTrace": {
+        "callCount": 38,
+        "resultCount": 38,
+        "subagentCallCount": 0,
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/tool-trace.json"
+      },
+      "validatorEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/validator-evidence.json",
+      "finalResponse": {
+        "seq": 159,
+        "step": 23,
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/final-response.txt",
+        "pureJson": false,
+        "containsMarkdownJsonFence": true,
+        "characters": 1267,
+        "verdict": "最终回复包含说明与Markdown代码块，未遵守02-role的结构化结果单独返回要求。"
+      },
+      "artifacts": [
+        {
+          "relativePath": "5.3-1/builder.json",
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-AgqW3u/5.3-1/builder.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/artifacts/5.3-1/builder.json",
+          "bytes": 712,
+          "jsonParsed": true,
+          "parseError": null,
+          "topLevelKeys": [
+            "model_route",
+            "positive_prompt",
+            "negative_mode",
+            "negative_prompt",
+            "positive_avoidance",
+            "generation_purpose",
+            "aspect_ratio",
+            "width",
+            "height",
+            "megapixels"
+          ]
+        },
+        {
+          "relativePath": "5.3-1/prompt-slots.json",
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-AgqW3u/5.3-1/prompt-slots.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/artifacts/5.3-1/prompt-slots.json",
+          "bytes": 1082,
+          "jsonParsed": true,
+          "parseError": null,
+          "topLevelKeys": [
+            "slots",
+            "display_text"
+          ]
+        }
+      ],
+      "configurationAfterExecution": {
+        "variant": "experimental",
+        "verifiedAt": "2026-10-14T05:38:25.517Z",
+        "sameAsReviewedProfile": false,
+        "differentPaths": [
+          "/2/config/port"
+        ],
+        "officialProbePort": {
+          "entryId": "webserver",
+          "prepared": 62973,
+          "runtime": 54191,
+          "expected": 54191,
+          "matchesRun": true
+        },
+        "sameAfterDocumentedProbePortNormalization": true
+      },
+      "cleanup": {
+        "variant": "experimental",
+        "verifiedAt": "2026-10-14T05:37:52.840Z",
+        "runId": "3fb1488c-1409-4614-8dfa-9b384734e38c",
+        "state": "stopped",
+        "probeStatus": {
+          "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/3fb1488c-1409-4614-8dfa-9b384734e38c/run.json",
+          "state": "stopped",
+          "processGroupMatchesRun": false,
+          "processGroupPresent": false,
+          "ports": [
+            {
+              "port": 54191,
+              "pids": []
+            },
+            {
+              "port": 54193,
+              "pids": []
+            },
+            {
+              "port": 54194,
+              "pids": []
+            }
+          ]
+        },
+        "observedApplicationPorts": [
+          {
+            "port": 54191,
+            "listening": false
+          },
+          {
+            "port": 54193,
+            "listening": false
+          },
+          {
+            "port": 54226,
+            "listening": false
+          }
+        ],
+        "allObservedApplicationPortsReleased": true,
+        "applicationPid": 89142,
+        "officialDesktopArchive": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/official-desktop"
+      },
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental",
+      "fullSessionCollectPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/session-collect.json",
+      "executionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/execution.json",
+      "setupAttemptBeforeSubmission": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/setup-attempt-1.json",
+        "modelSubmissions": 0
+      }
+    }
+  },
+  "formatOutcome": {
+    "baseline": "宿主完成事件为completed；最终回复含产物链接、JSON代码块和构建依据。",
+    "experimental": "宿主完成事件为completed；最终回复含文件列表、情况报告和JSON代码块。",
+    "bothPureJson": false,
+    "rule": "02-role要求只返回通过生成结果校验器的结构化结果，不另外输出解释、寒暄或Markdown。",
+    "observation": "本轮实验组实际隐藏目标段后，最终回复仍出现相同类别的格式偏离。",
+    "causalScope": "本轮每组各一例；两组独立状态、模型采样、后续工具选择和产物内容分别保留，可重复性与其他来源的影响由后续授权实验判断。"
+  },
+  "validationObservations": {
+    "baseline": {
+      "promptValidator": {
+        "callSeq": 215,
+        "resultSeq": 216,
+        "exitCode": 0
+      },
+      "generationValidatorInitialFailure": {
+        "callSeq": 220,
+        "resultSeq": 221,
+        "exitCode": 2,
+        "detail": "Python向/dev/stdout写入时收到PermissionError，校验器收到无效JSON。"
+      },
+      "generationValidatorRecovered": {
+        "callSeq": 225,
+        "resultSeq": 226,
+        "exitCode": 0
+      }
+    },
+    "experimental": {
+      "promptValidator": {
+        "callSeq": 135,
+        "resultSeq": 136,
+        "exitCode": 0
+      },
+      "generationValidator": {
+        "callSeq": 145,
+        "resultSeq": 146,
+        "exitCode": 0
+      },
+      "savedArtifactsRevalidation": {
+        "callSeq": 155,
+        "resultSeq": 156,
+        "promptExitCode": 0,
+        "generationExitCode": 0,
+        "promptTextMatchesSavedResult": true,
+        "validatedResultMatchesSavedObject": true
+      }
+    },
+    "reviewScope": "JSON解析与执行退出码属于结构证据；画面语义、权重与其他Skill规则由独立审查判断。"
+  },
+  "deadlines": {
+    "providerStreamIdleTimeoutMs": 120000,
+    "configurationEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/profile-after.json",
+    "observerTimeoutMs": 360000,
+    "taskTimeoutMs": 600000,
+    "observedIdleTimeout": false,
+    "observedObserverTimeout": false,
+    "observedTaskTimeout": false,
+    "finishReasonKinds": [
+      "tool-calls",
+      "stop"
+    ]
+  },
+  "isolationMetadata": {
+    "distinctProfiles": true,
+    "distinctWorkspaces": true,
+    "workspaceInitiallyEmpty": true,
+    "requiredDifferences": [
+      "Profile UUID与目录",
+      "Workspace目录与UUID",
+      "Desktop runId、PID与端口",
+      "sessionId、消息ID与RPC ID",
+      "请求时间与自然结束时间",
+      "后续工具调用及模型输出"
+    ],
+    "profileRuntimeDifference": "官方probe仅更新各自webserver.config.port；还原该端口后，实际Profile与已审查配置深比较一致。",
+    "sharedObservedTemporaryPaths": [],
+    "workspaceBoundary": "两个中性Workspace位于checkout外；任务仍使用同一宿主文件系统和真实目录服务。",
+    "comparisonBoundary": "首个请求的文本与工具声明经已列明身份差异归一后可比；完整请求与执行轨迹分别归档。"
+  },
+  "setupIncident": {
+    "description": "提交前准备尝试将remote业务结果外层value当作sourceAddress，导致身份检查失败；实际回读值为value.value。",
+    "beforeSubmission": true,
+    "modelSubmissions": 0,
+    "recovery": "保留失败记录，按业务结果结构读取真实18093后各提交一次原输入。",
+    "failedRunIds": [
+      "2e98a492-8dd7-4028-b0c1-b71b88b4b760",
+      "cde41564-a0c1-4755-a4b0-e1dc92ffbb71"
+    ],
+    "cleanup": "两次准备尝试已停止，清理证明保存在各组setup-attempt-1.json。"
+  },
+  "cleanup": {
+    "ownDesktopInstancesStopped": true,
+    "configuredPortsReleased": true,
+    "observedDynamicCliPortsReleased": true,
+    "processGroupsAbsent": true,
+    "profilesAndArtifactsPreserved": true,
+    "evidencePaths": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/cleanup-verification.json",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/cleanup-verification.json"
+    ]
+  },
+  "pending": [
+    "主线程安排两组完整轨迹与最终格式的独立审查。"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "purpose": "记录指定交接验收 JSON 的逐项文字审阅结果。",
+  "readWhen": "修订本报告所列字段的文字时。",
+  "scope": [
+    "remaining-handoff-driver-implementation.json#/review/activationRepair",
+    "remaining-handoff-zero-runtime-execution.json"
+  ],
+  "reviewBasis": "仅依据审计对象文字及指定文字规范，审阅措辞、主体、对象和时态。",
+  "status": "changes-requested",
+  "findings": [
+    {
+      "location": "remaining-handoff-driver-implementation.json#/review/activationRepair/cause",
+      "problem": "“两个插件”和“新增 ID”未指明所属模块，读者无法从本字段识别对象。",
+      "minimalRevision": "驱动将新增 runtime-control 与 relative-delay 模块写为普通 patch。两个模块的 ID 不在基础条目中，applyEntryPatches 跳过对应条目。"
+    },
+    {
+      "location": "remaining-handoff-driver-implementation.json#/review/activationRepair/chain/2",
+      "problem": "“apply 无法启动”未明确 apply 的所属对象和动作含义。",
+      "minimalRevision": "runtime-control 与 relative-delay 模块未进入有效配置，两个模块的 apply 函数未执行。"
+    },
+    {
+      "location": "remaining-handoff-driver-implementation.json#/review/activationRepair/replayLimit",
+      "problem": "“插入合同”用词生硬，无法清楚表达重放验证的对象。",
+      "minimalRevision": "保存的 cordis.yml 不含 Host 全局默认条目；本次重放验证 runtime-control 与 relative-delay 模块的插入声明。"
+    },
+    {
+      "location": "remaining-handoff-driver-implementation.json#/review/activationRepair/officialProof",
+      "problem": "该字段位于结果记录中，但未明确所述启动和核对是待执行工作。",
+      "minimalRevision": "计划由根线程在独立复核后重新执行 configure 并启动应用，核对插件实际激活情况、进程组、Inspector 端口及控制事件。"
+    }
+  ],
+  "otherScopeResult": {
+    "location": "remaining-handoff-zero-runtime-execution.json",
+    "result": "未发现需要修订的文字问题。"
+  }
+}

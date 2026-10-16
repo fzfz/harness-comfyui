@@ -1,16 +1,12 @@
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { randomBytes } from 'node:crypto'
 import { CLI_ENVIRONMENT_NAMES } from '../../cli/contract.ts'
-import type { SourceAddress } from '../../source-settings.ts'
 
 export const CLI_ENVIRONMENT_VARIABLES = Object.freeze({
   [CLI_ENVIRONMENT_NAMES.executable]: { description: 'Managed Harness ComfyUI CLI executable.' },
   [CLI_ENVIRONMENT_NAMES.nodeExecutable]: { description: 'This variable contains the path to the Host Electron executable. Set ELECTRON_RUN_AS_NODE=1 when invoking the managed Harness ComfyUI CLI with this executable.' },
   [CLI_ENVIRONMENT_NAMES.api]: { description: 'Current loopback Harness ComfyUI CLI endpoint.' },
   [CLI_ENVIRONMENT_NAMES.capability]: { description: 'Current foreground shell-call capability.' },
-  [CLI_ENVIRONMENT_NAMES.semanticQueryCli]: { description: 'Built-in Harness-ComfyUI semantic query client.' },
-  [CLI_ENVIRONMENT_NAMES.sourceUrl]: { description: 'Configured Harness-ComfyUI data source service URL.' },
-  [CLI_ENVIRONMENT_NAMES.sourcePort]: { description: 'Configured Harness-ComfyUI data source service port.' },
 })
 
 export interface CliExecutionIdentity {
@@ -24,8 +20,6 @@ export interface CliShellCapabilityStoreOptions {
   readonly cliPath: string
   readonly nodeExecutable: string
   readonly apiUrl: string
-  readonly semanticQueryCliPath: string
-  readonly sourceAddress: () => SourceAddress
   readonly createCapability?: () => string
 }
 
@@ -73,8 +67,6 @@ export class CliShellCapabilityStore {
     if (!nonEmpty(options.cliPath)) throw new TypeError('CLI path is required')
     if (!nonEmpty(options.nodeExecutable)) throw new TypeError('Host Node executable path is required')
     if (!nonEmpty(options.apiUrl)) throw new TypeError('CLI API URL is required')
-    if (!nonEmpty(options.semanticQueryCliPath)) throw new TypeError('Semantic query CLI path is required')
-    if (typeof options.sourceAddress !== 'function') throw new TypeError('Source address reader is required')
     this.options = options
     this.createCapability = options.createCapability ?? (() => randomBytes(32).toString('base64url'))
   }
@@ -109,15 +101,11 @@ export class CliShellCapabilityStore {
   }
 
   private environmentFor(capability: string): Readonly<Record<string, string>> {
-    const source = this.options.sourceAddress()
     return Object.freeze({
       [CLI_ENVIRONMENT_NAMES.executable]: this.options.cliPath,
       [CLI_ENVIRONMENT_NAMES.nodeExecutable]: this.options.nodeExecutable,
       [CLI_ENVIRONMENT_NAMES.api]: this.options.apiUrl,
       [CLI_ENVIRONMENT_NAMES.capability]: capability,
-      [CLI_ENVIRONMENT_NAMES.semanticQueryCli]: this.options.semanticQueryCliPath,
-      [CLI_ENVIRONMENT_NAMES.sourceUrl]: source.url,
-      [CLI_ENVIRONMENT_NAMES.sourcePort]: String(source.port),
     })
   }
 }

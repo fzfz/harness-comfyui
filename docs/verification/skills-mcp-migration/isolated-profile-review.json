@@ -1,0 +1,114 @@
+{
+  "purpose": "独立核对场景 Profile 驱动、安装脚本和会话驱动的配置与生命周期正确性。",
+  "status": "当前审查范围内未发现实质问题；6 项本地回归与 3 项语法检查通过。",
+  "scope": [
+    ".local/skills-mcp-migration-live/isolated-profile.mjs",
+    ".local/skills-mcp-migration-live/isolated-profile.test.mjs",
+    ".local/skills-mcp-migration-live/isolated-profile-cli.test.mjs",
+    ".local/skills-mcp-migration-live/install.mjs 的配置传递",
+    ".local/skills-mcp-migration-live/desktop-driver.mjs 的配置传递"
+  ],
+  "contracts": [
+    "docs/plans/skills-mcp-migration-20261013.md:1267",
+    "docs/verification/skills-mcp-migration/boundary-data-domain-design.json",
+    "docs/system/configuration.md",
+    "docs/agents/worktree-development.md"
+  ],
+  "findings": [],
+  "verified": [
+    {
+      "behavior": "prepare 为每次调用创建唯一 Harness home、user-data 与空外部 Workspace；选择性读取批准的 Profile 条目。",
+      "locations": [
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:37",
+        ".local/skills-mcp-migration-live/isolated-profile.test.mjs:10"
+      ],
+      "evidence": "相同场景两次准备的目录不同；配置仅覆盖 development.environmentRootRelativePath；源 runs.sqlite 和兄弟产物未进入新 Profile。"
+    },
+    {
+      "behavior": "MCP 与 HTTP 从同一 fixture state 派生，并核对运行状态、场景、回环协议、主机与端口。",
+      "locations": [
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:104"
+      ],
+      "evidence": "测试逐项断言两个预设的 MCP URL、Core configuration、保存的 fixtureRunId 与 sourceAddress。"
+    },
+    {
+      "behavior": "配置合并保留 Core 其他字段和观察器；移除夹具时恢复源地址基线。",
+      "locations": [
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:124"
+      ],
+      "evidence": "dataDirectory、browserExecutablePath、额外 configuration 字段、maxCalls、timeoutMs 均有断言；Core schema 在保存前执行。"
+    },
+    {
+      "behavior": "主模型、四角色与图片读取设置来自保存的批准模型选择并经观察器允许列表核对。",
+      "locations": [
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:99",
+        "tests/desktop/fixtures/official-preset-overrides.mjs:25"
+      ],
+      "evidence": "构图、生成、比较使用 opencode-go/deepseek-v4.1-flash，观察与图片读取使用 openrouter/thinkingmachines/inkling:free；本地测试核对角色 patch。"
+    },
+    {
+      "behavior": "生命周期使用每个 state 的官方配置并保留独立 runId，启动失败保存身份，停止复核进程与端口。",
+      "locations": [
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:79",
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:146",
+        ".local/skills-mcp-migration-live/isolated-profile.mjs:169",
+        "tests/desktop/fixtures/official-desktop-probe.mjs:692"
+      ],
+      "evidence": "本地测试拒绝错误 environmentRoot，验证准备状态、已退出进程停止及启动前身份失败后的端口释放。"
+    },
+    {
+      "behavior": "安装与会话 CLI 将可选场景配置传给官方身份和 CDP 校验；缺省配置保留原入口。",
+      "locations": [
+        ".local/skills-mcp-migration-live/install.mjs:7",
+        ".local/skills-mcp-migration-live/desktop-driver.mjs:6",
+        "tests/desktop/fixtures/renderer-cdp.mjs:94"
+      ],
+      "evidence": "两项 VM 回归在 CDP 连接前终止；官方连接逻辑继续校验 runId、配置目录、进程组与端口归属。"
+    }
+  ],
+  "validation": [
+    {
+      "command": "node --experimental-transform-types --test .local/skills-mcp-migration-live/isolated-profile.test.mjs",
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "command": "node --experimental-vm-modules --test .local/skills-mcp-migration-live/isolated-profile-cli.test.mjs",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "commands": [
+        "node --check .local/skills-mcp-migration-live/isolated-profile.mjs",
+        "node --check .local/skills-mcp-migration-live/install.mjs",
+        "node --check .local/skills-mcp-migration-live/desktop-driver.mjs"
+      ],
+      "status": "通过"
+    }
+  ],
+  "observed_records": [
+    {
+      "path": ".local/skills-mcp-migration-live/isolated-profiles/empty-instances-4591b808-48c2-4872-b84b-0d24d1cfed05/state.json",
+      "status": "stopped",
+      "runId": "007e9d92-fe16-4123-8d5b-a0c538f07d81",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      }
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/isolated-profiles/empty-instances-cee75443-bb9f-4665-bf45-2fd6b0ebb6f2/state.json",
+      "status": "stopped",
+      "runId": "dc22ecf0-bfd6-4490-b764-1c11687c0b1e",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      }
+    }
+  ],
+  "acceptance_limits": [
+    "记录读取时，两个已停止的 empty-instances state 尚无 configuration 记录；重启后的 Host 有效 sourceAddress、两预设 MCP 实际连接与子会话继承仍需消费路径采证。",
+    "本审查执行本地确定性测试并读取保存的状态，未启动 Desktop、调用模型、安装插件或重新观察实际进程。",
+    "6 项回归证明配置构造、配置传递和已覆盖的生命周期分支；原生生成入口、受管 CLI 负向链与 Agent 停止行为由后续验收分别判定。"
+  ]
+}

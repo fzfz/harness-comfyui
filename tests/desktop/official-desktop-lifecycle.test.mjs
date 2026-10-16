@@ -55,6 +55,10 @@ import {
   writeOfficialLifecycleEvidence,
 } from './fixtures/official-lifecycle-services.mjs'
 
+import { startOfficialMcpServices } from './fixtures/official-mcp-services.mjs'
+import { writeOfficialPresetProfilePatch } from './fixtures/official-preset-overrides.mjs'
+
+const activeMcpServices = new Set()
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const execFileAsync = promisify(execFile)
 const lifecycleRunGate = process.env[lifecycleFixtureJson.runGateEnvironmentName] === '1'
@@ -87,6 +91,10 @@ async function cleanupActiveDesktopRuns() {
     } catch (error) {
       cleanupErrors.push(error)
     }
+  }
+  for (const mcp of activeMcpServices) {
+    try { await mcp.close(); activeMcpServices.delete(mcp) }
+    catch (error) { cleanupErrors.push(error) }
   }
   if (cleanupErrors.length > 0) {
     const errors = cleanupErrors.splice(0)
@@ -152,6 +160,26 @@ liveDescribe('installed official Desktop A13 and A15 lifecycle regression', () =
       ))
     }
 
+    for (const [index, entry] of [left, right].entries()) {
+      await closeRunPage(pages[index])
+      await stopOwnedRun(initialRuns[index])
+      const profilePatch = await writeOfficialPresetProfilePatch({
+        profilePatchPath: join(initialRuns[index].record.directories.dshHome,
+          entry.config.paths.profileRelativePath, entry.config.paths.profilePatchFilename),
+        profilePatchAdapter: context.profileAdapter,
+        installedPackageRoot: dirname(installs[index].installedPackagePath),
+        mcpUrl: entry.mcp.url,
+      })
+      await writeFile(join(initialRuns[index].record.directories.evidence, 'official-lifecycle-mcp-profile.json'),
+        JSON.stringify({ installedPackageRoot: dirname(installs[index].installedPackagePath), profilePatch }, null, 2))
+      const configuredEntry = await restartRunContext(context, entry, entry.label)
+      initialRuns[index] = await startOwnedRun(configuredEntry)
+      initialStatuses[index] = await getProbeStatus({ runId: initialRuns[index].record.runId, repositoryRoot, config: initialRuns[index].config })
+      pages[index] = await connectRunPage(initialRuns[index])
+      await waitForMainRenderer(pages[index], context.fixture)
+    }
+    expect(left.mcp.url).not.toBe(right.mcp.url)
+    expect(left.mcp.token).not.toBe(right.mcp.token)
     const sessions = []
     for (const [index, page] of pages.entries()) {
       await acceptOfficialPluginNotice(page, context.fixture)
@@ -238,6 +266,18 @@ liveDescribe('installed official Desktop A13 and A15 lifecycle regression', () =
       const cleanup = item.cleanup ?? await readCleanup(item.run)
       return { ...item, run: { ...item.run, record: cleanup.record }, cleanup }
     }))
+    const mcpEnvironments = []
+    for (const [index, entry] of [left, right].entries()) {
+      expect(entry.mcp.requests.some(request => request.method === 'tools/list' && request.status === 200)).toBe(true)
+      expect(entry.mcp.requests.every(request => request.authenticationMatches)).toBe(true)
+      await entry.mcp.close()
+      await expect(fetch(entry.mcp.url)).rejects.toThrow()
+      mcpEnvironments.push({ label: entry.label, url: entry.mcp.url, session: sessions[index],
+        requests: entry.mcp.requests, portReleased: true })
+    }
+    await mkdir(join(context.supportRoot, 'evidence'), { recursive: true })
+    await writeFile(join(context.supportRoot, 'evidence/official-lifecycle-mcp.json'),
+      JSON.stringify({ environments: mcpEnvironments, independentCredentials: left.mcp.token !== right.mcp.token }, null, 2))
     const finalReport = createOfficialLifecycleEvidence({
       fixture: context.fixture,
       scenario: 'a13-parallel-instances',
@@ -405,8 +445,6 @@ async function createLifecycleContext() {
   const supportRoot = resolve(repositoryRoot, desktopConfig.paths.runRootRelativePath, fixture.paths.supportDirectoryName, fixtureId)
   await mkdir(supportRoot, { recursive: true, mode: 0o700 })
   const artifactRoot = join(supportRoot, fixture.paths.artifactsDirectoryName)
-  const environmentFilePath = join(supportRoot, fixture.paths.testEnvironmentFilename)
-  await writeLifecycleTestEnvironmentFile(environmentFilePath, fixture)
   const sourcePath = process.env[fixture.artifact.sourcePathEnvironmentName]
   if (typeof sourcePath !== 'string' || sourcePath.trim() === '') {
     throw new Error(`Set ${fixture.artifact.sourcePathEnvironmentName} to the fixed, prebuilt lifecycle candidate tarball path.`)
@@ -460,7 +498,6 @@ async function createLifecycleContext() {
     fixtureId,
     supportRoot,
     desktopConfig,
-    environmentFilePath,
     artifact,
     artifactEvidence: {
       packageName: candidateManifest.name,
@@ -486,20 +523,24 @@ async function createRunContext(context, label, previous = null) {
     : resolve(repositoryRoot, environmentRootRelativePath)
   const workspacePath = previous?.workspacePath
     ?? join(environmentRoot, context.desktopConfig.modes.development.directoryNames.workspace)
+  const mcp = previous?.mcp ?? await startOfficialMcpServices()
+  activeMcpServices.add(mcp)
+  const environmentFilePath = previous?.environmentFilePath ?? join(environmentRoot, context.fixture.paths.testEnvironmentFilename)
+  if (previous === null) await writeLifecycleTestEnvironmentFile(environmentFilePath, context.fixture, mcp)
   const config = createLifecycleDesktopConfig(context.desktopConfig, {
     fixture: context.fixture,
     fixtureId: context.fixtureId,
     runId,
     workspacePath,
-    environmentFilePath: context.environmentFilePath,
+    environmentFilePath,
     providers: context.providers,
   })
   if (environmentRootRelativePath !== undefined) {
     const reusedConfig = structuredClone(config)
     reusedConfig.modes.development.environmentRootRelativePath = environmentRootRelativePath
-  return { label, runId, config: parseDesktopE2EConfig(reusedConfig), workspacePath, lifecycleSignal: context.lifecycleSignal }
+  return { label, runId, config: parseDesktopE2EConfig(reusedConfig), workspacePath, mcp, environmentFilePath, lifecycleSignal: context.lifecycleSignal }
   }
-  return { label, runId, config, workspacePath, lifecycleSignal: context.lifecycleSignal }
+  return { label, runId, config, workspacePath, mcp, environmentFilePath, lifecycleSignal: context.lifecycleSignal }
 }
 
 async function restartRunContext(context, previous, label) {

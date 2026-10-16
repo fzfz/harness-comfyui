@@ -1,0 +1,3195 @@
+{
+  "schemaVersion": 1,
+  "verificationDate": "2026-10-13",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md",
+  "planSections": [
+    "5.4",
+    "5.9",
+    "7"
+  ],
+  "runId": "64ca19cf-15fa-421e-8400-de2c4aef89f6",
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
+    "bundleId": "com.deepseek.dsh",
+    "version": "0.2.0-rc.2"
+  },
+  "plugin": {
+    "name": "harness-comfyui",
+    "version": "0.45.0"
+  },
+  "allowedModel": {
+    "provider": "openrouter",
+    "model": "poolside/laguna-s-2.1:free"
+  },
+  "batchState": "已停止",
+  "batchReason": "首项发生18次上游429限流，DSH自动重试后完成会话；首项的角色ID调用、正向规避内容及最终回答仍不符合对应合同。后续三项保持未提交。",
+  "inputWording": {
+    "original": "只构建并保存 Builder JSON。",
+    "replacement": "请完成本 Skill 的提示词构建流程并保存最终结构化结果。",
+    "appliedCases": [
+      "5.4-2"
+    ],
+    "case54_5": "原输入没有待替换文字，保留原参数。"
+  },
+  "reviewedBy": "独立Krea2执行队员",
+  "reviewMethod": "队员逐条阅读DSH事件、实际模型请求与返回、MCP结果和最终产物，人工判定行为与语义要求。字符比较和JSON对象比较仅用于确定性的传递与结构核对。",
+  "cases": [
+    {
+      "caseId": "5.4-2",
+      "preset": "harness-comfyui-cli-candidate",
+      "executionState": "会话已完成",
+      "verdict": "未通过",
+      "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+      "workspaceId": "ce5ac978-c5e6-41c9-888a-aafc7075e8fd",
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-workbench",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "subSessionIds": [],
+      "eventRange": {
+        "first": 0,
+        "last": 199
+      },
+      "eventCount": 200,
+      "timeout": false,
+      "evidence": {
+        "input": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/task.json",
+        "submit": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/session.json",
+        "watch": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/watch.json",
+        "allDshEvents": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/collect.json",
+        "traceIndex": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/trace-index.json",
+        "deliveredToolComparison": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/delivered-tool-comparison.json",
+        "observedCharacterToolSchemas": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/observed-character-tool-schemas.json",
+        "observerCalls": [
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/9cb22c72-aaac-4aed-a377-d29a81f0f8b0.jsonl",
+            "requestAt": "2026-10-13T10:54:00.710Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 91,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:06.448Z",
+                "callId": "9cb22c72-aaac-4aed-a377-d29a81f0f8b0",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888840-kmmqnMhyfXbo2Y1XRWOR",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 5,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f5fedca2-6586-43ae-8ff3-9118a92b4ea9.jsonl",
+            "requestAt": "2026-10-13T10:54:00.713Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": "session-title",
+            "recordCount": 16,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:02.356Z",
+                "callId": "f5fedca2-6586-43ae-8ff3-9118a92b4ea9",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "stop"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888841-Na0p0k7SkznGpPeKwTsc",
+                      "stopReason": "stop"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 1
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/56f2685c-e716-4cfb-9dfe-33234fbaada1.jsonl",
+            "requestAt": "2026-10-13T10:54:06.502Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:07.043Z",
+                "callId": "56f2685c-e716-4cfb-9dfe-33234fbaada1",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 8,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/504de6f0-b837-4f61-8fef-9da3a0a0932d.jsonl",
+            "requestAt": "2026-10-13T10:54:07.572Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 113,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:13.172Z",
+                "callId": "504de6f0-b837-4f61-8fef-9da3a0a0932d",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888848-S8RIkMkmpFz9ltxmjPMH",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 8,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/6cb4727c-3d34-441a-98e7-385e2c85d193.jsonl",
+            "requestAt": "2026-10-13T10:54:13.223Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 141,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:18.858Z",
+                "callId": "6cb4727c-3d34-441a-98e7-385e2c85d193",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888853-AlivGX3mwRurgXFioXdL",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 10,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f3413dd9-c4be-4ae0-8ce4-d2e1f9806c25.jsonl",
+            "requestAt": "2026-10-13T10:54:18.926Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 51,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:27.585Z",
+                "callId": "f3413dd9-c4be-4ae0-8ce4-d2e1f9806c25",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888859-YvXXK46AeY2W0GRsCb6a",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 13,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/13e33a89-e3dd-4f71-9432-85437fed87a0.jsonl",
+            "requestAt": "2026-10-13T10:54:27.611Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:28.138Z",
+                "callId": "13e33a89-e3dd-4f71-9432-85437fed87a0",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 17,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/6a7e14d4-db7e-447b-9ff8-c5184fe7e50c.jsonl",
+            "requestAt": "2026-10-13T10:54:28.642Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 229,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:37.668Z",
+                "callId": "6a7e14d4-db7e-447b-9ff8-c5184fe7e50c",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888868-moREn4nuyLlzz7XJlJ10",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 17,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/c0cb6a4a-f421-4544-acbd-1c48f1a8dd80.jsonl",
+            "requestAt": "2026-10-13T10:54:37.755Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:38.511Z",
+                "callId": "c0cb6a4a-f421-4544-acbd-1c48f1a8dd80",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 21,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/c184b377-e4b2-4f72-bfd9-72f0d980a70b.jsonl",
+            "requestAt": "2026-10-13T10:54:39.002Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:39.939Z",
+                "callId": "c184b377-e4b2-4f72-bfd9-72f0d980a70b",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 21,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/a2076505-4f6e-4253-a7fb-f5674bb9fcb4.jsonl",
+            "requestAt": "2026-10-13T10:54:40.891Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:41.498Z",
+                "callId": "a2076505-4f6e-4253-a7fb-f5674bb9fcb4",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 21,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/fae09ed4-af72-4284-942f-affd19789e02.jsonl",
+            "requestAt": "2026-10-13T10:54:43.356Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 251,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:53.128Z",
+                "callId": "fae09ed4-af72-4284-942f-affd19789e02",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888883-J2S5ZchWyFLYvSPdeDfQ",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 21,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/1c339bd0-3e1e-4158-b371-1d37969838e3.jsonl",
+            "requestAt": "2026-10-13T10:54:53.209Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:53.834Z",
+                "callId": "1c339bd0-3e1e-4158-b371-1d37969838e3",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 25,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/48f8a6e0-6ca5-47c1-9158-9e7602c440c9.jsonl",
+            "requestAt": "2026-10-13T10:54:54.345Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:54.886Z",
+                "callId": "48f8a6e0-6ca5-47c1-9158-9e7602c440c9",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 25,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/cf2e3354-02bb-47b9-87cd-29f0087908be.jsonl",
+            "requestAt": "2026-10-13T10:54:55.803Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:54:56.321Z",
+                "callId": "cf2e3354-02bb-47b9-87cd-29f0087908be",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 25,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/2d53d1e7-e51c-4b6c-ac88-4ffc9e75d951.jsonl",
+            "requestAt": "2026-10-13T10:54:58.425Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 245,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:06.337Z",
+                "callId": "2d53d1e7-e51c-4b6c-ac88-4ffc9e75d951",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888898-qXenlXsLKHDvKDwe6Ku2",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 25,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/6c9f0153-b165-4a84-956d-22bf265c5e83.jsonl",
+            "requestAt": "2026-10-13T10:55:06.418Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 231,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:13.831Z",
+                "callId": "6c9f0153-b165-4a84-956d-22bf265c5e83",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888906-H5ZvFeIW33Mynrcv7cZX",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 29,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/2fbdecb1-5dee-41eb-87b3-22aa6feaa7ec.jsonl",
+            "requestAt": "2026-10-13T10:55:14.175Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 83,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:18.408Z",
+                "callId": "2fbdecb1-5dee-41eb-87b3-22aa6feaa7ec",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888914-Ttm4tRS9TQF57GZERQOU",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 32,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/7fd135a0-0873-4239-9586-9e1a1cddf457.jsonl",
+            "requestAt": "2026-10-13T10:55:18.452Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 165,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:24.014Z",
+                "callId": "7fd135a0-0873-4239-9586-9e1a1cddf457",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888918-98JwWnSsd2uefWgMWroS",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 34,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/bf2fcc95-fc70-4d08-8e4d-a3dd8c407399.jsonl",
+            "requestAt": "2026-10-13T10:55:24.044Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:24.714Z",
+                "callId": "bf2fcc95-fc70-4d08-8e4d-a3dd8c407399",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 36,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/6c996234-8d8d-49ed-9bcb-8dc2f048ab08.jsonl",
+            "requestAt": "2026-10-13T10:55:25.206Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 58,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:29.381Z",
+                "callId": "6c996234-8d8d-49ed-9bcb-8dc2f048ab08",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888925-GC9RfMvnob4ElmqR9YE2",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 36,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/9480d300-d36d-428f-b671-36d9f04c0a6b.jsonl",
+            "requestAt": "2026-10-13T10:55:29.405Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 241,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:36.736Z",
+                "callId": "9480d300-d36d-428f-b671-36d9f04c0a6b",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888929-csJicFGtx2chDrIKRyA5",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 38,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f546847e-83a3-4c72-9fbf-4e1a24b5c4dd.jsonl",
+            "requestAt": "2026-10-13T10:55:39.170Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:39.704Z",
+                "callId": "f546847e-83a3-4c72-9fbf-4e1a24b5c4dd",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 40,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/3a4a1e15-e87e-411c-baac-2144124f7843.jsonl",
+            "requestAt": "2026-10-13T10:55:40.228Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 465,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:55:58.955Z",
+                "callId": "3a4a1e15-e87e-411c-baac-2144124f7843",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888940-jrKCO3VhWOWUsdeCqHdT",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 40,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/7c261704-2aaa-43ce-b1bc-c86df9cdadc9.jsonl",
+            "requestAt": "2026-10-13T10:55:58.983Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 1216,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:56:28.287Z",
+                "callId": "7c261704-2aaa-43ce-b1bc-c86df9cdadc9",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888959-qphJu03SMOPv1Nvk0ZXK",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 43,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/385a4d77-664a-4746-8952-85d82471053c.jsonl",
+            "requestAt": "2026-10-13T10:56:28.324Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:56:29.203Z",
+                "callId": "385a4d77-664a-4746-8952-85d82471053c",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 45,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/81211f06-0be2-42ea-95ac-51407bd8ab6c.jsonl",
+            "requestAt": "2026-10-13T10:56:29.709Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:56:30.259Z",
+                "callId": "81211f06-0be2-42ea-95ac-51407bd8ab6c",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 45,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/41a89560-8623-474d-9a05-3f356be65d32.jsonl",
+            "requestAt": "2026-10-13T10:56:31.355Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 871,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:56:47.501Z",
+                "callId": "41a89560-8623-474d-9a05-3f356be65d32",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791888991-nzF3MhjgpHRlhjxAHVnB",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 45,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f12f39ef-b309-4c00-92bd-e2733027bc59.jsonl",
+            "requestAt": "2026-10-13T10:56:47.553Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 184,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:56:54.532Z",
+                "callId": "f12f39ef-b309-4c00-92bd-e2733027bc59",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791889007-GFTzyyit3Ir44SkU8bHJ",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 47,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/b7d026c6-f665-46a8-ba78-595dba6d7c17.jsonl",
+            "requestAt": "2026-10-13T10:56:54.602Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 456,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:04.136Z",
+                "callId": "b7d026c6-f665-46a8-ba78-595dba6d7c17",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791889014-jgckQ3HvN6ZVZ3m2YnOu",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 49,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/941c5aa3-95f7-4386-8b8b-57f0568b5b21.jsonl",
+            "requestAt": "2026-10-13T10:57:04.280Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 267,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:13.989Z",
+                "callId": "941c5aa3-95f7-4386-8b8b-57f0568b5b21",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791889024-MDyCFBZgWMdvMD0JgWBc",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 51,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/dd374031-ac04-4db8-8be0-ddd5811a65c2.jsonl",
+            "requestAt": "2026-10-13T10:57:14.034Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:14.562Z",
+                "callId": "dd374031-ac04-4db8-8be0-ddd5811a65c2",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 53,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/7b8ec110-5747-4e01-ac3e-0c2cbb7c86bc.jsonl",
+            "requestAt": "2026-10-13T10:57:15.031Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 395,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:24.094Z",
+                "callId": "7b8ec110-5747-4e01-ac3e-0c2cbb7c86bc",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791889035-6pqas2BUcL8VUwCFjYJu",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 53,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/2401fa8d-c381-4a70-bc56-dc08e41ee837.jsonl",
+            "requestAt": "2026-10-13T10:57:24.133Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:24.874Z",
+                "callId": "2401fa8d-c381-4a70-bc56-dc08e41ee837",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 55,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/42da5805-5ee6-4cc0-b5d0-e62342e34c47.jsonl",
+            "requestAt": "2026-10-13T10:57:25.428Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 234,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:32.283Z",
+                "callId": "42da5805-5ee6-4cc0-b5d0-e62342e34c47",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791889045-NHoIUrVkAwWHf30dIkxC",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 55,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/3e4a435c-0c28-4975-a1b9-a851a0c8d8de.jsonl",
+            "requestAt": "2026-10-13T10:57:32.426Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:33.037Z",
+                "callId": "3e4a435c-0c28-4975-a1b9-a851a0c8d8de",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 57,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/ff7da9df-af1c-4c35-8813-8f512757a4e0.jsonl",
+            "requestAt": "2026-10-13T10:57:33.565Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:34.291Z",
+                "callId": "ff7da9df-af1c-4c35-8813-8f512757a4e0",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 57,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f788a0ce-a1cc-48f9-86ee-11109cfa4d6c.jsonl",
+            "requestAt": "2026-10-13T10:57:35.253Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:36.134Z",
+                "callId": "f788a0ce-a1cc-48f9-86ee-11109cfa4d6c",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 57,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/07901b8a-e08d-44ae-8ebe-f3b14e5f6e48.jsonl",
+            "requestAt": "2026-10-13T10:57:38.008Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 4,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:57:38.500Z",
+                "callId": "07901b8a-e08d-44ae-8ebe-f3b14e5f6e48",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "error",
+                    "failure": {
+                      "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+                      "code": "RATE_LIMIT"
+                    }
+                  }
+                }
+              }
+            ],
+            "messageCount": 57,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/a2cd35aa-27ea-440f-80d4-3bc702f85e9e.jsonl",
+            "requestAt": "2026-10-13T10:57:42.609Z",
+            "provider": "openrouter",
+            "model": "poolside/laguna-s-2.1:free",
+            "sessionId": "session-702d5a58-4c75-4a46-a064-5000d6bdb8dc",
+            "purpose": null,
+            "recordCount": 1008,
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:58:00.098Z",
+                "callId": "a2cd35aa-27ea-440f-80d4-3bc702f85e9e",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "stop"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "poolside/laguna-s-2.1:free",
+                      "responseId": "gen-1791889063-IAqDVFWIgCPvVnMtmfJg",
+                      "stopReason": "stop"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 57,
+            "toolNames": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          }
+        ]
+      },
+      "checks": [
+        {
+          "expected": "官方Desktop创建全新Session，选择工作台预设及指定模型，并只接收既定初始输入。",
+          "actual": "新Workspace起初为空；seq3保存指定模型，projection保存工作台预设。会话仅有一轮初始任务输入。",
+          "eventSeqs": [
+            3,
+            5,
+            9,
+            21,
+            22,
+            199
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员完整读取Krea2 Skill和所需参考文件。",
+          "actual": "seq19/20加载Skill。seq41/43/45误用不存在的read工具，随后自行改用Bash；seq53至58取得输入合同、Prompt规则和生成结果合同，seq71至74取得schema及profiles，seq89/90取得动漫画风资料。",
+          "eventSeqs": [
+            19,
+            20,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            71,
+            72,
+            73,
+            74,
+            89,
+            90
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "Character Prompt为空时，执行队员优先使用已有角色ID 39934，按照实际工具声明提交合法字符串ID并取得对应记录。",
+          "actual": "seq100和118均提交数字id=39934，seq101/119明确返回id必须为string；执行队员未改为字符串ID。seq105错误地用get_catalog_resource的character kind，seq106拒绝。seq123最终改为名称search，seq124返回唯一角色39934及非空Prompt。",
+          "eventSeqs": [
+            100,
+            101,
+            105,
+            106,
+            118,
+            119,
+            123,
+            124
+          ],
+          "verdict": "未通过"
+        },
+        {
+          "expected": "执行队员从已采用的MCP角色Prompt取得外观，并保留当前用户要求。",
+          "actual": "seq124返回Ani_(Grok)、blonde hair、twintails、long hair、blue eyes；已保存结果包含Ani、长金色双马尾、蓝眼睛、单人站立半身像、白衬衫和窗边柔光。",
+          "eventSeqs": [
+            124,
+            172,
+            173
+          ],
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-workbench/5.4-2/krea2-anime-prompt-result.json",
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员确认精确krea2底模，并在自动画师无结果时采用Krea2默认设计。",
+          "actual": "seq98/99返回唯一名称krea2、ID3；seq131和133用该底模筛选styles及artist_prompt_strings，seq132/134均为空。已保存Prompt采用clean lineart、cel shading和soft daylight。",
+          "eventSeqs": [
+            98,
+            99,
+            131,
+            132,
+            133,
+            134,
+            172,
+            173
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员把positive_avoidance记录的正向约束实际写入positive_prompt。",
+          "actual": "产物positive_avoidance记录“two clear hands with five separated fingers each”，positive_prompt没有描述手部、两只手或每只手五指。waist up framing虽对应半身取景，不能补足缺失的手部约束。结构校验成功未覆盖该语义要求。",
+          "eventSeqs": [
+            159,
+            160,
+            172,
+            173,
+            180,
+            181
+          ],
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-workbench/5.4-2/krea2-anime-prompt-result.json",
+          "verdict": "未通过"
+        },
+        {
+          "expected": "执行队员按生成结果合同构造对象，调用现有校验器，并将成功对象保存到要求的目录。",
+          "actual": "seq159运行官方Electron下的validate-output.mjs --quiet，seq160返回一行JSON；seq172/173写入5.4-2/krea2-anime-prompt-result.json。seq180再验收保存文件，seq181显示exit_code=0。两份校验器输出对象与保存文件相同。",
+          "eventSeqs": [
+            159,
+            160,
+            172,
+            173,
+            180,
+            181
+          ],
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-workbench/5.4-2/krea2-anime-prompt-result.json",
+          "validatorOutputObjectEqual": true,
+          "revalidatorOutputObjectEqual": true,
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员最终只返回通过校验的结构化结果，并准确描述已执行调用。",
+          "actual": "seq196最终回答包含流程报告、候选分析、生成建议和JSON，超出最终结构化结果合同；其中“Character record resolved by ID 39934”与实际成功的名称search调用不符。",
+          "eventSeqs": [
+            100,
+            101,
+            118,
+            119,
+            123,
+            124,
+            196
+          ],
+          "verdict": "未通过"
+        },
+        {
+          "expected": "每条实际模型调用均使用获准Provider与模型。",
+          "actual": "40个观察器请求均为openrouter/poolside/laguna-s-2.1:free，包含39次Agent尝试和1次session-title调用；其中18次返回RATE_LIMIT并由DSH自动重试。",
+          "allRecordedCallsMatch": true,
+          "eventSeqs": [
+            3,
+            199
+          ],
+          "verdict": "通过"
+        }
+      ],
+      "failures": [
+        {
+          "kind": "角色ID请求参数错误",
+          "eventSeqs": [
+            100,
+            101,
+            118,
+            119
+          ],
+          "actualIdType": "number",
+          "declaredIdType": "string",
+          "successfulFallback": {
+            "callSeq": 123,
+            "resultSeq": 124,
+            "mode": "search",
+            "query": "Ani Grok Companion"
+          }
+        },
+        {
+          "kind": "正向规避内容未实际并入Prompt",
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-workbench/5.4-2/krea2-anime-prompt-result.json",
+          "missingContent": "two clear hands with five separated fingers each",
+          "eventSeqs": [
+            172,
+            173,
+            180,
+            181
+          ]
+        },
+        {
+          "kind": "最终回答超出结构化结果并误述目录入口",
+          "eventSeq": 196,
+          "misstatement": "Character record resolved by ID 39934",
+          "observedSuccessfulMode": "search"
+        }
+      ],
+      "artifact": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-workbench/5.4-2/krea2-anime-prompt-result.json",
+        "copiedPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/artifacts/krea2-anime-prompt-result.json",
+        "result": {
+          "model_route": "krea2-turbo",
+          "positive_prompt": "anime illustration with clean lineart and cel shading, illuminated by soft daylight, (masterpiece:1.2), (best quality:1.2), high resolution, ultra-detailed, a half body portrait of 1girl Ani with long blonde twintails and blue eyes, wearing a white shirt, standing by a window with warm gentle natural light filtering through, face gently lit with a soft glow, simple indoor room background with warm daylight, waist up framing, facing the viewer with a calm expression",
+          "negative_mode": "positive_rewrite",
+          "negative_prompt": null,
+          "positive_avoidance": "two clear hands with five separated fingers each, the upper body from head to waist is fully visible",
+          "generation_purpose": "final",
+          "aspect_ratio": "2:3",
+          "width": 1152,
+          "height": 1728,
+          "megapixels": 1.990656
+        },
+        "validatorOutputObjectEqual": true,
+        "revalidatorOutputObjectEqual": true,
+        "revalidatorExitLine": "exit_code=0"
+      },
+      "validator": {
+        "callEventSeqs": [
+          159,
+          180
+        ],
+        "resultEventSeqs": [
+          160,
+          181
+        ],
+        "explicitExitCode": 0,
+        "exitCodeEvidenceEventSeq": 181,
+        "separateStdoutStderrFieldsPreserved": false,
+        "stdoutObservation": "Tool result保留一行JSON；复验随后输出exit_code=0。"
+      },
+      "rateLimit": {
+        "responses": 18,
+        "scope": "upstream_provider_shared_pool",
+        "providerMetadataName": "Poolside",
+        "eventSeqs": [
+          25,
+          49,
+          61,
+          64,
+          67,
+          79,
+          82,
+          85,
+          114,
+          127,
+          142,
+          145,
+          168,
+          176,
+          184,
+          187,
+          190,
+          193
+        ],
+        "observerFiles": [
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/56f2685c-e716-4cfb-9dfe-33234fbaada1.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/13e33a89-e3dd-4f71-9432-85437fed87a0.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/c0cb6a4a-f421-4544-acbd-1c48f1a8dd80.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/c184b377-e4b2-4f72-bfd9-72f0d980a70b.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/a2076505-4f6e-4253-a7fb-f5674bb9fcb4.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/1c339bd0-3e1e-4158-b371-1d37969838e3.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/48f8a6e0-6ca5-47c1-9158-9e7602c440c9.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/cf2e3354-02bb-47b9-87cd-29f0087908be.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/bf2fcc95-fc70-4d08-8e4d-a3dd8c407399.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f546847e-83a3-4c72-9fbf-4e1a24b5c4dd.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/385a4d77-664a-4746-8952-85d82471053c.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/81211f06-0be2-42ea-95ac-51407bd8ab6c.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/dd374031-ac04-4db8-8be0-ddd5811a65c2.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/2401fa8d-c381-4a70-bc56-dc08e41ee837.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/3e4a435c-0c28-4975-a1b9-a851a0c8d8de.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/ff7da9df-af1c-4c35-8813-8f512757a4e0.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/f788a0ce-a1cc-48f9-86ee-11109cfa4d6c.jsonl",
+          ".local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-workbench/llm-calls/07901b8a-e08d-44ae-8ebe-f3b14e5f6e48.jsonl"
+        ]
+      },
+      "workflowTruncation": {
+        "state": "本项没有Workflow MCP调用",
+        "comparedToolResults": 32,
+        "allComparedTextsEqual": true,
+        "comparisons": [
+          {
+            "eventSeq": 20,
+            "callId": "chatcmpl-tool-a572b16a2900469d9d2d7445575164f9",
+            "nextRequestFile": "56f2685c-e716-4cfb-9dfe-33234fbaada1.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:06.502Z",
+            "durableTextCharacters": 5688,
+            "llmInputTextCharacters": 5688,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 22,
+            "callId": "chatcmpl-tool-2c28c58bfb874c50b979e3aad2b8c798",
+            "nextRequestFile": "56f2685c-e716-4cfb-9dfe-33234fbaada1.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:06.502Z",
+            "durableTextCharacters": 277,
+            "llmInputTextCharacters": 277,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 30,
+            "callId": "chatcmpl-tool-2c4549a85c3e4a44a6bb372d8cbc9ecf",
+            "nextRequestFile": "6cb4727c-3d34-441a-98e7-385e2c85d193.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:13.223Z",
+            "durableTextCharacters": 331,
+            "llmInputTextCharacters": 331,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 35,
+            "callId": "chatcmpl-tool-b171ec2b8f7e41a0ac280e2f72167aea",
+            "nextRequestFile": "f3413dd9-c4be-4ae0-8ce4-d2e1f9806c25.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:18.926Z",
+            "durableTextCharacters": 742,
+            "llmInputTextCharacters": 742,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 37,
+            "callId": "chatcmpl-tool-9427ce4044b94897809ca8e89ed6fb17",
+            "nextRequestFile": "f3413dd9-c4be-4ae0-8ce4-d2e1f9806c25.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:18.926Z",
+            "durableTextCharacters": 351,
+            "llmInputTextCharacters": 351,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 42,
+            "callId": "chatcmpl-tool-d4af33981c12418892ac8b6fd52c1d67",
+            "nextRequestFile": "13e33a89-e3dd-4f71-9432-85437fed87a0.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:27.611Z",
+            "durableTextCharacters": 26,
+            "llmInputTextCharacters": 26,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 44,
+            "callId": "chatcmpl-tool-8a1f6e79b9eb4a07b9f784b2a4441846",
+            "nextRequestFile": "13e33a89-e3dd-4f71-9432-85437fed87a0.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:27.611Z",
+            "durableTextCharacters": 26,
+            "llmInputTextCharacters": 26,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 46,
+            "callId": "chatcmpl-tool-deb23f78ad5247b5b80a902e6e8cbc19",
+            "nextRequestFile": "13e33a89-e3dd-4f71-9432-85437fed87a0.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:27.611Z",
+            "durableTextCharacters": 26,
+            "llmInputTextCharacters": 26,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 54,
+            "callId": "chatcmpl-tool-9aaa869233d641188a2fb58995b0fdd4",
+            "nextRequestFile": "c0cb6a4a-f421-4544-acbd-1c48f1a8dd80.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:37.755Z",
+            "durableTextCharacters": 2688,
+            "llmInputTextCharacters": 2688,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 56,
+            "callId": "chatcmpl-tool-25f7a7c3202449f6a26aa22ed8da4255",
+            "nextRequestFile": "c0cb6a4a-f421-4544-acbd-1c48f1a8dd80.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:37.755Z",
+            "durableTextCharacters": 2404,
+            "llmInputTextCharacters": 2404,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 58,
+            "callId": "chatcmpl-tool-3fa1356e279a4d608f6414923a9adf51",
+            "nextRequestFile": "c0cb6a4a-f421-4544-acbd-1c48f1a8dd80.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:37.755Z",
+            "durableTextCharacters": 3703,
+            "llmInputTextCharacters": 3703,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 72,
+            "callId": "chatcmpl-tool-ba87f54567f1496ab4859733e54ae5a0",
+            "nextRequestFile": "1c339bd0-3e1e-4158-b371-1d37969838e3.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:53.209Z",
+            "durableTextCharacters": 1012,
+            "llmInputTextCharacters": 1012,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 74,
+            "callId": "chatcmpl-tool-e4ffeebc55ca4617adf451eea7e13b55",
+            "nextRequestFile": "1c339bd0-3e1e-4158-b371-1d37969838e3.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:53.209Z",
+            "durableTextCharacters": 1674,
+            "llmInputTextCharacters": 1674,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 76,
+            "callId": "chatcmpl-tool-028f9df34701437aa516882755b005a1",
+            "nextRequestFile": "1c339bd0-3e1e-4158-b371-1d37969838e3.jsonl",
+            "nextRequestAt": "2026-10-13T10:54:53.209Z",
+            "durableTextCharacters": 6097,
+            "llmInputTextCharacters": 6097,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 90,
+            "callId": "chatcmpl-tool-83a5b23ae6744a5394725cab4a118ab2",
+            "nextRequestFile": "6c9f0153-b165-4a84-956d-22bf265c5e83.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:06.418Z",
+            "durableTextCharacters": 1969,
+            "llmInputTextCharacters": 1969,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 92,
+            "callId": "chatcmpl-tool-8a28bcb51d4b4bb1afacec39672c9f9f",
+            "nextRequestFile": "6c9f0153-b165-4a84-956d-22bf265c5e83.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:06.418Z",
+            "durableTextCharacters": 1897,
+            "llmInputTextCharacters": 1897,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 94,
+            "callId": "chatcmpl-tool-8a8e3be12c1842cfb4071896645df466",
+            "nextRequestFile": "6c9f0153-b165-4a84-956d-22bf265c5e83.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:06.418Z",
+            "durableTextCharacters": 67,
+            "llmInputTextCharacters": 67,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 99,
+            "callId": "chatcmpl-tool-fa487b2fd33f4d19aed0c0e3a69d4df5",
+            "nextRequestFile": "2fbdecb1-5dee-41eb-87b3-22aa6feaa7ec.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:14.175Z",
+            "durableTextCharacters": 79,
+            "llmInputTextCharacters": 79,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 101,
+            "callId": "chatcmpl-tool-13435a0e9dda4b169b1e4bc28080d9bd",
+            "nextRequestFile": "2fbdecb1-5dee-41eb-87b3-22aa6feaa7ec.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:14.175Z",
+            "durableTextCharacters": 330,
+            "llmInputTextCharacters": 330,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 106,
+            "callId": "chatcmpl-tool-cba8e8e1f2f84751871352f03e41dae6",
+            "nextRequestFile": "7fd135a0-0873-4239-9586-9e1a1cddf457.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:18.452Z",
+            "durableTextCharacters": 195,
+            "llmInputTextCharacters": 195,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 111,
+            "callId": "chatcmpl-tool-3fba7bbc222d48e29b2e925db85edb64",
+            "nextRequestFile": "bf2fcc95-fc70-4d08-8e4d-a3dd8c407399.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:24.044Z",
+            "durableTextCharacters": 53,
+            "llmInputTextCharacters": 53,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 119,
+            "callId": "chatcmpl-tool-f15ea31c9f2c4b5491514cce6121ca9a",
+            "nextRequestFile": "9480d300-d36d-428f-b671-36d9f04c0a6b.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:29.405Z",
+            "durableTextCharacters": 330,
+            "llmInputTextCharacters": 330,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 124,
+            "callId": "chatcmpl-tool-53cca9f2860b44f8983b5325c268c199",
+            "nextRequestFile": "f546847e-83a3-4c72-9fbf-4e1a24b5c4dd.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:39.170Z",
+            "durableTextCharacters": 373,
+            "llmInputTextCharacters": 373,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 132,
+            "callId": "chatcmpl-tool-8838d22c41374cfba74c0d22a500ccea",
+            "nextRequestFile": "7c261704-2aaa-43ce-b1bc-c86df9cdadc9.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:58.983Z",
+            "durableTextCharacters": 53,
+            "llmInputTextCharacters": 53,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 134,
+            "callId": "chatcmpl-tool-80e66ae0719e4196bf70fa5bca4dbabe",
+            "nextRequestFile": "7c261704-2aaa-43ce-b1bc-c86df9cdadc9.jsonl",
+            "nextRequestAt": "2026-10-13T10:55:58.983Z",
+            "durableTextCharacters": 53,
+            "llmInputTextCharacters": 53,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 139,
+            "callId": "chatcmpl-tool-953b87657e504386b12ea29ba55d5a1b",
+            "nextRequestFile": "385a4d77-664a-4746-8952-85d82471053c.jsonl",
+            "nextRequestAt": "2026-10-13T10:56:28.324Z",
+            "durableTextCharacters": 513,
+            "llmInputTextCharacters": 513,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 150,
+            "callId": "chatcmpl-tool-1d3bf971902e4d8884d1d57747fa2802",
+            "nextRequestFile": "f12f39ef-b309-4c00-92bd-e2733027bc59.jsonl",
+            "nextRequestAt": "2026-10-13T10:56:47.553Z",
+            "durableTextCharacters": 328,
+            "llmInputTextCharacters": 328,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 155,
+            "callId": "chatcmpl-tool-3d8017643a54437a8cebf5cbb14368f3",
+            "nextRequestFile": "b7d026c6-f665-46a8-ba78-595dba6d7c17.jsonl",
+            "nextRequestAt": "2026-10-13T10:56:54.602Z",
+            "durableTextCharacters": 34,
+            "llmInputTextCharacters": 34,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 160,
+            "callId": "chatcmpl-tool-9d73cf59eea1467ca484663909bd97fc",
+            "nextRequestFile": "941c5aa3-95f7-4386-8b8b-57f0568b5b21.jsonl",
+            "nextRequestAt": "2026-10-13T10:57:04.280Z",
+            "durableTextCharacters": 801,
+            "llmInputTextCharacters": 801,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 165,
+            "callId": "chatcmpl-tool-9682ca66031d4d0d97b76ef9d8efcb37",
+            "nextRequestFile": "dd374031-ac04-4db8-8be0-ddd5811a65c2.jsonl",
+            "nextRequestAt": "2026-10-13T10:57:14.034Z",
+            "durableTextCharacters": 99,
+            "llmInputTextCharacters": 99,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 173,
+            "callId": "chatcmpl-tool-23cb51e1e48c4109b68dd08e07e0d76a",
+            "nextRequestFile": "2401fa8d-c381-4a70-bc56-dc08e41ee837.jsonl",
+            "nextRequestAt": "2026-10-13T10:57:24.133Z",
+            "durableTextCharacters": 1037,
+            "llmInputTextCharacters": 1037,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 181,
+            "callId": "chatcmpl-tool-3068dafcc6774f3695a14573a87ff2a6",
+            "nextRequestFile": "3e4a435c-0c28-4975-a1b9-a851a0c8d8de.jsonl",
+            "nextRequestAt": "2026-10-13T10:57:32.426Z",
+            "durableTextCharacters": 813,
+            "llmInputTextCharacters": 813,
+            "textEqual": true,
+            "firstDifference": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "5.4-2",
+      "preset": "harness-comfyui-iteration",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-2-iteration",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-2-iteration/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项发生限流并出现明确执行缺陷，后续提交保持停止。"
+    },
+    {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-cli-candidate",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-5-workbench",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-5-workbench/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项发生限流并出现明确执行缺陷，后续提交保持停止。"
+    },
+    {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-iteration",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-laguna-64ca19cf-5.4-5-iteration",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/laguna-64ca19cf/5.4-5-iteration/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项发生限流并出现明确执行缺陷，后续提交保持停止。"
+    }
+  ],
+  "modelCallSummary": {
+    "agentAttempts": 39,
+    "titleCalls": 1,
+    "totalCalls": 40,
+    "rateLimitResponses": 18,
+    "unapprovedModelCalls": 0
+  },
+  "openItems": [
+    "5.4-2工作台：使用干净Session复验合法字符串ID读取、正向约束实际采用及仅结构化结果交付。",
+    "5.4-2迭代：完成首次独立Session验收。",
+    "5.4-5工作台：完成首次独立Session验收。",
+    "5.4-5迭代：完成首次独立Session验收。"
+  ],
+  "changes": {
+    "productEdited": false,
+    "skillEdited": false,
+    "profileEdited": false,
+    "desktopStartedByThisWorker": false,
+    "desktopStoppedByThisWorker": false,
+    "additionalDshMessagesSent": 0
+  }
+}

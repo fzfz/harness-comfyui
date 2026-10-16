@@ -1,0 +1,300 @@
+{
+  "purpose": "独立复核受控 Provider 在官方 Desktop 中的交接证据与本轮驱动。",
+  "recordedAt": "2026-10-14T10:17:06.607552+00:00",
+  "overallVerdict": "fail",
+  "verdictExplanation": "已采集运行的交接行为通过独立复核；驱动缺少关键验收断言，尚不能作为自动验收门禁。真实模型业务语义、标准官方 Preset 的实际运行与 PTC 取消冷续派超出本轮已验证范围。",
+  "controlledRuntimeVerdict": "pass",
+  "driverAcceptanceVerdict": "fail",
+  "realModelBusinessSemanticVerdict": "not_tested",
+  "findings": [
+    {
+      "id": "C1",
+      "priority": "P2",
+      "title": "驱动会将交接结果错误的正常结束回合计为成功",
+      "locations": [
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:166",
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:175",
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:295",
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs"
+      ],
+      "facts": "RESUME 等待条件只确认出现同 callId 的 tool 消息；finish 只等待 turn/end 并保存历史。run 的退出状态只读取 failures 和 Profile 恢复标志。驱动没有断言 list_agents 包含原 child、CONTINUE 成功并创建同 child 的新 Activation、子结束早于工具结果，或 DENY 确实拒绝。八个本地测试均通过，但均未覆盖这些结果判定。",
+      "counterexample": "按现有控制流，CONTINUE 返回 isError 工具消息后仍产生 turn/end，finish 会保存结果并继续 DENY；如 DENY 意外成功，finish 同样正常返回。上述路径没有设置 failures，run 可退出 0。该反例由条件与返回路径直接推出，未修改产品或启动额外运行。",
+      "impact": "后续交接或工具隔离回归可能通过此驱动的退出码。当前样本的原始事件仍支持其已发生的正确结果。",
+      "recommendation": "在结果采集后按实际请求、主子历史和 Activation ID 统一判定全部受控合同；为错误 CONTINUE、空 roster、错误完成顺序及旁路成功增加定向反例测试。"
+    }
+  ],
+  "checks": [
+    {
+      "case": "native-workbench",
+      "verdict": "pass",
+      "parentSessionId": "session-b13b4af7-e72a-4b2d-8c4a-a84db80bc4b8",
+      "childSessionId": "fe6e0fdf-9bfb-4863-8936-68f9af8caa20",
+      "starts": [
+        {
+          "line": 25,
+          "activationId": "020a97b4-8f2d-4d9b-871c-7bc74e2b796e"
+        },
+        {
+          "line": 141,
+          "activationId": "e210025d-5f57-4e1c-9ac8-017560ca143c"
+        }
+      ],
+      "endLines": [
+        63,
+        152
+      ],
+      "toolResults": [
+        {
+          "line": 38,
+          "callId": "controlled_native-workbench_PARENT",
+          "isError": true
+        },
+        {
+          "line": 51,
+          "callId": "controlled_native-workbench_RESUME",
+          "isError": false
+        },
+        {
+          "line": 153,
+          "callId": "controlled_native-workbench_CONTINUE",
+          "isError": false
+        },
+        {
+          "line": 170,
+          "callId": "controlled_native-workbench_DENY",
+          "isError": true
+        }
+      ],
+      "eventsFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/runtime-events/events.jsonl",
+      "historyFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/native-workbench-DENY.json",
+      "historyPointers": [
+        "/parentHistory/records",
+        "/childHistory/records",
+        "/CONTINUEChildHistory/records"
+      ],
+      "scope": "native：取消、身份持久化、list_agents、冷续派、拒绝旁路。PTC：首次派发完成、拒绝旁路。"
+    },
+    {
+      "case": "native-iteration",
+      "verdict": "pass",
+      "parentSessionId": "session-348c190a-ea12-42ef-b09a-310c9c2b1fe8",
+      "childSessionId": "30a0345a-6c6b-4d76-851e-a90809afed4a",
+      "starts": [
+        {
+          "line": 88,
+          "activationId": "4e8dd7a9-f332-4301-8cf8-00b4d4097860"
+        },
+        {
+          "line": 184,
+          "activationId": "911d6d6d-c6d6-491e-8615-b3dea84cd32c"
+        }
+      ],
+      "endLines": [
+        126,
+        195
+      ],
+      "toolResults": [
+        {
+          "line": 101,
+          "callId": "controlled_native-iteration_PARENT",
+          "isError": true
+        },
+        {
+          "line": 114,
+          "callId": "controlled_native-iteration_RESUME",
+          "isError": false
+        },
+        {
+          "line": 196,
+          "callId": "controlled_native-iteration_CONTINUE",
+          "isError": false
+        },
+        {
+          "line": 213,
+          "callId": "controlled_native-iteration_DENY",
+          "isError": true
+        }
+      ],
+      "eventsFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/runtime-events/events.jsonl",
+      "historyFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/native-iteration-DENY.json",
+      "historyPointers": [
+        "/parentHistory/records",
+        "/childHistory/records",
+        "/CONTINUEChildHistory/records"
+      ],
+      "scope": "native：取消、身份持久化、list_agents、冷续派、拒绝旁路。PTC：首次派发完成、拒绝旁路。"
+    },
+    {
+      "case": "ptc-workbench",
+      "verdict": "pass",
+      "parentSessionId": "session-30e8fc23-c504-45c0-afd1-a69c5f110726",
+      "childSessionId": "6a99a827-8859-4000-8d9f-df5068e49c6e",
+      "starts": [
+        {
+          "line": 240,
+          "activationId": "a987e0ff-7aec-4101-a12e-708be7a56357"
+        }
+      ],
+      "endLines": [
+        257
+      ],
+      "toolResults": [
+        {
+          "line": 259,
+          "callId": "controlled_ptc-workbench_PARENT",
+          "isError": false
+        },
+        {
+          "line": 276,
+          "callId": "controlled_ptc-workbench_DENY",
+          "isError": true
+        }
+      ],
+      "eventsFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/runtime-events/events.jsonl",
+      "historyFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/ptc-workbench-DENY.json",
+      "historyPointers": [
+        "/parentHistory/records",
+        "/childHistory/records"
+      ],
+      "scope": "native：取消、身份持久化、list_agents、冷续派、拒绝旁路。PTC：首次派发完成、拒绝旁路。"
+    },
+    {
+      "case": "ptc-iteration",
+      "verdict": "pass",
+      "parentSessionId": "session-5dcf5d35-abe1-4352-8e32-0d9d409d27c4",
+      "childSessionId": "cadfda99-658c-41b5-9f81-47c1026ddbaf",
+      "starts": [
+        {
+          "line": 302,
+          "activationId": "7526e0d8-52d0-4711-b4d7-93780bbdaac6"
+        }
+      ],
+      "endLines": [
+        319
+      ],
+      "toolResults": [
+        {
+          "line": 321,
+          "callId": "controlled_ptc-iteration_PARENT",
+          "isError": false
+        },
+        {
+          "line": 338,
+          "callId": "controlled_ptc-iteration_DENY",
+          "isError": true
+        }
+      ],
+      "eventsFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/runtime-events/events.jsonl",
+      "historyFile": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/ptc-iteration-DENY.json",
+      "historyPointers": [
+        "/parentHistory/records",
+        "/childHistory/records"
+      ],
+      "scope": "native：取消、身份持久化、list_agents、冷续派、拒绝旁路。PTC：首次派发完成、拒绝旁路。"
+    }
+  ],
+  "identityVisibility": {
+    "verdict": "pass",
+    "evidence": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-3.json#/body/messages/6",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-9.json#/body/messages/6",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-4.json#/body/messages",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-10.json#/body/messages",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-12.json#/body/messages/6",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-17.json#/body/messages/6"
+    ],
+    "finding": "两个 native 父回合取消后，accepted 身份出现在下一次实际 HTTP 请求；list_agents 实际工具结果含相同 child。重启后的请求仍含原身份，子历史追加 CONTINUE 消息。取消时父工具 Error: [object Object] 与 aborted 回合可见；此错误返回发生在子任务结束前，完成顺序结论限定成功派发。"
+  },
+  "capabilities": {
+    "verdict": "pass",
+    "evidence": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-0.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-2.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-6.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-8.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-16.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-21.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-22.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-24.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-27.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-28.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-30.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/request-33.json"
+    ],
+    "finding": "native 父请求声明派发、interrupt_agent、list_agents 与 MCP；子请求没有再次派发和 send_message。PTC 请求只声明 run_code，正文工具接口未声明 send_message；实际 tools.send_message 调用返回 TypeError。四个父拒绝尝试后，子事件和主子历史均未出现 CONTROLLED_BYPASS 消息。",
+    "limits": "本轮只主动探测父侧 send_message；未主动探测子侧旁路、interrupt_agent 的执行结果、PTC 取消恢复或 MCP 业务查询。"
+  },
+  "installation": {
+    "verdict": "pass",
+    "evidence": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/install-result-dc8ab9a0-be47-4219-a901-0ee591cbc290.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/candidate-manifest.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/installed-resource-comparison.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/probe-runs"
+    ],
+    "independentCheck": "重新逐项读取冻结 tarball 与实际安装目录，200 个普通文件全部字节相同。安装记录含官方插件管理操作、4 个截图路径、enabled=true；probe 记录应用 bundleId=com.deepseek.dsh、版本 0.2.0-rc.2。",
+    "limits": "未在本次审查重新运行安装，未逐张视觉审阅截图；该样本验证指定冻结包，不证明当前工作树全部改动已进入该包。"
+  },
+  "cleanup": {
+    "verdict": "pass",
+    "evidence": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/final-probe-status.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/final-stopped-confirmation.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/original-profile.yml",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/pre-install-profile.yml",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/official-installed-profile.yml"
+    ],
+    "independentCheck": "重新用 lsof 读取 12 个官方端口和 2 个受控服务端口，均无监听。四个 probe 运行记录已 stopped 并记录 portsReleased。实际 Profile 与 original-profile.yml 和 official-installed-profile.yml 字节相同。",
+    "baselineQualification": "恢复基准是安装后 Profile；run.mjs:268-270 覆盖 original-profile.yml。它与 pre-install-profile.yml 不同，包含安装阶段的本地 Provider 和观察插件。因此 Profile 恢复声明仅适用于安装后基准，不能解释为撤销全部测试配置。"
+  },
+  "scopeBoundary": {
+    "verdict": "partial",
+    "evidence": [
+      "agent-presets/presets.cordis.yml",
+      "agent-presets/project-tool-visibility.mjs:11",
+      "agent-presets/project-subagent-control.mjs:10",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/profile-native.yml",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/profile-ptc.yml"
+    ],
+    "finding": "产品源码在两个项目 Preset 组合中注册工具与可见性限制；限制调用 ctx.tools.restrict，未修改 root 注册表。受控 Profile 同时替换本轮全局默认模型与 llm-pi-ai Provider，影响该隔离 Profile 内其他 Preset 的模型配置。本轮创建的四个会话均使用项目 Preset，缺少标准官方 Preset 的实际请求作运行对照。",
+    "limits": "源码边界支持局部工具作用域设计；本轮记录不足以单独认证标准官方 Preset 的工具行为保持不变。"
+  },
+  "firstDeviationTrace": {
+    "currentRun": "全部 34 份模型观察记录均为 completion-local/completion-local-model。控制输入来自 run.mjs:77-91 的标记，工具选择与 DENY 强制调用来自 run.mjs:93-111。本轮旁路尝试由驱动明确构造，不能归因为模型主动发现或选择被禁工具。",
+    "earlierAttempts": [
+      {
+        "root": "harness-run-Nbwubx",
+        "evidence": [
+          ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-Nbwubx/profile-install.yml",
+          ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-Nbwubx/execution.json"
+        ],
+        "observation": "Profile 中观察插件为普通 patch；归档不存在 runtime-events/events.jsonl；3 次请求后等待 accepted 观察超时。观察缺失足以使该等待失败，不能据此判定产品丢失身份。"
+      },
+      {
+        "root": "harness-run-VgMgbi",
+        "evidence": [
+          ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-VgMgbi/profile-install.yml",
+          ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-VgMgbi/runtime-events/events.jsonl:1",
+          ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-VgMgbi/execution.json"
+        ],
+        "observation": "Profile 已 insert 观察插件，事件首行记录 PID 51707 激活；0 次模型请求，驱动在官方 PID 匹配阶段超时。当前驱动用进程组成员归属并在提示前读取 model/selection 事件。"
+      }
+    ]
+  },
+  "localValidation": {
+    "command": "node --test .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "externalModelsStarted": false,
+    "applicationsStarted": false,
+    "dependenciesInstalled": false
+  },
+  "limitations": [
+    "受控子模型仅返回固定完成标记；没有文件交付、Prompt 质量、真实生图或独立视觉模型业务验收。",
+    "native 冷续派验证先消费 accepted 身份再重启；未覆盖取消后立即重启且首次恢复时才消费身份的时序。",
+    "当前四场景只执行工作台通用派发和迭代构图角色；其余三个角色没有实际调用。",
+    "模型记录只提供请求、返回和可见历史；本报告不推测模型内部判断。"
+  ],
+  "memoryMethodReference": "MEMORY.md:49-50：从输入与首次工具暴露追溯调用，区分可观察记录和推测。"
+}

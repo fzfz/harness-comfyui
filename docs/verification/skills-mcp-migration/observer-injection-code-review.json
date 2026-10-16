@@ -1,0 +1,106 @@
+{
+  "purpose": "记录共享模型流观察器新增 agents 注入声明的独立代码审查。",
+  "readWhen": "决定观察器修复能否进入官方应用复验时。",
+  "scope": [
+    ".local/skills-mcp-migration-live/llm-observer.mjs:7",
+    ".local/skills-mcp-migration-live/llm-observer.test.mjs:126-145"
+  ],
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P2",
+      "title": "共享观察器新增声明导致模型比较入口生成重复 inject 声明",
+      "source": ".local/skills-mcp-migration-live/llm-observer.mjs:7",
+      "consumer": ".local/skills-mcp-migration-live/builder-model-comparison-runtime/runner.mjs:58-63",
+      "evidence": "runner 第 59 行在 name 导出前插入自身的 inject 导出。当前共享模块已导出同名 const，生成模块包含两次声明。对该变换结果执行 Node 语法检查返回 1，错误为 SyntaxError: Identifier inject has already been declared。共享模块本身语法检查返回 0。",
+      "impact": "重新执行 builder-model-comparison-runtime/runner.mjs 时，生成的观察器无法被官方应用加载，模型比较验收会在执行前失败。",
+      "recommendation": "统一共享观察器与派生观察器的依赖声明组合入口，保证派生模块仅导出一次 inject，并保留派生观察器所需的四项服务。"
+    }
+  ],
+  "verified": [
+    {
+      "source": "node_modules/@deepseek-ai/cordis/lib/index.js:1491-1497,1635",
+      "result": "Cordis 将模块 inject 数组解析为 Fiber 的依赖表。"
+    },
+    {
+      "source": "node_modules/@deepseek-ai/cordis/lib/index.js:672-695",
+      "result": "插件作用域的 ctx.agents 访问经过 Cordis 的依赖存储解析；未声明时会抛出 without inject 错误。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/llm-observer.test.mjs:126-145",
+      "result": "测试通过同级插件提供 agents，将观察器作为真实 Cordis 插件注册；Proxy 仅捕获事件回调，agents 访问继续进入实际 Cordis 代理。测试确认原错误对象抛出、一次取消调用及原错误消息落盘。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/llm-observer.mjs:26-61",
+      "result": "注入修复未更改流转发、脱敏、错误保存及迭代器清理逻辑；定向测试覆盖原始 chunk 引用、输入不变、超时、消费者退出、并发脱敏与清理。"
+    }
+  ],
+  "commands": [
+    {
+      "command": "node --test .local/skills-mcp-migration-live/llm-observer.test.mjs .local/skills-mcp-migration-live/redact-evidence.test.mjs",
+      "exitCode": 0,
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "command": "读取共享模块，在内存中执行 runner.mjs:59 的同一 replace，再将源代码分别通过 stdin 传入 node --input-type=module --check。",
+      "sharedExitCode": 0,
+      "derivedExitCode": 1,
+      "derivedError": "SyntaxError: Identifier 'inject' has already been declared"
+    }
+  ],
+  "officialRetest": {
+    "sharedObserverReady": true,
+    "builderComparisonRunnerReady": false,
+    "decision": "直接复制共享观察器的验收入口可进入官方复验。模型比较 runner 需先解决 R1，再进入该入口的官方复验。"
+  },
+  "unproven": [
+    "官方应用实际加载修复后的观察器及真实模型流错误路径。",
+    "真实 agents 服务的取消行为和运行中服务卸载后的生命周期。",
+    "当前新增真实 Cordis 测试直接调用捕获的回调，未覆盖官方 LlmRuntime 的完整事件分派链。"
+  ],
+  "executionBoundary": {
+    "applicationStarted": false,
+    "modelCalled": false,
+    "reviewedFilesModified": false
+  },
+  "followUpReview": {
+    "scope": "共享观察器的五个直接消费者完成依赖声明同步后的独立复审。",
+    "findings": [],
+    "firstReviewFindingResolution": {
+      "id": "R1",
+      "status": "resolved",
+      "evidence": "五个入口派生模块均仅导出一次 inject；三个扩展入口保留各自附加服务，两个直接复制入口继承共享 agents 依赖。"
+    },
+    "sourceLocations": [
+      ".local/skills-mcp-migration-live/builder-model-comparison-runtime/runner.mjs:59",
+      ".local/skills-mcp-migration-live/builder-E2-runtime/runner.mjs:52",
+      ".local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs:66",
+      ".local/skills-mcp-migration-live/history-current-runtime/runner.mjs:23",
+      ".local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/runner.mjs:17"
+    ],
+    "validation": {
+      "method": "从三个扩展入口源码提取实际完整字符串变换表达式，在 Node vm 中传入共享源码执行；另外两个入口核对直接复制表达式。对五个派生模块通过 stdin 执行 node --input-type=module --check，对五个 runner 执行 node --check，并断言每个派生模块只有一次 inject 导出。",
+      "derivedModulesPassed": 5,
+      "runnersPassed": 5,
+      "singleInjectDeclarationsPassed": 5,
+      "commandExitCode": 0,
+      "harnessCorrection": "首个临时复审命令自身括号笔误导致语法错误；修正临时命令后完成全部断言。被审查文件未修改。",
+      "previousRegressionResult": "首轮 observer 与 redact-evidence 定向测试 27 项通过；本轮变更仅涉及五个消费者，未重复运行同一组测试。"
+    },
+    "officialRetest": {
+      "ready": true,
+      "decision": "本轮注入修复及五个消费者的重复声明问题已通过代码复审，可进入按既定授权执行的官方应用复验。"
+    },
+    "unproven": [
+      "官方应用对更新后共享模块及派生模块的实际加载。",
+      "真实模型流错误时实际 Session 取消及错误证据落盘。",
+      "五个 runner 的完整业务执行与运行中服务生命周期。"
+    ],
+    "executionBoundary": {
+      "applicationStarted": false,
+      "modelCalled": false,
+      "reviewedFilesModified": false
+    }
+  }
+}

@@ -97,43 +97,18 @@ describe('official installed Preset declarations', () => {
     expect(entries.some(row => row.id === 'agent-preset-registry')).toBe(false)
   })
 
-  it('mounts the declaration resource from the installed package and disposes its loader', async () => {
-    const installationRoot = await mkdtemp(join(tmpdir(), 'official presets with spaces-'))
-    temporaryPaths.push(installationRoot)
-    const { createInstalledPresetsComponent } = await import('../../agent-presets/project-installed-presets.mjs')
-    const received = vi.fn()
-    const disposed = vi.fn()
-    function Include(ctx, config) {
-      received(config)
-      ctx.effect(() => disposed, 'test installed declaration loader')
-    }
-    const component = createInstalledPresetsComponent({
-      moduleUrl: pathToFileURL(join(installationRoot, 'agent-presets/project-installed-presets.mjs')).href,
-      loadIncludePlugin: async () => ({ default: Include }),
+  it('loads installed declarations through the official Loader with Profile patches and lazy expressions', async () => {
+    const { stdout } = await executeFile(process.execPath, [
+      resolve(repositoryRoot, 'tests/unit/fixtures/installed-presets-runtime.mjs'),
+      '--include-config',
+    ], { cwd: repositoryRoot, env: { NODE_ENV: 'test' }, encoding: 'utf8' })
+    expect(JSON.parse(stdout.trim())).toEqual({
+      defaultPresetIds: ['harness-comfyui-cli-candidate', 'harness-comfyui-iteration'],
+      patchedOrder: 193,
+      nestedExpressionPreserved: true,
+      reloadedOrder: 91,
+      disposed: true,
     })
-    const context = new Context()
-    const fiber = context.plugin(component)
-    await Promise.resolve()
-    expect(received).not.toHaveBeenCalled()
-    context.provide('loader', {})
-    context.provide('agentPresets', {})
-    await fiber
-    expect(received).toHaveBeenCalledExactlyOnceWith({ path: join(installationRoot, 'agent-presets/presets.cordis.yml') })
-    await fiber.dispose()
-    expect(disposed).toHaveBeenCalledOnce()
-    await context.fiber.dispose()
-  })
-
-  it('reports an unavailable official declaration loader before registering Presets', async () => {
-    const { createInstalledPresetsComponent } = await import('../../agent-presets/project-installed-presets.mjs')
-    const component = createInstalledPresetsComponent({
-      loadIncludePlugin: async () => { throw new Error('official include loader unavailable') },
-    })
-    const context = new Context()
-    context.provide('loader', {})
-    context.provide('agentPresets', {})
-    await expect(context.plugin(component)).rejects.toThrow('official include loader unavailable')
-    await context.fiber.dispose()
   })
 
   it('mounts the installed filesystem component only in the two product Presets', async () => {

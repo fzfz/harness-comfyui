@@ -1,0 +1,32 @@
+{
+  "status": "implemented-awaiting-official-runtime-and-real-model-acceptance",
+  "planSection": "5.12.3",
+  "contract": "iteration-persona-scope-contract.json",
+  "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+  "changedField": "persona.config.prefix",
+  "structuralValidation": {
+    "schema": "@deepseek-ai/cordis-plugin-include entryListSchema",
+    "onlyChangedField": true,
+    "result": "passed",
+    "initialAttempt": "default js-yaml schema rejected project !!js tag; no product defect inferred"
+  },
+  "tests": {
+    "files": 2,
+    "passed": 58,
+    "failed": 0,
+    "log": ".local/skills-mcp-migration-live/persona-scope-green.log"
+  },
+  "semanticReview": "scope-launch-semantic-review.json",
+  "candidate": ".local/skills-mcp-migration-live/persona-completion-candidate.tgz",
+  "buildLog": ".local/skills-mcp-migration-live/persona-completion-build.log",
+  "candidateContains": [
+    "CLI standalone bundling",
+    "dispatch completion boundary",
+    "conditional iteration persona"
+  ],
+  "limits": [
+    "Candidate is built and packed, not yet installed or accepted.",
+    "Earlier Builder semantic failures retain their original verdicts.",
+    "No causal model control has yet measured the persona change."
+  ]
+}

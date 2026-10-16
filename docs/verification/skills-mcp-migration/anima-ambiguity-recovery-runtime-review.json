@@ -1,0 +1,223 @@
+{
+  "purpose": "独立审查 ANIMA 重名选择恢复后的业务行为。",
+  "readWhen": "判断恢复分支和完整任务是否通过时。",
+  "reviewedAt": "2026-10-14T12:38:26.988050+00:00",
+  "verdict": {
+    "targetBranch": "passed",
+    "fullContract": "failed",
+    "summary": "角色选择恢复及外观覆盖通过。完整任务因自行扩展图片生成而失败。最终回答未交付。",
+    "scope": "本报告审查恢复轮。首轮候选及分页问题保留原结论。",
+    "naturalCompletionObserved": false
+  },
+  "evidenceRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime",
+  "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/all-persisted-session-events.json",
+  "sessionIds": {
+    "parent": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+    "composition": "559563d3-4ea3-483c-ba1c-35706a4a3096",
+    "generation": "32e22c24-9d16-4de7-94e4-49c8660ea07b"
+  },
+  "inputsReviewed": [
+    "anima-ambiguity-recovery-contract.json",
+    "anima-ambiguity-recovery-input-review.json",
+    "anima-ambiguity-recovery-runtime-execution.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/independent-review-index.json"
+  ],
+  "selection": {
+    "result": "passed",
+    "source": "父会话 seq 65 的真实候选：id=3334、work_id=408、作品 Sinoalice、角色爱丽丝。",
+    "reply": "选择角色 ID 3334。",
+    "replyEvent": 102,
+    "firstRequest": "post-stop/model-calls/374a3573-4c81-4d0a-bf28-f919e7eec62d.jsonl:1 messages[37]",
+    "replyCount": 1,
+    "addedTaskInstructions": 0,
+    "resolution": "父会话 seq 104 使用已选身份。构图子会话 seq 36–37 按 ID resolve 成功。",
+    "limit": "父会话 seq 148–149 使用 character 作为通用资源 kind，接口拒绝。该错误未改变已选身份。"
+  },
+  "builder": {
+    "result": "passed_for_requested_identity_appearance_and_dimensions",
+    "artifact": "offline-workspace/workspace-artifacts/5.3-3/rounds/001/builder.json",
+    "equivalentArtifact": "offline-workspace/workspace-artifacts/5.3-3/composition/prompt-result.json",
+    "verified": [
+      "身份采用 alice (sinoalice) 和 sinoalice。",
+      "外观包含 long hair、twintails、blonde hair 和 blue eyes。",
+      "服饰包含 white shirt、collared shirt 和 black hair bow。",
+      "删除与用户要求冲突的短发、蓝发和红眼。",
+      "采用 test、2:3、1024×1536 和 1.572864 百万像素。",
+      "采用 anima-aesthetic-v1.1、native_negative 和空 positive_avoidance。",
+      "保存 12 个有序槽位，生成结果包含全部 10 个字段。"
+    ],
+    "validationTrace": "父会话 seq 119–120 首次格式检查返回 2。seq 124–125 拆分画师元素后返回 0。seq 129–130 结果检查返回 0。seq 179–180、184–185 修改发饰标签后再次返回 0。",
+    "delivery": "父会话没有最终结构化回答。保存的 Builder 可核对，但最终回答合同未完成。",
+    "semanticLimit": "本项仅确认角色、用户外观、尺寸和已保存结果。未把格式检查通过扩大为全部语义规则通过。"
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "high",
+      "title": "Prompt 构建任务被扩展为图片生成。",
+      "source": "父会话 seq 9、94、104–106、133、141、163、189；生成子会话 seq 88、132。",
+      "observed": "原请求只要求构建测试用 Prompt。选择回复只指定角色 ID。主 Agent 自行选择模板 41，并派发生成任务。",
+      "firstDeviation": "首轮 seq 94 已预告生成与观察。恢复轮 seq 104 把迭代交接用于当前任务，seq 105 加载迭代 Skill。seq 133 明确计划生成、观察和比较。",
+      "knowledgeEntry": "父会话 seq 8 的系统提示介绍迭代分工，且以请求匹配迭代 Skill 为条件。seq 11 的目录提供迭代 Skill 名称。恢复首个请求的 tools 包含 subagent_generation。seq 106 加载迭代正文，seq 112–113 读取 records.md。",
+      "generationCommandEntry": "生成子会话 seq 16 获得 comfyui-generate 正文，seq 38–39 读取 generation-cli.md。seq 88 和 132 调用 generation submit。",
+      "judgment": "当前请求没有图片生成授权。test 字段只确定 Builder 的生成目的。",
+      "unresolvedCause": "已找到条件规则、工具入口和首次错误套用。尚无单变量试验证明系统提示或某份 Skill 是唯一原因。"
+    },
+    {
+      "id": "R2",
+      "severity": "high",
+      "title": "父会话取消后，生成子会话继续提交并重试。",
+      "source": "父会话 seq 194；生成子会话 seq 88–89、131–133；post-stop/model-calls/model-request-index.json。",
+      "observed": "父会话于 12:25:11.634 UTC 被取消。子会话随后新发起 9 次模型请求。两条 Run 都在取消后创建。",
+      "retry": "seq 89 报 overlay 错误。子 Agent 查询实例、节点和队列后读取 overlay 源码。seq 131 猜测缓存瞬态错误，并误认为失败发生在 Run 创建前。seq 132 用相同参数重试，seq 133 再次失败。",
+      "termination": "父会话结束原因为 user cancellation。生成子会话没有 turn/end。应用停止请求为 12:28:10.027 UTC；最后模型调用于 12:28:10.248 UTC 中止。",
+      "judgment": "记录证明人工取消与应用停止。自然停止行为尚未观察到。",
+      "unresolvedCause": "尚未查明父取消未终止子任务的宿主机制。overlay 错误定位到节点 3 的 wildcard_text 连接结构；缓存原因仍是模型猜测。"
+    },
+    {
+      "id": "R3",
+      "severity": "medium",
+      "title": "恢复轮使用了未声明的工具名和无效资源类型。",
+      "source": "父会话 seq 107–108、111、114–115、148–149。",
+      "observed": "search_artists 返回 unknown tool。随后改用 search_artist_prompt_strings 成功。get_catalog_resource 的 character kind 被拒绝。",
+      "knowledgeEntry": "恢复首个实际请求声明了 search_artist_prompt_strings 和 query_semantic_characters。该请求中未发现 search_artists。错误名称首次出现在模型输出 seq 104 对应调用。",
+      "judgment": "这是工具选择错误，不能归为服务不可用。未找到更早的错误名称注入来源。"
+    },
+    {
+      "id": "R4",
+      "severity": "medium",
+      "title": "原 Run 保留字段混合了记录保留和数据库未变化。",
+      "source": "anima-ambiguity-recovery-runtime-execution.json#/originalRunRecordsPreserved；before/generation-database.json；post-stop/generation-database.json。",
+      "observed": "执行报告字段为 false。恢复前 Run 数量为 0，恢复后新增 2 条失败 Run。",
+      "judgment": "现有证据没有原 Run 丢失。数据库发生新增，必须单独报告。"
+    }
+  ],
+  "runAudit": {
+    "beforeRunCount": 0,
+    "afterRunCount": 2,
+    "beforeMediaCount": 0,
+    "afterMediaCount": 0,
+    "runIds": [
+      "run_2c670669-e1a7-4d03-a579-c1a25352de44",
+      "run_a494cc44-16bd-4ff8-bc8b-a59264e9a626"
+    ],
+    "statuses": [
+      "failed",
+      "failed"
+    ],
+    "errorCode": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED",
+    "errorDetail": "Official API Workflow node \"3\" input \"wildcard_text\" connection structure does not match the runtime projection.",
+    "promptIds": [
+      null,
+      null
+    ],
+    "actualWorkflowPaths": [
+      null,
+      null
+    ],
+    "judgment": "两次提交都创建了本地 Run。没有媒体，也没有成功提交到 ComfyUI 队列的证据。"
+  },
+  "captureAudit": {
+    "modelCalls": 43,
+    "models": [
+      {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      }
+    ],
+    "terminalKinds": {
+      "complete": 42,
+      "aborted": 1
+    },
+    "analysisAvailableCalls": 35,
+    "analysisUnavailableCalls": 8,
+    "requestFieldsVerified": [
+      "messages",
+      "tools",
+      "toolHistory",
+      "provider",
+      "model",
+      "sessionId",
+      "purpose",
+      "maxTokens"
+    ],
+    "requestLimit": "实际请求保存了消息、工具和历史。采集边界未提供 temperature、topP、topK；不推断这些值。停止前没有完整请求快照。",
+    "rawSessions": 4,
+    "rawSessionFiles": "post-stop/sessions/*.jsonl.zstd",
+    "readableSessions": "post-stop/sessions/*-persisted.json",
+    "visibleAnalysis": "post-stop/model-calls/captured-model-analysis.json",
+    "analysisLimit": "仅使用可见分析；8 次调用没有可见分析。",
+    "artifactCount": 6,
+    "newArtifactCount": 5,
+    "artifacts": [
+      "5.3-3/character-identity-request.md",
+      "5.3-3/task.md",
+      "5.3-3/composition/001.md",
+      "5.3-3/composition/prompt-slots.json",
+      "5.3-3/composition/prompt-result.json",
+      "5.3-3/rounds/001/builder.json"
+    ],
+    "missingPlannedArtifacts": [
+      "5.3-3/rounds/001/generation.md"
+    ],
+    "oldSessionPrefixesPreserved": true,
+    "oldWorkspaceFilesPreserved": true,
+    "oldModelRequestFiles": 16,
+    "oldModelRequestsPreserved": true,
+    "installedCandidateFiles": 200,
+    "installedCandidateAllEqual": true,
+    "preservationSources": [
+      "post-stop/event-boundaries.json",
+      "post-stop/workspace-file-comparison.json",
+      "post-stop/old-model-request-comparison.json",
+      "post-stop/package/installed-candidate-comparison.json"
+    ]
+  },
+  "cleanup": {
+    "evidence": "final-cleanup.json",
+    "state": "stopped",
+    "ports": [
+      57009,
+      57010,
+      57011
+    ],
+    "portsReleased": true,
+    "processGroupPresent": false,
+    "limit": "本审查读取清理记录，未启动或停止任何应用。"
+  },
+  "acceptance": {
+    "recoveryInput": "passed",
+    "selectedCharacter": "passed",
+    "appearanceOverrides": "passed",
+    "builderSaved": "passed",
+    "promptOnlyScope": "failed",
+    "finalStructuredAnswer": "not_completed",
+    "naturalStop": "not_observed",
+    "imageGeneration": "failed_with_two_runs_zero_media",
+    "overall": "failed"
+  },
+  "languageReview": {
+    "profile": "for-document",
+    "manualReview": "已逐项复核事实、来源、范围、取消原因和数量。保留不确定性。",
+    "machineCheck": "STC for-document --anti-echo 返回 0；没有错误或 Anti-Echo 疑点。",
+    "warningDisposition": "JSON 字符串引号属于语法，保留半角引号。已把“读取实现”改为“读取 overlay 源码”。"
+  },
+  "memoryUse": {
+    "file": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "47-50",
+    "use": "按调用来源追踪首个偏离，区分观察结果与原因。"
+  },
+  "installedSkillContract": {
+    "path": "before/package/candidate/package/.agents/skills/anima-prompt-builder/SKILL.md",
+    "sections": [
+      "选择作品、角色、画师与词条",
+      "构建并校验提示词",
+      "构造生成结果"
+    ],
+    "references": [
+      "references/03-output-protocol.md",
+      "references/generation-output-contract.md"
+    ],
+    "finalRequirement": "构建任务的最终回答必须包含通过校验的结构化结果。"
+  }
+}

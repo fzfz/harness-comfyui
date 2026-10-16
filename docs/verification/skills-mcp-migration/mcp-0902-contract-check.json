@@ -1,0 +1,12 @@
+{
+  "observedOn": "2026-10-15",
+  "deploymentCommit": "1d5d0aa9606ab9442263d7d1924f1f2d332b3d43",
+  "serverInfo": {
+    "name": "noobai-catalog",
+    "version": "0.90.2"
+  },
+  "toolCount": 17,
+  "toolsEqualTo0901": true,
+  "comparisonSource": ".local/mcp-investigation/2026-10-14-upgrade/tools-list.json",
+  "verificationScope": "初始化响应与全部工具声明；未执行模型或Desktop任务"
+}

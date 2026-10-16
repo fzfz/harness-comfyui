@@ -1,0 +1,603 @@
+{
+  "purpose": "独立核对 ANIMA 与 Krea2 当前候选的 ID 查询分支、Prompt 业务合同和实际资料来源。",
+  "readWhen": "判定 5.3-2、5.4-2 的业务验收范围与后续复验问题时。",
+  "status": "completed-with-findings",
+  "method": {
+    "scope": "只读实际输入、安装资料、主会话完整事件、全部原始模型请求与归档产物；未调用模型、启动应用、安装依赖或修改被测产物。",
+    "independence": "未使用其他审查报告或主线程判断作为判定依据。",
+    "causalLimit": "当前执行同时包含多项候选改动；本报告定位实际规则送达与行为偏离，未建立单变量因果。",
+    "analysisUse": "模型分析文本仅用于查找候选判断；结论由实际输入、工具参数、返回和产物支持。"
+  },
+  "entries": [
+    {
+      "caseId": "5.3-2",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/materialized-input.json",
+      "installedSkillPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/all-session-records.json",
+      "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/workspace-artifacts/5.3-2/builder.json",
+      "evidenceCoverage": {
+        "eventRange": [
+          0,
+          140
+        ],
+        "eventCount": 141,
+        "childSessions": [],
+        "modelRequestCount": 25,
+        "businessRequests": 24,
+        "titleRequests": 1,
+        "firstRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/41281b01-32cc-4dbd-b504-519f7924db98.jsonl",
+        "lastRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9410021a-3e69-46fd-8bd4-08766fedee74.jsonl",
+        "allBusinessRequestsExpose31Tools": true,
+        "relevantCapabilities": [
+          "bash",
+          "skill",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_artist_prompt_strings"
+        ],
+        "generationCalls": 0,
+        "subagentCalls": 0
+      },
+      "findings": [
+        {
+          "id": "A-PAGINATION",
+          "severity": "material",
+          "title": "词条候选分页未完成",
+          "firstObservableDeviationSeq": 70,
+          "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/all-session-records.json",
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/collection-1791972306073/workspace-artifacts/5.3-2/builder.json",
+          "clauses": [
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/41281b01-32cc-4dbd-b504-519f7924db98.jsonl",
+              "location": "tools[name=mcp__noobai__query_semantic_prompt_terms].description / 返回字段 7",
+              "clause": "page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。"
+            }
+          ],
+          "trace": [
+            {
+              "seq": 68,
+              "fact": "查询 black bow hair ornament，page_size=10。"
+            },
+            {
+              "seq": 69,
+              "fact": "返回 page=1、page_size=10、total_count=21；仍有两页。"
+            },
+            {
+              "seq": 70,
+              "fact": "切换到 white collared shirt 查询；直到会话结束未继续前一查询。"
+            },
+            {
+              "seq": 97,
+              "fact": "另查 twintails，page_size=6。"
+            },
+            {
+              "seq": 98,
+              "fact": "返回 total_count=28；seq99 转查作品且后续未分页。"
+            },
+            {
+              "seq": 109,
+              "fact": "基于已取得部分候选采用 hair_bow、black_bow；twintails 的有效来源为 seq64 角色 Prompt。"
+            }
+          ],
+          "impact": "分页能力与继续条件已在首次原始请求中送达。当前已选发饰与用户要求相符，但未完成合同要求的候选读取；不能把部分候选比较描述成完整检索。",
+          "nextVerifiableQuestion": "在相同输入与相同目录快照下，读取剩余页后是否仍选择同一组发饰标签？"
+        }
+      ],
+      "targetBranchVerdict": "pass: ID 39934 resolve 返回非空 Prompt，保存结果采用角色身份与外观；用户非空 Style Prompt 直接采用。",
+      "fullContractVerdict": "fail: 两个词条查询未读完工具合同要求的分页。",
+      "sourceVerdict": "所用角色、画师、服装标签和默认槽位均能定位到当前输入、安装资料或已返回目录记录；未发现从其他 Skill 或历史任务读取 Prompt。分页缺失限制了候选比较的完整性。",
+      "checks": {
+        "character": "seq63/64 resolve 39934 得到 Ani_(Grok)、blonde hair、twintails、long hair、blue eyes；seq109 写入身份和外观，seq114 按校验错误调整身份标签转义。",
+        "style": "当前 Style id12415 的非空 prompt_text=say_hana；seq109 写入 @say_hana，无需查询底模或画师。",
+        "priority": "用户明确的金色长双马尾、蓝眼、白色翻领衬衫、黑色蝴蝶结发饰均保留。角色返回外观与用户要求一致。",
+        "prompt": "单人、站立、半身、白衬衫、窗边柔光均进入保存 Prompt；默认 expressionless、direct eye contact、facing viewer、indoors/window、cinematic 均有安装资料依据。",
+        "purposeAndSize": "用户明确测试及全部四项尺寸；test、2:3、1024×1536、1.572864 MP 一致。",
+        "negative": "使用 anima-aesthetic-v1.1 原生负向及基础项，score_7 仅在正向，positive_avoidance=null。",
+        "validation": "seq110 格式校验返回 2；seq114/115 修正后成功；seq119/120 完整结果成功；seq134/135 保存文件复检成功。结构校验结果仅证明结构。",
+        "delivery": "seq129/130 保存 builder.json 与 prompt-slots.json；seq138 JSON 解析结果与归档 builder.json 相等。",
+        "referenceReads": "seq19 Skill；seq29、34、39 按固定顺序读取十项资料；seq44、49、54、59 读取对应详细资料；seq76、81 读取生成合同、profiles、schema。完整文本保留在后续原始模型请求的 tool 消息中。"
+      },
+      "evidenceGaps": [
+        "当前轨迹未取得上述两个查询的剩余页，无法判断剩余候选是否改变选择。",
+        "本次未生成图像；Prompt 的实际成像效果不在本次结论范围。"
+      ],
+      "rawRequestEvidence": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/41281b01-32cc-4dbd-b504-519f7924db98.jsonl",
+          "callId": "41281b01-32cc-4dbd-b504-519f7924db98",
+          "requestAt": "2026-10-14T09:57:18.937Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/7a1564ad-013b-4240-be98-86fdde04f1d0.jsonl",
+          "callId": "7a1564ad-013b-4240-be98-86fdde04f1d0",
+          "requestAt": "2026-10-14T09:57:18.942Z",
+          "toolCount": 0
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/6770451d-3806-4a7d-95d5-08a1f8511971.jsonl",
+          "callId": "6770451d-3806-4a7d-95d5-08a1f8511971",
+          "requestAt": "2026-10-14T09:57:23.674Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/8a19d74c-6e15-4b3f-a6b5-443b93706883.jsonl",
+          "callId": "8a19d74c-6e15-4b3f-a6b5-443b93706883",
+          "requestAt": "2026-10-14T09:57:28.327Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/c754dcf5-344f-4dfe-b931-501d2b02d48f.jsonl",
+          "callId": "c754dcf5-344f-4dfe-b931-501d2b02d48f",
+          "requestAt": "2026-10-14T09:57:34.315Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/4947dbfc-b542-4002-a317-a9003b99708e.jsonl",
+          "callId": "4947dbfc-b542-4002-a317-a9003b99708e",
+          "requestAt": "2026-10-14T09:57:41.900Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/00aaad2d-5b82-4019-9a34-8d264bee154d.jsonl",
+          "callId": "00aaad2d-5b82-4019-9a34-8d264bee154d",
+          "requestAt": "2026-10-14T09:57:52.528Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/4139b3e4-ca15-4dba-b418-5f818296481f.jsonl",
+          "callId": "4139b3e4-ca15-4dba-b418-5f818296481f",
+          "requestAt": "2026-10-14T09:58:03.670Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/754b6f64-1301-4d50-8720-f78ad1df5994.jsonl",
+          "callId": "754b6f64-1301-4d50-8720-f78ad1df5994",
+          "requestAt": "2026-10-14T09:58:10.494Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/249a6db8-4edd-40a6-87cd-4ecd287361e0.jsonl",
+          "callId": "249a6db8-4edd-40a6-87cd-4ecd287361e0",
+          "requestAt": "2026-10-14T09:58:16.250Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/12a21d65-8cec-4802-a6c5-e75e3f6fb797.jsonl",
+          "callId": "12a21d65-8cec-4802-a6c5-e75e3f6fb797",
+          "requestAt": "2026-10-14T09:58:24.323Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/98b67312-3f10-4f8e-aa00-8a6785f1e38a.jsonl",
+          "callId": "98b67312-3f10-4f8e-aa00-8a6785f1e38a",
+          "requestAt": "2026-10-14T09:58:45.203Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9d405a42-181d-4714-a04f-b1982e62b410.jsonl",
+          "callId": "9d405a42-181d-4714-a04f-b1982e62b410",
+          "requestAt": "2026-10-14T09:59:07.174Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/159c34b4-f298-463c-9485-18b62b5dbdfc.jsonl",
+          "callId": "159c34b4-f298-463c-9485-18b62b5dbdfc",
+          "requestAt": "2026-10-14T09:59:29.890Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/d5c20e55-baae-49e3-b3a9-396346e9239e.jsonl",
+          "callId": "d5c20e55-baae-49e3-b3a9-396346e9239e",
+          "requestAt": "2026-10-14T09:59:40.688Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/a82a9dcf-cc88-41d8-80e4-be40a9d9d92f.jsonl",
+          "callId": "a82a9dcf-cc88-41d8-80e4-be40a9d9d92f",
+          "requestAt": "2026-10-14T09:59:50.906Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/498f35f1-7162-4559-a47c-785a26407afa.jsonl",
+          "callId": "498f35f1-7162-4559-a47c-785a26407afa",
+          "requestAt": "2026-10-14T10:01:00.721Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/86d1c0f6-659a-4f44-a6c5-777fafb27a4d.jsonl",
+          "callId": "86d1c0f6-659a-4f44-a6c5-777fafb27a4d",
+          "requestAt": "2026-10-14T10:01:21.605Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/d6816033-770d-4059-a62e-06bd5374732f.jsonl",
+          "callId": "d6816033-770d-4059-a62e-06bd5374732f",
+          "requestAt": "2026-10-14T10:01:43.413Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/e06f2ef5-b7f0-40df-b1a8-986a7b0cc3dc.jsonl",
+          "callId": "e06f2ef5-b7f0-40df-b1a8-986a7b0cc3dc",
+          "requestAt": "2026-10-14T10:01:59.863Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/bbf4d2bc-1691-430e-823f-08a26bf70770.jsonl",
+          "callId": "bbf4d2bc-1691-430e-823f-08a26bf70770",
+          "requestAt": "2026-10-14T10:02:13.748Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/348d6c49-fc11-44d1-b796-2c2c90013eb2.jsonl",
+          "callId": "348d6c49-fc11-44d1-b796-2c2c90013eb2",
+          "requestAt": "2026-10-14T10:02:47.600Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/702011f5-4498-43b7-b881-2f150496c0d3.jsonl",
+          "callId": "702011f5-4498-43b7-b881-2f150496c0d3",
+          "requestAt": "2026-10-14T10:03:03.372Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/0f05e4ce-eab4-4ba0-a788-63066bbb7b2a.jsonl",
+          "callId": "0f05e4ce-eab4-4ba0-a788-63066bbb7b2a",
+          "requestAt": "2026-10-14T10:03:15.681Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9410021a-3e69-46fd-8bd4-08766fedee74.jsonl",
+          "callId": "9410021a-3e69-46fd-8bd4-08766fedee74",
+          "requestAt": "2026-10-14T10:03:30.640Z",
+          "toolCount": 31
+        }
+      ]
+    },
+    {
+      "caseId": "5.4-2",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/materialized-input.json",
+      "installedSkillPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+      "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/workspace-artifacts/5.4-2/builder.json",
+      "evidenceCoverage": {
+        "eventRange": [
+          0,
+          78
+        ],
+        "eventCount": 79,
+        "childSessions": [],
+        "modelRequestCount": 12,
+        "businessRequests": 11,
+        "titleRequests": 1,
+        "firstRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7d7b2c30-4a26-4823-8b5d-0dfab8a35a4e.jsonl",
+        "lastRequestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7525af97-095e-40ec-a9fc-e39429394d94.jsonl",
+        "allBusinessRequestsExpose31Tools": true,
+        "relevantCapabilities": [
+          "bash",
+          "skill",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_artist_prompt_strings"
+        ],
+        "generationCalls": 0,
+        "subagentCalls": 0
+      },
+      "findings": [
+        {
+          "id": "K-PURPOSE",
+          "severity": "material",
+          "title": "新画面被设为测试用途并选用测试尺寸",
+          "firstObservableDeviationSeq": 67,
+          "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/workspace-artifacts/5.4-2/builder.json",
+          "clauses": [
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+              "lines": [
+                14
+              ],
+              "clause": "新画面没有测试、比较或迭代表述时选择 `final`。"
+            }
+          ],
+          "trace": [
+            {
+              "seq": 4,
+              "fact": "实际提交仅要求单人站立半身像、白衬衫、窗边柔光及保存 Builder JSON；没有旧任务引用或测试表述。"
+            },
+            {
+              "seq": 32,
+              "fact": "完整生成目的条款已送达；第4项要求此类新画面选择 final。"
+            },
+            {
+              "seq": 37,
+              "fact": "profiles 已送达，2:3 的 final 档为1152×1728、2 MP。"
+            },
+            {
+              "seq": 67,
+              "fact": "首次写入可执行产物时选择 test、832×1248、1 MP。"
+            },
+            {
+              "seq": 68,
+              "fact": "结构校验接受该合法字段组合。"
+            },
+            {
+              "seq": 76,
+              "fact": "最终答复以“未要求正式交付成图”解释 test，保存结果保持该用途。"
+            }
+          ],
+          "impact": "字段组合合法但用途决策与已送达的第4项冲突；后续使用该 Builder 会采用测试尺寸。宿主迭代预设名称本身未提供用户正在继续旧测试链的证据。",
+          "nextVerifiableQuestion": "在保留当前输入的复验中，执行者能否按新任务规则选 final 并使用对应档位？",
+          "analysisLead": {
+            "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+            "seq": [
+              61
+            ],
+            "summary": "seq61 直接计划使用 test 尺寸832×1248，没有说明新任务第4条为何不适用；seq76 面向用户的说明进一步以未要求正式成图解释 test。",
+            "status": "仅为偏离判断首次出现的线索；未据此断言模型内部原因或单变量因果。"
+          }
+        },
+        {
+          "id": "K-STYLE",
+          "severity": "material",
+          "title": "未匹配题材却采用学院校园预设",
+          "firstObservableDeviationSeq": 67,
+          "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/workspace-artifacts/5.4-2/builder.json",
+          "clauses": [
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/anime-style-presets.md",
+              "lines": [
+                5
+              ],
+              "clause": "当前要求没有匹配任何标题时"
+            },
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md",
+              "lines": [
+                28
+              ],
+              "clause": "媒介使用精致动漫插画"
+            }
+          ],
+          "trace": [
+            {
+              "seq": 30,
+              "fact": "默认动漫媒介规则已送达。"
+            },
+            {
+              "seq": 51,
+              "fact": "Krea2 Style 查询为空，允许继续采用适用资料和默认设计。"
+            },
+            {
+              "seq": 58,
+              "fact": "预设全文送达：先匹配用户风格/题材标题，无匹配则用默认设计；第8项含 school-anime illustration。"
+            },
+            {
+              "seq": 67,
+              "fact": "当前输入无学校/学院题材，产物仍写入第8项的整串 school-anime illustration 等词。"
+            },
+            {
+              "seq": 76,
+              "fact": "答复明确把学院校园预设列为采用来源。"
+            }
+          ],
+          "impact": "来源文本真实，但预设使用条件未满足；条件资料中的校园视觉方向进入了用户没有指定题材的画面。",
+          "nextVerifiableQuestion": "同样无画师结果且无题材匹配时，复验是否采用 prompt-rules 的默认媒介而保留窗边柔光？",
+          "analysisLead": {
+            "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+            "seq": [
+              61
+            ],
+            "summary": "seq61 注意到用户未指定学校，仍打算从第8项借用柔和日光并混合一般动漫方向；seq67 实际写入完整 school-anime 预设词串。",
+            "status": "仅为偏离判断首次出现的线索；未据此断言模型内部原因或单变量因果。"
+          }
+        },
+        {
+          "id": "K-IDENTITY",
+          "severity": "material",
+          "title": "目录角色身份内容未进入正向 Prompt",
+          "firstObservableDeviationSeq": 67,
+          "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/workspace-artifacts/5.4-2/builder.json",
+          "clauses": [
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
+              "lines": [
+                26
+              ],
+              "clause": "从 MCP 采用的角色 Prompt 产生角色内容。"
+            },
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7d7b2c30-4a26-4823-8b5d-0dfab8a35a4e.jsonl",
+              "location": "tools[name=mcp__noobai__query_semantic_characters].description / 返回字段15",
+              "clause": "调用者保留素材内容，按目标生成模型的提示词语法组合。"
+            }
+          ],
+          "trace": [
+            {
+              "seq": 25,
+              "fact": "角色名字仅用于查询，角色内容应从采用的 Prompt 产生。"
+            },
+            {
+              "seq": 39,
+              "fact": "返回 Prompt 以 Ani_(Grok) 开头，后接四项外观特征。"
+            },
+            {
+              "seq": 67,
+              "fact": "positive_prompt 描述一位单人少女并保留四项外观；没有 Ani_(Grok) 或对应角色身份表达。"
+            },
+            {
+              "seq": 76,
+              "fact": "答复宣称已采用角色 Prompt，但结果仍只有一般外貌描述。"
+            }
+          ],
+          "impact": "外貌可追溯，指定角色的身份锚点丢失；仅有金发双马尾蓝眼不足以在 Prompt 中表达指定的 Ani 身份。",
+          "nextVerifiableQuestion": "复验的最终正向 Prompt 能否保留目录所返回的角色身份及非冲突外观，并避免把查询用 display name 当成替代来源？",
+          "analysisLead": {
+            "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+            "seq": [
+              42,
+              61
+            ],
+            "summary": "seq42 声明采用唯一角色结果，但概括只列外观；seq61 按 anime girl 构建主体并列金发双马尾蓝眼。记录没有解释为何省略 Ani_(Grok) 身份。",
+            "status": "仅为偏离判断首次出现的线索；未据此断言模型内部原因或单变量因果。"
+          }
+        },
+        {
+          "id": "K-FRAMING",
+          "severity": "material",
+          "title": "胸上取景与腰部手部完整可见要求冲突",
+          "firstObservableDeviationSeq": 67,
+          "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+          "artifactPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/workspace-artifacts/5.4-2/builder.json",
+          "clauses": [
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+              "lines": [
+                90
+              ],
+              "clause": "人物身份、外观、服装、动作、镜头、场景和光线之间不存在可见冲突"
+            },
+            {
+              "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+              "lines": [
+                39
+              ],
+              "clause": "把完整约束实际并入 `positive_prompt`"
+            }
+          ],
+          "trace": [
+            {
+              "seq": 30,
+              "fact": "Prompt 规则要求姿态与镜头一致，用户明确半身覆盖默认全身。"
+            },
+            {
+              "seq": 32,
+              "fact": "正向规避只加入当前风险相关约束，完整并入 Prompt。"
+            },
+            {
+              "seq": 67,
+              "fact": "正文同写“从胸前到头顶”的近景、“右手自然垂放在腰侧，同样能看清完整的手指”；positive_avoidance 又要求“从头顶到腰部”的完整轮廓。"
+            },
+            {
+              "seq": 68,
+              "fact": "校验通过，冲突未被结构校验处理。"
+            },
+            {
+              "seq": 73,
+              "fact": "保存结果保留上述矛盾。"
+            }
+          ],
+          "impact": "同一画面不能同时以胸部为下边界并完整显示腰侧手部；positive_avoidance 的头腰范围没有一致地并入正文。",
+          "nextVerifiableQuestion": "在不改变用户半身要求的复验中，是否能确定唯一取景范围，并让手部位置与所有规避句服从该范围？",
+          "analysisLead": {
+            "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-vLMOh8/collection-1791972422410/all-session-records.json",
+            "seq": [
+              61
+            ],
+            "summary": "seq61 在同一分析中先设 chest up，随后设 mid-torso upward，最后设 cuts at waist 且双手可见；seq67 实际正文与规避字段保留了不同边界。",
+            "status": "仅为偏离判断首次出现的线索；未据此断言模型内部原因或单变量因果。"
+          }
+        }
+      ],
+      "targetBranchVerdict": "partial: ID resolve 与外观采用通过；角色 Prompt 的身份内容未进入最终 positive_prompt。",
+      "fullContractVerdict": "fail: 生成目的、条件画风采用、角色身份保留和取景/规避一致性存在偏差。",
+      "sourceVerdict": "已读取安装版合同与当前目录返回。未发现读取其他 Skill 或历史任务；学院校园画风来自已读预设，但当前输入未满足该预设的采用条件。跨底模 Style 返回未写入最终 Prompt。",
+      "checks": {
+        "character": "seq38/39 resolve 39934，唯一记录名称、作品与输入相符；金发、长发、双马尾、蓝眼转为中文描述，身份标签 Ani_(Grok) 未进入 Prompt。",
+        "artistSearch": "seq43/44 唯一 krea2 底模 id3；seq45/46 方向检索返回 wai/anima 记录，未采用；seq50/51 与 seq52/53 限定 krea2 的 Style/画师串查询为空，next=null。",
+        "pagination": "角色 resolve total_count=1；全部目录搜索 next=null；当前查询没有未读后续页。",
+        "routeAndPrompt": "展示路线符合任务；单人、白衬衫、站立、窗边柔光写入 Prompt，背景具有具体地点与空间层次。",
+        "purposeAndSize": "保存 test、2:3、832×1248、1 MP；比例与 profile 的 test 档匹配，但 purpose 应由新任务规则选 final，沿用此比例则应为1152×1728、2 MP。半身选择2:3本身不单列为违规。",
+        "avoidance": "negative_mode=positive_rewrite、negative_prompt=null 正确；positive_avoidance 非空，但完整腰部入镜与正文胸上取景冲突。",
+        "validation": "seq67/68 校验退出0；seq72/73 保存返回对象；seq76 包含同一 JSON。结构校验不能确认主体身份、预设匹配或取景一致性。",
+        "referenceReads": "seq18 Skill；seq25 input-contract；seq30 prompt-rules；seq32 generation-output-contract；seq37 schema/profiles；seq58 anime-style-presets。未实际读取游戏服装库正文，只有文件行数。"
+      },
+      "evidenceGaps": [
+        "当前记录足以定位实际采用文本与已送达条款，但不能证明为何执行者偏离；seq61 分析文本中的推断仅为后续实验线索。",
+        "本次未生成图像；不推断最终像素内容或成像成功率。"
+      ],
+      "rawRequestEvidence": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7d7b2c30-4a26-4823-8b5d-0dfab8a35a4e.jsonl",
+          "callId": "7d7b2c30-4a26-4823-8b5d-0dfab8a35a4e",
+          "requestAt": "2026-10-14T10:05:20.962Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/c4f87162-9555-4e11-bf3d-1144e21fa9ea.jsonl",
+          "callId": "c4f87162-9555-4e11-bf3d-1144e21fa9ea",
+          "requestAt": "2026-10-14T10:05:20.967Z",
+          "toolCount": 0
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/3e44895f-c23b-4301-aaec-bb36625d7bfb.jsonl",
+          "callId": "3e44895f-c23b-4301-aaec-bb36625d7bfb",
+          "requestAt": "2026-10-14T10:05:25.418Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/f2147a1e-c9af-4849-99bd-eb3bacedb8d4.jsonl",
+          "callId": "f2147a1e-c9af-4849-99bd-eb3bacedb8d4",
+          "requestAt": "2026-10-14T10:05:30.943Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/eecd04cd-5a12-4034-88a4-956d8e6af79f.jsonl",
+          "callId": "eecd04cd-5a12-4034-88a4-956d8e6af79f",
+          "requestAt": "2026-10-14T10:05:36.467Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7da374ba-60fc-46a4-ab6d-219814b9f570.jsonl",
+          "callId": "7da374ba-60fc-46a4-ab6d-219814b9f570",
+          "requestAt": "2026-10-14T10:05:41.452Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/dc173cef-a60c-46ce-beaa-d9f680e91f43.jsonl",
+          "callId": "dc173cef-a60c-46ce-beaa-d9f680e91f43",
+          "requestAt": "2026-10-14T10:05:49.252Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/c1413150-4aa5-4d90-b89d-051303e58326.jsonl",
+          "callId": "c1413150-4aa5-4d90-b89d-051303e58326",
+          "requestAt": "2026-10-14T10:05:54.494Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/2b633bbf-1e99-43c0-8c7b-273a750b74dd.jsonl",
+          "callId": "2b633bbf-1e99-43c0-8c7b-273a750b74dd",
+          "requestAt": "2026-10-14T10:05:59.483Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/553fcf84-56e7-4d75-90c5-ccdc22e102d7.jsonl",
+          "callId": "553fcf84-56e7-4d75-90c5-ccdc22e102d7",
+          "requestAt": "2026-10-14T10:06:11.349Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/9e336c67-c694-4051-979d-2ac63bc0ef63.jsonl",
+          "callId": "9e336c67-c694-4051-979d-2ac63bc0ef63",
+          "requestAt": "2026-10-14T10:06:24.384Z",
+          "toolCount": 31
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7525af97-095e-40ec-a9fc-e39429394d94.jsonl",
+          "callId": "7525af97-095e-40ec-a9fc-e39429394d94",
+          "requestAt": "2026-10-14T10:06:29.457Z",
+          "toolCount": 31
+        }
+      ]
+    }
+  ]
+}

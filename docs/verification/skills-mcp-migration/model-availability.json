@@ -1,0 +1,153 @@
+{
+  "checkedAt": "2026-10-13T07:15:16.324823+00:00",
+  "source": "https://openrouter.ai/api/v1/models",
+  "previousModel": "stealth/space-bunny-alpha",
+  "previousModelListed": false,
+  "selectedProvider": "openrouter",
+  "selectedModel": {
+    "id": "thinkingmachines/inkling:free",
+    "canonical_slug": "thinkingmachines/inkling-20260715",
+    "hugging_face_id": "thinkingmachines/Inkling",
+    "name": "Thinking Machines: Inkling (free)",
+    "created": 1784325956,
+    "description": "Inkling is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 41B active parameters out of 975B total. It is designed for general-purpose reasoning, coding, agentic and tool-use systems,...",
+    "context_length": 1048576,
+    "architecture": {
+      "modality": "text+image+audio->text",
+      "input_modalities": [
+        "text",
+        "image",
+        "audio"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "tokenizer": "Other",
+      "instruct_type": null
+    },
+    "pricing": {
+      "prompt": "0",
+      "completion": "0"
+    },
+    "top_provider": {
+      "context_length": 1048576,
+      "max_completion_tokens": 262144,
+      "is_moderated": false
+    },
+    "per_request_limits": null,
+    "supported_parameters": [
+      "frequency_penalty",
+      "include_reasoning",
+      "max_tokens",
+      "presence_penalty",
+      "reasoning",
+      "reasoning_effort",
+      "seed",
+      "stop",
+      "temperature",
+      "tools",
+      "top_p"
+    ],
+    "default_parameters": {
+      "temperature": null,
+      "top_p": null,
+      "top_k": null,
+      "frequency_penalty": null,
+      "presence_penalty": null,
+      "repetition_penalty": null
+    },
+    "supported_voices": null,
+    "knowledge_cutoff": null,
+    "expiration_date": null,
+    "links": {
+      "details": "/api/v1/models/thinkingmachines/inkling-20260715/endpoints"
+    },
+    "benchmarks": {
+      "design_arena": [
+        {
+          "arena": "agents",
+          "category": "webapps",
+          "elo": 1189,
+          "win_rate": 48.6,
+          "rank": 22
+        },
+        {
+          "arena": "models",
+          "category": "3d",
+          "elo": 1164,
+          "win_rate": 40.5,
+          "rank": 60
+        },
+        {
+          "arena": "models",
+          "category": "asciiart",
+          "elo": 1092,
+          "win_rate": 34,
+          "rank": 63
+        },
+        {
+          "arena": "models",
+          "category": "codecategories",
+          "elo": 1208,
+          "win_rate": 42.3,
+          "rank": 55
+        },
+        {
+          "arena": "models",
+          "category": "dataviz",
+          "elo": 1164,
+          "win_rate": 37.9,
+          "rank": 73
+        },
+        {
+          "arena": "models",
+          "category": "gamedev",
+          "elo": 1170,
+          "win_rate": 37.8,
+          "rank": 65
+        },
+        {
+          "arena": "models",
+          "category": "svg",
+          "elo": 1113,
+          "win_rate": 35.1,
+          "rank": 57
+        },
+        {
+          "arena": "models",
+          "category": "uicomponent",
+          "elo": 1201,
+          "win_rate": 40.2,
+          "rank": 56
+        },
+        {
+          "arena": "models",
+          "category": "website",
+          "elo": 1226,
+          "win_rate": 44.6,
+          "rank": 52
+        }
+      ],
+      "artificial_analysis": {
+        "intelligence_index": 25,
+        "coding_index": 52.1,
+        "agentic_index": 22.5
+      }
+    },
+    "reasoning": {
+      "mandatory": false,
+      "default_enabled": true,
+      "supported_efforts": [
+        "max",
+        "high",
+        "medium",
+        "low",
+        "minimal",
+        "none"
+      ],
+      "default_effort": "high"
+    }
+  },
+  "reason": "原 development 初始模型未列入当前模型目录；所选模型声明免费、工具调用与图像输入能力。",
+  "actualCalls": []
+}

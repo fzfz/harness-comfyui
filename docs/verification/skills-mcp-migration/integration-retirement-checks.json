@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-14",
+  "scope": "目录CLI退役与内部客户端集成",
+  "checks": [
+    {
+      "command": "pnpm exec vitest run tests/unit/cli-contract.test.ts tests/unit/cli-help-schema.test.mjs tests/unit/cli-shell-capability.test.ts tests/integration/cli-command.test.ts tests/integration/cli-route.test.ts tests/integration/official-plugin-activation.test.ts tests/integration/host-plugin.test.ts",
+      "files": 7,
+      "passed": 96
+    },
+    {
+      "command": "pnpm exec vitest run tests/contract/prompt-builder-generation-output-references.test.mjs tests/production/official-candidate-identity.test.mjs tests/production/official-agent-preset-resources.test.mjs tests/production/plugin-build-presets.test.mjs tests/unit/installed-presets.test.mjs",
+      "files": 5,
+      "passed": 59
+    }
+  ],
+  "liveAcceptance": "pending"
+}

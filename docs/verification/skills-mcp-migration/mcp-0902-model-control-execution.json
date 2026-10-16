@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "文档用途": "记录无默认模型工作台的一次真实模型路由组合对照。",
+  "读取时机": "核对本轮前置材料、实际调用、人工取消、生成结果和清理状态时。",
+  "caseId": "5.6-3",
+  "preset": "harness-comfyui-cli-candidate",
+  "executionStatus": "completed-with-operator-diagnostic-cancellation",
+  "acceptanceStatus": "failed-after-independent-review",
+  "model": {
+    "selected": {
+      "provider": "openrouter",
+      "model": "thinkingmachines/inkling:free"
+    },
+    "businessRequests": 21,
+    "titleRequests": 1,
+    "actualRoutes": [
+      "openrouter/thinkingmachines/inkling:free"
+    ],
+    "actualBusinessMaxTokens": [
+      8192
+    ],
+    "actualTitleMaxTokens": [
+      64
+    ],
+    "requests": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/model-request-manifest.json",
+    "firstBusinessRequest": {
+      "callId": "af06a4fb-021e-488b-8966-f5d7eff52e88",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-no-default-model-control/trace/model-calls/af06a4fb-021e-488b-8966-f5d7eff52e88.jsonl",
+      "at": "2026-10-14T18:28:20.858Z",
+      "provider": "openrouter",
+      "model": "thinkingmachines/inkling:free",
+      "purpose": null,
+      "maxTokens": 8192,
+      "status": "complete",
+      "receivedChunks": 6
+    },
+    "titleRequest": {
+      "callId": "520cab58-f936-477b-a6a6-150b61aa5aac",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/mcp-0902-no-default-model-control/trace/model-calls/520cab58-f936-477b-a6a6-150b61aa5aac.jsonl",
+      "at": "2026-10-14T18:28:20.894Z",
+      "provider": "openrouter",
+      "model": "thinkingmachines/inkling:free",
+      "purpose": "session-title",
+      "maxTokens": 64,
+      "status": "complete",
+      "receivedChunks": 5
+    }
+  },
+  "limits": {
+    "modelCallTimeoutMs": 360000,
+    "taskTimeoutMs": 1200000,
+    "maxModelCalls": 100
+  },
+  "comparison": {
+    "baselineInput": ".local/skills-mcp-migration-live/mcp-0902-no-default-workbench/input.json",
+    "businessTaskIdenticalAfterRuntimePathNormalization": true,
+    "roleOptionsIdentical": true,
+    "globalDefault": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    "baselineBusinessMaxTokens": [
+      32768
+    ],
+    "baselineTitleMaxTokens": [
+      64
+    ],
+    "fixedDifferences": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/fixed-differences.json",
+    "actualDifference": "主会话selectModel将业务请求和标题请求都切换到免费路由；业务请求实际maxTokens从32768变为8192，标题上限保持64。",
+    "scope": "本轮仅观察一次Provider、模型及其既有路由配置的组合变化。",
+    "conclusion": "本轮免费路由收到默认模型为空的结果后继续参数检查并提交生成；这一次结果没有满足缺少model_id时请求用户补充并停止创建图片的要求。",
+    "limitsOfInference": "现有证据支持本轮行为判断；一次路由组合对照不能归因到模型权重，也不能证明任何路由的稳定性。",
+    "actualOutputLimitReview": {
+      "controlMaximumOutputTokens": 473,
+      "controlLimit": 8192,
+      "baselineCompletedMaximumOutputTokens": 1623,
+      "baselineLimit": 32768,
+      "lengthTerminationObserved": false
+    },
+    "cancellationDifference": "基线因控制资料读取取消；本轮因已确认的创建准备行为追加诊断取消。两轮取消时点不同；比较范围限于各自取消前的已观察行为。"
+  },
+  "runtime": {
+    "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vBW8HF",
+    "runId": "12ed41d0-0127-4b13-a074-731abfc1379c",
+    "sessionId": "session-65c295c9-0de7-489d-80a0-89ad52407f2f",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vBW8HF/.local/desktop-development/official-environment/workspace",
+    "profilePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vBW8HF/.local/desktop-development/official-environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "applicationVersion": "0.2.0-rc.2",
+    "start": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/start.json",
+    "installation": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/installation.json",
+    "neutralRandomRuntime": true,
+    "modelTasksSent": 1
+  },
+  "candidate": {
+    "package": "harness-comfyui",
+    "version": "0.45.0",
+    "sourceCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+    "dirty": true,
+    "archivePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vBW8HF/harness-comfyui-0.45.0.tgz",
+    "sourceIdentity": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/source-identity.json",
+    "runtimeFiles": 200,
+    "comparedFiles": 200,
+    "allFilesMatch": true,
+    "evidence": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/installed-files.json"
+  },
+  "preflight": {
+    "input": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/input.json",
+    "configuration": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/configuration.json",
+    "profile": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/profile-effective.json",
+    "session": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/session-prepared.json",
+    "prepare": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/prepare/trace-index.json",
+    "index": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/preflight-index.json",
+    "modelCallsBeforePrompt": 0,
+    "catalogClientTemplateModelId": null,
+    "generationSourceClientTemplateId": "29",
+    "generationSourceClientProjection": [
+      "id",
+      "title",
+      "workflow"
+    ],
+    "httpConsumers": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/http-consumers/index.json",
+    "mcpConsumers": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/mcp-consumers/index.json",
+    "mcpTextMatchesStructured": true,
+    "mcpToolDeclarationsMatchBaseline": true,
+    "scenario": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/scenario.json",
+    "resourcesProxy": "沿用既有readonlyResourceMethods；本轮resources/read实际转发并保存上游返回。"
+  },
+  "observations": {
+    "knowledgeEntry": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/knowledge-entry.json",
+    "skill": {
+      "callSeq": 18,
+      "resultSeq": 19,
+      "rule": "模板默认模型指 NoobAI MCP 返回的 Workflow 记录的 `item.model`。Skill 执行者通过 NoobAI MCP 获取已选模板、模型和 LoRA。用户指定模型时，Skill 执行者采用该模型；用户未指定模型且模板默认模型非 `null` 时，Skill 执行者采用模板默认模型。用户未指定模型且模板默认模型为 `null` 时，Skill 执行者请求用户提供 `model_id`，并停止创建图片；不得从 Workflow 节点或模型路线推选生成模型。进入创建图片步骤前，Skill 执行者必须已取得所采用生成模型的查询结果。",
+      "firstModelRequest": "e4c9f427-d89c-4830-8b29-080a557d7f14"
+    },
+    "workflow": {
+      "callSeq": 73,
+      "resultSeq": 74,
+      "id": "29",
+      "model": null,
+      "firstModelRequestContainingNull": "0e01fbf1-e1bc-4e75-b6eb-71e3161f5a06"
+    },
+    "firstPostNullAction": {
+      "seq": 78,
+      "tool": "mcp__noobai__search_models"
+    },
+    "continuedCreationActions": [
+      {
+        "seq": 83,
+        "operation": "generation random-seeds",
+        "returnedSeq": 84
+      },
+      {
+        "seq": 93,
+        "operation": "generation inspect-template-parameters",
+        "returnedSeq": 94
+      },
+      {
+        "seq": 113,
+        "operation": "generation submit",
+        "model": null,
+        "returnedSeq": 114,
+        "result": "shell command not found; exit127"
+      },
+      {
+        "seq": 118,
+        "operation": "generation submit",
+        "model": null,
+        "returnedSeq": 119,
+        "result": "tool call aborted after operator cancellation; Host had already accepted the run"
+      }
+    ],
+    "assistantStatement": {
+      "seq": 112,
+      "text": "根据任务要求和 Skill 指引：当前选择为 `template_id=29`（`wai_basic_txt2img`），实例为 `instance_id=2`（`win3080`），没有指定生成模型则采用模板默认模型（该模板 `model` 为 `null`），用户提供的 Prompt 结果有效（`model_route` `wai-illustrious-sdxl` 匹配，尺寸 `1024x1536` 对应 `2:3`，`megapixels` 正确，负向为 `native_negative`）。现在构造并提交 Generation Request。",
+      "exactTextEvidence": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/observed-event-chain.json"
+    },
+    "selectedNonNullModelId": false,
+    "userFacingModelIdQuestionBeforeCancel": false,
+    "controlMaterialReadObserved": false,
+    "directRealCatalogHttpBypassObserved": false,
+    "childSessionCount": 0,
+    "eventChain": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/observed-event-chain.json",
+    "modelInputContainingNull": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/null-result-in-model-requests.json",
+    "firstConfirmedCreationPreparation": {
+      "seq": 83,
+      "operation": "generation random-seeds",
+      "scope": "seq78是缺项后的首次搜索；seq83是首次已确认的创建准备越界。"
+    }
+  },
+  "generation": {
+    "runId": "run_3ca4141b-d832-4bc7-962d-f64b85612983",
+    "callId": "call_2ea80835657e4a2daae1a6d1",
+    "requestModel": null,
+    "status": "succeeded",
+    "promptId": "434fcce6-fc0e-4dcd-b11b-8ad64ff323ee",
+    "origin": "http://192.168.110.122:8188",
+    "createdAt": 1792002633135,
+    "updatedAt": 1792002661469,
+    "comfyuiExecutionStartAt": 1792002643736,
+    "comfyuiExecutionSuccessAt": 1792002658402,
+    "checkpoint": "waiIllustriousSDXL_v170.safetensors",
+    "checkpointSource": "保存的api-workflow节点1及同prompt_id的ComfyUI history",
+    "imageCount": 1,
+    "image": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/generation/media_32a72770-e72c-4a81-b31d-c925c4e44202.png",
+    "bytes": 2000855,
+    "workspaceResultFiles": 0,
+    "database": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/generation-store.json",
+    "sourceSnapshot": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/generation/source-snapshot.json",
+    "actualWorkflow": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/generation/actual-workflow.json",
+    "apiWorkflow": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/generation/api-workflow.json",
+    "history": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/generation/comfyui-history.json",
+    "wireBodyCaptured": false,
+    "continuedAfterSessionCancellation": true
+  },
+  "postAudit": {
+    "index": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/post-audit.json",
+    "allPosts": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/all-posts.json",
+    "allExchanges": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/all-exchanges.json",
+    "upstreamRequests": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/all-upstream-requests.json",
+    "fixtureExchanges": 90,
+    "fixturePosts": 17,
+    "mcpPosts": 16,
+    "httpPosts": 1,
+    "httpSemanticPosts": "仅前置template resolve29；返回model_id=null。",
+    "upstreamErrors": 0,
+    "generationPost": "正常Host GenerationTransport提交到ComfyUI /prompt；原始wire-body未采集，同prompt_id历史和持久化工作流已保存。"
+  },
+  "termination": {
+    "kind": "operator-diagnostic-cancellation",
+    "requestedAt": 1792002644093,
+    "elapsedMs": 143412,
+    "accepted": true,
+    "authority": "主线程在确认缺少默认模型后继续生成准备行为时，依据计划5.11.11追加诊断取消。",
+    "originalControlReadOrHttpBypassStopTriggered": false,
+    "sessionEndSeq": 121,
+    "sessionReason": {
+      "kind": "aborted",
+      "reason": {
+        "kind": "user"
+      }
+    },
+    "toolResultSeq": 119,
+    "toolResult": "Error: tool call aborted",
+    "naturalCompletion": false,
+    "evidence": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/cancellation.json",
+    "terminal": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/terminal.json"
+  },
+  "trace": {
+    "index": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/trace/trace-index.json",
+    "complete": true,
+    "missing": [],
+    "sessions": [
+      {
+        "sessionId": "session-65c295c9-0de7-489d-80a0-89ad52407f2f",
+        "parentSessionId": null,
+        "coverage": {
+          "throughSeq": 121,
+          "firstSeq": 0,
+          "lastSeq": 121,
+          "complete": true,
+          "pageCount": 1
+        }
+      }
+    ],
+    "modelCallCount": 22,
+    "allModelStreamsComplete": true,
+    "cancelledStreamCount": 0,
+    "explanation": "取消发生在工具执行期间；22个模型流均已完结，完整导出与会话人工取消同时成立。"
+  },
+  "cleanup": {
+    "application": {
+      "state": "stopped",
+      "pid": 51289,
+      "ports": {
+        "host": 59277,
+        "rendererCdp": 59278,
+        "hostInspector": 59279
+      },
+      "portsReleased": true
+    },
+    "fixture": {
+      "state": "stopped",
+      "pid": 44664,
+      "port": 59039,
+      "portReleased": true
+    },
+    "restored": {
+      "mcpUrl": "http://127.0.0.1:18943/mcp",
+      "sourceAddress": {
+        "url": "http://127.0.0.1",
+        "port": 18093
+      }
+    },
+    "evidence": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/cleanup.json",
+    "profileRestored": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/profile-restored.json",
+    "credentialScan": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/credential-scan.json",
+    "controlProcessExitVerification": ".local/skills-mcp-migration-live/mcp-0902-no-default-model-control/control-process-exit.json"
+  },
+  "evidenceLimitations": [
+    "input.json的stopConditions列表保留基线内容；直接真实HTTP旁路取消条件由本轮父线程指令给定，未写入该列表。本轮未观察到该条件。",
+    "实际ComfyUI POST的原始wire-body未抓取；生成数据库、API Workflow、prompt_id历史及图片提供提交与完成证据。"
+  ],
+  "independentReview": {
+    "status": "completed",
+    "path": "mcp-0902-model-control-review.json",
+    "verdict": "failed"
+  },
+  "验收结论": "本轮未通过缺少默认模型时停止创建图片的要求。会话由主线程追加诊断取消；已被Host接纳的model:null生成任务随后完成并保存一张图片。"
+}

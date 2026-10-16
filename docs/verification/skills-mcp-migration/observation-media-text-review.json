@@ -1,0 +1,141 @@
+{
+  "summary": "发现 5 项需修改的文字问题，无需用户补充事实。",
+  "scope": [
+    {
+      "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "range": "全部面向 Agent 的中文文字"
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "range": "全文"
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "range": "全文"
+    },
+    {
+      "path": "docs/system/configuration.md",
+      "range": "第 140—156 行：图片迭代角色配置"
+    }
+  ],
+  "method": "仅审阅指定对象和 STC 文字规则。未读取其他参考资料、实现或测试报告；未修改审计对象。",
+  "findings": [
+    {
+      "id": "T1",
+      "path": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "lines": [
+        16,
+        19
+      ],
+      "original": "生成 Agent | 完整 Builder JSON、实际生成参数、Run ID、媒体 ID、图片路径和修改内容；观察 Agent | 每张图片的原始观察、图片对应关系和视觉模型信息；比较 Agent | 逐图达成依据、偏差、原因假设、修改方向和必须保留的表现",
+      "reason": "此表与 records.md 第 13—18 行分别定义输出内容。两处对观察结果的表述已有差异：此表写视觉模型信息，记录规范写观察模型信息。修改文件内容要求时须维护两处。",
+      "minimal_change": "将表格的“输出结果”列改为职责概述。输出字段统一引用 references/records.md 的“确定任务目录和文件写入者”节。",
+      "rules": [
+        "I7",
+        "G1",
+        "文字标准第 5.3 项"
+      ]
+    },
+    {
+      "id": "T2",
+      "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        48,
+        48
+      ],
+      "original": "包含目标、Prompt 和此前评价的结果文件提供给其他对应 Agent。",
+      "reason": "“其他对应 Agent”未说明接收者，也未说明以谁为基准的“其他”。上一句和本节输入表已规定后续任务所需文件。删除此句不会丢失输入要求，可消除对观察 Agent 输入范围的歧义。",
+      "minimal_change": "删除该句，保留前句及本节输入表。",
+      "rules": [
+        "I6",
+        "G20"
+      ]
+    },
+    {
+      "id": "T3",
+      "path": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "lines": [
+        43,
+        43
+      ],
+      "original": "主 Agent 提供本次要求和材料，将工具附加上下文中的接纳身份保存到 task.md，读取原生结束通知及其结果文件，再派发依赖该结果的任务。",
+      "reason": "一句包含提供材料、保存身份、读取通知与文件、派发依赖任务四项动作；同一编号又叠加缺项处理和续派要求，执行步骤难以逐项核对。",
+      "minimal_change": "拆为有序子项：提供要求和材料；保存接纳身份；读取结束通知和结果文件；处理错误、缺项或用户选择；满足输入要求后派发依赖任务。保留原文关于候选来源、不得改写用户选择和原 agent_id 续派的限制。",
+      "rules": [
+        "G9",
+        "I3"
+      ]
+    },
+    {
+      "id": "T4",
+      "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        31,
+        31
+      ],
+      "original": "主 Agent 在派发时创建本次需要的输出目录，将完整输出路径填入角色工具 output_files 每项的 path，将文件所需内容填入 purpose。",
+      "reason": "创建目录和填写两个字段合在一句。此处又重复 SKILL.md 参数表第 41 行的 output_files 字段定义。",
+      "minimal_change": "拆出“主 Agent 在派发前创建本次输出目录。”随后写“output_files 的填写规则见 SKILL.md 的参数表。”保留子 Agent 写入和完成回复要求。",
+      "rules": [
+        "G9",
+        "I7"
+      ]
+    },
+    {
+      "id": "T5",
+      "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        50,
+        50
+      ],
+      "original": "生成 Agent 因 comfyui-generate 的输入要求，请求在后续任务消息中提供完整 Builder JSON 时，主 Agent 读取对应 builder.json，并通过 subagent_generation 的 supplied_data 原样转交文件内容，agent_id 填原生成 Agent ID。",
+      "reason": "条件和三个操作挤在一句。“原生成 Agent ID”与参数表定义的 subagentId 叫法不同，不能直接核对要填写哪个返回字段。",
+      "minimal_change": "拆为：“生成 Agent 请求在后续消息中接收完整 Builder JSON 时，主 Agent 读取对应 builder.json。主 Agent 通过 subagent_generation 的 supplied_data 原样转交文件内容。agent_id 填该生成 Agent 的 subagentId。”",
+      "rules": [
+        "G9",
+        "G1",
+        "I6"
+      ]
+    }
+  ],
+  "needs_confirmation": [],
+  "machine_checks": [
+    {
+      "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "profile": "for-instruction-writing",
+      "errors": 0,
+      "warnings": 5
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "profile": "for-instruction-writing",
+      "errors": 0,
+      "warnings": 7
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "profile": "for-instruction-writing",
+      "errors": 0,
+      "warnings": 5
+    },
+    {
+      "path": "docs/system/configuration.md:140-157",
+      "profile": "for-document",
+      "errors": 0,
+      "warnings": 0
+    }
+  ],
+  "warning_review": [
+    "YAML 第 69、191、320、432 行的半角引号是字符串语法，保留。",
+    "YAML 第 462 行是参数所需材料的单项说明，内容具体，保留。",
+    "Skill description 为触发条件；第 49 行保留材料不足且需用户决定的条件，防止改变询问边界。",
+    "Skill 第 53 行保留比较、生成、构图和补充观察的分工，删除会丢失迭代路径。第 57 行保留停止条件和中断工具，防止未处理仍运行的子任务。",
+    "records.md 第 13、18 行为字段清单，删除字段会改变交付要求。第 35 行的编号替换和绝对路径转换用于直接派发，保留。",
+    "机器未标记 Anti-Echo 疑点；人工发现 records.md 第 48 行末句可删除，见 T2。"
+  ],
+  "no_findings_scope": [
+    "agent.cordis.yml 的中文文字未发现其他需修改的语义问题。",
+    "configuration.md 的指定节未发现文字问题；代码引用已提供。"
+  ],
+  "limitations": "未验证工具实现与文字描述是否一致；未打开指定对象以外的链接。"
+}

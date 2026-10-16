@@ -1,0 +1,308 @@
+{
+  "documentPurpose": "保存原 5.6-2 迭代任务的同业务输入复验准备证据。",
+  "readWhen": "模型复验授权和取消门禁通过后，读取本文件定位隔离配置、输入与来源证据。",
+  "status": "frozen-configured-and-stopped-model-gate-pending",
+  "preparedAt": "2026-10-14T14:42:07.185Z",
+  "executionId": "5.6-2:harness-comfyui-iteration",
+  "source": {
+    "status": "sources-verified-not-model-submitted",
+    "sourceLedger": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/execution-state.json",
+    "sourceEntry": "5.6-2:harness-comfyui-iteration",
+    "sourceStateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/state.json",
+    "sourceProfilePatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+    "sourceCandidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-4dz3WV/runtime/harness-comfyui-candidate.tgz",
+    "candidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-candidate.tgz",
+    "sourceBuilderPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+    "sourceBuilderByteCount": 720,
+    "builderBytesEqualOriginalPrompt": true,
+    "sourceParameters": {
+      "template_id": "29",
+      "instance_id": "2",
+      "count": 1,
+      "seed": 20261013,
+      "request": "使用随本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片，随后查询实际 Run 和媒体。"
+    },
+    "preset": "harness-comfyui-iteration",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "outputRelativeDirectory": "5.6-2",
+    "modelAuthorization": {
+      "activeGoSubscription": true,
+      "useBalance": false,
+      "source": "User confirmation in current conversation"
+    },
+    "allowedModels": [
+      {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      },
+      {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      }
+    ],
+    "sourceModelCallTimeoutMs": 360000,
+    "modelCallTimeoutMs": 600000,
+    "totalModelPhaseTimeoutMs": 1200000,
+    "modelExecutionAuthorized": false,
+    "cancellationGate": "parent-reported-pending-host-cancel-repair",
+    "candidateIsSingleCLIVariable": false
+  },
+  "paths": {
+    "preparationDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay",
+    "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/state.json",
+    "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK",
+    "controlRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/workspace",
+    "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/neutral-desktop-e2e.json",
+    "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml"
+  },
+  "modelBoundary": {
+    "userPromptSubmissions": 0,
+    "generationSubmissions": 0,
+    "modelExecutionAuthorized": false,
+    "cancelGate": "parent-reported-pending-host-cancel-repair",
+    "modelCallTimeoutMs": 600000,
+    "totalModelPhaseTimeoutMs": 1200000
+  },
+  "credentials": {
+    "sourceEnvironmentPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
+    "names": [
+      "OPENROUTER_API_KEY",
+      "OPENCODE_GO_API_KEY",
+      "NOOBAI_MCP_TOKEN"
+    ],
+    "valuesPrinted": false
+  },
+  "application": {
+    "status": "stopped",
+    "runId": "bed92b2a-3bac-4500-af7b-dbeea5991b12",
+    "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/.local/desktop-e2e/bed92b2a-3bac-4500-af7b-dbeea5991b12/run.json",
+    "cleanup": {
+      "portsReleased": true,
+      "processGroupPresent": false
+    },
+    "probeStatus": {
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/.local/desktop-e2e/bed92b2a-3bac-4500-af7b-dbeea5991b12/run.json",
+      "state": "stopped",
+      "processGroupMatchesRun": false,
+      "processGroupPresent": false,
+      "ports": [
+        {
+          "port": 56517,
+          "pids": []
+        },
+        {
+          "port": 56518,
+          "pids": []
+        },
+        {
+          "port": 56519,
+          "pids": []
+        }
+      ]
+    }
+  },
+  "phases": [
+    {
+      "phase": "prepare",
+      "completedAt": "2026-10-14T14:38:19.329Z"
+    },
+    {
+      "phase": "start-install",
+      "completedAt": "2026-10-14T14:38:42.977Z"
+    },
+    {
+      "phase": "official-install-and-byte-comparison",
+      "completedAt": "2026-10-14T14:38:47.762Z"
+    },
+    {
+      "phase": "stop-install",
+      "completedAt": "2026-10-14T14:38:53.563Z",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      }
+    },
+    {
+      "phase": "configure-materialize-and-final-stop-verification",
+      "completedAt": "2026-10-14T14:42:07.185Z"
+    }
+  ],
+  "candidateVerification": {
+    "resourceCount": 201,
+    "allEqual": true,
+    "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+    "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/installed-resource-comparison.json"
+  },
+  "input": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/materialized-input.json",
+    "materializationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/input-materialization.json",
+    "businessParameters": {
+      "template_id": "29",
+      "instance_id": "2",
+      "count": 1,
+      "seed": 20261013,
+      "request": "使用随本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片，随后查询实际 Run 和媒体。"
+    },
+    "businessParametersUnchanged": true,
+    "builderBytesUnchanged": true,
+    "builderByteCount": 720,
+    "promptEqualAfterOnlyPathMapping": true,
+    "outputRelativeDirectory": "5.6-2",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "preset": "harness-comfyui-iteration",
+    "builderValidationExitCode": 0
+  },
+  "configuration": {
+    "verificationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/configuration-verification.json",
+    "observerIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/observer-identity.json",
+    "roleConfigsFromInstalledCandidate": true,
+    "legacyImagesPathPresent": false,
+    "workspaceEmpty": true,
+    "historyCopied": false,
+    "initialGenerationDataEmpty": true,
+    "initialRunData": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/run-data-before-replay/index.json",
+      "databasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/run-data-before-replay/runs.sqlite",
+      "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/harness-run-npGsMK/run-data-before-replay/snapshot.json",
+      "tableCounts": [
+        {
+          "name": "generation_media",
+          "count": 0
+        },
+        {
+          "name": "generation_media_staging",
+          "count": 0
+        },
+        {
+          "name": "generation_run_outputs",
+          "count": 0
+        },
+        {
+          "name": "generation_runs",
+          "count": 0
+        },
+        {
+          "name": "schema_migrations",
+          "count": 1
+        }
+      ],
+      "sourcePaths": {
+        "dataDir": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui",
+        "apiWorkflowCacheDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui/api-workflow-cache",
+        "runRepositoryFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+        "runDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs",
+        "savedMediaDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui/media",
+        "logDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-npGsMK/runtime/environment/dsh-home/data/plugins/harness-comfyui/logs"
+      }
+    },
+    "observerRequestFileCount": 0,
+    "allowedModels": [
+      {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      },
+      {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      }
+    ],
+    "textMaxOutputTokens": 32768,
+    "modelCallTimeoutMs": 600000
+  },
+  "comparison": {
+    "scope": "同业务输入复验",
+    "singleCLIVariable": false,
+    "candidateFileDifferencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/candidate-vs-original-files.json",
+    "sourceResourceCount": 200,
+    "candidateResourceCount": 201,
+    "candidateAddedResourceCount": 1,
+    "candidateChangedResourceCount": 40,
+    "sourceModelCallTimeoutMs": 360000,
+    "modelCallTimeoutMs": 600000
+  },
+  "originalFailureTrace": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/original-run-inputs-trace.json",
+    "firstResultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay/original-first-run-inputs.json",
+    "firstRequestEventSeq": 90,
+    "firstResultEventSeq": 91,
+    "firstToolResultIsError": false,
+    "firstBusinessJSONComplete": true,
+    "subsequentQueryEventSeq": 105,
+    "subsequentArtifactListingEventSeq": 106
+  },
+  "cancellationPlan": {
+    "status": "prepared-not-executed",
+    "executionGate": "父线程完成并通过 Host 取消门禁，再授权本次模型提交。",
+    "modelCallTimeoutMs": 600000,
+    "totalModelPhaseTimeoutMs": 1200000,
+    "allowedModels": [
+      {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      },
+      {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      }
+    ],
+    "modelAuthorization": {
+      "activeGoSubscription": true,
+      "useBalance": false,
+      "source": "User confirmation in current conversation"
+    },
+    "steps": [
+      "父线程记录当前主会话和子会话身份后提交一次 materialized-input.json。",
+      "单次模型调用达到 600 秒或模型阶段达到 1200 秒时，父线程按 Host 取消门禁已验证的接口取消本次主会话，并确认子会话与 Provider 请求结束。",
+      "父线程采集会话、observer、CLI 结果文件、Generation Run 和媒体证据，再停止本轮官方应用并核对进程组及端口。",
+      "父线程依据已保存的 Run 状态处理已受理的生成请求，执行重试前核对原命令的重试条件。"
+    ],
+    "verifiedInThisPreparation": false
+  },
+  "openItems": [
+    "父线程完成 Host 取消门禁与 observer 独立审查。",
+    "父线程授权模型执行后，再验收真实 CLI 结果文件消费、Run 查询和媒体结果。"
+  ],
+  "ownership": {
+    "changedPaths": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-generation-replay",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/result-files-generation-replay-input.json"
+    ],
+    "existingRunnerScriptsChanged": false,
+    "productFilesChanged": false,
+    "oldEvidenceChanged": false
+  },
+  "preparationChecks": [
+    {
+      "name": "original-builder-bytes-and-parameters",
+      "passed": true
+    },
+    {
+      "name": "official-install-201-resource-byte-equality",
+      "passed": true
+    },
+    {
+      "name": "installed-candidate-role-profile-and-image-reader-schema",
+      "passed": true
+    },
+    {
+      "name": "installed-builder-validator",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "initial-workspace-and-generation-business-tables-empty",
+      "passed": true
+    },
+    {
+      "name": "no-model-prompt-or-observer-request",
+      "passed": true
+    },
+    {
+      "name": "final-official-probe-process-and-ports-released",
+      "passed": true
+    }
+  ]
+}

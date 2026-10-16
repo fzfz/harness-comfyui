@@ -1,0 +1,111 @@
+{
+  "serviceIdentity": {
+    "name": "noobai-catalog",
+    "version": "0.90.2"
+  },
+  "observedOn": "2026-10-15",
+  "source": ".local/mcp-investigation/2026-10-15-implementation",
+  "toolCount": 17,
+  "declarationsEqualToPlanBaseline": true,
+  "updatedFixture": "tests/desktop/fixtures/official-mcp-fixture.json",
+  "tools": [
+    "search_workflows",
+    "get_catalog_resource"
+  ],
+  "red": "新增测试在search_workflows输出schema的cover_url断言失败。",
+  "green": {
+    "command": "pnpm exec vitest run tests/production/official-mcp-services.test.mjs tests/production/official-mcp-acceptance.test.mjs",
+    "files": 2,
+    "tests": 7,
+    "latestRelatedRun": {
+      "files": 2,
+      "tests": 26
+    }
+  },
+  "typecheck": "passed",
+  "remaining": [
+    "无默认模型与空实例的实际模型停止行为复验",
+    "其余受新版合同影响的业务项目验收"
+  ],
+  "boundary": {
+    "module": "tests/desktop/fixtures/official-catalog-boundary.mjs",
+    "tests": 24,
+    "realUpstreamEvidence": ".local/mcp-investigation/2026-10-15-implementation/boundaries/summary.json",
+    "observed": [
+      "Workflow29搜索、详情及HTTP模型字段均为空",
+      "MCP实例列表为空，实例2详情返回MCP不存在错误",
+      "HTTP实例2源返回404且results为空",
+      "两轮夹具关闭后端口释放"
+    ],
+    "remaining": [
+      "真实模型在两预设的停止行为验收"
+    ],
+    "sharedRedaction": "tests/desktop/fixtures/official-trace-evidence.mjs"
+  },
+  "desktopAttempts": [
+    {
+      "log": ".local/mcp-investigation/2026-10-15-implementation/desktop-test.log",
+      "passed": 276,
+      "failed": 1,
+      "cause": "任务文本过滤误将session-title调用加入对话工具断言",
+      "fix": "按purpose区分对话请求，保留标题记录身份核对"
+    },
+    {
+      "log": ".local/mcp-investigation/2026-10-15-implementation/desktop-test-rerun.log",
+      "passed": 276,
+      "failed": 1,
+      "cause": "受控观察角色输入images为空，被产品合同拒绝后测试等待不存在的子请求",
+      "status": "已修复，相关定向测试和独立复审通过"
+    },
+    {
+      "log": ".local/mcp-investigation/2026-10-15-implementation/desktop-test-final.log",
+      "stage": "角色与轨迹断言已通过；应用重启后的会话定位失败",
+      "cause": "生成会话已在主界面选中，侧栏折叠较早条目使treeitem选择断言超时",
+      "status": "已修复，第四轮官方Desktop通过",
+      "passed": 276,
+      "failed": 1,
+      "stack": "verifyGenerationAfterRestart:1895 -> test:3185",
+      "traceEvidence": ".local/desktop-e2e/official-business-audit/8824fcdc-6c4d-4dcb-a951-940601b58061/e74cc257-12e4-4d53-b6f4-da8ab9a7f3a2/session-trace/live-assertions.json",
+      "normalTraceComplete": true,
+      "normalTraceMissing": [],
+      "cancelledFragments": 2
+    },
+    {
+      "log": ".local/mcp-investigation/2026-10-15-implementation/desktop-test-round4.log",
+      "files": 13,
+      "passed": 277,
+      "failed": 0,
+      "status": "passed"
+    }
+  ],
+  "realModelTrace": {
+    "status": "passed",
+    "case": "5.5-1:harness-comfyui-iteration",
+    "review": "mcp-0902-first-live-review.json",
+    "modelCalls": 7,
+    "events": 52,
+    "toolCalls": 9,
+    "missing": []
+  },
+  "resourceProtocol": {
+    "status": "implemented-and-independently-reviewed",
+    "upstreamCapabilities": {
+      "tools": {},
+      "resources": {},
+      "extensions": {
+        "io.modelcontextprotocol/skills": {}
+      }
+    },
+    "upstreamObserved": {
+      "resources/list": "skill://catalog-query/SKILL.md",
+      "resources/read": "目录素材查询文档",
+      "resources/templates/list": "JSON-RPC -32601 Method not found"
+    },
+    "rawEvidenceDirectory": ".local/skills-mcp-migration-live/mcp-0902-output-name-control",
+    "finding": "夹具原样返回资源能力声明却本地拒绝资源列表调用。",
+    "review": "mcp-0902-no-default-review.json",
+    "tests": 28,
+    "liveConsumerEvidence": ".local/skills-mcp-migration-live/mcp-0902-no-default-resource-baseline",
+    "reviewOutcome": "只读资源透传、能力边界、鉴权、跨会话取消及错误保留通过独立复核。"
+  }
+}

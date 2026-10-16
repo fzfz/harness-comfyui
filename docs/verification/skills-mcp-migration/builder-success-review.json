@@ -1,0 +1,1842 @@
+{
+  "reviewedAt": "2026-10-14T04:17:57.888518+00:00",
+  "reviewKind": "独立 Spec 验收",
+  "scope": "三个普通工作台预设真实 Builder 会话；保留初始输入与全部失败证据；未修改产品、Skill、执行者产物或模型配置。",
+  "plan": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md",
+  "planSections": [
+    "5.3",
+    "5.4",
+    "5.5",
+    "5.9",
+    "5.13"
+  ],
+  "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/builder-6761885f-c5dc-4a50-a75f-f77af6eef86f-execution.json",
+  "desktopRunId": "e0ce0cf3-d110-414f-a0f3-56788c2952dc",
+  "installedPackageRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+  "installedContractCheck": "已逐字节比较三类 Skill 的当前 Markdown 与 JSON 合同及安装文件：ANIMA 26、Krea2 11、WAI 71 个文件均一致。",
+  "judgmentMethod": "人工比较输入、实际送达的 Skill/参考文件/工具声明、工具参数及返回、保存产物和宿主结束事件；程序只提取结构、路径、序号和文件一致性。结构有效不等于语义通过。",
+  "overallVerdict": "未通过",
+  "cases": [
+    {
+      "caseId": "5.3-1",
+      "sessionId": "session-bcfd6acf-ec24-4b2a-af14-711a9c127717",
+      "preset": "harness-comfyui-cli-candidate",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-sZWTvc",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/builder-6761885f-c5dc-4a50-a75f-f77af6eef86f-5.3-1.json",
+      "collectPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e0ce0cf3-d110-414f-a0f3-56788c2952dc/1791951276600-4b117f93-09fc-46f5-866e-faa401400582-collect.json",
+      "throughSeq": 131,
+      "terminalEvents": [
+        {
+          "seq": 131,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "modelCalls": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/7c5708dc-0816-4aba-b11e-54cce1b244eb.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:19.294Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5894081e-f521-426f-a560-ae459b3bd169.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:19.297Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": "session-title"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d6af8671-810b-422a-8b55-714d0ef17091.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:21.836Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a536002d-160e-4323-9883-56c08c96a8d5.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:24.780Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8d8645bd-adf5-4e31-842b-a5c3c040ccc5.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:28.993Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8f1c9a93-2984-4a8d-9ea9-cf9cd4c63425.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:31.170Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/fab48b66-5a43-4efe-aad8-3e2d2967e49b.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:36.930Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/eb971a8e-df91-429e-9042-a53192e25cf1.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:40.835Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/f16a8332-fe9b-4e55-8c5b-0c8d0da2c941.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:51.720Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8b776a88-f782-4380-a723-07418ec85b7d.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:56.792Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5d10df4e-a5a2-442e-a290-cc7e51193c62.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:02.751Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/e58c9410-c7e6-4316-b7ca-698d6287620f.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:07.978Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8505f46d-02d6-4fc4-b4f5-c810a8cc64a5.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:10.370Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d32b9789-d44c-482a-bdf6-177a4660fe9f.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:15.721Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b5f58955-d924-4125-8f66-7dff2aad0c8c.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:24.873Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c55dd793-99b8-4ee1-bd0f-9dd1404532e0.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:35.450Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/86cb6b8e-983f-4bad-9acd-73247fdf5e0e.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:12:02.401Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/19709451-d04d-41a7-b496-935e76099ed6.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:12:07.129Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/07dadff1-4a27-4b74-b36e-0774b1fde06d.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:12:12.039Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:12:19.648Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        }
+      ],
+      "firstKnowledgeSources": {
+        "input": "初始用户消息给出明确 Skill 路径、工作目录和任务参数。",
+        "runtime": "首个实际模型请求同时提供工作台 persona、Skill catalog 与 NoobAI MCP 工具声明。",
+        "skill": "首次 skill 工具调用及其返回见 toolEvents；后续参考文件从所加载 Skill 的引用进入。",
+        "catalog": "目录工具知识来自原生 MCP 声明；本轮没有回退目录 CLI。"
+      },
+      "toolEvents": [
+        {
+          "seq": 17,
+          "time": 1791951021818,
+          "name": "skill",
+          "callId": "call_00_ET_us6HqHcKvWbTtfJDUlwE6863",
+          "arguments": {
+            "name": "anima-prompt-builder"
+          },
+          "resultSeq": 18,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d6af8671-810b-422a-8b55-714d0ef17091.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:21.836Z"
+          }
+        },
+        {
+          "seq": 22,
+          "time": 1791951024706,
+          "name": "bash",
+          "callId": "call_00_EiVfXc680HXvoEzZCTIk3475",
+          "description": "List skill directory",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 23,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a536002d-160e-4323-9883-56c08c96a8d5.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:24.780Z"
+          }
+        },
+        {
+          "seq": 24,
+          "time": 1791951024747,
+          "name": "bash",
+          "callId": "call_01_dLdSWeJp6n1r8Nb0flXu8850",
+          "description": "List skill references",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 25,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a536002d-160e-4323-9883-56c08c96a8d5.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:24.780Z"
+          }
+        },
+        {
+          "seq": 29,
+          "time": 1791951028938,
+          "name": "bash",
+          "callId": "call_c47b152e6c98458a87893d13",
+          "description": "Read first reference files",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 30,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8d8645bd-adf5-4e31-842b-a5c3c040ccc5.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:28.993Z"
+          }
+        },
+        {
+          "seq": 31,
+          "time": 1791951028963,
+          "name": "bash",
+          "callId": "call_8f145f1e3962430c8b46c318",
+          "description": "Read protocol reference files",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 32,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8d8645bd-adf5-4e31-842b-a5c3c040ccc5.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:28.993Z"
+          }
+        },
+        {
+          "seq": 36,
+          "time": 1791951031144,
+          "name": "bash",
+          "callId": "call_061a3f4765a74e57b7726759",
+          "description": "Read slot order and decision tree",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 37,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8f1c9a93-2984-4a8d-9ea9-cf9cd4c63425.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:31.170Z"
+          }
+        },
+        {
+          "seq": 42,
+          "time": 1791951036887,
+          "name": "bash",
+          "callId": "call_4eeb847d8874459eb9efe338",
+          "description": "Read count and appearance references",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 43,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/fab48b66-5a43-4efe-aad8-3e2d2967e49b.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:36.930Z"
+          }
+        },
+        {
+          "seq": 44,
+          "time": 1791951036906,
+          "name": "bash",
+          "callId": "call_1cba135b620e4ad3b2d0e612",
+          "description": "Read detail/mood and camera refs",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 45,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/fab48b66-5a43-4efe-aad8-3e2d2967e49b.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:36.930Z"
+          }
+        },
+        {
+          "seq": 49,
+          "time": 1791951040766,
+          "name": "bash",
+          "callId": "call_52ca3ff656f2480790ebc919",
+          "description": "Read generation output contract files",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 50,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/eb971a8e-df91-429e-9042-a53192e25cf1.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:40.835Z"
+          }
+        },
+        {
+          "seq": 51,
+          "time": 1791951040808,
+          "name": "bash",
+          "callId": "call_cfceca4142d641458e9c3598",
+          "description": "Read scene and expression refs",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 52,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/eb971a8e-df91-429e-9042-a53192e25cf1.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:40.835Z"
+          }
+        },
+        {
+          "seq": 56,
+          "time": 1791951051667,
+          "name": "bash",
+          "callId": "call_7503ca0fdeff42abbcf46eb2",
+          "description": "Grep clothing tags",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 57,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/f16a8332-fe9b-4e55-8c5b-0c8d0da2c941.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:51.720Z"
+          }
+        },
+        {
+          "seq": 58,
+          "time": 1791951051693,
+          "name": "bash",
+          "callId": "call_3752552d5eed4ac4a9eb345b",
+          "description": "Read clothing state head",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 59,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/f16a8332-fe9b-4e55-8c5b-0c8d0da2c941.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:51.720Z"
+          }
+        },
+        {
+          "seq": 63,
+          "time": 1791951056726,
+          "name": "bash",
+          "callId": "call_5c922e05215f43fb85510845",
+          "description": "Grep hair ornament and collared tags",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 64,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8b776a88-f782-4380-a723-07418ec85b7d.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:56.792Z"
+          }
+        },
+        {
+          "seq": 65,
+          "time": 1791951056764,
+          "name": "bash",
+          "callId": "call_3501e406f7744d109d45589e",
+          "description": "Read solo pose section 9.1",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 66,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8b776a88-f782-4380-a723-07418ec85b7d.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:56.792Z"
+          }
+        },
+        {
+          "seq": 70,
+          "time": 1791951062693,
+          "name": "bash",
+          "callId": "call_54d73f1d9a3c420c9b24b6ae",
+          "description": "List pose subsections and shirt tags",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 71,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5d10df4e-a5a2-442e-a290-cc7e51193c62.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:02.751Z"
+          }
+        },
+        {
+          "seq": 72,
+          "time": 1791951062726,
+          "name": "bash",
+          "callId": "call_6d0d83a6f2e94b4caa71ed51",
+          "description": "Read remaining 9.1 sections",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 73,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5d10df4e-a5a2-442e-a290-cc7e51193c62.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:02.751Z"
+          }
+        },
+        {
+          "seq": 77,
+          "time": 1791951067950,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_dadfbe0e4750437298a37aa4",
+          "arguments": {
+            "mode": "search",
+            "query": "black bow hair ornament on head",
+            "page_size": "10"
+          },
+          "resultSeq": 78,
+          "isError": true,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/e58c9410-c7e6-4316-b7ca-698d6287620f.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:07.978Z"
+          }
+        },
+        {
+          "seq": 79,
+          "time": 1791951067965,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_99c22b35f9d14d74aa4f5cb1",
+          "arguments": {
+            "mode": "search",
+            "query": "collared white shirt",
+            "page_size": "10"
+          },
+          "resultSeq": 80,
+          "isError": true,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/e58c9410-c7e6-4316-b7ca-698d6287620f.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:07.978Z"
+          }
+        },
+        {
+          "seq": 84,
+          "time": 1791951070346,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_2ce8ce87afb8416b87b23f4f",
+          "arguments": {
+            "mode": "search",
+            "query": "black bow hair ornament",
+            "page_size": "10"
+          },
+          "resultSeq": 85,
+          "isError": true,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8505f46d-02d6-4fc4-b4f5-c810a8cc64a5.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:10.370Z"
+          }
+        },
+        {
+          "seq": 86,
+          "time": 1791951070353,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_63206a75bd6f4048ab0f6f35",
+          "arguments": {
+            "mode": "search",
+            "query": "collared shirt white",
+            "page_size": "10"
+          },
+          "resultSeq": 87,
+          "isError": true,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8505f46d-02d6-4fc4-b4f5-c810a8cc64a5.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:10.370Z"
+          }
+        },
+        {
+          "seq": 91,
+          "time": 1791951073868,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_cdaf722f297241d2810ec64c",
+          "arguments": {
+            "mode": "search",
+            "query": "black bow hair ornament"
+          },
+          "resultSeq": 92,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d32b9789-d44c-482a-bdf6-177a4660fe9f.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:15.721Z"
+          }
+        },
+        {
+          "seq": 96,
+          "time": 1791951081619,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_14c6304364ae450598dde858",
+          "arguments": {
+            "mode": "search",
+            "query": "collared shirt with folded collar on neckline"
+          },
+          "resultSeq": 97,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b5f58955-d924-4125-8f66-7dff2aad0c8c.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:24.873Z"
+          }
+        },
+        {
+          "seq": 98,
+          "time": 1791951083328,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "callId": "call_c2500ab632804c2aa6065234",
+          "arguments": {
+            "mode": "search",
+            "query": "white shirt dress shirt"
+          },
+          "resultSeq": 99,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b5f58955-d924-4125-8f66-7dff2aad0c8c.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:24.873Z"
+          }
+        },
+        {
+          "seq": 103,
+          "time": 1791951095302,
+          "name": "bash",
+          "callId": "call_42f9fea5e9d141559ec0fc92",
+          "description": "Grep pose tags and read artist vocabulary head",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 104,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c55dd793-99b8-4ee1-bd0f-9dd1404532e0.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:35.450Z"
+          }
+        },
+        {
+          "seq": 105,
+          "time": 1791951095335,
+          "name": "bash",
+          "callId": "call_d6ca9b7c69074685b3c86a5c",
+          "description": "Inspect validator help",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 106,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c55dd793-99b8-4ee1-bd0f-9dd1404532e0.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:35.450Z"
+          }
+        },
+        {
+          "seq": 110,
+          "time": 1791951122269,
+          "name": "bash",
+          "callId": "call_d63f7cae012c4bd4b99fd193",
+          "description": "Validate slot prompt format",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 111,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/86cb6b8e-983f-4bad-9acd-73247fdf5e0e.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:12:02.401Z"
+          }
+        },
+        {
+          "seq": 115,
+          "time": 1791951126996,
+          "name": "bash",
+          "callId": "call_31e29f9056694dae8be54dbf",
+          "description": "Escape parens and re-validate",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 116,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/19709451-d04d-41a7-b496-935e76099ed6.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:12:07.129Z"
+          }
+        },
+        {
+          "seq": 120,
+          "time": 1791951131869,
+          "name": "bash",
+          "callId": "call_5feb4a45dc414137b2848869",
+          "description": "Validate generation result JSON",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 121,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/07dadff1-4a27-4b74-b36e-0774b1fde06d.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:12:12.039Z"
+          }
+        },
+        {
+          "seq": 125,
+          "time": 1791951139496,
+          "name": "bash",
+          "callId": "call_b05f2018c24d44b6b249c5f5",
+          "description": "Save validated builder JSON to 5.3-1",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 126,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:12:19.648Z"
+          }
+        }
+      ],
+      "unexpectedGeneration": {
+        "verdict": "通过",
+        "observed": "已审查完整工具事件：未发现生成提交、生成 CLI 调用、Run 或媒体产出；Krea2 额外查询 LoRA 但未采用或提交。"
+      },
+      "findings": [
+        {
+          "id": "ANIMA-FINAL-FORM",
+          "severity": "P2",
+          "title": "最终回答未遵守纯结构化结果合同",
+          "expected": ".agents/skills/anima-prompt-builder/references/02-role.md:3 要求只返回结构化结果，不另外输出解释或 Markdown。该文件在 seq 30 完整送达。",
+          "actual": "seq 129 的最终回答包含说明、Markdown 代码块和构建依据；保存 JSON 本身有效。",
+          "impact": "直接消费最终回答的结构化消费者需要额外剥离文本。",
+          "sourceLocation": ".agents/skills/anima-prompt-builder/references/02-role.md:3",
+          "eventSeq": 129,
+          "causalQualification": "交付形式差异已确认；追加诊断发现实际 system 通用展示偏好与 Skill 专用输出限制共同存在，责任与因果归属尚未完成受控验证。"
+        }
+      ],
+      "expectedBranch": "已有 Character 与 Style 非空 Prompt 优先采用；补充概念通过 MCP 取得规范标签；完成十二槽格式及生成结果校验。",
+      "targetedBranchVerdict": "通过",
+      "fullContractVerdict": "未通过",
+      "artifactPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-sZWTvc/5.3-1/anima-builder.json",
+      "artifactUsability": "保存对象可以解析且两层结构校验通过；可作为后续生成的候选输入，整体 Skill 验收仍有交付格式差异与待核实事项。",
+      "sourceAdoption": "用户提供 Ani_(Grok) 与四项外观；产物保留角色身份并按权重语法转义括号，保留金发、长发、双马尾、蓝眼。say_hana 来自当前 Style，产物为未加权 @say_hana；未重新查询角色或画师。",
+      "mcpDelivery": "seq 77/79/84/86 四次使用字符串 page_size 被拒绝，错误送达模型；seq 91/96/98 移除可选 page_size 后成功，seq 92/97/99 的完整返回送达后续模型请求。",
+      "validation": {
+        "promptFormat": [
+          {
+            "callSeq": 110,
+            "resultSeq": 111,
+            "exitCode": 2,
+            "reason": "角色标签括号未按 payload 语法转义。"
+          },
+          {
+            "callSeq": 115,
+            "resultSeq": 116,
+            "exitCode": 0
+          }
+        ],
+        "generationResult": [
+          {
+            "callSeq": 120,
+            "resultSeq": 121,
+            "exitCode": 0
+          },
+          {
+            "callSeq": 125,
+            "resultSeq": 126,
+            "exitCode": 0
+          }
+        ],
+        "dimensions": {
+          "width": 1024,
+          "height": 1536,
+          "aspect_ratio": "2:3",
+          "megapixels": 1.572864,
+          "verdict": "通过"
+        },
+        "purpose": "test，符合用户明确测试要求。"
+      },
+      "unresolvedItems": [
+        {
+          "topic": "MCP 规范标签与模型语法",
+          "verified": "MCP 返回 hair_bow、black_bow、collared_shirt、white_shirt；最终元素采用对应空格写法。已读参考文件未明示下划线转换规则。SKILL.md:94 要求采用规范标签，MCP 工具声明 results[].canonical_tag 说明允许按目标模型提示词语法使用；内置标签库采用空格风格。",
+          "judgment": "记录为表示规则待厘清，不据此声称语义身份改变或生图失效；本报告不把此项作为未通过原因。",
+          "sources": [
+            ".agents/skills/anima-prompt-builder/SKILL.md:94",
+            ".agents/skills/anima-prompt-builder/references/03-output-protocol.md:43",
+            "首个实际模型输入的 query_semantic_prompt_terms 声明",
+            "collect seq 92/97/99/116"
+          ]
+        },
+        {
+          "topic": "作品英文标签适用性",
+          "verified": "当前 Character 的 work_name 为“其它”，Prompt 只有 Ani_(Grok) 角色标签。最终没有独立作品标签。08-count-identity.md:25 对已有 IP 角色要求作品英文标签。",
+          "judgment": "现有输入没有证明“其它”是具体作品；它可能是兜底分组。未进一步查询真实作品记录或取得用户材料前，不把该字段当实际作品、不虚构作品标签，也不把作品标签缺失直接判为执行失败。"
+        }
+      ],
+      "waiting": {
+        "observed": false,
+        "replyAllowedNow": false,
+        "reason": "会话已经正常交付，没有已向用户提出的选择或补料问题。"
+      },
+      "diagnosis": {
+        "reviewedAt": "2026-10-14T04:24:13.094699+00:00",
+        "scope": "仅复核 ANIMA 最终交付格式的知识来源与决策时间；复用既有模型请求和宿主事件，不重跑模型、不修改产品。",
+        "conclusion": "已确认宿主通用展示规范、Skill 纯结构化输出规范和用户保存文件要求共同进入同一实际上下文。通用展示规范为偏好及条件性链接规则，与专用输出合同存在方向张力；当前证据未证明它强制执行者追加解释，也未完成单变量因果验证。暂不据此决定产品修改。",
+        "sources": [
+          {
+            "source": "首轮与末轮实际 system prompt",
+            "locations": [
+              {
+                "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/7c5708dc-0816-4aba-b11e-54cce1b244eb.jsonl",
+                "line": 1,
+                "jsonPath": "messages[0]"
+              },
+              {
+                "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+                "line": 1,
+                "jsonPath": "messages[0]"
+              }
+            ],
+            "verified": "两轮 system message 完全相同。开头 persona 要求 Follow the selected project Skill；后段要求 Prefer showing the primary results within your final response alongside a brief explanation，并规定提及已有文件时链接文件。",
+            "priority": "实际模型请求中的 system 层。",
+            "obligationAnalysis": "brief explanation 使用 Prefer；链接规则以已经提及文件为条件，未要求每次必须提及文件。两者构成真实存在的通用展示偏好，未形成必然要求解释或必须链接的硬性命令。",
+            "originBoundary": "当前仓库 agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:24 的 persona 只提供前缀；展示段在实际组装后的 system 中存在。本次未追到宿主包内具体注入函数，不把展示段归因于该 persona 的源码。"
+          },
+          {
+            "source": "用户保存要求",
+            "location": {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/7c5708dc-0816-4aba-b11e-54cce1b244eb.jsonl",
+              "line": 1,
+              "jsonPath": "messages[1]"
+            },
+            "verified": "用户要求只构建并保存 Builder JSON，产物保存到 5.3-1 目录；未请求解释、链接、过程汇报或 Markdown。",
+            "obligationAnalysis": "保存文件要求可以通过工具写入完成，同时最终回答保持纯 JSON。保存要求本身没有造成与纯 JSON 合同的冲突。"
+          },
+          {
+            "source": "Skill 纯结构化输出合同",
+            "repositoryLocation": ".agents/skills/anima-prompt-builder/references/02-role.md:3",
+            "hostDeliverySeq": 30,
+            "finalRequestLocation": {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+              "line": 1,
+              "jsonPath": "messages[10]"
+            },
+            "verified": "完整原文出现在实际工具返回，并在最终模型输入中保留；明确只返回通过校验的结构化结果，不另外输出解释、寒暄或 Markdown。"
+          },
+          {
+            "source": "Skill 最终构造条款",
+            "repositoryLocation": ".agents/skills/anima-prompt-builder/SKILL.md:100",
+            "secondaryLocation": ".agents/skills/anima-prompt-builder/SKILL.md:102",
+            "hostDeliverySeq": 18,
+            "finalRequestLocation": {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+              "line": 1,
+              "jsonPath": "messages[5]"
+            },
+            "verified": "完整 Skill 被实际加载。第 100 行限定使用校验后的结果，第 102 行要求最终回答包含该结构化结果；历史查询时另有先报告历史结果的分支，本轮未请求历史查询。",
+            "obligationAnalysis": "“包含”比 02-role.md 的“只返回”宽松，但本轮可以同时满足两条，因此不是逻辑矛盾；更具体的纯输出限制没有在最后条款再次引用，形成可能被忽略的分散表达，尚不能单凭这一点认定缺陷原因。"
+          },
+          {
+            "source": "生成结果合同",
+            "repositoryLocation": ".agents/skills/anima-prompt-builder/references/generation-output-contract.md:50",
+            "hostDeliverySeq": 50,
+            "finalRequestLocation": {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+              "line": 1,
+              "jsonPath": "messages[18]"
+            },
+            "verified": "完整原文在最终实际模型输入中存在，要求采用 stdout 对象作为最终结构化结果。该段不要求追加解释或链接。"
+          }
+        ],
+        "decisionTimeline": [
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/07dadff1-4a27-4b74-b36e-0774b1fde06d.jsonl",
+            "line": 370,
+            "hostEventSeq": 124,
+            "summary": "可复核记录中最早出现面向最终展示主产物的意图；随后实际只保存一个校验后的 JSON。该位置尚未明确决定追加解释性段落。",
+            "recordedAt": "2026-10-14T04:12:19.494Z",
+            "requestStartedAt": "2026-10-14T04:12:12.039Z"
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+            "line": 458,
+            "hostEventSeq": 129,
+            "summary": "最终回答的规划记录采用 Skill“包含结构化结果”条款，并决定展示格式化内容与文件路径；文件展示选择明确关联 system 的 present/链接指引。记录未见对 02-role.md 纯输出限制的调和。此处是最早可明确定位的最终 JSON 外层展示决策。",
+            "causalLimit": "该记录支持文件链接与宿主展示规范之间的联系，但没有明确说明解释性依据段由 brief explanation 偏好触发。",
+            "recordedAt": "2026-10-14T04:12:27.792Z",
+            "requestStartedAt": "2026-10-14T04:12:19.648Z"
+          },
+          {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl",
+            "line": 201,
+            "hostEventSeq": 129,
+            "summary": "模型实际文本流开始输出“构建要点”段，这是可直接观察的详细解释段开始位置。前文已有完成说明、链接和 Markdown JSON；最终消息完整保存在宿主 seq 129。",
+            "recordedAt": "2026-10-14T04:12:23.954Z",
+            "requestStartedAt": "2026-10-14T04:12:19.648Z"
+          }
+        ],
+        "hypotheses": [
+          {
+            "name": "宿主通用展示规范推动 JSON 外层展示",
+            "status": "有直接来源及链接展示关联证据，详细解释部分的因果作用仍待受控验证。"
+          },
+          {
+            "name": "最后的“包含”条款遮蔽先前“只返回”限制",
+            "status": "最终规划采用“包含”条款，支持该解释；全部原文仍在输入中，未证实是引用布局导致。"
+          },
+          {
+            "name": "模型固有回答习惯",
+            "status": "本轮没有独立证据，不能作为已验证原因。"
+          },
+          {
+            "name": "保存文件要求强制汇报链接或解释",
+            "status": "不成立；用户未提出这项要求，保存与纯 JSON 回答可同时完成。"
+          }
+        ],
+        "responsibilityAssessment": {
+          "current": "问题发生在通过校验的对象转为用户可见最终回答这一层，校验器与保存文件对象本身未被改写。实际 system 中存在通用展示偏好，Skill 的输出约束分散在 ROLE 与收尾条款；两者是应验证的责任边界。",
+          "notYetSupported": "当前证据不足以确定应修改宿主展示段、项目 persona、Skill 收尾引用，或仅进行同输入复验；不建议依据一次轨迹增加禁令或删改业务规则。"
+        },
+        "minimalSingleVariableVerification": {
+          "status": "仅建议，本轮未执行。",
+          "baseline": "复用末轮实际模型请求 70bf7a6f-43b5-4165-9456-493049f2ec6f line 1；只测试最终回答，不重复目录查询或校验工具。",
+          "treatment": "实验组只移除 system 中从 Prefer showing the primary results 开始的整段通用结果展示规范；persona、用户输入、全部 Skill/工具返回、工具声明、模型、采样和输出限额保持相同。",
+          "singleVariable": "一个宿主通用展示段的有无；不同时改写 Skill 的“包含”条款。",
+          "measurements": [
+            "最终响应能否直接解析为单一 JSON 对象。",
+            "解析后的对象是否与已校验对象保持一致。",
+            "是否新增说明、链接、Markdown 或工具调用。"
+          ],
+          "interpretation": "一组有差异只能提供初步支持；在相同采样配置下进行配对重复才能评估稳定性。若仅移除展示段可稳定恢复纯 JSON，优先在宿主通用展示默认与 Skill 专用输出合同的适用边界确认修订方案；若差异不稳定或两组同样失败，现有证据继续保持未决，不直接修改 Skill。"
+        },
+        "hostInjectionSourceFollowup": {
+          "evidence": "docs/verification/skills-mcp-migration/host-deliverable-section-source.json",
+          "sourcePath": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-client-ui-deliverables/lib/index.js",
+          "sectionName": "ui:deliverable-file-references",
+          "finding": "宿主插件通过 ctx.systemPrompt.section 注册 FILE_REFERENCE_PROMPT，包含实际模型输入中已确认的结果展示、简短解释和文件链接规范。至此已查明注入来源；尚无因果对照结果。",
+          "availableControl": "agent-presets/project-system-prompt-visibility.mjs 可按 section 名过滤；后续最小验证可仅在隔离 Profile 调整此段可见性，无需修改 SDK 或新增拦截框架。",
+          "status": "只补来源链，未更改可见性或运行模型。"
+        },
+        "actualRequestRetentionVerification": {
+          "reviewedAt": "2026-10-14T04:45:26.189707+00:00",
+          "method": "解析每个 jsonl 第 1 行记录的实际 request.messages，直接比对正文全文与规则原句；只在 role=tool 文本中的完整源文匹配上判定规则保留。请求与首次偏离由该请求响应中的 responseId 对应宿主 seq51、71、152，未以 callId 存在代替正文。",
+          "requests": [
+            {
+              "request": ".local/skills-mcp-migration-live/llm-calls/07dadff1-4a27-4b74-b36e-0774b1fde06d.jsonl:1",
+              "requestAt": "2026-10-14T04:12:12.039Z",
+              "checks": [
+                {
+                  "source": ".agents/skills/anima-prompt-builder/references/02-role.md",
+                  "fullSourcePresent": true,
+                  "matches": [
+                    {
+                      "messageIndex": 10,
+                      "role": "tool",
+                      "messageTextCharacters": 5440,
+                      "sourceStartCharacter": 1770,
+                      "fullSourceCharacters": 343
+                    }
+                  ]
+                },
+                {
+                  "source": ".agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+                  "fullSourcePresent": true,
+                  "matches": [
+                    {
+                      "messageIndex": 18,
+                      "role": "tool",
+                      "messageTextCharacters": 6157,
+                      "sourceStartCharacter": 42,
+                      "fullSourceCharacters": 3622
+                    }
+                  ]
+                },
+                {
+                  "rule": "宿主解释偏好",
+                  "exactText": "Prefer showing the primary results within your final response alongside a brief explanation.",
+                  "matches": [
+                    {
+                      "messageIndex": 0,
+                      "role": "system",
+                      "messageTextCharacters": 1912,
+                      "sourceStartCharacter": 608
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "request": ".local/skills-mcp-migration-live/llm-calls/70bf7a6f-43b5-4165-9456-493049f2ec6f.jsonl:1",
+              "requestAt": "2026-10-14T04:12:19.648Z",
+              "checks": [
+                {
+                  "source": ".agents/skills/anima-prompt-builder/references/02-role.md",
+                  "fullSourcePresent": true,
+                  "matches": [
+                    {
+                      "messageIndex": 10,
+                      "role": "tool",
+                      "messageTextCharacters": 5440,
+                      "sourceStartCharacter": 1770,
+                      "fullSourceCharacters": 343
+                    }
+                  ]
+                },
+                {
+                  "source": ".agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+                  "fullSourcePresent": true,
+                  "matches": [
+                    {
+                      "messageIndex": 18,
+                      "role": "tool",
+                      "messageTextCharacters": 6157,
+                      "sourceStartCharacter": 42,
+                      "fullSourceCharacters": 3622
+                    }
+                  ]
+                },
+                {
+                  "rule": "宿主解释偏好",
+                  "exactText": "Prefer showing the primary results within your final response alongside a brief explanation.",
+                  "matches": [
+                    {
+                      "messageIndex": 0,
+                      "role": "system",
+                      "messageTextCharacters": 1912,
+                      "sourceStartCharacter": 608
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "conclusion": "早期展示意图与最终交付决策对应请求均在 messages[10] 保留完整 02-role.md、messages[18] 保留完整 generation-output-contract.md；宿主解释偏好也在实际请求中存在。最终纯结构输出限制的丢失未获证据支持。",
+          "causalBoundary": "本次直接比对 request.messages 正文，补强先前宿主结果及标识关联。规则同时可见证明来源共存，尚不能单凭共存认定宿主解释偏好导致最终额外段落。未将日志请求等同于单独抓取的线上 HTTP 字节。"
+        }
+      }
+    },
+    {
+      "caseId": "5.4-2",
+      "sessionId": "session-14207940-eb3a-4ffd-ac45-1f6a0ef5a0a7",
+      "preset": "harness-comfyui-cli-candidate",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-t3kFpH",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/builder-6761885f-c5dc-4a50-a75f-f77af6eef86f-5.4-2.json",
+      "collectPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e0ce0cf3-d110-414f-a0f3-56788c2952dc/1791951118979-29b41f9d-498a-440c-9047-bc8ed88264b0-collect.json",
+      "throughSeq": 91,
+      "terminalEvents": [
+        {
+          "seq": 91,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "modelCalls": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/0b7f811a-1f1b-4abc-9c91-33341981bd82.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:19.781Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/673bb736-58f1-41df-b368-147c105955f0.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:19.783Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": "session-title"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3e0bc279-b4c7-483d-8543-20611c0fb239.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:22.891Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3e9fc581-3c78-4316-b853-3cc825e0edf9.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:27.874Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/430b85a1-fa75-4dab-b37c-2373ccc320c1.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:36.209Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/371c9777-6f9d-44c4-8ce8-7824a8298e90.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:41.092Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/39cdb12a-7ad6-49dd-956d-90a6face0559.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:47.217Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8c7a9054-547e-4889-b838-f3c839402e6d.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:51.614Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/ccda35e0-5018-4142-af52-ea26ad4b32cd.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:55.747Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/13e379b1-eda5-4345-906e-07415c2f8b5a.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:01.591Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a0d7c6c0-8cc7-47c4-ae8b-40620ac88467.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:13.370Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a654fd28-3416-4f21-9d58-656e1278af4e.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:23.331Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/60ccc42d-1566-4dca-8fa6-330a8ddbf56c.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:25.687Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3c7f4565-cc2d-4a58-b749-ba745a400273.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:28.691Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        }
+      ],
+      "firstKnowledgeSources": {
+        "input": "初始用户消息给出明确 Skill 路径、工作目录和任务参数。",
+        "runtime": "首个实际模型请求同时提供工作台 persona、Skill catalog 与 NoobAI MCP 工具声明。",
+        "skill": "首次 skill 工具调用及其返回见 toolEvents；后续参考文件从所加载 Skill 的引用进入。",
+        "catalog": "目录工具知识来自原生 MCP 声明；本轮没有回退目录 CLI。"
+      },
+      "toolEvents": [
+        {
+          "seq": 18,
+          "time": 1791951022877,
+          "name": "skill",
+          "callId": "call_00_v32sxdwzpp6tff7hruozsvw1",
+          "arguments": {
+            "name": "krea2-anime-prompt-builder"
+          },
+          "resultSeq": 19,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3e0bc279-b4c7-483d-8543-20611c0fb239.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:22.891Z"
+          }
+        },
+        {
+          "seq": 23,
+          "time": 1791951027807,
+          "name": "bash",
+          "callId": "call_00_qbqa4uh0ihamviiwjl9ycp2w",
+          "description": "List skill directory contents",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 24,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3e9fc581-3c78-4316-b853-3cc825e0edf9.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:27.874Z"
+          }
+        },
+        {
+          "seq": 25,
+          "time": 1791951027839,
+          "name": "bash",
+          "callId": "call_01_spwj6gjor2zgf92ck24kv42b",
+          "description": "Inspect harness environment variables",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 26,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3e9fc581-3c78-4316-b853-3cc825e0edf9.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:27.874Z"
+          }
+        },
+        {
+          "seq": 30,
+          "time": 1791951036184,
+          "name": "bash",
+          "callId": "call_00_01gm76leyd7afjorvm2vsyxs",
+          "description": "Read input contract and prompt rules",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 31,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/430b85a1-fa75-4dab-b37c-2373ccc320c1.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:36.209Z"
+          }
+        },
+        {
+          "seq": 35,
+          "time": 1791951041049,
+          "name": "bash",
+          "callId": "call_00_d66u1k6b7q8t7ino1mlldcmv",
+          "description": "Read output contract, schema, profiles",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 36,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/371c9777-6f9d-44c4-8ce8-7824a8298e90.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:41.092Z"
+          }
+        },
+        {
+          "seq": 40,
+          "time": 1791951046771,
+          "name": "mcp__noobai__query_semantic_characters",
+          "callId": "call_00_sfglieym9s71b4o060l9fb6e",
+          "arguments": {
+            "mode": "resolve",
+            "id": "39934"
+          },
+          "resultSeq": 41,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/39cdb12a-7ad6-49dd-956d-90a6face0559.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:47.217Z"
+          }
+        },
+        {
+          "seq": 42,
+          "time": 1791951046801,
+          "name": "mcp__noobai__search_base_models",
+          "callId": "call_01_2vr5de8wqsm0cb0ohjvjp3kx",
+          "arguments": {
+            "query": "krea2"
+          },
+          "resultSeq": 43,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/39cdb12a-7ad6-49dd-956d-90a6face0559.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:47.217Z"
+          }
+        },
+        {
+          "seq": 47,
+          "time": 1791951051575,
+          "name": "mcp__noobai__search_styles",
+          "callId": "call_00_17g1bdysine77vrkzol3crqz",
+          "arguments": {
+            "base_model": {
+              "name": "krea2"
+            },
+            "limit": 20,
+            "query": "精致动漫插画 干净线稿 赛璐璐上色 柔和阴影 明亮通透"
+          },
+          "resultSeq": 48,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8c7a9054-547e-4889-b838-f3c839402e6d.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:51.614Z"
+          }
+        },
+        {
+          "seq": 49,
+          "time": 1791951051595,
+          "name": "mcp__noobai__search_artist_prompt_strings",
+          "callId": "call_01_aqrfkry08jyxz8l4q0by0po4",
+          "arguments": {
+            "base_model": {
+              "name": "krea2"
+            },
+            "limit": 20,
+            "query": "动漫赛璐璐 干净线稿 柔和光线 唯美插画 少女"
+          },
+          "resultSeq": 50,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8c7a9054-547e-4889-b838-f3c839402e6d.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:51.614Z"
+          }
+        },
+        {
+          "seq": 54,
+          "time": 1791951055713,
+          "name": "mcp__noobai__search_styles",
+          "callId": "call_00_gtjza0pk5dmtmlns9f45i0v1",
+          "arguments": {
+            "limit": 20
+          },
+          "resultSeq": 55,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/ccda35e0-5018-4142-af52-ea26ad4b32cd.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:55.747Z"
+          }
+        },
+        {
+          "seq": 56,
+          "time": 1791951055728,
+          "name": "mcp__noobai__search_artist_prompt_strings",
+          "callId": "call_01_c8x39t3kyfioo2bdjiu9pbnl",
+          "arguments": {
+            "limit": 20
+          },
+          "resultSeq": 57,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/ccda35e0-5018-4142-af52-ea26ad4b32cd.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:55.747Z"
+          }
+        },
+        {
+          "seq": 61,
+          "time": 1791951059557,
+          "name": "bash",
+          "callId": "call_00_e9fpe9js2hpyox9lp1fltn6k",
+          "description": "Read anime style presets",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 62,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/13e379b1-eda5-4345-906e-07415c2f8b5a.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:01.591Z"
+          }
+        },
+        {
+          "seq": 63,
+          "time": 1791951059577,
+          "name": "mcp__noobai__search_styles",
+          "callId": "call_01_yfh7uvbof5at06jekidm6qzy",
+          "arguments": {
+            "limit": 20,
+            "query": "krea2 纯净动漫 柔光"
+          },
+          "resultSeq": 64,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/13e379b1-eda5-4345-906e-07415c2f8b5a.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:01.591Z"
+          }
+        },
+        {
+          "seq": 68,
+          "time": 1791951073301,
+          "name": "bash",
+          "callId": "call_00_lc4ercngx9yt43knf57jpmx6",
+          "description": "Create output dir and check megapixels",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 69,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a0d7c6c0-8cc7-47c4-ae8b-40620ac88467.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:13.370Z"
+          }
+        },
+        {
+          "seq": 70,
+          "time": 1791951073352,
+          "name": "mcp__noobai__search_loras",
+          "callId": "call_01_j5uxt5m7a7rc7rurduf3xvnk",
+          "arguments": {
+            "base_model": {
+              "id": "3"
+            },
+            "limit": 5
+          },
+          "resultSeq": 71,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a0d7c6c0-8cc7-47c4-ae8b-40620ac88467.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:13.370Z"
+          }
+        },
+        {
+          "seq": 75,
+          "time": 1791951083220,
+          "name": "bash",
+          "callId": "call_00_yko2rs6jmtn8223dn9ul3y8d",
+          "description": "Validate generation result JSON",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 76,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a654fd28-3416-4f21-9d58-656e1278af4e.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:23.331Z"
+          }
+        },
+        {
+          "seq": 80,
+          "time": 1791951085642,
+          "name": "bash",
+          "callId": "call_00_2a1wgdpee0xf0mt660t5yish",
+          "description": "Show validated output JSON",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 81,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/60ccc42d-1566-4dca-8fa6-330a8ddbf56c.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:25.687Z"
+          }
+        },
+        {
+          "seq": 85,
+          "time": 1791951088621,
+          "name": "bash",
+          "callId": "call_00_b3q2ruta4elvhuy0tf9p4adz",
+          "description": "Save builder JSON into 5.4-2",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 86,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3c7f4565-cc2d-4a58-b749-ba745a400273.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:28.691Z"
+          }
+        }
+      ],
+      "unexpectedGeneration": {
+        "verdict": "通过",
+        "observed": "已审查完整工具事件：未发现生成提交、生成 CLI 调用、Run 或媒体产出；Krea2 额外查询 LoRA 但未采用或提交。"
+      },
+      "findings": [
+        {
+          "id": "KREA-AVOIDANCE-INCOMPLETE",
+          "severity": "P2",
+          "title": "正向规避记录包含正文未表达的双耳可见约束",
+          "expected": "generation-output-contract.md:39-40 要求完整规避约束进入 positive_prompt，positive_avoidance 记录已进入正文的约束。",
+          "actual": "positive_avoidance 声称“头顶、双耳、肩颈与腰线都入镜”；positive_prompt 只明确头顶到腰线、双手和发束等内容，未要求耳朵可见。人物三分之四侧角与双马尾也不会自然保证双耳可见。",
+          "firstConstruction": {
+            "callId": "a0d7c6c0-8cc7-47c4-ae8b-40620ac88467",
+            "toolCallId": "call_00_yko2rs6jmtn8223dn9ul3y8d",
+            "eventSeq": 75,
+            "artifact": "/tmp/krea2_out.json"
+          },
+          "persistedLocation": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-t3kFpH/5.4-2/krea2-builder-result.json:6",
+          "sourceLocation": ".agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md:39",
+          "impact": "后续生成通常只使用 positive_prompt，规避记录中的耳朵约束不会参与成像。"
+        },
+        {
+          "id": "KREA-DUPLICATE-SEMANTICS",
+          "severity": "P2",
+          "title": "正文中英文重复表达媒介、线稿和上色",
+          "expected": "krea2-prompt-rules.md:59 要求相同含义的中文描述、英文短语和权重只保留一个表达。",
+          "actual": "开头“精致动漫插画，干净线稿，柔和赛璐璐上色”与结尾 anime illustration、clean lineart、soft cel shading 重复；room interior with soft window light 也重复窗边房间与光线。",
+          "sourceLocation": ".agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md:59",
+          "firstConstructionEventSeq": 75,
+          "persistedLocation": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-t3kFpH/5.4-2/krea2-builder-result.json:3",
+          "impact": "未完成合同要求的语义去重。",
+          "countQualification": "尾部共有五个英文短语；其中 room interior with soft window light 属环境和光线，是否计入规则第 8 项的四个稳定短语存在范围解释，因此本项仅按明确的语义重复判定。"
+        }
+      ],
+      "expectedBranch": "Character 39934 的 Prompt 为空，应按 ID 查询并采用有效结果；确认 krea2 底模，自动画师无结果时按已有参考继续；构造并校验单条结果。",
+      "targetedBranchVerdict": "通过",
+      "fullContractVerdict": "未通过",
+      "artifactPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-t3kFpH/5.4-2/krea2-builder-result.json",
+      "artifactUsability": "结构校验成功且文件可解析；当前语义验收未通过，不登记为完成全部 Builder 验收的生成输入。",
+      "sourceAdoption": "seq 40/41 按 ID 39934 取得唯一 Ani_(Grok), blonde hair, twintails, long hair, blue eyes 来源，最终身份与外观沿用该来源。seq 42/43 确认唯一 krea2 ID 3；限定底模查询为空，无筛选查询只见其他底模素材，最终未采用它们。用户站立半身、白衬衫、窗边柔光得到保留。",
+      "validation": {
+        "generationResult": [
+          {
+            "callSeq": 75,
+            "resultSeq": 76,
+            "exitCode": 0,
+            "stdoutReadSeq": 81,
+            "saveResultSeq": 86
+          }
+        ],
+        "dimensions": {
+          "width": 1152,
+          "height": 1728,
+          "aspect_ratio": "2:3",
+          "megapixels": 2,
+          "actualMegapixels": 1.990656,
+          "verdict": "通过，来自 final profile。"
+        },
+        "purpose": "final，符合独立新画面且未声明测试或迭代的合同。"
+      },
+      "causalEvidence": {
+        "ruleDelivery": "seq 31 完整包含当前 krea2-prompt-rules.md，seq 36 完整包含 generation-output-contract.md、schema 与 profiles；这些完整文本仍出现在首次构造调用 a0d7c6c0-8cc7-47c4-ae8b-40620ac88467 的 request line 1。逐字比较确认完整送达。",
+        "templateCheck": "anime-style-presets.md 的萌系少女和学院校园提供上述英文风格词，但未要求把同义中文与英文同时重复；generation-profiles.json 的规避示例未包含双耳。因此已读取材料未发现要求当前遗漏或重复的冲突指令。",
+        "firstDeviation": "两项偏差首次同时出现在 seq 75 的校验器输入，之后 stdout、保存文件与最终回答持续保留。",
+        "selfCheck": "轨迹确认结构校验发生；没有可复核产物显示语义自检已经消除这两项偏差。不能从缺少自检叙述断言模型从未自检，也不能由校验成功认定语义自检完成。",
+        "judgment": "已证实规则送达后的结果构造偏差；一次运行不足以认定 Skill 文本或模板造成缺陷。",
+        "minimalControlledVerification": "保留本次输入、Skill 安装树、模型、预设与目录来源，在干净会话原样重跑一例，不追加操作教程或新禁令；独立比较首次构造的两个字段与其后语义审查结论。只改变再次执行这一变量，检查偏差是否稳定复现。"
+      },
+      "deliveryObservation": "最终回答 seq 89 包含解释和 Markdown，而 SKILL.md 末句要求结构化结果；文件本身为有效对象。此项记录为交付形式偏差，主要未通过原因是上述两项语义问题。",
+      "waiting": {
+        "observed": false,
+        "replyAllowedNow": false,
+        "reason": "会话正常结束，现有缺陷不属于已提出的材料或候选选择问题。"
+      }
+    },
+    {
+      "caseId": "5.5-3",
+      "sessionId": "session-b6497619-2e30-413d-862c-3263cd72be66",
+      "preset": "harness-comfyui-cli-candidate",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/builder-6761885f-c5dc-4a50-a75f-f77af6eef86f-5.5-3.json",
+      "collectPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e0ce0cf3-d110-414f-a0f3-56788c2952dc/1791951276592-9384ebf0-d357-4af3-8360-389c5790b3a3-collect.json",
+      "throughSeq": 71,
+      "terminalEvents": [
+        {
+          "seq": 71,
+          "reason": {
+            "kind": "max-tokens"
+          }
+        }
+      ],
+      "modelCalls": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/4dd80883-bd6b-4f92-99c7-a5541e939306.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:20.304Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/f8968812-f8e3-4df4-b98e-ad854dc49294.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:20.306Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": "session-title"
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/aa0f2a31-79db-483f-9bb3-d652a416a405.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:22.817Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/702dfaaa-2cc5-448f-9693-ee4f98d6e72c.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:26.785Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c7ad8015-3938-49d4-ae8a-6c3dd471a1c2.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:30.354Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5bb764d1-6187-4b36-9e9c-80abde7c6d4e.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:35.508Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/ec3709fd-b38a-46fa-86aa-d9a8a180ae41.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:41.947Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/1a420aac-22a0-44f0-a370-a87df4163946.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:48.829Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/221fc46f-b481-4dcf-8a60-b922ffd7bd3b.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:10:58.300Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c1482797-0bb8-4000-b177-95f31ac69748.jsonl",
+          "requestLine": 1,
+          "at": "2026-10-14T04:11:32.333Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "purpose": null
+        }
+      ],
+      "firstKnowledgeSources": {
+        "input": "初始用户消息给出明确 Skill 路径、工作目录和任务参数。",
+        "runtime": "首个实际模型请求同时提供工作台 persona、Skill catalog 与 NoobAI MCP 工具声明。",
+        "skill": "首次 skill 工具调用及其返回见 toolEvents；后续参考文件从所加载 Skill 的引用进入。",
+        "catalog": "目录工具知识来自原生 MCP 声明；本轮没有回退目录 CLI。"
+      },
+      "toolEvents": [
+        {
+          "seq": 18,
+          "time": 1791951022798,
+          "name": "skill",
+          "callId": "call_00_17q83jaty40rrcczgqnetr9h",
+          "arguments": {
+            "name": "wai-sdxl-prompt-builder"
+          },
+          "resultSeq": 19,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/aa0f2a31-79db-483f-9bb3-d652a416a405.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:22.817Z"
+          }
+        },
+        {
+          "seq": 23,
+          "time": 1791951026715,
+          "name": "bash",
+          "callId": "call_00_bb7g0ljtg8by3h7352ovfl7n",
+          "description": "List skill directory contents",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 24,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/702dfaaa-2cc5-448f-9693-ee4f98d6e72c.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:26.785Z"
+          }
+        },
+        {
+          "seq": 25,
+          "time": 1791951026754,
+          "name": "bash",
+          "callId": "call_01_yewxmo7q39om5toboacnqzsw",
+          "description": "Inspect working directory",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 26,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/702dfaaa-2cc5-448f-9693-ee4f98d6e72c.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:26.785Z"
+          }
+        },
+        {
+          "seq": 30,
+          "time": 1791951030305,
+          "name": "bash",
+          "callId": "call_00_qr0t8bh4vubjviqkrj77e7oq",
+          "description": "Read input contract and position order",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 31,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c7ad8015-3938-49d4-ae8a-6c3dd471a1c2.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:30.354Z"
+          }
+        },
+        {
+          "seq": 32,
+          "time": 1791951030326,
+          "name": "bash",
+          "callId": "call_01_v6q28gwrw9p5o4ciawulrrdv",
+          "description": "Read composition decision tree and branches",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 33,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c7ad8015-3938-49d4-ae8a-6c3dd471a1c2.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:30.354Z"
+          }
+        },
+        {
+          "seq": 37,
+          "time": 1791951035436,
+          "name": "bash",
+          "callId": "call_00_gd96w5pceb9pf9hyaxhsyvwx",
+          "description": "Read visual design order and structure rules",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 38,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5bb764d1-6187-4b36-9e9c-80abde7c6d4e.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:35.508Z"
+          }
+        },
+        {
+          "seq": 39,
+          "time": 1791951035477,
+          "name": "bash",
+          "callId": "call_01_hsheo5648mqu327hms897pxv",
+          "description": "Read artist adoption and syntax rules",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 40,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/5bb764d1-6187-4b36-9e9c-80abde7c6d4e.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:35.508Z"
+          }
+        },
+        {
+          "seq": 44,
+          "time": 1791951041881,
+          "name": "bash",
+          "callId": "call_00_3baz9ya96y0ousowldu9rlkm",
+          "description": "Read all position rules",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 45,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/ec3709fd-b38a-46fa-86aa-d9a8a180ae41.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:41.947Z"
+          }
+        },
+        {
+          "seq": 49,
+          "time": 1791951048757,
+          "name": "bash",
+          "callId": "call_00_d8cqxklzoioghyjwry30be4l",
+          "description": "Read weight policy, weighting, conflict rules",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 50,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/1a420aac-22a0-44f0-a370-a87df4163946.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:48.829Z"
+          }
+        },
+        {
+          "seq": 51,
+          "time": 1791951048800,
+          "name": "bash",
+          "callId": "call_01_krvoh7w2y66q87hywhr9aq8p",
+          "description": "Read self-check and format validator",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 52,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/1a420aac-22a0-44f0-a370-a87df4163946.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:48.829Z"
+          }
+        },
+        {
+          "seq": 56,
+          "time": 1791951058238,
+          "name": "bash",
+          "callId": "call_00_g80zfae4h9ngdu4qlu6j72yk",
+          "description": "Read generation output contract and schema",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 57,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/221fc46f-b481-4dcf-8a60-b922ffd7bd3b.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:58.300Z"
+          }
+        },
+        {
+          "seq": 58,
+          "time": 1791951058271,
+          "name": "bash",
+          "callId": "call_01_wkwj9eoano65i626aerx0pnd",
+          "description": "Read portrait example and generation CLI",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 59,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/221fc46f-b481-4dcf-8a60-b922ffd7bd3b.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:10:58.300Z"
+          }
+        },
+        {
+          "seq": 63,
+          "time": 1791951092267,
+          "name": "bash",
+          "callId": "call_00_kzso60znu51bvrqz3dnvtjg7",
+          "description": "Read occlusion and environment examples",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 64,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c1482797-0bb8-4000-b177-95f31ac69748.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:32.333Z"
+          }
+        },
+        {
+          "seq": 65,
+          "time": 1791951092305,
+          "name": "bash",
+          "callId": "call_01_551bizby88hyk3px5qmfhhws",
+          "description": "Inspect DSH environment variables",
+          "argumentsLocation": "collect.records 的该 seq；完整原文仅留原始记录，避免在报告重复环境参数。",
+          "resultSeq": 66,
+          "isError": false,
+          "firstModelInputReceivingResult": {
+            "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c1482797-0bb8-4000-b177-95f31ac69748.jsonl",
+            "line": 1,
+            "at": "2026-10-14T04:11:32.333Z"
+          }
+        }
+      ],
+      "unexpectedGeneration": {
+        "verdict": "通过",
+        "observed": "已审查完整工具事件：未发现生成提交、生成 CLI 调用、Run 或媒体产出；Krea2 额外查询 LoRA 但未采用或提交。"
+      },
+      "findings": [
+        {
+          "id": "WAI-NO-DELIVERY",
+          "severity": "P1",
+          "title": "执行因输出上限结束，未完成画师说明查询与产物交付",
+          "sourceLocation": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md 的“取得画师说明”节",
+          "eventSeq": 71,
+          "impact": "目标分支没有被实际执行；记录不能作为 WAI 成功验收。",
+          "rootCauseBoundary": "这里只确认实际结束机制，不推定输出上限的配置来源或 SDK 原因。"
+        }
+      ],
+      "expectedBranch": "已有 say_hana Prompt 缺少说明；先确认唯一 wai 底模，再按 Style ID 12344 读取完整说明，保留用户 Prompt 并完成冲突比较和十五位置构建。",
+      "targetedBranchVerdict": "未完成",
+      "fullContractVerdict": "未通过",
+      "artifactPath": null,
+      "artifactUsability": "Workspace 未发现最终 Builder 产物，不能用于后续生成。",
+      "actualBehavior": "完成 Skill 与参考文件读取后，最后一次实际模型调用输出 8192 tokens，以 max-tokens 结束；宿主 seq 71 同样记为 max-tokens。末次消息只有 reasoning，没有用户可见的选择问题、MCP 调用、校验调用或最终结果。",
+      "truncationEvidence": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/c1482797-0bb8-4000-b177-95f31ac69748.jsonl",
+        "finishedAt": "2026-10-14T04:12:42.054Z",
+        "outputTokens": 8192,
+        "finishReason": "max-tokens",
+        "hostSeq": 71
+      },
+      "waiting": {
+        "observed": false,
+        "replyAllowedNow": false,
+        "actualMissingInput": "当前场景矩阵可匹配单主体肖像、遮挡与深度；窗边地点也涉及环境叙事。用户没有明确指定唯一主场景。",
+        "contractLocation": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md:16",
+        "predefinedReplyCondition": "仅当后续独立执行确实向用户列出实际匹配的候选、明确请求选择主场景并停止时，主线程可以选择已列出的“单主体肖像”为主要场景，保留全部现有画面要求；不补调用教程。",
+        "permittedReplyIfConditionSatisfied": "主要场景选择“单主体肖像”。其余已经明确提供的画面要求保持不变。",
+        "artistMaterialRule": "仅当执行者实际查询后报告 ID 12344 没有完整说明时，才允许主线程提供经真实目录或用户材料核实的完整说明；不从画师名称猜测说明。",
+        "currentReason": "本轮没有向用户交付问题，不能把内部推理当正确等待，也不能以测试用户回复替代未发生的分支。"
+      }
+    }
+  ],
+  "acceptanceBoundary": "三个案例仅覆盖普通工作台预设的三个具体输入；不能扩展为两种预设、三类 Skill 全部分支或真实生图已通过。"
+}

@@ -1,0 +1,9 @@
+{
+  "command": "pnpm test:desktop",
+  "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-final-scope-check.log",
+  "filesPassed": 13,
+  "testsPassed": 269,
+  "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79",
+  "independentReview": "desktop-final-mcp-review.json",
+  "independentVerdict": "passed"
+}

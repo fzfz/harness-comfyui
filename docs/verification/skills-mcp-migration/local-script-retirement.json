@@ -1,0 +1,493 @@
+{
+  "purpose": "登记重复测试执行脚本的删除范围及保留材料。",
+  "readWhen": "核对迁移清理范围或定位历史验收资料时。",
+  "scope": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live",
+  "removed": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/common.mjs",
+      "bytes": 9588,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs",
+      "bytes": 7430,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/observer.mjs",
+      "bytes": 3694,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/offline-finalize.mjs",
+      "bytes": 9798,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/runner.mjs",
+      "bytes": 10496,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/shared-finalize.mjs",
+      "bytes": 10880,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control-install.mjs",
+      "bytes": 1986,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control.mjs",
+      "bytes": 5762,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control.test.mjs",
+      "bytes": 4073,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/batch-ready-builder-finalize.mjs",
+      "bytes": 5659,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/batch-ready-builder-runner.mjs",
+      "bytes": 16954,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-runtime/finalize-offline.mjs",
+      "bytes": 7698,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-runtime/runner.mjs",
+      "bytes": 18893,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-model-comparison-runtime/finalize-offline.mjs",
+      "bytes": 7678,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-model-comparison-runtime/prepare-runner.mjs",
+      "bytes": 9068,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-model-comparison-runtime/runner.mjs",
+      "bytes": 23484,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/collect-batch.mjs",
+      "bytes": 887,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/configure-boundary.mjs",
+      "bytes": 1371,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/configure-go.mjs",
+      "bytes": 2143,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/configure-nemotron.mjs",
+      "bytes": 2818,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/configure.mjs",
+      "bytes": 1702,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/desktop-driver.mjs",
+      "bytes": 21,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。",
+      "symlinkTargetPreserved": "../desktop-driver.mjs"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/finalize.mjs",
+      "bytes": 8517,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/preparation-driver-import-path-copy.mjs",
+      "bytes": 7697,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/runner.mjs",
+      "bytes": 20260,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/finalize.mjs",
+      "bytes": 8648,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/runner.mjs",
+      "bytes": 13321,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/finalize.mjs",
+      "bytes": 9905,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/post-stop.mjs",
+      "bytes": 4583,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/desktop-driver.mjs",
+      "bytes": 7430,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/recovery.mjs",
+      "bytes": 31081,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/common.mjs",
+      "bytes": 9579,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/desktop-driver.mjs",
+      "bytes": 7430,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/observer.mjs",
+      "bytes": 3694,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/runner.mjs",
+      "bytes": 23080,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/install.mjs",
+      "bytes": 1498,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observer-derived-check.mjs",
+      "bytes": 1150,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/finalize.mjs",
+      "bytes": 8646,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/finish-index.mjs",
+      "bytes": 4143,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/runner.mjs",
+      "bytes": 15710,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/finalize.mjs",
+      "bytes": 8650,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/finish-index.mjs",
+      "bytes": 4162,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/runner.mjs",
+      "bytes": 17590,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/desktop-driver.mjs",
+      "bytes": 7406,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/finalize.mjs",
+      "bytes": 8975,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/finish-index.mjs",
+      "bytes": 4327,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/runner.mjs",
+      "bytes": 17864,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/verify-final-evidence.mjs",
+      "bytes": 5390,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/finalize-offline.mjs",
+      "bytes": 9899,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/runner.mjs",
+      "bytes": 19310,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/submit-batch.mjs",
+      "bytes": 1408,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/finalize.mjs",
+      "bytes": 8646,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/finish-index.mjs",
+      "bytes": 4158,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/runner.mjs",
+      "bytes": 17606,
+      "reason": "场景专用执行、配置或归档入口，已停止使用。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/cleanup.test.mjs",
+      "bytes": 5641,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/cli.test.mjs",
+      "bytes": 1405,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/local-provider.mjs",
+      "bytes": 2890,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/local-provider.test.mjs",
+      "bytes": 1330,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/official-control.mjs",
+      "bytes": 9336,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/runner.mjs",
+      "bytes": 45105,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/runner.test.mjs",
+      "bytes": 16735,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/runtime-observer.mjs",
+      "bytes": 1637,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/cancellation.test.mjs",
+      "bytes": 9101,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/cli.test.mjs",
+      "bytes": 2833,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/controlled-parent.mjs",
+      "bytes": 4343,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/controlled-parent.test.mjs",
+      "bytes": 1006,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/inspector-cancel.test.mjs",
+      "bytes": 3965,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+      "bytes": 4567,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/profile.test.mjs",
+      "bytes": 5852,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/relative-delay.mjs",
+      "bytes": 5944,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/relative-delay.test.mjs",
+      "bytes": 5182,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/request-journal.mjs",
+      "bytes": 3543,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/request-journal.test.mjs",
+      "bytes": 3733,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+      "bytes": 16059,
+      "reason": "重复的场景执行及控制层与其专属测试；轨迹采集单独迁入受管源码。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog.mjs",
+      "bytes": 2099,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe.mjs",
+      "bytes": 2307,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/prepare-matrix.py",
+      "bytes": 6697,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-alternative/catalog.mjs",
+      "bytes": 2099,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/compile.mjs",
+      "bytes": 3513,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/inspect.mjs",
+      "bytes": 1674,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-export.mjs",
+      "bytes": 1958,
+      "reason": "已结束的目录与模板专项调查脚本；结果材料保留，后续查询使用现有入口。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture.mjs",
+      "bytes": 31767,
+      "reason": "目录边界服务与协议测试已迁入tests/desktop/fixtures及tests/production，并通过真实0.90.2上游只读核对；独立CLI启停与smoke入口已退役。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+      "bytes": 52918,
+      "reason": "目录边界服务与协议测试已迁入tests/desktop/fixtures及tests/production，并通过真实0.90.2上游只读核对；独立CLI启停与smoke入口已退役。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-smoke.mjs",
+      "bytes": 3331,
+      "reason": "目录边界服务与协议测试已迁入tests/desktop/fixtures及tests/production，并通过真实0.90.2上游只读核对；独立CLI启停与smoke入口已退役。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-driver.mjs",
+      "bytes": 7398,
+      "reason": "capture/collect 由受管采集 CLI 接替；会话创建、发送和等待使用官方 Desktop UI/Remote 既有流程。",
+      "replacements": [
+        "scripts/verification/collect-session-trace.mjs#prepareOfficialSessionTrace",
+        "scripts/verification/collect-session-trace.mjs#collectOfficialSessionTrace",
+        "tests/desktop/official-desktop-live.test.mjs#seedOfficialBusinessSessions",
+        "tests/desktop/official-desktop-live.test.mjs#waitForValue"
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-evidence.test.mjs",
+      "bytes": 1583,
+      "reason": "仅测试被退役的 desktop-driver。",
+      "replacements": [
+        "tests/production/official-session-trace.test.mjs",
+        "tests/production/collect-session-trace.test.mjs",
+        "tests/production/official-trace-evidence.test.mjs"
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/session-turn.mjs",
+      "bytes": 316,
+      "reason": "仅供 desktop-driver 的 watch 使用；随驱动整组退役。",
+      "replacements": [
+        "tests/desktop/official-desktop-live.test.mjs#waitForValue",
+        "scripts/verification/collect-session-trace.mjs#collectOfficialSessionTrace"
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/session-turn.test.mjs",
+      "bytes": 988,
+      "reason": "仅测试被退役的 session-turn。",
+      "replacements": [
+        "tests/desktop/official-desktop-live.test.mjs"
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-observer.mjs",
+      "bytes": 3694,
+      "reason": "模型请求和响应采集已进入受管模块；运行副本另行保留。",
+      "replacements": [
+        "tests/desktop/fixtures/official-session-trace.mjs#apply"
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-observer.test.mjs",
+      "bytes": 12161,
+      "reason": "仅测试被退役的 llm-observer。",
+      "replacements": [
+        "tests/production/official-session-trace.test.mjs",
+        "tests/production/collect-session-trace.test.mjs",
+        "tests/production/official-trace-evidence.test.mjs"
+      ]
+    }
+  ],
+  "replacement": "应用生命周期、安装和会话操作继续使用 tests/desktop/ 既有设施；轨迹采集按主计划第 5.13.3 节迁入仓库。",
+  "preserved": "本次不删除 JSON、JSONL、Profile、数据库、图片、候选包或运行目录中的执行快照。",
+  "remaining": "保留历史重放、扫描和调查工具及其依赖；精确消费者见 .planning/skills-mcp-migration/remaining-script-cleanup.json。后续执行使用受管设施。",
+  "status": "removed",
+  "removedCount": 90,
+  "validation": [
+    "mcp-0902-fixture-verification.json",
+    "mcp-0902-first-live-review.json"
+  ]
+}

@@ -1,0 +1,419 @@
+{
+  "purpose": "记录完整候选官方安装及本地受控派发生命周期的运行事实与证据入口。",
+  "status": "完整安装与四场景受控运行已完成，待独立复核。",
+  "recordedAt": "2026-10-14T10:09:33.350445+00:00",
+  "evidenceIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/evidence-index.json",
+  "driver": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+  "driverChangedFiles": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/runtime-observer.mjs"
+  ],
+  "driverAdaptation": {
+    "plan": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-adaptation-plan.json",
+    "passedTests": 8,
+    "testLog": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-final-tests.log",
+    "redGreenStages": [
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-red-1.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-green-1.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-red-2.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-green-2.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-red-3.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-green-3.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-red-4.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-green-4.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-red-5.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-green-5.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-red-6.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-green-6.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/observer-insertion-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/observer-insertion-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/observer-readiness-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/observer-readiness-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/observer-owner-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/observer-owner-green.log"
+      }
+    ],
+    "dryRun": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/dry-run.json",
+    "candidateParameterRequired": true,
+    "resourceCountDerivedFromManifest": true
+  },
+  "scope": {
+    "mode": "本轮冻结候选经官方安装器完整安装后的受控派发生命周期。",
+    "runtimeState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/state.json",
+    "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-6Xztjj",
+    "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-6Xztjj/runtime",
+    "controlRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj",
+    "candidateSourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-candidate.tgz",
+    "candidateFrozenPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-6Xztjj/runtime/harness-comfyui-candidate.tgz",
+    "candidateInstalled": true,
+    "resourceCount": 200,
+    "allInstalledResourcesByteEqual": true,
+    "manifest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/candidate-manifest.json",
+    "installedResourceComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/installed-resource-comparison.json",
+    "historyCopied": false
+  },
+  "officialInstallation": {
+    "state": {
+      "runId": "dc8ab9a0-be47-4219-a901-0ee591cbc290",
+      "resultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/install-result-dc8ab9a0-be47-4219-a901-0ee591cbc290.json",
+      "status": "installed",
+      "enabled": true,
+      "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-6Xztjj/runtime/harness-comfyui-candidate.tgz"
+    },
+    "result": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/complete-installation.json",
+    "cacheEnvironmentName": "pnpm_config_store_dir",
+    "cacheDirectory": "/Users/fzfz/Library/pnpm/store"
+  },
+  "controlledRuntimeResult": {
+    "execution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/execution.json",
+    "runIds": [
+      "dc8ab9a0-be47-4219-a901-0ee591cbc290",
+      "174769c8-11d3-48c8-a5b0-eccd57e5f5fb",
+      "98f58fe2-0930-48db-a6af-70e029750ac6",
+      "5217b213-56bc-48a3-bd13-b14eb9470850"
+    ],
+    "cases": [
+      {
+        "case": "native-workbench",
+        "parentSessionId": "session-b13b4af7-e72a-4b2d-8c4a-a84db80bc4b8",
+        "childId": "fe6e0fdf-9bfb-4863-8936-68f9af8caa20",
+        "promptSubmissions": 4,
+        "cancelAccepted": true,
+        "acceptedIdentityInNextActualRequest": true,
+        "listAgentsResultContainsChild": true,
+        "coldContinuationSameChildNewActivation": true,
+        "sendMessageDeclared": false,
+        "childBypassEventCount": 0,
+        "denialResults": [
+          {
+            "requestSequence": 16,
+            "callId": "controlled_native-workbench_DENY",
+            "text": "Error: unknown tool \"send_message\""
+          }
+        ],
+        "completionOrder": [
+          {
+            "stage": "CONTINUE",
+            "childEndEventIndex": 151,
+            "parentToolResultEventIndexes": [
+              152
+            ],
+            "childEndBeforeToolResult": true
+          }
+        ]
+      },
+      {
+        "case": "native-iteration",
+        "parentSessionId": "session-348c190a-ea12-42ef-b09a-310c9c2b1fe8",
+        "childId": "30a0345a-6c6b-4d76-851e-a90809afed4a",
+        "promptSubmissions": 4,
+        "cancelAccepted": true,
+        "acceptedIdentityInNextActualRequest": true,
+        "listAgentsResultContainsChild": true,
+        "coldContinuationSameChildNewActivation": true,
+        "sendMessageDeclared": false,
+        "childBypassEventCount": 0,
+        "denialResults": [
+          {
+            "requestSequence": 21,
+            "callId": "controlled_native-iteration_DENY",
+            "text": "Error: unknown tool \"send_message\""
+          }
+        ],
+        "completionOrder": [
+          {
+            "stage": "CONTINUE",
+            "childEndEventIndex": 194,
+            "parentToolResultEventIndexes": [
+              195
+            ],
+            "childEndBeforeToolResult": true
+          }
+        ]
+      },
+      {
+        "case": "ptc-workbench",
+        "parentSessionId": "session-30e8fc23-c504-45c0-afd1-a69c5f110726",
+        "childId": "6a99a827-8859-4000-8d9f-df5068e49c6e",
+        "promptSubmissions": 2,
+        "cancelAccepted": null,
+        "acceptedIdentityInNextActualRequest": null,
+        "listAgentsResultContainsChild": null,
+        "coldContinuationSameChildNewActivation": null,
+        "sendMessageDeclared": false,
+        "childBypassEventCount": 0,
+        "denialResults": [
+          {
+            "requestSequence": 27,
+            "callId": "controlled_ptc-workbench_DENY",
+            "text": "Error: code run failed (exception): TypeError: tools.send_message is not a function\n    at eval (eval at runProgram (file:///Applications/DeepSeek%20Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1030:31), <anonymous>:4:20)\n    at runProgram (file:///Applications/DeepSeek%20Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1030:172)\n    at runNodeMain (file:///Applications/DeepSeek%20Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1113:9)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\nFile sandbox: workspace-write; enforcement: full."
+          }
+        ],
+        "completionOrder": [
+          {
+            "stage": "PARENT",
+            "childEndEventIndex": 256,
+            "parentToolResultEventIndexes": [
+              258
+            ],
+            "childEndBeforeToolResult": true
+          }
+        ]
+      },
+      {
+        "case": "ptc-iteration",
+        "parentSessionId": "session-5dcf5d35-abe1-4352-8e32-0d9d409d27c4",
+        "childId": "cadfda99-658c-41b5-9f81-47c1026ddbaf",
+        "promptSubmissions": 2,
+        "cancelAccepted": null,
+        "acceptedIdentityInNextActualRequest": null,
+        "listAgentsResultContainsChild": null,
+        "coldContinuationSameChildNewActivation": null,
+        "sendMessageDeclared": false,
+        "childBypassEventCount": 0,
+        "denialResults": [
+          {
+            "requestSequence": 33,
+            "callId": "controlled_ptc-iteration_DENY",
+            "text": "Error: code run failed (exception): TypeError: tools.send_message is not a function\n    at eval (eval at runProgram (file:///Applications/DeepSeek%20Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1030:31), <anonymous>:4:20)\n    at runProgram (file:///Applications/DeepSeek%20Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1030:172)\n    at runNodeMain (file:///Applications/DeepSeek%20Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-ptc-runtime-node/lib/process.js:1113:9)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\nFile sandbox: workspace-write; enforcement: full."
+          }
+        ],
+        "completionOrder": [
+          {
+            "stage": "PARENT",
+            "childEndEventIndex": 318,
+            "parentToolResultEventIndexes": [
+              320
+            ],
+            "childEndBeforeToolResult": true
+          }
+        ]
+      }
+    ],
+    "executionFailures": [],
+    "structuredFacts": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/structured-facts.json"
+  },
+  "modelRequests": {
+    "httpRequestCount": 34,
+    "observerRecordCount": 34,
+    "providerModels": {
+      "completion-local/completion-local-model": 34
+    },
+    "purposes": {
+      "null": 30,
+      "session-title": 4
+    },
+    "network": {
+      "provider": "completion-local",
+      "model": "completion-local-model",
+      "baseURL": "http://127.0.0.1:57564/v1",
+      "modelPort": 57564,
+      "mcpUrl": "http://127.0.0.1:57563/mcp",
+      "mcpPort": 57563
+    },
+    "externalModelRequests": 0,
+    "realGenerationRequests": 0
+  },
+  "observerReadiness": {
+    "activationProofs": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/observer-activation-174769c8-11d3-48c8-a5b0-eccd57e5f5fb.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/observer-activation-dc8ab9a0-be47-4219-a901-0ee591cbc290.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/observer-activation-98f58fe2-0930-48db-a6af-70e029750ac6.json",
+      ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/observer-activation-5217b213-56bc-48a3-bd13-b14eb9470850.json"
+    ],
+    "minimumEventProbes": [
+      {
+        "path": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/native-iteration-observer-probe.json",
+        "runId": "174769c8-11d3-48c8-a5b0-eccd57e5f5fb",
+        "sessionId": "session-348c190a-ea12-42ef-b09a-310c9c2b1fe8",
+        "type": "model/selection",
+        "requestsBeforeFirstPrompt": 6
+      },
+      {
+        "path": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/ptc-workbench-observer-probe.json",
+        "runId": "5217b213-56bc-48a3-bd13-b14eb9470850",
+        "sessionId": "session-30e8fc23-c504-45c0-afd1-a69c5f110726",
+        "type": "model/selection",
+        "requestsBeforeFirstPrompt": 22
+      },
+      {
+        "path": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/native-workbench-observer-probe.json",
+        "runId": "174769c8-11d3-48c8-a5b0-eccd57e5f5fb",
+        "sessionId": "session-b13b4af7-e72a-4b2d-8c4a-a84db80bc4b8",
+        "type": "model/selection",
+        "requestsBeforeFirstPrompt": 0
+      },
+      {
+        "path": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/ptc-iteration-observer-probe.json",
+        "runId": "5217b213-56bc-48a3-bd13-b14eb9470850",
+        "sessionId": "session-5dcf5d35-abe1-4352-8e32-0d9d409d27c4",
+        "type": "model/selection",
+        "requestsBeforeFirstPrompt": 28
+      }
+    ],
+    "firstPromptEventProbeModelRequests": 0
+  },
+  "cleanup": {
+    "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/final-stopped-confirmation.json",
+    "ownProcessGroupsAbsent": true,
+    "ownPortsReleased": true,
+    "ownLeasesAbsent": true,
+    "profileRestoredByteEqual": true,
+    "defaultHomeUserFilesRestoredOrRemoved": false
+  },
+  "facilityFailures": [
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Nbwubx",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-Nbwubx/state.json",
+      "execution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-Nbwubx/execution.json",
+      "runIds": [
+        "51f7eb27-3938-40f7-bee3-e754ca7fa227",
+        "6c9bc461-a790-431d-890b-f985ba828d79"
+      ],
+      "modelRequests": 3,
+      "rawFailures": [
+        {
+          "stage": "controlled-runtime",
+          "message": "CONTROLLED_TIMEOUT: accepted identity committed after cancel",
+          "stack": "Error: CONTROLLED_TIMEOUT: accepted identity committed after cancel\n    at waitFor (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:31:9)\n    at async newCase (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:150:16)\n    at async run (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:259:21)\n    at async main (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:320:12)"
+        }
+      ],
+      "facilityCauseAndRepair": "Profile将测试观察插件作为不存在条目的patch；本次修复将该插件写入insert。",
+      "profileRestoredByteEqual": true,
+      "successfulSample": false,
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-Nbwubx",
+      "actualPersistentAccepted": [
+        {
+          "toolName": "subagent_task",
+          "callId": "controlled_native-workbench_PARENT",
+          "subagentId": "22257463-5ed6-49eb-93c6-3e3cfc89869c",
+          "messageId": "3337712d-896d-484d-aab6-2ab21bf488e4",
+          "status": "accepted"
+        }
+      ],
+      "acceptedParentHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-Nbwubx/native-workbench-failure.json",
+      "childEvidenceScope": "观察器未启用期间的子Agent HTTP请求与R内持久文件已保留；驱动未采集该子Agent的Remote历史。"
+    },
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-VgMgbi",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-VgMgbi/state.json",
+      "execution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-VgMgbi/execution.json",
+      "runIds": [
+        "fbb46a95-8446-4d78-ac5d-19f3f6676a2f"
+      ],
+      "modelRequests": 0,
+      "rawFailures": [
+        {
+          "stage": "controlled-runtime",
+          "message": "CONTROLLED_TIMEOUT: observer activated for current official PID",
+          "stack": "Error: CONTROLLED_TIMEOUT: observer activated for current official PID\n    at waitFor (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:31:9)\n    at async confirmObserverActivation (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:57:20)\n    at async start (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:61:116)\n    at async installControlledCandidate (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:248:5)\n    at async run (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:264:24)\n    at async main (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs:333:12)"
+        }
+      ],
+      "facilityCauseAndRepair": "观察插件已启用，但驱动使用Desktop主PID匹配Host子进程PID；本次修复按官方进程组成员核对。",
+      "profileRestoredByteEqual": true,
+      "successfulSample": false,
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-VgMgbi"
+    }
+  ],
+  "historicalCouejkExperiment": {
+    "result": {
+      "runId": "b0fac459-7805-42c9-b5a5-ff03016852dd",
+      "stage": "remote.session.create → agent-preset/invalid",
+      "promptSubmissions": 0,
+      "casesCompleted": 0,
+      "registryContractFailure": "project-tool-visibility: tools.restrict() names unknown global tool \"send_message\"; known global tools: inspect_image",
+      "resourceOverlayResolutionFailure": "skill-filesystem: Cannot find package '@deepseek-ai/dsh-skill-filesystem' imported from Couejk/runtime/completion-candidate-resources/package/agent-presets/project-installed-skills.mjs",
+      "actualErrorAndStack": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/failed-attempt-2/execution.json",
+      "activationTraceAndLogs": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/failed-attempt-2/probe-runs/b0fac459-7805-42c9-b5a5-ff03016852dd",
+      "archive": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/failed-attempt-2/archive-index.json",
+      "profileRestoredByteEqual": true,
+      "controlledModelRequests": 0,
+      "mcpRequests": 0,
+      "criteriaReached": [],
+      "controlledSessionCreated": false
+    },
+    "scope": {
+      "mode": "官方已安装Couejk环境＋当前候选资源Include覆盖",
+      "originalInstalledProfile": "已通过官方安装的0.45.0",
+      "candidateInstalled": false,
+      "originalProfileBackup": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/original-profile.yml",
+      "candidateComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/candidate-resource-comparison.json",
+      "runtimeState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/state.json",
+      "environmentConsistencyGate": "父线程报告独立复审通过，9项结构测试通过；本轮实际启动通过守卫。",
+      "resourceOverlayPreservedAsFailedExperiment": true
+    },
+    "candidateIdentity": {
+      "scope": "派发生命周期候选资源",
+      "resourceRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-candidate-resources/package",
+      "comparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/couejk-controlled/candidate-resource-comparison.json",
+      "includesLatestPersonaConditionClarification": false,
+      "dispatchModules": [
+        {
+          "candidate": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-candidate-resources/package/agent-presets/project-iteration-dispatch.mjs",
+          "current": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/agent-presets/project-iteration-dispatch.mjs",
+          "bytes": 5071,
+          "equalToCurrentSource": true
+        },
+        {
+          "candidate": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-candidate-resources/package/agent-presets/project-tool-visibility.mjs",
+          "current": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/agent-presets/project-tool-visibility.mjs",
+          "bytes": 2145,
+          "equalToCurrentSource": true
+        }
+      ],
+      "observer": [
+        {
+          "runtime": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-observer/llm-observer.mjs",
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-observer.mjs",
+          "equal": true
+        },
+        {
+          "runtime": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/completion-observer/redact-evidence.mjs",
+          "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/redact-evidence.mjs",
+          "equal": true
+        }
+      ],
+      "sourceComparisonTiming": "selected-resource-identity.json记录本次冻结候选时的源码比较；后续产品修复使用另一本轮候选身份。"
+    }
+  },
+  "defaultHomeFailedLaunch": {
+    "assessment": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/harness-run-hRnrbX/misdirected-launch-assessment.json",
+    "metadata": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/harness-run-hRnrbX/misdirected-launch-files.json",
+    "readonlyDetails": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/harness-run-hRnrbX/default-home-readonly-details.json",
+    "rawLogsDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/harness-run-hRnrbX",
+    "cleanup": {
+      "processGroupAbsent": true,
+      "portsReleased": true
+    },
+    "defaultHomeFileRestoration": false
+  },
+  "redactionReview": {
+    "observerSourceTestsParentReportedPass": true,
+    "observerSourceTests": 32,
+    "historicalCoverage": "父线程完成的2537份历史证据扫描。",
+    "currentCoverage": "本轮新增HTTP请求、历史、事件和probe归档待独立脱敏复核。"
+  },
+  "pending": [
+    "独立队员复核完整候选身份、34请求及主子生命周期轨迹。",
+    "独立队员复核native/PTC拒绝含义及四轮清理。",
+    "本轮新增证据脱敏复核。"
+  ]
+}

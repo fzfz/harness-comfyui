@@ -1,0 +1,642 @@
+{
+  "reviewedAt": "2026-10-14T05:47:26.653263+00:00",
+  "scope": "5.6-7 工作台首轮独立 Spec 与完整轨迹，只读审查；未回复执行者。",
+  "targetBranchStatus": "failed",
+  "wholeTurnStatus": "failed",
+  "waiting": false,
+  "preauthorizedReplyApplicable": false,
+  "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-template-choice-execution.json",
+  "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791956498546-5ebaff8c-25fa-4e4c-ab62-627e1b977b56-collect.json",
+  "sessionId": "session-ea9d677d-2fdc-4a9d-bd63-d83b63ccbbdf",
+  "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/5.6-7-input.json",
+  "contractSources": [
+    {
+      "source": "实际安装 comfyui-generate/SKILL.md，seq18",
+      "section": "搜索 Workflow 模板、生成模型与 LoRA",
+      "requirement": "按返回顺序展示候选标识、名称和用途说明，并等待用户选择。"
+    },
+    {
+      "source": "同一 Skill，核对当前选择",
+      "requirement": "创建图片前由当前消息直接ID或上下文ID确定模板；缺少模板选择时等待。"
+    },
+    {
+      "source": "docs/verification/skills-mcp-migration/input-preflight-current.json 5.6-7.test_reply_rule",
+      "requirement": "先独立核对真实候选和等待；随后选择本轮实际候选29并原样补入完整Builder。"
+    }
+  ],
+  "findings": [
+    {
+      "id": "GTC1",
+      "severity": "high",
+      "title": "未等待模板选择便提交真实生成",
+      "firstDecisionSeq": 21,
+      "firstPostCandidateDecisionSeq": 28,
+      "resourceSelectionCallSeq": 38,
+      "submissionCallSeq": 50,
+      "submissionResultSeq": 51,
+      "evidence": "seq21 已决定唯一名称匹配时继续；seq25 返回六项；seq28继续采用29；seq50实际提交；seq94直接说明自行选择。",
+      "judgment": "用户明确要求供我选择后生成，Skill也明确等待。精确名称命中没有赋予代选授权。",
+      "causeBoundary": "完整等待条款实际保留在首次偏离请求中。模型对任务期待的推测属于执行者判断，未发现允许唯一名称命中直接提交的合同来源；这不足以证明某项宿主配置导致偏离。"
+    },
+    {
+      "id": "GTC2",
+      "severity": "low",
+      "title": "调用未注册 present 工具",
+      "seqs": [
+        94,
+        95,
+        96,
+        99
+      ],
+      "evidence": "seq95调用present，seq96返回UNKNOWN_TOOL；seq99改用链接。",
+      "source": "seq8 system中的宿主交付说明提及present，实际注册工具中没有该名称。",
+      "impact": "图片和链接已经在seq94返回，失败工具没有阻断最终结束。"
+    }
+  ],
+  "actualCandidates": [
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "29"
+      },
+      "name": "wai_basic_txt2img",
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "model": {
+        "id": "1",
+        "name": "waiIllustriousSDXL_v170.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "37"
+      },
+      "name": "wai_txt2img_lora",
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "model": {
+        "id": "1",
+        "name": "waiIllustriousSDXL_v170.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image_lora",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "28"
+      },
+      "name": "wai_2pass_upscale",
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "model": {
+        "id": "1",
+        "name": "waiIllustriousSDXL_v170.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image_second_pass",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "40"
+      },
+      "name": "wai-rin模型_V37_年龄lora_8步加速lora_nsfw_face细化",
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "model": {
+        "id": "15",
+        "name": "rinSoftsketch_v20.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image_lora",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "27"
+      },
+      "name": "krea2_txt2img_unet 1.2.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "11",
+        "name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "24"
+      },
+      "name": "krea2_txt2img_gguf 1.2.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "13",
+        "name": "Krea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "23"
+      },
+      "name": "krea2_txt2img_gguf 1.1.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "13",
+        "name": "Krea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "33"
+      },
+      "name": "Anima Preview3文生图",
+      "base_model": {
+        "id": "1",
+        "name": "anima"
+      },
+      "model": {
+        "id": "9",
+        "name": "anima-preview3-base.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "18"
+      },
+      "name": "krea2_gguf_lora_txt2img 1.2.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "13",
+        "name": "Krea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf"
+      },
+      "lora": {
+        "id": "8",
+        "name": "Krea2-亚洲asianMix_v1-bf16.safetensors"
+      },
+      "workflow_type": "text_to_image_lora",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "42"
+      },
+      "name": "turboloar_4步加速_另加一个lora_krea2",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "11",
+        "name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "41"
+      },
+      "name": "miaomiao_Anima_10步+turbolora_cfg1",
+      "base_model": {
+        "id": "1",
+        "name": "anima"
+      },
+      "model": {
+        "id": "3",
+        "name": "anima-aesthetic-v1.1.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "36"
+      },
+      "name": "Krea 2 Identity Edit V1.2单图像编辑",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "10",
+        "name": "krea2_turbo_bf16.safetensors"
+      },
+      "lora": {
+        "id": "5",
+        "name": "krea2_identity_edit_v1_2_编辑模型.safetensors"
+      },
+      "workflow_type": "text_to_image",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "43"
+      },
+      "name": "AnimaStandardV8_完整25步吃负面词",
+      "base_model": {
+        "id": "1",
+        "name": "anima"
+      },
+      "model": {
+        "id": "3",
+        "name": "anima-aesthetic-v1.1.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image_lora",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "11"
+      },
+      "name": "krea2_2pass_usd_unet 1.2.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "11",
+        "name": "Krea2-MuseByStable_v15Turbo_fp8.safetensors"
+      },
+      "lora": {
+        "id": "6",
+        "name": "Krea2-亚洲asianMix_v1-bf16.safetensors"
+      },
+      "workflow_type": "text_to_image_second_pass",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "8"
+      },
+      "name": "krea2_2pass_usd_gguf 1.2.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "6",
+        "name": "Krea2-MuseByStable_v15Turbo_GGUF_Q4.gguf"
+      },
+      "lora": {
+        "id": "7",
+        "name": "Krea2-亚洲asianMix_v1-bf16.safetensors"
+      },
+      "workflow_type": "text_to_image_second_pass",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "44"
+      },
+      "name": "miaomiaoHarem_20步cfg2_吃负面词",
+      "base_model": {
+        "id": "1",
+        "name": "anima"
+      },
+      "model": {
+        "id": "16",
+        "name": "miaomiaoHarem_anima16.safetensors"
+      },
+      "lora": null,
+      "workflow_type": "text_to_image_lora",
+      "cover_url": null
+    },
+    {
+      "ref": {
+        "kind": "workflow",
+        "id": "16"
+      },
+      "name": "krea2_gguf_lora_2pass_usd 1.2.0",
+      "base_model": {
+        "id": "3",
+        "name": "krea2"
+      },
+      "model": {
+        "id": "6",
+        "name": "Krea2-MuseByStable_v15Turbo_GGUF_Q4.gguf"
+      },
+      "lora": {
+        "id": "7",
+        "name": "Krea2-亚洲asianMix_v1-bf16.safetensors"
+      },
+      "workflow_type": "text_to_image_second_pass",
+      "cover_url": null
+    }
+  ],
+  "candidate29Eligible": true,
+  "replyDecision": "当前会话已经生成且completed，不是等待状态，预授权等待回复不适用。未来仅在真实展示候选并等待且29仍为本轮候选时，才能按原规则选择29并在该条当前消息中重附完整Builder JSON。",
+  "requestRetention": [
+    {
+      "assistantSeq": 21,
+      "request": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/9e20df7f-4fa7-4faa-a5de-8f11eac1257f.jsonl",
+      "fullSkillMessageIndexes": [
+        5
+      ],
+      "fullCandidatesMessageIndexes": [],
+      "method": "读取实际 request.messages，逐字比较完整 seq18 Skill 返回及 seq25 MCP 返回；索引从0开始。"
+    },
+    {
+      "assistantSeq": 28,
+      "request": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/e22e5c5b-a543-4fb3-ba4e-62db0b7cb6a4.jsonl",
+      "fullSkillMessageIndexes": [
+        5
+      ],
+      "fullCandidatesMessageIndexes": [
+        8
+      ],
+      "method": "读取实际 request.messages，逐字比较完整 seq18 Skill 返回及 seq25 MCP 返回；索引从0开始。"
+    },
+    {
+      "assistantSeq": 33,
+      "request": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8a161843-83ec-4ce7-a03d-3fcd3f3c08cf.jsonl",
+      "fullSkillMessageIndexes": [
+        5
+      ],
+      "fullCandidatesMessageIndexes": [
+        8
+      ],
+      "method": "读取实际 request.messages，逐字比较完整 seq18 Skill 返回及 seq25 MCP 返回；索引从0开始。"
+    },
+    {
+      "assistantSeq": 49,
+      "request": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3b0d8664-13ce-4741-a29b-85c6c8de98e2.jsonl",
+      "fullSkillMessageIndexes": [
+        5
+      ],
+      "fullCandidatesMessageIndexes": [
+        8
+      ],
+      "method": "读取实际 request.messages，逐字比较完整 seq18 Skill 返回及 seq25 MCP 返回；索引从0开始。"
+    }
+  ],
+  "knowledgeAndActions": [
+    {
+      "seqs": [
+        17,
+        18
+      ],
+      "action": "首先加载生成Skill，取得MCP搜索/等待和受管CLI引用。"
+    },
+    {
+      "seqs": [
+        24,
+        25
+      ],
+      "action": "实际搜索wai_basic_txt2img，返回29、37、28、40、27、33。"
+    },
+    {
+      "seqs": [
+        29,
+        30,
+        34,
+        35
+      ],
+      "action": "读取结果合同、路线、生成CLI、参数检查CLI及schema。"
+    },
+    {
+      "seqs": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "action": "实例首项2；模板29默认模型1；读取模型1完整记录。"
+    },
+    {
+      "seqs": [
+        44,
+        45,
+        46,
+        49,
+        50,
+        51
+      ],
+      "action": "完成结果校验及参数检查后提交一次，未调用随机Seed。"
+    },
+    {
+      "seqs": [
+        55,
+        60,
+        65,
+        70,
+        75,
+        80
+      ],
+      "action": "提交后查找内部产物目录及SQLite状态，未使用媒体查询CLI；80只读轮询已提交Run。"
+    },
+    {
+      "seqs": [
+        81,
+        85,
+        86,
+        90,
+        91,
+        94,
+        99,
+        101
+      ],
+      "action": "内部状态succeeded，复制图片和请求/Workflow，交付图片与链接，completed。"
+    }
+  ],
+  "generationEvidence": {
+    "runId": "run_ef27e825-b2f0-47a2-96f8-583d755a1509",
+    "submitCount": 1,
+    "actualRequest": {
+      "title": "图片 1",
+      "instanceId": "2",
+      "templateId": "29",
+      "model": null,
+      "parameters": {
+        "batch_size": 1,
+        "height": 1536,
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor",
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast",
+        "seed": 20261013,
+        "width": 1536
+      },
+      "loras": []
+    },
+    "builderPromptExact": true,
+    "builderNegativeExact": true,
+    "defaultModel": "item.model.id=1，file=waiIllustriousSDXL_v170.safetensors；请求model=null",
+    "actualWorkflowModel": "waiIllustriousSDXL_v170.safetensors",
+    "actualWorkflowPositiveExact": true,
+    "mediaId": "media_a2ee9c78-c157-4a61-a1d3-e0bbce6e5be7",
+    "filename": "WAI_00044_.png",
+    "statusEvidence": "seq81及86的实际SQLite查询结果为succeeded；本审查未另取Host RPC快照。",
+    "dimensions": [
+      1536,
+      1536
+    ],
+    "visualObservation": "未调用视觉模型；本报告仅核对媒体归属与文件。"
+  },
+  "artifacts": [
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3/5.6-7/actual-workflow.json",
+      "bytes": 5971
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3/5.6-7/api-workflow.json",
+      "bytes": 2120
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3/5.6-7/request.json",
+      "bytes": 702
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3/5.6-7/run_ef27e825.png",
+      "bytes": 2812768
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3/5.6-7/source-snapshot.json",
+      "bytes": 177
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-RnADI3/5.6-7/生成报告.md",
+      "bytes": 4120
+    }
+  ],
+  "rawModelIndex": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8296aca2-639e-4850-ad1f-de3b3a7f2fd4.jsonl",
+      "at": "2026-10-14T05:38:44.521Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/23271e61-44b5-4e64-96cb-368df5d2fb9c.jsonl",
+      "at": "2026-10-14T05:38:44.524Z",
+      "purpose": "session-title"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/9e20df7f-4fa7-4faa-a5de-8f11eac1257f.jsonl",
+      "at": "2026-10-14T05:38:46.960Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/e22e5c5b-a543-4fb3-ba4e-62db0b7cb6a4.jsonl",
+      "at": "2026-10-14T05:38:56.433Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8a161843-83ec-4ce7-a03d-3fcd3f3c08cf.jsonl",
+      "at": "2026-10-14T05:39:01.962Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/96384eca-f6c6-4865-8e2c-676f590910ad.jsonl",
+      "at": "2026-10-14T05:39:13.627Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/3b0d8664-13ce-4741-a29b-85c6c8de98e2.jsonl",
+      "at": "2026-10-14T05:39:20.499Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/0b5bbef5-68d2-4090-b21f-e15b8e88e45d.jsonl",
+      "at": "2026-10-14T05:39:31.481Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a407cf6a-ee1a-4e2a-81f0-c367a845a26c.jsonl",
+      "at": "2026-10-14T05:39:34.812Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/92a38ca6-3de5-405c-ba25-3f451c1539f2.jsonl",
+      "at": "2026-10-14T05:39:38.165Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a7e8e9b3-1158-497f-8bfc-86da2f343ee7.jsonl",
+      "at": "2026-10-14T05:39:42.124Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/8e70533d-9911-433a-b741-6f9912a03765.jsonl",
+      "at": "2026-10-14T05:39:47.238Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/cd33d623-c4bb-4698-b335-6e76f4d22c7e.jsonl",
+      "at": "2026-10-14T05:39:51.241Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/60a30ef5-1689-429c-b868-26ab3a338c8f.jsonl",
+      "at": "2026-10-14T05:41:10.207Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/619f5763-9b12-4e4d-a865-f2da96ee23a5.jsonl",
+      "at": "2026-10-14T05:41:16.246Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/9d28f1e7-4876-4a04-9b8b-d1200f667868.jsonl",
+      "at": "2026-10-14T05:41:27.755Z",
+      "purpose": null
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/27deb669-e0f1-4884-a281-6eb2b895cd4a.jsonl",
+      "at": "2026-10-14T05:41:35.252Z",
+      "purpose": null
+    }
+  ],
+  "conclusion": "实际生成成功与等待目标分别判定；5.6-7首轮等待目标失败，原失败应保留。"
+}

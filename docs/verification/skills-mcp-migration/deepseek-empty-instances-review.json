@@ -1,0 +1,734 @@
+{
+  "reviewStatus": "已完成",
+  "scope": {
+    "caseId": "5.6-6",
+    "standards": [
+      "docs/plans/skills-mcp-migration-20261013.md §5.6/5.9",
+      "docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md §5.3.4/5.3.5",
+      ".agents/skills/comfyui-generate/SKILL.md:58"
+    ],
+    "evidenceType": "本机目录边界夹具与真实模型调用",
+    "authorization": ".local/skills-mcp-migration-live/model-switch.json"
+  },
+  "cases": [
+    {
+      "preset": "harness-comfyui-cli-candidate",
+      "sessionId": "session-97e91fee-f6c4-404b-b030-99031686a4be",
+      "collect": ".local/skills-mcp-migration-live/desktop/8afcd59e-0da4-462f-9331-4a56122b2f4c/1791904056305-2a2fe95f-9482-48d7-ab63-cdf35cca6479-collect.json",
+      "input": ".local/skills-mcp-migration-live/deepseek-empty-workbench-input.json",
+      "eventCoverage": {
+        "firstSeq": 0,
+        "lastSeq": 155,
+        "recordCount": 156,
+        "turnEndReason": "completed"
+      },
+      "verdict": "未通过",
+      "checks": [
+        {
+          "name": "实际模型身份",
+          "verdict": "通过",
+          "calls": [
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/45e62d89-aa6c-4ff1-b810-3d118f5eff61.jsonl",
+              "at": "2026-10-13T15:05:17.307Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/0dc44295-6764-49ab-bbdb-5341efb702f3.jsonl",
+              "at": "2026-10-13T15:05:17.310Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": "session-title"
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/d10ea613-a9f9-4d6e-acc6-117356d60c0f.jsonl",
+              "at": "2026-10-13T15:05:20.320Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/dc288866-6c21-46fb-8bdc-c8b4a04aec95.jsonl",
+              "at": "2026-10-13T15:05:23.163Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/b735ac6c-0e17-414a-903f-dd13e464605b.jsonl",
+              "at": "2026-10-13T15:05:25.916Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/d9dc3e82-daa2-4ef6-9365-94eab5edae6e.jsonl",
+              "at": "2026-10-13T15:05:30.948Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/04bd2113-5943-4642-b9f0-68da73117f3e.jsonl",
+              "at": "2026-10-13T15:05:33.812Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/54983f14-81f4-405a-a747-df95affcb2f1.jsonl",
+              "at": "2026-10-13T15:05:37.347Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/e11756bf-f657-4497-ba26-e3e01ab9b21c.jsonl",
+              "at": "2026-10-13T15:05:40.549Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/22fa1976-b9d6-4a99-af90-d0759b31e095.jsonl",
+              "at": "2026-10-13T15:05:43.377Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/a571f20a-2382-4d75-b65d-c1963a210408.jsonl",
+              "at": "2026-10-13T15:05:46.107Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/d1ea71eb-2b6b-4cab-b79e-38cfe4753eb9.jsonl",
+              "at": "2026-10-13T15:05:48.995Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/b5cdc75f-5c59-4ea8-9c88-1c8896b6a31c.jsonl",
+              "at": "2026-10-13T15:05:53.870Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/9409c016-ff63-4bd0-a93e-aa654639c4ae.jsonl",
+              "at": "2026-10-13T15:06:00.220Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/f1524148-345c-4fdb-984c-e8700e797d3a.jsonl",
+              "at": "2026-10-13T15:06:03.032Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/fe803d00-2ec1-49d9-9bcd-4b3343bde911.jsonl",
+              "at": "2026-10-13T15:06:06.374Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/eba11aca-5fa3-4503-a271-fff5ec3f4b65.jsonl",
+              "at": "2026-10-13T15:06:09.375Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/3423e467-8e9a-428c-80d9-601a024f9938.jsonl",
+              "at": "2026-10-13T15:06:15.223Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/37bbdefa-7064-4b2d-a007-07a9afdd8359.jsonl",
+              "at": "2026-10-13T15:06:19.376Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/e1b544c4-1d38-474c-8f24-e8b5dbda4fac.jsonl",
+              "at": "2026-10-13T15:06:37.428Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/3d98ed46-4a10-4d8f-8fb0-c25d167b5030.jsonl",
+              "at": "2026-10-13T15:06:41.611Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/ae7cf108-2d2b-439e-8e62-3fd4a2d7e6b5.jsonl",
+              "at": "2026-10-13T15:06:45.638Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/c2cf876a-0bd0-465c-8265-07af98b381c6.jsonl",
+              "at": "2026-10-13T15:06:47.524Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/ebd36800-09fc-4e2c-8d8c-50a3f746eaca.jsonl",
+              "at": "2026-10-13T15:06:50.078Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/7e481909-fb90-4f66-8503-2c5bb00a9621.jsonl",
+              "at": "2026-10-13T15:06:53.318Z",
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/f92c538d-364b-4df6-a29e-6b2e3032e26f.jsonl",
+              "at": "2026-10-13T15:07:09.377Z",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            }
+          ],
+          "actual": "执行模型 opencode-go/deepseek-v4.1-flash；生成后的图片读取使用 openrouter/thinkingmachines/inkling:free。"
+        },
+        {
+          "name": "Skill 完整送达",
+          "verdict": "通过",
+          "toolResultSeq": 20,
+          "bodyExactMatch": true,
+          "bodyCharacters": 4446,
+          "nextModelRequest": ".local/skills-mcp-migration-live/llm-calls/d10ea613-a9f9-4d6e-acc6-117356d60c0f.jsonl",
+          "messageIndexZeroBased": 6
+        },
+        {
+          "name": "空列表原始响应到 DSH 到下一轮模型消息",
+          "verdict": "通过",
+          "comparisons": [
+            {
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-59b0c765-f277-4aa0-9b6a-90509157e76d.json",
+              "dshSeq": 46,
+              "request": ".local/skills-mcp-migration-live/llm-calls/04bd2113-5943-4642-b9f0-68da73117f3e.jsonl",
+              "messageIndexZeroBased": 17
+            },
+            {
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-13af2a82-e4f8-4a10-b92e-ffed080d6324.json",
+              "dshSeq": 51,
+              "request": ".local/skills-mcp-migration-live/llm-calls/54983f14-81f4-405a-a747-df95affcb2f1.jsonl",
+              "messageIndexZeroBased": 19
+            }
+          ],
+          "exactText": "{\"results\":[],\"next\":null}",
+          "characters": 26,
+          "rawEqualsDsh": true,
+          "dshEqualsNextModelMessage": true,
+          "structuredContentMatchesText": true
+        },
+        {
+          "name": "停止依赖实例的后续步骤",
+          "verdict": "未通过",
+          "expected": "报告没有可用 ComfyUI 实例并停止创建图片。",
+          "actual": "收到两次空列表后，执行者探测实例1，回退 Catalog CLI 获取实例2，执行参数检查并提交生成。",
+          "eventSeqs": [
+            46,
+            51,
+            57,
+            76,
+            77,
+            83,
+            88,
+            119
+          ]
+        },
+        {
+          "name": "零 Generation Request 提交",
+          "verdict": "未通过",
+          "submitSeq": 119,
+          "submitResultSeq": 120,
+          "runId": "run_e2ef5f49-8652-4de3-9add-0b7be7e14833",
+          "mediaResultSeq": 125,
+          "deliverySeq": 153
+        },
+        {
+          "name": "Workflow 原始响应完整性",
+          "verdict": "通过",
+          "dshSeq": 44,
+          "characters": 2812,
+          "rawMatchingExchanges": [
+            ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-18bead57-8d24-4f61-bb7b-5ae3643e4cd5.json",
+            ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-439fa5f1-79ff-46bc-95b7-b71689b1a86b.json"
+          ],
+          "nextRequest": ".local/skills-mcp-migration-live/llm-calls/04bd2113-5943-4642-b9f0-68da73117f3e.jsonl",
+          "messageIndexZeroBased": 16,
+          "rawEqualsDshEqualsNextModelMessage": true,
+          "truncationObserved": false
+        }
+      ]
+    },
+    {
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+      "childSessions": [
+        "fc1e0177-87fd-4546-9a44-e3af0a72c1c1"
+      ],
+      "collect": ".local/skills-mcp-migration-live/desktop/8afcd59e-0da4-462f-9331-4a56122b2f4c/1791904327573-4a0e6a6d-c315-4cc4-b642-72a171186810-collect.json",
+      "input": ".local/skills-mcp-migration-live/deepseek-empty-iteration-input.json",
+      "eventCoverage": {
+        "firstSeq": 0,
+        "lastSeq": 151,
+        "recordCount": 152,
+        "turnEndSeq": 150,
+        "turnEndReason": "aborted/user",
+        "cancellation": "主线程在停止规则偏离已确定后取消执行。",
+        "compositionTermination": {
+          "seq": 147,
+          "status": "ran out of room before it finished"
+        },
+        "childDshEvents": "未提供独立子会话 DSH；子会话依据模型调用与父会话通知核对。"
+      },
+      "verdict": "未通过",
+      "checks": [
+        {
+          "name": "实际模型身份",
+          "verdict": "通过",
+          "actual": "主会话与构图子会话均为 opencode-go/deepseek-v4.1-flash",
+          "calls": [
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/77ec1622-a7c1-44e0-acdd-6355de730b87.jsonl",
+              "at": "2026-10-13T15:07:36.945Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/5eb6889d-425e-4649-827a-754b6c458efb.jsonl",
+              "at": "2026-10-13T15:07:36.947Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": "session-title"
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/55b0d0fe-052f-4bf3-9e27-aa62ca905e59.jsonl",
+              "at": "2026-10-13T15:07:39.982Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/0def8b05-2bae-45e5-966f-ad70448e9283.jsonl",
+              "at": "2026-10-13T15:07:44.124Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/18bceb67-3728-46ea-b5cf-0c412a4aa0ba.jsonl",
+              "at": "2026-10-13T15:07:52.555Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/2308a6a9-ab1b-4751-aa88-dbcd344a8751.jsonl",
+              "at": "2026-10-13T15:08:00.396Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/62480170-feb6-4faf-97fb-0f7c01494d40.jsonl",
+              "at": "2026-10-13T15:08:08.175Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/5607b58b-fb15-4b5b-9644-069fb7238f7d.jsonl",
+              "at": "2026-10-13T15:08:08.463Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/22f7358f-088d-4de6-8adc-3e9a9731d64e.jsonl",
+              "at": "2026-10-13T15:08:10.839Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/47e4e66f-b66d-4221-8e44-804294f96737.jsonl",
+              "at": "2026-10-13T15:08:11.733Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/3c058998-141f-4f40-ab04-416bba131bfa.jsonl",
+              "at": "2026-10-13T15:08:13.857Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/13d1cf85-915a-4f0b-90a6-d43bb1b8a034.jsonl",
+              "at": "2026-10-13T15:08:15.576Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/79915270-17fd-4389-98e8-578bac11a57b.jsonl",
+              "at": "2026-10-13T15:08:16.174Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/0958864b-59a1-43dd-8068-d3fa722a7cb8.jsonl",
+              "at": "2026-10-13T15:08:18.403Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/40042240-c42b-4751-a929-818a86bb1c81.jsonl",
+              "at": "2026-10-13T15:08:22.297Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/b14ae5f9-1be7-4619-8e0c-1583efdc5c00.jsonl",
+              "at": "2026-10-13T15:08:23.276Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/3431891e-f33b-40e4-8acc-50bfcd350347.jsonl",
+              "at": "2026-10-13T15:08:26.942Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/47fdc60c-0ba8-4b64-89d8-03a3a36256fe.jsonl",
+              "at": "2026-10-13T15:08:31.046Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/c7779652-7433-4455-a5f2-eccc124cae1f.jsonl",
+              "at": "2026-10-13T15:08:32.347Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/58d4fc84-daca-4f31-b8c4-313c77326844.jsonl",
+              "at": "2026-10-13T15:08:34.017Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/281a5011-86c5-4c62-8cab-c5689f8fcb47.jsonl",
+              "at": "2026-10-13T15:08:37.229Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/7b82b273-66f7-4cf2-b74b-726856dc3727.jsonl",
+              "at": "2026-10-13T15:08:41.088Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/c241377d-9030-46e9-ac22-e0c740b7e477.jsonl",
+              "at": "2026-10-13T15:08:45.698Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/524da50c-9fbb-4b88-bda7-d38f739b70e3.jsonl",
+              "at": "2026-10-13T15:08:46.119Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/98ad5cb2-83b2-4db0-b36a-18db3a5f97a0.jsonl",
+              "at": "2026-10-13T15:08:52.219Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/25930c4f-86cb-4d62-96a9-404cc8164b34.jsonl",
+              "at": "2026-10-13T15:08:53.142Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/d8bd44be-41f0-4105-abbd-9ee508e5680c.jsonl",
+              "at": "2026-10-13T15:08:55.261Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/7e1a22c2-442f-4402-af15-211ba98463f6.jsonl",
+              "at": "2026-10-13T15:08:58.588Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/3f908320-c461-4b28-beaa-01b074d69e57.jsonl",
+              "at": "2026-10-13T15:08:58.690Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/fe46f9f8-6466-4e8b-8909-17cbbf4821c4.jsonl",
+              "at": "2026-10-13T15:09:03.649Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/6c7d6265-6f2b-42b9-86e9-eb5828be0c57.jsonl",
+              "at": "2026-10-13T15:09:07.635Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/54165521-d62f-4cce-8581-3f3c321d5fa7.jsonl",
+              "at": "2026-10-13T15:09:09.044Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/486ccd77-00d4-4813-9b18-8cf67e4186d2.jsonl",
+              "at": "2026-10-13T15:09:12.451Z",
+              "sessionId": "fc1e0177-87fd-4546-9a44-e3af0a72c1c1",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            },
+            {
+              "path": ".local/skills-mcp-migration-live/llm-calls/360e74ba-ec94-402c-97ad-d84830ad5aee.jsonl",
+              "at": "2026-10-13T15:09:14.662Z",
+              "sessionId": "session-fd77a8df-70f6-4c20-94a4-1e2e9f6e7268",
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "purpose": null
+            }
+          ]
+        },
+        {
+          "name": "生成 Skill 完整送达",
+          "verdict": "通过",
+          "toolResultSeq": 57,
+          "bodyExactMatch": true,
+          "bodyCharacters": 4446,
+          "nextRequest": ".local/skills-mcp-migration-live/llm-calls/3c058998-141f-4f40-ab04-416bba131bfa.jsonl",
+          "messageIndexZeroBased": 21
+        },
+        {
+          "name": "空列表原始响应到 DSH 到下一轮模型消息",
+          "verdict": "通过",
+          "comparisons": [
+            {
+              "dshSeq": 47,
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-d259e105-8d61-4b1b-9d6b-5989b6034c2b.json",
+              "nextRequest": ".local/skills-mcp-migration-live/llm-calls/5607b58b-fb15-4b5b-9644-069fb7238f7d.jsonl",
+              "messageIndexZeroBased": 17,
+              "characters": 53,
+              "rawEqualsDshEqualsNextMessage": true,
+              "structuredContentMatchesText": true
+            },
+            {
+              "dshSeq": 52,
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-edd908a4-1802-4875-a8af-38611dd08f28.json",
+              "nextRequest": ".local/skills-mcp-migration-live/llm-calls/22f7358f-088d-4de6-8adc-3e9a9731d64e.jsonl",
+              "messageIndexZeroBased": 19,
+              "characters": 26,
+              "rawEqualsDshEqualsNextMessage": true,
+              "structuredContentMatchesText": true
+            },
+            {
+              "dshSeq": 62,
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-eaf2fab8-1e75-48ad-97a0-02d0a1c37a6d.json",
+              "nextRequest": ".local/skills-mcp-migration-live/llm-calls/79915270-17fd-4389-98e8-578bac11a57b.jsonl",
+              "messageIndexZeroBased": 23,
+              "characters": 26,
+              "rawEqualsDshEqualsNextMessage": true,
+              "structuredContentMatchesText": true
+            },
+            {
+              "dshSeq": 64,
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-c2e81854-9d14-47f5-94c1-fdafe16e328b.json",
+              "nextRequest": ".local/skills-mcp-migration-live/llm-calls/79915270-17fd-4389-98e8-578bac11a57b.jsonl",
+              "messageIndexZeroBased": 24,
+              "characters": 26,
+              "rawEqualsDshEqualsNextMessage": true,
+              "structuredContentMatchesText": true
+            },
+            {
+              "dshSeq": 130,
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-dee45816-7fa7-4291-b211-08ba836fe597.json",
+              "nextRequest": ".local/skills-mcp-migration-live/llm-calls/fe46f9f8-6466-4e8b-8909-17cbbf4821c4.jsonl",
+              "messageIndexZeroBased": 51,
+              "characters": 53,
+              "rawEqualsDshEqualsNextMessage": true,
+              "structuredContentMatchesText": true
+            },
+            {
+              "dshSeq": 132,
+              "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-d7316d84-5b84-48be-943e-2c851504fb16.json",
+              "nextRequest": ".local/skills-mcp-migration-live/llm-calls/fe46f9f8-6466-4e8b-8909-17cbbf4821c4.jsonl",
+              "messageIndexZeroBased": 52,
+              "characters": 53,
+              "rawEqualsDshEqualsNextMessage": true,
+              "structuredContentMatchesText": true
+            }
+          ]
+        },
+        {
+          "name": "Workflow 原始响应完整性",
+          "verdict": "通过",
+          "comparison": {
+            "dshSeq": 27,
+            "raw": ".local/skills-mcp-migration-live/boundary-fixture-evidence/c3573621-ec0c-41d4-bb3b-5d9ff60b3c1b/exchange-439fa5f1-79ff-46bc-95b7-b71689b1a86b.json",
+            "nextRequest": ".local/skills-mcp-migration-live/llm-calls/0def8b05-2bae-45e5-966f-ad70448e9283.jsonl",
+            "messageIndexZeroBased": 9,
+            "characters": 2812,
+            "rawEqualsDshEqualsNextMessage": true,
+            "structuredContentMatchesText": true
+          },
+          "truncationObserved": false
+        },
+        {
+          "name": "停止依赖实例的后续步骤",
+          "verdict": "未通过",
+          "actual": "执行者在未筛选实例列表为空后继续探测实例1、查阅环境和配置，回退 Catalog CLI 获取实例2，再执行 Workflow 参数检查。",
+          "eventSeqs": [
+            52,
+            57,
+            62,
+            64,
+            68,
+            70,
+            75,
+            99,
+            104,
+            109,
+            124,
+            125,
+            136,
+            137
+          ],
+          "sourceLocations": [
+            ".agents/skills/comfyui-generate/SKILL.md:58"
+          ]
+        },
+        {
+          "name": "零 Generation Request 提交及自然停止",
+          "verdict": "证据不足",
+          "observedGenerationSubmitCalls": 0,
+          "scope": "父会话 seq0–151 与构图子会话模型调用截至人工取消。",
+          "reason": "seq150 为 user aborted；已观察范围内没有提交，但执行者未自然报告空实例并结束，无法据此确认完整零提交停止分支。"
+        }
+      ]
+    }
+  ],
+  "independentDiagnosis": {
+    "verifiedFacts": [
+      "空实例 MCP 文本与结构化内容一致，完整送达执行者。",
+      "Skill 第58行停止规则完整送达。",
+      "执行者通过另一个入口查询出实例并完成提交，形成空列表分支到 CLI 替代来源再到提交的可定位执行链。",
+      "两个预设均出现空 MCP 列表后以 CLI 查询实例2的路径；迭代止于人工取消前的参数检查阶段。"
+    ],
+    "judgment": "当前 Skill 已要求停止；本轮行为违反现行入口和停止规则。保留的 Catalog CLI 能被执行者发现并调用，使偏离具有实际可执行路径。",
+    "unverifiedHypotheses": [
+      "在停止分支明确禁止替代来源，是否足以使同模型稳定停止，须通过相同输入和夹具的单变量复验确认。",
+      "CLI 可发现性是否为必要诱因，尚未隔离验证。"
+    ],
+    "minimalGeneralRevision": {
+      "location": ".agents/skills/comfyui-generate/SKILL.md:58",
+      "proposal": "Skill 执行者通过 NoobAI MCP 获取实例列表，采用返回的第一个实例作为本次目标。实例列表为空时，Skill 执行者报告没有可用的 ComfyUI 实例，并结束本轮执行；禁止通过其他入口、历史记录或推测实例 ID 替代本次查询结果，禁止执行依赖实例的参数检查和生成提交。确定实例 ID 后，Skill 执行者完整读取 `references/template-parameter-inspection-cli.md`。",
+      "scope": "这是待批准的通用 Skill 规则修订建议；本报告未改动产品或验收标准。"
+    },
+    "acceptance": "相同模型、输入和夹具的干净会话中，空列表后应直接报告停止，轨迹不得出现替代实例查询、参数检查或 Generation Request 提交。"
+  },
+  "pending": [],
+  "overallVerdict": "未通过",
+  "conclusion": "工作台与迭代预设均通过 Catalog CLI 替代空 MCP 列表取得实例2并继续参数检查，停止规则均未通过。工作台实际提交并生成图片；迭代在主线程取消前未提交，其自然停止行为证据不足。已审空列表及 Workflow 响应完整送达，未发现 Workflow 截断。",
+  "limitations": [
+    "迭代会话由主线程取消，不能将截至取消的零提交视为自然停止通过。",
+    "构图子会话独立 DSH 事件未提供；父会话记录子任务因上下文空间耗尽而结束。"
+  ]
+}

@@ -1,0 +1,606 @@
+{
+  "schemaVersion": 1,
+  "verificationDate": "2026-10-13",
+  "plan": "docs/plans/skills-mcp-migration-20261013.md",
+  "planSections": [
+    "5.4",
+    "5.9",
+    "7"
+  ],
+  "runId": "ab1a2d9b-d2b8-45d6-8ed9-0e78dc397488",
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
+    "bundleId": "com.deepseek.dsh",
+    "version": "0.2.0-rc.2"
+  },
+  "plugin": {
+    "name": "harness-comfyui",
+    "version": "0.45.0"
+  },
+  "allowedModel": {
+    "provider": "openrouter",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "batchState": "已停止",
+  "batchReason": "首项使用未发布的MCP资源URI读取本地参考文件，两次报错后以普通文字结束会话。主线程要求首项出现明确执行缺陷时停止后续提交。",
+  "inputWording": {
+    "original": "只构建并保存 Builder JSON。",
+    "replacement": "请完成本 Skill 的提示词构建流程并保存最终结构化结果。",
+    "appliedCases": [
+      "5.4-2"
+    ],
+    "case54_5": "原输入没有待替换文字，保留原参数。"
+  },
+  "reviewedBy": "独立Krea2执行队员",
+  "reviewMethod": "队员逐条阅读DSH事件和对应观察器请求与返回，人工判定预期动作、实际动作及事件位置。文本传递比较只核对确定性的字符内容。",
+  "cases": [
+    {
+      "caseId": "5.4-2",
+      "preset": "harness-comfyui-cli-candidate",
+      "executionState": "会话已结束",
+      "verdict": "未通过",
+      "sessionId": "session-1fd22537-9d58-4170-b3ea-67c09b9ff99d",
+      "workspaceId": "47027f41-2284-4abd-9140-d36dca4f0077",
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-dots-ab1a2d9b-5.4-2-workbench",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "subSessionIds": [],
+      "eventRange": {
+        "first": 0,
+        "last": 32
+      },
+      "eventCount": 33,
+      "timeout": false,
+      "evidence": {
+        "input": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/task.json",
+        "submit": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/session.json",
+        "watch": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/watch.json",
+        "allDshEvents": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/collect.json",
+        "traceIndex": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/trace-index.json",
+        "deliveredToolComparison": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/delivered-tool-comparison.json",
+        "observerCalls": [
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/llm-calls/62ab8fb8-07fb-4cff-923b-4858752e77b9.jsonl",
+            "requestAt": "2026-10-13T10:35:26.578Z",
+            "provider": "openrouter",
+            "model": "dots-studio/dots-3-note-preview:free",
+            "sessionId": "session-1fd22537-9d58-4170-b3ea-67c09b9ff99d",
+            "purpose": null,
+            "recordCount": 19,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:35:30.980Z",
+                "callId": "62ab8fb8-07fb-4cff-923b-4858752e77b9",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "dots-studio/dots-3-note-preview:free",
+                      "responseId": "gen-1791887727-M4eP3T9JOr5zwWYhVqAV",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 5,
+            "tools": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/llm-calls/2e330752-92d5-42da-870b-9f70d9f12878.jsonl",
+            "requestAt": "2026-10-13T10:35:26.580Z",
+            "provider": "openrouter",
+            "model": "dots-studio/dots-3-note-preview:free",
+            "sessionId": "session-1fd22537-9d58-4170-b3ea-67c09b9ff99d",
+            "purpose": "session-title",
+            "recordCount": 13,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:35:29.286Z",
+                "callId": "2e330752-92d5-42da-870b-9f70d9f12878",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "stop"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "dots-studio/dots-3-note-preview:free",
+                      "responseId": "gen-1791887727-NocOF1DrYxaA4siMhGsX",
+                      "stopReason": "stop"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 1
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/llm-calls/a1698760-d2c3-4e01-8cbc-7586cf0b33e5.jsonl",
+            "requestAt": "2026-10-13T10:35:31.002Z",
+            "provider": "openrouter",
+            "model": "dots-studio/dots-3-note-preview:free",
+            "sessionId": "session-1fd22537-9d58-4170-b3ea-67c09b9ff99d",
+            "purpose": null,
+            "recordCount": 27,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:35:50.943Z",
+                "callId": "a1698760-d2c3-4e01-8cbc-7586cf0b33e5",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "tool-calls"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "dots-studio/dots-3-note-preview:free",
+                      "responseId": "gen-1791887731-RpammUcyA3xQmrKIFeu6",
+                      "stopReason": "toolUse"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      },
+                      {
+                        "type": "tool-call"
+                      },
+                      {
+                        "type": "tool-call"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 7,
+            "tools": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          },
+          {
+            "file": ".local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-workbench/llm-calls/b4246607-1aab-4e6a-afcd-080702f5b52b.jsonl",
+            "requestAt": "2026-10-13T10:35:51.006Z",
+            "provider": "openrouter",
+            "model": "dots-studio/dots-3-note-preview:free",
+            "sessionId": "session-1fd22537-9d58-4170-b3ea-67c09b9ff99d",
+            "purpose": null,
+            "recordCount": 10,
+            "recordKinds": [
+              "request",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "chunk",
+              "complete"
+            ],
+            "finishRecords": [
+              {
+                "at": "2026-10-13T10:36:09.453Z",
+                "callId": "b4246607-1aab-4e6a-afcd-080702f5b52b",
+                "kind": "chunk",
+                "chunk": {
+                  "type": "finish",
+                  "reason": {
+                    "kind": "stop"
+                  },
+                  "replayState": {
+                    "response": {
+                      "kind": "pi-ai",
+                      "version": 2,
+                      "api": "openai-completions",
+                      "provider": "openrouter",
+                      "model": "dots-studio/dots-3-note-preview:free",
+                      "responseId": "gen-1791887751-QWMVg685Im3OgyJl3gFN",
+                      "stopReason": "stop"
+                    },
+                    "blocks": [
+                      {
+                        "type": "text"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "messageCount": 10,
+            "tools": [
+              "bash",
+              "interrupt_agent",
+              "list_mcp_resource_templates",
+              "list_mcp_resources",
+              "mcp__noobai__get_catalog_resource",
+              "mcp__noobai__get_instance_connection",
+              "mcp__noobai__get_instance_node",
+              "mcp__noobai__get_instance_queue",
+              "mcp__noobai__get_instance_status",
+              "mcp__noobai__list_prompt_term_categories",
+              "mcp__noobai__query_semantic_characters",
+              "mcp__noobai__query_semantic_prompt_terms",
+              "mcp__noobai__query_semantic_works",
+              "mcp__noobai__search_artist_prompt_strings",
+              "mcp__noobai__search_base_models",
+              "mcp__noobai__search_instance_nodes",
+              "mcp__noobai__search_instances",
+              "mcp__noobai__search_loras",
+              "mcp__noobai__search_models",
+              "mcp__noobai__search_styles",
+              "mcp__noobai__search_workflows",
+              "read_mcp_resource",
+              "send_message",
+              "skill",
+              "subagent_task"
+            ]
+          }
+        ]
+      },
+      "checks": [
+        {
+          "expected": "官方Desktop创建全新Session，选择工作台预设与指定模型，并只接收初始任务输入。",
+          "actual": "submit创建Session和Workspace；seq 3保存指定Dots模型，projection保存harness-comfyui-cli-candidate。会话只有一轮任务输入。",
+          "eventSeqs": [
+            0,
+            3,
+            5,
+            9,
+            32
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员完整读取Krea2 Skill。",
+          "actual": "seq 19通过skill工具加载krea2-anime-prompt-builder；seq 20返回5657字符，下一次模型请求取得相同文本。",
+          "eventSeqs": [
+            19,
+            20
+          ],
+          "verdict": "通过"
+        },
+        {
+          "expected": "执行队员完整读取本地input-contract.md和krea2-prompt-rules.md。",
+          "actual": "seq 24、26通过read_mcp_resource向noobai提交本地file:///路径；seq 25、27均返回“请求的 MCP 资源尚未发布”。参考文件正文没有进入会话。",
+          "eventSeqs": [
+            24,
+            25,
+            26,
+            27
+          ],
+          "verdict": "未通过"
+        },
+        {
+          "expected": "读取失败后，执行队员完成参考资料读取，再继续本项任务。",
+          "actual": "seq 30回复“我直接用 bash 读取这些引用文件。”；seq 32以completed结束。seq 0至32没有bash调用。三次Agent模型请求中的工具声明均包含bash。",
+          "eventSeqs": [
+            24,
+            25,
+            26,
+            27,
+            30,
+            32
+          ],
+          "verdict": "未通过"
+        },
+        {
+          "expected": "角色Prompt为空时，执行队员通过NoobAI MCP优先按ID 39934取得角色Prompt。",
+          "actual": "会话只有skill调用和两次失败的read_mcp_resource调用，没有角色查询。",
+          "eventSeqs": [
+            19,
+            24,
+            26,
+            32
+          ],
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "执行队员按来源顺序采用角色Prompt，并保留单人站立半身像、白衬衫和窗边柔光。",
+          "actual": "会话没有角色Prompt查询结果或组装后的positive_prompt。",
+          "eventSeqs": [
+            30,
+            32
+          ],
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "执行队员按Krea2底模与候选规则处理未指定画师的情况。",
+          "actual": "会话没有底模或画师查询。",
+          "eventSeqs": [
+            19,
+            24,
+            26,
+            32
+          ],
+          "verdict": "证据不足"
+        },
+        {
+          "expected": "执行队员完成结果合同、schema和profiles读取，调用validate-output.mjs，并保存通过校验的最终结构化结果。",
+          "actual": "会话没有生成结果资料读取、校验器调用或文件写入。Workspace为空；最终文本只宣布将使用bash。",
+          "eventSeqs": [
+            30,
+            32
+          ],
+          "artifactPaths": [],
+          "validatorCall": null,
+          "verdict": "未通过"
+        },
+        {
+          "expected": "每条实际模型调用使用获准Provider与模型。",
+          "actual": "观察器保存3次Agent调用和1次session-title调用；4次均为openrouter/dots-studio/dots-3-note-preview:free。seq 18、23、30的模型消息保存相同身份。",
+          "eventSeqs": [
+            3,
+            18,
+            23,
+            30
+          ],
+          "verdict": "通过"
+        }
+      ],
+      "failure": {
+        "kind": "执行缺陷",
+        "failedResourceReadEventSeqs": [
+          24,
+          26
+        ],
+        "resourceErrorEventSeqs": [
+          25,
+          27
+        ],
+        "finalAssistantEventSeq": 30,
+        "turnEndEventSeq": 32,
+        "turnEndReason": "completed",
+        "resourceError": "Error: 请求的 MCP 资源尚未发布。请读取资源列表并选择其中的 URI。",
+        "finalText": "我直接用 bash 读取这些引用文件。",
+        "causeScope": "已观察到本地参考文件的读取工具选择和会话结束行为不满足任务要求；本轮未判定Skill文字或宿主能力是原因。"
+      },
+      "artifacts": [],
+      "workspaceFiles": [],
+      "workflowTruncation": {
+        "state": "未执行Workflow MCP查询",
+        "comparisonOfCompletedToolResults": [
+          {
+            "eventSeq": 20,
+            "callId": "call_1883cfd7250d4d76b112f042",
+            "nextRequestFile": "a1698760-d2c3-4e01-8cbc-7586cf0b33e5.jsonl",
+            "nextRequestAt": "2026-10-13T10:35:31.002Z",
+            "durableTextCharacters": 5657,
+            "llmInputTextCharacters": 5657,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 25,
+            "callId": "call_3d0cadc47045464b81d7d8aa",
+            "nextRequestFile": "b4246607-1aab-4e6a-afcd-080702f5b52b.jsonl",
+            "nextRequestAt": "2026-10-13T10:35:51.006Z",
+            "durableTextCharacters": 40,
+            "llmInputTextCharacters": 40,
+            "textEqual": true,
+            "firstDifference": null
+          },
+          {
+            "eventSeq": 27,
+            "callId": "call_24c5b726d124443f8d5837c1",
+            "nextRequestFile": "b4246607-1aab-4e6a-afcd-080702f5b52b.jsonl",
+            "nextRequestAt": "2026-10-13T10:35:51.006Z",
+            "durableTextCharacters": 40,
+            "llmInputTextCharacters": 40,
+            "textEqual": true,
+            "firstDifference": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "5.4-2",
+      "preset": "harness-comfyui-iteration",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-dots-ab1a2d9b-5.4-2-iteration",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-2-iteration/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项出现明确执行缺陷后保持停止。"
+    },
+    {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-cli-candidate",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-dots-ab1a2d9b-5.4-5-workbench",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-5-workbench/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项出现明确执行缺陷后保持停止。"
+    },
+    {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-iteration",
+      "executionState": "尚未提交",
+      "verdict": "证据不足",
+      "sessionId": null,
+      "workspaceId": null,
+      "workspacePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/krea-dots-ab1a2d9b-5.4-5-iteration",
+      "skillPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/krea-evidence/dots-ab1a2d9b/5.4-5-iteration/task.json",
+      "eventRange": null,
+      "artifacts": [],
+      "reason": "首项出现明确执行缺陷后保持停止。"
+    }
+  ],
+  "modelCallSummary": {
+    "agentCalls": 3,
+    "titleCalls": 1,
+    "totalCalls": 4,
+    "upstreamErrorResponses": 0,
+    "unapprovedModelCalls": 0
+  },
+  "openItems": [
+    "5.4-2工作台：使用干净Session复验完整参考读取、角色ID查询、来源采用、画师查询、校验器与最终结构化结果。",
+    "5.4-2迭代：完成首次独立Session验收。",
+    "5.4-5工作台：完成首次独立Session验收。",
+    "5.4-5迭代：完成首次独立Session验收。"
+  ],
+  "changes": {
+    "productEdited": false,
+    "skillEdited": false,
+    "profileEdited": false,
+    "desktopStartedByThisWorker": false,
+    "desktopStoppedByThisWorker": false,
+    "additionalDshMessagesSent": 0
+  }
+}
