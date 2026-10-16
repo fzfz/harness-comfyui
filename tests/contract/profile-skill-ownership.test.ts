@@ -17,7 +17,7 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
     expect(bundleSource).not.toMatch(/skill-filesystem|tool-skill|project-installed-skills|\.agents\/skills/u)
     expect(bundleRows.some(row => ['agent-default-model', 'llm-pi-ai', 'bash-sandbox'].includes(row.id ?? '')))
       .toBe(false)
-    expect(bundleRows.filter(row => row.name === './agent-presets/project-installed-presets.mjs'))
+    expect(bundleRows.filter(row => row.name === 'harness-comfyui/presets'))
       .toHaveLength(1)
 
     for (const presetId of ['harness-comfyui-cli-candidate', 'harness-comfyui-iteration']) {

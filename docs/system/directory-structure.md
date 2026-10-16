@@ -66,6 +66,7 @@
    | 路径 | 内容 |
    | --- | --- |
    | `cordis.patch.yml` | Host 插件与已安装 Preset 的装配声明。 |
+   | `locales/` | 官方插件管理界面使用的插件包与组件名称。 |
    | `config/base.json`、`config/profiles/production.json` | Configuration Profile 默认值。 |
    | `config/schema.ts` | Configuration Profile 字段与约束。 |
    | `config/environment-overrides.json` | 环境覆盖映射。 |

@@ -57,7 +57,7 @@ const expectedOfficialBundle = [{
     { id: 'harness-comfyui-image-reader', name: 'harness-comfyui/image-reader' },
     { id: 'harness-comfyui-cli', name: 'harness-comfyui/cli' },
     { id: 'harness-comfyui', name: 'harness-comfyui' },
-    { id: 'harness-comfyui-presets', name: './agent-presets/project-installed-presets.mjs' },
+    { id: 'harness-comfyui-presets', name: 'harness-comfyui/presets' },
   ],
 }]
 const forbiddenGlobalDefaultEntries = new Set([
